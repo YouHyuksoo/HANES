@@ -29,9 +29,9 @@ export interface AppConfig {
  * 데이터베이스 설정 인터페이스
  */
 export interface DatabaseConfig {
-  /** Prisma 연결 URL (Transaction pooler) */
+  /** Oracle 연결 문자열 (TNS 또는 EZConnect) */
   url: string;
-  /** Direct 연결 URL (Migration용) */
+  /** Oracle 마이그레이션용 Direct 연결 문자열 */
   directUrl: string;
 }
 

@@ -16,7 +16,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { Repository, Between, In, FindOptionsWhere } from 'typeorm';
 import { RepairOrder } from '../../../entities/repair-order.entity';
 import { RepairUsedPart } from '../../../entities/repair-used-part.entity';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -36,6 +36,46 @@ export class RepairService {
     private readonly tx: TransactionService,
   ) {}
 
+  private buildRepairOrderUpdate(
+    dto: Omit<UpdateRepairDto, 'usedParts' | 'repairDate'>,
+  ): Partial<Pick<RepairOrder,
+    | 'fgBarcode'
+    | 'itemCode'
+    | 'itemName'
+    | 'qty'
+    | 'prdUid'
+    | 'sourceProcess'
+    | 'returnProcess'
+    | 'repairResult'
+    | 'genuineType'
+    | 'defectType'
+    | 'defectCause'
+    | 'defectPosition'
+    | 'disposition'
+    | 'workerId'
+    | 'remark'
+    | 'completedAt'
+    | 'status'
+  >> {
+    return {
+      ...(dto.fgBarcode !== undefined ? { fgBarcode: dto.fgBarcode || null } : {}),
+      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.itemName !== undefined ? { itemName: dto.itemName || null } : {}),
+      ...(dto.qty !== undefined ? { qty: dto.qty } : {}),
+      ...(dto.prdUid !== undefined ? { prdUid: dto.prdUid || null } : {}),
+      ...(dto.sourceProcess !== undefined ? { sourceProcess: dto.sourceProcess || null } : {}),
+      ...(dto.returnProcess !== undefined ? { returnProcess: dto.returnProcess || null } : {}),
+      ...(dto.repairResult !== undefined ? { repairResult: dto.repairResult || null } : {}),
+      ...(dto.genuineType !== undefined ? { genuineType: dto.genuineType || null } : {}),
+      ...(dto.defectType !== undefined ? { defectType: dto.defectType || null } : {}),
+      ...(dto.defectCause !== undefined ? { defectCause: dto.defectCause || null } : {}),
+      ...(dto.defectPosition !== undefined ? { defectPosition: dto.defectPosition || null } : {}),
+      ...(dto.disposition !== undefined ? { disposition: dto.disposition || null } : {}),
+      ...(dto.workerId !== undefined ? { workerId: dto.workerId || null } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark || null } : {}),
+    };
+  }
+
   /** 수리 목록 조회 */
   async findAll(query: RepairQueryDto, company: string, plant: string) {
     const {
@@ -49,7 +89,7 @@ export class RepairService {
       search,
     } = query;
 
-    const where: any = { company, plant };
+    const where: FindOptionsWhere<RepairOrder> = { company, plant };
     if (status) where.status = status;
     if (sourceProcess) where.sourceProcess = sourceProcess;
     if (workerId) where.workerId = workerId;
@@ -185,9 +225,8 @@ export class RepairService {
       }
 
       // 마스터 업데이트
-      const { usedParts, ...masterDto } = dto;
-      const updateData: any = { ...masterDto };
-      delete updateData.repairDate;
+      const { usedParts, repairDate: _ignoredRepairDate, ...masterDto } = dto;
+      const updateData = this.buildRepairOrderUpdate(masterDto);
 
       // 수리후재처리 결정 시 완료 처리
       if (

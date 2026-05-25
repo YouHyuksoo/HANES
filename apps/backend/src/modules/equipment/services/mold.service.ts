@@ -16,6 +16,7 @@ import {
   MoldQueryDto,
 } from '../dto/mold.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { getErrorMessage } from '../../../common/utils/error-message.util';
 
 @Injectable()
 export class MoldService {
@@ -93,7 +94,17 @@ export class MoldService {
     }
 
     const entity = this.moldRepo.create({
-      ...dto,
+      moldCode: dto.moldCode,
+      moldName: dto.moldName,
+      moldType: dto.moldType ?? null,
+      itemCode: dto.itemCode ?? null,
+      cavity: dto.cavity ?? 1,
+      guaranteedShots: dto.guaranteedShots ?? null,
+      maintenanceCycle: dto.maintenanceCycle ?? null,
+      location: dto.location ?? null,
+      maker: dto.maker ?? null,
+      purchaseDate: dto.purchaseDate ? new Date(dto.purchaseDate) : null,
+      remark: dto.remark ?? null,
       currentShots: 0,
       status: 'ACTIVE',
       company,
@@ -111,16 +122,33 @@ export class MoldService {
     if (item.status === 'SCRAPPED') {
       throw new BadRequestException('Cannot update scrapped mold.');
     }
-    if ((dto as any).status !== undefined) {
+    if ('status' in dto) {
       throw new BadRequestException('Mold status cannot be changed via generic update API.');
     }
 
-    const {
-      moldCode: _moldCode,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<Pick<MoldMaster,
+      | 'moldName'
+      | 'moldType'
+      | 'itemCode'
+      | 'cavity'
+      | 'guaranteedShots'
+      | 'maintenanceCycle'
+      | 'location'
+      | 'maker'
+      | 'purchaseDate'
+      | 'remark'
+    >> = {
+      ...(dto.moldName !== undefined ? { moldName: dto.moldName } : {}),
+      ...(dto.moldType !== undefined ? { moldType: dto.moldType } : {}),
+      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.cavity !== undefined ? { cavity: dto.cavity } : {}),
+      ...(dto.guaranteedShots !== undefined ? { guaranteedShots: dto.guaranteedShots } : {}),
+      ...(dto.maintenanceCycle !== undefined ? { maintenanceCycle: dto.maintenanceCycle } : {}),
+      ...(dto.location !== undefined ? { location: dto.location } : {}),
+      ...(dto.maker !== undefined ? { maker: dto.maker } : {}),
+      ...(dto.purchaseDate !== undefined ? { purchaseDate: new Date(dto.purchaseDate) } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.moldRepo.save(item);
   }
@@ -164,10 +192,14 @@ export class MoldService {
       const seq = await this.getNextUsageSeq(usageDate, queryRunner);
 
       const usage = queryRunner.manager.create(MoldUsageLog, {
-        ...dto,
         usageDate,
         seq,
         moldCode,
+        shotCount: dto.shotCount,
+        orderNo: dto.orderNo ?? null,
+        equipCode: dto.equipCode ?? null,
+        workerCode: dto.workerCode ?? null,
+        remark: dto.remark ?? null,
         company,
         plant,
         createdBy: userId,
@@ -189,7 +221,7 @@ export class MoldService {
             `Mold guaranteed shots exceeded. INTERLOCK set: ${dto.equipCode} / ${mold.moldCode} (${mold.currentShots}/${mold.guaranteedShots})`,
           );
         } catch (err: unknown) {
-          this.logger.error(`Failed to set INTERLOCK for equipment: ${dto.equipCode}`, err as Error);
+          this.logger.error(`Failed to set INTERLOCK for equipment: ${dto.equipCode}`, getErrorMessage(err));
         }
       }
 

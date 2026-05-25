@@ -26,7 +26,7 @@ import {
 import { ReorderMenuItemsDto } from '../dto/menu-category-item.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { listKnownMenuCodes } from '../utils/menu-code-validator';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { AuthenticatedRequest, JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('시스템 - 메뉴 카테고리')
 @UseGuards(JwtAuthGuard)
@@ -39,14 +39,14 @@ export class MenuCategoriesController {
 
   @Get()
   @ApiOperation({ summary: '카테고리 목록' })
-  async findAll(@Req() req: any) {
+  async findAll(@Req() req: AuthenticatedRequest) {
     const data = await this.categories.findAll(this.scope(req));
     return ResponseUtil.success(data);
   }
 
   @Get('tree')
   @ApiOperation({ summary: '사이드바 트리 (카테고리 + 메뉴 배치)' })
-  async tree(@Req() req: any) {
+  async tree(@Req() req: AuthenticatedRequest) {
     const scope = this.scope(req);
     const [categories, allItems] = await Promise.all([
       this.categories.findAll(scope),
@@ -71,7 +71,7 @@ export class MenuCategoriesController {
 
   @Get('unassigned-menus')
   @ApiOperation({ summary: '어디에도 배치되지 않은 메뉴 코드 목록' })
-  async unassigned(@Req() req: any) {
+  async unassigned(@Req() req: AuthenticatedRequest) {
     const all = listKnownMenuCodes();
     const allItems = await this.items.findAll(this.scope(req));
     const placed = new Set(allItems.map((i) => i.menuCode));
@@ -82,50 +82,50 @@ export class MenuCategoriesController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '카테고리 생성' })
-  async create(@Body() dto: CreateMenuCategoryDto, @Req() req: any) {
+  async create(@Body() dto: CreateMenuCategoryDto, @Req() req: AuthenticatedRequest) {
     const data = await this.categories.create(dto, this.scope(req));
     return ResponseUtil.success(data);
   }
 
   @Patch('reorder')
   @ApiOperation({ summary: '카테고리 순서 일괄 갱신' })
-  async reorder(@Body() dto: ReorderCategoriesDto, @Req() req: any) {
+  async reorder(@Body() dto: ReorderCategoriesDto, @Req() req: AuthenticatedRequest) {
     await this.categories.reorder(dto, this.scope(req));
     return ResponseUtil.success({ ok: true });
   }
 
   @Patch(':code')
   @ApiOperation({ summary: '카테고리 수정' })
-  async update(@Param('code') code: string, @Body() dto: UpdateMenuCategoryDto, @Req() req: any) {
+  async update(@Param('code') code: string, @Body() dto: UpdateMenuCategoryDto, @Req() req: AuthenticatedRequest) {
     const data = await this.categories.update(code, dto, this.scope(req));
     return ResponseUtil.success(data);
   }
 
   @Patch(':code/items')
   @ApiOperation({ summary: '카테고리 내 메뉴 순서 일괄 갱신' })
-  async reorderItems(@Param('code') code: string, @Body() dto: ReorderMenuItemsDto, @Req() req: any) {
+  async reorderItems(@Param('code') code: string, @Body() dto: ReorderMenuItemsDto, @Req() req: AuthenticatedRequest) {
     await this.items.reorderInCategory(code, dto, this.scope(req));
     return ResponseUtil.success({ ok: true });
   }
 
   @Delete(':code')
   @ApiOperation({ summary: '카테고리 삭제(빈 카테고리만 가능)' })
-  async delete(@Param('code') code: string, @Req() req: any) {
+  async delete(@Param('code') code: string, @Req() req: AuthenticatedRequest) {
     const data = await this.categories.delete(code, this.scope(req));
     return ResponseUtil.success(data);
   }
 
-  private scope(req: any) {
-    const user = req.user ?? {};
+  private scope(req: AuthenticatedRequest) {
+    const user = req.user;
     const company = user.company;
-    const plantCd = user.plantCd ?? user.plant;
+    const plantCd = user.plant;
     if (!company || !plantCd) {
       throw new BadRequestException('회사/사업장 정보가 없습니다.');
     }
     return {
       company,
       plantCd,
-      userId: user.id ?? user.userId ?? user.userName ?? 'system',
+      userId: user.id,
     };
   }
 }

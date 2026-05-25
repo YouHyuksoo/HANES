@@ -24,14 +24,36 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as oracledb from 'oracledb';
+import { isRecord } from '../utils/json-record.util';
 
 /** Oracle 식별자 화이트리스트 패턴 (패키지명/프로시저명 인젝션 방지) */
 const SAFE_IDENTIFIER = /^[A-Z][A-Z0-9_$#]{0,29}$/i;
+type OracleRow = Record<string, unknown>;
+type OracleResultSet = oracledb.ResultSet<OracleRow>;
 
 function validateIdentifier(name: string, label: string): void {
   if (!SAFE_IDENTIFIER.test(name)) {
     throw new BadRequestException(`유효하지 않은 ${label}: "${name}"`);
   }
+}
+
+function getOutBinds(outBinds: unknown): Record<string, unknown> {
+  if (!isRecord(outBinds)) {
+    throw new Error('Oracle outBinds object expected');
+  }
+  return outBinds;
+}
+
+function isOracleResultSet(value: unknown): value is OracleResultSet {
+  return isRecord(value) && typeof value.getRows === 'function' && typeof value.close === 'function';
+}
+
+function getCursor(outBinds: unknown, name: string): OracleResultSet {
+  const cursor = getOutBinds(outBinds)[name];
+  if (!isOracleResultSet(cursor)) {
+    throw new Error(`Oracle cursor outBind expected: ${name}`);
+  }
+  return cursor;
 }
 
 @Injectable()
@@ -87,10 +109,10 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
    * @param inParams IN 파라미터 (선택, 예: { p_target_date: new Date() })
    * @returns 커서 결과 배열 (camelCase 키)
    */
-  async callProc<T = Record<string, any>>(
+  async callProc<T = OracleRow>(
     packageName: string,
     procName: string,
-    inParams?: Record<string, any>,
+    inParams?: Record<string, unknown>,
   ): Promise<T[]> {
     validateIdentifier(packageName, '패키지명');
     validateIdentifier(procName, '프로시저명');
@@ -119,9 +141,7 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
       });
 
       // SYS_REFCURSOR fetch
-      const cursor = (result.outBinds as Record<string, any>)[
-        'o_cursor'
-      ] as oracledb.ResultSet<any>;
+      const cursor = getCursor(result.outBinds, 'o_cursor');
       const rows = await cursor.getRows();
       await cursor.close();
 
@@ -151,8 +171,8 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
   async callProcScalar(
     procName: string,
     outDefs: Array<{ name: string; type: 'NUMBER' | 'STRING' | 'DATE'; maxSize?: number }>,
-    inParams?: Record<string, any>,
-  ): Promise<Record<string, any>> {
+    inParams?: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     validateIdentifier(procName, '프로시저명');
 
     let conn: oracledb.Connection | undefined;
@@ -183,7 +203,7 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
 
       const sql = `BEGIN ${procName}(${paramNames.join(', ')}); END;`;
       const result = await conn.execute(sql, bindVars);
-      return result.outBinds as Record<string, any>;
+      return getOutBinds(result.outBinds);
     } catch (err) {
       this.logger.error(
         `프로시저 호출 실패: ${procName}`,
@@ -204,11 +224,11 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
    * @param inParams IN 파라미터 (선택)
    * @returns 커서명별 결과 맵 (camelCase 키)
    */
-  async callProcMultiCursor<T = Record<string, any>>(
+  async callProcMultiCursor<T = OracleRow>(
     packageName: string,
     procName: string,
     cursorNames: string[],
-    inParams?: Record<string, any>,
+    inParams?: Record<string, unknown>,
   ): Promise<Record<string, T[]>> {
     validateIdentifier(packageName, '패키지명');
     validateIdentifier(procName, '프로시저명');
@@ -239,9 +259,7 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
 
       const output: Record<string, T[]> = {};
       for (const name of cursorNames) {
-        const cursor = (result.outBinds as Record<string, any>)[
-          name
-        ] as oracledb.ResultSet<any>;
+        const cursor = getCursor(result.outBinds, name);
         const rows = await cursor.getRows();
         await cursor.close();
         output[name] = rows.map((row) => this.toCamelCase(row)) as T[];
@@ -265,8 +283,8 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
    * UPPER_SNAKE_CASE 키를 camelCase로 변환
    * 예: { NORMAL_CNT: 5 } -> { normalCnt: 5 }
    */
-  private toCamelCase(obj: Record<string, any>): Record<string, any> {
-    const result: Record<string, any> = {};
+  private toCamelCase(obj: OracleRow): OracleRow {
+    const result: OracleRow = {};
     for (const [key, value] of Object.entries(obj)) {
       const camelKey = key
         .toLowerCase()

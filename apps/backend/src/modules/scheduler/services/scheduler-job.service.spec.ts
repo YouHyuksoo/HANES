@@ -16,7 +16,7 @@ import { SchedulerJobService } from './scheduler-job.service';
 import { SchedulerJob } from '../../../entities/scheduler-job.entity';
 import { SchedulerRunnerService } from './scheduler-runner.service';
 import { SchedulerLogService } from './scheduler-log.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SchedulerJobService', () => {
   let target: SchedulerJobService;

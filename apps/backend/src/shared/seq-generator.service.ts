@@ -25,8 +25,9 @@ export class SeqGeneratorService {
         [docType],
       );
       return result[0].no;
-    } catch (error: any) {
-      this.logger.error(`채번 실패 (${docType}): ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`채번 실패 (${docType}): ${message}`);
       throw new InternalServerErrorException(
         `채번 실패 (${docType}): SEQ_RULES에 규칙이 등록되어 있는지 확인하세요.`,
       );

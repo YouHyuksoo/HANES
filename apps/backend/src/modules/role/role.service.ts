@@ -106,10 +106,14 @@ export class RoleService {
   async update(code: string, dto: UpdateRoleDto, company?: string, plant?: string, userId?: string) {
     const role = await this.findOne(code, company, plant);
 
-    await this.roleRepository.update({ code, ...this.tenantWhere(company, plant) }, {
-      ...dto,
+    const updateData: Partial<Pick<Role, 'name' | 'description' | 'sortOrder' | 'updatedBy'>> = {
+      ...(dto.name !== undefined ? { name: dto.name } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
       updatedBy: userId || role.updatedBy,
-    });
+    };
+
+    await this.roleRepository.update({ code, ...this.tenantWhere(company, plant) }, updateData);
 
     const updated = await this.roleRepository.findOne({
       where: { code, ...this.tenantWhere(company, plant) },

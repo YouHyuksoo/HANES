@@ -9,7 +9,7 @@
  */
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import {
@@ -35,7 +35,7 @@ export class WarehouseLocationService {
 
   async findAll(warehouseCode?: string, company?: string, plant?: string) {
     const tenantWhere = this.tenantWhere(company, plant);
-    const where: any = { ...tenantWhere };
+    const where: FindOptionsWhere<WarehouseLocation> = { ...tenantWhere };
     if (warehouseCode) where.warehouseCode = warehouseCode;
 
     const locations = await this.locationRepo.find({
@@ -74,7 +74,19 @@ export class WarehouseLocationService {
       );
     }
 
-    const location = this.locationRepo.create({ ...dto, company: company || null, plant: plant || null });
+    const location = this.locationRepo.create({
+      warehouseCode: dto.warehouseCode,
+      locationCode: dto.locationCode,
+      locationName: dto.locationName,
+      zone: dto.zone ?? null,
+      rowNo: dto.rowNo ?? null,
+      colNo: dto.colNo ?? null,
+      levelNo: dto.levelNo ?? null,
+      remark: dto.remark ?? null,
+      useYn: 'Y',
+      company: company || null,
+      plant: plant || null,
+    });
     const saved = await this.locationRepo.save(location);
     return { success: true, data: saved };
   }
@@ -89,13 +101,15 @@ export class WarehouseLocationService {
       throw new NotFoundException(`로케이션을 찾을 수 없습니다: ${id}`);
     }
 
-    const {
-      warehouseCode: _warehouseCode,
-      locationCode: _locationCode,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<WarehouseLocation> = {
+      ...(dto.locationName !== undefined ? { locationName: dto.locationName } : {}),
+      ...(dto.zone !== undefined ? { zone: dto.zone } : {}),
+      ...(dto.rowNo !== undefined ? { rowNo: dto.rowNo } : {}),
+      ...(dto.colNo !== undefined ? { colNo: dto.colNo } : {}),
+      ...(dto.levelNo !== undefined ? { levelNo: dto.levelNo } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
     Object.assign(location, updateData);
     const saved = await this.locationRepo.save(location);
     return { success: true, data: saved };

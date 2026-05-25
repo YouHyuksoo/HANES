@@ -5,7 +5,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectItemPoolService } from './equip-inspect-item-pool.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('EquipInspectItemPoolService', () => {
   let target: EquipInspectItemPoolService;

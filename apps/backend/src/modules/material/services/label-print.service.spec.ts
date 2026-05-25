@@ -18,7 +18,7 @@ import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { LabelTemplate } from '../../../entities/label-template.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('LabelPrintService', () => {
   let target: LabelPrintService;

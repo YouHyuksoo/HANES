@@ -17,6 +17,7 @@
  * ```
  */
 import { QueryRunner } from 'typeorm';
+import { ProductTransaction } from '../../entities/product-transaction.entity';
 
 /** DI 토큰 */
 export const STOCK_MANAGER = 'STOCK_MANAGER';
@@ -39,7 +40,7 @@ export interface StockReceiveInput {
 /** 재고관리 인터페이스 — 외부 모듈이 의존하는 최소 계약 */
 export interface IStockManager {
   /** 외부 트랜잭션 내에서 제품 입고 */
-  receiveStockInTx(qr: QueryRunner, dto: StockReceiveInput): Promise<any>;
+  receiveStockInTx(qr: QueryRunner, dto: StockReceiveInput): Promise<ProductTransaction>;
 
   /** 제품 트랜잭션 번호 생성 */
   generateTransNo?(qr?: QueryRunner): Promise<string>;

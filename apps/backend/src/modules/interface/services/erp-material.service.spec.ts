@@ -9,22 +9,29 @@ import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ErpMaterialService', () => {
   let target: ErpMaterialService;
   let interLogRepo: DeepMocked<Repository<InterLog>>;
   let dataSource: DeepMocked<DataSource>;
+  let sysConfig: DeepMocked<SysConfigService>;
   let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
+  const originalFetch = global.fetch;
 
   beforeEach(async () => {
     interLogRepo = createMock<Repository<InterLog>>();
     dataSource = createMock<DataSource>();
+    sysConfig = createMock<SysConfigService>();
     tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.query.mockResolvedValue([{ nextSeq: 1 }]);
+    sysConfig.getValue.mockImplementation(async (key: string) => {
+      if (key === 'ERP_EXPORT_ENABLED') return 'N';
+      return undefined;
+    });
     tx.run.mockImplementation(async (callback) => callback(queryRunner));
 
     const module: TestingModule = await Test.createTestingModule({
@@ -34,7 +41,7 @@ describe('ErpMaterialService', () => {
         { provide: getRepositoryToken(PurchaseOrder), useValue: createMock<Repository<PurchaseOrder>>() },
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: createMock<Repository<PurchaseOrderItem>>() },
         { provide: DataSource, useValue: dataSource },
-        { provide: SysConfigService, useValue: createMock<SysConfigService>() },
+        { provide: SysConfigService, useValue: sysConfig },
         { provide: TransactionService, useValue: tx },
       ],
     })
@@ -42,6 +49,10 @@ describe('ErpMaterialService', () => {
       .compile();
 
     target = module.get<ErpMaterialService>(ErpMaterialService);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
   });
 
   it('imports purchase orders through TransactionService', async () => {
@@ -134,16 +145,59 @@ describe('ErpMaterialService', () => {
   });
 
   it('writes outbound interface logs with the requested tenant', async () => {
-    const sysConfig = (target as any).sysConfigService as DeepMocked<SysConfigService>;
-    sysConfig.getValue.mockResolvedValue('Y');
+    sysConfig.getValue.mockImplementation(async (key: string) => {
+      if (key === 'ERP_EXPORT_ENABLED') return 'Y';
+      if (key === 'ERP_API_URL') return 'https://erp.example.test/interface';
+      return undefined;
+    });
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: jest.fn().mockResolvedValue(''),
+    } as any);
     interLogRepo.save.mockResolvedValue({} as InterLog);
 
     await target.exportReceiving('RCV-1', 'RM-1', 5, 'PO-1', 'C1', 'P1');
 
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://erp.example.test/interface',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
     expect(interLogRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({
         direction: 'OUTBOUND',
         messageType: 'ERP_RECEIVING',
+        company: 'C1',
+        plant: 'P1',
+      }),
+    );
+  });
+
+  it('marks outbound export failed when ERP export is enabled but endpoint is missing', async () => {
+    sysConfig.getValue.mockImplementation(async (key: string) => {
+      if (key === 'ERP_EXPORT_ENABLED') return 'Y';
+      if (key === 'ERP_API_URL') return '';
+      return undefined;
+    });
+    interLogRepo.save.mockResolvedValue({} as InterLog);
+
+    const result = await target.exportReceiving('RCV-1', 'RM-1', 5, 'PO-1', 'C1', 'P1');
+
+    expect(result).toEqual(expect.objectContaining({
+      success: false,
+      refNo: 'RCV-1',
+      error: expect.stringContaining('ERP_API_URL'),
+    }));
+    expect(interLogRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        direction: 'OUTBOUND',
+        messageType: 'ERP_RECEIVING',
+        status: 'FAILED',
+        interfaceId: 'RCV-1',
+        errorMsg: expect.stringContaining('ERP_API_URL'),
         company: 'C1',
         plant: 'P1',
       }),
@@ -167,6 +221,12 @@ describe('ErpMaterialService', () => {
       } as InterLog,
     ]);
     interLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+    sysConfig.getValue.mockResolvedValue('https://erp.example.test/interface');
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: jest.fn().mockResolvedValue(''),
+    } as any);
 
     await target.retryFailed('C1', 'P1');
 

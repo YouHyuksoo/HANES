@@ -1,6 +1,6 @@
 ﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -43,7 +43,7 @@ export class MatOutRequestService {
 
   async findPending(query: { page?: number; limit?: number }, company?: string, plant?: string) {
     const { page = 1, limit = 20 } = query;
-    const where: any = {
+    const where: FindOptionsWhere<StockTransaction> = {
       status: 'PENDING_APPROVAL',
       ...(company && { company }),
       ...(plant && { plant }),

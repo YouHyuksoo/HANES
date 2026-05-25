@@ -61,7 +61,17 @@ export class SelfInspectService {
     plant: string,
   ) {
     const result = this.resultRepo.create({
-      ...dto,
+      orderNo: dto.orderNo,
+      equipCode: dto.equipCode ?? null,
+      processCode: dto.processCode ?? null,
+      inspectItemId: dto.inspectItemId ?? null,
+      itemName: dto.itemName,
+      timing: dto.timing,
+      inspectMethod: dto.inspectMethod,
+      status: dto.status,
+      prodQtyAtInspect: dto.prodQtyAtInspect ?? null,
+      inspectorId: dto.inspectorId ?? null,
+      remark: dto.remark ?? null,
       sampleNo: dto.sampleNo ?? 1,
       measureValue: dto.measureValue ?? null,
       company,
@@ -161,13 +171,18 @@ export class SelfInspectService {
     sampleCount?: number;
   }, company: string, plant: string) {
     const item = this.itemRepo.create({
-      ...dto,
+      processCode: dto.processCode,
+      itemName: dto.itemName,
+      standard: dto.standard ?? null,
       inspectMethod: dto.inspectMethod ?? 'DIRECT',
       timing: dto.timing ?? 'MID',
       isDestructive: dto.isDestructive ?? false,
       sortOrder: dto.sortOrder ?? 0,
       useYn: dto.useYn ?? 'Y',
       itemType: dto.itemType ?? 'VISUAL',
+      unit: dto.unit ?? null,
+      lslValue: dto.lslValue ?? null,
+      uslValue: dto.uslValue ?? null,
       sampleCount: dto.sampleCount ?? 1,
       company,
       plant,
@@ -192,12 +207,20 @@ export class SelfInspectService {
   }, company: string, plant: string) {
     const item = await this.itemRepo.findOne({ where: { id, company, plant } });
     if (!item) throw new NotFoundException(`SelfInspectItem ${id} not found`);
-    const {
-      id: _id,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<SelfInspectItem> = {
+      ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
+      ...(dto.standard !== undefined ? { standard: dto.standard } : {}),
+      ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),
+      ...(dto.timing !== undefined ? { timing: dto.timing } : {}),
+      ...(dto.isDestructive !== undefined ? { isDestructive: dto.isDestructive } : {}),
+      ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+      ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
+      ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
+      ...(dto.lslValue !== undefined ? { lslValue: dto.lslValue } : {}),
+      ...(dto.uslValue !== undefined ? { uslValue: dto.uslValue } : {}),
+      ...(dto.sampleCount !== undefined ? { sampleCount: dto.sampleCount } : {}),
+    };
     Object.assign(item, updateData);
     return this.itemRepo.save(item);
   }

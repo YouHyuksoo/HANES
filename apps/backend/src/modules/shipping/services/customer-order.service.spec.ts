@@ -11,7 +11,7 @@ import { CustomerOrderService } from './customer-order.service';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('CustomerOrderService', () => {

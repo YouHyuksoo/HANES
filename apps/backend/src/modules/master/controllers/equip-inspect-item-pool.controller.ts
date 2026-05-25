@@ -8,6 +8,8 @@ import {
   UpdateEquipInspectItemPoolDto,
 } from '../dto/equip-inspect-item-pool.dto';
 import { EquipInspectItemPoolService } from '../services/equip-inspect-item-pool.service';
+import { getHeaderString } from '../../../common/utils/header-value.util';
+import { getRequestUser } from '../../../common/utils/request-user.util';
 
 @ApiTags('기준정보 - 설비점검항목 Pool')
 @Controller('master/equip-inspect-item-pool')
@@ -48,10 +50,10 @@ export class EquipInspectItemPoolController {
   }
 
   private tenant(req: Request) {
-    const user = (req as Request & { user?: { company?: string; plant?: string } }).user ?? {};
+    const user = getRequestUser(req) ?? {};
     return {
-      company: (req.headers['x-company'] as string) || user.company || '',
-      plant: (req.headers['x-plant'] as string) || user.plant || '',
+      company: getHeaderString(req.headers['x-company']) || user.company || '',
+      plant: getHeaderString(req.headers['x-plant']) || user.plant || '',
     };
   }
 }

@@ -1,8 +1,8 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';

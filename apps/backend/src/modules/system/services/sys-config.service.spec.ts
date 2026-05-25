@@ -13,7 +13,7 @@ import { NotFoundException, ConflictException, BadRequestException } from '@nest
 import { Repository } from 'typeorm';
 import { SysConfigService } from './sys-config.service';
 import { SysConfig } from '../../../entities/sys-config.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SysConfigService', () => {
   let target: SysConfigService;

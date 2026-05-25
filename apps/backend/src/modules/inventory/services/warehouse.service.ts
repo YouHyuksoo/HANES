@@ -4,7 +4,7 @@
  */
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, FindOptionsWhere } from 'typeorm';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { CreateWarehouseDto, UpdateWarehouseDto } from '../dto/inventory.dto';
@@ -30,7 +30,7 @@ export class WarehouseService {
    * 창고 목록 조회
    */
   async findAll(warehouseType?: string, company?: string, plant?: string) {
-    const where: any = {
+    const where: FindOptionsWhere<Warehouse> = {
       ...(company && { company }),
       ...(plant && { plant }),
     };

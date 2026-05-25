@@ -42,10 +42,11 @@ export class AppController {
         dbLatencyMs = Date.now() - start;
         dbStatus = 'connected';
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
       dbStatus = 'error';
-      dbError = e.message;
-      this.logger.warn(`Health check DB 오류: ${e.message}`);
+      dbError = message;
+      this.logger.warn(`Health check DB 오류: ${message}`);
     }
 
     return {

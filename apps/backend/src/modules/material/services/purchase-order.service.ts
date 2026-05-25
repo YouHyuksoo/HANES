@@ -39,6 +39,20 @@ export class PurchaseOrderService {
     };
   }
 
+  private buildPurchaseOrderUpdate(
+    dto: Omit<UpdatePurchaseOrderDto, 'items' | 'poNo'>,
+    totalAmount?: number,
+  ): Partial<Pick<PurchaseOrder, 'partnerId' | 'partnerName' | 'orderDate' | 'dueDate' | 'remark' | 'totalAmount'>> {
+    return {
+      ...(dto.partnerId !== undefined ? { partnerId: dto.partnerId } : {}),
+      ...(dto.partnerName !== undefined ? { partnerName: dto.partnerName } : {}),
+      ...(dto.orderDate !== undefined ? { orderDate: new Date(dto.orderDate) } : {}),
+      ...(dto.dueDate !== undefined ? { dueDate: new Date(dto.dueDate) } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(totalAmount !== undefined ? { totalAmount } : {}),
+    };
+  }
+
   async findAll(query: PurchaseOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -215,7 +229,7 @@ export class PurchaseOrderService {
   async update(poNo: string, dto: UpdatePurchaseOrderDto, company?: string, plant?: string) {
     const tenantWhere = this.tenantWhere(company, plant);
     await this.findById(poNo, company, plant);
-    const { items, ...poData } = dto;
+    const { items, poNo: _ignoredPoNo, ...poData } = dto;
 
     await this.tx.run(async (queryRunner) => {
       if (items) {
@@ -225,12 +239,7 @@ export class PurchaseOrderService {
         const totalAmount = items.reduce((sum, item) => sum + (item.orderQty * (item.unitPrice ?? 0)), 0);
 
         // PO 업데이트
-        const updateData: any = {
-          ...poData,
-          totalAmount,
-        };
-        if (poData.orderDate) updateData.orderDate = new Date(poData.orderDate);
-        if (poData.dueDate) updateData.dueDate = new Date(poData.dueDate);
+        const updateData = this.buildPurchaseOrderUpdate(poData, totalAmount);
 
         await queryRunner.manager.update(PurchaseOrder, { poNo, ...tenantWhere }, updateData);
 
@@ -249,11 +258,10 @@ export class PurchaseOrderService {
         );
         await queryRunner.manager.save(itemEntities);
       } else {
-        const updateData: any = { ...poData };
-        if (poData.orderDate) updateData.orderDate = new Date(poData.orderDate);
-        if (poData.dueDate) updateData.dueDate = new Date(poData.dueDate);
-
-        await queryRunner.manager.update(PurchaseOrder, { poNo, ...tenantWhere }, updateData);
+        const updateData = this.buildPurchaseOrderUpdate(poData);
+        if (Object.keys(updateData).length > 0) {
+          await queryRunner.manager.update(PurchaseOrder, { poNo, ...tenantWhere }, updateData);
+        }
       }
     });
 

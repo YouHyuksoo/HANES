@@ -27,7 +27,6 @@ export default function IssueProcessModal({ isOpen, onClose, record }: IssueProc
 
   const handleSubmit = () => {
     if (!record) return;
-    console.log(`출고처리: ${record.requestNo} / ${record.itemCode}, 수량: ${issueQty}`);
     handleClose();
   };
 

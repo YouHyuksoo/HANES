@@ -92,12 +92,15 @@ export class ProdLineService {
 
   async update(lineCode: string, dto: UpdateProdLineDto, company?: string, plant?: string) {
     await this.findById(lineCode, company, plant);
-    const {
-      lineCode: _lineCode,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<ProdLineMaster> = {
+      ...(dto.lineName !== undefined ? { lineName: dto.lineName } : {}),
+      ...(dto.whLoc !== undefined ? { whLoc: dto.whLoc } : {}),
+      ...(dto.erpCode !== undefined ? { erpCode: dto.erpCode } : {}),
+      ...(dto.oper !== undefined ? { oper: dto.oper } : {}),
+      ...(dto.lineType !== undefined ? { lineType: dto.lineType } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.prodLineRepository.update({ lineCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(lineCode, company, plant);
   }

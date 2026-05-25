@@ -193,7 +193,7 @@ export class CapaService {
       createdBy: userId,
       updatedBy: userId,
     });
-    const saved = await this.capaRepo.save(entity) as CAPARequest;
+    const saved = await this.capaRepo.save(entity);
 
     // 조치 항목 생성
     if (actions && actions.length > 0) {
@@ -237,7 +237,7 @@ export class CapaService {
     }
     // 조치 항목 먼저 삭제
     await this.actionRepo.delete({ capaId: capaNo });
-    await this.capaRepo.remove(item as any);
+    await this.capaRepo.remove(item);
   }
 
   // =============================================

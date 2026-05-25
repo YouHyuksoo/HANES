@@ -18,18 +18,21 @@ import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProdResultService delete policy', () => {
   let target: ProdResultService;
   let mockProdResultRepo: DeepMocked<Repository<ProdResult>>;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockProdResultRepo = createMock<Repository<ProdResult>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockDataSource.getRepository.mockReturnValue(createMock<any>());
 
     const module: TestingModule = await Test.createTestingModule({
@@ -50,6 +53,7 @@ describe('ProdResultService delete policy', () => {
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: NumberingService, useValue: createMock<NumberingService>() },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
 

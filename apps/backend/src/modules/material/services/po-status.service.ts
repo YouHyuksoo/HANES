@@ -5,7 +5,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, In } from 'typeorm';
+import { Repository, Between, Like, In, FindOptionsWhere } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -26,7 +26,7 @@ export class PoStatusService {
     const { page = 1, limit = 10, search, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<PurchaseOrder> = {
       ...(company && { company }),
       ...(plant && { plant }),
     };

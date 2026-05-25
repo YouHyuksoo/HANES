@@ -167,8 +167,18 @@ export class ComplaintService {
   ) {
     const complaintNo = await this.generateComplaintNo(company, plant);
     const entity = this.complaintRepo.create({
-      ...dto,
       complaintNo,
+      customerCode: dto.customerCode,
+      customerName: dto.customerName,
+      complaintDate: new Date(dto.complaintDate),
+      itemCode: dto.itemCode,
+      lotNo: dto.lotNo,
+      defectQty: dto.defectQty,
+      complaintType: dto.complaintType,
+      description: dto.description,
+      urgency: dto.urgency,
+      responsibleCode: dto.responsibleCode,
+      costAmount: dto.costAmount,
       status: 'RECEIVED',
       company,
       plant,
@@ -188,12 +198,19 @@ export class ComplaintService {
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 수정할 수 있습니다.');
     }
-    const {
-      complaintNo: _complaintNo,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<CustomerComplaint> = {
+      ...(dto.customerCode !== undefined ? { customerCode: dto.customerCode } : {}),
+      ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
+      ...(dto.complaintDate !== undefined ? { complaintDate: new Date(dto.complaintDate) } : {}),
+      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.lotNo !== undefined ? { lotNo: dto.lotNo } : {}),
+      ...(dto.defectQty !== undefined ? { defectQty: dto.defectQty } : {}),
+      ...(dto.complaintType !== undefined ? { complaintType: dto.complaintType } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.urgency !== undefined ? { urgency: dto.urgency } : {}),
+      ...(dto.responsibleCode !== undefined ? { responsibleCode: dto.responsibleCode } : {}),
+      ...(dto.costAmount !== undefined ? { costAmount: dto.costAmount } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.complaintRepo.save(item);
   }

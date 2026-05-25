@@ -96,7 +96,16 @@ export class IqcItemService {
 
   async create(dto: CreateIqcItemDto, company?: string, plant?: string) {
     const entity = this.iqcItemRepository.create({
-      ...dto,
+      itemCode: dto.itemCode,
+      seq: dto.seq,
+      inspectItem: dto.inspectItem,
+      spec: dto.spec ?? null,
+      lsl: dto.lsl ?? null,
+      usl: dto.usl ?? null,
+      unit: dto.unit ?? null,
+      isShelfLife: dto.isShelfLife ?? false,
+      retestCycle: dto.retestCycle ?? null,
+      useYn: dto.useYn ?? 'Y',
       company: company || null,
       plant: plant || null,
     });
@@ -107,9 +116,19 @@ export class IqcItemService {
   async update(itemCode: string, seq: number, dto: UpdateIqcItemDto, company?: string, plant?: string) {
     const item = await this.findByCompositeKey(itemCode, seq, company, plant);
 
+    Object.assign(item, {
+      ...(dto.inspectItem !== undefined ? { inspectItem: dto.inspectItem } : {}),
+      ...(dto.spec !== undefined ? { spec: dto.spec } : {}),
+      ...(dto.lsl !== undefined ? { lsl: dto.lsl } : {}),
+      ...(dto.usl !== undefined ? { usl: dto.usl } : {}),
+      ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
+      ...(dto.isShelfLife !== undefined ? { isShelfLife: dto.isShelfLife } : {}),
+      ...(dto.retestCycle !== undefined ? { retestCycle: dto.retestCycle } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    });
+
     const updated = await this.iqcItemRepository.save({
       ...item,
-      ...dto,
       company: item.company,
       plant: item.plant,
       itemCode,

@@ -14,7 +14,7 @@ import { Repository, DataSource, getMetadataArgsStorage } from 'typeorm';
 import { PdaRoleService, PDA_MENU_CODES } from './pda-role.service';
 import { PdaRole } from '../../../entities/pda-role.entity';
 import { PdaRoleMenu } from '../../../entities/pda-role-menu.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('PdaRoleService', () => {

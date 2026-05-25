@@ -13,7 +13,7 @@ import { NotFoundException, ConflictException, BadRequestException } from '@nest
 import { Repository } from 'typeorm';
 import { CommConfigService } from './comm-config.service';
 import { CommConfig } from '../../../entities/comm-config.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('CommConfigService', () => {
   let target: CommConfigService;

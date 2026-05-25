@@ -6,7 +6,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@common/*": ["src/common/*"],
-      "@modules/*": ["src/modules/*"]
+      "@modules/*": ["src/modules/*"],
+      "@test/*": ["test/utils/*"]
     },
     "skipLibCheck": true,
     "strictNullChecks": false,

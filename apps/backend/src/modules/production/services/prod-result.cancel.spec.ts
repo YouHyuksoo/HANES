@@ -18,7 +18,7 @@ import { ProductInventoryService } from '../../inventory/services/product-invent
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { TransactionService } from '../../../shared/transaction.service';

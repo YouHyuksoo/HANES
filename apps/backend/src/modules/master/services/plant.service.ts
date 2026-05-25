@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { Plant } from '../../../entities/plant.entity';
 import { CreatePlantDto, UpdatePlantDto, PlantQueryDto } from '../dto/plant.dto';
 
@@ -65,7 +65,7 @@ export class PlantService {
   }
 
   async findHierarchy(plantCode?: string) {
-    const where: any = {};
+    const where: FindOptionsWhere<Plant> = {};
     if (plantCode) {
       where.plantCode = plantCode;
     }
@@ -104,7 +104,13 @@ export class PlantService {
 
   async update(plantCode: string, dto: UpdatePlantDto, shopCode = '-', lineCode = '-', cellCode = '-') {
     await this.findById(plantCode, shopCode, lineCode, cellCode);
-    await this.plantRepository.update({ plantCode, shopCode, lineCode, cellCode }, dto);
+    const updateData: Partial<Pick<Plant, 'plantName' | 'plantType' | 'sortOrder' | 'useYn'>> = {
+      ...(dto.plantName !== undefined ? { plantName: dto.plantName } : {}),
+      ...(dto.plantType !== undefined ? { plantType: dto.plantType } : {}),
+      ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
+    await this.plantRepository.update({ plantCode, shopCode, lineCode, cellCode }, updateData);
     return this.findById(plantCode, shopCode, lineCode, cellCode);
   }
 

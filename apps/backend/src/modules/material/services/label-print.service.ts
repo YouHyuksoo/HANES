@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere } from 'typeorm';
 import * as net from 'net';
 
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
@@ -38,6 +38,14 @@ function formatDate(d: Date | null | undefined): string {
   const day = String(dt.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+type LotLabelDetail = {
+  matUid: string;
+  itemCode: string;
+  itemName: string;
+  qty: number;
+  unit: string;
+};
 
 @Injectable()
 export class LabelPrintService {
@@ -67,7 +75,7 @@ export class LabelPrintService {
   async generateZpl(dto: GenerateZplDto, company?: string, plant?: string) {
     // templateId는 "templateName::category" 형식
     const parts = dto.templateId.includes('::') ? dto.templateId.split('::') : [dto.templateId, undefined];
-    const where: any = parts[1]
+    const where: FindOptionsWhere<LabelTemplate> = parts[1]
       ? { templateName: parts[0], category: parts[1] }
       : { templateName: parts[0] };
     const template = await this.templateRepo.findOne({ where });
@@ -103,7 +111,7 @@ export class LabelPrintService {
     const partMap = new Map(partsList.map((p) => [p.itemCode, p] as const));
 
     const zplDataList: string[] = [];
-    const lotDetails: any[] = [];
+    const lotDetails: LotLabelDetail[] = [];
 
     for (const matUid of matUids) {
       const lot = lotMap.get(matUid)!;

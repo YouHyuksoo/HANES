@@ -19,6 +19,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './auth.dto';
+import { getHeaderString } from '../../common/utils/header-value.util';
 
 @ApiTags('인증')
 @Controller('auth')
@@ -46,8 +47,8 @@ export class AuthController {
     }
     return this.authService.me(
       token,
-      req.headers['x-company'] as string | undefined,
-      req.headers['x-plant'] as string | undefined,
+      getHeaderString(req.headers['x-company']),
+      getHeaderString(req.headers['x-plant']),
     );
   }
 

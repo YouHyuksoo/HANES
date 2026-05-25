@@ -9,7 +9,7 @@ import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.en
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatIssueService } from './mat-issue.service';
 import { NumberingService } from '../../../shared/numbering.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('IssueRequestService', () => {

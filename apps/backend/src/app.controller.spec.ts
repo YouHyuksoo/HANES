@@ -11,7 +11,7 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { DataSource } from 'typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MockLoggerService } from './common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('AppController', () => {
   let target: AppController;

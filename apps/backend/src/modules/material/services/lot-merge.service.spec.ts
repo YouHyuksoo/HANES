@@ -19,7 +19,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('LotMergeService', () => {
@@ -127,8 +127,8 @@ describe('LotMergeService', () => {
 
     it('정상적으로 LOT을 병합한다', async () => {
       const lots = [
-        { ...createLot('MAT-001'), originMatUid: 'ROOT-001' } as any,
-        { ...createLot('MAT-002'), originMatUid: 'ROOT-001' } as any,
+        { ...createLot('MAT-001'), origin: 'ROOT-001' } as any,
+        { ...createLot('MAT-002'), origin: 'ROOT-001' } as any,
       ];
       const stocks = [createStock('MAT-001', 30), createStock('MAT-002', 20)];
 
@@ -156,8 +156,8 @@ describe('LotMergeService', () => {
 
     it('품목 마스터가 누락되어도 병합 결과의 대상 LOT 원본 itemCode는 유지한다', async () => {
       const lots = [
-        { ...createLot('MAT-001', 'ITEM-MISSING'), originMatUid: 'ROOT-001' } as any,
-        { ...createLot('MAT-002', 'ITEM-MISSING'), originMatUid: 'ROOT-001' } as any,
+        { ...createLot('MAT-001', 'ITEM-MISSING'), origin: 'ROOT-001' } as any,
+        { ...createLot('MAT-002', 'ITEM-MISSING'), origin: 'ROOT-001' } as any,
       ];
       const stocks = [
         { ...createStock('MAT-001', 30), itemCode: 'ITEM-MISSING' },
@@ -189,8 +189,8 @@ describe('LotMergeService', () => {
 
     it('LOT과 재고의 회사/공장이 다르면 병합하지 않는다', async () => {
       const lots = [
-        { ...createLot('MAT-001'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
-        { ...createLot('MAT-002'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
+        { ...createLot('MAT-001'), origin: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
+        { ...createLot('MAT-002'), origin: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
       ];
       const stocks = [
         { ...createStock('MAT-001', 30), company: 'C1', plant: 'P1' },
@@ -219,8 +219,8 @@ describe('LotMergeService', () => {
 
     it('병합 실행은 LOT 회사/공장 범위에서 LOT/재고/출고이력/품목과 상태 갱신을 처리한다', async () => {
       const lots = [
-        { ...createLot('MAT-001'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
-        { ...createLot('MAT-002'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
+        { ...createLot('MAT-001'), origin: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
+        { ...createLot('MAT-002'), origin: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
       ];
       const stocks = [
         { ...createStock('MAT-001', 30), company: 'C1', plant: 'P1' },

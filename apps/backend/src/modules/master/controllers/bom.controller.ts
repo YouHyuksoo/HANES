@@ -18,7 +18,7 @@
 } from '@nestjs/common';
 import { ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { memoryStorage } from 'multer';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -75,7 +75,7 @@ export class BomController {
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: { fileSize: 10 * 1024 * 1024 },
-      fileFilter: (_req: any, file: Express.Multer.File, cb: (error: Error | null, accept: boolean) => void) => {
+      fileFilter: (_req: Request, file: Express.Multer.File, cb: (error: Error | null, accept: boolean) => void) => {
         if (!file.originalname.match(/\.xlsx$/i)) {
           return cb(new BadRequestException('Only .xlsx is allowed'), false);
         }

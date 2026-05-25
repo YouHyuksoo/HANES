@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { CapaService } from './capa.service';
 import { CAPARequest } from '../../../../entities/capa-request.entity';
 import { CAPAAction } from '../../../../entities/capa-action.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('CapaService', () => {
   let target: CapaService;

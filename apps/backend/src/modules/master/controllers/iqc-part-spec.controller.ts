@@ -13,7 +13,7 @@ import {
   Body, Param, HttpCode, HttpStatus, UseGuards, Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { AuthenticatedRequest, JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { IqcPartSpecService } from '../services/iqc-part-spec.service';
 import { UpsertIqcPartSpecDto } from '../dto/iqc-part-spec.dto';
@@ -50,7 +50,7 @@ export class IqcPartSpecController {
     @Body() dto: UpsertIqcPartSpecDto,
     @Company() company: string,
     @Plant() plant: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const userId = req.user?.id ?? 'SYSTEM';
     const data = await this.service.upsert(dto, company, plant, userId);

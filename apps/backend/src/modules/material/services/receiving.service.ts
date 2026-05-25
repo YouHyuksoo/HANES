@@ -14,7 +14,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Between, DataSource } from 'typeorm';
+import { Repository, In, Between, DataSource, EntityManager } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
@@ -671,7 +671,7 @@ export class ReceivingService {
   }
 
   /** MatStock upsert */
-  private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
+  private async upsertStock(manager: EntityManager, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: matUid || null, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });

@@ -37,7 +37,6 @@ import { GaugeMaster } from '../../../entities/gauge-master.entity';
 import { CalibrationLog } from '../../../entities/calibration-log.entity';
 import { ControlPlan } from '../../../entities/control-plan.entity';
 import { ControlPlanItem } from '../../../entities/control-plan-item.entity';
-import { User } from '../../../entities/user.entity';
 
 @Module({
   imports: [
@@ -49,7 +48,6 @@ import { User } from '../../../entities/user.entity';
       CalibrationLog,
       ControlPlan,
       ControlPlanItem,
-      User,
     ]),
   ],
   controllers: [

@@ -150,13 +150,35 @@ export class WorkerService {
   async update(workerCode: string, dto: UpdateWorkerDto, company?: string, plant?: string) {
     await this.findById(workerCode, company, plant);
 
-    const updateData: any = { ...dto };
-    delete updateData.workerCode;
-    delete updateData.company;
-    delete updateData.plant;
-    if (dto.processIds !== undefined) {
-      updateData.processIds = dto.processIds ? JSON.stringify(dto.processIds) : null;
-    }
+    const updateData: Partial<Pick<WorkerMaster,
+      | 'workerName'
+      | 'engName'
+      | 'dept'
+      | 'position'
+      | 'phone'
+      | 'email'
+      | 'hireDate'
+      | 'quitDate'
+      | 'qrCode'
+      | 'photoUrl'
+      | 'processIds'
+      | 'remark'
+      | 'useYn'
+    >> = {
+      ...(dto.workerName !== undefined ? { workerName: dto.workerName } : {}),
+      ...(dto.engName !== undefined ? { engName: dto.engName } : {}),
+      ...(dto.dept !== undefined ? { dept: dto.dept } : {}),
+      ...(dto.position !== undefined ? { position: dto.position } : {}),
+      ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
+      ...(dto.email !== undefined ? { email: dto.email } : {}),
+      ...(dto.hireDate !== undefined ? { hireDate: dto.hireDate } : {}),
+      ...(dto.quitDate !== undefined ? { quitDate: dto.quitDate } : {}),
+      ...(dto.qrCode !== undefined ? { qrCode: dto.qrCode } : {}),
+      ...(dto.photoUrl !== undefined ? { photoUrl: dto.photoUrl } : {}),
+      ...(dto.processIds !== undefined ? { processIds: dto.processIds ? JSON.stringify(dto.processIds) : null } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
 
     await this.workerRepository.update({ workerCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(workerCode, company, plant);

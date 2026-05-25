@@ -11,7 +11,7 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { InternalServerErrorException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { SeqGeneratorService } from './seq-generator.service';
-import { MockLoggerService } from '../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SeqGeneratorService', () => {
   let target: SeqGeneratorService;

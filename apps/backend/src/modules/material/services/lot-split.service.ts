@@ -195,7 +195,7 @@ export class LotSplitService {
         initQty: splitQty,
         recvDate: new Date(),
         expireDate: sourceLot.expireDate,
-        origin: sourceLot.origin,
+        origin: sourceLot.origin || sourceLot.matUid,
         vendor: sourceLot.vendor,
         invoiceNo: sourceLot.invoiceNo,
         poNo: sourceLot.poNo,

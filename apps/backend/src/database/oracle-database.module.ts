@@ -2,7 +2,7 @@
  * @file database/oracle-database.module.ts
  * @description Oracle Database Module for MYDBPDB
  * 
- * PostgreSQL(Prisma)와 함께 사용 - 듀얼 DB 설정
+ * Oracle 단일 DB 설정
  */
 
 import { Module, Global } from '@nestjs/common';

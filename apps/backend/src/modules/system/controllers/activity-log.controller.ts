@@ -22,6 +22,8 @@ import { Request } from 'express';
 import { ActivityLogService } from '../services/activity-log.service';
 import { CreateActivityLogDto, ActivityLogQueryDto } from '../dto/activity-log.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { getHeaderString } from '../../../common/utils/header-value.util';
+import { getRequestUser } from '../../../common/utils/request-user.util';
 
 @ApiTags('시스템관리 - 활동 로그')
 @Controller('system/activity-logs')
@@ -39,7 +41,7 @@ export class ActivityLogController {
 
     const userAgent = req.headers['user-agent'] || null;
     const ipAddress =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      getHeaderString(req.headers['x-forwarded-for'])?.split(',')[0]?.trim() ||
       req.ip ||
       null;
     const { company, plant } = this.tenant(req);
@@ -69,7 +71,7 @@ export class ActivityLogController {
 
   /** JwtAuthGuard user.id 우선, 없으면 Authorization: Bearer {userId} fallback */
   private extractUserId(req: Request): string | null {
-    const user = (req as Request & { user?: { id?: string } }).user;
+    const user = getRequestUser(req);
     if (user?.id) return user.id;
 
     const auth = req.headers.authorization;
@@ -79,10 +81,10 @@ export class ActivityLogController {
   }
 
   private tenant(req: Request) {
-    const user = (req as Request & { user?: { company?: string; plant?: string } }).user ?? {};
+    const user = getRequestUser(req) ?? {};
     return {
-      company: (req.headers['x-company'] as string) || user.company || undefined,
-      plant: (req.headers['x-plant'] as string) || user.plant || undefined,
+      company: getHeaderString(req.headers['x-company']) || user.company || undefined,
+      plant: getHeaderString(req.headers['x-plant']) || user.plant || undefined,
     };
   }
 }

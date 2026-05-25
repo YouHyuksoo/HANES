@@ -17,6 +17,8 @@ import {
 } from '@nestjs/common';
 import { IJobExecutor, ExecutorResult } from './executor.interface';
 import { SchedulerJob } from '../../../entities/scheduler-job.entity';
+import { getErrorMessage } from '../../../common/utils/error-message.util';
+import { isRecord, toRecord } from '../../../common/utils/json-record.util';
 import { getAllowedHosts } from '../config/scheduler-security.config';
 
 /** IP 주소 패턴 (IPv4) */
@@ -85,8 +87,8 @@ export class HttpExecutor implements IJobExecutor {
         const parsed = JSON.parse(execParams);
 
         // 실행 요청 본문에 company/plant 관련 키가 있으면 스케줄러 테넌트를 강제 반영
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          const mutated = { ...parsed } as Record<string, unknown>;
+        if (isRecord(parsed)) {
+          const mutated = toRecord(parsed);
 
           if ('company' in mutated) mutated.company = company;
           if ('plant' in mutated) mutated.plant = plantCd;
@@ -98,7 +100,7 @@ export class HttpExecutor implements IJobExecutor {
         }
       } catch (error: unknown) {
         throw new BadRequestException(
-          `execParams JSON 파싱 실패: ${(error as Error).message}`,
+          `execParams JSON 파싱 실패: ${getErrorMessage(error)}`,
         );
       }
     }

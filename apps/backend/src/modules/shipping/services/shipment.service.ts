@@ -23,7 +23,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And, DataSource } from 'typeorm';
+import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, DataSource, FindOptionsWhere } from 'typeorm';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
@@ -69,6 +69,20 @@ export class ShipmentService {
     };
   }
 
+  private buildShipmentUpdate(
+    dto: Omit<UpdateShipmentDto, 'status' | 'shipNo'>,
+  ): Partial<Pick<ShipmentLog, 'shipDate' | 'vehicleNo' | 'driverName' | 'destination' | 'customer' | 'remark' | 'shipOrderNo'>> {
+    return {
+      ...(dto.shipDate !== undefined ? { shipDate: dto.shipDate ? new Date(dto.shipDate) : null } : {}),
+      ...(dto.vehicleNo !== undefined ? { vehicleNo: dto.vehicleNo } : {}),
+      ...(dto.driverName !== undefined ? { driverName: dto.driverName } : {}),
+      ...(dto.destination !== undefined ? { destination: dto.destination } : {}),
+      ...(dto.customer !== undefined ? { customer: dto.customer } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.shipOrderNo !== undefined ? { shipOrderNo: dto.shipOrderNo || null } : {}),
+    };
+  }
+
   /**
    * 출하 목록 조회
    */
@@ -85,22 +99,21 @@ export class ShipmentService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<ShipmentLog> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(shipNo && { shipNo: ILike(`%${shipNo}%`) }),
       ...(customer && { customer: ILike(`%${customer}%`) }),
       ...(status && { status }),
       ...(erpSyncYn && { erpSyncYn }),
-      ...(shipDateFrom || shipDateTo
-        ? {
-            shipDate: And(
-              shipDateFrom ? MoreThanOrEqual(new Date(shipDateFrom)) : undefined,
-              shipDateTo ? LessThanOrEqual(new Date(shipDateTo)) : undefined
-            ),
-          }
-        : {}),
     };
+    if (shipDateFrom && shipDateTo) {
+      where.shipDate = Between(new Date(shipDateFrom), new Date(shipDateTo));
+    } else if (shipDateFrom) {
+      where.shipDate = MoreThanOrEqual(new Date(shipDateFrom));
+    } else if (shipDateTo) {
+      where.shipDate = LessThanOrEqual(new Date(shipDateTo));
+    }
 
     const [data, total] = await Promise.all([
       this.shipmentRepository.find({
@@ -181,24 +194,24 @@ export class ShipmentService {
     if (shipment.status === 'SHIPPED' || shipment.status === 'DELIVERED') {
       throw new BadRequestException('출하 완료된 건은 수정할 수 없습니다.');
     }
-
-    const updateData: any = {};
-    if (dto.shipDate !== undefined) updateData.shipDate = dto.shipDate ? new Date(dto.shipDate) : null;
-    if (dto.vehicleNo !== undefined) updateData.vehicleNo = dto.vehicleNo;
-    if (dto.driverName !== undefined) updateData.driverName = dto.driverName;
-    if (dto.destination !== undefined) updateData.destination = dto.destination;
-    if (dto.customer !== undefined) updateData.customer = dto.customer;
-    if (dto.remark !== undefined) updateData.remark = dto.remark;
     if (dto.status !== undefined) {
       throw new BadRequestException(
         '출하 상태 변경은 전용 처리만 허용됩니다. 적재/출하/역분개/취소 API를 사용해 주세요.',
       );
     }
+    if (dto.shipNo !== undefined && dto.shipNo !== id) {
+      throw new BadRequestException('출하 번호는 수정할 수 없습니다.');
+    }
 
-    await this.shipmentRepository.update(
-      { shipNo: typeof id === 'string' ? id : String(id), ...this.tenantWhere(company, plant) },
-      updateData,
-    );
+    const { status: _ignoredStatus, shipNo: _ignoredShipNo, ...shipmentData } = dto;
+    const updateData = this.buildShipmentUpdate(shipmentData);
+
+    if (Object.keys(updateData).length > 0) {
+      await this.shipmentRepository.update(
+        { shipNo: typeof id === 'string' ? id : String(id), ...this.tenantWhere(company, plant) },
+        updateData,
+      );
+    }
 
     return this.findById(id, company, plant);
   }
@@ -614,7 +627,7 @@ export class ShipmentService {
       );
 
       // 출하 상태 업데이트
-      const updateData: any = {
+      const updateData: Partial<Pick<ShipmentLog, 'status' | 'palletCount' | 'boxCount' | 'totalQty' | 'remark'>> = {
         status: 'CANCELED',
         palletCount: 0,
         boxCount: 0,
@@ -801,7 +814,7 @@ export class ShipmentService {
   async getShipmentStats(query: ShipmentStatsQueryDto, company?: string, plant?: string) {
     const { startDate, endDate, customer } = query;
 
-    const where: any = {
+    const where: FindOptionsWhere<ShipmentLog> = {
       shipDate: Between(new Date(startDate), new Date(endDate)),
       status: In(['SHIPPED', 'DELIVERED']),
       ...(customer && { customer: ILike(`%${customer}%`) }),

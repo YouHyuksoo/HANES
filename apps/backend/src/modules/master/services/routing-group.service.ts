@@ -109,7 +109,10 @@ export class RoutingGroupService {
     if (existing) throw new ConflictException(`?대? 議댁옱?섎뒗 ?쇱슦??洹몃９: ${dto.routingCode}`);
 
     const group = this.groupRepo.create({
-      ...dto,
+      routingCode: dto.routingCode,
+      routingName: dto.routingName,
+      itemCode: dto.itemCode ?? null,
+      description: dto.description ?? null,
       useYn: dto.useYn ?? 'Y',
       company,
       plant,
@@ -119,7 +122,12 @@ export class RoutingGroupService {
 
   async updateGroup(routingCode: string, dto: UpdateRoutingGroupDto, company?: string, plant?: string) {
     await this.findGroupByCode(routingCode, company, plant);
-    const { routingCode: _rc, ...updateData } = dto;
+    const updateData: Partial<Pick<RoutingGroup, 'routingName' | 'itemCode' | 'description' | 'useYn'>> = {
+      ...(dto.routingName !== undefined ? { routingName: dto.routingName } : {}),
+      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.groupRepo.update({ routingCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findGroupByCode(routingCode, company, plant);
   }
@@ -151,7 +159,15 @@ export class RoutingGroupService {
     if (existing) throw new ConflictException(`?대? 議댁옱?섎뒗 怨듭젙?쒖꽌: ${dto.routingCode} / seq ${dto.seq}`);
 
     const proc = this.processRepo.create({
-      ...dto,
+      routingCode: dto.routingCode,
+      seq: dto.seq,
+      processCode: dto.processCode,
+      processName: dto.processName,
+      processType: dto.processType ?? null,
+      equipType: dto.equipType ?? null,
+      stdTime: dto.stdTime ?? null,
+      setupTime: dto.setupTime ?? null,
+      sampleInspectYn: dto.sampleInspectYn ?? 'N',
       useYn: dto.useYn ?? 'Y',
       qcSelfYn: dto.qcSelfYn ?? 'N',
       inspectMethod: dto.inspectMethod ?? 'DIRECT',
@@ -167,7 +183,34 @@ export class RoutingGroupService {
     const existing = await this.processRepo.findOne({ where: { routingCode, seq, ...this.tenantWhere(company, plant) } });
     if (!existing) throw new NotFoundException(`怨듭젙?쒖꽌瑜?李얠쓣 ???놁뒿?덈떎: ${routingCode}/${seq}`);
 
-    const { routingCode: _rc, seq: _s, ...updateData } = dto;
+    const updateData: Partial<Pick<
+      RoutingProcess,
+      | 'processCode'
+      | 'processName'
+      | 'processType'
+      | 'equipType'
+      | 'stdTime'
+      | 'setupTime'
+      | 'sampleInspectYn'
+      | 'useYn'
+      | 'qcSelfYn'
+      | 'inspectMethod'
+      | 'destructiveYn'
+      | 'sampleQty'
+    >> = {
+      ...(dto.processCode !== undefined ? { processCode: dto.processCode } : {}),
+      ...(dto.processName !== undefined ? { processName: dto.processName } : {}),
+      ...(dto.processType !== undefined ? { processType: dto.processType } : {}),
+      ...(dto.equipType !== undefined ? { equipType: dto.equipType } : {}),
+      ...(dto.stdTime !== undefined ? { stdTime: dto.stdTime } : {}),
+      ...(dto.setupTime !== undefined ? { setupTime: dto.setupTime } : {}),
+      ...(dto.sampleInspectYn !== undefined ? { sampleInspectYn: dto.sampleInspectYn } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+      ...(dto.qcSelfYn !== undefined ? { qcSelfYn: dto.qcSelfYn } : {}),
+      ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),
+      ...(dto.destructiveYn !== undefined ? { destructiveYn: dto.destructiveYn } : {}),
+      ...(dto.sampleQty !== undefined ? { sampleQty: dto.sampleQty } : {}),
+    };
     await this.processRepo.update({ routingCode, seq, ...this.tenantWhere(company, plant) }, updateData);
     return this.processRepo.findOne({ where: { routingCode, seq, ...this.tenantWhere(company, plant) } });
   }

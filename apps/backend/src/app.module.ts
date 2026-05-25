@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **ConfigModule**: 환경변수 로드 (.env 파일)
- * 2. **PrismaModule**: 데이터베이스 연결 (글로벌)
+ * 2. **DatabaseModule**: 데이터베이스 연결 (글로벌)
  * 3. **기능 모듈**: 각 도메인별 모듈 import
  *
  * 모듈 추가 시:
@@ -57,6 +57,9 @@ import { GuardModule } from './common/modules/guard.module';
 
     // Oracle 패키지/프로시저 호출 헬퍼 (글로벌)
     OracleModule,
+
+    // 공통 가드 모듈 (@Global) - 기능 모듈보다 먼저 로드해야 JwtAuthGuard가 전역 적용됨
+    GuardModule,
 
     // ===== 기능 모듈 =====
 
@@ -116,9 +119,6 @@ import { GuardModule } from './common/modules/guard.module';
 
     // 공유 모듈 (NumberingService 파사드 + SeqGenerator + NumRule)
     SharedModule,
-
-    // 공통 가드 모듈 (JwtAuthGuard/RolesGuard/InventoryFreezeGuard)
-    GuardModule,
 
     // 스케줄러 (정기 작업 실행 + 로그 + 알림)
     SchedulerModule,

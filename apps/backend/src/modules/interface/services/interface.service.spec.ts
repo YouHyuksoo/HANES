@@ -16,8 +16,9 @@ import { InterLog } from '../../../entities/inter-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { OracleService } from '../../../common/services/oracle.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('InterfaceService', () => {
   let target: InterfaceService;
@@ -27,6 +28,7 @@ describe('InterfaceService', () => {
   let mockJobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockOracleService: DeepMocked<OracleService>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockLogRepo = createMock<Repository<InterLog>>();
@@ -35,6 +37,7 @@ describe('InterfaceService', () => {
     mockJobOrderRepo = createMock<Repository<JobOrder>>();
     mockDataSource = createMock<DataSource>();
     mockOracleService = createMock<OracleService>();
+    mockTx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,6 +47,7 @@ describe('InterfaceService', () => {
         { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
         { provide: OracleService, useValue: mockOracleService },
       ],
     })
@@ -121,7 +125,7 @@ describe('InterfaceService', () => {
         create: jest.fn().mockReturnValue(log),
         save: jest.fn().mockResolvedValue(log),
       };
-      mockDataSource.transaction.mockImplementation(async (callback: any) => callback(manager));
+      mockTx.run.mockImplementation(async (callback) => callback({ manager } as any));
 
       // Act
       const result = await target.createLog({
@@ -131,7 +135,7 @@ describe('InterfaceService', () => {
 
       // Assert
       expect(result.status).toBe('PENDING');
-      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(manager.query).toHaveBeenCalledWith('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
       expect(manager.query).toHaveBeenCalledWith(
         expect.stringContaining('NVL(MAX("SEQ"), 0) + 1'),
@@ -152,7 +156,7 @@ describe('InterfaceService', () => {
         create: jest.fn().mockReturnValue(log),
         save: jest.fn().mockResolvedValue(log),
       };
-      mockDataSource.transaction.mockImplementation(async (callback: any) => callback(manager));
+      mockTx.run.mockImplementation(async (callback) => callback({ manager } as any));
 
       await target.createLog({
         direction: 'IN',

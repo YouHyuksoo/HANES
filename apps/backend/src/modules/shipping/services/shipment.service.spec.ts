@@ -10,7 +10,7 @@ import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ShipmentService', () => {

@@ -168,10 +168,17 @@ export class DocumentService {
   ) {
     const docNo = await this.generateDocNo(company, plant);
     const entity = this.docRepo.create({
-      ...dto,
       docNo,
+      docTitle: dto.docTitle,
+      docType: dto.docType,
+      category: dto.category ?? null,
       status: 'DRAFT',
+      filePath: dto.filePath ?? null,
+      fileSize: dto.fileSize ?? null,
       revisionNo: 1,
+      retentionPeriod: dto.retentionPeriod ?? null,
+      expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+      description: dto.description ?? null,
       company,
       plant,
       createdBy: userId,
@@ -196,12 +203,25 @@ export class DocumentService {
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 수정할 수 있습니다.');
     }
-    const {
-      docNo: _docNo,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<Pick<DocumentMaster,
+      | 'docTitle'
+      | 'docType'
+      | 'category'
+      | 'filePath'
+      | 'fileSize'
+      | 'retentionPeriod'
+      | 'expiresAt'
+      | 'description'
+    >> = {
+      ...(dto.docTitle !== undefined ? { docTitle: dto.docTitle } : {}),
+      ...(dto.docType !== undefined ? { docType: dto.docType } : {}),
+      ...(dto.category !== undefined ? { category: dto.category } : {}),
+      ...(dto.filePath !== undefined ? { filePath: dto.filePath } : {}),
+      ...(dto.fileSize !== undefined ? { fileSize: dto.fileSize } : {}),
+      ...(dto.retentionPeriod !== undefined ? { retentionPeriod: dto.retentionPeriod } : {}),
+      ...(dto.expiresAt !== undefined ? { expiresAt: new Date(dto.expiresAt) } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.docRepo.save(item);
   }

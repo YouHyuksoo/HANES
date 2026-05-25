@@ -57,11 +57,13 @@ const PPAP_ELEMENT_KEYS = [
   'partSubmissionWarrant',
 ] as const;
 
+type PpapElementKey = (typeof PPAP_ELEMENT_KEYS)[number];
+
 /**
  * PPAP Level별 필수 요소 매트릭스 (AIAG PPAP 4th Edition 기준)
  * true = 필수(제출), false = 보관만
  */
-const PPAP_LEVEL_MATRIX: Record<number, Record<string, boolean>> = {
+const PPAP_LEVEL_MATRIX: Record<number, Record<PpapElementKey, boolean>> = {
   1: {
     designRecords: false,
     ecnDocuments: false,
@@ -303,8 +305,32 @@ export class PpapService {
   ) {
     const ppapNo = await this.generatePpapNo(company, plant);
     const entity = this.ppapRepo.create({
-      ...dto,
       ppapNo,
+      itemCode: dto.itemCode,
+      itemName: dto.itemName,
+      customerCode: dto.customerCode,
+      customerName: dto.customerName,
+      ppapLevel: dto.ppapLevel,
+      reason: dto.reason,
+      designRecords: dto.designRecords,
+      ecnDocuments: dto.ecnDocuments,
+      customerApproval: dto.customerApproval,
+      dfmea: dto.dfmea,
+      processFlowDiagram: dto.processFlowDiagram,
+      pfmea: dto.pfmea,
+      controlPlan: dto.controlPlan,
+      msaStudies: dto.msaStudies,
+      dimensionalResults: dto.dimensionalResults,
+      materialTestResults: dto.materialTestResults,
+      initialProcessStudies: dto.initialProcessStudies,
+      qualifiedLabDoc: dto.qualifiedLabDoc,
+      appearanceApproval: dto.appearanceApproval,
+      sampleProduct: dto.sampleProduct,
+      masterSample: dto.masterSample,
+      checkingAids: dto.checkingAids,
+      customerSpecificReq: dto.customerSpecificReq,
+      partSubmissionWarrant: dto.partSubmissionWarrant,
+      remark: dto.remark,
       status: 'DRAFT',
       company,
       plant,
@@ -332,12 +358,33 @@ export class PpapService {
         '초안 또는 반려 상태에서만 수정할 수 있습니다.',
       );
     }
-    const {
-      ppapNo: _ppapNo,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<PpapSubmission> = {
+      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
+      ...(dto.customerCode !== undefined ? { customerCode: dto.customerCode } : {}),
+      ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
+      ...(dto.ppapLevel !== undefined ? { ppapLevel: dto.ppapLevel } : {}),
+      ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
+      ...(dto.designRecords !== undefined ? { designRecords: dto.designRecords } : {}),
+      ...(dto.ecnDocuments !== undefined ? { ecnDocuments: dto.ecnDocuments } : {}),
+      ...(dto.customerApproval !== undefined ? { customerApproval: dto.customerApproval } : {}),
+      ...(dto.dfmea !== undefined ? { dfmea: dto.dfmea } : {}),
+      ...(dto.processFlowDiagram !== undefined ? { processFlowDiagram: dto.processFlowDiagram } : {}),
+      ...(dto.pfmea !== undefined ? { pfmea: dto.pfmea } : {}),
+      ...(dto.controlPlan !== undefined ? { controlPlan: dto.controlPlan } : {}),
+      ...(dto.msaStudies !== undefined ? { msaStudies: dto.msaStudies } : {}),
+      ...(dto.dimensionalResults !== undefined ? { dimensionalResults: dto.dimensionalResults } : {}),
+      ...(dto.materialTestResults !== undefined ? { materialTestResults: dto.materialTestResults } : {}),
+      ...(dto.initialProcessStudies !== undefined ? { initialProcessStudies: dto.initialProcessStudies } : {}),
+      ...(dto.qualifiedLabDoc !== undefined ? { qualifiedLabDoc: dto.qualifiedLabDoc } : {}),
+      ...(dto.appearanceApproval !== undefined ? { appearanceApproval: dto.appearanceApproval } : {}),
+      ...(dto.sampleProduct !== undefined ? { sampleProduct: dto.sampleProduct } : {}),
+      ...(dto.masterSample !== undefined ? { masterSample: dto.masterSample } : {}),
+      ...(dto.checkingAids !== undefined ? { checkingAids: dto.checkingAids } : {}),
+      ...(dto.customerSpecificReq !== undefined ? { customerSpecificReq: dto.customerSpecificReq } : {}),
+      ...(dto.partSubmissionWarrant !== undefined ? { partSubmissionWarrant: dto.partSubmissionWarrant } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.ppapRepo.save(item);
   }
@@ -501,9 +548,7 @@ export class PpapService {
       return { ppapNo: item.ppapNo, level: item.ppapLevel, rate: 100, completed: 0, total: 0 };
     }
 
-    const completed = requiredKeys.filter(
-      (key) => (item as any)[key] === 1,
-    ).length;
+    const completed = requiredKeys.filter((key) => item[key] === 1).length;
     const rate = Math.round((completed / requiredKeys.length) * 100);
 
     return {

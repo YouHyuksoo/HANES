@@ -39,9 +39,16 @@ export class ShiftPatternService {
     }
 
     const entity = this.repo.create({
-      ...dto,
       company,
       plant,
+      shiftCode: dto.shiftCode,
+      shiftName: dto.shiftName,
+      startTime: dto.startTime,
+      endTime: dto.endTime,
+      breakMinutes: dto.breakMinutes ?? 60,
+      workMinutes: dto.workMinutes ?? 0,
+      sortOrder: dto.sortOrder ?? 0,
+      useYn: 'Y',
     });
     return this.repo.save(entity);
   }
@@ -55,7 +62,22 @@ export class ShiftPatternService {
       throw new NotFoundException(`교대 패턴을 찾을 수 없습니다: ${shiftCode}`);
     }
 
-    const { shiftCode: _sc, ...updateData } = dto;
+    const updateData: Partial<Pick<
+      ShiftPattern,
+      | 'shiftName'
+      | 'startTime'
+      | 'endTime'
+      | 'breakMinutes'
+      | 'workMinutes'
+      | 'sortOrder'
+    >> = {
+      ...(dto.shiftName !== undefined ? { shiftName: dto.shiftName } : {}),
+      ...(dto.startTime !== undefined ? { startTime: dto.startTime } : {}),
+      ...(dto.endTime !== undefined ? { endTime: dto.endTime } : {}),
+      ...(dto.breakMinutes !== undefined ? { breakMinutes: dto.breakMinutes } : {}),
+      ...(dto.workMinutes !== undefined ? { workMinutes: dto.workMinutes } : {}),
+      ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+    };
     await this.repo.update({ company, plant, shiftCode }, updateData);
     return this.repo.findOne({ where: { company, plant, shiftCode } });
   }

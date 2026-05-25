@@ -214,7 +214,7 @@ export class InterfaceService {
       direction: 'IN',
       messageType: 'JOB_ORDER',
       interfaceId: dto.erpOrderNo,
-      payload: dto as unknown as Record<string, unknown>,
+      payload: { ...dto },
     }, company, plant);
 
     try {
@@ -262,7 +262,7 @@ export class InterfaceService {
     const log = await this.createLog({
       direction: 'IN',
       messageType: 'BOM_SYNC',
-      payload: { items: dtos } as unknown as Record<string, unknown>,
+      payload: { items: dtos },
     }, company, plant);
 
     try {
@@ -342,7 +342,7 @@ export class InterfaceService {
     const log = await this.createLog({
       direction: 'IN',
       messageType: 'PART_SYNC',
-      payload: { items: dtos } as unknown as Record<string, unknown>,
+      payload: { items: dtos },
     }, company, plant);
 
     try {
@@ -411,7 +411,12 @@ export class InterfaceService {
       direction: 'OUT',
       messageType: 'PROD_RESULT',
       interfaceId: dto.orderNo,
-      payload: dto as any,
+      payload: {
+        orderNo: dto.orderNo,
+        goodQty: dto.goodQty,
+        ...(dto.defectQty !== undefined ? { defectQty: dto.defectQty } : {}),
+        ...(dto.endAt !== undefined ? { endAt: dto.endAt } : {}),
+      },
     }, company, plant);
 
     try {
@@ -446,7 +451,7 @@ export class InterfaceService {
     }
   }
 
-  private async processOutbound(messageType: string, payload: Record<string, any>) {
+  private async processOutbound(messageType: string, payload: object) {
     // 실제로는 HTTP 요청이나 메시지 큐로 ERP에 전송
     this.logger.log(`[${messageType}] ERP 전송: ${JSON.stringify(payload)}`);
 

@@ -12,7 +12,7 @@ import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { TraceLog } from '../../../../entities/trace-log.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('InspectResultService', () => {
   let target: InspectResultService;

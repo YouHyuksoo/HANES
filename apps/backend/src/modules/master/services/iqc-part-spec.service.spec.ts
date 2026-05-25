@@ -4,19 +4,22 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { IqcPartSpec } from '../../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../../entities/iqc-part-spec-item.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { IqcPartSpecService } from './iqc-part-spec.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('IqcPartSpecService', () => {
   let target: IqcPartSpecService;
   let mockSpecRepo: DeepMocked<Repository<IqcPartSpec>>;
   let mockItemRepo: DeepMocked<Repository<IqcPartSpecItem>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockSpecRepo = createMock<Repository<IqcPartSpec>>();
     mockItemRepo = createMock<Repository<IqcPartSpecItem>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -24,6 +27,7 @@ describe('IqcPartSpecService', () => {
         { provide: getRepositoryToken(IqcPartSpec), useValue: mockSpecRepo },
         { provide: getRepositoryToken(IqcPartSpecItem), useValue: mockItemRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -53,7 +57,7 @@ describe('IqcPartSpecService', () => {
       save: jest.fn().mockResolvedValue(undefined),
       delete: jest.fn().mockResolvedValue(undefined),
     };
-    mockDataSource.transaction.mockImplementation(async (callback: any) => callback(em));
+    mockTx.run.mockImplementation(async (callback) => callback({ manager: em } as any));
 
     await target.upsert({
       itemCode: 'ITEM-001',

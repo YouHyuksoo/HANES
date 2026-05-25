@@ -22,6 +22,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { IJobExecutor, ExecutorResult } from './executor.interface';
 import { SchedulerJob } from '../../../entities/scheduler-job.entity';
+import { getErrorMessage } from '../../../common/utils/error-message.util';
+import { isRecord } from '../../../common/utils/json-record.util';
 import {
   SCRIPT_ALLOWED_EXTENSIONS,
   getAllowedScripts,
@@ -84,7 +86,7 @@ export class ScriptExecutor implements IJobExecutor {
         }
       } catch (error: unknown) {
         throw new BadRequestException(
-          `execParams JSON 파싱 실패: ${(error as Error).message}`,
+          `execParams JSON 파싱 실패: ${getErrorMessage(error)}`,
         );
       }
     }
@@ -115,10 +117,8 @@ export class ScriptExecutor implements IJobExecutor {
         message: `스크립트 실행 완료: ${path.basename(realPath)}${output ? ` — ${output.substring(0, 500)}` : ''}`,
       };
     } catch (error: unknown) {
-      const err = error as Error & { killed?: boolean; code?: string | number };
-
       // 타임아웃으로 프로세스 종료된 경우
-      if (err.killed) {
+      if (isRecord(error) && error.killed === true) {
         return {
           success: false,
           message: `스크립트 타임아웃 (${timeoutSec}초 초과): ${path.basename(realPath)}`,
@@ -127,7 +127,7 @@ export class ScriptExecutor implements IJobExecutor {
 
       return {
         success: false,
-        message: `스크립트 실행 실패: ${err.message}`,
+        message: `스크립트 실행 실패: ${getErrorMessage(error)}`,
       };
     }
   }

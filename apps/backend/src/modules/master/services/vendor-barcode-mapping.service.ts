@@ -100,8 +100,14 @@ export class VendorBarcodeMappingService {
     }
 
     const mapping = this.repo.create({
-      ...dto,
+      vendorBarcode: dto.vendorBarcode,
+      itemCode: dto.itemCode,
+      itemName: dto.itemName ?? null,
+      vendorCode: dto.vendorCode ?? null,
+      vendorName: dto.vendorName ?? null,
+      mappingRule: dto.mappingRule ?? null,
       matchType: dto.matchType ?? 'EXACT',
+      remark: dto.remark ?? null,
       useYn: dto.useYn ?? 'Y',
       company: company || null,
       plant: plant || null,
@@ -113,10 +119,25 @@ export class VendorBarcodeMappingService {
   /** 수정 */
   async update(vendorBarcode: string, dto: UpdateVendorBarcodeMappingDto, company?: string, plant?: string) {
     await this.findByBarcode(vendorBarcode, company, plant);
-    const updateData: any = { ...dto };
-    delete updateData.vendorBarcode;
-    delete updateData.company;
-    delete updateData.plant;
+    const updateData: Partial<Pick<VendorBarcodeMapping,
+      | 'itemCode'
+      | 'itemName'
+      | 'vendorCode'
+      | 'vendorName'
+      | 'mappingRule'
+      | 'matchType'
+      | 'remark'
+      | 'useYn'
+    >> = {
+      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
+      ...(dto.vendorCode !== undefined ? { vendorCode: dto.vendorCode } : {}),
+      ...(dto.vendorName !== undefined ? { vendorName: dto.vendorName } : {}),
+      ...(dto.mappingRule !== undefined ? { mappingRule: dto.mappingRule } : {}),
+      ...(dto.matchType !== undefined ? { matchType: dto.matchType } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.repo.update({ vendorBarcode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findByBarcode(vendorBarcode, company, plant);
   }

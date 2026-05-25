@@ -13,7 +13,7 @@ import { Repository } from 'typeorm';
 import { ActivityLogService } from './activity-log.service';
 import { ActivityLog } from '../../../entities/activity-log.entity';
 import { SysConfigService } from './sys-config.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ActivityLogService', () => {
   let target: ActivityLogService;

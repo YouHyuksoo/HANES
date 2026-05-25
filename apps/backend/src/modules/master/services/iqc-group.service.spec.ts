@@ -14,7 +14,7 @@ import { Repository } from 'typeorm';
 import { IqcGroupService } from './iqc-group.service';
 import { IqcGroup } from '../../../entities/iqc-group.entity';
 import { IqcGroupItem } from '../../../entities/iqc-group-item.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('IqcGroupService', () => {
   let target: IqcGroupService;

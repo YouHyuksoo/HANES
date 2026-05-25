@@ -29,6 +29,8 @@ import {
   ImprRequestQueryDto,
 } from '../dto/impr-request.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { getHeaderString } from '../../../common/utils/header-value.util';
+import { getRequestUser } from '../../../common/utils/request-user.util';
 
 @ApiTags('시스템관리 - 개선요청')
 @Controller('system/improvement-requests')
@@ -73,13 +75,13 @@ export class ImprRequestController {
   }
 
   private extractMeta(req: Request) {
-    const user = (req as Request & { user?: { id?: string; userId?: string; userName?: string; company?: string; plant?: string } }).user ?? {};
+    const user = getRequestUser(req) ?? {};
     const auth = req.headers.authorization ?? '';
     const [, token] = auth.split(' ');
-    const userId = user.id || user.userId || token || 'unknown';
-    const userName = user.userName ?? (req.headers['x-user-name'] as string) ?? null;
-    const company = (req.headers['x-company'] as string) ?? user.company;
-    const plantCd = (req.headers['x-plant'] as string) ?? user.plant;
+    const userId = user.id || token || 'unknown';
+    const userName = getHeaderString(req.headers['x-user-name']) ?? null;
+    const company = getHeaderString(req.headers['x-company']) ?? user.company;
+    const plantCd = getHeaderString(req.headers['x-plant']) ?? user.plant;
     if (!company || !plantCd) {
       throw new BadRequestException('회사/사업장 정보가 없습니다.');
     }

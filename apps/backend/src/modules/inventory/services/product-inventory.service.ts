@@ -9,7 +9,7 @@
  */
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In, QueryRunner } from 'typeorm';
+import { Repository, IsNull, In, QueryRunner, FindOptionsWhere } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -506,7 +506,7 @@ export class ProductInventoryService {
 
   /** 제품 현재고 조회 */
   async getStock(query: ProductStockQueryDto, company?: string, plant?: string) {
-    const where: any = {};
+    const where: FindOptionsWhere<ProductStock> = {};
     if (company) where.company = company;
     if (plant) where.plant = plant;
     if (query.warehouseId) where.warehouseCode = query.warehouseId;
@@ -567,7 +567,7 @@ export class ProductInventoryService {
 
   /** 제품 수불 이력 조회 */
   async getTransactions(query: ProductTransactionQueryDto, company?: string, plant?: string) {
-    const where: any = {};
+    const where: FindOptionsWhere<ProductTransaction> = {};
     if (company) where.company = company;
     if (plant) where.plant = plant;
     if (query.itemCode) where.itemCode = query.itemCode;

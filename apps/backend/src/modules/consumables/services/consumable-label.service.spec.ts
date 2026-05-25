@@ -17,7 +17,7 @@ import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ConsumableLabelService', () => {

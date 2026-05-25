@@ -20,26 +20,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Request } from 'express';
 import { User } from '../../entities/user.entity';
+import { getErrorMessage } from '../utils/error-message.util';
+import { RequestUser, RequestWithUser, setRequestUser } from '../utils/request-user.util';
 
 const READONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
  * 인증된 사용자 정보 인터페이스
  */
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  role?: string;
-  company?: string;
-  plant?: string;
-}
-
-/**
- * 인증된 요청 인터페이스
- */
-export interface AuthenticatedRequest extends Request {
-  user: AuthenticatedUser;
-}
+export type AuthenticatedUser = RequestUser;
+export type AuthenticatedRequest = RequestWithUser & { user: AuthenticatedUser };
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -85,13 +75,13 @@ export class JwtAuthGuard implements CanActivate {
       }
 
       // 요청 객체에 사용자 정보 추가
-      (request as AuthenticatedRequest).user = {
+      setRequestUser(request, {
         id: user.email,
         email: user.email,
         role: user.role,
         company: resolvedCompany,
         plant: resolvedPlant,
-      };
+      });
 
       if (
         user.role === 'VIEWER' &&
@@ -104,7 +94,7 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     } catch (error) {
       if (error instanceof UnauthorizedException || error instanceof ForbiddenException) throw error;
-      this.logger.warn(`Authentication failed: ${(error as Error).message}`);
+      this.logger.warn(`Authentication failed: ${getErrorMessage(error)}`);
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
   }

@@ -14,7 +14,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('IqcHistoryService cancel policy', () => {
   let target: IqcHistoryService;

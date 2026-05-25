@@ -18,6 +18,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { isRecord } from '../utils/json-record.util';
 
 /** Oracle DB 연결 관련 에러 패턴 */
 const DB_CONNECTION_PATTERNS = [
@@ -70,10 +71,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
         errorCode = `HTTP_${status}`;
-      } else if (typeof exceptionResponse === 'object') {
-        const responseObj = exceptionResponse as Record<string, unknown>;
-        message = (responseObj.message as string) || exception.message;
-        errorCode = (responseObj.errorCode as string) || `HTTP_${status}`;
+      } else if (isRecord(exceptionResponse)) {
+        const responseObj = exceptionResponse;
+        message = typeof responseObj.message === 'string' ? responseObj.message : exception.message;
+        errorCode = typeof responseObj.errorCode === 'string' ? responseObj.errorCode : `HTTP_${status}`;
         details = responseObj.details;
       } else {
         message = exception.message;

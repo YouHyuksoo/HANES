@@ -15,7 +15,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { RepairService } from './repair.service';
 import { RepairOrder } from '../../../entities/repair-order.entity';
 import { RepairUsedPart } from '../../../entities/repair-used-part.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('RepairService', () => {

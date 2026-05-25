@@ -57,13 +57,15 @@ export class EquipInspectItemPoolService {
     }
 
     const entity = this.repo.create({
-      ...dto,
       company,
       plant,
-      criteria: dto.criteria || null,
-      cycle: dto.cycle || null,
-      useYn: dto.useYn || 'Y',
-      remark: dto.remark || null,
+      itemCode: dto.itemCode,
+      itemName: dto.itemName,
+      inspectType: dto.inspectType,
+      criteria: dto.criteria ?? null,
+      cycle: dto.cycle ?? null,
+      useYn: dto.useYn ?? 'Y',
+      remark: dto.remark ?? null,
     });
     return this.repo.save(entity);
   }
@@ -74,12 +76,14 @@ export class EquipInspectItemPoolService {
       throw new NotFoundException(`점검항목 마스터를 찾을 수 없습니다: ${itemCode}`);
     }
 
-    const {
-      company: _company,
-      plant: _plant,
-      itemCode: _itemCode,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<EquipInspectItemPool> = {
+      ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
+      ...(dto.inspectType !== undefined ? { inspectType: dto.inspectType } : {}),
+      ...(dto.criteria !== undefined ? { criteria: dto.criteria } : {}),
+      ...(dto.cycle !== undefined ? { cycle: dto.cycle } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
     Object.assign(item, updateData);
     return this.repo.save(item);
   }

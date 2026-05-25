@@ -45,6 +45,89 @@ export class InventoryController {
     private readonly productInventoryService: ProductInventoryService,
   ) {}
 
+  private receivePayload(dto: ReceiveStockDto, transType: string): ReceiveStockDto {
+    return {
+      warehouseCode: dto.warehouseCode,
+      itemCode: dto.itemCode,
+      matUid: dto.matUid,
+      qty: dto.qty,
+      transType,
+      refType: dto.refType,
+      refId: dto.refId,
+      unitPrice: dto.unitPrice,
+      workerId: dto.workerId,
+      remark: dto.remark,
+    };
+  }
+
+  private issuePayload(dto: IssueStockDto, transType: string): IssueStockDto {
+    return {
+      warehouseCode: dto.warehouseCode,
+      itemCode: dto.itemCode,
+      matUid: dto.matUid,
+      qty: dto.qty,
+      transType,
+      toWarehouseCode: dto.toWarehouseCode,
+      refType: dto.refType,
+      refId: dto.refId,
+      workerId: dto.workerId,
+      remark: dto.remark,
+    };
+  }
+
+  private productReceivePayload(
+    dto: ProductReceiveStockDto,
+    itemType: string,
+    transType: string,
+    company: string,
+    plant: string,
+  ): ProductReceiveStockDto {
+    return {
+      warehouseId: dto.warehouseId,
+      itemCode: dto.itemCode,
+      itemType,
+      prdUid: dto.prdUid,
+      qty: dto.qty,
+      transType,
+      orderNo: dto.orderNo,
+      processCode: dto.processCode,
+      refType: dto.refType,
+      refId: dto.refId,
+      unitPrice: dto.unitPrice,
+      workerId: dto.workerId,
+      remark: dto.remark,
+      company,
+      plant,
+    };
+  }
+
+  private productIssuePayload(
+    dto: ProductIssueStockDto,
+    itemType: string,
+    transType: string,
+    company: string,
+    plant: string,
+  ): ProductIssueStockDto {
+    return {
+      warehouseId: dto.warehouseId,
+      itemCode: dto.itemCode,
+      itemType,
+      prdUid: dto.prdUid,
+      qty: dto.qty,
+      transType,
+      toWarehouseId: dto.toWarehouseId,
+      orderNo: dto.orderNo,
+      processCode: dto.processCode,
+      refType: dto.refType,
+      refId: dto.refId,
+      workerId: dto.workerId,
+      issueType: dto.issueType,
+      remark: dto.remark,
+      company,
+      plant,
+    };
+  }
+
   // ============================================================================
   // 창고 관리 API
   // ============================================================================
@@ -254,10 +337,7 @@ export class InventoryController {
    */
   @Post('material/receive')
   async receiveMaterial(@Body() dto: ReceiveStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.inventoryService.receiveStock({
-      ...dto,
-      transType: 'MAT_IN' as any,
-    }, company, plant);
+    return this.inventoryService.receiveStock(this.receivePayload(dto, 'MAT_IN'), company, plant);
   }
 
   /**
@@ -265,10 +345,7 @@ export class InventoryController {
    */
   @Post('material/issue')
   async issueMaterial(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.inventoryService.issueStock({
-      ...dto,
-      transType: 'MAT_OUT' as any,
-    }, company, plant);
+    return this.inventoryService.issueStock(this.issuePayload(dto, 'MAT_OUT'), company, plant);
   }
 
   /**
@@ -276,13 +353,9 @@ export class InventoryController {
    */
   @Post('wip/receive')
   async receiveWip(@Body() dto: ProductReceiveStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.productInventoryService.receiveStock({
-      ...dto,
-      itemType: 'SEMI_PRODUCT',
-      transType: 'WIP_IN',
-      company,
-      plant,
-    });
+    return this.productInventoryService.receiveStock(
+      this.productReceivePayload(dto, 'SEMI_PRODUCT', 'WIP_IN', company, plant),
+    );
   }
 
   /**
@@ -290,13 +363,9 @@ export class InventoryController {
    */
   @Post('wip/issue')
   async issueWip(@Body() dto: ProductIssueStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.productInventoryService.issueStock({
-      ...dto,
-      itemType: 'SEMI_PRODUCT',
-      transType: 'WIP_OUT',
-      company,
-      plant,
-    });
+    return this.productInventoryService.issueStock(
+      this.productIssuePayload(dto, 'SEMI_PRODUCT', 'WIP_OUT', company, plant),
+    );
   }
 
   /**
@@ -304,13 +373,9 @@ export class InventoryController {
    */
   @Post('fg/receive')
   async receiveFg(@Body() dto: ProductReceiveStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.productInventoryService.receiveStock({
-      ...dto,
-      itemType: 'FINISHED',
-      transType: 'FG_IN',
-      company,
-      plant,
-    });
+    return this.productInventoryService.receiveStock(
+      this.productReceivePayload(dto, 'FINISHED', 'FG_IN', company, plant),
+    );
   }
 
   /**
@@ -318,13 +383,9 @@ export class InventoryController {
    */
   @Post('fg/issue')
   async issueFg(@Body() dto: ProductIssueStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.productInventoryService.issueStock({
-      ...dto,
-      itemType: 'FINISHED',
-      transType: 'FG_OUT',
-      company,
-      plant,
-    });
+    return this.productInventoryService.issueStock(
+      this.productIssuePayload(dto, 'FINISHED', 'FG_OUT', company, plant),
+    );
   }
 
   // ============================================================================
@@ -352,10 +413,7 @@ export class InventoryController {
    */
   @Post('subcon/issue')
   async issueSubcon(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.inventoryService.issueStock({
-      ...dto,
-      transType: 'SUBCON_OUT' as any,
-    }, company, plant);
+    return this.inventoryService.issueStock(this.issuePayload(dto, 'SUBCON_OUT'), company, plant);
   }
 
   /**
@@ -363,10 +421,7 @@ export class InventoryController {
    */
   @Post('subcon/receive')
   async receiveSubcon(@Body() dto: ReceiveStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.inventoryService.receiveStock({
-      ...dto,
-      transType: 'SUBCON_IN' as any,
-    }, company, plant);
+    return this.inventoryService.receiveStock(this.receivePayload(dto, 'SUBCON_IN'), company, plant);
   }
 
   /**
@@ -374,10 +429,7 @@ export class InventoryController {
    */
   @Post('adjust/plus')
   async adjustPlus(@Body() dto: ReceiveStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.inventoryService.receiveStock({
-      ...dto,
-      transType: 'ADJ_PLUS' as any,
-    }, company, plant);
+    return this.inventoryService.receiveStock(this.receivePayload(dto, 'ADJ_PLUS'), company, plant);
   }
 
   /**
@@ -385,10 +437,7 @@ export class InventoryController {
    */
   @Post('adjust/minus')
   async adjustMinus(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.inventoryService.issueStock({
-      ...dto,
-      transType: 'ADJ_MINUS' as any,
-    }, company, plant);
+    return this.inventoryService.issueStock(this.issuePayload(dto, 'ADJ_MINUS'), company, plant);
   }
 
   /**
@@ -396,9 +445,6 @@ export class InventoryController {
    */
   @Post('scrap')
   async scrap(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
-    return this.inventoryService.issueStock({
-      ...dto,
-      transType: 'SCRAP' as any,
-    }, company, plant);
+    return this.inventoryService.issueStock(this.issuePayload(dto, 'SCRAP'), company, plant);
   }
 }

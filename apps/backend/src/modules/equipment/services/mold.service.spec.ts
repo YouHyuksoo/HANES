@@ -11,7 +11,7 @@ import { MoldService } from './mold.service';
 import { MoldMaster } from '../../../entities/mold-master.entity';
 import { MoldUsageLog } from '../../../entities/mold-usage-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('MoldService', () => {

@@ -22,7 +22,6 @@ import { TraceService } from './services/trace.service';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { TraceLog } from '../../../entities/trace-log.entity';
-import { User } from '../../../entities/user.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
@@ -40,7 +39,6 @@ import { SharedModule } from '../../../shared/shared.module';
       InspectResult,
       ProdResult,
       TraceLog,
-      User,
       FgLabel,
       JobOrder,
       MatIssue,

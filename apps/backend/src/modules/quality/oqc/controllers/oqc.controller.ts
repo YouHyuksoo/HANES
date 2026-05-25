@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Get,
@@ -11,11 +11,10 @@
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
-import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
+import { AuthenticatedRequest, JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
 import {
   CreateOqcRequestDto,
   ExecuteOqcInspectionDto,
@@ -79,11 +78,11 @@ export class OqcController {
   @ApiResponse({ status: 201, description: 'Created' })
   async createRequest(
     @Body() dto: CreateOqcRequestDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.id;
     const data = await this.oqcService.createRequest(dto, company, plant, userId);
     return ResponseUtil.success(data, 'OQC request created');
   }
@@ -96,11 +95,11 @@ export class OqcController {
   async executeInspection(
     @Param('id') id: string,
     @Body() dto: ExecuteOqcInspectionDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.id;
     const data = await this.oqcService.executeInspection(id, dto, userId, company, plant);
     return ResponseUtil.success(data, `Result: ${dto.result}`);
   }
@@ -112,11 +111,11 @@ export class OqcController {
   async updateResult(
     @Param('id') id: string,
     @Body() dto: UpdateOqcResultDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.id;
     const data = await this.oqcService.updateResult(id, dto, userId, company, plant);
     return ResponseUtil.success(data, 'OQC result updated');
   }

@@ -16,7 +16,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, QueryRunner } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
@@ -452,7 +452,7 @@ export class ProdPlanService {
   }
 
   /** planNo 자동생성: PP-YYYYMM-NNN */
-  private async generatePlanNo(planMonth: string, queryRunner?: any): Promise<string> {
+  private async generatePlanNo(planMonth: string, queryRunner?: QueryRunner): Promise<string> {
     const prefix = `PP-${planMonth.replace('-', '')}-`;
     const repo = queryRunner ? queryRunner.manager.getRepository(ProdPlan) : this.planRepo;
 

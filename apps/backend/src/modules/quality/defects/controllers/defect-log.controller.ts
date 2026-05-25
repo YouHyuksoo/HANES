@@ -243,8 +243,13 @@ export class DefectLogController {
   @ApiResponse({ status: 404, description: '불량로그 없음' })
   async createRepairLog(@Param('id') id: string, @Body() dto: Omit<CreateRepairLogDto, 'defectLogId'>, @Company() company: string, @Plant() plant: string) {
     const data = await this.defectLogService.createRepairLog({
-      ...dto,
       defectLogId: id,
+      workerId: dto.workerId,
+      repairAction: dto.repairAction,
+      materialUsed: dto.materialUsed,
+      repairTime: dto.repairTime,
+      result: dto.result,
+      remark: dto.remark,
     }, company, plant);
     return ResponseUtil.success(data, '수리 이력이 등록되었습니다.');
   }

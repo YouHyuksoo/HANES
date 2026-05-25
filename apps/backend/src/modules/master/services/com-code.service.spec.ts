@@ -13,7 +13,7 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ComCodeService } from './com-code.service';
 import { ComCode } from '../../../entities/com-code.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ComCodeService', () => {
   let target: ComCodeService;

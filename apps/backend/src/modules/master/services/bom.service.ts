@@ -12,7 +12,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere, SelectQueryBuilder } from 'typeorm';
 import * as XLSX from 'xlsx';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -25,6 +25,68 @@ export interface BomUploadResult {
   errors: { row: number; message: string }[];
 }
 
+type BomParentRow = {
+  itemCode: string;
+  itemName: string | null;
+  itemNo: string | null;
+  itemType: string | null;
+  spec: string | null;
+  unit: string | null;
+  customer: string | null;
+  remark: string | null;
+  bomCount: string | number;
+  revisions: string | null;
+};
+
+type BomChildRow = {
+  parentItemCode: string;
+  childItemCode: string;
+  revision: string;
+  qtyPer: number | string;
+  seq: number | string;
+  bomGrp: string | null;
+  processCode: string | null;
+  side: string | null;
+  ecoNo: string | null;
+  validFrom: Date | null;
+  validTo: Date | null;
+  useYn: string;
+  remark: string | null;
+};
+
+type BomTreeFlatRow = BomChildRow & {
+  id: string;
+  lvl: number | string;
+  itemCode: string;
+  itemNo: string | null;
+  itemName: string | null;
+  itemType: string | null;
+  unit: string | null;
+};
+
+export type BomTreeNode = {
+  id: string;
+  level: number;
+  parentItemCode: string;
+  childItemCode: string;
+  itemCode: string;
+  itemNo: string | null;
+  itemName: string | null;
+  itemType: string | null;
+  qtyPer: number;
+  unit: string | null;
+  revision: string;
+  seq: number;
+  processCode: string | null;
+  side: string | null;
+  validFrom: Date | null;
+  validTo: Date | null;
+  useYn: string;
+  children: BomTreeNode[];
+};
+
+type BomExcelRow = Record<string, unknown>;
+
 @Injectable()
 export class BomService {
   constructor(
@@ -35,7 +97,7 @@ export class BomService {
   ) {}
 
   /** 유효일자 필터 조건 생성 (validFrom <= date AND validTo >= date, NULL은 무제한) */
-  private buildDateFilter(queryBuilder: any, effectiveDate?: string) {
+  private buildDateFilter(queryBuilder: SelectQueryBuilder<BomMaster>, effectiveDate?: string) {
     if (!effectiveDate) return queryBuilder;
     const d = new Date(effectiveDate);
     
@@ -47,7 +109,7 @@ export class BomService {
   /** BOM에 등재된 모품목(부모품목) 목록 + 자품목 수 (단일 JOIN 쿼리) */
   async findParents(search?: string, effectiveDate?: string) {
     try {
-      const params: any[] = [];
+      const params: unknown[] = [];
       let dateFilter = '';
       if (effectiveDate) {
         params.push(effectiveDate, effectiveDate);
@@ -62,7 +124,7 @@ export class BomService {
         searchFilter = `AND (p.ITEM_CODE LIKE :${idx} OR p.ITEM_NAME LIKE :${idx} OR p.PART_NO LIKE :${idx})`;
       }
 
-      const rows: any[] = await this.bomRepository.query(
+      const rows = await this.bomRepository.query<BomParentRow[]>(
         `SELECT p.ITEM_CODE   AS "itemCode",
                 p.ITEM_NAME   AS "itemName",
                 p.PART_NO     AS "itemNo",
@@ -84,7 +146,7 @@ export class BomService {
 
       return rows.map((r) => ({
         ...r,
-        bomCount: parseInt(r.bomCount, 10),
+        bomCount: Number(r.bomCount),
         revisions: r.revisions ? r.revisions.split(',') : [],
       }));
     } catch (error) {
@@ -97,7 +159,7 @@ export class BomService {
     const { page = 1, limit = 10, parentItemCode, childItemCode, revision } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { useYn: 'Y' };
+    const where: FindOptionsWhere<BomMaster> = { useYn: 'Y' };
     if (company) where.company = company;
     if (plant) where.plant = plant;
     if (parentItemCode) where.parentItemCode = parentItemCode;
@@ -155,7 +217,7 @@ export class BomService {
   }
 
   async findByParentId(parentItemCode: string, effectiveDate?: string, company?: string, plant?: string) {
-    const params: any[] = [parentItemCode];
+    const params: unknown[] = [parentItemCode];
     let dateFilter = '';
     if (effectiveDate) {
       params.push(effectiveDate, effectiveDate);
@@ -163,7 +225,7 @@ export class BomService {
         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
     }
 
-    const rows: any[] = await this.bomRepository.query(
+    const rows = await this.bomRepository.query<BomChildRow[]>(
       `SELECT b.PARENT_ITEM_CODE AS "parentItemCode",
               b.CHILD_ITEM_CODE  AS "childItemCode",
               b.REVISION         AS "revision",
@@ -270,17 +332,17 @@ export class BomService {
       ORDER SIBLINGS BY b.SEQ ASC
     `;
 
-    const rawResults = await this.bomRepository.query(query, params);
+    const rawResults = await this.bomRepository.query<BomTreeFlatRow[]>(query, params);
     
     // 평면 데이터를 트리 구조로 변환
     return this.buildTreeFromFlatData(rawResults);
   }
 
   /** 평면 데이터를 트리 구조로 변환 (childItemCode 기준 부모 매칭) */
-  private buildTreeFromFlatData(rows: any[]): any[] {
-    const roots: any[] = [];
+  private buildTreeFromFlatData(rows: BomTreeFlatRow[]): BomTreeNode[] {
+    const roots: BomTreeNode[] = [];
     // childItemCode → node 매핑 (부모 찾을 때 사용)
-    const childMap = new Map<string, any>();
+    const childMap = new Map<string, BomTreeNode>();
 
     const nodes = rows.map((row) => {
       const node = {
@@ -359,7 +421,7 @@ export class BomService {
   async update(id: string, dto: UpdateBomDto, company?: string, plant?: string) {
     const bom = await this.findById(id, company, plant);
 
-    const updateData: any = {};
+    const updateData: Partial<Pick<BomMaster, 'qtyPer' | 'seq' | 'bomGrp' | 'processCode' | 'side' | 'ecoNo' | 'validFrom' | 'validTo' | 'remark' | 'useYn'>> = {};
     if (dto.qtyPer !== undefined) updateData.qtyPer = dto.qtyPer;
     if (dto.seq !== undefined) updateData.seq = dto.seq;
     if (dto.bomGrp !== undefined) updateData.bomGrp = dto.bomGrp;
@@ -398,7 +460,7 @@ export class BomService {
 
   /** BOM 데이터를 Excel(xlsx) 파일로 내보내기 */
   async exportToExcel(parentItemCode?: string, company?: string, plant?: string): Promise<Buffer> {
-    const where: any = { useYn: 'Y' };
+    const where: FindOptionsWhere<BomMaster> = { useYn: 'Y' };
     if (parentItemCode) where.parentItemCode = parentItemCode;
     if (company) where.company = company;
     if (plant) where.plant = plant;
@@ -420,7 +482,7 @@ export class BomService {
   /** Excel(xlsx)에서 BOM 일괄 등록 (신규만 INSERT, 기존 PK 스킵) */
   async uploadFromExcel(buffer: Buffer, company?: string, plant?: string, userId?: string): Promise<BomUploadResult> {
     const wb = XLSX.read(buffer, { type: 'buffer' });
-    const jsonRows: Record<string, any>[] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    const jsonRows = XLSX.utils.sheet_to_json<BomExcelRow>(wb.Sheets[wb.SheetNames[0]], { defval: '' });
     if (jsonRows.length === 0) return { inserted: 0, skipped: 0, errors: [{ row: 2, message: '데이터가 없습니다.' }] };
 
     /* 1) 품목코드 일괄 존재 확인 */
@@ -458,7 +520,7 @@ export class BomService {
     /* 3) 행별 검증 및 INSERT */
     const result: BomUploadResult = { inserted: 0, skipped: 0, errors: [] };
     const done = new Set<string>();
-    const str = (v: any) => String(v ?? '').trim();
+    const str = (v: unknown) => String(v ?? '').trim();
 
     for (let i = 0; i < jsonRows.length; i++) {
       const row = jsonRows[i];

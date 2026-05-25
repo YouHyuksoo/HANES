@@ -31,7 +31,6 @@ import { ChangeOrder } from '../../../entities/change-order.entity';
 import { CustomerComplaint } from '../../../entities/customer-complaint.entity';
 import { CAPARequest } from '../../../entities/capa-request.entity';
 import { CAPAAction } from '../../../entities/capa-action.entity';
-import { User } from '../../../entities/user.entity';
 
 @Module({
   imports: [
@@ -40,7 +39,6 @@ import { User } from '../../../entities/user.entity';
       CustomerComplaint,
       CAPARequest,
       CAPAAction,
-      User,
     ]),
   ],
   controllers: [

@@ -9,7 +9,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ComplaintService } from './complaint.service';
 import { CustomerComplaint } from '../../../../entities/customer-complaint.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ComplaintService', () => {
   let target: ComplaintService;

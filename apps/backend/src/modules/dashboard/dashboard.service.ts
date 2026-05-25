@@ -23,6 +23,54 @@ import { OracleService } from '../../common/services/oracle.service';
 
 const PKG = 'PKG_DASHBOARD';
 
+type KpiRow = {
+  todayProd?: number;
+  prodChange?: number;
+  inventoryTotal?: number;
+  invChange?: number;
+  passRate?: string;
+  rateChange?: number;
+  defectCnt?: number;
+  defectChange?: number;
+};
+
+type CountStatsRow = {
+  normalCnt?: number;
+  maintCnt?: number;
+  stopCnt?: number;
+  waitCnt?: number;
+  runningCnt?: number;
+  doneCnt?: number;
+  totalCnt?: number;
+  lowStockCnt?: number;
+  nearExpiryCnt?: number;
+  expiredCnt?: number;
+  repairCnt?: number;
+  reworkCnt?: number;
+};
+
+type InspectSummaryRow = {
+  totalCnt?: number;
+  completedCnt?: number;
+  passCnt?: number;
+  failCnt?: number;
+};
+
+type InspectItemRow = {
+  equipCode?: string;
+  equipName?: string;
+  result?: string | null;
+  inspectorName?: string | null;
+  lineCode?: string | null;
+};
+
+type RecentProductionRow = Record<string, unknown>;
+
+type InspectCursorResult = {
+  o_summary?: InspectSummaryRow[];
+  o_items?: InspectItemRow[];
+};
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly oracle: OracleService) {}
@@ -57,7 +105,7 @@ export class DashboardService {
 
   /** KPI 데이터 (생산량/재고/합격률/불량) */
   async getKpi(company?: string, plant?: string) {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_KPI', this.tenantParams(company, plant));
+    const rows = await this.oracle.callProc<KpiRow>(PKG, 'SP_KPI', this.tenantParams(company, plant));
     const r = rows[0] || {};
     return {
       todayProduction: { value: r.todayProd ?? 0, change: r.prodChange ?? 0 },
@@ -73,11 +121,11 @@ export class DashboardService {
    * WAITING→WAIT 상태 매핑을 PL/SQL에서 처리하므로 그대로 반환
    */
   async getRecentProductions(company?: string, plant?: string) {
-    return this.oracle.callProc<any>(PKG, 'SP_RECENT_PRODUCTIONS', this.tenantParams(company, plant));
+    return this.oracle.callProc<RecentProductionRow>(PKG, 'SP_RECENT_PRODUCTIONS', this.tenantParams(company, plant));
   }
 
   private async getEquipStats(company?: string, plant?: string) {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_EQUIP_STATS', this.tenantParams(company, plant));
+    const rows = await this.oracle.callProc<CountStatsRow>(PKG, 'SP_EQUIP_STATS', this.tenantParams(company, plant));
     const r = rows[0] || {};
     return {
       normal: r.normalCnt ?? 0,
@@ -88,7 +136,7 @@ export class DashboardService {
   }
 
   private async getJobOrderStats(date: Date, company?: string, plant?: string) {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_JOB_ORDER_STATS', {
+    const rows = await this.oracle.callProc<CountStatsRow>(PKG, 'SP_JOB_ORDER_STATS', {
       p_target_date: date,
       ...this.tenantParams(company, plant),
     });
@@ -102,7 +150,7 @@ export class DashboardService {
   }
 
   private async getMatAlert(company?: string, plant?: string) {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_MAT_ALERT', this.tenantParams(company, plant));
+    const rows = await this.oracle.callProc<CountStatsRow>(PKG, 'SP_MAT_ALERT', this.tenantParams(company, plant));
     const r = rows[0] || {};
     return {
       lowStock: r.lowStockCnt ?? 0,
@@ -112,7 +160,7 @@ export class DashboardService {
   }
 
   private async getDefectStats(company?: string, plant?: string) {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_DEFECT_STATS', this.tenantParams(company, plant));
+    const rows = await this.oracle.callProc<CountStatsRow>(PKG, 'SP_DEFECT_STATS', this.tenantParams(company, plant));
     const r = rows[0] || {};
     return {
       wait: r.waitCnt ?? 0,
@@ -128,22 +176,22 @@ export class DashboardService {
    * 다중 커서: o_summary (요약 1행) + o_items (설비별 행)
    */
   private async getInspectData(procName: string, date: Date, company?: string, plant?: string) {
-    const result = await this.oracle.callProcMultiCursor<any>(
+    const result: InspectCursorResult = await this.oracle.callProcMultiCursor(
       PKG,
       procName,
       ['o_summary', 'o_items'],
       { p_target_date: date, ...this.tenantParams(company, plant) },
     );
 
-    const summary = result.o_summary[0] || {};
-    const items = result.o_items || [];
+    const summary = result.o_summary?.[0] ?? {};
+    const items = result.o_items ?? [];
 
     return {
       total: summary.totalCnt ?? 0,
       completed: summary.completedCnt ?? 0,
       pass: summary.passCnt ?? 0,
       fail: summary.failCnt ?? 0,
-      items: items.map((item: any) => ({
+      items: items.map((item) => ({
         equipCode: item.equipCode ?? '',
         equipName: item.equipName ?? '',
         result: item.result ?? null,

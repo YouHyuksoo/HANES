@@ -5,14 +5,9 @@
 
 import type {
   ApiResponse as SharedApiResponse,
-  CommTypeValue,
-  DefectStatusValue,
-  EquipStatusValue,
-  EquipTypeValue,
   JobOrderSelectItem,
   JobOrderStatusValue,
   PaginationParams as SharedPaginationParams,
-  IqcStatusValue,
   UseYnValue,
 } from "@harness/shared";
 
@@ -39,116 +34,12 @@ export interface PaginatedResponse<T> {
 export type UseYn = UseYnValue;
 
 // ========================================
-// 사용자 관련 타입
-// ========================================
-
-export interface User {
-  id: string;
-  username: string;
-  name: string;
-  email?: string;
-  role: UserRole;
-  department?: string;
-  isActive: boolean;
-}
-
-export type UserRole = "admin" | "manager" | "operator" | "viewer";
-
-// ========================================
 // 생산 관련 타입
 // ========================================
 
 export type JobOrder = JobOrderSelectItem;
 
 export type JobOrderStatus = JobOrderStatusValue;
-
-export interface ProductionResult {
-  id: string;
-  orderNo: string;
-  equipCode: string;
-  workerId: string;
-  goodQty: number;
-  defectQty: number;
-  startAt: string;
-  endAt?: string;
-  shiftCode: string;
-}
-
-// ========================================
-// 자재 관련 타입
-// ========================================
-
-export interface MaterialLot {
-  id: string;
-  matUid: string;
-  itemCode: string;
-  itemName: string;
-  qty: number;
-  remainQty: number;
-  receivedAt: string;
-  expiryDate?: string;
-  warehouseCode: string;
-  status: MaterialStatus;
-}
-
-/** IQC 상태 (자재 품질 검사 상태) */
-export type MaterialStatus = IqcStatusValue;
-
-// ========================================
-// 품질 관련 타입
-// ========================================
-
-export interface InspectionResult {
-  id: string;
-  serialNo: string;
-  productionResultId: string;
-  inspectType: string;
-  result: "pass" | "fail";
-  errorCode?: string;
-  inspectedAt: string;
-  inspectorId: string;
-}
-
-export interface DefectLog {
-  id: string;
-  serialNo?: string;
-  matUid?: string;
-  defectCode: string;
-  defectName: string;
-  qty: number;
-  status: DefectStatus;
-  detectedAt: string;
-  processCode: string;
-}
-
-export type DefectStatus = DefectStatusValue;
-
-// ========================================
-// 설비 관련 타입
-// ========================================
-
-export interface Equipment {
-  id: string;
-  equipCode: string;
-  equipName: string;
-  equipType: EquipType;
-  lineCode: string;
-  status: EquipmentStatus;
-  ipAddress?: string;
-  commType?: CommType;
-  manufacturer?: string;
-  model?: string;
-  useYn?: UseYn;
-}
-
-/** 설비 상태 */
-export type EquipmentStatus = EquipStatusValue;
-
-/** 설비 유형 */
-export type EquipType = EquipTypeValue;
-
-/** 통신 방식 */
-export type CommType = CommTypeValue;
 
 // ========================================
 // 메뉴/네비게이션 타입

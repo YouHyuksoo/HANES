@@ -165,8 +165,14 @@ export class AuditService {
   ) {
     const auditNo = await this.generateAuditNo(company, plant);
     const entity = this.auditRepo.create({
-      ...dto,
       auditNo,
+      auditType: dto.auditType,
+      auditScope: dto.auditScope,
+      targetDept: dto.targetDept,
+      auditor: dto.auditor,
+      coAuditor: dto.coAuditor,
+      scheduledDate: new Date(dto.scheduledDate),
+      summary: dto.summary,
       status: 'PLANNED',
       company,
       plant,
@@ -186,12 +192,15 @@ export class AuditService {
     if (item.status !== 'PLANNED') {
       throw new BadRequestException('계획 상태에서만 수정할 수 있습니다.');
     }
-    const {
-      auditNo: _auditNo,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<AuditPlan> = {
+      ...(dto.auditType !== undefined ? { auditType: dto.auditType } : {}),
+      ...(dto.auditScope !== undefined ? { auditScope: dto.auditScope } : {}),
+      ...(dto.targetDept !== undefined ? { targetDept: dto.targetDept } : {}),
+      ...(dto.auditor !== undefined ? { auditor: dto.auditor } : {}),
+      ...(dto.coAuditor !== undefined ? { coAuditor: dto.coAuditor } : {}),
+      ...(dto.scheduledDate !== undefined ? { scheduledDate: new Date(dto.scheduledDate) } : {}),
+      ...(dto.summary !== undefined ? { summary: dto.summary } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.auditRepo.save(item);
   }
@@ -276,8 +285,14 @@ export class AuditService {
     const findingNo = lastFinding ? lastFinding.findingNo + 1 : 1;
 
     const entity = this.findingRepo.create({
-      ...dto,
+      auditId: dto.auditId,
       findingNo,
+      clauseRef: dto.clauseRef,
+      category: dto.category,
+      description: dto.description,
+      evidence: dto.evidence,
+      dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+      remark: dto.remark,
       status: 'OPEN',
       company,
       plant,

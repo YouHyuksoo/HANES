@@ -18,12 +18,21 @@ export interface NodeCount {
   reverseCnt: number;
 }
 
+interface WorkflowSummaryRow {
+  workflowId?: string;
+  nodeId?: string;
+  pendingCnt?: number;
+  activeCnt?: number;
+  doneCnt?: number;
+  reverseCnt?: number;
+}
+
 @Injectable()
 export class WorkflowService {
   constructor(private readonly oracleQueries: OracleQueryAdapter) {}
 
   async getSummary(): Promise<Record<string, Record<string, NodeCount>>> {
-    const rows = await this.oracleQueries.fetchCursor<any>(
+    const rows = await this.oracleQueries.fetchCursor<WorkflowSummaryRow>(
       PKG,
       'SP_WORKFLOW_SUMMARY',
     );

@@ -59,7 +59,7 @@ export class CreateEquipInspectDto {
   @ApiPropertyOptional({ description: '점검 상세 (항목별 결과 JSON)' })
   @IsOptional()
   @IsObject()
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()

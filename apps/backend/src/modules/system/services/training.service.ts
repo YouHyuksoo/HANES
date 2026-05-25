@@ -149,9 +149,16 @@ export class TrainingService {
     // NUM_RULE_MASTERS + SELECT FOR UPDATE 기반 채번 (동시성 안전)
     const planNo = await this.numbering.next('TRAINING_PLAN', undefined, userId);
     const entity = this.planRepo.create({
-      ...dto,
       planNo,
+      title: dto.title,
+      trainingType: dto.trainingType,
+      targetRole: dto.targetRole ?? null,
+      instructor: dto.instructor ?? null,
+      scheduledDate: dto.scheduledDate ? new Date(dto.scheduledDate) : null,
+      duration: dto.duration ?? null,
+      maxParticipants: dto.maxParticipants ?? null,
       status: 'PLANNED',
+      description: dto.description ?? null,
       company,
       plant,
       createdBy: userId,
@@ -173,12 +180,16 @@ export class TrainingService {
     plant?: string,
   ) {
     const item = await this.findById(planNo, company, plant);
-    const {
-      planNo: _planNo,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<TrainingPlan> = {
+      ...(dto.title !== undefined ? { title: dto.title } : {}),
+      ...(dto.trainingType !== undefined ? { trainingType: dto.trainingType } : {}),
+      ...(dto.targetRole !== undefined ? { targetRole: dto.targetRole } : {}),
+      ...(dto.instructor !== undefined ? { instructor: dto.instructor } : {}),
+      ...(dto.scheduledDate !== undefined ? { scheduledDate: new Date(dto.scheduledDate) } : {}),
+      ...(dto.duration !== undefined ? { duration: dto.duration } : {}),
+      ...(dto.maxParticipants !== undefined ? { maxParticipants: dto.maxParticipants } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.planRepo.save(item);
   }
@@ -259,8 +270,15 @@ export class TrainingService {
   ) {
     await this.findById(planNo, company, plant);
     const entity = this.resultRepo.create({
-      ...dto,
       planNo,
+      workerCode: dto.workerCode,
+      workerName: dto.workerName,
+      attendDate: dto.attendDate ? new Date(dto.attendDate) : null,
+      score: dto.score ?? null,
+      passed: dto.passed ?? 0,
+      certificateNo: dto.certificateNo ?? null,
+      validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
+      remark: dto.remark ?? null,
       company,
       plant,
       createdBy: userId,
@@ -325,13 +343,15 @@ export class TrainingService {
       throw new NotFoundException('교육 결과를 찾을 수 없습니다.');
     }
     this.assertSameTenant('교육 결과', item, company, plant);
-    const {
-      planNo: _planNo,
-      workerCode: _workerCode,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<TrainingResult> = {
+      ...(dto.workerName !== undefined ? { workerName: dto.workerName } : {}),
+      ...(dto.attendDate !== undefined ? { attendDate: new Date(dto.attendDate) } : {}),
+      ...(dto.score !== undefined ? { score: dto.score } : {}),
+      ...(dto.passed !== undefined ? { passed: dto.passed } : {}),
+      ...(dto.certificateNo !== undefined ? { certificateNo: dto.certificateNo } : {}),
+      ...(dto.validUntil !== undefined ? { validUntil: new Date(dto.validUntil) } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
     Object.assign(item, updateData);
     return this.resultRepo.save(item);
   }

@@ -14,7 +14,7 @@ import { Repository } from 'typeorm';
 import { RoutingService } from './routing.service';
 import { ProcessMap } from '../../../entities/process-map.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('RoutingService', () => {
   let target: RoutingService;

@@ -13,7 +13,7 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { VendorBarcodeMappingService } from './vendor-barcode-mapping.service';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('VendorBarcodeMappingService', () => {
   let target: VendorBarcodeMappingService;
@@ -235,11 +235,23 @@ describe('VendorBarcodeMappingService', () => {
 
       expect(mockRepo.update).toHaveBeenCalledWith(
         { vendorBarcode: 'BC01', company: 'C1', plant: 'P1' },
-        expect.not.objectContaining({
-          vendorBarcode: expect.anything(),
-          company: expect.anything(),
-          plant: expect.anything(),
-        }),
+        { itemCode: 'ITEM02' },
+      );
+    });
+
+    it('does not pass arbitrary fields from update payload to the repository', async () => {
+      const existing = { vendorBarcode: 'BC01', itemCode: 'ITEM01', company: 'C1', plant: 'P1' } as VendorBarcodeMapping;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('BC01', {
+        itemCode: 'ITEM02',
+        externalSource: 'ERP',
+      } as any, 'C1', 'P1');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { vendorBarcode: 'BC01', company: 'C1', plant: 'P1' },
+        { itemCode: 'ITEM02' },
       );
     });
   });

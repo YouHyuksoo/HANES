@@ -8,7 +8,7 @@
  * 3. seedParts 제거됨 - 모든 데이터는 API를 통해 DB에서 조회
  */
 
-import type { UseYn } from "@/types";
+import type { UseYnValue } from "@harness/shared";
 
 /** 품목 분류 */
 export type PartType = "RAW_MATERIAL" | "SEMI_PRODUCT" | "FINISHED" | "CONSUMABLE";
@@ -29,7 +29,7 @@ export interface Part {
   safetyStock?: number; // 안전재고 (기본값: 0)
   lotUnitQty?: number; // LOT 단위수량 (Oracle LOTUNITQTY)
   boxQty?: number; // 박스 입수량 (Oracle BOXQTY) (기본값: 0)
-  iqcYn?: UseYn; // IQC 대상여부 Y/N (Oracle IQCFLAG) (기본값: Y)
+  iqcYn?: UseYnValue; // IQC 대상여부 Y/N (Oracle IQCFLAG) (기본값: Y)
   inspectMethod?: string; // 검사방법 (FULL/SAMPLE/SKIP)
   tactTime?: number; // 택타임 초 (Oracle TACTTIME) (기본값: 0)
   expiryDate?: number; // 유효기간 일 (Oracle EXPIRYDATE) (기본값: 0)
@@ -37,7 +37,7 @@ export interface Part {
   storageLocation?: string; // 적재 로케이션 (창고 내 위치)
   remark?: string; // 비고 (Oracle REMARKS)
   imageUrl?: string | null;
-  useYn: UseYn;
+  useYn: UseYnValue;
 }
 
 /** 품목-검사그룹 연결 (추후 DB 테이블로 이관 예정) */

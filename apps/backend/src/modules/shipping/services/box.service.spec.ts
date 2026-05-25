@@ -11,7 +11,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('BoxService', () => {

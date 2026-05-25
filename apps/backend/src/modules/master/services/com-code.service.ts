@@ -254,7 +254,7 @@ export class ComCodeService {
     await this.findById(id, company, plant); // 존재 확인
     const { groupCode, detailCode } = this.parseId(id);
 
-    const updateData: any = {};
+    const updateData: Partial<Pick<ComCode, 'parentCode' | 'codeName' | 'codeDesc' | 'sortOrder' | 'useYn' | 'attr1' | 'attr2' | 'attr3'>> = {};
     if (dto.parentCode !== undefined) updateData.parentCode = dto.parentCode;
     if (dto.codeName !== undefined) updateData.codeName = dto.codeName;
     if (dto.codeDesc !== undefined) updateData.codeDesc = dto.codeDesc;

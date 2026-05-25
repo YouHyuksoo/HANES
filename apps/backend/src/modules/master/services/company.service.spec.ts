@@ -13,7 +13,7 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { CompanyService } from './company.service';
 import { CompanyMaster } from '../../../entities/company-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('CompanyService', () => {
   let target: CompanyService;

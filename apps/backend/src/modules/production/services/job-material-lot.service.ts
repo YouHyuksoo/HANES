@@ -13,6 +13,7 @@ import { Repository } from 'typeorm';
 import { JobMaterialLot } from '../../../entities/job-material-lot.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ScanBarcodeDto } from '../dto/job-material-lot.dto';
+import { isRecord } from '../../../common/utils/json-record.util';
 
 @Injectable()
 export class JobMaterialLotService {
@@ -83,10 +84,11 @@ export class JobMaterialLotService {
       });
       return await this.repo.save(record);
     } catch (err: unknown) {
-      const dbErr = err as { driverError?: { message?: string }; code?: string };
-      const isUnique = dbErr?.code === 'ORA-00001' ||
-        dbErr?.driverError?.message?.includes('ORA-00001') ||
-        dbErr?.driverError?.message?.includes('unique constraint');
+      const driverError = isRecord(err) && isRecord(err.driverError) ? err.driverError : undefined;
+      const driverMessage = typeof driverError?.message === 'string' ? driverError.message : undefined;
+      const isUnique = (isRecord(err) && err.code === 'ORA-00001') ||
+        driverMessage?.includes('ORA-00001') ||
+        driverMessage?.includes('unique constraint');
       if (isUnique) {
         const conflict = await this.repo.findOne({
           where: { jobOrderNo, itemCode: matched.itemCode, seq: matched.seq, ...tenantWhere },

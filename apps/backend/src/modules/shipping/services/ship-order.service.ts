@@ -18,7 +18,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, In } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, FindOptionsWhere } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -44,27 +44,38 @@ export class ShipOrderService {
     };
   }
 
+  private buildShipmentOrderUpdate(
+    dto: Omit<UpdateShipOrderDto, 'items' | 'status' | 'shipOrderNo'>,
+  ): Partial<Pick<ShipmentOrder, 'customerId' | 'customerName' | 'dueDate' | 'shipDate' | 'remark'>> {
+    return {
+      ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
+      ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
+      ...(dto.dueDate !== undefined ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null } : {}),
+      ...(dto.shipDate !== undefined ? { shipDate: dto.shipDate ? new Date(dto.shipDate) : null } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
+  }
+
   /** 출하지시 목록 조회 */
   async findAll(query: ShipOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<ShipmentOrder> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(status && { status }),
       ...(search && {
         shipOrderNo: ILike(`%${search}%`),
       }),
-      ...(dueDateFrom || dueDateTo
-        ? {
-            dueDate: And(
-              dueDateFrom ? MoreThanOrEqual(new Date(dueDateFrom)) : undefined,
-              dueDateTo ? LessThanOrEqual(new Date(dueDateTo)) : undefined
-            ),
-          }
-        : {}),
     };
+    if (dueDateFrom && dueDateTo) {
+      where.dueDate = Between(new Date(dueDateFrom), new Date(dueDateTo));
+    } else if (dueDateFrom) {
+      where.dueDate = MoreThanOrEqual(new Date(dueDateFrom));
+    } else if (dueDateTo) {
+      where.dueDate = LessThanOrEqual(new Date(dueDateTo));
+    }
 
     const [data, total] = await Promise.all([
       this.shipOrderRepository.find({
@@ -192,12 +203,16 @@ export class ShipOrderService {
         `출하지시 상태(${dto.status})는 직접 변경할 수 없습니다. 확정/마감 전용 API를 사용해 주세요.`,
       );
     }
+    if (dto.shipOrderNo !== undefined && dto.shipOrderNo !== shipOrderNo) {
+      throw new BadRequestException('출하지시 번호는 수정할 수 없습니다.');
+    }
 
     await this.tx.run(async (queryRunner) => {
+      const { items, status: _ignoredStatus, shipOrderNo: _ignoredShipOrderNo, ...orderData } = dto;
       if (dto.items) {
         await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderNo, ...this.tenantWhere(company, plant) });
 
-        const items = dto.items.map((item, idx) =>
+        const itemEntities = dto.items.map((item, idx) =>
           this.shipOrderItemRepository.create({
             shipOrderNo,
             seq: idx + 1,
@@ -209,21 +224,17 @@ export class ShipOrderService {
             plant: plant || null,
           })
         );
-        await queryRunner.manager.save(items);
+        await queryRunner.manager.save(itemEntities);
       }
 
-      const updateData: any = {};
-      if (dto.shipOrderNo !== undefined) updateData.shipOrderNo = dto.shipOrderNo;
-      if (dto.customerId !== undefined) updateData.customerId = dto.customerId;
-      if (dto.customerName !== undefined) updateData.customerName = dto.customerName;
-      if (dto.dueDate !== undefined) updateData.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
-      if (dto.shipDate !== undefined) updateData.shipDate = dto.shipDate ? new Date(dto.shipDate) : null;
-      if (dto.remark !== undefined) updateData.remark = dto.remark;
+      const updateData = this.buildShipmentOrderUpdate(orderData);
 
-      await queryRunner.manager.update(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) }, updateData);
+      if (Object.keys(updateData).length > 0) {
+        await queryRunner.manager.update(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) }, updateData);
+      }
     });
 
-    return this.findById(dto.shipOrderNo ?? shipOrderNo, company, plant);
+    return this.findById(shipOrderNo, company, plant);
   }
 
   /** 출하지시 삭제 */

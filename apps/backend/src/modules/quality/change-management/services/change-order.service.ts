@@ -170,8 +170,18 @@ export class ChangeOrderService {
   ) {
     const changeNo = await this.generateChangeNo(company, plant);
     const entity = this.changeRepo.create({
-      ...dto,
       changeNo,
+      changeType: dto.changeType,
+      title: dto.title,
+      description: dto.description,
+      reason: dto.reason,
+      riskAssessment: dto.riskAssessment,
+      affectedItems: dto.affectedItems,
+      affectedProcesses: dto.affectedProcesses,
+      priority: dto.priority,
+      requestedBy: dto.requestedBy,
+      requestedAt: new Date(),
+      effectiveDate: dto.effectiveDate ? new Date(dto.effectiveDate) : undefined,
       status: 'DRAFT',
       company,
       plant,
@@ -193,12 +203,18 @@ export class ChangeOrderService {
         '초안 또는 반려 상태에서만 수정할 수 있습니다.',
       );
     }
-    const {
-      changeNo: _changeNo,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<ChangeOrder> = {
+      ...(dto.changeType !== undefined ? { changeType: dto.changeType } : {}),
+      ...(dto.title !== undefined ? { title: dto.title } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
+      ...(dto.riskAssessment !== undefined ? { riskAssessment: dto.riskAssessment } : {}),
+      ...(dto.affectedItems !== undefined ? { affectedItems: dto.affectedItems } : {}),
+      ...(dto.affectedProcesses !== undefined ? { affectedProcesses: dto.affectedProcesses } : {}),
+      ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+      ...(dto.requestedBy !== undefined ? { requestedBy: dto.requestedBy } : {}),
+      ...(dto.effectiveDate !== undefined ? { effectiveDate: new Date(dto.effectiveDate) } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.changeRepo.save(item);
   }

@@ -116,12 +116,16 @@ export class TransferRuleService {
 
   async update(fromWarehouseId: string, toWarehouseId: string, dto: UpdateTransferRuleDto, company?: string, plant?: string) {
     await this.findByCompositeKey(fromWarehouseId, toWarehouseId, company, plant);
+    const updateData: Partial<Pick<WarehouseTransferRule, 'allowYn' | 'remark'>> = {
+      ...(dto.allowYn !== undefined ? { allowYn: dto.allowYn } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
     await this.transferRuleRepository.update({
       fromWarehouseId,
       toWarehouseId,
       ...(company && { company }),
       ...(plant && { plant }),
-    }, dto);
+    }, updateData);
     return this.findByCompositeKey(fromWarehouseId, toWarehouseId, company, plant);
   }
 

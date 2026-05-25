@@ -3,7 +3,7 @@
  * @description 작업자관리 타입 정의
  */
 
-import type { UseYn } from "@/types";
+import type { UseYnValue } from "@harness/shared";
 
 /** 작업자 유형 */
 export type WorkerType =
@@ -30,7 +30,7 @@ export interface Worker {
   photoUrl?: string;
   processIds?: string[];
   remark?: string;
-  useYn: UseYn;
+  useYn: UseYnValue;
 }
 
 /** 작업자 유형별 색상 */

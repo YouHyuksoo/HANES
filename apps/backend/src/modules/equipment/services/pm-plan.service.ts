@@ -121,7 +121,7 @@ export class PmPlanService {
         .andWhere('item.useYn = :useYn', { useYn: 'Y' })
         .groupBy('item.pmPlanCode')
         .getRawMany();
-      itemCountMap = new Map(itemCounts.map((r: any) => [r.pmPlanCode, parseInt(r.cnt, 10)]));
+      itemCountMap = new Map(itemCounts.map((r: { pmPlanCode: string; cnt: string }) => [r.pmPlanCode, parseInt(r.cnt, 10)]));
     }
 
     const data = plans.map((plan) => {

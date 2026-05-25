@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { MsaService } from './msa.service';
 import { GaugeMaster } from '../../../../entities/gauge-master.entity';
 import { CalibrationLog } from '../../../../entities/calibration-log.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('MsaService', () => {
   let target: MsaService;

@@ -111,7 +111,7 @@ export class CreateEquipMasterDto {
     example: '{"baudRate": 9600, "dataBits": 8}',
   })
   @IsOptional()
-  commConfig?: Record<string, any>;
+  commConfig?: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: '설치일 (ISO 8601)', example: '2024-01-15' })
   @IsOptional()

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, FindOptionsWhere } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -155,7 +155,7 @@ export class ProductPhysicalInvService {
           throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${item.stockId}`);
         }
 
-        const scopedKey: any = {
+        const scopedKey: FindOptionsWhere<ProductStock> = {
           warehouseCode,
           itemCode,
           prdUid,

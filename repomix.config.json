@@ -39,7 +39,6 @@
     "**/*.tsx",
     "**/*.js",
     "**/*.jsx",
-    "**/*.prisma",
     "**/package.json",
     "**/tsconfig.json",
     "**/locales/*.json",

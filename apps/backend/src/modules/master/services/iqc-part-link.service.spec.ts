@@ -13,7 +13,7 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { IqcPartLinkService } from './iqc-part-link.service';
 import { IqcPartLink } from '../../../entities/iqc-part-link.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('IqcPartLinkService', () => {
   let target: IqcPartLinkService;

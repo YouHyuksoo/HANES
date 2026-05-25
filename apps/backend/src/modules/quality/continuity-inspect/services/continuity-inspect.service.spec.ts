@@ -11,7 +11,7 @@ import { EquipProtocol } from '../../../../entities/equip-protocol.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 
 describe('ContinuityInspectService', () => {

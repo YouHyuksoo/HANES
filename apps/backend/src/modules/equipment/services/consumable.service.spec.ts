@@ -13,7 +13,7 @@ import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { User } from '../../../entities/user.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ConsumableService', () => {

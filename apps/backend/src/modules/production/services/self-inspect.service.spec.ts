@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { SelfInspectItem } from '../../../entities/self-inspect-item.entity';
 import { SelfInspectResult } from '../../../entities/self-inspect-result.entity';
 import { SelfInspectService } from './self-inspect.service';

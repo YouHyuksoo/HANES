@@ -10,7 +10,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DashboardService } from './dashboard.service';
 import { OracleService } from '../../common/services/oracle.service';
-import { MockLoggerService } from '../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('DashboardService', () => {
   let target: DashboardService;

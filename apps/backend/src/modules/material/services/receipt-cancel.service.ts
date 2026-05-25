@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, Between, In } from 'typeorm';
+import { Repository, DataSource, IsNull, Between, In, FindOptionsWhere } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -58,7 +58,7 @@ export class ReceiptCancelService {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<StockTransaction> = {
       transType: 'RECEIPT',
       cancelRefId: IsNull(),
       ...(company && { company }),

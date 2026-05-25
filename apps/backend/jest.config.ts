@@ -30,6 +30,7 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/$1',
     '^@common/(.*)$': '<rootDir>/common/$1',
     '^@modules/(.*)$': '<rootDir>/modules/$1',
+    '^@test/(.*)$': '<rootDir>/../test/utils/$1',
   },
 };
 

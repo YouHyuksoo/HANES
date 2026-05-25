@@ -22,7 +22,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between, In, QueryRunner } from 'typeorm';
+import { Repository, DataSource, Between, In, QueryRunner, FindOptionsWhere } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import {
@@ -340,7 +340,7 @@ export class ConsumablesService {
     } = query || {};
     const skip = (page - 1) * limit;
 
-    const where: any = { ...this.tenantWhere(company, plant) };
+    const where: FindOptionsWhere<ConsumableLog> = { ...this.tenantWhere(company, plant) };
 
     if (consumableId) {
       where.consumableCode = consumableId;

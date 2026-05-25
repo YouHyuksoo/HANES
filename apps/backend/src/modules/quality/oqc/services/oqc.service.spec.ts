@@ -12,7 +12,7 @@ import { OqcRequest } from '../../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../../entities/oqc-request-box.entity';
 import { BoxMaster } from '../../../../entities/box-master.entity';
 import { PartMaster } from '../../../../entities/part-master.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 
 describe('OqcService', () => {

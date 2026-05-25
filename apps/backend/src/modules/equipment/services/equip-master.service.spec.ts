@@ -11,7 +11,7 @@ import { EquipMasterService } from './equip-master.service';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { ProdLineMaster } from '../../../entities/prod-line-master.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('EquipMasterService', () => {
   let target: EquipMasterService;

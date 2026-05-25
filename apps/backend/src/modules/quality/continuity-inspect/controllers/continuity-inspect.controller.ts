@@ -24,8 +24,10 @@ import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
 import {
   AutoInspectDto,
   ContinuityInspectDto,
+  CreateEquipProtocolDto,
   PreIssueDto,
   ReInspectDto,
+  UpdateEquipProtocolDto,
   VoidLabelDto,
 } from '../dto/continuity-inspect.dto';
 import { ContinuityInspectService } from '../services/continuity-inspect.service';
@@ -139,8 +141,8 @@ export class ContinuityInspectController {
   @Post('protocols')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create equipment protocol' })
-  async createProtocol(@Body() body: any, @Company() company: string, @Plant() plant: string) {
-    const data = await this.continuityInspectService.createProtocol(body, company, plant);
+  async createProtocol(@Body() dto: CreateEquipProtocolDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.continuityInspectService.createProtocol(dto, company, plant);
     return ResponseUtil.success(data, 'Created');
   }
 
@@ -148,11 +150,11 @@ export class ContinuityInspectController {
   @ApiOperation({ summary: 'Update equipment protocol' })
   async updateProtocol(
     @Param('protocolId') protocolId: string,
-    @Body() body: any,
+    @Body() dto: UpdateEquipProtocolDto,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const data = await this.continuityInspectService.updateProtocol(protocolId, body, company, plant);
+    const data = await this.continuityInspectService.updateProtocol(protocolId, dto, company, plant);
     return ResponseUtil.success(data, 'Updated');
   }
 

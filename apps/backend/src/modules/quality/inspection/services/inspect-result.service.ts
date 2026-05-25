@@ -20,7 +20,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, Between, MoreThanOrEqual, LessThanOrEqual, And, Not } from 'typeorm';
+import { Repository, IsNull, ILike, Between, MoreThanOrEqual, LessThanOrEqual, Not, FindOptionsWhere } from 'typeorm';
 import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { TraceLog } from '../../../../entities/trace-log.entity';
@@ -48,6 +48,46 @@ export class InspectResultService {
     private readonly traceLogRepository: Repository<TraceLog>,
     private readonly seqGenerator: SeqGeneratorService,
   ) {}
+
+  private buildInspectResultUpdate(
+    dto: Omit<UpdateInspectResultDto, 'prodResultNo'>,
+  ): Partial<Pick<InspectResult,
+    | 'serialNo'
+    | 'inspectType'
+    | 'inspectScope'
+    | 'passYn'
+    | 'errorCode'
+    | 'errorDetail'
+    | 'inspectData'
+    | 'inspectAt'
+    | 'inspectorId'
+  >> {
+    return {
+      ...(dto.serialNo !== undefined ? { serialNo: dto.serialNo } : {}),
+      ...(dto.inspectType !== undefined ? { inspectType: dto.inspectType } : {}),
+      ...(dto.inspectScope !== undefined ? { inspectScope: dto.inspectScope } : {}),
+      ...(dto.passYn !== undefined ? { passYn: dto.passYn } : {}),
+      ...(dto.errorCode !== undefined ? { errorCode: dto.errorCode } : {}),
+      ...(dto.errorDetail !== undefined ? { errorDetail: dto.errorDetail } : {}),
+      ...(dto.inspectData !== undefined ? { inspectData: JSON.stringify(dto.inspectData) } : {}),
+      ...(dto.inspectAt !== undefined ? { inspectAt: new Date(dto.inspectAt) } : {}),
+      ...(dto.inspectorId !== undefined ? { inspectorId: dto.inspectorId } : {}),
+    };
+  }
+
+  private applyInspectAtRange(
+    where: FindOptionsWhere<InspectResult>,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    if (startDate && endDate) {
+      where.inspectAt = Between(new Date(startDate), new Date(endDate));
+    } else if (startDate) {
+      where.inspectAt = MoreThanOrEqual(new Date(startDate));
+    } else if (endDate) {
+      where.inspectAt = LessThanOrEqual(new Date(endDate));
+    }
+  }
 
   private tenantWhere(company?: string, plant?: string) {
     return {
@@ -90,7 +130,7 @@ export class InspectResultService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<InspectResult> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(prodResultNo && { prodResultNo }),
@@ -98,15 +138,8 @@ export class InspectResultService {
       ...(inspectType && { inspectType }),
       ...(inspectScope && { inspectScope }),
       ...(passYn && { passYn }),
-      ...(startDate || endDate
-        ? {
-            inspectAt: And(
-              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
-              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
-            ),
-          }
-        : {}),
     };
+    this.applyInspectAtRange(where, startDate, endDate);
 
     const [data, total] = await Promise.all([
       this.inspectResultRepository.find({
@@ -180,6 +213,7 @@ export class InspectResultService {
       prodResultNo: dto.prodResultNo,
       serialNo: dto.serialNo,
       inspectType: dto.inspectType,
+      inspectScope: dto.inspectScope,
       passYn: dto.passYn ?? 'Y',
       errorCode: dto.errorCode,
       errorDetail: dto.errorDetail,
@@ -366,20 +400,12 @@ export class InspectResultService {
    */
   async update(resultNo: string, dto: UpdateInspectResultDto, company?: string, plant?: string) {
     await this.findById(resultNo, company, plant); // 존재 확인
+    const { prodResultNo: _ignoredProdResultNo, ...inspectData } = dto;
+    const updateData = this.buildInspectResultUpdate(inspectData);
 
-    const updateData: any = {};
-
-    if (dto.serialNo !== undefined) updateData.serialNo = dto.serialNo;
-    if (dto.inspectType !== undefined) updateData.inspectType = dto.inspectType;
-    if (dto.inspectScope !== undefined) updateData.inspectScope = dto.inspectScope;
-    if (dto.passYn !== undefined) updateData.passYn = dto.passYn;
-    if (dto.errorCode !== undefined) updateData.errorCode = dto.errorCode;
-    if (dto.errorDetail !== undefined) updateData.errorDetail = dto.errorDetail;
-    if (dto.inspectData !== undefined) updateData.inspectData = JSON.stringify(dto.inspectData);
-    if (dto.inspectAt !== undefined) updateData.inspectAt = new Date(dto.inspectAt);
-    if (dto.inspectorId !== undefined) updateData.inspectorId = dto.inspectorId;
-
-    await this.inspectResultRepository.update({ resultNo, ...this.tenantWhere(company, plant) }, updateData);
+    if (Object.keys(updateData).length > 0) {
+      await this.inspectResultRepository.update({ resultNo, ...this.tenantWhere(company, plant) }, updateData);
+    }
 
     return this.findById(resultNo, company, plant);
   }
@@ -421,18 +447,11 @@ export class InspectResultService {
     company?: string,
     plant?: string,
   ): Promise<InspectPassRateDto> {
-    const where: any = {
+    const where: FindOptionsWhere<InspectResult> = {
       ...this.tenantWhere(company, plant),
       ...(inspectType && { inspectType }),
-      ...(startDate || endDate
-        ? {
-            inspectAt: And(
-              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
-              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
-            ),
-          }
-        : {}),
     };
+    this.applyInspectAtRange(where, startDate, endDate);
 
     const [totalCount, passCount] = await Promise.all([
       this.inspectResultRepository.count({ where }),
@@ -463,18 +482,11 @@ export class InspectResultService {
     company?: string,
     plant?: string,
   ): Promise<InspectTypeStatsDto[]> {
-    const where: any = {
+    const where: FindOptionsWhere<InspectResult> = {
       inspectType: Not(IsNull()),
       ...this.tenantWhere(company, plant),
-      ...(startDate || endDate
-        ? {
-            inspectAt: And(
-              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
-              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
-            ),
-          }
-        : {}),
     };
+    this.applyInspectAtRange(where, startDate, endDate);
 
     // 유형별 그룹 조회
     const groupedData = await this.inspectResultRepository

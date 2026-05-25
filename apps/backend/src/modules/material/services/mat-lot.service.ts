@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In, Not } from 'typeorm';
+import { Repository, Like, In, Not, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -42,7 +42,7 @@ export class MatLotService {
     const { page = 1, limit = 10, itemCode, matUid, vendor, iqcStatus, status } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<MatLot> = {
       ...(itemCode && { itemCode }),
       ...(matUid && { matUid: Like(`%${matUid}%`) }),
       ...(vendor && { vendor: Like(`%${vendor}%`) }),
@@ -164,7 +164,7 @@ export class MatLotService {
       );
     }
 
-    const updateData: any = {};
+    const updateData: Partial<Pick<MatLot, 'iqcStatus' | 'expireDate' | 'vendor' | 'origin'>> = {};
     if (dto.iqcStatus) updateData.iqcStatus = dto.iqcStatus;
     if (dto.expireDate) updateData.expireDate = new Date(dto.expireDate);
     if (dto.vendor) updateData.vendor = dto.vendor;

@@ -13,6 +13,8 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { IJobExecutor, ExecutorResult } from './executor.interface';
 import { SchedulerJob } from '../../../entities/scheduler-job.entity';
 import { OracleService } from '../../../common/services/oracle.service';
+import { getErrorMessage } from '../../../common/utils/error-message.util';
+import { parseJsonRecord } from '../../../common/utils/json-record.util';
 
 @Injectable()
 export class ProcedureExecutor implements IJobExecutor {
@@ -43,11 +45,11 @@ export class ProcedureExecutor implements IJobExecutor {
     let params: Record<string, unknown> | undefined;
     if (execParams) {
       try {
-        params = JSON.parse(execParams) as Record<string, unknown>;
+        params = parseJsonRecord(execParams);
         params = this.normalizeTenantParams(params, job);
       } catch (error: unknown) {
         throw new BadRequestException(
-          `execParams JSON 파싱 실패: ${(error as Error).message}`,
+          `execParams JSON 파싱 실패: ${getErrorMessage(error)}`,
         );
       }
     }

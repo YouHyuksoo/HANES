@@ -26,7 +26,7 @@ import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.e
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ArrivalService', () => {
   let target: ArrivalService;

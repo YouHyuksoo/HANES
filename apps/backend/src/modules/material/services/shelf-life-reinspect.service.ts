@@ -4,13 +4,13 @@
  *
  * 초보자 가이드:
  * 1. create(): IqcLog에 inspectType='RETEST'로 기록 + 합격/불합격 후속 처리
- * 2. 합격: 품목 EXTEND_SHELF_DAYS만큼 MatLot.expireDate 연장
+ * 2. 합격: 기본 재검 연장일수(90일)만큼 MatLot.expireDate 연장
  * 3. 불합격: G6과 동일한 불합격 자동처리 (불용창고 이동)
  * 4. 별도 테이블 없이 기존 IQC_LOGS 재사용 (심플이즈베스트)
  */
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -72,7 +72,7 @@ export class ShelfLifeReInspectService {
   /** 재검사 이력 조회 (inspectType = RETEST) */
   async findAll(query: { page?: number; limit?: number }, company?: string, plant?: string) {
     const { page = 1, limit = 20 } = query;
-    const where: any = {
+    const where: FindOptionsWhere<IqcLog> = {
       inspectType: 'RETEST',
       ...(company && { company }),
       ...(plant && { plant }),
@@ -95,8 +95,6 @@ export class ShelfLifeReInspectService {
     this.assertSameTenant(lot, company, plant, 'LOT');
 
     const lotTenant = this.tenantWhere(lot.company, lot.plant);
-    const part = await this.partMasterRepo.findOne({ where: { itemCode: lot.itemCode, ...lotTenant } });
-
     // IqcLog에 RETEST로 기록
     const log = this.iqcLogRepo.create({
       arrivalNo: null,
@@ -115,7 +113,7 @@ export class ShelfLifeReInspectService {
 
     // 합격: 만료기간 연장
     if (dto.result === 'PASS' && lot.expireDate) {
-      const extendDays = (part as any)?.extendShelfDays ?? 90;
+      const extendDays = 90;
       const prevExpiry = new Date(lot.expireDate);
       const newExpiry = new Date(prevExpiry.getTime() + extendDays * 24 * 60 * 60 * 1000);
       await this.matLotRepo.update({ matUid: lot.matUid, ...lotTenant }, { expireDate: newExpiry });

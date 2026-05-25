@@ -6,8 +6,9 @@
  * 1. **입하**: 공급업체에서 자재가 도착하면 가입고(입하) 등록
  * 2. **상태**: ARRIVED(입하완료), IQC_READY(IQC대기)
  */
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ArrivalStatus } from '@/components/material';
+import { api } from '@/services/api';
 
 /** 입하 자재 인터페이스 */
 export interface ArrivalItem {
@@ -43,14 +44,24 @@ const INITIAL_FORM: ArrivalCreateForm = {
   remark: '',
 };
 
-/** Mock 데이터 */
-const mockArrivals: ArrivalItem[] = [
-  { id: '1', arrivalNo: 'ARR-20250126-001', arrivalDate: '2025-01-26', supplierName: '대한전선', itemCode: 'WIRE-001', itemName: 'AWG18 적색', supUid: 'SUP-A01', invoiceNo: 'INV-001', quantity: 5000, unit: 'M', status: 'ARRIVED', iqcStatus: 'PENDING', remark: null },
-  { id: '2', arrivalNo: 'ARR-20250126-002', arrivalDate: '2025-01-26', supplierName: '한국단자', itemCode: 'TERM-001', itemName: '단자 110형', supUid: 'SUP-B01', invoiceNo: 'INV-002', quantity: 10000, unit: 'EA', status: 'IQC_READY', iqcStatus: 'PENDING', remark: null },
-  { id: '3', arrivalNo: 'ARR-20250125-001', arrivalDate: '2025-01-25', supplierName: '삼성커넥터', itemCode: 'CONN-001', itemName: '커넥터 6핀', supUid: 'SUP-C01', invoiceNo: 'INV-003', quantity: 2000, unit: 'EA', status: 'IQC_READY', iqcStatus: 'PENDING', remark: '긴급 입하' },
-  { id: '4', arrivalNo: 'ARR-20250125-002', arrivalDate: '2025-01-25', supplierName: '대한전선', itemCode: 'WIRE-002', itemName: 'AWG20 흑색', supUid: 'SUP-A02', invoiceNo: 'INV-004', quantity: 3000, unit: 'M', status: 'ARRIVED', iqcStatus: 'PENDING', remark: null },
-  { id: '5', arrivalNo: 'ARR-20250124-001', arrivalDate: '2025-01-24', supplierName: '한국단자', itemCode: 'TERM-002', itemName: '단자 250형', supUid: 'SUP-B02', invoiceNo: 'INV-005', quantity: 8000, unit: 'EA', status: 'IQC_READY', iqcStatus: 'PENDING', remark: null },
-];
+interface ArrivalApiRow {
+  transNo?: string;
+  transDate?: string;
+  arrivalNo?: string;
+  vendorName?: string;
+  itemCode?: string;
+  itemName?: string | null;
+  matUid?: string | null;
+  invoiceNo?: string | null;
+  qty?: number;
+  unit?: string | null;
+  status?: string;
+  remark?: string | null;
+}
+
+interface PagedResponse<T> {
+  data?: T[];
+}
 
 export const supplierOptions = [
   { value: '', label: '전체 공급업체' },
@@ -60,14 +71,52 @@ export const supplierOptions = [
 ];
 
 export function useArrivalData() {
+  const [arrivals, setArrivals] = useState<ArrivalItem[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
   const [searchText, setSearchText] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState<ArrivalCreateForm>(INITIAL_FORM);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchArrivals() {
+      try {
+        const response = await api.get<PagedResponse<ArrivalApiRow>>('/material/arrivals', {
+          params: { limit: 200 },
+        });
+        const rows = (response.data?.data ?? []).map((row, index) => ({
+          id: row.transNo ?? row.arrivalNo ?? String(index),
+          arrivalNo: row.arrivalNo ?? row.transNo ?? '',
+          arrivalDate: row.transDate ? String(row.transDate).slice(0, 10) : '',
+          supplierName: row.vendorName ?? '',
+          itemCode: row.itemCode ?? '',
+          itemName: row.itemName ?? row.itemCode ?? '',
+          supUid: row.matUid ?? '',
+          invoiceNo: row.invoiceNo ?? '',
+          quantity: row.qty ?? 0,
+          unit: row.unit ?? '',
+          status: row.status === 'CANCELED' ? 'ARRIVED' : 'IQC_READY' as ArrivalStatus,
+          iqcStatus: 'PENDING',
+          remark: row.remark ?? null,
+        }));
+
+        if (!cancelled) setArrivals(rows);
+      } catch {
+        if (!cancelled) setArrivals([]);
+      }
+    }
+
+    fetchArrivals();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const filteredArrivals = useMemo(() => {
-    return mockArrivals.filter((r) => {
+    return arrivals.filter((r) => {
       const matchStatus = !statusFilter || r.status === statusFilter;
       const matchSupplier = !supplierFilter || r.supplierName === supplierFilter;
       const matchSearch =
@@ -76,21 +125,20 @@ export function useArrivalData() {
         r.itemName.toLowerCase().includes(searchText.toLowerCase());
       return matchStatus && matchSupplier && matchSearch;
     });
-  }, [statusFilter, supplierFilter, searchText]);
+  }, [arrivals, statusFilter, supplierFilter, searchText]);
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
-    const todayItems = mockArrivals.filter((r) => r.arrivalDate === today);
+    const todayItems = arrivals.filter((r) => r.arrivalDate === today);
     return {
       todayCount: todayItems.length,
-      pendingCount: mockArrivals.filter((r) => r.status === 'ARRIVED').length,
+      pendingCount: arrivals.filter((r) => r.status === 'ARRIVED').length,
       todayQty: todayItems.reduce((sum, r) => sum + r.quantity, 0),
-      totalCount: mockArrivals.length,
+      totalCount: arrivals.length,
     };
-  }, []);
+  }, [arrivals]);
 
   const handleCreate = () => {
-    console.log('입하 등록:', createForm);
     setIsCreateModalOpen(false);
     setCreateForm(INITIAL_FORM);
   };

@@ -6,17 +6,20 @@ import { DataSource, Repository } from 'typeorm';
 import { WorkCalendar } from '../../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../../entities/work-calendar-day.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { WorkCalendarService } from './work-calendar.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('WorkCalendarService', () => {
   let target: WorkCalendarService;
   let calendarRepo: DeepMocked<Repository<WorkCalendar>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     calendarRepo = createMock<Repository<WorkCalendar>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -25,6 +28,7 @@ describe('WorkCalendarService', () => {
         { provide: getRepositoryToken(WorkCalendarDay), useValue: createMock<Repository<WorkCalendarDay>>() },
         { provide: getRepositoryToken(ShiftPattern), useValue: createMock<Repository<ShiftPattern>>() },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -83,18 +87,29 @@ describe('WorkCalendarService', () => {
 
     expect(calendarRepo.update).toHaveBeenCalledWith(
       { calendarId: 'CAL-2026', company: 'C1', plant: 'P1' },
-      expect.not.objectContaining({
-        calendarId: expect.anything(),
-        company: expect.anything(),
-        plant: expect.anything(),
-      }),
+      { calendarYear: '2027' },
+    );
+  });
+
+  it('does not pass arbitrary fields from update payload to the repository', async () => {
+    calendarRepo.findOne.mockResolvedValue({ calendarId: 'CAL-2026', status: 'DRAFT', company: 'C1', plant: 'P1' } as WorkCalendar);
+    calendarRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+    await target.update('CAL-2026', {
+      calendarYear: '2027',
+      externalSource: 'ERP',
+    } as any, 'C1', 'P1');
+
+    expect(calendarRepo.update).toHaveBeenCalledWith(
+      { calendarId: 'CAL-2026', company: 'C1', plant: 'P1' },
+      { calendarYear: '2027' },
     );
   });
 
   it('deletes a calendar and its days within tenant only', async () => {
     const manager = createMock<Pick<Repository<WorkCalendar>, 'delete'>>();
     calendarRepo.findOne.mockResolvedValue({ calendarId: 'CAL-2026', status: 'DRAFT', company: 'C1', plant: 'P1' } as WorkCalendar);
-    dataSource.transaction.mockImplementation(async (callback: any) => callback(manager));
+    tx.run.mockImplementation(async (callback) => callback({ manager } as any));
 
     await target.delete('CAL-2026', 'C1', 'P1');
 

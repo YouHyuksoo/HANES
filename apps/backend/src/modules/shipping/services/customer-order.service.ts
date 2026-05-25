@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, In } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, FindOptionsWhere } from 'typeorm';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -45,27 +45,40 @@ export class CustomerOrderService {
     };
   }
 
+  private buildCustomerOrderUpdate(
+    dto: Omit<UpdateCustomerOrderDto, 'items' | 'status' | 'orderNo'>,
+  ): Partial<Pick<CustomerOrder, 'customerId' | 'customerName' | 'orderDate' | 'dueDate' | 'totalAmount' | 'currency' | 'remark'>> {
+    return {
+      ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
+      ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
+      ...(dto.orderDate !== undefined ? { orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date() } : {}),
+      ...(dto.dueDate !== undefined ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null } : {}),
+      ...(dto.totalAmount !== undefined ? { totalAmount: dto.totalAmount } : {}),
+      ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
+  }
+
   /** 고객발주 목록 조회 */
   async findAll(query: CustomerOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<CustomerOrder> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(status && { status }),
       ...(search && {
         orderNo: ILike(`%${search}%`),
       }),
-      ...(dueDateFrom || dueDateTo
-        ? {
-            dueDate: And(
-              dueDateFrom ? MoreThanOrEqual(new Date(dueDateFrom)) : undefined,
-              dueDateTo ? LessThanOrEqual(new Date(dueDateTo)) : undefined
-            ),
-          }
-        : {}),
     };
+    if (dueDateFrom && dueDateTo) {
+      where.dueDate = Between(new Date(dueDateFrom), new Date(dueDateTo));
+    } else if (dueDateFrom) {
+      where.dueDate = MoreThanOrEqual(new Date(dueDateFrom));
+    } else if (dueDateTo) {
+      where.dueDate = LessThanOrEqual(new Date(dueDateTo));
+    }
 
     const [data, total] = await Promise.all([
       this.customerOrderRepository.find({
@@ -202,12 +215,16 @@ export class CustomerOrderService {
         `고객오더 상태(${dto.status})는 직접 변경할 수 없습니다. 고객오더 전용 상태처리 API를 사용해 주세요.`,
       );
     }
+    if (dto.orderNo !== undefined && dto.orderNo !== orderNo) {
+      throw new BadRequestException('고객발주 번호는 수정할 수 없습니다.');
+    }
 
     await this.tx.run(async (queryRunner) => {
+      const { items, status: _ignoredStatus, orderNo: _ignoredOrderNo, ...orderData } = dto;
       if (dto.items) {
         await queryRunner.manager.delete(CustomerOrderItem, { orderNo, ...this.tenantWhere(company, plant) });
 
-        const items = dto.items.map((item, idx) =>
+        const itemEntities = dto.items.map((item, idx) =>
           this.customerOrderItemRepository.create({
             orderNo,
             seq: idx + 1,
@@ -220,23 +237,17 @@ export class CustomerOrderService {
             plant: plant || null,
           })
         );
-        await queryRunner.manager.save(items);
+        await queryRunner.manager.save(itemEntities);
       }
 
-      const updateData: any = {};
-      if (dto.orderNo !== undefined) updateData.orderNo = dto.orderNo;
-      if (dto.customerId !== undefined) updateData.customerId = dto.customerId;
-      if (dto.customerName !== undefined) updateData.customerName = dto.customerName;
-      if (dto.orderDate !== undefined) updateData.orderDate = dto.orderDate ? new Date(dto.orderDate) : new Date();
-      if (dto.dueDate !== undefined) updateData.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
-      if (dto.totalAmount !== undefined) updateData.totalAmount = dto.totalAmount;
-      if (dto.currency !== undefined) updateData.currency = dto.currency;
-      if (dto.remark !== undefined) updateData.remark = dto.remark;
+      const updateData = this.buildCustomerOrderUpdate(orderData);
 
-      await queryRunner.manager.update(CustomerOrder, { orderNo, ...this.tenantWhere(company, plant) }, updateData);
+      if (Object.keys(updateData).length > 0) {
+        await queryRunner.manager.update(CustomerOrder, { orderNo, ...this.tenantWhere(company, plant) }, updateData);
+      }
     });
 
-    return this.findById(dto.orderNo ?? orderNo, company, plant);
+    return this.findById(orderNo, company, plant);
   }
 
   /** 고객발주 삭제 */

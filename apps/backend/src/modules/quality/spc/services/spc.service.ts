@@ -161,8 +161,17 @@ export class SpcService {
   ) {
     const chartNo = await this.generateChartNo(company, plant);
     const entity = this.chartRepo.create({
-      ...dto,
       chartNo,
+      itemCode: dto.itemCode,
+      processCode: dto.processCode,
+      characteristicName: dto.characteristicName,
+      chartType: dto.chartType,
+      subgroupSize: dto.subgroupSize,
+      usl: dto.usl,
+      lsl: dto.lsl,
+      target: dto.target,
+      dataSource: dto.dataSource,
+      sourceInspectItem: dto.sourceInspectItem,
       company,
       plant,
       createdBy: userId,
@@ -184,12 +193,19 @@ export class SpcService {
     plant?: string,
   ) {
     const item = await this.findChartById(chartNo, company, plant);
-    const {
-      chartNo: _chartNo,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<SpcChart> = {
+      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.processCode !== undefined ? { processCode: dto.processCode } : {}),
+      ...(dto.characteristicName !== undefined ? { characteristicName: dto.characteristicName } : {}),
+      ...(dto.chartType !== undefined ? { chartType: dto.chartType } : {}),
+      ...(dto.subgroupSize !== undefined ? { subgroupSize: dto.subgroupSize } : {}),
+      ...(dto.usl !== undefined ? { usl: dto.usl } : {}),
+      ...(dto.lsl !== undefined ? { lsl: dto.lsl } : {}),
+      ...(dto.target !== undefined ? { target: dto.target } : {}),
+      ...(dto.dataSource !== undefined ? { dataSource: dto.dataSource } : {}),
+      ...(dto.sourceInspectItem !== undefined ? { sourceInspectItem: dto.sourceInspectItem } : {}),
+      ...(dto.status !== undefined ? { status: dto.status } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.chartRepo.save(item);
   }

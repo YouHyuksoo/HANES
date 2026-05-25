@@ -6,7 +6,7 @@ import { NotFoundException } from '@nestjs/common';
 import { JobMaterialLotService } from './job-material-lot.service';
 import { JobMaterialLot } from '../../../entities/job-material-lot.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('JobMaterialLotService', () => {
   let target: JobMaterialLotService;

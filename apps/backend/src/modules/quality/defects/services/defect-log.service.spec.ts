@@ -16,7 +16,7 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('DefectLogService', () => {
   let target: DefectLogService;

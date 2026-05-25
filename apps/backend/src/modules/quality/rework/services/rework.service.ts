@@ -177,8 +177,18 @@ export class ReworkService {
   ) {
     const reworkNo = await this.generateReworkNo(company, plant);
     const entity = this.reworkRepo.create({
-      ...dto,
       reworkNo,
+      defectLogId: dto.defectLogId ?? null,
+      itemCode: dto.itemCode,
+      itemName: dto.itemName ?? null,
+      prdUid: dto.prdUid ?? null,
+      reworkQty: dto.reworkQty,
+      defectType: dto.defectType ?? null,
+      reworkMethod: dto.reworkMethod,
+      workerId: dto.workerId ?? null,
+      lineCode: dto.lineCode ?? null,
+      equipCode: dto.equipCode ?? null,
+      remark: dto.remark ?? null,
       status: 'REGISTERED',
       isolationFlag: 1,
       company,

@@ -30,6 +30,7 @@ import {
 import { SimulationService } from '../services/simulation.service';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { SimulationResult } from '../dto/simulation.dto';
 
 @ApiTags('생산관리 - 시뮬레이션')
 @UseGuards(JwtAuthGuard)
@@ -89,7 +90,7 @@ export class SimulationController {
   @ApiResponse({ status: 201, description: '저장 성공' })
   async save(
     @Body() body: {
-      month: string; strategy?: string; result: Record<string, unknown>;
+      month: string; strategy?: string; result: SimulationResult;
       shiftCount?: number; includeOt?: boolean; applySetup?: boolean; deductStock?: boolean;
     },
     @Company() company: string,
@@ -98,7 +99,7 @@ export class SimulationController {
     await this.simulationService.saveResult(
       body.month,
       body.strategy || 'DUE_DATE',
-      body.result as never,
+      body.result,
       company,
       plant,
       {

@@ -10,7 +10,7 @@ import { Repository, DataSource, getMetadataArgsStorage } from 'typeorm';
 import { WarehouseService } from './warehouse.service';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('WarehouseService', () => {
   let target: WarehouseService;

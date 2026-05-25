@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In } from 'typeorm';
+import { Repository, Like, In, FindOptionsWhere } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProductHoldActionDto, ProductReleaseHoldDto, ProductHoldQueryDto } from '../dto/product-hold.dto';
@@ -20,7 +20,7 @@ export class ProductHoldService {
     const { page = 1, limit = 50, search, status, itemType } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<ProductStock> = {
       ...(company && { company }),
       ...(plant && { plant }),
     };

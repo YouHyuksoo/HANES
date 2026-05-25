@@ -14,8 +14,9 @@ import { DataSource, Repository } from 'typeorm';
 import { TrainingService } from './training.service';
 import { TrainingPlan } from '../../../entities/training-plan.entity';
 import { TrainingResult } from '../../../entities/training-result.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('TrainingService', () => {
   let target: TrainingService;
@@ -23,6 +24,9 @@ describe('TrainingService', () => {
   let mockResultRepo: DeepMocked<Repository<TrainingResult>>;
   let mockDataSource: {
     transaction: jest.Mock;
+  };
+  let mockTx: {
+    run: jest.Mock;
   };
   let mockNumbering: {
     next: jest.Mock;
@@ -39,6 +43,16 @@ describe('TrainingService', () => {
         }),
       ),
     };
+    mockTx = {
+      run: jest.fn(async (callback) =>
+        callback({
+          manager: {
+            delete: jest.fn(),
+            remove: jest.fn(),
+          },
+        }),
+      ),
+    };
     mockNumbering = {
       next: jest.fn().mockResolvedValue('TRN-20260318-001'),
     };
@@ -49,6 +63,7 @@ describe('TrainingService', () => {
         { provide: getRepositoryToken(TrainingPlan), useValue: mockPlanRepo },
         { provide: getRepositoryToken(TrainingResult), useValue: mockResultRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
         { provide: NumberingService, useValue: mockNumbering },
       ],
     })
@@ -174,8 +189,8 @@ describe('TrainingService', () => {
         delete: jest.fn().mockResolvedValue({ affected: 0 }),
         remove: jest.fn().mockResolvedValue(plan),
       };
-      mockDataSource.transaction.mockImplementationOnce(async (callback) =>
-        callback(manager),
+      mockTx.run.mockImplementationOnce(async (callback) =>
+        callback({ manager }),
       );
       mockPlanRepo.findOne.mockResolvedValue(plan);
 
@@ -194,7 +209,7 @@ describe('TrainingService', () => {
       mockPlanRepo.findOne.mockResolvedValue(plan);
 
       await expect(target.delete('TRN-001', 'COMP', 'PLANT')).rejects.toThrow(BadRequestException);
-      expect(mockDataSource.transaction).not.toHaveBeenCalled();
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
   });
 

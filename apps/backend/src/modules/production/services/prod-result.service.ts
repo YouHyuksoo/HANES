@@ -21,7 +21,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, ILike, Not, In, DataSource } from 'typeorm';
+import { Repository, Between, ILike, Not, In, DataSource, FindOptionsWhere } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -85,6 +85,36 @@ export class ProdResultService {
     this.shiftResolver = new ShiftResolver(this.shiftPatternRepo);
   }
 
+  private buildProdResultUpdate(
+    dto: Omit<UpdateProdResultDto, 'status' | 'orderNo'>,
+  ): Partial<Pick<ProdResult,
+    | 'equipCode'
+    | 'workerId'
+    | 'prdUid'
+    | 'processCode'
+    | 'goodQty'
+    | 'defectQty'
+    | 'startAt'
+    | 'endAt'
+    | 'cycleTime'
+    | 'remark'
+    | 'shiftCode'
+  >> {
+    return {
+      ...(dto.equipCode !== undefined ? { equipCode: dto.equipCode } : {}),
+      ...(dto.workerId !== undefined ? { workerId: dto.workerId ?? null } : {}),
+      ...(dto.prdUid !== undefined ? { prdUid: dto.prdUid } : {}),
+      ...(dto.processCode !== undefined ? { processCode: dto.processCode } : {}),
+      ...(dto.goodQty !== undefined ? { goodQty: dto.goodQty } : {}),
+      ...(dto.defectQty !== undefined ? { defectQty: dto.defectQty } : {}),
+      ...(dto.startAt !== undefined ? { startAt: new Date(dto.startAt) } : {}),
+      ...(dto.endAt !== undefined ? { endAt: new Date(dto.endAt) } : {}),
+      ...(dto.cycleTime !== undefined ? { cycleTime: dto.cycleTime } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.shiftCode !== undefined ? { shiftCode: dto.shiftCode } : {}),
+    };
+  }
+
   /**
    * 생산실적 목록 조회
    */
@@ -104,7 +134,7 @@ export class ProdResultService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<ProdResult> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(orderNo && { orderNo }),
@@ -171,7 +201,7 @@ export class ProdResultService {
     // Filter inspectResults (only passYn = 'N') and limit to 10
     if (prodResult.inspectResults) {
       prodResult.inspectResults = prodResult.inspectResults
-        .filter((r: any) => r.passYn === 'N')
+        .filter((r) => r.passYn === 'N')
         .slice(0, 10);
     }
 
@@ -182,9 +212,8 @@ export class ProdResultService {
 
     // 자재 투입 이력 조회
     const matIssues = await this.findMatIssues(prodResult.resultNo, company, plant);
-    (prodResult as any).matIssues = matIssues;
 
-    return prodResult;
+    return { ...prodResult, matIssues };
   }
 
   /**
@@ -204,7 +233,7 @@ export class ProdResultService {
     // LOT 및 품목 정보 추가
     const matUids = issues.map(i => i.matUid).filter(Boolean);
     const lots = matUids.length > 0
-      ? await this.dataSource.getRepository('MatLot').find({
+      ? await this.dataSource.getRepository(MatLot).find({
           where: {
             matUid: In(matUids),
             ...(company ? { company } : {}),
@@ -212,9 +241,9 @@ export class ProdResultService {
           },
         })
       : [];
-    const lotMap = new Map(lots.map((l: any) => [l.matUid, l]));
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
 
-    const itemCodes = lots.map((l: any) => l.itemCode).filter(Boolean);
+    const itemCodes = lots.map((l) => l.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
       ? await this.partMasterRepository.find({
           where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -551,32 +580,28 @@ export class ProdResultService {
     const qtyChanged = (dto.goodQty !== undefined || dto.defectQty !== undefined) && oldTotalQty !== newTotalQty;
 
     await this.tx.run(async (queryRunner) => {
-      const updateData: any = {};
-      if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
-      if (dto.workerId !== undefined) updateData.workerId = dto.workerId ?? null;
-      if (dto.prdUid !== undefined) updateData.prdUid = dto.prdUid;
-      if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
-      if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
-      if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
-      if (dto.startAt !== undefined) updateData.startAt = new Date(dto.startAt);
-      if (dto.endAt !== undefined) updateData.endAt = new Date(dto.endAt);
-      if (dto.cycleTime !== undefined) updateData.cycleTime = dto.cycleTime;
       if (dto.status !== undefined) {
         throw new BadRequestException(
           '???? ??? ?? ???? ??? ? ????. ?? ?? ?? ?? API? ??? ???.',
         );
       }
-      if (dto.remark !== undefined) updateData.remark = dto.remark;
+      if (dto.orderNo !== undefined && dto.orderNo !== prodResult.orderNo) {
+        throw new BadRequestException('생산실적의 작업지시 번호는 수정할 수 없습니다.');
+      }
+      const { status: _ignoredStatus, orderNo: _ignoredOrderNo, ...resultData } = dto;
+      const updateData = this.buildProdResultUpdate(resultData);
 
-      await queryRunner.manager.update(
-        ProdResult,
-        {
-          resultNo: prodResult.resultNo,
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
-        },
-        updateData,
-      );
+      if (Object.keys(updateData).length > 0) {
+        await queryRunner.manager.update(
+          ProdResult,
+          {
+            resultNo: prodResult.resultNo,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+          updateData,
+        );
+      }
 
       // 수량 변경 시 자재 자동차감 재계산 (역분개 → 재차감)
       if (qtyChanged && prodResult.status !== 'DONE') {
@@ -650,7 +675,7 @@ export class ProdResultService {
 
     await this.tx.run(async (queryRunner) => {
       // 1. 실적 상태 → DONE
-      const updateData: any = {
+      const updateData: Partial<Pick<ProdResult, 'status' | 'endAt' | 'goodQty' | 'defectQty' | 'remark'>> = {
         status: 'DONE',
         endAt: dto.endAt ? new Date(dto.endAt) : new Date(),
       };
@@ -867,7 +892,7 @@ export class ProdResultService {
     await this.ensureNoDownstreamProgress(prodResult, company, plant);
 
     await this.tx.run(async (queryRunner) => {
-      const updateData: any = { status: 'CANCELED' };
+      const updateData: Partial<Pick<ProdResult, 'status' | 'remark'>> = { status: 'CANCELED' };
       if (remark) updateData.remark = remark;
 
       await queryRunner.manager.update(

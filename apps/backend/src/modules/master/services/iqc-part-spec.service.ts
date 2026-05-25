@@ -104,11 +104,13 @@ export class IqcPartSpecService {
         await queryRunner.manager.save(IqcPartSpecItem, newItems);
       }
 
-      return queryRunner.manager.findOne(IqcPartSpec, {
+      const saved = await queryRunner.manager.findOne(IqcPartSpec, {
         where: { itemCode: dto.itemCode, ...tenantWhere },
         relations: ['items', 'items.inspItem'],
         order: { items: { seq: 'ASC' } },
-      }) as Promise<IqcPartSpec>;
+      });
+      if (!saved) throw new NotFoundException(`IQC 기준이 없습니다: ${dto.itemCode}`);
+      return saved;
     });
   }
 

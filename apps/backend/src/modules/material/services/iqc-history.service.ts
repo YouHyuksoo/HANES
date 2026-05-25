@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, In, DataSource, IsNull } from 'typeorm';
+import { Repository, Between, Like, In, DataSource, IsNull, QueryRunner } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
@@ -402,7 +402,7 @@ export class IqcHistoryService {
   }
 
   private async reverseIqcFailMove(
-    queryRunner: any,
+    queryRunner: QueryRunner,
     matUid: string,
     itemCode: string,
     company?: string | null,

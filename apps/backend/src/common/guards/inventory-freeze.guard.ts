@@ -24,6 +24,9 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { getErrorMessage } from '../utils/error-message.util';
+import { getHeaderString } from '../utils/header-value.util';
+import { getRequestUser } from '../utils/request-user.util';
 import { DataSource } from 'typeorm';
 import { Request } from 'express';
 
@@ -50,10 +53,10 @@ export class InventoryFreezeGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    const user = (request as Request & { user?: { company?: string; plant?: string } }).user ?? {};
+    const user = getRequestUser(request) ?? {};
     // X-Company, X-Plant 헤더를 우선하고, 인증 가드가 넣은 req.user 테넌트를 fallback으로 사용한다.
-    const company = (request.headers['x-company'] as string | undefined) || user.company;
-    const plant = (request.headers['x-plant'] as string | undefined) || user.plant;
+    const company = getHeaderString(request.headers['x-company']) || user.company;
+    const plant = getHeaderString(request.headers['x-plant']) || user.plant;
 
     try {
       const isFreeze = await this.checkFreezeStatus(company, plant);
@@ -75,7 +78,7 @@ export class InventoryFreezeGuard implements CanActivate {
       }
       // 재고 변경 보호 장치가 불확실하면 데이터 정합성을 위해 차단한다.
       this.logger.error(
-        `InventoryFreezeGuard DB 조회 실패 — 차단 처리: ${(error as Error).message}`,
+        `InventoryFreezeGuard DB 조회 실패 — 차단 처리: ${getErrorMessage(error)}`,
       );
       throw new BadRequestException(
         '재고실사 상태를 확인할 수 없어 자재 트랜잭션이 제한됩니다.',

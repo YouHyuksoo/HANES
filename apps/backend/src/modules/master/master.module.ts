@@ -105,7 +105,6 @@ import { ProcessQualityCondition } from '../../entities/process-quality-conditio
 import { RoutingGroup } from '../../entities/routing-group.entity';
 import { RoutingProcess } from '../../entities/routing-process.entity';
 import { RoutingMaterial } from '../../entities/routing-material.entity';
-import { User } from '../../entities/user.entity';
 import { ShiftPattern } from '../../entities/shift-pattern.entity';
 import { ProcessCapa } from '../../entities/process-capa.entity';
 import { WorkCalendar } from '../../entities/work-calendar.entity';
@@ -149,7 +148,6 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       RoutingGroup,
       RoutingProcess,
       RoutingMaterial,
-      User,
       ShiftPattern,
       WorkCalendar,
       WorkCalendarDay,

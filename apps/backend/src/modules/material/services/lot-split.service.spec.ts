@@ -9,7 +9,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('LotSplitService', () => {
@@ -272,6 +272,14 @@ describe('LotSplitService', () => {
     } as any);
 
     expect(result.newLotNo).toBe('MAT-001-S001');
+    expect(mockQueryRunner.manager.create).toHaveBeenNthCalledWith(
+      1,
+      MatLot,
+      expect.objectContaining({
+        matUid: 'MAT-001-S001',
+        origin: 'MAT-001',
+      }),
+    );
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
   });

@@ -124,10 +124,61 @@ export class PartService {
 
   async update(itemCode: string, dto: UpdatePartDto, company?: string, plant?: string) {
     await this.findById(itemCode, company, plant);
-    const updateData: any = { ...dto };
-    delete updateData.itemCode;
-    delete updateData.company;
-    delete updateData.plant;
+    const updateData: Partial<Pick<PartMaster,
+      | 'itemName'
+      | 'itemNo'
+      | 'custPartNo'
+      | 'itemType'
+      | 'productType'
+      | 'spec'
+      | 'rev'
+      | 'unit'
+      | 'drawNo'
+      | 'customer'
+      | 'vendor'
+      | 'leadTime'
+      | 'safetyStock'
+      | 'lotUnitQty'
+      | 'boxQty'
+      | 'iqcYn'
+      | 'tactTime'
+      | 'expiryDate'
+      | 'toleranceRate'
+      | 'isSplittable'
+      | 'sampleQty'
+      | 'packUnit'
+      | 'storageLocation'
+      | 'imageUrl'
+      | 'remark'
+      | 'useYn'
+    >> = {
+      ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
+      ...(dto.itemNo !== undefined ? { itemNo: dto.itemNo } : {}),
+      ...(dto.custPartNo !== undefined ? { custPartNo: dto.custPartNo } : {}),
+      ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
+      ...(dto.productType !== undefined ? { productType: dto.productType } : {}),
+      ...(dto.spec !== undefined ? { spec: dto.spec } : {}),
+      ...(dto.rev !== undefined ? { rev: dto.rev } : {}),
+      ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
+      ...(dto.drawNo !== undefined ? { drawNo: dto.drawNo } : {}),
+      ...(dto.customer !== undefined ? { customer: dto.customer } : {}),
+      ...(dto.vendor !== undefined ? { vendor: dto.vendor } : {}),
+      ...(dto.leadTime !== undefined ? { leadTime: dto.leadTime } : {}),
+      ...(dto.safetyStock !== undefined ? { safetyStock: dto.safetyStock } : {}),
+      ...(dto.lotUnitQty !== undefined ? { lotUnitQty: dto.lotUnitQty } : {}),
+      ...(dto.boxQty !== undefined ? { boxQty: dto.boxQty } : {}),
+      ...(dto.iqcYn !== undefined ? { iqcYn: dto.iqcYn } : {}),
+      ...(dto.tactTime !== undefined ? { tactTime: dto.tactTime } : {}),
+      ...(dto.expiryDate !== undefined ? { expiryDate: dto.expiryDate } : {}),
+      ...(dto.toleranceRate !== undefined ? { toleranceRate: dto.toleranceRate } : {}),
+      ...(dto.isSplittable !== undefined ? { isSplittable: dto.isSplittable } : {}),
+      ...(dto.sampleQty !== undefined ? { sampleQty: dto.sampleQty } : {}),
+      ...(dto.packUnit !== undefined ? { packUnit: dto.packUnit } : {}),
+      ...(dto.storageLocation !== undefined ? { storageLocation: dto.storageLocation } : {}),
+      ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.partRepository.update({ itemCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(itemCode, company, plant);
   }

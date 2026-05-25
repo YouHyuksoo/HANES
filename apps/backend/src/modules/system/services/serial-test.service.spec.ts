@@ -9,7 +9,7 @@
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { SerialTestService } from './serial-test.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SerialTestService', () => {
   let target: SerialTestService;

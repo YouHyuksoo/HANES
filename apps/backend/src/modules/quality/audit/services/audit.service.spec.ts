@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { AuditService } from './audit.service';
 import { AuditPlan } from '../../../../entities/audit-plan.entity';
 import { AuditFinding } from '../../../../entities/audit-finding.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('AuditService', () => {
   let target: AuditService;
@@ -70,25 +70,27 @@ describe('AuditService', () => {
       await expect(target.update('AUD-001', {} as any, 'user')).rejects.toThrow(BadRequestException);
     });
 
-    it('should keep tenant and audit key columns from the matched audit when update payload contains them', async () => {
-      const item = { auditNo: 'AUD-001', title: 'Old', status: 'PLANNED', company: 'CO', plant: 'P01' } as unknown as AuditPlan;
+    it('should update only DTO fields and keep tenant/audit key columns from the matched audit', async () => {
+      const item = { auditNo: 'AUD-001', auditScope: 'Old', status: 'PLANNED', company: 'CO', plant: 'P01' } as unknown as AuditPlan;
       mockAuditRepo.findOne.mockResolvedValue(item);
       mockAuditRepo.save.mockImplementation(async (value) => value as AuditPlan);
 
       const result = await target.update('AUD-001' as any, {
         auditNo: 'AUD-999',
-        title: 'New',
+        auditScope: 'New',
+        title: 'Ignored',
         company: 'OTHER',
         plant: 'P99',
       } as any, 'user');
 
       expect(result).toEqual(expect.objectContaining({
         auditNo: 'AUD-001',
-        title: 'New',
+        auditScope: 'New',
         company: 'CO',
         plant: 'P01',
         updatedBy: 'user',
       }));
+      expect(result).not.toHaveProperty('title');
     });
 
     it('rejects update when audit belongs to a different tenant', async () => {

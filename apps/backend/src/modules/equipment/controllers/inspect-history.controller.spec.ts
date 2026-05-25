@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { InspectHistoryController } from './inspect-history.controller';
 import { EquipInspectService } from '../services/equip-inspect.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('InspectHistoryController', () => {
   let controller: InspectHistoryController;

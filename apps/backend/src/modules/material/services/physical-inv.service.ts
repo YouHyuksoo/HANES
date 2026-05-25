@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In, Like } from 'typeorm';
+import { Repository, DataSource, In, Like, FindOptionsWhere, QueryRunner } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
@@ -80,7 +80,7 @@ export class PhysicalInvService {
    * ?꾨줎?몄뿏??諛곕꼫 ?쒖떆, InventoryFreezeGuard 寃利앹뿉 ?쒖슜
    */
   async getSessionStatus(company?: string, plant?: string) {
-    const where: any = { status: 'IN_PROGRESS' };
+    const where: FindOptionsWhere<PhysicalInvSession> = { status: 'IN_PROGRESS' };
     if (company) where.company = company;
     if (plant) where.plant = plant;
 
@@ -294,7 +294,7 @@ export class PhysicalInvService {
    * PDA ?낆뿉??留덉슫?????몄텧
    */
   async getActiveSession(company?: string, plant?: string) {
-    const where: any = { status: 'IN_PROGRESS', invType: 'MATERIAL' };
+    const where: FindOptionsWhere<PhysicalInvSession> = { status: 'IN_PROGRESS', invType: 'MATERIAL' };
     if (company) where.company = company;
     if (plant) where.plant = plant;
 
@@ -339,7 +339,7 @@ export class PhysicalInvService {
     company?: string,
     plant?: string,
   ) {
-    const where: any = { locationCode };
+    const where: FindOptionsWhere<MatStock> = { locationCode };
     if (company) where.company = company;
     if (plant) where.plant = plant;
 
@@ -485,7 +485,7 @@ export class PhysicalInvService {
     // ?대떦 湲곗??꾩썡??紐⑤뱺 ?몄뀡 李얘린
     let sessions: PhysicalInvSession[] = [];
     if (countMonth) {
-      const sessionWhere: any = { countMonth };
+      const sessionWhere: FindOptionsWhere<PhysicalInvSession> = { countMonth };
       if (company) sessionWhere.company = company;
       if (plant) sessionWhere.plant = plant;
       sessions = await this.sessionRepository.find({
@@ -730,7 +730,7 @@ export class PhysicalInvService {
   }
 
   /** ?ㅼ궗 ?몃옖??뀡 踰덊샇 梨꾨쾲 (PHCyyyyMMdd + 4?먮━ seq) */
-  private async generatePhysCountTransNo(queryRunner?: any): Promise<string> {
+  private async generatePhysCountTransNo(queryRunner?: QueryRunner): Promise<string> {
     const today = new Date();
     const prefix = `PHC${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 

@@ -46,7 +46,20 @@ describe('SimulationController', () => {
       {
         month: '2026-04',
         strategy: 'DUE_DATE',
-        result: { plans: [], schedule: [], summary: {} },
+        result: {
+          plans: [],
+          schedule: [],
+          summary: {
+            totalPlans: 0,
+            onTimeCount: 0,
+            delayCount: 0,
+            totalQty: 0,
+            workDays: 0,
+            utilizationRate: 0,
+            requiredHours: 0,
+            availableHours: 0,
+          },
+        },
       },
       'C1',
       'P1',

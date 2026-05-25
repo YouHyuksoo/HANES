@@ -33,8 +33,10 @@ import { SysConfigService } from '../../../system/services/sys-config.service';
 import {
   ContinuityInspectDto,
   AutoInspectDto,
+  CreateEquipProtocolDto,
   PreIssueDto,
   ReInspectDto,
+  UpdateEquipProtocolDto,
 } from '../dto/continuity-inspect.dto';
 
 @Injectable()
@@ -678,7 +680,11 @@ export class ContinuityInspectService {
   /**
    * 프로토콜 등록
    */
-  async createProtocol(data: Partial<EquipProtocol>, company?: string, plant?: string) {
+  async createProtocol(
+    data: CreateEquipProtocolDto & { company?: string; plant?: string },
+    company?: string,
+    plant?: string,
+  ) {
     this.assertTenantMatches('통전 프로토콜', { company, plant }, {
       label: 'body',
       company: data.company,
@@ -686,9 +692,22 @@ export class ContinuityInspectService {
     });
 
     const protocol = this.equipProtocolRepo.create({
-      ...data,
-      company: company ?? data.company ?? null,
-      plant: plant ?? data.plant ?? null,
+      protocolId: data.protocolId,
+      equipCode: data.equipCode ?? null,
+      protocolName: data.protocolName,
+      commType: data.commType ?? 'SERIAL',
+      delimiter: data.delimiter ?? ',',
+      resultIndex: data.resultIndex ?? 1,
+      passValue: data.passValue ?? 'PASS',
+      failValue: data.failValue ?? 'FAIL',
+      errorIndex: data.errorIndex ?? null,
+      dataStartChar: data.dataStartChar ?? null,
+      dataEndChar: data.dataEndChar ?? null,
+      sampleData: data.sampleData ?? null,
+      description: data.description ?? null,
+      useYn: data.useYn ?? 'Y',
+      company: company ?? null,
+      plant: plant ?? null,
     });
     return this.equipProtocolRepo.save(protocol);
   }
@@ -696,7 +715,7 @@ export class ContinuityInspectService {
   /**
    * 프로토콜 수정
    */
-  async updateProtocol(protocolId: string, data: Partial<EquipProtocol>, company?: string, plant?: string) {
+  async updateProtocol(protocolId: string, data: UpdateEquipProtocolDto, company?: string, plant?: string) {
     const protocol = await this.equipProtocolRepo.findOne({
       where: { protocolId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
@@ -704,7 +723,21 @@ export class ContinuityInspectService {
       throw new NotFoundException(
         `프로토콜을 찾을 수 없습니다: ${protocolId}`,
       );
-    Object.assign(protocol, data);
+    Object.assign(protocol, {
+      ...(data.equipCode !== undefined ? { equipCode: data.equipCode } : {}),
+      ...(data.protocolName !== undefined ? { protocolName: data.protocolName } : {}),
+      ...(data.commType !== undefined ? { commType: data.commType } : {}),
+      ...(data.delimiter !== undefined ? { delimiter: data.delimiter } : {}),
+      ...(data.resultIndex !== undefined ? { resultIndex: data.resultIndex } : {}),
+      ...(data.passValue !== undefined ? { passValue: data.passValue } : {}),
+      ...(data.failValue !== undefined ? { failValue: data.failValue } : {}),
+      ...(data.errorIndex !== undefined ? { errorIndex: data.errorIndex } : {}),
+      ...(data.dataStartChar !== undefined ? { dataStartChar: data.dataStartChar } : {}),
+      ...(data.dataEndChar !== undefined ? { dataEndChar: data.dataEndChar } : {}),
+      ...(data.sampleData !== undefined ? { sampleData: data.sampleData } : {}),
+      ...(data.description !== undefined ? { description: data.description } : {}),
+      ...(data.useYn !== undefined ? { useYn: data.useYn } : {}),
+    });
     return this.equipProtocolRepo.save(protocol);
   }
 
@@ -755,9 +788,11 @@ export class ContinuityInspectService {
         const parsed = this.parseRawData(dto.rawData, protocol);
         passYn = parsed.passYn;
         errorCode = parsed.errorCode;
-      } catch (parseError: any) {
-        this.logger.error(`데이터 파싱 실패: rawData="${dto.rawData}", protocol=${dto.protocolId}`, parseError.stack);
-        throw new BadRequestException(`데이터 파싱 실패: ${parseError.message}`);
+      } catch (parseError: unknown) {
+        const message = parseError instanceof Error ? parseError.message : String(parseError);
+        const stack = parseError instanceof Error ? parseError.stack : undefined;
+        this.logger.error(`데이터 파싱 실패: rawData="${dto.rawData}", protocol=${dto.protocolId}`, stack);
+        throw new BadRequestException(`데이터 파싱 실패: ${message}`);
       }
     } else {
       throw new BadRequestException(

@@ -27,7 +27,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('JobOrderService', () => {

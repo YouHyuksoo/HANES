@@ -10,7 +10,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { ProductHoldService } from './product-hold.service';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProductHoldService', () => {

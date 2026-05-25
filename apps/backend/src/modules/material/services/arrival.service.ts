@@ -14,7 +14,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Between, DataSource } from 'typeorm';
+import { Repository, In, Between, DataSource, EntityManager, FindOptionsWhere } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -85,7 +85,7 @@ export class ArrivalService {
 
   /** 입하 가능 PO 목록 조회 (CONFIRMED/PARTIAL 상태) */
   async findReceivablePOs(company?: string, plant?: string) {
-    const where: any = {
+    const where: FindOptionsWhere<PurchaseOrder> = {
       status: In(['CONFIRMED', 'PARTIAL']),
     };
     if (company) where.company = company;
@@ -929,7 +929,7 @@ export class ArrivalService {
   }
 
   /** PO 상태 재계산 */
-  private async updatePOStatus(manager: any, poNo: string, company?: string | null, plant?: string | null) {
+  private async updatePOStatus(manager: EntityManager, poNo: string, company?: string | null, plant?: string | null) {
     const tenantWhere = {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
@@ -958,7 +958,7 @@ export class ArrivalService {
   }
 
   /** MatStock upsert (현재고 증감) */
-  private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
+  private async upsertStock(manager: EntityManager, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
     const resolvedMatUid = matUid || '*';
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: resolvedMatUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },

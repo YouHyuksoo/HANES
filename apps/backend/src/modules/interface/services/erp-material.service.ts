@@ -217,10 +217,7 @@ export class ErpMaterialService {
     const payload = JSON.stringify(data);
 
     try {
-      // TODO: 실제 ERP API 호출 (어댑터 패턴)
-      // const erpApiUrl = await this.sysConfigService.getValue('ERP_API_URL');
-      // const response = await httpClient.post(erpApiUrl, data);
-      this.logger.log(`ERP 전송 시뮬레이션: ${data.messageType} ${data.refNo}`);
+      await this.sendToErp(data);
 
       await this.logInterface(transDate, seq, 'OUTBOUND', `ERP_${data.messageType}`, 'SUCCESS', data.refNo, payload, undefined, data.company, data.plant);
       return { success: true, refNo: data.refNo };
@@ -251,8 +248,8 @@ export class ErpMaterialService {
 
       try {
         const data = JSON.parse(log.payload || '{}');
-        // TODO: 실제 ERP API 재호출
         this.logger.log(`ERP 재시도 (${log.retryCount + 1}/3): ${log.messageType} ${log.interfaceId}`);
+        await this.sendToErp(data);
 
         await this.interLogRepo.update(
           { transDate: log.transDate, seq: log.seq, ...tenantWhere },
@@ -270,6 +267,28 @@ export class ErpMaterialService {
       }
     }
     return results;
+  }
+
+  private async sendToErp(data: ErpExportData): Promise<void> {
+    const erpApiUrl = await this.sysConfigService.getValue('ERP_API_URL');
+    if (!erpApiUrl) {
+      throw new Error('ERP_API_URL 설정이 없어 ERP 전송을 수행할 수 없습니다.');
+    }
+
+    if (typeof fetch !== 'function') {
+      throw new Error('fetch API를 사용할 수 없어 ERP 전송을 수행할 수 없습니다.');
+    }
+
+    const response = await fetch(erpApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const responseText = await response.text().catch(() => '');
+      throw new Error(`ERP 전송 실패: HTTP ${response.status}${responseText ? ` - ${responseText}` : ''}`);
+    }
   }
 
   // ==========================================================================

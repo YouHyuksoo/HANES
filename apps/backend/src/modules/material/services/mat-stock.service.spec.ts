@@ -19,7 +19,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { TransactionService } from '../../../shared/transaction.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('MatStockService', () => {
   let target: MatStockService;

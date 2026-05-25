@@ -9,7 +9,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
 import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
 import {
@@ -37,9 +37,9 @@ export class EquipBomService {
   async findAllItems(query: EquipBomItemQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 20, itemType, useYn, search, company: queryCompany } = query;
 
-    const whereConditions: any = {};
+    const whereConditions: FindOptionsWhere<EquipBomItem> = {};
 
-    if (itemType) {
+    if (itemType === 'PART' || itemType === 'CONSUMABLE') {
       whereConditions.itemType = itemType;
     }
     if (useYn) {
@@ -52,7 +52,7 @@ export class EquipBomService {
       whereConditions.plant = plant;
     }
 
-    let where: any = whereConditions;
+    let where: FindOptionsWhere<EquipBomItem> | FindOptionsWhere<EquipBomItem>[] = whereConditions;
     
     // 검색어 처리
     if (search) {
@@ -90,18 +90,38 @@ export class EquipBomService {
   }
 
   async createItem(dto: CreateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
-    const item = this.bomItemRepo.create({ ...dto, company, plant });
+    const item = this.bomItemRepo.create({
+      bomItemCode: dto.bomItemCode,
+      bomItemName: dto.bomItemName,
+      itemType: dto.itemType,
+      spec: dto.spec ?? null,
+      maker: dto.maker ?? null,
+      unit: dto.unit ?? 'EA',
+      unitPrice: dto.unitPrice ?? null,
+      replacementCycle: dto.replacementCycle ?? null,
+      stockQty: dto.stockQty ?? 0,
+      safetyStock: dto.safetyStock ?? 0,
+      useYn: dto.useYn ?? 'Y',
+      company: company ?? null,
+      plant: plant ?? null,
+    });
     return this.bomItemRepo.save(item);
   }
 
   async updateItem(id: string, dto: UpdateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
     const item = await this.findItemById(id, company, plant);
-    const {
-      bomItemCode: _bomItemCode,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<EquipBomItem> = {
+      ...(dto.bomItemName !== undefined ? { bomItemName: dto.bomItemName } : {}),
+      ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
+      ...(dto.spec !== undefined ? { spec: dto.spec } : {}),
+      ...(dto.maker !== undefined ? { maker: dto.maker } : {}),
+      ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
+      ...(dto.unitPrice !== undefined ? { unitPrice: dto.unitPrice } : {}),
+      ...(dto.replacementCycle !== undefined ? { replacementCycle: dto.replacementCycle } : {}),
+      ...(dto.stockQty !== undefined ? { stockQty: dto.stockQty } : {}),
+      ...(dto.safetyStock !== undefined ? { safetyStock: dto.safetyStock } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     Object.assign(item, updateData);
     return this.bomItemRepo.save(item);
   }

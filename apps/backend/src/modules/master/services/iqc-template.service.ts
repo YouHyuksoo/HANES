@@ -109,11 +109,13 @@ export class IqcTemplateService {
         await queryRunner.manager.save(IqcTemplateItem, items);
       }
 
-      return queryRunner.manager.findOne(IqcTemplate, {
+      const saved = await queryRunner.manager.findOne(IqcTemplate, {
         where: { templateId, company, plant },
         relations: ['items', 'items.inspItem'],
         order: { items: { seq: 'ASC' } },
-      }) as Promise<IqcTemplate>;
+      });
+      if (!saved) throw new NotFoundException(`템플릿이 없습니다: ${templateId}`);
+      return saved;
     });
   }
 

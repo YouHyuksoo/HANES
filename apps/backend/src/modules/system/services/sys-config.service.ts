@@ -11,7 +11,7 @@
  */
 import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { SysConfig } from '../../../entities/sys-config.entity';
 import {
   CreateSysConfigDto,
@@ -54,7 +54,7 @@ export class SysConfigService {
 
   /** 설정 목록 조회 (관리 페이지용) */
   async findAll(query: SysConfigQueryDto, company?: string, plant?: string) {
-    const where: any = {
+    const where: FindOptionsWhere<SysConfig> = {
       ...(company && { company }),
       ...(plant && { plant }),
     };
@@ -130,7 +130,15 @@ export class SysConfigService {
       );
     }
     const entity = this.sysConfigRepository.create({
-      ...dto,
+      configGroup: dto.configGroup,
+      configKey: dto.configKey,
+      configValue: dto.configValue,
+      configType: dto.configType,
+      label: dto.label,
+      description: dto.description ?? null,
+      options: dto.options ?? null,
+      sortOrder: dto.sortOrder ?? 0,
+      isActive: 'Y',
       company,
       plant,
     });

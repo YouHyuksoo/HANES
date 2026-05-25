@@ -98,7 +98,12 @@ export class WorkCalendarService {
     if (existing) throw new ConflictException(`이미 존재하는 캘린더: ${dto.calendarId}`);
 
     const entity = this.calendarRepo.create({
-      ...dto,
+      calendarId: dto.calendarId,
+      calendarYear: dto.calendarYear,
+      processCd: dto.processCd ?? null,
+      defaultShiftCount: dto.defaultShiftCount ?? 1,
+      defaultShifts: dto.defaultShifts ?? null,
+      remark: dto.remark ?? null,
       status: 'DRAFT',
       company,
       plant,
@@ -111,10 +116,19 @@ export class WorkCalendarService {
     const calendar = await this.findById(calendarId, company, plant);
     this.ensureNotConfirmed(calendar);
 
-    const updateData: any = { ...dto };
-    delete updateData.calendarId;
-    delete updateData.company;
-    delete updateData.plant;
+    const updateData: Partial<Pick<WorkCalendar,
+      | 'calendarYear'
+      | 'processCd'
+      | 'defaultShiftCount'
+      | 'defaultShifts'
+      | 'remark'
+    >> = {
+      ...(dto.calendarYear !== undefined ? { calendarYear: dto.calendarYear } : {}),
+      ...(dto.processCd !== undefined ? { processCd: dto.processCd } : {}),
+      ...(dto.defaultShiftCount !== undefined ? { defaultShiftCount: dto.defaultShiftCount } : {}),
+      ...(dto.defaultShifts !== undefined ? { defaultShifts: dto.defaultShifts } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
     await this.calendarRepo.update({ calendarId, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(calendarId, company, plant);
   }

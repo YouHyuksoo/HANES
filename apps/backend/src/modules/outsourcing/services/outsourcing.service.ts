@@ -29,6 +29,15 @@ import {
   CreateSubconReceiveDto,
 } from '../dto/outsourcing.dto';
 
+type VendorStockSummary = {
+  vendorId: string;
+  vendorCode: string;
+  vendorName: string;
+  deliveredQty: number;
+  receivedQty: number;
+  stockQty: number;
+};
+
 @Injectable()
 export class OutsourcingService {
   private readonly logger = new Logger(OutsourcingService.name);
@@ -126,8 +135,18 @@ export class OutsourcingService {
     }
 
     const vendor = this.vendorMasterRepository.create({
-      ...dto,
-      ...this.tenantWhere(company, plant),
+      vendorCode: dto.vendorCode,
+      vendorName: dto.vendorName,
+      bizNo: dto.bizNo ?? null,
+      ceoName: dto.ceoName ?? null,
+      address: dto.address ?? null,
+      tel: dto.tel ?? null,
+      fax: dto.fax ?? null,
+      email: dto.email ?? null,
+      contactPerson: dto.contactPerson ?? null,
+      vendorType: dto.vendorType ?? null,
+      company: company ?? null,
+      plant: plant ?? null,
     });
     return this.vendorMasterRepository.save(vendor);
   }
@@ -135,7 +154,32 @@ export class OutsourcingService {
   async updateVendor(vendorCode: string, dto: UpdateVendorDto, company?: string, plant?: string) {
     await this.findVendorById(vendorCode, company, plant);
 
-    await this.vendorMasterRepository.update({ vendorCode, ...this.tenantWhere(company, plant) }, dto);
+    const updateData: Partial<Pick<
+      VendorMaster,
+      | 'vendorName'
+      | 'bizNo'
+      | 'ceoName'
+      | 'address'
+      | 'tel'
+      | 'fax'
+      | 'email'
+      | 'contactPerson'
+      | 'vendorType'
+      | 'useYn'
+    >> = {
+      ...(dto.vendorName !== undefined ? { vendorName: dto.vendorName } : {}),
+      ...(dto.bizNo !== undefined ? { bizNo: dto.bizNo } : {}),
+      ...(dto.ceoName !== undefined ? { ceoName: dto.ceoName } : {}),
+      ...(dto.address !== undefined ? { address: dto.address } : {}),
+      ...(dto.tel !== undefined ? { tel: dto.tel } : {}),
+      ...(dto.fax !== undefined ? { fax: dto.fax } : {}),
+      ...(dto.email !== undefined ? { email: dto.email } : {}),
+      ...(dto.contactPerson !== undefined ? { contactPerson: dto.contactPerson } : {}),
+      ...(dto.vendorType !== undefined ? { vendorType: dto.vendorType } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
+
+    await this.vendorMasterRepository.update({ vendorCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findVendorById(vendorCode, company, plant);
   }
 
@@ -491,7 +535,7 @@ export class OutsourcingService {
     });
 
     // 외주처별 재고 집계
-    const stockByVendor = orders.reduce((acc, order) => {
+    const stockByVendor = orders.reduce<Record<string, VendorStockSummary>>((acc, order) => {
       const vendorId = order.vendorId;
       if (!acc[vendorId]) {
         acc[vendorId] = {
@@ -507,7 +551,7 @@ export class OutsourcingService {
       acc[vendorId].receivedQty += order.receivedQty;
       acc[vendorId].stockQty += order.deliveredQty - order.receivedQty;
       return acc;
-    }, {} as Record<string, any>);
+    }, {});
 
     // IN 배치 선조회로 N+1 방지
     const vendorIdList = Object.keys(stockByVendor);

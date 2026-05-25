@@ -8,7 +8,7 @@
  * 3. passYn='Y' → FG_BARCODE 자동 채번, 'N' → 불량 기록만
  */
 
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsString, IsOptional, IsInt, IsIn, Min, MaxLength } from 'class-validator';
 
@@ -174,3 +174,89 @@ export class VoidLabelDto {
   @MaxLength(200)
   reason: string;
 }
+
+export class CreateEquipProtocolDto {
+  @ApiProperty({ description: '프로토콜 ID' })
+  @IsString()
+  @MaxLength(30)
+  protocolId: string;
+
+  @ApiPropertyOptional({ description: '설비 코드' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  equipCode?: string;
+
+  @ApiProperty({ description: '프로토콜명' })
+  @IsString()
+  @MaxLength(100)
+  protocolName: string;
+
+  @ApiPropertyOptional({ description: '통신 유형', default: 'SERIAL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  commType?: string;
+
+  @ApiPropertyOptional({ description: '구분자', default: ',' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  delimiter?: string;
+
+  @ApiPropertyOptional({ description: '결과 위치 index', default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  resultIndex?: number;
+
+  @ApiPropertyOptional({ description: '합격 값', default: 'PASS' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  passValue?: string;
+
+  @ApiPropertyOptional({ description: '불합격 값', default: 'FAIL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  failValue?: string;
+
+  @ApiPropertyOptional({ description: '에러 위치 index' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  errorIndex?: number;
+
+  @ApiPropertyOptional({ description: '데이터 시작 문자' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5)
+  dataStartChar?: string;
+
+  @ApiPropertyOptional({ description: '데이터 종료 문자' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5)
+  dataEndChar?: string;
+
+  @ApiPropertyOptional({ description: '샘플 데이터' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  sampleData?: string;
+
+  @ApiPropertyOptional({ description: '설명' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  description?: string;
+
+  @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  useYn?: string;
+}
+
+export class UpdateEquipProtocolDto extends PartialType(CreateEquipProtocolDto) {}

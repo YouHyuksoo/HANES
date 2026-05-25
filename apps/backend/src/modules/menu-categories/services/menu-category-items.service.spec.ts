@@ -5,6 +5,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { MenuCategory } from '../../../entities/menu-category.entity';
 import { MenuCategoryItem } from '../../../entities/menu-category-item.entity';
 import { MenuCategoryItemsService } from './menu-category-items.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 jest.mock('../utils/menu-code-validator', () => ({
   isValidMenuCode: (code: string) => new Set(['DASHBOARD', 'MST_PART', 'MST_BOM', 'SYS_USER']).has(code),
@@ -16,6 +17,7 @@ describe('MenuCategoryItemsService', () => {
   let itemRepo: jest.Mocked<Repository<MenuCategoryItem>>;
   let categoryRepo: jest.Mocked<Repository<MenuCategory>>;
   let dataSource: jest.Mocked<DataSource>;
+  let tx: jest.Mocked<TransactionService>;
 
   beforeEach(async () => {
     itemRepo = {
@@ -34,6 +36,9 @@ describe('MenuCategoryItemsService', () => {
     dataSource = {
       transaction: jest.fn(async (cb: any) => cb({ getRepository: () => itemRepo })),
     } as unknown as jest.Mocked<DataSource>;
+    tx = {
+      run: jest.fn(async (cb: any) => cb({ manager: { getRepository: () => itemRepo } })),
+    } as unknown as jest.Mocked<TransactionService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -41,6 +46,7 @@ describe('MenuCategoryItemsService', () => {
         { provide: getRepositoryToken(MenuCategoryItem), useValue: itemRepo },
         { provide: getRepositoryToken(MenuCategory), useValue: categoryRepo },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     }).compile();
 
@@ -126,7 +132,7 @@ describe('MenuCategoryItemsService', () => {
           { menuCode: 'MST_BOM', sortOrder: 20 },
         ],
       });
-      expect(dataSource.transaction).toHaveBeenCalled();
+      expect(tx.run).toHaveBeenCalled();
     });
   });
 

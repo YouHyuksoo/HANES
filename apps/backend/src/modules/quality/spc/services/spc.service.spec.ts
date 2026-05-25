@@ -10,7 +10,7 @@ import { Repository, DataSource } from 'typeorm';
 import { SpcService } from './spc.service';
 import { SpcChart } from '../../../../entities/spc-chart.entity';
 import { SpcData } from '../../../../entities/spc-data.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SpcService', () => {
   let target: SpcService;
@@ -55,25 +55,27 @@ describe('SpcService', () => {
   });
 
   describe('updateChart', () => {
-    it('should keep tenant and chart key columns from the matched chart when update payload contains them', async () => {
-      const chart = { chartNo: 'SPC-001', chartName: 'Old', company: 'CO', plant: 'P01' } as unknown as SpcChart;
+    it('should update only DTO fields and keep tenant/chart key columns from the matched chart', async () => {
+      const chart = { chartNo: 'SPC-001', characteristicName: 'Old', company: 'CO', plant: 'P01' } as unknown as SpcChart;
       mockChartRepo.findOne.mockResolvedValue(chart);
       mockChartRepo.save.mockImplementation(async (value) => value as SpcChart);
 
       const result = await target.updateChart('SPC-001', {
         chartNo: 'SPC-999',
-        chartName: 'New',
+        characteristicName: 'New',
+        chartName: 'Ignored',
         company: 'OTHER',
         plant: 'P99',
       } as any, 'user', 'CO', 'P01');
 
       expect(result).toEqual(expect.objectContaining({
         chartNo: 'SPC-001',
-        chartName: 'New',
+        characteristicName: 'New',
         company: 'CO',
         plant: 'P01',
         updatedBy: 'user',
       }));
+      expect(result).not.toHaveProperty('chartName');
     });
   });
 

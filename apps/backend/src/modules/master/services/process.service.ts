@@ -101,10 +101,21 @@ export class ProcessService {
 
   async update(processCode: string, dto: UpdateProcessDto, company?: string, plant?: string) {
     await this.findById(processCode, company, plant);
-    const updateData: any = { ...dto };
-    delete updateData.processCode;
-    delete updateData.company;
-    delete updateData.plant;
+    const updateData: Partial<Pick<ProcessMaster,
+      | 'processName'
+      | 'processType'
+      | 'processCategory'
+      | 'sortOrder'
+      | 'remark'
+      | 'useYn'
+    >> = {
+      ...(dto.processName !== undefined ? { processName: dto.processName } : {}),
+      ...(dto.processType !== undefined ? { processType: dto.processType } : {}),
+      ...(dto.processCategory !== undefined ? { processCategory: dto.processCategory } : {}),
+      ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.processRepository.update({ processCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(processCode, company, plant);
   }

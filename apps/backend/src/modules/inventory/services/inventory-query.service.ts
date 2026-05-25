@@ -8,13 +8,25 @@
  */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, MoreThan } from 'typeorm';
+import { Repository, In, MoreThan, FindOptionsWhere } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockQueryDto, TransactionQueryDto } from '../dto/inventory.dto';
+
+export interface StockSummary {
+  itemCode: string;
+  itemName: string;
+  totalQty: number;
+  warehouses: Array<{
+    warehouseId: string;
+    warehouseCode: string;
+    warehouseName: string;
+    qty: number;
+  }>;
+}
 
 @Injectable()
 export class InventoryQueryService {
@@ -38,12 +50,16 @@ export class InventoryQueryService {
     };
   }
 
+  private createStockSummary(): Record<string, StockSummary> {
+    return {};
+  }
+
   /**
    * 현재고 조회
    * @returns 평면화된 재고 데이터 (중첩 객체 → 평면 필드)
    */
   async getStock(query: StockQueryDto, company?: string, plant?: string) {
-    const where: any = {};
+    const where: FindOptionsWhere<MatStock> = {};
     if (company) where.company = company;
     if (plant) where.plant = plant;
     if (query.warehouseCode) where.warehouseCode = query.warehouseCode;
@@ -118,7 +134,7 @@ export class InventoryQueryService {
    * 수불 이력 조회 (원자재 STOCK_TRANSACTIONS)
    */
   async getTransactions(query: TransactionQueryDto, company?: string, plant?: string) {
-    const where: any = {};
+    const where: FindOptionsWhere<StockTransaction> = {};
     if (company) where.company = company;
     if (plant) where.plant = plant;
     if (query.itemCode) where.itemCode = query.itemCode;
@@ -180,7 +196,7 @@ export class InventoryQueryService {
    * LOT 목록 조회
    */
   async getLots(query: { itemCode?: string; itemType?: string; status?: string }, company?: string, plant?: string) {
-    const where: any = this.tenantWhere(company, plant);
+    const where: FindOptionsWhere<MatLot> = this.tenantWhere(company, plant);
     if (query.itemCode) where.itemCode = query.itemCode;
     if (query.status) where.status = query.status;
 
@@ -318,7 +334,7 @@ export class InventoryQueryService {
     }
 
     // 품목별 집계
-    const summary: Record<string, { itemCode: string; itemName: string; totalQty: number; warehouses: any[] }> = {};
+    const summary = this.createStockSummary();
 
     for (const stock of stocks) {
       const part = partMap.get(stock.itemCode);

@@ -13,7 +13,7 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { IqcItemPoolService } from './iqc-item-pool.service';
 import { IqcItemPool } from '../../../entities/iqc-item-pool.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('IqcItemPoolService', () => {
   let target: IqcItemPoolService;

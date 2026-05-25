@@ -13,7 +13,7 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PartnerService } from './partner.service';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('PartnerService', () => {
   let target: PartnerService;
@@ -131,11 +131,23 @@ describe('PartnerService', () => {
 
       expect(mockRepo.update).toHaveBeenCalledWith(
         { partnerCode: 'P01', company: 'C1', plant: 'P1' },
-        expect.not.objectContaining({
-          partnerCode: expect.anything(),
-          company: expect.anything(),
-          plant: expect.anything(),
-        }),
+        { partnerName: 'New' },
+      );
+    });
+
+    it('does not pass arbitrary fields from update payload to the repository', async () => {
+      const existing = { partnerCode: 'P01', partnerName: 'Old', company: 'C1', plant: 'P1' } as PartnerMaster;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('P01', {
+        partnerName: 'New',
+        externalSource: 'ERP',
+      } as any, 'C1', 'P1');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { partnerCode: 'P01', company: 'C1', plant: 'P1' },
+        { partnerName: 'New' },
       );
     });
   });

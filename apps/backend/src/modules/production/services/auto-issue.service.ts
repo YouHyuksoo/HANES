@@ -38,6 +38,20 @@ export interface AutoIssueResult {
   skipped: boolean;
 }
 
+interface BomComponentRow {
+  parentItemCode: string;
+  childItemCode: string;
+  qtyPer: number;
+  seq: number;
+  bomGrp: string | null;
+  processCode: string | null;
+  side: string | null;
+  ecoNo: string | null;
+  validFrom: Date | string | null;
+  validTo: Date | string | null;
+  useYn: string;
+}
+
 type IssueTiming = 'ON_CREATE' | 'ON_COMPLETE';
 type TenantContext = { company?: string | null; plant?: string | null };
 
@@ -170,7 +184,7 @@ export class AutoIssueService {
     parentItemCode: string,
     today: Date,
     tenant: TenantContext,
-  ): Promise<BomMaster[]> {
+  ): Promise<BomComponentRow[]> {
     const dateStr = today.toISOString().slice(0, 10);
     const tenantClauses: string[] = [];
     const params = [parentItemCode, dateStr, dateStr];
@@ -184,7 +198,7 @@ export class AutoIssueService {
     }
     const tenantSql = tenantClauses.length > 0 ? `${tenantClauses.join('\n')}\n` : '';
     // Raw SQL로 복합 PK 테이블 조회 (TypeORM QueryBuilder의 Oracle 복합PK 호환 문제 회피)
-    const rows = await qr.manager.query(
+    const rows: BomComponentRow[] = await qr.manager.query(
       `SELECT b.PARENT_ITEM_CODE AS "parentItemCode",
               b.CHILD_ITEM_CODE  AS "childItemCode",
               b.REVISION         AS "revision",
@@ -206,7 +220,7 @@ ${tenantSql}
         ORDER BY b.SEQ ASC`,
       params,
     );
-    return rows as BomMaster[];
+    return rows;
   }
 
   /* ================================================================

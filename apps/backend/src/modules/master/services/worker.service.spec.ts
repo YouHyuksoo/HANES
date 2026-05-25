@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { WorkerService } from './worker.service';
 
 describe('WorkerService', () => {
@@ -116,11 +116,23 @@ describe('WorkerService', () => {
 
     expect(mockRepo.update).toHaveBeenCalledWith(
       { workerCode: 'W01', company: 'C1', plant: 'P1' },
-      expect.not.objectContaining({
-        workerCode: expect.anything(),
-        company: expect.anything(),
-        plant: expect.anything(),
-      }),
+      { workerName: 'New', processIds: '["P20"]' },
+    );
+  });
+
+  it('does not pass arbitrary fields from update payload to the repository', async () => {
+    const item = { workerCode: 'W01', workerName: 'Old', company: 'C1', plant: 'P1', processIds: null } as WorkerMaster;
+    mockRepo.findOne.mockResolvedValue(item);
+    mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+    await target.update('W01', {
+      workerName: 'New',
+      externalSource: 'ERP',
+    } as any, 'C1', 'P1');
+
+    expect(mockRepo.update).toHaveBeenCalledWith(
+      { workerCode: 'W01', company: 'C1', plant: 'P1' },
+      { workerName: 'New' },
     );
   });
 

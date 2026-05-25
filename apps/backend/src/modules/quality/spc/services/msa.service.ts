@@ -147,7 +147,20 @@ export class MsaService {
     }
 
     const entity = this.gaugeRepo.create({
-      ...dto,
+      gaugeCode: dto.gaugeCode,
+      gaugeName: dto.gaugeName,
+      gaugeType: dto.gaugeType,
+      manufacturer: dto.manufacturer,
+      model: dto.model,
+      serialNo: dto.serialNo,
+      resolution: dto.resolution,
+      measureRange: dto.measureRange,
+      calibrationCycle: dto.calibrationCycle,
+      lastCalibrationDate: dto.lastCalibrationDate ? new Date(dto.lastCalibrationDate) : undefined,
+      nextCalibrationDate: dto.nextCalibrationDate ? new Date(dto.nextCalibrationDate) : undefined,
+      status: dto.status,
+      location: dto.location,
+      responsiblePerson: dto.responsiblePerson,
       company,
       plant,
       createdBy: userId,
@@ -169,12 +182,21 @@ export class MsaService {
     plant?: string,
   ) {
     const item = await this.findGaugeById(gaugeCode, company, plant);
-    const {
-      gaugeCode: _gaugeCode,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<GaugeMaster> = {
+      ...(dto.gaugeName !== undefined ? { gaugeName: dto.gaugeName } : {}),
+      ...(dto.gaugeType !== undefined ? { gaugeType: dto.gaugeType } : {}),
+      ...(dto.manufacturer !== undefined ? { manufacturer: dto.manufacturer } : {}),
+      ...(dto.model !== undefined ? { model: dto.model } : {}),
+      ...(dto.serialNo !== undefined ? { serialNo: dto.serialNo } : {}),
+      ...(dto.resolution !== undefined ? { resolution: dto.resolution } : {}),
+      ...(dto.measureRange !== undefined ? { measureRange: dto.measureRange } : {}),
+      ...(dto.calibrationCycle !== undefined ? { calibrationCycle: dto.calibrationCycle } : {}),
+      ...(dto.lastCalibrationDate !== undefined ? { lastCalibrationDate: new Date(dto.lastCalibrationDate) } : {}),
+      ...(dto.nextCalibrationDate !== undefined ? { nextCalibrationDate: new Date(dto.nextCalibrationDate) } : {}),
+      ...(dto.status !== undefined ? { status: dto.status } : {}),
+      ...(dto.location !== undefined ? { location: dto.location } : {}),
+      ...(dto.responsiblePerson !== undefined ? { responsiblePerson: dto.responsiblePerson } : {}),
+    };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.gaugeRepo.save(item);
   }
@@ -265,11 +287,22 @@ export class MsaService {
     }
 
     const calibrationNo = await this.generateCalibrationNo(company, plant);
-    const { gaugeId: dtoGaugeCode, ...restDto } = dto;
     const entity = this.calRepo.create({
-      ...restDto,
-      gaugeCode: dtoGaugeCode,
+      gaugeCode: dto.gaugeId,
       calibrationNo,
+      calibrationDate: new Date(dto.calibrationDate),
+      calibrationType: dto.calibrationType,
+      calibrator: dto.calibrator ?? null,
+      calibrationOrg: dto.calibrationOrg ?? null,
+      standardUsed: dto.standardUsed ?? null,
+      result: dto.result,
+      measuredValue: dto.measuredValue ?? null,
+      referenceValue: dto.referenceValue ?? null,
+      deviation: dto.deviation ?? null,
+      uncertainty: dto.uncertainty ?? null,
+      nextDueDate: dto.nextDueDate ? new Date(dto.nextDueDate) : null,
+      certificateNo: dto.certificateNo ?? null,
+      remark: dto.remark ?? null,
       company,
       plant,
       createdBy: userId,

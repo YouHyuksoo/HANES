@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { ControlPlanService } from './control-plan.service';
 import { ControlPlan } from '../../../../entities/control-plan.entity';
 import { ControlPlanItem } from '../../../../entities/control-plan-item.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ControlPlanService', () => {
   let target: ControlPlanService;

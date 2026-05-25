@@ -13,7 +13,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { DocumentService } from './document.service';
 import { DocumentMaster } from '../../../entities/document-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('DocumentService', () => {
   let target: DocumentService;

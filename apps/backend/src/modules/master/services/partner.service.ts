@@ -109,10 +109,31 @@ export class PartnerService {
 
   async update(partnerCode: string, dto: UpdatePartnerDto, company?: string, plant?: string) {
     await this.findById(partnerCode, company, plant);
-    const updateData: any = { ...dto };
-    delete updateData.partnerCode;
-    delete updateData.company;
-    delete updateData.plant;
+    const updateData: Partial<Pick<PartnerMaster,
+      | 'partnerName'
+      | 'partnerType'
+      | 'bizNo'
+      | 'ceoName'
+      | 'address'
+      | 'tel'
+      | 'fax'
+      | 'email'
+      | 'contactPerson'
+      | 'remark'
+      | 'useYn'
+    >> = {
+      ...(dto.partnerName !== undefined ? { partnerName: dto.partnerName } : {}),
+      ...(dto.partnerType !== undefined ? { partnerType: dto.partnerType } : {}),
+      ...(dto.bizNo !== undefined ? { bizNo: dto.bizNo } : {}),
+      ...(dto.ceoName !== undefined ? { ceoName: dto.ceoName } : {}),
+      ...(dto.address !== undefined ? { address: dto.address } : {}),
+      ...(dto.tel !== undefined ? { tel: dto.tel } : {}),
+      ...(dto.fax !== undefined ? { fax: dto.fax } : {}),
+      ...(dto.email !== undefined ? { email: dto.email } : {}),
+      ...(dto.contactPerson !== undefined ? { contactPerson: dto.contactPerson } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.partnerRepository.update({ partnerCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(partnerCode, company, plant);
   }

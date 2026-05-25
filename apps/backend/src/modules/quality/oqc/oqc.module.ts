@@ -22,7 +22,6 @@ import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { User } from '../../../entities/user.entity';
 
 @Module({
   imports: [
@@ -31,7 +30,6 @@ import { User } from '../../../entities/user.entity';
       OqcRequestBox,
       BoxMaster,
       PartMaster,
-      User,
     ]),
   ],
   controllers: [OqcController],

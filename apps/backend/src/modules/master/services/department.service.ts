@@ -92,12 +92,14 @@ export class DepartmentService {
 
   async update(id: string, dto: UpdateDepartmentDto, company?: string, plant?: string) {
     await this.findById(id, company, plant);
-    const {
-      deptCode: _deptCode,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<DepartmentMaster> = {
+      ...(dto.deptName !== undefined ? { deptName: dto.deptName } : {}),
+      ...(dto.parentDeptCode !== undefined ? { parentDeptCode: dto.parentDeptCode } : {}),
+      ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+      ...(dto.managerName !== undefined ? { managerName: dto.managerName } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.departmentRepository.update({ deptCode: id, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(id, company, plant);
   }

@@ -7,7 +7,7 @@ import { ProcessService } from './process.service';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { ProcessEquipment } from '../../../entities/process-equipment.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ProcessService equipment assignments', () => {
   let target: ProcessService;
@@ -152,11 +152,22 @@ describe('ProcessService equipment assignments', () => {
 
     expect(processRepo.update).toHaveBeenCalledWith(
       { processCode: 'PROC-A', company: 'C1', plant: 'P1' },
-      expect.not.objectContaining({
-        processCode: expect.anything(),
-        company: expect.anything(),
-        plant: expect.anything(),
-      }),
+      { processName: 'Cutting' },
+    );
+  });
+
+  it('does not pass arbitrary fields from update payload to the repository', async () => {
+    processRepo.findOne.mockResolvedValue({ processCode: 'PROC-A', company: 'C1', plant: 'P1' } as ProcessMaster);
+    processRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+    await target.update('PROC-A', {
+      processName: 'Cutting',
+      externalSource: 'ERP',
+    } as any, 'C1', 'P1');
+
+    expect(processRepo.update).toHaveBeenCalledWith(
+      { processCode: 'PROC-A', company: 'C1', plant: 'P1' },
+      { processName: 'Cutting' },
     );
   });
 });

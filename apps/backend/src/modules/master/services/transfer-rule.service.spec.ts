@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { Repository, getMetadataArgsStorage } from 'typeorm';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { WarehouseTransferRule } from '../../../entities/warehouse-transfer-rule.entity';
 import { TransferRuleService } from './transfer-rule.service';
 

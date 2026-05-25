@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file src/modules/scheduler/services/scheduler-noti.service.spec.ts
  * @description SchedulerNotiService ?⑥쐞 ?뚯뒪?? *
  * 珥덈낫??媛?대뱶:
@@ -10,7 +10,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { SchedulerNotiService } from './scheduler-noti.service';
 import { SchedulerNotification } from '../../../entities/scheduler-notification.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SchedulerNotiService', () => {
   let target: SchedulerNotiService;

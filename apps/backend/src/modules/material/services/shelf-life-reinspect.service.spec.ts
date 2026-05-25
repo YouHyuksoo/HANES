@@ -11,7 +11,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ShelfLifeReInspectService', () => {
@@ -67,7 +67,7 @@ describe('ShelfLifeReInspectService', () => {
   });
 
   describe('create', () => {
-    it('재검 PASS는 LOT의 회사/공장 범위에서 품목 기준과 LOT 만료일을 갱신한다', async () => {
+    it('재검 PASS는 LOT의 회사/공장 범위에서 기본 연장일수로 LOT 만료일을 갱신한다', async () => {
       const expireDate = new Date('2026-01-01T00:00:00.000Z');
       matLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
@@ -76,18 +76,14 @@ describe('ShelfLifeReInspectService', () => {
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
-      partMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', extendShelfDays: 30 } as any);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
       iqcLogRepo.save.mockResolvedValue({ inspectNo: 'IQC-001' } as any);
 
       await service.create({ matUid: 'MAT-001', result: 'PASS' }, 'HANES', 'P01');
 
-      expect(partMasterRepo.findOne).toHaveBeenCalledWith({
-        where: { itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
-      });
       expect(matLotRepo.update).toHaveBeenCalledWith(
         { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-        { expireDate: new Date('2026-01-31T00:00:00.000Z') },
+        { expireDate: new Date('2026-04-01T00:00:00.000Z') },
       );
     });
 

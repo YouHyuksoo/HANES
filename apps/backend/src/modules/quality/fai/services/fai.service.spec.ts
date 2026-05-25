@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { FaiService } from './fai.service';
 import { FaiRequest } from '../../../../entities/fai-request.entity';
 import { FaiItem } from '../../../../entities/fai-item.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('FaiService', () => {
   let target: FaiService;

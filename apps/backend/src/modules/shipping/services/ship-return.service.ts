@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, FindOptionsWhere } from 'typeorm';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
@@ -44,8 +44,23 @@ export class ShipReturnService {
     };
   }
 
+  private buildShipmentReturnUpdate(
+    dto: Omit<UpdateShipReturnDto, 'items' | 'status' | 'returnNo'>,
+  ): Partial<Pick<ShipmentReturn, 'shipmentId' | 'returnDate' | 'returnReason' | 'remark'>> {
+    return {
+      ...(dto.shipmentId !== undefined ? { shipmentId: dto.shipmentId } : {}),
+      ...(dto.returnDate !== undefined ? { returnDate: dto.returnDate ? new Date(dto.returnDate) : null } : {}),
+      ...(dto.returnReason !== undefined ? { returnReason: dto.returnReason } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
+  }
+
   /** items 배열의 part를 평면화하는 헬퍼 메서드 */
-  private async flattenItems(data: any, company?: string, plant?: string): Promise<any> {
+  private async flattenItems(
+    data: ShipmentReturn,
+    company?: string,
+    plant?: string,
+  ): Promise<ShipmentReturn & { items: Array<ShipmentReturnItem & { itemName?: string }> }> {
     const items = await this.shipReturnItemRepository.find({
       where: { returnNo: data.returnNo, ...this.tenantWhere(company, plant) },
     });
@@ -75,22 +90,21 @@ export class ShipReturnService {
     const { page = 1, limit = 10, search, status, returnDateFrom, returnDateTo } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<ShipmentReturn> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(status && { status }),
       ...(search && {
         returnNo: ILike(`%${search}%`),
       }),
-      ...(returnDateFrom || returnDateTo
-        ? {
-            returnDate: And(
-              returnDateFrom ? MoreThanOrEqual(new Date(returnDateFrom)) : undefined,
-              returnDateTo ? LessThanOrEqual(new Date(returnDateTo)) : undefined
-            ),
-          }
-        : {}),
     };
+    if (returnDateFrom && returnDateTo) {
+      where.returnDate = Between(new Date(returnDateFrom), new Date(returnDateTo));
+    } else if (returnDateFrom) {
+      where.returnDate = MoreThanOrEqual(new Date(returnDateFrom));
+    } else if (returnDateTo) {
+      where.returnDate = LessThanOrEqual(new Date(returnDateTo));
+    }
 
     const [data, total] = await Promise.all([
       this.shipReturnRepository.find({
@@ -200,12 +214,16 @@ export class ShipReturnService {
         `반품 상태(${dto.status})는 직접 변경할 수 없습니다. 반품 전용 처리 API를 사용해 주세요.`,
       );
     }
+    if (dto.returnNo !== undefined && dto.returnNo !== returnNo) {
+      throw new BadRequestException('반품 번호는 수정할 수 없습니다.');
+    }
 
     await this.tx.run(async (queryRunner) => {
+      const { items, status: _ignoredStatus, returnNo: _ignoredReturnNo, ...returnData } = dto;
       if (dto.items) {
         await queryRunner.manager.delete(ShipmentReturnItem, { returnNo, ...this.tenantWhere(company, plant) });
 
-        const items = dto.items.map((item, idx) =>
+        const itemEntities = dto.items.map((item, idx) =>
           this.shipReturnItemRepository.create({
             returnNo,
             seq: idx + 1,
@@ -217,17 +235,14 @@ export class ShipReturnService {
             plant: plant || null,
           })
         );
-        await queryRunner.manager.save(items);
+        await queryRunner.manager.save(itemEntities);
       }
 
-      const updateData: any = {};
-      if (dto.returnNo !== undefined) updateData.returnNo = dto.returnNo;
-      if (dto.shipmentId !== undefined) updateData.shipmentId = dto.shipmentId;
-      if (dto.returnDate !== undefined) updateData.returnDate = dto.returnDate ? new Date(dto.returnDate) : null;
-      if (dto.returnReason !== undefined) updateData.returnReason = dto.returnReason;
-      if (dto.remark !== undefined) updateData.remark = dto.remark;
+      const updateData = this.buildShipmentReturnUpdate(returnData);
 
-      await queryRunner.manager.update(ShipmentReturn, { returnNo, ...this.tenantWhere(company, plant) }, updateData);
+      if (Object.keys(updateData).length > 0) {
+        await queryRunner.manager.update(ShipmentReturn, { returnNo, ...this.tenantWhere(company, plant) }, updateData);
+      }
     });
 
     return this.findById(returnNo, company, plant);

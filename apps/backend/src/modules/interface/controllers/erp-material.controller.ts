@@ -15,6 +15,31 @@ import { ErpMaterialService } from '../services/erp-material.service';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
+interface ErpPoRequest {
+  poNo: string;
+  orderDate: string;
+  partnerId: string;
+  partnerName: string;
+  items: {
+    seq: number;
+    itemCode: string;
+    itemName: string;
+    orderQty: number;
+    unit: string;
+    deliveryDate?: string;
+  }[];
+  company?: string;
+  plant?: string;
+}
+
+interface ErpExportRequest {
+  refNo: string;
+  itemCode: string;
+  qty: number;
+  poNo?: string;
+  reason?: string;
+}
+
 @ApiTags('인터페이스 - ERP 자재')
 @Controller('interface/erp')
 export class ErpMaterialController {
@@ -23,7 +48,7 @@ export class ErpMaterialController {
   @Post('po-import')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'ERP → MES: PO 단건 수신' })
-  async importPo(@Body() body: any) {
+  async importPo(@Body() body: ErpPoRequest) {
     const data = await this.erpMaterialService.importPurchaseOrder(body);
     return ResponseUtil.success(data, 'PO 수신 완료');
   }
@@ -31,7 +56,7 @@ export class ErpMaterialController {
   @Post('po-sync')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'ERP → MES: PO 일괄 동기화' })
-  async syncPos(@Body() body: { poList: any[] }) {
+  async syncPos(@Body() body: { poList: ErpPoRequest[] }) {
     const data = await this.erpMaterialService.syncPurchaseOrders(body.poList);
     return ResponseUtil.success(data, 'PO 동기화 완료');
   }
@@ -39,7 +64,7 @@ export class ErpMaterialController {
   @Post('export/receiving')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'MES → ERP: 입고 실적 전송' })
-  async exportReceiving(@Body() body: any, @Company() company: string, @Plant() plant: string) {
+  async exportReceiving(@Body() body: ErpExportRequest, @Company() company: string, @Plant() plant: string) {
     const data = await this.erpMaterialService.exportReceiving(body.refNo, body.itemCode, body.qty, body.poNo, company, plant);
     return ResponseUtil.success(data);
   }
@@ -47,7 +72,7 @@ export class ErpMaterialController {
   @Post('export/return')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'MES → ERP: 반품 실적 전송' })
-  async exportReturn(@Body() body: any, @Company() company: string, @Plant() plant: string) {
+  async exportReturn(@Body() body: ErpExportRequest, @Company() company: string, @Plant() plant: string) {
     const data = await this.erpMaterialService.exportReturn(body.refNo, body.itemCode, body.qty, body.reason, company, plant);
     return ResponseUtil.success(data);
   }
@@ -55,7 +80,7 @@ export class ErpMaterialController {
   @Post('export/issue')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'MES → ERP: 기타출고 실적 전송' })
-  async exportIssue(@Body() body: any, @Company() company: string, @Plant() plant: string) {
+  async exportIssue(@Body() body: ErpExportRequest, @Company() company: string, @Plant() plant: string) {
     const data = await this.erpMaterialService.exportIssue(body.refNo, body.itemCode, body.qty, company, plant);
     return ResponseUtil.success(data);
   }
@@ -63,7 +88,7 @@ export class ErpMaterialController {
   @Post('export/adjustment')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'MES → ERP: 재고보정 실적 전송' })
-  async exportAdjustment(@Body() body: any, @Company() company: string, @Plant() plant: string) {
+  async exportAdjustment(@Body() body: ErpExportRequest, @Company() company: string, @Plant() plant: string) {
     const data = await this.erpMaterialService.exportAdjustment(body.refNo, body.itemCode, body.qty, body.reason, company, plant);
     return ResponseUtil.success(data);
   }

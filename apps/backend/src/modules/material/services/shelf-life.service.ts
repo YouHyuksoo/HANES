@@ -5,7 +5,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Raw, In } from 'typeorm';
+import { Repository, Raw, In, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ShelfLifeQueryDto } from '../dto/shelf-life.dto';
@@ -23,7 +23,7 @@ export class ShelfLifeService {
     const { page = 1, limit = 10, search, expiryStatus, nearExpiryDays = 30 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<MatLot> = {
       // 유효기한이 있는 LOT만 조회
       expireDate: Raw((alias) => `${alias} IS NOT NULL`),
       ...(company && { company }),

@@ -87,7 +87,17 @@ export class IqcItemPoolService {
     }
 
     const entity = this.repo.create({
-      ...dto,
+      inspItemCode: dto.inspItemCode,
+      inspItemName: dto.inspItemName,
+      judgeMethod: dto.judgeMethod,
+      criteria: dto.criteria ?? null,
+      lsl: dto.lsl ?? null,
+      usl: dto.usl ?? null,
+      unit: dto.unit ?? null,
+      revision: dto.revision ?? 1,
+      effectiveDate: dto.effectiveDate ? new Date(dto.effectiveDate) : null,
+      useYn: dto.useYn ?? 'Y',
+      remark: dto.remark ?? null,
       company: company || null,
       plant: plant || null,
     });
@@ -97,12 +107,18 @@ export class IqcItemPoolService {
   async update(inspItemCode: string, dto: UpdateIqcItemPoolDto, company?: string, plant?: string) {
     const item = await this.findByCode(inspItemCode, company, plant);
 
-    const {
-      inspItemCode: _inspItemCode,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<IqcItemPool> = {
+      ...(dto.inspItemName !== undefined ? { inspItemName: dto.inspItemName } : {}),
+      ...(dto.judgeMethod !== undefined ? { judgeMethod: dto.judgeMethod } : {}),
+      ...(dto.criteria !== undefined ? { criteria: dto.criteria } : {}),
+      ...(dto.lsl !== undefined ? { lsl: dto.lsl } : {}),
+      ...(dto.usl !== undefined ? { usl: dto.usl } : {}),
+      ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
+      ...(dto.revision !== undefined ? { revision: dto.revision } : {}),
+      ...(dto.effectiveDate !== undefined ? { effectiveDate: new Date(dto.effectiveDate) } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+    };
     Object.assign(item, updateData);
     return this.repo.save(item);
   }

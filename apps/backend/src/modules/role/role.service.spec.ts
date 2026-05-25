@@ -14,7 +14,7 @@ import { Repository, getMetadataArgsStorage } from 'typeorm';
 import { RoleService } from './role.service';
 import { Role } from '../../entities/role.entity';
 import { RoleMenuPermission } from '../../entities/role-menu-permission.entity';
-import { MockLoggerService } from '../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('RoleService', () => {
   let target: RoleService;

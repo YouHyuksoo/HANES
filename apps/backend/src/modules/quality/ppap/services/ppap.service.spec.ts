@@ -9,7 +9,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PpapService } from './ppap.service';
 import { PpapSubmission } from '../../../../entities/ppap-submission.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('PpapService', () => {
   let target: PpapService;

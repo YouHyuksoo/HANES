@@ -5,12 +5,14 @@ import { ConflictException, BadRequestException, NotFoundException } from '@nest
 import { MenuCategory } from '../../../entities/menu-category.entity';
 import { MenuCategoryItem } from '../../../entities/menu-category-item.entity';
 import { MenuCategoriesService } from './menu-categories.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('MenuCategoriesService', () => {
   let service: MenuCategoriesService;
   let categoryRepo: jest.Mocked<Repository<MenuCategory>>;
   let itemRepo: jest.Mocked<Repository<MenuCategoryItem>>;
   let dataSource: jest.Mocked<DataSource>;
+  let tx: jest.Mocked<TransactionService>;
 
   beforeEach(async () => {
     categoryRepo = {
@@ -31,6 +33,9 @@ describe('MenuCategoriesService', () => {
     dataSource = {
       transaction: jest.fn(async (cb: any) => cb({ getRepository: () => categoryRepo })),
     } as unknown as jest.Mocked<DataSource>;
+    tx = {
+      run: jest.fn(async (cb: any) => cb({ manager: { getRepository: () => categoryRepo } })),
+    } as unknown as jest.Mocked<TransactionService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,6 +43,7 @@ describe('MenuCategoriesService', () => {
         { provide: getRepositoryToken(MenuCategory), useValue: categoryRepo },
         { provide: getRepositoryToken(MenuCategoryItem), useValue: itemRepo },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     }).compile();
 
@@ -135,7 +141,7 @@ describe('MenuCategoriesService', () => {
     it('카테고리 순서 일괄 갱신', async () => {
       categoryRepo.update.mockResolvedValue({} as any);
       await service.reorder({ items: [{ code: 'A', sortOrder: 10 }, { code: 'B', sortOrder: 20 }] });
-      expect(dataSource.transaction).toHaveBeenCalled();
+      expect(tx.run).toHaveBeenCalled();
     });
   });
 });

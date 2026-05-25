@@ -87,14 +87,18 @@ export class EquipInspectService {
     dto: UpdateEquipInspectItemDto,
   ) {
     const item = await this.findByKey(company, plant, equipCode, inspectType, seq);
-    const {
-      company: _company,
-      plant: _plant,
-      equipCode: _equipCode,
-      inspectType: _inspectType,
-      seq: _seq,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<EquipInspectItemMaster> = {
+      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
+      ...(dto.criteria !== undefined ? { criteria: dto.criteria } : {}),
+      ...(dto.cycle !== undefined ? { cycle: dto.cycle } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+      ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
+      ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
+      ...(dto.lslValue !== undefined ? { lslValue: dto.lslValue } : {}),
+      ...(dto.uslValue !== undefined ? { uslValue: dto.uslValue } : {}),
+      ...(dto.workerQrCode !== undefined ? { workerQrCode: dto.workerQrCode } : {}),
+    };
     Object.assign(item, updateData);
     return this.equipInspectRepository.save(item);
   }

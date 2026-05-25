@@ -114,7 +114,15 @@ export class PeriodicInspectController {
     @Plant() plant: string,
   ) {
     const data = await this.equipInspectService.create(
-      { ...dto, inspectType: 'PERIODIC' },
+      {
+        equipCode: dto.equipCode,
+        inspectType: 'PERIODIC',
+        inspectDate: dto.inspectDate,
+        inspectorName: dto.inspectorName,
+        overallResult: dto.overallResult,
+        details: dto.details,
+        remark: dto.remark,
+      },
       { company, plant },
     );
     return ResponseUtil.success(data, '정기점검이 등록되었습니다.');

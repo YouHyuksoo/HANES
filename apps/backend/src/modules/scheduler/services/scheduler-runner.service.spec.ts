@@ -16,7 +16,7 @@ import { SchedulerLog } from '../../../entities/scheduler-log.entity';
 import { ExecutorFactory } from '../executors/executor.factory';
 import { SchedulerLogService } from './scheduler-log.service';
 import { SchedulerNotiService } from './scheduler-noti.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SchedulerRunnerService', () => {
   let target: SchedulerRunnerService;

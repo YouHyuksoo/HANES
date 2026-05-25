@@ -251,7 +251,7 @@ export class SimulationDataService {
     const pairItemCodes = [...new Set(pairs.map((p) => p.itemCode))];
 
     if (customerIds.length > 0 && pairItemCodes.length > 0) {
-      const rows: Array<{ customerId: string; itemCode: string; minDueDate: string }> =
+      const rows: Array<{ customerId: string; itemCode: string; minDueDate: string | Date }> =
         await this.orderRepo
           .createQueryBuilder('co')
           .innerJoin(CustomerOrderItem, 'ci', 'co.orderNo = ci.orderNo AND co.company = ci.company AND co.plant = ci.plant')
@@ -270,9 +270,7 @@ export class SimulationDataService {
 
       for (const row of rows) {
         if (row.minDueDate) {
-          const dt = typeof row.minDueDate === 'object' && row.minDueDate !== null
-            ? (row.minDueDate as unknown as Date)
-            : new Date(String(row.minDueDate));
+          const dt = row.minDueDate instanceof Date ? row.minDueDate : new Date(row.minDueDate);
           dueDateByKey.set(
             `${row.customerId}|${row.itemCode}`,
             dt.toISOString().substring(0, 10),

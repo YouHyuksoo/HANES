@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In, FindOptionsWhere } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -64,7 +64,7 @@ export class MatStockService {
     const { page = 1, limit = 10, itemCode, warehouseCode, locationCode, search, lowStockOnly } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<MatStock> = {
       ...(itemCode && { itemCode }),
       ...(warehouseCode && { warehouseCode }),
       ...(locationCode && { locationCode }),
@@ -159,7 +159,7 @@ export class MatStockService {
   /** 출고 가능 재고 조회 (IQC PASS + 잔량 > 0 인 LOT만) */
   async findAvailable(query: StockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, warehouseCode, search } = query;
-    const where: any = { ...(itemCode && { itemCode }), ...(warehouseCode && { warehouseCode }), ...(company && { company }), ...(plant && { plant }) };
+    const where: FindOptionsWhere<MatStock> = { ...(itemCode && { itemCode }), ...(warehouseCode && { warehouseCode }), ...(company && { company }), ...(plant && { plant }) };
 
     const stocks = await this.matStockRepository.find({
       where, skip: (page - 1) * limit, take: limit, order: { updatedAt: 'DESC' },

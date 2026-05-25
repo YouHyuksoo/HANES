@@ -11,7 +11,7 @@ import { ReworkProcessService } from './rework-process.service';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { ReworkProcess } from '../../../../entities/rework-process.entity';
 import { ReworkResult } from '../../../../entities/rework-result.entity';
-import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ReworkProcessService', () => {
   let target: ReworkProcessService;

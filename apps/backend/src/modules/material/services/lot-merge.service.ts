@@ -132,7 +132,7 @@ export class LotMergeService {
       }
 
       // Minor: 최초 시리얼(origin) 동일 여부 검증 — THN 문서 요구사항
-      const origins = new Set(lots.map(l => (l as any).originMatUid || l.matUid));
+      const origins = new Set(lots.map(l => l.origin || l.matUid));
       if (origins.size > 1) {
         throw new BadRequestException('최초 시리얼이 다른 LOT은 병합할 수 없습니다.');
       }

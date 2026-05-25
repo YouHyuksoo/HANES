@@ -178,7 +178,7 @@ export class FaiService {
       createdBy: userId,
       updatedBy: userId,
     });
-    const saved = await this.faiRepo.save(entity) as FaiRequest;
+    const saved = await this.faiRepo.save(entity);
 
     if (items && items.length > 0) {
       await this.saveItems(saved.faiNo, items);

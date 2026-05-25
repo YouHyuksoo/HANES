@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In } from 'typeorm';
+import { Repository, Like, In, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -33,7 +33,7 @@ export class HoldService {
     const { page = 1, limit = 10, search, status } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = this.tenantWhere(company, plant);
+    const where: FindOptionsWhere<MatLot> = this.tenantWhere(company, plant);
 
     if (status) {
       where.status = status;

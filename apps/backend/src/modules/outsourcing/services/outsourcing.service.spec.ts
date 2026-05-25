@@ -17,7 +17,8 @@ import { SubconDelivery } from '../../../entities/subcon-delivery.entity';
 import { SubconReceive } from '../../../entities/subcon-receive.entity';
 import { VendorMaster } from '../../../entities/vendor-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('OutsourcingService', () => {
   let target: OutsourcingService;
@@ -27,6 +28,7 @@ describe('OutsourcingService', () => {
   let mockVendorRepo: DeepMocked<Repository<VendorMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockNumbering: DeepMocked<NumberingService>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockOrderRepo = createMock<Repository<SubconOrder>>();
@@ -35,6 +37,7 @@ describe('OutsourcingService', () => {
     mockVendorRepo = createMock<Repository<VendorMaster>>();
     mockDataSource = createMock<DataSource>();
     mockNumbering = createMock<NumberingService>();
+    mockTx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,6 +47,7 @@ describe('OutsourcingService', () => {
         { provide: getRepositoryToken(SubconReceive), useValue: mockReceiveRepo },
         { provide: getRepositoryToken(VendorMaster), useValue: mockVendorRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
         { provide: NumberingService, useValue: mockNumbering },
       ],
     })

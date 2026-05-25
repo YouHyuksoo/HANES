@@ -11,7 +11,7 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { InternalServerErrorException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { NumRuleService } from './num-rule.service';
-import { MockLoggerService } from '../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../shared/transaction.service';
 
 describe('NumRuleService', () => {

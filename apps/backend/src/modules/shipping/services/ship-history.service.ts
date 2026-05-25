@@ -10,7 +10,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, In } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, FindOptionsWhere } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -39,22 +39,21 @@ export class ShipHistoryService {
     const { page = 1, limit = 10, search, status, shipDateFrom, shipDateTo, customerName } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<ShipmentOrder> = {
       ...this.tenantWhere(company, plant),
       ...(status && { status }),
       ...(customerName && { customerName: ILike(`%${customerName}%`) }),
       ...(search && {
         shipOrderNo: ILike(`%${search}%`),
       }),
-      ...(shipDateFrom || shipDateTo
-        ? {
-            shipDate: And(
-              shipDateFrom ? MoreThanOrEqual(new Date(shipDateFrom)) : undefined,
-              shipDateTo ? LessThanOrEqual(new Date(shipDateTo)) : undefined
-            ),
-          }
-        : {}),
     };
+    if (shipDateFrom && shipDateTo) {
+      where.shipDate = Between(new Date(shipDateFrom), new Date(shipDateTo));
+    } else if (shipDateFrom) {
+      where.shipDate = MoreThanOrEqual(new Date(shipDateFrom));
+    } else if (shipDateTo) {
+      where.shipDate = LessThanOrEqual(new Date(shipDateTo));
+    }
 
     const [data, total] = await Promise.all([
       this.shipmentOrderRepository.find({

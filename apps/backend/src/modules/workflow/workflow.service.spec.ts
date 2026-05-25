@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OracleQueryAdapter } from '../../common/services/oracle-query.adapter';
-import { MockLoggerService } from '../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { WorkflowService } from './workflow.service';
 
 describe('WorkflowService', () => {

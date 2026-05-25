@@ -9,7 +9,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { LabelTemplate } from '../../../entities/label-template.entity';
 import {
   CreateLabelTemplateDto,
@@ -80,7 +80,7 @@ export class LabelTemplateService {
   async findById(id: string, company?: string, plant?: string) {
     // id는 "templateName::category" 형식 또는 단순 조회용
     const [templateName, category] = id.includes('::') ? id.split('::') : [id, undefined];
-    const where: any = category
+    const where: FindOptionsWhere<LabelTemplate> = category
       ? { templateName, category }
       : { templateName };
 
@@ -115,8 +115,15 @@ export class LabelTemplateService {
     }
 
     const entity = this.labelTemplateRepository.create({
-      ...dto,
+      templateName: dto.templateName,
+      category: dto.category,
       designData: JSON.stringify(dto.designData),
+      isDefault: dto.isDefault ?? false,
+      remark: dto.remark ?? null,
+      zplCode: dto.zplCode ?? null,
+      printMode: dto.printMode ?? 'BROWSER',
+      printerId: dto.printerId ?? null,
+      useYn: 'Y',
       company: company || null,
       plant: plant || null,
     });

@@ -17,7 +17,7 @@ import { User } from '../../entities/user.entity';
 import { PdaRoleMenu } from '../../entities/pda-role-menu.entity';
 import { RoleService } from '../role/role.service';
 import { ActivityLogService } from '../system/services/activity-log.service';
-import { MockLoggerService } from '../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('AuthService', () => {
   let target: AuthService;

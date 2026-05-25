@@ -15,7 +15,7 @@ import { CustomsService } from './customs.service';
 import { CustomsEntry } from '../../../entities/customs-entry.entity';
 import { CustomsLot } from '../../../entities/customs-lot.entity';
 import { CustomsUsageReport } from '../../../entities/customs-usage-report.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('CustomsService', () => {

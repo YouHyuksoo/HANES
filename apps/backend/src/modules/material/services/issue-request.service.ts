@@ -12,7 +12,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -132,7 +132,7 @@ export class IssueRequestService {
   /** 출고요청 목록 조회 (페이지네이션 + 필터) */
   async findAll(query: IssueRequestQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, status, search } = query;
-    const where: any = { ...(status && { status }), ...(company && { company }), ...(plant && { plant }) };
+    const where: FindOptionsWhere<MatIssueRequest> = { ...(status && { status }), ...(company && { company }), ...(plant && { plant }) };
 
     const [data, total] = await Promise.all([
       this.requestRepository.find({

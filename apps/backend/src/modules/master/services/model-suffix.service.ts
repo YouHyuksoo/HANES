@@ -108,7 +108,12 @@ export class ModelSuffixService {
     }
 
     const entity = this.modelSuffixRepository.create({
-      ...dto,
+      modelCode: dto.modelCode,
+      suffixCode: dto.suffixCode,
+      suffixName: dto.suffixName,
+      customer: dto.customer ?? null,
+      remark: dto.remark ?? null,
+      useYn: dto.useYn ?? 'Y',
       company: company || null,
       plant: plant || null,
     });
@@ -119,9 +124,15 @@ export class ModelSuffixService {
   async update(modelCode: string, suffixCode: string, dto: UpdateModelSuffixDto, company?: string, plant?: string) {
     const suffix = await this.findByCompositeKey(modelCode, suffixCode, company, plant);
 
+    Object.assign(suffix, {
+      ...(dto.suffixName !== undefined ? { suffixName: dto.suffixName } : {}),
+      ...(dto.customer !== undefined ? { customer: dto.customer } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    });
+
     const updated = await this.modelSuffixRepository.save({
       ...suffix,
-      ...dto,
       company: suffix.company,
       plant: suffix.plant,
       modelCode,

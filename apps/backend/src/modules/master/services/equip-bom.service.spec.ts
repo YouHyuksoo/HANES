@@ -14,7 +14,7 @@ import { Repository } from 'typeorm';
 import { EquipBomService } from './equip-bom.service';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
 import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('EquipBomService', () => {
   let target: EquipBomService;

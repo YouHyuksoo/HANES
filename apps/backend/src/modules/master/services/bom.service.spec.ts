@@ -14,7 +14,7 @@ import { Repository } from 'typeorm';
 import { BomService } from './bom.service';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('BomService', () => {
   let target: BomService;

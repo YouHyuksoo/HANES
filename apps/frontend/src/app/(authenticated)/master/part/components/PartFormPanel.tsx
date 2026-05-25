@@ -189,7 +189,6 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         storageLocation: form.storageLocation || undefined,
         remark: form.remark || undefined,
       };
-      console.log("[PartForm] submitting payload:", JSON.stringify(payload, null, 2));
       if (isEdit && editingPart?.itemCode) {
         await api.put(`/master/parts/${editingPart.itemCode}`, payload);
         if (selectedImageFile) {
@@ -252,10 +251,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={form.rev} onChange={e => setField("rev", e.target.value)} fullWidth />
             <Select label={t("master.part.type")} options={partTypeOptions}
               value={form.itemType} 
-              onChange={v => {
-                console.log("[PartForm] itemType changed:", v);
-                setField("itemType", v);
-              }} 
+              onChange={v => setField("itemType", v)}
               fullWidth />
             <Select label={t("master.part.productType", "제품유형")}
               options={PRODUCT_TYPE_OPTIONS.filter(o => o.value)}

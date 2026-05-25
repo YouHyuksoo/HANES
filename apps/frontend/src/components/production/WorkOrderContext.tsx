@@ -12,6 +12,8 @@
 import { useTranslation } from "react-i18next";
 import { ClipboardList, TrendingUp } from "lucide-react";
 import { Select } from "@/components/ui";
+import { useEffect, useMemo, useState } from "react";
+import api from "@/services/api";
 
 /** 작업지시 데이터 인터페이스 */
 export interface WorkOrderSummary {
@@ -25,16 +27,24 @@ export interface WorkOrderSummary {
   status: string;
 }
 
-/** Mock 작업지시 (모든 실적입력 페이지에서 공유) */
-export const mockWorkOrders: WorkOrderSummary[] = [
-  { orderNo: "JO-20250126-001", itemCode: "H-001", itemName: "메인 하네스 A", processType: "ASSY", planQty: 200, prodQty: 145, lineName: "L3-조립", status: "RUNNING" },
-  { orderNo: "JO-20250126-002", itemCode: "T-001", itemName: "110형 단자 압착", processType: "CRIMP", planQty: 1500, prodQty: 1480, lineName: "L2-압착", status: "RUNNING" },
-  { orderNo: "JO-20250126-003", itemCode: "H-003", itemName: "도어 하네스 C", processType: "ASSY", planQty: 300, prodQty: 0, lineName: "L3-조립", status: "WAITING" },
-  { orderNo: "JO-20250126-004", itemCode: "W-002", itemName: "AVSS 0.3sq 흰색", processType: "CUT", planQty: 6000, prodQty: 5900, lineName: "L1-절단", status: "RUNNING" },
-  { orderNo: "JO-20250126-005", itemCode: "H-001", itemName: "메인 하네스 A", processType: "INSP", planQty: 150, prodQty: 148, lineName: "L4-검사", status: "RUNNING" },
-  { orderNo: "JO-20250126-006", itemCode: "T-002", itemName: "250형 단자 압착", processType: "CRIMP", planQty: 4000, prodQty: 3960, lineName: "L2-압착", status: "RUNNING" },
-  { orderNo: "JO-20250126-007", itemCode: "H-003", itemName: "도어 하네스 C", processType: "PACK", planQty: 100, prodQty: 100, lineName: "L5-포장", status: "DONE" },
-];
+interface JobOrderApiRow {
+  orderNo: string;
+  itemCode: string;
+  processType?: string;
+  processCode?: string;
+  planQty?: number;
+  goodQty?: number;
+  completedQty?: number;
+  lineName?: string;
+  status: string;
+  part?: {
+    itemName?: string;
+  };
+}
+
+interface JobOrderListResponse {
+  data?: JobOrderApiRow[];
+}
 
 const processColors: Record<string, string> = {
   CUT: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
@@ -53,12 +63,51 @@ interface WorkOrderContextProps {
 
 function WorkOrderContext({ selectedOrderNo, onSelect, processFilter }: WorkOrderContextProps) {
   const { t } = useTranslation();
+  const [workOrders, setWorkOrders] = useState<WorkOrderSummary[]>([]);
 
-  // useMemo 제거 - 데이터가 7개뿐이고 filter 연산은 매우 빠름
-  let availableOrders = mockWorkOrders.filter((o) => o.status !== "DONE");
-  if (processFilter?.length) {
-    availableOrders = availableOrders.filter((o) => processFilter.includes(o.processType));
-  }
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchWorkOrders() {
+      try {
+        const response = await api.get<JobOrderListResponse | JobOrderApiRow[]>("/production/job-orders", {
+          params: { statuses: "WAITING,RUNNING", limit: 200 },
+        });
+        const rawRows = Array.isArray(response.data) ? response.data : response.data?.data ?? [];
+        const rows = rawRows.map((row) => ({
+          orderNo: row.orderNo,
+          itemCode: row.itemCode,
+          itemName: row.part?.itemName ?? row.itemCode,
+          processType: row.processType ?? row.processCode ?? "",
+          planQty: row.planQty ?? 0,
+          prodQty: row.goodQty ?? row.completedQty ?? 0,
+          lineName: row.lineName ?? "",
+          status: row.status,
+        }));
+
+        if (!cancelled) {
+          setWorkOrders(rows);
+        }
+      } catch {
+        if (!cancelled) {
+          setWorkOrders([]);
+        }
+      }
+    }
+
+    fetchWorkOrders();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const availableOrders = useMemo(() => {
+    const activeOrders = workOrders.filter((o) => o.status !== "DONE");
+    return processFilter?.length
+      ? activeOrders.filter((o) => processFilter.includes(o.processType))
+      : activeOrders;
+  }, [processFilter, workOrders]);
 
   const options = [
     { value: "", label: t("production.workOrderCtx.selectOrder") },
@@ -68,7 +117,7 @@ function WorkOrderContext({ selectedOrderNo, onSelect, processFilter }: WorkOrde
     })),
   ];
 
-  const selected = mockWorkOrders.find((o) => o.orderNo === selectedOrderNo) ?? null;
+  const selected = workOrders.find((o) => o.orderNo === selectedOrderNo) ?? null;
 
   const remaining = selected ? Math.max(selected.planQty - selected.prodQty, 0) : 0;
   const progressPct = selected && selected.planQty > 0

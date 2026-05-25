@@ -155,10 +155,19 @@ export class SchedulerJobService implements OnModuleInit {
     const nextRunAt = this.computeNextRun(dto.cronExpr);
 
     const entity = this.jobRepo.create({
-      ...dto,
       company,
       plantCd: plant,
+      jobCode: dto.jobCode,
+      jobName: dto.jobName,
+      jobGroup: dto.jobGroup,
+      execType: dto.execType,
+      execTarget: dto.execTarget,
+      execParams: dto.execParams ?? null,
+      cronExpr: dto.cronExpr,
       isActive: 'N', // 생성 시 비활성 (수동 활성화 필요)
+      maxRetry: dto.maxRetry ?? 0,
+      timeoutSec: dto.timeoutSec ?? 300,
+      description: dto.description ?? null,
       nextRunAt,
       createdBy: userId,
       updatedBy: userId,
@@ -181,18 +190,22 @@ export class SchedulerJobService implements OnModuleInit {
   ): Promise<SchedulerJob> {
     const job = await this.findOne(jobCode, company, plant);
 
-    const {
-      company: _company,
-      plant: _plant,
-      plantCd: _plantCd,
-      jobCode: _jobCode,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<SchedulerJob> = {
+      ...(dto.jobName !== undefined ? { jobName: dto.jobName } : {}),
+      ...(dto.jobGroup !== undefined ? { jobGroup: dto.jobGroup } : {}),
+      ...(dto.execType !== undefined ? { execType: dto.execType } : {}),
+      ...(dto.execTarget !== undefined ? { execTarget: dto.execTarget } : {}),
+      ...(dto.execParams !== undefined ? { execParams: dto.execParams } : {}),
+      ...(dto.cronExpr !== undefined ? { cronExpr: dto.cronExpr } : {}),
+      ...(dto.maxRetry !== undefined ? { maxRetry: dto.maxRetry } : {}),
+      ...(dto.timeoutSec !== undefined ? { timeoutSec: dto.timeoutSec } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+    };
     Object.assign(job, updateData, { updatedBy: userId });
 
     // cron 표현식이 변경되었으면 nextRunAt 재계산
-    if (updateData.cronExpr) {
-      job.nextRunAt = this.computeNextRun(updateData.cronExpr);
+    if (dto.cronExpr) {
+      job.nextRunAt = this.computeNextRun(dto.cronExpr);
     }
 
     const saved = await this.jobRepo.save(job);

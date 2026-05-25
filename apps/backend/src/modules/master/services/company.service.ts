@@ -114,7 +114,29 @@ export class CompanyService {
   /** 수정 */
   async update(id: string, dto: UpdateCompanyDto) {
     await this.findById(id);
-    await this.companyRepository.update(id, dto);
+    const updateData: Partial<Pick<
+      CompanyMaster,
+      | 'companyName'
+      | 'bizNo'
+      | 'ceoName'
+      | 'address'
+      | 'tel'
+      | 'fax'
+      | 'email'
+      | 'remark'
+      | 'useYn'
+    >> = {
+      ...(dto.companyName !== undefined ? { companyName: dto.companyName } : {}),
+      ...(dto.bizNo !== undefined ? { bizNo: dto.bizNo } : {}),
+      ...(dto.ceoName !== undefined ? { ceoName: dto.ceoName } : {}),
+      ...(dto.address !== undefined ? { address: dto.address } : {}),
+      ...(dto.tel !== undefined ? { tel: dto.tel } : {}),
+      ...(dto.fax !== undefined ? { fax: dto.fax } : {}),
+      ...(dto.email !== undefined ? { email: dto.email } : {}),
+      ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
+    await this.companyRepository.update(id, updateData);
     return this.findById(id);
   }
 

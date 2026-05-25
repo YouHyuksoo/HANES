@@ -9,7 +9,7 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, FindOptionsWhere } from 'typeorm';
 import { ActivityLog } from '../../../entities/activity-log.entity';
 import { SysConfigService } from './sys-config.service';
 import { ActivityLogQueryDto } from '../dto/activity-log.dto';
@@ -62,8 +62,9 @@ export class ActivityLogService {
       });
 
       await this.activityLogRepository.save(log);
-    } catch (error: any) {
-      this.logger.warn(`활동 로그 기록 실패: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`활동 로그 기록 실패: ${message}`);
     }
   }
 
@@ -75,10 +76,10 @@ export class ActivityLogService {
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<ActivityLog> = {
       ...(company && { company }),
       ...(plant && { plant }),
-      ...(query.userId && { userId: query.userId }),
+      ...(query.userId && { userEmail: query.userId }),
       ...(query.activityType && { activityType: query.activityType }),
     };
 

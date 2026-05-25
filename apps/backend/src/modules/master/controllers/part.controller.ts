@@ -19,6 +19,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import type { Request } from 'express';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
@@ -59,19 +60,19 @@ export class PartController {
   @UseInterceptors(
     FileInterceptor('image', {
       storage: diskStorage({
-        destination: (req: any, file: Express.Multer.File, callback: (error: Error | null, destination: string) => void) => {
+        destination: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, destination: string) => void) => {
           const uploadPath = './uploads/parts';
           if (!existsSync(uploadPath)) {
             mkdirSync(uploadPath, { recursive: true });
           }
           callback(null, uploadPath);
         },
-        filename: (req: any, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) => {
+        filename: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
           callback(null, `part-${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
-      fileFilter: (req: any, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
+      fileFilter: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
         if (!file.mimetype.match(/\/jpg|jpeg|png|gif|webp$/)) {
           return callback(new Error('Only image files are allowed!'), false);
         }

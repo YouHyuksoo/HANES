@@ -109,14 +109,12 @@ export class WorkInstructionService {
   async update(id: string, dto: UpdateWorkInstructionDto, company?: string, plant?: string) {
     await this.findById(id, company, plant);
     const key = this.parseCompositeId(id);
-    const {
-      itemCode: _itemCode,
-      processCode: _processCode,
-      revision: _revision,
-      company: _company,
-      plant: _plant,
-      ...updateData
-    } = dto as any;
+    const updateData: Partial<WorkInstruction> = {
+      ...(dto.title !== undefined ? { title: dto.title } : {}),
+      ...(dto.content !== undefined ? { content: dto.content } : {}),
+      ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.workInstructionRepository.update({ ...key, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(id, company, plant);
   }

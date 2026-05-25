@@ -14,7 +14,7 @@ import { Repository } from 'typeorm';
 import { ShelfLifeService } from './shelf-life.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ShelfLifeService', () => {
   let target: ShelfLifeService;

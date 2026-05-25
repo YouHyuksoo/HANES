@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like, Between, In } from 'typeorm';
+import { Repository, DataSource, Like, Between, In, FindOptionsWhere } from 'typeorm';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -65,7 +65,7 @@ export class AdjustmentService {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<InvAdjLog> = {
       ...(company && { company }),
       ...(plant && { plant }),
     };

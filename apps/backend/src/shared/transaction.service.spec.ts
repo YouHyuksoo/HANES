@@ -10,7 +10,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { DataSource, QueryRunner } from 'typeorm';
 import { TransactionService } from './transaction.service';
-import { MockLoggerService } from '../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('TransactionService', () => {
   let target: TransactionService;

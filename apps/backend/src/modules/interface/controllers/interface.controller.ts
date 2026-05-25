@@ -85,7 +85,7 @@ export class InterfaceController {
   @ApiOperation({ summary: '인터페이스 로그 일괄 재시도' })
   @ApiResponse({ status: 200, description: '일괄 재시도 성공' })
   async bulkRetry(@Body() dto: BulkRetryDto, @Company() company: string, @Plant() plant: string) {
-    const logKeys = dto.logIds.map((item: any) => ({
+    const logKeys = dto.logIds.map((item) => ({
       transDate: new Date(item.transDate),
       seq: Number(item.seq),
     }));

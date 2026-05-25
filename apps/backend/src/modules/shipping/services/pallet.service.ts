@@ -22,7 +22,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, In } from 'typeorm';
+import { Repository, IsNull, ILike, In, FindOptionsWhere } from 'typeorm';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
@@ -75,7 +75,7 @@ export class PalletService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<PalletMaster> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(palletNo && { palletNo: ILike(`%${palletNo}%`) }),
@@ -168,7 +168,7 @@ export class PalletService {
       );
     }
 
-    const updateData: any = {};
+    const updateData: Partial<Pick<PalletMaster, 'shipmentId'>> = {};
     if (dto.shipmentId !== undefined) updateData.shipmentId = dto.shipmentId;
 
     await this.palletRepository.update({ palletNo: id, ...this.tenantWhere(company, plant) }, updateData);

@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
 import { EquipInspectService } from './equip-inspect.service';
 import { EquipInspectItemPoolService } from './equip-inspect-item-pool.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('EquipInspectService', () => {
   let target: EquipInspectService;

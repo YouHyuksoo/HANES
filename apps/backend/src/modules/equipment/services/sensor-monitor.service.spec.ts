@@ -9,7 +9,7 @@ import { EquipConditionRule } from '../../../entities/equip-condition-rule.entit
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SensorMonitorService', () => {
   let target: SensorMonitorService;

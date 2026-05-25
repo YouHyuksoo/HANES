@@ -18,10 +18,16 @@ import {
 import { DataSource } from 'typeorm';
 import { IJobExecutor, ExecutorResult } from './executor.interface';
 import { SchedulerJob } from '../../../entities/scheduler-job.entity';
+import { getErrorMessage } from '../../../common/utils/error-message.util';
+import { parseJsonRecord } from '../../../common/utils/json-record.util';
 import {
   SQL_ALLOWED_PATTERN,
   SQL_BLOCKED_KEYWORDS,
 } from '../config/scheduler-security.config';
+
+interface SqlQueryDataSource {
+  query<T = unknown>(query: string, parameters?: Record<string, unknown> | unknown[]): Promise<T>;
+}
 
 @Injectable()
 export class SqlExecutor implements IJobExecutor {
@@ -59,10 +65,10 @@ export class SqlExecutor implements IJobExecutor {
     let params: Record<string, unknown> | undefined;
     if (execParams) {
       try {
-        params = JSON.parse(execParams) as Record<string, unknown>;
+        params = parseJsonRecord(execParams);
       } catch (error: unknown) {
         throw new BadRequestException(
-          `execParams JSON 파싱 실패: ${(error as Error).message}`,
+          `execParams JSON 파싱 실패: ${getErrorMessage(error)}`,
         );
       }
     }
@@ -88,12 +94,12 @@ export class SqlExecutor implements IJobExecutor {
     // - 위치 바인드(:1, :2)   → Object.values() 배열로 전달
     // SQL에 `:숫자` 패턴이 없으면 이름 바인드로 판단
     const hasPositional = params && /:\d+/.test(sql);
-    const bindParams = params
+    const bindParams: Record<string, unknown> | unknown[] | undefined = params
       ? hasPositional
         ? Object.values(params)
-        : (params as unknown as unknown[])
+        : params
       : undefined;
-    const result = await this.dataSource.query(sql, bindParams);
+    const result = await (this.dataSource as SqlQueryDataSource).query(sql, bindParams);
 
     const affectedRows = Array.isArray(result) ? result.length : 0;
 

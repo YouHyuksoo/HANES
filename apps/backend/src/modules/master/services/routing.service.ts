@@ -138,8 +138,36 @@ export class RoutingService {
 
   async update(itemCode: string, seq: number, dto: UpdateRoutingDto, company?: string, plant?: string) {
     await this.findByKey(itemCode, seq, company, plant);
-    // PK 필드는 update 대상에서 제외
-    const { itemCode: _ic, seq: _seq, ...updateData } = dto;
+    const updateData: Partial<Pick<
+      ProcessMap,
+      | 'processCode'
+      | 'processName'
+      | 'processType'
+      | 'equipType'
+      | 'stdTime'
+      | 'setupTime'
+      | 'wireLength'
+      | 'stripLength'
+      | 'crimpHeight'
+      | 'crimpWidth'
+      | 'weldCondition'
+      | 'processParams'
+      | 'useYn'
+    >> = {
+      ...(dto.processCode !== undefined ? { processCode: dto.processCode } : {}),
+      ...(dto.processName !== undefined ? { processName: dto.processName } : {}),
+      ...(dto.processType !== undefined ? { processType: dto.processType } : {}),
+      ...(dto.equipType !== undefined ? { equipType: dto.equipType } : {}),
+      ...(dto.stdTime !== undefined ? { stdTime: dto.stdTime } : {}),
+      ...(dto.setupTime !== undefined ? { setupTime: dto.setupTime } : {}),
+      ...(dto.wireLength !== undefined ? { wireLength: dto.wireLength } : {}),
+      ...(dto.stripLength !== undefined ? { stripLength: dto.stripLength } : {}),
+      ...(dto.crimpHeight !== undefined ? { crimpHeight: dto.crimpHeight } : {}),
+      ...(dto.crimpWidth !== undefined ? { crimpWidth: dto.crimpWidth } : {}),
+      ...(dto.weldCondition !== undefined ? { weldCondition: dto.weldCondition } : {}),
+      ...(dto.processParams !== undefined ? { processParams: dto.processParams } : {}),
+      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+    };
     await this.routingRepository.update({ itemCode, seq, ...this.tenantWhere(company, plant) }, updateData);
     return this.findByKey(itemCode, seq, company, plant);
   }

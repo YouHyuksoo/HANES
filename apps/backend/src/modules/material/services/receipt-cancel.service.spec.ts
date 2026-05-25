@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file src/modules/material/services/receipt-cancel.service.spec.ts
  * @description ReceiptCancelService 단위 테스트 - 입고취소 역분개 처리
  *
@@ -19,7 +19,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ReceiptCancelService', () => {
   let target: ReceiptCancelService;

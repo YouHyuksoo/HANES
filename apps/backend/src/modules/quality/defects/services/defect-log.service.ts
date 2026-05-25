@@ -20,7 +20,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
+import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, FindOptionsWhere } from 'typeorm';
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
@@ -87,6 +87,20 @@ export class DefectLogService {
     };
   }
 
+  private applyOccurAtRange(
+    where: FindOptionsWhere<DefectLog>,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    if (startDate && endDate) {
+      where.occurAt = Between(new Date(startDate), new Date(endDate));
+    } else if (startDate) {
+      where.occurAt = MoreThanOrEqual(new Date(startDate));
+    } else if (endDate) {
+      where.occurAt = LessThanOrEqual(new Date(endDate));
+    }
+  }
+
   private async ensureNoLinkedRework(defect: DefectLog) {
     const linkedRework = await this.reworkOrderRepository.findOne({
       where: {
@@ -121,24 +135,17 @@ export class DefectLogService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: FindOptionsWhere<DefectLog> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(prodResultNo && { prodResultNo }),
       ...(defectCode && { defectCode }),
       ...(status && { status }),
-      ...(startDate || endDate
-        ? {
-            occurAt: And(
-              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
-              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
-            ),
-          }
-        : {}),
       ...(search && {
         defectName: ILike(`%${search}%`),
       }),
     };
+    this.applyOccurAtRange(where, startDate, endDate);
 
     const [data, total] = await Promise.all([
       this.defectLogRepository.find({
@@ -437,17 +444,10 @@ export class DefectLogService {
     company?: string,
     plant?: string,
   ): Promise<DefectTypeStatsDto[]> {
-    const where: any = {
+    const where: FindOptionsWhere<DefectLog> = {
       ...this.tenantWhere(company, plant),
-      ...(startDate || endDate
-        ? {
-            occurAt: And(
-              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
-              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
-            ),
-          }
-        : {}),
     };
+    this.applyOccurAtRange(where, startDate, endDate);
 
     // TypeORM의 groupBy 사용
     const grouped = await this.defectLogRepository
@@ -483,17 +483,10 @@ export class DefectLogService {
     company?: string,
     plant?: string,
   ): Promise<DefectStatusStatsDto[]> {
-    const where: any = {
+    const where: FindOptionsWhere<DefectLog> = {
       ...this.tenantWhere(company, plant),
-      ...(startDate || endDate
-        ? {
-            occurAt: And(
-              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
-              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
-            ),
-          }
-        : {}),
     };
+    this.applyOccurAtRange(where, startDate, endDate);
 
     const grouped = await this.defectLogRepository
       .createQueryBuilder('defect')

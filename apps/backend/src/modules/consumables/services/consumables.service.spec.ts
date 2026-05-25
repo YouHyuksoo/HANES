@@ -14,7 +14,7 @@ import { Repository, DataSource } from 'typeorm';
 import { ConsumablesService } from './consumables.service';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ConsumablesService', () => {

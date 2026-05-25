@@ -13,7 +13,7 @@ import { QueryRunner } from 'typeorm';
 import { NumberingService } from './numbering.service';
 import { SeqGeneratorService } from './seq-generator.service';
 import { NumRuleService } from '../modules/num-rule/num-rule.service';
-import { MockLoggerService } from '../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('NumberingService', () => {
   let target: NumberingService;

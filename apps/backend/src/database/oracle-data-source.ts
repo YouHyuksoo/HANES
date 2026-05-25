@@ -2,7 +2,7 @@
  * @file database/oracle-data-source.ts
  * @description Oracle Database DataSource for MYDBPDB
  * 
- * PostgreSQL(Prisma)와 함께 사용 - 듀얼 DB 설정
+ * Oracle 단일 DB 설정
  */
 
 import { DataSource } from 'typeorm';

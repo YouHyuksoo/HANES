@@ -13,7 +13,7 @@ import { PmPlanItem } from '../../../entities/pm-plan-item.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
 import { PmWoResult } from '../../../entities/pm-wo-result.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('PmPlanService', () => {
   let target: PmPlanService;

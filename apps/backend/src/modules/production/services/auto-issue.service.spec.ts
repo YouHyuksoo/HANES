@@ -22,7 +22,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('AutoIssueService', () => {
   let target: AutoIssueService;

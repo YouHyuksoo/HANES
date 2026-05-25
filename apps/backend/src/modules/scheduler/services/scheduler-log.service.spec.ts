@@ -12,7 +12,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { SchedulerLogService } from './scheduler-log.service';
 import { SchedulerLog } from '../../../entities/scheduler-log.entity';
-import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('SchedulerLogService', () => {
   let target: SchedulerLogService;
