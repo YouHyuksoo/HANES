@@ -679,10 +679,16 @@ export class ContinuityInspectService {
    * 프로토콜 등록
    */
   async createProtocol(data: Partial<EquipProtocol>, company?: string, plant?: string) {
+    this.assertTenantMatches('통전 프로토콜', { company, plant }, {
+      label: 'body',
+      company: data.company,
+      plant: data.plant,
+    });
+
     const protocol = this.equipProtocolRepo.create({
       ...data,
-      company: data.company ?? company ?? null,
-      plant: data.plant ?? plant ?? null,
+      company: company ?? data.company ?? null,
+      plant: plant ?? data.plant ?? null,
     });
     return this.equipProtocolRepo.save(protocol);
   }

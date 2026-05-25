@@ -1,10 +1,10 @@
 /**
  * @file entities/pda-role-menu.entity.ts
  * @description PDA 역할-메뉴 매핑 엔티티 - PDA 역할별 접근 가능한 메뉴 정의
- *              pdaRoleCode + menuCode 복합 PK를 사용한다.
+ *              company + plant + pdaRoleCode + menuCode 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. pdaRoleCode + menuCode가 복합 PK (자연키)
+ * 1. company + plant + pdaRoleCode + menuCode가 복합 PK (자연키)
  * 2. isActive: true면 해당 메뉴 접근 허용
  * 3. CASCADE 삭제: PDA 역할 삭제 시 관련 메뉴 매핑도 자동 삭제
  *
@@ -30,7 +30,15 @@ import { PdaRole } from './pda-role.entity';
 
 @Entity({ name: 'PDA_ROLE_MENU' })
 export class PdaRoleMenu {
-  /** PDA 역할 코드 (FK → PDA_ROLE.CODE) */
+  /** 회사 코드 */
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  /** 공장 코드 */
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
+  /** PDA 역할 코드 (FK -> PDA_ROLE.COMPANY + PLANT_CD + CODE) */
   @PrimaryColumn({ name: 'PDA_ROLE_CODE', length: 50 })
   pdaRoleCode: string;
 
@@ -61,6 +69,10 @@ export class PdaRoleMenu {
 
   /** PDA 역할 — CASCADE 삭제 */
   @ManyToOne(() => PdaRole, (role) => role.menus, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'PDA_ROLE_CODE', referencedColumnName: 'code' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'PDA_ROLE_CODE', referencedColumnName: 'code' },
+  ])
   pdaRole: PdaRole;
 }

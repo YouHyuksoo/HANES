@@ -24,30 +24,30 @@ export class DepartmentController {
 
   @Get(':id')
   @ApiOperation({ summary: '부서 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.departmentService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.departmentService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '부서 생성' })
-  async create(@Body() dto: CreateDepartmentDto) {
-    const data = await this.departmentService.create(dto);
+  async create(@Body() dto: CreateDepartmentDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.departmentService.create(dto, company, plant);
     return ResponseUtil.success(data, '부서가 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: '부서 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateDepartmentDto) {
-    const data = await this.departmentService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateDepartmentDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.departmentService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '부서가 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '부서 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.departmentService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.departmentService.delete(id, company, plant);
     return ResponseUtil.success(null, '부서가 삭제되었습니다.');
   }
 }

@@ -24,7 +24,9 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      * @references EQUIP_MASTERS
      */
     PROCEDURE SP_EQUIP_STATS(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     );
 
     /**
@@ -36,6 +38,8 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      */
     PROCEDURE SP_JOB_ORDER_STATS(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
+        p_company     IN VARCHAR2 DEFAULT NULL,
+        p_plant       IN VARCHAR2 DEFAULT NULL,
         o_cursor      OUT SYS_REFCURSOR
     );
 
@@ -46,7 +50,9 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      * @references MAT_STOCKS, ITEM_MASTERS, MAT_LOTS
      */
     PROCEDURE SP_MAT_ALERT(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     );
 
     /**
@@ -56,7 +62,9 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      * @references DEFECT_LOGS
      */
     PROCEDURE SP_DEFECT_STATS(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     );
 
     /**
@@ -69,6 +77,8 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      */
     PROCEDURE SP_INSPECT_DAILY(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
+        p_company     IN VARCHAR2 DEFAULT NULL,
+        p_plant       IN VARCHAR2 DEFAULT NULL,
         o_summary     OUT SYS_REFCURSOR,
         o_items       OUT SYS_REFCURSOR
     );
@@ -83,6 +93,8 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      */
     PROCEDURE SP_INSPECT_PERIODIC(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
+        p_company     IN VARCHAR2 DEFAULT NULL,
+        p_plant       IN VARCHAR2 DEFAULT NULL,
         o_summary     OUT SYS_REFCURSOR,
         o_items       OUT SYS_REFCURSOR
     );
@@ -97,6 +109,8 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      */
     PROCEDURE SP_INSPECT_PM(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
+        p_company     IN VARCHAR2 DEFAULT NULL,
+        p_plant       IN VARCHAR2 DEFAULT NULL,
         o_summary     OUT SYS_REFCURSOR,
         o_items       OUT SYS_REFCURSOR
     );
@@ -111,7 +125,9 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      * @references JOB_ORDERS, MAT_STOCKS, INSPECT_RESULTS, DEFECT_LOGS
      */
     PROCEDURE SP_KPI(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     );
 
     /**
@@ -122,7 +138,9 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      * @references JOB_ORDERS, ITEM_MASTERS
      */
     PROCEDURE SP_RECENT_PRODUCTIONS(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     );
 
 END PKG_DASHBOARD;
@@ -139,7 +157,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     -- NORMAL / MAINT(유지보수) / STOP(정지) 3가지로 분류
     ----------------------------------------------------------------------------
     PROCEDURE SP_EQUIP_STATS(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     ) IS
     BEGIN
         OPEN o_cursor FOR
@@ -153,7 +173,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                 -- 전체 사용 설비 수
                 COUNT(*)                                        AS TOTAL_CNT
             FROM EQUIP_MASTERS
-            WHERE USE_YN = 'Y';
+            WHERE USE_YN = 'Y'
+              AND (p_company IS NULL OR COMPANY = p_company)
+              AND (p_plant IS NULL OR PLANT_CD = p_plant);
     END SP_EQUIP_STATS;
 
     ----------------------------------------------------------------------------
@@ -163,6 +185,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     ----------------------------------------------------------------------------
     PROCEDURE SP_JOB_ORDER_STATS(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
+        p_company     IN VARCHAR2 DEFAULT NULL,
+        p_plant       IN VARCHAR2 DEFAULT NULL,
         o_cursor      OUT SYS_REFCURSOR
     ) IS
     BEGIN
@@ -177,7 +201,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                 -- 전체 건수
                 COUNT(*)                                                         AS TOTAL_CNT
             FROM JOB_ORDERS
-            WHERE TRUNC(PLAN_DATE) = TRUNC(p_target_date);
+            WHERE TRUNC(PLAN_DATE) = TRUNC(p_target_date)
+              AND (p_company IS NULL OR COMPANY = p_company)
+              AND (p_plant IS NULL OR PLANT_CD = p_plant);
     END SP_JOB_ORDER_STATS;
 
     ----------------------------------------------------------------------------
@@ -187,7 +213,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     -- 3) 유통기한 초과: 이미 만료된 자재
     ----------------------------------------------------------------------------
     PROCEDURE SP_MAT_ALERT(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     ) IS
         v_low_stock    NUMBER := 0;
         v_near_expiry  NUMBER := 0;
@@ -198,8 +226,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
           INTO v_low_stock
           FROM MAT_STOCKS s
           JOIN ITEM_MASTERS i ON s.ITEM_CODE = i.ITEM_CODE
+           AND s.COMPANY = i.COMPANY
+           AND s.PLANT_CD = i.PLANT_CD
          WHERE s.QTY < i.SAFETY_STOCK
-           AND i.SAFETY_STOCK > 0;
+           AND i.SAFETY_STOCK > 0
+           AND (p_company IS NULL OR s.COMPANY = p_company)
+           AND (p_plant IS NULL OR s.PLANT_CD = p_plant);
 
         -- 유통기한 임박 건수 (7일 이내)
         SELECT COUNT(*)
@@ -207,7 +239,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
           FROM MAT_LOTS
          WHERE EXPIRE_DATE IS NOT NULL
            AND STATUS NOT IN ('DEPLETED', 'SCRAPPED')
-           AND EXPIRE_DATE BETWEEN TRUNC(SYSDATE) AND TRUNC(SYSDATE) + 7;
+           AND EXPIRE_DATE BETWEEN TRUNC(SYSDATE) AND TRUNC(SYSDATE) + 7
+           AND (p_company IS NULL OR COMPANY = p_company)
+           AND (p_plant IS NULL OR PLANT_CD = p_plant);
 
         -- 유통기한 초과 건수
         SELECT COUNT(*)
@@ -215,7 +249,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
           FROM MAT_LOTS
          WHERE EXPIRE_DATE IS NOT NULL
            AND STATUS NOT IN ('DEPLETED', 'SCRAPPED')
-           AND EXPIRE_DATE < TRUNC(SYSDATE);
+           AND EXPIRE_DATE < TRUNC(SYSDATE)
+           AND (p_company IS NULL OR COMPANY = p_company)
+           AND (p_plant IS NULL OR PLANT_CD = p_plant);
 
         OPEN o_cursor FOR
             SELECT
@@ -232,7 +268,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     -- WAIT(대기), REPAIR(수리), REWORK(재작업), DONE(완료)
     ----------------------------------------------------------------------------
     PROCEDURE SP_DEFECT_STATS(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     ) IS
     BEGIN
         OPEN o_cursor FOR
@@ -242,7 +280,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                 COUNT(CASE WHEN STATUS = 'REWORK'  THEN 1 END) AS REWORK_CNT,
                 COUNT(CASE WHEN STATUS = 'DONE'    THEN 1 END) AS DONE_CNT,
                 COUNT(*)                                        AS TOTAL_CNT
-            FROM DEFECT_LOGS;
+            FROM DEFECT_LOGS
+            WHERE (p_company IS NULL OR COMPANY = p_company)
+              AND (p_plant IS NULL OR PLANT_CD = p_plant);
     END SP_DEFECT_STATS;
 
     ----------------------------------------------------------------------------
@@ -252,6 +292,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     ----------------------------------------------------------------------------
     PROCEDURE SP_INSPECT_DAILY(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
+        p_company     IN VARCHAR2 DEFAULT NULL,
+        p_plant       IN VARCHAR2 DEFAULT NULL,
         o_summary     OUT SYS_REFCURSOR,
         o_items       OUT SYS_REFCURSOR
     ) IS
@@ -266,13 +308,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                             AND l.OVERALL_RESULT <> 'PASS' THEN 1 END)            AS FAIL_CNT
             FROM (
                 -- 일상점검 대상 설비 목록 (설비별 1건으로 그룹핑)
-                SELECT DISTINCT EQUIP_CODE
+                SELECT DISTINCT EQUIP_CODE, COMPANY, PLANT_CD
                   FROM EQUIP_INSPECT_ITEM_MASTERS
                  WHERE INSPECT_TYPE = 'DAILY'
                    AND USE_YN = 'Y'
+                   AND (p_company IS NULL OR COMPANY = p_company)
+                   AND (p_plant IS NULL OR PLANT_CD = p_plant)
             ) t
             LEFT JOIN EQUIP_INSPECT_LOGS l
               ON t.EQUIP_CODE    = l.EQUIP_CODE
+             AND t.COMPANY       = l.COMPANY
+             AND t.PLANT_CD      = l.PLANT_CD
              AND l.INSPECT_TYPE  = 'DAILY'
              AND TRUNC(l.INSPECT_DATE) = TRUNC(p_target_date);
 
@@ -285,17 +331,23 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                 l.INSPECTOR_NAME,
                 e.LINE_CODE
             FROM (
-                SELECT DISTINCT EQUIP_CODE
+                SELECT DISTINCT EQUIP_CODE, COMPANY, PLANT_CD
                   FROM EQUIP_INSPECT_ITEM_MASTERS
                  WHERE INSPECT_TYPE = 'DAILY'
                    AND USE_YN = 'Y'
+                   AND (p_company IS NULL OR COMPANY = p_company)
+                   AND (p_plant IS NULL OR PLANT_CD = p_plant)
             ) t
             LEFT JOIN EQUIP_INSPECT_LOGS l
               ON t.EQUIP_CODE    = l.EQUIP_CODE
+             AND t.COMPANY       = l.COMPANY
+             AND t.PLANT_CD      = l.PLANT_CD
              AND l.INSPECT_TYPE  = 'DAILY'
              AND TRUNC(l.INSPECT_DATE) = TRUNC(p_target_date)
             LEFT JOIN EQUIP_MASTERS e
               ON t.EQUIP_CODE = e.EQUIP_CODE
+             AND t.COMPANY = e.COMPANY
+             AND t.PLANT_CD = e.PLANT_CD
             ORDER BY t.EQUIP_CODE;
     END SP_INSPECT_DAILY;
 
@@ -305,6 +357,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     ----------------------------------------------------------------------------
     PROCEDURE SP_INSPECT_PERIODIC(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
+        p_company     IN VARCHAR2 DEFAULT NULL,
+        p_plant       IN VARCHAR2 DEFAULT NULL,
         o_summary     OUT SYS_REFCURSOR,
         o_items       OUT SYS_REFCURSOR
     ) IS
@@ -319,13 +373,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                             AND l.OVERALL_RESULT <> 'PASS' THEN 1 END)            AS FAIL_CNT
             FROM (
                 -- 정기점검 대상 설비 목록
-                SELECT DISTINCT EQUIP_CODE
+                SELECT DISTINCT EQUIP_CODE, COMPANY, PLANT_CD
                   FROM EQUIP_INSPECT_ITEM_MASTERS
                  WHERE INSPECT_TYPE = 'PERIODIC'
                    AND USE_YN = 'Y'
+                   AND (p_company IS NULL OR COMPANY = p_company)
+                   AND (p_plant IS NULL OR PLANT_CD = p_plant)
             ) t
             LEFT JOIN EQUIP_INSPECT_LOGS l
               ON t.EQUIP_CODE    = l.EQUIP_CODE
+             AND t.COMPANY       = l.COMPANY
+             AND t.PLANT_CD      = l.PLANT_CD
              AND l.INSPECT_TYPE  = 'PERIODIC'
              AND TRUNC(l.INSPECT_DATE) = TRUNC(p_target_date);
 
@@ -338,17 +396,23 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                 l.INSPECTOR_NAME,
                 e.LINE_CODE
             FROM (
-                SELECT DISTINCT EQUIP_CODE
+                SELECT DISTINCT EQUIP_CODE, COMPANY, PLANT_CD
                   FROM EQUIP_INSPECT_ITEM_MASTERS
                  WHERE INSPECT_TYPE = 'PERIODIC'
                    AND USE_YN = 'Y'
+                   AND (p_company IS NULL OR COMPANY = p_company)
+                   AND (p_plant IS NULL OR PLANT_CD = p_plant)
             ) t
             LEFT JOIN EQUIP_INSPECT_LOGS l
               ON t.EQUIP_CODE    = l.EQUIP_CODE
+             AND t.COMPANY       = l.COMPANY
+             AND t.PLANT_CD      = l.PLANT_CD
              AND l.INSPECT_TYPE  = 'PERIODIC'
              AND TRUNC(l.INSPECT_DATE) = TRUNC(p_target_date)
             LEFT JOIN EQUIP_MASTERS e
               ON t.EQUIP_CODE = e.EQUIP_CODE
+             AND t.COMPANY = e.COMPANY
+             AND t.PLANT_CD = e.PLANT_CD
             ORDER BY t.EQUIP_CODE;
     END SP_INSPECT_PERIODIC;
 
@@ -359,6 +423,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     ----------------------------------------------------------------------------
     PROCEDURE SP_INSPECT_PM(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
+        p_company     IN VARCHAR2 DEFAULT NULL,
+        p_plant       IN VARCHAR2 DEFAULT NULL,
         o_summary     OUT SYS_REFCURSOR,
         o_items       OUT SYS_REFCURSOR
     ) IS
@@ -378,7 +444,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                             AND NVL(wo.OVERALL_RESULT, 'COMPLETED') <> 'PASS'
                        THEN 1 END)                                                    AS FAIL_CNT
             FROM PM_WORK_ORDERS wo
-            WHERE TRUNC(wo.SCHEDULED_DATE) = TRUNC(p_target_date);
+            WHERE TRUNC(wo.SCHEDULED_DATE) = TRUNC(p_target_date)
+              AND (p_company IS NULL OR wo.COMPANY = p_company)
+              AND (p_plant IS NULL OR wo.PLANT_CD = p_plant);
 
         -- 상세 커서
         OPEN o_items FOR
@@ -396,7 +464,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
             FROM PM_WORK_ORDERS wo
             LEFT JOIN EQUIP_MASTERS e
               ON wo.EQUIP_CODE = e.EQUIP_CODE
+             AND wo.COMPANY = e.COMPANY
+             AND wo.PLANT_CD = e.PLANT_CD
             WHERE TRUNC(wo.SCHEDULED_DATE) = TRUNC(p_target_date)
+              AND (p_company IS NULL OR wo.COMPANY = p_company)
+              AND (p_plant IS NULL OR wo.PLANT_CD = p_plant)
             ORDER BY wo.EQUIP_CODE;
     END SP_INSPECT_PM;
 
@@ -406,7 +478,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     -- 변화율 계산: 전일 값 > 0 이면 ROUND(((금일 - 전일) / 전일) * 100), 아니면 0
     ----------------------------------------------------------------------------
     PROCEDURE SP_KPI(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     ) IS
         v_today_prod      NUMBER := 0;   -- 금일 생산량
         v_yesterday_prod  NUMBER := 0;   -- 전일 생산량
@@ -428,14 +502,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
             NVL(SUM(CASE WHEN TRUNC(PLAN_DATE) = TRUNC(SYSDATE) - 1 THEN GOOD_QTY ELSE 0 END), 0)
           INTO v_today_prod, v_yesterday_prod
           FROM JOB_ORDERS
-         WHERE TRUNC(PLAN_DATE) IN (TRUNC(SYSDATE), TRUNC(SYSDATE) - 1);
+         WHERE TRUNC(PLAN_DATE) IN (TRUNC(SYSDATE), TRUNC(SYSDATE) - 1)
+           AND (p_company IS NULL OR COMPANY = p_company)
+           AND (p_plant IS NULL OR PLANT_CD = p_plant);
 
         -----------------------------------------------------------------------
         -- 2) 재고 총량 (MAT_STOCKS.QTY 합계)
         -----------------------------------------------------------------------
         SELECT NVL(SUM(QTY), 0)
           INTO v_inventory_total
-          FROM MAT_STOCKS;
+          FROM MAT_STOCKS
+         WHERE (p_company IS NULL OR COMPANY = p_company)
+           AND (p_plant IS NULL OR PLANT_CD = p_plant);
 
         -----------------------------------------------------------------------
         -- 3) 합격률 (INSPECT_RESULTS 금일/전일 비교)
@@ -446,14 +524,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
             COUNT(*)
           INTO v_today_pass, v_today_total_insp
           FROM INSPECT_RESULTS
-         WHERE TRUNC(INSPECT_TIME) = TRUNC(SYSDATE);
+         WHERE TRUNC(INSPECT_TIME) = TRUNC(SYSDATE)
+           AND (p_company IS NULL OR COMPANY = p_company)
+           AND (p_plant IS NULL OR PLANT_CD = p_plant);
 
         SELECT
             COUNT(CASE WHEN PASS_YN = 'Y' THEN 1 END),
             COUNT(*)
           INTO v_yest_pass, v_yest_total_insp
           FROM INSPECT_RESULTS
-         WHERE TRUNC(INSPECT_TIME) = TRUNC(SYSDATE) - 1;
+         WHERE TRUNC(INSPECT_TIME) = TRUNC(SYSDATE) - 1
+           AND (p_company IS NULL OR COMPANY = p_company)
+           AND (p_plant IS NULL OR PLANT_CD = p_plant);
 
         -- 합격률 계산
         IF v_today_total_insp > 0 THEN
@@ -474,12 +556,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
         SELECT COUNT(*)
           INTO v_defect_cnt
           FROM DEFECT_LOGS
-         WHERE TRUNC(OCCUR_TIME) = TRUNC(SYSDATE);
+         WHERE TRUNC(OCCUR_TIME) = TRUNC(SYSDATE)
+           AND (p_company IS NULL OR COMPANY = p_company)
+           AND (p_plant IS NULL OR PLANT_CD = p_plant);
 
         SELECT COUNT(*)
           INTO v_yest_defect_cnt
           FROM DEFECT_LOGS
-         WHERE TRUNC(OCCUR_TIME) = TRUNC(SYSDATE) - 1;
+         WHERE TRUNC(OCCUR_TIME) = TRUNC(SYSDATE) - 1
+           AND (p_company IS NULL OR COMPANY = p_company)
+           AND (p_plant IS NULL OR PLANT_CD = p_plant);
 
         -----------------------------------------------------------------------
         -- 결과 커서 반환 (변화율 계산 포함)
@@ -518,7 +604,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
     -- PROGRESS = ROUND(GOOD_QTY / PLAN_QTY * 1000) / 10 (소수 첫째자리)
     ----------------------------------------------------------------------------
     PROCEDURE SP_RECENT_PRODUCTIONS(
-        o_cursor OUT SYS_REFCURSOR
+        p_company IN VARCHAR2 DEFAULT NULL,
+        p_plant   IN VARCHAR2 DEFAULT NULL,
+        o_cursor  OUT SYS_REFCURSOR
     ) IS
     BEGIN
         OPEN o_cursor FOR
@@ -542,6 +630,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
             FROM JOB_ORDERS jo
             LEFT JOIN ITEM_MASTERS i
               ON jo.ITEM_CODE = i.ITEM_CODE
+             AND jo.COMPANY = i.COMPANY
+             AND jo.PLANT_CD = i.PLANT_CD
+            WHERE (p_company IS NULL OR jo.COMPANY = p_company)
+              AND (p_plant IS NULL OR jo.PLANT_CD = p_plant)
             ORDER BY jo.CREATED_AT DESC
             FETCH FIRST 10 ROWS ONLY;
     END SP_RECENT_PRODUCTIONS;

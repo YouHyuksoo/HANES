@@ -90,9 +90,15 @@ export class ProductLabelService {
       }
 
       if (dto.qty === 1 && !prodResult.prdUid) {
-        await queryRunner.manager.update(ProdResult, prodResult.resultNo, {
-          prdUid: results[0].prdUid,
-        });
+        await queryRunner.manager.update(
+          ProdResult,
+          {
+            resultNo: prodResult.resultNo,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+          { prdUid: results[0].prdUid },
+        );
       }
 
       const log = queryRunner.manager.create(LabelPrintLog, {

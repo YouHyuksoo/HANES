@@ -1,10 +1,10 @@
 /**
  * @file entities/role-menu-permission.entity.ts
  * @description 역할-메뉴 권한 매핑 엔티티 - 역할별 접근 가능한 메뉴 정의
- *              roleCode + menuCode 복합 PK를 사용한다.
+ *              company + plant + roleCode + menuCode 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. roleCode + menuCode가 복합 PK (자연키)
+ * 1. company + plant + roleCode + menuCode가 복합 PK (자연키)
  * 2. canAccess: true면 해당 메뉴 접근 허용
  * 3. CASCADE 삭제: 역할 삭제 시 관련 권한도 자동 삭제
  */
@@ -21,6 +21,12 @@ import { Role } from './role.entity';
 
 @Entity({ name: 'ROLE_MENU_PERMISSIONS' })
 export class RoleMenuPermission {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'ROLE_CODE', length: 50 })
   roleCode: string;
 
@@ -43,6 +49,10 @@ export class RoleMenuPermission {
   updatedAt: Date;
 
   @ManyToOne(() => Role, (role) => role.permissions, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'ROLE_CODE', referencedColumnName: 'code' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'ROLE_CODE', referencedColumnName: 'code' },
+  ])
   role: Role;
 }

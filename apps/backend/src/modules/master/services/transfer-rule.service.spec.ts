@@ -2,7 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
-import { Repository } from 'typeorm';
+import { Repository, getMetadataArgsStorage } from 'typeorm';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 import { WarehouseTransferRule } from '../../../entities/warehouse-transfer-rule.entity';
 import { TransferRuleService } from './transfer-rule.service';
@@ -25,6 +25,15 @@ describe('TransferRuleService', () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  it('includes tenant columns in transfer rule primary key metadata', () => {
+    const primaryColumnNames = getMetadataArgsStorage()
+      .columns
+      .filter((column) => column.target === WarehouseTransferRule && column.options.primary)
+      .map((column) => column.propertyName);
+
+    expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plant']));
+  });
 
   describe('findAll', () => {
     it('joins warehouse names by tenant-scoped warehouse keys', async () => {

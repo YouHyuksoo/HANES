@@ -97,8 +97,12 @@ export class IqcItemPoolService {
   async update(inspItemCode: string, dto: UpdateIqcItemPoolDto, company?: string, plant?: string) {
     const item = await this.findByCode(inspItemCode, company, plant);
 
-    // PK인 inspItemCode는 변경 불가 — dto에서 제거
-    const { inspItemCode: _ignore, ...updateData } = dto as any;
+    const {
+      inspItemCode: _inspItemCode,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
     Object.assign(item, updateData);
     return this.repo.save(item);
   }

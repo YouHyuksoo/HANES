@@ -11,6 +11,7 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository, DataSource, EntityManager } from 'typeorm';
+import { getMetadataArgsStorage } from 'typeorm';
 import { RoutingGroupService } from './routing-group.service';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
@@ -66,6 +67,20 @@ describe('RoutingGroupService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('tenant key metadata', () => {
+    it('includes tenant columns in routing hierarchy primary keys', () => {
+      const primaryColumnNames = (targetEntity: Function) =>
+        getMetadataArgsStorage()
+          .columns
+          .filter((column) => column.target === targetEntity && column.options.primary)
+          .map((column) => column.propertyName);
+
+      for (const entity of [RoutingGroup, RoutingProcess, ProcessQualityCondition, RoutingMaterial]) {
+        expect(primaryColumnNames(entity)).toEqual(expect.arrayContaining(['company', 'plant']));
+      }
+    });
   });
 
   // ─── Group CRUD ───
@@ -371,6 +386,21 @@ describe('RoutingGroupService', () => {
 
       await expect(
         target.bulkSaveConditions('RG01', 10, dto, 'OTHER', 'PLANT01'),
+      ).rejects.toThrow(ConflictException);
+      expect(mockDataSource.transaction).not.toHaveBeenCalled();
+    });
+
+    it('should throw when request tenant is present but routing process tenant is missing', async () => {
+      const dto = { conditions: [{ conditionSeq: 1, conditionCode: 'TEMP' }] } as any;
+      mockProcessRepo.findOne.mockResolvedValue({
+        routingCode: 'RG01',
+        seq: 10,
+        company: null,
+        plant: 'PLANT01',
+      } as RoutingProcess);
+
+      await expect(
+        target.bulkSaveConditions('RG01', 10, dto, 'COMP01', 'PLANT01'),
       ).rejects.toThrow(ConflictException);
       expect(mockDataSource.transaction).not.toHaveBeenCalled();
     });

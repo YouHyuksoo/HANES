@@ -36,7 +36,7 @@ import {
   JwtAuthGuard,
   AuthenticatedRequest,
 } from '../../common/guards/jwt-auth.guard';
-import { Company } from '../../common/decorators/tenant.decorator';
+import { Company, Plant } from '../../common/decorators/tenant.decorator';
 
 @ApiTags('역할')
 @ApiBearerAuth()
@@ -47,14 +47,14 @@ export class RoleController {
 
   @Get()
   @ApiOperation({ summary: '역할 목록 조회' })
-  findAll(@Company() company?: string) {
-    return this.roleService.findAll(company);
+  findAll(@Company() company?: string, @Plant() plant?: string) {
+    return this.roleService.findAll(company, plant);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '역할 상세 조회' })
-  findOne(@Param('id') code: string) {
-    return this.roleService.findOne(code);
+  findOne(@Param('id') code: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.roleService.findOne(code, company, plant);
   }
 
   @Post()
@@ -62,9 +62,10 @@ export class RoleController {
   create(
     @Body() dto: CreateRoleDto,
     @Company() company?: string,
+    @Plant() plant?: string,
     @Req() req?: AuthenticatedRequest,
   ) {
-    return this.roleService.create(dto, company, req?.user?.id);
+    return this.roleService.create(dto, company, plant, req?.user?.id);
   }
 
   @Patch(':id')
@@ -72,21 +73,23 @@ export class RoleController {
   update(
     @Param('id') code: string,
     @Body() dto: UpdateRoleDto,
+    @Company() company?: string,
+    @Plant() plant?: string,
     @Req() req?: AuthenticatedRequest,
   ) {
-    return this.roleService.update(code, dto, req?.user?.id);
+    return this.roleService.update(code, dto, company, plant, req?.user?.id);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '역할 삭제' })
-  remove(@Param('id') code: string) {
-    return this.roleService.remove(code);
+  remove(@Param('id') code: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.roleService.remove(code, company, plant);
   }
 
   @Get(':id/permissions')
   @ApiOperation({ summary: '역할 메뉴 권한 조회' })
-  getPermissions(@Param('id') code: string) {
-    return this.roleService.getPermissions(code);
+  getPermissions(@Param('id') code: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.roleService.getPermissions(code, company, plant);
   }
 
   @Put(':id/permissions')
@@ -94,7 +97,9 @@ export class RoleController {
   updatePermissions(
     @Param('id') code: string,
     @Body() dto: UpdatePermissionsDto,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    return this.roleService.updatePermissions(code, dto);
+    return this.roleService.updatePermissions(code, dto, company, plant);
   }
 }

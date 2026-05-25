@@ -96,7 +96,13 @@ export class EquipBomService {
 
   async updateItem(id: string, dto: UpdateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
     const item = await this.findItemById(id, company, plant);
-    Object.assign(item, dto);
+    const {
+      bomItemCode: _bomItemCode,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData);
     return this.bomItemRepo.save(item);
   }
 

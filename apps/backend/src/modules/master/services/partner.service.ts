@@ -109,7 +109,11 @@ export class PartnerService {
 
   async update(partnerCode: string, dto: UpdatePartnerDto, company?: string, plant?: string) {
     await this.findById(partnerCode, company, plant);
-    await this.partnerRepository.update({ partnerCode, ...this.tenantWhere(company, plant) }, dto);
+    const updateData: any = { ...dto };
+    delete updateData.partnerCode;
+    delete updateData.company;
+    delete updateData.plant;
+    await this.partnerRepository.update({ partnerCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(partnerCode, company, plant);
   }
 

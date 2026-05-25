@@ -53,16 +53,16 @@ export class LabelTemplateController {
   @Get(':id')
   @ApiOperation({ summary: '라벨 템플릿 단건 조회' })
   @ApiParam({ name: 'id', description: '라벨 템플릿 ID' })
-  async findById(@Param('id') id: string) {
-    const data = await this.labelTemplateService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelTemplateService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '라벨 템플릿 생성' })
-  async create(@Body() dto: CreateLabelTemplateDto) {
-    const data = await this.labelTemplateService.create(dto);
+  async create(@Body() dto: CreateLabelTemplateDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelTemplateService.create(dto, company, plant);
     return ResponseUtil.success(data, '라벨 템플릿이 저장되었습니다.');
   }
 
@@ -72,16 +72,18 @@ export class LabelTemplateController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateLabelTemplateDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.labelTemplateService.update(id, dto);
+    const data = await this.labelTemplateService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '라벨 템플릿이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '라벨 템플릿 삭제' })
   @ApiParam({ name: 'id', description: '라벨 템플릿 ID' })
-  async delete(@Param('id') id: string) {
-    await this.labelTemplateService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.labelTemplateService.delete(id, company, plant);
     return ResponseUtil.success(null, '라벨 템플릿이 삭제되었습니다.');
   }
 }

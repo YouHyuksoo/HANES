@@ -108,4 +108,90 @@ describe('ErpMaterialService', () => {
       { orderQty: 10 },
     );
   });
+
+  it('writes interface logs with the same tenant as the imported purchase order', async () => {
+    queryRunner.manager.findOne.mockResolvedValue(null);
+    queryRunner.manager.create.mockImplementation((_entity, payload) => payload as any);
+    queryRunner.manager.save.mockImplementation(async (payload) => payload as any);
+    queryRunner.manager.find.mockResolvedValue([]);
+    interLogRepo.save.mockResolvedValue({} as InterLog);
+
+    await target.importPurchaseOrder({
+      poNo: 'PO-1',
+      orderDate: '2026-05-23',
+      partnerId: 'V-1',
+      partnerName: 'Vendor',
+      items: [
+        { seq: 1, itemCode: 'RM-1', itemName: 'Raw', orderQty: 10, unit: 'EA' },
+      ],
+      company: 'C1',
+      plant: 'P1',
+    });
+
+    expect(interLogRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ company: 'C1', plant: 'P1' }),
+    );
+  });
+
+  it('writes outbound interface logs with the requested tenant', async () => {
+    const sysConfig = (target as any).sysConfigService as DeepMocked<SysConfigService>;
+    sysConfig.getValue.mockResolvedValue('Y');
+    interLogRepo.save.mockResolvedValue({} as InterLog);
+
+    await target.exportReceiving('RCV-1', 'RM-1', 5, 'PO-1', 'C1', 'P1');
+
+    expect(interLogRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        direction: 'OUTBOUND',
+        messageType: 'ERP_RECEIVING',
+        company: 'C1',
+        plant: 'P1',
+      }),
+    );
+  });
+
+  it('retries only failed outbound logs in the requested tenant', async () => {
+    const transDate = new Date('2026-05-23');
+    interLogRepo.find.mockResolvedValue([
+      {
+        transDate,
+        seq: 1,
+        status: 'FAILED',
+        direction: 'OUTBOUND',
+        messageType: 'ERP_RECEIVING',
+        interfaceId: 'RCV-1',
+        retryCount: 0,
+        payload: '{}',
+        company: 'C1',
+        plant: 'P1',
+      } as InterLog,
+    ]);
+    interLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+    await target.retryFailed('C1', 'P1');
+
+    expect(interLogRepo.find).toHaveBeenCalledWith({
+      where: { status: 'FAILED', direction: 'OUTBOUND', company: 'C1', plant: 'P1' },
+      order: { transDate: 'ASC' },
+    });
+    expect(interLogRepo.update).toHaveBeenCalledWith(
+      { transDate, seq: 1, company: 'C1', plant: 'P1' },
+      expect.objectContaining({ status: 'SUCCESS', retryCount: 1 }),
+    );
+  });
+
+  it('queries today stats within requested tenant', async () => {
+    dataSource.query.mockResolvedValue([{ STATUS: 'SUCCESS', cnt: 2 }]);
+
+    await target.getTodayStats('C1', 'P1');
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('"COMPANY" = :2'),
+      expect.arrayContaining([expect.any(String), 'C1', 'P1']),
+    );
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('"PLANT_CD" = :3'),
+      expect.any(Array),
+    );
+  });
 });

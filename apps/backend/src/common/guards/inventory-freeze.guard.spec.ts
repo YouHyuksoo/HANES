@@ -66,6 +66,24 @@ describe('InventoryFreezeGuard (HTTP)', () => {
     expect(dataSourceMock.query.mock.calls[0][1]).toEqual(['HANES', 'P01']);
   });
 
+  it('uses JwtAuthGuard user tenant when tenant headers are absent', async () => {
+    dataSourceMock.query.mockResolvedValue([{ CNT: 0 }]);
+    const guard = app.get(InventoryFreezeGuard);
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: {},
+          user: { company: 'HANES', plant: 'P01' },
+          path: '/guard-test/apply',
+        }),
+      }),
+    } as any;
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+
+    expect(dataSourceMock.query.mock.calls[0][1]).toEqual(['HANES', 'P01']);
+  });
+
   it('blocks request when freeze status query throws', async () => {
     dataSourceMock.query.mockRejectedValue(new Error('db unavailable'));
 

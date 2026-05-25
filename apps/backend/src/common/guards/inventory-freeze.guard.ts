@@ -50,9 +50,10 @@ export class InventoryFreezeGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    // X-Company, X-Plant 헤더에서 회사/사업장 정보 추출 (범위 제한용)
-    const company = request.headers['x-company'] as string | undefined;
-    const plant = request.headers['x-plant'] as string | undefined;
+    const user = (request as Request & { user?: { company?: string; plant?: string } }).user ?? {};
+    // X-Company, X-Plant 헤더를 우선하고, 인증 가드가 넣은 req.user 테넌트를 fallback으로 사용한다.
+    const company = (request.headers['x-company'] as string | undefined) || user.company;
+    const plant = (request.headers['x-plant'] as string | undefined) || user.plant;
 
     try {
       const isFreeze = await this.checkFreezeStatus(company, plant);

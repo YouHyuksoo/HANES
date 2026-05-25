@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { SensorMonitorService } from './sensor-monitor.service';
 import { SensorDataLog } from '../../../entities/sensor-data-log.entity';
@@ -76,5 +77,33 @@ describe('SensorMonitorService', () => {
       { planCode: 'PM-001', company: 'CO', plant: 'P01' },
       { currentUsage: 120 },
     );
+  });
+
+  it('rejects sensor rule evaluation when rule tenant differs from request tenant', async () => {
+    ruleRepo.createQueryBuilder.mockReturnValue(queryBuilder([
+      {
+        ruleId: 1,
+        equipCode: 'EQ-001',
+        sensorType: 'TEMP',
+        criticalValue: 80,
+        compareOp: 'GT',
+        actionType: 'INTERLOCK',
+        company: 'OTHER',
+        plant: 'P01',
+        useYn: 'Y',
+      },
+    ]));
+
+    await expect(
+      target.receiveSensorData(
+        { items: [{ equipCode: 'EQ-001', sensorType: 'TEMP', value: 90 }] } as any,
+        'CO',
+        'P01',
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(equipRepo.update).not.toHaveBeenCalled();
+    expect(pmWorkOrderRepo.create).not.toHaveBeenCalled();
+    expect(pmWorkOrderRepo.save).not.toHaveBeenCalled();
   });
 });

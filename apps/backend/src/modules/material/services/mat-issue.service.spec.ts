@@ -308,6 +308,8 @@ describe('MatIssueService', () => {
       status: 'DONE',
       matUid: 'MAT-001',
       issueQty: 5,
+      company: 'HANES',
+      plant: 'P01',
     } as MatIssue);
 
     const manager = {
@@ -369,6 +371,56 @@ describe('MatIssueService', () => {
       { transNo: 'TX-002', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED' },
     );
+  });
+
+  it('blocks cancel when the loaded issue belongs to a different tenant', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-001',
+      seq: 1,
+      status: 'DONE',
+      matUid: 'MAT-001',
+      company: 'OTHER',
+      plant: 'P01',
+    } as MatIssue);
+
+    await expect(target.cancel('ISS-001', 1, 'cancel', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+
+    expect(mockTx.run).not.toHaveBeenCalled();
+    expect(mockDataSource.getRepository).not.toHaveBeenCalled();
+  });
+
+  it('blocks cancel when an original stock transaction belongs to a different tenant', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-001',
+      seq: 1,
+      status: 'DONE',
+      matUid: 'MAT-001',
+      company: 'HANES',
+      plant: 'P01',
+    } as MatIssue);
+
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+      find: jest.fn().mockResolvedValue([
+        {
+          transNo: 'TX-001',
+          fromWarehouseId: 'W1',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: -3,
+          company: 'OTHER',
+          plant: 'P01',
+        } as StockTransaction,
+      ]),
+      findOne: jest.fn(),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await expect(target.cancel('ISS-001', 1, 'cancel', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+
+    expect(manager.save).not.toHaveBeenCalled();
   });
 
   it('blocks cancel when linked production has already progressed', async () => {

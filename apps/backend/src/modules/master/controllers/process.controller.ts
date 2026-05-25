@@ -30,8 +30,8 @@ export class ProcessController {
 
   @Get('equipment-counts')
   @ApiOperation({ summary: '공정별 배치 설비 수 조회' })
-  async getEquipmentCounts() {
-    const data = await this.processService.getEquipmentCounts();
+  async getEquipmentCounts(@Company() company: string, @Plant() plant: string) {
+    const data = await this.processService.getEquipmentCounts(company, plant);
     return ResponseUtil.success(data);
   }
 

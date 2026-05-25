@@ -54,6 +54,23 @@ export class InventoryService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string; plant?: string },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   // ──────────────────────────────────────────────────────────────
   // 조회 위임 (컨트롤러 하위 호환성 유지 — 실제 로직은 InventoryQueryService)
   // ──────────────────────────────────────────────────────────────
@@ -364,6 +381,8 @@ export class InventoryService {
     if (originalTrans.status === 'CANCELED') {
       throw new BadRequestException('이미 취소된 트랜잭션입니다.');
     }
+
+    this.assertSameTenant('원본 트랜잭션', { company, plant }, originalTrans);
 
     // 취소 트랜잭션 유형 결정
     const cancelTransType = this.getCancelTransType(originalTrans.transType);

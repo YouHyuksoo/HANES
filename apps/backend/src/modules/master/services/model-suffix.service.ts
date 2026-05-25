@@ -19,6 +19,13 @@ export class ModelSuffixService {
     private readonly modelSuffixRepository: Repository<ModelSuffix>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: ModelSuffixQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, modelCode, customer, search, useYn } = query;
 
@@ -60,9 +67,9 @@ export class ModelSuffixService {
     return { data, total, page, limit };
   }
 
-  async findByCompositeKey(modelCode: string, suffixCode: string) {
+  async findByCompositeKey(modelCode: string, suffixCode: string, company?: string, plant?: string) {
     const suffix = await this.modelSuffixRepository.findOne({
-      where: { modelCode, suffixCode },
+      where: { modelCode, suffixCode, ...this.tenantWhere(company, plant) },
     });
 
     if (!suffix) {
@@ -72,11 +79,12 @@ export class ModelSuffixService {
     return suffix;
   }
 
-  async create(dto: CreateModelSuffixDto) {
+  async create(dto: CreateModelSuffixDto, company?: string, plant?: string) {
     const existing = await this.modelSuffixRepository.findOne({
       where: {
         modelCode: dto.modelCode,
         suffixCode: dto.suffixCode,
+        ...this.tenantWhere(company, plant),
       },
     });
 
@@ -84,17 +92,23 @@ export class ModelSuffixService {
       throw new ConflictException('이미 존재하는 모델접미사 조합입니다.');
     }
 
-    const entity = this.modelSuffixRepository.create(dto);
+    const entity = this.modelSuffixRepository.create({
+      ...dto,
+      company: company || null,
+      plant: plant || null,
+    });
     const saved = await this.modelSuffixRepository.save(entity);
     return saved;
   }
 
-  async update(modelCode: string, suffixCode: string, dto: UpdateModelSuffixDto) {
-    const suffix = await this.findByCompositeKey(modelCode, suffixCode);
+  async update(modelCode: string, suffixCode: string, dto: UpdateModelSuffixDto, company?: string, plant?: string) {
+    const suffix = await this.findByCompositeKey(modelCode, suffixCode, company, plant);
 
     const updated = await this.modelSuffixRepository.save({
       ...suffix,
       ...dto,
+      company: suffix.company,
+      plant: suffix.plant,
       modelCode,
       suffixCode,
     });
@@ -102,8 +116,8 @@ export class ModelSuffixService {
     return updated;
   }
 
-  async delete(modelCode: string, suffixCode: string) {
-    const suffix = await this.findByCompositeKey(modelCode, suffixCode);
+  async delete(modelCode: string, suffixCode: string, company?: string, plant?: string) {
+    const suffix = await this.findByCompositeKey(modelCode, suffixCode, company, plant);
 
     await this.modelSuffixRepository.remove(suffix);
 

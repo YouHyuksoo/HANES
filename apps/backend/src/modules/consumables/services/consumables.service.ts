@@ -176,23 +176,8 @@ export class ConsumablesService {
   async update(id: string, dto: UpdateConsumableDto, company?: string, plant?: string) {
     await this.findById(id, company, plant);
 
-    // 코드 변경 시 중복 확인
-    if (dto.consumableCode) {
-      const existing = await this.consumableMasterRepository.findOne({
-        where: {
-          consumableCode: dto.consumableCode,
-          ...this.tenantWhere(company, plant),
-        },
-      });
-
-      if (existing && existing.consumableCode !== id) {
-        throw new ConflictException(`이미 존재하는 소모품 코드입니다: ${dto.consumableCode}`);
-      }
-    }
-
     const updateData: Partial<ConsumableMaster> = {};
 
-    if (dto.consumableCode !== undefined) updateData.consumableCode = dto.consumableCode;
     if (dto.consumableName !== undefined) updateData.consumableName = dto.consumableName;
     if (dto.category !== undefined) updateData.category = dto.category || null;
     if (dto.expectedLife !== undefined) updateData.expectedLife = dto.expectedLife || null;

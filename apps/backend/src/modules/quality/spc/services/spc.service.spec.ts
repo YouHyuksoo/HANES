@@ -54,6 +54,29 @@ describe('SpcService', () => {
     });
   });
 
+  describe('updateChart', () => {
+    it('should keep tenant and chart key columns from the matched chart when update payload contains them', async () => {
+      const chart = { chartNo: 'SPC-001', chartName: 'Old', company: 'CO', plant: 'P01' } as SpcChart;
+      mockChartRepo.findOne.mockResolvedValue(chart);
+      mockChartRepo.save.mockImplementation(async (value) => value as SpcChart);
+
+      const result = await target.updateChart('SPC-001', {
+        chartNo: 'SPC-999',
+        chartName: 'New',
+        company: 'OTHER',
+        plant: 'P99',
+      } as any, 'user', 'CO', 'P01');
+
+      expect(result).toEqual(expect.objectContaining({
+        chartNo: 'SPC-001',
+        chartName: 'New',
+        company: 'CO',
+        plant: 'P01',
+        updatedBy: 'user',
+      }));
+    });
+  });
+
   describe('calculateControlLimits', () => {
     it('should throw when less than 2 subgroups', async () => {
       mockChartRepo.findOne.mockResolvedValue({ chartNo: 'SPC-001', id: 1 } as any);

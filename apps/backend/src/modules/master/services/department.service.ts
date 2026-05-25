@@ -16,6 +16,13 @@ export class DepartmentService {
     private readonly departmentRepository: Repository<DepartmentMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: DepartmentQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, useYn } = query;
     const skip = (page - 1) * limit;
@@ -54,17 +61,17 @@ export class DepartmentService {
     return { data, total, page, limit };
   }
 
-  async findById(deptCode: string) {
+  async findById(deptCode: string, company?: string, plant?: string) {
     const dept = await this.departmentRepository.findOne({
-      where: { deptCode },
+      where: { deptCode, ...this.tenantWhere(company, plant) },
     });
     if (!dept) throw new NotFoundException(`부서를 찾을 수 없습니다: ${deptCode}`);
     return dept;
   }
 
-  async create(dto: CreateDepartmentDto) {
+  async create(dto: CreateDepartmentDto, company?: string, plant?: string) {
     const existing = await this.departmentRepository.findOne({
-      where: { deptCode: dto.deptCode },
+      where: { deptCode: dto.deptCode, ...this.tenantWhere(company, plant) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 부서코드입니다: ${dto.deptCode}`);
 
@@ -76,20 +83,28 @@ export class DepartmentService {
       managerName: dto.managerName,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.departmentRepository.save(dept);
   }
 
-  async update(id: string, dto: UpdateDepartmentDto) {
-    await this.findById(id);
-    await this.departmentRepository.update(id, dto);
-    return this.findById(id);
+  async update(id: string, dto: UpdateDepartmentDto, company?: string, plant?: string) {
+    await this.findById(id, company, plant);
+    const {
+      deptCode: _deptCode,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    await this.departmentRepository.update({ deptCode: id, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findById(id, company, plant);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    await this.departmentRepository.delete(id);
+  async delete(id: string, company?: string, plant?: string) {
+    await this.findById(id, company, plant);
+    await this.departmentRepository.delete({ deptCode: id, ...this.tenantWhere(company, plant) });
     return { id };
   }
 }

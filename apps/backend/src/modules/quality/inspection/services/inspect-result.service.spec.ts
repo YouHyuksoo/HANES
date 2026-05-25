@@ -182,6 +182,20 @@ describe('InspectResultService', () => {
       expect(mockInspectRepo.delete).toHaveBeenCalledWith({ resultNo: 'IR-001', company: 'C1', plant: 'P1' });
     });
 
+    it('should reject delete when loaded inspect result tenant differs from request tenant', async () => {
+      mockInspectRepo.findOne.mockResolvedValue({
+        resultNo: 'IR-001',
+        prodResultNo: 'PR-001',
+        company: 'OTHER',
+        plant: 'P1',
+      } as any);
+
+      await expect(target.delete('IR-001', 'C1', 'P1')).rejects.toThrow(BadRequestException);
+
+      expect(mockProdResultRepo.findOne).not.toHaveBeenCalled();
+      expect(mockInspectRepo.delete).not.toHaveBeenCalled();
+    });
+
     it('should block delete while linked production result is still active', async () => {
       mockInspectRepo.findOne.mockResolvedValue({
         resultNo: 'IR-002',

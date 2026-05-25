@@ -13,8 +13,9 @@
  * - DELETE /menu-categories/:code            카테고리 삭제
  */
 import {
+  BadRequestException,
   Body, Controller, Delete, Get, HttpCode, HttpStatus,
-  Param, Patch, Post, Req,
+  Param, Patch, Post, Req, UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MenuCategoriesService } from '../services/menu-categories.service';
@@ -25,8 +26,10 @@ import {
 import { ReorderMenuItemsDto } from '../dto/menu-category-item.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { listKnownMenuCodes } from '../utils/menu-code-validator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('시스템 - 메뉴 카테고리')
+@UseGuards(JwtAuthGuard)
 @Controller('menu-categories')
 export class MenuCategoriesController {
   constructor(
@@ -36,17 +39,18 @@ export class MenuCategoriesController {
 
   @Get()
   @ApiOperation({ summary: '카테고리 목록' })
-  async findAll() {
-    const data = await this.categories.findAll();
+  async findAll(@Req() req: any) {
+    const data = await this.categories.findAll(this.scope(req));
     return ResponseUtil.success(data);
   }
 
   @Get('tree')
   @ApiOperation({ summary: '사이드바 트리 (카테고리 + 메뉴 배치)' })
-  async tree() {
+  async tree(@Req() req: any) {
+    const scope = this.scope(req);
     const [categories, allItems] = await Promise.all([
-      this.categories.findAll(),
-      this.items.findAll(),
+      this.categories.findAll(scope),
+      this.items.findAll(scope),
     ]);
     const byCategory = new Map<string, { menuCode: string; sortOrder: number }[]>();
     for (const it of allItems) {
@@ -67,9 +71,9 @@ export class MenuCategoriesController {
 
   @Get('unassigned-menus')
   @ApiOperation({ summary: '어디에도 배치되지 않은 메뉴 코드 목록' })
-  async unassigned() {
+  async unassigned(@Req() req: any) {
     const all = listKnownMenuCodes();
-    const allItems = await this.items.findAll();
+    const allItems = await this.items.findAll(this.scope(req));
     const placed = new Set(allItems.map((i) => i.menuCode));
     const unassigned = all.filter((code) => !placed.has(code));
     return ResponseUtil.success(unassigned);
@@ -85,8 +89,8 @@ export class MenuCategoriesController {
 
   @Patch('reorder')
   @ApiOperation({ summary: '카테고리 순서 일괄 갱신' })
-  async reorder(@Body() dto: ReorderCategoriesDto) {
-    await this.categories.reorder(dto);
+  async reorder(@Body() dto: ReorderCategoriesDto, @Req() req: any) {
+    await this.categories.reorder(dto, this.scope(req));
     return ResponseUtil.success({ ok: true });
   }
 
@@ -99,24 +103,29 @@ export class MenuCategoriesController {
 
   @Patch(':code/items')
   @ApiOperation({ summary: '카테고리 내 메뉴 순서 일괄 갱신' })
-  async reorderItems(@Param('code') code: string, @Body() dto: ReorderMenuItemsDto) {
-    await this.items.reorderInCategory(code, dto);
+  async reorderItems(@Param('code') code: string, @Body() dto: ReorderMenuItemsDto, @Req() req: any) {
+    await this.items.reorderInCategory(code, dto, this.scope(req));
     return ResponseUtil.success({ ok: true });
   }
 
   @Delete(':code')
   @ApiOperation({ summary: '카테고리 삭제(빈 카테고리만 가능)' })
-  async delete(@Param('code') code: string) {
-    const data = await this.categories.delete(code);
+  async delete(@Param('code') code: string, @Req() req: any) {
+    const data = await this.categories.delete(code, this.scope(req));
     return ResponseUtil.success(data);
   }
 
   private scope(req: any) {
     const user = req.user ?? {};
+    const company = user.company;
+    const plantCd = user.plantCd ?? user.plant;
+    if (!company || !plantCd) {
+      throw new BadRequestException('회사/사업장 정보가 없습니다.');
+    }
     return {
-      company: user.company ?? 'HANES',
-      plantCd: user.plantCd ?? user.plant ?? '-',
-      userId: user.userId ?? user.userName ?? 'system',
+      company,
+      plantCd,
+      userId: user.id ?? user.userId ?? user.userName ?? 'system',
     };
   }
 }

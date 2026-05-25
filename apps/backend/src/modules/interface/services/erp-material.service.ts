@@ -65,6 +65,13 @@ export class ErpMaterialService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   // ==========================================================================
   // ERP → MES: PO 정보 수신 (Inbound)
   // ==========================================================================
@@ -129,11 +136,11 @@ export class ErpMaterialService {
       });
 
       // 성공 로그
-      await this.logInterface(transDate, seq, 'INBOUND', 'ERP_PO_IMPORT', 'SUCCESS', data.poNo, JSON.stringify(data));
+      await this.logInterface(transDate, seq, 'INBOUND', 'ERP_PO_IMPORT', 'SUCCESS', data.poNo, JSON.stringify(data), undefined, data.company, data.plant);
       return { success: true, poNo: data.poNo };
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      await this.logInterface(transDate, seq, 'INBOUND', 'ERP_PO_IMPORT', 'FAILED', data.poNo, JSON.stringify(data), errMsg);
+      await this.logInterface(transDate, seq, 'INBOUND', 'ERP_PO_IMPORT', 'FAILED', data.poNo, JSON.stringify(data), errMsg, data.company, data.plant);
       throw error;
     }
   }
@@ -215,11 +222,11 @@ export class ErpMaterialService {
       // const response = await httpClient.post(erpApiUrl, data);
       this.logger.log(`ERP 전송 시뮬레이션: ${data.messageType} ${data.refNo}`);
 
-      await this.logInterface(transDate, seq, 'OUTBOUND', `ERP_${data.messageType}`, 'SUCCESS', data.refNo, payload);
+      await this.logInterface(transDate, seq, 'OUTBOUND', `ERP_${data.messageType}`, 'SUCCESS', data.refNo, payload, undefined, data.company, data.plant);
       return { success: true, refNo: data.refNo };
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      await this.logInterface(transDate, seq, 'OUTBOUND', `ERP_${data.messageType}`, 'FAILED', data.refNo, payload, errMsg);
+      await this.logInterface(transDate, seq, 'OUTBOUND', `ERP_${data.messageType}`, 'FAILED', data.refNo, payload, errMsg, data.company, data.plant);
 
       // 재시도 대기 상태로 기록 (스케줄러가 재시도)
       return { success: false, refNo: data.refNo, error: errMsg };
@@ -231,9 +238,10 @@ export class ErpMaterialService {
   // ==========================================================================
 
   /** FAILED 상태 건 재시도 (최대 3회) */
-  async retryFailed() {
+  async retryFailed(company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const failedLogs = await this.interLogRepo.find({
-      where: { status: 'FAILED', direction: 'OUTBOUND' },
+      where: { status: 'FAILED', direction: 'OUTBOUND', ...tenantWhere },
       order: { transDate: 'ASC' },
     });
 
@@ -247,7 +255,7 @@ export class ErpMaterialService {
         this.logger.log(`ERP 재시도 (${log.retryCount + 1}/3): ${log.messageType} ${log.interfaceId}`);
 
         await this.interLogRepo.update(
-          { transDate: log.transDate, seq: log.seq },
+          { transDate: log.transDate, seq: log.seq, ...tenantWhere },
           { status: 'SUCCESS', retryCount: log.retryCount + 1 },
         );
         results.push({ transDate: log.transDate, seq: log.seq, status: 'SUCCESS' });
@@ -255,7 +263,7 @@ export class ErpMaterialService {
         const errMsg = error instanceof Error ? error.message : String(error);
         const newRetry = log.retryCount + 1;
         await this.interLogRepo.update(
-          { transDate: log.transDate, seq: log.seq },
+          { transDate: log.transDate, seq: log.seq, ...tenantWhere },
           { retryCount: newRetry, errorMsg: errMsg, status: newRetry >= 3 ? 'FAILED' : 'RETRY' },
         );
         results.push({ transDate: log.transDate, seq: log.seq, status: newRetry >= 3 ? 'FAILED' : 'RETRY' });
@@ -269,11 +277,21 @@ export class ErpMaterialService {
   // ==========================================================================
 
   /** 오늘 인터페이스 통계 */
-  async getTodayStats() {
+  async getTodayStats(company?: string, plant?: string) {
     const today = new Date().toISOString().slice(0, 10);
+    const conditions = ['"TRANS_DATE" = TO_DATE(:1, \'YYYY-MM-DD\')'];
+    const binds: unknown[] = [today];
+    if (company) {
+      conditions.push(`"COMPANY" = :${binds.length + 1}`);
+      binds.push(company);
+    }
+    if (plant) {
+      conditions.push(`"PLANT_CD" = :${binds.length + 1}`);
+      binds.push(plant);
+    }
     const logs = await this.dataSource.query(
-      `SELECT "STATUS", COUNT(*) AS "cnt" FROM "INTER_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD') GROUP BY "STATUS"`,
-      [today],
+      `SELECT "STATUS", COUNT(*) AS "cnt" FROM "INTER_LOGS" WHERE ${conditions.join(' AND ')} GROUP BY "STATUS"`,
+      binds,
     );
     const stats = { success: 0, failed: 0, retry: 0, pending: 0, total: 0 };
     for (const row of logs) {
@@ -302,7 +320,7 @@ export class ErpMaterialService {
 
   private async logInterface(
     transDate: Date, seq: number, direction: string, messageType: string,
-    status: string, interfaceId?: string, payload?: string, errorMsg?: string,
+    status: string, interfaceId?: string, payload?: string, errorMsg?: string, company?: string, plant?: string,
   ) {
     await this.interLogRepo.save({
       transDate, seq, direction, messageType, status,
@@ -311,6 +329,8 @@ export class ErpMaterialService {
       errorMsg: errorMsg || null,
       sendAt: direction === 'OUTBOUND' ? new Date() : null,
       recvAt: direction === 'INBOUND' ? new Date() : null,
+      company: company || null,
+      plant: plant || null,
     });
   }
 }

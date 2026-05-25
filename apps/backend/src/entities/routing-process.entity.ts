@@ -62,10 +62,10 @@ export class RoutingProcess {
   @Column({ name: 'SAMPLE_QTY', type: 'number', default: 1, nullable: true })
   sampleQty: number | null;
 
-  @Column({ name: 'COMPANY', length: 50 })
+  @PrimaryColumn({ name: 'COMPANY', length: 50 })
   company: string;
 
-  @Column({ name: 'PLANT_CD', length: 50 })
+  @PrimaryColumn({ name: 'PLANT_CD', length: 50 })
   plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })

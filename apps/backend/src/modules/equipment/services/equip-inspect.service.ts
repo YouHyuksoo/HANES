@@ -211,12 +211,12 @@ export class EquipInspectService {
     context: { company: string; plant: string } | undefined,
     equip: EquipMaster,
   ): void {
-    if (context?.company && equip.company && context.company !== equip.company) {
+    if (context?.company && context.company !== equip.company) {
       throw new BadRequestException(
         `요청 회사와 설비 회사가 일치하지 않습니다. request=${context.company}, equipment=${equip.company}`,
       );
     }
-    if (context?.plant && equip.plant && context.plant !== equip.plant) {
+    if (context?.plant && context.plant !== equip.plant) {
       throw new BadRequestException(
         `요청 사업장과 설비 사업장이 일치하지 않습니다. request=${context.plant}, equipment=${equip.plant}`,
       );
@@ -522,20 +522,34 @@ export class EquipInspectService {
   }
 
   /** 점검 통계 요약 */
-  async getSummary(inspectType?: string) {
+  async getSummary(inspectType?: string, company?: string, plant?: string) {
     const queryBuilder = this.equipInspectLogRepository.createQueryBuilder('log');
 
     if (inspectType) {
       queryBuilder.where('log.inspectType = :inspectType', { inspectType });
     }
+    if (company) {
+      queryBuilder.andWhere('log.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('log.plant = :plant', { plant });
+    }
 
     const total = await queryBuilder.getCount();
 
-    const byResult = await this.equipInspectLogRepository
+    const byResultQuery = this.equipInspectLogRepository
       .createQueryBuilder('log')
       .select('log.overallResult', 'result')
       .addSelect('COUNT(*)', 'count')
-      .where(inspectType ? 'log.inspectType = :inspectType' : '1=1', inspectType ? { inspectType } : {})
+      .where(inspectType ? 'log.inspectType = :inspectType' : '1=1', inspectType ? { inspectType } : {});
+    if (company) {
+      byResultQuery.andWhere('log.company = :company', { company });
+    }
+    if (plant) {
+      byResultQuery.andWhere('log.plant = :plant', { plant });
+    }
+
+    const byResult = await byResultQuery
       .groupBy('log.overallResult')
       .getRawMany();
 

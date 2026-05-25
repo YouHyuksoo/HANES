@@ -102,6 +102,27 @@ describe('DocumentService', () => {
       expect(mockRepo.save).toHaveBeenCalled();
     });
 
+    it('should keep tenant and document key columns from the matched document when update payload contains them', async () => {
+      const doc = { docNo: 'DOC-001', docTitle: 'Old', status: 'DRAFT', company: 'COMP', plant: 'PLANT' } as DocumentMaster;
+      mockRepo.findOne.mockResolvedValue(doc);
+      mockRepo.save.mockImplementation(async (value) => value as DocumentMaster);
+
+      const result = await target.update('DOC-001', {
+        docNo: 'DOC-999',
+        docTitle: 'New',
+        company: 'OTHER',
+        plant: 'OTHER_PLANT',
+      } as any, 'user');
+
+      expect(result).toEqual(expect.objectContaining({
+        docNo: 'DOC-001',
+        docTitle: 'New',
+        company: 'COMP',
+        plant: 'PLANT',
+        updatedBy: 'user',
+      }));
+    });
+
     it('should throw BadRequestException when status is not DRAFT', async () => {
       // Arrange
       const doc = { docNo: 'DOC-001', status: 'APPROVED' } as DocumentMaster;

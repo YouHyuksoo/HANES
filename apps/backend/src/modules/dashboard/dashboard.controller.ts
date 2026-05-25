@@ -9,26 +9,31 @@
 
 import { Controller, Get, Query } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
+import { Company, Plant } from '../../common/decorators/tenant.decorator';
 
 @Controller('dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('kpi')
-  async getKpi() {
-    const data = await this.dashboardService.getKpi();
+  async getKpi(@Company() company: string, @Plant() plant: string) {
+    const data = await this.dashboardService.getKpi(company, plant);
     return { success: true, data };
   }
 
   @Get('summary')
-  async getSummary(@Query('date') date: string) {
-    const data = await this.dashboardService.getSummary(date);
+  async getSummary(
+    @Query('date') date: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.dashboardService.getSummary(date, company, plant);
     return { success: true, data };
   }
 
   @Get('recent-productions')
-  async getRecentProductions() {
-    const data = await this.dashboardService.getRecentProductions();
+  async getRecentProductions(@Company() company: string, @Plant() plant: string) {
+    const data = await this.dashboardService.getRecentProductions(company, plant);
     return { success: true, data };
   }
 }

@@ -56,6 +56,20 @@ export class MatIssueService {
     };
   }
 
+  private assertSameTenant(
+    label: string,
+    actual: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && actual.company !== company) {
+      throw new BadRequestException(`${label}의 회사가 요청 회사와 다릅니다.`);
+    }
+    if (plant && actual.plant !== plant) {
+      throw new BadRequestException(`${label}의 공장이 요청 공장과 다릅니다.`);
+    }
+  }
+
   private async flattenIssue(issue: MatIssue, company?: string, plant?: string) {
     if (!issue) return null;
     const tenantWhere = this.tenantWhere(company ?? issue.company, plant ?? issue.plant);
@@ -325,6 +339,7 @@ export class MatIssueService {
     if (!rawIssue) {
       throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${issueNo}-${seq}`);
     }
+    this.assertSameTenant('자재출고 이력', rawIssue, company, plant);
 
     if (rawIssue.status !== 'DONE') {
       throw new BadRequestException('이미 취소된 출고입니다.');
@@ -341,6 +356,8 @@ export class MatIssueService {
       });
 
       for (const originalTx of originalTxs) {
+        this.assertSameTenant('원본 재고거래', originalTx, company, plant);
+
         const restoreQty = Math.abs(originalTx.qty);
         const cancelTransNo = await this.numbering.nextInTx(queryRunner, 'CANCEL_TX');
         const cancelTx = queryRunner.manager.create(StockTransaction, {

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, getMetadataArgsStorage } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { MenuCategory } from '../../../entities/menu-category.entity';
 import { MenuCategoryItem } from '../../../entities/menu-category-item.entity';
@@ -59,6 +59,12 @@ describe('MenuCategoryItemsService', () => {
       );
       expect(result.menuCode).toBe('MST_PART');
       expect(result.categoryCode).toBe('TARGET');
+      expect(categoryRepo.findOne).toHaveBeenCalledWith({
+        where: { categoryCode: 'TARGET', company: 'C1', plantCd: 'P1' },
+      });
+      expect(itemRepo.findOne).toHaveBeenCalledWith({
+        where: { menuCode: 'MST_PART', company: 'C1', plantCd: 'P1' },
+      });
     });
 
     it('이미 다른 카테고리에 있으면 카테고리/순서 갱신', async () => {
@@ -98,8 +104,11 @@ describe('MenuCategoryItemsService', () => {
       itemRepo.findOne.mockResolvedValueOnce({ menuCode: 'MST_PART' } as any);
       itemRepo.delete.mockResolvedValueOnce({} as any);
 
-      await service.remove('MST_PART');
-      expect(itemRepo.delete).toHaveBeenCalledWith({ menuCode: 'MST_PART' });
+      await service.remove('MST_PART', { company: 'C1', plantCd: 'P1', userId: 'tester' });
+      expect(itemRepo.findOne).toHaveBeenCalledWith({
+        where: { menuCode: 'MST_PART', company: 'C1', plantCd: 'P1' },
+      });
+      expect(itemRepo.delete).toHaveBeenCalledWith({ menuCode: 'MST_PART', company: 'C1', plantCd: 'P1' });
     });
 
     it('매핑이 없으면 NotFound', async () => {
@@ -118,6 +127,17 @@ describe('MenuCategoryItemsService', () => {
         ],
       });
       expect(dataSource.transaction).toHaveBeenCalled();
+    });
+  });
+
+  describe('tenant keys', () => {
+    it('includes company and plantCd in MenuCategoryItem primary key metadata', () => {
+      const primaryColumnNames = getMetadataArgsStorage()
+        .columns
+        .filter(column => column.target === MenuCategoryItem && column.options.primary)
+        .map(column => column.propertyName);
+
+      expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plantCd', 'menuCode']));
     });
   });
 });

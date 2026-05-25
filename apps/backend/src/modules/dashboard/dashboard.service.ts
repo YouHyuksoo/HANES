@@ -27,30 +27,37 @@ const PKG = 'PKG_DASHBOARD';
 export class DashboardService {
   constructor(private readonly oracle: OracleService) {}
 
+  private tenantParams(company?: string, plant?: string) {
+    return {
+      p_company: company ?? null,
+      p_plant: plant ?? null,
+    };
+  }
+
   /**
    * 대시보드 요약 데이터 (현황판 전용)
    * 기존 API 응답 구조 유지: { equip, job, mat, defect, daily, periodic, pm }
    */
-  async getSummary(dateStr: string) {
+  async getSummary(dateStr: string, company?: string, plant?: string) {
     // 'T00:00:00' 을 붙여 로컬 타임존 자정 생성 (UTC 변환 방지)
     const targetDate = new Date(dateStr + 'T00:00:00');
 
     const [equip, job, mat, defect, daily, periodic, pm] = await Promise.all([
-      this.getEquipStats(),
-      this.getJobOrderStats(targetDate),
-      this.getMatAlert(),
-      this.getDefectStats(),
-      this.getInspectData('SP_INSPECT_DAILY', targetDate),
-      this.getInspectData('SP_INSPECT_PERIODIC', targetDate),
-      this.getInspectData('SP_INSPECT_PM', targetDate),
+      this.getEquipStats(company, plant),
+      this.getJobOrderStats(targetDate, company, plant),
+      this.getMatAlert(company, plant),
+      this.getDefectStats(company, plant),
+      this.getInspectData('SP_INSPECT_DAILY', targetDate, company, plant),
+      this.getInspectData('SP_INSPECT_PERIODIC', targetDate, company, plant),
+      this.getInspectData('SP_INSPECT_PM', targetDate, company, plant),
     ]);
 
     return { equip, job, mat, defect, daily, periodic, pm };
   }
 
   /** KPI 데이터 (생산량/재고/합격률/불량) */
-  async getKpi() {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_KPI');
+  async getKpi(company?: string, plant?: string) {
+    const rows = await this.oracle.callProc<any>(PKG, 'SP_KPI', this.tenantParams(company, plant));
     const r = rows[0] || {};
     return {
       todayProduction: { value: r.todayProd ?? 0, change: r.prodChange ?? 0 },
@@ -65,12 +72,12 @@ export class DashboardService {
    * SP_RECENT_PRODUCTIONS에서 LINE_CODE→LINE alias, progress 계산,
    * WAITING→WAIT 상태 매핑을 PL/SQL에서 처리하므로 그대로 반환
    */
-  async getRecentProductions() {
-    return this.oracle.callProc<any>(PKG, 'SP_RECENT_PRODUCTIONS');
+  async getRecentProductions(company?: string, plant?: string) {
+    return this.oracle.callProc<any>(PKG, 'SP_RECENT_PRODUCTIONS', this.tenantParams(company, plant));
   }
 
-  private async getEquipStats() {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_EQUIP_STATS');
+  private async getEquipStats(company?: string, plant?: string) {
+    const rows = await this.oracle.callProc<any>(PKG, 'SP_EQUIP_STATS', this.tenantParams(company, plant));
     const r = rows[0] || {};
     return {
       normal: r.normalCnt ?? 0,
@@ -80,9 +87,10 @@ export class DashboardService {
     };
   }
 
-  private async getJobOrderStats(date: Date) {
+  private async getJobOrderStats(date: Date, company?: string, plant?: string) {
     const rows = await this.oracle.callProc<any>(PKG, 'SP_JOB_ORDER_STATS', {
       p_target_date: date,
+      ...this.tenantParams(company, plant),
     });
     const r = rows[0] || {};
     return {
@@ -93,8 +101,8 @@ export class DashboardService {
     };
   }
 
-  private async getMatAlert() {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_MAT_ALERT');
+  private async getMatAlert(company?: string, plant?: string) {
+    const rows = await this.oracle.callProc<any>(PKG, 'SP_MAT_ALERT', this.tenantParams(company, plant));
     const r = rows[0] || {};
     return {
       lowStock: r.lowStockCnt ?? 0,
@@ -103,8 +111,8 @@ export class DashboardService {
     };
   }
 
-  private async getDefectStats() {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_DEFECT_STATS');
+  private async getDefectStats(company?: string, plant?: string) {
+    const rows = await this.oracle.callProc<any>(PKG, 'SP_DEFECT_STATS', this.tenantParams(company, plant));
     const r = rows[0] || {};
     return {
       wait: r.waitCnt ?? 0,
@@ -119,12 +127,12 @@ export class DashboardService {
    * 점검 데이터 조회 (일상/정기/PM 공통)
    * 다중 커서: o_summary (요약 1행) + o_items (설비별 행)
    */
-  private async getInspectData(procName: string, date: Date) {
+  private async getInspectData(procName: string, date: Date, company?: string, plant?: string) {
     const result = await this.oracle.callProcMultiCursor<any>(
       PKG,
       procName,
       ['o_summary', 'o_items'],
-      { p_target_date: date },
+      { p_target_date: date, ...this.tenantParams(company, plant) },
     );
 
     const summary = result.o_summary[0] || {};

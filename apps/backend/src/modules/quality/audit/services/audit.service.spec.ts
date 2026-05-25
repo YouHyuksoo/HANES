@@ -59,6 +59,27 @@ describe('AuditService', () => {
       mockAuditRepo.findOne.mockResolvedValue({ id: 1, status: 'COMPLETED' } as any);
       await expect(target.update(1, {} as any, 'user')).rejects.toThrow(BadRequestException);
     });
+
+    it('should keep tenant and audit key columns from the matched audit when update payload contains them', async () => {
+      const item = { auditNo: 'AUD-001', title: 'Old', status: 'PLANNED', company: 'CO', plant: 'P01' } as AuditPlan;
+      mockAuditRepo.findOne.mockResolvedValue(item);
+      mockAuditRepo.save.mockImplementation(async (value) => value as AuditPlan);
+
+      const result = await target.update('AUD-001' as any, {
+        auditNo: 'AUD-999',
+        title: 'New',
+        company: 'OTHER',
+        plant: 'P99',
+      } as any, 'user');
+
+      expect(result).toEqual(expect.objectContaining({
+        auditNo: 'AUD-001',
+        title: 'New',
+        company: 'CO',
+        plant: 'P01',
+        updatedBy: 'user',
+      }));
+    });
   });
 
   describe('delete', () => {

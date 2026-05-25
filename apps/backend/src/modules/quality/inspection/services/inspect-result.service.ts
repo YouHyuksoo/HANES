@@ -56,6 +56,23 @@ export class InspectResultService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   /**
    * 검사실적 목록 조회 (페이지네이션)
    */
@@ -372,6 +389,7 @@ export class InspectResultService {
    */
   async delete(resultNo: string, company?: string, plant?: string) {
     const result = await this.findById(resultNo, company, plant); // 존재 확인
+    this.assertSameTenant('검사실적', { company, plant }, result);
     const resultTenantWhere = this.tenantWhere(result.company ?? company, result.plant ?? plant);
 
     if (result.prodResultNo) {

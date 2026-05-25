@@ -71,15 +71,15 @@ export class ErpMaterialController {
   @Post('retry')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '실패 건 재시도 (최대 3회)' })
-  async retryFailed() {
-    const data = await this.erpMaterialService.retryFailed();
+  async retryFailed(@Company() company: string, @Plant() plant: string) {
+    const data = await this.erpMaterialService.retryFailed(company, plant);
     return ResponseUtil.success(data, `재시도 처리: ${data.length}건`);
   }
 
   @Get('stats')
   @ApiOperation({ summary: '오늘 ERP 인터페이스 통계' })
-  async getStats() {
-    const data = await this.erpMaterialService.getTodayStats();
+  async getStats(@Company() company: string, @Plant() plant: string) {
+    const data = await this.erpMaterialService.getTodayStats(company, plant);
     return ResponseUtil.success(data);
   }
 }

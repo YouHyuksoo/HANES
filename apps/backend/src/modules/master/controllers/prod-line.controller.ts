@@ -24,30 +24,30 @@ export class ProdLineController {
 
   @Get(':id')
   @ApiOperation({ summary: '생산라인 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.prodLineService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodLineService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '생산라인 생성' })
-  async create(@Body() dto: CreateProdLineDto) {
-    const data = await this.prodLineService.create(dto);
+  async create(@Body() dto: CreateProdLineDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodLineService.create(dto, company, plant);
     return ResponseUtil.success(data, '생산라인이 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: '생산라인 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateProdLineDto) {
-    const data = await this.prodLineService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateProdLineDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodLineService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '생산라인이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '생산라인 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.prodLineService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.prodLineService.delete(id, company, plant);
     return ResponseUtil.success(null, '생산라인이 삭제되었습니다.');
   }
 }

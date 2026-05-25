@@ -166,7 +166,13 @@ export class ComplaintService {
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 수정할 수 있습니다.');
     }
-    Object.assign(item, dto, { updatedBy: userId });
+    const {
+      complaintNo: _complaintNo,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData, { updatedBy: userId });
     return this.complaintRepo.save(item);
   }
 

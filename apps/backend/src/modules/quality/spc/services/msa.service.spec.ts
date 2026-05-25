@@ -65,6 +65,29 @@ describe('MsaService', () => {
     });
   });
 
+  describe('updateGauge', () => {
+    it('should keep tenant and gauge key columns from the matched gauge when update payload contains them', async () => {
+      const gauge = { gaugeCode: 'G-001', gaugeName: 'Old', company: 'CO', plant: 'P01' } as GaugeMaster;
+      mockGaugeRepo.findOne.mockResolvedValue(gauge);
+      mockGaugeRepo.save.mockImplementation(async (value) => value as GaugeMaster);
+
+      const result = await target.updateGauge('G-001', {
+        gaugeCode: 'G-999',
+        gaugeName: 'New',
+        company: 'OTHER',
+        plant: 'P99',
+      } as any, 'user', 'CO', 'P01');
+
+      expect(result).toEqual(expect.objectContaining({
+        gaugeCode: 'G-001',
+        gaugeName: 'New',
+        company: 'CO',
+        plant: 'P01',
+        updatedBy: 'user',
+      }));
+    });
+  });
+
   describe('deleteCalibration', () => {
     it('should throw when not found', async () => {
       mockCalRepo.findOne.mockResolvedValue(null);

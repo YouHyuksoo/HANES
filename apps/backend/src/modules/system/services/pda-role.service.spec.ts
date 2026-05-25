@@ -9,8 +9,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ConflictException } from '@nestjs/common';
-import { Repository, DataSource } from 'typeorm';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Repository, DataSource, getMetadataArgsStorage } from 'typeorm';
 import { PdaRoleService, PDA_MENU_CODES } from './pda-role.service';
 import { PdaRole } from '../../../entities/pda-role.entity';
 import { PdaRoleMenu } from '../../../entities/pda-role-menu.entity';
@@ -45,6 +45,24 @@ describe('PdaRoleService', () => {
     jest.clearAllMocks();
   });
 
+  it('includes tenant columns in PDA role primary key metadata', () => {
+    const primaryColumnNames = getMetadataArgsStorage()
+      .columns
+      .filter(column => column.target === PdaRole && column.options.primary)
+      .map(column => column.propertyName);
+
+    expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plant', 'code']));
+  });
+
+  it('includes tenant columns in PDA role menu primary key metadata', () => {
+    const primaryColumnNames = getMetadataArgsStorage()
+      .columns
+      .filter(column => column.target === PdaRoleMenu && column.options.primary)
+      .map(column => column.propertyName);
+
+    expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plant', 'pdaRoleCode', 'menuCode']));
+  });
+
   // ─── findAll ───
   describe('findAll', () => {
     it('should return roles with menus relation', async () => {
@@ -53,11 +71,12 @@ describe('PdaRoleService', () => {
       mockRoleRepo.find.mockResolvedValue(roles);
 
       // Act
-      const result = await target.findAll();
+      const result = await target.findAll('C1', 'P1');
 
       // Assert
       expect(result).toEqual(roles);
       expect(mockRoleRepo.find).toHaveBeenCalledWith({
+        where: { company: 'C1', plant: 'P1' },
         relations: ['menus'],
         order: { createdAt: 'ASC' },
       });
@@ -72,10 +91,13 @@ describe('PdaRoleService', () => {
       mockRoleRepo.find.mockResolvedValue(roles);
 
       // Act
-      const result = await target.findAllActive();
+      const result = await target.findAllActive('C1', 'P1');
 
       // Assert
       expect(result).toEqual(roles);
+      expect(mockRoleRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: { isActive: true, company: 'C1', plant: 'P1' },
+      }));
     });
   });
 
@@ -100,10 +122,13 @@ describe('PdaRoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue({ code: 'NEW', menus: [] } as any);
 
       // Act
-      const result = await target.create(dto as any);
+      const result = await target.create(dto as any, 'C1', 'P1');
 
       // Assert
       expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockRoleRepo.findOne).toHaveBeenCalledWith({ where: { code: 'NEW', company: 'C1', plant: 'P1' } });
+      expect(mockManager.create).toHaveBeenCalledWith(PdaRole, expect.objectContaining({ company: 'C1', plant: 'P1' }));
+      expect(mockManager.create).toHaveBeenCalledWith(PdaRoleMenu, expect.objectContaining({ company: 'C1', plant: 'P1' }));
     });
 
     it('should throw ConflictException when code exists', async () => {
@@ -112,7 +137,15 @@ describe('PdaRoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue({ code: 'EXISTING' } as any);
 
       // Act & Assert
-      await expect(target.create(dto)).rejects.toThrow(ConflictException);
+      await expect(target.create(dto, 'C1', 'P1')).rejects.toThrow(ConflictException);
+    });
+
+    it('should reject create when tenant is missing instead of defaulting to HANES/P01', async () => {
+      mockRoleRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.create({ code: 'NEW', name: 'New Role' } as any)).rejects.toThrow(BadRequestException);
+
+      expect(mockDataSource.transaction).not.toHaveBeenCalled();
     });
   });
 
@@ -129,10 +162,13 @@ describe('PdaRoleService', () => {
       mockDataSource.transaction.mockImplementation(async (cb: any) => cb(mockManager));
 
       // Act
-      await target.update('R1', { name: 'Updated', menuCodes: ['PDA_SHIPPING'] } as any);
+      await target.update('R1', { name: 'Updated', menuCodes: ['PDA_SHIPPING'] } as any, 'C1', 'P1');
 
       // Assert
       expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockManager.update).toHaveBeenCalledWith(PdaRole, { code: 'R1', company: 'C1', plant: 'P1' }, expect.objectContaining({ name: 'Updated' }));
+      expect(mockManager.delete).toHaveBeenCalledWith(PdaRoleMenu, { pdaRoleCode: 'R1', company: 'C1', plant: 'P1' });
+      expect(mockManager.create).toHaveBeenCalledWith(PdaRoleMenu, expect.objectContaining({ pdaRoleCode: 'R1', company: 'C1', plant: 'P1' }));
     });
 
     it('should throw NotFoundException when role not found', async () => {
@@ -140,7 +176,15 @@ describe('PdaRoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(target.update('NONE', {} as any)).rejects.toThrow(NotFoundException);
+      await expect(target.update('NONE', {} as any, 'C1', 'P1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should reject menu replacement when tenant is missing instead of defaulting to HANES/P01', async () => {
+      mockRoleRepo.findOne.mockResolvedValue({ code: 'R1' } as any);
+
+      await expect(target.update('R1', { menuCodes: ['PDA_SHIPPING'] } as any)).rejects.toThrow(BadRequestException);
+
+      expect(mockDataSource.transaction).not.toHaveBeenCalled();
     });
   });
 
@@ -152,10 +196,11 @@ describe('PdaRoleService', () => {
       mockRoleRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.remove('R1');
+      const result = await target.remove('R1', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ code: 'R1', deleted: true });
+      expect(mockRoleRepo.delete).toHaveBeenCalledWith({ code: 'R1', company: 'C1', plant: 'P1' });
     });
 
     it('should throw NotFoundException when role not found', async () => {

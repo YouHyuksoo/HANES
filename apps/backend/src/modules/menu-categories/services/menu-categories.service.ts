@@ -35,15 +35,21 @@ export class MenuCategoriesService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findAll(): Promise<MenuCategory[]> {
-    return this.categoryRepo.find({ order: { sortOrder: 'ASC', categoryCode: 'ASC' } });
+  async findAll(scope?: AuditScope): Promise<MenuCategory[]> {
+    const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
+    return this.categoryRepo.find({
+      where: tenantWhere,
+      order: { sortOrder: 'ASC', categoryCode: 'ASC' },
+    });
   }
 
   async create(dto: CreateMenuCategoryDto, scope: AuditScope): Promise<MenuCategory> {
     if (dto.code === RESERVED_ROOT) {
       throw new BadRequestException(`예약어 ${RESERVED_ROOT}는 생성할 수 없습니다.`);
     }
-    const existing = await this.categoryRepo.findOne({ where: { categoryCode: dto.code } });
+    const existing = await this.categoryRepo.findOne({
+      where: { categoryCode: dto.code, company: scope.company, plantCd: scope.plantCd },
+    });
     if (existing) {
       throw new ConflictException(`이미 존재하는 카테고리 코드입니다: ${dto.code}`);
     }
@@ -65,7 +71,9 @@ export class MenuCategoriesService {
   }
 
   async update(code: string, dto: UpdateMenuCategoryDto, scope: AuditScope): Promise<MenuCategory> {
-    const existing = await this.categoryRepo.findOne({ where: { categoryCode: code } });
+    const existing = await this.categoryRepo.findOne({
+      where: { categoryCode: code, company: scope.company, plantCd: scope.plantCd },
+    });
     if (!existing) throw new NotFoundException(`카테고리를 찾을 수 없습니다: ${code}`);
 
     if (code === RESERVED_ROOT) {
@@ -75,7 +83,7 @@ export class MenuCategoriesService {
     }
 
     await this.categoryRepo.update(
-      { categoryCode: code },
+      { categoryCode: code, company: scope.company, plantCd: scope.plantCd },
       {
         ...(dto.labelKey !== undefined && { labelKey: dto.labelKey }),
         ...(dto.iconName !== undefined && { iconName: dto.iconName }),
@@ -86,32 +94,39 @@ export class MenuCategoriesService {
       },
     );
 
-    return (await this.categoryRepo.findOne({ where: { categoryCode: code } }))!;
+    return (await this.categoryRepo.findOne({
+      where: { categoryCode: code, company: scope.company, plantCd: scope.plantCd },
+    }))!;
   }
 
-  async delete(code: string): Promise<{ code: string }> {
+  async delete(code: string, scope?: AuditScope): Promise<{ code: string }> {
     if (code === RESERVED_ROOT) {
       throw new BadRequestException(`예약어 ${RESERVED_ROOT}는 삭제할 수 없습니다.`);
     }
-    const existing = await this.categoryRepo.findOne({ where: { categoryCode: code } });
+    const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
+    const existing = await this.categoryRepo.findOne({ where: { categoryCode: code, ...tenantWhere } });
     if (!existing) throw new NotFoundException(`카테고리를 찾을 수 없습니다: ${code}`);
 
-    const childCount = await this.itemRepo.count({ where: { categoryCode: code } });
+    const childCount = await this.itemRepo.count({ where: { categoryCode: code, ...tenantWhere } });
     if (childCount > 0) {
       throw new ConflictException(
         `카테고리에 메뉴가 ${childCount}개 있습니다. 먼저 다른 카테고리로 이동하거나 삭제해주세요`,
       );
     }
 
-    await this.categoryRepo.delete({ categoryCode: code });
+    await this.categoryRepo.delete({ categoryCode: code, ...tenantWhere });
     return { code };
   }
 
-  async reorder(dto: ReorderCategoriesDto): Promise<void> {
+  async reorder(dto: ReorderCategoriesDto, scope?: AuditScope): Promise<void> {
+    const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
     await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(MenuCategory);
       for (const item of dto.items) {
-        await repo.update({ categoryCode: item.code }, { sortOrder: item.sortOrder, updatedAt: new Date() });
+        await repo.update(
+          { categoryCode: item.code, ...tenantWhere },
+          { sortOrder: item.sortOrder, updatedAt: new Date() },
+        );
       }
     });
   }

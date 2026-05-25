@@ -35,10 +35,24 @@ export class RoleService {
     private readonly permissionRepository: Repository<RoleMenuPermission>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private requireTenant(company?: string | null, plant?: string | null) {
+    if (!company || !plant) {
+      throw new BadRequestException('회사/사업장 정보가 없습니다.');
+    }
+    return { company, plant };
+  }
+
   /** 역할 목록 조회 */
-  async findAll(company?: string) {
+  async findAll(company?: string, plant?: string) {
     const where: Record<string, unknown> = {
-      ...(company && { company }),
+      ...this.tenantWhere(company, plant),
     };
 
     return this.roleRepository.find({
@@ -48,9 +62,9 @@ export class RoleService {
   }
 
   /** 역할 상세 조회 (권한 포함) */
-  async findOne(code: string) {
+  async findOne(code: string, company?: string, plant?: string) {
     const role = await this.roleRepository.findOne({
-      where: { code },
+      where: { code, ...this.tenantWhere(company, plant) },
       relations: ['permissions'],
     });
 
@@ -62,10 +76,11 @@ export class RoleService {
   }
 
   /** 역할 생성 */
-  async create(dto: CreateRoleDto, company?: string, userId?: string) {
+  async create(dto: CreateRoleDto, company?: string, plant?: string, userId?: string) {
+    const tenant = this.requireTenant(company, plant);
     // code 중복 체크
     const existing = await this.roleRepository.findOne({
-      where: { code: dto.code },
+      where: { code: dto.code, ...tenant },
     });
 
     if (existing) {
@@ -77,7 +92,8 @@ export class RoleService {
       name: dto.name,
       description: dto.description || null,
       sortOrder: dto.sortOrder ?? 0,
-      company: company || null,
+      company: tenant.company,
+      plant: tenant.plant,
       createdBy: userId || null,
     });
 
@@ -87,16 +103,16 @@ export class RoleService {
   }
 
   /** 역할 수정 */
-  async update(code: string, dto: UpdateRoleDto, userId?: string) {
-    const role = await this.findOne(code);
+  async update(code: string, dto: UpdateRoleDto, company?: string, plant?: string, userId?: string) {
+    const role = await this.findOne(code, company, plant);
 
-    await this.roleRepository.update({ code }, {
+    await this.roleRepository.update({ code, ...this.tenantWhere(company, plant) }, {
       ...dto,
       updatedBy: userId || role.updatedBy,
     });
 
     const updated = await this.roleRepository.findOne({
-      where: { code },
+      where: { code, ...this.tenantWhere(company, plant) },
       relations: ['permissions'],
     });
 
@@ -105,31 +121,32 @@ export class RoleService {
   }
 
   /** 역할 삭제 (소프트 삭제) */
-  async remove(code: string) {
-    const role = await this.findOne(code);
+  async remove(code: string, company?: string, plant?: string) {
+    const role = await this.findOne(code, company, plant);
 
     if (role.isSystem) {
       throw new BadRequestException('시스템 기본 역할은 삭제할 수 없습니다.');
     }
 
-    await this.roleRepository.delete({ code });
+    await this.roleRepository.delete({ code, ...this.tenantWhere(company, plant) });
     this.logger.log(`Role deleted: ${code}`);
     return { message: '역할이 삭제되었습니다.' };
   }
 
   /** 특정 역할의 메뉴 권한 목록 조회 (메뉴 코드 배열) */
-  async getPermissions(roleCode: string): Promise<string[]> {
+  async getPermissions(roleCode: string, company?: string, plant?: string): Promise<string[]> {
     const permissions = await this.permissionRepository.find({
-      where: { roleCode, canAccess: true },
+      where: { roleCode, canAccess: true, ...this.tenantWhere(company, plant) },
     });
 
     return permissions.map((p) => p.menuCode);
   }
 
   /** 메뉴 권한 일괄 업데이트 (기존 삭제 후 새로 INSERT) */
-  async updatePermissions(roleCode: string, dto: UpdatePermissionsDto) {
+  async updatePermissions(roleCode: string, dto: UpdatePermissionsDto, company?: string, plant?: string) {
+    const tenant = this.requireTenant(company, plant);
     // ADMIN 역할은 권한 수정 불가 (모든 메뉴 접근 가능)
-    const role = await this.findOne(roleCode);
+    const role = await this.findOne(roleCode, tenant.company, tenant.plant);
     if (role.code === 'ADMIN') {
       throw new BadRequestException(
         'ADMIN 역할의 권한은 수정할 수 없습니다. (모든 메뉴 접근 가능)',
@@ -137,7 +154,7 @@ export class RoleService {
     }
 
     // 기존 권한 전체 삭제
-    await this.permissionRepository.delete({ roleCode });
+    await this.permissionRepository.delete({ roleCode, ...tenant });
 
     // 새 권한 INSERT
     const entities = dto.menuCodes.map((menuCode) =>
@@ -145,6 +162,8 @@ export class RoleService {
         roleCode,
         menuCode,
         canAccess: true,
+        company: tenant.company,
+        plant: tenant.plant,
       }),
     );
 
@@ -166,13 +185,13 @@ export class RoleService {
    * - ADMIN이면 빈 배열 반환 (프론트에서 빈 배열 = 모든 메뉴 허용으로 처리)
    * - AuthService.login()에서 호출됨
    */
-  async getAllowedMenusByRoleCode(roleCode: string): Promise<string[]> {
+  async getAllowedMenusByRoleCode(roleCode: string, company?: string | null, plant?: string | null): Promise<string[]> {
     if (roleCode === 'ADMIN') {
       return [];
     }
 
     const role = await this.roleRepository.findOne({
-      where: { code: roleCode },
+      where: { code: roleCode, ...this.tenantWhere(company ?? undefined, plant ?? undefined) },
     });
 
     if (!role) {
@@ -180,7 +199,11 @@ export class RoleService {
     }
 
     const permissions = await this.permissionRepository.find({
-      where: { roleCode, canAccess: true },
+      where: {
+        roleCode,
+        canAccess: true,
+        ...this.tenantWhere(company ?? undefined, plant ?? undefined),
+      },
     });
 
     return permissions.map((p) => p.menuCode);

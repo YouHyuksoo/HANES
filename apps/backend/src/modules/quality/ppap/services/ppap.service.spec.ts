@@ -52,6 +52,29 @@ describe('PpapService', () => {
     });
   });
 
+  describe('update', () => {
+    it('should keep tenant and ppap key columns from the matched submission when update payload contains them', async () => {
+      const item = { ppapNo: 'PPAP-001', itemCode: 'ITEM-OLD', status: 'DRAFT', company: 'CO', plant: 'P01' } as PpapSubmission;
+      mockRepo.findOne.mockResolvedValue(item);
+      mockRepo.save.mockImplementation(async (value) => value as PpapSubmission);
+
+      const result = await target.update('PPAP-001', {
+        ppapNo: 'PPAP-999',
+        itemCode: 'ITEM-NEW',
+        company: 'OTHER',
+        plant: 'P99',
+      } as any, 'user');
+
+      expect(result).toEqual(expect.objectContaining({
+        ppapNo: 'PPAP-001',
+        itemCode: 'ITEM-NEW',
+        company: 'CO',
+        plant: 'P01',
+        updatedBy: 'user',
+      }));
+    });
+  });
+
   describe('approve', () => {
     it('should approve SUBMITTED', async () => {
       const item = { ppapNo: 'PPAP-001', status: 'SUBMITTED' } as any;

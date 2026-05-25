@@ -35,37 +35,37 @@ export class WorkerController {
 
   @Get('by-qr/:qrCode')
   @ApiOperation({ summary: 'QR 코드로 작업자 조회 (PDA 연동)' })
-  async findByQrCode(@Param('qrCode') qrCode: string) {
-    const data = await this.workerService.findByQrCode(qrCode);
+  async findByQrCode(@Param('qrCode') qrCode: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.workerService.findByQrCode(qrCode, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '작업자 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.workerService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.workerService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '작업자 생성' })
-  async create(@Body() dto: CreateWorkerDto) {
-    const data = await this.workerService.create(dto);
+  async create(@Body() dto: CreateWorkerDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.workerService.create(dto, company, plant);
     return ResponseUtil.success(data, '작업자가 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: '작업자 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateWorkerDto) {
-    const data = await this.workerService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateWorkerDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.workerService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '작업자가 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '작업자 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.workerService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.workerService.delete(id, company, plant);
     return ResponseUtil.success(null, '작업자가 삭제되었습니다.');
   }
 

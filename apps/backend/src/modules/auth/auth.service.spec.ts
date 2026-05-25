@@ -97,6 +97,7 @@ describe('AuthService', () => {
       expect(result.user.company).toBe('HANES');
       expect(result.allowedMenus).toEqual(['menu1']);
       expect(result.pdaAllowedMenus).toEqual([]);
+      expect(mockRoleService.getAllowedMenusByRoleCode).toHaveBeenCalledWith('OPERATOR', 'HANES', 'P01');
       expect(mockUserRepo.update).toHaveBeenCalledTimes(1);
     });
 
@@ -117,6 +118,54 @@ describe('AuthService', () => {
 
       // Assert
       expect(result.user.company).toBe('NEW_CO');
+    });
+
+    it('should find and update the user within the selected tenant', async () => {
+      // Arrange
+      const user = createActiveUser({ company: 'C1', plant: 'P1' });
+      mockUserRepo.findOne.mockResolvedValue(user);
+      mockUserRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockRoleService.getAllowedMenusByRoleCode.mockResolvedValue([]);
+      mockActivityLogService.logActivity.mockResolvedValue(undefined);
+      mockPdaRoleMenuRepo.find.mockResolvedValue([]);
+
+      // Act
+      await target.login({
+        email: 'test@harness.com',
+        password: 'password123',
+        company: 'C1',
+        plant: 'P1',
+      });
+
+      // Assert
+      expect(mockUserRepo.findOne).toHaveBeenCalledWith({
+        where: { email: 'test@harness.com', company: 'C1', plant: 'P1' },
+      });
+      expect(mockUserRepo.update).toHaveBeenCalledWith(
+        { email: 'test@harness.com', company: 'C1', plant: 'P1' },
+        { lastLoginAt: expect.any(Date) },
+      );
+    });
+
+    it('should use dto.plant when provided', async () => {
+      // Arrange
+      const user = createActiveUser({ plant: 'OLD_P' });
+      mockUserRepo.findOne.mockResolvedValue(user);
+      mockUserRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockRoleService.getAllowedMenusByRoleCode.mockResolvedValue([]);
+      mockActivityLogService.logActivity.mockResolvedValue(undefined);
+
+      // Act
+      const result = await target.login({
+        email: 'test@harness.com',
+        password: 'password123',
+        company: 'HANES',
+        plant: 'NEW_P',
+      });
+
+      // Assert
+      expect(result.user.plant).toBe('NEW_P');
+      expect(mockRoleService.getAllowedMenusByRoleCode).toHaveBeenCalledWith('OPERATOR', 'HANES', 'NEW_P');
     });
 
     it('should return pdaAllowedMenus when user has pdaRoleCode', async () => {
@@ -140,7 +189,7 @@ describe('AuthService', () => {
       // Assert
       expect(result.pdaAllowedMenus).toEqual(['PDA_MAT_RECEIVING', 'PDA_SHIPPING']);
       expect(mockPdaRoleMenuRepo.find).toHaveBeenCalledWith({
-        where: { pdaRoleCode: 'PDA_WORKER', isActive: true },
+        where: { pdaRoleCode: 'PDA_WORKER', isActive: true, company: 'HANES', plant: 'P01' },
         select: ['menuCode'],
       });
     });
@@ -268,6 +317,34 @@ describe('AuthService', () => {
       expect(result.email).toBe('test@harness.com');
       expect(result.allowedMenus).toEqual(['dashboard', 'material']);
       expect(result.pdaAllowedMenus).toEqual([]);
+      expect(mockRoleService.getAllowedMenusByRoleCode).toHaveBeenCalledWith('OPERATOR', 'HANES', 'P01');
+    });
+
+    it('should lookup current user within requested tenant when provided', async () => {
+      // Arrange
+      const user = createActiveUser({ company: 'C1', plant: 'P1' });
+      mockUserRepo.findOne.mockResolvedValue(user);
+      mockRoleService.getAllowedMenusByRoleCode.mockResolvedValue([]);
+
+      // Act
+      await target.me('test@harness.com', 'C1', 'P1');
+
+      // Assert
+      expect(mockUserRepo.findOne).toHaveBeenCalledWith({
+        where: { email: 'test@harness.com', company: 'C1', plant: 'P1' },
+        select: [
+          'email',
+          'name',
+          'empNo',
+          'dept',
+          'role',
+          'status',
+          'company',
+          'plant',
+          'lastLoginAt',
+          'pdaRoleCode',
+        ],
+      });
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
@@ -305,6 +382,10 @@ describe('AuthService', () => {
 
       // Assert
       expect(result.pdaAllowedMenus).toEqual(['PDA_EQUIP_INSPECT']);
+      expect(mockPdaRoleMenuRepo.find).toHaveBeenCalledWith({
+        where: { pdaRoleCode: 'PDA_LEADER', isActive: true, company: 'HANES', plant: 'P01' },
+        select: ['menuCode'],
+      });
     });
   });
 });

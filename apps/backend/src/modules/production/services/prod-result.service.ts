@@ -470,7 +470,15 @@ export class ProdResultService {
             plant: fgJobOrder.plant,
           });
           // prdUid에 FG 바코드 연결
-          await queryRunner.manager.update(ProdResult, savedResultNo, { prdUid: fgBarcode });
+          await queryRunner.manager.update(
+            ProdResult,
+            {
+              resultNo: savedResultNo,
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
+            { prdUid: fgBarcode },
+          );
         }
       }
 
@@ -548,7 +556,15 @@ export class ProdResultService {
       }
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(ProdResult, prodResult.resultNo, updateData);
+      await queryRunner.manager.update(
+        ProdResult,
+        {
+          resultNo: prodResult.resultNo,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+        updateData,
+      );
 
       // 수량 변경 시 자재 자동차감 재계산 (역분개 → 재차감)
       if (qtyChanged && prodResult.status !== 'DONE') {
@@ -630,7 +646,15 @@ export class ProdResultService {
       if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
       if (dto.remark) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(ProdResult, prodResult.resultNo, updateData);
+      await queryRunner.manager.update(
+        ProdResult,
+        {
+          resultNo: prodResult.resultNo,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+        updateData,
+      );
 
       // 2. 금형 타수 자동 증가 (트랜잭션 내 — 실패 시 전체 롤백)
       if (prodResult.equipCode) {
@@ -641,6 +665,8 @@ export class ProdResultService {
               mountedEquipCode: prodResult.equipCode,
               category: 'MOLD',
               operStatus: 'MOUNTED',
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
             },
           });
 
@@ -654,10 +680,18 @@ export class ProdResultService {
               newStatus = 'WARNING';
             }
 
-            await queryRunner.manager.update(ConsumableMaster, { consumableCode: mold.consumableCode }, {
-              currentCount: newCount,
-              status: newStatus,
-            });
+            await queryRunner.manager.update(
+              ConsumableMaster,
+              {
+                consumableCode: mold.consumableCode,
+                ...(company ? { company } : {}),
+                ...(plant ? { plant } : {}),
+              },
+              {
+                currentCount: newCount,
+                status: newStatus,
+              },
+            );
 
             this.logger.log(
               `금형 타수 자동 증가: ${mold.consumableCode} (${mold.currentCount} → ${newCount})`,
@@ -666,9 +700,15 @@ export class ProdResultService {
         }
 
         // 3. 설비의 현재 작업지시번호 해제
-        await queryRunner.manager.update(EquipMaster, { equipCode: prodResult.equipCode }, {
-          currentJobOrderId: null,
-        });
+        await queryRunner.manager.update(
+          EquipMaster,
+          {
+            equipCode: prodResult.equipCode,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+          { currentJobOrderId: null },
+        );
         this.logger.log(`설비 작업지시 해제: ${prodResult.equipCode}`);
       }
 

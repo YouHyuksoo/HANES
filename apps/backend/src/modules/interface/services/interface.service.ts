@@ -50,6 +50,21 @@ export class InterfaceService {
     };
   }
 
+  private applyTenantFilter<T extends { andWhere: (condition: string, parameters?: Record<string, unknown>) => T }>(
+    queryBuilder: T,
+    alias: string,
+    company?: string,
+    plant?: string,
+  ) {
+    if (company) {
+      queryBuilder.andWhere(`${alias}.company = :company`, { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere(`${alias}.plant = :plant`, { plant });
+    }
+    return queryBuilder;
+  }
+
   /** 오늘 날짜 기준 다음 SEQ 번호 조회 */
   private async getNextSeq(manager: EntityManager, transDate: Date): Promise<number> {
     const dateStr = transDate.toISOString().slice(0, 10);
@@ -92,9 +107,9 @@ export class InterfaceService {
     return { data, total, page, limit };
   }
 
-  async findLogById(transDate: Date, seq: number) {
+  async findLogById(transDate: Date, seq: number, company?: string, plant?: string) {
     const log = await this.interLogRepository.findOne({
-      where: { transDate, seq },
+      where: { transDate, seq, ...this.tenantWhere(company, plant) },
     });
 
     if (!log) {
@@ -104,7 +119,7 @@ export class InterfaceService {
     return log;
   }
 
-  async createLog(dto: CreateInterLogDto) {
+  async createLog(dto: CreateInterLogDto, company?: string, plant?: string) {
     const transDate = new Date();
     transDate.setHours(0, 0, 0, 0);
 
@@ -120,26 +135,28 @@ export class InterfaceService {
         interfaceId: dto.interfaceId,
         payload: dto.payload ? JSON.stringify(dto.payload) : null,
         status: 'PENDING',
+        company,
+        plant,
       });
 
       return manager.save(InterLog, log);
     });
   }
 
-  async updateLogStatus(transDate: Date, seq: number, status: string, errorMsg?: string) {
-    await this.findLogById(transDate, seq);
+  async updateLogStatus(transDate: Date, seq: number, status: string, errorMsg?: string, company?: string, plant?: string) {
+    await this.findLogById(transDate, seq, company, plant);
 
     const updateData: Partial<InterLog> = { status };
     if (errorMsg) updateData.errorMsg = errorMsg;
     if (status === 'SUCCESS') updateData.recvAt = new Date();
 
-    await this.interLogRepository.update({ transDate, seq }, updateData);
-    return this.findLogById(transDate, seq);
+    await this.interLogRepository.update({ transDate, seq, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findLogById(transDate, seq, company, plant);
   }
 
-  async retryLog(transDate: Date, seq: number) {
-    const log = await this.findLogById(transDate, seq);
-    const pk = { transDate: log.transDate, seq: log.seq };
+  async retryLog(transDate: Date, seq: number, company?: string, plant?: string) {
+    const log = await this.findLogById(transDate, seq, company, plant);
+    const pk = { transDate: log.transDate, seq: log.seq, ...this.tenantWhere(company, plant) };
 
     if (log.status !== 'FAIL') {
       throw new BadRequestException('실패한 로그만 재시도할 수 있습니다.');
@@ -162,21 +179,21 @@ export class InterfaceService {
         recvAt: new Date(),
       });
 
-      return this.findLogById(transDate, seq);
+      return this.findLogById(transDate, seq, company, plant);
     } catch (error) {
       await this.interLogRepository.update(pk, {
         status: 'FAIL',
         errorMsg: error instanceof Error ? error.message : '알 수 없는 오류',
       });
-      return this.findLogById(transDate, seq);
+      return this.findLogById(transDate, seq, company, plant);
     }
   }
 
-  async bulkRetry(logKeys: { transDate: Date; seq: number }[]) {
+  async bulkRetry(logKeys: { transDate: Date; seq: number }[], company?: string, plant?: string) {
     const results = await Promise.all(
       logKeys.map(async (key) => {
         try {
-          await this.retryLog(key.transDate, key.seq);
+          await this.retryLog(key.transDate, key.seq, company, plant);
           return { transDate: key.transDate, seq: key.seq, success: true };
         } catch (error) {
           return { transDate: key.transDate, seq: key.seq, success: false, error: error instanceof Error ? error.message : '오류' };
@@ -197,7 +214,7 @@ export class InterfaceService {
       messageType: 'JOB_ORDER',
       interfaceId: dto.erpOrderNo,
       payload: dto as unknown as Record<string, unknown>,
-    });
+    }, company, plant);
 
     try {
       // 품목 확인
@@ -224,7 +241,7 @@ export class InterfaceService {
 
       await this.jobOrderRepository.save(jobOrder);
 
-      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS', undefined, company, plant);
 
       return jobOrder;
     } catch (error) {
@@ -232,7 +249,9 @@ export class InterfaceService {
         log.transDate,
         log.seq,
         'FAIL',
-        error instanceof Error ? error.message : '알 수 없는 오류'
+        error instanceof Error ? error.message : '알 수 없는 오류',
+        company,
+        plant,
       );
       throw error;
     }
@@ -243,7 +262,7 @@ export class InterfaceService {
       direction: 'IN',
       messageType: 'BOM_SYNC',
       payload: { items: dtos } as unknown as Record<string, unknown>,
-    });
+    }, company, plant);
 
     try {
       // 관련 품목코드 일괄 선조회 (N+1 제거)
@@ -302,7 +321,7 @@ export class InterfaceService {
         results.push({ success: true, dto });
       }
 
-      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS', undefined, company, plant);
 
       return results;
     } catch (error) {
@@ -310,7 +329,9 @@ export class InterfaceService {
         log.transDate,
         log.seq,
         'FAIL',
-        error instanceof Error ? error.message : '알 수 없는 오류'
+        error instanceof Error ? error.message : '알 수 없는 오류',
+        company,
+        plant,
       );
       throw error;
     }
@@ -321,7 +342,7 @@ export class InterfaceService {
       direction: 'IN',
       messageType: 'PART_SYNC',
       payload: { items: dtos } as unknown as Record<string, unknown>,
-    });
+    }, company, plant);
 
     try {
       // 기존 품목 일괄 선조회 (N+1 제거)
@@ -364,7 +385,7 @@ export class InterfaceService {
         results.push({ success: true, itemCode: dto.itemCode });
       }
 
-      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS', undefined, company, plant);
 
       return results;
     } catch (error) {
@@ -372,7 +393,9 @@ export class InterfaceService {
         log.transDate,
         log.seq,
         'FAIL',
-        error instanceof Error ? error.message : '알 수 없는 오류'
+        error instanceof Error ? error.message : '알 수 없는 오류',
+        company,
+        plant,
       );
       throw error;
     }
@@ -388,7 +411,7 @@ export class InterfaceService {
       messageType: 'PROD_RESULT',
       interfaceId: dto.orderNo,
       payload: dto as any,
-    });
+    }, company, plant);
 
     try {
       // 실제 ERP 전송 로직 자리. 전송 어댑터가 연결되기 전까지는 로그만 남긴다.
@@ -406,7 +429,7 @@ export class InterfaceService {
         );
       }
 
-      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS', undefined, company, plant);
 
       return { success: true, transDate: log.transDate, seq: log.seq };
     } catch (error) {
@@ -414,7 +437,9 @@ export class InterfaceService {
         log.transDate,
         log.seq,
         'FAIL',
-        error instanceof Error ? error.message : '알 수 없는 오류'
+        error instanceof Error ? error.message : '알 수 없는 오류',
+        company,
+        plant,
       );
       throw error;
     }
@@ -431,32 +456,47 @@ export class InterfaceService {
   // 통계 및 대시보드
   // ============================================================================
 
-  async getSummary() {
+  async getSummary(company?: string, plant?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    // 4번 count → 1번 집계 쿼리로 통합 + 타입/방향별 집계는 병렬 유지
-    const [statusCounts, byType, byDirection] = await Promise.all([
+    const statusQb = this.applyTenantFilter(
       this.interLogRepository
         .createQueryBuilder('log')
         .select('COUNT(*)', 'total')
         .addSelect("SUM(CASE WHEN log.createdAt >= :today THEN 1 ELSE 0 END)", 'todayCount')
         .addSelect("SUM(CASE WHEN log.status = 'PENDING' THEN 1 ELSE 0 END)", 'pending')
         .addSelect("SUM(CASE WHEN log.status = 'FAIL' THEN 1 ELSE 0 END)", 'failed')
-        .setParameter('today', today)
-        .getRawOne(),
+        .setParameter('today', today),
+      'log',
+      company,
+      plant,
+    );
+    const byTypeQb = this.applyTenantFilter(
       this.interLogRepository
         .createQueryBuilder('log')
         .select('log.messageType', 'messageType')
         .addSelect('COUNT(*)', 'count')
-        .groupBy('log.messageType')
-        .getRawMany(),
+        .groupBy('log.messageType'),
+      'log',
+      company,
+      plant,
+    );
+    const byDirectionQb = this.applyTenantFilter(
       this.interLogRepository
         .createQueryBuilder('log')
         .select('log.direction', 'direction')
         .addSelect('COUNT(*)', 'count')
-        .groupBy('log.direction')
-        .getRawMany(),
+        .groupBy('log.direction'),
+      'log',
+      company,
+      plant,
+    );
+
+    // 4번 count → 1번 집계 쿼리로 통합 + 타입/방향별 집계는 병렬 유지
+    const [statusCounts, byType, byDirection] = await Promise.all([
+      statusQb.getRawOne(),
+      byTypeQb.getRawMany(),
+      byDirectionQb.getRawMany(),
     ]);
     const total = Number(statusCounts.total) || 0;
     const todayCount = Number(statusCounts.todayCount) || 0;
@@ -479,16 +519,17 @@ export class InterfaceService {
     };
   }
 
-  async getFailedLogs() {
+  async getFailedLogs(company?: string, plant?: string) {
     return this.interLogRepository.find({
-      where: { status: 'FAIL' },
+      where: { status: 'FAIL', ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
       take: 50,
     });
   }
 
-  async getRecentLogs(limit: number = 20) {
+  async getRecentLogs(limit: number = 20, company?: string, plant?: string) {
     return this.interLogRepository.find({
+      where: this.tenantWhere(company, plant),
       order: { createdAt: 'DESC' },
       take: limit,
     });

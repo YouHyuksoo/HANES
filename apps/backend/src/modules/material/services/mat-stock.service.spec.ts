@@ -388,6 +388,22 @@ describe('MatStockService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
+
+    it('조회된 재고 테넌트가 요청 테넌트와 다르면 조정 이력을 만들지 않는다', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(createStock({ company: 'OTHER', plant: 'P01' }));
+
+      await expect(
+        target.adjustStock({
+          itemCode: 'ITEM-001',
+          warehouseCode: 'WH-01',
+          adjustQty: 10,
+          reason: '보정',
+        } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('transferStock', () => {
@@ -458,6 +474,61 @@ describe('MatStockService', () => {
         { warehouseCode: 'WH-TO', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 70, availableQty: 70 }),
       );
+    });
+
+    it('출고 재고 테넌트가 요청 테넌트와 다르면 이동하지 않는다', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(createStock({
+        warehouseCode: 'WH-FROM',
+        qty: 100,
+        availableQty: 100,
+        company: 'OTHER',
+        plant: 'P1',
+      }));
+
+      await expect(
+        target.transferStock({
+          itemCode: 'ITEM-001',
+          fromWarehouseCode: 'WH-FROM',
+          toWarehouseCode: 'WH-TO',
+          qty: 20,
+        } as any, 'C1', 'P1'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.create).not.toHaveBeenCalled();
+    });
+
+    it('입고 재고 테넌트가 요청 테넌트와 다르면 이동하지 않는다', async () => {
+      const fromStock = createStock({
+        warehouseCode: 'WH-FROM',
+        qty: 100,
+        availableQty: 100,
+        company: 'C1',
+        plant: 'P1',
+      });
+      const toStock = createStock({
+        warehouseCode: 'WH-TO',
+        qty: 50,
+        availableQty: 50,
+        company: 'C1',
+        plant: 'OTHER',
+      });
+
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(fromStock)
+        .mockResolvedValueOnce(toStock);
+
+      await expect(
+        target.transferStock({
+          itemCode: 'ITEM-001',
+          fromWarehouseCode: 'WH-FROM',
+          toWarehouseCode: 'WH-TO',
+          qty: 20,
+        } as any, 'C1', 'P1'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.create).not.toHaveBeenCalled();
     });
 
     it('출고 창고 재고 부족이면 BadRequestException', async () => {

@@ -6,7 +6,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException } from '@nestjs/common';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, getMetadataArgsStorage } from 'typeorm';
 import { WarehouseService } from './warehouse.service';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -33,6 +33,15 @@ describe('WarehouseService', () => {
     target = module.get<WarehouseService>(WarehouseService);
   });
   afterEach(() => jest.clearAllMocks());
+
+  it('includes tenant columns in warehouse primary key metadata', () => {
+    const primaryColumnNames = getMetadataArgsStorage()
+      .columns
+      .filter((column) => column.target === Warehouse && column.options.primary)
+      .map((column) => column.propertyName);
+
+    expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plant']));
+  });
 
   describe('findOne', () => {
     it('should return warehouse', async () => {

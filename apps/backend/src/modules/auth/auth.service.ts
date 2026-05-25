@@ -41,9 +41,13 @@ export class AuthService {
    */
   async login(dto: LoginDto) {
     this.logger.debug(`Login attempt: email=${dto.email}`);
+    const requestedTenant = {
+      ...(dto.company ? { company: dto.company } : {}),
+      ...(dto.plant ? { plant: dto.plant } : {}),
+    };
     
     const user = await this.userRepository.findOne({
-      where: { email: dto.email },
+      where: { email: dto.email, ...requestedTenant },
     });
 
     this.logger.debug(`User found: ${user ? 'YES' : 'NO'}`);
@@ -68,13 +72,16 @@ export class AuthService {
     }
 
     // 최근 로그인 시간 업데이트
-    await this.userRepository.update({ email: user.email }, { lastLoginAt: new Date() });
+    await this.userRepository.update(
+      { email: user.email, ...requestedTenant },
+      { lastLoginAt: new Date() },
+    );
 
     this.logger.log(`User logged in: ${user.email}`);
 
     // 로그인 시 선택한 회사/사업장 또는 사용자 기본값 사용
     const selectedCompany = dto.company || user.company || '';
-    const selectedPlant = user.plant || '';
+    const selectedPlant = dto.plant || user.plant || '';
 
     // 활동 로그 기록 (비동기, 실패해도 로그인에 영향 없음)
     this.activityLogService.logActivity({
@@ -88,10 +95,18 @@ export class AuthService {
     }).catch((err) => this.logger.warn(`로그인 활동 로그 기록 실패: ${err.message}`));
 
     // RBAC: 역할별 허용 메뉴 조회 (ADMIN이면 빈 배열 → 프론트에서 전체 허용)
-    const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(user.role);
+    const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(
+      user.role,
+      selectedCompany,
+      selectedPlant,
+    );
 
     // PDA 허용 메뉴 조회 — pdaRoleCode가 있는 경우에만 조회, 없으면 빈 배열
-    const pdaAllowedMenus = await this.getPdaAllowedMenus(user.pdaRoleCode);
+    const pdaAllowedMenus = await this.getPdaAllowedMenus(
+      user.pdaRoleCode,
+      selectedCompany,
+      selectedPlant,
+    );
 
     return {
       token: user.email, // email을 토큰으로 사용
@@ -153,9 +168,13 @@ export class AuthService {
   /**
    * 현재 사용자 조회 - Bearer 토큰(userId)으로 사용자 조회
    */
-  async me(userId: string) {
+  async me(userId: string, company?: string, plant?: string) {
     const user = await this.userRepository.findOne({
-      where: { email: userId },
+      where: {
+        email: userId,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       select: [
         'email',
         'name',
@@ -179,10 +198,18 @@ export class AuthService {
     }
 
     // RBAC: 역할별 허용 메뉴 조회
-    const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(user.role);
+    const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(
+      user.role,
+      user.company,
+      user.plant,
+    );
 
     // PDA 허용 메뉴 조회 — pdaRoleCode가 있는 경우에만 조회, 없으면 빈 배열
-    const pdaAllowedMenus = await this.getPdaAllowedMenus(user.pdaRoleCode);
+    const pdaAllowedMenus = await this.getPdaAllowedMenus(
+      user.pdaRoleCode,
+      user.company,
+      user.plant,
+    );
 
     return {
       ...user,
@@ -196,11 +223,20 @@ export class AuthService {
    * - pdaRoleCode가 null/undefined이면 빈 배열 반환
    * - PDA_ROLE_MENU 테이블에서 IS_ACTIVE = 'Y' 인 MENU_CODE 목록만 추출
    */
-  private async getPdaAllowedMenus(pdaRoleCode: string | null): Promise<string[]> {
+  private async getPdaAllowedMenus(
+    pdaRoleCode: string | null,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<string[]> {
     if (!pdaRoleCode) return [];
 
     const rows = await this.pdaRoleMenuRepository.find({
-      where: { pdaRoleCode, isActive: true },
+      where: {
+        pdaRoleCode,
+        isActive: true,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       select: ['menuCode'],
     });
 

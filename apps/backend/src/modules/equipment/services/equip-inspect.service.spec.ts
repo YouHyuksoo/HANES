@@ -59,6 +59,17 @@ describe('EquipInspectService', () => {
       ).rejects.toThrow(BadRequestException);
       expect(mockLogRepo.create).not.toHaveBeenCalled();
     });
+    it('should throw when request tenant is present but equipment tenant is missing', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: null, plant: 'P01' } as any);
+
+      await expect(
+        target.create(
+          { equipCode: 'EQ-001', inspectType: 'DAILY', inspectDate: '2026-03-18', overallResult: 'PASS' } as any,
+          { company: 'CO', plant: 'P01' },
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockLogRepo.create).not.toHaveBeenCalled();
+    });
     it('should resolve equipment and interlock update within request tenant', async () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
       mockLogRepo.create.mockReturnValue({ overallResult: 'FAIL' } as any);

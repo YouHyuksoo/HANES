@@ -188,7 +188,7 @@ describe('IssueRequestService', () => {
       queryRunner.manager.save
         .mockResolvedValueOnce({ requestNo: 'REQ-001' } as MatIssueRequest)
         .mockResolvedValueOnce([] as any);
-      requestRepo.findOne.mockResolvedValue({ requestNo: 'REQ-001', orderNo: 'WO-001' } as MatIssueRequest);
+      requestRepo.findOne.mockResolvedValue({ requestNo: 'REQ-001', orderNo: 'WO-001', company: 'C1', plant: 'P1' } as MatIssueRequest);
       requestItemRepo.find.mockResolvedValue([]);
 
       await service.create({
@@ -241,6 +241,20 @@ describe('IssueRequestService', () => {
         { status: 'REJECTED', rejectReason: 'reject' },
       );
     });
+
+    it('승인은 조회된 요청 테넌트가 요청 테넌트와 다르면 상태를 갱신하지 않는다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'REQUESTED',
+        company: 'OTHER',
+        plant: 'P1',
+      } as MatIssueRequest);
+
+      await expect(service.approve('REQ-001', 'C1', 'P1')).rejects.toThrow(BadRequestException);
+
+      expect(requestRepo.update).not.toHaveBeenCalled();
+      expect(requestItemRepo.find).not.toHaveBeenCalled();
+    });
   });
 
   describe('issueFromRequest', () => {
@@ -250,6 +264,8 @@ describe('IssueRequestService', () => {
         status: 'APPROVED',
         orderNo: 'WO-001',
         issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
       } as MatIssueRequest);
       (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
       requestItemRepo.findOne.mockResolvedValue({
@@ -306,6 +322,27 @@ describe('IssueRequestService', () => {
 
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('실출고는 조회된 요청 테넌트가 요청 테넌트와 다르면 트랜잭션을 시작하지 않는다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'OTHER',
+      } as MatIssueRequest);
+
+      await expect(
+        service.issueFromRequest('REQ-001', {
+          warehouseCode: 'WH-01',
+          items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 3 }],
+        }, 'C1', 'P1'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(tx.run).not.toHaveBeenCalled();
+      expect((matIssueService as any).createInTx).not.toHaveBeenCalled();
     });
 
     it('남은 요청 수량을 초과하면 출고를 차단한다', async () => {

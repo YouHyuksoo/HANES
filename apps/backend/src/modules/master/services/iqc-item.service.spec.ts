@@ -61,6 +61,28 @@ describe('IqcItemService', () => {
     });
   });
 
+  it('keeps tenant and item key columns from the matched IQC item when update payload contains them', async () => {
+    const item = { itemCode: 'ITEM01', seq: 1, inspectItem: 'Old', company: 'C1', plant: 'P1' } as IqcItemMaster;
+    mockRepo.findOne.mockResolvedValue(item);
+    mockRepo.save.mockImplementation(async (value) => value as IqcItemMaster);
+
+    const result = await target.update('ITEM01', 1, {
+      itemCode: 'ITEM99',
+      seq: 99,
+      inspectItem: 'New',
+      company: 'C2',
+      plant: 'P2',
+    } as any, 'C1', 'P1');
+
+    expect(result).toEqual(expect.objectContaining({
+      itemCode: 'ITEM01',
+      seq: 1,
+      inspectItem: 'New',
+      company: 'C1',
+      plant: 'P1',
+    }));
+  });
+
   it('deletes an item within the tenant context', async () => {
     const item = { itemCode: 'ITEM01', seq: 1, company: 'C1', plant: 'P1' } as IqcItemMaster;
     mockRepo.findOne.mockResolvedValue(item);

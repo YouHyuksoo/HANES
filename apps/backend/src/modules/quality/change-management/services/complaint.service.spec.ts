@@ -38,6 +38,29 @@ describe('ComplaintService', () => {
     });
   });
 
+  describe('update', () => {
+    it('should keep tenant and complaint key columns from the matched complaint when update payload contains them', async () => {
+      const item = { complaintNo: 'CC-001', customerCode: 'CUST-OLD', status: 'RECEIVED', company: 'CO', plant: 'P01' } as CustomerComplaint;
+      mockRepo.findOne.mockResolvedValue(item);
+      mockRepo.save.mockImplementation(async (value) => value as CustomerComplaint);
+
+      const result = await target.update('CC-001', {
+        complaintNo: 'CC-999',
+        customerCode: 'CUST-NEW',
+        company: 'OTHER',
+        plant: 'P99',
+      } as any, 'user');
+
+      expect(result).toEqual(expect.objectContaining({
+        complaintNo: 'CC-001',
+        customerCode: 'CUST-NEW',
+        company: 'CO',
+        plant: 'P01',
+        updatedBy: 'user',
+      }));
+    });
+  });
+
   describe('investigate', () => {
     it('should start investigation from RECEIVED', async () => {
       const item = { complaintNo: 'CC-001', status: 'RECEIVED' } as any;

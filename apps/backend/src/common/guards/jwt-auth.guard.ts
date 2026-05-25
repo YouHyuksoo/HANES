@@ -59,19 +59,23 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
+      // X-Company, X-Plant 헤더에서 회사/사업장 코드 추출 (프론트엔드가 설정)
+      const companyHeader = request.headers['x-company'] as string | undefined;
+      const plantHeader = request.headers['x-plant'] as string | undefined;
+
       // DB에서 userId로 사용자 조회
       const user = await this.userRepository.findOne({
-        where: { email: token },
+        where: {
+          email: token,
+          ...(companyHeader ? { company: companyHeader } : {}),
+          ...(plantHeader ? { plant: plantHeader } : {}),
+        },
         select: ['email', 'role', 'status', 'company', 'plant'],
       });
 
       if (!user || user.status !== 'ACTIVE') {
         throw new UnauthorizedException('유효하지 않은 토큰입니다.');
       }
-
-      // X-Company, X-Plant 헤더에서 회사/사업장 코드 추출 (프론트엔드가 설정)
-      const companyHeader = request.headers['x-company'] as string | undefined;
-      const plantHeader = request.headers['x-plant'] as string | undefined;
 
       const resolvedCompany = companyHeader || user.company;
       const resolvedPlant = plantHeader || user.plant;

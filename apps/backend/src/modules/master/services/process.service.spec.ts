@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { getMetadataArgsStorage } from 'typeorm';
 import { ProcessService } from './process.service';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -35,6 +36,15 @@ describe('ProcessService equipment assignments', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('includes tenant columns in process equipment primary key metadata', () => {
+    const primaryColumnNames = getMetadataArgsStorage()
+      .columns
+      .filter((column) => column.target === ProcessEquipment && column.options.primary)
+      .map((column) => column.propertyName);
+
+    expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plant']));
   });
 
   it('allows the same equipment to be assigned to different processes', async () => {
@@ -73,9 +83,11 @@ describe('ProcessService equipment assignments', () => {
       where: { equipCode: 'EQ-001', company: 'C1', plant: 'P1' },
     });
     expect(assignmentRepo.findOne).toHaveBeenCalledWith({
-      where: { processCode: 'PROC-A', equipCode: 'EQ-001' },
+      where: { processCode: 'PROC-A', equipCode: 'EQ-001', company: 'C1', plant: 'P1' },
     });
     expect(assignmentRepo.create).toHaveBeenCalledWith({
+      company: 'C1',
+      plant: 'P1',
       processCode: 'PROC-A',
       equipCode: 'EQ-001',
       useYn: 'Y',
@@ -89,9 +101,62 @@ describe('ProcessService equipment assignments', () => {
     await target.findEquipments('PROC-A', 'C1', 'P1');
 
     expect(assignmentRepo.find).toHaveBeenCalledWith({
-      where: { processCode: 'PROC-A', useYn: 'Y' },
+      where: { processCode: 'PROC-A', useYn: 'Y', company: 'C1', plant: 'P1' },
       relations: ['equipment'],
       order: { equipCode: 'ASC' },
     });
+  });
+
+  it('removes equipment assignment within tenant only', async () => {
+    processRepo.findOne.mockResolvedValue({ processCode: 'PROC-A', company: 'C1', plant: 'P1' } as ProcessMaster);
+    assignmentRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+    await target.removeEquipment('PROC-A', 'EQ-001', 'C1', 'P1');
+
+    expect(assignmentRepo.delete).toHaveBeenCalledWith({
+      processCode: 'PROC-A',
+      equipCode: 'EQ-001',
+      company: 'C1',
+      plant: 'P1',
+    });
+  });
+
+  it('counts assigned equipment within tenant only', async () => {
+    const qb: any = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([{ processCode: 'PROC-A', count: '2' }]),
+    };
+    assignmentRepo.createQueryBuilder.mockReturnValue(qb);
+
+    const result = await target.getEquipmentCounts('C1', 'P1');
+
+    expect(result).toEqual({ 'PROC-A': 2 });
+    expect(qb.andWhere).toHaveBeenCalledWith('pe.company = :company', { company: 'C1' });
+    expect(qb.andWhere).toHaveBeenCalledWith('pe.plant = :plant', { plant: 'P1' });
+  });
+
+  it('updates a process within tenant and strips key/tenant columns from payload', async () => {
+    processRepo.findOne.mockResolvedValue({ processCode: 'PROC-A', company: 'C1', plant: 'P1' } as ProcessMaster);
+    processRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+    await target.update('PROC-A', {
+      processCode: 'PROC-B',
+      processName: 'Cutting',
+      company: 'C2',
+      plant: 'P2',
+    } as any, 'C1', 'P1');
+
+    expect(processRepo.update).toHaveBeenCalledWith(
+      { processCode: 'PROC-A', company: 'C1', plant: 'P1' },
+      expect.not.objectContaining({
+        processCode: expect.anything(),
+        company: expect.anything(),
+        plant: expect.anything(),
+      }),
+    );
   });
 });

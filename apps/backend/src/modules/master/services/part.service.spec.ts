@@ -120,6 +120,28 @@ describe('PartService', () => {
         expect.objectContaining({ itemName: 'New' }),
       );
     });
+
+    it('should strip key and tenant columns from update payload', async () => {
+      const existing = { itemCode: 'ITEM01', itemName: 'Old', company: 'C1', plant: 'P1' } as PartMaster;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('ITEM01', {
+        itemCode: 'ITEM99',
+        itemName: 'New',
+        company: 'C2',
+        plant: 'P2',
+      } as any, 'C1', 'P1');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
+        expect.not.objectContaining({
+          itemCode: expect.anything(),
+          company: expect.anything(),
+          plant: expect.anything(),
+        }),
+      );
+    });
   });
 
   // ─── delete ───

@@ -101,7 +101,11 @@ export class ProcessService {
 
   async update(processCode: string, dto: UpdateProcessDto, company?: string, plant?: string) {
     await this.findById(processCode, company, plant);
-    await this.processRepository.update({ processCode, ...this.tenantWhere(company, plant) }, dto);
+    const updateData: any = { ...dto };
+    delete updateData.processCode;
+    delete updateData.company;
+    delete updateData.plant;
+    await this.processRepository.update({ processCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(processCode, company, plant);
   }
 
@@ -115,7 +119,7 @@ export class ProcessService {
     await this.findById(processCode, company, plant);
 
     const assignments = await this.processEquipmentRepository.find({
-      where: { processCode, useYn: 'Y' },
+      where: { processCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
       relations: ['equipment'],
       order: { equipCode: 'ASC' },
     });
@@ -125,12 +129,17 @@ export class ProcessService {
       .filter((equipment): equipment is EquipMaster => !!equipment);
   }
 
-  async getEquipmentCounts(): Promise<Record<string, number>> {
-    const rows = await this.processEquipmentRepository
+  async getEquipmentCounts(company?: string, plant?: string): Promise<Record<string, number>> {
+    const qb = this.processEquipmentRepository
       .createQueryBuilder('pe')
       .select('pe.processCode', 'processCode')
       .addSelect('COUNT(*)', 'count')
-      .where('pe.useYn = :useYn', { useYn: 'Y' })
+      .where('pe.useYn = :useYn', { useYn: 'Y' });
+
+    if (company) qb.andWhere('pe.company = :company', { company });
+    if (plant) qb.andWhere('pe.plant = :plant', { plant });
+
+    const rows = await qb
       .groupBy('pe.processCode')
       .getRawMany<{ processCode: string; count: string }>();
 
@@ -151,7 +160,7 @@ export class ProcessService {
     }
 
     const existing = await this.processEquipmentRepository.findOne({
-      where: { processCode, equipCode },
+      where: { processCode, equipCode, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) {
@@ -159,15 +168,17 @@ export class ProcessService {
         return existing;
       }
       await this.processEquipmentRepository.update(
-        { processCode, equipCode },
+        { processCode, equipCode, ...this.tenantWhere(company, plant) },
         { useYn: 'Y' },
       );
       return this.processEquipmentRepository.findOne({
-        where: { processCode, equipCode },
+        where: { processCode, equipCode, ...this.tenantWhere(company, plant) },
       });
     }
 
     const assignment = this.processEquipmentRepository.create({
+      company: company || null,
+      plant: plant || null,
       processCode,
       equipCode,
       useYn: 'Y',
@@ -178,7 +189,7 @@ export class ProcessService {
 
   async removeEquipment(processCode: string, equipCode: string, company?: string, plant?: string) {
     await this.findById(processCode, company, plant);
-    await this.processEquipmentRepository.delete({ processCode, equipCode });
+    await this.processEquipmentRepository.delete({ processCode, equipCode, ...this.tenantWhere(company, plant) });
     return { processCode, equipCode };
   }
 }

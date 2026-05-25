@@ -32,15 +32,18 @@ export class MenuCategoryItemsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findByCategory(categoryCode: string): Promise<MenuCategoryItem[]> {
+  async findByCategory(categoryCode: string, scope?: AuditScope): Promise<MenuCategoryItem[]> {
+    const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
     return this.itemRepo.find({
-      where: { categoryCode },
+      where: { categoryCode, ...tenantWhere },
       order: { sortOrder: 'ASC', menuCode: 'ASC' },
     });
   }
 
-  async findAll(): Promise<MenuCategoryItem[]> {
+  async findAll(scope?: AuditScope): Promise<MenuCategoryItem[]> {
+    const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
     return this.itemRepo.find({
+      where: tenantWhere,
       order: { categoryCode: 'ASC', sortOrder: 'ASC', menuCode: 'ASC' },
     });
   }
@@ -49,10 +52,14 @@ export class MenuCategoryItemsService {
     if (!isValidMenuCode(dto.menuCode)) {
       throw new BadRequestException(`알 수 없는 메뉴 코드입니다: ${dto.menuCode}`);
     }
-    const cat = await this.categoryRepo.findOne({ where: { categoryCode: dto.toCategoryCode } });
+    const cat = await this.categoryRepo.findOne({
+      where: { categoryCode: dto.toCategoryCode, company: scope.company, plantCd: scope.plantCd },
+    });
     if (!cat) throw new NotFoundException(`카테고리를 찾을 수 없습니다: ${dto.toCategoryCode}`);
 
-    const existing = await this.itemRepo.findOne({ where: { menuCode: dto.menuCode } });
+    const existing = await this.itemRepo.findOne({
+      where: { menuCode: dto.menuCode, company: scope.company, plantCd: scope.plantCd },
+    });
     const now = new Date();
 
     const entity = this.itemRepo.create({
@@ -70,20 +77,22 @@ export class MenuCategoryItemsService {
     return this.itemRepo.save(entity);
   }
 
-  async remove(menuCode: string): Promise<{ menuCode: string }> {
-    const existing = await this.itemRepo.findOne({ where: { menuCode } });
+  async remove(menuCode: string, scope?: AuditScope): Promise<{ menuCode: string }> {
+    const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
+    const existing = await this.itemRepo.findOne({ where: { menuCode, ...tenantWhere } });
     if (!existing) throw new NotFoundException(`메뉴 배치를 찾을 수 없습니다: ${menuCode}`);
 
-    await this.itemRepo.delete({ menuCode });
+    await this.itemRepo.delete({ menuCode, ...tenantWhere });
     return { menuCode };
   }
 
-  async reorderInCategory(categoryCode: string, dto: ReorderMenuItemsDto): Promise<void> {
+  async reorderInCategory(categoryCode: string, dto: ReorderMenuItemsDto, scope?: AuditScope): Promise<void> {
+    const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
     await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(MenuCategoryItem);
       for (const item of dto.items) {
         await repo.update(
-          { menuCode: item.menuCode, categoryCode },
+          { menuCode: item.menuCode, categoryCode, ...tenantWhere },
           { sortOrder: item.sortOrder, updatedAt: new Date() },
         );
       }

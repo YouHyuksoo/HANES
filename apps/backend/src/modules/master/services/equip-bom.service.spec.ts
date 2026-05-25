@@ -106,6 +106,26 @@ describe('EquipBomService', () => {
       // Assert
       expect(result.bomItemName).toBe('New');
     });
+
+    it('should keep tenant and item key columns from the matched item when update payload contains them', async () => {
+      const existing = { bomItemCode: 'BI01', bomItemName: 'Old', company: 'C1', plant: 'P1' } as EquipBomItem;
+      mockBomItemRepo.findOne.mockResolvedValue(existing);
+      mockBomItemRepo.save.mockImplementation(async (value) => value as EquipBomItem);
+
+      const result = await target.updateItem('BI01', {
+        bomItemCode: 'BI99',
+        bomItemName: 'New',
+        company: 'C2',
+        plant: 'P2',
+      } as any, 'C1', 'P1');
+
+      expect(result).toEqual(expect.objectContaining({
+        bomItemCode: 'BI01',
+        bomItemName: 'New',
+        company: 'C1',
+        plant: 'P1',
+      }));
+    });
   });
 
   describe('deleteItem', () => {

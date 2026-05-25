@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string, company?: string, plant?: string) => {
         set({ isLoading: true });
         try {
-          const res = await api.post("/auth/login", { email, password, company });
+          const res = await api.post("/auth/login", { email, password, company, plant });
           const responseData = res.data?.data ?? res.data;
           const { token, user, allowedMenus, pdaAllowedMenus } = responseData;
 

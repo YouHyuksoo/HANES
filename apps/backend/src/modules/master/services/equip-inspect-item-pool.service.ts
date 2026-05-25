@@ -74,7 +74,12 @@ export class EquipInspectItemPoolService {
       throw new NotFoundException(`점검항목 마스터를 찾을 수 없습니다: ${itemCode}`);
     }
 
-    const { itemCode: _ignore, ...updateData } = dto as any;
+    const {
+      company: _company,
+      plant: _plant,
+      itemCode: _itemCode,
+      ...updateData
+    } = dto as any;
     Object.assign(item, updateData);
     return this.repo.save(item);
   }

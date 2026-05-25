@@ -57,13 +57,25 @@ describe('DashboardService', () => {
         .mockResolvedValueOnce({ o_summary: [{ totalCnt: 3, completedCnt: 2, passCnt: 2, failCnt: 0 }], o_items: [] }); // pm
 
       // Act
-      const result = await target.getSummary('2026-03-18');
+      const result = await target.getSummary('2026-03-18', 'CO', 'P01');
 
       // Assert
       expect(result.equip).toEqual({ normal: 5, maint: 1, stop: 0, total: 6 });
       expect(result.job).toEqual({ wait: 2, running: 3, done: 1, total: 6 });
       expect(result.mat).toEqual({ lowStock: 1, nearExpiry: 0, expired: 0 });
       expect(result.daily.total).toBe(10);
+      expect(mockOracleService.callProc).toHaveBeenCalledWith('PKG_DASHBOARD', 'SP_EQUIP_STATS', { p_company: 'CO', p_plant: 'P01' });
+      expect(mockOracleService.callProc).toHaveBeenCalledWith('PKG_DASHBOARD', 'SP_JOB_ORDER_STATS', {
+        p_target_date: new Date('2026-03-18T00:00:00'),
+        p_company: 'CO',
+        p_plant: 'P01',
+      });
+      expect(mockOracleService.callProcMultiCursor).toHaveBeenCalledWith(
+        'PKG_DASHBOARD',
+        'SP_INSPECT_DAILY',
+        ['o_summary', 'o_items'],
+        { p_target_date: new Date('2026-03-18T00:00:00'), p_company: 'CO', p_plant: 'P01' },
+      );
     });
 
     it('should handle empty rows gracefully', async () => {
@@ -96,11 +108,12 @@ describe('DashboardService', () => {
       }]);
 
       // Act
-      const result = await target.getKpi();
+      const result = await target.getKpi('CO', 'P01');
 
       // Assert
       expect(result.todayProduction).toEqual({ value: 100, change: 5 });
       expect(result.qualityPassRate).toEqual({ value: '98.5', change: 0.5 });
+      expect(mockOracleService.callProc).toHaveBeenCalledWith('PKG_DASHBOARD', 'SP_KPI', { p_company: 'CO', p_plant: 'P01' });
     });
 
     it('should handle empty KPI result', async () => {
@@ -112,6 +125,7 @@ describe('DashboardService', () => {
 
       // Assert
       expect(result.todayProduction).toEqual({ value: 0, change: 0 });
+      expect(mockOracleService.callProc).toHaveBeenCalledWith('PKG_DASHBOARD', 'SP_KPI', { p_company: null, p_plant: null });
     });
   });
 
@@ -123,10 +137,11 @@ describe('DashboardService', () => {
       mockOracleService.callProc.mockResolvedValue(productions);
 
       // Act
-      const result = await target.getRecentProductions();
+      const result = await target.getRecentProductions('CO', 'P01');
 
       // Assert
       expect(result).toEqual(productions);
+      expect(mockOracleService.callProc).toHaveBeenCalledWith('PKG_DASHBOARD', 'SP_RECENT_PRODUCTIONS', { p_company: 'CO', p_plant: 'P01' });
     });
   });
 });

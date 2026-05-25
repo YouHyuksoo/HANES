@@ -164,7 +164,13 @@ export class AuditService {
     if (item.status !== 'PLANNED') {
       throw new BadRequestException('계획 상태에서만 수정할 수 있습니다.');
     }
-    Object.assign(item, dto, { updatedBy: userId });
+    const {
+      auditNo: _auditNo,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData, { updatedBy: userId });
     return this.auditRepo.save(item);
   }
 

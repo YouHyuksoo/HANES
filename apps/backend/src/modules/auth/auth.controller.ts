@@ -44,7 +44,11 @@ export class AuthController {
     if (!token) {
       throw new UnauthorizedException('인증 토큰이 필요합니다.');
     }
-    return this.authService.me(token);
+    return this.authService.me(
+      token,
+      req.headers['x-company'] as string | undefined,
+      req.headers['x-plant'] as string | undefined,
+    );
   }
 
   private extractToken(req: Request): string | undefined {

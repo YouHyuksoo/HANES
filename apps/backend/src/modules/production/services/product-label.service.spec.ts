@@ -113,6 +113,10 @@ describe('ProductLabelService', () => {
     });
     expect(tx.run).toHaveBeenCalledTimes(1);
     expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
-    expect(queryRunner.manager.update).toHaveBeenCalledWith(ProdResult, '1', { prdUid: 'PRD-001' });
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      ProdResult,
+      { resultNo: '1', company: 'C1', plant: 'P1' },
+      { prdUid: 'PRD-001' },
+    );
   });
 });

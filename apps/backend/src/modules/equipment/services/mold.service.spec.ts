@@ -111,6 +111,27 @@ describe('MoldService', () => {
         BadRequestException,
       );
     });
+
+    it('should keep tenant and mold key columns from the matched mold when update payload contains them', async () => {
+      const mold = { moldCode: 'M-001', moldName: 'Old', status: 'ACTIVE', company: 'CO', plant: 'P01' } as MoldMaster;
+      mockMoldRepo.findOne.mockResolvedValue(mold);
+      mockMoldRepo.save.mockImplementation(async (value) => value as MoldMaster);
+
+      const result = await target.update('M-001', {
+        moldCode: 'M-999',
+        moldName: 'New',
+        company: 'OTHER',
+        plant: 'P99',
+      } as any, 'user', 'CO', 'P01');
+
+      expect(result).toEqual(expect.objectContaining({
+        moldCode: 'M-001',
+        moldName: 'New',
+        company: 'CO',
+        plant: 'P01',
+        updatedBy: 'user',
+      }));
+    });
   });
 
   describe('delete', () => {

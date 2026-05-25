@@ -29,6 +29,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import type { Request } from 'express';
+import { Company, Plant } from '../../common/decorators/tenant.decorator';
 
 @ApiTags('사용자')
 @Controller('users')
@@ -41,32 +42,39 @@ export class UserController {
     @Query('search') search?: string,
     @Query('role') role?: string,
     @Query('status') status?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    return this.userService.findAll({ search, role, status });
+    return this.userService.findAll({ search, role, status }, company, plant);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '사용자 상세 조회' })
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
+  findOne(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.userService.findOne(id, company, plant);
   }
 
   @Post()
   @ApiOperation({ summary: '사용자 생성' })
-  create(@Body() dto: CreateUserDto) {
-    return this.userService.create(dto);
+  create(@Body() dto: CreateUserDto, @Company() company?: string, @Plant() plant?: string) {
+    return this.userService.create(dto, company, plant);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: '사용자 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.userService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    return this.userService.update(id, dto, company, plant);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '사용자 삭제' })
-  remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  remove(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.userService.remove(id, company, plant);
   }
 
   @Post(':id/photo')
@@ -101,14 +109,16 @@ export class UserController {
   uploadPhoto(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
     const photoUrl = `/uploads/users/${file.filename}`;
-    return this.userService.updatePhoto(id, photoUrl);
+    return this.userService.updatePhoto(id, photoUrl, company, plant);
   }
 
   @Delete(':id/photo')
   @ApiOperation({ summary: '사용자 사진 삭제' })
-  removePhoto(@Param('id') id: string) {
-    return this.userService.updatePhoto(id, null);
+  removePhoto(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.userService.updatePhoto(id, null, company, plant);
   }
 }

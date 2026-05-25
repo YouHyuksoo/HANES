@@ -73,4 +73,38 @@ describe('EquipInspectItemPoolService', () => {
 
     await expect(target.findByCode('HANES', '1000', 'EIP-999')).rejects.toThrow(NotFoundException);
   });
+
+  it('keeps tenant and item key columns from the matched pool item when update payload contains them', async () => {
+    const existing = {
+      company: 'HANES',
+      plant: '1000',
+      itemCode: 'EIP-001',
+      itemName: 'Air pressure check',
+      inspectType: 'DAILY',
+      criteria: '0.5~0.7 MPa',
+      cycle: 'DAILY',
+      useYn: 'Y',
+    } as EquipInspectItemPool;
+
+    mockRepo.findOne.mockResolvedValue(existing);
+    mockRepo.save.mockImplementation(async (item) => item as EquipInspectItemPool);
+
+    const result = await target.update('HANES', '1000', 'EIP-001', {
+      company: 'OTHER',
+      plant: '9999',
+      itemCode: 'EIP-999',
+      itemName: 'Updated pressure check',
+    } as any);
+
+    expect(result.company).toBe('HANES');
+    expect(result.plant).toBe('1000');
+    expect(result.itemCode).toBe('EIP-001');
+    expect(result.itemName).toBe('Updated pressure check');
+    expect(mockRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+      company: 'HANES',
+      plant: '1000',
+      itemCode: 'EIP-001',
+      itemName: 'Updated pressure check',
+    }));
+  });
 });

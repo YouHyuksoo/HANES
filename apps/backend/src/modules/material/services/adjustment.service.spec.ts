@@ -202,6 +202,30 @@ describe('AdjustmentService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('승인대기 보정 요청은 조회된 재고 테넌트가 요청 테넌트와 다르면 차단한다', async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: null,
+          qty: 10,
+          reservedQty: 0,
+          company: 'OTHER',
+          plant: 'P01',
+        } as MatStock);
+
+      await expect(
+        service.createPending({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          afterQty: 12,
+          reason: '보정',
+        } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(queryRunner.manager.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('approve', () => {
@@ -397,6 +421,31 @@ describe('AdjustmentService', () => {
       expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatLot, {
         where: { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       });
+    });
+
+    it('즉시승인 보정은 조회된 재고 테넌트가 요청 테넌트와 다르면 차단한다', async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: null,
+          qty: 10,
+          reservedQty: 0,
+          company: 'HANES',
+          plant: 'OTHER',
+        } as MatStock);
+
+      await expect(
+        service.create({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          afterQty: 12,
+          reason: '보정',
+        } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(queryRunner.manager.update).not.toHaveBeenCalled();
+      expect(queryRunner.manager.create).not.toHaveBeenCalled();
     });
   });
 });

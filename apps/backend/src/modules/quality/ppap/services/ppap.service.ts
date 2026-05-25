@@ -298,7 +298,13 @@ export class PpapService {
         '초안 또는 반려 상태에서만 수정할 수 있습니다.',
       );
     }
-    Object.assign(item, dto, { updatedBy: userId });
+    const {
+      ppapNo: _ppapNo,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData, { updatedBy: userId });
     return this.ppapRepo.save(item);
   }
 

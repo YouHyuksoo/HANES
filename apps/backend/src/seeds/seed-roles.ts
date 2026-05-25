@@ -53,6 +53,9 @@ const ROLE_SEEDS: RoleSeed[] = [
   { code: 'VIEWER',   name: '조회자',    description: '조회만 가능',                 isSystem: true, sortOrder: 4 },
 ];
 
+const seedCompany = process.env.SEED_COMPANY || process.env.DEFAULT_COMPANY || 'HANES';
+const seedPlant = process.env.SEED_PLANT || process.env.DEFAULT_PLANT || 'P01';
+
 // ---------------------------------------------------------------------------
 // 역할별 허용 메뉴 코드 생성
 // ---------------------------------------------------------------------------
@@ -145,23 +148,23 @@ async function seedRoles(): Promise<void> {
     console.log('  Connected successfully.\n');
 
     // ------------------------------------------------------------------
-    // 1) 역할(Role) UPSERT — CODE 가 PK (자연키)
+    // 1) 역할(Role) UPSERT — COMPANY + PLANT_CD + CODE 가 PK (자연키)
     // ------------------------------------------------------------------
     console.log('[1/2] Seeding roles...');
 
     for (const role of ROLE_SEEDS) {
       const existing = await dataSource.query(
-        `SELECT "CODE" FROM "ROLES" WHERE "CODE" = :1`,
-        [role.code],
+        `SELECT "CODE" FROM "ROLES" WHERE "COMPANY" = :1 AND "PLANT_CD" = :2 AND "CODE" = :3`,
+        [seedCompany, seedPlant, role.code],
       );
 
       if (existing.length > 0) {
         console.log(`  [SKIP] ${role.code} - already exists`);
       } else {
         await dataSource.query(
-          `INSERT INTO "ROLES" ("CODE", "NAME", "DESCRIPTION", "IS_SYSTEM", "SORT_ORDER", "CREATED_BY", "UPDATED_BY", "CREATED_AT", "UPDATED_AT")
-           VALUES (:1, :2, :3, :4, :5, 'SEED', 'SEED', SYSTIMESTAMP, SYSTIMESTAMP)`,
-          [role.code, role.name, role.description, role.isSystem ? 'Y' : 'N', role.sortOrder],
+          `INSERT INTO "ROLES" ("COMPANY", "PLANT_CD", "CODE", "NAME", "DESCRIPTION", "IS_SYSTEM", "SORT_ORDER", "CREATED_BY", "UPDATED_BY", "CREATED_AT", "UPDATED_AT")
+           VALUES (:1, :2, :3, :4, :5, :6, :7, 'SEED', 'SEED', SYSTIMESTAMP, SYSTIMESTAMP)`,
+          [seedCompany, seedPlant, role.code, role.name, role.description, role.isSystem ? 'Y' : 'N', role.sortOrder],
         );
         console.log(`  [INSERT] ${role.code}`);
       }
@@ -171,7 +174,7 @@ async function seedRoles(): Promise<void> {
 
     // ------------------------------------------------------------------
     // 2) 역할-메뉴 권한 매핑 (ADMIN은 생략 — 코드에서 전체 허용)
-    //    (ROLE_CODE, MENU_CODE) 복합 PK
+    //    (COMPANY, PLANT_CD, ROLE_CODE, MENU_CODE) 복합 PK
     // ------------------------------------------------------------------
     console.log('[2/2] Seeding role-menu permissions...');
 
@@ -189,17 +192,17 @@ async function seedRoles(): Promise<void> {
 
       for (const menuCode of menuCodes) {
         const existing = await dataSource.query(
-          `SELECT "ROLE_CODE" FROM "ROLE_MENU_PERMISSIONS" WHERE "ROLE_CODE" = :1 AND "MENU_CODE" = :2`,
-          [roleCode, menuCode],
+          `SELECT "ROLE_CODE" FROM "ROLE_MENU_PERMISSIONS" WHERE "COMPANY" = :1 AND "PLANT_CD" = :2 AND "ROLE_CODE" = :3 AND "MENU_CODE" = :4`,
+          [seedCompany, seedPlant, roleCode, menuCode],
         );
 
         if (existing.length > 0) {
           skippedCount++;
         } else {
           await dataSource.query(
-            `INSERT INTO "ROLE_MENU_PERMISSIONS" ("ROLE_CODE", "MENU_CODE", "CAN_ACCESS", "CREATED_AT", "UPDATED_AT")
-             VALUES (:1, :2, 'Y', SYSTIMESTAMP, SYSTIMESTAMP)`,
-            [roleCode, menuCode],
+            `INSERT INTO "ROLE_MENU_PERMISSIONS" ("COMPANY", "PLANT_CD", "ROLE_CODE", "MENU_CODE", "CAN_ACCESS", "CREATED_AT", "UPDATED_AT")
+             VALUES (:1, :2, :3, :4, 'Y', SYSTIMESTAMP, SYSTIMESTAMP)`,
+            [seedCompany, seedPlant, roleCode, menuCode],
           );
           insertedCount++;
         }

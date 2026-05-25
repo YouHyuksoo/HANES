@@ -162,7 +162,13 @@ export class DocumentService {
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 수정할 수 있습니다.');
     }
-    Object.assign(item, dto, { updatedBy: userId });
+    const {
+      docNo: _docNo,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData, { updatedBy: userId });
     return this.docRepo.save(item);
   }
 

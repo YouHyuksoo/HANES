@@ -89,7 +89,14 @@ export class WarehouseLocationService {
       throw new NotFoundException(`로케이션을 찾을 수 없습니다: ${id}`);
     }
 
-    Object.assign(location, dto);
+    const {
+      warehouseCode: _warehouseCode,
+      locationCode: _locationCode,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(location, updateData);
     const saved = await this.locationRepo.save(location);
     return { success: true, data: saved };
   }

@@ -6,7 +6,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { Repository, DataSource, QueryRunner, getMetadataArgsStorage } from 'typeorm';
 import { ProductInventoryService } from './product-inventory.service';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
@@ -55,6 +55,17 @@ describe('ProductInventoryService', () => {
     target = module.get<ProductInventoryService>(ProductInventoryService);
   });
   afterEach(() => jest.clearAllMocks());
+
+  it('includes tenant columns in product stock primary key metadata', () => {
+    const primaryColumnNames = getMetadataArgsStorage()
+      .columns
+      .filter(column => column.target === ProductStock && column.options.primary)
+      .map(column => column.propertyName);
+
+    expect(primaryColumnNames).toEqual(
+      expect.arrayContaining(['company', 'plant', 'warehouseCode', 'itemCode', 'prdUid']),
+    );
+  });
 
   describe('receiveStock', () => {
     it('should create transaction and new stock', async () => {

@@ -650,6 +650,29 @@ describe('ArrivalService', () => {
       expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-003-C', transType: 'MAT_IN_CANCEL' }));
     });
 
+    it('입하 취소는 원본 트랜잭션 테넌트가 요청 테넌트와 다르면 후속 조회를 실행하지 않는다', async () => {
+      mockStockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-003',
+        status: 'DONE',
+        transType: 'MAT_IN',
+        matUid: null,
+        itemCode: 'ITEM-001',
+        qty: 10,
+        toWarehouseId: 'WH-001',
+        refType: 'MANUAL',
+        refId: 'ARR-001',
+        company: 'OTHER',
+        plant: 'P01',
+      } as StockTransaction);
+
+      await expect(
+        target.cancel({ transactionId: 'TX-003', reason: 'cancel', workerId: 'user' } as any, 'CO', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockIqcLogRepo.findOne).not.toHaveBeenCalled();
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
     it('보강 마스터가 누락되어도 입하 취소 결과의 원본 itemCode, matUid, warehouseCode는 유지한다', async () => {
       mockStockTxRepo.findOne.mockResolvedValue({
         transNo: 'TX-004',

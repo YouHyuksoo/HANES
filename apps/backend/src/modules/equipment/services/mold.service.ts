@@ -115,7 +115,13 @@ export class MoldService {
       throw new BadRequestException('Mold status cannot be changed via generic update API.');
     }
 
-    Object.assign(item, dto, { updatedBy: userId });
+    const {
+      moldCode: _moldCode,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData, { updatedBy: userId });
     return this.moldRepo.save(item);
   }
 

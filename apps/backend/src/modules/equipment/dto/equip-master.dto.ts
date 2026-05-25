@@ -175,11 +175,9 @@ export class AssignJobOrderDto {
  */
 export class EquipMasterQueryDto extends PaginationQueryDto {
 
-
   @ApiPropertyOptional({ description: '설비 유형', enum: EQUIP_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn([...EQUIP_TYPE_VALUES])
   equipType?: string;
 
   @ApiPropertyOptional({ description: '라인 코드' })
@@ -195,8 +193,12 @@ export class EquipMasterQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '상태', enum: EQUIP_STATUS_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn([...EQUIP_STATUS_VALUES])
   status?: string;
+
+  @ApiPropertyOptional({ description: '통신 방식', enum: COMM_TYPE_VALUES })
+  @IsOptional()
+  @IsString()
+  commType?: string;
 
   @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES })
   @IsOptional()

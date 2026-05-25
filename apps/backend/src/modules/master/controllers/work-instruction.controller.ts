@@ -72,30 +72,30 @@ export class WorkInstructionController {
 
   @Get(':id')
   @ApiOperation({ summary: '작업지도서 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.workInstructionService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.workInstructionService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '작업지도서 생성' })
-  async create(@Body() dto: CreateWorkInstructionDto) {
-    const data = await this.workInstructionService.create(dto);
+  async create(@Body() dto: CreateWorkInstructionDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.workInstructionService.create(dto, company, plant);
     return ResponseUtil.success(data, '작업지도서가 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: '작업지도서 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateWorkInstructionDto) {
-    const data = await this.workInstructionService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateWorkInstructionDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.workInstructionService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '작업지도서가 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '작업지도서 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.workInstructionService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.workInstructionService.delete(id, company, plant);
     return ResponseUtil.success(null, '작업지도서가 삭제되었습니다.');
   }
 }

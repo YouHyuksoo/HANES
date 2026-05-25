@@ -116,6 +116,28 @@ describe('PartnerService', () => {
         { partnerName: 'New' },
       );
     });
+
+    it('should strip key and tenant columns from update payload', async () => {
+      const existing = { partnerCode: 'P01', partnerName: 'Old', company: 'C1', plant: 'P1' } as PartnerMaster;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('P01', {
+        partnerCode: 'P99',
+        partnerName: 'New',
+        company: 'C2',
+        plant: 'P2',
+      } as any, 'C1', 'P1');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { partnerCode: 'P01', company: 'C1', plant: 'P1' },
+        expect.not.objectContaining({
+          partnerCode: expect.anything(),
+          company: expect.anything(),
+          plant: expect.anything(),
+        }),
+      );
+    });
   });
 
   // ─── delete ───

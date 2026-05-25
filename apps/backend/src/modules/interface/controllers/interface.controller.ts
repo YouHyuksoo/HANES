@@ -64,8 +64,8 @@ export class InterfaceController {
   @ApiParam({ name: 'transDate', description: '전송일 (YYYY-MM-DD)' })
   @ApiParam({ name: 'seq', description: '일련번호' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findLogById(@Param('transDate') transDate: string, @Param('seq') seq: string) {
-    const data = await this.interfaceService.findLogById(new Date(transDate), +seq);
+  async findLogById(@Param('transDate') transDate: string, @Param('seq') seq: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.interfaceService.findLogById(new Date(transDate), +seq, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -75,8 +75,8 @@ export class InterfaceController {
   @ApiParam({ name: 'transDate', description: '전송일 (YYYY-MM-DD)' })
   @ApiParam({ name: 'seq', description: '일련번호' })
   @ApiResponse({ status: 200, description: '재시도 성공' })
-  async retryLog(@Param('transDate') transDate: string, @Param('seq') seq: string) {
-    const data = await this.interfaceService.retryLog(new Date(transDate), +seq);
+  async retryLog(@Param('transDate') transDate: string, @Param('seq') seq: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.interfaceService.retryLog(new Date(transDate), +seq, company, plant);
     return ResponseUtil.success(data, '재시도가 완료되었습니다.');
   }
 
@@ -84,12 +84,12 @@ export class InterfaceController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '인터페이스 로그 일괄 재시도' })
   @ApiResponse({ status: 200, description: '일괄 재시도 성공' })
-  async bulkRetry(@Body() dto: BulkRetryDto) {
+  async bulkRetry(@Body() dto: BulkRetryDto, @Company() company: string, @Plant() plant: string) {
     const logKeys = dto.logIds.map((item: any) => ({
       transDate: new Date(item.transDate),
       seq: Number(item.seq),
     }));
-    const data = await this.interfaceService.bulkRetry(logKeys);
+    const data = await this.interfaceService.bulkRetry(logKeys, company, plant);
     return ResponseUtil.success(data, '일괄 재시도가 완료되었습니다.');
   }
 
@@ -147,24 +147,24 @@ export class InterfaceController {
   @Get('summary')
   @ApiOperation({ summary: '인터페이스 현황 요약' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getSummary() {
-    const data = await this.interfaceService.getSummary();
+  async getSummary(@Company() company: string, @Plant() plant: string) {
+    const data = await this.interfaceService.getSummary(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('failed')
   @ApiOperation({ summary: '실패 로그 목록' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getFailedLogs() {
-    const data = await this.interfaceService.getFailedLogs();
+  async getFailedLogs(@Company() company: string, @Plant() plant: string) {
+    const data = await this.interfaceService.getFailedLogs(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('recent')
   @ApiOperation({ summary: '최근 로그 목록' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getRecentLogs(@Query('limit') limit?: number) {
-    const data = await this.interfaceService.getRecentLogs(limit);
+  async getRecentLogs(@Query('limit') limit?: number, @Company() company?: string, @Plant() plant?: string) {
+    const data = await this.interfaceService.getRecentLogs(limit, company, plant);
     return ResponseUtil.success(data);
   }
 }

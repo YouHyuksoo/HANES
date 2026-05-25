@@ -52,6 +52,17 @@ describe('VendorBarcodeMappingService', () => {
       expect(result).toEqual(mapping);
     });
 
+    it('finds a mapping within tenant only', async () => {
+      const mapping = { vendorBarcode: 'BC01', itemCode: 'ITEM01', company: 'C1', plant: 'P1' } as VendorBarcodeMapping;
+      mockRepo.findOne.mockResolvedValue(mapping);
+
+      await target.findByBarcode('BC01', 'C1', 'P1');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { vendorBarcode: 'BC01', company: 'C1', plant: 'P1' },
+      });
+    });
+
     it('should throw NotFoundException when not found', async () => {
       // Arrange
       mockRepo.findOne.mockResolvedValue(null);
@@ -78,6 +89,19 @@ describe('VendorBarcodeMappingService', () => {
       expect(result).toEqual(created);
     });
 
+    it('checks duplicate barcode within tenant when creating', async () => {
+      const dto = { vendorBarcode: 'BC01', itemCode: 'ITEM01' } as any;
+      mockRepo.findOne.mockResolvedValue(null);
+      mockRepo.create.mockReturnValue({ ...dto, company: 'C1', plant: 'P1' } as VendorBarcodeMapping);
+      mockRepo.save.mockResolvedValue({ ...dto, company: 'C1', plant: 'P1' } as VendorBarcodeMapping);
+
+      await target.create(dto, 'C1', 'P1');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { vendorBarcode: 'BC01', company: 'C1', plant: 'P1' },
+      });
+    });
+
     it('should throw ConflictException when barcode already exists', async () => {
       // Arrange
       const dto = { vendorBarcode: 'BC01' } as any;
@@ -101,6 +125,23 @@ describe('VendorBarcodeMappingService', () => {
       // Assert
       expect(result.matched).toBe(true);
       expect(result.matchMethod).toBe('EXACT');
+    });
+
+    it('resolves exact barcode within tenant only', async () => {
+      const mapping = { vendorBarcode: 'ABC123', matchType: 'EXACT', useYn: 'Y', company: 'C1', plant: 'P1' } as VendorBarcodeMapping;
+      mockRepo.findOne.mockResolvedValue(mapping);
+
+      await target.resolveBarcode('ABC123', 'C1', 'P1');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          vendorBarcode: 'ABC123',
+          matchType: 'EXACT',
+          useYn: 'Y',
+          company: 'C1',
+          plant: 'P1',
+        },
+      });
     });
 
     it('should match PREFIX barcode when EXACT fails', async () => {
@@ -179,6 +220,28 @@ describe('VendorBarcodeMappingService', () => {
       // Assert
       expect(mockRepo.update).toHaveBeenCalled();
     });
+
+    it('updates a mapping within tenant and strips tenant/key columns from payload', async () => {
+      const existing = { vendorBarcode: 'BC01', itemCode: 'ITEM01', company: 'C1', plant: 'P1' } as VendorBarcodeMapping;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('BC01', {
+        vendorBarcode: 'BC99',
+        itemCode: 'ITEM02',
+        company: 'C2',
+        plant: 'P2',
+      } as any, 'C1', 'P1');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { vendorBarcode: 'BC01', company: 'C1', plant: 'P1' },
+        expect.not.objectContaining({
+          vendorBarcode: expect.anything(),
+          company: expect.anything(),
+          plant: expect.anything(),
+        }),
+      );
+    });
   });
 
   // ─── delete ───
@@ -194,6 +257,16 @@ describe('VendorBarcodeMappingService', () => {
 
       // Assert
       expect(result).toEqual({ vendorBarcode: 'BC01' });
+    });
+
+    it('deletes a mapping within tenant only', async () => {
+      const existing = { vendorBarcode: 'BC01', company: 'C1', plant: 'P1' } as VendorBarcodeMapping;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await target.delete('BC01', 'C1', 'P1');
+
+      expect(mockRepo.delete).toHaveBeenCalledWith({ vendorBarcode: 'BC01', company: 'C1', plant: 'P1' });
     });
   });
 });

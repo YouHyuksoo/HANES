@@ -17,6 +17,7 @@ import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
@@ -24,10 +25,13 @@ describe('ProdResultService update policy', () => {
   let target: ProdResultService;
   let mockProdResultRepo: DeepMocked<Repository<ProdResult>>;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockProdResultRepo = createMock<Repository<ProdResult>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
+    mockTx = createMock<TransactionService>();
+    mockTx.run.mockImplementation(async (callback: any) => callback({ manager: createMock<any>() }));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,6 +50,7 @@ describe('ProdResultService update policy', () => {
         { provide: AutoIssueService, useValue: createMock<AutoIssueService>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: NumberingService, useValue: createMock<NumberingService>() },
+        { provide: TransactionService, useValue: mockTx },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
       ],
     })

@@ -3,7 +3,7 @@
  * @description 제품 재고 엔티티 - 창고별 반제품/완제품 현재고
  *
  * 초보자 가이드:
- * - 복합 PK: (warehouseCode, itemCode, prdUid) 조합으로 재고 식별
+ * - 복합 PK: (company, plant, warehouseCode, itemCode, prdUid) 조합으로 재고 식별
  * - 원자재(RAW_MATERIAL)는 MAT_STOCKS, 제품(SEMI_PRODUCT/FINISHED)은 PRODUCT_STOCKS 테이블 사용
  * - qty: 총수량, reservedQty: 예약수량, availableQty: 가용수량
  * - itemType: 'SEMI_PRODUCT'(반제품) 또는 'FINISHED'(완제품)
@@ -76,10 +76,10 @@ export class ProductStock {
   @Column({ name: 'LAST_COUNT', type: 'timestamp', nullable: true })
   lastCountAt: Date | null;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
   company: string | null;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
   plant: string | null;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })

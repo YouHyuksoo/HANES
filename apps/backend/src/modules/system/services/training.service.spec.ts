@@ -121,6 +121,27 @@ describe('TrainingService', () => {
       // Assert
       expect(mockPlanRepo.save).toHaveBeenCalled();
     });
+
+    it('should keep tenant and plan key columns from the matched plan when update payload contains them', async () => {
+      const plan = { planNo: 'TRN-001', title: 'Old', status: 'PLANNED', company: 'COMP', plant: 'PLANT' } as TrainingPlan;
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+      mockPlanRepo.save.mockImplementation(async (value) => value as TrainingPlan);
+
+      const result = await target.update('TRN-001', {
+        planNo: 'TRN-999',
+        title: 'New',
+        company: 'OTHER',
+        plant: 'OTHER_PLANT',
+      } as any, 'user');
+
+      expect(result).toEqual(expect.objectContaining({
+        planNo: 'TRN-001',
+        title: 'New',
+        company: 'COMP',
+        plant: 'PLANT',
+        updatedBy: 'user',
+      }));
+    });
   });
 
   // ─── delete ───
@@ -243,6 +264,28 @@ describe('TrainingService', () => {
 
       // Assert
       expect(mockResultRepo.save).toHaveBeenCalled();
+    });
+
+    it('should keep tenant and result key columns from the matched training result when update payload contains them', async () => {
+      const item = { planNo: 'TRN-001', workerCode: 'W001', workerName: 'Old', company: 'COMP', plant: 'PLANT' } as TrainingResult;
+      mockResultRepo.findOne.mockResolvedValue(item);
+      mockResultRepo.save.mockImplementation(async (value) => value as TrainingResult);
+
+      const result = await target.updateResult('TRN-001', 'W001', {
+        planNo: 'TRN-999',
+        workerCode: 'W999',
+        workerName: 'New',
+        company: 'OTHER',
+        plant: 'OTHER_PLANT',
+      } as any);
+
+      expect(result).toEqual(expect.objectContaining({
+        planNo: 'TRN-001',
+        workerCode: 'W001',
+        workerName: 'New',
+        company: 'COMP',
+        plant: 'PLANT',
+      }));
     });
 
     it('should throw NotFoundException when result not found', async () => {

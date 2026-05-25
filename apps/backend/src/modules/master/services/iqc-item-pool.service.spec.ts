@@ -112,6 +112,26 @@ describe('IqcItemPoolService', () => {
       // Assert
       expect(result.inspItemName).toBe('New');
     });
+
+    it('should keep tenant and item key columns from the matched pool item when update payload contains them', async () => {
+      const existing = { inspItemCode: 'IQ01', inspItemName: 'Old', company: 'C1', plant: 'P1' } as IqcItemPool;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.save.mockImplementation(async (value) => value as IqcItemPool);
+
+      const result = await target.update('IQ01', {
+        inspItemCode: 'IQ99',
+        inspItemName: 'New',
+        company: 'C2',
+        plant: 'P2',
+      } as any, 'C1', 'P1');
+
+      expect(result).toEqual(expect.objectContaining({
+        inspItemCode: 'IQ01',
+        inspItemName: 'New',
+        company: 'C1',
+        plant: 'P1',
+      }));
+    });
   });
 
   // ─── delete ───

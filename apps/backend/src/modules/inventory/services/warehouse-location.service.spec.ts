@@ -6,7 +6,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Repository, getMetadataArgsStorage } from 'typeorm';
 import { WarehouseLocationService } from './warehouse-location.service';
 import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -30,6 +30,15 @@ describe('WarehouseLocationService', () => {
     target = module.get<WarehouseLocationService>(WarehouseLocationService);
   });
   afterEach(() => jest.clearAllMocks());
+
+  it('includes tenant columns in warehouse location primary key metadata', () => {
+    const primaryColumnNames = getMetadataArgsStorage()
+      .columns
+      .filter((column) => column.target === WarehouseLocation && column.options.primary)
+      .map((column) => column.propertyName);
+
+    expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plant']));
+  });
 
   describe('findAll', () => {
     it('should preserve location WAREHOUSE_CODE even when warehouse master is missing', async () => {
@@ -116,6 +125,27 @@ describe('WarehouseLocationService', () => {
       expect(mockLocRepo.save).toHaveBeenCalledWith(expect.objectContaining({
         warehouseCode: 'WH-001',
         locationCode: 'A-01',
+        locationName: 'Changed',
+      }));
+    });
+    it('should keep tenant and location key columns from the matched location when update payload contains them', async () => {
+      const loc = { warehouseCode: 'WH-001', locationCode: 'A-01', company: 'C1', plant: 'P1', locationName: 'Old' } as any;
+      mockLocRepo.findOne.mockResolvedValue(loc);
+      mockLocRepo.save.mockImplementation(async (value) => value as WarehouseLocation);
+
+      const result = await target.update('WH-001::A-01', {
+        warehouseCode: 'WH-999',
+        locationCode: 'Z-99',
+        company: 'C2',
+        plant: 'P2',
+        locationName: 'Changed',
+      } as any, 'C1', 'P1');
+
+      expect(result.data).toEqual(expect.objectContaining({
+        warehouseCode: 'WH-001',
+        locationCode: 'A-01',
+        company: 'C1',
+        plant: 'P1',
         locationName: 'Changed',
       }));
     });

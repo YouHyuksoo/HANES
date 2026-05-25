@@ -44,6 +44,23 @@ export class AdjustmentService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   async findAll(query: AdjustmentQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -129,6 +146,9 @@ export class AdjustmentService {
       });
       const beforeQty = stock?.qty ?? 0;
       const diffQty = afterQty - beforeQty;
+      if (stock) {
+        this.assertSameTenant('보정 대상 재고', { company, plant }, stock);
+      }
       if (stock && afterQty < stock.reservedQty) {
         throw new BadRequestException(
           `????(${stock.reservedQty})?? ?? ??? ??? ? ????.`,
@@ -329,6 +349,9 @@ export class AdjustmentService {
 
       const beforeQty = stock?.qty ?? 0;
       const diffQty = afterQty - beforeQty;
+      if (stock) {
+        this.assertSameTenant('보정 대상 재고', { company, plant }, stock);
+      }
 
       // ?ш퀬 ?낅뜲?댄듃 ?먮뒗 ?앹꽦
       if (stock) {

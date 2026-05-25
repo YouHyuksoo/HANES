@@ -312,7 +312,7 @@ describe('ProdResultService', () => {
     expect(result?.resultNo).toBe('PR-1');
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       ProdResult,
-      'PR-1',
+      { resultNo: 'PR-1', company: 'C1', plant: 'P1' },
       expect.objectContaining({ remark: 'updated' }),
     );
     expect(tx.run).toHaveBeenCalledTimes(1);

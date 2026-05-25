@@ -16,6 +16,13 @@ export class WorkInstructionService {
     private readonly workInstructionRepository: Repository<WorkInstruction>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: WorkInstructionQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, itemCode, processCode, useYn } = query;
     const skip = (page - 1) * limit;
@@ -74,16 +81,16 @@ export class WorkInstructionService {
     throw new NotFoundException(`잘못된 작업지도서 ID 형식입니다: ${id}`);
   }
 
-  async findById(id: string) {
+  async findById(id: string, company?: string, plant?: string) {
     const key = this.parseCompositeId(id);
     const workInstruction = await this.workInstructionRepository.findOne({
-      where: key,
+      where: { ...key, ...this.tenantWhere(company, plant) },
     });
     if (!workInstruction) throw new NotFoundException(`작업지도서를 찾을 수 없습니다: ${id}`);
     return workInstruction;
   }
 
-  async create(dto: CreateWorkInstructionDto) {
+  async create(dto: CreateWorkInstructionDto, company?: string, plant?: string) {
     const workInstruction = this.workInstructionRepository.create({
       itemCode: dto.itemCode,
       processCode: dto.processCode ?? '',
@@ -92,24 +99,32 @@ export class WorkInstructionService {
       imageUrl: dto.imageUrl,
       revision: dto.revision ?? 'A',
       useYn: dto.useYn ?? 'Y',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.workInstructionRepository.save(workInstruction);
   }
 
-  async update(id: string, dto: UpdateWorkInstructionDto) {
-    const existing = await this.findById(id);
+  async update(id: string, dto: UpdateWorkInstructionDto, company?: string, plant?: string) {
+    await this.findById(id, company, plant);
     const key = this.parseCompositeId(id);
-    await this.workInstructionRepository.update(key, dto);
-    return this.findById(
-      `${dto.itemCode ?? key.itemCode}::${dto.processCode ?? key.processCode}::${dto.revision ?? key.revision}`,
-    );
+    const {
+      itemCode: _itemCode,
+      processCode: _processCode,
+      revision: _revision,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    await this.workInstructionRepository.update({ ...key, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findById(id, company, plant);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
+  async delete(id: string, company?: string, plant?: string) {
+    await this.findById(id, company, plant);
     const key = this.parseCompositeId(id);
-    await this.workInstructionRepository.delete(key);
+    await this.workInstructionRepository.delete({ ...key, ...this.tenantWhere(company, plant) });
     return { id };
   }
 }

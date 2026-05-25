@@ -20,6 +20,11 @@ export class LoginDto {
   @IsOptional()
   @IsString()
   company?: string;
+
+  @ApiPropertyOptional({ description: '사업장코드', example: 'P01' })
+  @IsOptional()
+  @IsString()
+  plant?: string;
 }
 
 export class RegisterDto {

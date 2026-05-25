@@ -9,7 +9,7 @@
  * 4. Sensor Data Query: 센서 데이터 이력 조회
  */
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SensorDataLog } from '../../../entities/sensor-data-log.entity';
@@ -47,6 +47,23 @@ export class SensorMonitorService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
   }
 
   // ─── 센서 데이터 수신 ────────────────────────────────────
@@ -113,6 +130,8 @@ export class SensorMonitorService {
       const rules = ruleMap.get(key) || [];
 
       for (const rule of rules) {
+        this.assertSameTenant('센서 조건 규칙', { company, plant }, rule);
+
         // WARNING 체크
         if (rule.warningValue != null && this.isTriggered(value, rule.warningValue, rule.compareOp)) {
           warnings++;

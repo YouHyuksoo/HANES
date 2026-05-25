@@ -20,11 +20,16 @@ export class WorkerService {
     private readonly workerRepository: Repository<WorkerMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: WorkerQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, dept, useYn } = query;
     const skip = (page - 1) * limit;
-
-    console.log(`[WorkerService.findAll] query=`, JSON.stringify(query), ', company=', company);
 
     const queryBuilder = this.workerRepository.createQueryBuilder('worker')
 
@@ -60,8 +65,6 @@ export class WorkerService {
       queryBuilder.getCount(),
     ]);
 
-    console.log(`[WorkerService.findAll] total=${total}, data.length=${data.length}`);
-
     // Parse processIds from CLOB string to array
     const parsedData = data.map(worker => ({
       ...worker,
@@ -71,9 +74,9 @@ export class WorkerService {
     return { data: parsedData, total, page, limit };
   }
 
-  async findById(workerCode: string) {
+  async findById(workerCode: string, company?: string, plant?: string) {
     const item = await this.workerRepository.findOne({
-      where: { workerCode },
+      where: { workerCode, ...this.tenantWhere(company, plant) },
     });
     if (!item) throw new NotFoundException(`작업자를 찾을 수 없습니다: ${workerCode}`);
 
@@ -90,16 +93,16 @@ export class WorkerService {
    * 2차: QR에 workerCode가 담긴 경우 대비해 WORKER_CODE로 재시도
    * 둘 다 없으면 NotFoundException 발생
    */
-  async findByQrCode(qrCode: string) {
+  async findByQrCode(qrCode: string, company?: string, plant?: string) {
     // 1차 시도: qrCode 컬럼으로 조회
     let item = await this.workerRepository.findOne({
-      where: { qrCode },
+      where: { qrCode, ...this.tenantWhere(company, plant) },
     });
 
     // 2차 시도: workerCode로 조회 (QR에 사번이 인쇄된 경우)
     if (!item) {
       item = await this.workerRepository.findOne({
-        where: { workerCode: qrCode },
+        where: { workerCode: qrCode, ...this.tenantWhere(company, plant) },
       });
     }
 
@@ -112,9 +115,9 @@ export class WorkerService {
     };
   }
 
-  async create(dto: CreateWorkerDto) {
+  async create(dto: CreateWorkerDto, company?: string, plant?: string) {
     const existing = await this.workerRepository.findOne({
-      where: { workerCode: dto.workerCode },
+      where: { workerCode: dto.workerCode, ...this.tenantWhere(company, plant) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 작업자 코드입니다: ${dto.workerCode}`);
 
@@ -133,6 +136,8 @@ export class WorkerService {
       processIds: dto.processIds ? JSON.stringify(dto.processIds) : null,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
+      company: company || null,
+      plant: plant || null,
     });
 
     const saved = await this.workerRepository.save(worker);
@@ -142,21 +147,24 @@ export class WorkerService {
     };
   }
 
-  async update(workerCode: string, dto: UpdateWorkerDto) {
-    await this.findById(workerCode);
+  async update(workerCode: string, dto: UpdateWorkerDto, company?: string, plant?: string) {
+    await this.findById(workerCode, company, plant);
 
     const updateData: any = { ...dto };
+    delete updateData.workerCode;
+    delete updateData.company;
+    delete updateData.plant;
     if (dto.processIds !== undefined) {
       updateData.processIds = dto.processIds ? JSON.stringify(dto.processIds) : null;
     }
 
-    await this.workerRepository.update({ workerCode }, updateData);
-    return this.findById(workerCode);
+    await this.workerRepository.update({ workerCode, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findById(workerCode, company, plant);
   }
 
-  async delete(workerCode: string) {
-    await this.findById(workerCode);
-    await this.workerRepository.delete({ workerCode });
+  async delete(workerCode: string, company?: string, plant?: string) {
+    await this.findById(workerCode, company, plant);
+    await this.workerRepository.delete({ workerCode, ...this.tenantWhere(company, plant) });
     return { workerCode };
   }
 }

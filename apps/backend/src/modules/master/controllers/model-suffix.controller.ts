@@ -30,16 +30,25 @@ export class ModelSuffixController {
 
   @Get(':modelCode/:suffixCode')
   @ApiOperation({ summary: '모델접미사 상세 조회' })
-  async findByCompositeKey(@Param('modelCode') modelCode: string, @Param('suffixCode') suffixCode: string) {
-    const data = await this.modelSuffixService.findByCompositeKey(modelCode, suffixCode);
+  async findByCompositeKey(
+    @Param('modelCode') modelCode: string,
+    @Param('suffixCode') suffixCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.modelSuffixService.findByCompositeKey(modelCode, suffixCode, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '모델접미사 생성' })
-  async create(@Body() dto: CreateModelSuffixDto) {
-    const data = await this.modelSuffixService.create(dto);
+  async create(
+    @Body() dto: CreateModelSuffixDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.modelSuffixService.create(dto, company, plant);
     return ResponseUtil.success(data, '모델접미사가 생성되었습니다.');
   }
 
@@ -49,15 +58,22 @@ export class ModelSuffixController {
     @Param('modelCode') modelCode: string,
     @Param('suffixCode') suffixCode: string,
     @Body() dto: UpdateModelSuffixDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.modelSuffixService.update(modelCode, suffixCode, dto);
+    const data = await this.modelSuffixService.update(modelCode, suffixCode, dto, company, plant);
     return ResponseUtil.success(data, '모델접미사가 수정되었습니다.');
   }
 
   @Delete(':modelCode/:suffixCode')
   @ApiOperation({ summary: '모델접미사 삭제' })
-  async delete(@Param('modelCode') modelCode: string, @Param('suffixCode') suffixCode: string) {
-    await this.modelSuffixService.delete(modelCode, suffixCode);
+  async delete(
+    @Param('modelCode') modelCode: string,
+    @Param('suffixCode') suffixCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.modelSuffixService.delete(modelCode, suffixCode, company, plant);
     return ResponseUtil.success(null, '모델접미사가 삭제되었습니다.');
   }
 }

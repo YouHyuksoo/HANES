@@ -66,6 +66,23 @@ export class ArrivalService {
     private readonly tx: TransactionService,
   ) {}
 
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   /** 입하 가능 PO 목록 조회 (CONFIRMED/PARTIAL 상태) */
   async findReceivablePOs(company?: string, plant?: string) {
     const where: any = {
@@ -488,6 +505,7 @@ export class ArrivalService {
     if (!original) throw new NotFoundException(`트랜잭션을 찾을 수 없습니다: ${dto.transactionId}`);
     if (original.status === 'CANCELED') throw new BadRequestException('이미 취소된 트랜잭션입니다.');
     if (original.transType !== 'MAT_IN') throw new BadRequestException('입하 트랜잭션만 취소할 수 있습니다.');
+    this.assertSameTenant('입하 원본 트랜잭션', { company, plant }, original);
 
     // G3: 입하 취소 조건 제한 — IQC 판정 이후 취소 불가 (무검사품은 입고 전)
     const tenantWhere = {

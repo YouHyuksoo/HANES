@@ -70,6 +70,7 @@ export class EquipMasterService {
       equipType,
       lineCode,
       status,
+      commType,
       useYn,
       search,
       company,
@@ -82,6 +83,7 @@ export class EquipMasterService {
     if (lineCode) qb.andWhere('e.lineCode = :lineCode', { lineCode });
     if (query.processCode) qb.andWhere('e.processCode = :processCode', { processCode: query.processCode });
     if (status) qb.andWhere('e.status = :status', { status });
+    if (commType) qb.andWhere('e.commType = :commType', { commType });
     if (useYn) qb.andWhere('e.useYn = :useYn', { useYn });
     if (company) qb.andWhere('e.company = :company', { company });
     if (query.plant) qb.andWhere('e.plant = :plant', { plant: query.plant });

@@ -8,6 +8,7 @@
  * 3. 목록 조회 시 screenshot 컬럼 제외 (대용량, 단건 조회 시에만 포함)
  */
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -72,13 +73,16 @@ export class ImprRequestController {
   }
 
   private extractMeta(req: Request) {
-    const user = (req as Request & { user?: { company?: string; plant?: string } }).user ?? {};
+    const user = (req as Request & { user?: { id?: string; userId?: string; userName?: string; company?: string; plant?: string } }).user ?? {};
     const auth = req.headers.authorization ?? '';
     const [, token] = auth.split(' ');
-    const userId = token || 'unknown';
-    const userName = (req.headers['x-user-name'] as string) ?? null;
-    const company = (req.headers['x-company'] as string) ?? user.company ?? 'JSHANES';
-    const plantCd = (req.headers['x-plant'] as string) ?? user.plant ?? 'JSHANES';
+    const userId = user.id || user.userId || token || 'unknown';
+    const userName = user.userName ?? (req.headers['x-user-name'] as string) ?? null;
+    const company = (req.headers['x-company'] as string) ?? user.company;
+    const plantCd = (req.headers['x-plant'] as string) ?? user.plant;
+    if (!company || !plantCd) {
+      throw new BadRequestException('회사/사업장 정보가 없습니다.');
+    }
     return { userId, userName, company, plantCd };
   }
 }

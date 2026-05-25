@@ -51,8 +51,8 @@ export class VendorBarcodeMappingController {
 
   @Get(':vendorBarcode')
   @ApiOperation({ summary: '매핑 상세 조회' })
-  async findByBarcode(@Param('vendorBarcode') vendorBarcode: string) {
-    const data = await this.service.findByBarcode(vendorBarcode);
+  async findByBarcode(@Param('vendorBarcode') vendorBarcode: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.service.findByBarcode(vendorBarcode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -69,23 +69,25 @@ export class VendorBarcodeMappingController {
   async update(
     @Param('vendorBarcode') vendorBarcode: string,
     @Body() dto: UpdateVendorBarcodeMappingDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.service.update(vendorBarcode, dto);
+    const data = await this.service.update(vendorBarcode, dto, company, plant);
     return ResponseUtil.success(data, '바코드 매핑이 수정되었습니다.');
   }
 
   @Delete(':vendorBarcode')
   @ApiOperation({ summary: '매핑 삭제' })
-  async delete(@Param('vendorBarcode') vendorBarcode: string) {
-    await this.service.delete(vendorBarcode);
+  async delete(@Param('vendorBarcode') vendorBarcode: string, @Company() company: string, @Plant() plant: string) {
+    await this.service.delete(vendorBarcode, company, plant);
     return ResponseUtil.success(null, '바코드 매핑이 삭제되었습니다.');
   }
 
   @Post('resolve')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '바코드 스캔 → 품목 매칭' })
-  async resolveBarcode(@Body() dto: BarcodeScanDto) {
-    const result = await this.service.resolveBarcode(dto.barcode);
+  async resolveBarcode(@Body() dto: BarcodeScanDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.service.resolveBarcode(dto.barcode, company, plant);
     return ResponseUtil.success(result);
   }
 }

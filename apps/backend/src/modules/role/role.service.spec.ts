@@ -10,7 +10,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Repository, getMetadataArgsStorage } from 'typeorm';
 import { RoleService } from './role.service';
 import { Role } from '../../entities/role.entity';
 import { RoleMenuPermission } from '../../entities/role-menu-permission.entity';
@@ -42,6 +42,26 @@ describe('RoleService', () => {
     jest.clearAllMocks();
   });
 
+  describe('entity tenant keys', () => {
+    it('should include company and plant in Role primary key', () => {
+      const primaryColumnNames = getMetadataArgsStorage()
+        .columns
+        .filter(column => column.target === Role && column.options.primary)
+        .map(column => column.propertyName);
+
+      expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plant', 'code']));
+    });
+
+    it('should include company and plant in RoleMenuPermission primary key', () => {
+      const primaryColumnNames = getMetadataArgsStorage()
+        .columns
+        .filter(column => column.target === RoleMenuPermission && column.options.primary)
+        .map(column => column.propertyName);
+
+      expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plant', 'roleCode', 'menuCode']));
+    });
+  });
+
   // ─── findAll ───
   describe('findAll', () => {
     it('should return roles list', async () => {
@@ -65,7 +85,7 @@ describe('RoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue(role);
 
       // Act
-      const result = await target.findOne('ADMIN');
+      const result = await target.findOne('ADMIN', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(role);
@@ -76,7 +96,7 @@ describe('RoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(target.findOne('NONE')).rejects.toThrow(NotFoundException);
+      await expect(target.findOne('NONE', 'C1', 'P1')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -90,7 +110,7 @@ describe('RoleService', () => {
       mockRoleRepo.save.mockResolvedValue(dto as Role);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(dto);
@@ -101,7 +121,15 @@ describe('RoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue({ code: 'EXISTING' } as any);
 
       // Act & Assert
-      await expect(target.create({ code: 'EXISTING' } as any)).rejects.toThrow(ConflictException);
+      await expect(target.create({ code: 'EXISTING' } as any, 'C1', 'P1')).rejects.toThrow(ConflictException);
+    });
+
+    it('should reject create when tenant is missing instead of defaulting to HANES/P01', async () => {
+      mockRoleRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.create({ code: 'NEW', name: 'New Role' } as any)).rejects.toThrow(BadRequestException);
+
+      expect(mockRoleRepo.create).not.toHaveBeenCalled();
     });
   });
 
@@ -114,10 +142,14 @@ describe('RoleService', () => {
       mockRoleRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('ROLE1', { name: 'Updated' } as any);
+      const result = await target.update('ROLE1', { name: 'Updated' } as any, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(role);
+      expect(mockRoleRepo.update).toHaveBeenCalledWith(
+        { code: 'ROLE1', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ name: 'Updated' }),
+      );
     });
   });
 
@@ -130,10 +162,11 @@ describe('RoleService', () => {
       mockRoleRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.remove('ROLE1');
+      const result = await target.remove('ROLE1', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ message: '역할이 삭제되었습니다.' });
+      expect(mockRoleRepo.delete).toHaveBeenCalledWith({ code: 'ROLE1', company: 'C1', plant: 'P1' });
     });
 
     it('should throw BadRequestException for system role', async () => {
@@ -142,7 +175,7 @@ describe('RoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue(role);
 
       // Act & Assert
-      await expect(target.remove('ADMIN')).rejects.toThrow(BadRequestException);
+      await expect(target.remove('ADMIN', 'C1', 'P1')).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -157,10 +190,13 @@ describe('RoleService', () => {
       mockPermRepo.find.mockResolvedValue(perms);
 
       // Act
-      const result = await target.getPermissions('R1');
+      const result = await target.getPermissions('R1', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(['MENU1', 'MENU2']);
+      expect(mockPermRepo.find).toHaveBeenCalledWith({
+        where: { roleCode: 'R1', canAccess: true, company: 'C1', plant: 'P1' },
+      });
     });
   });
 
@@ -175,10 +211,12 @@ describe('RoleService', () => {
       mockPermRepo.save.mockResolvedValue([] as any);
 
       // Act
-      const result = await target.updatePermissions('ROLE1', { menuCodes: ['M1', 'M2'] } as any);
+      const result = await target.updatePermissions('ROLE1', { menuCodes: ['M1', 'M2'] } as any, 'C1', 'P1');
 
       // Assert
       expect(result.menuCodes).toEqual(['M1', 'M2']);
+      expect(mockPermRepo.delete).toHaveBeenCalledWith({ roleCode: 'ROLE1', company: 'C1', plant: 'P1' });
+      expect(mockPermRepo.create).toHaveBeenCalledWith(expect.objectContaining({ roleCode: 'ROLE1', company: 'C1', plant: 'P1' }));
     });
 
     it('should throw BadRequestException for ADMIN role', async () => {
@@ -187,7 +225,13 @@ describe('RoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue(role);
 
       // Act & Assert
-      await expect(target.updatePermissions('ADMIN', { menuCodes: ['M1'] } as any)).rejects.toThrow(BadRequestException);
+      await expect(target.updatePermissions('ADMIN', { menuCodes: ['M1'] } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject permission updates when tenant is missing instead of defaulting to HANES/P01', async () => {
+      await expect(target.updatePermissions('ROLE1', { menuCodes: ['M1'] } as any)).rejects.toThrow(BadRequestException);
+
+      expect(mockPermRepo.create).not.toHaveBeenCalled();
     });
   });
 
@@ -206,7 +250,7 @@ describe('RoleService', () => {
       mockRoleRepo.findOne.mockResolvedValue(null);
 
       // Act
-      const result = await target.getAllowedMenusByRoleCode('NONEXIST');
+      const result = await target.getAllowedMenusByRoleCode('NONEXIST', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual([]);
@@ -221,10 +265,16 @@ describe('RoleService', () => {
       ] as RoleMenuPermission[]);
 
       // Act
-      const result = await target.getAllowedMenusByRoleCode('ROLE1');
+      const result = await target.getAllowedMenusByRoleCode('ROLE1', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(['MENU1', 'MENU2']);
+      expect(mockRoleRepo.findOne).toHaveBeenCalledWith({
+        where: { code: 'ROLE1', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPermRepo.find).toHaveBeenCalledWith({
+        where: { roleCode: 'ROLE1', canAccess: true, company: 'C1', plant: 'P1' },
+      });
     });
   });
 });

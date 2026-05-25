@@ -244,6 +244,15 @@ describe('ContinuityInspectService', () => {
     expect(mockTx.run).not.toHaveBeenCalled();
   });
 
+  it('createProtocol rejects body tenant that differs from request tenant', async () => {
+    await expect(
+      target.createProtocol({ equipCode: 'EQ-001', company: 'OTHER', plant: 'P1' } as any, 'C1', 'P1'),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(mockProtocolRepo.create).not.toHaveBeenCalled();
+    expect(mockProtocolRepo.save).not.toHaveBeenCalled();
+  });
+
   it('voidLabel blocks labels that already progressed downstream', async () => {
     mockFgLabelRepo.findOne.mockResolvedValue({
       fgBarcode: 'FG-999',

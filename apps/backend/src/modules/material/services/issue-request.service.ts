@@ -47,6 +47,23 @@ export class IssueRequestService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   /** 통합 채번 서비스를 통한 요청번호 생성 */
   private async generateRequestNo(qr?: import('typeorm').QueryRunner): Promise<string> {
     return this.numbering.next('MAT_REQ', qr);
@@ -74,6 +91,7 @@ export class IssueRequestService {
   private async getRequestOrFail(requestNo: string, company?: string, plant?: string) {
     const request = await this.requestRepository.findOne({ where: { requestNo, ...this.tenantWhere(company, plant) } });
     if (!request) throw new NotFoundException(`출고요청을 찾을 수 없습니다: ${requestNo}`);
+    this.assertSameTenant('출고요청', { company, plant }, request);
     return request;
   }
 

@@ -87,7 +87,15 @@ export class EquipInspectService {
     dto: UpdateEquipInspectItemDto,
   ) {
     const item = await this.findByKey(company, plant, equipCode, inspectType, seq);
-    Object.assign(item, dto);
+    const {
+      company: _company,
+      plant: _plant,
+      equipCode: _equipCode,
+      inspectType: _inspectType,
+      seq: _seq,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData);
     return this.equipInspectRepository.save(item);
   }
 

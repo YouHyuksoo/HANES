@@ -124,7 +124,11 @@ export class PartService {
 
   async update(itemCode: string, dto: UpdatePartDto, company?: string, plant?: string) {
     await this.findById(itemCode, company, plant);
-    await this.partRepository.update({ itemCode, ...this.tenantWhere(company, plant) }, dto);
+    const updateData: any = { ...dto };
+    delete updateData.itemCode;
+    delete updateData.company;
+    delete updateData.plant;
+    await this.partRepository.update({ itemCode, ...this.tenantWhere(company, plant) }, updateData);
     return this.findById(itemCode, company, plant);
   }
 

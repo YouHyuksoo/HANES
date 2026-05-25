@@ -184,7 +184,13 @@ export class SpcService {
     plant?: string,
   ) {
     const item = await this.findChartById(chartNo, company, plant);
-    Object.assign(item, dto, { updatedBy: userId });
+    const {
+      chartNo: _chartNo,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData, { updatedBy: userId });
     return this.chartRepo.save(item);
   }
 

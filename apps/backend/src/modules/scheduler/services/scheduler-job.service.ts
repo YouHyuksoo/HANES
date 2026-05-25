@@ -181,11 +181,18 @@ export class SchedulerJobService implements OnModuleInit {
   ): Promise<SchedulerJob> {
     const job = await this.findOne(jobCode, company, plant);
 
-    Object.assign(job, dto, { updatedBy: userId });
+    const {
+      company: _company,
+      plant: _plant,
+      plantCd: _plantCd,
+      jobCode: _jobCode,
+      ...updateData
+    } = dto as any;
+    Object.assign(job, updateData, { updatedBy: userId });
 
     // cron 표현식이 변경되었으면 nextRunAt 재계산
-    if (dto.cronExpr) {
-      job.nextRunAt = this.computeNextRun(dto.cronExpr);
+    if (updateData.cronExpr) {
+      job.nextRunAt = this.computeNextRun(updateData.cronExpr);
     }
 
     const saved = await this.jobRepo.save(job);

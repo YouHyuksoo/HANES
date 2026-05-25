@@ -192,7 +192,13 @@ export class SelfInspectService {
   }, company: string, plant: string) {
     const item = await this.itemRepo.findOne({ where: { id, company, plant } });
     if (!item) throw new NotFoundException(`SelfInspectItem ${id} not found`);
-    Object.assign(item, dto);
+    const {
+      id: _id,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData);
     return this.itemRepo.save(item);
   }
 

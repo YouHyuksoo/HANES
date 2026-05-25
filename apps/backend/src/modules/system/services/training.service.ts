@@ -138,7 +138,13 @@ export class TrainingService {
    */
   async update(planNo: string, dto: UpdateTrainingPlanDto, userId: string) {
     const item = await this.findById(planNo);
-    Object.assign(item, dto, { updatedBy: userId });
+    const {
+      planNo: _planNo,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData, { updatedBy: userId });
     return this.planRepo.save(item);
   }
 
@@ -259,7 +265,14 @@ export class TrainingService {
     if (!item) {
       throw new NotFoundException('교육 결과를 찾을 수 없습니다.');
     }
-    Object.assign(item, dto);
+    const {
+      planNo: _planNo,
+      workerCode: _workerCode,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData);
     return this.resultRepo.save(item);
   }
 

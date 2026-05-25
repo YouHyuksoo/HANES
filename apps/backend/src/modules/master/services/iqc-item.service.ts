@@ -92,6 +92,8 @@ export class IqcItemService {
     const updated = await this.iqcItemRepository.save({
       ...item,
       ...dto,
+      company: item.company,
+      plant: item.plant,
       itemCode,
       seq,
     });

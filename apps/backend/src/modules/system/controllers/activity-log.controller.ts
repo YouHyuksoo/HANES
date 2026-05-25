@@ -42,8 +42,7 @@ export class ActivityLogController {
       (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
       req.ip ||
       null;
-    const company = (req.headers['x-company'] as string) || null;
-    const plant = (req.headers['x-plant'] as string) || null;
+    const { company, plant } = this.tenant(req);
 
     await this.activityLogService.logActivity({
       userId,
@@ -63,17 +62,27 @@ export class ActivityLogController {
   @Get()
   @ApiOperation({ summary: '활동 로그 조회 (페이지네이션)' })
   async findAll(@Query() query: ActivityLogQueryDto, @Req() req: Request) {
-    const company = (req.headers['x-company'] as string) || undefined;
-    const plant = (req.headers['x-plant'] as string) || undefined;
+    const { company, plant } = this.tenant(req);
     const result = await this.activityLogService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  /** Authorization: Bearer {userId} 에서 userId 추출 */
+  /** JwtAuthGuard user.id 우선, 없으면 Authorization: Bearer {userId} fallback */
   private extractUserId(req: Request): string | null {
+    const user = (req as Request & { user?: { id?: string } }).user;
+    if (user?.id) return user.id;
+
     const auth = req.headers.authorization;
     if (!auth) return null;
     const [type, token] = auth.split(' ');
     return type === 'Bearer' && token ? token : null;
+  }
+
+  private tenant(req: Request) {
+    const user = (req as Request & { user?: { company?: string; plant?: string } }).user ?? {};
+    return {
+      company: (req.headers['x-company'] as string) || user.company || undefined,
+      plant: (req.headers['x-plant'] as string) || user.plant || undefined,
+    };
   }
 }

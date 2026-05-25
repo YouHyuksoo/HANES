@@ -112,16 +112,33 @@ describe('ConsumablesService', () => {
       expect(result).toEqual(item);
     });
 
-    it('should throw ConflictException when renaming to existing code', async () => {
+    it('should ignore consumableCode from update body and keep URL id as the only key source', async () => {
+      // Arrange
+      const item = { consumableCode: 'C001' } as ConsumableMaster;
+      mockMasterRepo.findOne.mockResolvedValue(item);
+      mockMasterRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      // Act
+      await target.update('C001', { consumableCode: 'C002', consumableName: 'Updated' } as any, 'COMP', 'PLANT');
+
+      // Assert
+      expect(mockMasterRepo.update).toHaveBeenCalledWith(
+        { consumableCode: 'C001', company: 'COMP', plant: 'PLANT' },
+        expect.not.objectContaining({ consumableCode: expect.anything() }),
+      );
+    });
+
+    it('should not run duplicate lookup for consumableCode in update body', async () => {
       // Arrange
       const existing = { consumableCode: 'C001' } as ConsumableMaster;
-      const other = { consumableCode: 'C002' } as ConsumableMaster;
-      mockMasterRepo.findOne
-        .mockResolvedValueOnce(existing) // findById
-        .mockResolvedValueOnce(other); // duplicate check
+      mockMasterRepo.findOne.mockResolvedValue(existing);
+      mockMasterRepo.update.mockResolvedValue({ affected: 1 } as any);
 
-      // Act & Assert
-      await expect(target.update('C001', { consumableCode: 'C002' } as any)).rejects.toThrow(ConflictException);
+      // Act
+      await target.update('C001', { consumableCode: 'C002' } as any);
+
+      // Assert
+      expect(mockMasterRepo.findOne).toHaveBeenCalledTimes(2);
     });
   });
 

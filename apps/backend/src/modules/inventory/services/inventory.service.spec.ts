@@ -11,7 +11,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner, Like } from 'typeorm';
+import { Repository, DataSource, QueryRunner, Like, getMetadataArgsStorage } from 'typeorm';
 import { InventoryService } from './inventory.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -76,6 +76,17 @@ describe('InventoryService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('includes tenant columns in material stock primary key metadata', () => {
+    const primaryColumnNames = getMetadataArgsStorage()
+      .columns
+      .filter(column => column.target === MatStock && column.options.primary)
+      .map(column => column.propertyName);
+
+    expect(primaryColumnNames).toEqual(
+      expect.arrayContaining(['company', 'plant', 'warehouseCode', 'itemCode', 'matUid']),
+    );
   });
 
   // ─────────────────────────────────────────────
@@ -591,6 +602,25 @@ describe('InventoryService', () => {
         { transNo: 'TRX202603180001', company: 'TESTV', plant: 'WAREHOUSES' },
         { status: 'CANCELED' },
       );
+    });
+
+    it('rejects cancellation when requested tenant differs from original transaction tenant', async () => {
+      mockStockTransRepo.findOne.mockResolvedValueOnce({
+        transNo: 'TRX202603180001',
+        transType: 'MAT_OUT',
+        fromWarehouseId: 'WH-RM',
+        itemCode: 'PART-001',
+        matUid: 'RM202603180001',
+        qty: -10,
+        status: 'DONE',
+        company: 'ORIGINAL',
+        plant: 'P01',
+      } as any);
+
+      await expect(
+        target.cancelTransaction({ transactionId: 'TRX202603180001' } as any, 'REQUEST', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockTransactionService.run).not.toHaveBeenCalled();
     });
   });
 

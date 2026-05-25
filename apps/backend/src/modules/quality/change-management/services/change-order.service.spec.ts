@@ -52,6 +52,29 @@ describe('ChangeOrderService', () => {
     });
   });
 
+  describe('update', () => {
+    it('should keep tenant and change key columns from the matched order when update payload contains them', async () => {
+      const item = { changeNo: 'ECN-001', title: 'Old', status: 'DRAFT', company: 'CO', plant: 'P01' } as ChangeOrder;
+      mockRepo.findOne.mockResolvedValue(item);
+      mockRepo.save.mockImplementation(async (value) => value as ChangeOrder);
+
+      const result = await target.update('ECN-001', {
+        changeNo: 'ECN-999',
+        title: 'New',
+        company: 'OTHER',
+        plant: 'P99',
+      } as any, 'user');
+
+      expect(result).toEqual(expect.objectContaining({
+        changeNo: 'ECN-001',
+        title: 'New',
+        company: 'CO',
+        plant: 'P01',
+        updatedBy: 'user',
+      }));
+    });
+  });
+
   describe('review', () => {
     it('should approve submitted order', async () => {
       const item = { changeNo: 'ECN-001', status: 'SUBMITTED' } as any;

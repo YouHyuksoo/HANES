@@ -169,7 +169,13 @@ export class MsaService {
     plant?: string,
   ) {
     const item = await this.findGaugeById(gaugeCode, company, plant);
-    Object.assign(item, dto, { updatedBy: userId });
+    const {
+      gaugeCode: _gaugeCode,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    Object.assign(item, updateData, { updatedBy: userId });
     return this.gaugeRepo.save(item);
   }
 

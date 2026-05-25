@@ -62,6 +62,16 @@ describe('ComCodeService', () => {
       });
     });
 
+    it('should return active codes within tenant only', async () => {
+      mockRepo.find.mockResolvedValue([]);
+
+      await target.findAllActive('C1', 'P1');
+
+      expect(mockRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: { useYn: 'Y', company: 'C1', plant: 'P1' },
+      }));
+    });
+
     it('should return empty object when no codes exist', async () => {
       // Arrange
       mockRepo.find.mockResolvedValue([]);
@@ -75,6 +85,27 @@ describe('ComCodeService', () => {
   });
 
   // ─── findById ───
+  describe('findAllGroups', () => {
+    it('should count groups within tenant only', async () => {
+      const qb: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([{ groupCode: 'GRP1', count: '2' }]),
+      };
+      mockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await target.findAllGroups('C1', 'P1');
+
+      expect(result).toEqual([{ groupCode: 'GRP1', count: 2 }]);
+      expect(qb.andWhere).toHaveBeenCalledWith('code.company = :company', { company: 'C1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('code.plant = :plant', { plant: 'P1' });
+    });
+  });
+
+  // ─── findById ───
   describe('findById', () => {
     it('should return code when found', async () => {
       // Arrange
@@ -82,12 +113,12 @@ describe('ComCodeService', () => {
       mockRepo.findOne.mockResolvedValue(code);
 
       // Act
-      const result = await target.findById('GRP1::D1');
+      const result = await target.findById('GRP1::D1', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(code);
       expect(mockRepo.findOne).toHaveBeenCalledWith({
-        where: { groupCode: 'GRP1', detailCode: 'D1' },
+        where: { groupCode: 'GRP1', detailCode: 'D1', company: 'C1', plant: 'P1' },
       });
     });
 
@@ -108,10 +139,13 @@ describe('ComCodeService', () => {
       mockRepo.findOne.mockResolvedValue(code);
 
       // Act
-      const result = await target.findByCode('GRP1', 'D1');
+      const result = await target.findByCode('GRP1', 'D1', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(code);
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { groupCode: 'GRP1', detailCode: 'D1', company: 'C1', plant: 'P1' },
+      });
     });
 
     it('should throw NotFoundException when not found', async () => {
@@ -141,6 +175,19 @@ describe('ComCodeService', () => {
       expect(mockRepo.save).toHaveBeenCalled();
     });
 
+    it('should check duplicate code within tenant when creating', async () => {
+      const dto = { groupCode: 'GRP1', detailCode: 'D1', codeName: 'Test' } as any;
+      mockRepo.findOne.mockResolvedValue(null);
+      mockRepo.create.mockReturnValue({ ...dto, company: 'C1', plant: 'P1' } as ComCode);
+      mockRepo.save.mockResolvedValue({ ...dto, company: 'C1', plant: 'P1' } as ComCode);
+
+      await target.create(dto, 'C1', 'P1');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { groupCode: 'GRP1', detailCode: 'D1', company: 'C1', plant: 'P1' },
+      });
+    });
+
     it('should throw ConflictException when code already exists', async () => {
       // Arrange
       const dto = { groupCode: 'GRP1', detailCode: 'D1', codeName: 'Test' } as any;
@@ -167,6 +214,30 @@ describe('ComCodeService', () => {
       expect(mockRepo.update).toHaveBeenCalled();
     });
 
+    it('should update within tenant and strip key/tenant columns from payload', async () => {
+      const existing = { groupCode: 'GRP1', detailCode: 'D1', codeName: 'Old', company: 'C1', plant: 'P1' } as ComCode;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('GRP1::D1', {
+        groupCode: 'GRP2',
+        detailCode: 'D2',
+        codeName: 'New',
+        company: 'C2',
+        plant: 'P2',
+      } as any, 'C1', 'P1');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { groupCode: 'GRP1', detailCode: 'D1', company: 'C1', plant: 'P1' },
+        expect.not.objectContaining({
+          groupCode: expect.anything(),
+          detailCode: expect.anything(),
+          company: expect.anything(),
+          plant: expect.anything(),
+        }),
+      );
+    });
+
     it('should throw NotFoundException when code not found', async () => {
       // Arrange
       mockRepo.findOne.mockResolvedValue(null);
@@ -190,6 +261,21 @@ describe('ComCodeService', () => {
       // Assert
       expect(result).toEqual({ id: 'GRP1::D1', deleted: true });
     });
+
+    it('should delete within tenant only', async () => {
+      const existing = { groupCode: 'GRP1', detailCode: 'D1', company: 'C1', plant: 'P1' } as ComCode;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await target.delete('GRP1::D1', 'C1', 'P1');
+
+      expect(mockRepo.delete).toHaveBeenCalledWith({
+        groupCode: 'GRP1',
+        detailCode: 'D1',
+        company: 'C1',
+        plant: 'P1',
+      });
+    });
   });
 
   // ─── deleteByGroupCode ───
@@ -199,11 +285,11 @@ describe('ComCodeService', () => {
       mockRepo.delete.mockResolvedValue({ affected: 5 } as any);
 
       // Act
-      const result = await target.deleteByGroupCode('GRP1');
+      const result = await target.deleteByGroupCode('GRP1', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ count: 5 });
-      expect(mockRepo.delete).toHaveBeenCalledWith({ groupCode: 'GRP1' });
+      expect(mockRepo.delete).toHaveBeenCalledWith({ groupCode: 'GRP1', company: 'C1', plant: 'P1' });
     });
   });
 
@@ -215,12 +301,12 @@ describe('ComCodeService', () => {
       mockRepo.find.mockResolvedValue(codes);
 
       // Act
-      const result = await target.findByGroupCode('GRP1');
+      const result = await target.findByGroupCode('GRP1', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(codes);
       expect(mockRepo.find).toHaveBeenCalledWith({
-        where: { groupCode: 'GRP1', useYn: 'Y' },
+        where: { groupCode: 'GRP1', useYn: 'Y', company: 'C1', plant: 'P1' },
         order: { sortOrder: 'asc' },
       });
     });

@@ -43,6 +43,23 @@ export class MatStockService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   async findAll(query: StockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, warehouseCode, locationCode, search, lowStockOnly } = query;
     const skip = (page - 1) * limit;
@@ -253,6 +270,10 @@ export class MatStockService {
       const beforeQty = stock?.qty ?? 0;
       const afterQty = beforeQty + adjustQty;
 
+      if (stock) {
+        this.assertSameTenant('조정 대상 재고', { company, plant }, stock);
+      }
+
       if (afterQty < 0) {
         throw new BadRequestException(`재고가 음수가 될 수 없습니다. 현재: ${beforeQty}, 조정: ${adjustQty}`);
       }
@@ -331,6 +352,7 @@ export class MatStockService {
       if (!fromStock || fromStock.qty < qty) {
         throw new BadRequestException(`출고 창고 재고 부족: ${fromStock?.qty ?? 0}`);
       }
+      this.assertSameTenant('출고 재고', { company, plant }, fromStock);
 
       // 출고 창고 차감
       if (fromWarehouseCode === toWarehouseCode) {
@@ -342,15 +364,18 @@ export class MatStockService {
         );
       }
 
-      await queryRunner.manager.update(MatStock,
-        { warehouseCode: fromStock.warehouseCode, itemCode: fromStock.itemCode, matUid: fromStock.matUid, ...tenantWhere },
-        { qty: fromStock.qty - qty, availableQty: fromStock.availableQty - qty },
-      );
-
       // 입고 창고 재고 확인 또는 생성
       let toStock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode: toWarehouseCode, ...(matUid && { matUid }), ...tenantWhere },
       });
+      if (toStock) {
+        this.assertSameTenant('입고 재고', { company, plant }, toStock);
+      }
+
+      await queryRunner.manager.update(MatStock,
+        { warehouseCode: fromStock.warehouseCode, itemCode: fromStock.itemCode, matUid: fromStock.matUid, ...tenantWhere },
+        { qty: fromStock.qty - qty, availableQty: fromStock.availableQty - qty },
+      );
 
       if (toStock) {
         await queryRunner.manager.update(MatStock,

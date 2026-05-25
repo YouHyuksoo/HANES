@@ -1,10 +1,10 @@
 /**
  * @file entities/role.entity.ts
  * @description 역할(Role) 엔티티 - RBAC 역할 정의 테이블
- *              code를 자연키 PK로 사용한다.
+ *              company + plant + code를 자연키 PK로 사용한다.
  *
  * 초보자 가이드:
- * 1. code가 PK (ADMIN, MANAGER 등)
+ * 1. company + plant + code가 PK (ADMIN, MANAGER 등)
  * 2. isSystem: true인 역할은 삭제/수정 불가
  * 3. permissions: 이 역할에 할당된 메뉴 권한 목록 (RoleMenuPermission과 1:N)
  */
@@ -20,6 +20,12 @@ import { RoleMenuPermission } from './role-menu-permission.entity';
 
 @Entity({ name: 'ROLES' })
 export class Role {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'CODE', length: 50 })
   code: string;
 
@@ -40,12 +46,6 @@ export class Role {
 
   @Column({ name: 'SORT_ORDER', type: 'int', default: 0 })
   sortOrder: number;
-
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
-
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

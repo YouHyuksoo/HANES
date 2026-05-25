@@ -73,4 +73,24 @@ describe('SelfInspectService', () => {
     await expect(service.updateResultStatus('R404', 'PASS', undefined, undefined, 'C1', 'P1'))
       .rejects.toThrow(NotFoundException);
   });
+
+  it('keeps tenant and id columns from the matched self inspect item when update payload contains them', async () => {
+    const item = { id: 'SI-001', itemName: 'Old', company: 'C1', plant: 'P1' } as SelfInspectItem;
+    itemRepo.findOne.mockResolvedValue(item);
+    itemRepo.save.mockImplementation(async (value) => value as SelfInspectItem);
+
+    const result = await service.updateItem('SI-001', {
+      id: 'SI-999',
+      itemName: 'New',
+      company: 'C2',
+      plant: 'P2',
+    } as any, 'C1', 'P1');
+
+    expect(result).toEqual(expect.objectContaining({
+      id: 'SI-001',
+      itemName: 'New',
+      company: 'C1',
+      plant: 'P1',
+    }));
+  });
 });

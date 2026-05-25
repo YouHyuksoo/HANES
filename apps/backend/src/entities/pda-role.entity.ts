@@ -1,10 +1,10 @@
 /**
  * @file entities/pda-role.entity.ts
  * @description PDA 역할(PdaRole) 엔티티 - PDA 단말기 접근 권한 역할 정의 테이블
- *              Role 엔티티와 동일한 패턴으로 code를 자연키 PK로 사용한다.
+ *              회사/공장별 code를 자연키 PK로 사용한다.
  *
  * 초보자 가이드:
- * 1. code가 PK (PDA_ADMIN, PDA_MATERIAL, PDA_SHIPPING 등)
+ * 1. company + plant + code가 PK (PDA_ADMIN, PDA_MATERIAL, PDA_SHIPPING 등)
  * 2. isActive: true인 역할만 PDA 로그인 시 선택 가능
  * 3. menus: 이 역할에 할당된 PDA 메뉴 목록 (PdaRoleMenu와 1:N)
  * 4. company / plant: 다중 사업장 지원을 위한 필터 컬럼
@@ -21,6 +21,14 @@ import { PdaRoleMenu } from './pda-role-menu.entity';
 
 @Entity({ name: 'PDA_ROLE' })
 export class PdaRole {
+  /** 회사 코드 (다중 사업장 지원) */
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  /** 공장 코드 (다중 사업장 지원) */
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   /** 역할 코드 — 자연키 PK (예: PDA_ADMIN) */
   @PrimaryColumn({ name: 'CODE', length: 50 })
   code: string;
@@ -45,14 +53,6 @@ export class PdaRole {
     },
   })
   isActive: boolean;
-
-  /** 회사 코드 (다중 사업장 지원) */
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
-
-  /** 공장 코드 (다중 사업장 지원) */
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
 
   /** 생성자 */
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })

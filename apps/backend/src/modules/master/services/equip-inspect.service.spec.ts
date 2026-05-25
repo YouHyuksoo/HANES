@@ -79,4 +79,44 @@ describe('EquipInspectService', () => {
       useYn: 'Y',
     });
   });
+
+  it('keeps tenant key columns from the matched equipment assignment when update payload contains them', async () => {
+    const existing = {
+      company: 'HANES',
+      plant: '1000',
+      equipCode: 'EQ-CUT-01',
+      itemCode: 'EIP-001',
+      inspectType: 'DAILY',
+      seq: 1,
+      itemName: 'Air pressure check',
+      criteria: '0.5~0.7 MPa',
+      cycle: 'DAILY',
+      useYn: 'Y',
+    } as EquipInspectItemMaster;
+
+    mockRepo.findOne.mockResolvedValue(existing);
+    mockRepo.save.mockImplementation(async (item) => item as EquipInspectItemMaster);
+
+    const result = await target.update(
+      'HANES',
+      '1000',
+      'EQ-CUT-01',
+      'DAILY',
+      1,
+      {
+        company: 'OTHER',
+        plant: '9999',
+        itemName: 'Updated pressure check',
+      } as any,
+    );
+
+    expect(result.company).toBe('HANES');
+    expect(result.plant).toBe('1000');
+    expect(result.itemName).toBe('Updated pressure check');
+    expect(mockRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+      company: 'HANES',
+      plant: '1000',
+      itemName: 'Updated pressure check',
+    }));
+  });
 });

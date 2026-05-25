@@ -140,6 +140,36 @@ describe('SchedulerJobService', () => {
       // Assert
       expect(mockJobRepo.save).toHaveBeenCalled();
     });
+
+    it('should keep tenant and job key columns from the matched job when update payload contains them', async () => {
+      const job = {
+        company: 'COMP',
+        plantCd: 'PLANT',
+        jobCode: 'JOB1',
+        jobName: 'Old',
+        isActive: 'N',
+        cronExpr: '0 * * * *',
+      } as SchedulerJob;
+      mockJobRepo.findOne.mockResolvedValue(job);
+      mockJobRepo.save.mockImplementation(async (value) => value as SchedulerJob);
+      mockSchedulerRegistry.getCronJob.mockImplementation(() => { throw new Error('not found'); });
+
+      const result = await target.update('JOB1', {
+        company: 'OTHER',
+        plantCd: 'OTHER_PLANT',
+        plant: 'OTHER_PLANT',
+        jobCode: 'JOB9',
+        jobName: 'New',
+      } as any, 'COMP', 'PLANT', 'user');
+
+      expect(result).toEqual(expect.objectContaining({
+        company: 'COMP',
+        plantCd: 'PLANT',
+        jobCode: 'JOB1',
+        jobName: 'New',
+        updatedBy: 'user',
+      }));
+    });
   });
 
   // ─── remove ───

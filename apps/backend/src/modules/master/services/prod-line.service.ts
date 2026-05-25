@@ -16,6 +16,13 @@ export class ProdLineService {
     private readonly prodLineRepository: Repository<ProdLineMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: ProdLineQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, useYn } = query;
     const skip = (page - 1) * limit;
@@ -53,17 +60,17 @@ export class ProdLineService {
     return { data, total, page, limit };
   }
 
-  async findById(lineCode: string) {
+  async findById(lineCode: string, company?: string, plant?: string) {
     const prodLine = await this.prodLineRepository.findOne({
-      where: { lineCode },
+      where: { lineCode, ...this.tenantWhere(company, plant) },
     });
     if (!prodLine) throw new NotFoundException(`생산라인을 찾을 수 없습니다: ${lineCode}`);
     return prodLine;
   }
 
-  async create(dto: CreateProdLineDto) {
+  async create(dto: CreateProdLineDto, company?: string, plant?: string) {
     const existing = await this.prodLineRepository.findOne({
-      where: { lineCode: dto.lineCode },
+      where: { lineCode: dto.lineCode, ...this.tenantWhere(company, plant) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 라인 코드입니다: ${dto.lineCode}`);
 
@@ -76,20 +83,28 @@ export class ProdLineService {
       lineType: dto.lineType,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.prodLineRepository.save(prodLine);
   }
 
-  async update(lineCode: string, dto: UpdateProdLineDto) {
-    await this.findById(lineCode);
-    await this.prodLineRepository.update({ lineCode }, dto);
-    return this.findById(lineCode);
+  async update(lineCode: string, dto: UpdateProdLineDto, company?: string, plant?: string) {
+    await this.findById(lineCode, company, plant);
+    const {
+      lineCode: _lineCode,
+      company: _company,
+      plant: _plant,
+      ...updateData
+    } = dto as any;
+    await this.prodLineRepository.update({ lineCode, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findById(lineCode, company, plant);
   }
 
-  async delete(lineCode: string) {
-    await this.findById(lineCode);
-    await this.prodLineRepository.delete({ lineCode });
+  async delete(lineCode: string, company?: string, plant?: string) {
+    await this.findById(lineCode, company, plant);
+    await this.prodLineRepository.delete({ lineCode, ...this.tenantWhere(company, plant) });
     return { lineCode };
   }
 }

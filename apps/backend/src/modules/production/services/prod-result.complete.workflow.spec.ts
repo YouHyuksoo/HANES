@@ -84,13 +84,24 @@ describe('ProdResultService complete workflow', () => {
         defectQty: 0,
         processCode: 'P1',
         prdUid: null,
-        equipCode: null,
+        equipCode: 'EQ-1',
         inspectResults: [],
         defectLogs: [],
       } as any)
       .mockResolvedValueOnce({ resultNo: 'PR-100', status: 'DONE' } as any);
 
     matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.manager.find.mockResolvedValueOnce([
+      {
+        consumableCode: 'MOLD-1',
+        currentCount: 2,
+        expectedLife: 100,
+        warningCount: 80,
+        status: 'NORMAL',
+        company: 'C1',
+        plant: 'P1',
+      },
+    ] as any);
 
     const summaryQb = {
       select: jest.fn().mockReturnThis(),
@@ -122,6 +133,12 @@ describe('ProdResultService complete workflow', () => {
 
     await target.complete('PR-100', { goodQty: 10, defectQty: 1 } as any, 'C1', 'P1');
 
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      ProdResult,
+      expect.objectContaining({ resultNo: 'PR-100', company: 'C1', plant: 'P1' }),
+      expect.objectContaining({ status: 'DONE', goodQty: 10, defectQty: 1 }),
+    );
+
     expect(queryRunner.manager.findOne).toHaveBeenCalledWith(
       JobOrder,
       expect.objectContaining({
@@ -133,6 +150,28 @@ describe('ProdResultService complete workflow', () => {
       JobOrder,
       expect.objectContaining({ orderNo: 'JO-100', company: 'C1', plant: 'P1' }),
       expect.objectContaining({ status: 'DONE', goodQty: 10, defectQty: 1 }),
+    );
+    expect(queryRunner.manager.find).toHaveBeenCalledWith(
+      ConsumableMaster,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          mountedEquipCode: 'EQ-1',
+          category: 'MOLD',
+          operStatus: 'MOUNTED',
+          company: 'C1',
+          plant: 'P1',
+        }),
+      }),
+    );
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      ConsumableMaster,
+      expect.objectContaining({ consumableCode: 'MOLD-1', company: 'C1', plant: 'P1' }),
+      expect.objectContaining({ currentCount: 13, status: 'NORMAL' }),
+    );
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      EquipMaster,
+      expect.objectContaining({ equipCode: 'EQ-1', company: 'C1', plant: 'P1' }),
+      expect.objectContaining({ currentJobOrderId: null }),
     );
     expect(tx.run).toHaveBeenCalledTimes(1);
     expect(dataSource.createQueryRunner).not.toHaveBeenCalled();

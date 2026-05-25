@@ -68,10 +68,12 @@ describe('UserService', () => {
       mockRepo.find.mockResolvedValue([]);
 
       // Act
-      await target.findAll({ role: 'ADMIN', status: 'ACTIVE' }, 'COMP');
+      await target.findAll({ role: 'ADMIN', status: 'ACTIVE' }, 'COMP', 'P01');
 
       // Assert
-      expect(mockRepo.find).toHaveBeenCalled();
+      expect(mockRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: { company: 'COMP', plant: 'P01', role: 'ADMIN', status: 'ACTIVE' },
+      }));
     });
   });
 
@@ -83,10 +85,13 @@ describe('UserService', () => {
       mockRepo.findOne.mockResolvedValue(user);
 
       // Act
-      const result = await target.findOne('user@test.com');
+      const result = await target.findOne('user@test.com', 'COMP', 'P01');
 
       // Assert
       expect(result).toEqual(user);
+      expect(mockRepo.findOne).toHaveBeenCalledWith(expect.objectContaining({
+        where: { email: 'user@test.com', company: 'COMP', plant: 'P01' },
+      }));
     });
 
     it('should throw NotFoundException when not found', async () => {
@@ -94,7 +99,7 @@ describe('UserService', () => {
       mockRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(target.findOne('none@test.com')).rejects.toThrow(NotFoundException);
+      await expect(target.findOne('none@test.com', 'COMP', 'P01')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -117,10 +122,18 @@ describe('UserService', () => {
       mockRepo.save.mockResolvedValue(saved);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'COMP', 'P01');
 
       // Assert
       expect(result.email).toBe('new@test.com');
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { email: 'new@test.com', company: 'COMP', plant: 'P01' },
+      });
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        email: 'new@test.com',
+        company: 'COMP',
+        plant: 'P01',
+      }));
     });
 
     it('should throw ConflictException when email exists', async () => {
@@ -128,7 +141,7 @@ describe('UserService', () => {
       mockRepo.findOne.mockResolvedValue({ email: 'existing@test.com' } as User);
 
       // Act & Assert
-      await expect(target.create({ email: 'existing@test.com' } as any)).rejects.toThrow(ConflictException);
+      await expect(target.create({ email: 'existing@test.com' } as any, 'COMP', 'P01')).rejects.toThrow(ConflictException);
     });
   });
 
@@ -141,10 +154,14 @@ describe('UserService', () => {
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('user@test.com', { name: 'New' } as any);
+      const result = await target.update('user@test.com', { name: 'New', company: 'OTHER' } as any, 'COMP', 'P01');
 
       // Assert
       expect(result).toEqual(user);
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { email: 'user@test.com', company: 'COMP', plant: 'P01' },
+        { name: 'New' },
+      );
     });
 
     it('should throw NotFoundException when user not found', async () => {
@@ -152,7 +169,7 @@ describe('UserService', () => {
       mockRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(target.update('none@test.com', {} as any)).rejects.toThrow(NotFoundException);
+      await expect(target.update('none@test.com', {} as any, 'COMP', 'P01')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -165,10 +182,11 @@ describe('UserService', () => {
       mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.remove('user@test.com');
+      const result = await target.remove('user@test.com', 'COMP', 'P01');
 
       // Assert
       expect(result).toEqual({ message: '사용자가 삭제되었습니다.' });
+      expect(mockRepo.delete).toHaveBeenCalledWith({ email: 'user@test.com', company: 'COMP', plant: 'P01' });
     });
   });
 
@@ -181,11 +199,15 @@ describe('UserService', () => {
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.updatePhoto('user@test.com', 'http://photo.png');
+      const result = await target.updatePhoto('user@test.com', 'http://photo.png', 'COMP', 'P01');
 
       // Assert
       expect(result.photoUrl).toBe('http://photo.png');
       expect(result.message).toBe('사진이 업로드되었습니다.');
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { email: 'user@test.com', company: 'COMP', plant: 'P01' },
+        { photoUrl: 'http://photo.png' },
+      );
     });
 
     it('should handle null photo URL (delete)', async () => {
@@ -195,7 +217,7 @@ describe('UserService', () => {
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.updatePhoto('user@test.com', null);
+      const result = await target.updatePhoto('user@test.com', null, 'COMP', 'P01');
 
       // Assert
       expect(result.photoUrl).toBeNull();

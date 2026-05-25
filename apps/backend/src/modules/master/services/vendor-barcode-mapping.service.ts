@@ -30,6 +30,13 @@ export class VendorBarcodeMappingService {
     private readonly repo: Repository<VendorBarcodeMapping>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   /** 목록 조회 */
   async findAll(query: VendorBarcodeMappingQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 100, search, vendorCode, useYn } = query;
@@ -71,9 +78,9 @@ export class VendorBarcodeMappingService {
   }
 
   /** 상세 조회 */
-  async findByBarcode(vendorBarcode: string) {
+  async findByBarcode(vendorBarcode: string, company?: string, plant?: string) {
     const mapping = await this.repo.findOne({
-      where: { vendorBarcode },
+      where: { vendorBarcode, ...this.tenantWhere(company, plant) },
     });
     if (!mapping) {
       throw new NotFoundException(`바코드 매핑을 찾을 수 없습니다: ${vendorBarcode}`);
@@ -84,7 +91,7 @@ export class VendorBarcodeMappingService {
   /** 생성 */
   async create(dto: CreateVendorBarcodeMappingDto, company?: string, plant?: string) {
     const existing = await this.repo.findOne({
-      where: { vendorBarcode: dto.vendorBarcode },
+      where: { vendorBarcode: dto.vendorBarcode, ...this.tenantWhere(company, plant) },
     });
     if (existing) {
       throw new ConflictException(
@@ -104,18 +111,20 @@ export class VendorBarcodeMappingService {
   }
 
   /** 수정 */
-  async update(vendorBarcode: string, dto: UpdateVendorBarcodeMappingDto) {
-    await this.findByBarcode(vendorBarcode);
-    // PK인 vendorBarcode는 변경 불가 — dto에서 제거
-    const { vendorBarcode: _ignore, ...updateData } = dto as any;
-    await this.repo.update({ vendorBarcode }, updateData);
-    return this.findByBarcode(vendorBarcode);
+  async update(vendorBarcode: string, dto: UpdateVendorBarcodeMappingDto, company?: string, plant?: string) {
+    await this.findByBarcode(vendorBarcode, company, plant);
+    const updateData: any = { ...dto };
+    delete updateData.vendorBarcode;
+    delete updateData.company;
+    delete updateData.plant;
+    await this.repo.update({ vendorBarcode, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findByBarcode(vendorBarcode, company, plant);
   }
 
   /** 삭제 (Soft Delete) */
-  async delete(vendorBarcode: string) {
-    await this.findByBarcode(vendorBarcode);
-    await this.repo.delete({ vendorBarcode });
+  async delete(vendorBarcode: string, company?: string, plant?: string) {
+    await this.findByBarcode(vendorBarcode, company, plant);
+    await this.repo.delete({ vendorBarcode, ...this.tenantWhere(company, plant) });
     return { vendorBarcode };
   }
 
@@ -125,20 +134,23 @@ export class VendorBarcodeMappingService {
    * 2. PREFIX: 접두사 매칭
    * 3. REGEX: 정규식 매칭 (메모리 내 처리)
    */
-  async resolveBarcode(barcode: string) {
+  async resolveBarcode(barcode: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+
     // 1단계: EXACT 매칭
     const exact = await this.repo.findOne({
       where: {
         vendorBarcode: barcode,
         matchType: 'EXACT',
         useYn: 'Y',
+        ...tenantWhere,
       },
     });
     if (exact) return { matched: true, mapping: exact, matchMethod: 'EXACT' };
 
     // 2단계: PREFIX 매칭 (DB에서 PREFIX 타입만 로드 후 비교)
     const prefixMappings = await this.repo.find({
-      where: { matchType: 'PREFIX', useYn: 'Y' },
+      where: { matchType: 'PREFIX', useYn: 'Y', ...tenantWhere },
     });
     for (const m of prefixMappings) {
       if (barcode.startsWith(m.vendorBarcode)) {
@@ -148,7 +160,7 @@ export class VendorBarcodeMappingService {
 
     // 3단계: REGEX 매칭
     const regexMappings = await this.repo.find({
-      where: { matchType: 'REGEX', useYn: 'Y' },
+      where: { matchType: 'REGEX', useYn: 'Y', ...tenantWhere },
     });
     for (const m of regexMappings) {
       try {

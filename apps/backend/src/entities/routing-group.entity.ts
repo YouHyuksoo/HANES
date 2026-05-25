@@ -33,10 +33,10 @@ export class RoutingGroup {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50 })
+  @PrimaryColumn({ name: 'COMPANY', length: 50 })
   company: string;
 
-  @Column({ name: 'PLANT_CD', length: 50 })
+  @PrimaryColumn({ name: 'PLANT_CD', length: 50 })
   plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, getMetadataArgsStorage } from 'typeorm';
 import { ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { MenuCategory } from '../../../entities/menu-category.entity';
 import { MenuCategoryItem } from '../../../entities/menu-category-item.entity';
@@ -57,6 +57,20 @@ describe('MenuCategoriesService', () => {
       expect(categoryRepo.save).toHaveBeenCalled();
     });
 
+    it('checks duplicate category codes within tenant scope', async () => {
+      categoryRepo.findOne.mockResolvedValueOnce(null);
+      categoryRepo.save.mockImplementation(async (e: any) => e);
+
+      await service.create(
+        { code: 'NEW_CAT', labelKey: 'menu.newCat' },
+        { company: 'C1', plantCd: 'P1', userId: 'tester' },
+      );
+
+      expect(categoryRepo.findOne).toHaveBeenCalledWith({
+        where: { categoryCode: 'NEW_CAT', company: 'C1', plantCd: 'P1' },
+      });
+    });
+
     it('예약어 __ROOT__ 생성 시 BadRequest', async () => {
       await expect(
         service.create(
@@ -103,6 +117,17 @@ describe('MenuCategoriesService', () => {
     it('존재하지 않으면 NotFound', async () => {
       categoryRepo.findOne.mockResolvedValueOnce(null);
       await expect(service.delete('X')).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('tenant keys', () => {
+    it('includes company and plantCd in MenuCategory primary key metadata', () => {
+      const primaryColumnNames = getMetadataArgsStorage()
+        .columns
+        .filter(column => column.target === MenuCategory && column.options.primary)
+        .map(column => column.propertyName);
+
+      expect(primaryColumnNames).toEqual(expect.arrayContaining(['company', 'plantCd', 'categoryCode']));
     });
   });
 
