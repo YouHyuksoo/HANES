@@ -5,6 +5,9 @@
  * 초보자 가이드:
  * 1. JwtAuthGuard와 RolesGuard, InventoryFreezeGuard를 전역으로 제공
  * 2. 기존 모듈 개별 providers 등록을 줄여 가드 누락 위험을 제거
+ * 3. TypeOrmModule을 re-export하여 User repository를 전역 제공
+ *    → @UseGuards(JwtAuthGuard)를 쓰는 각 모듈이 User forFeature 없이도
+ *      가드의 UserRepository 의존성을 해결할 수 있게 한다.
  */
 
 import { Global, Module } from '@nestjs/common';
@@ -18,6 +21,6 @@ import { InventoryFreezeGuard } from '../guards/inventory-freeze.guard';
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
   providers: [JwtAuthGuard, RolesGuard, InventoryFreezeGuard],
-  exports: [JwtAuthGuard, RolesGuard, InventoryFreezeGuard],
+  exports: [JwtAuthGuard, RolesGuard, InventoryFreezeGuard, TypeOrmModule],
 })
 export class GuardModule {}
