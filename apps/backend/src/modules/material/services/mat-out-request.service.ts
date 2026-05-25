@@ -27,6 +27,20 @@ export class MatOutRequestService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   async findPending(query: { page?: number; limit?: number }, company?: string, plant?: string) {
     const { page = 1, limit = 20 } = query;
     const where: any = {
@@ -114,6 +128,7 @@ export class MatOutRequestService {
   async approve(transNo: string, approverId: string, company?: string, plant?: string) {
     const tx = await this.stockTxRepo.findOne({ where: { transNo, ...this.tenantWhere(company, plant) } });
     if (!tx) throw new NotFoundException('Stock transaction not found.');
+    this.assertSameTenant('자재출고요청 거래', tx, company, plant);
     if (tx.status !== 'PENDING_APPROVAL') throw new BadRequestException('Transaction is not pending approval.');
 
     const txTenantWhere = this.tenantWhere(tx.company, tx.plant);
@@ -169,6 +184,7 @@ export class MatOutRequestService {
   async reject(transNo: string, approverId: string, company?: string, plant?: string) {
     const tx = await this.stockTxRepo.findOne({ where: { transNo, ...this.tenantWhere(company, plant) } });
     if (!tx) throw new NotFoundException('Stock transaction not found.');
+    this.assertSameTenant('자재출고요청 거래', tx, company, plant);
     if (tx.status !== 'PENDING_APPROVAL') throw new BadRequestException('Transaction is not pending approval.');
 
     await this.unlockStock(tx);
@@ -187,6 +203,7 @@ export class MatOutRequestService {
   async cancel(transNo: string, company?: string, plant?: string) {
     const tx = await this.stockTxRepo.findOne({ where: { transNo, ...this.tenantWhere(company, plant) } });
     if (!tx) throw new NotFoundException('Stock transaction not found.');
+    this.assertSameTenant('자재출고요청 거래', tx, company, plant);
     if (tx.status !== 'PENDING_APPROVAL') {
       throw new BadRequestException('Only pending approval transaction can be canceled.');
     }

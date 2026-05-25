@@ -10,7 +10,7 @@
  * 3. **폐기처리**: PATCH /equipment/molds/retire/:id
  * 4. 읽기전용: currentShots, status, lastMaintenanceDate, nextMaintenanceDate
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Trash2 } from "lucide-react";
 import { Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
@@ -48,6 +48,12 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
   const [saving, setSaving] = useState(false);
   const [isPartModalOpen, setIsPartModalOpen] = useState(false);
   const [retireConfirm, setRetireConfirm] = useState(false);
+  const saveDisabledReason = useMemo(() => {
+    if (saving) return t("common.saving");
+    if (!form.moldCode) return `${t("equipment.mold.moldCode")}는 필수입니다`;
+    if (!form.moldName) return `${t("equipment.mold.moldName")}은(는) 필수입니다`;
+    return "";
+  }, [form.moldCode, form.moldName, saving, t]);
 
   useEffect(() => {
     if (editData) {
@@ -102,11 +108,19 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
             </Button>
           )}
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSave} disabled={saving || !form.moldCode || !form.moldName}>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={saving || !form.moldCode || !form.moldName}
+            title={saveDisabledReason}
+          >
             {saving ? t("common.saving") : t("common.save")}
           </Button>
         </div>
       </div>
+      {saveDisabledReason && (
+        <div className="px-5 pt-2 text-[11px] text-orange-600">{saveDisabledReason}</div>
+      )}
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
         <div className="grid grid-cols-2 gap-3">

@@ -9,7 +9,8 @@
  */
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
@@ -37,7 +38,7 @@ export class RoutingGroupService {
     private readonly bomRepo: Repository<BomMaster>,
     @InjectRepository(RoutingMaterial)
     private readonly materialRepo: Repository<RoutingMaterial>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -125,11 +126,11 @@ export class RoutingGroupService {
 
   async deleteGroup(routingCode: string, company?: string, plant?: string) {
     await this.findGroupByCode(routingCode, company, plant);
-    await this.dataSource.transaction(async (manager) => {
-      await manager.delete(ProcessQualityCondition, { routingCode, ...this.tenantWhere(company, plant) });
-      await manager.delete(RoutingMaterial, { routingCode, ...this.tenantWhere(company, plant) });
-      await manager.delete(RoutingProcess, { routingCode, ...this.tenantWhere(company, plant) });
-      await manager.delete(RoutingGroup, { routingCode, ...this.tenantWhere(company, plant) });
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(ProcessQualityCondition, { routingCode, ...this.tenantWhere(company, plant) });
+      await queryRunner.manager.delete(RoutingMaterial, { routingCode, ...this.tenantWhere(company, plant) });
+      await queryRunner.manager.delete(RoutingProcess, { routingCode, ...this.tenantWhere(company, plant) });
+      await queryRunner.manager.delete(RoutingGroup, { routingCode, ...this.tenantWhere(company, plant) });
     });
     return { routingCode };
   }
@@ -175,10 +176,10 @@ export class RoutingGroupService {
     const existing = await this.processRepo.findOne({ where: { routingCode, seq, ...this.tenantWhere(company, plant) } });
     if (!existing) throw new NotFoundException(`怨듭젙?쒖꽌瑜?李얠쓣 ???놁뒿?덈떎: ${routingCode}/${seq}`);
 
-    await this.dataSource.transaction(async (manager) => {
-      await manager.delete(ProcessQualityCondition, { routingCode, seq, ...this.tenantWhere(company, plant) });
-      await manager.delete(RoutingMaterial, { routingCode, seq, ...this.tenantWhere(company, plant) });
-      await manager.delete(RoutingProcess, { routingCode, seq, ...this.tenantWhere(company, plant) });
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(ProcessQualityCondition, { routingCode, seq, ...this.tenantWhere(company, plant) });
+      await queryRunner.manager.delete(RoutingMaterial, { routingCode, seq, ...this.tenantWhere(company, plant) });
+      await queryRunner.manager.delete(RoutingProcess, { routingCode, seq, ...this.tenantWhere(company, plant) });
     });
     return { routingCode, seq };
   }
@@ -223,12 +224,12 @@ export class RoutingGroupService {
   ) {
     const tenant = await this.resolveProcessTenant(routingCode, seq, company, plant);
 
-    return this.dataSource.transaction(async (manager) => {
-      await manager.delete(ProcessQualityCondition, { routingCode, seq, company: tenant.company, plant: tenant.plant });
+    return this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(ProcessQualityCondition, { routingCode, seq, company: tenant.company, plant: tenant.plant });
       if (dto.conditions.length === 0) return [];
 
       const entities = dto.conditions.map((c) =>
-        manager.create(ProcessQualityCondition, {
+        queryRunner.manager.create(ProcessQualityCondition, {
           routingCode, seq,
           conditionSeq: c.conditionSeq,
           conditionCode: c.conditionCode,
@@ -241,7 +242,7 @@ export class RoutingGroupService {
           plant: tenant.plant,
         }),
       );
-      return manager.save(ProcessQualityCondition, entities);
+      return queryRunner.manager.save(ProcessQualityCondition, entities);
     });
   }
 
@@ -308,12 +309,12 @@ export class RoutingGroupService {
       throw new ConflictException(`BOM에 없는 자재는 공정에 매핑할 수 없습니다: ${invalid.childItemCode}`);
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      await manager.delete(RoutingMaterial, { routingCode, seq, company: tenant.company, plant: tenant.plant });
+    return this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(RoutingMaterial, { routingCode, seq, company: tenant.company, plant: tenant.plant });
       if (dto.materials.length === 0) return [];
 
       const entities = dto.materials.map((m) =>
-        manager.create(RoutingMaterial, {
+        queryRunner.manager.create(RoutingMaterial, {
           routingCode,
           seq,
           childItemCode: m.childItemCode,
@@ -324,7 +325,7 @@ export class RoutingGroupService {
           plant: tenant.plant,
         }),
       );
-      return manager.save(RoutingMaterial, entities);
+      return queryRunner.manager.save(RoutingMaterial, entities);
     });
   }
 }

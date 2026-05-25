@@ -448,7 +448,7 @@ describe('PhysicalInvService', () => {
       warehouseRepo.find.mockResolvedValue([]);
       countDetailRepo.find.mockResolvedValue([]);
 
-      await service.findStocksWithCounts({ countMonth: '2026-05' }, 'C1', 'P1');
+      await service.findStocksWithCounts({ page: 1, limit: 20, countMonth: '2026-05' }, 'C1', 'P1');
 
       expect(partMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
@@ -489,7 +489,7 @@ describe('PhysicalInvService', () => {
       warehouseRepo.find.mockResolvedValue([]);
       countDetailRepo.find.mockResolvedValue([]);
 
-      await service.findStocksWithCounts({ countMonth: '2026-05' }, 'C1', 'P1');
+      await service.findStocksWithCounts({ page: 1, limit: 20, countMonth: '2026-05' }, 'C1', 'P1');
 
       expect(countDetailRepo.find).toHaveBeenCalledWith({
         where: [
@@ -659,6 +659,8 @@ describe('PhysicalInvService', () => {
         seq: 1,
         status: 'IN_PROGRESS',
         warehouseCode: 'WH-01',
+        company: 'HANES',
+        plant: 'P01',
       } as PhysicalInvSession);
       queryRunner.manager.find.mockResolvedValue([
         {
@@ -700,6 +702,38 @@ describe('PhysicalInvService', () => {
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
         expect.objectContaining({ qty: 8, availableQty: 8 }),
       );
+    });
+
+    it('blocks apply when stock tenant is missing under a request tenant', async () => {
+      sessionRepo.findOne.mockResolvedValue({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+        warehouseCode: 'WH-01',
+        company: 'HANES',
+        plant: 'P01',
+      } as PhysicalInvSession);
+      queryRunner.manager.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          reservedQty: 0,
+          company: null,
+          plant: 'P01',
+        } as unknown as MatStock,
+      ]);
+
+      await expect(
+        service.applyCount({
+          items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 8 }],
+          createdBy: 'admin',
+        }, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(queryRunner.manager.update).not.toHaveBeenCalledWith(MatStock, expect.anything(), expect.anything());
+      expect(queryRunner.manager.save).not.toHaveBeenCalled();
     });
   });
 

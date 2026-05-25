@@ -245,6 +245,27 @@ describe('MatIssueService', () => {
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
     });
+
+    it('스캔 출고 재고 행이 LOT 회사/공장과 다르면 출고하지 않는다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'C1',
+        plant: 'P1',
+      } as MatLot);
+      mockMatStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'OTHER', plant: 'P1' } as MatStock,
+      ]);
+
+      await expect(target.scanIssue({
+        matUid: 'MAT-001',
+        warehouseCode: 'WH-01',
+        issueType: 'PROD',
+        workerId: 'worker',
+      }, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    });
   });
 
   it('create splits manual issue across multiple stock rows', async () => {
@@ -260,12 +281,12 @@ describe('MatIssueService', () => {
       find: jest
         .fn()
         .mockResolvedValueOnce([
-          { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 3, availableQty: 3 } as MatStock,
-          { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 4, availableQty: 4 } as MatStock,
+          { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 3, availableQty: 3, company: 'HANES', plant: 'P01' } as MatStock,
+          { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 4, availableQty: 4, company: 'HANES', plant: 'P01' } as MatStock,
         ])
         .mockResolvedValueOnce([
-          { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0 } as MatStock,
-          { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 2, availableQty: 2 } as MatStock,
+          { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock,
+          { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 2, availableQty: 2, company: 'HANES', plant: 'P01' } as MatStock,
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
@@ -283,7 +304,7 @@ describe('MatIssueService', () => {
     await target.create({
       issueType: 'PROD',
       items: [{ matUid: 'MAT-001', issueQty: 5 }],
-    } as any);
+    } as any, 'HANES', 'P01');
 
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
@@ -291,14 +312,53 @@ describe('MatIssueService', () => {
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-002', qty: -2 }));
     expect(manager.update).toHaveBeenCalledWith(
       MatStock,
-      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 0, availableQty: 0 },
     );
     expect(manager.update).toHaveBeenCalledWith(
       MatStock,
-      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 2, availableQty: 2 },
     );
+  });
+
+  it('blocks create when an issue stock row belongs to a different tenant', async () => {
+    const manager = {
+      findOne: jest.fn().mockResolvedValueOnce({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot),
+      find: jest
+        .fn()
+        .mockResolvedValueOnce([
+          {
+            warehouseCode: 'W1',
+            itemCode: 'ITEM-001',
+            matUid: 'MAT-001',
+            qty: 5,
+            availableQty: 5,
+            company: 'OTHER',
+            plant: 'P01',
+          } as MatStock,
+        ])
+        .mockResolvedValueOnce([]),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+    mockNumbering.nextInTx.mockResolvedValue('ISS-001');
+
+    await expect(target.create({
+      issueType: 'PROD',
+      items: [{ matUid: 'MAT-001', issueQty: 5 }],
+    } as any, 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+
+    expect(manager.update).not.toHaveBeenCalledWith(MatStock, expect.anything(), expect.anything());
   });
 
   it('cancel restores stock to the original warehouse rows', async () => {
@@ -336,8 +396,8 @@ describe('MatIssueService', () => {
       ]),
       findOne: jest
         .fn()
-        .mockResolvedValueOnce({ warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0 } as MatStock)
-        .mockResolvedValueOnce({ warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 2, availableQty: 2 } as MatStock),
+        .mockResolvedValueOnce({ warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock)
+        .mockResolvedValueOnce({ warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 2, availableQty: 2, company: 'HANES', plant: 'P01' } as MatStock),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
     };
@@ -421,6 +481,53 @@ describe('MatIssueService', () => {
     await expect(target.cancel('ISS-001', 1, 'cancel', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
 
     expect(manager.save).not.toHaveBeenCalled();
+  });
+
+  it('blocks cancel when the restore stock row belongs to a different tenant', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-001',
+      seq: 1,
+      status: 'DONE',
+      matUid: 'MAT-001',
+      company: 'HANES',
+      plant: 'P01',
+    } as MatIssue);
+
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+      find: jest.fn().mockResolvedValue([
+        {
+          transNo: 'TX-001',
+          fromWarehouseId: 'W1',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: -3,
+          company: 'HANES',
+          plant: 'P01',
+        } as StockTransaction,
+      ]),
+      findOne: jest.fn().mockResolvedValue({
+        warehouseCode: 'W1',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 0,
+        availableQty: 0,
+        company: 'OTHER',
+        plant: 'P01',
+      } as MatStock),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+    (mockQueryRunner as any).manager = manager;
+    mockNumbering.nextInTx.mockResolvedValue('CANCEL-001');
+
+    await expect(target.cancel('ISS-001', 1, 'cancel', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+
+    expect(manager.update).not.toHaveBeenCalledWith(
+      MatStock,
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
   it('blocks cancel when linked production has already progressed', async () => {

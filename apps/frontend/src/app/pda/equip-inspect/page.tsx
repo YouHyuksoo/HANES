@@ -134,6 +134,11 @@ export default function EquipInspectPage() {
   /** 하단 액션 버튼 */
   const actionButtons = useMemo(() => {
     if (!scannedEquip) return [];
+    const confirmDisabledReason = isAllCompleted
+      ? undefined
+      : inspectItems.length === 0
+        ? "점검 항목이 없습니다."
+        : `${completedCount} / ${inspectItems.length} 항목만 입력되었습니다.`;
     return [
       {
         label: t("pda.scan.nextScan"),
@@ -146,11 +151,12 @@ export default function EquipInspectPage() {
         onClick: onSubmit,
         variant: "primary" as const,
         disabled: !isAllCompleted,
+        disabledReason: !isAllCompleted ? confirmDisabledReason : undefined,
         isLoading: isSubmitting,
         icon: <ClipboardCheck className="w-5 h-5" />,
       },
     ];
-  }, [scannedEquip, t, onReset, onSubmit, isAllCompleted, isSubmitting]);
+  }, [scannedEquip, t, onReset, onSubmit, isAllCompleted, isSubmitting, completedCount, inspectItems.length]);
 
   return (
     <>

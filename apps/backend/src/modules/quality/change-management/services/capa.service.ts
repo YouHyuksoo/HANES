@@ -51,6 +51,34 @@ export class CapaService {
     private readonly actionRepo: Repository<CAPAAction>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
+  private async findRequest(capaNo: string, company?: string, plant?: string) {
+    const item = await this.capaRepo.findOne({ where: { capaNo, ...this.tenantWhere(company, plant) } });
+    if (!item) throw new NotFoundException('CAPA 요청을 찾을 수 없습니다.');
+    this.assertSameTenant('CAPA 요청', item, company, plant);
+    return item;
+  }
+
   // =============================================
   // CAPA 번호 자동채번
   // =============================================
@@ -135,11 +163,8 @@ export class CapaService {
   /**
    * CAPA 단건 조회 (actions 포함)
    */
-  async findById(capaNo: string) {
-    const item = await this.capaRepo.findOne({ where: { capaNo } });
-    if (!item) {
-      throw new NotFoundException('CAPA 요청을 찾을 수 없습니다.');
-    }
+  async findById(capaNo: string, company?: string, plant?: string) {
+    const item = await this.findRequest(capaNo, company, plant);
     const actions = await this.actionRepo.find({
       where: { capaId: capaNo },
       order: { seq: 'ASC' },
@@ -192,8 +217,8 @@ export class CapaService {
   /**
    * CAPA 수정 (OPEN 상태에서만)
    */
-  async update(capaNo: string, dto: UpdateCapaDto, userId: string) {
-    const item = await this.findById(capaNo);
+  async update(capaNo: string, dto: UpdateCapaDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findRequest(capaNo, company, plant);
     if (!['OPEN', 'ANALYZING'].includes(item.status)) {
       throw new BadRequestException('OPEN 또는 ANALYZING 상태에서만 수정할 수 있습니다.');
     }
@@ -205,8 +230,8 @@ export class CapaService {
   /**
    * CAPA 삭제 (OPEN 상태에서만)
    */
-  async delete(capaNo: string) {
-    const item = await this.findById(capaNo);
+  async delete(capaNo: string, company?: string, plant?: string) {
+    const item = await this.findRequest(capaNo, company, plant);
     if (item.status !== 'OPEN') {
       throw new BadRequestException('OPEN 상태에서만 삭제할 수 있습니다.');
     }
@@ -222,9 +247,8 @@ export class CapaService {
   /**
    * 원인 분석 완료 (OPEN → ANALYZING)
    */
-  async analyze(capaNo: string, dto: AnalyzeCapaDto, userId: string) {
-    const item = await this.capaRepo.findOne({ where: { capaNo } });
-    if (!item) throw new NotFoundException('CAPA 요청을 찾을 수 없습니다.');
+  async analyze(capaNo: string, dto: AnalyzeCapaDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findRequest(capaNo, company, plant);
     if (item.status !== 'OPEN') {
       throw new BadRequestException('OPEN 상태에서만 원인 분석을 등록할 수 있습니다.');
     }
@@ -237,9 +261,8 @@ export class CapaService {
   /**
    * 조치 계획 등록 (ANALYZING → ACTION_PLANNED)
    */
-  async plan(capaNo: string, dto: PlanCapaDto, userId: string) {
-    const item = await this.capaRepo.findOne({ where: { capaNo } });
-    if (!item) throw new NotFoundException('CAPA 요청을 찾을 수 없습니다.');
+  async plan(capaNo: string, dto: PlanCapaDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findRequest(capaNo, company, plant);
     if (item.status !== 'ANALYZING') {
       throw new BadRequestException('ANALYZING 상태에서만 조치 계획을 등록할 수 있습니다.');
     }
@@ -253,9 +276,8 @@ export class CapaService {
   /**
    * 조치 시작 (ACTION_PLANNED → IN_PROGRESS)
    */
-  async start(capaNo: string, userId: string) {
-    const item = await this.capaRepo.findOne({ where: { capaNo } });
-    if (!item) throw new NotFoundException('CAPA 요청을 찾을 수 없습니다.');
+  async start(capaNo: string, userId: string, company?: string, plant?: string) {
+    const item = await this.findRequest(capaNo, company, plant);
     if (item.status !== 'ACTION_PLANNED') {
       throw new BadRequestException('ACTION_PLANNED 상태에서만 조치를 시작할 수 있습니다.');
     }
@@ -267,9 +289,8 @@ export class CapaService {
   /**
    * 유효성 검증 (IN_PROGRESS → VERIFYING)
    */
-  async verify(capaNo: string, dto: VerifyCapaDto, userId: string) {
-    const item = await this.capaRepo.findOne({ where: { capaNo } });
-    if (!item) throw new NotFoundException('CAPA 요청을 찾을 수 없습니다.');
+  async verify(capaNo: string, dto: VerifyCapaDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findRequest(capaNo, company, plant);
     if (item.status !== 'IN_PROGRESS') {
       throw new BadRequestException('IN_PROGRESS 상태에서만 검증할 수 있습니다.');
     }
@@ -284,9 +305,8 @@ export class CapaService {
   /**
    * 종료 (VERIFYING → CLOSED)
    */
-  async close(capaNo: string, userId: string) {
-    const item = await this.capaRepo.findOne({ where: { capaNo } });
-    if (!item) throw new NotFoundException('CAPA 요청을 찾을 수 없습니다.');
+  async close(capaNo: string, userId: string, company?: string, plant?: string) {
+    const item = await this.findRequest(capaNo, company, plant);
     if (item.status !== 'VERIFYING') {
       throw new BadRequestException('VERIFYING 상태에서만 종료할 수 있습니다.');
     }
@@ -303,9 +323,8 @@ export class CapaService {
   /**
    * 조치 항목 추가
    */
-  async addAction(capaNo: string, dto: CAPAActionItemDto, userId: string) {
-    const capa = await this.capaRepo.findOne({ where: { capaNo } });
-    if (!capa) throw new NotFoundException('CAPA 요청을 찾을 수 없습니다.');
+  async addAction(capaNo: string, dto: CAPAActionItemDto, userId: string, company?: string, plant?: string) {
+    const capa = await this.findRequest(capaNo, company, plant);
 
     const entity = this.actionRepo.create({
       capaId: capaNo,
@@ -328,7 +347,10 @@ export class CapaService {
     actionSeq: number,
     dto: Partial<CAPAActionItemDto>,
     userId: string,
+    company?: string,
+    plant?: string,
   ) {
+    await this.findRequest(capaNo, company, plant);
     const action = await this.actionRepo.findOne({
       where: { capaId: capaNo, seq: actionSeq },
     });
@@ -346,7 +368,10 @@ export class CapaService {
     if (dto.result !== undefined) action.result = dto.result;
 
     // CAPA updatedBy 갱신
-    await this.capaRepo.update({ capaNo }, { updatedBy: userId });
+    await this.capaRepo.update(
+      { capaNo, ...this.tenantWhere(company, plant) },
+      { updatedBy: userId },
+    );
     return this.actionRepo.save(action);
   }
 

@@ -9,7 +9,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { CommConfigService } from './comm-config.service';
 import { CommConfig } from '../../../entities/comm-config.entity';
@@ -87,6 +87,17 @@ describe('CommConfigService', () => {
       // Act & Assert
       await expect(target.findById('NONE')).rejects.toThrow(NotFoundException);
     });
+
+    it('scopes config lookup by tenant', async () => {
+      const config = { configName: 'CFG1', company: 'COMP', plant: 'PLANT' } as CommConfig;
+      mockRepo.findOne.mockResolvedValue(config);
+
+      await target.findById('CFG1', 'COMP', 'PLANT');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { configName: 'CFG1', company: 'COMP', plant: 'PLANT' },
+      });
+    });
   });
 
   // ─── findByName ───
@@ -137,10 +148,14 @@ describe('CommConfigService', () => {
       mockRepo.save.mockResolvedValue(dto as CommConfig);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'COMP', 'PLANT');
 
       // Assert
       expect(result).toEqual(dto);
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: 'COMP',
+        plant: 'PLANT',
+      }));
       expect(mockRepo.save).toHaveBeenCalled();
     });
 
@@ -158,15 +173,27 @@ describe('CommConfigService', () => {
   describe('update', () => {
     it('should update and return config', async () => {
       // Arrange
-      const existing = { configName: 'CFG1' } as CommConfig;
+      const existing = { configName: 'CFG1', company: 'COMP', plant: 'PLANT' } as CommConfig;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('CFG1', { commType: 'TCP' } as any);
+      const result = await target.update('CFG1', { commType: 'TCP' } as any, 'COMP', 'PLANT');
 
       // Assert
       expect(result).toEqual(existing);
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { configName: 'CFG1', company: 'COMP', plant: 'PLANT' },
+        expect.objectContaining({ commType: 'TCP' }),
+      );
+    });
+
+    it('rejects update when config belongs to a different tenant', async () => {
+      const existing = { configName: 'CFG1', company: 'OTHER', plant: 'PLANT' } as CommConfig;
+      mockRepo.findOne.mockResolvedValue(existing);
+
+      await expect(target.update('CFG1', { commType: 'TCP' } as any, 'COMP', 'PLANT')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.update).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException when renaming to existing name', async () => {
@@ -187,14 +214,19 @@ describe('CommConfigService', () => {
   describe('remove', () => {
     it('should delete and return message', async () => {
       // Arrange
-      mockRepo.findOne.mockResolvedValue({ configName: 'CFG1' } as CommConfig);
+      mockRepo.findOne.mockResolvedValue({ configName: 'CFG1', company: 'COMP', plant: 'PLANT' } as CommConfig);
       mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.remove('CFG1');
+      const result = await target.remove('CFG1', 'COMP', 'PLANT');
 
       // Assert
       expect(result).toEqual({ message: '통신설정이 삭제되었습니다.' });
+      expect(mockRepo.delete).toHaveBeenCalledWith({
+        configName: 'CFG1',
+        company: 'COMP',
+        plant: 'PLANT',
+      });
     });
 
     it('should throw NotFoundException when config not found', async () => {

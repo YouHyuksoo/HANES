@@ -46,6 +46,27 @@ export class AuditService {
     private readonly findingRepo: Repository<AuditFinding>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   // =============================================
   // 심사번호 자동채번
   // =============================================
@@ -124,11 +145,12 @@ export class AuditService {
   /**
    * 심사 계획 단건 조회
    */
-  async findById(auditNo: string) {
-    const item = await this.auditRepo.findOne({ where: { auditNo } });
+  async findById(auditNo: string, company?: string, plant?: string) {
+    const item = await this.auditRepo.findOne({ where: { auditNo, ...this.tenantWhere(company, plant) } });
     if (!item) {
       throw new NotFoundException('심사 계획을 찾을 수 없습니다.');
     }
+    this.assertSameTenant('심사 계획', item, company, plant);
     return item;
   }
 
@@ -159,8 +181,8 @@ export class AuditService {
   /**
    * 심사 계획 수정 (PLANNED 상태에서만 가능)
    */
-  async update(auditNo: string, dto: UpdateAuditPlanDto, userId: string) {
-    const item = await this.findById(auditNo);
+  async update(auditNo: string, dto: UpdateAuditPlanDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(auditNo, company, plant);
     if (item.status !== 'PLANNED') {
       throw new BadRequestException('계획 상태에서만 수정할 수 있습니다.');
     }
@@ -177,8 +199,8 @@ export class AuditService {
   /**
    * 심사 계획 삭제 (PLANNED 상태에서만 가능)
    */
-  async delete(auditNo: string) {
-    const item = await this.findById(auditNo);
+  async delete(auditNo: string, company?: string, plant?: string) {
+    const item = await this.findById(auditNo, company, plant);
     if (item.status !== 'PLANNED') {
       throw new BadRequestException('계획 상태에서만 삭제할 수 있습니다.');
     }
@@ -196,8 +218,10 @@ export class AuditService {
     auditNo: string,
     overallResult: string,
     userId: string,
+    company?: string,
+    plant?: string,
   ) {
-    const item = await this.findById(auditNo);
+    const item = await this.findById(auditNo, company, plant);
     if (!['PLANNED', 'IN_PROGRESS'].includes(item.status)) {
       throw new BadRequestException(
         '계획 또는 진행중 상태에서만 완료할 수 있습니다.',
@@ -215,8 +239,8 @@ export class AuditService {
   /**
    * 종결 (COMPLETED → CLOSED)
    */
-  async close(auditNo: string, userId: string) {
-    const item = await this.findById(auditNo);
+  async close(auditNo: string, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(auditNo, company, plant);
     if (item.status !== 'COMPLETED') {
       throw new BadRequestException('완료 상태에서만 종결할 수 있습니다.');
     }
@@ -240,7 +264,7 @@ export class AuditService {
     plant: string,
     userId: string,
   ) {
-    await this.findById(dto.auditId);
+    await this.findById(dto.auditId, company, plant);
 
     // 발견사항 번호 자동 부여
     const lastFinding = await this.findingRepo
@@ -269,9 +293,9 @@ export class AuditService {
   /**
    * 심사별 발견사항 조회
    */
-  async getFindings(auditId: string) {
+  async getFindings(auditId: string, company?: string, plant?: string) {
     return this.findingRepo.find({
-      where: { auditId },
+      where: { auditId, ...this.tenantWhere(company, plant) },
       order: { findingNo: 'ASC' },
     });
   }
@@ -279,13 +303,14 @@ export class AuditService {
   /**
    * 발견사항에 CAPA 연결
    */
-  async linkCapa(auditId: string, findingNo: number, capaId: string) {
+  async linkCapa(auditId: string, findingNo: number, capaId: string, company?: string, plant?: string) {
     const finding = await this.findingRepo.findOne({
-      where: { auditId, findingNo },
+      where: { auditId, findingNo, ...this.tenantWhere(company, plant) },
     });
     if (!finding) {
       throw new NotFoundException('발견사항을 찾을 수 없습니다.');
     }
+    this.assertSameTenant('심사 발견사항', finding, company, plant);
     finding.capaId = capaId;
     finding.status = 'IN_PROGRESS';
     const saved = await this.findingRepo.save(finding);

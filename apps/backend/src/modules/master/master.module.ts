@@ -58,6 +58,8 @@ import { IqcItemPoolController } from './controllers/iqc-item-pool.controller';
 import { IqcItemPoolService } from './services/iqc-item-pool.service';
 import { IqcPartSpecController } from './controllers/iqc-part-spec.controller';
 import { IqcPartSpecService } from './services/iqc-part-spec.service';
+import { IqcTemplateController } from './controllers/iqc-template.controller';
+import { IqcTemplateService } from './services/iqc-template.service';
 import { RoutingGroupController } from './controllers/routing-group.controller';
 import { RoutingGroupService } from './services/routing-group.service';
 import { ShiftPatternController } from './controllers/shift-pattern.controller';
@@ -97,6 +99,8 @@ import { VendorBarcodeMapping } from '../../entities/vendor-barcode-mapping.enti
 import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
 import { IqcPartSpec } from '../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../entities/iqc-part-spec-item.entity';
+import { IqcTemplate } from '../../entities/iqc-template.entity';
+import { IqcTemplateItem } from '../../entities/iqc-template-item.entity';
 import { ProcessQualityCondition } from '../../entities/process-quality-condition.entity';
 import { RoutingGroup } from '../../entities/routing-group.entity';
 import { RoutingProcess } from '../../entities/routing-process.entity';
@@ -139,6 +143,8 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       IqcItemPool,
       IqcPartSpec,
       IqcPartSpecItem,
+      IqcTemplate,
+      IqcTemplateItem,
       ProcessQualityCondition,
       RoutingGroup,
       RoutingProcess,
@@ -175,6 +181,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     VendorBarcodeMappingController,
     IqcItemPoolController,
     IqcPartSpecController,
+    IqcTemplateController,
     RoutingGroupController,
     ShiftPatternController,
     WorkCalendarController,
@@ -205,6 +212,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     VendorBarcodeMappingService,
     IqcItemPoolService,
     IqcPartSpecService,
+    IqcTemplateService,
     RoutingGroupService,
     ShiftPatternService,
     WorkCalendarService,

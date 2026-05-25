@@ -20,8 +20,9 @@ import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
+import type { DefectStatusValue } from "@harness/shared";
 
-type DefectStatus = "PENDING" | "REPAIRING" | "COMPLETED" | "SCRAPPED";
+type DefectStatus = DefectStatusValue;
 
 interface Defect {
   id: string;

@@ -10,7 +10,8 @@
  */
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { MenuCategory } from '../../../entities/menu-category.entity';
 import { MenuCategoryItem } from '../../../entities/menu-category-item.entity';
 import { MoveMenuItemDto, ReorderMenuItemsDto } from '../dto/menu-category-item.dto';
@@ -29,7 +30,7 @@ export class MenuCategoryItemsService {
     private readonly itemRepo: Repository<MenuCategoryItem>,
     @InjectRepository(MenuCategory)
     private readonly categoryRepo: Repository<MenuCategory>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findByCategory(categoryCode: string, scope?: AuditScope): Promise<MenuCategoryItem[]> {
@@ -88,8 +89,8 @@ export class MenuCategoryItemsService {
 
   async reorderInCategory(categoryCode: string, dto: ReorderMenuItemsDto, scope?: AuditScope): Promise<void> {
     const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
-    await this.dataSource.transaction(async (manager) => {
-      const repo = manager.getRepository(MenuCategoryItem);
+    await this.tx.run(async (queryRunner) => {
+      const repo = queryRunner.manager.getRepository(MenuCategoryItem);
       for (const item of dto.items) {
         await repo.update(
           { menuCode: item.menuCode, categoryCode, ...tenantWhere },

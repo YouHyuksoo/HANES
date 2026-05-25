@@ -205,8 +205,8 @@ describe('PurchaseOrderService', () => {
     it('새 PO를 생성한다', async () => {
       const po = createPo();
       mockPoRepo.findOne.mockResolvedValue(null);
-      mockQueryRunner.manager.create.mockReturnValue(po);
-      mockQueryRunner.manager.save
+      (mockQueryRunner.manager.create as jest.Mock).mockReturnValue(po);
+      (mockQueryRunner.manager.save as jest.Mock)
         .mockResolvedValueOnce(po) // PO 저장
         .mockResolvedValueOnce([]); // 품목 저장
       mockPartMasterRepo.find.mockResolvedValue([]);

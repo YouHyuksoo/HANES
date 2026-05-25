@@ -43,6 +43,25 @@ describe('ControlPlanService', () => {
       mockPlanRepo.findOne.mockResolvedValue(null);
       await expect(target.findById('CP-999')).rejects.toThrow(NotFoundException);
     });
+
+    it('scopes plan and items by tenant', async () => {
+      mockPlanRepo.findOne.mockResolvedValue({ planNo: 'CP-001', company: 'CO', plant: 'P01' } as any);
+      const qb: any = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockItemRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findById('CP-001', 'CO', 'P01');
+
+      expect(mockPlanRepo.findOne).toHaveBeenCalledWith({
+        where: { planNo: 'CP-001', company: 'CO', plant: 'P01' },
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith('i.company = :company', { company: 'CO' });
+      expect(qb.andWhere).toHaveBeenCalledWith('i.plant = :plant', { plant: 'P01' });
+    });
   });
 
   describe('approve', () => {
@@ -57,12 +76,40 @@ describe('ControlPlanService', () => {
       mockPlanRepo.findOne.mockResolvedValue({ planNo: 'CP-001', status: 'OBSOLETE' } as any);
       await expect(target.approve('CP-001', 'user')).rejects.toThrow(BadRequestException);
     });
+
+    it('rejects approve when the plan belongs to a different tenant', async () => {
+      mockPlanRepo.findOne.mockResolvedValue({ planNo: 'CP-001', status: 'DRAFT', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.approve('CP-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockPlanRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {
     it('should throw when not DRAFT', async () => {
       mockPlanRepo.findOne.mockResolvedValue({ planNo: 'CP-001', status: 'APPROVED' } as any);
       await expect(target.delete('CP-001')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects delete when the plan belongs to a different tenant', async () => {
+      mockPlanRepo.findOne.mockResolvedValue({ planNo: 'CP-001', status: 'DRAFT', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.delete('CP-001', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockPlanRepo.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    it('rejects update when the plan belongs to a different tenant', async () => {
+      mockPlanRepo.findOne.mockResolvedValue({ planNo: 'CP-001', status: 'DRAFT', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.update('CP-001', { itemName: 'New' } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockPlanRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('revise', () => {
+    it('rejects revise when the plan belongs to a different tenant', async () => {
+      mockPlanRepo.findOne.mockResolvedValue({ planNo: 'CP-001', status: 'APPROVED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.revise('CP-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockPlanRepo.save).not.toHaveBeenCalled();
     });
   });
 });

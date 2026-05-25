@@ -41,6 +41,7 @@ export default function HeaderCheckItem({
   const buttonTitle = isDisabled
     ? (reasonText ?? t('kiosk.header.inputDisabled', '입력할 수 없습니다.'))
     : t('common.input', '입력');
+  const reasonId = reasonText ? `check-item-reason-${label.replace(/\W+/g, '-')}` : undefined;
 
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5">
@@ -62,17 +63,31 @@ export default function HeaderCheckItem({
               {t('kiosk.header.notDone', '미완료')}
             </div>
             {disabledReason && (
-              <div className="truncate text-[11px] text-text-muted" title={disabledReason}>
+              <div
+                id={reasonId}
+                className="truncate text-[11px] text-text-muted"
+                title={disabledReason}
+              >
                 {disabledReason}
               </div>
             )}
           </>
+        )}
+        {!notTarget && isDisabled && reasonText && !disabledReason && (
+          <div
+            id={reasonId}
+            className="truncate text-[11px] text-text-muted"
+            title={reasonText}
+          >
+            {reasonText}
+          </div>
         )}
       </div>
       <span className="shrink-0" title={buttonTitle}>
         <button
           onClick={onInput}
           disabled={isDisabled}
+          aria-describedby={reasonId}
           aria-label={buttonTitle}
           className="rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted"
         >

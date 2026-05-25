@@ -30,6 +30,20 @@ export class ProductPhysicalInvService {
     private readonly tx: TransactionService,
   ) {}
 
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   async findStocks(query: ProductPhysicalInvQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search } = query;
     const warehouseCode = query.warehouseCode ?? query.warehouseId;
@@ -156,6 +170,7 @@ export class ProductPhysicalInvService {
         if (!stock) {
           throw new NotFoundException(`재고를 찾을 수 없습니다: ${item.stockId}`);
         }
+        this.assertSameTenant('제품 실사 대상 재고', stock, company, plant);
 
         const reservedQty = stock.reservedQty ?? 0;
         if (item.countedQty < reservedQty) {

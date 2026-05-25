@@ -417,9 +417,12 @@ export class InspectResultService {
   async getPassRate(
     startDate?: string,
     endDate?: string,
-    inspectType?: string
+    inspectType?: string,
+    company?: string,
+    plant?: string,
   ): Promise<InspectPassRateDto> {
     const where: any = {
+      ...this.tenantWhere(company, plant),
       ...(inspectType && { inspectType }),
       ...(startDate || endDate
         ? {
@@ -456,10 +459,13 @@ export class InspectResultService {
    */
   async getStatsByType(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    company?: string,
+    plant?: string,
   ): Promise<InspectTypeStatsDto[]> {
     const where: any = {
       inspectType: Not(IsNull()),
+      ...this.tenantWhere(company, plant),
       ...(startDate || endDate
         ? {
             inspectAt: And(
@@ -510,7 +516,7 @@ export class InspectResultService {
    * 일별 합격률 추이 조회
    * @param days 조회 일수 (기본 7일)
    */
-  async getDailyPassRateTrend(days: number = 7) {
+  async getDailyPassRateTrend(days: number = 7, company?: string, plant?: string) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days + 1);
     startDate.setHours(0, 0, 0, 0);
@@ -518,6 +524,7 @@ export class InspectResultService {
     const results = await this.inspectResultRepository.find({
       where: {
         inspectAt: MoreThanOrEqual(startDate),
+        ...this.tenantWhere(company, plant),
       },
       select: ['inspectAt', 'passYn'],
       order: { inspectAt: 'ASC' },

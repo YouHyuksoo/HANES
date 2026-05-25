@@ -47,6 +47,27 @@ export class ComplaintService {
     private readonly complaintRepo: Repository<CustomerComplaint>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   // =============================================
   // 클레임번호 자동채번
   // =============================================
@@ -126,11 +147,12 @@ export class ComplaintService {
   /**
    * 클레임 단건 조회
    */
-  async findById(complaintNo: string) {
-    const item = await this.complaintRepo.findOne({ where: { complaintNo } });
+  async findById(complaintNo: string, company?: string, plant?: string) {
+    const item = await this.complaintRepo.findOne({ where: { complaintNo, ...this.tenantWhere(company, plant) } });
     if (!item) {
       throw new NotFoundException('고객클레임을 찾을 수 없습니다.');
     }
+    this.assertSameTenant('고객클레임', item, company, plant);
     return item;
   }
 
@@ -161,8 +183,8 @@ export class ComplaintService {
   /**
    * 클레임 수정 (RECEIVED 상태에서만 가능)
    */
-  async update(complaintNo: string, dto: UpdateComplaintDto, userId: string) {
-    const item = await this.findById(complaintNo);
+  async update(complaintNo: string, dto: UpdateComplaintDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(complaintNo, company, plant);
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 수정할 수 있습니다.');
     }
@@ -179,8 +201,8 @@ export class ComplaintService {
   /**
    * 클레임 삭제 (RECEIVED 상태에서만 가능)
    */
-  async delete(complaintNo: string) {
-    const item = await this.findById(complaintNo);
+  async delete(complaintNo: string, company?: string, plant?: string) {
+    const item = await this.findById(complaintNo, company, plant);
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 삭제할 수 있습니다.');
     }
@@ -194,8 +216,8 @@ export class ComplaintService {
   /**
    * 조사 시작 (RECEIVED → INVESTIGATING)
    */
-  async investigate(complaintNo: string, dto: InvestigateComplaintDto, userId: string) {
-    const item = await this.findById(complaintNo);
+  async investigate(complaintNo: string, dto: InvestigateComplaintDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(complaintNo, company, plant);
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 조사를 시작할 수 있습니다.');
     }
@@ -211,8 +233,8 @@ export class ComplaintService {
   /**
    * 대응 완료 (INVESTIGATING → RESPONDING)
    */
-  async respond(complaintNo: string, dto: RespondComplaintDto, userId: string) {
-    const item = await this.findById(complaintNo);
+  async respond(complaintNo: string, dto: RespondComplaintDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(complaintNo, company, plant);
     if (item.status !== 'INVESTIGATING') {
       throw new BadRequestException('조사중 상태에서만 대응할 수 있습니다.');
     }
@@ -228,8 +250,8 @@ export class ComplaintService {
   /**
    * 해결 (RESPONDING → RESOLVED)
    */
-  async resolve(complaintNo: string, userId: string) {
-    const item = await this.findById(complaintNo);
+  async resolve(complaintNo: string, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(complaintNo, company, plant);
     if (item.status !== 'RESPONDING') {
       throw new BadRequestException('대응중 상태에서만 해결할 수 있습니다.');
     }
@@ -243,8 +265,8 @@ export class ComplaintService {
   /**
    * 종료 (RESOLVED → CLOSED)
    */
-  async close(complaintNo: string, userId: string) {
-    const item = await this.findById(complaintNo);
+  async close(complaintNo: string, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(complaintNo, company, plant);
     if (item.status !== 'RESOLVED') {
       throw new BadRequestException('해결 상태에서만 종료할 수 있습니다.');
     }
@@ -257,8 +279,8 @@ export class ComplaintService {
   /**
    * CAPA 연계
    */
-  async linkCapa(complaintNo: string, dto: LinkCapaDto, userId: string) {
-    const item = await this.findById(complaintNo);
+  async linkCapa(complaintNo: string, dto: LinkCapaDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(complaintNo, company, plant);
     item.capaId = dto.capaId;
     item.updatedBy = userId;
     this.logger.log(`고객클레임 CAPA 연계: ${item.complaintNo} → CAPA#${dto.capaId}`);

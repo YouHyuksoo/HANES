@@ -187,6 +187,36 @@ describe('LotMergeService', () => {
       );
     });
 
+    it('LOT과 재고의 회사/공장이 다르면 병합하지 않는다', async () => {
+      const lots = [
+        { ...createLot('MAT-001'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
+        { ...createLot('MAT-002'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
+      ];
+      const stocks = [
+        { ...createStock('MAT-001', 30), company: 'C1', plant: 'P1' },
+        { ...createStock('MAT-002', 20), company: 'OTHER', plant: 'P1' },
+      ] as MatStock[];
+
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce(lots)
+        .mockResolvedValueOnce(stocks)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ itemCode: 'ITEM-001', itemName: 'PART-A', company: 'C1', plant: 'P1' } as PartMaster]);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockStockTxRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        target.merge({
+          sourceLotIds: ['MAT-001', 'MAT-002'],
+          targetLotId: 'MAT-001',
+        } as any, 'C1', 'P1'),
+      ).rejects.toThrow('회사 정보가 일치하지 않습니다');
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
+
     it('병합 실행은 LOT 회사/공장 범위에서 LOT/재고/출고이력/품목과 상태 갱신을 처리한다', async () => {
       const lots = [
         { ...createLot('MAT-001'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,

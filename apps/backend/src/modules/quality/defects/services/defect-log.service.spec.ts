@@ -134,7 +134,7 @@ describe('DefectLogService', () => {
       const result = await target.findById('1');
 
       // Assert
-      expect(result.id).toBe(1);
+      expect(result.seq).toBe(1);
       expect(result.defectCode).toBe('DEF001');
     });
 
@@ -145,6 +145,17 @@ describe('DefectLogService', () => {
       // Act & Assert
       await expect(target.findById('999')).rejects.toThrow(NotFoundException);
     });
+
+    it('scopes defect lookup by tenant', async () => {
+      const defect = createDefectLog();
+      mockDefectLogRepo.findOne.mockResolvedValue(defect);
+
+      await target.findById('1', 'HANES', 'P01');
+
+      expect(mockDefectLogRepo.findOne).toHaveBeenCalledWith({
+        where: { seq: 1, company: 'HANES', plant: 'P01' },
+      });
+    });
   });
 
   // ─────────────────────────────────────────────
@@ -153,7 +164,7 @@ describe('DefectLogService', () => {
   describe('create', () => {
     it('should create defect log and update prodResult defectQty', async () => {
       // Arrange
-      const prodResult = createProdResult({ defectQty: 3 });
+      const prodResult = createProdResult({ defectQty: 3, company: 'HANES', plant: 'P01' } as any);
       const dto = {
         prodResultNo: 'PR260318-00001',
         defectCode: 'DEF002',
@@ -173,9 +184,19 @@ describe('DefectLogService', () => {
       // Assert
       expect(result.defectCode).toBe('DEF002');
       expect(mockProdResultRepo.update).toHaveBeenCalledWith(
-        { resultNo: 'PR260318-00001' },
+        { resultNo: 'PR260318-00001', company: 'HANES', plant: 'P01' },
         { defectQty: 5 }, // 3 + 2
       );
+    });
+
+    it('rejects create when prodResult belongs to a different tenant', async () => {
+      const prodResult = createProdResult({ company: 'OTHER', plant: 'P01' } as any);
+      mockProdResultRepo.findOne.mockResolvedValue(prodResult);
+
+      await expect(
+        target.create({ prodResultNo: 'PR260318-00001', defectCode: 'DEF001' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDefectLogRepo.save).not.toHaveBeenCalled();
     });
 
     it('should default qty to 1 when not provided', async () => {
@@ -218,15 +239,29 @@ describe('DefectLogService', () => {
       mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.delete('1');
+      const result = await target.delete('1', 'HANES', 'P01');
 
       // Assert
       expect(result).toEqual({ id: '1', deleted: true });
       expect(mockDefectLogRepo.delete).toHaveBeenCalledTimes(1);
       expect(mockProdResultRepo.update).toHaveBeenCalledWith(
-        { resultNo: 'PR260318-00001' },
+        { resultNo: 'PR260318-00001', company: 'HANES', plant: 'P01' },
         expect.objectContaining({ defectQty: expect.any(Function) }),
       );
+      expect(mockDefectLogRepo.delete).toHaveBeenCalledWith({
+        occurAt: defect.occurAt,
+        seq: defect.seq,
+        company: 'HANES',
+        plant: 'P01',
+      });
+    });
+
+    it('rejects delete when defect belongs to a different tenant', async () => {
+      const defect = createDefectLog({ company: 'OTHER' });
+      mockDefectLogRepo.findOne.mockResolvedValue(defect);
+
+      await expect(target.delete('1', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockDefectLogRepo.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -241,12 +276,20 @@ describe('DefectLogService', () => {
       mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
       mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
 
-      await target.update('1', { qty: 5 } as any);
+      await target.update('1', { qty: 5 } as any, 'HANES', 'P01');
 
       expect(mockProdResultRepo.update).toHaveBeenCalledWith(
-        { resultNo: 'PR260318-00001' },
+        { resultNo: 'PR260318-00001', company: 'HANES', plant: 'P01' },
         { defectQty: expect.any(Function) },
       );
+    });
+
+    it('rejects update when defect belongs to a different tenant', async () => {
+      const defect = createDefectLog({ plant: 'OTHER' });
+      mockDefectLogRepo.findOne.mockResolvedValue(defect);
+
+      await expect(target.update('1', { qty: 5 } as any, 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockDefectLogRepo.update).not.toHaveBeenCalled();
     });
   });
 
@@ -261,13 +304,20 @@ describe('DefectLogService', () => {
       mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.changeStatus('1', { status: 'REPAIR' } as any);
+      const result = await target.changeStatus('1', { status: 'REPAIR' } as any, 'HANES', 'P01');
 
       // Assert
       expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: defect.occurAt, seq: defect.seq },
+        { occurAt: defect.occurAt, seq: defect.seq, company: 'HANES', plant: 'P01' },
         { status: 'REPAIR' },
       );
+      expect(mockReworkOrderRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          defectLogId: `${defect.occurAt.toISOString()}|${defect.seq}`,
+          company: 'HANES',
+          plant: 'P01',
+        },
+      });
     });
 
     it('should allow WAIT → REWORK', async () => {
@@ -341,6 +391,16 @@ describe('DefectLogService', () => {
         target.changeStatus('1', { status: 'DONE' } as any),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('rejects status change when defect belongs to a different tenant', async () => {
+      const defect = createDefectLog({ company: 'OTHER' });
+      mockDefectLogRepo.findOne.mockResolvedValue(defect);
+
+      await expect(
+        target.changeStatus('1', { status: 'REPAIR' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDefectLogRepo.update).not.toHaveBeenCalled();
+    });
   });
 
   // ─────────────────────────────────────────────
@@ -363,7 +423,7 @@ describe('DefectLogService', () => {
       mockRepairLogRepo.save.mockResolvedValue(savedRepair);
 
       // Act
-      const result = await target.createRepairLog(dto as any);
+      const result = await target.createRepairLog(dto as any, 'HANES', 'P01');
 
       // Assert
       expect(result).toEqual(savedRepair);
@@ -387,11 +447,11 @@ describe('DefectLogService', () => {
       mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      await target.createRepairLog(dto as any);
+      await target.createRepairLog(dto as any, 'HANES', 'P01');
 
       // Assert
       expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: defect.occurAt, seq: defect.seq },
+        { occurAt: defect.occurAt, seq: defect.seq, company: 'HANES', plant: 'P01' },
         { status: 'DONE' },
       );
     });
@@ -413,11 +473,11 @@ describe('DefectLogService', () => {
       mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      await target.createRepairLog(dto as any);
+      await target.createRepairLog(dto as any, 'HANES', 'P01');
 
       // Assert
       expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: defect.occurAt, seq: defect.seq },
+        { occurAt: defect.occurAt, seq: defect.seq, company: 'HANES', plant: 'P01' },
         { status: 'SCRAP' },
       );
     });
@@ -438,10 +498,20 @@ describe('DefectLogService', () => {
       mockRepairLogRepo.save.mockResolvedValue(savedRepair);
 
       // Act
-      await target.createRepairLog(dto as any);
+      await target.createRepairLog(dto as any, 'HANES', 'P01');
 
       // Assert — FAIL이면 상태 변경하지 않음
       expect(mockDefectLogRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects repair log creation when defect belongs to a different tenant', async () => {
+      const defect = createDefectLog({ plant: 'OTHER' });
+      mockDefectLogRepo.findOne.mockResolvedValue(defect);
+
+      await expect(
+        target.createRepairLog({ defectLogId: '1', workerId: 'worker' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockRepairLogRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -458,12 +528,55 @@ describe('DefectLogService', () => {
       mockDefectLogRepo.find.mockResolvedValue(pending);
 
       // Act
-      const result = await target.getPendingDefects();
+      const result = await target.getPendingDefects('HANES', 'P01');
 
       // Assert
       expect(result).toHaveLength(2);
       expect(mockDefectLogRepo.find).toHaveBeenCalledWith({
-        where: { status: expect.any(Object) }, // In(['WAIT','REPAIR','REWORK'])
+        where: { status: expect.any(Object), company: 'HANES', plant: 'P01' }, // In(['WAIT','REPAIR','REWORK'])
+        order: { occurAt: 'ASC' },
+      });
+    });
+  });
+
+  describe('stats', () => {
+    const mockStatsQb = (rows: any[]) => {
+      const qb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(rows),
+      };
+      mockDefectLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+      return qb;
+    };
+
+    it('should scope defect type stats by tenant', async () => {
+      const qb = mockStatsQb([{ defectCode: 'DEF001', defectName: 'Scratch', count: '1', totalQty: '2' }]);
+
+      await target.getStatsByDefectType(undefined, undefined, 'HANES', 'P01');
+
+      expect(qb.where).toHaveBeenCalledWith({ company: 'HANES', plant: 'P01' });
+    });
+
+    it('should scope defect status stats by tenant', async () => {
+      const qb = mockStatsQb([{ status: 'WAIT', count: '1', totalQty: '2' }]);
+
+      await target.getStatsByStatus(undefined, undefined, 'HANES', 'P01');
+
+      expect(qb.where).toHaveBeenCalledWith({ company: 'HANES', plant: 'P01' });
+    });
+
+    it('should scope daily defect trend by tenant', async () => {
+      mockDefectLogRepo.find.mockResolvedValue([]);
+
+      await target.getDailyDefectTrend(7, 'HANES', 'P01');
+
+      expect(mockDefectLogRepo.find).toHaveBeenCalledWith({
+        where: { occurAt: expect.any(Object), company: 'HANES', plant: 'P01' },
+        select: ['occurAt', 'qty', 'defectCode'],
         order: { occurAt: 'ASC' },
       });
     });

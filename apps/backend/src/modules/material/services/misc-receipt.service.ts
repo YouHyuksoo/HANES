@@ -32,6 +32,20 @@ export class MiscReceiptService {
     };
   }
 
+  private assertSameTenant(
+    row: { company?: string | null; plant?: string | null } | null | undefined,
+    company?: string | null,
+    plant?: string | null,
+    context = '데이터',
+  ) {
+    if (company && row?.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row?.company ?? 'NULL'}`);
+    }
+    if (plant && row?.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row?.plant ?? 'NULL'}`);
+    }
+  }
+
   async findAll(query: MiscReceiptQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -181,6 +195,7 @@ export class MiscReceiptService {
       });
 
       if (existingStock) {
+        this.assertSameTenant(existingStock, company, plant, '기존 재고');
         const nextQty = existingStock.qty + qty;
         await queryRunner.manager.update(
           MatStock,

@@ -67,6 +67,20 @@ export class SqlExecutor implements IJobExecutor {
       }
     }
 
+    const namedBinds = this.extractNamedBinds(sql);
+    const tenantParams = this.extractTenantBindParams(namedBinds, job);
+    const isDelete = /^\s*DELETE\s/i.test(sql);
+
+    if (isDelete && (!namedBinds.has('company') || (!namedBinds.has('plant') && !namedBinds.has('plantCd')))) {
+      throw new ForbiddenException(
+        'DELETE SQL은 company와 plant 또는 plantCd 테넌트 바인드를 포함해야 합니다.',
+      );
+    }
+
+    if (Object.keys(tenantParams).length > 0) {
+      params = { ...(params ?? {}), ...tenantParams };
+    }
+
     this.logger.log(`SQL 실행: ${sql.substring(0, 100)}...`);
 
     // Oracle 바인드 파라미터 처리:
@@ -88,5 +102,21 @@ export class SqlExecutor implements IJobExecutor {
       affectedRows,
       message: `SQL 실행 완료 (${affectedRows}행)`,
     };
+  }
+
+  private extractNamedBinds(sql: string): Set<string> {
+    const names = new Set<string>();
+    for (const match of sql.matchAll(/:([A-Za-z][A-Za-z0-9_]*)/g)) {
+      names.add(match[1]);
+    }
+    return names;
+  }
+
+  private extractTenantBindParams(namedBinds: Set<string>, job: SchedulerJob): Record<string, string> {
+    const params: Record<string, string> = {};
+    if (namedBinds.has('company')) params.company = job.company;
+    if (namedBinds.has('plant')) params.plant = job.plantCd;
+    if (namedBinds.has('plantCd')) params.plantCd = job.plantCd;
+    return params;
   }
 }

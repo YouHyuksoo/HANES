@@ -1,8 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { User } from '../../../entities/user.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
@@ -41,7 +38,6 @@ import { ReceivingService } from '../services/receiving.service';
       PurchaseOrder,
       PurchaseOrderItem,
       StockTransaction,
-      User,
       VendorBarcodeMapping,
       Warehouse,
     ]),
@@ -53,8 +49,6 @@ import { ReceivingService } from '../services/receiving.service';
     ReceiptCancelController,
   ],
   providers: [
-    JwtAuthGuard,
-    InventoryFreezeGuard,
     ArrivalService,
     ReceivingService,
     IqcHistoryService,

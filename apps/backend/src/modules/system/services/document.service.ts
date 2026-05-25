@@ -41,6 +41,31 @@ export class DocumentService {
     private readonly docRepo: Repository<DocumentMaster>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`,
+      );
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   // =============================================
   // 문서번호 자동채번
   // =============================================
@@ -121,11 +146,14 @@ export class DocumentService {
   /**
    * 문서 단건 조회
    */
-  async findById(docNo: string) {
-    const item = await this.docRepo.findOne({ where: { docNo } });
+  async findById(docNo: string, company?: string, plant?: string) {
+    const item = await this.docRepo.findOne({
+      where: { docNo, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('문서를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('문서', item, company, plant);
     return item;
   }
 
@@ -157,8 +185,14 @@ export class DocumentService {
   /**
    * 문서 수정 (DRAFT 상태에서만 가능)
    */
-  async update(docNo: string, dto: UpdateDocumentDto, userId: string) {
-    const item = await this.findById(docNo);
+  async update(
+    docNo: string,
+    dto: UpdateDocumentDto,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(docNo, company, plant);
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 수정할 수 있습니다.');
     }
@@ -175,8 +209,8 @@ export class DocumentService {
   /**
    * 문서 삭제 (DRAFT 상태에서만 가능)
    */
-  async delete(docNo: string) {
-    const item = await this.findById(docNo);
+  async delete(docNo: string, company?: string, plant?: string) {
+    const item = await this.findById(docNo, company, plant);
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 삭제할 수 있습니다.');
     }
@@ -190,8 +224,13 @@ export class DocumentService {
   /**
    * 승인 (DRAFT/REVIEW → APPROVED)
    */
-  async approve(docNo: string, userId: string) {
-    const item = await this.findById(docNo);
+  async approve(
+    docNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(docNo, company, plant);
     if (!['DRAFT', 'REVIEW'].includes(item.status)) {
       throw new BadRequestException(
         '초안 또는 검토 상태에서만 승인할 수 있습니다.',
@@ -210,8 +249,13 @@ export class DocumentService {
   /**
    * 개정 (APPROVED → 새 DRAFT, revisionNo 증가)
    */
-  async revise(docNo: string, userId: string) {
-    const item = await this.findById(docNo);
+  async revise(
+    docNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(docNo, company, plant);
     if (item.status !== 'APPROVED') {
       throw new BadRequestException(
         '승인된 문서만 개정할 수 있습니다.',

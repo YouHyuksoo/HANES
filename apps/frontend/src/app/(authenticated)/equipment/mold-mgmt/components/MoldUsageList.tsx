@@ -9,7 +9,7 @@
  * 2. **인라인 추가**: 하단 인라인 폼으로 신규 사용이력 등록
  * 3. API: GET /equipment/molds/:id, POST /equipment/molds/:id/usage
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, History, X } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
@@ -69,6 +69,12 @@ export default function MoldUsageList({ mold }: Props) {
   const setField = (key: keyof UsageForm, value: string) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
+  const addDisabledReason = useMemo(() => {
+    if (saving) return t("common.saving");
+    if (!form.shotCount) return `${t("equipment.mold.shotCount")}은(는) 필수입니다`;
+    return "";
+  }, [saving, form.shotCount, t]);
+
   const handleAdd = useCallback(async () => {
     if (!form.shotCount) return;
     setSaving(true);
@@ -125,9 +131,17 @@ export default function MoldUsageList({ mold }: Props) {
             </div>
             <Input label={t("common.remark")} value={form.remark}
               onChange={e => setField("remark", e.target.value)} className="w-32" />
-            <Button size="sm" onClick={handleAdd} disabled={saving || !form.shotCount}>
+            <Button
+              size="sm"
+              onClick={handleAdd}
+              disabled={saving || !form.shotCount}
+              title={addDisabledReason}
+            >
               {saving ? t("common.saving") : t("common.save")}
             </Button>
+            {addDisabledReason && (
+              <div className="text-xs text-orange-600">{addDisabledReason}</div>
+            )}
           </div>
         )}
 

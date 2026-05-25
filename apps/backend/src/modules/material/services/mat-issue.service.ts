@@ -191,6 +191,7 @@ export class MatIssueService {
       if (!lot) {
         throw new BadRequestException(`LOT를 찾을 수 없습니다: ${item.matUid}`);
       }
+      this.assertSameTenant('출고 LOT', lot, company, plant);
 
       if (lot.iqcStatus !== 'PASS') {
         throw new BadRequestException(`IQC 합격 상태가 아닌 LOT입니다: ${lot.matUid}`);
@@ -205,6 +206,7 @@ export class MatIssueService {
           ? { matUid: lot.matUid, warehouseCode, ...tenantWhere }
           : { matUid: lot.matUid, ...tenantWhere },
       });
+      stockRows.forEach((stock) => this.assertSameTenant('출고 대상 재고', stock, lot.company, lot.plant));
       const stockQty = stockRows.reduce((sum, stock) => sum + (stock.availableQty ?? stock.qty ?? 0), 0);
 
       if (stockQty < item.issueQty) {
@@ -269,6 +271,7 @@ export class MatIssueService {
       const remainingStocks = await queryRunner.manager.find(MatStock, {
         where: { matUid: lot.matUid, ...tenantWhere },
       });
+      remainingStocks.forEach((stock) => this.assertSameTenant('출고 후 잔여 재고', stock, lot.company, lot.plant));
       const totalRemainingQty = remainingStocks.reduce((sum, stock) => sum + (stock.qty ?? 0), 0);
 
       if (totalRemainingQty <= 0) {
@@ -398,6 +401,7 @@ export class MatIssueService {
           : null;
 
         if (stock) {
+          this.assertSameTenant('복구 대상 재고', stock, originalTx.company, originalTx.plant);
           await queryRunner.manager.update(
             MatStock,
             { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },

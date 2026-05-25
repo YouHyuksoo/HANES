@@ -136,6 +136,7 @@ export default function ShippingPage() {
 
   const progressPct = Math.round(progress * 100);
   const orderQty = scannedOrder?.orderQty ?? 0;
+  const hasNoScannedItems = scannedItems.length === 0;
 
   // ── 이력 렌더 ─────────────────────────────────────────
 
@@ -272,7 +273,8 @@ export default function ShippingPage() {
               onClick: onConfirm,
               variant: "primary",
               isLoading: isConfirming,
-              disabled: scannedItems.length === 0,
+              disabled: hasNoScannedItems,
+              disabledReason: hasNoScannedItems ? "출하할 수량 스캔이 필요합니다." : undefined,
             },
             {
               label: t("common.reset"),

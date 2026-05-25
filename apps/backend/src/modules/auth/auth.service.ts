@@ -145,6 +145,8 @@ export class AuthService {
       empNo: dto.empNo,
       dept: dto.dept,
       role: 'OPERATOR', // 기본 역할
+      company: dto.company ?? null,
+      plant: dto.plant ?? null,
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -161,6 +163,8 @@ export class AuthService {
         dept: savedUser.dept,
         role: savedUser.role,
         status: savedUser.status,
+        company: savedUser.company,
+        plant: savedUser.plant,
       },
     };
   }

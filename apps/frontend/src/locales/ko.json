@@ -150,7 +150,8 @@
     "master.worker.workerList": "작업자 목록",
     "master.worker.totalCount": "총 {{count}}건",
     "master.worker.emptyMessage": "등록된 작업자가 없습니다.",
-    "master.iqcItem": "IQC검사항목/그룹",
+    "master.iqcItem": "검사항목마스터",
+    "master.iqcPartSpec": "품목별 IQC 항목관리",
     "master.iqcItem.itemCode": "항목코드",
     "master.iqcItem.judgeMethod": "판정방법",
     "master.iqcItem.visual": "육안",
@@ -316,7 +317,6 @@
     "system.training": "교육훈련",
     "system.menuCategory": "메뉴 카테고리 관리",
     "root": "최상위",
-    "system.screenRequirements": "화면 요구사항 수집",
     "system.improvementRequests": "개선요청 관리"
   },
   "header": {
@@ -1533,8 +1533,8 @@
       "deleteConfirm": "을(를) 삭제하시겠습니까?"
     },
     "iqcItem": {
-      "title": "IQC 검사항목/그룹 관리",
-      "subtitle": "수입검사 항목을 등록하고, 검사그룹으로 묶어 관리합니다.",
+      "title": "검사항목마스터",
+      "subtitle": "IQC 검사에 사용할 전역 검사항목을 등록하고 관리합니다.",
       "seq": "순번",
       "inspectItem": "검사항목",
       "spec": "규격/기준",
@@ -1562,11 +1562,34 @@
       "unlinkGroup": "연결 해제",
       "measureItems": "측정형 검사항목",
       "judgeItems": "판정형 검사항목",
-      "perItemIqc": "품목별 IQC 기준",
-      "itemPool": "검사항목 마스터",
+      "perItemIqc": "품목별 IQC 항목관리",
+      "perItemIqcSubtitle": "품목별 시료수, 파괴검사 여부, 검사항목과 규격을 관리합니다.",
+      "itemPool": "검사항목마스터",
+      "itemPoolSubtitle": "IQC 검사에 사용할 전역 검사항목을 등록하고 관리합니다.",
       "linkedGroupCount": "연결그룹",
       "unlinkConfirm": "이 검사그룹 연결을 해제하시겠습니까?",
-      "selectGroup": "검사그룹을 선택하세요"
+      "selectGroup": "검사그룹을 선택하세요",
+      "judgeCriteria": "판정기준",
+      "typeMeasure": "측정형",
+      "typeVisual": "판정형",
+      "sampleQty": "시료수",
+      "destructive": "파괴",
+      "nonDestructive": "비파괴",
+      "inspItem": "검사항목",
+      "type": "종류"
+    },
+    "iqcTemplate": {
+      "title": "IQC 항목 템플릿 관리",
+      "currentItem": "현재 품목",
+      "namePlaceholder": "템플릿명 입력",
+      "saveAs": "템플릿으로 저장",
+      "list": "템플릿 목록",
+      "empty": "저장된 템플릿이 없습니다.",
+      "itemsUnit": "개",
+      "preview": "미리보기",
+      "apply": "현재 품목에 적용",
+      "selectHint": "템플릿을 선택하세요.",
+      "applyHint": "적용 시 현재 품목 항목을 통째로 대체합니다. 적용 후 [변경 저장]을 눌러야 확정됩니다."
     },
     "iqcGroup": {
       "tabItems": "검사항목",
@@ -5827,7 +5850,17 @@
       "selectJobOrderFirst": "작업지시 선택 후 표시",
       "qtyRequired": "수량을 입력해주세요",
       "saveSuccess": "실적이 저장되었습니다",
-      "saveError": "실적 저장에 실패했습니다"
+      "saveError": "실적 저장에 실패했습니다",
+      "disabledHint": "실적입력이 불가합니다",
+      "disabledReasons": {
+        "noEquip": "설비를 선택해주세요",
+        "noJobOrder": "작업지시를 선택해주세요",
+        "noWorker": "작업자를 최소 1명 선택해주세요",
+        "dailyInspect": "설비일일점검 미완료",
+        "workerInspect": "작업자설비점검 미완료",
+        "materialScan": "자재 스캔 미완료",
+        "consumableScan": "소모성 점검 미완료"
+      }
     },
     "jobOrder": {
       "assignError": "작업지시 할당에 실패했습니다"

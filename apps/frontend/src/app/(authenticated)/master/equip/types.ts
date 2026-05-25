@@ -8,13 +8,15 @@
  * 3. **EquipBomRel**: 설비-BOM 연결 정보
  */
 
+import type { CommTypeValue, EquipStatusValue, EquipTypeValue } from "@harness/shared";
+
 // ========================================
 // 설비 마스터 타입
 // ========================================
 
-export type EquipType = 'AUTO_CRIMP' | 'SINGLE_CUT' | 'MULTI_CUT' | 'TWIST' | 'SOLDER' | 'HOUSING' | 'TESTER' | 'LABEL_PRINTER' | 'INSPECTION' | 'PACKING' | 'OTHER';
-export type CommType = 'MQTT' | 'SERIAL' | 'TCP' | 'NONE';
-export type EquipStatus = 'NORMAL' | 'MAINT' | 'STOP';
+export type EquipType = EquipTypeValue;
+export type CommType = Exclude<CommTypeValue, "OPC_UA" | "MODBUS"> | "NONE";
+export type EquipStatus = EquipStatusValue;
 
 export interface EquipMaster {
   equipCode: string;

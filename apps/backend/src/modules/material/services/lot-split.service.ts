@@ -37,6 +37,20 @@ export class LotSplitService {
     };
   }
 
+  private assertSameTenant(
+    row: { company?: string | null; plant?: string | null } | null | undefined,
+    company?: string | null,
+    plant?: string | null,
+    context = '데이터',
+  ) {
+    if (company && row?.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row?.company ?? 'NULL'}`);
+    }
+    if (plant && row?.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row?.plant ?? 'NULL'}`);
+    }
+  }
+
   async findSplittableLots(query: LotSplitQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
@@ -103,6 +117,7 @@ export class LotSplitService {
       if (!sourceLot) {
         throw new NotFoundException(`원본 LOT을 찾을 수 없습니다: ${sourceLotId}`);
       }
+      this.assertSameTenant(sourceLot, company, plant, '원본 LOT');
 
       if (sourceLot.status === 'HOLD') {
         throw new BadRequestException('HOLD 상태인 LOT은 분할할 수 없습니다.');
@@ -120,6 +135,7 @@ export class LotSplitService {
       if (!sourceStock || sourceStock.qty < splitQty) {
         throw new BadRequestException(`분할 수량이 현재 재고보다 많습니다. 현재: ${sourceStock?.qty ?? 0}, 요청: ${splitQty}`);
       }
+      this.assertSameTenant(sourceStock, sourceLot.company, sourceLot.plant, '원본 재고');
       if ((sourceStock.reservedQty ?? 0) > 0) {
         throw new BadRequestException('예약 수량이 있는 LOT는 분할할 수 없습니다. 예약부터 먼저 정리해 주세요.');
       }
@@ -140,6 +156,7 @@ export class LotSplitService {
       if (!part) {
         throw new NotFoundException(`품목을 찾을 수 없습니다: ${sourceLot.itemCode}`);
       }
+      this.assertSameTenant(part, sourceLot.company, sourceLot.plant, '품목');
 
       // 분할 가능 여부 체크
       if (part.isSplittable === 'N') {

@@ -25,6 +25,10 @@ export class IqcPartSpecItemDto {
 
   @IsOptional()
   @IsString()
+  judgeCriteria?: string | null;
+
+  @IsOptional()
+  @IsString()
   useYn?: string;
 }
 

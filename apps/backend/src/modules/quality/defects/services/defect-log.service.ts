@@ -50,13 +50,49 @@ export class DefectLogService {
     private readonly reworkOrderRepository: Repository<ReworkOrder>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`,
+      );
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   private buildDefectLogId(defect: DefectLog) {
     return `${defect.occurAt.toISOString()}|${defect.seq}`;
   }
 
+  private defectPkWhere(defect: DefectLog, company?: string | null, plant?: string | null) {
+    return {
+      occurAt: defect.occurAt,
+      seq: defect.seq,
+      ...this.tenantWhere(company, plant),
+    };
+  }
+
   private async ensureNoLinkedRework(defect: DefectLog) {
     const linkedRework = await this.reworkOrderRepository.findOne({
-      where: { defectLogId: this.buildDefectLogId(defect) },
+      where: {
+        defectLogId: this.buildDefectLogId(defect),
+        ...this.tenantWhere(defect.company, defect.plant),
+      },
     });
     if (linkedRework) {
       throw new BadRequestException(
@@ -120,39 +156,50 @@ export class DefectLogService {
   /**
    * 불량로그 단건 조회 (occurAt + seq 복합키)
    */
-  async findByCompositeKey(occurAt: string, seq: number) {
+  async findByCompositeKey(
+    occurAt: string,
+    seq: number,
+    company?: string,
+    plant?: string,
+  ) {
     const defect = await this.defectLogRepository.findOne({
-      where: { occurAt: new Date(occurAt), seq },
+      where: { occurAt: new Date(occurAt), seq, ...this.tenantWhere(company, plant) },
     });
 
     if (!defect) {
       throw new NotFoundException(`불량로그를 찾을 수 없습니다: ${occurAt}/${seq}`);
     }
 
+    this.assertSameTenant('불량로그', defect, company, plant);
     return defect;
   }
 
   /**
    * 불량로그 단건 조회 (id 기준 — 기존 FK 호환)
    */
-  async findById(id: string) {
+  async findById(id: string, company?: string, plant?: string) {
     const defect = await this.defectLogRepository.findOne({
-      where: { seq: +id },
+      where: { seq: +id, ...this.tenantWhere(company, plant) },
     });
 
     if (!defect) {
       throw new NotFoundException(`불량로그를 찾을 수 없습니다: ${id}`);
     }
 
+    this.assertSameTenant('불량로그', defect, company, plant);
     return defect;
   }
 
   /**
    * 생산실적별 불량 목록 조회
    */
-  async findByProdResultNo(prodResultNo: string) {
+  async findByProdResultNo(
+    prodResultNo: string,
+    company?: string,
+    plant?: string,
+  ) {
     const defects = await this.defectLogRepository.find({
-      where: { prodResultNo },
+      where: { prodResultNo, ...this.tenantWhere(company, plant) },
       order: { occurAt: 'DESC' },
     });
 
@@ -165,12 +212,13 @@ export class DefectLogService {
   async create(dto: CreateDefectLogDto, company?: string, plant?: string) {
     // 생산실적 존재 확인
     const prodResult = await this.prodResultRepository.findOne({
-      where: { resultNo: dto.prodResultNo },
+      where: { resultNo: dto.prodResultNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!prodResult) {
       throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultNo}`);
     }
+    this.assertSameTenant('생산실적', prodResult, company, plant);
 
     // 불량 등록 및 생산실적 불량수량 증가를 트랜잭션으로 처리
     const defectLog = this.defectLogRepository.create({
@@ -190,7 +238,7 @@ export class DefectLogService {
 
     // 생산실적의 불량수량 증가
     await this.prodResultRepository.update(
-      { resultNo: dto.prodResultNo },
+      { resultNo: dto.prodResultNo, ...this.tenantWhere(company, plant) },
       { defectQty: prodResult.defectQty + (dto.qty ?? 1) }
     );
 
@@ -200,8 +248,13 @@ export class DefectLogService {
   /**
    * 불량로그 수정
    */
-  async update(id: string, dto: UpdateDefectLogDto) {
-    const existing = await this.findById(id);
+  async update(
+    id: string,
+    dto: UpdateDefectLogDto,
+    company?: string,
+    plant?: string,
+  ) {
+    const existing = await this.findById(id, company, plant);
     await this.ensureNoLinkedRework(existing);
     const pk = { occurAt: existing.occurAt, seq: existing.seq };
 
@@ -221,7 +274,7 @@ export class DefectLogService {
       );
 
       await this.prodResultRepository.update(
-        { resultNo: existing.prodResultNo },
+        { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
         { defectQty: () => `DEFECT_QTY + ${qtyDiff}` }
       );
     } else {
@@ -236,21 +289,21 @@ export class DefectLogService {
       );
     }
 
-    return this.findById(id);
+    return this.findById(id, company, plant);
   }
 
   /**
    * 불량로그 삭제
    */
-  async delete(id: string) {
-    const existing = await this.findById(id);
+  async delete(id: string, company?: string, plant?: string) {
+    const existing = await this.findById(id, company, plant);
     await this.ensureNoLinkedRework(existing);
 
     // 불량 삭제 시 생산실적 불량수량 감소
-    await this.defectLogRepository.delete({ occurAt: existing.occurAt, seq: existing.seq });
+    await this.defectLogRepository.delete(this.defectPkWhere(existing, company, plant));
 
     await this.prodResultRepository.update(
-      { resultNo: existing.prodResultNo },
+      { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
       { defectQty: () => `DEFECT_QTY - ${existing.qty}` }
     );
 
@@ -264,19 +317,24 @@ export class DefectLogService {
   /**
    * 불량 상태 변경
    */
-  async changeStatus(id: string, dto: ChangeDefectStatusDto) {
-    const existing = await this.findById(id);
+  async changeStatus(
+    id: string,
+    dto: ChangeDefectStatusDto,
+    company?: string,
+    plant?: string,
+  ) {
+    const existing = await this.findById(id, company, plant);
 
     // 상태 변경 유효성 검사
     await this.ensureNoLinkedRework(existing);
     this.validateStatusChange(existing.status, dto.status);
 
     await this.defectLogRepository.update(
-      { occurAt: existing.occurAt, seq: existing.seq },
+      this.defectPkWhere(existing, company, plant),
       { status: dto.status }
     );
 
-    return this.findById(id);
+    return this.findById(id, company, plant);
   }
 
   /**
@@ -306,7 +364,7 @@ export class DefectLogService {
    * 수리 이력 생성
    */
   async createRepairLog(dto: CreateRepairLogDto, company?: string, plant?: string) {
-    const defectLog = await this.findById(dto.defectLogId);
+    const defectLog = await this.findById(dto.defectLogId, company, plant);
 
     // WAIT 상태가 아니면 자동으로 REPAIR 상태로 변경하지 않음
     // 이미 REPAIR/REWORK 상태일 수 있음
@@ -340,9 +398,9 @@ export class DefectLogService {
           return savedRepairLog;
       }
 
-      const defect = await this.findById(dto.defectLogId);
+      const defect = await this.findById(dto.defectLogId, company, plant);
       await this.defectLogRepository.update(
-        { occurAt: defect.occurAt, seq: defect.seq },
+        this.defectPkWhere(defect, company, plant),
         { status: newStatus }
       );
     }
@@ -353,11 +411,15 @@ export class DefectLogService {
   /**
    * 불량로그별 수리 이력 조회
    */
-  async getRepairLogs(defectLogId: string) {
-    await this.findById(defectLogId); // 존재 확인
+  async getRepairLogs(
+    defectLogId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    await this.findById(defectLogId, company, plant); // 존재 확인
 
     return this.repairLogRepository.find({
-      where: { defectLogId },
+      where: { defectLogId, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
     });
   }
@@ -371,9 +433,12 @@ export class DefectLogService {
    */
   async getStatsByDefectType(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    company?: string,
+    plant?: string,
   ): Promise<DefectTypeStatsDto[]> {
     const where: any = {
+      ...this.tenantWhere(company, plant),
       ...(startDate || endDate
         ? {
             occurAt: And(
@@ -414,9 +479,12 @@ export class DefectLogService {
    */
   async getStatsByStatus(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    company?: string,
+    plant?: string,
   ): Promise<DefectStatusStatsDto[]> {
     const where: any = {
+      ...this.tenantWhere(company, plant),
       ...(startDate || endDate
         ? {
             occurAt: And(
@@ -446,7 +514,7 @@ export class DefectLogService {
   /**
    * 일별 불량 발생 추이
    */
-  async getDailyDefectTrend(days: number = 7) {
+  async getDailyDefectTrend(days: number = 7, company?: string, plant?: string) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days + 1);
     startDate.setHours(0, 0, 0, 0);
@@ -454,6 +522,7 @@ export class DefectLogService {
     const defects = await this.defectLogRepository.find({
       where: {
         occurAt: MoreThanOrEqual(startDate),
+        ...this.tenantWhere(company, plant),
       },
       select: ['occurAt', 'qty', 'defectCode'],
       order: { occurAt: 'ASC' },
@@ -480,10 +549,11 @@ export class DefectLogService {
   /**
    * 미처리 불량 목록 조회
    */
-  async getPendingDefects() {
+  async getPendingDefects(company?: string, plant?: string) {
     return this.defectLogRepository.find({
       where: {
         status: In(['WAIT', 'REPAIR', 'REWORK']),
+        ...this.tenantWhere(company, plant),
       },
       order: { occurAt: 'ASC' },
     });

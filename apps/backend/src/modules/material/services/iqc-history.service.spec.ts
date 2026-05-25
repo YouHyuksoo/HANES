@@ -126,6 +126,26 @@ describe('IqcHistoryService cancel policy', () => {
   });
 
   describe('createResult', () => {
+    it('요청 회사/공장과 다른 LOT에는 IQC 결과를 등록하지 않는다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        arrivalNo: 'ARR-001',
+        company: 'OTHER',
+        plant: 'P01',
+      } as MatLot);
+      mockIqcLogRepo.create.mockReturnValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as IqcLog);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+
+      await expect(
+        target.createResult({ matUid: 'MAT-001', result: 'PASS' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow('회사 정보가 일치하지 않습니다');
+
+      expect(mockMatLotRepo.update).not.toHaveBeenCalled();
+      expect(mockIqcLogRepo.save).not.toHaveBeenCalled();
+    });
+
     it('IQC 결과 등록은 LOT 회사/공장 범위에서 LOT와 품목을 조회/갱신한다', async () => {
       const lot = {
         matUid: 'MAT-001',
@@ -284,12 +304,14 @@ describe('IqcHistoryService cancel policy', () => {
     mockMatLotRepo.findOne.mockResolvedValue(lot);
     mockIqcLogRepo.create.mockReturnValue({ seq: 1 } as IqcLog);
     mockIqcLogRepo.save.mockResolvedValue({ seq: 1 } as IqcLog);
-    mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-DEFECT' } as Warehouse);
+    mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-DEFECT', company: 'HANES', plant: 'P01' } as Warehouse);
     mockMatStockRepo.findOne.mockResolvedValue({
       warehouseCode: 'WH-NORMAL',
       itemCode: 'ITEM-001',
       matUid: 'MAT-001',
       qty: 5,
+      company: 'HANES',
+      plant: 'P01',
     } as MatStock);
     mockNumbering.nextInTx.mockResolvedValue('TX-IQC-FAIL');
     mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
@@ -339,6 +361,8 @@ describe('IqcHistoryService cancel policy', () => {
       itemCode: 'ITEM-001',
       matUid: 'MAT-001',
       qty: 10,
+      company: 'HANES',
+      plant: 'P01',
     } as MatStock);
     mockNumbering.nextInTx.mockResolvedValue('TX-IQC-DESTRUCT');
     mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);

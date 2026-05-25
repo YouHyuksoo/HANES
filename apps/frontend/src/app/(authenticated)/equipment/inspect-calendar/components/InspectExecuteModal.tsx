@@ -105,6 +105,17 @@ export default function InspectExecuteModal({
     return true;
   }, [selectedWorkerId, items]);
 
+  const saveDisabledReason = useMemo(() => {
+    if (saving) return t("common.saving");
+    if (!selectedWorkerId) return t("equipment.inspectCalendar.inspectorName");
+    if (items.length === 0) return t("equipment.inspectCalendar.noInspection", "점검 항목이 없습니다");
+    if (items.some((i) => i.result === "")) return t("equipment.inspectCalendar.itemResult") + " 입력 필요";
+    if (items.some((i) => i.result === "FAIL" && !i.remark.trim())) {
+      return t("equipment.inspectCalendar.failCausePlaceholder") + " 입력이 필요합니다";
+    }
+    return "";
+  }, [saving, selectedWorkerId, items, t]);
+
   const handleSave = useCallback(async () => {
     if (!equip || !canSave) return;
     setSaving(true);
@@ -282,10 +293,15 @@ export default function InspectExecuteModal({
           <Button variant="secondary" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleSave} disabled={!canSave || saving}>
+          <Button onClick={handleSave} disabled={!canSave || saving} title={saveDisabledReason}>
             {saving ? t("common.saving") : t("common.save")}
           </Button>
         </div>
+        {saveDisabledReason && (
+          <div className="text-xs text-orange-600">
+            {saveDisabledReason}
+          </div>
+        )}
       </div>
     </Modal>
   );

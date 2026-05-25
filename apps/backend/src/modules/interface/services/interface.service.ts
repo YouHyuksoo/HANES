@@ -11,7 +11,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, MoreThanOrEqual, Between, In, EntityManager } from 'typeorm';
+import { Repository, MoreThanOrEqual, Between, In, EntityManager } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { OracleService } from '../../../common/services/oracle.service';
 import { InterLog } from '../../../entities/inter-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -39,7 +40,7 @@ export class InterfaceService {
     private readonly bomMasterRepository: Repository<BomMaster>,
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly oracleService: OracleService,
   ) {}
 
@@ -123,11 +124,11 @@ export class InterfaceService {
     const transDate = new Date();
     transDate.setHours(0, 0, 0, 0);
 
-    return this.dataSource.transaction(async (manager) => {
-      await manager.query('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
-      const seq = await this.getNextSeq(manager, transDate);
+    return this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.query('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
+      const seq = await this.getNextSeq(queryRunner.manager, transDate);
 
-      const log = manager.create(InterLog, {
+      const log = queryRunner.manager.create(InterLog, {
         transDate,
         seq,
         direction: dto.direction,
@@ -139,7 +140,7 @@ export class InterfaceService {
         plant,
       });
 
-      return manager.save(InterLog, log);
+      return queryRunner.manager.save(InterLog, log);
     });
   }
 
@@ -543,10 +544,10 @@ export class InterfaceService {
    * 스케줄러용: PENDING 상태 BOM 동기화 로그를 조회 후 재시도
    * @returns 처리 건수
    */
-  async scheduledSyncBom(): Promise<{ affectedRows: number }> {
+  async scheduledSyncBom(company?: string, plant?: string): Promise<{ affectedRows: number }> {
     try {
       const pendingLogs = await this.interLogRepository.find({
-        where: { status: 'PENDING', messageType: 'BOM_SYNC' },
+        where: { status: 'PENDING', messageType: 'BOM_SYNC', ...this.tenantWhere(company, plant) },
         order: { createdAt: 'ASC' },
         take: 50,
       });
@@ -561,7 +562,7 @@ export class InterfaceService {
           if (log.payload) {
             const payload = JSON.parse(log.payload);
             if (payload.items && Array.isArray(payload.items)) {
-              await this.syncBom(payload.items);
+              await this.syncBom(payload.items, log.company ?? company, log.plant ?? plant);
             }
           }
           processed++;
@@ -614,9 +615,9 @@ export class InterfaceService {
    * 스케줄러용: 실패 로그를 자동 조회 후 bulkRetry() 호출
    * @returns 처리 건수
    */
-  async scheduledBulkRetry(): Promise<{ affectedRows: number }> {
+  async scheduledBulkRetry(company?: string, plant?: string): Promise<{ affectedRows: number }> {
     try {
-      const failedLogs = await this.getFailedLogs();
+      const failedLogs = await this.getFailedLogs(company, plant);
       if (!failedLogs || failedLogs.length === 0) {
         return { affectedRows: 0 };
       }
@@ -625,7 +626,7 @@ export class InterfaceService {
         transDate: l.transDate,
         seq: l.seq,
       }));
-      const results = await this.bulkRetry(keys);
+      const results = await this.bulkRetry(keys, company, plant);
       return { affectedRows: Array.isArray(results) ? results.length : 0 };
     } catch (error: unknown) {
       this.logger.error(

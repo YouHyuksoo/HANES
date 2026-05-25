@@ -730,7 +730,7 @@ export class ShipmentService {
         await this.productInventoryService.cancelTransaction({
           transactionId: trans.transNo,
           remark: remark || `출하 ${id} 역분개`,
-        });
+        }, shipment.company ?? company, shipment.plant ?? plant);
       } catch (err: unknown) {
         this.logger.warn(
           `출하 ${id} 트랜잭션 ${trans.transNo} 역분개 실패: ${err instanceof Error ? err.message : String(err)}`,

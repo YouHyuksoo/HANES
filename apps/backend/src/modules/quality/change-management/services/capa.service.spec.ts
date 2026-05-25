@@ -35,13 +35,28 @@ describe('CapaService', () => {
     it('should return capa with actions', async () => {
       mockCapaRepo.findOne.mockResolvedValue({ id: 1, capaNo: 'CA-001' } as any);
       mockActionRepo.find.mockResolvedValue([]);
-      const r = await target.findById(1);
+      const r = await target.findById('CA-001');
       expect(r.capaNo).toBe('CA-001');
       expect(r.actions).toEqual([]);
     });
     it('should throw NotFoundException', async () => {
       mockCapaRepo.findOne.mockResolvedValue(null);
-      await expect(target.findById(999)).rejects.toThrow(NotFoundException);
+      await expect(target.findById('999')).rejects.toThrow(NotFoundException);
+    });
+
+    it('scopes CAPA lookup and actions by tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', company: 'CO', plant: 'P01' } as any);
+      mockActionRepo.find.mockResolvedValue([]);
+
+      await target.findById('CA-001', 'CO', 'P01');
+
+      expect(mockCapaRepo.findOne).toHaveBeenCalledWith({
+        where: { capaNo: 'CA-001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockActionRepo.find).toHaveBeenCalledWith({
+        where: { capaId: 'CA-001' },
+        order: { seq: 'ASC' },
+      });
     });
   });
 
@@ -50,12 +65,38 @@ describe('CapaService', () => {
       const item = { id: 1, status: 'OPEN' } as any;
       mockCapaRepo.findOne.mockResolvedValue(item);
       mockCapaRepo.save.mockResolvedValue({ ...item, status: 'ANALYZING' });
-      const r = await target.analyze(1, { rootCause: 'test' } as any, 'user');
+      const r = await target.analyze('CA-001', { rootCause: 'test' } as any, 'user');
       expect(r.status).toBe('ANALYZING');
     });
     it('should throw when not OPEN', async () => {
       mockCapaRepo.findOne.mockResolvedValue({ id: 1, status: 'CLOSED' } as any);
-      await expect(target.analyze(1, {} as any, 'user')).rejects.toThrow(BadRequestException);
+      await expect(target.analyze('CA-001', {} as any, 'user')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects analyze when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', status: 'OPEN', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.analyze('CA-001', { rootCause: 'x' } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockCapaRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('plan and start and verify', () => {
+    it('rejects plan when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', status: 'ANALYZING', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.plan('CA-001', { actionPlan: 'x' } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockCapaRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects start when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', status: 'ACTION_PLANNED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.start('CA-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockCapaRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects verify when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', status: 'IN_PROGRESS', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.verify('CA-001', { verificationResult: 'ok' } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockCapaRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -64,8 +105,14 @@ describe('CapaService', () => {
       const item = { id: 1, status: 'VERIFYING' } as any;
       mockCapaRepo.findOne.mockResolvedValue(item);
       mockCapaRepo.save.mockResolvedValue({ ...item, status: 'CLOSED' });
-      const r = await target.close(1, 'user');
+      const r = await target.close('CA-001', 'user');
       expect(r.status).toBe('CLOSED');
+    });
+
+    it('rejects close when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', status: 'VERIFYING', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.close('CA-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockCapaRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -73,7 +120,63 @@ describe('CapaService', () => {
     it('should throw when not OPEN', async () => {
       mockCapaRepo.findOne.mockResolvedValue({ id: 1, status: 'ANALYZING' } as any);
       mockActionRepo.find.mockResolvedValue([]);
-      await expect(target.delete(1)).rejects.toThrow(BadRequestException);
+      await expect(target.delete('CA-001')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects delete when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', status: 'OPEN', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.delete('CA-001', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockActionRepo.delete).not.toHaveBeenCalled();
+      expect(mockCapaRepo.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update and actions', () => {
+    it('rejects update when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', status: 'OPEN', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.update('CA-001', {} as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockCapaRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects addAction when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.addAction('CA-001', { seq: 1, actionDesc: 'x' } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockActionRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects updateAction when CAPA belongs to a different tenant', async () => {
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', company: 'OTHER', plant: 'P01' } as any);
+
+      await expect(
+        target.updateAction('CA-001', 1, { actionDesc: 'x' } as any, 'user', 'CO', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockActionRepo.findOne).not.toHaveBeenCalled();
+      expect(mockActionRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('updates action only after CAPA tenant is validated', async () => {
+      const action = { capaId: 'CA-001', seq: 1, actionDesc: 'old' } as CAPAAction;
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CA-001', company: 'CO', plant: 'P01' } as any);
+      mockActionRepo.findOne.mockResolvedValue(action);
+      mockActionRepo.save.mockImplementation(async (value) => value as CAPAAction);
+
+      const result = await target.updateAction(
+        'CA-001',
+        1,
+        { actionDesc: 'new' } as any,
+        'user',
+        'CO',
+        'P01',
+      );
+
+      expect(mockCapaRepo.findOne).toHaveBeenCalledWith({
+        where: { capaNo: 'CA-001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockCapaRepo.update).toHaveBeenCalledWith(
+        { capaNo: 'CA-001', company: 'CO', plant: 'P01' },
+        { updatedBy: 'user' },
+      );
+      expect(result.actionDesc).toBe('new');
     });
   });
 });

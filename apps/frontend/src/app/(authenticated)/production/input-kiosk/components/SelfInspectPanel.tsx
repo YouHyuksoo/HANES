@@ -78,12 +78,13 @@ interface TimingBtnProps {
   label: string;
   done: boolean;
   disabled: boolean;
+  disabledReason?: string;
   notify?: boolean;
   block?: boolean;
   onClick: () => void;
 }
 
-function TimingBtn({ timing, label, done, disabled, notify, block, onClick }: TimingBtnProps) {
+function TimingBtn({ timing, label, done, disabled, disabledReason, notify, block, onClick }: TimingBtnProps) {
   const tone: Record<InspectTiming, string> = {
     FIRST: 'border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300',
     MID: 'border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300',
@@ -103,6 +104,7 @@ function TimingBtn({ timing, label, done, disabled, notify, block, onClick }: Ti
     <button
       onClick={onClick}
       disabled={disabled && !done}
+      title={done ? label : (disabledReason || label)}
       className={`flex flex-col items-center gap-0.5 rounded border-2 px-1 py-1 text-xs font-semibold transition-all ${cls}`}
     >
       <span>{label}</span>
@@ -115,6 +117,11 @@ function TimingBtn({ timing, label, done, disabled, notify, block, onClick }: Ti
       ) : (
         <FlaskConical className="h-3 w-3 opacity-60" />
       )}
+      {!done && disabled && disabledReason ? (
+        <span className="text-[9px] text-text-muted leading-none" title={disabledReason}>
+          {disabledReason}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -134,6 +141,22 @@ export default function SelfInspectPanel({
   const allInterlockDone = isAllInterlockDone(interlock);
   const planQty = selectedJobOrder?.planQty ?? 0;
   const progressPct = planQty > 0 ? (savedResultCount / planQty) * 100 : 0;
+
+  const firstDisabledReason = !allInterlockDone
+    ? t('kiosk.prep.checkRequired')
+    : '';
+  const midDisabledReason = progressPct >= midBlockPct && !midInspectDone
+    ? t('kiosk.selfInspect.midBlock')
+    : !allInterlockDone
+      ? t('kiosk.prep.checkRequired')
+      : allInterlockDone && !firstInspectDone
+        ? t('kiosk.selfInspect.first')
+        : '';
+  const lastDisabledReason = !allInterlockDone
+    ? t('kiosk.prep.checkRequired')
+    : !firstInspectDone
+      ? t('kiosk.selfInspect.first')
+      : '';
 
   useEffect(() => {
     if (!orderNo) { setRows([]); return; }
@@ -169,6 +192,7 @@ export default function SelfInspectPanel({
           label={t('kiosk.selfInspect.first')}
           done={firstInspectDone}
           disabled={!allInterlockDone}
+          disabledReason={firstDisabledReason}
           onClick={() => onOpenSelfInspect('FIRST')}
         />
         <TimingBtn
@@ -176,6 +200,7 @@ export default function SelfInspectPanel({
           label={t('kiosk.selfInspect.mid')}
           done={midInspectDone}
           disabled={!allInterlockDone || !firstInspectDone}
+          disabledReason={midDisabledReason}
           notify={progressPct >= midNotifyPct && !midInspectDone}
           block={progressPct >= midBlockPct && !midInspectDone}
           onClick={() => onOpenSelfInspect('MID')}
@@ -185,6 +210,7 @@ export default function SelfInspectPanel({
           label={t('kiosk.selfInspect.last')}
           done={lastInspectDone}
           disabled={!allInterlockDone || !firstInspectDone}
+          disabledReason={lastDisabledReason}
           onClick={() => onOpenSelfInspect('LAST')}
         />
       </div>

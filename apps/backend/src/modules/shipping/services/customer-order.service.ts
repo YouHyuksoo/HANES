@@ -180,6 +180,8 @@ export class CustomerOrderService {
             shippedQty: 0,
             unitPrice: item.unitPrice,
             remark: item.remark,
+            company: company || null,
+            plant: plant || null,
           })
         );
         await queryRunner.manager.save(items);
@@ -214,6 +216,8 @@ export class CustomerOrderService {
             shippedQty: 0,
             unitPrice: item.unitPrice,
             remark: item.remark,
+            company: company || null,
+            plant: plant || null,
           })
         );
         await queryRunner.manager.save(items);

@@ -285,6 +285,8 @@ describe('AuthService', () => {
         empNo: 'EMP002',
         dept: '품질부',
         role: 'OPERATOR',
+        company: null,
+        plant: null,
       });
       expect(mockUserRepo.save).toHaveBeenCalledTimes(1);
     });
@@ -297,6 +299,29 @@ describe('AuthService', () => {
       await expect(
         target.register({ email: 'test@harness.com', password: 'pass' }),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('should persist selected tenant when registering a user', async () => {
+      const dto = {
+        email: 'new@harness.com',
+        password: 'newpass',
+        name: '신규사용자',
+        company: 'HANES',
+        plant: 'P01',
+      };
+      mockUserRepo.findOne.mockResolvedValue(null);
+      mockUserRepo.create.mockImplementation((payload) => ({ ...payload, status: 'ACTIVE' }) as User);
+      mockUserRepo.save.mockImplementation(async (payload) => payload as User);
+
+      const result = await target.register(dto);
+
+      expect(mockUserRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        email: 'new@harness.com',
+        company: 'HANES',
+        plant: 'P01',
+      }));
+      expect(result.user.company).toBe('HANES');
+      expect(result.user.plant).toBe('P01');
     });
   });
 

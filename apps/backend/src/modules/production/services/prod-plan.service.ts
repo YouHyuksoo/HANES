@@ -120,7 +120,10 @@ export class ProdPlanService {
     });
 
     const saved = await this.planRepo.save(plan);
-    return this.planRepo.findOne({ where: { planNo: saved.planNo }, relations: ['part'] });
+    return this.planRepo.findOne({
+      where: { planNo: saved.planNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      relations: ['part'],
+    });
   }
 
   /** 엑셀 일괄 등록 (트랜잭션) */

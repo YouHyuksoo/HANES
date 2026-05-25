@@ -45,6 +45,11 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
   const scannedMap = new Map(scannedMaterialLots.map(l => [`${l.itemCode}::${l.seq}`, l]));
   const allScanned = bomItems.length > 0 && bomItems.every(b => scannedMap.has(`${b.childItemCode}::${b.seq}`));
   const unscannedCount = bomItems.filter(b => !scannedMap.has(`${b.childItemCode}::${b.seq}`)).length;
+  const completeDisabledReason = allScanned
+    ? ''
+    : bomItems.length === 0
+      ? t('kiosk.prep.noBomItems')
+      : t('kiosk.material.remaining', { count: unscannedCount });
 
   const handleScan = useCallback(async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -147,10 +152,16 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
               setInterlock('materialScanDone', true);
               onDone();
             }}
+            title={completeDisabledReason || t('kiosk.material.allLotScanned')}
           >
             {allScanned ? t('kiosk.material.allLotScanned') : t('kiosk.material.remaining', { count: unscannedCount })}
           </Button>
         </div>
+        {completeDisabledReason && (
+          <p className="text-[11px] text-text-muted mt-1" title={completeDisabledReason}>
+            {completeDisabledReason}
+          </p>
+        )}
       </div>
     </Modal>
   );

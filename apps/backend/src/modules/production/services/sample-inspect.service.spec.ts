@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
@@ -88,6 +88,25 @@ describe('SampleInspectService', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
+  it('throws when job order tenant differs from request tenant', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-001', company: 'OTHER', plant: 'P1' } as any);
+
+    await expect(
+      service.create(
+        {
+          orderNo: 'JO-001',
+          inspectDate: '2026-03-18',
+          inspectorName: 'I',
+          samples: [{ sampleNo: 1, passYn: 'Y' }],
+        } as any,
+        'C1',
+        'P1',
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
   it('passes tenant scope to findByJobOrder', async () => {
     sampleInspectRepo.find.mockResolvedValue([] as SampleInspectResult[]);
 
@@ -111,7 +130,7 @@ describe('SampleInspectService', () => {
     };
     sampleInspectRepo.createQueryBuilder.mockReturnValue(qb as any);
 
-    await service.findHistory({}, 'C1', 'P1');
+    await service.findHistory({ page: 1, limit: 20 }, 'C1', 'P1');
 
     expect(qb.select).toHaveBeenCalledWith(expect.arrayContaining([
       'si.orderNo AS "orderNo"',
@@ -134,7 +153,7 @@ describe('SampleInspectService', () => {
     };
     sampleInspectRepo.createQueryBuilder.mockReturnValue(qb as any);
 
-    await service.findHistory({}, 'C1', 'P1');
+    await service.findHistory({ page: 1, limit: 20 }, 'C1', 'P1');
 
     expect(qb.leftJoin).toHaveBeenCalledWith(
       JobOrder,

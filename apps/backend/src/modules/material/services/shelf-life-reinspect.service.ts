@@ -55,6 +55,20 @@ export class ShelfLifeReInspectService {
     };
   }
 
+  private assertSameTenant(
+    row: { company?: string | null; plant?: string | null } | null | undefined,
+    company?: string | null,
+    plant?: string | null,
+    context = '데이터',
+  ) {
+    if (company && row?.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row?.company ?? 'NULL'}`);
+    }
+    if (plant && row?.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row?.plant ?? 'NULL'}`);
+    }
+  }
+
   /** 재검사 이력 조회 (inspectType = RETEST) */
   async findAll(query: { page?: number; limit?: number }, company?: string, plant?: string) {
     const { page = 1, limit = 20 } = query;
@@ -78,6 +92,7 @@ export class ShelfLifeReInspectService {
       where: { matUid: dto.matUid, ...this.tenantWhere(company, plant) },
     });
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
+    this.assertSameTenant(lot, company, plant, 'LOT');
 
     const lotTenant = this.tenantWhere(lot.company, lot.plant);
     const part = await this.partMasterRepo.findOne({ where: { itemCode: lot.itemCode, ...lotTenant } });
@@ -121,11 +136,13 @@ export class ShelfLifeReInspectService {
       where: { warehouseType: 'DEFECT', useYn: 'Y', ...tenantWhere },
     });
     if (!defectWh) return;
+    this.assertSameTenant(defectWh, company, plant, '불용창고');
 
     const stock = await this.matStockRepo.findOne({
       where: { matUid, itemCode, ...tenantWhere },
     });
     if (!stock || stock.qty <= 0) return;
+    this.assertSameTenant(stock, company, plant, '재검 대상 재고');
     if (stock.availableQty < stock.qty) {
       throw new BadRequestException(
         `??? ??? ?? ?? FAIL ??? ??? ? ????. ????: ${stock.availableQty}`,

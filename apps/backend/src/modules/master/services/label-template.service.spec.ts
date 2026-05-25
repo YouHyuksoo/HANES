@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { LabelTemplate } from '../../../entities/label-template.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
@@ -55,6 +55,12 @@ describe('LabelTemplateService', () => {
     mockRepo.findOne.mockResolvedValue(null);
 
     await expect(target.findById('BOX::FG', 'C1', 'P1')).rejects.toThrow(NotFoundException);
+  });
+
+  it('throws when matched template tenant differs from request tenant', async () => {
+    mockRepo.findOne.mockResolvedValue({ templateName: 'BOX', category: 'FG', company: 'OTHER', plant: 'P1' } as LabelTemplate);
+
+    await expect(target.findById('BOX::FG', 'C1', 'P1')).rejects.toThrow(BadRequestException);
   });
 
   it('creates a template within tenant and clears default only in tenant', async () => {

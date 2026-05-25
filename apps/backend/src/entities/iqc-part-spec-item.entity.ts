@@ -34,6 +34,9 @@ export class IqcPartSpecItem {
   @Column({ name: 'USL', type: 'decimal', precision: 12, scale: 4, nullable: true })
   usl: number | null;
 
+  @Column({ name: 'JUDGE_CRITERIA', type: 'varchar2', length: 500, nullable: true })
+  judgeCriteria: string | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

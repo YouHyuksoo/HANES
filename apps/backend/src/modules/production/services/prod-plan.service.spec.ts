@@ -111,6 +111,31 @@ describe('ProdPlanService', () => {
     });
   });
 
+  it('reloads created plan within tenant scope', async () => {
+    partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-1', company: 'C1', plant: 'P1' } as any);
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(null),
+    } as any;
+    planRepo.createQueryBuilder.mockReturnValue(qb);
+    planRepo.create.mockReturnValue({ planNo: 'PP-202603-001', company: 'C1', plant: 'P1' } as any);
+    planRepo.save.mockResolvedValue({ planNo: 'PP-202603-001', company: 'C1', plant: 'P1' } as any);
+    planRepo.findOne.mockResolvedValue({ planNo: 'PP-202603-001', company: 'C1', plant: 'P1' } as any);
+
+    await service.create({
+      planMonth: '2026-03',
+      itemCode: 'ITEM-1',
+      itemType: 'FINISHED',
+      planQty: 10,
+    } as any, 'C1', 'P1');
+
+    expect(planRepo.findOne).toHaveBeenCalledWith({
+      where: { planNo: 'PP-202603-001', company: 'C1', plant: 'P1' },
+      relations: ['part'],
+    });
+  });
+
   it('throws when part missing', async () => {
     partRepo.findOne.mockResolvedValue(null);
     await expect(service.create({ itemCode: 'X' } as any)).rejects.toThrow(NotFoundException);

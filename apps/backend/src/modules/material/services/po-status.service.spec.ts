@@ -69,7 +69,7 @@ describe('PoStatusService', () => {
       mockPoRepo.count.mockResolvedValue(0);
       mockPoItemRepo.find.mockResolvedValue([]);
 
-      const result = await target.findAll({});
+      const result = await target.findAll({ page: 1, limit: 20 });
 
       expect(result.data).toHaveLength(0);
     });

@@ -9,7 +9,8 @@
  */
 import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { MenuCategory } from '../../../entities/menu-category.entity';
 import { MenuCategoryItem } from '../../../entities/menu-category-item.entity';
 import {
@@ -32,7 +33,7 @@ export class MenuCategoriesService {
     private readonly categoryRepo: Repository<MenuCategory>,
     @InjectRepository(MenuCategoryItem)
     private readonly itemRepo: Repository<MenuCategoryItem>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findAll(scope?: AuditScope): Promise<MenuCategory[]> {
@@ -120,8 +121,8 @@ export class MenuCategoriesService {
 
   async reorder(dto: ReorderCategoriesDto, scope?: AuditScope): Promise<void> {
     const tenantWhere = scope ? { company: scope.company, plantCd: scope.plantCd } : {};
-    await this.dataSource.transaction(async (manager) => {
-      const repo = manager.getRepository(MenuCategory);
+    await this.tx.run(async (queryRunner) => {
+      const repo = queryRunner.manager.getRepository(MenuCategory);
       for (const item of dto.items) {
         await repo.update(
           { categoryCode: item.code, ...tenantWhere },

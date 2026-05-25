@@ -81,8 +81,12 @@ export class ChangeOrderController {
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '변경점 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.changeOrderService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.changeOrderService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -112,12 +116,16 @@ export class ChangeOrderController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateChangeOrderDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.update(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '변경점이 수정되었습니다.');
   }
@@ -127,8 +135,12 @@ export class ChangeOrderController {
   @ApiOperation({ summary: '변경점 삭제', description: 'DRAFT 상태에서만 가능' })
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') id: string) {
-    await this.changeOrderService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.changeOrderService.delete(id, company, plant);
     return ResponseUtil.success(null, '변경점이 삭제되었습니다.');
   }
 
@@ -140,11 +152,15 @@ export class ChangeOrderController {
   @ApiResponse({ status: 200, description: '제출 성공' })
   async submit(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.submit(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '변경점이 제출되었습니다.');
   }
@@ -159,12 +175,16 @@ export class ChangeOrderController {
   async review(
     @Param('id') id: string,
     @Body() dto: ReviewChangeOrderDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.review(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data);
   }
@@ -176,12 +196,16 @@ export class ChangeOrderController {
   async approve(
     @Param('id') id: string,
     @Body() dto: ReviewChangeOrderDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.approve(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '변경점이 승인되었습니다.');
   }
@@ -192,11 +216,15 @@ export class ChangeOrderController {
   @ApiResponse({ status: 200, description: '시행 시작' })
   async start(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.start(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '시행이 시작되었습니다.');
   }
@@ -207,11 +235,15 @@ export class ChangeOrderController {
   @ApiResponse({ status: 200, description: '완료' })
   async complete(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.complete(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '변경점이 완료되었습니다.');
   }

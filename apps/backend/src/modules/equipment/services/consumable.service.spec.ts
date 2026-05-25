@@ -27,6 +27,20 @@ describe('ConsumableService', () => {
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
 
+  const setDataSourceManager = (manager: unknown) => {
+    Object.defineProperty(mockDataSource, 'manager', {
+      configurable: true,
+      value: manager,
+    });
+  };
+
+  const setQueryRunnerManager = (manager: unknown) => {
+    Object.defineProperty(mockQr, 'manager', {
+      configurable: true,
+      value: manager,
+    });
+  };
+
   beforeEach(async () => {
     mockConsumableRepo = createMock<Repository<ConsumableMaster>>();
     mockLogRepo = createMock<Repository<ConsumableLog>>();
@@ -35,7 +49,7 @@ describe('ConsumableService', () => {
     mockEquipRepo = createMock<Repository<EquipMaster>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
-    mockDataSource.manager = { query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]) } as any;
+    setDataSourceManager({ query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]) });
     mockQr = createMock<QueryRunner>();
     mockDataSource.createQueryRunner.mockReturnValue(mockQr);
     mockTx.run.mockImplementation(async (callback) => callback(mockQr));
@@ -44,7 +58,7 @@ describe('ConsumableService', () => {
     mockQr.commitTransaction.mockResolvedValue(undefined);
     mockQr.rollbackTransaction.mockResolvedValue(undefined);
     mockQr.release.mockResolvedValue(undefined);
-    mockQr.manager = { query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]), update: jest.fn(), save: jest.fn() } as any;
+    setQueryRunnerManager({ query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]), update: jest.fn(), save: jest.fn() });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

@@ -10,6 +10,7 @@
  * - BomCheckList로 BOM 항목별 스캔 현황 표시
  * - 출고확인 버튼 → Phase 3(CONFIRM)으로 이동
  */
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import ScanInput from "@/components/pda/ScanInput";
 import type { ScanInputHandle } from "@/components/pda/ScanInput";
@@ -40,6 +41,10 @@ export function ScanMaterialPhase({
   onCancel,
 }: Props) {
   const { t } = useTranslation();
+  const allUnchecked = useMemo(() => bomItems.length > 0 && bomItems.every((b) => !b.checked), [bomItems]);
+  const confirmIssueDisabledReason = allUnchecked
+    ? "BOM 항목이 있으면 최소 1개 이상 스캔해 주세요."
+    : undefined;
 
   return (
     <>
@@ -92,7 +97,8 @@ export function ScanMaterialPhase({
             label: t("pda.issuing.confirmIssue"),
             onClick: onConfirm,
             variant: "primary",
-            disabled: bomItems.length > 0 && bomItems.every((b) => !b.checked),
+            disabled: allUnchecked,
+            disabledReason: confirmIssueDisabledReason,
           },
           { label: t("common.cancel"), onClick: onCancel, variant: "secondary" },
         ]}

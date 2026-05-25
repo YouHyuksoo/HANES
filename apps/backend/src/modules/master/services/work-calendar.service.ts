@@ -15,7 +15,8 @@ import {
   Injectable, NotFoundException, ConflictException, BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { WorkCalendar } from '../../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../../entities/work-calendar-day.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
@@ -38,7 +39,7 @@ export class WorkCalendarService {
     private readonly dayRepo: Repository<WorkCalendarDay>,
     @InjectRepository(ShiftPattern)
     private readonly shiftRepo: Repository<ShiftPattern>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -124,9 +125,9 @@ export class WorkCalendarService {
     this.ensureNotConfirmed(calendar);
 
     const where = { calendarId, ...this.tenantWhere(company, plant) };
-    await this.dataSource.transaction(async (manager) => {
-      await manager.delete(WorkCalendarDay, where);
-      await manager.delete(WorkCalendar, where);
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(WorkCalendarDay, where);
+      await queryRunner.manager.delete(WorkCalendar, where);
     });
     return { calendarId };
   }
@@ -163,8 +164,8 @@ export class WorkCalendarService {
     const minDate = dates.reduce((a, b) => (a < b ? a : b));
     const maxDate = dates.reduce((a, b) => (a > b ? a : b));
 
-    return this.dataSource.transaction(async (manager) => {
-      await manager.createQueryBuilder()
+    return this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.createQueryBuilder()
         .delete()
         .from(WorkCalendarDay)
         .where('calendarId = :calendarId', { calendarId })
@@ -177,7 +178,7 @@ export class WorkCalendarService {
         .execute();
 
       const entities = dto.days.map((d) =>
-        manager.create(WorkCalendarDay, {
+        queryRunner.manager.create(WorkCalendarDay, {
           calendarId,
           workDate: d.workDate,
           dayType: d.dayType,
@@ -191,7 +192,7 @@ export class WorkCalendarService {
           plant,
         }),
       );
-      return manager.save(WorkCalendarDay, entities);
+      return queryRunner.manager.save(WorkCalendarDay, entities);
     });
   }
 
@@ -269,17 +270,17 @@ export class WorkCalendarService {
       });
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      await manager.delete(WorkCalendarDay, { calendarId, ...this.tenantWhere(company, plant) });
+    return this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(WorkCalendarDay, { calendarId, ...this.tenantWhere(company, plant) });
 
       /** 배치 단위로 저장 (Oracle 제한 대응) */
       const BATCH_SIZE = 100;
       const saved: WorkCalendarDay[] = [];
       for (let i = 0; i < days.length; i += BATCH_SIZE) {
         const batch = days.slice(i, i + BATCH_SIZE).map((item) =>
-          manager.create(WorkCalendarDay, item),
+          queryRunner.manager.create(WorkCalendarDay, item),
         );
-        const result = await manager.save(WorkCalendarDay, batch);
+        const result = await queryRunner.manager.save(WorkCalendarDay, batch);
         saved.push(...result);
       }
       return saved;
@@ -301,21 +302,21 @@ export class WorkCalendarService {
       throw new NotFoundException(`복사 원본 캘린더에 일정이 없습니다: ${sourceId}`);
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      await manager.delete(WorkCalendarDay, { calendarId, ...this.tenantWhere(company, plant) });
+    return this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(WorkCalendarDay, { calendarId, ...this.tenantWhere(company, plant) });
 
       const BATCH_SIZE = 100;
       const saved: WorkCalendarDay[] = [];
       for (let i = 0; i < sourceDays.length; i += BATCH_SIZE) {
         const batch = sourceDays.slice(i, i + BATCH_SIZE).map((day) =>
-          manager.create(WorkCalendarDay, {
+          queryRunner.manager.create(WorkCalendarDay, {
             ...day,
             calendarId,
             company,
             plant,
           }),
         );
-        const result = await manager.save(WorkCalendarDay, batch);
+        const result = await queryRunner.manager.save(WorkCalendarDay, batch);
         saved.push(...result);
       }
       return saved;

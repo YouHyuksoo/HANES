@@ -43,6 +43,23 @@ export class IqcHistoryService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null } | null | undefined,
+  ) {
+    if (requested.company && actual?.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual?.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual?.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual?.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, inspectType, result, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -132,6 +149,7 @@ export class IqcHistoryService {
     if (!lot) {
       throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
     }
+    this.assertSameTenant('LOT', { company, plant }, lot);
 
     const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
 
@@ -195,11 +213,13 @@ export class IqcHistoryService {
       where: { warehouseType: 'DEFECT', useYn: 'Y', ...this.tenantWhere(company, plant) },
     });
     if (!defectWarehouse) return;
+    this.assertSameTenant('불용창고', { company, plant }, defectWarehouse);
 
     const stock = await this.matStockRepository.findOne({
       where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
     });
     if (!stock || stock.qty <= 0) return;
+    this.assertSameTenant('IQC 대상 재고', { company, plant }, stock);
 
     return this.tx.run(async (queryRunner) => {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
@@ -258,6 +278,7 @@ export class IqcHistoryService {
       where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
     });
     if (!stock || stock.qty < sampleQty) return;
+    this.assertSameTenant('IQC 파괴검사 재고', { company, plant }, stock);
 
     return this.tx.run(async (queryRunner) => {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');

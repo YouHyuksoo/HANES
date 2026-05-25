@@ -94,6 +94,16 @@ export default function PmExecuteModal({ isOpen, onClose, workOrder, onSaved, mo
     return true;
   }, [selectedWorkerId, items]);
 
+  const saveDisabledReason = useMemo(() => {
+    if (saving) return t("common.saving");
+    if (!selectedWorkerId) return t("equipment.pmWorkOrder.worker");
+    if (items.some((i) => i.result === "")) return t("equipment.pmWorkOrder.fillAllItems");
+    if (items.some((i) => i.result === "FAIL" && !i.remark.trim())) {
+      return t("equipment.pmWorkOrder.remarkPlaceholder");
+    }
+    return "";
+  }, [saving, selectedWorkerId, items, t]);
+
   const handleSave = useCallback(async () => {
     if (!workOrder || !canSave) return;
     setSaving(true);
@@ -337,15 +347,20 @@ export default function PmExecuteModal({ isOpen, onClose, workOrder, onSaved, mo
             </Button>
           ) : (
             <>
-              <Button variant="secondary" onClick={onClose}>
-                {t("common.cancel")}
-              </Button>
-              <Button onClick={handleSave} disabled={!canSave || saving}>
+            <Button variant="secondary" onClick={onClose}>
+              {t("common.cancel")}
+            </Button>
+              <Button onClick={handleSave} disabled={!canSave || saving} title={saveDisabledReason}>
                 {saving ? t("common.saving") : t("equipment.pmWorkOrder.completeWo")}
               </Button>
             </>
           )}
         </div>
+        {saveDisabledReason && (
+          <div className="text-xs text-orange-600">
+            {saveDisabledReason}
+          </div>
+        )}
       </div>
     </Modal>
   );

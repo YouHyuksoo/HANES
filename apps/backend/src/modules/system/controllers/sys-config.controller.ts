@@ -56,31 +56,48 @@ export class SysConfigController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '환경설정 등록' })
-  async create(@Body() dto: CreateSysConfigDto) {
-    const data = await this.sysConfigService.create(dto);
+  async create(
+    @Body() dto: CreateSysConfigDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.sysConfigService.create(dto, company, plant);
     return ResponseUtil.success(data, '설정이 등록되었습니다.');
   }
 
   @Patch(':id')
   @ApiOperation({ summary: '환경설정 수정' })
   @ApiParam({ name: 'id', description: '설정 ID' })
-  async update(@Param('id') id: string, @Body() dto: UpdateSysConfigDto) {
-    const data = await this.sysConfigService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateSysConfigDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.sysConfigService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '설정이 수정되었습니다.');
   }
 
   @Put('bulk')
   @ApiOperation({ summary: '환경설정 일괄 저장' })
-  async bulkUpdate(@Body() dto: BulkUpdateSysConfigDto) {
-    const data = await this.sysConfigService.bulkUpdate(dto);
+  async bulkUpdate(
+    @Body() dto: BulkUpdateSysConfigDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.sysConfigService.bulkUpdate(dto, company, plant);
     return ResponseUtil.success(data, '설정이 저장되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '환경설정 삭제' })
   @ApiParam({ name: 'id', description: '설정 ID' })
-  async remove(@Param('id') id: string) {
-    const data = await this.sysConfigService.remove(id);
+  async remove(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.sysConfigService.remove(id, company, plant);
     return ResponseUtil.success(data, '설정이 삭제되었습니다.');
   }
 }

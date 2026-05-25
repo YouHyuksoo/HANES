@@ -59,6 +59,22 @@ describe('DocumentService', () => {
       // Act & Assert
       await expect(target.findById('NONE')).rejects.toThrow(NotFoundException);
     });
+
+    it('scopes document lookup by tenant', async () => {
+      const doc = {
+        docNo: 'DOC-001',
+        status: 'DRAFT',
+        company: 'COMP',
+        plant: 'PLANT',
+      } as DocumentMaster;
+      mockRepo.findOne.mockResolvedValue(doc);
+
+      await target.findById('DOC-001', 'COMP', 'PLANT');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { docNo: 'DOC-001', company: 'COMP', plant: 'PLANT' },
+      });
+    });
   });
 
   // ─── create ───
@@ -131,6 +147,21 @@ describe('DocumentService', () => {
       // Act & Assert
       await expect(target.update('DOC-001', {} as any, 'user')).rejects.toThrow(BadRequestException);
     });
+
+    it('rejects update when document belongs to a different tenant', async () => {
+      const doc = {
+        docNo: 'DOC-001',
+        status: 'DRAFT',
+        company: 'OTHER',
+        plant: 'PLANT',
+      } as DocumentMaster;
+      mockRepo.findOne.mockResolvedValue(doc);
+
+      await expect(
+        target.update('DOC-001', { docTitle: 'Updated' } as any, 'user', 'COMP', 'PLANT'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   // ─── delete ───
@@ -155,6 +186,19 @@ describe('DocumentService', () => {
 
       // Act & Assert
       await expect(target.delete('DOC-001')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects delete when document belongs to a different tenant', async () => {
+      const doc = {
+        docNo: 'DOC-001',
+        status: 'DRAFT',
+        company: 'COMP',
+        plant: 'OTHER',
+      } as DocumentMaster;
+      mockRepo.findOne.mockResolvedValue(doc);
+
+      await expect(target.delete('DOC-001', 'COMP', 'PLANT')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.remove).not.toHaveBeenCalled();
     });
   });
 
@@ -194,6 +238,19 @@ describe('DocumentService', () => {
       // Act & Assert
       await expect(target.approve('DOC-001', 'user')).rejects.toThrow(BadRequestException);
     });
+
+    it('rejects approve when document belongs to a different tenant', async () => {
+      const doc = {
+        docNo: 'DOC-001',
+        status: 'DRAFT',
+        company: 'OTHER',
+        plant: 'PLANT',
+      } as DocumentMaster;
+      mockRepo.findOne.mockResolvedValue(doc);
+
+      await expect(target.approve('DOC-001', 'user', 'COMP', 'PLANT')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   // ─── revise ───
@@ -229,6 +286,20 @@ describe('DocumentService', () => {
 
       // Act & Assert
       await expect(target.revise('DOC-001', 'user')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects revise when document belongs to a different tenant', async () => {
+      const doc = {
+        docNo: 'DOC-001',
+        status: 'APPROVED',
+        revisionNo: 1,
+        company: 'COMP',
+        plant: 'OTHER',
+      } as DocumentMaster;
+      mockRepo.findOne.mockResolvedValue(doc);
+
+      await expect(target.revise('DOC-001', 'user', 'COMP', 'PLANT')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
     });
   });
 

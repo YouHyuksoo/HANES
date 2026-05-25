@@ -35,7 +35,7 @@ export class HttpExecutor implements IJobExecutor {
    * @returns 실행 결과
    */
   async execute(job: SchedulerJob): Promise<ExecutorResult> {
-    const { execTarget, execParams, timeoutSec } = job;
+    const { execTarget, execParams, timeoutSec, company, plantCd } = job;
 
     // execTarget을 METHOD URL로 분리
     const spaceIndex = execTarget.indexOf(' ');
@@ -82,8 +82,20 @@ export class HttpExecutor implements IJobExecutor {
     let body: string | undefined;
     if (execParams) {
       try {
-        JSON.parse(execParams); // JSON 유효성 검증
-        body = execParams;
+        const parsed = JSON.parse(execParams);
+
+        // 실행 요청 본문에 company/plant 관련 키가 있으면 스케줄러 테넌트를 강제 반영
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          const mutated = { ...parsed } as Record<string, unknown>;
+
+          if ('company' in mutated) mutated.company = company;
+          if ('plant' in mutated) mutated.plant = plantCd;
+          if ('plantCd' in mutated) mutated.plantCd = plantCd;
+
+          body = JSON.stringify(mutated);
+        } else {
+          body = execParams;
+        }
       } catch (error: unknown) {
         throw new BadRequestException(
           `execParams JSON 파싱 실패: ${(error as Error).message}`,
@@ -103,7 +115,11 @@ export class HttpExecutor implements IJobExecutor {
     try {
       const response = await fetch(urlStr, {
         method,
-        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        headers: {
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+          'X-Company': company,
+          'X-Plant': plantCd,
+        },
         body: method !== 'GET' ? body : undefined,
         signal: controller.signal,
       });

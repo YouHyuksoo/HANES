@@ -127,6 +127,29 @@ describe('ShipReturnService', () => {
         BadRequestException,
       );
     });
+
+    it('should preserve tenant columns when replacing items', async () => {
+      mockReturnRepo.findOne
+        .mockResolvedValueOnce({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null, company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null, company: 'C1', plant: 'P1' } as any);
+      mockReturnItemRepo.find.mockResolvedValue([]);
+      mockReturnItemRepo.create.mockImplementation((payload) => payload as any);
+      mockPartRepo.findOne.mockResolvedValue(null);
+
+      await target.update(
+        'SR-001',
+        { items: [{ itemCode: 'ITEM-1', returnQty: 2 }] } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockReturnItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        returnNo: 'SR-001',
+        itemCode: 'ITEM-1',
+        company: 'C1',
+        plant: 'P1',
+      }));
+    });
   });
 
   describe('create', () => {
@@ -151,6 +174,35 @@ describe('ShipReturnService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQr.commitTransaction).not.toHaveBeenCalled();
       expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('should preserve tenant columns when creating items', async () => {
+      mockReturnRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null, company: 'C1', plant: 'P1' } as any);
+      mockReturnRepo.create.mockReturnValue({ returnNo: 'SR-001', company: 'C1', plant: 'P1' } as any);
+      mockReturnItemRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save
+        .mockResolvedValueOnce({ returnNo: 'SR-001', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce([] as any);
+      mockReturnItemRepo.find.mockResolvedValue([]);
+      mockPartRepo.findOne.mockResolvedValue(null);
+
+      await target.create(
+        {
+          returnNo: 'SR-001',
+          items: [{ itemCode: 'ITEM-1', returnQty: 1 }],
+        } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockReturnItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        returnNo: 'SR-001',
+        itemCode: 'ITEM-1',
+        company: 'C1',
+        plant: 'P1',
+      }));
     });
   });
 });

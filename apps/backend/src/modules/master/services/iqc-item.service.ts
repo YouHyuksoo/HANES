@@ -7,7 +7,7 @@
  * 2. findAll: 목록 조회 (itemCode, search 필터)
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IqcItemMaster } from '../../../entities/iqc-item-master.entity';
@@ -25,6 +25,23 @@ export class IqcItemService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
   }
 
   async findAll(query: IqcItemQueryDto, company?: string, plant?: string) {
@@ -72,6 +89,7 @@ export class IqcItemService {
     if (!item) {
       throw new NotFoundException('IQC 검사항목을 찾을 수 없습니다.');
     }
+    this.assertSameTenant('IQC 검사항목', { company, plant }, item);
 
     return item;
   }

@@ -137,6 +137,26 @@ describe('ProductInventoryService', () => {
       await expect(target.cancelTransaction({ transactionId: 'PTX001' } as any)).rejects.toThrow(BadRequestException);
     });
 
+    it('rejects cancellation when original product transaction belongs to a different tenant', async () => {
+      mockTransRepo.findOne.mockResolvedValue({
+        transNo: 'PTX001',
+        transType: 'FG_OUT',
+        status: 'DONE',
+        fromWarehouseId: 'WH',
+        itemCode: 'FG',
+        itemType: 'FINISHED',
+        prdUid: 'LOT1',
+        qty: -10,
+        company: 'OTHER',
+        plant: 'P1',
+      } as any);
+
+      await expect(
+        target.cancelTransaction({ transactionId: 'PTX001' } as any, 'C1', 'P1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
     it('should cancel transaction and restore stock within original tenant only', async () => {
       const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
       mockTransRepo.createQueryBuilder.mockReturnValue(qb);
@@ -179,6 +199,38 @@ describe('ProductInventoryService', () => {
         { warehouseCode: 'WH', itemCode: 'FG', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 30, availableQty: 30 }),
       );
+    });
+
+    it('rejects cancellation when restored product stock belongs to a different tenant', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTransRepo.findOne.mockResolvedValue({
+        transNo: 'PTX001',
+        transType: 'FG_OUT',
+        status: 'DONE',
+        fromWarehouseId: 'WH',
+        itemCode: 'FG',
+        itemType: 'FINISHED',
+        prdUid: 'LOT1',
+        qty: -10,
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+      mockTransRepo.create.mockReturnValue({ transNo: 'PTX002' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX002' } as any);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'WH',
+        itemCode: 'FG',
+        prdUid: 'LOT1',
+        qty: 20,
+        availableQty: 20,
+        company: 'OTHER',
+        plant: 'P1',
+      } as any);
+
+      await expect(
+        target.cancelTransaction({ transactionId: 'PTX001' } as any, 'C1', 'P1'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

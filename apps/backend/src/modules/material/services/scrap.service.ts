@@ -41,6 +41,20 @@ export class ScrapService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   async findAll(query: ScrapQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -115,6 +129,7 @@ export class ScrapService {
       if (!lot) {
         throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
       }
+      this.assertSameTenant('폐기 대상 LOT', lot, company, plant);
 
       // 재고 확인 (MatStock 기준)
       const stock = await queryRunner.manager.findOne(MatStock, {
@@ -124,6 +139,7 @@ export class ScrapService {
       if (!stock || stock.qty < qty) {
         throw new BadRequestException(`??? ??? ?????. ?? ??: ${stock?.qty ?? 0}`);
       }
+      this.assertSameTenant('폐기 대상 재고', stock, company, plant);
       if (stock.availableQty < qty) {
         throw new BadRequestException(
           `??? ??? ?? ?? ??? ??? ?????. ????: ${stock.availableQty}`,

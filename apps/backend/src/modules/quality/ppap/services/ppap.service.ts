@@ -173,6 +173,31 @@ export class PpapService {
     private readonly ppapRepo: Repository<PpapSubmission>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`,
+      );
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   // =============================================
   // PPAP 번호 자동채번
   // =============================================
@@ -256,11 +281,14 @@ export class PpapService {
   /**
    * PPAP 단건 조회
    */
-  async findById(ppapNo: string) {
-    const item = await this.ppapRepo.findOne({ where: { ppapNo } });
+  async findById(ppapNo: string, company?: string, plant?: string) {
+    const item = await this.ppapRepo.findOne({
+      where: { ppapNo, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('PPAP 제출을 찾을 수 없습니다.');
     }
+    this.assertSameTenant('PPAP 제출', item, company, plant);
     return item;
   }
 
@@ -291,8 +319,14 @@ export class PpapService {
   /**
    * PPAP 수정 (DRAFT 또는 REJECTED 상태에서만 가능)
    */
-  async update(ppapNo: string, dto: UpdatePpapDto, userId: string) {
-    const item = await this.findById(ppapNo);
+  async update(
+    ppapNo: string,
+    dto: UpdatePpapDto,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(ppapNo, company, plant);
     if (!['DRAFT', 'REJECTED'].includes(item.status)) {
       throw new BadRequestException(
         '초안 또는 반려 상태에서만 수정할 수 있습니다.',
@@ -311,8 +345,8 @@ export class PpapService {
   /**
    * PPAP 삭제 (DRAFT 상태에서만 가능)
    */
-  async delete(ppapNo: string) {
-    const item = await this.findById(ppapNo);
+  async delete(ppapNo: string, company?: string, plant?: string) {
+    const item = await this.findById(ppapNo, company, plant);
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 삭제할 수 있습니다.');
     }
@@ -326,8 +360,13 @@ export class PpapService {
   /**
    * 제출 (DRAFT → SUBMITTED)
    */
-  async submit(ppapNo: string, userId: string) {
-    const item = await this.findById(ppapNo);
+  async submit(
+    ppapNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(ppapNo, company, plant);
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 제출할 수 있습니다.');
     }
@@ -342,8 +381,13 @@ export class PpapService {
   /**
    * 승인 (SUBMITTED → APPROVED)
    */
-  async approve(ppapNo: string, userId: string) {
-    const item = await this.findById(ppapNo);
+  async approve(
+    ppapNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(ppapNo, company, plant);
     if (item.status !== 'SUBMITTED') {
       throw new BadRequestException(
         '제출된 상태에서만 승인할 수 있습니다.',
@@ -361,8 +405,14 @@ export class PpapService {
   /**
    * 반려 (SUBMITTED → REJECTED)
    */
-  async reject(ppapNo: string, reason: string, userId: string) {
-    const item = await this.findById(ppapNo);
+  async reject(
+    ppapNo: string,
+    reason: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(ppapNo, company, plant);
     if (item.status !== 'SUBMITTED') {
       throw new BadRequestException(
         '제출된 상태에서만 반려할 수 있습니다.',
@@ -379,8 +429,13 @@ export class PpapService {
   /**
    * 승인 취소 (APPROVED → SUBMITTED)
    */
-  async cancelApproval(ppapNo: string, userId: string) {
-    const item = await this.findById(ppapNo);
+  async cancelApproval(
+    ppapNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(ppapNo, company, plant);
     if (item.status !== 'APPROVED') {
       throw new BadRequestException(
         '승인 상태에서만 승인취소할 수 있습니다.',
@@ -398,8 +453,13 @@ export class PpapService {
   /**
    * 제출 취소 (SUBMITTED → DRAFT)
    */
-  async cancelSubmit(ppapNo: string, userId: string) {
-    const item = await this.findById(ppapNo);
+  async cancelSubmit(
+    ppapNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(ppapNo, company, plant);
     if (item.status !== 'SUBMITTED') {
       throw new BadRequestException(
         '제출 상태에서만 제출취소할 수 있습니다.',
@@ -433,8 +493,8 @@ export class PpapService {
   /**
    * 완성률 계산 (필수 요소 대비 완료된 비율)
    */
-  async getCompletionRate(ppapNo: string) {
-    const item = await this.findById(ppapNo);
+  async getCompletionRate(ppapNo: string, company?: string, plant?: string) {
+    const item = await this.findById(ppapNo, company, plant);
     const matrix = PPAP_LEVEL_MATRIX[item.ppapLevel] ?? PPAP_LEVEL_MATRIX[3];
     const requiredKeys = PPAP_ELEMENT_KEYS.filter((key) => matrix[key]);
     if (requiredKeys.length === 0) {

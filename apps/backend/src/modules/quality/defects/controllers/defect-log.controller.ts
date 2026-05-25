@@ -67,8 +67,8 @@ export class DefectLogController {
   @Get('pending')
   @ApiOperation({ summary: '미처리 불량 목록', description: 'WAIT, REPAIR, REWORK 상태의 불량' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getPendingDefects() {
-    const data = await this.defectLogService.getPendingDefects();
+  async getPendingDefects(@Company() company: string, @Plant() plant: string) {
+    const data = await this.defectLogService.getPendingDefects(company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -79,9 +79,11 @@ export class DefectLogController {
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStatsByType(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.defectLogService.getStatsByDefectType(startDate, endDate);
+    const data = await this.defectLogService.getStatsByDefectType(startDate, endDate, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -92,9 +94,11 @@ export class DefectLogController {
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStatsByStatus(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.defectLogService.getStatsByStatus(startDate, endDate);
+    const data = await this.defectLogService.getStatsByStatus(startDate, endDate, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -102,9 +106,11 @@ export class DefectLogController {
   @ApiOperation({ summary: '일별 불량 발생 추이', description: '최근 N일간 일별 불량 발생 추이' })
   @ApiQuery({ name: 'days', required: false, description: '조회 일수 (기본 7일)', example: 7 })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getDailyTrend(@Query('days') days?: string) {
+  async getDailyTrend(@Query('days') days?: string, @Company() company?: string, @Plant() plant?: string) {
     const data = await this.defectLogService.getDailyDefectTrend(
-      days ? parseInt(days, 10) : 7
+      days ? parseInt(days, 10) : 7,
+      company,
+      plant,
     );
     return ResponseUtil.success(data);
   }
@@ -115,8 +121,16 @@ export class DefectLogController {
   @ApiOperation({ summary: '생산실적별 불량 목록', description: '특정 생산실적의 불량 목록' })
   @ApiParam({ name: 'prodResultNo', description: '생산실적 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByProdResultNo(@Param('prodResultNo') prodResultNo: string) {
-    const data = await this.defectLogService.findByProdResultNo(prodResultNo);
+  async findByProdResultNo(
+    @Param('prodResultNo') prodResultNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.defectLogService.findByProdResultNo(
+      prodResultNo,
+      company,
+      plant,
+    );
     return ResponseUtil.success(data);
   }
 
@@ -135,8 +149,12 @@ export class DefectLogController {
   @ApiParam({ name: 'id', description: '불량로그 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '불량로그 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.defectLogService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.defectLogService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -155,8 +173,13 @@ export class DefectLogController {
   @ApiParam({ name: 'id', description: '불량로그 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   @ApiResponse({ status: 404, description: '불량로그 없음' })
-  async update(@Param('id') id: string, @Body() dto: UpdateDefectLogDto) {
-    const data = await this.defectLogService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateDefectLogDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.defectLogService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '불량로그가 수정되었습니다.');
   }
 
@@ -166,8 +189,18 @@ export class DefectLogController {
   @ApiResponse({ status: 200, description: '변경 성공' })
   @ApiResponse({ status: 400, description: '유효하지 않은 상태 변경' })
   @ApiResponse({ status: 404, description: '불량로그 없음' })
-  async changeStatus(@Param('id') id: string, @Body() dto: ChangeDefectStatusDto) {
-    const data = await this.defectLogService.changeStatus(id, dto);
+  async changeStatus(
+    @Param('id') id: string,
+    @Body() dto: ChangeDefectStatusDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.defectLogService.changeStatus(
+      id,
+      dto,
+      company,
+      plant,
+    );
     return ResponseUtil.success(data, `상태가 ${dto.status}로 변경되었습니다.`);
   }
 
@@ -177,8 +210,12 @@ export class DefectLogController {
   @ApiParam({ name: 'id', description: '불량로그 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
   @ApiResponse({ status: 404, description: '불량로그 없음' })
-  async delete(@Param('id') id: string) {
-    await this.defectLogService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.defectLogService.delete(id, company, plant);
     return ResponseUtil.success(null, '불량로그가 삭제되었습니다.');
   }
 
@@ -189,8 +226,12 @@ export class DefectLogController {
   @ApiParam({ name: 'id', description: '불량로그 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '불량로그 없음' })
-  async getRepairLogs(@Param('id') id: string) {
-    const data = await this.defectLogService.getRepairLogs(id);
+  async getRepairLogs(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.defectLogService.getRepairLogs(id, company, plant);
     return ResponseUtil.success(data);
   }
 

@@ -59,6 +59,20 @@ export class PhysicalInvService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   // ??? ?ㅼ궗 ?몄뀡 愿由?????????????????????????????????????????????????
 
   /**
@@ -613,6 +627,7 @@ export class PhysicalInvService {
     if (!activeSession) {
       throw new BadRequestException('?? ?? ???? ??? ?? ?? ??? ? ? ????.');
     }
+    this.assertSameTenant('실사 세션', activeSession, company, plant);
 
     return this.tx.run(async (queryRunner) => {
       // IN 諛곗튂 ?좎“?뚮줈 N+1 諛⑹? ??stockId ?뚯떛 ???쇨큵 議고쉶
@@ -644,6 +659,7 @@ export class PhysicalInvService {
         if (!stock) {
           throw new NotFoundException(`?ш퀬瑜?李얠쓣 ???놁뒿?덈떎: ${item.stockId}`);
         }
+        this.assertSameTenant('실사 대상 재고', stock, company, plant);
         if (activeSession.warehouseCode && stock.warehouseCode !== activeSession.warehouseCode) {
           throw new BadRequestException(
             `실사 세션 창고(${activeSession.warehouseCode})와 반영 대상 창고(${stock.warehouseCode})가 일치하지 않습니다: ${item.stockId}`,

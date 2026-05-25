@@ -132,6 +132,29 @@ describe('CustomerOrderService', () => {
         BadRequestException,
       );
     });
+
+    it('should preserve tenant columns when replacing items', async () => {
+      mockOrderRepo.findOne
+        .mockResolvedValueOnce({ orderNo: 'CO-001', status: 'RECEIVED', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce({ orderNo: 'CO-001', status: 'RECEIVED', company: 'C1', plant: 'P1' } as any);
+      mockItemRepo.find.mockResolvedValue([]);
+      mockItemRepo.create.mockImplementation((payload) => payload as any);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      await target.update(
+        'CO-001',
+        { items: [{ itemCode: 'ITEM-1', orderQty: 3 }] } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        orderNo: 'CO-001',
+        itemCode: 'ITEM-1',
+        company: 'C1',
+        plant: 'P1',
+      }));
+    });
   });
 
   describe('create', () => {
@@ -158,6 +181,37 @@ describe('CustomerOrderService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQr.commitTransaction).not.toHaveBeenCalled();
       expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('should preserve tenant columns when creating items', async () => {
+      mockOrderRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ orderNo: 'CO-001', status: 'RECEIVED', company: 'C1', plant: 'P1' } as any);
+      mockOrderRepo.create.mockReturnValue({ orderNo: 'CO-001', company: 'C1', plant: 'P1' } as any);
+      mockItemRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save
+        .mockResolvedValueOnce({ orderNo: 'CO-001', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce([] as any);
+      mockItemRepo.find.mockResolvedValue([]);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      await target.create(
+        {
+          orderNo: 'CO-001',
+          customerId: 'CUST-1',
+          customerName: 'Customer',
+          items: [{ itemCode: 'ITEM-1', orderQty: 1 }],
+        } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        orderNo: 'CO-001',
+        itemCode: 'ITEM-1',
+        company: 'C1',
+        plant: 'P1',
+      }));
     });
   });
 });

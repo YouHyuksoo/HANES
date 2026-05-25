@@ -50,6 +50,9 @@ export default function ImprovementRequestModal() {
   }, [description, pathname, selectedElement, screenshot, t, handleClose]);
 
   if (!selectedElement) return null;
+  const submitDisabledReason = description.trim()
+    ? ""
+    : t("improvement.submitError", "설명 입력은 필수입니다.");
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -144,10 +147,16 @@ export default function ImprovementRequestModal() {
           <button
             onClick={handleSubmit}
             disabled={!description.trim() || isSubmitting}
+            title={isSubmitting ? t("common.saving") : submitDisabledReason || t("improvement.submit")}
             className="px-4 py-2 text-sm font-medium rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? t("common.saving") : t("improvement.submit")}
           </button>
+          {submitDisabledReason ? (
+            <p className="text-xs text-text-muted" title={submitDisabledReason}>
+              {submitDisabledReason}
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

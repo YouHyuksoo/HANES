@@ -69,12 +69,12 @@ export class CompanyService {
   async findPlantsByCompany(companyCode: string) {
     const rows = await this.companyRepository.find({
       where: { companyCode, useYn: 'Y' },
-      select: ['plant', 'companyName'],
+      select: ['plant', 'plantName', 'companyName'],
       order: { plant: 'asc' },
     });
     return rows
       .filter((r) => r.plant)
-      .map((r) => ({ plantCode: r.plant, plantName: r.plant }));
+      .map((r) => ({ plantCode: r.plant, plantName: r.plantName || r.plant }));
   }
 
   /** 상세 조회 */

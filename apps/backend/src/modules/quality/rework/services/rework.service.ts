@@ -62,6 +62,16 @@ export class ReworkService {
     };
   }
 
+  private defectLogWhere(defectLogId: string, company?: string, plant?: string) {
+    const [occurAtStr, seqStr] = defectLogId.split('|');
+    if (!occurAtStr || !seqStr) return null;
+    return {
+      occurAt: new Date(occurAtStr),
+      seq: Number(seqStr),
+      ...this.tenantWhere(company, plant),
+    };
+  }
+
   // =============================================
   // 재작업번호 자동채번
   // =============================================
@@ -203,13 +213,8 @@ export class ReworkService {
 
     // 불량 이력 상태 연동 — defectLogId 형식: "occurAt|seq"
     if (dto.defectLogId) {
-      const [occurAtStr, seqStr] = dto.defectLogId.split('|');
-      if (occurAtStr && seqStr) {
-        await this.defectLogRepo.update(
-          { occurAt: new Date(occurAtStr), seq: Number(seqStr) },
-          { status: 'REWORK' },
-        );
-      }
+      const defectWhere = this.defectLogWhere(dto.defectLogId, company, plant);
+      if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: 'REWORK' });
     }
 
     this.logger.log(
@@ -267,13 +272,8 @@ export class ReworkService {
       );
     }
     if (item.defectLogId) {
-      const [occurAtStr, seqStr] = item.defectLogId.split('|');
-      if (occurAtStr && seqStr) {
-        await this.defectLogRepo.update(
-          { occurAt: new Date(occurAtStr), seq: Number(seqStr) },
-          { status: 'WAIT' },
-        );
-      }
+      const defectWhere = this.defectLogWhere(item.defectLogId, company, plant);
+      if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: 'WAIT' });
     }
     await this.processRepo.delete({ reworkOrderId: reworkNo, ...this.tenantWhere(company, plant) });
     await this.reworkRepo.delete({ reworkNo, ...this.tenantWhere(company, plant) });
@@ -509,13 +509,8 @@ export class ReworkService {
         where: { reworkNo: dto.reworkNo, company, plant },
       });
       if (reworkOrder?.defectLogId) {
-        const [occurAtStr, seqStr] = reworkOrder.defectLogId.split('|');
-        if (occurAtStr && seqStr) {
-          await this.defectLogRepo.update(
-            { occurAt: new Date(occurAtStr), seq: Number(seqStr) },
-            { status: defectStatus },
-          );
-        }
+        const defectWhere = this.defectLogWhere(reworkOrder.defectLogId, company, plant);
+        if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: defectStatus });
       }
     }
 

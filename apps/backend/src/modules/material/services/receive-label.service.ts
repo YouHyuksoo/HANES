@@ -7,7 +7,7 @@
  * 2. createMatLabels(): 입하건 선택 → qty만큼 matUid 채번 → MatLot N건 생성 → 인쇄 로그 저장
  * 3. matUid 채번은 Oracle DB Function(F_GET_MAT_UID) 호출
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
@@ -38,6 +38,20 @@ export class ReceiveLabelService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
   }
 
   /** IQC PASS + 라벨 미발행 입하건 조회 */
@@ -118,6 +132,7 @@ export class ReceiveLabelService {
     const tenantWhere = this.tenantWhere(company, plant);
     const arrival = await this.arrivalRepo.findOne({ where: { arrivalNo: dto.arrivalId, seq: dto.arrivalSeq ?? 1, ...tenantWhere } });
     if (!arrival) throw new NotFoundException('입하건을 찾을 수 없습니다.');
+    this.assertSameTenant('자재라벨 입하건', arrival, company, plant);
     if (arrival.iqcStatus !== 'PASS') {
       throw new NotFoundException('IQC 합격 상태가 아닙니다.');
     }

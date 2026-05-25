@@ -41,6 +41,7 @@ import { RoleModule } from './modules/role/role.module';
 import { MenuCategoriesModule } from './modules/menu-categories/menu-categories.module';
 import { SharedModule } from './shared/shared.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
+import { GuardModule } from './common/modules/guard.module';
 
 @Module({
   imports: [
@@ -115,6 +116,9 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 
     // 공유 모듈 (NumberingService 파사드 + SeqGenerator + NumRule)
     SharedModule,
+
+    // 공통 가드 모듈 (JwtAuthGuard/RolesGuard/InventoryFreezeGuard)
+    GuardModule,
 
     // 스케줄러 (정기 작업 실행 + 로그 + 알림)
     SchedulerModule,

@@ -17,6 +17,13 @@ describe('SeqGeneratorService', () => {
   let target: SeqGeneratorService;
   let mockDataSource: DeepMocked<DataSource>;
 
+  const setManager = (manager: unknown) => {
+    Object.defineProperty(mockDataSource, 'manager', {
+      configurable: true,
+      value: manager,
+    });
+  };
+
   beforeEach(async () => {
     mockDataSource = createMock<DataSource>();
 
@@ -40,9 +47,9 @@ describe('SeqGeneratorService', () => {
   describe('getNo', () => {
     it('should return generated number from Oracle package', async () => {
       // Arrange
-      mockDataSource.manager = {
+      setManager({
         query: jest.fn().mockResolvedValue([{ no: 'MAT20260318-0001' }]),
-      } as any;
+      });
 
       // Act
       const result = await target.getNo('MAT_UID');
@@ -53,9 +60,9 @@ describe('SeqGeneratorService', () => {
 
     it('should throw InternalServerErrorException on failure', async () => {
       // Arrange
-      mockDataSource.manager = {
+      setManager({
         query: jest.fn().mockRejectedValue(new Error('ORA-20001')),
-      } as any;
+      });
 
       // Act & Assert
       await expect(target.getNo('INVALID')).rejects.toThrow(InternalServerErrorException);
@@ -81,9 +88,9 @@ describe('SeqGeneratorService', () => {
   // ─── convenience methods ───
   describe('convenience methods', () => {
     beforeEach(() => {
-      mockDataSource.manager = {
+      setManager({
         query: jest.fn().mockResolvedValue([{ no: 'TEST-001' }]),
-      } as any;
+      });
     });
 
     it('nextMatUid should call getNo with MAT_UID', async () => {

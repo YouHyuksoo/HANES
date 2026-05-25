@@ -181,6 +181,7 @@ export class ArrivalService {
       where: { poNo: dto.poId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${dto.poId}`);
+    this.assertSameTenant('PO', { company, plant }, po);
     if (!['CONFIRMED', 'PARTIAL'].includes(po.status)) {
       throw new BadRequestException(`입하 불가 상태입니다: ${po.status}`);
     }
@@ -188,6 +189,7 @@ export class ArrivalService {
     const poItems = await this.purchaseOrderItemRepository.find({
       where: { poNo: dto.poId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
+    poItems.forEach((poItem) => this.assertSameTenant('PO 품목', { company: po.company, plant: po.plant }, poItem));
 
     // 잔량 검증 — poItemId는 "poNo-seq" 형식 또는 seq 번호
     // G2: 입하잔량 = 발주수량 - 입하합계 + 반품합계 (반품 시 잔량 복원)

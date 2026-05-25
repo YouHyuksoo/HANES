@@ -101,8 +101,12 @@ export class ControlPlanController {
   @ApiParam({ name: 'planNo', description: '관리계획번호' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '관리계획서 없음' })
-  async findById(@Param('planNo') planNo: string) {
-    const data = await this.controlPlanService.findById(planNo);
+  async findById(
+    @Param('planNo') planNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.controlPlanService.findById(planNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -135,12 +139,16 @@ export class ControlPlanController {
   async update(
     @Param('planNo') planNo: string,
     @Body() dto: UpdateControlPlanDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.controlPlanService.update(
       planNo,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '관리계획서가 수정되었습니다.');
   }
@@ -153,8 +161,12 @@ export class ControlPlanController {
   })
   @ApiParam({ name: 'planNo', description: '관리계획번호' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('planNo') planNo: string) {
-    await this.controlPlanService.delete(planNo);
+  async delete(
+    @Param('planNo') planNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.controlPlanService.delete(planNo, company, plant);
     return ResponseUtil.success(null, '관리계획서가 삭제되었습니다.');
   }
 
@@ -169,11 +181,15 @@ export class ControlPlanController {
   @ApiResponse({ status: 200, description: '승인 성공' })
   async approve(
     @Param('planNo') planNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.controlPlanService.approve(
       planNo,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '관리계획서가 승인되었습니다.');
   }
@@ -188,11 +204,15 @@ export class ControlPlanController {
   @ApiResponse({ status: 201, description: '개정 성공' })
   async revise(
     @Param('planNo') planNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.controlPlanService.revise(
       planNo,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '관리계획서가 개정되었습니다.');
   }

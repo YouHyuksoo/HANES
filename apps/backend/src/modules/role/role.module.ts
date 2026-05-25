@@ -14,10 +14,9 @@ import { RoleController } from './role.controller';
 import { RoleService } from './role.service';
 import { Role } from '../../entities/role.entity';
 import { RoleMenuPermission } from '../../entities/role-menu-permission.entity';
-import { User } from '../../entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Role, RoleMenuPermission, User])],
+  imports: [TypeOrmModule.forFeature([Role, RoleMenuPermission])],
   controllers: [RoleController],
   providers: [RoleService],
   exports: [RoleService],

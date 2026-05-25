@@ -34,11 +34,21 @@ describe('AuditService', () => {
   describe('findById', () => {
     it('should return audit plan', async () => {
       mockAuditRepo.findOne.mockResolvedValue({ id: 1, auditNo: 'AUD-001' } as any);
-      expect((await target.findById(1)).auditNo).toBe('AUD-001');
+      expect((await target.findById('AUD-001')).auditNo).toBe('AUD-001');
     });
     it('should throw NotFoundException', async () => {
       mockAuditRepo.findOne.mockResolvedValue(null);
-      await expect(target.findById(999)).rejects.toThrow(NotFoundException);
+      await expect(target.findById('999')).rejects.toThrow(NotFoundException);
+    });
+
+    it('scopes audit lookup by tenant', async () => {
+      mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', company: 'CO', plant: 'P01' } as any);
+
+      await target.findById('AUD-001' as any, 'CO', 'P01');
+
+      expect(mockAuditRepo.findOne).toHaveBeenCalledWith({
+        where: { auditNo: 'AUD-001', company: 'CO', plant: 'P01' },
+      });
     });
   });
 
@@ -57,11 +67,11 @@ describe('AuditService', () => {
   describe('update', () => {
     it('should throw when not PLANNED', async () => {
       mockAuditRepo.findOne.mockResolvedValue({ id: 1, status: 'COMPLETED' } as any);
-      await expect(target.update(1, {} as any, 'user')).rejects.toThrow(BadRequestException);
+      await expect(target.update('AUD-001', {} as any, 'user')).rejects.toThrow(BadRequestException);
     });
 
     it('should keep tenant and audit key columns from the matched audit when update payload contains them', async () => {
-      const item = { auditNo: 'AUD-001', title: 'Old', status: 'PLANNED', company: 'CO', plant: 'P01' } as AuditPlan;
+      const item = { auditNo: 'AUD-001', title: 'Old', status: 'PLANNED', company: 'CO', plant: 'P01' } as unknown as AuditPlan;
       mockAuditRepo.findOne.mockResolvedValue(item);
       mockAuditRepo.save.mockImplementation(async (value) => value as AuditPlan);
 
@@ -80,12 +90,24 @@ describe('AuditService', () => {
         updatedBy: 'user',
       }));
     });
+
+    it('rejects update when audit belongs to a different tenant', async () => {
+      mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', status: 'PLANNED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.update('AUD-001' as any, {} as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockAuditRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {
     it('should throw when not PLANNED', async () => {
       mockAuditRepo.findOne.mockResolvedValue({ id: 1, status: 'IN_PROGRESS' } as any);
-      await expect(target.delete(1)).rejects.toThrow(BadRequestException);
+      await expect(target.delete('AUD-001')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects delete when audit belongs to a different tenant', async () => {
+      mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', status: 'PLANNED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.delete('AUD-001' as any, 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockAuditRepo.remove).not.toHaveBeenCalled();
     });
   });
 
@@ -94,12 +116,18 @@ describe('AuditService', () => {
       const item = { id: 1, auditNo: 'AUD-001', status: 'IN_PROGRESS' } as any;
       mockAuditRepo.findOne.mockResolvedValue(item);
       mockAuditRepo.save.mockResolvedValue({ ...item, status: 'COMPLETED' });
-      const r = await target.complete(1, 'PASS', 'user');
+      const r = await target.complete('AUD-001', 'PASS', 'user');
       expect(r.status).toBe('COMPLETED');
     });
     it('should throw when CLOSED', async () => {
       mockAuditRepo.findOne.mockResolvedValue({ id: 1, status: 'CLOSED' } as any);
-      await expect(target.complete(1, 'PASS', 'user')).rejects.toThrow(BadRequestException);
+      await expect(target.complete('AUD-001', 'PASS', 'user')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects complete when audit belongs to a different tenant', async () => {
+      mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', status: 'IN_PROGRESS', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.complete('AUD-001' as any, 'PASS', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockAuditRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -108,8 +136,31 @@ describe('AuditService', () => {
       const item = { id: 1, auditNo: 'AUD-001', status: 'COMPLETED' } as any;
       mockAuditRepo.findOne.mockResolvedValue(item);
       mockAuditRepo.save.mockResolvedValue({ ...item, status: 'CLOSED' });
-      const r = await target.close(1, 'user');
+      const r = await target.close('AUD-001', 'user');
       expect(r.status).toBe('CLOSED');
+    });
+
+    it('rejects close when audit belongs to a different tenant', async () => {
+      mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', status: 'COMPLETED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.close('AUD-001' as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockAuditRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findings', () => {
+    it('rejects addFinding when audit belongs to a different tenant', async () => {
+      mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.addFinding({ auditId: 'AUD-001' } as any, 'CO', 'P01', 'user')).rejects.toThrow(BadRequestException);
+      expect(mockFindingRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('scopes findings by tenant', async () => {
+      mockFindingRepo.find.mockResolvedValue([]);
+      await target.getFindings('AUD-001' as any, 'CO', 'P01');
+      expect(mockFindingRepo.find).toHaveBeenCalledWith({
+        where: { auditId: 'AUD-001', company: 'CO', plant: 'P01' },
+        order: { findingNo: 'ASC' },
+      });
     });
   });
 
@@ -119,12 +170,18 @@ describe('AuditService', () => {
       mockAuditRepo.findOne.mockResolvedValue({ id: 1 } as any);
       mockFindingRepo.findOne.mockResolvedValue(finding);
       mockFindingRepo.save.mockResolvedValue({ ...finding, capaId: 10, status: 'IN_PROGRESS' });
-      const r = await target.linkCapa(1, 1, 10);
+      const r = await target.linkCapa('AUD-001', 1, '10');
       expect(r.capaId).toBe(10);
     });
     it('should throw when finding not found', async () => {
       mockFindingRepo.findOne.mockResolvedValue(null);
-      await expect(target.linkCapa(1, 99, 10)).rejects.toThrow(NotFoundException);
+      await expect(target.linkCapa('AUD-001', 99, '10')).rejects.toThrow(NotFoundException);
+    });
+
+    it('rejects linkCapa when finding belongs to a different tenant', async () => {
+      mockFindingRepo.findOne.mockResolvedValue({ auditId: 'AUD-001', findingNo: 1, status: 'OPEN', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.linkCapa('AUD-001' as any, 1, 'CAPA-001', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockFindingRepo.save).not.toHaveBeenCalled();
     });
   });
 });

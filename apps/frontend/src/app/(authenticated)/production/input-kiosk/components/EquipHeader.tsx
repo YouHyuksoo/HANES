@@ -202,6 +202,7 @@ export default function EquipHeader({
               </div>
             ) : (
               <button onClick={() => selectedEquip && onOpenJobOrder()} disabled={!selectedEquip}
+                title={selectedEquip ? t('kiosk.header.selectJobOrder') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
                 className="flex items-center gap-1.5 text-sm text-text-muted hover:text-primary disabled:cursor-not-allowed disabled:opacity-40">
                 <ClipboardList className="h-4 w-4" />
                 {t('kiosk.header.selectJobOrder')}
@@ -223,6 +224,7 @@ export default function EquipHeader({
                 </span>
               ))}
               <button onClick={onOpenWorker} disabled={!selectedEquip}
+                title={selectedEquip ? t('kiosk.header.addWorker') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
                 className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-text-muted transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40">
                 <UserPlus className="h-3 w-3" />
                 {t('kiosk.header.addWorker')}

@@ -151,6 +151,17 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
     return items.every((item) => item.itemName.trim() !== "");
   }, [equipId, planCode, planName, items]);
 
+  const saveDisabledReason = useMemo(() => {
+    if (saving) return t("common.saving");
+    if (!equipId) return t("equipment.pmPlan.equipSelect");
+    if (!planCode.trim()) return `${t("equipment.pmPlan.planCode")}는 필수입니다`;
+    if (!planName.trim()) return `${t("equipment.pmPlan.planName")}은(는) 필수입니다`;
+    if (!items.every((item) => item.itemName.trim() !== "")) {
+      return t("equipment.pmPlan.itemName") + "을(를) 입력하세요";
+    }
+    return "";
+  }, [saving, equipId, items, planCode, planName, t]);
+
   const handleSave = useCallback(async () => {
     if (!canSave) return;
     setSaving(true);
@@ -193,11 +204,19 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSave} disabled={!canSave || saving}>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={!canSave || saving}
+            title={saveDisabledReason}
+          >
             {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
           </Button>
         </div>
       </div>
+      {saveDisabledReason && (
+        <div className="px-5 pt-2 text-[11px] text-orange-600">{saveDisabledReason}</div>
+      )}
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">

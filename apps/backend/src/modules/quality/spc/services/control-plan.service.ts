@@ -46,6 +46,27 @@ export class ControlPlanService {
     private readonly itemRepo: Repository<ControlPlanItem>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   // =============================================
   // 관리계획번호 자동채번
   // =============================================
@@ -129,17 +150,19 @@ export class ControlPlanService {
   /**
    * 관리계획서 단건 조회 (항목 포함)
    */
-  async findById(planNo: string) {
-    const plan = await this.planRepo.findOne({ where: { planNo } });
+  async findById(planNo: string, company?: string, plant?: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('관리계획서', plan, company, plant);
 
-    const items = await this.itemRepo
+    const qb = this.itemRepo
       .createQueryBuilder('i')
-      .where('i.controlPlanId = :planNo', { planNo })
-      .orderBy('i.seq', 'ASC')
-      .getMany();
+      .where('i.controlPlanId = :planNo', { planNo });
+    if (company) qb.andWhere('i.company = :company', { company });
+    if (plant) qb.andWhere('i.plant = :plant', { plant });
+    const items = await qb.orderBy('i.seq', 'ASC').getMany();
 
     return { ...plan, items };
   }
@@ -173,17 +196,18 @@ export class ControlPlanService {
     }
 
     this.logger.log(`관리계획서 등록: ${planNo}`);
-    return this.findById(saved.planNo);
+    return this.findById(saved.planNo, company, plant);
   }
 
   /**
    * 관리계획서 수정 (DRAFT 상태에서만 가능)
    */
-  async update(planNo: string, dto: UpdateControlPlanDto, userId: string) {
-    const plan = await this.planRepo.findOne({ where: { planNo } });
+  async update(planNo: string, dto: UpdateControlPlanDto, userId: string, company?: string, plant?: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('관리계획서', plan, company, plant);
     if (plan.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 수정할 수 있습니다.');
     }
@@ -205,17 +229,18 @@ export class ControlPlanService {
       }
     }
 
-    return this.findById(planNo);
+    return this.findById(planNo, company, plant);
   }
 
   /**
    * 관리계획서 삭제 (DRAFT 상태에서만 가능)
    */
-  async delete(planNo: string) {
-    const plan = await this.planRepo.findOne({ where: { planNo } });
+  async delete(planNo: string, company?: string, plant?: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('관리계획서', plan, company, plant);
     if (plan.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 삭제할 수 있습니다.');
     }
@@ -237,11 +262,12 @@ export class ControlPlanService {
   /**
    * 승인 (DRAFT/REVIEW → APPROVED)
    */
-  async approve(planNo: string, userId: string) {
-    const plan = await this.planRepo.findOne({ where: { planNo } });
+  async approve(planNo: string, userId: string, company?: string, plant?: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('관리계획서', plan, company, plant);
     if (!['DRAFT', 'REVIEW'].includes(plan.status)) {
       throw new BadRequestException(
         '초안 또는 검토 상태에서만 승인할 수 있습니다.',
@@ -259,11 +285,12 @@ export class ControlPlanService {
   /**
    * 개정 (기존 OBSOLETE, 새 버전 생성)
    */
-  async revise(planNo: string, userId: string) {
-    const plan = await this.planRepo.findOne({ where: { planNo } });
+  async revise(planNo: string, userId: string, company?: string, plant?: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('관리계획서', plan, company, plant);
     if (plan.status !== 'APPROVED') {
       throw new BadRequestException(
         '승인된 상태에서만 개정할 수 있습니다.',

@@ -11,7 +11,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { SubconOrder } from '../../../entities/subcon-order.entity';
 import { SubconDelivery } from '../../../entities/subcon-delivery.entity';
 import { SubconReceive } from '../../../entities/subcon-receive.entity';
@@ -41,7 +42,7 @@ export class OutsourcingService {
     private readonly subconReceiveRepository: Repository<SubconReceive>,
     @InjectRepository(VendorMaster)
     private readonly vendorMasterRepository: Repository<VendorMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
   ) {}
 
@@ -349,8 +350,8 @@ export class OutsourcingService {
     });
     const deliveryNo = `SCD${today}${String(count + 1).padStart(4, '0')}`;
 
-    return this.dataSource.transaction(async (manager) => {
-      const delivery = manager.create(SubconDelivery, {
+    return this.tx.run(async (queryRunner) => {
+      const delivery = queryRunner.manager.create(SubconDelivery, {
         orderNo: dto.orderId,
         deliveryNo,
         matUid: dto.matUid,
@@ -360,11 +361,11 @@ export class OutsourcingService {
         ...this.tenantWhere(company, plant),
       });
 
-      await manager.save(delivery);
+      await queryRunner.manager.save(delivery);
 
       // 발주 출고수량 업데이트
       const newDeliveredQty = order.deliveredQty + dto.qty;
-      await manager.update(
+      await queryRunner.manager.update(
         SubconOrder,
         { orderNo: dto.orderId, ...this.tenantWhere(company, plant) },
         {
@@ -403,8 +404,8 @@ export class OutsourcingService {
     const goodQty = dto.goodQty ?? dto.qty;
     const defectQty = dto.defectQty ?? 0;
 
-    return this.dataSource.transaction(async (manager) => {
-      const receive = manager.create(SubconReceive, {
+    return this.tx.run(async (queryRunner) => {
+      const receive = queryRunner.manager.create(SubconReceive, {
         orderNo: dto.orderId,
         receiveNo,
         matUid: dto.matUid,
@@ -417,7 +418,7 @@ export class OutsourcingService {
         ...this.tenantWhere(company, plant),
       });
 
-      await manager.save(receive);
+      await queryRunner.manager.save(receive);
 
       // 발주 입고수량 업데이트
       const newReceivedQty = order.receivedQty + dto.qty;
@@ -430,7 +431,7 @@ export class OutsourcingService {
         newStatus = 'PARTIAL_RECV';
       }
 
-      await manager.update(
+      await queryRunner.manager.update(
         SubconOrder,
         { orderNo: dto.orderId, ...this.tenantWhere(company, plant) },
         {

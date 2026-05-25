@@ -29,13 +29,22 @@ interface CheckItemProps {
   disabled?: boolean;
   onClick: () => void;
   step: number;
+  disabledReason?: string;
 }
 
-function CheckItem({ label, done, disabled, onClick, step }: CheckItemProps) {
+function CheckItem({
+  label,
+  done,
+  disabled,
+  onClick,
+  step,
+  disabledReason,
+}: CheckItemProps) {
   return (
     <button
       onClick={onClick}
       disabled={disabled || done}
+      title={done ? label : (disabledReason || label)}
       className={[
         'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded transition-all border',
         done
@@ -52,6 +61,11 @@ function CheckItem({ label, done, disabled, onClick, step }: CheckItemProps) {
         ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
         : <XCircle className="w-4 h-4 text-orange-500 shrink-0" />}
       <span className="whitespace-nowrap">{label}</span>
+      {disabled && disabledReason && (
+        <span className="text-[10px] text-text-muted truncate" title={disabledReason}>
+          {disabledReason}
+        </span>
+      )}
     </button>
   );
 }
@@ -67,6 +81,22 @@ export default function PrepCheckBar({
   const allDone = isAllInterlockDone(interlock);
   const hasEquip = !!selectedEquip;
   const hasJobOrder = !!selectedJobOrder;
+  const dailyReason = !hasEquip
+    ? t('kiosk.header.selectEquip')
+    : '';
+  const workerReason = !interlock.dailyInspectDone
+    ? t('kiosk.header.dailyInspectRequired', '설비일일점검을 먼저 완료하세요.')
+    : selectedWorkers.length === 0
+      ? t('kiosk.header.workerRequiredForInspect', '작업자를 1명 이상 추가하세요.')
+      : '';
+  const materialReason = !interlock.workerInspectDone
+    ? t('kiosk.prep.workerInspect')
+    : !hasJobOrder
+      ? t('kiosk.header.selectJobOrder')
+      : '';
+  const consumableReason = interlock.materialScanDone
+    ? ''
+    : t('kiosk.input.disabledReasons.materialScan');
 
   if (!hasEquip) return null;
 
@@ -98,6 +128,7 @@ export default function PrepCheckBar({
         label={t('kiosk.prep.dailyInspect')}
         done={interlock.dailyInspectDone}
         disabled={!hasEquip}
+        disabledReason={dailyReason}
         onClick={onOpenDailyInspect}
       />
 
@@ -109,6 +140,7 @@ export default function PrepCheckBar({
         label={t('kiosk.prep.workerInspect')}
         done={interlock.workerInspectDone}
         disabled={!interlock.dailyInspectDone || selectedWorkers.length === 0}
+        disabledReason={workerReason}
         onClick={onOpenWorkerInspect}
       />
 
@@ -120,6 +152,7 @@ export default function PrepCheckBar({
         label={t('kiosk.prep.materialScan')}
         done={interlock.materialScanDone}
         disabled={!interlock.workerInspectDone || !hasJobOrder}
+        disabledReason={materialReason}
         onClick={onOpenMaterialScan}
       />
 
@@ -131,6 +164,7 @@ export default function PrepCheckBar({
         label={t('kiosk.prep.consumableScan')}
         done={interlock.consumableScanDone}
         disabled={!interlock.materialScanDone}
+        disabledReason={consumableReason}
         onClick={onOpenConsumableScan}
       />
 

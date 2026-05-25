@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -52,7 +51,6 @@ import { ShelfLifeService } from '../services/shelf-life.service';
     PhysicalInvController,
   ],
   providers: [
-    InventoryFreezeGuard,
     MatStockService,
     ShelfLifeService,
     HoldService,

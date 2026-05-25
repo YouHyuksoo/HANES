@@ -55,44 +55,69 @@ export class CommConfigController {
   @Get('type/:type')
   @ApiOperation({ summary: '유형별 통신설정 조회 (드롭다운용)' })
   @ApiParam({ name: 'type', description: '통신 유형 (SERIAL, TCP, MQTT, OPC_UA, MODBUS)' })
-  async findByType(@Param('type') type: string) {
-    const data = await this.commConfigService.findByType(type);
+  async findByType(
+    @Param('type') type: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.commConfigService.findByType(type, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('name/:name')
   @ApiOperation({ summary: '이름으로 통신설정 조회' })
   @ApiParam({ name: 'name', description: '설정 이름' })
-  async findByName(@Param('name') name: string) {
-    const data = await this.commConfigService.findByName(name);
+  async findByName(
+    @Param('name') name: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.commConfigService.findByName(name, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '통신설정 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.commConfigService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.commConfigService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @ApiOperation({ summary: '통신설정 생성' })
-  async create(@Body() dto: CreateCommConfigDto) {
-    const data = await this.commConfigService.create(dto);
+  async create(
+    @Body() dto: CreateCommConfigDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.commConfigService.create(dto, company, plant);
     return ResponseUtil.success(data, '통신설정이 등록되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: '통신설정 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateCommConfigDto) {
-    const data = await this.commConfigService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCommConfigDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.commConfigService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '통신설정이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '통신설정 삭제' })
-  async remove(@Param('id') id: string) {
-    const data = await this.commConfigService.remove(id);
+  async remove(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.commConfigService.remove(id, company, plant);
     return ResponseUtil.success(data);
   }
 }

@@ -9,7 +9,7 @@
  * 4. isEnabled: BOOLEAN 타입 설정의 활성 여부 (서비스 로직에서 사용)
  * 5. bulkUpdate: 여러 설정을 한번에 저장 (관리 페이지에서 저장 버튼)
  */
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SysConfig } from '../../../entities/sys-config.entity';
@@ -26,6 +26,31 @@ export class SysConfigService {
     @InjectRepository(SysConfig)
     private readonly sysConfigRepository: Repository<SysConfig>,
   ) {}
+
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`,
+      );
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`,
+      );
+    }
+  }
 
   /** 설정 목록 조회 (관리 페이지용) */
   async findAll(query: SysConfigQueryDto, company?: string, plant?: string) {
@@ -91,36 +116,64 @@ export class SysConfigService {
   }
 
   /** 설정 생성 */
-  async create(dto: CreateSysConfigDto) {
+  async create(dto: CreateSysConfigDto, company?: string, plant?: string) {
     const existing = await this.sysConfigRepository.findOne({
-      where: { configGroup: dto.configGroup, configKey: dto.configKey },
+      where: {
+        configGroup: dto.configGroup,
+        configKey: dto.configKey,
+        ...this.tenantWhere(company, plant),
+      },
     });
     if (existing) {
       throw new ConflictException(
         `이미 존재하는 설정입니다: ${dto.configGroup}.${dto.configKey}`,
       );
     }
-    const entity = this.sysConfigRepository.create(dto);
+    const entity = this.sysConfigRepository.create({
+      ...dto,
+      company,
+      plant,
+    });
     return this.sysConfigRepository.save(entity);
   }
 
   /** 설정 수정 */
-  async update(id: string, dto: UpdateSysConfigDto) {
-    const config = await this.sysConfigRepository.findOne({ where: { configKey: id } });
+  async update(
+    id: string,
+    dto: UpdateSysConfigDto,
+    company?: string,
+    plant?: string,
+  ) {
+    const config = await this.sysConfigRepository.findOne({
+      where: { configKey: id, ...this.tenantWhere(company, plant) },
+    });
     if (!config) throw new NotFoundException(`설정을 찾을 수 없습니다: ${id}`);
-    await this.sysConfigRepository.update({ configKey: id }, dto);
-    return this.sysConfigRepository.findOne({ where: { configKey: id } });
+    this.assertSameTenant('시스템 설정', config, company, plant);
+    await this.sysConfigRepository.update(
+      { configKey: id, ...this.tenantWhere(company, plant) },
+      dto,
+    );
+    return this.sysConfigRepository.findOne({
+      where: { configKey: id, ...this.tenantWhere(company, plant) },
+    });
   }
 
   /** 일괄 수정 (관리 페이지 저장 버튼) */
-  async bulkUpdate(dto: BulkUpdateSysConfigDto) {
+  async bulkUpdate(
+    dto: BulkUpdateSysConfigDto,
+    company?: string,
+    plant?: string,
+  ) {
     const results = [];
     for (const item of dto.items) {
-      await this.sysConfigRepository.update({ configKey: item.id }, {
-        configValue: item.configValue,
-      });
+      await this.sysConfigRepository.update(
+        { configKey: item.id, ...this.tenantWhere(company, plant) },
+        {
+          configValue: item.configValue,
+        },
+      );
       const updated = await this.sysConfigRepository.findOne({
-        where: { configKey: item.id },
+        where: { configKey: item.id, ...this.tenantWhere(company, plant) },
       });
       if (updated) results.push(updated);
     }
@@ -128,10 +181,16 @@ export class SysConfigService {
   }
 
   /** 설정 삭제 */
-  async remove(id: string) {
-    const config = await this.sysConfigRepository.findOne({ where: { configKey: id } });
+  async remove(id: string, company?: string, plant?: string) {
+    const config = await this.sysConfigRepository.findOne({
+      where: { configKey: id, ...this.tenantWhere(company, plant) },
+    });
     if (!config) throw new NotFoundException(`설정을 찾을 수 없습니다: ${id}`);
-    await this.sysConfigRepository.delete({ configKey: id });
+    this.assertSameTenant('시스템 설정', config, company, plant);
+    await this.sysConfigRepository.delete({
+      configKey: id,
+      ...this.tenantWhere(company, plant),
+    });
     return { id, deleted: true };
   }
 }

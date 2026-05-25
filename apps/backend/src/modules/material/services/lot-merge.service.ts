@@ -42,6 +42,20 @@ export class LotMergeService {
     };
   }
 
+  private assertSameTenant(
+    row: { company?: string | null; plant?: string | null } | null | undefined,
+    company?: string | null,
+    plant?: string | null,
+    context = '데이터',
+  ) {
+    if (company && row?.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row?.company ?? 'NULL'}`);
+    }
+    if (plant && row?.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row?.plant ?? 'NULL'}`);
+    }
+  }
+
   async findMergeableLots(query: LotMergeQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, itemCode } = query;
     const skip = (page - 1) * limit;
@@ -109,6 +123,7 @@ export class LotMergeService {
       if (lots.length < 2) {
         throw new BadRequestException('병합하려면 2개 이상의 유효한 LOT이 필요합니다.');
       }
+      lots.forEach((lot) => this.assertSameTenant(lot, company, plant, `LOT ${lot.matUid}`));
 
       // 같은 품목인지 검증
       const itemCodes = new Set(lots.map(l => l.itemCode));
@@ -138,6 +153,7 @@ export class LotMergeService {
         if (lot.status === 'DEPLETED' || !lotStock || lotStock.qty <= 0) {
           throw new BadRequestException(`재고가 없는 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
+        this.assertSameTenant(lotStock, lot.company, lot.plant, `재고 ${lot.matUid}`);
         if ((lotStock.reservedQty ?? 0) > 0) {
           throw new BadRequestException(`예약 수량이 있는 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
@@ -179,6 +195,9 @@ export class LotMergeService {
       });
       const partMapForMerge = new Map(partsForMerge.map(p => [p.itemCode, p] as const));
       const part = partMapForMerge.get(target.itemCode);
+      if (part) {
+        this.assertSameTenant(part, target.company, target.plant, `품목 ${target.itemCode}`);
+      }
 
       // 원본 LOT들 소진 처리 (상태만 변경, currentQty 업데이트 없음)
       for (const src of sources) {

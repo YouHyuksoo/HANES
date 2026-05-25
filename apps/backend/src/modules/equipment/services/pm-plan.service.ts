@@ -48,6 +48,20 @@ export class PmPlanService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   // ─── PM Plan CRUD ────────────────────────────────────────
 
   /** PM 계획 목록 조회 */
@@ -165,6 +179,7 @@ export class PmPlanService {
       },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
+    this.assertSameTenant('PM 계획 설비', equip, company, plant);
 
     const nextDueAt = this.calculateNextDueAt(
       new Date(),
@@ -313,7 +328,7 @@ export class PmPlanService {
         })
       : [];
     const existingWoSet = new Set(
-      existingWos.map((wo) => `${wo.pmPlanCode}::${this.formatDate(wo.scheduledDate)}`),
+      existingWos.map((wo) => `${wo.company ?? ''}::${wo.plant ?? ''}::${wo.pmPlanCode}::${this.formatDate(wo.scheduledDate)}`),
     );
 
     // 날짜별 최대 WO번호를 미리 조회하여 루프 안 개별 쿼리 제거
@@ -323,7 +338,7 @@ export class PmPlanService {
       const scheduledDate = plan.nextDueAt || startDate;
       const dateStr = this.formatDate(scheduledDate);
 
-      if (existingWoSet.has(`${plan.planCode}::${dateStr}`)) {
+      if (existingWoSet.has(`${plan.company ?? ''}::${plan.plant ?? ''}::${plan.planCode}::${dateStr}`)) {
         skipped++;
         continue;
       }
@@ -364,7 +379,10 @@ export class PmPlanService {
 
       // USAGE_BASED: WO 생성 후 사용량 리셋
       if (plan.pmType === 'USAGE_BASED') {
-        await this.pmPlanRepo.update({ planCode: plan.planCode }, { currentUsage: 0 });
+        await this.pmPlanRepo.update(
+          { planCode: plan.planCode, ...this.tenantWhere(plan.company ?? undefined, plan.plant ?? undefined) },
+          { currentUsage: 0 },
+        );
       }
 
       created++;
@@ -379,6 +397,7 @@ export class PmPlanService {
       where: { equipCode: dto.equipCode, ...this.tenantWhere(company, plant) },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
+    this.assertSameTenant('PM 작업지시 설비', equip, company, plant);
 
     const dateStr = dto.scheduledDate.substring(0, 10).replace(/-/g, '');
     const workOrderNo = await this.generateWoNumber(dateStr);

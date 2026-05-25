@@ -8,7 +8,7 @@
  * 3. **findByJobOrder**: 특정 작업지시의 샘플검사 목록
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SampleInspectResult } from '../../../entities/sample-inspect-result.entity';
@@ -30,6 +30,20 @@ export class SampleInspectService {
     private readonly tx: TransactionService,
   ) {}
 
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   /** 샘플검사 일괄 입력 */
   async create(dto: CreateSampleInspectDto, company?: string, plant?: string) {
     const jobOrder = await this.jobOrderRepository.findOne({
@@ -38,6 +52,7 @@ export class SampleInspectService {
     if (!jobOrder) {
       throw new NotFoundException('작업지시를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('샘플검사 작업지시', jobOrder, company, plant);
 
     return this.tx.run(async (queryRunner) => {
       const records: SampleInspectResult[] = [];

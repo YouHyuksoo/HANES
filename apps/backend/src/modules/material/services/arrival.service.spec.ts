@@ -208,6 +208,24 @@ describe('ArrivalService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('PO 행의 회사/공장이 요청 테넌트와 다르면 입하를 생성하지 않는다', async () => {
+      mockPurchaseOrderRepo.findOne.mockResolvedValue({
+        poNo: 'PO-001',
+        status: 'CONFIRMED',
+        company: 'OTHER',
+        plant: 'P01',
+      } as PurchaseOrder);
+
+      await expect(
+        target.createPoArrival({
+          poId: 'PO-001',
+          items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 1, warehouseId: 'WH-001' }],
+        } as any, 'CO', 'P01'),
+      ).rejects.toThrow('회사 정보가 일치하지 않습니다');
+
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
     it('PO 입하는 TransactionService로 입하, 수불, 재고, PO상태를 함께 저장한다', async () => {
       mockPurchaseOrderRepo.findOne.mockResolvedValue({
         poNo: 'PO-001',
@@ -218,7 +236,7 @@ describe('ArrivalService', () => {
         plant: 'P01',
       } as PurchaseOrder);
       mockPurchaseOrderItemRepo.find.mockResolvedValue([
-        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem,
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0, company: 'CO', plant: 'P01' } as PurchaseOrderItem,
       ]);
       mockStockTxRepo.find.mockResolvedValue([]);
       mockPartMasterRepo.find.mockResolvedValue([
@@ -310,7 +328,7 @@ describe('ArrivalService', () => {
         plant: 'P01',
       } as PurchaseOrder);
       mockPurchaseOrderItemRepo.find.mockResolvedValue([
-        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem,
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 10, receivedQty: 0, company: 'CO', plant: 'P01' } as PurchaseOrderItem,
       ]);
       mockStockTxRepo.find.mockResolvedValue([]);
       mockPartMasterRepo.find.mockResolvedValue([]);
@@ -806,7 +824,7 @@ describe('ArrivalService', () => {
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockMatStockRepo.find.mockResolvedValue([]);
 
-      const result = await target.getArrivalStockStatus({});
+      const result = await target.getArrivalStockStatus({ page: 1, limit: 20 });
 
       expect(result.data[0]).toEqual(
         expect.objectContaining({
@@ -845,7 +863,7 @@ describe('ArrivalService', () => {
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockMatStockRepo.find.mockResolvedValue([]);
 
-      await target.getArrivalStockStatus({}, 'C1', 'P1');
+      await target.getArrivalStockStatus({ page: 1, limit: 20 }, 'C1', 'P1');
 
       expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),

@@ -150,7 +150,8 @@
     "master.worker.workerList": "Danh sách nhân viên",
     "master.worker.totalCount": "Tổng {{count}} bản ghi",
     "master.worker.emptyMessage": "Chưa có nhân viên nào.",
-    "master.iqcItem": "IQC Hạng mục/Nhóm",
+    "master.iqcItem": "Danh mục kiểm tra",
+    "master.iqcPartSpec": "Hạng mục IQC theo phẩm mục",
     "master.iqcItem.itemCode": "Mã hạng mục",
     "master.iqcItem.judgeMethod": "Phương pháp",
     "master.iqcItem.visual": "Bằng mắt",
@@ -315,7 +316,6 @@
     "system.training": "Quản lý đào tạo",
     "system.menuCategory": "Quản lý danh mục menu",
     "root": "Cấp cao nhất",
-    "system.screenRequirements": "Thu thập yêu cầu màn hình",
     "system.improvementRequests": "Quản lý yêu cầu cải tiến"
   },
   "header": {
@@ -1205,8 +1205,8 @@
       "deleteConfirm": "Bạn có chắc muốn xóa?"
     },
     "iqcItem": {
-      "title": "Quản lý hạng mục/nhóm kiểm tra IQC",
-      "subtitle": "Đăng ký hạng mục kiểm tra và quản lý theo nhóm.",
+      "title": "Danh mục kiểm tra",
+      "subtitle": "Đăng ký và quản lý các hạng mục kiểm tra IQC dùng chung.",
       "seq": "STT",
       "inspectItem": "Hạng mục kiểm tra",
       "spec": "Quy cách/Tiêu chuẩn",
@@ -1234,11 +1234,34 @@
       "unlinkGroup": "Hủy liên kết",
       "measureItems": "Mục kiểm tra đo lường",
       "judgeItems": "Mục kiểm tra đánh giá",
-      "perItemIqc": "Tiêu chuẩn IQC theo phẩm mục",
+      "perItemIqc": "Hạng mục IQC theo phẩm mục",
+      "perItemIqcSubtitle": "Quản lý số mẫu, kiểm tra phá hủy, hạng mục kiểm tra và quy cách theo phẩm mục.",
       "itemPool": "Danh mục kiểm tra",
+      "itemPoolSubtitle": "Đăng ký và quản lý các hạng mục kiểm tra IQC dùng chung.",
       "linkedGroupCount": "Nhóm liên kết",
       "unlinkConfirm": "Bạn có chắc muốn hủy liên kết nhóm kiểm tra này?",
-      "selectGroup": "Vui lòng chọn nhóm kiểm tra"
+      "selectGroup": "Vui lòng chọn nhóm kiểm tra",
+      "judgeCriteria": "Tiêu chí đánh giá",
+      "typeMeasure": "Đo lường",
+      "typeVisual": "Đánh giá",
+      "sampleQty": "SL mẫu",
+      "destructive": "Phá hủy",
+      "nonDestructive": "Không phá hủy",
+      "inspItem": "Hạng mục kiểm tra",
+      "type": "Loại"
+    },
+    "iqcTemplate": {
+      "title": "Quản lý mẫu hạng mục IQC",
+      "currentItem": "Sản phẩm hiện tại",
+      "namePlaceholder": "Nhập tên mẫu",
+      "saveAs": "Lưu thành mẫu",
+      "list": "Danh sách mẫu",
+      "empty": "Không có mẫu đã lưu.",
+      "itemsUnit": " mục",
+      "preview": "Xem trước",
+      "apply": "Áp dụng cho SP hiện tại",
+      "selectHint": "Vui lòng chọn mẫu.",
+      "applyHint": "Khi áp dụng sẽ thay thế toàn bộ hạng mục sản phẩm hiện tại. Nhấn [Lưu thay đổi] để xác nhận."
     },
     "iqcGroup": {
       "tabItems": "Hạng mục kiểm tra",
@@ -5792,7 +5815,17 @@
       "selectJobOrderFirst": "Chọn lệnh SX trước",
       "qtyRequired": "Vui lòng nhập số lượng",
       "saveSuccess": "Kết quả đã được lưu",
-      "saveError": "Lưu kết quả thất bại"
+      "saveError": "Lưu kết quả thất bại",
+      "disabledHint": "Không thể nhập thực tế",
+      "disabledReasons": {
+        "noEquip": "Chưa chọn thiết bị",
+        "noJobOrder": "Chưa chọn lệnh sản xuất",
+        "noWorker": "Chưa đăng ký người vận hành",
+        "dailyInspect": "Chưa hoàn thành kiểm tra thiết bị hàng ngày",
+        "workerInspect": "Chưa hoàn thành kiểm tra thiết bị người dùng",
+        "materialScan": "Chưa quét vật liệu",
+        "consumableScan": "Chưa quét phụ tùng tiêu hao"
+      }
     },
     "jobOrder": {
       "assignError": "Gán lệnh sản xuất thất bại"

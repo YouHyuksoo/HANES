@@ -85,7 +85,7 @@ describe('OqcService', () => {
 
   describe('createRequest', () => {
     it('should create request through TransactionService', async () => {
-      const boxes = [{ boxNo: 'BOX-001', qty: 10, status: 'CLOSED', oqcStatus: null }];
+      const boxes = [{ boxNo: 'BOX-001', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'C1', plant: 'P1' }];
       mockBoxRepo.find.mockResolvedValue(boxes as any);
       const qb: any = {
         where: jest.fn().mockReturnThis(),
@@ -106,6 +106,49 @@ describe('OqcService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQr.commitTransaction).not.toHaveBeenCalled();
       expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('creates request only from boxes in the request tenant', async () => {
+      const boxes = [{ boxNo: 'BOX-001', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'C1', plant: 'P1' }];
+      mockBoxRepo.find.mockResolvedValue(boxes as any);
+      const qb: any = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      mockOqcRepo.createQueryBuilder.mockReturnValue(qb);
+      mockQr.manager.create.mockImplementation((_entity, payload) => payload as any);
+      mockQr.manager.save
+        .mockResolvedValueOnce({ requestNo: 'OQC-20260523-001' } as any)
+        .mockResolvedValueOnce([] as any);
+      mockOqcRepo.findOne.mockResolvedValue({ requestNo: 'OQC-20260523-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as any);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as any);
+
+      await target.createRequest({ itemCode: 'ITEM-001', boxIds: ['BOX-001'] } as any, 'C1', 'P1', 'user1');
+
+      expect(mockBoxRepo.find).toHaveBeenCalledWith({
+        where: { boxNo: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockQr.manager.create).toHaveBeenCalledWith(
+        OqcRequestBox,
+        expect.objectContaining({ requestNo: 'OQC-20260523-001', boxNo: 'BOX-001', company: 'C1', plant: 'P1' }),
+      );
+      expect(mockQr.manager.update).toHaveBeenCalledWith(
+        BoxMaster,
+        { boxNo: expect.anything(), company: 'C1', plant: 'P1' },
+        { oqcStatus: 'PENDING' },
+      );
+    });
+
+    it('rejects create when a selected box belongs to a different tenant', async () => {
+      mockBoxRepo.find.mockResolvedValue([
+        { boxNo: 'BOX-001', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'OTHER', plant: 'P1' },
+      ] as any);
+
+      await expect(
+        target.createRequest({ itemCode: 'ITEM-001', boxIds: ['BOX-001'] } as any, 'C1', 'P1', 'user1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
   });
 
@@ -159,6 +202,11 @@ describe('OqcService', () => {
         OqcRequest,
         { requestNo: 'OQC-001', company: 'C1', plant: 'P1' },
         expect.objectContaining({ status: 'PASS', result: 'PASS' }),
+      );
+      expect(mockQr.manager.update).toHaveBeenCalledWith(
+        BoxMaster,
+        { boxNo: expect.anything(), company: 'C1', plant: 'P1' },
+        { oqcStatus: 'PASS' },
       );
     });
 
@@ -228,6 +276,11 @@ describe('OqcService', () => {
         OqcRequest,
         { requestNo: 'OQC-001', company: 'C1', plant: 'P1' },
         expect.objectContaining({ status: 'FAIL', result: 'FAIL' }),
+      );
+      expect(mockQr.manager.update).toHaveBeenCalledWith(
+        BoxMaster,
+        { boxNo: expect.anything(), company: 'C1', plant: 'P1' },
+        { oqcStatus: 'FAIL' },
       );
     });
 

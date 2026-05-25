@@ -132,6 +132,29 @@ describe('ShipOrderService', () => {
         BadRequestException,
       );
     });
+
+    it('should preserve tenant columns when replacing items', async () => {
+      mockOrderRepo.findOne
+        .mockResolvedValueOnce({ shipOrderNo: 'SO-001', status: 'DRAFT', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce({ shipOrderNo: 'SO-001', status: 'DRAFT', company: 'C1', plant: 'P1' } as any);
+      mockItemRepo.find.mockResolvedValue([]);
+      mockItemRepo.create.mockImplementation((payload) => payload as any);
+      mockPartRepo.findOne.mockResolvedValue(null);
+
+      await target.update(
+        'SO-001',
+        { items: [{ itemCode: 'ITEM-1', orderQty: 3 }] } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        shipOrderNo: 'SO-001',
+        itemCode: 'ITEM-1',
+        company: 'C1',
+        plant: 'P1',
+      }));
+    });
   });
 
   describe('create', () => {

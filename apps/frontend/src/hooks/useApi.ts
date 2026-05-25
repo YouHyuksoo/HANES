@@ -15,7 +15,7 @@ import {
   UseMutationOptions,
 } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import type { ApiResponse } from "@/types";
+import type { ApiResponse } from "@harness/shared";
 
 export function useApiQuery<T>(
   key: string[],

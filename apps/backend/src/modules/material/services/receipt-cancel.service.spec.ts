@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/material/services/receipt-cancel.service.spec.ts
  * @description ReceiptCancelService 단위 테스트 - 입고취소 역분개 처리
  *
@@ -138,6 +138,27 @@ describe('ReceiptCancelService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('요청 회사/공장과 다른 원본 입고 거래는 취소하지 않는다', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        transNo: 'TX-001',
+        cancelRefId: null,
+        transType: 'RECEIPT',
+        toWarehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: null,
+        qty: 10,
+        company: 'OTHER',
+        plant: 'P01',
+      } as StockTransaction);
+
+      await expect(
+        target.cancel({ transactionId: 'TX-001', reason: '취소' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
+
     it('정상적으로 입고취소를 처리한다', async () => {
       const originalTx = {
         transNo: 'TX-001', cancelRefId: null, transType: 'RECEIPT',
@@ -152,8 +173,8 @@ describe('ReceiptCancelService', () => {
         .mockResolvedValueOnce(stock); // 재고
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
       mockNumbering.nextInTx.mockResolvedValue('CANCEL-001');
-      mockQueryRunner.manager.create.mockReturnValue(cancelTx);
-      mockQueryRunner.manager.save.mockResolvedValue(cancelTx);
+      (mockQueryRunner.manager.create as jest.Mock).mockReturnValue(cancelTx);
+      (mockQueryRunner.manager.save as jest.Mock).mockResolvedValue(cancelTx);
 
       const result = await target.cancel({ transactionId: 'TX-001', reason: '취소' } as any);
 
@@ -194,8 +215,8 @@ describe('ReceiptCancelService', () => {
         .mockResolvedValueOnce(stock);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
       mockNumbering.nextInTx.mockResolvedValue('CANCEL-001');
-      mockQueryRunner.manager.create.mockReturnValue(cancelTx);
-      mockQueryRunner.manager.save.mockResolvedValue(cancelTx);
+      (mockQueryRunner.manager.create as jest.Mock).mockReturnValue(cancelTx);
+      (mockQueryRunner.manager.save as jest.Mock).mockResolvedValue(cancelTx);
 
       await (target as any).cancel({ transactionId: 'TX-001', reason: '취소' }, 'HANES', 'P01');
 

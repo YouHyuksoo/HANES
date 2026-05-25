@@ -66,6 +66,20 @@ export class ReceivingService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   /** 입고 가능 LOT 목록 (IQC 합격 + 미입고/부분입고) */
   async findReceivable(company?: string, plant?: string) {
     // IQC 합격된 LOT 조회 (initQty > 0 조건으로 유효 LOT 필터)
@@ -273,6 +287,7 @@ export class ReceivingService {
         where: { matUid: item.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
       if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${item.matUid}`);
+      this.assertSameTenant('입고 대상 LOT', lot, company, plant);
       if (lot.iqcStatus !== 'PASS') throw new BadRequestException(`IQC 합격되지 않은 LOT입니다: ${lot.matUid}`);
 
       // 기입고수량 확인
@@ -311,6 +326,7 @@ export class ReceivingService {
           where: { matUid: item.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         });
         if (!lot) continue;
+        this.assertSameTenant('입고 대상 LOT', lot, company, plant);
 
         // 0. MAT_ARRIVALS에서 입하 창고 조회 (LOT의 arrivalNo FK 기준)
         let arrivalRecord: MatArrival | null = null;
@@ -334,6 +350,9 @@ export class ReceivingService {
             },
             order: { arrivalDate: 'DESC' },
           });
+        }
+        if (arrivalRecord) {
+          this.assertSameTenant('입고 대상 입하건', arrivalRecord, company, plant);
         }
         const arrivalWarehouseCode = arrivalRecord?.warehouseCode || null;
 

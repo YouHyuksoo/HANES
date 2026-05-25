@@ -15,17 +15,20 @@ import { PdaRoleService, PDA_MENU_CODES } from './pda-role.service';
 import { PdaRole } from '../../../entities/pda-role.entity';
 import { PdaRoleMenu } from '../../../entities/pda-role-menu.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('PdaRoleService', () => {
   let target: PdaRoleService;
   let mockRoleRepo: DeepMocked<Repository<PdaRole>>;
   let mockMenuRepo: DeepMocked<Repository<PdaRoleMenu>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockRoleRepo = createMock<Repository<PdaRole>>();
     mockMenuRepo = createMock<Repository<PdaRoleMenu>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -33,6 +36,7 @@ describe('PdaRoleService', () => {
         { provide: getRepositoryToken(PdaRole), useValue: mockRoleRepo },
         { provide: getRepositoryToken(PdaRoleMenu), useValue: mockMenuRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -118,14 +122,14 @@ describe('PdaRoleService', () => {
       const mockManager = createMock<any>();
       mockManager.create.mockReturnValue({} as any);
       mockManager.save.mockResolvedValue({} as any);
-      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(mockManager));
+      mockTx.run.mockImplementation(async (cb) => cb({ manager: mockManager } as any));
       mockRoleRepo.findOne.mockResolvedValue({ code: 'NEW', menus: [] } as any);
 
       // Act
       const result = await target.create(dto as any, 'C1', 'P1');
 
       // Assert
-      expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalled();
       expect(mockRoleRepo.findOne).toHaveBeenCalledWith({ where: { code: 'NEW', company: 'C1', plant: 'P1' } });
       expect(mockManager.create).toHaveBeenCalledWith(PdaRole, expect.objectContaining({ company: 'C1', plant: 'P1' }));
       expect(mockManager.create).toHaveBeenCalledWith(PdaRoleMenu, expect.objectContaining({ company: 'C1', plant: 'P1' }));
@@ -145,7 +149,7 @@ describe('PdaRoleService', () => {
 
       await expect(target.create({ code: 'NEW', name: 'New Role' } as any)).rejects.toThrow(BadRequestException);
 
-      expect(mockDataSource.transaction).not.toHaveBeenCalled();
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
   });
 
@@ -159,13 +163,13 @@ describe('PdaRoleService', () => {
       mockManager.delete.mockResolvedValue({} as any);
       mockManager.create.mockReturnValue({} as any);
       mockManager.save.mockResolvedValue({} as any);
-      mockDataSource.transaction.mockImplementation(async (cb: any) => cb(mockManager));
+      mockTx.run.mockImplementation(async (cb) => cb({ manager: mockManager } as any));
 
       // Act
       await target.update('R1', { name: 'Updated', menuCodes: ['PDA_SHIPPING'] } as any, 'C1', 'P1');
 
       // Assert
-      expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalled();
       expect(mockManager.update).toHaveBeenCalledWith(PdaRole, { code: 'R1', company: 'C1', plant: 'P1' }, expect.objectContaining({ name: 'Updated' }));
       expect(mockManager.delete).toHaveBeenCalledWith(PdaRoleMenu, { pdaRoleCode: 'R1', company: 'C1', plant: 'P1' });
       expect(mockManager.create).toHaveBeenCalledWith(PdaRoleMenu, expect.objectContaining({ pdaRoleCode: 'R1', company: 'C1', plant: 'P1' }));
@@ -184,7 +188,7 @@ describe('PdaRoleService', () => {
 
       await expect(target.update('R1', { menuCodes: ['PDA_SHIPPING'] } as any)).rejects.toThrow(BadRequestException);
 
-      expect(mockDataSource.transaction).not.toHaveBeenCalled();
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
   });
 

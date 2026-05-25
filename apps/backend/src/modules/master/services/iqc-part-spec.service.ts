@@ -9,7 +9,8 @@
  */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { IqcPartSpec } from '../../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../../entities/iqc-part-spec-item.entity';
 import { UpsertIqcPartSpecDto } from '../dto/iqc-part-spec.dto';
@@ -21,7 +22,7 @@ export class IqcPartSpecService {
     private readonly specRepo: Repository<IqcPartSpec>,
     @InjectRepository(IqcPartSpecItem)
     private readonly itemRepo: Repository<IqcPartSpecItem>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -58,12 +59,12 @@ export class IqcPartSpecService {
     plant: string,
     userId: string,
   ): Promise<IqcPartSpec> {
-    return this.dataSource.transaction(async (em) => {
+    return this.tx.run(async (queryRunner) => {
       const tenantWhere = this.tenantWhere(company, plant);
-      let spec = await em.findOne(IqcPartSpec, { where: { itemCode: dto.itemCode, ...tenantWhere } });
+      let spec = await queryRunner.manager.findOne(IqcPartSpec, { where: { itemCode: dto.itemCode, ...tenantWhere } });
 
       if (!spec) {
-        spec = em.create(IqcPartSpec, {
+        spec = queryRunner.manager.create(IqcPartSpec, {
           itemCode: dto.itemCode,
           sampleQty: dto.sampleQty,
           isDest: dto.isDest,
@@ -79,19 +80,20 @@ export class IqcPartSpecService {
         spec.useYn = dto.useYn ?? spec.useYn;
         spec.updatedBy = userId;
       }
-      await em.save(IqcPartSpec, spec);
+      await queryRunner.manager.save(IqcPartSpec, spec);
 
       // 기존 검사항목 전체 삭제 후 재삽입
-      await em.delete(IqcPartSpecItem, { itemCode: dto.itemCode, ...tenantWhere });
+      await queryRunner.manager.delete(IqcPartSpecItem, { itemCode: dto.itemCode, ...tenantWhere });
 
       if (dto.items.length > 0) {
         const newItems = dto.items.map((it) =>
-          em.create(IqcPartSpecItem, {
+          queryRunner.manager.create(IqcPartSpecItem, {
             itemCode: dto.itemCode,
             seq: it.seq,
             inspItemCode: it.inspItemCode,
             lsl: it.lsl ?? null,
             usl: it.usl ?? null,
+            judgeCriteria: it.judgeCriteria ?? null,
             useYn: it.useYn ?? 'Y',
             company,
             plant,
@@ -99,10 +101,10 @@ export class IqcPartSpecService {
             updatedBy: userId,
           }),
         );
-        await em.save(IqcPartSpecItem, newItems);
+        await queryRunner.manager.save(IqcPartSpecItem, newItems);
       }
 
-      return em.findOne(IqcPartSpec, {
+      return queryRunner.manager.findOne(IqcPartSpec, {
         where: { itemCode: dto.itemCode, ...tenantWhere },
         relations: ['items', 'items.inspItem'],
         order: { items: { seq: 'ASC' } },

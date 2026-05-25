@@ -90,11 +90,22 @@ export class OqcService {
     const { itemCode, boxIds, customer, requestDate, sampleSize } = dto;
 
     const boxes = await this.boxRepo.find({
-      where: { boxNo: In(boxIds) },
+      where: { boxNo: In(boxIds), ...this.tenantWhere(company, plant) },
     });
 
     if (boxes.length !== boxIds.length) {
       throw new BadRequestException('?쇰? 諛뺤뒪瑜?李얠쓣 ???놁뒿?덈떎.');
+    }
+
+    const tenantMismatchedBoxes = boxes.filter(
+      (box) =>
+        (company && box.company !== company) ||
+        (plant && box.plant !== plant),
+    );
+    if (tenantMismatchedBoxes.length > 0) {
+      throw new BadRequestException(
+        `OQC 요청 박스의 회사/사업장 정보가 일치하지 않습니다: ${tenantMismatchedBoxes.map((box) => box.boxNo).join(', ')}`,
+      );
     }
 
     const invalidBoxes = boxes.filter((box) => box.status !== 'CLOSED' || box.oqcStatus !== null);
@@ -147,13 +158,16 @@ export class OqcService {
           boxNo: box.boxNo,
           qty: box.qty,
           isSample: 'N',
+          company: company || null,
+          plant: plant || null,
+          createdBy: createdBy || null,
         }),
       );
       await queryRunner.manager.save(OqcRequestBox, requestBoxes);
 
       await queryRunner.manager.update(
         BoxMaster,
-        { boxNo: In(boxIds) },
+        { boxNo: In(boxIds), ...this.tenantWhere(company, plant) },
         { oqcStatus: 'PENDING' },
       );
     });
@@ -178,7 +192,7 @@ export class OqcService {
     const boxNos = oqcRequest.boxes.map((box) => box.boxNo);
     if (boxNos.length > 0) {
       const linkedBoxes = await this.boxRepo.find({
-        where: { boxNo: In(boxNos) },
+        where: { boxNo: In(boxNos), ...tenantWhere },
       });
       const progressedBoxes = linkedBoxes.filter((box) => box.palletNo || box.status === 'SHIPPED');
       if (progressedBoxes.length > 0) {
@@ -213,7 +227,7 @@ export class OqcService {
       if (boxNos.length > 0) {
         await queryRunner.manager.update(
           BoxMaster,
-          { boxNo: In(boxNos) },
+          { boxNo: In(boxNos), ...tenantWhere },
           { oqcStatus: dto.result },
         );
       }
@@ -236,7 +250,7 @@ export class OqcService {
       const boxNos = oqcRequest.boxes.map((box) => box.boxNo);
       if (boxNos.length > 0) {
         const linkedBoxes = await this.boxRepo.find({
-          where: { boxNo: In(boxNos) },
+          where: { boxNo: In(boxNos), ...tenantWhere },
         });
         const progressedBoxes = linkedBoxes.filter((box) => box.palletNo || box.status === 'SHIPPED');
         if (progressedBoxes.length > 0) {
@@ -262,7 +276,7 @@ export class OqcService {
         if (boxNos.length > 0) {
           await queryRunner.manager.update(
             BoxMaster,
-            { boxNo: In(boxNos) },
+            { boxNo: In(boxNos), ...tenantWhere },
             { oqcStatus: dto.result },
           );
         }

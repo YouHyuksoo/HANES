@@ -24,7 +24,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { TrainingPlan } from '../../../entities/training-plan.entity';
 import { TrainingResult } from '../../../entities/training-result.entity';
 import {
@@ -44,9 +45,34 @@ export class TrainingService {
     private readonly planRepo: Repository<TrainingPlan>,
     @InjectRepository(TrainingResult)
     private readonly resultRepo: Repository<TrainingResult>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
   ) {}
+
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`,
+      );
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`,
+      );
+    }
+  }
 
   // =============================================
   // 교육 계획 CRUD
@@ -100,11 +126,14 @@ export class TrainingService {
   /**
    * 교육 계획 단건 조회
    */
-  async findById(planNo: string) {
-    const item = await this.planRepo.findOne({ where: { planNo } });
+  async findById(planNo: string, company?: string, plant?: string) {
+    const item = await this.planRepo.findOne({
+      where: { planNo, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('교육 계획을 찾을 수 없습니다.');
     }
+    this.assertSameTenant('교육 계획', item, company, plant);
     return item;
   }
 
@@ -136,8 +165,14 @@ export class TrainingService {
   /**
    * 교육 계획 수정 (PLANNED 상태에서만 가능)
    */
-  async update(planNo: string, dto: UpdateTrainingPlanDto, userId: string) {
-    const item = await this.findById(planNo);
+  async update(
+    planNo: string,
+    dto: UpdateTrainingPlanDto,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(planNo, company, plant);
     const {
       planNo: _planNo,
       company: _company,
@@ -151,11 +186,14 @@ export class TrainingService {
   /**
    * 교육 계획 삭제 — 결과 삭제 + 계획 삭제를 단일 트랜잭션으로 처리 (원자성 보장)
    */
-  async delete(planNo: string) {
-    const item = await this.findById(planNo);
-    await this.dataSource.transaction(async (manager) => {
-      await manager.delete(TrainingResult, { planNo });
-      await manager.remove(TrainingPlan, item);
+  async delete(planNo: string, company?: string, plant?: string) {
+    const item = await this.findById(planNo, company, plant);
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(TrainingResult, {
+        planNo,
+        ...this.tenantWhere(company, plant),
+      });
+      await queryRunner.manager.remove(TrainingPlan, item);
     });
   }
 
@@ -166,8 +204,13 @@ export class TrainingService {
   /**
    * 완료 처리 (PLANNED/IN_PROGRESS → COMPLETED)
    */
-  async complete(planNo: string, userId: string) {
-    const item = await this.findById(planNo);
+  async complete(
+    planNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(planNo, company, plant);
     if (!['PLANNED', 'IN_PROGRESS'].includes(item.status)) {
       throw new BadRequestException(
         '계획 또는 진행중 상태에서만 완료할 수 있습니다.',
@@ -183,8 +226,13 @@ export class TrainingService {
   /**
    * 완료 취소 (COMPLETED → PLANNED)
    */
-  async cancelComplete(planNo: string, userId: string) {
-    const item = await this.findById(planNo);
+  async cancelComplete(
+    planNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findById(planNo, company, plant);
     if (item.status !== 'COMPLETED') {
       throw new BadRequestException('완료 상태에서만 취소할 수 있습니다.');
     }
@@ -209,7 +257,7 @@ export class TrainingService {
     plant: string,
     userId: string,
   ) {
-    await this.findById(planNo);
+    await this.findById(planNo, company, plant);
     const entity = this.resultRepo.create({
       ...dto,
       planNo,
@@ -227,10 +275,13 @@ export class TrainingService {
   /**
    * 교육 계획별 결과 조회 (작업자 사진 포함)
    */
-  async getResults(planNo: string) {
+  async getResults(planNo: string, company?: string, plant?: string) {
+    await this.findById(planNo, company, plant);
     const results = await this.resultRepo
       .createQueryBuilder('r')
       .where('r.planNo = :planNo', { planNo })
+      .andWhere(company ? 'r.company = :company' : '1 = 1', { company })
+      .andWhere(plant ? 'r.plant = :plant' : '1 = 1', { plant })
       .orderBy('r.createdAt', 'DESC')
       .getMany();
 
@@ -260,11 +311,20 @@ export class TrainingService {
   /**
    * 교육 결과 수정
    */
-  async updateResult(planNo: string, workerCode: string, dto: Partial<CreateTrainingResultDto>) {
-    const item = await this.resultRepo.findOne({ where: { planNo, workerCode } });
+  async updateResult(
+    planNo: string,
+    workerCode: string,
+    dto: Partial<CreateTrainingResultDto>,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.resultRepo.findOne({
+      where: { planNo, workerCode, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('교육 결과를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('교육 결과', item, company, plant);
     const {
       planNo: _planNo,
       workerCode: _workerCode,
@@ -279,11 +339,19 @@ export class TrainingService {
   /**
    * 교육 결과 삭제
    */
-  async deleteResult(planNo: string, workerCode: string) {
-    const item = await this.resultRepo.findOne({ where: { planNo, workerCode } });
+  async deleteResult(
+    planNo: string,
+    workerCode: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.resultRepo.findOne({
+      where: { planNo, workerCode, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('교육 결과를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('교육 결과', item, company, plant);
     await this.resultRepo.remove(item);
   }
 

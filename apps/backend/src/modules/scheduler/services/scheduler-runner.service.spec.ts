@@ -131,7 +131,10 @@ describe('SchedulerRunnerService', () => {
 
       mockLogService.updateLog.mockResolvedValue();
       mockJobRepo.update.mockResolvedValue({ affected: 1 } as any);
-      mockLogRepo.manager = { query: jest.fn().mockResolvedValue([]) } as any;
+      Object.defineProperty(mockLogRepo, 'manager', {
+        configurable: true,
+        value: { query: jest.fn().mockResolvedValue([]) },
+      });
       mockNotiService.createNotification.mockResolvedValue({} as any);
 
       // Act
@@ -162,7 +165,10 @@ describe('SchedulerRunnerService', () => {
 
       mockLogService.updateLog.mockResolvedValue();
       mockJobRepo.update.mockResolvedValue({ affected: 1 } as any);
-      mockLogRepo.manager = { query: jest.fn().mockResolvedValue([]) } as any;
+      Object.defineProperty(mockLogRepo, 'manager', {
+        configurable: true,
+        value: { query: jest.fn().mockResolvedValue([]) },
+      });
       mockNotiService.createNotification.mockResolvedValue({} as any);
 
       // Act

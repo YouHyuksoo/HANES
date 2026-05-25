@@ -2,43 +2,18 @@
 
 /**
  * @file components/IqcItemTab.tsx
- * @description IQC 검사항목 풀 관리 탭 — API 연동 CRUD
- *
- * 초보자 가이드:
- * 1. API: GET/POST/PUT/DELETE /master/iqc-item-pool
- * 2. 항목코드(IQC-xxx) + 판정방법(육안/계측) 관리
- * 3. 계측 항목은 단위(unit) 입력 가능
- * 4. LSL/USL/규격은 품목별 IQC 기준 탭에서 설정
+ * @description IQC 검사항목 풀 관리 탭 - 우측 패널 CRUD
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { JUDGE_METHOD_COLORS } from "../types";
+import IqcItemFormPanel, { type IqcItemFormState, type IqcItemPool } from "./IqcItemFormPanel";
 import api from "@/services/api";
-
-interface IqcItemPool {
-  id: string;
-  inspItemCode: string;
-  inspItemName: string;
-  judgeMethod: "VISUAL" | "MEASURE";
-  unit: string | null;
-  useYn: string;
-}
-
-interface FormState {
-  itemCode: string;
-  itemName: string;
-  judgeMethod: "VISUAL" | "MEASURE";
-  unit: string;
-}
-
-const EMPTY_FORM: FormState = {
-  itemCode: "", itemName: "", judgeMethod: "VISUAL", unit: "",
-};
 
 export default function IqcItemTab() {
   const { t } = useTranslation();
@@ -47,10 +22,11 @@ export default function IqcItemTab() {
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [methodFilter, setMethodFilter] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [editing, setEditing] = useState<IqcItemPool | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [panelKey, setPanelKey] = useState(0);
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; itemCode: string }>({ open: false, itemCode: "" });
+  const panelAnimateRef = useRef(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -93,24 +69,27 @@ export default function IqcItemTab() {
     );
   }, [data, searchText]);
 
-  const openCreate = () => {
+  const closePanel = useCallback(() => {
+    setPanelOpen(false);
     setEditing(null);
-    setForm(EMPTY_FORM);
-    setModalOpen(true);
-  };
+    panelAnimateRef.current = true;
+  }, []);
 
-  const openEdit = (item: IqcItemPool) => {
+  const openCreate = useCallback(() => {
+    panelAnimateRef.current = !panelOpen;
+    setEditing(null);
+    setPanelKey(k => k + 1);
+    setPanelOpen(true);
+  }, [panelOpen]);
+
+  const openEdit = useCallback((item: IqcItemPool) => {
+    panelAnimateRef.current = !panelOpen;
     setEditing(item);
-    setForm({
-      itemCode: item.inspItemCode,
-      itemName: item.inspItemName,
-      judgeMethod: item.judgeMethod,
-      unit: item.unit ?? "",
-    });
-    setModalOpen(true);
-  };
+    setPanelKey(k => k + 1);
+    setPanelOpen(true);
+  }, [panelOpen]);
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (form: IqcItemFormState) => {
     if (!form.itemCode || !form.itemName) return;
     setSaving(true);
     try {
@@ -126,14 +105,14 @@ export default function IqcItemTab() {
       } else {
         await api.post("/master/iqc-item-pool", payload);
       }
-      setModalOpen(false);
+      closePanel();
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [editing, form, fetchData]);
+  }, [editing, fetchData, closePanel]);
 
   const handleDelete = useCallback(async () => {
     try {
@@ -151,11 +130,14 @@ export default function IqcItemTab() {
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row.original); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button
-            onClick={() => setConfirmModal({ open: true, itemCode: row.original.inspItemCode })}
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmModal({ open: true, itemCode: row.original.inspItemCode });
+            }}
             className="p-1 hover:bg-surface rounded"
           >
             <Trash2 className="w-4 h-4 text-red-500" />
@@ -174,84 +156,63 @@ export default function IqcItemTab() {
       },
     },
     { accessorKey: "unit", header: t("common.unit", "단위"), size: 80, meta: { filterType: "text" as const } },
-  ], [t, methodLabels]);
+  ], [t, methodLabels, openEdit]);
 
   return (
-    <>
-      <Card><CardContent>
-        <DataGrid
-          data={filtered}
-          columns={columns}
-          isLoading={loading}
-          enableColumnFilter
-          enableExport
-          exportFileName={t("master.iqcItem.tabItems", "검사항목")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input
-                  placeholder={t("master.iqcItem.searchPlaceholder")}
-                  value={searchText}
-                  onChange={e => setSearchText(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />}
-                  fullWidth
-                />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Select options={methodOptions} value={methodFilter} onChange={setMethodFilter} fullWidth />
-              </div>
-              <Button variant="secondary" size="sm" onClick={fetchData} className="flex-shrink-0">
-                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-              </Button>
-              <Button size="sm" onClick={openCreate} className="flex-shrink-0">
-                <Plus className="w-4 h-4 mr-1" />{t("master.iqcItem.addItem")}
-              </Button>
-            </div>
-          }
-        />
-      </CardContent></Card>
+    <div className="flex h-full">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-4">
+            <DataGrid
+              data={filtered}
+              columns={columns}
+              isLoading={loading}
+              enableColumnFilter
+              enableExport
+              exportFileName={t("master.iqcItem.tabItems", "검사항목")}
+              onRowClick={(row) => {
+                if (!panelOpen || !editing) return;
+                setEditing(row as IqcItemPool);
+                setPanelKey(k => k + 1);
+              }}
+              toolbarLeft={
+                <div className="flex gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      placeholder={t("master.iqcItem.searchPlaceholder")}
+                      value={searchText}
+                      onChange={e => setSearchText(e.target.value)}
+                      leftIcon={<Search className="w-4 h-4" />}
+                      fullWidth
+                    />
+                  </div>
+                  <div className="w-36 flex-shrink-0">
+                    <Select options={methodOptions} value={methodFilter} onChange={setMethodFilter} fullWidth />
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={fetchData} className="flex-shrink-0">
+                    <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+                  </Button>
+                  <Button size="sm" onClick={openCreate} className="flex-shrink-0">
+                    <Plus className="w-4 h-4 mr-1" />{t("master.iqcItem.addItem")}
+                  </Button>
+                </div>
+              }
+            />
+          </CardContent>
+        </Card>
+      </div>
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editing ? t("master.iqcItem.editItem") : t("master.iqcItem.addItem")}
-        size="md"
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label={t("master.iqcItem.itemCode", "항목코드")}
-            value={form.itemCode}
-            onChange={e => setForm({ ...form, itemCode: e.target.value })}
-            fullWidth
-            disabled={!!editing}
-          />
-          <Input
-            label={t("master.iqcItem.inspectItem")}
-            value={form.itemName}
-            onChange={e => setForm({ ...form, itemName: e.target.value })}
-            fullWidth
-          />
-          <Select
-            label={t("master.iqcItem.judgeMethod", "판정방법")}
-            options={judgeOptions}
-            value={form.judgeMethod}
-            onChange={v => setForm({ ...form, judgeMethod: v as "VISUAL" | "MEASURE" })}
-            fullWidth
-          />
-          <Input
-            label={t("common.unit", "단위")}
-            value={form.unit}
-            onChange={e => setForm({ ...form, unit: e.target.value })}
-            fullWidth
-          />
-        </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? t("common.saving") : editing ? t("common.edit") : t("common.add")}
-          </Button>
-        </div>
-      </Modal>
+      {panelOpen && (
+        <IqcItemFormPanel
+          key={`${editing?.inspItemCode ?? "create"}-${panelKey}`}
+          editing={editing}
+          saving={saving}
+          judgeOptions={judgeOptions}
+          onClose={closePanel}
+          onSave={handleSave}
+          animate={panelAnimateRef.current}
+        />
+      )}
 
       <ConfirmModal
         isOpen={confirmModal.open}
@@ -261,6 +222,6 @@ export default function IqcItemTab() {
         message={t("master.iqcItem.deleteConfirm", "이 검사항목을 삭제하시겠습니까?")}
         variant="danger"
       />
-    </>
+    </div>
   );
 }

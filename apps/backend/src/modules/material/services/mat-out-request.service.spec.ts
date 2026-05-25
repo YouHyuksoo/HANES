@@ -220,6 +220,34 @@ describe('MatOutRequestService', () => {
         expect.objectContaining({ status: 'DONE', approverId: 'approver' }),
       );
     });
+
+    it('rejects approve when the request transaction belongs to a different tenant', async () => {
+      stockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-001',
+        status: 'PENDING_APPROVAL',
+        fromWarehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: -3,
+        company: 'OTHER',
+        plant: 'P01',
+      } as StockTransaction);
+      matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status: 'NORMAL', company: 'OTHER', plant: 'P01' } as MatLot);
+      matStockRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        reservedQty: 5,
+        availableQty: 5,
+        company: 'OTHER',
+        plant: 'P01',
+      } as MatStock);
+
+      await expect(service.approve('TX-001', 'approver', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+      expect(matLotRepo.findOne).not.toHaveBeenCalled();
+      expect(matStockRepo.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('reject', () => {
@@ -298,6 +326,62 @@ describe('MatOutRequestService', () => {
         { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
         expect.objectContaining({ status: 'REJECTED', approverId: 'approver' }),
       );
+    });
+
+    it('rejects reject when the request transaction belongs to a different tenant', async () => {
+      stockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-001',
+        status: 'PENDING_APPROVAL',
+        fromWarehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: -3,
+        company: 'OTHER',
+        plant: 'P01',
+      } as StockTransaction);
+      matStockRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        reservedQty: 5,
+        availableQty: 5,
+        company: 'OTHER',
+        plant: 'P01',
+      } as MatStock);
+
+      await expect(service.reject('TX-001', 'approver', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+      expect(matStockRepo.findOne).not.toHaveBeenCalled();
+      expect(stockTxRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cancel', () => {
+    it('rejects cancel when the request transaction belongs to a different tenant', async () => {
+      stockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-001',
+        status: 'PENDING_APPROVAL',
+        fromWarehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: -3,
+        company: 'OTHER',
+        plant: 'P01',
+      } as StockTransaction);
+      matStockRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        reservedQty: 5,
+        availableQty: 5,
+        company: 'OTHER',
+        plant: 'P01',
+      } as MatStock);
+
+      await expect(service.cancel('TX-001', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
+      expect(matStockRepo.findOne).not.toHaveBeenCalled();
+      expect(stockTxRepo.update).not.toHaveBeenCalled();
     });
   });
 });

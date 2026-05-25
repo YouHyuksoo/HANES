@@ -191,6 +191,46 @@ describe('LotSplitService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('blocks split when source stock tenant differs from source LOT tenant', async () => {
+    const sourceLot = {
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      status: 'NORMAL',
+      company: 'C1',
+      plant: 'P1',
+    } as MatLot;
+    const sourceStock = {
+      warehouseCode: 'WH-01',
+      itemCode: 'ITEM-001',
+      matUid: 'MAT-001',
+      qty: 10,
+      availableQty: 10,
+      reservedQty: 0,
+      company: 'OTHER',
+      plant: 'P1',
+    } as MatStock;
+
+    mockQueryRunner.manager.findOne
+      .mockResolvedValueOnce(sourceLot)
+      .mockResolvedValueOnce(sourceStock)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART-A', isSplittable: 'Y', company: 'C1', plant: 'P1' } as PartMaster)
+      .mockResolvedValueOnce(null);
+    mockQueryRunner.manager.find.mockResolvedValue([]);
+    (mockQueryRunner.manager.create as jest.Mock)
+      .mockReturnValueOnce({ matUid: 'MAT-001-S001', itemCode: 'ITEM-001' } as MatLot)
+      .mockReturnValueOnce({ matUid: 'MAT-001-S001' } as MatStock);
+    mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+    mockQueryRunner.manager.save.mockResolvedValue({} as any);
+    mockStockTxRepo.findOne.mockResolvedValue(null);
+
+    await expect(
+      target.split({ sourceLotId: 'MAT-001', splitQty: 3 } as any, 'C1', 'P1'),
+    ).rejects.toThrow('회사 정보가 일치하지 않습니다');
+
+    expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+  });
+
   it('splits a LOT through TransactionService', async () => {
     const sourceLot = {
       matUid: 'MAT-001',
@@ -209,7 +249,7 @@ describe('LotSplitService', () => {
       company: 'C1',
       plant: 'P1',
     } as MatStock;
-    const part = { itemCode: 'ITEM-001', itemName: 'PART-A', isSplittable: 'Y' } as PartMaster;
+    const part = { itemCode: 'ITEM-001', itemName: 'PART-A', isSplittable: 'Y', company: 'C1', plant: 'P1' } as PartMaster;
     const newLot = { matUid: 'MAT-001-S001', itemCode: 'ITEM-001' } as MatLot;
 
     mockQueryRunner.manager.findOne
@@ -218,7 +258,7 @@ describe('LotSplitService', () => {
       .mockResolvedValueOnce(part)
       .mockResolvedValueOnce(null);
     mockQueryRunner.manager.find.mockResolvedValue([]);
-    mockQueryRunner.manager.create
+    (mockQueryRunner.manager.create as jest.Mock)
       .mockReturnValueOnce(newLot)
       .mockReturnValueOnce({ matUid: 'MAT-001-S001' } as MatStock);
     mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
@@ -262,7 +302,7 @@ describe('LotSplitService', () => {
       .mockResolvedValueOnce(part)
       .mockResolvedValueOnce(null);
     mockQueryRunner.manager.find.mockResolvedValue([]);
-    mockQueryRunner.manager.create
+    (mockQueryRunner.manager.create as jest.Mock)
       .mockReturnValueOnce({ matUid: 'MAT-001-S001', itemCode: 'ITEM-001' } as MatLot)
       .mockReturnValueOnce({ matUid: 'MAT-001-S001' } as MatStock);
     mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);

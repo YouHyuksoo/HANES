@@ -150,7 +150,8 @@
     "master.worker.workerList": "Worker List",
     "master.worker.totalCount": "Total {{count}} records",
     "master.worker.emptyMessage": "No workers registered.",
-    "master.iqcItem": "IQC Items/Groups",
+    "master.iqcItem": "Inspection Item Master",
+    "master.iqcPartSpec": "IQC Items by Part",
     "master.iqcItem.itemCode": "Item Code",
     "master.iqcItem.judgeMethod": "Judge Method",
     "master.iqcItem.visual": "Visual",
@@ -315,7 +316,6 @@
     "system.training": "Training",
     "system.menuCategory": "Menu Category Management",
     "root": "Root",
-    "system.screenRequirements": "Screen Requirements",
     "system.improvementRequests": "Improvement Requests"
   },
   "header": {
@@ -1219,8 +1219,8 @@
       "deleteConfirm": " will be deleted. Are you sure?"
     },
     "iqcItem": {
-      "title": "IQC Inspection Items/Groups",
-      "subtitle": "Register inspection items and manage inspection groups.",
+      "title": "Inspection Item Master",
+      "subtitle": "Register and manage global IQC inspection items.",
       "seq": "Seq",
       "inspectItem": "Inspection Item",
       "spec": "Spec/Criteria",
@@ -1248,11 +1248,34 @@
       "unlinkGroup": "Unlink",
       "measureItems": "Measurement Items",
       "judgeItems": "Judgment Items",
-      "perItemIqc": "IQC Spec by Item",
+      "perItemIqc": "IQC Items by Part",
+      "perItemIqcSubtitle": "Manage sample quantity, destructive inspection, inspection items, and specs by item.",
       "itemPool": "Inspection Item Master",
+      "itemPoolSubtitle": "Register and manage global IQC inspection items.",
       "linkedGroupCount": "Linked Groups",
       "unlinkConfirm": "Are you sure you want to unlink this inspection group?",
-      "selectGroup": "Select an inspection group"
+      "selectGroup": "Select an inspection group",
+      "judgeCriteria": "Judgment Criteria",
+      "typeMeasure": "Measured",
+      "typeVisual": "Pass/Fail",
+      "sampleQty": "Sample Qty",
+      "destructive": "Destructive",
+      "nonDestructive": "Non-destructive",
+      "inspItem": "Inspection Item",
+      "type": "Type"
+    },
+    "iqcTemplate": {
+      "title": "IQC Item Template Management",
+      "currentItem": "Current Item",
+      "namePlaceholder": "Enter template name",
+      "saveAs": "Save as Template",
+      "list": "Template List",
+      "empty": "No saved templates.",
+      "itemsUnit": " items",
+      "preview": "Preview",
+      "apply": "Apply to Current Item",
+      "selectHint": "Select a template.",
+      "applyHint": "Applying replaces all current item entries. Click [Save Changes] to confirm."
     },
     "iqcGroup": {
       "tabItems": "Inspection Items",
@@ -5806,7 +5829,17 @@
       "selectJobOrderFirst": "Select job order first",
       "qtyRequired": "Please enter quantity",
       "saveSuccess": "Result saved successfully",
-      "saveError": "Failed to save result"
+      "saveError": "Failed to save result",
+      "disabledHint": "Result input is disabled",
+      "disabledReasons": {
+        "noEquip": "Please select equipment",
+        "noJobOrder": "Please select a job order",
+        "noWorker": "Please select at least one worker",
+        "dailyInspect": "Daily equipment inspection is not completed",
+        "workerInspect": "Worker equipment inspection is not completed",
+        "materialScan": "Material scan is not completed",
+        "consumableScan": "Consumable scan is not completed"
+      }
     },
     "jobOrder": {
       "assignError": "Failed to assign job order"

@@ -105,6 +105,17 @@ export default function MaterialReceivingPage() {
     setWarehouseCode("");
   }, [handleReset]);
 
+  const receiveDisabledReason = useMemo(() => {
+    const qty = Number(receivedQty);
+    if (!receivedQty || Number.isNaN(qty) || qty <= 0) {
+      return "입고수량은 1 이상이어야 합니다.";
+    }
+    if (!warehouseCode) {
+      return "창고를 선택해 주세요.";
+    }
+    return undefined;
+  }, [receivedQty, warehouseCode]);
+
   return (
     <>
       <PdaHeader titleKey="pda.receiving.title" backPath="/pda/material/menu" />
@@ -208,6 +219,7 @@ export default function MaterialReceivingPage() {
               variant: "primary",
               isLoading: isConfirming,
               disabled: !receivedQty || Number(receivedQty) <= 0 || !warehouseCode,
+              disabledReason: receiveDisabledReason,
             },
             {
               label: t("pda.scan.nextScan"),

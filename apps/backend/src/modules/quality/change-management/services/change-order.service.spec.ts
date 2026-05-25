@@ -36,6 +36,16 @@ describe('ChangeOrderService', () => {
       mockRepo.findOne.mockResolvedValue(null);
       await expect(target.findById('X')).rejects.toThrow(NotFoundException);
     });
+
+    it('scopes change order lookup by tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', company: 'CO', plant: 'P01' } as any);
+
+      await target.findById('ECN-001', 'CO', 'P01');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { changeNo: 'ECN-001', company: 'CO', plant: 'P01' },
+      });
+    });
   });
 
   describe('submit', () => {
@@ -49,6 +59,12 @@ describe('ChangeOrderService', () => {
     it('should throw when not DRAFT', async () => {
       mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'APPROVED' } as any);
       await expect(target.submit('ECN-001', 'user')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects submit when change order belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'DRAFT', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.submit('ECN-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -73,6 +89,12 @@ describe('ChangeOrderService', () => {
         updatedBy: 'user',
       }));
     });
+
+    it('rejects update when change order belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'DRAFT', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.update('ECN-001', {} as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('review', () => {
@@ -90,6 +112,12 @@ describe('ChangeOrderService', () => {
       const r = await target.review('ECN-001', { action: 'REJECT' } as any, 'user');
       expect(r.status).toBe('REJECTED');
     });
+
+    it('rejects review when change order belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'SUBMITTED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.review('ECN-001', { action: 'APPROVE' } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('complete', () => {
@@ -104,12 +132,38 @@ describe('ChangeOrderService', () => {
       mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'DRAFT' } as any);
       await expect(target.complete('ECN-001', 'user')).rejects.toThrow(BadRequestException);
     });
+
+    it('rejects complete when change order belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'IN_PROGRESS', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.complete('ECN-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {
     it('should throw when not DRAFT', async () => {
       mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'SUBMITTED' } as any);
       await expect(target.delete('ECN-001')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects delete when change order belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'DRAFT', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.delete('ECN-001', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('approve and start', () => {
+    it('rejects approve when change order belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'APPROVED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.approve('ECN-001', { action: 'APPROVE' } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects start when change order belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'APPROVED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.start('ECN-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
     });
   });
 });

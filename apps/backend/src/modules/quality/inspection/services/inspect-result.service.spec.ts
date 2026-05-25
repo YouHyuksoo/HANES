@@ -224,5 +224,55 @@ describe('InspectResultService', () => {
       const r = await target.getPassRate();
       expect(r.passRate).toBe(0);
     });
+
+    it('should scope pass rate by tenant', async () => {
+      mockInspectRepo.count.mockResolvedValueOnce(100).mockResolvedValueOnce(90);
+
+      await target.getPassRate(undefined, undefined, undefined, 'C1', 'P1');
+
+      expect(mockInspectRepo.count).toHaveBeenNthCalledWith(1, {
+        where: { company: 'C1', plant: 'P1' },
+      });
+      expect(mockInspectRepo.count).toHaveBeenNthCalledWith(2, {
+        where: { company: 'C1', plant: 'P1', passYn: 'Y' },
+      });
+    });
+  });
+
+  describe('stats', () => {
+    const mockStatsQb = (rows: any[]) => {
+      const qb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(rows),
+      };
+      mockInspectRepo.createQueryBuilder.mockReturnValue(qb as any);
+      return qb;
+    };
+
+    it('should scope inspection type stats by tenant', async () => {
+      const qb = mockStatsQb([{ inspectType: 'OQC', totalCount: '1' }]);
+      mockInspectRepo.createQueryBuilder
+        .mockReturnValueOnce(qb as any)
+        .mockReturnValueOnce(mockStatsQb([{ inspectType: 'OQC', passCount: '1' }]) as any);
+
+      await target.getStatsByType(undefined, undefined, 'C1', 'P1');
+
+      expect(qb.where).toHaveBeenCalledWith(expect.objectContaining({ company: 'C1', plant: 'P1' }));
+    });
+
+    it('should scope daily pass rate trend by tenant', async () => {
+      mockInspectRepo.find.mockResolvedValue([]);
+
+      await target.getDailyPassRateTrend(7, 'C1', 'P1');
+
+      expect(mockInspectRepo.find).toHaveBeenCalledWith({
+        where: { inspectAt: expect.any(Object), company: 'C1', plant: 'P1' },
+        select: ['inspectAt', 'passYn'],
+        order: { inspectAt: 'ASC' },
+      });
+    });
   });
 });

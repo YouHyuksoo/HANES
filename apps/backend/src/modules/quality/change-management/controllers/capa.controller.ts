@@ -87,8 +87,12 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: 'CAPA 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.capaService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.capaService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -115,9 +119,11 @@ export class CapaController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateCapaDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.capaService.update(id, dto, req.user?.id ?? 'system');
+    const data = await this.capaService.update(id, dto, req.user?.id ?? 'system', company, plant);
     return ResponseUtil.success(data, 'CAPA가 수정되었습니다.');
   }
 
@@ -126,8 +132,12 @@ export class CapaController {
   @ApiOperation({ summary: 'CAPA 삭제', description: 'OPEN 상태에서만 가능' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') id: string) {
-    await this.capaService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.capaService.delete(id, company, plant);
     return ResponseUtil.success(null, 'CAPA가 삭제되었습니다.');
   }
 
@@ -140,9 +150,11 @@ export class CapaController {
   async analyze(
     @Param('id') id: string,
     @Body() dto: AnalyzeCapaDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.capaService.analyze(id, dto, req.user?.id ?? 'system');
+    const data = await this.capaService.analyze(id, dto, req.user?.id ?? 'system', company, plant);
     return ResponseUtil.success(data, '원인 분석이 등록되었습니다.');
   }
 
@@ -153,9 +165,11 @@ export class CapaController {
   async plan(
     @Param('id') id: string,
     @Body() dto: PlanCapaDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.capaService.plan(id, dto, req.user?.id ?? 'system');
+    const data = await this.capaService.plan(id, dto, req.user?.id ?? 'system', company, plant);
     return ResponseUtil.success(data, '조치 계획이 등록되었습니다.');
   }
 
@@ -165,9 +179,11 @@ export class CapaController {
   @ApiResponse({ status: 200, description: '조치 시작 성공' })
   async start(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.capaService.start(id, req.user?.id ?? 'system');
+    const data = await this.capaService.start(id, req.user?.id ?? 'system', company, plant);
     return ResponseUtil.success(data, '조치가 시작되었습니다.');
   }
 
@@ -178,9 +194,11 @@ export class CapaController {
   async verify(
     @Param('id') id: string,
     @Body() dto: VerifyCapaDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.capaService.verify(id, dto, req.user?.id ?? 'system');
+    const data = await this.capaService.verify(id, dto, req.user?.id ?? 'system', company, plant);
     return ResponseUtil.success(data, '유효성 검증이 등록되었습니다.');
   }
 
@@ -190,9 +208,11 @@ export class CapaController {
   @ApiResponse({ status: 200, description: '종료 성공' })
   async close(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.capaService.close(id, req.user?.id ?? 'system');
+    const data = await this.capaService.close(id, req.user?.id ?? 'system', company, plant);
     return ResponseUtil.success(data, 'CAPA가 종료되었습니다.');
   }
 
@@ -206,9 +226,11 @@ export class CapaController {
   async addAction(
     @Param('id') id: string,
     @Body() dto: CAPAActionItemDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.capaService.addAction(id, dto, req.user?.id ?? 'system');
+    const data = await this.capaService.addAction(id, dto, req.user?.id ?? 'system', company, plant);
     return ResponseUtil.success(data, '조치항목이 추가되었습니다.');
   }
 
@@ -221,10 +243,12 @@ export class CapaController {
     @Param('id') id: string,
     @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: Partial<CAPAActionItemDto>,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.capaService.updateAction(
-      id, seq, dto, req.user?.id ?? 'system',
+      id, seq, dto, req.user?.id ?? 'system', company, plant,
     );
     return ResponseUtil.success(data, '조치항목이 수정되었습니다.');
   }

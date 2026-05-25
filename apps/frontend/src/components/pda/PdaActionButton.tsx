@@ -10,6 +10,7 @@
  * 3. safe-area-inset 대응 (노치/홈바)
  */
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ActionButton {
   /** 버튼 텍스트 */
@@ -20,6 +21,8 @@ interface ActionButton {
   variant?: "primary" | "secondary" | "danger";
   /** 비활성화 */
   disabled?: boolean;
+  /** 비활성 사유 */
+  disabledReason?: string;
   /** 로딩 */
   isLoading?: boolean;
   /** 아이콘 */
@@ -42,28 +45,48 @@ const variantStyles = {
 
 export default function PdaActionButton({ buttons }: PdaActionButtonProps) {
   if (buttons.length === 0) return null;
+  const { t } = useTranslation();
 
   return (
     <div className="sticky bottom-0 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <div className={`flex gap-3 ${buttons.length === 1 ? "" : "grid grid-cols-2"}`}>
-        {buttons.map((btn, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={btn.onClick}
-            disabled={btn.disabled || btn.isLoading}
-            className={`flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-              variantStyles[btn.variant || "primary"]
-            } ${buttons.length === 1 ? "w-full" : ""}`}
-          >
-            {btn.isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              btn.icon
-            )}
-            {btn.label}
-          </button>
-        ))}
+        {buttons.map((btn, idx) => {
+          const isDisabled = !!(btn.disabled || btn.isLoading);
+          const disabledReason = isDisabled
+            ? (btn.disabledReason || t("common.wait", "처리 중"))
+            : btn.label;
+
+          const actionButton = (
+            <button
+              key={idx}
+              type="button"
+              onClick={btn.onClick}
+              disabled={isDisabled}
+              title={disabledReason}
+              aria-label={disabledReason}
+              className={`flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                variantStyles[btn.variant || "primary"]
+              } ${buttons.length === 1 ? "w-full" : ""}`}
+            >
+              {btn.isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                btn.icon
+              )}
+              {btn.label}
+            </button>
+          );
+
+          if (isDisabled && disabledReason) {
+            return (
+              <span key={idx} title={disabledReason} className="inline-flex">
+                {actionButton}
+              </span>
+            );
+          }
+
+          return actionButton;
+        })}
       </div>
     </div>
   );

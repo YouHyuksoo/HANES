@@ -18,6 +18,13 @@ describe('AppController', () => {
   let mockAppService: DeepMocked<AppService>;
   let mockDataSource: DeepMocked<DataSource>;
 
+  const setInitialized = (value: boolean) => {
+    Object.defineProperty(mockDataSource, 'isInitialized', {
+      configurable: true,
+      value,
+    });
+  };
+
   beforeEach(async () => {
     mockAppService = createMock<AppService>();
     mockDataSource = createMock<DataSource>();
@@ -55,7 +62,7 @@ describe('AppController', () => {
   describe('getHealth', () => {
     it('should return ok status when DB is connected', async () => {
       // Arrange
-      mockDataSource.isInitialized = true;
+      setInitialized(true);
       mockDataSource.query.mockResolvedValue([{ '1': 1 }]);
 
       // Act
@@ -69,7 +76,7 @@ describe('AppController', () => {
 
     it('should return degraded status when DB is not initialized', async () => {
       // Arrange
-      mockDataSource.isInitialized = false;
+      setInitialized(false);
 
       // Act
       const result = await target.getHealth();
@@ -81,7 +88,7 @@ describe('AppController', () => {
 
     it('should return error status when DB query fails', async () => {
       // Arrange
-      mockDataSource.isInitialized = true;
+      setInitialized(true);
       mockDataSource.query.mockRejectedValue(new Error('ORA-12541'));
 
       // Act

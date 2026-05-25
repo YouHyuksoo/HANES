@@ -178,6 +178,8 @@ export class ShipReturnService {
             returnQty: item.returnQty,
             disposalType: item.disposalType ?? 'RESTOCK',
             remark: item.remark,
+            company: company || null,
+            plant: plant || null,
           })
         );
         await queryRunner.manager.save(items);
@@ -211,6 +213,8 @@ export class ShipReturnService {
             returnQty: item.returnQty,
             disposalType: item.disposalType ?? 'RESTOCK',
             remark: item.remark,
+            company: company || null,
+            plant: plant || null,
           })
         );
         await queryRunner.manager.save(items);

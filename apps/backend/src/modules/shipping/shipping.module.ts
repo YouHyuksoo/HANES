@@ -53,14 +53,11 @@ import { FgLabel } from '../../entities/fg-label.entity';
 import { OqcRequest } from '../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../entities/oqc-request-box.entity';
 import { InventoryModule } from '../inventory/inventory.module';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { User } from '../../entities/user.entity';
 
 @Module({
   imports: [
     InventoryModule,
     TypeOrmModule.forFeature([
-      User,
       BoxMaster,
       PalletMaster,
       ShipmentLog,
@@ -87,7 +84,6 @@ import { User } from '../../entities/user.entity';
     CustomerOrderController,
   ],
   providers: [
-    JwtAuthGuard,
     BoxService,
     PalletService,
     ShipmentService,

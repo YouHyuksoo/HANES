@@ -167,8 +167,8 @@ describe('ScrapService', () => {
           qty: 10,
           availableQty: 10,
         } as MatStock);
-      queryRunner.manager.create.mockReturnValue({ transNo: 'TX-001' } as StockTransaction);
-      queryRunner.manager.save.mockResolvedValue({ transNo: 'TX-001' } as StockTransaction);
+      (queryRunner.manager.create as jest.Mock).mockReturnValue({ transNo: 'TX-001' } as StockTransaction);
+      (queryRunner.manager.save as jest.Mock).mockResolvedValue({ transNo: 'TX-001' } as StockTransaction);
 
       const result = await service.create({
         matUid: 'MAT-001',
@@ -201,8 +201,8 @@ describe('ScrapService', () => {
           company: 'C1',
           plant: 'P1',
         } as MatStock);
-      queryRunner.manager.create.mockReturnValue({ transNo: 'TX-001' } as StockTransaction);
-      queryRunner.manager.save.mockResolvedValue({ transNo: 'TX-001' } as StockTransaction);
+      (queryRunner.manager.create as jest.Mock).mockReturnValue({ transNo: 'TX-001' } as StockTransaction);
+      (queryRunner.manager.save as jest.Mock).mockResolvedValue({ transNo: 'TX-001' } as StockTransaction);
 
       await service.create({
         matUid: 'MAT-001',
@@ -225,6 +225,54 @@ describe('ScrapService', () => {
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 7, availableQty: 7 }),
       );
+    });
+
+    it('요청 테넌트와 LOT 테넌트가 다르면 폐기를 차단한다', async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'OTHER', plant: 'P1' } as MatLot)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          availableQty: 10,
+          company: 'C1',
+          plant: 'P1',
+        } as MatStock);
+
+      await expect(service.create({
+        matUid: 'MAT-001',
+        warehouseId: 'WH-01',
+        qty: 3,
+        reason: '폐기',
+      } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+
+      expect(queryRunner.manager.update).not.toHaveBeenCalled();
+      expect(queryRunner.manager.save).not.toHaveBeenCalled();
+    });
+
+    it('요청 테넌트와 재고 테넌트가 다르면 폐기를 차단한다', async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as MatLot)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          availableQty: 10,
+          company: 'OTHER',
+          plant: 'P1',
+        } as MatStock);
+
+      await expect(service.create({
+        matUid: 'MAT-001',
+        warehouseId: 'WH-01',
+        qty: 3,
+        reason: '폐기',
+      } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+
+      expect(queryRunner.manager.update).not.toHaveBeenCalled();
+      expect(queryRunner.manager.save).not.toHaveBeenCalled();
     });
   });
 });

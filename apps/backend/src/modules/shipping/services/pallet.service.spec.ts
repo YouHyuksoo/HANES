@@ -214,4 +214,32 @@ describe('PalletService', () => {
       expect(mockQr.release).not.toHaveBeenCalled();
     });
   });
+
+  describe('getPalletSummary', () => {
+    it('should resolve part names within the same tenant as the pallet summary', async () => {
+      mockPalletRepo.findOne.mockResolvedValue({
+        palletNo: 'P-001',
+        status: 'OPEN',
+        boxCount: 1,
+        totalQty: 2,
+      } as any);
+      const qb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([{ itemCode: 'ITEM-1', boxCount: '1', qty: '2' }]),
+      };
+      (mockBoxRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-1', itemName: 'Part A' }] as any);
+
+      await target.getPalletSummary('P-001', 'C1', 'P1');
+
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+        select: ['itemCode', 'itemName'],
+      });
+    });
+  });
 });

@@ -84,8 +84,12 @@ export class DocumentController {
   @ApiParam({ name: 'id', description: '문서 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '문서 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.documentService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.documentService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -116,11 +120,15 @@ export class DocumentController {
     @Param('id') id: string,
     @Body() dto: UpdateDocumentDto,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.documentService.update(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '문서가 수정되었습니다.');
   }
@@ -130,8 +138,12 @@ export class DocumentController {
   @ApiOperation({ summary: '문서 삭제', description: 'DRAFT 상태에서만 가능' })
   @ApiParam({ name: 'id', description: '문서 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') id: string) {
-    await this.documentService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.documentService.delete(id, company, plant);
     return ResponseUtil.success(null, '문서가 삭제되었습니다.');
   }
 
@@ -144,10 +156,14 @@ export class DocumentController {
   async approve(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.documentService.approve(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '문서가 승인되었습니다.');
   }
@@ -159,10 +175,14 @@ export class DocumentController {
   async revise(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.documentService.revise(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '문서가 개정되었습니다.');
   }

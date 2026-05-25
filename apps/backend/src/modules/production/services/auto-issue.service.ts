@@ -70,6 +70,19 @@ export class AutoIssueService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    tenant: TenantContext,
+    row: { company?: string | null; plant?: string | null },
+  ) {
+    if (tenant.company && row.company !== tenant.company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${tenant.company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (tenant.plant && row.plant !== tenant.plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${tenant.plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
   /**
    * BOM 기반 자재 자동차감 실행
    * @param timing  호출 시점 ('ON_CREATE' | 'ON_COMPLETE')
@@ -221,11 +234,17 @@ ${tenantSql}
     if (tenant.company) lotQb.andWhere('l.company = :company', { company: tenant.company });
     if (tenant.plant) lotQb.andWhere('l.plant = :plant', { plant: tenant.plant });
     const candidateLots = await lotQb.orderBy('l.createdAt', 'ASC').getMany();
+    for (const lot of candidateLots) {
+      this.assertSameTenant('자동차감 LOT', tenant, lot);
+    }
 
     const candidateMatUids = candidateLots.map((l) => l.matUid);
     const allStocks = candidateMatUids.length > 0
       ? await qr.manager.find(MatStock, { where: { matUid: In(candidateMatUids), ...tenantWhere } })
       : [];
+    for (const stock of allStocks) {
+      this.assertSameTenant('자동차감 재고', tenant, stock);
+    }
 
     // matUid별 재고수량 합산 Map
     const stockQtyByMatUid = new Map<string, number>();
@@ -328,6 +347,9 @@ ${tenantSql}
       where: { itemCode, matUid, ...tenantWhere },
       order: { createdAt: 'ASC' },
     });
+    for (const stock of stocks) {
+      this.assertSameTenant('자동차감 차감 재고', tenant, stock);
+    }
 
     let remaining = totalDeduct;
     for (const stock of stocks) {

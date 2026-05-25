@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { IqcItemMaster } from '../../../entities/iqc-item-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
@@ -46,6 +46,12 @@ describe('IqcItemService', () => {
     mockRepo.findOne.mockResolvedValue(null);
 
     await expect(target.findByCompositeKey('ITEM99', 1, 'C1', 'P1')).rejects.toThrow(NotFoundException);
+  });
+
+  it('rejects a matched IQC item when its tenant differs from the request tenant', async () => {
+    mockRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', seq: 1, company: 'OTHER', plant: 'P1' } as IqcItemMaster);
+
+    await expect(target.findByCompositeKey('ITEM01', 1, 'C1', 'P1')).rejects.toThrow(BadRequestException);
   });
 
   it('updates an item within the tenant context', async () => {

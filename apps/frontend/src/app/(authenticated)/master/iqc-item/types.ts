@@ -38,6 +38,7 @@ export interface IqcSpecRow {
   unit?: string | null;
   lsl: number | null;
   usl: number | null;
+  judgeCriteria?: string | null;
   useYn: string;
 }
 
@@ -47,5 +48,14 @@ export interface IqcPartSpec {
   sampleQty: number;
   isDest: string;
   useYn: string;
+  items: IqcSpecRow[];
+}
+
+// IQC 항목 템플릿
+export interface IqcTemplate {
+  templateId: string;
+  templateName: string;
+  sampleQty: number;
+  isDest: string;
   items: IqcSpecRow[];
 }

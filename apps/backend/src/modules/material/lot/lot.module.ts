@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -24,7 +23,7 @@ import { MatLotService } from '../services/mat-lot.service';
     ]),
   ],
   controllers: [MatLotController, LotSplitController, LotMergeController],
-  providers: [InventoryFreezeGuard, MatLotService, LotSplitService, LotMergeService],
+  providers: [MatLotService, LotSplitService, LotMergeService],
   exports: [MatLotService],
 })
 export class LotModule {}

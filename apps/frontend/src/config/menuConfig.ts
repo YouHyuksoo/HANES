@@ -175,6 +175,7 @@ export const menuConfig: MenuConfigItem[] = [
     icon: Shield,
     children: [
       { code: "QC_IQC_ITEM", labelKey: "menu.master.iqcItem", path: "/master/iqc-item" },
+      { code: "QC_IQC_PART_SPEC", labelKey: "menu.master.iqcPartSpec", path: "/master/iqc-part-spec" },
       { code: "QC_IQC", labelKey: "menu.material.iqc", path: "/material/iqc" },
       { code: "QC_IQC_HISTORY", labelKey: "menu.material.iqcHistory", path: "/material/iqc-history" },
       { code: "QC_DEFECT", labelKey: "menu.quality.defect", path: "/quality/defect" },
@@ -310,7 +311,6 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "SYS_CODE", labelKey: "menu.master.code", path: "/master/code" },
       { code: "SYS_SCHEDULER", labelKey: "scheduler.title", path: "/system/scheduler" },
       { code: "SYS_MENU_CATEGORY", labelKey: "menu.system.menuCategory", path: "/system/menu-categories" },
-      { code: "SYS_SCREEN_REQ", labelKey: "menu.system.screenRequirements", path: "/system/screen-requirements" },
       { code: "SYS_IMPR_REQ", labelKey: "menu.system.improvementRequests", path: "/system/improvement-requests" },
     ],
   },

@@ -50,6 +50,11 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
   const scannedCodes = new Set(scannedConsumables);
   const allScanned = items.length > 0 && items.every(c => scannedCodes.has(c.consumableCode));
   const unscannedCount = items.filter(c => !scannedCodes.has(c.consumableCode)).length;
+  const completeDisabledReason = allScanned
+    ? ''
+    : items.length === 0
+      ? t('kiosk.prep.noConsumables')
+      : t('kiosk.material.remaining', { count: unscannedCount });
 
   const handleScan = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -199,12 +204,21 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
           </Button>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-            <Button onClick={handleComplete} disabled={!allScanned}>
+            <Button
+              onClick={handleComplete}
+              disabled={!allScanned}
+              title={completeDisabledReason || t('kiosk.prep.completeScan')}
+            >
               <CheckCircle2 className="w-4 h-4 mr-1" />
               {t('kiosk.prep.completeScan')}
             </Button>
           </div>
         </div>
+        {completeDisabledReason && (
+          <p className="text-[11px] text-text-muted mt-2" title={completeDisabledReason}>
+            {completeDisabledReason}
+          </p>
+        )}
       </div>
     </Modal>
   );

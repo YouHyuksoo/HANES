@@ -9,7 +9,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { SysConfigService } from './sys-config.service';
 import { SysConfig } from '../../../entities/sys-config.entity';
@@ -164,10 +164,17 @@ describe('SysConfigService', () => {
       mockRepo.save.mockResolvedValue(dto as SysConfig);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'COMP', 'PLANT');
 
       // Assert
       expect(result).toEqual(dto);
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { configGroup: 'G1', configKey: 'NEW', company: 'COMP', plant: 'PLANT' },
+      });
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: 'COMP',
+        plant: 'PLANT',
+      }));
     });
 
     it('should throw ConflictException when config exists', async () => {
@@ -183,15 +190,19 @@ describe('SysConfigService', () => {
   describe('update', () => {
     it('should update config', async () => {
       // Arrange
-      const existing = { configKey: 'KEY' } as SysConfig;
+      const existing = { configKey: 'KEY', company: 'COMP', plant: 'PLANT' } as SysConfig;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('KEY', { configValue: 'NEW_VAL' } as any);
+      const result = await target.update('KEY', { configValue: 'NEW_VAL' } as any, 'COMP', 'PLANT');
 
       // Assert
       expect(result).toEqual(existing);
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { configKey: 'KEY', company: 'COMP', plant: 'PLANT' },
+        { configValue: 'NEW_VAL' },
+      );
     });
 
     it('should throw NotFoundException when config not found', async () => {
@@ -201,23 +212,37 @@ describe('SysConfigService', () => {
       // Act & Assert
       await expect(target.update('NONE', {} as any)).rejects.toThrow(NotFoundException);
     });
+
+    it('rejects update when config belongs to a different tenant', async () => {
+      const existing = { configKey: 'KEY', company: 'OTHER', plant: 'PLANT' } as SysConfig;
+      mockRepo.findOne.mockResolvedValue(existing);
+
+      await expect(
+        target.update('KEY', { configValue: 'NEW_VAL' } as any, 'COMP', 'PLANT'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockRepo.update).not.toHaveBeenCalled();
+    });
   });
 
   // ─── bulkUpdate ───
   describe('bulkUpdate', () => {
     it('should update multiple configs', async () => {
       // Arrange
-      const config = { configKey: 'K1', configValue: 'V1' } as SysConfig;
+      const config = { configKey: 'K1', configValue: 'V1', company: 'COMP', plant: 'PLANT' } as SysConfig;
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
       mockRepo.findOne.mockResolvedValue(config);
 
       // Act
       const result = await target.bulkUpdate({
         items: [{ id: 'K1', configValue: 'NEW_V1' }],
-      } as any);
+      } as any, 'COMP', 'PLANT');
 
       // Assert
       expect(result).toHaveLength(1);
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { configKey: 'K1', company: 'COMP', plant: 'PLANT' },
+        { configValue: 'NEW_V1' },
+      );
     });
   });
 
@@ -225,14 +250,26 @@ describe('SysConfigService', () => {
   describe('remove', () => {
     it('should delete config and return result', async () => {
       // Arrange
-      mockRepo.findOne.mockResolvedValue({ configKey: 'KEY' } as SysConfig);
+      mockRepo.findOne.mockResolvedValue({ configKey: 'KEY', company: 'COMP', plant: 'PLANT' } as SysConfig);
       mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.remove('KEY');
+      const result = await target.remove('KEY', 'COMP', 'PLANT');
 
       // Assert
       expect(result).toEqual({ id: 'KEY', deleted: true });
+      expect(mockRepo.delete).toHaveBeenCalledWith({
+        configKey: 'KEY',
+        company: 'COMP',
+        plant: 'PLANT',
+      });
+    });
+
+    it('rejects remove when config belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ configKey: 'KEY', company: 'COMP', plant: 'OTHER' } as SysConfig);
+
+      await expect(target.remove('KEY', 'COMP', 'PLANT')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.delete).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when config not found', async () => {

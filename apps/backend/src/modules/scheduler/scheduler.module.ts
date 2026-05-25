@@ -17,7 +17,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SchedulerJob } from '../../entities/scheduler-job.entity';
 import { SchedulerLog } from '../../entities/scheduler-log.entity';
 import { SchedulerNotification } from '../../entities/scheduler-notification.entity';
-import { User } from '../../entities/user.entity';
 
 // 컨트롤러
 import { SchedulerJobController } from './controllers/scheduler-job.controller';
@@ -43,7 +42,7 @@ import { SERVICE_CLASS_MAP } from './config/scheduler-security.config';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    TypeOrmModule.forFeature([SchedulerJob, SchedulerLog, SchedulerNotification, User]),
+    TypeOrmModule.forFeature([SchedulerJob, SchedulerLog, SchedulerNotification]),
   ],
   controllers: [
     SchedulerJobController,

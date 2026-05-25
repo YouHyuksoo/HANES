@@ -3,6 +3,7 @@
  * @description 라벨 템플릿 서비스 - DB CRUD + 기본 템플릿 관리
  */
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ConflictException,
@@ -28,6 +29,20 @@ export class LabelTemplateService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
   }
 
   async findAll(query: LabelTemplateQueryDto, company?: string, plant?: string) {
@@ -76,6 +91,7 @@ export class LabelTemplateService {
     if (!template) {
       throw new NotFoundException('라벨 템플릿을 찾을 수 없습니다.');
     }
+    this.assertSameTenant('라벨 템플릿', template, company, plant);
 
     return template;
   }
@@ -88,6 +104,7 @@ export class LabelTemplateService {
     if (!template) {
       throw new NotFoundException('라벨 템플릿을 찾을 수 없습니다.');
     }
+    this.assertSameTenant('라벨 템플릿', template, company, plant);
 
     return template;
   }

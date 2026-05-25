@@ -16,7 +16,7 @@
  *   - MID(중물): 패널 버튼 클릭 또는 진행률 60% 차단
  *   - LAST(종물): 패널 버튼 클릭
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useKioskStore, isAllInterlockDone, type InspectTiming } from '@/stores/kioskStore';
@@ -45,7 +45,7 @@ export default function InputKioskPage() {
   const { t } = useTranslation();
   const {
     selectedEquip, selectedJobOrder, interlock, savedResultCount, hasPendingDelegate,
-    midInspectDone,
+    selectedWorkers, midInspectDone,
     addWorker, setSelectedJobOrder, setInterlock, incrementResultCount, setHasPendingDelegate,
   } = useKioskStore();
 
@@ -151,6 +151,45 @@ export default function InputKioskPage() {
     : 0;
   const isMidBlock = progressPct >= midBlockPct && !midInspectDone;
 
+  const submitDisabledReasons = useMemo(() => {
+    const reasons: string[] = [];
+    if (!selectedEquip) reasons.push(t('kiosk.input.disabledReasons.noEquip'));
+    if (!selectedJobOrder) reasons.push(t('kiosk.input.disabledReasons.noJobOrder'));
+    if (selectedWorkers.length === 0) reasons.push(t('kiosk.input.disabledReasons.noWorker'));
+    if (!interlock.dailyInspectDone) reasons.push(t('kiosk.input.disabledReasons.dailyInspect'));
+    if (!interlock.workerInspectDone) reasons.push(t('kiosk.input.disabledReasons.workerInspect'));
+    if (!interlock.materialScanDone) reasons.push(t('kiosk.input.disabledReasons.materialScan'));
+    if (!interlock.consumableScanDone) reasons.push(t('kiosk.input.disabledReasons.consumableScan'));
+    if (hasPendingDelegate) reasons.push(t('kiosk.selfInspect.delegateBlocking'));
+    if (isMidBlock) reasons.push(t('kiosk.selfInspect.midBlock'));
+    return reasons;
+  }, [
+    selectedEquip,
+    selectedJobOrder,
+    selectedWorkers.length,
+    interlock.dailyInspectDone,
+    interlock.workerInspectDone,
+    interlock.materialScanDone,
+    interlock.consumableScanDone,
+    hasPendingDelegate,
+    isMidBlock,
+    t,
+  ]);
+
+  const materialScanDisabledReasons = useMemo(() => {
+    const reasons: string[] = [];
+    if (!interlock.dailyInspectDone) reasons.push(t('kiosk.input.disabledReasons.dailyInspect'));
+    if (!interlock.workerInspectDone) reasons.push(t('kiosk.input.disabledReasons.workerInspect'));
+    if (!selectedJobOrder) reasons.push(t('kiosk.input.disabledReasons.noJobOrder'));
+    return reasons;
+  }, [interlock.dailyInspectDone, interlock.workerInspectDone, selectedJobOrder, t]);
+
+  const consumableScanDisabledReasons = useMemo(() => {
+    const reasons: string[] = [];
+    if (!interlock.materialScanDone) reasons.push(t('kiosk.input.disabledReasons.materialScan'));
+    return reasons;
+  }, [interlock.materialScanDone, t]);
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
 
@@ -170,6 +209,8 @@ export default function InputKioskPage() {
           <MaterialListPanel
             onOpenMaterialScan={() => setIsMaterialScanOpen(true)}
             onOpenConsumableScan={() => setIsConsumableScanOpen(true)}
+            materialScanDisabledReasons={materialScanDisabledReasons}
+            consumableScanDisabledReasons={consumableScanDisabledReasons}
           />
         </div>
 
@@ -192,10 +233,11 @@ export default function InputKioskPage() {
 
             {/* 불량 */}
             <div className="min-w-0 border-r-2 border-border">
-              <DefectSummaryPanel
-                onOpenDefect={handleOpenDefect}
-                disabled={!allInterlockDone || hasPendingDelegate}
-              />
+            <DefectSummaryPanel
+              onOpenDefect={handleOpenDefect}
+              disabled={!allInterlockDone || hasPendingDelegate}
+              disabledReasons={submitDisabledReasons}
+            />
             </div>
 
             {/* 실적입력 */}
@@ -203,6 +245,7 @@ export default function InputKioskPage() {
               <ProductionInputBar
                 onSaved={handleSaved}
                 interlockDone={allInterlockDone && !hasPendingDelegate && !isMidBlock}
+                disabledReasons={submitDisabledReasons}
               />
             </div>
           </div>

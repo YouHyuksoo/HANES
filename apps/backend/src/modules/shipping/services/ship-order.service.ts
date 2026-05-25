@@ -205,6 +205,8 @@ export class ShipOrderService {
             orderQty: item.orderQty,
             shippedQty: 0,
             remark: item.remark,
+            company: company || null,
+            plant: plant || null,
           })
         );
         await queryRunner.manager.save(items);

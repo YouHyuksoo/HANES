@@ -46,6 +46,23 @@ export class ProductInventoryService {
     };
   }
 
+  private assertSameTenant(
+    context: string,
+    expected: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (expected.company && actual.company !== expected.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. expected=${expected.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (expected.plant && actual.plant !== expected.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. expected=${expected.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
+  }
+
   /** 제품 트랜잭션 번호 생성 (PTX20260224XXXXX 형식) */
   private async generateTransNo(qr?: QueryRunner): Promise<string> {
     const today = new Date();
@@ -376,6 +393,7 @@ export class ProductInventoryService {
     if (originalTrans.status === 'CANCELED') {
       throw new BadRequestException('이미 취소된 트랜잭션입니다.');
     }
+    this.assertSameTenant('원본 제품거래', { company, plant }, originalTrans);
 
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
     const transNo = await this.generateTransNo();
@@ -426,6 +444,7 @@ export class ProductInventoryService {
         });
 
         if (stock) {
+          this.assertSameTenant('취소 대상 제품재고', originalTrans, stock);
           const newQty = stock.qty - Math.abs(originalTrans.qty);
           if (newQty < 0) {
             throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
@@ -450,6 +469,7 @@ export class ProductInventoryService {
         });
 
         if (stock) {
+          this.assertSameTenant('복구 대상 제품재고', originalTrans, stock);
           await queryRunner.manager.update(ProductStock,
             { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere },
             { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },

@@ -593,6 +593,8 @@ describe('InventoryService', () => {
         matUid: 'RM202603180001',
         qty: 20,
         availableQty: 20,
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
       } as any);
 
       await target.cancelTransaction({ transactionId: 'TRX202603180001' } as any, 'TESTV', 'WAREHOUSES');
@@ -621,6 +623,36 @@ describe('InventoryService', () => {
         target.cancelTransaction({ transactionId: 'TRX202603180001' } as any, 'REQUEST', 'P01'),
       ).rejects.toThrow(BadRequestException);
       expect(mockTransactionService.run).not.toHaveBeenCalled();
+    });
+
+    it('rejects cancellation when restored stock belongs to a different tenant', async () => {
+      mockStockTransRepo.findOne.mockResolvedValueOnce({
+        transNo: 'TRX202603180001',
+        transType: 'MAT_OUT',
+        fromWarehouseId: 'WH-RM',
+        itemCode: 'PART-001',
+        matUid: 'RM202603180001',
+        qty: -10,
+        status: 'DONE',
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
+      } as any);
+      mockStockTransRepo.findOne.mockResolvedValue(null);
+      mockStockTransRepo.create.mockReturnValue({ transNo: 'TRX202603180002' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'TRX202603180002' } as any);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'WH-RM',
+        itemCode: 'PART-001',
+        matUid: 'RM202603180001',
+        qty: 20,
+        availableQty: 20,
+        company: 'OTHER',
+        plant: 'WAREHOUSES',
+      } as any);
+
+      await expect(
+        target.cancelTransaction({ transactionId: 'TRX202603180001' } as any, 'TESTV', 'WAREHOUSES'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

@@ -55,12 +55,12 @@ describe('ReworkProcessService', () => {
       mockProcessRepo.save.mockResolvedValue({ ...proc, status: 'IN_PROGRESS' });
       mockReworkRepo.findOne.mockResolvedValue({ id: 1, status: 'APPROVED' } as any);
       mockReworkRepo.save.mockResolvedValue({} as any);
-      const r = await target.startProcess(1, 'P01', 'user');
+      const r = await target.startProcess('1', 'P01', 'user');
       expect(r.status).toBe('IN_PROGRESS');
     });
     it('should throw when not WAITING', async () => {
       mockProcessRepo.findOne.mockResolvedValue({ status: 'COMPLETED' } as any);
-      await expect(target.startProcess(1, 'P01', 'user')).rejects.toThrow(BadRequestException);
+      await expect(target.startProcess('1', 'P01', 'user')).rejects.toThrow(BadRequestException);
     });
     it('should start process within tenant', async () => {
       const proc = { reworkOrderId: 'RW-001', processCode: 'P01', status: 'WAITING', company: 'CO', plant: 'P01' } as any;
@@ -88,7 +88,7 @@ describe('ReworkProcessService', () => {
       mockProcessRepo.find.mockResolvedValue([{ status: 'COMPLETED', resultQty: 10 } as any]);
       mockReworkRepo.findOne.mockResolvedValue({ id: 1, status: 'IN_PROGRESS' } as any);
       mockReworkRepo.save.mockResolvedValue({} as any);
-      const r = await target.completeProcess(1, 'P01', 10, 'user');
+      const r = await target.completeProcess('1', 'P01', 10, 'user');
       expect(r.status).toBe('COMPLETED');
     });
   });
@@ -101,7 +101,7 @@ describe('ReworkProcessService', () => {
       mockProcessRepo.find.mockResolvedValue([{ status: 'SKIPPED', resultQty: 0 } as any]);
       mockReworkRepo.findOne.mockResolvedValue({ id: 1, status: 'IN_PROGRESS' } as any);
       mockReworkRepo.save.mockResolvedValue({} as any);
-      const r = await target.skipProcess(1, 'P01', 'user');
+      const r = await target.skipProcess('1', 'P01', 'user');
       expect(r.status).toBe('SKIPPED');
     });
   });

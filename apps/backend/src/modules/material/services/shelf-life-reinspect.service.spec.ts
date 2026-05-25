@@ -119,6 +119,40 @@ describe('ShelfLifeReInspectService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('재검 FAIL 대상 재고가 LOT 회사/공장과 다르면 자동 이동하지 않는다', async () => {
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot);
+      iqcLogRepo.create.mockReturnValue({} as IqcLog);
+      iqcLogRepo.save.mockResolvedValue({ inspectNo: 'IQC-001' } as any);
+      warehouseRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-DEF',
+        warehouseType: 'DEFECT',
+        useYn: 'Y',
+        company: 'HANES',
+        plant: 'P01',
+      } as Warehouse);
+      matStockRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        qty: 10,
+        availableQty: 10,
+        reservedQty: 0,
+        warehouseCode: 'WH-01',
+        company: 'OTHER',
+        plant: 'P01',
+      } as MatStock);
+
+      await expect(
+        service.create({ matUid: 'MAT-001', result: 'FAIL' }, 'HANES', 'P01'),
+      ).rejects.toThrow('회사 정보가 일치하지 않습니다');
+
+      expect(tx.run).not.toHaveBeenCalled();
+    });
+
     it('재검 FAIL 자동 이동은 TransactionService로 재고 이동과 이력을 함께 저장한다', async () => {
       matLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
@@ -135,11 +169,15 @@ describe('ShelfLifeReInspectService', () => {
         availableQty: 10,
         reservedQty: 0,
         warehouseCode: 'WH-01',
+        company: 'HANES',
+        plant: 'P01',
       } as MatStock);
       warehouseRepo.findOne.mockResolvedValue({
         warehouseCode: 'WH-DEF',
         warehouseType: 'DEFECT',
         useYn: 'Y',
+        company: 'HANES',
+        plant: 'P01',
       } as Warehouse);
       queryRunner.manager.findOne.mockResolvedValue(null);
       queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);

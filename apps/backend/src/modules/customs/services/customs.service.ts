@@ -16,7 +16,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { CustomsEntry } from '../../../entities/customs-entry.entity';
 import { CustomsLot } from '../../../entities/customs-lot.entity';
 import { CustomsUsageReport } from '../../../entities/customs-usage-report.entity';
@@ -47,7 +48,7 @@ export class CustomsService {
     private readonly customsLotRepository: Repository<CustomsLot>,
     @InjectRepository(CustomsUsageReport)
     private readonly customsUsageReportRepository: Repository<CustomsUsageReport>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -466,8 +467,8 @@ export class CustomsService {
     const reportNo = `USG${today}${String(count + 1).padStart(4, '0')}`;
 
     // 트랜잭션으로 사용신고 생성 및 LOT 업데이트
-    return this.dataSource.transaction(async (manager) => {
-      const report = manager.create(CustomsUsageReport, {
+    return this.tx.run(async (queryRunner) => {
+      const report = queryRunner.manager.create(CustomsUsageReport, {
         reportNo,
         lotEntryNo: dto.lotEntryNo,
         lotMatUid: dto.lotMatUid,
@@ -478,14 +479,14 @@ export class CustomsService {
         ...this.tenantWhere(company, plant),
       });
 
-      await manager.save(report);
+      await queryRunner.manager.save(report);
 
       // LOT 잔여수량 업데이트
       const newUsedQty = lot.usedQty + dto.usageQty;
       const newRemainQty = lot.qty - newUsedQty;
       const newStatus = newRemainQty === 0 ? 'RELEASED' : 'PARTIAL';
 
-      await manager.update(
+      await queryRunner.manager.update(
         CustomsLot,
         { entryNo: dto.lotEntryNo, matUid: dto.lotMatUid, ...this.tenantWhere(company, plant) },
         {

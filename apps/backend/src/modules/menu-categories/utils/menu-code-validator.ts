@@ -60,7 +60,7 @@ const KNOWN_LEAF_CODES: ReadonlySet<string> = new Set<string>([
   'IF_DASHBOARD','IF_LOG','IF_MANUAL',
   // SYSTEM
   'SYS_COMPANY','SYS_DEPT','SYS_USER','SYS_ROLE','SYS_PDA_ROLE','SYS_COMM','SYS_CONFIG',
-  'SYS_CODE','SYS_SCHEDULER','SYS_MENU_CATEGORY','SYS_SCREEN_REQ','SYS_IMPR_REQ',
+  'SYS_CODE','SYS_SCHEDULER','SYS_MENU_CATEGORY','SYS_IMPR_REQ',
 ]);
 
 export function isValidMenuCode(code: string): boolean {

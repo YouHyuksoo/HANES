@@ -126,6 +126,11 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
   const allTabsComplete = !reInspectMode
     ? Array.from({ length: sampleCount }, (_, i) => i).every(i => isTabComplete(i, items))
     : Array.from({ length: reInspectSampleCount }, (_, i) => i).every(i => isTabComplete(i, displayItems));
+  const submitDisabledReason = saving
+    ? t('common.saving')
+    : !allTabsComplete
+      ? t('kiosk.selfInspect.answerAll')
+      : '';
 
   const hasDelegates = items.some(i => i.inspectMethod === 'DELEGATE');
   const hasDestructive = items.some(i => i.isDestructive);
@@ -372,7 +377,11 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
           {displayItems.length === 0 && !reInspectMode ? (
             <Button onClick={onDone}>{t('common.close')}</Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={!allTabsComplete || saving}>
+            <Button
+              onClick={handleSubmit}
+              disabled={!allTabsComplete || saving}
+              title={submitDisabledReason || (reInspectMode ? t('kiosk.selfInspect.reInspect') : t('kiosk.selfInspect.save'))}
+            >
               {reInspectMode
                 ? <><RotateCcw className="w-4 h-4 mr-1" />{t('kiosk.selfInspect.reInspect')}</>
                 : <><CheckCircle2 className="w-4 h-4 mr-1" />{saving ? t('common.saving') : t('kiosk.selfInspect.save')}</>
@@ -380,6 +389,11 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
             </Button>
           )}
         </div>
+        {submitDisabledReason && !saving && (
+          <p className="text-[11px] text-text-muted mt-1" title={submitDisabledReason}>
+            {submitDisabledReason}
+          </p>
+        )}
       </div>
     </Modal>
   );

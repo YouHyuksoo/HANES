@@ -185,7 +185,7 @@ describe('LabelPrintService', () => {
   // ─── createLog ───
   describe('createLog', () => {
     it('라벨 발행 이력을 저장한다', async () => {
-      const log = { id: 1, category: 'mat_lot', labelCount: 2, status: 'SUCCESS' } as LabelPrintLog;
+      const log = { id: 1, category: 'mat_lot', labelCount: 2, status: 'SUCCESS' } as unknown as LabelPrintLog;
       mockPrintLogRepo.create.mockReturnValue(log);
       mockPrintLogRepo.save.mockResolvedValue(log);
 

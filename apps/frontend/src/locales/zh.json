@@ -150,7 +150,8 @@
     "master.worker.workerList": "员工列表",
     "master.worker.totalCount": "共 {{count}} 条",
     "master.worker.emptyMessage": "暂无员工信息。",
-    "master.iqcItem": "IQC检查项目/组",
+    "master.iqcItem": "检查项目主数据",
+    "master.iqcPartSpec": "按品目IQC项目管理",
     "master.iqcItem.itemCode": "项目编号",
     "master.iqcItem.judgeMethod": "判定方法",
     "master.iqcItem.visual": "目视",
@@ -315,7 +316,6 @@
     "system.training": "培训管理",
     "system.menuCategory": "菜单类别管理",
     "root": "顶级",
-    "system.screenRequirements": "界面需求收集",
     "system.improvementRequests": "改善申请管理"
   },
   "header": {
@@ -1205,8 +1205,8 @@
       "deleteConfirm": "确定要删除吗？"
     },
     "iqcItem": {
-      "title": "IQC检查项目/组管理",
-      "subtitle": "注册检查项目并按检查组进行管理。",
+      "title": "检查项目主数据",
+      "subtitle": "注册并管理IQC使用的全局检查项目。",
       "seq": "序号",
       "inspectItem": "检查项目",
       "spec": "规格/基准",
@@ -1234,11 +1234,34 @@
       "unlinkGroup": "解除关联",
       "measureItems": "测量型检查项目",
       "judgeItems": "判定型检查项目",
-      "perItemIqc": "按品目IQC规格",
+      "perItemIqc": "按品目IQC项目管理",
+      "perItemIqcSubtitle": "按品目管理样本数、破坏检查、检查项目和规格。",
       "itemPool": "检查项目主数据",
+      "itemPoolSubtitle": "注册并管理IQC使用的全局检查项目。",
       "linkedGroupCount": "关联组",
       "unlinkConfirm": "确定要解除此检查组关联吗？",
-      "selectGroup": "请选择检查组"
+      "selectGroup": "请选择检查组",
+      "judgeCriteria": "判定标准",
+      "typeMeasure": "测量型",
+      "typeVisual": "判定型",
+      "sampleQty": "样品数",
+      "destructive": "破坏检查",
+      "nonDestructive": "非破坏",
+      "inspItem": "检查项目",
+      "type": "类型"
+    },
+    "iqcTemplate": {
+      "title": "IQC项目模板管理",
+      "currentItem": "当前品目",
+      "namePlaceholder": "输入模板名称",
+      "saveAs": "保存为模板",
+      "list": "模板列表",
+      "empty": "没有已保存的模板。",
+      "itemsUnit": "项",
+      "preview": "预览",
+      "apply": "应用到当前品目",
+      "selectHint": "请选择模板。",
+      "applyHint": "应用时将整体替换当前品目项目。应用后需点击[保存更改]确认。"
     },
     "iqcGroup": {
       "tabItems": "检查项目",
@@ -5792,7 +5815,17 @@
       "selectJobOrderFirst": "请先选择作业指示",
       "qtyRequired": "请输入数量",
       "saveSuccess": "实绩已保存",
-      "saveError": "实绩保存失败"
+      "saveError": "实绩保存失败",
+      "disabledHint": "无法录入实绩",
+      "disabledReasons": {
+        "noEquip": "未选择设备",
+        "noJobOrder": "未选择作业指示",
+        "noWorker": "未登记作业者",
+        "dailyInspect": "未完成设备日常点检",
+        "workerInspect": "未完成作业者设备点检",
+        "materialScan": "未完成材料扫描",
+        "consumableScan": "未完成耗材扫描"
+      }
     },
     "jobOrder": {
       "assignError": "作业指示分配失败"

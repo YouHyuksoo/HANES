@@ -16,7 +16,8 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
+import { TransactionService } from '../../../shared/transaction.service';
 import { PdaRole } from '../../../entities/pda-role.entity';
 import { PdaRoleMenu } from '../../../entities/pda-role-menu.entity';
 import { CreatePdaRoleDto, UpdatePdaRoleDto } from '../dto/pda-role.dto';
@@ -39,7 +40,7 @@ export class PdaRoleService {
     private readonly roleRepo: Repository<PdaRole>,
     @InjectRepository(PdaRoleMenu)
     private readonly menuRepo: Repository<PdaRoleMenu>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -87,8 +88,8 @@ export class PdaRoleService {
       throw new ConflictException(`이미 존재하는 역할 코드입니다: ${dto.code}`);
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const role = manager.create(PdaRole, {
+    return this.tx.run(async (queryRunner) => {
+      const role = queryRunner.manager.create(PdaRole, {
         code: dto.code,
         name: dto.name,
         description: dto.description ?? null,
@@ -96,11 +97,11 @@ export class PdaRoleService {
         company: tenant.company,
         plant: tenant.plant,
       });
-      await manager.save(role);
+      await queryRunner.manager.save(role);
 
       if (dto.menuCodes?.length) {
         const menus = dto.menuCodes.map((menuCode) =>
-          manager.create(PdaRoleMenu, {
+          queryRunner.manager.create(PdaRoleMenu, {
             pdaRoleCode: dto.code,
             menuCode,
             isActive: true,
@@ -108,7 +109,7 @@ export class PdaRoleService {
             plant: tenant.plant,
           }),
         );
-        await manager.save(menus);
+        await queryRunner.manager.save(menus);
       }
 
       return this.roleRepo.findOne({
@@ -124,22 +125,22 @@ export class PdaRoleService {
     const role = await this.roleRepo.findOne({ where: { code, ...tenant } });
     if (!role) throw new NotFoundException(`역할을 찾을 수 없습니다: ${code}`);
 
-    return this.dataSource.transaction(async (manager) => {
+    return this.tx.run(async (queryRunner) => {
       const updateData: Partial<PdaRole> = {};
       if (dto.name !== undefined) updateData.name = dto.name;
       if (dto.description !== undefined) updateData.description = dto.description;
       if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
       if (Object.keys(updateData).length > 0) {
-        await manager.update(PdaRole, { code, ...tenant }, updateData);
+        await queryRunner.manager.update(PdaRole, { code, ...tenant }, updateData);
       }
 
       if (dto.menuCodes !== undefined) {
-        await manager.delete(PdaRoleMenu, { pdaRoleCode: code, ...tenant });
+        await queryRunner.manager.delete(PdaRoleMenu, { pdaRoleCode: code, ...tenant });
 
         if (dto.menuCodes.length > 0) {
           const menus = dto.menuCodes.map((menuCode) =>
-            manager.create(PdaRoleMenu, {
+            queryRunner.manager.create(PdaRoleMenu, {
               pdaRoleCode: code,
               menuCode,
               isActive: true,
@@ -147,7 +148,7 @@ export class PdaRoleService {
               plant: tenant.plant,
             }),
           );
-          await manager.save(menus);
+          await queryRunner.manager.save(menus);
         }
       }
 

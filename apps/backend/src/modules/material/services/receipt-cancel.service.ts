@@ -40,6 +40,20 @@ export class ReceiptCancelService {
     };
   }
 
+  private assertSameTenant(
+    row: { company?: string | null; plant?: string | null } | null | undefined,
+    expectedCompany?: string | null,
+    expectedPlant?: string | null,
+    label = '데이터',
+  ) {
+    if (expectedCompany && row?.company !== expectedCompany) {
+      throw new BadRequestException(`${label}의 회사 정보가 요청 회사와 일치하지 않습니다.`);
+    }
+    if (expectedPlant && row?.plant !== expectedPlant) {
+      throw new BadRequestException(`${label}의 공장 정보가 요청 공장과 일치하지 않습니다.`);
+    }
+  }
+
   async findCancellable(query: ReceiptCancelQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -88,6 +102,8 @@ export class ReceiptCancelService {
         throw new BadRequestException('입고 트랜잭션만 취소할 수 있습니다.');
       }
 
+      this.assertSameTenant(originalTransaction, company, plant, '원본 입고 거래');
+
       await this.ensureNoDownstreamProgress(originalTransaction);
 
       const { itemCode, matUid, toWarehouseId, qty } = originalTransaction;
@@ -105,6 +121,7 @@ export class ReceiptCancelService {
       if (!stock || stock.qty < qty) {
         throw new BadRequestException(`취소할 재고가 부족합니다. 현재 재고: ${stock?.qty ?? 0}`);
       }
+      this.assertSameTenant(stock, originalTransaction.company, originalTransaction.plant, '입고취소 대상 재고');
 
       // 재고 차감
       await queryRunner.manager.update(MatStock,

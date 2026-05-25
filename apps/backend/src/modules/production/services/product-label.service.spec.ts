@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
@@ -101,8 +101,8 @@ describe('ProductLabelService', () => {
     } as ProdResult);
     partRepo.findOne.mockResolvedValue({ itemCode: 'FG-001', itemName: 'Finished Good' } as PartMaster);
     numbering.nextPrdUid.mockResolvedValue('PRD-001');
-    queryRunner.manager.create.mockReturnValue({ category: 'prd_uid' } as LabelPrintLog);
-    queryRunner.manager.save.mockResolvedValue({} as LabelPrintLog);
+    (queryRunner.manager.create as jest.Mock).mockReturnValue({ category: 'prd_uid' } as LabelPrintLog);
+    (queryRunner.manager.save as jest.Mock).mockResolvedValue({} as LabelPrintLog);
     queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
 
     const result = await service.createPrdLabels({ sourceId: 1, source: 'PROD_RESULT' as any, qty: 1 }, 'C1', 'P1');
@@ -118,5 +118,21 @@ describe('ProductLabelService', () => {
       { resultNo: '1', company: 'C1', plant: 'P1' },
       { prdUid: 'PRD-001' },
     );
+  });
+
+  it('throws when source result tenant differs from request tenant', async () => {
+    prodResultRepo.findOne.mockResolvedValue({
+      resultNo: '1',
+      prdUid: null,
+      company: 'OTHER',
+      plant: 'P1',
+      jobOrder: { itemCode: 'FG-001' },
+    } as ProdResult);
+
+    await expect(
+      service.createPrdLabels({ sourceId: 1, source: 'PROD_RESULT' as any, qty: 1 }, 'C1', 'P1'),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(tx.run).not.toHaveBeenCalled();
   });
 });

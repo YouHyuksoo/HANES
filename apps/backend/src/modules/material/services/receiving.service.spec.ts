@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException } from '@nestjs/common';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { ReceivingService } from './receiving.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -312,7 +313,7 @@ describe('ReceivingService', () => {
       findOne: jest
         .fn()
         .mockResolvedValueOnce(lot)
-        .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH' } as MatArrival)
+        .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null),
       create: jest.fn((entity, payload) => ({ ...payload })),
@@ -330,6 +331,24 @@ describe('ReceivingService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ receiveNo: 'RCV-001' }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', transType: 'RECEIVE' }));
+  });
+
+  it('createBulkReceive는 요청 테넌트와 LOT 테넌트가 다르면 차단한다', async () => {
+    mockMatLotRepo.findOne.mockResolvedValue({
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      initQty: 10,
+      iqcStatus: 'PASS',
+      company: 'OTHER',
+      plant: 'P01',
+    } as MatLot);
+
+    await expect(target.createBulkReceive({
+      workerId: 'user',
+      items: [{ matUid: 'MAT-001', qty: 5, warehouseId: 'MAIN-WH' }],
+    } as any, 'CO', 'P01')).rejects.toThrow(BadRequestException);
+
+    expect(mockTx.run).not.toHaveBeenCalled();
   });
 
   it('createBulkReceive는 PO 허용오차와 제조일 갱신도 LOT 회사/공장 범위로 처리한다', async () => {
@@ -369,7 +388,7 @@ describe('ReceivingService', () => {
       findOne: jest
         .fn()
         .mockResolvedValueOnce(lot)
-        .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH' } as MatArrival)
+        .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null),
       create: jest.fn((entity, payload) => ({ ...payload })),

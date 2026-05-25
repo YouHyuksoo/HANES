@@ -140,6 +140,10 @@ export default function InspectPanel({ order }: Props) {
 
   /** 스캔 모드에서 바코드 미입력 시 PASS/FAIL 비활성화 */
   const scanDisabled = isScanMode && !scannedBarcode.trim();
+  const scanDisabledReason = t(
+    "inspection.result.scanRequired",
+    "바코드를 먼저 스캔해주세요."
+  );
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-auto">
@@ -206,13 +210,19 @@ export default function InspectPanel({ order }: Props) {
 
       {/* 검사 버튼 */}
       <div className="flex gap-4">
-        <button onClick={handlePass} disabled={inspecting || scanDisabled}
+        <button
+          onClick={handlePass}
+          disabled={inspecting || scanDisabled}
+          title={inspecting ? t("common.saving") : scanDisabled ? scanDisabledReason : t("inspection.result.passBtn")}
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700
             text-white font-bold text-lg transition-colors disabled:opacity-50">
           <CheckCircle className="w-7 h-7" />{t("inspection.result.passBtn")}
         </button>
-        <button onClick={() => setFailModalOpen(true)} disabled={inspecting || scanDisabled}
+        <button
+          onClick={() => setFailModalOpen(true)}
+          disabled={inspecting || scanDisabled}
+          title={inspecting ? t("common.saving") : scanDisabled ? scanDisabledReason : t("inspection.result.failBtn")}
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700
             text-white font-bold text-lg transition-colors disabled:opacity-50">

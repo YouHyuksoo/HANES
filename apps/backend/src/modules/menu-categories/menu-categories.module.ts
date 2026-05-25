@@ -10,10 +10,9 @@ import { MenuCategoriesService } from './services/menu-categories.service';
 import { MenuCategoryItemsService } from './services/menu-category-items.service';
 import { MenuCategoriesController } from './controllers/menu-categories.controller';
 import { MenuCategoryItemsController } from './controllers/menu-category-items.controller';
-import { User } from '../../entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MenuCategory, MenuCategoryItem, User])],
+  imports: [TypeOrmModule.forFeature([MenuCategory, MenuCategoryItem])],
   controllers: [MenuCategoriesController, MenuCategoryItemsController],
   providers: [MenuCategoriesService, MenuCategoryItemsService],
   exports: [MenuCategoriesService, MenuCategoryItemsService],

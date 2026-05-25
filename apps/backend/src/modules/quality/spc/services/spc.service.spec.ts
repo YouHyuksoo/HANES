@@ -56,7 +56,7 @@ describe('SpcService', () => {
 
   describe('updateChart', () => {
     it('should keep tenant and chart key columns from the matched chart when update payload contains them', async () => {
-      const chart = { chartNo: 'SPC-001', chartName: 'Old', company: 'CO', plant: 'P01' } as SpcChart;
+      const chart = { chartNo: 'SPC-001', chartName: 'Old', company: 'CO', plant: 'P01' } as unknown as SpcChart;
       mockChartRepo.findOne.mockResolvedValue(chart);
       mockChartRepo.save.mockImplementation(async (value) => value as SpcChart);
 

@@ -119,6 +119,17 @@ describe('JobOrderService', () => {
       // Act & Assert
       await expect(target.findById('INVALID')).rejects.toThrow(NotFoundException);
     });
+
+    it('should reject when the found job order tenant differs from request tenant', async () => {
+      mockJobOrderRepo.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        status: 'WAITING',
+        company: 'OTHER',
+        plant: 'P1',
+      } as JobOrder);
+
+      await expect(target.findById('JO-001', 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('findByIdWithResults', () => {
@@ -197,7 +208,7 @@ describe('JobOrderService', () => {
       mockJobOrderRepo.findOne
         .mockResolvedValueOnce(null) // existing check
         .mockResolvedValueOnce({ orderNo: 'JO-20260318-0001' } as JobOrder); // final findOne
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001' } as PartMaster);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'COMPANY', plant: 'PLANT' } as PartMaster);
       mockRoutingGroupRepo.findOne.mockResolvedValue(null);
       mockQueryRunner.manager.create.mockReturnValue({ orderNo: 'JO-20260318-0001' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ orderNo: 'JO-20260318-0001' } as any);
@@ -252,6 +263,27 @@ describe('JobOrderService', () => {
 
       // Act & Assert
       await expect(target.create(createDto, 'C', 'P')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should reject when the found part belongs to a different tenant', async () => {
+      mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
+      mockJobOrderRepo.findOne.mockResolvedValue(null);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'OTHER', plant: 'P' } as PartMaster);
+
+      await expect(target.create(createDto, 'C', 'P')).rejects.toThrow(BadRequestException);
+
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('should reject when resolved routing group belongs to a different tenant', async () => {
+      mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
+      mockJobOrderRepo.findOne.mockResolvedValue(null);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C', plant: 'P' } as PartMaster);
+      mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-OTHER', itemCode: 'PART-001', company: 'OTHER', plant: 'P' } as RoutingGroup);
+
+      await expect(target.create(createDto, 'C', 'P')).rejects.toThrow(BadRequestException);
+
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
 
     it('should rollback on error', async () => {

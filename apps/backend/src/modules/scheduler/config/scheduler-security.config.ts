@@ -26,6 +26,15 @@ export const ALLOWED_SERVICE_METHODS: string[] = [
 ];
 
 /**
+ * 스케줄러 Job의 회사/공장 범위로 실행되어야 하는 서비스 메서드.
+ * 이 목록의 메서드는 execParams 대신 (company, plantCd)를 첫 인자로 받는다.
+ */
+export const TENANT_AWARE_SERVICE_METHODS: string[] = [
+  'InterfaceService.scheduledSyncBom',
+  'InterfaceService.scheduledBulkRetry',
+];
+
+/**
  * 서비스 이름 문자열 → 실제 클래스 참조 매핑
  * ModuleRef.get()은 클래스 참조가 필요하므로, 모듈 초기화 시 등록한다.
  * 순환 의존성 방지를 위해 런타임에 populate 된다.

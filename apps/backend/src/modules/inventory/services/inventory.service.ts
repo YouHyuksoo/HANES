@@ -433,6 +433,7 @@ export class InventoryService {
         });
 
         if (stock) {
+          this.assertSameTenant('취소 대상 재고', { company: originalTrans.company ?? company, plant: originalTrans.plant ?? plant }, stock);
           const newQty = stock.qty - Math.abs(originalTrans.qty);
           if (newQty < 0) {
             throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
@@ -461,6 +462,7 @@ export class InventoryService {
         });
 
         if (stock) {
+          this.assertSameTenant('복구 대상 재고', { company: originalTrans.company ?? company, plant: originalTrans.plant ?? plant }, stock);
           await queryRunner.manager.update(MatStock,
             {
               warehouseCode: stock.warehouseCode,

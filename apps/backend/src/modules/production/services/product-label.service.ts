@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
@@ -18,6 +18,20 @@ export class ProductLabelService {
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
   ) {}
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
 
   async findLabelableResults(company?: string, plant?: string) {
     const results = await this.prodResultRepo.find({
@@ -65,6 +79,7 @@ export class ProductLabelService {
     if (!prodResult) {
       throw new NotFoundException('Production result not found');
     }
+    this.assertSameTenant('제품라벨 생산실적', prodResult, company, plant);
 
     const itemCode = prodResult.jobOrder?.itemCode ?? '';
     const part = itemCode

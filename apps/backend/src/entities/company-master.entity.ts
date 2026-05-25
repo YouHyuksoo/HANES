@@ -24,6 +24,9 @@ export class CompanyMaster {
   @PrimaryColumn({ name: 'PLANT_CD', length: 50, default: '-' })
   plant: string;
 
+  @Column({ type: 'varchar2', name: 'PLANT_NAME', length: 100, nullable: true })
+  plantName: string | null;
+
   @Column({ name: 'COMPANY_NAME', length: 100 })
   companyName: string;
 

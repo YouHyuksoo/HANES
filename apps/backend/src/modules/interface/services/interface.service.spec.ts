@@ -369,6 +369,34 @@ describe('InterfaceService', () => {
       // Assert
       expect(result).toEqual({ affectedRows: 0 });
     });
+
+    it('should retry only pending BOM logs in the scheduler tenant', async () => {
+      mockLogRepo.find.mockResolvedValue([
+        {
+          transDate: new Date('2026-05-23'),
+          seq: 1,
+          status: 'PENDING',
+          messageType: 'BOM_SYNC',
+          payload: JSON.stringify({ items: [{ parentItemCode: 'FG-001', childItemCode: 'RM-001' }] }),
+          company: 'C1',
+          plant: 'P1',
+        } as InterLog,
+      ]);
+      jest.spyOn(target, 'syncBom').mockResolvedValue({ processed: 1 } as any);
+
+      await target.scheduledSyncBom('C1', 'P1');
+
+      expect(mockLogRepo.find).toHaveBeenCalledWith({
+        where: { status: 'PENDING', messageType: 'BOM_SYNC', company: 'C1', plant: 'P1' },
+        order: { createdAt: 'ASC' },
+        take: 50,
+      });
+      expect(target.syncBom).toHaveBeenCalledWith(
+        [{ parentItemCode: 'FG-001', childItemCode: 'RM-001' }],
+        'C1',
+        'P1',
+      );
+    });
   });
 
   // ─── scheduledBulkRetry ───
@@ -382,6 +410,18 @@ describe('InterfaceService', () => {
 
       // Assert
       expect(result).toEqual({ affectedRows: 0 });
+    });
+
+    it('should retry only failed logs in the scheduler tenant', async () => {
+      const transDate = new Date('2026-05-24');
+      jest.spyOn(target, 'getFailedLogs').mockResolvedValue([{ transDate, seq: 3 } as InterLog]);
+      jest.spyOn(target, 'bulkRetry').mockResolvedValue([{ transDate, seq: 3, success: true }]);
+
+      const result = await target.scheduledBulkRetry('C1', 'P1');
+
+      expect(target.getFailedLogs).toHaveBeenCalledWith('C1', 'P1');
+      expect(target.bulkRetry).toHaveBeenCalledWith([{ transDate, seq: 3 }], 'C1', 'P1');
+      expect(result).toEqual({ affectedRows: 1 });
     });
   });
 

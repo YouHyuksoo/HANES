@@ -76,8 +76,8 @@ describe('AutoPlanService', () => {
       getOne: jest.fn().mockResolvedValue(null),
     } as any);
     queryRunner.manager.getRepository.mockReturnValue(planRepo);
-    queryRunner.manager.create.mockReturnValue({ planNo: 'PP-202605-001' } as ProdPlan);
-    queryRunner.manager.save.mockResolvedValue({ planNo: 'PP-202605-001' } as ProdPlan);
+    (queryRunner.manager.create as jest.Mock).mockReturnValue({ planNo: 'PP-202605-001' } as ProdPlan);
+    (queryRunner.manager.save as jest.Mock).mockResolvedValue({ planNo: 'PP-202605-001' } as ProdPlan);
 
     const result = await service.importOrders({ month: '2026-05' } as any, 'C1', 'P1');
 

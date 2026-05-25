@@ -10,9 +10,10 @@
  * 4. [저장] 한 번에 POST /master/iqc-part-specs
  */
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Save } from "lucide-react";
+import { Plus, Trash2, Save, ClipboardList } from "lucide-react";
 import { Button, Card, CardContent } from "@/components/ui";
 import type { IqcPoolItem, IqcPartSpec, IqcSpecRow } from "../types";
+import IqcTemplatePickerModal from "./IqcTemplatePickerModal";
 import api from "@/services/api";
 
 interface Props {
@@ -34,6 +35,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
 
   const loadSpec = useCallback(async (code: string) => {
     setLoading(true);
@@ -54,6 +56,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
             unit: it.inspItem?.unit ?? null,
             lsl: it.lsl ?? null,
             usl: it.usl ?? null,
+            judgeCriteria: it.judgeCriteria ?? null,
             useYn: it.useYn ?? 'Y',
           })),
         });
@@ -89,7 +92,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
       ...prev,
       items: [
         ...prev.items,
-        { seq: maxSeq + 1, inspItemCode: '', lsl: null, usl: null, useYn: 'Y' },
+        { seq: maxSeq + 1, inspItemCode: '', lsl: null, usl: null, judgeCriteria: null, useYn: 'Y' },
       ],
     }));
     setDirty(true);
@@ -118,6 +121,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
           unit: pool?.unit ?? null,
           lsl: null,
           usl: null,
+          judgeCriteria: null,
         };
       } else {
         items[idx] = { ...items[idx], [field]: value };
@@ -143,6 +147,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
             inspItemCode: it.inspItemCode,
             lsl: it.lsl,
             usl: it.usl,
+            judgeCriteria: it.judgeCriteria ?? null,
             useYn: it.useYn,
           })),
       });
@@ -153,6 +158,12 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
     } finally {
       setSaving(false);
     }
+  };
+
+  // 템플릿 적용 — 현재 품목 항목을 통째로 대체 (로컬 상태, [저장]으로 확정)
+  const applyTemplate = (items: IqcSpecRow[], sampleQty: number, isDest: string) => {
+    setSpec((prev) => ({ ...prev, sampleQty, isDest, items }));
+    setDirty(true);
   };
 
   if (!itemCode) {
@@ -215,10 +226,16 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden border border-border rounded-lg bg-bg">
         <div className="flex items-center justify-between px-4 py-2 border-b border-border">
           <span className="text-sm font-medium text-text">검사항목</span>
-          <Button size="sm" variant="outline" onClick={addRow} className="flex items-center gap-1">
-            <Plus className="w-3.5 h-3.5" />
-            항목 추가
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setTemplateOpen(true)} className="flex items-center gap-1">
+              <ClipboardList className="w-3.5 h-3.5" />
+              템플릿 불러오기/관리
+            </Button>
+            <Button size="sm" variant="outline" onClick={addRow} className="flex items-center gap-1">
+              <Plus className="w-3.5 h-3.5" />
+              항목 추가
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -235,6 +252,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-20">종류</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-28">하한(LSL)</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-28">상한(USL)</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium">판정기준</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-16">단위</th>
                   <th className="px-3 py-2 w-10"></th>
                 </tr>
@@ -242,7 +260,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
               <tbody>
                 {spec.items.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-text-muted text-sm">
+                    <td colSpan={8} className="py-8 text-center text-text-muted text-sm">
                       검사항목이 없습니다. [항목 추가]를 눌러 추가하세요.
                     </td>
                   </tr>
@@ -303,6 +321,19 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                           <span className="text-text-muted text-xs">-</span>
                         )}
                       </td>
+                      <td className="px-3 py-1.5">
+                        {!isMeasure ? (
+                          <input
+                            type="text"
+                            value={row.judgeCriteria ?? ''}
+                            onChange={(e) => updateRow(idx, 'judgeCriteria', e.target.value === '' ? null : e.target.value)}
+                            placeholder="판정기준"
+                            className="w-full border border-border rounded px-2 py-1 text-sm bg-bg text-text"
+                          />
+                        ) : (
+                          <span className="text-text-muted text-xs">-</span>
+                        )}
+                      </td>
                       <td className="px-3 py-1.5 text-text-muted text-xs">
                         {row.unit ?? '-'}
                       </td>
@@ -323,6 +354,16 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
           </div>
         )}
       </div>
+
+      <IqcTemplatePickerModal
+        isOpen={templateOpen}
+        onClose={() => setTemplateOpen(false)}
+        itemName={itemName}
+        currentSampleQty={spec.sampleQty}
+        currentIsDest={spec.isDest}
+        currentItems={spec.items}
+        onApply={applyTemplate}
+      />
     </div>
   );
 }

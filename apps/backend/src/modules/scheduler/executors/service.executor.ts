@@ -16,6 +16,7 @@ import { SchedulerJob } from '../../../entities/scheduler-job.entity';
 import {
   ALLOWED_SERVICE_METHODS,
   SERVICE_CLASS_MAP,
+  TENANT_AWARE_SERVICE_METHODS,
 } from '../config/scheduler-security.config';
 
 @Injectable()
@@ -89,7 +90,9 @@ export class ServiceExecutor implements IJobExecutor {
     this.logger.log(`서비스 메서드 실행: ${execTarget}`);
 
     // 메서드 호출
-    const result = await method.call(serviceInstance, params);
+    const result = TENANT_AWARE_SERVICE_METHODS.includes(execTarget)
+      ? await method.call(serviceInstance, job.company, job.plantCd)
+      : await method.call(serviceInstance, params);
 
     // 결과에서 affectedRows 추출 (있으면)
     const affectedRows =

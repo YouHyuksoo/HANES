@@ -21,6 +21,7 @@ interface ProductionInputBarProps {
   onSaved: () => void;
   /** 준비단계 인터락 모두 완료 여부 — false면 실적입력 비활성화 */
   interlockDone?: boolean;
+  disabledReasons?: string[];
 }
 
 const LOT_OPTIONS = [1, 5, 10, 20, 50, 100];
@@ -28,6 +29,7 @@ const LOT_OPTIONS = [1, 5, 10, 20, 50, 100];
 export default function ProductionInputBar({
   onSaved,
   interlockDone = true,
+  disabledReasons = [],
 }: ProductionInputBarProps) {
   const { t } = useTranslation();
   const {
@@ -49,6 +51,13 @@ export default function ProductionInputBar({
     : '';
 
   const canSave = !!(selectedEquip && selectedJobOrder && selectedWorkers.length > 0 && interlockDone);
+
+  const buttonTitle = (() => {
+    if (saving) return t('common.saving');
+    if (canSave) return t('kiosk.input.submit');
+    if (disabledReasons.length === 0) return t('kiosk.input.disabledHint');
+    return `${t('kiosk.input.disabledHint')}\n${disabledReasons.map(r => `• ${r}`).join('\n')}`;
+  })();
 
   const handleTotalChange = useCallback((val: string) => {
     setTotalQty(val);
@@ -203,6 +212,7 @@ export default function ProductionInputBar({
         <button
           onClick={handleSubmit}
           disabled={!canSave || saving}
+          title={buttonTitle}
           className="flex w-16 shrink-0 flex-col items-center justify-center gap-1 bg-primary px-1 hover:bg-primary/90 disabled:bg-surface disabled:cursor-not-allowed text-white disabled:text-text-muted transition-colors"
         >
           <Save className="w-5 h-5" />

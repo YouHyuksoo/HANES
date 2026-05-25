@@ -52,4 +52,14 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   dept?: string;
+
+  @ApiPropertyOptional({ description: '회사코드', example: 'HANES' })
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @ApiPropertyOptional({ description: '사업장코드', example: 'P01' })
+  @IsOptional()
+  @IsString()
+  plant?: string;
 }

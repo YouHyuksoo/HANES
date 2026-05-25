@@ -20,6 +20,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('RoutingGroupService', () => {
   let target: RoutingGroupService;
@@ -31,6 +32,7 @@ describe('RoutingGroupService', () => {
   let mockMaterialRepo: DeepMocked<Repository<RoutingMaterial>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockEntityManager: DeepMocked<EntityManager>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockGroupRepo = createMock<Repository<RoutingGroup>>();
@@ -41,11 +43,13 @@ describe('RoutingGroupService', () => {
     mockMaterialRepo = createMock<Repository<RoutingMaterial>>();
     mockDataSource = createMock<DataSource>();
     mockEntityManager = createMock<EntityManager>();
+    mockTx = createMock<TransactionService>();
 
     // Transaction mock: execute callback with mockEntityManager
     mockDataSource.transaction.mockImplementation(async (cb: any) => {
       return cb(mockEntityManager);
     });
+    mockTx.run.mockImplementation(async (cb) => cb({ manager: mockEntityManager } as any));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -57,6 +61,7 @@ describe('RoutingGroupService', () => {
         { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
         { provide: getRepositoryToken(RoutingMaterial), useValue: mockMaterialRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -197,7 +202,7 @@ describe('RoutingGroupService', () => {
 
       // Assert
       expect(result).toEqual({ routingCode: 'RG01' });
-      expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalled();
       expect(mockEntityManager.delete).toHaveBeenCalledTimes(4);
     });
 
@@ -337,14 +342,14 @@ describe('RoutingGroupService', () => {
         plant: 'PLANT01',
       } as RoutingProcess);
       mockEntityManager.delete.mockResolvedValue({ affected: 0 } as any);
-      mockEntityManager.create.mockReturnValue(created);
+      (mockEntityManager.create as jest.Mock).mockReturnValue(created);
       mockEntityManager.save.mockResolvedValue([created]);
 
       // Act
       const result = await target.bulkSaveConditions('RG01', 10, dto);
 
       // Assert
-      expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalled();
       expect(mockEntityManager.delete).toHaveBeenCalledWith(ProcessQualityCondition, {
         routingCode: 'RG01',
         seq: 10,

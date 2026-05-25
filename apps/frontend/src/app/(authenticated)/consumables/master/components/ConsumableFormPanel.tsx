@@ -130,6 +130,16 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
     onSubmit(form);
   };
 
+  const isSaveDisabled =
+    loading || !form.consumableCode.trim() || !form.consumableName.trim();
+  const saveDisabledReason = loading
+    ? t("common.saving")
+    : !form.consumableCode.trim()
+      ? "소모품 코드를 입력하세요."
+      : !form.consumableName.trim()
+        ? "소모품명을 입력하세요."
+        : "";
+
   return (
     <div
       className={`w-[420px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}
@@ -141,10 +151,20 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSubmit} disabled={loading || !form.consumableCode || !form.consumableName}>
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={isSaveDisabled}
+            title={saveDisabledReason}
+          >
             {loading ? t("common.saving") : (isEdit ? t("common.edit") : t("common.register"))}
           </Button>
         </div>
+        {isSaveDisabled ? (
+          <p className="text-xs text-text-muted mt-1" title={saveDisabledReason}>
+            {saveDisabledReason}
+          </p>
+        ) : null}
       </div>
 
       {/* 본문 (스크롤 가능) */}

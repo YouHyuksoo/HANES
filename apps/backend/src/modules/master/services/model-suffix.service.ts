@@ -6,7 +6,7 @@
  * 1. modelCode + suffixCode 복합 PK로 조회/수정/삭제
  */
 
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ModelSuffix } from '../../../entities/model-suffix.entity';
@@ -24,6 +24,20 @@ export class ModelSuffixService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private assertSameTenant(
+    context: string,
+    row: { company?: string | null; plant?: string | null },
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    if (company && row.company !== company) {
+      throw new BadRequestException(`${context} 회사 정보가 일치하지 않습니다. request=${company}, row=${row.company ?? 'NULL'}`);
+    }
+    if (plant && row.plant !== plant) {
+      throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
   }
 
   async findAll(query: ModelSuffixQueryDto, company?: string, plant?: string) {
@@ -75,6 +89,7 @@ export class ModelSuffixService {
     if (!suffix) {
       throw new NotFoundException('모델접미사를 찾을 수 없습니다.');
     }
+    this.assertSameTenant('모델접미사', suffix, company, plant);
 
     return suffix;
   }

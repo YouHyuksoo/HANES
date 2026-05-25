@@ -15,11 +15,16 @@ import { useKioskStore } from '@/stores/kioskStore';
 interface DefectSummaryPanelProps {
   onOpenDefect: () => void;
   disabled: boolean;
+  disabledReasons?: string[];
 }
 
-export default function DefectSummaryPanel({ onOpenDefect, disabled }: DefectSummaryPanelProps) {
+export default function DefectSummaryPanel({ onOpenDefect, disabled, disabledReasons = [] }: DefectSummaryPanelProps) {
   const { t } = useTranslation();
   const { pendingDefects } = useKioskStore();
+  const reasonText = disabledReasons.filter(Boolean).join(' / ');
+  const buttonTitle = disabled
+    ? (reasonText || t('kiosk.input.disabledHint'))
+    : t('kiosk.input.defect');
 
   return (
     <div className="flex h-full flex-col gap-1.5 p-2">
@@ -31,11 +36,17 @@ export default function DefectSummaryPanel({ onOpenDefect, disabled }: DefectSum
         <button
           onClick={onOpenDefect}
           disabled={disabled}
+          title={buttonTitle}
           className="rounded bg-red-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted"
         >
           {t('kiosk.input.defect')}
         </button>
       </div>
+      {disabled && reasonText && (
+        <div className="text-[11px] text-text-muted" title={reasonText}>
+          {reasonText}
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto rounded border border-border bg-surface/40">
         {pendingDefects.length === 0 ? (
           <div className="px-2 py-4 text-center text-[11px] text-text-muted">

@@ -613,7 +613,9 @@ export class PalletService {
     // 품목 정보 조회
     const itemCodes = partSummary.map(p => p.itemCode);
     const parts = await this.partRepository.find({
-      where: itemCodes.length > 0 ? { itemCode: In(itemCodes) } : {},
+      where: itemCodes.length > 0
+        ? { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) }
+        : this.tenantWhere(company, plant),
       select: ['itemCode', 'itemName'],
     });
 

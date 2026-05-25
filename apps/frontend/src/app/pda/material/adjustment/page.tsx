@@ -138,6 +138,16 @@ export default function MaterialAdjustmentPage() {
     setReason("", "");
   }, [handleReset, setReason]);
 
+  const adjustmentDisabledReason = useMemo(() => {
+    if (!isQtyValid) {
+      return "조정 수량은 0이 아닌 값이어야 합니다.";
+    }
+    if (!isReasonValid) {
+      return "조정 사유를 입력해 주세요.";
+    }
+    return undefined;
+  }, [isQtyValid, isReasonValid]);
+
   /** 이력 렌더 */
   const renderHistoryItem = useCallback(
     (item: AdjustmentHistoryItem) => (
@@ -261,6 +271,7 @@ export default function MaterialAdjustmentPage() {
               variant: "primary",
               isLoading: isAdjusting,
               disabled: !isQtyValid || !isReasonValid,
+              disabledReason: adjustmentDisabledReason,
             },
             {
               label: t("pda.scan.nextScan"),

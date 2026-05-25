@@ -19,6 +19,8 @@ import { useKioskStore } from '@/stores/kioskStore';
 interface MaterialListPanelProps {
   onOpenMaterialScan?: () => void;
   onOpenConsumableScan?: () => void;
+  materialScanDisabledReasons?: string[];
+  consumableScanDisabledReasons?: string[];
 }
 
 export interface BomItem {
@@ -55,7 +57,12 @@ function lifeTextColor(current: number, max: number): string {
   return 'text-text-muted';
 }
 
-export default function MaterialListPanel({ onOpenMaterialScan, onOpenConsumableScan }: MaterialListPanelProps) {
+export default function MaterialListPanel({
+  onOpenMaterialScan,
+  onOpenConsumableScan,
+  materialScanDisabledReasons = [],
+  consumableScanDisabledReasons = [],
+}: MaterialListPanelProps) {
   const { t } = useTranslation();
   const { selectedJobOrder, selectedEquip, scannedMaterialLots, interlock, removeScannedMaterialLot, addScannedMaterialLot, setInterlock } = useKioskStore();
   const [bomItems, setBomItems] = useState<BomItem[]>([]);
@@ -127,6 +134,9 @@ export default function MaterialListPanel({ onOpenMaterialScan, onOpenConsumable
             <button
               onClick={onOpenMaterialScan}
               disabled={!interlock.workerInspectDone || !selectedJobOrder}
+              title={interlock.workerInspectDone && selectedJobOrder
+                ? t('kiosk.prep.materialScan')
+                : materialScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.materialScan')}
               className={[
                 'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
                 interlock.materialScanDone
@@ -138,6 +148,14 @@ export default function MaterialListPanel({ onOpenMaterialScan, onOpenConsumable
               {t('kiosk.prep.materialScan')}
               {interlock.materialScanDone && <CheckCircle2 className="h-3 w-3 text-teal-500" />}
             </button>
+          )}
+          {(!interlock.workerInspectDone || !selectedJobOrder) && (
+            <span
+              className="text-[10px] text-text-muted max-w-[140px] truncate"
+              title={materialScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.materialScan')}
+            >
+              {materialScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.materialScan')}
+            </span>
           )}
         </div>
 
@@ -208,6 +226,9 @@ export default function MaterialListPanel({ onOpenMaterialScan, onOpenConsumable
             <button
               onClick={onOpenConsumableScan}
               disabled={!interlock.materialScanDone}
+              title={interlock.materialScanDone
+                ? t('kiosk.prep.consumableScan')
+                : consumableScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.consumableScan')}
               className={[
                 'ml-auto inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
                 interlock.consumableScanDone
@@ -219,6 +240,14 @@ export default function MaterialListPanel({ onOpenMaterialScan, onOpenConsumable
               {t('kiosk.prep.consumableScan')}
               {interlock.consumableScanDone && <CheckCircle2 className="h-3 w-3 text-teal-500" />}
             </button>
+          )}
+          {(!interlock.materialScanDone && onOpenConsumableScan) && (
+            <span
+              className="ml-2 text-[10px] text-text-muted max-w-[140px] truncate"
+              title={consumableScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.consumableScan')}
+            >
+              {consumableScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.consumableScan')}
+            </span>
           )}
         </div>
         {consumables.length === 0 ? (

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ModelSuffix } from '../../../entities/model-suffix.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
@@ -46,6 +46,12 @@ describe('ModelSuffixService', () => {
     mockRepo.findOne.mockResolvedValue(null);
 
     await expect(target.findByCompositeKey('MDL-01', 'A', 'C1', 'P1')).rejects.toThrow(NotFoundException);
+  });
+
+  it('throws when matched suffix tenant differs from request tenant', async () => {
+    mockRepo.findOne.mockResolvedValue({ modelCode: 'MDL-01', suffixCode: 'A', company: 'OTHER', plant: 'P1' } as ModelSuffix);
+
+    await expect(target.findByCompositeKey('MDL-01', 'A', 'C1', 'P1')).rejects.toThrow(BadRequestException);
   });
 
   it('creates a suffix within the tenant context', async () => {

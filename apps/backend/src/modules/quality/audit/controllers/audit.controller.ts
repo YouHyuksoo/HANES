@@ -71,8 +71,12 @@ export class AuditController {
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '심사 계획 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.auditService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.auditService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -102,12 +106,16 @@ export class AuditController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateAuditPlanDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.auditService.update(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '심사 계획이 수정되었습니다.');
   }
@@ -117,8 +125,12 @@ export class AuditController {
   @ApiOperation({ summary: '심사 계획 삭제', description: 'PLANNED 상태에서만 가능' })
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') id: string) {
-    await this.auditService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.auditService.delete(id, company, plant);
     return ResponseUtil.success(null, '심사 계획이 삭제되었습니다.');
   }
 
@@ -131,12 +143,16 @@ export class AuditController {
   async complete(
     @Param('id') id: string,
     @Body('overallResult') overallResult: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.auditService.complete(
       id,
       overallResult,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '심사가 완료되었습니다.');
   }
@@ -147,11 +163,15 @@ export class AuditController {
   @ApiResponse({ status: 200, description: '종결 성공' })
   async close(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.auditService.close(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '심사가 종결되었습니다.');
   }
@@ -162,8 +182,12 @@ export class AuditController {
   @ApiOperation({ summary: '발견사항 목록', description: '심사별 발견사항 조회' })
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getFindings(@Param('id') id: string) {
-    const data = await this.auditService.getFindings(id);
+  async getFindings(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.auditService.getFindings(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -195,8 +219,10 @@ export class AuditController {
     @Param('auditId') auditId: string,
     @Param('findingNo', ParseIntPipe) findingNo: number,
     @Body('capaId') capaId: string,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.auditService.linkCapa(auditId, findingNo, capaId);
+    const data = await this.auditService.linkCapa(auditId, findingNo, capaId, company, plant);
     return ResponseUtil.success(data, 'CAPA가 연결되었습니다.');
   }
 }

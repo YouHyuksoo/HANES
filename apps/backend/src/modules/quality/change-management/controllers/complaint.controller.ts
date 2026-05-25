@@ -83,8 +83,12 @@ export class ComplaintController {
   @ApiParam({ name: 'id', description: '클레임 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '클레임 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.complaintService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.complaintService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -114,12 +118,16 @@ export class ComplaintController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateComplaintDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.complaintService.update(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '고객클레임이 수정되었습니다.');
   }
@@ -129,8 +137,12 @@ export class ComplaintController {
   @ApiOperation({ summary: '클레임 삭제' })
   @ApiParam({ name: 'id', description: '클레임 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') id: string) {
-    await this.complaintService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.complaintService.delete(id, company, plant);
     return ResponseUtil.success(null, '고객클레임이 삭제되었습니다.');
   }
 
@@ -143,12 +155,16 @@ export class ComplaintController {
   async investigate(
     @Param('id') id: string,
     @Body() dto: InvestigateComplaintDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.complaintService.investigate(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '조사가 시작되었습니다.');
   }
@@ -160,12 +176,16 @@ export class ComplaintController {
   async respond(
     @Param('id') id: string,
     @Body() dto: RespondComplaintDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.complaintService.respond(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '대응이 완료되었습니다.');
   }
@@ -176,11 +196,15 @@ export class ComplaintController {
   @ApiResponse({ status: 200, description: '처리 성공' })
   async resolve(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.complaintService.resolve(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '클레임이 해결되었습니다.');
   }
@@ -191,11 +215,15 @@ export class ComplaintController {
   @ApiResponse({ status: 200, description: '처리 성공' })
   async close(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.complaintService.close(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '클레임이 종료되었습니다.');
   }
@@ -207,12 +235,16 @@ export class ComplaintController {
   async linkCapa(
     @Param('id') id: string,
     @Body() dto: LinkCapaDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.complaintService.linkCapa(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, 'CAPA가 연계되었습니다.');
   }

@@ -74,6 +74,7 @@ export default function ServerStatusBanner() {
       <button
         onClick={handleRetry}
         disabled={retrying}
+        title={retrying ? t("pda.server.retrying", "서버 재확인 중") : t("pda.server.retry")}
         className="flex items-center gap-1 px-2 py-1 rounded bg-white/20 hover:bg-white/30 text-xs font-medium disabled:opacity-50"
       >
         <RefreshCw className={`w-3 h-3 ${retrying ? "animate-spin" : ""}`} />

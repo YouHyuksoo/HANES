@@ -68,9 +68,11 @@ export class InspectResultController {
   async getPassRate(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-    @Query('inspectType') inspectType?: string
+    @Query('inspectType') inspectType?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.inspectResultService.getPassRate(startDate, endDate, inspectType);
+    const data = await this.inspectResultService.getPassRate(startDate, endDate, inspectType, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -81,9 +83,11 @@ export class InspectResultController {
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStatsByType(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.inspectResultService.getStatsByType(startDate, endDate);
+    const data = await this.inspectResultService.getStatsByType(startDate, endDate, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -91,9 +95,11 @@ export class InspectResultController {
   @ApiOperation({ summary: '일별 합격률 추이', description: '최근 N일간 일별 합격률 추이' })
   @ApiQuery({ name: 'days', required: false, description: '조회 일수 (기본 7일)', example: 7 })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getDailyTrend(@Query('days') days?: string) {
+  async getDailyTrend(@Query('days') days?: string, @Company() company?: string, @Plant() plant?: string) {
     const data = await this.inspectResultService.getDailyPassRateTrend(
-      days ? parseInt(days, 10) : 7
+      days ? parseInt(days, 10) : 7,
+      company,
+      plant,
     );
     return ResponseUtil.success(data);
   }

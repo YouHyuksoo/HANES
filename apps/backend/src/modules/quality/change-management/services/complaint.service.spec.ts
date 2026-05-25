@@ -36,6 +36,16 @@ describe('ComplaintService', () => {
       mockRepo.findOne.mockResolvedValue(null);
       await expect(target.findById('X')).rejects.toThrow(NotFoundException);
     });
+
+    it('scopes complaint lookup by tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', company: 'CO', plant: 'P01' } as any);
+
+      await target.findById('CC-001', 'CO', 'P01');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { complaintNo: 'CC-001', company: 'CO', plant: 'P01' },
+      });
+    });
   });
 
   describe('update', () => {
@@ -59,6 +69,12 @@ describe('ComplaintService', () => {
         updatedBy: 'user',
       }));
     });
+
+    it('rejects update when complaint belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'RECEIVED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.update('CC-001', {} as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('investigate', () => {
@@ -73,6 +89,20 @@ describe('ComplaintService', () => {
       mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'CLOSED' } as any);
       await expect(target.investigate('CC-001', {} as any, 'user')).rejects.toThrow(BadRequestException);
     });
+
+    it('rejects investigate when complaint belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'RECEIVED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.investigate('CC-001', {} as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('respond', () => {
+    it('rejects respond when complaint belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'INVESTIGATING', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.respond('CC-001', {} as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('resolve', () => {
@@ -82,6 +112,12 @@ describe('ComplaintService', () => {
       mockRepo.save.mockResolvedValue({ ...item, status: 'RESOLVED' });
       const r = await target.resolve('CC-001', 'user');
       expect(r.status).toBe('RESOLVED');
+    });
+
+    it('rejects resolve when complaint belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'RESPONDING', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.resolve('CC-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -93,12 +129,32 @@ describe('ComplaintService', () => {
       const r = await target.close('CC-001', 'user');
       expect(r.status).toBe('CLOSED');
     });
+
+    it('rejects close when complaint belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'RESOLVED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.close('CC-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {
     it('should throw when not RECEIVED', async () => {
       mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'INVESTIGATING' } as any);
       await expect(target.delete('CC-001')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects delete when complaint belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'RECEIVED', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.delete('CC-001', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('linkCapa', () => {
+    it('rejects linkCapa when complaint belongs to a different tenant', async () => {
+      mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'RESPONDING', company: 'OTHER', plant: 'P01' } as any);
+      await expect(target.linkCapa('CC-001', { capaId: 'CAPA-001' } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
     });
   });
 });

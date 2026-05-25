@@ -123,6 +123,13 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
   const okCount = items.filter(i => results[i.seq] === 'PASS').length;
   const ngCount = items.filter(i => results[i.seq] === 'FAIL').length;
   const answeredCount = okCount + ngCount;
+  const saveDisabledReason = saving
+    ? t('common.saving')
+    : !inspectorName
+      ? t('kiosk.prep.inspectorRequired')
+      : !allAnswered
+        ? t('kiosk.prep.workerInspectDesc')
+        : '';
 
   const handleSave = useCallback(async () => {
     if (!selectedEquip) return;
@@ -247,7 +254,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
             <div className="flex flex-col items-center gap-3 py-8 text-text-muted">
               <AlertTriangle className="w-10 h-10 opacity-40" />
               <p className="text-sm">{t('kiosk.prep.noInspectItems')}</p>
-              <Button onClick={handleSkip} disabled={saving}>
+              <Button onClick={handleSkip} disabled={saving} title={saving ? t('common.saving') : t('kiosk.prep.confirmWithoutItems')}>
                 {t('kiosk.prep.confirmWithoutItems')}
               </Button>
             </div>
@@ -374,37 +381,45 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
               </div>
 
               {/* 푸터 */}
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="px-2 py-0.5 rounded font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                    OK {okCount}
-                  </span>
-                  <span className="px-2 py-0.5 rounded font-semibold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
-                    NG {ngCount}
-                  </span>
-                  {allAnswered && (
-                    <span className="text-text-muted">
-                      → 종합판정 <strong className={anyFail ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
-                        {anyFail ? 'NG' : 'OK'}
-                      </strong>
+              <div className="space-y-1 pt-2 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                      OK {okCount}
                     </span>
-                  )}
+                    <span className="px-2 py-0.5 rounded font-semibold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
+                      NG {ngCount}
+                    </span>
+                    {allAnswered && (
+                      <span className="text-text-muted">
+                        → 종합판정 <strong className={anyFail ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
+                          {anyFail ? 'NG' : 'OK'}
+                        </strong>
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+                    <Button
+                      onClick={handleSave}
+                      disabled={!allAnswered || !inspectorName || saving}
+                      title={saveDisabledReason || t('kiosk.prep.saveInspect')}
+                      className={allAnswered && anyFail ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : ''}
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      {saving
+                        ? t('common.saving')
+                        : allAnswered && anyFail
+                        ? t('kiosk.prep.saveInspectNg')
+                        : t('kiosk.prep.saveInspectOk')}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={!allAnswered || !inspectorName || saving}
-                    className={allAnswered && anyFail ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : ''}
-                  >
-                    <Save className="w-4 h-4 mr-1" />
-                    {saving
-                      ? t('common.saving')
-                      : allAnswered && anyFail
-                      ? t('kiosk.prep.saveInspectNg')
-                      : t('kiosk.prep.saveInspectOk')}
-                  </Button>
-                </div>
+                {saveDisabledReason && (
+                  <p className="text-[11px] text-text-muted" title={saveDisabledReason}>
+                    {saveDisabledReason}
+                  </p>
+                )}
               </div>
             </>
           )}

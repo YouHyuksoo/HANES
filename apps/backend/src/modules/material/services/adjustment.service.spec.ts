@@ -130,8 +130,8 @@ describe('AdjustmentService', () => {
           company: 'HANES',
           plant: 'P01',
         } as MatStock);
-      queryRunner.manager.create.mockReturnValue(invAdjLog);
-      queryRunner.manager.save.mockResolvedValue(invAdjLog);
+      (queryRunner.manager.create as jest.Mock).mockReturnValue(invAdjLog);
+      (queryRunner.manager.save as jest.Mock).mockResolvedValue(invAdjLog);
 
       const result = await service.createPending({
         warehouseCode: 'WH-01',
@@ -159,8 +159,8 @@ describe('AdjustmentService', () => {
           company: 'HANES',
           plant: 'P01',
         } as MatStock);
-      queryRunner.manager.create.mockReturnValue({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog);
-      queryRunner.manager.save.mockResolvedValue({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog);
+      (queryRunner.manager.create as jest.Mock).mockReturnValue({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog);
+      (queryRunner.manager.save as jest.Mock).mockResolvedValue({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog);
 
       await service.createPending({
         warehouseCode: 'WH-01',
@@ -251,8 +251,8 @@ describe('AdjustmentService', () => {
         reservedQty: 0,
       } as MatStock);
       stockTxRepo.findOne.mockResolvedValue(null);
-      queryRunner.manager.create.mockReturnValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
-      queryRunner.manager.save.mockResolvedValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
+      (queryRunner.manager.create as jest.Mock).mockReturnValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
+      (queryRunner.manager.save as jest.Mock).mockResolvedValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
 
       const result = await service.approve('2026-04-11', 1, 'admin');
 
@@ -293,8 +293,8 @@ describe('AdjustmentService', () => {
         plant: 'P01',
       } as MatStock);
       stockTxRepo.findOne.mockResolvedValue(null);
-      queryRunner.manager.create.mockReturnValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
-      queryRunner.manager.save.mockResolvedValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
+      (queryRunner.manager.create as jest.Mock).mockReturnValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
+      (queryRunner.manager.save as jest.Mock).mockResolvedValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
 
       await service.approve('2026-04-11', 1, 'admin', 'HANES', 'P01');
 
@@ -366,10 +366,10 @@ describe('AdjustmentService', () => {
           plant: 'P01',
         } as MatStock);
       stockTxRepo.findOne.mockResolvedValue(null);
-      queryRunner.manager.create
+      (queryRunner.manager.create as jest.Mock)
         .mockReturnValueOnce(invAdjLog)
         .mockReturnValueOnce({ transNo: 'ADJ2026041100001' } as StockTransaction);
-      queryRunner.manager.save
+      (queryRunner.manager.save as jest.Mock)
         .mockResolvedValueOnce(invAdjLog)
         .mockResolvedValueOnce({ transNo: 'ADJ2026041100001' } as StockTransaction);
 
@@ -400,10 +400,10 @@ describe('AdjustmentService', () => {
           plant: 'P01',
         } as MatStock);
       stockTxRepo.findOne.mockResolvedValue(null);
-      queryRunner.manager.create
+      (queryRunner.manager.create as jest.Mock)
         .mockReturnValueOnce({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog)
         .mockReturnValueOnce({ transNo: 'ADJ2026041100001' } as StockTransaction);
-      queryRunner.manager.save
+      (queryRunner.manager.save as jest.Mock)
         .mockResolvedValueOnce({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog)
         .mockResolvedValueOnce({ transNo: 'ADJ2026041100001' } as StockTransaction);
 

@@ -109,6 +109,18 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   const allAnswered = items.length > 0 && pendingCount === 0;
   const anyNg = ngCount > 0;
   const total = items.length || 1;
+  const saveDisabledReason = saving
+    ? t('common.saving')
+    : !allAnswered
+      ? t('kiosk.prep.workerInspectDesc')
+      : '';
+  const startDisabledReason = saving
+    ? t('common.saving')
+    : anyNg
+      ? t('kiosk.prep.failWarning')
+      : !allAnswered
+        ? t('kiosk.prep.workerInspectDesc')
+        : '';
 
   const doSave = useCallback(async (startWork: boolean) => {
     if (!selectedEquip || !allAnswered) return;
@@ -298,14 +310,28 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
 
         <div className="flex justify-end gap-2 pt-2 border-t border-border">
           <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="secondary" onClick={() => doSave(false)} disabled={!allAnswered || saving}>
+          <Button
+            variant="secondary"
+            onClick={() => doSave(false)}
+            disabled={!allAnswered || saving}
+            title={saveDisabledReason || t('kiosk.prep.saveInspect')}
+          >
             {saving ? t('common.saving') : t('kiosk.prep.saveInspect')}
           </Button>
-          <Button onClick={() => doSave(true)} disabled={!allAnswered || anyNg || saving}>
+          <Button
+            onClick={() => doSave(true)}
+            disabled={!allAnswered || anyNg || saving}
+            title={startDisabledReason || t('kiosk.prep.startWork')}
+          >
             <Play className="w-4 h-4 mr-1" />
             {t('kiosk.prep.startWork')}
           </Button>
         </div>
+        {(saveDisabledReason || startDisabledReason) && (
+          <p className="text-[11px] text-text-muted mt-1" title={startDisabledReason || saveDisabledReason}>
+            {startDisabledReason || saveDisabledReason}
+          </p>
+        )}
       </div>
     </Modal>
   );

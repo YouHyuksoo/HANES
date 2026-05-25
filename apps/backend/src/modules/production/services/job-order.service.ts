@@ -81,7 +81,27 @@ export class JobOrderService {
         ...(plant ? { plant } : {}),
       },
     });
+    if (group) {
+      this.assertSameTenant('라우팅 그룹', { company, plant }, group);
+    }
     return group?.routingCode ?? null;
+  }
+
+  private assertSameTenant(
+    context: string,
+    requested: { company?: string | null; plant?: string | null },
+    actual: { company?: string | null; plant?: string | null },
+  ) {
+    if (requested.company && actual.company !== requested.company) {
+      throw new BadRequestException(
+        `${context} 회사 정보가 일치하지 않습니다. request=${requested.company}, row=${actual.company ?? 'NULL'}`,
+      );
+    }
+    if (requested.plant && actual.plant !== requested.plant) {
+      throw new BadRequestException(
+        `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
+      );
+    }
   }
 
   /** 작업지시 단건 조회 + select 필드 적용 (내부 헬퍼) */
@@ -142,6 +162,7 @@ export class JobOrderService {
       relations: ['part', 'routing'],
     });
     if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
+    this.assertSameTenant('작업지시', { company, plant }, jobOrder);
     return jobOrder;
   }
 
@@ -197,6 +218,7 @@ export class JobOrderService {
       where: { itemCode: dto.itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
+    this.assertSameTenant('품목', { company, plant }, part);
 
     // 품목 기반 라우팅 자동 조회
     const routingCode = await this.resolveRoutingCodeByItem(dto.itemCode, company, plant);

@@ -193,5 +193,18 @@ describe('ProductPhysicalInvService', () => {
         createdBy: 'user',
       } as any, 'CO', 'P01', 'user')).rejects.toThrow(BadRequestException);
     });
+
+    it('should throw when product stock tenant differs from request tenant', async () => {
+      const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', qty: 100, reservedQty: 0, company: 'OTHER', plant: 'P01' } as any;
+      mockQueryRunner.manager.findOne.mockResolvedValue(stock);
+
+      await expect(target.applyCount({
+        items: [{ stockId: 'WH::IT::LOT1', countedQty: 90 }],
+        createdBy: 'user',
+      } as any, 'CO', 'P01', 'user')).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
   });
 });

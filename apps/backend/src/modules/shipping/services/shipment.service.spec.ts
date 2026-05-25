@@ -170,10 +170,14 @@ describe('ShipmentService', () => {
     expect(mockProductInventoryService.cancelTransaction).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ transactionId: 'PTX-001' }),
+      'HANES',
+      'P01',
     );
     expect(mockProductInventoryService.cancelTransaction).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ transactionId: 'PTX-002' }),
+      'HANES',
+      'P01',
     );
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();

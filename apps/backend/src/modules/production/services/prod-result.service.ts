@@ -376,6 +376,10 @@ export class ProdResultService {
     if (!jobOrder) {
       throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${dto.orderNo}`);
     }
+    this.assertTenantConsistency('생산실적 작업지시', {
+      expected: { company, plant },
+      sources: [{ label: 'jobOrder', company: jobOrder.company, plant: jobOrder.plant }],
+    });
 
     if (jobOrder.status === 'DONE' || jobOrder.status === 'CANCELED') {
       throw new BadRequestException(`완료되거나 취소된 작업지시에는 실적을 등록할 수 없습니다.`);
@@ -398,12 +402,16 @@ export class ProdResultService {
       if (!equip) {
         throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
       }
+      this.assertTenantConsistency('생산실적 설비', {
+        expected: { company, plant },
+        sources: [{ label: 'equip', company: equip.company, plant: equip.plant }],
+      });
     }
 
     // 작업자 존재 확인 (옵션) — workerId로 User 테이블 조회
     if (dto.workerId) {
       const worker = await this.userRepository.findOne({
-        where: { email: dto.workerId },
+        where: { email: dto.workerId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
       if (!worker) {
         throw new NotFoundException(`작업자를 찾을 수 없습니다: ${dto.workerId}`);
@@ -459,6 +467,10 @@ export class ProdResultService {
           where: { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         });
         if (fgJobOrder) {
+          this.assertTenantConsistency('생산실적 FG 라벨 작업지시', {
+            expected: { company, plant },
+            sources: [{ label: 'fgJobOrder', company: fgJobOrder.company, plant: fgJobOrder.plant }],
+          });
           const fgBarcode = await this.numbering.nextFgBarcode(queryRunner);
           await queryRunner.manager.save(FgLabel, {
             fgBarcode,
@@ -1138,13 +1150,24 @@ export class ProdResultService {
     expected: string | undefined,
     sources: { label: string; company?: string | null; plant?: string | null }[],
   ): void {
+    if (expected) {
+      const mismatch = sources.find((source) => source[field] !== expected);
+      if (mismatch) {
+        const details = sources.map((source) => `${source.label}=${source[field] ?? '-'}`).join(', ');
+        throw new BadRequestException(
+          `${context} ${field} 값이 일치하지 않습니다. expected=${expected}, ${details}`,
+        );
+      }
+      return;
+    }
+
     const values = sources
       .map((source) => ({ label: source.label, value: source[field] }))
       .filter((source): source is { label: string; value: string } => Boolean(source.value));
     const baseline = expected ?? values[0]?.value;
     const mismatch = values.find((source) => baseline && source.value !== baseline);
 
-    if (mismatch || (expected && values.some((source) => source.value !== expected))) {
+    if (mismatch) {
       const details = values.map((source) => `${source.label}=${source.value}`).join(', ');
       throw new BadRequestException(
         `${context} ${field} 값이 일치하지 않습니다. expected=${baseline ?? '-'}, ${details}`,
@@ -1174,6 +1197,13 @@ export class ProdResultService {
     if (transactions.length === 0) return;
 
     for (const tx of transactions) {
+      this.assertTenantConsistency('제품 재고 역분개', {
+        expected: { company, plant },
+        sources: [
+          { label: 'productTx', company: tx.company, plant: tx.plant },
+        ],
+      });
+
       // (a) 원본 트랜잭션 → CANCELED
       await qr.manager.update(
         ProductTransaction,
@@ -1194,6 +1224,13 @@ export class ProdResultService {
         });
 
         if (stock) {
+          this.assertTenantConsistency('제품 재고 역분개', {
+            expected: { company, plant },
+            sources: [
+              { label: 'productTx', company: tx.company, plant: tx.plant },
+              { label: 'productStock', company: stock.company, plant: stock.plant },
+            ],
+          });
           const newQty = Math.max(stock.qty - tx.qty, 0);
           await qr.manager.update(ProductStock,
             {

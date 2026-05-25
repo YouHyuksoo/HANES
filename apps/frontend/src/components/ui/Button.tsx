@@ -16,6 +16,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  disabledReason?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
@@ -27,10 +28,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = 'primary',
       size = 'md',
       isLoading = false,
+      disabledReason,
       leftIcon,
       rightIcon,
       disabled,
       children,
+      title,
       ...props
     },
     ref
@@ -82,16 +85,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       lg: 'h-12 px-8 text-base',
     };
 
-    return (
+    const isActionDisabled = disabled || isLoading;
+    const buttonTitle = title ?? (isActionDisabled ? disabledReason : undefined);
+    const buttonNode = (
       <button
         ref={ref}
+        type="button"
         className={`
           ${baseStyles}
           ${variantStyles[variant]}
           ${sizeStyles[size]}
           ${className}
         `}
-        disabled={disabled || isLoading}
+        disabled={isActionDisabled}
+        title={buttonTitle}
+        aria-label={buttonTitle ?? undefined}
         {...props}
       >
         {isLoading ? (
@@ -103,6 +111,16 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {!isLoading && rightIcon}
       </button>
     );
+
+    if (isActionDisabled && buttonTitle) {
+      return (
+        <span title={buttonTitle} className="inline-flex">
+          {buttonNode}
+        </span>
+      );
+    }
+
+    return buttonNode;
   }
 );
 

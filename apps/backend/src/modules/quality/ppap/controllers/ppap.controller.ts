@@ -74,8 +74,12 @@ export class PpapController {
   })
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getCompletionRate(@Param('id') id: string) {
-    const data = await this.ppapService.getCompletionRate(id);
+  async getCompletionRate(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.ppapService.getCompletionRate(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -106,8 +110,12 @@ export class PpapController {
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: 'PPAP 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.ppapService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.ppapService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -138,11 +146,15 @@ export class PpapController {
     @Param('id') id: string,
     @Body() dto: UpdatePpapDto,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.ppapService.update(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, 'PPAP가 수정되었습니다.');
   }
@@ -155,8 +167,12 @@ export class PpapController {
   })
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') id: string) {
-    await this.ppapService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.ppapService.delete(id, company, plant);
     return ResponseUtil.success(null, 'PPAP가 삭제되었습니다.');
   }
 
@@ -172,10 +188,14 @@ export class PpapController {
   async submit(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.ppapService.submit(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, 'PPAP가 제출되었습니다.');
   }
@@ -190,10 +210,14 @@ export class PpapController {
   async approve(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.ppapService.approve(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, 'PPAP가 승인되었습니다.');
   }
@@ -209,11 +233,15 @@ export class PpapController {
     @Param('id') id: string,
     @Body('reason') reason: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.ppapService.reject(
       id,
       reason,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, 'PPAP가 반려되었습니다.');
   }
@@ -228,10 +256,14 @@ export class PpapController {
   async cancelApproval(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.ppapService.cancelApproval(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, 'PPAP 승인이 취소되었습니다.');
   }
@@ -246,10 +278,14 @@ export class PpapController {
   async cancelSubmit(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.ppapService.cancelSubmit(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, 'PPAP 제출이 취소되었습니다.');
   }

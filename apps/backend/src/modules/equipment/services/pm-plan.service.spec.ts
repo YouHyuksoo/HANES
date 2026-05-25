@@ -109,6 +109,17 @@ describe('PmPlanService', () => {
         expect.objectContaining({ planCode: 'PM-001', equipCode: 'EQ-001', company: 'CO', plant: 'P01' }),
       );
     });
+
+    it('should reject plan creation when equipment tenant differs from request tenant', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'OTHER', plant: 'P01' } as any);
+
+      await expect(
+        target.createPlan({ equipCode: 'EQ-001', planCode: 'PM-001', planName: 'PM' } as any, 'CO', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockPlanRepo.create).not.toHaveBeenCalled();
+      expect(mockPlanRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('createWorkOrder', () => {
@@ -133,6 +144,85 @@ describe('PmPlanService', () => {
         expect.objectContaining({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' }),
       );
     });
+
+    it('should reject work order creation when equipment tenant differs from request tenant', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'OTHER', plant: 'P01' } as any);
+
+      await expect(
+        target.createWorkOrder({ equipCode: 'EQ-001', scheduledDate: '2026-03-18' } as any, 'CO', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockWoRepo.create).not.toHaveBeenCalled();
+      expect(mockWoRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('generateWorkOrders', () => {
+    it('matches existing work orders by tenant as well as plan and date', async () => {
+      const plan = {
+        planCode: 'PM-001',
+        equipCode: 'EQ-001',
+        nextDueAt: new Date('2026-03-18T00:00:00Z'),
+        pmType: 'TIME_BASED',
+        company: 'CO',
+        plant: 'P01',
+      } as PmPlan;
+      mockPlanRepo.find.mockResolvedValueOnce([plan] as any);
+      const qb = mockQueryBuilder([]);
+      qb.andWhere = jest.fn().mockReturnThis();
+      mockPlanRepo.createQueryBuilder.mockReturnValue(qb);
+      mockWoRepo.find.mockResolvedValue([
+        {
+          pmPlanCode: 'PM-001',
+          scheduledDate: new Date('2026-03-18T00:00:00Z'),
+          company: 'OTHER',
+          plant: 'P01',
+        },
+      ] as any);
+      mockWoRepo.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any);
+      mockWoRepo.create.mockImplementation((value) => value as any);
+      mockWoRepo.save.mockResolvedValue({} as any);
+
+      const result = await target.generateWorkOrders(2026, 3);
+
+      expect(result.created).toBe(1);
+      expect(mockWoRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ pmPlanCode: 'PM-001', company: 'CO', plant: 'P01' }),
+      );
+    });
+
+    it('resets usage-based plan within the plan tenant only', async () => {
+      const plan = {
+        planCode: 'PM-001',
+        equipCode: 'EQ-001',
+        nextDueAt: new Date('2026-03-18T00:00:00Z'),
+        pmType: 'USAGE_BASED',
+        company: 'CO',
+        plant: 'P01',
+      } as PmPlan;
+      mockPlanRepo.find.mockResolvedValueOnce([] as any);
+      const qb = mockQueryBuilder([plan]);
+      qb.andWhere = jest.fn().mockReturnThis();
+      mockPlanRepo.createQueryBuilder.mockReturnValueOnce(qb).mockReturnValueOnce({
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any);
+      mockWoRepo.find.mockResolvedValue([] as any);
+      mockWoRepo.create.mockImplementation((value) => value as any);
+      mockWoRepo.save.mockResolvedValue({} as any);
+
+      await target.generateWorkOrders(2026, 3);
+
+      expect(mockPlanRepo.update).toHaveBeenCalledWith(
+        { planCode: 'PM-001', company: 'CO', plant: 'P01' },
+        { currentUsage: 0 },
+      );
+    });
   });
 
   describe('deletePlan', () => {
@@ -147,14 +237,14 @@ describe('PmPlanService', () => {
   describe('executeWorkOrder', () => {
     it('should throw when already COMPLETED', async () => {
       mockWoRepo.findOne.mockResolvedValue({ id: 1, status: 'COMPLETED' } as any);
-      await expect(target.executeWorkOrder(1, { overallResult: 'PASS' } as any)).rejects.toThrow(BadRequestException);
+      await expect(target.executeWorkOrder('1', { overallResult: 'PASS' } as any)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('cancelWorkOrder', () => {
     it('should throw when COMPLETED', async () => {
       mockWoRepo.findOne.mockResolvedValue({ id: 1, status: 'COMPLETED' } as any);
-      await expect(target.cancelWorkOrder(1)).rejects.toThrow(BadRequestException);
+      await expect(target.cancelWorkOrder('1')).rejects.toThrow(BadRequestException);
     });
   });
 });

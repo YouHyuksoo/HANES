@@ -44,16 +44,19 @@ export default function TabContextMenu({ tab, x, y, onClose }: TabContextMenuPro
     {
       label: t("tabs.close"),
       disabled: !!tab.pinned,
+      disabledReason: tab.pinned ? "현재 고정된 탭은 닫을 수 없습니다." : "",
       onClick: () => { removeTab(tab.id); onClose(); },
     },
     {
       label: t("tabs.closeOthers"),
       disabled: false,
+      disabledReason: "",
       onClick: () => { closeOtherTabs(tab.id); onClose(); },
     },
     {
       label: t("tabs.closeAll"),
       disabled: false,
+      disabledReason: "",
       onClick: () => { closeAllTabs(); onClose(); },
     },
   ];
@@ -70,6 +73,7 @@ export default function TabContextMenu({ tab, x, y, onClose }: TabContextMenuPro
           key={item.label}
           disabled={item.disabled}
           onClick={item.onClick}
+          title={item.disabled ? item.disabledReason : item.label}
           className="w-full text-left px-3 py-1.5 text-sm rounded-[var(--radius-sm)]
             transition-colors duration-150
             text-popover-foreground hover:bg-accent hover:text-accent-foreground

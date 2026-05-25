@@ -44,6 +44,7 @@ export class ProcedureExecutor implements IJobExecutor {
     if (execParams) {
       try {
         params = JSON.parse(execParams) as Record<string, unknown>;
+        params = this.normalizeTenantParams(params, job);
       } catch (error: unknown) {
         throw new BadRequestException(
           `execParams JSON 파싱 실패: ${(error as Error).message}`,
@@ -59,6 +60,15 @@ export class ProcedureExecutor implements IJobExecutor {
       success: true,
       affectedRows: rows.length,
       message: `프로시저 실행 완료: ${pkgName}.${procName} (${rows.length}행)`,
+    };
+  }
+
+  private normalizeTenantParams(params: Record<string, unknown>, job: SchedulerJob): Record<string, unknown> {
+    return {
+      ...params,
+      ...('company' in params ? { company: job.company } : {}),
+      ...('plant' in params ? { plant: job.plantCd } : {}),
+      ...('plantCd' in params ? { plantCd: job.plantCd } : {}),
     };
   }
 }

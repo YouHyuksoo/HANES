@@ -16,6 +16,7 @@ import { CustomsEntry } from '../../../entities/customs-entry.entity';
 import { CustomsLot } from '../../../entities/customs-lot.entity';
 import { CustomsUsageReport } from '../../../entities/customs-usage-report.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('CustomsService', () => {
   let target: CustomsService;
@@ -23,12 +24,14 @@ describe('CustomsService', () => {
   let mockLotRepo: DeepMocked<Repository<CustomsLot>>;
   let mockUsageRepo: DeepMocked<Repository<CustomsUsageReport>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockEntryRepo = createMock<Repository<CustomsEntry>>();
     mockLotRepo = createMock<Repository<CustomsLot>>();
     mockUsageRepo = createMock<Repository<CustomsUsageReport>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -37,6 +40,7 @@ describe('CustomsService', () => {
         { provide: getRepositoryToken(CustomsLot), useValue: mockLotRepo },
         { provide: getRepositoryToken(CustomsUsageReport), useValue: mockUsageRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -257,7 +261,7 @@ describe('CustomsService', () => {
       manager.create.mockImplementation((_entity: any, value: any) => value);
       manager.save.mockImplementation(async (value: any) => value);
       manager.update.mockResolvedValue({ affected: 1 });
-      mockDataSource.transaction.mockImplementation(async (callback: any) => callback(manager));
+      mockTx.run.mockImplementation(async (callback) => callback({ manager } as any));
 
       await target.createUsageReport({
         lotEntryNo: 'E001',

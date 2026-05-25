@@ -331,5 +331,77 @@ describe('AutoIssueService', () => {
         { status: 'DEPLETED' },
       );
     });
+
+    it('should reject auto issue when returned LOT tenant differs from job order tenant', async () => {
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE')
+        .mockResolvedValueOnce('BLOCK');
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
+      ]);
+
+      const mockLotQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'LOT-001', itemCode: 'RM-001', company: 'OTHER', plant: 'P1' },
+        ]),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+      mockQueryRunner.manager.find.mockResolvedValue([
+        { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 10, availableQty: 10, company: 'C1', plant: 'P1' },
+      ]);
+
+      await expect(
+        target.execute('ON_CREATE', '1', 'JO-001', 10, mockQueryRunner),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
+    it('should reject auto issue when returned stock tenant differs from job order tenant', async () => {
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE')
+        .mockResolvedValueOnce('BLOCK');
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
+      ]);
+
+      const mockLotQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'LOT-001', itemCode: 'RM-001', company: 'C1', plant: 'P1' },
+        ]),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+      mockQueryRunner.manager.find.mockResolvedValue([
+        { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 10, availableQty: 10, company: 'OTHER', plant: 'P1' },
+      ]);
+
+      await expect(
+        target.execute('ON_CREATE', '1', 'JO-001', 10, mockQueryRunner),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
   });
 });

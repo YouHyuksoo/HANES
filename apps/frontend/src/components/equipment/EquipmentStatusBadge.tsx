@@ -7,8 +7,9 @@
 import ComCodeBadge from '@/components/ui/ComCodeBadge';
 import { useComCodeLabel, useComCodeColor } from '@/hooks/useComCode';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import type { EquipStatusValue } from "@harness/shared";
 
-export type EquipStatus = 'NORMAL' | 'MAINT' | 'STOP';
+export type EquipStatus = EquipStatusValue;
 
 const iconMap: Record<EquipStatus, typeof CheckCircle> = {
   NORMAL: CheckCircle,

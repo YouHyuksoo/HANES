@@ -11,7 +11,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { ReceiveLabelService } from './receive-label.service';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
@@ -203,6 +203,24 @@ describe('ReceiveLabelService', () => {
       expect(mockPartRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
+    });
+
+    it('요청 테넌트와 입하건 테넌트가 다르면 라벨 생성을 차단한다', async () => {
+      mockArrivalRepo.findOne.mockResolvedValue({
+        arrivalNo: 'ARR-001',
+        seq: 1,
+        iqcStatus: 'PASS',
+        itemCode: 'ITEM-001',
+        company: 'OTHER',
+        plant: 'P1',
+      } as MatArrival);
+
+      await expect(
+        target.createMatLabels({ arrivalId: 'ARR-001', arrivalSeq: 1, qty: 1 } as any, 'C1', 'P1'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockTx.run).not.toHaveBeenCalled();
+      expect(mockNumbering.nextMatUid).not.toHaveBeenCalled();
     });
   });
 });

@@ -114,6 +114,13 @@ export default function PeriodicInspectPage() {
       setSaving(false);
     }
   }, [editingItem, form, fetchData]);
+  const saveDisabledReason = saving
+    ? t("common.saving")
+    : !form.equipCode
+      ? t("equipment.periodicInspect.equipCode")
+      : !form.inspectDate
+        ? t("equipment.periodicInspect.inspectDate")
+        : "";
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
@@ -238,10 +245,19 @@ export default function PeriodicInspectPage() {
             value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleSave} disabled={saving || !form.equipCode || !form.inspectDate}>
+            <Button
+              onClick={handleSave}
+              disabled={saving || !form.equipCode || !form.inspectDate}
+              title={saveDisabledReason || (editingItem ? t("common.edit") : t("common.register"))}
+            >
               {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
             </Button>
           </div>
+          {saveDisabledReason && (
+            <p className="text-xs text-text-muted mt-1" title={saveDisabledReason}>
+              {saveDisabledReason}
+            </p>
+          )}
         </div>
       </Modal>
       <ConfirmModal

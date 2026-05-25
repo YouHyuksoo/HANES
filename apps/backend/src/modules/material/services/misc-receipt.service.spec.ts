@@ -132,6 +132,37 @@ describe('MiscReceiptService', () => {
     expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
+  it('blocks create when existing stock belongs to a different tenant', async () => {
+    stockTxRepo.findOne.mockResolvedValue(null);
+
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH', company: 'HANES', plant: 'P01' } as Warehouse)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw', company: 'HANES', plant: 'P01' } as PartMaster)
+      .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' } as MatLot)
+      .mockResolvedValueOnce({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        reservedQty: 0,
+        availableQty: 10,
+        company: 'OTHER',
+        plant: 'P01',
+      } as MatStock);
+
+    await expect(
+      service.create({
+        warehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 5,
+      }, 'HANES', 'P01'),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(queryRunner.manager.update).not.toHaveBeenCalled();
+    expect(queryRunner.manager.save).not.toHaveBeenCalled();
+  });
+
   it('blocks create when matUid lot itemCode mismatches request itemCode', async () => {
     stockTxRepo.findOne.mockResolvedValue(null);
 

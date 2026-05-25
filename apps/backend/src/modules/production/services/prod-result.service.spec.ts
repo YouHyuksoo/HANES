@@ -220,6 +220,45 @@ describe('ProdResultService', () => {
     expect(result?.resultNo).toBe('PR-1');
   });
 
+  it('blocks create when the loaded job order belongs to a different tenant', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-1',
+      status: 'RUNNING',
+      planQty: 100,
+      company: 'OTHER',
+      plant: 'P1',
+    } as any);
+
+    await expect(service.create({ orderNo: 'JO-1', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
+  it('blocks create when the loaded equipment belongs to a different tenant', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-1',
+      status: 'RUNNING',
+      planQty: 100,
+      company: 'C1',
+      plant: 'P1',
+    } as any);
+
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+    equipBomRelRepo.find.mockResolvedValue([]);
+    equipMasterRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'OTHER', plant: 'P1' } as any);
+
+    await expect(service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
   it('validates equipment and equipment BOM within tenant when creating result', async () => {
     jobOrderRepo.findOne.mockResolvedValue({
       orderNo: 'JO-1',
@@ -255,6 +294,43 @@ describe('ProdResultService', () => {
     });
     expect(equipMasterRepo.findOne).toHaveBeenCalledWith({
       where: { equipCode: 'EQ-001', company: 'C1', plant: 'P1' },
+    });
+  });
+
+  it('validates worker within tenant when creating result', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-1',
+      status: 'RUNNING',
+      planQty: 100,
+      company: 'C1',
+      plant: 'P1',
+    } as any);
+    userRepo.findOne.mockResolvedValue({ email: 'worker@harness.com', company: 'C1', plant: 'P1' } as any);
+
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+
+    await service.create(
+      { orderNo: 'JO-1', workerId: 'worker@harness.com', goodQty: 1, defectQty: 0 } as any,
+      'C1',
+      'P1',
+    );
+
+    expect(userRepo.findOne).toHaveBeenCalledWith({
+      where: { email: 'worker@harness.com', company: 'C1', plant: 'P1' },
     });
   });
 

@@ -86,6 +86,28 @@ describe('ReworkService', () => {
       );
     });
 
+    it('should restore linked defect status within the rework tenant', async () => {
+      mockReworkRepo.findOne.mockResolvedValue({
+        reworkNo: 'RW-001',
+        status: 'REGISTERED',
+        defectLogId: '2026-04-08T00:00:00.000Z|1',
+        id: 1,
+        company: 'CO',
+        plant: 'P01',
+      } as any);
+      mockProcessRepo.find.mockResolvedValue([]);
+      mockInspectRepo.find.mockResolvedValue([]);
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockReworkRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await target.delete('RW-001', 'CO', 'P01');
+
+      expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
+        { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 1, company: 'CO', plant: 'P01' },
+        { status: 'WAIT' },
+      );
+    });
+
     it('should block delete when rework process has already progressed', async () => {
       mockReworkRepo.findOne.mockResolvedValue({
         reworkNo: 'RW-002',

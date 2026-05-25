@@ -39,7 +39,7 @@ export class ScriptExecutor implements IJobExecutor {
    * @returns 실행 결과
    */
   async execute(job: SchedulerJob): Promise<ExecutorResult> {
-    const { execTarget, execParams, timeoutSec } = job;
+    const { execTarget, execParams, timeoutSec, company, plantCd } = job;
 
     // 확장자 검증
     const ext = path.extname(execTarget).toLowerCase();
@@ -71,9 +71,16 @@ export class ScriptExecutor implements IJobExecutor {
     let args: string[] = [];
     if (execParams) {
       try {
-        const parsed = JSON.parse(execParams) as { args?: string[] };
-        if (parsed.args && Array.isArray(parsed.args)) {
-          args = parsed.args.map(String);
+        const parsed = JSON.parse(execParams);
+        const candidate = parsed as { args?: string[] };
+
+        if (Array.isArray(candidate)) {
+          args = candidate.map(String);
+        } else if (candidate.args && Array.isArray(candidate.args)) {
+          args = candidate.args.map(String);
+        } else if (parsed && typeof parsed === 'object') {
+          // args가 비어 있으면 빈 배열로 실행
+          args = [];
         }
       } catch (error: unknown) {
         throw new BadRequestException(
@@ -88,6 +95,12 @@ export class ScriptExecutor implements IJobExecutor {
       const { stdout, stderr } = await execFileAsync(realPath, args, {
         timeout: (timeoutSec || 300) * 1000,
         maxBuffer: 10 * 1024 * 1024, // 10MB
+        env: {
+          ...process.env,
+          SCHEDULER_COMPANY: company,
+          SCHEDULER_PLANT: plantCd,
+          SCHEDULER_PLANT_CD: plantCd,
+        },
       });
 
       const output = (stdout || '').trim();

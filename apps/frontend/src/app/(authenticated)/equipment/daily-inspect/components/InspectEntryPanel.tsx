@@ -157,6 +157,13 @@ export default function InspectEntryPanel({
   const allFilled =
     items.length > 0 && items.every((item) => results[item.seq]?.result !== null);
   const isNgOverall = ngCount > 0;
+  const saveDisabledReason = loading
+    ? t("common.loading")
+    : allFilled && !inspectorName
+      ? t("equipment.dailyInspect.inspectorRequired")
+      : !allFilled
+        ? "점검 항목을 모두 입력하세요."
+        : "";
 
   const handleSave = useCallback(async () => {
     if (!equipCode || !inspectorName || !allFilled) return;
@@ -226,6 +233,7 @@ export default function InspectEntryPanel({
           <button
             onClick={handleSave}
             disabled={!allFilled || !inspectorName || saving}
+            title={saving ? t("common.saving") : saveDisabledReason || t("common.save")}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
               isNgOverall
                 ? "bg-red-600 hover:bg-red-700 text-white"
@@ -238,6 +246,11 @@ export default function InspectEntryPanel({
               ? "💾 저장 (NG · 정비요청 등록)"
               : "💾 저장 (PASS)"}
           </button>
+          {saveDisabledReason ? (
+            <p className="text-[11px] text-text-muted mt-2" title={saveDisabledReason}>
+              {saveDisabledReason}
+            </p>
+          ) : null}
         </div>
 
         {/* 점검일자 / 점검자 / 시작시각 */}

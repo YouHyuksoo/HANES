@@ -3,26 +3,26 @@
  * @description 전역 타입 정의
  */
 
-import type { JobOrderSelectItem, JobOrderStatusValue } from "@harness/shared";
+import type {
+  ApiResponse as SharedApiResponse,
+  CommTypeValue,
+  DefectStatusValue,
+  EquipStatusValue,
+  EquipTypeValue,
+  JobOrderSelectItem,
+  JobOrderStatusValue,
+  PaginationParams as SharedPaginationParams,
+  IqcStatusValue,
+  UseYnValue,
+} from "@harness/shared";
 
 // ========================================
 // 공통 타입
 // ========================================
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  errorCode?: string;
-  timestamp?: string;
-}
+export type ApiResponse<T> = SharedApiResponse<T>;
 
-export interface PaginationParams {
-  page: number;
-  limit: number;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-}
+export type PaginationParams = SharedPaginationParams;
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -35,6 +35,8 @@ export interface PaginatedResponse<T> {
     hasPrev: boolean;
   };
 }
+
+export type UseYn = UseYnValue;
 
 // ========================================
 // 사용자 관련 타입
@@ -90,7 +92,7 @@ export interface MaterialLot {
 }
 
 /** IQC 상태 (자재 품질 검사 상태) */
-export type MaterialStatus = "PENDING" | "PASS" | "FAIL" | "HOLD";
+export type MaterialStatus = IqcStatusValue;
 
 // ========================================
 // 품질 관련 타입
@@ -119,11 +121,7 @@ export interface DefectLog {
   processCode: string;
 }
 
-export type DefectStatus =
-  | "PENDING"
-  | "REPAIRING"
-  | "COMPLETED"
-  | "SCRAPPED";
+export type DefectStatus = DefectStatusValue;
 
 // ========================================
 // 설비 관련 타입
@@ -144,27 +142,13 @@ export interface Equipment {
 }
 
 /** 설비 상태 */
-export type EquipmentStatus = "NORMAL" | "MAINT" | "STOP";
+export type EquipmentStatus = EquipStatusValue;
 
 /** 설비 유형 */
-export type EquipType =
-  | "AUTO_CRIMP"
-  | "SINGLE_CUT"
-  | "MULTI_CUT"
-  | "TWIST"
-  | "SOLDER"
-  | "HOUSING"
-  | "TESTER"
-  | "LABEL_PRINTER"
-  | "INSPECTION"
-  | "PACKING"
-  | "OTHER";
+export type EquipType = EquipTypeValue;
 
 /** 통신 방식 */
-export type CommType = "MQTT" | "SERIAL" | "TCP" | "OPC_UA" | "MODBUS";
-
-/** 사용 여부 */
-export type UseYn = "Y" | "N";
+export type CommType = CommTypeValue;
 
 // ========================================
 // 메뉴/네비게이션 타입
