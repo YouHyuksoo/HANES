@@ -17,7 +17,6 @@ import { ScanBarcodeDto, ScanRequestDto } from '../dto/job-material-lot.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
-@UseGuards(JwtAuthGuard)
 @ApiTags('생산관리 - 자재롯트 스캔')
 @Controller('production/job-orders/:orderNo/material-lots')
 export class JobMaterialLotController {

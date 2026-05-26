@@ -8,7 +8,6 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('Material - Receiving')
-@UseGuards(JwtAuthGuard)
 @Controller('material/receiving')
 export class ReceivingController {
   constructor(private readonly receivingService: ReceivingService) {}

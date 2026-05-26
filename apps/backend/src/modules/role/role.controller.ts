@@ -40,7 +40,6 @@ import { Company, Plant } from '../../common/decorators/tenant.decorator';
 
 @ApiTags('역할')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}

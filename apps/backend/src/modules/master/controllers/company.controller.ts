@@ -15,6 +15,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpS
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CompanyService } from '../services/company.service';
 import { CreateCompanyDto, UpdateCompanyDto, CompanyQueryDto } from '../dto/company.dto';
+import { Public } from '../../../common/decorators/public.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - 회사마스터')
@@ -23,6 +24,7 @@ export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
   /** 공개 API — 활성 회사 목록 (로그인 페이지용, 인증 불필요) */
+  @Public()
   @Get('public')
   @ApiOperation({ summary: '활성 회사 목록 (인증 불필요)' })
   async findPublic() {
@@ -31,6 +33,7 @@ export class CompanyController {
   }
 
   /** 공개 API — 회사별 사업장 목록 (로그인 페이지용, 인증 불필요) */
+  @Public()
   @Get('public/plants')
   @ApiOperation({ summary: '회사별 사업장 목록 (인증 불필요)' })
   @ApiQuery({ name: 'company', required: true, description: '회사 코드' })

@@ -40,7 +40,6 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('생산관리 - 수리관리')
-@UseGuards(JwtAuthGuard)
 @Controller('production/repairs')
 export class RepairController {
   constructor(private readonly repairService: RepairService) {}

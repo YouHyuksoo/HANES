@@ -64,7 +64,6 @@ import {
 } from '../dto/rework.dto';
 
 @ApiTags('품질관리 - 재작업')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/reworks')
 export class ReworkController {
   constructor(

@@ -49,7 +49,6 @@ import {
 } from '../dto/complaint.dto';
 
 @ApiTags('품질관리 - 고객클레임')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/complaints')
 export class ComplaintController {
   constructor(private readonly complaintService: ComplaintService) {}

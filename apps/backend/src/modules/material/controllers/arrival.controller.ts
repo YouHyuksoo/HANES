@@ -13,7 +13,6 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('Material - Arrival')
-@UseGuards(JwtAuthGuard)
 @Controller('material/arrivals')
 export class ArrivalController {
   constructor(private readonly arrivalService: ArrivalService) {}

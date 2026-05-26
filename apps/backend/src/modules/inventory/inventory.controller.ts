@@ -36,7 +36,6 @@ import {
   ProductStockQueryDto,
 } from './dto/product-inventory.dto';
 
-@UseGuards(JwtAuthGuard)
 @Controller('inventory')
 export class InventoryController {
   constructor(

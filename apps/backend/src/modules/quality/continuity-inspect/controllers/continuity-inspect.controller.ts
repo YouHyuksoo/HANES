@@ -33,7 +33,6 @@ import {
 import { ContinuityInspectService } from '../services/continuity-inspect.service';
 
 @ApiTags('Quality - Continuity Inspect')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/continuity-inspect')
 export class ContinuityInspectController {
   constructor(private readonly continuityInspectService: ContinuityInspectService) {}

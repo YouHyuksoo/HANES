@@ -65,7 +65,6 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('출하관리 - 출하')
-@UseGuards(JwtAuthGuard)
 @Controller('shipping/shipments')
 export class ShipmentController {
   constructor(private readonly shipmentService: ShipmentService) {}

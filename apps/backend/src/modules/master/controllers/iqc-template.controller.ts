@@ -20,7 +20,6 @@ import { CreateIqcTemplateDto } from '../dto/iqc-template.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - IQC 항목 템플릿')
-@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-templates')
 export class IqcTemplateController {
   constructor(private readonly service: IqcTemplateService) {}

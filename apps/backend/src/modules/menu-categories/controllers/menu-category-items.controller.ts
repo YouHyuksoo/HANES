@@ -10,7 +10,6 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 import { AuthenticatedRequest, JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('시스템 - 메뉴 배치')
-@UseGuards(JwtAuthGuard)
 @Controller('menu-category-items')
 export class MenuCategoryItemsController {
   constructor(private readonly items: MenuCategoryItemsService) {}

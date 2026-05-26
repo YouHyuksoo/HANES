@@ -57,7 +57,6 @@ import {
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 
 @ApiTags('품질관리 - 불량로그')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/defect-logs')
 export class DefectLogController {
   constructor(private readonly defectLogService: DefectLogService) {}

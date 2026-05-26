@@ -20,7 +20,6 @@ import {
 import { SampleInspectService } from '../services/sample-inspect.service';
 
 @ApiTags('Production - Sample Inspect')
-@UseGuards(JwtAuthGuard)
 @Controller('production/sample-inspect-input')
 export class SampleInspectController {
   constructor(private readonly sampleInspectService: SampleInspectService) {}

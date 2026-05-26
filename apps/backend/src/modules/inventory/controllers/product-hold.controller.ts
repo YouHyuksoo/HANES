@@ -7,7 +7,6 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard, AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('��ǰ������- ��ǰȦ��')
-@UseGuards(JwtAuthGuard)
 @Controller('inventory/product-hold')
 export class ProductHoldController {
   constructor(private readonly productHoldService: ProductHoldService) {}

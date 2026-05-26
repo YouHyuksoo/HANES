@@ -31,7 +31,6 @@ import { TraceService } from '../services/trace.service';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 
 @ApiTags('품질관리 - 추적성 조회')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/trace')
 export class TraceController {
   constructor(private readonly traceService: TraceService) {}

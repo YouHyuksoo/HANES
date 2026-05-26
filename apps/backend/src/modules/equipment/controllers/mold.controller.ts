@@ -26,7 +26,6 @@ import {
 } from '../dto/mold.dto';
 
 @ApiTags('Mold Management')
-@UseGuards(JwtAuthGuard)
 @Controller('equipment')
 export class MoldController {
   constructor(private readonly moldService: MoldService) {}

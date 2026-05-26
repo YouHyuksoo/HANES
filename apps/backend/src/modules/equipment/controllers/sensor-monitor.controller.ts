@@ -38,7 +38,6 @@ import {
 } from '../dto/sensor-monitor.dto';
 
 @ApiTags('설비관리 - 센서 모니터링')
-@UseGuards(JwtAuthGuard)
 @Controller('equipment')
 export class SensorMonitorController {
   constructor(private readonly sensorMonitorService: SensorMonitorService) {}

@@ -22,7 +22,6 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 import { SelfInspectService } from '../services/self-inspect.service';
 
 @ApiTags('Production - 자주검사')
-@UseGuards(JwtAuthGuard)
 @Controller('production/self-inspect')
 export class SelfInspectController {
   constructor(private readonly svc: SelfInspectService) {}

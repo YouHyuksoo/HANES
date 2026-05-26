@@ -19,6 +19,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './auth.dto';
+import { Public } from '../../common/decorators/public.decorator';
 import { getHeaderString } from '../../common/utils/header-value.util';
 
 @ApiTags('인증')
@@ -26,12 +27,14 @@ import { getHeaderString } from '../../common/utils/header-value.util';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('login')
   @ApiOperation({ summary: '로그인' })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
+  @Public()
   @Post('register')
   @ApiOperation({ summary: '회원가입' })
   async register(@Body() dto: RegisterDto) {

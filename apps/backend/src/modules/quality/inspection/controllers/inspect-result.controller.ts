@@ -52,7 +52,6 @@ import {
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 
 @ApiTags('품질관리 - 검사실적')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/inspect-results')
 export class InspectResultController {
   constructor(private readonly inspectResultService: InspectResultService) {}

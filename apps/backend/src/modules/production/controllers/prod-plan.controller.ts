@@ -54,7 +54,6 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('생산관리 - 월간생산계획')
-@UseGuards(JwtAuthGuard)
 @Controller('production/prod-plans')
 export class ProdPlanController {
   constructor(

@@ -19,7 +19,6 @@ import { ComCodeQueryDto, CreateComCodeDto, UpdateComCodeDto } from '../dto/com-
 import { ComCodeService } from '../services/com-code.service';
 
 @ApiTags('Master - ComCode')
-@UseGuards(JwtAuthGuard)
 @Controller('master/com-codes')
 export class ComCodeController {
   constructor(private readonly comCodeService: ComCodeService) {}

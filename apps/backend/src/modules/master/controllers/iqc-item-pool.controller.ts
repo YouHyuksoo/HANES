@@ -35,7 +35,6 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - IQC검사항목 풀')
-@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-item-pool')
 export class IqcItemPoolController {
   constructor(private readonly service: IqcItemPoolService) {}

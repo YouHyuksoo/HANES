@@ -11,7 +11,6 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 import { JwtAuthGuard, AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('재고관리- 제품 재고실사')
-@UseGuards(JwtAuthGuard)
 @Controller('inventory/product-physical-inv')
 export class ProductPhysicalInvController {
   constructor(private readonly productPhysicalInvService: ProductPhysicalInvService) {}

@@ -33,7 +33,6 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { SimulationResult } from '../dto/simulation.dto';
 
 @ApiTags('생산관리 - 시뮬레이션')
-@UseGuards(JwtAuthGuard)
 @Controller('production/prod-plans')
 export class SimulationController {
   constructor(private readonly simulationService: SimulationService) {}

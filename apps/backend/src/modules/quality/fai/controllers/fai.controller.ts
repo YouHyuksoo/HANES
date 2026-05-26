@@ -47,7 +47,6 @@ import {
 } from '../dto/fai.dto';
 
 @ApiTags('품질관리 - 초물검사')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/fai')
 export class FaiController {
   constructor(private readonly faiService: FaiService) {}

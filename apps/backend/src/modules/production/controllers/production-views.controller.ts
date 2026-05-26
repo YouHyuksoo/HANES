@@ -23,7 +23,6 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('생산관리 - 조회')
-@UseGuards(JwtAuthGuard)
 @Controller('production')
 export class ProductionViewsController {
   constructor(private readonly viewsService: ProductionViewsService) {}

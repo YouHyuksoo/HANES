@@ -19,7 +19,6 @@ import { CreateIqcItemDto, IqcItemQueryDto, UpdateIqcItemDto } from '../dto/iqc-
 import { IqcItemService } from '../services/iqc-item.service';
 
 @ApiTags('Master - IQC Items')
-@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-items')
 export class IqcItemController {
   constructor(private readonly iqcItemService: IqcItemService) {}

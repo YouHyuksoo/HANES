@@ -7,7 +7,6 @@ import { CreatePrdLabelsDto } from '../dto/product-label.dto';
 import { ProductLabelService } from '../services/product-label.service';
 
 @ApiTags('Production - Product Label')
-@UseGuards(JwtAuthGuard)
 @Controller('production/product-label')
 export class ProductLabelController {
   constructor(private readonly service: ProductLabelService) {}

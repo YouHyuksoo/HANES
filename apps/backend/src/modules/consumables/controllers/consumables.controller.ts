@@ -59,7 +59,6 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('소모품관리')
-@UseGuards(JwtAuthGuard)
 @Controller('consumables')
 export class ConsumablesController {
   constructor(private readonly consumablesService: ConsumablesService) {}

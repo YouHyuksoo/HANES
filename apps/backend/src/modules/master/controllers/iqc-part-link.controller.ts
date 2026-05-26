@@ -18,7 +18,6 @@ import { CreateIqcPartLinkDto, UpdateIqcPartLinkDto, IqcPartLinkQueryDto } from 
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - IQC연결관리')
-@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-part-links')
 export class IqcPartLinkController {
   constructor(private readonly iqcPartLinkService: IqcPartLinkService) {}

@@ -47,7 +47,6 @@ import {
 } from '../dto/change-order.dto';
 
 @ApiTags('품질관리 - 변경점관리')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/changes')
 export class ChangeOrderController {
   constructor(private readonly changeOrderService: ChangeOrderService) {}

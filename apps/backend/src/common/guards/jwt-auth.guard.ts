@@ -17,9 +17,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Reflector } from '@nestjs/core';
 import { Repository } from 'typeorm';
 import { Request } from 'express';
 import { User } from '../../entities/user.entity';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { getErrorMessage } from '../utils/error-message.util';
 import { RequestUser, RequestWithUser, setRequestUser } from '../utils/request-user.util';
 
@@ -38,9 +40,19 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly reflector: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // @Public() 데코레이터가 붙은 핸들러/컨트롤러는 인증 건너뜀
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractTokenFromHeader(request);
 

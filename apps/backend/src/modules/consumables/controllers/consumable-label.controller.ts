@@ -20,7 +20,6 @@ import {
 
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
-@UseGuards(JwtAuthGuard)
 @Controller('consumables/label')
 export class ConsumableLabelController {
   constructor(private readonly labelService: ConsumableLabelService) {}

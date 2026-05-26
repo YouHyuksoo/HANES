@@ -66,7 +66,6 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('설비관리 - 소모품(금형/지그/공구)')
-@UseGuards(JwtAuthGuard)
 @Controller('equipment/consumables')
 export class ConsumableController {
   constructor(private readonly consumableService: ConsumableService) {}

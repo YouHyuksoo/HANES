@@ -23,7 +23,6 @@ import { SchedulerLogFilterDto } from '../dto/scheduler-log.dto';
 
 @ApiTags('Scheduler')
 @Controller('scheduler/logs')
-@UseGuards(JwtAuthGuard)
 export class SchedulerLogController {
   constructor(private readonly logService: SchedulerLogService) {}
 

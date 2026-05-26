@@ -43,7 +43,6 @@ import {
 } from '../dto/control-plan.dto';
 
 @ApiTags('품질관리 - 관리계획서')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/control-plans')
 export class ControlPlanController {
   constructor(private readonly controlPlanService: ControlPlanService) {}

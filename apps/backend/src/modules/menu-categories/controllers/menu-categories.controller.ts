@@ -29,7 +29,6 @@ import { listKnownMenuCodes } from '../utils/menu-code-validator';
 import { AuthenticatedRequest, JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('시스템 - 메뉴 카테고리')
-@UseGuards(JwtAuthGuard)
 @Controller('menu-categories')
 export class MenuCategoriesController {
   constructor(

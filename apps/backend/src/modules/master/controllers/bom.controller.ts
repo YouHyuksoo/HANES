@@ -44,7 +44,6 @@ export class BomController {
   }
 
   @Get('export')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Export BOM to Excel' })
   @ApiQuery({ name: 'parentItemCode', required: false })
   async exportToExcel(
@@ -68,7 +67,6 @@ export class BomController {
   }
 
   @Post('upload')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Upload BOM from Excel' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
@@ -128,7 +126,6 @@ export class BomController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get BOM list' })
   async findAll(
     @Query() query: BomQueryDto,
@@ -147,7 +144,6 @@ export class BomController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create BOM row' })
   async create(

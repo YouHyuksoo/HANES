@@ -53,7 +53,6 @@ import {
 } from '../dto/capa.dto';
 
 @ApiTags('품질관리 - CAPA')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/capas')
 export class CapaController {
   constructor(private readonly capaService: CapaService) {}

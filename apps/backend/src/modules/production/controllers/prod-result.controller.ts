@@ -31,7 +31,6 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('Production - Prod Results')
-@UseGuards(JwtAuthGuard)
 @Controller('production/prod-results')
 export class ProdResultController {
   constructor(private readonly prodResultService: ProdResultService) {}

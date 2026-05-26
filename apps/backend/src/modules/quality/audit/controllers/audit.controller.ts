@@ -47,7 +47,6 @@ import {
 } from '../dto/audit.dto';
 
 @ApiTags('Internal Audit')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/audits')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}

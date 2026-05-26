@@ -46,7 +46,6 @@ import {
 } from '../dto/ppap.dto';
 
 @ApiTags('품질관리 - PPAP')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/ppap')
 export class PpapController {
   constructor(private readonly ppapService: PpapService) {}

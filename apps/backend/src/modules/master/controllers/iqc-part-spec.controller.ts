@@ -20,7 +20,6 @@ import { UpsertIqcPartSpecDto } from '../dto/iqc-part-spec.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - 품목별 IQC 기준')
-@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-part-specs')
 export class IqcPartSpecController {
   constructor(private readonly service: IqcPartSpecService) {}

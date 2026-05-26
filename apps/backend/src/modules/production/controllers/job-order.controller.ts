@@ -56,7 +56,6 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('생산관리 - 작업지시')
-@UseGuards(JwtAuthGuard)
 @Controller('production/job-orders')
 export class JobOrderController {
   constructor(private readonly jobOrderService: JobOrderService) {}

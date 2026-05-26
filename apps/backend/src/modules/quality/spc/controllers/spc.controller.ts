@@ -46,7 +46,6 @@ import {
 } from '../dto/spc.dto';
 
 @ApiTags('SPC')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/spc')
 export class SpcController {
   constructor(private readonly spcService: SpcService) {}

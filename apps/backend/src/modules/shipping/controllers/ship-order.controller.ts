@@ -35,7 +35,6 @@ import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dt
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('출하관리 - 출하지시')
-@UseGuards(JwtAuthGuard)
 @Controller('shipping/orders')
 export class ShipOrderController {
   constructor(private readonly shipOrderService: ShipOrderService) {}

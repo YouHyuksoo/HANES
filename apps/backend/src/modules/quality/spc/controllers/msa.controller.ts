@@ -51,7 +51,6 @@ import {
 } from '../dto/msa.dto';
 
 @ApiTags('품질관리 - MSA')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/msa')
 export class MsaController {
   constructor(private readonly msaService: MsaService) {}

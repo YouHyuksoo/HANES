@@ -20,7 +20,6 @@ const IQC_UPLOAD_DIR = join(process.cwd(), 'uploads', 'iqc-certs');
 if (!existsSync(IQC_UPLOAD_DIR)) mkdirSync(IQC_UPLOAD_DIR, { recursive: true });
 
 @ApiTags('자재관리 - IQC이력')
-@UseGuards(JwtAuthGuard)
 @Controller('material/iqc-history')
 export class IqcHistoryController {
   constructor(private readonly iqcHistoryService: IqcHistoryService) {}

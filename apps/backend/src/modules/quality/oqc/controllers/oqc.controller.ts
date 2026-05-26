@@ -24,7 +24,6 @@ import {
 import { OqcService } from '../services/oqc.service';
 
 @ApiTags('Quality - OQC')
-@UseGuards(JwtAuthGuard)
 @Controller('quality/oqc')
 export class OqcController {
   constructor(private readonly oqcService: OqcService) {}

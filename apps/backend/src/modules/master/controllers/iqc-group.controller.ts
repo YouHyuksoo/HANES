@@ -19,7 +19,6 @@ import { CreateIqcGroupDto, UpdateIqcGroupDto, IqcGroupQueryDto } from '../dto/i
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - IQC검사그룹')
-@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-groups')
 export class IqcGroupController {
   constructor(private readonly iqcGroupService: IqcGroupService) {}
