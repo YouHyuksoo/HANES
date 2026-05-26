@@ -77,7 +77,7 @@ describe('EquipBomService', () => {
   });
 
   describe('createItem', () => {
-    it('should create and return item', async () => {
+    it('should create and return item with tenant and default columns', async () => {
       // Arrange
       const dto = { bomItemCode: 'BI01', bomItemName: 'Bolt' } as any;
       const created = { ...dto } as EquipBomItem;
@@ -89,7 +89,19 @@ describe('EquipBomService', () => {
 
       // Assert
       expect(result).toEqual(created);
-      expect(mockBomItemRepo.create).toHaveBeenCalledWith({ ...dto, company: 'COMP', plant: 'PLT' });
+      // createItem은 dto 필드 외에 unit/useYn/stockQty/safetyStock 기본값을 채워 넣는다.
+      expect(mockBomItemRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bomItemCode: 'BI01',
+          bomItemName: 'Bolt',
+          unit: 'EA',
+          useYn: 'Y',
+          stockQty: 0,
+          safetyStock: 0,
+          company: 'COMP',
+          plant: 'PLT',
+        }),
+      );
     });
   });
 

@@ -123,7 +123,7 @@ export class InterfaceService {
     transDate.setHours(0, 0, 0, 0);
 
     return this.tx.run(async (queryRunner) => {
-      await queryRunner.manager.query('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
+      // SEQ는 Oracle 시퀀스(SEQ_INTER_LOGS)로 채번하므로 LOCK TABLE 불필요.
       const seq = await this.getNextSeq(queryRunner.manager);
 
       const log = queryRunner.manager.create(InterLog, {
@@ -161,11 +161,16 @@ export class InterfaceService {
       throw new BadRequestException('실패한 로그만 재시도할 수 있습니다.');
     }
 
-    // 재시도 횟수 증가
-    await this.interLogRepository.update(pk, {
-      status: 'RETRY',
-      retryCount: log.retryCount + 1,
-    });
+    // 재시도 횟수 원자적 증가 (read-modify-write lost update 회피)
+    await this.interLogRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        status: 'RETRY',
+        retryCount: () => '"RETRY_COUNT" + 1',
+      })
+      .where(pk)
+      .execute();
 
     // 실제 전송 로직 (타입별로 분기)
     try {

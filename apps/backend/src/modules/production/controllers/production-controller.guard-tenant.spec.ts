@@ -1,6 +1,5 @@
 ﻿import 'reflect-metadata';
 import { GUARDS_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { JobOrderController } from './job-order.controller';
 import { ProdPlanController } from './prod-plan.controller';
 import { ProdResultController } from './prod-result.controller';
@@ -108,9 +107,11 @@ const mockExecutionContext = {
 } as any;
 
 describe('Production Controllers Guard/Tenant Metadata', () => {
-  it.each(CASES)('applies JwtAuthGuard at controller level: $controller.name', ({ controller }) => {
+  // JwtAuthGuard가 APP_GUARD로 전역 등록되어 컨트롤러 레벨 @UseGuards 검증은 더 이상 의미가 없다.
+  // 회귀 방지 차원에서 컨트롤러에 별도의 가드 메타데이터가 끼어들지 않았는지만 확인한다.
+  it.each(CASES)('does not attach extra controller-level guards: $controller.name', ({ controller }) => {
     const guards = Reflect.getMetadata(GUARDS_METADATA, controller) ?? [];
-    expect(guards).toContain(JwtAuthGuard);
+    expect(guards).toEqual([]);
   });
 
   it.each(

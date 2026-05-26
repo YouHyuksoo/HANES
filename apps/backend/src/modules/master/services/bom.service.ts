@@ -107,22 +107,32 @@ export class BomService {
   }
 
   /** BOM에 등재된 모품목(부모품목) 목록 + 자품목 수 (단일 JOIN 쿼리) */
-  async findParents(search?: string, effectiveDate?: string) {
+  async findParents(search?: string, effectiveDate?: string, company?: string, plant?: string) {
     try {
       const params: unknown[] = [];
+      // 바인드는 SQL 등장 순서대로 push. LIKE 3개도 같은 값이지만 각각 별도 push.
+      const bind = (v: unknown): number => { params.push(v); return params.length; };
+
       let dateFilter = '';
       if (effectiveDate) {
-        params.push(effectiveDate, effectiveDate);
-        dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${params.length - 1}, 'YYYY-MM-DD'))
-          AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
+        const f = bind(effectiveDate);
+        const t = bind(effectiveDate);
+        dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${f}, 'YYYY-MM-DD'))
+          AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${t}, 'YYYY-MM-DD'))`;
       }
 
       let searchFilter = '';
       if (search) {
-        params.push(`%${search.toUpperCase()}%`);
-        const idx = params.length;
-        searchFilter = `AND (p.ITEM_CODE LIKE :${idx} OR p.ITEM_NAME LIKE :${idx} OR p.PART_NO LIKE :${idx})`;
+        const v = `%${search.toUpperCase()}%`;
+        const a = bind(v);
+        const b = bind(v);
+        const c = bind(v);
+        searchFilter = `AND (p.ITEM_CODE LIKE :${a} OR p.ITEM_NAME LIKE :${b} OR p.PART_NO LIKE :${c})`;
       }
+
+      let tenantFilter = '';
+      if (company) tenantFilter += ` AND b.COMPANY = :${bind(company)}`;
+      if (plant) tenantFilter += ` AND b.PLANT_CD = :${bind(plant)}`;
 
       const rows = await this.bomRepository.query<BomParentRow[]>(
         `SELECT p.ITEM_CODE   AS "itemCode",
@@ -137,7 +147,7 @@ export class BomService {
                 LISTAGG(DISTINCT b.REVISION, ',') WITHIN GROUP (ORDER BY b.REVISION) AS "revisions"
            FROM BOM_MASTERS b
            JOIN ITEM_MASTERS p ON p.ITEM_CODE = b.PARENT_ITEM_CODE
-          WHERE b.USE_YN = 'Y' ${dateFilter} ${searchFilter}
+          WHERE b.USE_YN = 'Y' ${dateFilter} ${searchFilter} ${tenantFilter}
           GROUP BY p.ITEM_CODE, p.ITEM_NAME, p.PART_NO, p.ITEM_TYPE,
                    p.SPEC, p.UNIT, p.CUSTOMER, p.REMARK
           ORDER BY p.ITEM_CODE ASC`,
@@ -217,13 +227,21 @@ export class BomService {
   }
 
   async findByParentId(parentItemCode: string, effectiveDate?: string, company?: string, plant?: string) {
-    const params: unknown[] = [parentItemCode];
+    const params: unknown[] = [];
+    const bind = (v: unknown): number => { params.push(v); return params.length; };
+
+    // WHERE 등장 순서: parent → date → tenant
+    const parentIdx = bind(parentItemCode);
     let dateFilter = '';
     if (effectiveDate) {
-      params.push(effectiveDate, effectiveDate);
-      dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${params.length - 1}, 'YYYY-MM-DD'))
-        AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
+      const f = bind(effectiveDate);
+      const t = bind(effectiveDate);
+      dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${f}, 'YYYY-MM-DD'))
+        AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${t}, 'YYYY-MM-DD'))`;
     }
+    let tenantFilter = '';
+    if (company) tenantFilter += ` AND b.COMPANY = :${bind(company)}`;
+    if (plant) tenantFilter += ` AND b.PLANT_CD = :${bind(plant)}`;
 
     const rows = await this.bomRepository.query<BomChildRow[]>(
       `SELECT b.PARENT_ITEM_CODE AS "parentItemCode",
@@ -240,9 +258,10 @@ export class BomService {
               b.USE_YN           AS "useYn",
               b.REMARK           AS "remark"
          FROM BOM_MASTERS b
-        WHERE b.PARENT_ITEM_CODE = :1
+        WHERE b.PARENT_ITEM_CODE = :${parentIdx}
           AND b.USE_YN = 'Y'
           ${dateFilter}
+          ${tenantFilter}
         ORDER BY b.SEQ ASC`,
       params,
     );
@@ -271,33 +290,42 @@ export class BomService {
   async findHierarchy(parentItemCode: string, depth: number = 3, effectiveDate?: string, company?: string, plant?: string) {
     const safeDepth = Math.min(Math.max(Math.floor(Number(depth) || 3), 1), 10);
     const params: string[] = [];
+    // 바인드는 SQL 등장 순서대로 push (oracledb positional). 각 절마다 별도 바인드.
+    const bind = (v: string): number => {
+      params.push(v);
+      return params.length;
+    };
 
+    // 1) WHERE 절 날짜 필터
     let dateFilter = '';
     if (effectiveDate) {
-      params.push(effectiveDate, effectiveDate);
-      dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${params.length - 1}, 'YYYY-MM-DD'))
-         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
+      const f = bind(effectiveDate);
+      const t = bind(effectiveDate);
+      dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${f}, 'YYYY-MM-DD'))
+         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${t}, 'YYYY-MM-DD'))`;
     }
 
-    const parentIdx = params.length + 1;
-    params.push(parentItemCode);
+    // 2) WHERE 절 테넌트 필터
+    let tenantFilterWhere = '';
+    if (company) tenantFilterWhere += ` AND b.COMPANY = :${bind(company)}`;
+    if (plant) tenantFilterWhere += ` AND b.PLANT_CD = :${bind(plant)}`;
 
-    let tenantFilter = '';
-    if (company) {
-      params.push(company);
-      tenantFilter += ` AND b.COMPANY = :${params.length}`;
-    }
-    if (plant) {
-      params.push(plant);
-      tenantFilter += ` AND b.PLANT = :${params.length}`;
-    }
+    // 3) START WITH
+    const parentIdx = bind(parentItemCode);
 
+    // 4) CONNECT BY 절 날짜 필터
     let dateFilterConnect = '';
     if (effectiveDate) {
-      params.push(effectiveDate, effectiveDate);
-      dateFilterConnect = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${params.length - 1}, 'YYYY-MM-DD'))
-         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
+      const f = bind(effectiveDate);
+      const t = bind(effectiveDate);
+      dateFilterConnect = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${f}, 'YYYY-MM-DD'))
+         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${t}, 'YYYY-MM-DD'))`;
     }
+
+    // 5) CONNECT BY 절 테넌트 필터
+    let tenantFilterConnect = '';
+    if (company) tenantFilterConnect += ` AND b.COMPANY = :${bind(company)}`;
+    if (plant) tenantFilterConnect += ` AND b.PLANT_CD = :${bind(plant)}`;
 
     const query = `
       SELECT
@@ -322,13 +350,13 @@ export class BomService {
       JOIN ITEM_MASTERS p ON b.CHILD_ITEM_CODE = p.ITEM_CODE
       WHERE b.USE_YN = 'Y'
         ${dateFilter}
-        ${tenantFilter}
+        ${tenantFilterWhere}
       START WITH b.PARENT_ITEM_CODE = :${parentIdx}
       CONNECT BY PRIOR b.CHILD_ITEM_CODE = b.PARENT_ITEM_CODE
         AND LEVEL <= ${safeDepth}
         AND b.USE_YN = 'Y'
         ${dateFilterConnect}
-        ${tenantFilter}
+        ${tenantFilterConnect}
       ORDER SIBLINGS BY b.SEQ ASC
     `;
 

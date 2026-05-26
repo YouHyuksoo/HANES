@@ -269,4 +269,82 @@ describe('BomService', () => {
       });
     });
   });
+
+  // ─── findHierarchy: bind helper 회귀 방지 ───
+  describe('findHierarchy', () => {
+    /**
+     * findHierarchy의 bind() 헬퍼는 호출 순서대로 :N 위치 바인드를 채운다.
+     * SQL의 절 추가/위치 변경 시 묵시적으로 깨질 수 있으므로 다음을 보장한다:
+     *  - params 길이 = SQL에 나타난 unique :N 의 개수
+     *  - 각 :N 의 값이 절의 의미와 일치 (예: START WITH 바인드 = parentItemCode)
+     *  - PLANT_CD 컬럼명 (PLANT 아님) 사용
+     */
+    it('should bind parentItemCode to START WITH and use PLANT_CD column', async () => {
+      mockBomRepo.query.mockResolvedValue([]);
+
+      await target.findHierarchy('P01', 3, undefined, 'C1', 'PL1');
+
+      const [sql, params] = mockBomRepo.query.mock.calls[0] as [string, string[]];
+
+      // PLANT_CD가 정확히 사용되어야 한다 (예전 b.PLANT 로 오타냈던 회귀 방지)
+      expect(sql).toContain('b.PLANT_CD');
+      expect(sql).not.toMatch(/b\.PLANT(?!\s*_)/);
+
+      // SQL에 등장한 모든 :N 의 N이 1..params.length 범위 안이고 빠짐 없어야 한다
+      const bindNumbers = new Set<number>();
+      for (const m of sql.matchAll(/:(\d+)/g)) {
+        bindNumbers.add(Number(m[1]));
+      }
+      const sortedBinds = [...bindNumbers].sort((a, b) => a - b);
+      for (let i = 0; i < sortedBinds.length; i++) {
+        expect(sortedBinds[i]).toBe(i + 1);
+      }
+      expect(sortedBinds.length).toBe(params.length);
+
+      // START WITH :N 자리에 들어간 바인드 N이 parentItemCode 값과 매칭되는지
+      const startWithMatch = sql.match(/START\s+WITH\s+b\.PARENT_ITEM_CODE\s*=\s*:(\d+)/i);
+      expect(startWithMatch).not.toBeNull();
+      const startWithIdx = Number(startWithMatch![1]);
+      expect(params[startWithIdx - 1]).toBe('P01');
+
+      // company / plant 값이 params에 포함되어야 한다
+      expect(params).toContain('C1');
+      expect(params).toContain('PL1');
+    });
+
+    it('should bind effectiveDate twice in WHERE and twice in CONNECT BY', async () => {
+      mockBomRepo.query.mockResolvedValue([]);
+
+      await target.findHierarchy('P01', 3, '2026-05-26');
+
+      const [, params] = mockBomRepo.query.mock.calls[0] as [string, string[]];
+
+      // WHERE 2개 + CONNECT BY 2개 = effectiveDate 4번, parentItemCode 1번
+      const dateCount = params.filter((p) => p === '2026-05-26').length;
+      expect(dateCount).toBe(4);
+      expect(params).toContain('P01');
+      expect(params.length).toBe(5);
+    });
+
+    it('should keep bind positions stable when only plant is provided (no company, no date)', async () => {
+      // 조건부 절이 모두 빠졌을 때도 :N 번호가 1부터 순차여야 한다 (헬퍼 회귀 방지)
+      mockBomRepo.query.mockResolvedValue([]);
+
+      await target.findHierarchy('P01', 3, undefined, undefined, 'PL1');
+
+      const [sql, params] = mockBomRepo.query.mock.calls[0] as [string, string[]];
+
+      const bindNumbers = [...new Set(
+        [...sql.matchAll(/:(\d+)/g)].map((m) => Number(m[1])),
+      )].sort((a, b) => a - b);
+      for (let i = 0; i < bindNumbers.length; i++) {
+        expect(bindNumbers[i]).toBe(i + 1);
+      }
+      expect(bindNumbers.length).toBe(params.length);
+
+      // WHERE + CONNECT BY 각각의 PLANT_CD 바인드 + parentItemCode = 3
+      expect(params).toEqual(expect.arrayContaining(['PL1', 'P01']));
+      expect(params.length).toBe(3);
+    });
+  });
 });

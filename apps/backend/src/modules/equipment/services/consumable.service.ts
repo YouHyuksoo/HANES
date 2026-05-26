@@ -444,23 +444,41 @@ export class ConsumableService {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const logSeq = await this.getNextLogSeq();
 
-    const log = this.consumableLogRepository.create({
-      transDate: today,
-      seq: logSeq,
-      consumableCode: dto.consumableId,
-      logType: dto.logType,
-      qty: dto.qty ?? 1,
-      workerId: dto.workerId,
-      remark: dto.remark,
-      company: company ?? consumable.company ?? null,
-      plant: plant ?? consumable.plant ?? null,
+    // SEQ 채번 → 로그 INSERT → (SCRAP이면) 마스터 useYn='N' 까지를 하나의 트랜잭션에 묶는다.
+    // SCRAP 흐름에서 로그만 남고 마스터 비활성화가 누락되는 partial commit 방지.
+    const saved = await this.tx.run(async (queryRunner) => {
+      const logSeq = await this.getNextLogSeq(queryRunner);
+
+      const log = queryRunner.manager.create(ConsumableLog, {
+        transDate: today,
+        seq: logSeq,
+        consumableCode: dto.consumableId,
+        logType: dto.logType,
+        qty: dto.qty ?? 1,
+        workerId: dto.workerId,
+        remark: dto.remark,
+        company: company ?? consumable.company ?? null,
+        plant: plant ?? consumable.plant ?? null,
+      });
+      const persisted = await queryRunner.manager.save(ConsumableLog, log);
+
+      if (dto.logType === 'SCRAP') {
+        await queryRunner.manager.update(
+          ConsumableMaster,
+          { consumableCode: dto.consumableId, ...this.tenantWhere(company, plant) },
+          { useYn: 'N' },
+        );
+      }
+
+      return persisted;
     });
 
-    const saved = await this.consumableLogRepository.save(log);
+    if (dto.logType === 'SCRAP') {
+      this.logger.log(`소모품 폐기 처리: ${consumable.consumableCode}`);
+    }
 
-    // Get worker info
+    // 작업자 표시용 정보는 트랜잭션 밖에서 조회해도 무방.
     let workerInfo = null;
     if (dto.workerId) {
       const worker = await this.userRepository.findOne({
@@ -468,16 +486,6 @@ export class ConsumableService {
         select: ['email', 'name', 'empNo'],
       });
       workerInfo = worker || null;
-    }
-
-    // SCRAP인 경우 소모품 비활성화
-    if (dto.logType === 'SCRAP') {
-      await this.consumableMasterRepository.update(
-        { consumableCode: dto.consumableId, ...this.tenantWhere(company, plant) },
-        { useYn: 'N' },
-      );
-
-      this.logger.log(`소모품 폐기 처리: ${consumable.consumableCode}`);
     }
 
     return {

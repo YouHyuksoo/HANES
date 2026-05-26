@@ -22,6 +22,9 @@ const createContext = (method: string, headers: Record<string, string> = {}): Ex
     switchToHttp: () => ({
       getRequest: () => request,
     }),
+    // Reflector.getAllAndOverride 호출에 필요한 핸들러/클래스 참조
+    getHandler: () => undefined,
+    getClass: () => undefined,
   } as unknown as ExecutionContext;
 };
 
@@ -29,10 +32,15 @@ const createGuard = (user: UserRecord) => {
   const repository = {
     findOne: jest.fn().mockResolvedValue(user),
   };
+  // @Public() 인식용 Reflector — 기본 false (Public 아님)로 답한다.
+  const reflector = {
+    getAllAndOverride: jest.fn().mockReturnValue(false),
+  };
 
   return {
-    guard: new JwtAuthGuard(repository as any),
+    guard: new JwtAuthGuard(repository as any, reflector as any),
     repository,
+    reflector,
   };
 };
 

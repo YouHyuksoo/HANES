@@ -38,21 +38,57 @@ describe('Equipment ConsumableService', () => {
     );
   });
 
-  it('allocates CONSUMABLE_LOGS seq from Oracle sequence', async () => {
+  it('allocates CONSUMABLE_LOGS seq from Oracle sequence inside a transaction', async () => {
+    // createLog는 SEQ 채번 + 로그 INSERT + (SCRAP이면) 마스터 UPDATE를 단일 tx로 묶어야 한다.
     masterRepo.findOne.mockResolvedValue({
       consumableCode: 'CON-1',
       company: 'COMP',
       plant: 'PLANT',
     } as ConsumableMaster);
-    logRepo.create.mockImplementation((payload) => payload as ConsumableLog);
-    logRepo.save.mockImplementation(async (payload) => payload as ConsumableLog);
-    (dataSource.manager.query as jest.Mock).mockResolvedValue([{ nextSeq: 1 }]);
+    const manager = {
+      create: jest.fn().mockImplementation((_entity: unknown, payload: unknown) => payload),
+      save: jest.fn().mockImplementation(async (_entity: unknown, payload: unknown) => payload),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+      query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
+    };
+    tx.run.mockImplementationOnce(async (callback) => callback({ manager } as any));
 
     await service.createLog({ consumableId: 'CON-1', logType: 'IN', qty: 1 } as any, 'COMP', 'PLANT');
 
-    expect(dataSource.manager.query).toHaveBeenCalledWith(
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(manager.query).toHaveBeenCalledWith(
       'SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
     );
+  });
+
+  it('SCRAP 로그는 같은 트랜잭션에서 마스터 useYn을 N으로 업데이트해야 한다', async () => {
+    // partial commit 회귀 방지: 로그만 남고 마스터 폐기 누락되는 시나리오 차단.
+    masterRepo.findOne.mockResolvedValue({
+      consumableCode: 'CON-1',
+      company: 'COMP',
+      plant: 'PLANT',
+    } as ConsumableMaster);
+    const manager = {
+      create: jest.fn().mockImplementation((_entity: unknown, payload: unknown) => payload),
+      save: jest.fn().mockImplementation(async (_entity: unknown, payload: unknown) => payload),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+      query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
+    };
+    tx.run.mockImplementationOnce(async (callback) => callback({ manager } as any));
+
+    await service.createLog(
+      { consumableId: 'CON-1', logType: 'SCRAP', qty: 1 } as any,
+      'COMP',
+      'PLANT',
+    );
+
+    expect(manager.update).toHaveBeenCalledWith(
+      ConsumableMaster,
+      expect.objectContaining({ consumableCode: 'CON-1', company: 'COMP', plant: 'PLANT' }),
+      { useYn: 'N' },
+    );
+    // 마스터 update는 트랜잭션 안의 manager로만 호출되어야 한다.
+    expect(masterRepo.update).not.toHaveBeenCalled();
   });
 
   it('allocates CONSUMABLE_MOUNT_LOGS seq from Oracle sequence', async () => {

@@ -38,8 +38,10 @@ export class BomController {
   async findParents(
     @Query('search') search?: string,
     @Query('effectiveDate') effectiveDate?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.bomService.findParents(search, effectiveDate);
+    const data = await this.bomService.findParents(search, effectiveDate, company, plant);
     return ResponseUtil.success(data);
   }
 

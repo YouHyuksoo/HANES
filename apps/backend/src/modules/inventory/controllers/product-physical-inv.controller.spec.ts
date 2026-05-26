@@ -1,9 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable, INestApplication } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { ProductPhysicalInvController } from './product-physical-inv.controller';
 import { ProductPhysicalInvService } from '../services/product-physical-inv.service';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @Injectable()
 class MockJwtAuthGuard implements CanActivate {
@@ -31,11 +31,11 @@ describe('ProductPhysicalInvController (HTTP)', () => {
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [ProductPhysicalInvController],
-      providers: [{ provide: ProductPhysicalInvService, useValue: serviceMock }],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useClass(MockJwtAuthGuard)
-      .compile();
+      providers: [
+        { provide: ProductPhysicalInvService, useValue: serviceMock },
+        { provide: APP_GUARD, useClass: MockJwtAuthGuard },
+      ],
+    }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();

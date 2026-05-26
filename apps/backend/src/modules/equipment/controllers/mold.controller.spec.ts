@@ -1,9 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable, INestApplication, NotFoundException } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { MoldController } from './mold.controller';
 import { MoldService } from '../services/mold.service';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @Injectable()
 class MockJwtAuthGuard implements CanActivate {
@@ -34,15 +34,14 @@ describe('MoldController (HTTP)', () => {
       retire: jest.fn(),
     };
 
+    // JwtAuthGuard는 APP_GUARD로 전역 등록되었으므로 같은 토큰으로 mock을 끼워 넣는다.
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [MoldController],
       providers: [
         { provide: MoldService, useValue: moldServiceMock },
+        { provide: APP_GUARD, useClass: MockJwtAuthGuard },
       ],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useClass(MockJwtAuthGuard)
-      .compile();
+    }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();

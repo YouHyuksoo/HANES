@@ -114,14 +114,11 @@ describe('InterfaceService', () => {
 
   // ─── createLog ───
   describe('createLog', () => {
-    it('should create log with PENDING status inside a locked transaction', async () => {
+    it('should create log with PENDING status inside a transaction without locking the table', async () => {
       // Arrange
       const log = { transDate: new Date(), seq: 1, status: 'PENDING' } as InterLog;
       const manager = {
-        query: jest
-          .fn()
-          .mockResolvedValueOnce(undefined)
-          .mockResolvedValueOnce([{ nextSeq: 1 }]),
+        query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         create: jest.fn().mockReturnValue(log),
         save: jest.fn().mockResolvedValue(log),
       };
@@ -136,9 +133,11 @@ describe('InterfaceService', () => {
       // Assert
       expect(result.status).toBe('PENDING');
       expect(mockTx.run).toHaveBeenCalledTimes(1);
-      expect(manager.query).toHaveBeenCalledWith('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
       expect(manager.query).toHaveBeenCalledWith(
         'SELECT SEQ_INTER_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
+      );
+      expect(manager.query).not.toHaveBeenCalledWith(
+        expect.stringContaining('LOCK TABLE'),
       );
       expect(manager.create).toHaveBeenCalledWith(InterLog, expect.objectContaining({ seq: 1, status: 'PENDING' }));
       expect(manager.save).toHaveBeenCalledWith(InterLog, log);
@@ -148,10 +147,7 @@ describe('InterfaceService', () => {
     it('should persist tenant columns on new logs', async () => {
       const log = { transDate: new Date(), seq: 1, status: 'PENDING', company: 'C1', plant: 'P1' } as InterLog;
       const manager = {
-        query: jest
-          .fn()
-          .mockResolvedValueOnce(undefined)
-          .mockResolvedValueOnce([{ nextSeq: 1 }]),
+        query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         create: jest.fn().mockReturnValue(log),
         save: jest.fn().mockResolvedValue(log),
       };
@@ -171,10 +167,7 @@ describe('InterfaceService', () => {
     it('should allocate INTER_LOGS seq from Oracle sequence', async () => {
       const log = { transDate: new Date(), seq: 1, status: 'PENDING', company: 'C1', plant: 'P1' } as InterLog;
       const manager = {
-        query: jest
-          .fn()
-          .mockResolvedValueOnce(undefined)
-          .mockResolvedValueOnce([{ nextSeq: 1 }]),
+        query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         create: jest.fn().mockReturnValue(log),
         save: jest.fn().mockResolvedValue(log),
       };
@@ -246,16 +239,69 @@ describe('InterfaceService', () => {
       mockLogRepo.findOne.mockResolvedValue(log);
       mockLogRepo.update.mockResolvedValue({ affected: 1 } as any);
 
+      // queryBuilder chain을 명시적으로 mock — DeepMocked는 호출마다 새 인스턴스를 줄 수 있다.
+      const qb = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+
       await target.retryLog(transDate, 1, 'C1', 'P1');
 
-      expect(mockLogRepo.update).toHaveBeenCalledWith(
-        { transDate, seq: 1, company: 'C1', plant: 'P1' },
-        expect.objectContaining({ status: 'RETRY', retryCount: 1 }),
+      // RETRY 단계: queryBuilder로 원자적 retryCount 증가
+      expect(qb.update).toHaveBeenCalled();
+      expect(qb.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'RETRY',
+          retryCount: expect.any(Function),
+        }),
       );
+      // set() 인자의 retryCount 함수가 RAW SQL fragment를 반환하는지 검증
+      const setArg = qb.set.mock.calls[0][0] as { retryCount: () => string };
+      expect(setArg.retryCount()).toBe('"RETRY_COUNT" + 1');
+      expect(qb.where).toHaveBeenCalledWith({
+        transDate,
+        seq: 1,
+        company: 'C1',
+        plant: 'P1',
+      });
+
+      // SUCCESS 단계: 기존대로 repository.update
       expect(mockLogRepo.update).toHaveBeenCalledWith(
         { transDate, seq: 1, company: 'C1', plant: 'P1' },
         expect.objectContaining({ status: 'SUCCESS' }),
       );
+    });
+
+    it('should increment retryCount atomically via raw SQL fragment', async () => {
+      // race condition 회귀 방지: retryCount는 read-modify-write 가 아닌 컬럼 증가식이어야 한다.
+      const transDate = new Date('2026-05-23');
+      const log = {
+        transDate,
+        seq: 1,
+        status: 'FAIL',
+        retryCount: 5,
+        direction: 'IN',
+      } as InterLog;
+      mockLogRepo.findOne.mockResolvedValue(log);
+
+      const qb = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.retryLog(transDate, 1);
+
+      const setArg = qb.set.mock.calls[0][0] as { retryCount: () => string };
+      // log.retryCount + 1 같은 JS 리터럴이 아닌, DB 컬럼 식이어야 함
+      expect(setArg.retryCount).toBeInstanceOf(Function);
+      expect(setArg.retryCount()).not.toBe(6);
+      expect(setArg.retryCount()).toMatch(/RETRY_COUNT/);
     });
   });
 
