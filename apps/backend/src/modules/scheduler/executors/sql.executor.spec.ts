@@ -58,4 +58,58 @@ describe('SqlExecutor', () => {
       { status: 'SUCCESS', company: 'C1', plant: 'P1' },
     );
   });
+
+  it('should reject non-sequential positional binds', async () => {
+    await expect(
+      executor.execute({
+        ...baseJob,
+        execTarget: 'SELECT * FROM INTER_LOGS WHERE COMPANY = :1 AND STATUS = :3',
+        execParams: JSON.stringify({ company: 'C1', status: 'SUCCESS' }),
+      }),
+    ).rejects.toThrow('1부터 순차');
+
+    expect(dataSource.query).not.toHaveBeenCalled();
+  });
+
+  it('should reject positional binds with leading zeros', async () => {
+    // :01과 :1은 oracledb에서 별개 바인드. Number 기반 dedup의 false negative 회귀 방지.
+    await expect(
+      executor.execute({
+        ...baseJob,
+        execTarget: 'SELECT * FROM INTER_LOGS WHERE COMPANY = :01 AND STATUS = :1',
+        execParams: JSON.stringify({ company: 'C1', status: 'SUCCESS' }),
+      }),
+    ).rejects.toThrow('1부터 순차');
+
+    expect(dataSource.query).not.toHaveBeenCalled();
+  });
+
+  it('should ignore :숫자 patterns inside string literals when validating positional binds', async () => {
+    // 리터럴 '12:30:45' 안의 :30 / :45 가 매칭되어 정상 SQL이 거부되던 false positive 회귀 방지.
+    await executor.execute({
+      ...baseJob,
+      execTarget:
+        "SELECT * FROM INTER_LOGS WHERE COMPANY = :1 AND STATUS = :2 AND MEMO = '12:30:45'",
+      execParams: JSON.stringify({ company: 'C1', status: 'SUCCESS' }),
+    });
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE COMPANY = :1 AND STATUS = :2'),
+      ['C1', 'SUCCESS'],
+    );
+  });
+
+  it('should ignore :숫자 patterns inside block comments when validating positional binds', async () => {
+    await executor.execute({
+      ...baseJob,
+      execTarget:
+        'SELECT /* tuning ref :99 */ * FROM INTER_LOGS WHERE COMPANY = :1 AND STATUS = :2',
+      execParams: JSON.stringify({ company: 'C1', status: 'SUCCESS' }),
+    });
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE COMPANY = :1 AND STATUS = :2'),
+      ['C1', 'SUCCESS'],
+    );
+  });
 });

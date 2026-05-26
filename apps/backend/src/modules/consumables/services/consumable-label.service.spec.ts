@@ -186,6 +186,32 @@ describe('ConsumableLabelService', () => {
         target.confirmReceiving({ conUid: 'CON001' } as any),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should allocate CONSUMABLE_LOGS seq from Oracle sequence', async () => {
+      const stock = {
+        conUid: 'CON001',
+        status: 'PENDING',
+        consumableCode: 'C001',
+      } as ConsumableStock;
+      mockStockRepo.findOne.mockResolvedValue(stock);
+
+      const mockQr = {
+        manager: {
+          save: jest.fn().mockResolvedValue(stock),
+          increment: jest.fn().mockResolvedValue({} as any),
+          create: jest.fn().mockReturnValue({} as any),
+          query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
+        },
+      };
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
+      mockMasterRepo.findOne.mockResolvedValue({ consumableCode: 'C001', consumableName: 'Test' } as ConsumableMaster);
+
+      await target.confirmReceiving({ conUid: 'CON001' } as any, 'COMP', 'PLANT');
+
+      expect(mockQr.manager.query).toHaveBeenCalledWith(
+        'SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
+      );
+    });
   });
 
   // ─── bulkConfirmReceiving ───

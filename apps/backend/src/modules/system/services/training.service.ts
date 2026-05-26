@@ -306,10 +306,20 @@ export class TrainingService {
     if (results.length === 0) return results;
 
     const workerCodes = [...new Set(results.map(r => r.workerCode))];
-    const placeholders = workerCodes.map((_, i) => `:${i}`).join(',');
+    const params: unknown[] = [...workerCodes];
+    const placeholders = workerCodes.map((_, i) => `:${i + 1}`).join(',');
+    let tenantFilter = '';
+    if (company) {
+      params.push(company);
+      tenantFilter += ` AND COMPANY = :${params.length}`;
+    }
+    if (plant) {
+      params.push(plant);
+      tenantFilter += ` AND PLANT_CD = :${params.length}`;
+    }
     const workers = await this.resultRepo.manager.query(
-      `SELECT WORKER_CODE, PHOTO_URL, DEPT FROM WORKER_MASTERS WHERE WORKER_CODE IN (${placeholders})`,
-      workerCodes,
+      `SELECT WORKER_CODE, PHOTO_URL, DEPT FROM WORKER_MASTERS WHERE WORKER_CODE IN (${placeholders})${tenantFilter}`,
+      params,
     );
     const workerMap = new Map<string, { photoUrl: string | null; dept: string | null }>();
     for (const w of workers) {

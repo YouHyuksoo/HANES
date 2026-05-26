@@ -93,7 +93,12 @@ export class SqlExecutor implements IJobExecutor {
     // - 이름 바인드(:col_name) → params 객체를 그대로 전달 (oracledb가 직접 처리)
     // - 위치 바인드(:1, :2)   → Object.values() 배열로 전달
     // SQL에 `:숫자` 패턴이 없으면 이름 바인드로 판단
-    const hasPositional = params && /:\d+/.test(sql);
+    // 문자열 리터럴/코멘트 내부의 `:숫자`는 매칭 대상에서 제외해야 false positive를 피할 수 있다.
+    const sqlForBindScan = this.stripStringsAndComments(sql);
+    const hasPositional = params && /:\d+/.test(sqlForBindScan);
+    if (hasPositional) {
+      this.assertSequentialPositionalBinds(sqlForBindScan);
+    }
     const bindParams: Record<string, unknown> | unknown[] | undefined = params
       ? hasPositional
         ? Object.values(params)
@@ -124,5 +129,37 @@ export class SqlExecutor implements IJobExecutor {
     if (namedBinds.has('plant')) params.plant = job.plantCd;
     if (namedBinds.has('plantCd')) params.plantCd = job.plantCd;
     return params;
+  }
+
+  private assertSequentialPositionalBinds(sanitizedSql: string): void {
+    // 이름 문자열로 dedup. `:01`과 `:1`은 oracledb에서 별개 바인드라 Number 기반 dedup은 위험.
+    const bindNames = new Set<string>();
+    for (const match of sanitizedSql.matchAll(/:(\d+)/g)) {
+      bindNames.add(match[1]);
+    }
+    const sorted = [...bindNames].sort((a, b) => Number(a) - Number(b));
+    for (let i = 0; i < sorted.length; i++) {
+      if (sorted[i] !== String(i + 1)) {
+        throw new BadRequestException(
+          '위치 바인드(:숫자)는 :1부터 순차적으로 작성해야 합니다. 선행 0(:01) 또는 건너뛰기는 허용되지 않습니다.',
+        );
+      }
+    }
+  }
+
+  /**
+   * SQL에서 문자열 리터럴과 코멘트를 빈 문자열로 치환한다.
+   * 바인드 스캔 시 리터럴 내부의 `:NN`(예: 'HH24:MI:SS')이 매칭되는 false positive를 막는다.
+   */
+  private stripStringsAndComments(sql: string): string {
+    return sql
+      // ' ... ' 문자열 리터럴 (Oracle 표준: 작은따옴표 두 개 '' 로 이스케이프)
+      .replace(/'(?:''|[^'])*'/g, "''")
+      // q'[...]' / q'(...)' / q'{...}' / q'<...>' Oracle quote literal
+      .replace(/[qQ]'(.)([\s\S]*?)\1'/g, "''")
+      // -- 라인 코멘트
+      .replace(/--[^\n\r]*/g, '')
+      // /* ... */ 블록 코멘트
+      .replace(/\/\*[\s\S]*?\*\//g, '');
   }
 }

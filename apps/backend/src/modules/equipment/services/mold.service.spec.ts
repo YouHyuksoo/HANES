@@ -27,6 +27,7 @@ describe('MoldService', () => {
     save: jest.Mock;
     update: jest.Mock;
     getRepository: jest.Mock;
+    query: jest.Mock;
   };
   let mockQueryRunner: {
     connect: jest.Mock;
@@ -50,6 +51,7 @@ describe('MoldService', () => {
       save: jest.fn(),
       update: jest.fn(),
       getRepository: jest.fn(() => mockUsageRepo),
+      query: jest.fn().mockResolvedValue([{ nextSeq: 4 }]),
     };
     mockQueryRunner = {
       connect: jest.fn(),
@@ -146,12 +148,6 @@ describe('MoldService', () => {
     it('should add usage and increment shots', async () => {
       const mold = { moldCode: 'M-001', status: 'ACTIVE', currentShots: 100, guaranteedShots: null } as any;
       mockManager.findOne.mockResolvedValue(mold);
-      const qb = {
-        select: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ maxSeq: 3 }),
-      };
-      mockUsageRepo.createQueryBuilder.mockReturnValue(qb as any);
       mockManager.save.mockImplementation(async (_entity: unknown, payload: any) => payload);
 
       const r = await target.addUsage('M-001', { shotCount: 50 } as any, 'CO', 'P01', 'user');
@@ -194,12 +190,7 @@ describe('MoldService', () => {
         guaranteedShots: 100,
       } as any;
       mockManager.findOne.mockResolvedValue(mold);
-      const qb = {
-        select: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ maxSeq: 1 }),
-      };
-      mockUsageRepo.createQueryBuilder.mockReturnValue(qb as any);
+      mockManager.query.mockResolvedValueOnce([{ nextSeq: 2 }]);
       mockManager.save.mockImplementation(async (_entity: unknown, payload: any) => payload);
 
       await target.addUsage(
@@ -232,6 +223,7 @@ describe('MoldService', () => {
           save: jest.fn(async (_entity: unknown, payload: any) => payload),
           update: jest.fn(),
           getRepository: jest.fn(() => mockUsageRepo),
+          query: jest.fn().mockResolvedValue([{ nextSeq: 11 }]),
         };
 
         return {
@@ -249,13 +241,6 @@ describe('MoldService', () => {
       mockTx.run
         .mockImplementationOnce(async (callback) => callback(runner1 as any))
         .mockImplementationOnce(async (callback) => callback(runner2 as any));
-
-      const qb = {
-        select: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ maxSeq: 10 }),
-      };
-      mockUsageRepo.createQueryBuilder.mockReturnValue(qb as any);
 
       await Promise.all([
         target.addUsage(

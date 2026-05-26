@@ -68,11 +68,10 @@ export class SpcService {
     };
   }
 
-  /** chartId + sampleDate 기준 다음 SEQ 번호 조회 */
-  private async getNextDataSeq(chartId: string, sampleDate: Date): Promise<number> {
+  /** SPC_DATA 다음 SEQ 번호 조회 */
+  private async getNextDataSeq(): Promise<number> {
     const result = await this.dataSource.query(
-      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "SPC_DATA" WHERE "CHART_ID" = :1 AND "SAMPLE_DATE" = :2`,
-      [chartId, sampleDate],
+      `SELECT SEQ_SPC_DATA.NEXTVAL AS "nextSeq" FROM DUAL`,
     );
     return result[0].nextSeq;
   }
@@ -251,7 +250,7 @@ export class SpcService {
     if (chart.lcl != null && mean < Number(chart.lcl)) outOfControl = 1;
 
     const sampleDate = new Date(dto.sampleDate);
-    const seq = await this.getNextDataSeq(dto.chartId, sampleDate);
+    const seq = await this.getNextDataSeq();
 
     const entity = this.dataRepo.create({
       chartId: dto.chartId,

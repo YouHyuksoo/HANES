@@ -3,7 +3,7 @@
  * @description 스케줄러 실행 로그 서비스 - 작업 실행 이력 CRUD 및 통계를 관리한다.
  *
  * 초보자 가이드:
- * 1. **generateLogId()**: company + plantCd 범위 내에서 MAX(LOG_ID)+1 채번
+ * 1. **generateLogId()**: Oracle sequence 기반 LOG_ID 채번
  * 2. **createLog()**: RUNNING 상태로 로그 생성 (실행 시작 시 호출)
  * 3. **updateLog()**: 실행 완료 후 상태/종료시각/소요시간 등 갱신
  * 4. **findAll()**: 페이지네이션 + 필터(작업코드, 상태, 날짜범위) 목록 조회
@@ -59,17 +59,14 @@ export class SchedulerLogService {
   // =============================================
 
   /**
-   * LOG_ID 채번: company + plantCd 범위 내 MAX+1
+   * LOG_ID 채번: Oracle sequence
    * @param company 회사코드
    * @param plant 사업장코드
    * @returns 다음 LOG_ID
    */
   async generateLogId(company: string, plant: string): Promise<number> {
     const result = await this.dataSource.query(
-      `SELECT NVL(MAX("LOG_ID"), 0) + 1 AS "nextId"
-         FROM "SCHEDULER_LOGS"
-        WHERE "COMPANY" = :1 AND "PLANT_CD" = :2`,
-      [company, plant],
+      `SELECT SEQ_SCHEDULER_LOGS.NEXTVAL AS "nextId" FROM DUAL`,
     );
     return result[0].nextId;
   }

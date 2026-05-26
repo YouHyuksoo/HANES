@@ -139,12 +139,13 @@ export class DbBackupService {
 
     for (const objType of objectTypes) {
       try {
+        // TypeORM DataSource.query는 위치 바인드 배열을 사용한다. named bind와 배열을 섞지 않는다.
         const rows = await this.dataSource.query<DdlRow[]>(
           `SELECT OBJECT_NAME,
-                  DBMS_METADATA.GET_DDL(:objType, OBJECT_NAME, :schema) AS DDL_TEXT
+                  DBMS_METADATA.GET_DDL(:1, OBJECT_NAME, :2) AS DDL_TEXT
              FROM ALL_OBJECTS
-            WHERE OWNER = :schema
-              AND OBJECT_TYPE = :objType
+            WHERE OWNER = :3
+              AND OBJECT_TYPE = :4
             ORDER BY OBJECT_NAME`,
           [objType, schema, schema, objType],
         );

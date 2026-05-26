@@ -30,3 +30,4 @@
 ### 주의사항
 - TypeORM CLI는 ES Module 이슈로 직접 사용 불가 → Raw SQL via oracle-db Python connector 사용
 - 마이그레이션 파일은 `apps/backend/src/migrations/`에 보관
+- `SEQ` 채번은 Oracle `SEQUENCE.NEXTVAL`만 사용한다. `MAX(SEQ)+1`, `NVL(MAX(...))+1`, 날짜별 1부터 재시작 채번은 금지한다.

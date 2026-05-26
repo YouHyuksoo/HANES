@@ -138,8 +138,7 @@ describe('InterfaceService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(manager.query).toHaveBeenCalledWith('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
       expect(manager.query).toHaveBeenCalledWith(
-        expect.stringContaining('NVL(MAX("SEQ"), 0) + 1'),
-        expect.any(Array),
+        'SELECT SEQ_INTER_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
       );
       expect(manager.create).toHaveBeenCalledWith(InterLog, expect.objectContaining({ seq: 1, status: 'PENDING' }));
       expect(manager.save).toHaveBeenCalledWith(InterLog, log);
@@ -166,6 +165,28 @@ describe('InterfaceService', () => {
       expect(manager.create).toHaveBeenCalledWith(
         InterLog,
         expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      );
+    });
+
+    it('should allocate INTER_LOGS seq from Oracle sequence', async () => {
+      const log = { transDate: new Date(), seq: 1, status: 'PENDING', company: 'C1', plant: 'P1' } as InterLog;
+      const manager = {
+        query: jest
+          .fn()
+          .mockResolvedValueOnce(undefined)
+          .mockResolvedValueOnce([{ nextSeq: 1 }]),
+        create: jest.fn().mockReturnValue(log),
+        save: jest.fn().mockResolvedValue(log),
+      };
+      mockTx.run.mockImplementation(async (callback) => callback({ manager } as any));
+
+      await target.createLog({
+        direction: 'IN',
+        messageType: 'JOB_ORDER',
+      } as any, 'C1', 'P1');
+
+      expect(manager.query).toHaveBeenCalledWith(
+        'SELECT SEQ_INTER_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
       );
     });
   });

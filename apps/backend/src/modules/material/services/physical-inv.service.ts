@@ -114,13 +114,10 @@ export class PhysicalInvService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 媛숈? ?좎쭨??理쒕? seq 議고쉶 ??+1
-    const maxSeqRow = await this.sessionRepository
-      .createQueryBuilder('s')
-      .select('MAX(s.seq)', 'maxSeq')
-      .where('s.sessionDate = :today', { today })
-      .getRawOne();
-    const nextSeq = (maxSeqRow?.maxSeq ?? 0) + 1;
+    const seqResult = await this.dataSource.query(
+      `SELECT SEQ_PHYSICAL_INV_SESSIONS.NEXTVAL AS "nextSeq" FROM DUAL`,
+    );
+    const nextSeq = seqResult[0].nextSeq;
 
     const session = this.sessionRepository.create({
       sessionDate: today,

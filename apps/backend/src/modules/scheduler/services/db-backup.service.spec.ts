@@ -401,6 +401,19 @@ describe('DbBackupService', () => {
 
   // ─── extractDdl ───
   describe('extractDdl', () => {
+    it('DBMS_METADATA.GET_DDL 조회는 위치 바인드와 배열 params를 전달해야 한다', async () => {
+      const ddlDir = path.join(tmpDir, 'ddl-bind');
+      fs.mkdirSync(ddlDir, { recursive: true });
+      mockDataSource.query.mockResolvedValue([]);
+
+      await target.extractDdl('TEST', ddlDir);
+
+      expect(mockDataSource.query).toHaveBeenCalledWith(
+        expect.stringContaining('DBMS_METADATA.GET_DDL(:1, OBJECT_NAME, :2)'),
+        ['TABLE', 'TEST', 'TEST', 'TABLE'],
+      );
+    });
+
     it('DDL 결과가 있으면 타입별 .sql 파일을 생성해야 한다', async () => {
       // Arrange
       const ddlDir = path.join(tmpDir, 'ddl');

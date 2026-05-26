@@ -33,14 +33,12 @@ export class MoldService {
     private readonly tx: TransactionService,
   ) {}
 
-  private async getNextUsageSeq(usageDate: Date, qr?: import('typeorm').QueryRunner): Promise<number> {
-    const repo = qr ? qr.manager.getRepository(MoldUsageLog) : this.usageRepo;
-    const result = await repo
-      .createQueryBuilder('u')
-      .select('NVL(MAX(u.seq), 0)', 'maxSeq')
-      .where('u.usageDate = :usageDate', { usageDate })
-      .getRawOne();
-    return (result?.maxSeq ?? 0) + 1;
+  private async getNextUsageSeq(qr?: import('typeorm').QueryRunner): Promise<number> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const result = await manager.query(
+      `SELECT SEQ_MOLD_USAGE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
+    );
+    return result[0].nextSeq;
   }
 
   async findAll(query: MoldQueryDto, company?: string, plant?: string) {
@@ -189,7 +187,7 @@ export class MoldService {
       }
 
       const usageDate = dto.usageDate ? new Date(dto.usageDate) : new Date();
-      const seq = await this.getNextUsageSeq(usageDate, queryRunner);
+      const seq = await this.getNextUsageSeq(queryRunner);
 
       const usage = queryRunner.manager.create(MoldUsageLog, {
         usageDate,

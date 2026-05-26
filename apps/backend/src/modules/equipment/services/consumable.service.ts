@@ -70,32 +70,20 @@ export class ConsumableService {
     private readonly tx: TransactionService,
   ) {}
 
-  /** 로컬 타임존 안전한 YYYY-MM-DD 문자열 */
-  private toLocalDateStr(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${dd}`;
-  }
-
-  /** CONSUMABLE_LOGS 테이블 오늘 날짜 기준 다음 SEQ */
-  private async getNextLogSeq(transDate: Date, qr?: QueryRunner): Promise<number> {
+  /** CONSUMABLE_LOGS 테이블 다음 SEQ */
+  private async getNextLogSeq(qr?: QueryRunner): Promise<number> {
     const manager = qr?.manager ?? this.dataSource.manager;
-    const dateStr = this.toLocalDateStr(transDate);
     const result = await manager.query(
-      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
-      [dateStr],
+      `SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
     );
     return result[0].nextSeq;
   }
 
-  /** CONSUMABLE_MOUNT_LOGS 테이블 오늘 날짜 기준 다음 SEQ */
-  private async getNextMountSeq(mountDate: Date, qr?: QueryRunner): Promise<number> {
+  /** CONSUMABLE_MOUNT_LOGS 테이블 다음 SEQ */
+  private async getNextMountSeq(qr?: QueryRunner): Promise<number> {
     const manager = qr?.manager ?? this.dataSource.manager;
-    const dateStr = this.toLocalDateStr(mountDate);
     const result = await manager.query(
-      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_MOUNT_LOGS" WHERE "MOUNT_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
-      [dateStr],
+      `SELECT SEQ_CONSUMABLE_MOUNT_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
     );
     return result[0].nextSeq;
   }
@@ -374,7 +362,7 @@ export class ConsumableService {
       // 입고 로그 생성
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const logSeq = await this.getNextLogSeq(today, queryRunner);
+      const logSeq = await this.getNextLogSeq(queryRunner);
       await queryRunner.manager.save(ConsumableLog, {
         transDate: today,
         seq: logSeq,
@@ -456,7 +444,7 @@ export class ConsumableService {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const logSeq = await this.getNextLogSeq(today);
+    const logSeq = await this.getNextLogSeq();
 
     const log = this.consumableLogRepository.create({
       transDate: today,
@@ -671,7 +659,7 @@ export class ConsumableService {
 
       const mountDate = new Date();
       mountDate.setHours(0, 0, 0, 0);
-      const mountSeq = await this.getNextMountSeq(mountDate, queryRunner);
+      const mountSeq = await this.getNextMountSeq(queryRunner);
       await queryRunner.manager.save(ConsumableMountLog, {
         mountDate,
         seq: mountSeq,
@@ -725,7 +713,7 @@ export class ConsumableService {
 
       const mountDate = new Date();
       mountDate.setHours(0, 0, 0, 0);
-      const mountSeq = await this.getNextMountSeq(mountDate, queryRunner);
+      const mountSeq = await this.getNextMountSeq(queryRunner);
       await queryRunner.manager.save(ConsumableMountLog, {
         mountDate,
         seq: mountSeq,
@@ -764,7 +752,7 @@ export class ConsumableService {
       if (consumable.operStatus === 'MOUNTED' && consumable.mountedEquipCode) {
         const mountDate = new Date();
         mountDate.setHours(0, 0, 0, 0);
-        const mountSeq = await this.getNextMountSeq(mountDate, queryRunner);
+        const mountSeq = await this.getNextMountSeq(queryRunner);
         await queryRunner.manager.save(ConsumableMountLog, {
           mountDate,
           seq: mountSeq,

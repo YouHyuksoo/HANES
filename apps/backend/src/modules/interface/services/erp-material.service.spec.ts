@@ -144,6 +144,28 @@ describe('ErpMaterialService', () => {
     );
   });
 
+  it('allocates inbound INTER_LOGS seq from Oracle sequence', async () => {
+    queryRunner.manager.findOne.mockResolvedValue(null);
+    queryRunner.manager.create.mockImplementation((_entity, payload) => payload as any);
+    queryRunner.manager.save.mockImplementation(async (payload) => payload as any);
+    queryRunner.manager.find.mockResolvedValue([]);
+    interLogRepo.save.mockResolvedValue({} as InterLog);
+
+    await target.importPurchaseOrder({
+      poNo: 'PO-1',
+      orderDate: '2026-05-23',
+      partnerId: 'V-1',
+      partnerName: 'Vendor',
+      items: [],
+      company: 'C1',
+      plant: 'P1',
+    });
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      'SELECT SEQ_INTER_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
+    );
+  });
+
   it('writes outbound interface logs with the requested tenant', async () => {
     sysConfig.getValue.mockImplementation(async (key: string) => {
       if (key === 'ERP_EXPORT_ENABLED') return 'Y';
@@ -173,6 +195,26 @@ describe('ErpMaterialService', () => {
         company: 'C1',
         plant: 'P1',
       }),
+    );
+  });
+
+  it('allocates outbound INTER_LOGS seq from Oracle sequence', async () => {
+    sysConfig.getValue.mockImplementation(async (key: string) => {
+      if (key === 'ERP_EXPORT_ENABLED') return 'Y';
+      if (key === 'ERP_API_URL') return 'https://erp.example.test/interface';
+      return undefined;
+    });
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: jest.fn().mockResolvedValue(''),
+    } as any);
+    interLogRepo.save.mockResolvedValue({} as InterLog);
+
+    await target.exportReceiving('RCV-1', 'RM-1', 5, 'PO-1', 'C1', 'P1');
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      'SELECT SEQ_INTER_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
     );
   });
 

@@ -10,7 +10,7 @@
  */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { IqcTemplate } from '../../../entities/iqc-template.entity';
 import { IqcTemplateItem } from '../../../entities/iqc-template-item.entity';
@@ -54,18 +54,12 @@ export class IqcTemplateService {
     return tpl;
   }
 
-  /** 다음 TEMPLATE_ID 채번 — 테넌트별 MAX(TEMPLATE_ID) + 1, T0001 형식 */
-  private async nextTemplateId(company: string, plant: string): Promise<string> {
-    const row = await this.templateRepo
-      .createQueryBuilder('t')
-      .select('MAX(t.templateId)', 'maxId')
-      .where('t.company = :company', { company })
-      .andWhere('t.plant = :plant', { plant })
-      .getRawOne<{ maxId: string | null }>();
-
-    const max = row?.maxId ?? null;
-    const next = max ? parseInt(max.replace(/^T/, ''), 10) + 1 : 1;
-    return `T${String(next).padStart(4, '0')}`;
+  /** 다음 TEMPLATE_ID 채번 — Oracle sequence, T0001 형식 */
+  private async nextTemplateId(queryRunner: QueryRunner): Promise<string> {
+    const result = await queryRunner.manager.query(
+      `SELECT SEQ_IQC_TEMPLATES.NEXTVAL AS "nextSeq" FROM DUAL`,
+    );
+    return `T${String(result[0].nextSeq).padStart(4, '0')}`;
   }
 
   async create(
@@ -75,7 +69,7 @@ export class IqcTemplateService {
     userId: string,
   ): Promise<IqcTemplate> {
     return this.tx.run(async (queryRunner) => {
-      const templateId = await this.nextTemplateId(company, plant);
+      const templateId = await this.nextTemplateId(queryRunner);
 
       const tpl = queryRunner.manager.create(IqcTemplate, {
         templateId,

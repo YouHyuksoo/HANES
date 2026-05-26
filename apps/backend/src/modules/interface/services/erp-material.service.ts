@@ -79,7 +79,7 @@ export class ErpMaterialService {
   /** ERP에서 PO 데이터를 수신하여 PurchaseOrder/PurchaseOrderItem에 upsert */
   async importPurchaseOrder(data: ErpPoData) {
     const transDate = new Date();
-    const seq = await this.getNextSeq(transDate);
+    const seq = await this.getNextSeq();
     const tenantWhere = {
       ...(data.company ? { company: data.company } : {}),
       ...(data.plant ? { plant: data.plant } : {}),
@@ -213,7 +213,7 @@ export class ErpMaterialService {
     }
 
     const transDate = new Date();
-    const seq = await this.getNextSeq(transDate);
+    const seq = await this.getNextSeq();
     const payload = JSON.stringify(data);
 
     try {
@@ -328,11 +328,9 @@ export class ErpMaterialService {
   // Helpers
   // ==========================================================================
 
-  private async getNextSeq(transDate: Date): Promise<number> {
-    const dateStr = transDate.toISOString().slice(0, 10);
+  private async getNextSeq(): Promise<number> {
     const result = await this.dataSource.query(
-      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "INTER_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
-      [dateStr],
+      `SELECT SEQ_INTER_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
     );
     return result[0].nextSeq;
   }

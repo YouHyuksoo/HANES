@@ -461,4 +461,33 @@ describe('TrainingService', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('getResults', () => {
+    it('loads worker photos with 1-based binds and tenant filters', async () => {
+      const plan = { planNo: 'TRN-001', company: 'COMP', plant: 'PLANT' } as TrainingPlan;
+      mockPlanRepo.findOne.mockResolvedValue(plan);
+
+      const resultQb = createMock<any>();
+      resultQb.where.mockReturnThis();
+      resultQb.andWhere.mockReturnThis();
+      resultQb.orderBy.mockReturnThis();
+      resultQb.getMany.mockResolvedValue([
+        { planNo: 'TRN-001', workerCode: 'W001', company: 'COMP', plant: 'PLANT' },
+        { planNo: 'TRN-001', workerCode: 'W002', company: 'COMP', plant: 'PLANT' },
+      ]);
+      mockResultRepo.createQueryBuilder.mockReturnValue(resultQb);
+      mockResultRepo.manager.query = jest.fn().mockResolvedValue([]);
+
+      await target.getResults('TRN-001', 'COMP', 'PLANT');
+
+      expect(mockResultRepo.manager.query).toHaveBeenCalledWith(
+        expect.stringContaining('WORKER_CODE IN (:1,:2)'),
+        ['W001', 'W002', 'COMP', 'PLANT'],
+      );
+      expect(mockResultRepo.manager.query).toHaveBeenCalledWith(
+        expect.stringContaining('COMPANY = :3 AND PLANT_CD = :4'),
+        expect.any(Array),
+      );
+    });
+  });
 });

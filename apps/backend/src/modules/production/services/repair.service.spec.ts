@@ -40,6 +40,7 @@ describe('RepairService', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
+    mockQueryRunner.manager.query.mockResolvedValue([{ nextSeq: 1 }]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -150,12 +151,7 @@ describe('RepairService', () => {
   describe('create', () => {
     it('should create repair order with auto-seq and used parts', async () => {
       // Arrange
-      const mockCreateQb = {
-        select: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ maxSeq: 3 }),
-      };
-      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockCreateQb as any);
+      mockQueryRunner.manager.query.mockResolvedValueOnce([{ nextSeq: 4 }]);
       mockQueryRunner.manager.create.mockImplementation((_: any, data: any) => data);
       mockQueryRunner.manager.save.mockResolvedValue({} as any);
 
@@ -171,7 +167,7 @@ describe('RepairService', () => {
       );
 
       // Assert
-      expect(result.seq).toBe(4); // maxSeq(3) + 1
+      expect(result.seq).toBe(4);
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2); // order + parts
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
@@ -179,12 +175,7 @@ describe('RepairService', () => {
 
     it('should create repair order without used parts', async () => {
       // Arrange
-      const mockCreateQb = {
-        select: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ maxSeq: null }),
-      };
-      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockCreateQb as any);
+      mockQueryRunner.manager.query.mockResolvedValueOnce([{ nextSeq: 1 }]);
       mockQueryRunner.manager.create.mockImplementation((_: any, data: any) => data);
       mockQueryRunner.manager.save.mockResolvedValue({} as any);
 
@@ -195,18 +186,13 @@ describe('RepairService', () => {
       );
 
       // Assert
-      expect(result.seq).toBe(1); // null + 1
+      expect(result.seq).toBe(1);
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(1); // only order
     });
 
     it('should rollback on error', async () => {
       // Arrange
-      const mockCreateQb = {
-        select: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockRejectedValue(new Error('DB error')),
-      };
-      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockCreateQb as any);
+      mockQueryRunner.manager.query.mockRejectedValueOnce(new Error('DB error'));
 
       // Act & Assert
       await expect(

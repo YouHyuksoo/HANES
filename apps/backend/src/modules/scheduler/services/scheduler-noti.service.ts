@@ -3,7 +3,7 @@
  * @description ?ㅼ?以꾨윭 ?뚮┝ ?쒕퉬??- ?묒뾽 ?ㅽ뻾 寃곌낵 ?뚮┝ ?앹꽦/議고쉶/?쎌쓬泥섎━瑜?愿由ы븳??
  *
  * 珥덈낫??媛?대뱶:
- * 1. **generateNotiId()**: company 踰붿쐞 ?댁뿉??MAX(NOTI_ID)+1 梨꾨쾲
+ * 1. **generateNotiId()**: Oracle sequence 기반 NOTI_ID 채번
  * 2. **createNotification()**: ?ㅽ뻾 ?ㅽ뙣/??꾩븘????愿由ъ옄?먭쾶 ?뚮┝ ?앹꽦
  * 3. **findByUser()**: ?뱀젙 ?ъ슜?먯쓽 理쒓렐 ?뚮┝ 紐⑸줉 議고쉶
  * 4. **getUnreadCount()**: ?쎌? ?딆? ?뚮┝ 媛쒖닔 (?ㅻ뜑 踰??꾩씠肄?諭껋???
@@ -31,16 +31,13 @@ export class SchedulerNotiService {
   // =============================================
 
   /**
-   * NOTI_ID 梨꾨쾲: company 踰붿쐞 ??MAX+1
+   * NOTI_ID 채번: Oracle sequence
    * @param company ?뚯궗肄붾뱶
    * @returns ?ㅼ쓬 NOTI_ID
    */
   async generateNotiId(company: string): Promise<number> {
     const result = await this.dataSource.query(
-      `SELECT NVL(MAX("NOTI_ID"), 0) + 1 AS "nextId"
-         FROM "SCHEDULER_NOTIFICATIONS"
-        WHERE "COMPANY" = :1`,
-      [company],
+      `SELECT SEQ_SCHEDULER_NOTIFICATIONS.NEXTVAL AS "nextId" FROM DUAL`,
     );
     return result[0].nextId;
   }

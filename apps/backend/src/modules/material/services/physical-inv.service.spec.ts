@@ -42,6 +42,7 @@ describe('PhysicalInvService', () => {
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
     dataSource.getRepository.mockReturnValue(createMock<Repository<StockTransaction>>() as any);
+    dataSource.query.mockResolvedValue([{ nextSeq: 1 }]);
     tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
@@ -750,11 +751,6 @@ describe('PhysicalInvService', () => {
           plant: 'P01',
         } as PhysicalInvSession);
 
-      const maxSeqQb = {
-        select: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ maxSeq: 0 }),
-      };
       const scanSessionQb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -775,7 +771,6 @@ describe('PhysicalInvService', () => {
         getOne: jest.fn().mockResolvedValue(completeSessionEntity),
       };
       sessionRepo.createQueryBuilder
-        .mockReturnValueOnce(maxSeqQb as any)
         .mockReturnValueOnce(scanSessionQb as any)
         .mockReturnValueOnce(completeSessionQb as any);
 

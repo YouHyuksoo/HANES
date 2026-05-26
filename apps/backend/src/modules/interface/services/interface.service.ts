@@ -67,11 +67,9 @@ export class InterfaceService {
   }
 
   /** 오늘 날짜 기준 다음 SEQ 번호 조회 */
-  private async getNextSeq(manager: EntityManager, transDate: Date): Promise<number> {
-    const dateStr = transDate.toISOString().slice(0, 10);
+  private async getNextSeq(manager: EntityManager): Promise<number> {
     const result = await manager.query(
-      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "INTER_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
-      [dateStr],
+      `SELECT SEQ_INTER_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
     );
     return result[0].nextSeq;
   }
@@ -126,7 +124,7 @@ export class InterfaceService {
 
     return this.tx.run(async (queryRunner) => {
       await queryRunner.manager.query('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
-      const seq = await this.getNextSeq(queryRunner.manager, transDate);
+      const seq = await this.getNextSeq(queryRunner.manager);
 
       const log = queryRunner.manager.create(InterLog, {
         transDate,

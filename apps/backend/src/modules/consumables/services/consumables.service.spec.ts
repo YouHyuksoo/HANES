@@ -253,6 +253,25 @@ describe('ConsumablesService', () => {
       expect(mockQr.commitTransaction).not.toHaveBeenCalled();
     });
 
+    it('should allocate CONSUMABLE_LOGS seq from Oracle sequence', async () => {
+      const mockQr = {
+        manager: {
+          findOne: jest.fn().mockResolvedValue({ consumableCode: 'C001', stockQty: 10 } as ConsumableMaster),
+          create: jest.fn().mockReturnValue({ consumableCode: 'C001', logType: 'IN', qty: 5 } as any),
+          save: jest.fn().mockResolvedValue({ consumableCode: 'C001', logType: 'IN', qty: 5 } as any),
+          update: jest.fn().mockResolvedValue({ affected: 1 } as any),
+          query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
+        },
+      };
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
+
+      await target.createLog({ consumableId: 'C001', logType: 'IN', qty: 5 } as any, 'COMP', 'PLANT');
+
+      expect(mockQr.manager.query).toHaveBeenCalledWith(
+        'SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
+      );
+    });
+
     it('should throw BadRequestException when stock insufficient for OUT', async () => {
       // Arrange
       const mockQr = {

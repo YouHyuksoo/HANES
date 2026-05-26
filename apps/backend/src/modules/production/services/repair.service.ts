@@ -147,16 +147,10 @@ export class RepairService {
         ? new Date(dto.repairDate)
         : new Date();
 
-      // SEQ 채번: 해당 날짜의 MAX(SEQ) + 1
-      const maxResult = await queryRunner.manager
-        .createQueryBuilder(RepairOrder, 'r')
-        .select('MAX(r.SEQ)', 'maxSeq')
-        .where(
-          'r.REPAIR_DATE = :repairDate AND r.COMPANY = :company AND r.PLANT_CD = :plant',
-          { repairDate, company, plant },
-        )
-        .getRawOne();
-      const seq = (maxResult?.maxSeq || 0) + 1;
+      const seqResult = await queryRunner.manager.query(
+        `SELECT SEQ_REPAIR_ORDERS.NEXTVAL AS "nextSeq" FROM DUAL`,
+      );
+      const seq = seqResult[0].nextSeq;
 
       // 마스터 저장
       const order = queryRunner.manager.create(RepairOrder, {

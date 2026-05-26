@@ -57,15 +57,10 @@ export class ConsumablesService {
   }
 
   /** CONSUMABLE_LOGS 테이블 오늘 날짜 기준 다음 SEQ (타임존 안전) */
-  private async getNextLogSeq(transDate: Date, qr?: QueryRunner): Promise<number> {
+  private async getNextLogSeq(qr?: QueryRunner): Promise<number> {
     const manager = qr?.manager ?? this.dataSource.manager;
-    const y = transDate.getFullYear();
-    const m = String(transDate.getMonth() + 1).padStart(2, '0');
-    const d = String(transDate.getDate()).padStart(2, '0');
-    const dateStr = `${y}-${m}-${d}`;
     const result = await manager.query(
-      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
-      [dateStr],
+      `SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
     );
     return result[0].nextSeq;
   }
@@ -417,7 +412,7 @@ export class ConsumablesService {
       // 이력 생성
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const logSeq = await this.getNextLogSeq(today, queryRunner);
+      const logSeq = await this.getNextLogSeq(queryRunner);
 
       const log = queryRunner.manager.create(ConsumableLog, {
         transDate: today,
@@ -525,7 +520,7 @@ export class ConsumablesService {
       if (dto.equipCode) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const logSeq = await this.getNextLogSeq(today, queryRunner);
+        const logSeq = await this.getNextLogSeq(queryRunner);
 
         const log = queryRunner.manager.create(ConsumableLog, {
           transDate: today,
@@ -575,7 +570,7 @@ export class ConsumablesService {
       // 교체 이력 로그 생성
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const logSeq = await this.getNextLogSeq(today, queryRunner);
+      const logSeq = await this.getNextLogSeq(queryRunner);
 
       const log = queryRunner.manager.create(ConsumableLog, {
         transDate: today,
