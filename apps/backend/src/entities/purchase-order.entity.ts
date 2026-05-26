@@ -38,6 +38,9 @@ export class PurchaseOrder {
   @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
+  @Column({ name: 'USE_TYPE', length: 20, default: 'PROD' })
+  useType: string;
+
   @Column({ name: 'TOTAL_AMOUNT', type: 'decimal', precision: 14, scale: 2, nullable: true })
   totalAmount: number | null;
 
