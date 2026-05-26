@@ -1,6 +1,15 @@
 -- Log sequence creation.
 -- Safe to rerun. Existing tables may already contain SEQ values, so each
 -- sequence starts after the current max SEQ to avoid primary-key collisions.
+--
+-- ⚠️ Cut-over note: 이 마이그가 실행되는 동안 구 코드(NVL(MAX(SEQ))+1 client-side
+-- 채번)가 계속 INSERT 를 발행하면 START WITH 값 산정 후 ↔ CREATE SEQUENCE 직전
+-- 구간에서 SEQ 충돌이 가능하다. 안전 절차:
+--   1) 새 코드 배포 전, 기존 구 코드 인스턴스를 모두 중지하거나 read-only 로 만든다.
+--   2) 이 SQL 을 실행한다.
+--   3) 새 코드를 기동한다.
+-- 무중단 배포가 필요하면, 사전에 maintenance window 또는 application-level write-lock
+-- 으로 INSERT 를 잠시 멈춘 뒤 실행해야 한다.
 
 DECLARE
   v_count NUMBER;
@@ -124,14 +133,22 @@ END;
 
 DECLARE
   v_count NUMBER;
+  v_table_count NUMBER;
   v_start NUMBER;
 BEGIN
   SELECT COUNT(*) INTO v_count FROM USER_SEQUENCES WHERE SEQUENCE_NAME = 'SEQ_IQC_TEMPLATES';
   IF v_count = 0 THEN
-    SELECT NVL(MAX(TO_NUMBER(SUBSTR("TEMPLATE_ID", 2))), 0) + 1
-      INTO v_start
-      FROM "IQC_TEMPLATES"
-     WHERE REGEXP_LIKE("TEMPLATE_ID", '^T[0-9]+$');
+    -- IQC_TEMPLATES 테이블이 아직 없는 환경(신규/모듈 미배포)에서 ORA-00942 로 마이그가 중단되지
+    -- 않도록 USER_TABLES 가드를 둔다. 다른 블록들의 패턴과 동일.
+    SELECT COUNT(*) INTO v_table_count FROM USER_TABLES WHERE TABLE_NAME = 'IQC_TEMPLATES';
+    IF v_table_count = 0 THEN
+      v_start := 1;
+    ELSE
+      SELECT NVL(MAX(TO_NUMBER(SUBSTR("TEMPLATE_ID", 2))), 0) + 1
+        INTO v_start
+        FROM "IQC_TEMPLATES"
+       WHERE REGEXP_LIKE("TEMPLATE_ID", '^T[0-9]+$');
+    END IF;
     EXECUTE IMMEDIATE 'CREATE SEQUENCE SEQ_IQC_TEMPLATES START WITH ' || v_start || ' INCREMENT BY 1 NOCACHE';
   END IF;
 END;

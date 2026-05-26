@@ -305,25 +305,56 @@ export class TrainingService {
 
     if (results.length === 0) return results;
 
-    const workerCodes = [...new Set(results.map(r => r.workerCode))];
-    const params: unknown[] = [...workerCodes];
-    const placeholders = workerCodes.map((_, i) => `:${i + 1}`).join(',');
-    let tenantFilter = '';
-    if (company) {
-      params.push(company);
-      tenantFilter += ` AND COMPANY = :${params.length}`;
-    }
-    if (plant) {
-      params.push(plant);
-      tenantFilter += ` AND PLANT_CD = :${params.length}`;
-    }
-    const workers = await this.resultRepo.manager.query(
-      `SELECT WORKER_CODE, PHOTO_URL, DEPT FROM WORKER_MASTERS WHERE WORKER_CODE IN (${placeholders})${tenantFilter}`,
-      params,
+    const workerCodes = [...new Set(results.map(r => r.workerCode))].filter(
+      (code): code is string => !!code,
     );
     const workerMap = new Map<string, { photoUrl: string | null; dept: string | null }>();
-    for (const w of workers) {
-      workerMap.set(w.WORKER_CODE, { photoUrl: w.PHOTO_URL, dept: w.DEPT });
+
+    // Oracle IN 리스트는 1000개 한도. chunk 단위로 분할 조회.
+    const chunkSize = 900;
+
+    // 1차: tenant 필터로 워커 조회.
+    for (let offset = 0; offset < workerCodes.length; offset += chunkSize) {
+      const chunk = workerCodes.slice(offset, offset + chunkSize);
+      const params: unknown[] = [...chunk];
+      const placeholders = chunk.map((_, i) => `:${i + 1}`).join(',');
+      let tenantFilter = '';
+      if (company) {
+        params.push(company);
+        tenantFilter += ` AND COMPANY = :${params.length}`;
+      }
+      if (plant) {
+        params.push(plant);
+        tenantFilter += ` AND PLANT_CD = :${params.length}`;
+      }
+      const rows = await this.resultRepo.manager.query(
+        `SELECT WORKER_CODE, PHOTO_URL, DEPT FROM WORKER_MASTERS WHERE WORKER_CODE IN (${placeholders})${tenantFilter}`,
+        params,
+      );
+      for (const w of rows) {
+        workerMap.set(w.WORKER_CODE, { photoUrl: w.PHOTO_URL, dept: w.DEPT });
+      }
+    }
+
+    // 2차 fallback: 전배/타 사업장 워커는 tenant 한정 조회에서 누락된다.
+    // 매칭 안 된 코드만 골라 전역 조회 — photoUrl/dept 자체는 워커가 어디 소속이든
+    // 동일한 PII 라 응답 누락보다 보여 주는 편이 낫다.
+    const missing = workerCodes.filter((code) => !workerMap.has(code));
+    if (missing.length > 0 && (company || plant)) {
+      for (let offset = 0; offset < missing.length; offset += chunkSize) {
+        const chunk = missing.slice(offset, offset + chunkSize);
+        const params: unknown[] = [...chunk];
+        const placeholders = chunk.map((_, i) => `:${i + 1}`).join(',');
+        const rows = await this.resultRepo.manager.query(
+          `SELECT WORKER_CODE, PHOTO_URL, DEPT FROM WORKER_MASTERS WHERE WORKER_CODE IN (${placeholders})`,
+          params,
+        );
+        for (const w of rows) {
+          if (!workerMap.has(w.WORKER_CODE)) {
+            workerMap.set(w.WORKER_CODE, { photoUrl: w.PHOTO_URL, dept: w.DEPT });
+          }
+        }
+      }
     }
 
     return results.map(r => {

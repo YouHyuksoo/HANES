@@ -8,7 +8,7 @@
  * 3. create: TEMPLATE_ID 자동 채번(T0001..) 후 헤더 + 항목 저장
  * 4. delete: 헤더 삭제 (CASCADE로 항목 자동 삭제)
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryRunner, Repository } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -54,12 +54,28 @@ export class IqcTemplateService {
     return tpl;
   }
 
-  /** 다음 TEMPLATE_ID 채번 — Oracle sequence, T0001 형식 */
+  /**
+   * 다음 TEMPLATE_ID 채번 — Oracle sequence 기반, T0001 형식.
+   * 글로벌 시퀀스라 (COMPANY, PLANT_CD) PK 하위에서 채번이 dense 하지 않을 수 있다.
+   * sequence 가 9999 를 넘으면 T#### 자리수가 깨지므로 명시적으로 차단하고 운영자에게 알린다.
+   */
   private async nextTemplateId(queryRunner: QueryRunner): Promise<string> {
     const result = await queryRunner.manager.query(
       `SELECT SEQ_IQC_TEMPLATES.NEXTVAL AS "nextSeq" FROM DUAL`,
     );
-    return `T${String(result[0].nextSeq).padStart(4, '0')}`;
+    const nextSeq = Number(result[0].nextSeq);
+    if (!Number.isFinite(nextSeq) || nextSeq <= 0) {
+      throw new InternalServerErrorException(
+        `IQC 템플릿 ID 시퀀스 값이 비정상입니다: ${result[0].nextSeq}`,
+      );
+    }
+    if (nextSeq > 9999) {
+      throw new InternalServerErrorException(
+        `IQC 템플릿 ID 시퀀스가 9999 를 초과했습니다 (current=${nextSeq}). ` +
+          `자릿수 확장(예: T#####) 또는 sequence 재설정 후 다시 시도해 주세요.`,
+      );
+    }
+    return `T${String(nextSeq).padStart(4, '0')}`;
   }
 
   async create(

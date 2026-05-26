@@ -260,7 +260,8 @@ describe('InterfaceService', () => {
       );
       // set() 인자의 retryCount 함수가 RAW SQL fragment를 반환하는지 검증
       const setArg = qb.set.mock.calls[0][0] as { retryCount: () => string };
-      expect(setArg.retryCount()).toBe('"RETRY_COUNT" + 1');
+      // NULL+1=NULL 회귀 방지를 위해 NVL 로 보호된 raw SQL.
+      expect(setArg.retryCount()).toBe('NVL("RETRY_COUNT", 0) + 1');
       expect(qb.where).toHaveBeenCalledWith({
         transDate,
         seq: 1,
@@ -273,6 +274,29 @@ describe('InterfaceService', () => {
         { transDate, seq: 1, company: 'C1', plant: 'P1' },
         expect.objectContaining({ status: 'SUCCESS' }),
       );
+    });
+
+    it('retryCount 갱신 시 affected 가 0 이면 InternalServerErrorException 을 던져야 한다', async () => {
+      // pk 의 transDate 정밀도 mismatch 등으로 silent 0-rows-affected 가 되던 회귀 방지.
+      const transDate = new Date('2026-05-23');
+      const log = {
+        transDate,
+        seq: 1,
+        status: 'FAIL',
+        retryCount: 0,
+        direction: 'IN',
+      } as InterLog;
+      mockLogRepo.findOne.mockResolvedValue(log);
+
+      const qb = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 0 }),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await expect(target.retryLog(transDate, 1)).rejects.toThrow('재시도 카운트 갱신');
     });
 
     it('should increment retryCount atomically via raw SQL fragment', async () => {

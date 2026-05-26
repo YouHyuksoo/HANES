@@ -155,22 +155,31 @@ export class InterfaceService {
 
   async retryLog(transDate: Date, seq: number, company?: string, plant?: string) {
     const log = await this.findLogById(transDate, seq, company, plant);
+    // pk 는 caller 가 넘긴 transDate 가 아니라 DB 에서 읽어 온 log.transDate 를 사용한다.
+    // (caller 가 ms/timezone 가 다른 Date 를 넘겨도 affected=0 이 되지 않도록.)
     const pk = { transDate: log.transDate, seq: log.seq, ...this.tenantWhere(company, plant) };
 
     if (log.status !== 'FAIL') {
       throw new BadRequestException('실패한 로그만 재시도할 수 있습니다.');
     }
 
-    // 재시도 횟수 원자적 증가 (read-modify-write lost update 회피)
-    await this.interLogRepository
+    // 재시도 횟수 원자적 증가 (read-modify-write lost update 회피).
+    // 레거시 행 RETRY_COUNT IS NULL 도 NVL 로 보호 — NULL+1=NULL 회귀 방지.
+    const retryUpdate = await this.interLogRepository
       .createQueryBuilder()
       .update()
       .set({
         status: 'RETRY',
-        retryCount: () => '"RETRY_COUNT" + 1',
+        retryCount: () => 'NVL("RETRY_COUNT", 0) + 1',
       })
       .where(pk)
       .execute();
+    if (typeof retryUpdate.affected === 'number' && retryUpdate.affected === 0) {
+      // pk 가 row 와 silent mismatch (예: transDate 정밀도) 일 때 조용히 무시되던 버그 방지.
+      throw new InternalServerErrorException(
+        `재시도 카운트 갱신에 실패했습니다. (transDate=${log.transDate}, seq=${log.seq})`,
+      );
+    }
 
     // 실제 전송 로직 (타입별로 분기)
     try {

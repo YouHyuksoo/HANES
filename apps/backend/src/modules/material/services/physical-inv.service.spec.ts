@@ -740,16 +740,16 @@ describe('PhysicalInvService', () => {
 
   describe('workflow', () => {
     it('keeps consistency across start -> scan -> apply -> complete flow', async () => {
-      sessionRepo.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          sessionDate: new Date('2026-03-18'),
-          seq: 1,
-          status: 'IN_PROGRESS',
-          warehouseCode: 'WH-01',
-          company: 'HANES',
-          plant: 'P01',
-        } as PhysicalInvSession);
+      // startSession 은 tx.run 내부에서 queryRunner.manager.findOne/query/create/save 를 사용한다.
+      // applyCount 가 동일 활성 세션을 조회할 때는 sessionRepo.findOne 을 쓰므로 그쪽은 그대로 둔다.
+      sessionRepo.findOne.mockResolvedValueOnce({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+        warehouseCode: 'WH-01',
+        company: 'HANES',
+        plant: 'P01',
+      } as PhysicalInvSession);
 
       const scanSessionQb = {
         where: jest.fn().mockReturnThis(),
@@ -774,23 +774,14 @@ describe('PhysicalInvService', () => {
         .mockReturnValueOnce(scanSessionQb as any)
         .mockReturnValueOnce(completeSessionQb as any);
 
-      sessionRepo.create.mockReturnValue({
-        sessionDate: new Date('2026-03-18'),
-        seq: 1,
-        status: 'IN_PROGRESS',
-        warehouseCode: 'WH-01',
+      // startSession 의 tx 내부 mock — IN_PROGRESS 부재 → SEQ NEXTVAL → create → save 순서.
+      queryRunner.manager.findOne.mockResolvedValueOnce(null);
+      queryRunner.manager.query.mockResolvedValueOnce([{ nextSeq: 1 }]);
+
+      sessionRepo.save.mockResolvedValueOnce({
+        ...completeSessionEntity,
+        status: 'COMPLETED',
       } as PhysicalInvSession);
-      sessionRepo.save
-        .mockResolvedValueOnce({
-          sessionDate: new Date('2026-03-18'),
-          seq: 1,
-          status: 'IN_PROGRESS',
-          warehouseCode: 'WH-01',
-        } as PhysicalInvSession)
-        .mockResolvedValueOnce({
-          ...completeSessionEntity,
-          status: 'COMPLETED',
-        } as PhysicalInvSession);
 
       const stockQb = {
         innerJoin: jest.fn().mockReturnThis(),
@@ -842,9 +833,28 @@ describe('PhysicalInvService', () => {
       txRepo.findOne.mockResolvedValue(null);
       queryRunner.manager.getRepository = jest.fn().mockReturnValue(txRepo);
       queryRunner.manager.create
+        // startSession: PhysicalInvSession 엔티티 생성
+        .mockReturnValueOnce({
+          sessionDate: new Date('2026-03-18'),
+          seq: 1,
+          status: 'IN_PROGRESS',
+          warehouseCode: 'WH-01',
+          company: 'HANES',
+          plant: 'P01',
+        } as any)
+        // applyCount: StockTransaction, InvAdjLog
         .mockReturnValueOnce({ transNo: 'PHC202603180001' } as any)
         .mockReturnValueOnce({ adjDate: new Date('2026-03-18') } as any);
       queryRunner.manager.save
+        // startSession: 세션 저장 결과
+        .mockResolvedValueOnce({
+          sessionDate: new Date('2026-03-18'),
+          seq: 1,
+          status: 'IN_PROGRESS',
+          warehouseCode: 'WH-01',
+          company: 'HANES',
+          plant: 'P01',
+        } as any)
         .mockResolvedValueOnce({ transNo: 'PHC202603180001' } as any)
         .mockResolvedValueOnce({ adjDate: new Date('2026-03-18') } as any);
 

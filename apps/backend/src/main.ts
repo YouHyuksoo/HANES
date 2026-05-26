@@ -9,6 +9,10 @@
  * 4. **포트**: 기본 3001 (환경변수로 변경 가능)
  */
 
+// 컨테이너/호스트 TZ 가 다른 환경에서도 동일한 'YYYY-MM-DD' 자정을 의도하도록 명시.
+// 이 라인은 다른 import 보다 먼저 실행되어 Date 동작이 즉시 KST 로 고정되어야 한다.
+process.env.TZ = process.env.TZ ?? 'Asia/Seoul';
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';

@@ -100,38 +100,59 @@ export class PhysicalInvService {
     company?: string,
     plant?: string,
   ): Promise<PhysicalInvSession> {
-    // ?대? 吏꾪뻾 以묒씤 ?몄뀡???덉쑝硫??덉쇅
-    const existing = await this.sessionRepository.findOne({
-      where: { status: 'IN_PROGRESS', ...(company && { company }), ...(plant && { plant }) },
-    });
-    if (existing) {
-      throw new BadRequestException(
-        `?대? 吏꾪뻾 以묒씤 ?ш퀬?ㅼ궗 ?몄뀡???덉뒿?덈떎. (${existing.sessionDate}-${existing.seq})`,
-      );
-    }
-
-    // SESSION_DATE???쒕텇珥??놁씠 ?좎쭨留????
+    // SESSION_DATE 는 시분초 없이 날짜만 사용한다.
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const seqResult = await this.dataSource.query(
-      `SELECT SEQ_PHYSICAL_INV_SESSIONS.NEXTVAL AS "nextSeq" FROM DUAL`,
-    );
-    const nextSeq = seqResult[0].nextSeq;
+    // 동시 호출 두 건이 둘 다 IN_PROGRESS 부재를 보고 INSERT 하는 race 를 막기 위해
+    // 검증 + SEQ + INSERT 를 한 트랜잭션에 묶고, DB 의 partial unique index
+    // (UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS, migrations/2026-05-26_physical_inv_session_uniq.sql)
+    // 위반은 BadRequestException 으로 변환한다.
+    return this.tx.run<PhysicalInvSession>(async (queryRunner) => {
+      const existing = await queryRunner.manager.findOne(PhysicalInvSession, {
+        where: { status: 'IN_PROGRESS', ...(company && { company }), ...(plant && { plant }) },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          `이미 진행 중인 재고조사 세션이 있습니다. (${existing.sessionDate}-${existing.seq})`,
+        );
+      }
 
-    const session = this.sessionRepository.create({
-      sessionDate: today,
-      seq: nextSeq,
-      invType: dto.invType,
-      countMonth: dto.countMonth,
-      status: 'IN_PROGRESS',
-      warehouseCode: dto.warehouseCode ?? null,
-      company: company ?? null,
-      plant: plant ?? null,
-      startedBy: dto.startedBy ?? null,
-      remark: dto.remark ?? null,
+      const seqResult = await queryRunner.manager.query(
+        `SELECT SEQ_PHYSICAL_INV_SESSIONS.NEXTVAL AS "nextSeq" FROM DUAL`,
+      );
+      const nextSeq = seqResult[0].nextSeq;
+
+      const session = queryRunner.manager.create(PhysicalInvSession, {
+        sessionDate: today,
+        seq: nextSeq,
+        invType: dto.invType,
+        countMonth: dto.countMonth,
+        status: 'IN_PROGRESS',
+        warehouseCode: dto.warehouseCode ?? null,
+        company: company ?? null,
+        plant: plant ?? null,
+        startedBy: dto.startedBy ?? null,
+        remark: dto.remark ?? null,
+      });
+
+      try {
+        return await queryRunner.manager.save(PhysicalInvSession, session);
+      } catch (error: unknown) {
+        if (this.isUniqueViolation(error)) {
+          throw new BadRequestException(
+            '동시 다른 사용자가 이미 재고조사 세션을 시작했습니다. 잠시 후 다시 시도해 주세요.',
+          );
+        }
+        throw error;
+      }
     });
-    return this.sessionRepository.save(session);
+  }
+
+  /** Oracle 고유 제약 위반(ORA-00001) 여부 */
+  private isUniqueViolation(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    return error.message.includes('ORA-00001');
   }
 
   /**

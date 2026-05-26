@@ -73,7 +73,11 @@ export class SqlExecutor implements IJobExecutor {
       }
     }
 
-    const namedBinds = this.extractNamedBinds(sql);
+    // 모든 바인드 스캔은 리터럴/코멘트 제거된 SQL 기준. 그래야 `'... :company ...'` 같은
+    // 리터럴이 DELETE 테넌트 가드를 우회하지 못한다.
+    const sqlForBindScan = this.stripStringsAndComments(sql);
+    const namedBinds = this.extractNamedBinds(sqlForBindScan);
+    const hasPositional = /:\d+/.test(sqlForBindScan);
     const tenantParams = this.extractTenantBindParams(namedBinds, job);
     const isDelete = /^\s*DELETE\s/i.test(sql);
 
@@ -83,25 +87,31 @@ export class SqlExecutor implements IJobExecutor {
       );
     }
 
+    // 위치 바인드와 이름 바인드 혼용은 oracledb가 일관되게 처리하지 못해 silent bind mismatch
+    // (예: :company 가 미바인드된 채 ORA-01006) 가 나기 쉬우므로 명시적으로 거부한다.
+    if (hasPositional && namedBinds.size > 0) {
+      throw new BadRequestException(
+        '위치 바인드(:1, :2)와 이름 바인드(:name)는 같은 SQL에서 혼용할 수 없습니다.',
+      );
+    }
+
     if (Object.keys(tenantParams).length > 0) {
       params = { ...(params ?? {}), ...tenantParams };
     }
 
     this.logger.log(`SQL 실행: ${sql.substring(0, 100)}...`);
 
-    // Oracle 바인드 파라미터 처리:
-    // - 이름 바인드(:col_name) → params 객체를 그대로 전달 (oracledb가 직접 처리)
-    // - 위치 바인드(:1, :2)   → Object.values() 배열로 전달
-    // SQL에 `:숫자` 패턴이 없으면 이름 바인드로 판단
-    // 문자열 리터럴/코멘트 내부의 `:숫자`는 매칭 대상에서 제외해야 false positive를 피할 수 있다.
-    const sqlForBindScan = this.stripStringsAndComments(sql);
-    const hasPositional = params && /:\d+/.test(sqlForBindScan);
     if (hasPositional) {
       this.assertSequentialPositionalBinds(sqlForBindScan);
     }
+
+    // Oracle 바인드 파라미터 처리:
+    // - 이름 바인드(:col_name) → params 객체를 그대로 전달 (oracledb가 직접 처리)
+    // - 위치 바인드(:1, :2)   → SQL에 등장한 :N 순서대로 배열로 변환
+    //   (Object.values 사용 시 JSON 키 입력 순서가 매핑을 좌우해 silent miswire 위험)
     const bindParams: Record<string, unknown> | unknown[] | undefined = params
       ? hasPositional
-        ? Object.values(params)
+        ? this.toPositionalArray(sqlForBindScan, params)
         : params
       : undefined;
     const result = await (this.dataSource as SqlQueryDataSource).query(sql, bindParams);
@@ -148,18 +158,54 @@ export class SqlExecutor implements IJobExecutor {
   }
 
   /**
+   * 위치 바인드용 배열을 SQL에 등장한 `:N` 순서대로 만든다.
+   * `Object.values(params)` 는 사용자 JSON의 키 입력 순서를 따르기 때문에
+   * 같은 SQL이라도 키 순서가 바뀌면 silent하게 다른 행에 적용된다.
+   */
+  private toPositionalArray(
+    sanitizedSql: string,
+    params: Record<string, unknown>,
+  ): unknown[] {
+    const bindNames = new Set<string>();
+    for (const match of sanitizedSql.matchAll(/:(\d+)/g)) {
+      bindNames.add(match[1]);
+    }
+    const sorted = [...bindNames].sort((a, b) => Number(a) - Number(b));
+    const missing: string[] = [];
+    const result: unknown[] = [];
+    for (const name of sorted) {
+      if (!Object.prototype.hasOwnProperty.call(params, name)) {
+        missing.push(name);
+        continue;
+      }
+      result.push(params[name]);
+    }
+    if (missing.length > 0) {
+      throw new BadRequestException(
+        `execParams에 위치 바인드 값이 없습니다: :${missing.join(', :')}`,
+      );
+    }
+    return result;
+  }
+
+  /**
    * SQL에서 문자열 리터럴과 코멘트를 빈 문자열로 치환한다.
-   * 바인드 스캔 시 리터럴 내부의 `:NN`(예: 'HH24:MI:SS')이 매칭되는 false positive를 막는다.
+   * 바인드 스캔 시 리터럴 내부의 `:NN`(예: 'HH24:MI:SS')이 매칭되는 false positive,
+   * 그리고 리터럴 안의 `:company` 같은 토큰으로 테넌트 가드를 우회하는 공격을 차단한다.
    */
   private stripStringsAndComments(sql: string): string {
     return sql
-      // ' ... ' 문자열 리터럴 (Oracle 표준: 작은따옴표 두 개 '' 로 이스케이프)
-      .replace(/'(?:''|[^'])*'/g, "''")
-      // q'[...]' / q'(...)' / q'{...}' / q'<...>' Oracle quote literal
-      .replace(/[qQ]'(.)([\s\S]*?)\1'/g, "''")
-      // -- 라인 코멘트
+      // 라인/블록 코멘트는 따옴표 셈에 영향을 줄 수 있으므로 먼저 제거.
       .replace(/--[^\n\r]*/g, '')
-      // /* ... */ 블록 코멘트
-      .replace(/\/\*[\s\S]*?\*\//g, '');
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      // Oracle q-quote: 짝 구분자 ([] () {} <>) 케이스 먼저
+      .replace(/[qQ]'\[[\s\S]*?\]'/g, "''")
+      .replace(/[qQ]'\([\s\S]*?\)'/g, "''")
+      .replace(/[qQ]'\{[\s\S]*?\}'/g, "''")
+      .replace(/[qQ]'<[\s\S]*?>'/g, "''")
+      // 그 외 단일 구분자(예: q'#abc#', q'!abc!')
+      .replace(/[qQ]'(.)([\s\S]*?)\1'/g, "''")
+      // 일반 작은따옴표 리터럴 (Oracle 표준: '' 로 이스케이프)
+      .replace(/'(?:''|[^'])*'/g, "''");
   }
 }

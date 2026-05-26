@@ -439,15 +439,22 @@ export class ConsumableService {
    * 소모품 로그 생성
    */
   async createLog(dto: EquipCreateConsumableLogDto, company?: string, plant?: string) {
-    // 소모품 존재 확인
-    const consumable = await this.findById(dto.consumableId, company, plant);
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // SEQ 채번 → 로그 INSERT → (SCRAP이면) 마스터 useYn='N' 까지를 하나의 트랜잭션에 묶는다.
-    // SCRAP 흐름에서 로그만 남고 마스터 비활성화가 누락되는 partial commit 방지.
-    const saved = await this.tx.run(async (queryRunner) => {
+    // 검증, SEQ 채번, 로그 INSERT, (SCRAP이면) 마스터 useYn='N' 까지를 하나의 트랜잭션에 묶는다.
+    // - findById 를 tx 안으로 옮겨 read-modify-write race condition 차단.
+    // - SCRAP 마스터 갱신은 항상 (consumable.company, consumable.plant)로 잠금 → 호출자가 tenant 헤더를
+    //   생략해도 다른 테넌트의 동일 consumableCode 마스터가 함께 비활성화되지 않는다.
+    const { saved, consumable } = await this.tx.run(async (queryRunner) => {
+      const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
+        where: { consumableCode: dto.consumableId, ...this.tenantWhere(company, plant) },
+      });
+      if (!consumable) {
+        throw new NotFoundException(`소모품을 찾을 수 없습니다: ${dto.consumableId}`);
+      }
+      this.assertSameTenant('소모품', { company, plant }, consumable);
+
       const logSeq = await this.getNextLogSeq(queryRunner);
 
       const log = queryRunner.manager.create(ConsumableLog, {
@@ -464,28 +471,40 @@ export class ConsumableService {
       const persisted = await queryRunner.manager.save(ConsumableLog, log);
 
       if (dto.logType === 'SCRAP') {
+        // tenantWhere 가 빈 객체가 되어도 마스터에서 확보한 tenant 로 강제 한정한다.
         await queryRunner.manager.update(
           ConsumableMaster,
-          { consumableCode: dto.consumableId, ...this.tenantWhere(company, plant) },
+          {
+            consumableCode: dto.consumableId,
+            company: consumable.company,
+            plant: consumable.plant,
+          },
           { useYn: 'N' },
         );
       }
 
-      return persisted;
+      return { saved: persisted, consumable };
     });
 
     if (dto.logType === 'SCRAP') {
       this.logger.log(`소모품 폐기 처리: ${consumable.consumableCode}`);
     }
 
-    // 작업자 표시용 정보는 트랜잭션 밖에서 조회해도 무방.
+    // 작업자 표시용 정보는 트랜잭션 밖에서 조회하며, 실패해도 본 응답을 깨트리지 않는다.
+    // (post-commit 예외 → caller 가 같은 SCRAP 을 재시도해 중복 로그가 쌓이던 회귀 방지)
     let workerInfo = null;
     if (dto.workerId) {
-      const worker = await this.userRepository.findOne({
-        where: { email: dto.workerId },
-        select: ['email', 'name', 'empNo'],
-      });
-      workerInfo = worker || null;
+      try {
+        const worker = await this.userRepository.findOne({
+          where: { email: dto.workerId },
+          select: ['email', 'name', 'empNo'],
+        });
+        workerInfo = worker || null;
+      } catch (error: unknown) {
+        this.logger.warn(
+          `소모품 로그 응답용 worker 조회 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`,
+        );
+      }
     }
 
     return {
