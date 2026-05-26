@@ -46,3 +46,11 @@ apps/backend/uploads
 *.tsbuildinfo
 nul
 .gstack/
+
+# AI coordination — live presence file (hook-generated, never commit)
+.ai-coordination/AGENTS_STATUS.json
+
+# Stray tool output (Windows path mangling artifacts)
+CUsers*
+Ctemp*
+CProjectHANESscripts
