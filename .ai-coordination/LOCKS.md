@@ -15,6 +15,27 @@ Before editing, add a lock entry. Remove or mark it released when done.
   notes:
 ```
 
+- owner: claude
+  task: T-011 IQC005 자재 입하관리 정렬 — Phase A
+  status: active
+  files:
+    - apps/backend/src/migrations/2026-05-26_iqc005_*.sql
+    - apps/backend/src/entities/mat-lot.entity.ts
+    - apps/backend/src/modules/material/services/mat-serial-number.service.ts
+    - apps/backend/src/modules/material/services/arrival.service.ts
+    - apps/backend/src/modules/material/controllers/arrival.controller.ts
+    - apps/backend/src/modules/material/dto/arrival.dto.ts
+    - apps/frontend/src/app/(authenticated)/material/arrival/**
+    - apps/frontend/src/components/shared/MfgPartnerSelect.tsx
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+  started: 2026-05-26T15:50:00+09:00
+  last_seen: 2026-05-26T15:50:00+09:00
+  expires: 2026-05-26T19:50:00+09:00
+  notes: |
+    IQC005 정렬 Phase A 작업. 스펙 docs/superpowers/specs/2026-05-26-iqc005-alignment-phase-a-design.md.
+    DB 마이그레이션 + 백엔드 시리얼 채번 + 입하 API 개편 + 프론트 UI 재구조화.
+    Phase B/C/D는 별도 task. arrival.service의 기존 receive 메서드는 deprecate 주석만 추가, 제거는 Phase B에서.
+
 - owner: kimi
   task: T-009 Build AI Command Center dashboard
   status: released
