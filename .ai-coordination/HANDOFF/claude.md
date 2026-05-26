@@ -2,40 +2,54 @@
 
 ## Last Update
 
-2026-05-26 (Claude Opus 4.7 1M context, HANES MES repo)
+2026-05-26 T-008 closed (Claude Opus 4.7 1M context)
 
-## Completed
+## Completed (T-008)
 
-- Backend 잠재 버그 5건 처리(commit `c79b4c6` 및 `59e29a1`에 분산 반영):
-  - `sql.executor.ts` 정규식 false positive/negative 차단(문자열 리터럴·코멘트 strip, 선행 0 바인드 검출).
-  - `db-backup.service.ts` TypeORM 객체 바인드 캐스트 제거, 위치 바인드 배열로 복귀.
-  - `interface.service.ts` 시퀀스 도입 후 무용한 `LOCK TABLE` 제거, `retryLog` retryCount 원자적 증가.
-  - `equipment/consumable.service.ts createLog` 를 `tx.run` 으로 감싸 SCRAP partial commit 차단.
-  - `bom.service.spec.ts findHierarchy` 회귀 방지 spec 3건 추가.
-- 시퀀스 전환 검증: 6개 호출처에서 `SEQ_*.NEXTVAL` 정상 적용 확인, 마이그레이션 SQL 존재 확인.
-- 사이드 spec 정리: JwtAuthGuard APP_GUARD 전환 영향으로 깨진 5개 spec(`jwt-auth.guard`, `equip-bom.service`, `menu-categories.guard`, `production-controller.guard-tenant`, `mold.controller`, `product-hold.controller`, `product-physical-inv.controller`) 패턴에 맞춰 재작성.
-- AI 협업 보드 통합:
-  - `~/.claude/skills/ai-coordination/` 스킬 생성. Codex와 동일 스크립트 동봉.
-  - HANES `CLAUDE.md` 최상단에 협업 보드 포인터 섹션 추가(commit `fa6c786`).
+- 2차 코드 리뷰 15건 중 13건 처리 + #11 iqc-template 까지 함께 처리 (T-007 잠금 해제 후).
+- 보안/데이터 무결성:
+  - SQL Executor: 문자열 리터럴 / q-quote 짝-구분자 / 위치+이름 혼용으로 인한 DELETE 가드 우회 + 바인드 silent miswire 차단.
+  - Equipment ConsumableService SCRAP: tenant 미전달 호출에서 다른 테넌트 마스터까지 useYn='N' 으로 flip 되던 cross-tenant 결함 차단.
+  - physical-inv startSession race: tx + partial unique index 로 단일 IN_PROGRESS 불변식 DB 보장.
+- 회귀:
+  - retryCount = `NVL(RETRY_COUNT, 0) + 1` 로 legacy NULL 무한 retry 차단.
+  - retryLog affected=0 시 InternalServerErrorException — pk 정밀도 mismatch silent fail 차단.
+  - createLog post-commit worker 조회 실패 → 200 응답 유지로 사용자 재시도 인한 중복 SCRAP 방지.
+- 운영:
+  - main.ts 에서 Node TZ 를 Asia/Seoul 로 강제 → setHours(0,0,0,0) 자정 의미를 컨테이너 TZ 와 분리.
+  - migrations/README.md 추가 — 시퀀스 마이그 미적용 환경, cutover race 안전 절차 가이드.
+  - create_log_sequences.sql IQC_TEMPLATES 블록 USER_TABLES 가드 추가.
+
+## Files Touched
+
+- apps/backend/src/main.ts
+- apps/backend/src/migrations/2026-05-26_create_log_sequences.sql
+- apps/backend/src/migrations/2026-05-26_physical_inv_session_uniq.sql (new)
+- apps/backend/src/migrations/README.md (new)
+- apps/backend/src/modules/equipment/services/consumable.service{.ts,.spec.ts}
+- apps/backend/src/modules/interface/services/interface.service{.ts,.spec.ts}
+- apps/backend/src/modules/master/services/iqc-template.service.ts
+- apps/backend/src/modules/material/services/physical-inv.service{.ts,.spec.ts}
+- apps/backend/src/modules/scheduler/executors/sql.executor{.ts,.spec.ts}
+- apps/backend/src/modules/system/services/training.service.ts
 
 ## Verification
 
 - `pnpm exec tsc --noEmit` → 0 error
-- `pnpm exec jest` → 168 suites / 1663 tests PASS
-- `check_coordination.py --repo /c/Project/HANES` → OK
+- `pnpm exec jest --no-coverage` → 168 suites / 1671 tests PASS
+- 신규/수정 마이그 SQL 은 사용자가 별도로 JSHANES 에 적용해야 함 (`apps/backend/src/migrations/README.md` 참고).
 
-## Open Notes
+## Deferred / Operational Notes
 
-- 추가 잠재 버그 보류분(이번 작업 범위 밖, 다음 세션에서 검토 가치 있음):
-  - `erp-material.service.ts importPurchaseOrder`: `getNextSeq` 호출이 `tx.run` 바깥. 시퀀스 도입으로 PK 충돌 위험은 사라졌으나 트랜잭션 롤백 시 SEQ 갭만 남음(허용 가능). 필요 시 `tx.run` 안으로 이동 검토.
-  - `bom.service.ts findHierarchy`: bind() 헬퍼는 SQL 등장 순서에 강하게 묶여 있어 절 추가/이동 시 묵시적으로 깨질 수 있음. 회귀 spec 3건으로 1차 방어 완료. 장기적으로는 named bind + 객체 전달 방식으로 전환 가치 있음(TypeORM 객체 바인드 호환성 사전 확인 필요).
-  - `interface.service.ts bulkRetry`: `Promise.all` 로 동시 호출 시 동일 로그 키가 두 번 들어오면 race. 현재는 호출자가 distinct 키를 보장하지만 방어 코드 없음.
-- 협업 보드 자체에 대한 변경은 가능한 한 협업 인프라 커밋으로만 분리할 것. backend 기능 변경과 섞지 말 것.
+- **#6 마이그 cutover race**: 코드 수정으로 막을 수 없는 운영 절차 항목. README 와 SQL 헤더 코멘트에 안전 절차 문서화. 실제 배포 시 사용자가 구 코드 인스턴스를 중지/quiesce 한 뒤 마이그를 실행할 것.
+- **#8 마이그 미적용 위험**: README 의 smoke-test 체크리스트로 가이드. startup-time sequence existence probe 는 별도 task 로 분리 가능.
+- **#11 iqc-template per-tenant 채번**: 현재는 글로벌 시퀀스 + 자릿수 9999 cap. per-tenant dense numbering 으로 전환 시 sequence 제거 + 별도 채번 테이블 필요. 비즈니스 결정 대기.
+- 전배된 worker tenant fallback(#12) 은 PII 노출 측면에서 의도된 동작인지 비즈니스 확인 필요 (현재 결정: 워커는 글로벌 식별자라 가정하고 fallback 허용).
 
 ## Next AI Should
 
-1. `AGENTS.md` 와 `.ai-coordination/README.md` / `STATE.md` / `TASKS.md` / `DECISIONS.md` / `LOCKS.md` 를 먼저 읽는다.
-2. broad edits / DB 변경 / 리뷰 핸드오프가 있으면 `PROTOCOL.md` 도 읽는다.
-3. 편집 전 `LOCKS.md` 에 agent 이름·task ID·예정 파일 기록.
-4. `TASKS.md` 는 active-only 유지. 완료 작업은 `ARCHIVE.md` 한 줄 + `JOURNAL.md` 상세.
-5. 종료 전 본 핸드오프 파일을 갱신할 것.
+1. `AGENTS.md` 와 `.ai-coordination/*` 우선 읽기.
+2. broad edit / DB change / review handoff 시 `PROTOCOL.md` 확인.
+3. 편집 전 `LOCKS.md` 에 task ID 기록.
+4. 신규 마이그 적용 여부는 사용자에게 명시적으로 확인.
+5. 종료 전 본 핸드오프 갱신.
