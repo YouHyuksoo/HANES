@@ -2,6 +2,36 @@
 
 Append new entries at the top.
 
+## 2026-05-26 Claude (T-011 Phase A — 사전 조사)
+
+- 사용자 요청: IQC005 자재 입하관리를 목업 + 채번규칙 PDF 기준으로 정렬 (Phase A).
+- 디자인/스펙/플랜 작성:
+  - 스펙: `docs/superpowers/specs/2026-05-26-iqc005-alignment-phase-a-design.md`
+  - 플랜: `docs/superpowers/plans/2026-05-26-iqc005-alignment-phase-a.md` (19 task)
+  - 채번 규칙 문서: `docs/standards/numbering-rules.md` (PDF 정리)
+- 사용자 결정 3건:
+  - 제조사: PARTNER_MASTERS의 PARTNER_TYPE='MFG' row, MAT_LOTS에 MFG_PARTNER_CODE 컬럼 신설
+  - 채번: Oracle SEQUENCE 사용 강제
+  - 시리얼 접두 'VH1-RM'은 상수 (PLANT_CD '1000'과 매핑 관계 없음)
+- 사용자 결정 B: PO 라인 메타 (LINE_NO/REV_NO/LINE_STATUS) 컬럼을 PURCHASE_ORDER_ITEMS에 신설, USE_TYPE을 PURCHASE_ORDERS에 신설
+- 실행 전 사전 조사 (Task 1):
+  - `PKG_SEQ_GENERATOR` 본문 동작 = `PREFIX || SEPARATOR || TO_CHAR(SYSDATE, DATE_FORMAT) || SEPARATOR || LPAD(SEQ, PAD_LENGTH, '0')`
+  - SEPARATOR가 양쪽에 적용되어 PDF 형식 `VH1-RM260526-00001` (날짜 앞 무, 일련 앞 -) 생성 불가.
+  - 일별 리셋도 패키지 내 처리 없음 (단순 NEXTVAL).
+  - 현재 SEQ_RULES: MAT_UID(PREFIX='M', SEQ='MAT_UID_SEQ', PAD=5), ARRIVAL(PREFIX='AR', SEQ='SEQ_ARRIVAL', PAD=4) — 기존 흐름에서 사용 중.
+  - 결정: 기존 PKG/SEQ_RULES는 건드리지 않고, IQC005 흐름은 `NumberingService`에 신규 메서드 2개(`nextMatSerial`/`nextArrivalNoV2`)를 추가해 신규 SEQUENCE(`SEQ_MAT_SERIAL_DAILY`/`SEQ_ARRIVAL_NO_DAILY`)를 직접 호출하고 application-level에서 포맷 조립. DBMS_SCHEDULER 잡으로 일별 리셋.
+
+## 2026-05-26 Codex
+
+- 사용자 지시: AI Command Center는 `C:\Project\command-center` 별도 프로젝트로 분리했으므로 HANES repo 안의 `ai-command` 구현을 제거.
+- 제거 파일:
+  - `apps/frontend/src/app/ai-command/**`
+  - `apps/frontend/src/components/ai-command/**`
+- 정리:
+  - `apps/frontend/src/app/globals.css`에서 AI Command Center 전용 cyberpunk animation/class 블록 제거.
+  - 직전 중단된 T-012 작업 항목과 codex active lock 제거.
+- 검증: `rg "ai-command|AI COMMAND|COMMAND CENTER|cyberpunk-grid|animate-status-pulse|AgentStatusPanel" apps -S` 결과 없음. 두 디렉토리 `Test-Path` 결과 모두 `False`.
+
 ## 2026-05-26 Claude (T-010)
 
 - 사용자 요청: T-008 의 SQL 마이그를 JSHANES 에 적용.

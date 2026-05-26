@@ -54,6 +54,9 @@ export class MatLot {
   @Column({ name: 'VENDOR', length: 50 })
   vendor: string;
 
+  @Column({ type: 'varchar2', name: 'MFG_PARTNER_CODE', length: 50, nullable: true })
+  mfgPartnerCode: string | null;
+
   @Column({ name: 'INVOICE_NO', length: 50 })
   invoiceNo: string;
 

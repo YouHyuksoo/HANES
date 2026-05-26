@@ -220,83 +220,127 @@ git commit -m "feat(numbering): add daily reset jobs for serial sequences (T-011
 
 ---
 
-## Task 5: 마이그레이션 — SEQ_RULES 룰 정정 (MAT_UID, ARRIVAL)
+## Task 5: NumberingService에 IQC005 신규 채번 메서드 2개 추가
+
+> Task 1 결과: PKG_SEQ_GENERATOR가 `PREFIX || SEP || DATE || SEP || PAD` 형식으로 SEPARATOR를 양쪽에 적용하여 PDF 형식 `VH1-RM260526-00001`을 SEQ_RULES만으로 생성 불가. 기존 PKG/SEQ_RULES는 다른 채번 흐름에서 사용 중이므로 건드리지 않고, IQC005 흐름은 application-level 포맷으로 우회한다.
 
 **Files:**
-- Create: `apps/backend/src/migrations/2026-05-26_iqc005_seq_rules.sql`
+- Modify: `apps/backend/src/shared/numbering.service.ts`
+- Modify: `apps/backend/src/shared/numbering.service.spec.ts` (TDD)
 
-- [ ] **Step 1: 현재 SEQ_RULES 확인 (oracle-db로 select)**
+- [ ] **Step 1: 실패하는 spec 추가**
 
-```sql
-SELECT DOC_TYPE, PREFIX, SEQ_NAME, PAD_LENGTH, DATE_FORMAT, SEPARATOR, USE_YN
-FROM SEQ_RULES
-WHERE DOC_TYPE IN ('MAT_UID', 'ARRIVAL');
-```
-결과를 JOURNAL에 백업.
+`numbering.service.spec.ts`에 새 describe:
+```ts
+describe('NumberingService.nextMatSerial / nextArrivalNoV2 (IQC005 Phase A)', () => {
+  // ...mock 셋업 — 기존 patterns 따름
+  it('nextMatSerial: VH1-RM + YYMMDD + 5자리', async () => {
+    const mockDs = { manager: { query: jest.fn().mockResolvedValue([{ NEXT_SEQ: 7 }]) } };
+    const svc = new NumberingService({} as any, {} as any, mockDs as any);
+    const result = await svc.nextMatSerial(undefined, new Date('2026-05-26T00:00:00+09:00'));
+    expect(result).toBe('VH1-RM260526-00007');
+  });
 
-- [ ] **Step 2: 마이그레이션 SQL 작성**
+  it('nextArrivalNoV2: R + YYMMDD + 5자리 (no separator)', async () => {
+    const mockDs = { manager: { query: jest.fn().mockResolvedValue([{ NEXT_SEQ: 3 }]) } };
+    const svc = new NumberingService({} as any, {} as any, mockDs as any);
+    const result = await svc.nextArrivalNoV2(undefined, new Date('2026-05-26T00:00:00+09:00'));
+    expect(result).toBe('R26052600003');
+  });
 
-```sql
--- 2026-05-26: IQC005 Phase A — SEQ_RULES 정정 (PDF 채번규칙 반영)
-
-MERGE INTO SEQ_RULES r
-USING (SELECT 'MAT_UID' AS DOC_TYPE FROM DUAL) s
-ON (r.DOC_TYPE = s.DOC_TYPE)
-WHEN MATCHED THEN UPDATE SET
-  PREFIX = 'VH1-RM',
-  SEQ_NAME = 'SEQ_MAT_SERIAL_DAILY',
-  PAD_LENGTH = 5,
-  DATE_FORMAT = 'YYMMDD',
-  SEPARATOR = '-',
-  USE_YN = 'Y',
-  DESCRIPTION = '자재 시리얼 (PDF 채번규칙 2026-05-19)'
-WHEN NOT MATCHED THEN INSERT
-  (DOC_TYPE, PREFIX, SEQ_NAME, PAD_LENGTH, DATE_FORMAT, SEPARATOR, USE_YN, DESCRIPTION, COMPANY, PLANT_CD)
-VALUES
-  ('MAT_UID', 'VH1-RM', 'SEQ_MAT_SERIAL_DAILY', 5, 'YYMMDD', '-', 'Y',
-   '자재 시리얼 (PDF 채번규칙 2026-05-19)', '40', '1000');
-
-MERGE INTO SEQ_RULES r
-USING (SELECT 'ARRIVAL' AS DOC_TYPE FROM DUAL) s
-ON (r.DOC_TYPE = s.DOC_TYPE)
-WHEN MATCHED THEN UPDATE SET
-  PREFIX = 'R',
-  SEQ_NAME = 'SEQ_ARRIVAL_NO_DAILY',
-  PAD_LENGTH = 5,
-  DATE_FORMAT = 'YYMMDD',
-  SEPARATOR = '',
-  USE_YN = 'Y',
-  DESCRIPTION = '입하실적코드 (PDF 채번규칙 2026-05-19)'
-WHEN NOT MATCHED THEN INSERT
-  (DOC_TYPE, PREFIX, SEQ_NAME, PAD_LENGTH, DATE_FORMAT, SEPARATOR, USE_YN, DESCRIPTION, COMPANY, PLANT_CD)
-VALUES
-  ('ARRIVAL', 'R', 'SEQ_ARRIVAL_NO_DAILY', 5, 'YYMMDD', '', 'Y',
-   '입하실적코드 (PDF 채번규칙 2026-05-19)', '40', '1000');
-
-COMMIT;
+  it('nextMatSerial: pad 5 zero-fill', async () => {
+    const mockDs = { manager: { query: jest.fn().mockResolvedValue([{ NEXT_SEQ: 1 }]) } };
+    const svc = new NumberingService({} as any, {} as any, mockDs as any);
+    const result = await svc.nextMatSerial(undefined, new Date('2026-05-26T00:00:00+09:00'));
+    expect(result).toBe('VH1-RM260526-00001');
+  });
+});
 ```
 
-- [ ] **Step 3: JSHANES 적용 + 채번 동작 확인**
+> 기존 `NumberingService` 생성자는 `(seqGenerator, numRule)` 2개. spec에서 3번째 인자로 DataSource 추가 가정 — Step 2에서 생성자 확장.
 
-```sql
--- 적용 후 룰 재확인
-SELECT * FROM SEQ_RULES WHERE DOC_TYPE IN ('MAT_UID', 'ARRIVAL');
-
--- 실제 채번 호출 (Date 2026-05-26 가정)
-SELECT PKG_SEQ_GENERATOR.GET_NO('MAT_UID') FROM DUAL;
--- 예상: 'VH1-RM260526-00001' 형식
-
-SELECT PKG_SEQ_GENERATOR.GET_NO('ARRIVAL') FROM DUAL;
--- 예상: 'R26052600001' 형식
-```
-
-> 호출 결과가 예상 형식과 다르면 Task 1로 돌아가 PKG_SEQ_GENERATOR 본문 재확인. 패키지가 SEPARATOR/DATE_FORMAT을 어떻게 조합하는지에 따라 룰 컬럼 의미가 다를 수 있음.
-
-- [ ] **Step 4: 커밋**
+- [ ] **Step 2: spec 실행 → 실패 확인**
 
 ```bash
-git add apps/backend/src/migrations/2026-05-26_iqc005_seq_rules.sql
-git commit -m "feat(numbering): align MAT_UID/ARRIVAL seq rules with PDF spec (T-011)"
+pnpm --filter @hanes/backend test -- numbering.service
+```
+Expected: 3 신규 케이스 FAIL.
+
+- [ ] **Step 3: NumberingService에 메서드 추가**
+
+`apps/backend/src/shared/numbering.service.ts` 수정:
+
+생성자에 DataSource 추가:
+```ts
+import { DataSource, QueryRunner } from 'typeorm';
+
+constructor(
+  private readonly seqGenerator: SeqGeneratorService,
+  private readonly numRule: NumRuleService,
+  private readonly dataSource: DataSource,
+) {}
+```
+
+메서드 추가:
+```ts
+  // ─────────────────────────────────────────────
+  // IQC005 Phase A — application-level 포맷 채번
+  // PKG_SEQ_GENERATOR의 SEPARATOR 양쪽 적용 제약을 우회
+  // ─────────────────────────────────────────────
+
+  /** 자재 시리얼 (VH1-RM + YYMMDD + 5자리). PDF 채번규칙 2026-05-19. */
+  async nextMatSerial(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_MAT_SERIAL_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq);
+    return `VH1-RM${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
+  }
+
+  /** 입하실적코드 (R + YYMMDD + 5자리, separator 없음). PDF 채번규칙 2026-05-19. */
+  async nextArrivalNoV2(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_ARRIVAL_NO_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq);
+    return `R${this.yyMMdd(txDate)}${this.pad5(seq)}`;
+  }
+
+  private yyMMdd(d: Date): string {
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}${mm}${dd}`;
+  }
+
+  private pad5(n: number): string {
+    return String(n).padStart(5, '0');
+  }
+```
+
+- [ ] **Step 4: 모듈 등록 확인**
+
+`NumberingService`를 export하는 module 파일에서 DataSource는 NestJS TypeOrm이 자동 주입하므로 별도 등록 불필요. 단, 기존 사용처에서 `new NumberingService(seq, rule)` 형태로 직접 생성하는 곳이 있는지 확인:
+```bash
+grep -rn "new NumberingService" apps/backend/src
+```
+있으면 3번째 인자로 DataSource 전달하도록 수정.
+
+- [ ] **Step 5: spec 통과 + 빌드 확인**
+
+```bash
+pnpm --filter @hanes/backend test -- numbering.service
+pnpm --filter @hanes/backend build
+```
+Expected: 3 케이스 PASS, 빌드 0 error.
+
+- [ ] **Step 6: 커밋**
+
+```bash
+git add apps/backend/src/shared/numbering.service.ts apps/backend/src/shared/numbering.service.spec.ts
+git commit -m "feat(numbering): add nextMatSerial/nextArrivalNoV2 for IQC005 (T-011)"
 ```
 
 ---
@@ -596,8 +640,8 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
       create: jest.fn((cls, data) => ({ ...data })),
     };
     mockNumbering = {
-      nextMatUid: jest.fn(),
-      nextArrivalNo: jest.fn().mockResolvedValue('R26052600001'),
+      nextMatSerial: jest.fn(),
+      nextArrivalNoV2: jest.fn().mockResolvedValue('R26052600001'),
     };
     mockTx = {
       runInTransaction: jest.fn(async (fn) => fn(mockManager)),
@@ -666,7 +710,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
 
   it('case 1: receivedQty 200 / LOT_UNIT_QTY 50 → MAT_LOT 4건 (각 50)', async () => {
     setupBasicMocks({ lotUnitQty: 50, orderQty: 1000, receivedQty: 300 });
-    mockNumbering.nextMatUid
+    mockNumbering.nextMatSerial
       .mockResolvedValueOnce('VH1-RM260526-00001')
       .mockResolvedValueOnce('VH1-RM260526-00002')
       .mockResolvedValueOnce('VH1-RM260526-00003')
@@ -684,7 +728,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
 
   it('case 2: receivedQty 220 / LOT_UNIT_QTY 50 → MAT_LOT 5건 (50,50,50,50,20)', async () => {
     setupBasicMocks({ lotUnitQty: 50, orderQty: 1000, receivedQty: 0 });
-    mockNumbering.nextMatUid.mockImplementation(() => Promise.resolve(`VH1-RM260526-${String(Math.random()).slice(2, 7)}`));
+    mockNumbering.nextMatSerial.mockImplementation(() => Promise.resolve(`VH1-RM260526-${String(Math.random()).slice(2, 7)}`));
 
     const result = await service.receivePoLine({
       poNo: 'PO-26-001', poSeq: 1, receivedQty: 220, mfgPartnerCode: 'M001',
@@ -697,7 +741,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
 
   it('case 3: LOT_UNIT_QTY NULL → 단일 MAT_LOT 1건', async () => {
     setupBasicMocks({ lotUnitQty: null, orderQty: 1000, receivedQty: 0 });
-    mockNumbering.nextMatUid.mockResolvedValueOnce('VH1-RM260526-00010');
+    mockNumbering.nextMatSerial.mockResolvedValueOnce('VH1-RM260526-00010');
 
     const result = await service.receivePoLine({
       poNo: 'PO-26-001', poSeq: 1, receivedQty: 200, mfgPartnerCode: 'M001',
@@ -794,11 +838,12 @@ private readonly partnerMasterRepository: Repository<PartnerMaster>,
       const unit = item.lotUnitQty && item.lotUnitQty > 0 ? item.lotUnitQty : dto.receivedQty;
       const serialCount = Math.ceil(dto.receivedQty / unit);
 
-      // 4. 채번
-      const arrivalNo = await this.numbering.nextArrivalNo();
+      // 4. 채번 (NumberingService IQC005 메서드, 트랜잭션 안 결번 없음)
+      const txDate = new Date(dto.receivedDate);
+      const arrivalNo = await this.numbering.nextArrivalNoV2(undefined, txDate);
       const serialNos: string[] = [];
       for (let i = 0; i < serialCount; i++) {
-        serialNos.push(await this.numbering.nextMatUid());
+        serialNos.push(await this.numbering.nextMatSerial(undefined, txDate));
       }
 
       // 5. MAT_LOTS 생성
@@ -2396,6 +2441,13 @@ git commit -m "chore(ai-coordination): close T-011 Phase A board state"
 - Task 9 listPoLines: 명시적 join 사용, lineStatus/useType 컬럼 활용
 - Task 12 PoLineGrid: status → lineStatus 필드 사용, `PO_LINE_STATUS` 코드 그룹 사용 (시드 필요)
 - Task 13 PoLineReceiptModal: 부모에 poNo/poSeq 전달, part API 경로 `/master/parts/code/:itemCode`
+
+## 변경 사항 (PKG_SEQ_GENERATOR 발견 반영 — 2026-05-26 17:05)
+
+- Task 1 결과: PKG_SEQ_GENERATOR가 `PREFIX || SEP || DATE || SEP || PAD` 형식으로 SEPARATOR를 양쪽 적용, PDF 형식 `VH1-RM260526-00001` 직접 생성 불가. 일별 리셋도 패키지 내 처리 없음.
+- Task 5 변경: SEQ_RULES 룰 정정 → `NumberingService.nextMatSerial / nextArrivalNoV2` 신규 메서드 (application-level 포맷 + 신규 시퀀스 직접 NEXTVAL)
+- Task 8 호출 변경: `nextMatUid/nextArrivalNo` → `nextMatSerial/nextArrivalNoV2`
+- Task 4 (DBMS_SCHEDULER 리셋 잡) 진행 확정 (조건부 아님)
 
 ## 후속 (Phase A 외)
 
