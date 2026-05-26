@@ -55,7 +55,40 @@ CREATE INDEX IX_MAT_LOTS_MFG ON MAT_LOTS(MFG_PARTNER_CODE);
 mfgPartnerCode: string | null;
 ```
 
-### 3-3. 채번 SEQUENCE (마이그레이션 1개)
+### 3-3. 채번 인프라 재사용 — `SEQ_RULES` + `PKG_SEQ_GENERATOR`
+
+기존 인프라:
+- `SeqRule` 엔티티 (`SEQ_RULES` 테이블)와 Oracle `PKG_SEQ_GENERATOR.GET_NO(docType)` 패키지가 이미 채번을 일원화.
+- `NumberingService.nextMatUid()`, `nextArrivalNo()` 메서드 노출됨.
+
+플랜은 신규 서비스를 만들지 않고 **`SEQ_RULES`의 룰만 PDF 포맷대로 정정**한다.
+
+```sql
+-- 2026-05-26_iqc005_seq_rules.sql
+-- MAT_UID (자재 시리얼)
+MERGE INTO SEQ_RULES r USING (SELECT 'MAT_UID' AS DOC_TYPE FROM DUAL) s
+ON (r.DOC_TYPE = s.DOC_TYPE)
+WHEN MATCHED THEN UPDATE SET
+  PREFIX='VH1-RM', SEQ_NAME='SEQ_MAT_SERIAL_DAILY', PAD_LENGTH=5,
+  DATE_FORMAT='YYMMDD', SEPARATOR='-', USE_YN='Y'
+WHEN NOT MATCHED THEN INSERT (DOC_TYPE, PREFIX, SEQ_NAME, PAD_LENGTH, DATE_FORMAT, SEPARATOR, USE_YN, DESCRIPTION)
+VALUES ('MAT_UID', 'VH1-RM', 'SEQ_MAT_SERIAL_DAILY', 5, 'YYMMDD', '-', 'Y', '자재 시리얼 (PDF 채번규칙)');
+
+-- ARRIVAL (입하실적코드)
+MERGE INTO SEQ_RULES r USING (SELECT 'ARRIVAL' AS DOC_TYPE FROM DUAL) s
+ON (r.DOC_TYPE = s.DOC_TYPE)
+WHEN MATCHED THEN UPDATE SET
+  PREFIX='R', SEQ_NAME='SEQ_ARRIVAL_NO_DAILY', PAD_LENGTH=5,
+  DATE_FORMAT='YYMMDD', SEPARATOR='', USE_YN='Y'
+WHEN NOT MATCHED THEN INSERT (DOC_TYPE, PREFIX, SEQ_NAME, PAD_LENGTH, DATE_FORMAT, SEPARATOR, USE_YN, DESCRIPTION)
+VALUES ('ARRIVAL', 'R', 'SEQ_ARRIVAL_NO_DAILY', 5, 'YYMMDD', '', 'Y', '입하실적코드 (PDF 채번규칙)');
+```
+
+### 3-4. 채번 SEQUENCE 및 일별 리셋
+
+PKG_SEQ_GENERATOR가 사용하는 Oracle SEQUENCE를 생성한다. 패키지 본문이 일별 리셋을 처리하지 않는 경우 DBMS_SCHEDULER 잡으로 보강.
+
+> **PKG_SEQ_GENERATOR 본문 확인이 선결조건**: 패키지가 내부에서 PREFIX+DATE_FORMAT 조합 시 일별 카운터를 어떻게 처리하는지 확인 후, (a) 패키지 내부 처리 시 잡 불필요, (b) 단순 NEXTVAL 호출만 하면 DBMS_SCHEDULER 잡 + ALTER SEQUENCE RESTART 추가.
 
 ```sql
 -- 2026-05-26_iqc005_serial_sequences.sql
@@ -66,18 +99,15 @@ CREATE SEQUENCE SEQ_ARRIVAL_NO_DAILY
   START WITH 1 INCREMENT BY 1 MAXVALUE 99999 NOCYCLE NOCACHE ORDER;
 ```
 
-> `NOCACHE ORDER` 채택 이유: 일별 리셋 + 순번이 시간순 정렬과 일치해야 운영자가 시리얼/입하번호로 발생 순서를 추론 가능. 성능 영향은 입하 트랜잭션 빈도(분당 수십 건 이내)에서 무시 가능.
-
-### 3-4. 일별 리셋 잡 (마이그레이션 1개)
-
+리셋 잡(필요 시):
 ```sql
--- 2026-05-26_iqc005_daily_reset_jobs.sql
+-- 2026-05-26_iqc005_daily_reset_jobs.sql (조건부)
 BEGIN
   DBMS_SCHEDULER.CREATE_JOB(
     job_name   => 'JOB_RESET_MAT_SERIAL_DAILY',
     job_type   => 'PLSQL_BLOCK',
     job_action => 'BEGIN EXECUTE IMMEDIATE ''ALTER SEQUENCE SEQ_MAT_SERIAL_DAILY RESTART START WITH 1''; END;',
-    start_date => TRUNC(SYSDATE) + 1,  -- 다음 자정
+    start_date => TRUNC(SYSDATE) + 1,
     repeat_interval => 'FREQ=DAILY; BYHOUR=0; BYMINUTE=0; BYSECOND=0',
     enabled    => TRUE
   );
@@ -111,50 +141,22 @@ WHERE ITEM_TYPE = 'RM' AND LOT_UNIT_QTY IS NULL AND COMPANY = '40';
 
 ## 4. 백엔드 변경
 
-### 4-1. 신규 서비스
+### 4-1. 채번 서비스 (기존 재사용)
 
-**파일:** `apps/backend/src/modules/material/services/mat-serial-number.service.ts`
+신규 서비스를 만들지 않는다. 기존 `NumberingService`를 트랜잭션 내에서 호출:
 
 ```ts
-const MAT_SERIAL_PREFIX = 'VH1-RM';  // 회사 표준 상수 (PLANT_CD와 매핑 관계 없음)
-
-@Injectable()
-export class MatSerialNumberService {
-  constructor(private readonly dataSource: DataSource) {}
-
-  async nextMatSerial(txDate: Date = new Date()): Promise<string> {
-    const [{ NEXT_SEQ: seq }] = await this.dataSource.query(
-      'SELECT SEQ_MAT_SERIAL_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
-    );
-    return `${MAT_SERIAL_PREFIX}${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
-  }
-
-  async nextMatSerialBatch(count: number, txDate: Date = new Date()): Promise<string[]> {
-    // CONNECT BY로 N개 한번에 채번
-    const rows = await this.dataSource.query(
-      `SELECT SEQ_MAT_SERIAL_DAILY.NEXTVAL AS "NEXT_SEQ"
-       FROM DUAL CONNECT BY LEVEL <= :count`,
-      [count],
-    );
-    return rows.map((r: any) => `${MAT_SERIAL_PREFIX}${this.yyMMdd(txDate)}-${this.pad5(r.NEXT_SEQ)}`);
-  }
-
-  async nextArrivalNo(txDate: Date = new Date()): Promise<string> {
-    const [{ NEXT_SEQ: seq }] = await this.dataSource.query(
-      'SELECT SEQ_ARRIVAL_NO_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
-    );
-    return `R${this.yyMMdd(txDate)}${this.pad5(seq)}`;
-  }
-
-  private yyMMdd(d: Date): string {
-    const yy = String(d.getFullYear()).slice(-2);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yy}${mm}${dd}`;
-  }
-  private pad5(n: number): string { return String(n).padStart(5, '0'); }
+// 시리얼 N개 한번에
+const serials: string[] = [];
+for (let i = 0; i < serialCount; i++) {
+  serials.push(await this.numbering.nextMatUid(qr));
 }
+
+// 입하실적코드
+const arrivalNo = await this.numbering.nextArrivalNo(qr);
 ```
+
+> 배치 채번이 성능에 부담이 될 만한 호출 빈도가 아니므로 단순 루프로 충분. 트랜잭션 안에서 호출하므로 결번 없음.
 
 ### 4-2. 입하 서비스 개편
 
@@ -193,9 +195,12 @@ async receivePoLine(dto: PoLineReceiptDto, user: User) {
     const unit = item.lotUnitQty ?? dto.receivedQty;  // NULL이면 단일 LOT
     const serialCount = Math.ceil(dto.receivedQty / unit);
 
-    // 4. 채번 (Oracle SEQUENCE 일괄)
-    const arrivalNo = await this.serialNo.nextArrivalNo(new Date(dto.receivedDate));
-    const serials = await this.serialNo.nextMatSerialBatch(serialCount, new Date(dto.receivedDate));
+    // 4. 채번 (기존 NumberingService 재사용, 트랜잭션 안에서 결번 없음)
+    const arrivalNo = await this.numbering.nextArrivalNo(qr);
+    const serials: string[] = [];
+    for (let i = 0; i < serialCount; i++) {
+      serials.push(await this.numbering.nextMatUid(qr));
+    }
 
     // 5. MAT_LOTS insert N건
     const lots: MatLot[] = [];
@@ -413,11 +418,10 @@ BOM 절대 금지 ([[feedback_no_bom_in_json]]).
 
 ### 신규
 - `apps/backend/src/migrations/2026-05-26_iqc005_mat_lots_mfg_code.sql`
-- `apps/backend/src/migrations/2026-05-26_iqc005_serial_sequences.sql`
-- `apps/backend/src/migrations/2026-05-26_iqc005_daily_reset_jobs.sql`
+- `apps/backend/src/migrations/2026-05-26_iqc005_seq_rules.sql` — SEQ_RULES의 MAT_UID/ARRIVAL 룰 정정
+- `apps/backend/src/migrations/2026-05-26_iqc005_serial_sequences.sql` — 신규 Oracle SEQUENCE
+- `apps/backend/src/migrations/2026-05-26_iqc005_daily_reset_jobs.sql` — DBMS_SCHEDULER 잡 (PKG 동작 확인 후 조건부)
 - `apps/backend/src/migrations/2026-05-26_iqc005_seed_mfg_partners.sql`
-- `apps/backend/src/modules/material/services/mat-serial-number.service.ts`
-- `apps/backend/src/modules/material/services/mat-serial-number.service.spec.ts`
 - `apps/frontend/src/app/(authenticated)/material/arrival/components/PoLineGrid.tsx`
 - `apps/frontend/src/app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx`
 - `apps/frontend/src/app/(authenticated)/material/arrival/components/SerialIssueConfirmModal.tsx`
