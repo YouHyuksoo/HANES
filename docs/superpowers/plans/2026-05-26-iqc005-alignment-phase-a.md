@@ -365,6 +365,108 @@ git commit -m "chore(seed): MFG partners and LOT_UNIT_QTY backfill for RM (T-011
 
 ---
 
+## Task 6.5: 마이그레이션 — PURCHASE_ORDER 라인 메타 컬럼 신설 (LINE_NO/REV_NO/LINE_STATUS/USE_TYPE)
+
+> 사용자 결정 B: 목업 L/N, R/N, 사용구분, 라인 상태를 위해 PO 스키마 확장.
+
+**Files:**
+- Create: `apps/backend/src/migrations/2026-05-26_iqc005_po_line_meta.sql`
+- Modify: `apps/backend/src/entities/purchase-order-item.entity.ts`
+- Modify: `apps/backend/src/entities/purchase-order.entity.ts`
+
+- [ ] **Step 1: 마이그레이션 SQL 작성**
+
+```sql
+-- 2026-05-26: IQC005 Phase A — PO 라인 메타 컬럼 신설 (L/N, R/N, 라인 상태, 사용구분)
+
+-- 1) PURCHASE_ORDER_ITEMS에 LINE_NO, REV_NO, LINE_STATUS
+BEGIN
+  EXECUTE IMMEDIATE 'ALTER TABLE PURCHASE_ORDER_ITEMS ADD (LINE_NO NUMBER)';
+EXCEPTION WHEN OTHERS THEN IF SQLCODE = -1430 THEN NULL; ELSE RAISE; END IF; END;
+/
+BEGIN
+  EXECUTE IMMEDIATE 'ALTER TABLE PURCHASE_ORDER_ITEMS ADD (REV_NO NUMBER DEFAULT 1)';
+EXCEPTION WHEN OTHERS THEN IF SQLCODE = -1430 THEN NULL; ELSE RAISE; END IF; END;
+/
+BEGIN
+  EXECUTE IMMEDIATE q'[ALTER TABLE PURCHASE_ORDER_ITEMS ADD (LINE_STATUS VARCHAR2(20) DEFAULT 'OPEN')]';
+EXCEPTION WHEN OTHERS THEN IF SQLCODE = -1430 THEN NULL; ELSE RAISE; END IF; END;
+/
+
+-- 2) PURCHASE_ORDERS에 USE_TYPE
+BEGIN
+  EXECUTE IMMEDIATE q'[ALTER TABLE PURCHASE_ORDERS ADD (USE_TYPE VARCHAR2(20) DEFAULT 'PROD')]';
+EXCEPTION WHEN OTHERS THEN IF SQLCODE = -1430 THEN NULL; ELSE RAISE; END IF; END;
+/
+
+-- 3) 백필 — LINE_NO=SEQ, REV_NO=1, LINE_STATUS=계산
+UPDATE PURCHASE_ORDER_ITEMS SET LINE_NO = SEQ WHERE LINE_NO IS NULL;
+UPDATE PURCHASE_ORDER_ITEMS SET REV_NO = 1 WHERE REV_NO IS NULL;
+UPDATE PURCHASE_ORDER_ITEMS
+SET LINE_STATUS = CASE
+  WHEN RECEIVED_QTY >= ORDER_QTY THEN 'CLOSE'
+  WHEN RECEIVED_QTY > 0 THEN 'PARTIAL'
+  ELSE 'OPEN'
+END
+WHERE LINE_STATUS IS NULL OR LINE_STATUS = 'OPEN';
+
+UPDATE PURCHASE_ORDERS SET USE_TYPE = 'PROD' WHERE USE_TYPE IS NULL;
+
+COMMIT;
+
+COMMENT ON COLUMN PURCHASE_ORDER_ITEMS.LINE_NO IS '발주 라인 번호 (목업 L/N)';
+COMMENT ON COLUMN PURCHASE_ORDER_ITEMS.REV_NO IS '발주 라인 리비전 번호 (목업 R/N, 기본 1)';
+COMMENT ON COLUMN PURCHASE_ORDER_ITEMS.LINE_STATUS IS '라인 상태: OPEN | PARTIAL | CLOSE';
+COMMENT ON COLUMN PURCHASE_ORDERS.USE_TYPE IS '사용 구분: PROD(양산) | DEV(개발) | SAMPLE 등';
+```
+
+- [ ] **Step 2: JSHANES 적용 + 확인**
+
+```sql
+SELECT COLUMN_NAME FROM USER_TAB_COLUMNS
+WHERE TABLE_NAME='PURCHASE_ORDER_ITEMS' AND COLUMN_NAME IN ('LINE_NO','REV_NO','LINE_STATUS');
+-- 예상: 3건
+
+SELECT COLUMN_NAME FROM USER_TAB_COLUMNS
+WHERE TABLE_NAME='PURCHASE_ORDERS' AND COLUMN_NAME='USE_TYPE';
+-- 예상: 1건
+
+SELECT COUNT(*) AS NULL_LINE_NO FROM PURCHASE_ORDER_ITEMS WHERE LINE_NO IS NULL;
+-- 예상: 0
+```
+
+- [ ] **Step 3: 엔티티 컬럼 추가**
+
+`purchase-order-item.entity.ts`에 추가:
+```ts
+  @Column({ name: 'LINE_NO', type: 'int', nullable: true })
+  lineNo: number | null;
+
+  @Column({ name: 'REV_NO', type: 'int', default: 1 })
+  revNo: number;
+
+  @Column({ name: 'LINE_STATUS', length: 20, default: 'OPEN' })
+  lineStatus: string;
+```
+
+`purchase-order.entity.ts`에 추가:
+```ts
+  @Column({ name: 'USE_TYPE', length: 20, default: 'PROD' })
+  useType: string;
+```
+
+- [ ] **Step 4: 백엔드 빌드 + 커밋**
+
+```bash
+pnpm --filter @hanes/backend build
+git add apps/backend/src/migrations/2026-05-26_iqc005_po_line_meta.sql \
+        apps/backend/src/entities/purchase-order-item.entity.ts \
+        apps/backend/src/entities/purchase-order.entity.ts
+git commit -m "feat(po): add LINE_NO/REV_NO/LINE_STATUS/USE_TYPE columns for IQC005 (T-011)"
+```
+
+---
+
 ## Task 7: 백엔드 DTO — `PoLineReceiptDto`
 
 **Files:**
@@ -393,7 +495,11 @@ Existing class들과 import 스타일 파악.
 export class PoLineReceiptDto {
   @IsString()
   @IsNotEmpty()
-  poItemId!: string;
+  poNo!: string;
+
+  @IsInt()
+  @Min(1)
+  poSeq!: number;
 
   @IsInt()
   @Min(1)
@@ -529,13 +635,23 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
     mockManager.findOne.mockImplementation((entity: any, opts: any) => {
       if (entity === PurchaseOrderItem) {
         return Promise.resolve({
-          id: 'pi-1',
+          poNo: 'PO-26-001',
+          seq: 1,
           itemCode: 'TMN-0001',
           orderQty: cfg.orderQty,
           receivedQty: cfg.receivedQty,
-          remainingQty: cfg.orderQty - cfg.receivedQty,
-          status: 'PARTIAL',
-          po: { id: 'po-1', poNo: 'PO-26-001', partnerCode: 'V001' },
+          lineNo: 1,
+          revNo: 1,
+          lineStatus: 'PARTIAL',
+        });
+      }
+      if (entity === PurchaseOrder) {
+        return Promise.resolve({
+          poNo: 'PO-26-001',
+          partnerId: 'V001',
+          partnerName: '행성사김천',
+          useType: 'PROD',
+          status: 'CONFIRMED',
         });
       }
       if (entity === PartMaster) {
@@ -557,7 +673,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
       .mockResolvedValueOnce('VH1-RM260526-00004');
 
     const result = await service.receivePoLine({
-      poItemId: 'pi-1', receivedQty: 200, mfgPartnerCode: 'M001',
+      poNo: 'PO-26-001', poSeq: 1, receivedQty: 200, mfgPartnerCode: 'M001',
       receivedDate: '2026-05-26', warehouseCode: 'W01',
     }, { username: 'tester', company: '40', plant: '1000' } as any);
 
@@ -571,7 +687,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
     mockNumbering.nextMatUid.mockImplementation(() => Promise.resolve(`VH1-RM260526-${String(Math.random()).slice(2, 7)}`));
 
     const result = await service.receivePoLine({
-      poItemId: 'pi-1', receivedQty: 220, mfgPartnerCode: 'M001',
+      poNo: 'PO-26-001', poSeq: 1, receivedQty: 220, mfgPartnerCode: 'M001',
       receivedDate: '2026-05-26', warehouseCode: 'W01',
     }, { username: 'tester', company: '40', plant: '1000' } as any);
 
@@ -584,7 +700,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
     mockNumbering.nextMatUid.mockResolvedValueOnce('VH1-RM260526-00010');
 
     const result = await service.receivePoLine({
-      poItemId: 'pi-1', receivedQty: 200, mfgPartnerCode: 'M001',
+      poNo: 'PO-26-001', poSeq: 1, receivedQty: 200, mfgPartnerCode: 'M001',
       receivedDate: '2026-05-26', warehouseCode: 'W01',
     }, { username: 'tester', company: '40', plant: '1000' } as any);
 
@@ -595,7 +711,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
   it('case 4: receivedQty가 잔량 초과 → BadRequest', async () => {
     setupBasicMocks({ lotUnitQty: 50, orderQty: 100, receivedQty: 50 });
     await expect(service.receivePoLine({
-      poItemId: 'pi-1', receivedQty: 200, mfgPartnerCode: 'M001',
+      poNo: 'PO-26-001', poSeq: 1, receivedQty: 200, mfgPartnerCode: 'M001',
       receivedDate: '2026-05-26', warehouseCode: 'W01',
     }, { username: 'tester', company: '40', plant: '1000' } as any)).rejects.toThrow(BadRequestException);
   });
@@ -603,7 +719,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
   it('case 5: mfgPartnerCode가 MFG 타입 아님 → BadRequest', async () => {
     setupBasicMocks({ mfgFound: false });
     await expect(service.receivePoLine({
-      poItemId: 'pi-1', receivedQty: 100, mfgPartnerCode: 'X999', // not MFG
+      poNo: 'PO-26-001', poSeq: 1, receivedQty: 100, mfgPartnerCode: 'X999', // not MFG
       receivedDate: '2026-05-26', warehouseCode: 'W01',
     }, { username: 'tester', company: '40', plant: '1000' } as any)).rejects.toThrow(BadRequestException);
   });
@@ -648,12 +764,15 @@ private readonly partnerMasterRepository: Repository<PartnerMaster>,
     user: { username: string; company?: string | null; plant?: string | null },
   ): Promise<{ arrivalNo: string; serials: MatLot[] }> {
     return this.tx.runInTransaction(async (manager) => {
-      // 1. PO 라인
+      // 1. PO 라인 (복합 PK)
       const poItem = await manager.findOne(PurchaseOrderItem, {
-        where: { id: dto.poItemId },
-        relations: ['po'],
+        where: { poNo: dto.poNo, seq: dto.poSeq },
       });
-      if (!poItem) throw new NotFoundException(`PO 라인 없음: ${dto.poItemId}`);
+      if (!poItem) throw new NotFoundException(`PO 라인 없음: ${dto.poNo}#${dto.poSeq}`);
+
+      const po = await manager.findOne(PurchaseOrder, { where: { poNo: dto.poNo } });
+      if (!po) throw new NotFoundException(`PO 헤더 없음: ${dto.poNo}`);
+
       const remaining = poItem.orderQty - poItem.receivedQty;
       if (dto.receivedQty > remaining) {
         throw new BadRequestException(
@@ -699,9 +818,9 @@ private readonly partnerMasterRepository: Repository<PartnerMaster>,
           arrivalNo,
           arrivalSeq: i + 1,
           origin: serialNos[i], // root_serial 자기 자신 (Phase D 분할에서 활용)
-          vendor: poItem.po.partnerCode,
+          vendor: po.partnerId ?? '',
           invoiceNo: '',
-          poNo: poItem.po.poNo,
+          poNo: po.poNo,
           mfgPartnerCode: dto.mfgPartnerCode,
           iqcStatus: 'PENDING',
           status: 'NORMAL',
@@ -713,10 +832,10 @@ private readonly partnerMasterRepository: Repository<PartnerMaster>,
       }
       const savedLots = await manager.save(MatLot, lots);
 
-      // 6. PO 잔량 갱신
+      // 6. PO 라인 잔량 + 상태 갱신
       poItem.receivedQty += dto.receivedQty;
-      if (poItem.receivedQty >= poItem.orderQty) poItem.status = 'CLOSE';
-      else poItem.status = 'PARTIAL';
+      if (poItem.receivedQty >= poItem.orderQty) poItem.lineStatus = 'CLOSE';
+      else poItem.lineStatus = 'PARTIAL';
       await manager.save(PurchaseOrderItem, poItem);
 
       // 7. MAT_STOCK upsert + STOCK_TRANSACTION 기록은 기존 패턴 재사용
@@ -731,10 +850,10 @@ private readonly partnerMasterRepository: Repository<PartnerMaster>,
         await manager.save(MatArrival, manager.create(MatArrival, {
           arrivalNo, seq: seq++,
           invoiceNo: '',
-          poId: poItem.po.id,
-          poItemId: poItem.id,
-          poNo: poItem.po.poNo,
-          vendorId: poItem.po.partnerCode,
+          poId: po.poNo,
+          poItemId: `${po.poNo}#${poItem.seq}`,
+          poNo: po.poNo,
+          vendorId: po.partnerId ?? '',
           vendorName: '', // 채워주기 - vendor 조회 캐싱 필요시 추후
           itemCode: lot.itemCode,
           qty: lot.initQty,
@@ -858,14 +977,14 @@ git commit -m "feat(material): add receivePoLine for IQC005 serial issuance (T-0
    * status, itemCode, poNo로 필터링.
    */
   async listPoLines(query: {
-    status?: 'OPEN' | 'CLOSE';
+    status?: 'OPEN' | 'CLOSE' | 'PARTIAL';
     itemCode?: string;
     poNo?: string;
     company?: string | null;
     plant?: string | null;
   }): Promise<Array<{
-    poItemId: string;
     poNo: string;
+    poSeq: number;
     lineNo: number;
     revNo: number;
     itemCode: string;
@@ -876,17 +995,17 @@ git commit -m "feat(material): add receivePoLine for IQC005 serial issuance (T-0
     orderDate: string | null;
     partnerName: string;
     useType: string;
-    status: 'OPEN' | 'CLOSE';
+    lineStatus: 'OPEN' | 'PARTIAL' | 'CLOSE';
   }>> {
     const qb = this.purchaseOrderItemRepository
       .createQueryBuilder('pi')
-      .innerJoin('pi.po', 'po')
+      .innerJoin(PurchaseOrder, 'po', 'po.poNo = pi.poNo')
       .leftJoin(PartMaster, 'item', 'item.itemCode = pi.itemCode')
       .select([
-        'pi.id AS "poItemId"',
-        'po.poNo AS "poNo"',
-        'pi.lineNo AS "lineNo"',
-        'pi.revNo AS "revNo"',
+        'pi.poNo AS "poNo"',
+        'pi.seq AS "poSeq"',
+        'NVL(pi.lineNo, pi.seq) AS "lineNo"',
+        'NVL(pi.revNo, 1) AS "revNo"',
         'pi.itemCode AS "itemCode"',
         'item.itemName AS "itemName"',
         'pi.orderQty AS "orderQty"',
@@ -895,23 +1014,23 @@ git commit -m "feat(material): add receivePoLine for IQC005 serial issuance (T-0
         'po.orderDate AS "orderDate"',
         'po.partnerName AS "partnerName"',
         "NVL(po.useType, 'PROD') AS \"useType\"",
-        'pi.status AS "status"',
-      ])
-      .where('pi.status IN (:...statuses)', {
-        statuses: query.status ? [query.status] : ['OPEN', 'PARTIAL', 'CLOSE'],
-      });
+        "NVL(pi.lineStatus, 'OPEN') AS \"lineStatus\"",
+      ]);
 
+    if (query.status) {
+      qb.where('NVL(pi.lineStatus, \'OPEN\') = :st', { st: query.status });
+    }
     if (query.itemCode) qb.andWhere('pi.itemCode = :ic', { ic: query.itemCode });
-    if (query.poNo) qb.andWhere('po.poNo LIKE :pno', { pno: `%${query.poNo}%` });
+    if (query.poNo) qb.andWhere('pi.poNo LIKE :pno', { pno: `%${query.poNo}%` });
     if (query.company) qb.andWhere('pi.company = :co', { co: query.company });
     if (query.plant) qb.andWhere('pi.plant = :pl', { pl: query.plant });
 
-    qb.orderBy('po.orderDate', 'DESC').addOrderBy('pi.lineNo', 'ASC');
+    qb.orderBy('po.orderDate', 'DESC').addOrderBy('NVL(pi.lineNo, pi.seq)', 'ASC');
 
     const rows = await qb.getRawMany();
     return rows.map((r) => ({
-      poItemId: r.poItemId,
       poNo: r.poNo,
+      poSeq: Number(r.poSeq),
       lineNo: Number(r.lineNo),
       revNo: Number(r.revNo),
       itemCode: r.itemCode,
@@ -922,12 +1041,12 @@ git commit -m "feat(material): add receivePoLine for IQC005 serial issuance (T-0
       orderDate: r.orderDate ? new Date(r.orderDate).toISOString().slice(0, 10) : null,
       partnerName: r.partnerName ?? '',
       useType: r.useType ?? 'PROD',
-      status: r.status === 'CLOSE' ? 'CLOSE' : 'OPEN',
+      lineStatus: (r.lineStatus === 'CLOSE' ? 'CLOSE' : r.lineStatus === 'PARTIAL' ? 'PARTIAL' : 'OPEN'),
     }));
   }
 ```
 
-> 가정: `purchase_order_items`에 `LINE_NO`, `REV_NO` 컬럼이 있고 엔티티에 매핑되어 있음. 없으면 엔티티 컬럼 추가 또는 임시로 1, 1 하드코딩 (다음 Phase에서 보강). 본 Task 진행 전 엔티티 확인.
+> Task 6.5에서 LINE_NO/REV_NO/LINE_STATUS/USE_TYPE 컬럼이 추가된 후 본 task 진행. PurchaseOrderItem entity에 po 관계가 없어서 `innerJoin(PurchaseOrder, 'po', 'po.poNo = pi.poNo')` 명시적 join 사용.
 
 - [ ] **Step 2: 컨트롤러 엔드포인트 2개 추가**
 
@@ -935,7 +1054,7 @@ git commit -m "feat(material): add receivePoLine for IQC005 serial issuance (T-0
 ```ts
   @Get('po-lines')
   async listPoLines(
-    @Query('status') status?: 'OPEN' | 'CLOSE',
+    @Query('status') status?: 'OPEN' | 'PARTIAL' | 'CLOSE',
     @Query('itemCode') itemCode?: string,
     @Query('poNo') poNo?: string,
     @Req() req?: any,
@@ -1142,8 +1261,8 @@ git commit -m "feat(shared): add MfgPartnerSelect for PARTNER_TYPE=MFG (T-011)"
 ```ts
 /** IQC005 메인 그리드 행 */
 export interface PoLineRow {
-  poItemId: string;
   poNo: string;
+  poSeq: number;
   lineNo: number;
   revNo: number;
   itemCode: string;
@@ -1154,12 +1273,13 @@ export interface PoLineRow {
   orderDate: string | null;
   partnerName: string;
   useType: string;
-  status: 'OPEN' | 'CLOSE';
+  lineStatus: 'OPEN' | 'PARTIAL' | 'CLOSE';
 }
 
 /** PO 라인 입하 등록 입력 */
 export interface PoLineReceiptInput {
-  poItemId: string;
+  poNo: string;
+  poSeq: number;
   receivedQty: number;
   mfgPartnerCode: string;
   receivedDate: string;
@@ -1209,7 +1329,7 @@ interface PoLineGridProps {
 }
 
 const rowClass = (row: PoLineRow) => {
-  if (row.status === 'CLOSE') return 'bg-gray-100 text-gray-500';
+  if (row.lineStatus === 'CLOSE') return 'bg-gray-100 text-gray-500';
   if (row.remainingQty === 0) return 'bg-blue-50/60';
   if (row.receivedQty > 0) return 'bg-yellow-50/60';
   return '';
@@ -1226,7 +1346,7 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const r = row.original;
-        const disabled = r.status === 'CLOSE' || r.remainingQty === 0;
+        const disabled = r.lineStatus === 'CLOSE' || r.remainingQty === 0;
         return (
           <button
             type="button"
@@ -1265,11 +1385,11 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       cell: ({ getValue }) => <ComCodeBadge groupCode="PO_USE_TYPE" code={getValue() as string} />,
     },
     {
-      accessorKey: 'status',
+      accessorKey: 'lineStatus',
       header: t('common.status'),
       size: 80,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="PO_STATUS" code={getValue() as string} />,
+      cell: ({ getValue }) => <ComCodeBadge groupCode="PO_LINE_STATUS" code={getValue() as string} />,
     },
   ], [t, onSelectLine]);
 
@@ -1284,7 +1404,7 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       toolbarLeft={toolbarLeft}
       rowClassName={rowClass}
       onRowClick={(row) => {
-        if (row.status !== 'CLOSE' && row.remainingQty > 0) onSelectLine(row);
+        if (row.lineStatus !== 'CLOSE' && row.remainingQty > 0) onSelectLine(row);
       }}
     />
   );
@@ -1361,7 +1481,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
       setRemark('');
       setWarehouseCode(warehouses[0]?.value ?? '');
       // 품목 마스터 LOT_UNIT_QTY 조회
-      api.get(`/master/parts/${encodeURIComponent(line.itemCode)}`)
+      api.get(`/master/parts/code/${encodeURIComponent(line.itemCode)}`)
         .then((res) => setLotUnitQty(res.data?.data?.lotUnitQty ?? null))
         .catch(() => setLotUnitQty(null));
     }
@@ -1384,7 +1504,8 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
   const handleSave = () => {
     if (!canSave || !line) return;
     onConfirm({
-      poItemId: line.poItemId,
+      poNo: line.poNo,
+      poSeq: line.poSeq,
       receivedQty,
       mfgPartnerCode,
       receivedDate,
@@ -2266,6 +2387,15 @@ git commit -m "chore(ai-coordination): close T-011 Phase A board state"
 ```
 
 ---
+
+## 변경 사항 (B 결정 반영 — 2026-05-26 16:50)
+
+- Task 6.5 추가: PURCHASE_ORDER_ITEMS에 `LINE_NO/REV_NO/LINE_STATUS`, PURCHASE_ORDERS에 `USE_TYPE` 컬럼 신설
+- Task 7 DTO: `poItemId` → `poNo + poSeq` 복합키
+- Task 8 receivePoLine: 복합키 조회 + PO 헤더 별도 조회 (PurchaseOrderItem entity에 po 관계 없음)
+- Task 9 listPoLines: 명시적 join 사용, lineStatus/useType 컬럼 활용
+- Task 12 PoLineGrid: status → lineStatus 필드 사용, `PO_LINE_STATUS` 코드 그룹 사용 (시드 필요)
+- Task 13 PoLineReceiptModal: 부모에 poNo/poSeq 전달, part API 경로 `/master/parts/code/:itemCode`
 
 ## 후속 (Phase A 외)
 
