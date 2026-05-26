@@ -4531,6 +4531,16 @@
     "dashboard": "대시보드"
   },
   "comCode": {
+    "PO_LINE_STATUS": {
+      "OPEN": "미입하",
+      "PARTIAL": "일부입하",
+      "CLOSE": "CLOSE"
+    },
+    "PO_USE_TYPE": {
+      "PROD": "양산",
+      "DEV": "개발",
+      "SAMPLE": "샘플"
+    },
     "VISUAL_DEFECT": {
       "SCRATCH": "스크래치",
       "DISCOLOR": "변색",

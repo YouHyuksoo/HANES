@@ -2,6 +2,16 @@
 
 Append new entries at the top.
 
+## 2026-05-26 Claude (T-011 Phase A — 마무리)
+
+- 사용자 피드백: "남은 작업 없냐" → 4건 식별 후 처리.
+  1. `2026-05-26_iqc005_seed_po_com_codes.sql`: PO_LINE_STATUS / PO_USE_TYPE 공통코드 6건 시드 (ComCodeBadge attr1 Tailwind 색상). JSHANES 적용.
+  2. i18n 4국어에 `comCode.PO_LINE_STATUS.*`, `comCode.PO_USE_TYPE.*` 키 추가 (ko/en/zh/vi).
+  3. `arrival.service.po-line.spec.ts` 신규: receivePoLine 5 시나리오 (200/50, 220/50 자투리, NULL 단위, 잔량초과, MFG 검증) 모두 PASS.
+  4. SEQ_MAT_SERIAL_DAILY / SEQ_ARRIVAL_NO_DAILY NEXTVAL 정상 호출 확인 (각 1 반환).
+- 백엔드 dev 서버 안 떠 있어 (3000은 다른 Next 앱) end-to-end curl 검증은 사용자 환경에서 진행.
+- HANDOFF/claude.md, TASKS.md notes 갱신: "PURCHASE_ORDER_ITEMS 0건" → 시드 완료, "공통코드 누락" → 해소.
+
 ## 2026-05-26 Claude (T-011 Phase A — 데모 PO 시드 추가)
 
 - 사용자 피드백: PO 시드 누락은 사용자 일감 아님 → 직접 작성·적용.

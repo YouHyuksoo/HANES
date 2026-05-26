@@ -36,11 +36,12 @@
 
 ## 사용자 액션 필요
 
-1. **PO 등록 또는 시드 보강** — `PURCHASE_ORDER_ITEMS` 행 0건이라 IQC005 UI 첫 진입 시 빈 그리드. PO 등록 화면 사용 또는 별도 시드 SQL 작성.
-2. **검증 시나리오**:
-   - PO 라인 [자재입하] 클릭 → 수량 200, 제조사 M001, 입하일 오늘, 창고 → 저장
-   - "4건의 시리얼을 발급합니다" 확인 → 라벨 4건 + 바코드 → 인쇄 동작
-   - oracle-db로 `SELECT MAT_UID, INIT_QTY, ARRIVAL_NO, MFG_PARTNER_CODE FROM MAT_LOTS WHERE ARRIVAL_NO=...` 4건 확인
+- 끝. PO 시드 9 라인 + 공통코드 6건 + receivePoLine 단위 spec 5/5 PASS 까지 완료.
+- 남은 건 dev 서버 띄우고 브라우저에서 한 사이클 돌려보는 시연용 검증뿐 (선택). 시나리오:
+  1. `/material/arrival` 접속 → PO 라인 9건 그리드 표시 (4단계 행 색상 확인)
+  2. PO-26-001 / L1 [자재입하] → 수량 200, 제조사 M001, 창고 선택 → 저장
+  3. "4건의 시리얼을 발급합니다" → 확인 → 라벨 4건 + 바코드 표시 → 인쇄 다이얼로그
+  4. oracle-db로 `SELECT MAT_UID, INIT_QTY, ARRIVAL_NO, MFG_PARTNER_CODE FROM MAT_LOTS WHERE ARRIVAL_NO LIKE 'R%' ORDER BY ARRIVAL_NO DESC FETCH FIRST 4 ROWS ONLY` 확인
 
 ## Phase B/C/D 후속 작업
 

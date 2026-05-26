@@ -4496,6 +4496,16 @@
     "dashboard": "Bảng điều khiển"
   },
   "comCode": {
+    "PO_LINE_STATUS": {
+      "OPEN": "Chưa nhập",
+      "PARTIAL": "Nhập một phần",
+      "CLOSE": "Đã đóng"
+    },
+    "PO_USE_TYPE": {
+      "PROD": "Sản xuất",
+      "DEV": "Phát triển",
+      "SAMPLE": "Mẫu"
+    },
     "VISUAL_DEFECT": {
       "SCRATCH": "Trầy xước",
       "DISCOLOR": "Đổi màu",

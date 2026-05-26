@@ -4510,6 +4510,16 @@
     "dashboard": "Dashboard"
   },
   "comCode": {
+    "PO_LINE_STATUS": {
+      "OPEN": "Open",
+      "PARTIAL": "Partial",
+      "CLOSE": "Close"
+    },
+    "PO_USE_TYPE": {
+      "PROD": "Production",
+      "DEV": "Development",
+      "SAMPLE": "Sample"
+    },
     "VISUAL_DEFECT": {
       "SCRATCH": "Scratch",
       "DISCOLOR": "Discoloration",

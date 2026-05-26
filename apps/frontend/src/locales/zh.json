@@ -4496,6 +4496,16 @@
     "dashboard": "仪表盘"
   },
   "comCode": {
+    "PO_LINE_STATUS": {
+      "OPEN": "未到货",
+      "PARTIAL": "部分到货",
+      "CLOSE": "已关闭"
+    },
+    "PO_USE_TYPE": {
+      "PROD": "量产",
+      "DEV": "开发",
+      "SAMPLE": "样品"
+    },
     "VISUAL_DEFECT": {
       "SCRATCH": "划痕",
       "DISCOLOR": "变色",
