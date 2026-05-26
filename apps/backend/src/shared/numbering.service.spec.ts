@@ -9,7 +9,7 @@
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
-import { QueryRunner } from 'typeorm';
+import { DataSource, QueryRunner } from 'typeorm';
 import { NumberingService } from './numbering.service';
 import { SeqGeneratorService } from './seq-generator.service';
 import { NumRuleService } from '../modules/num-rule/num-rule.service';
@@ -20,17 +20,20 @@ describe('NumberingService', () => {
   let mockSeqGenerator: DeepMocked<SeqGeneratorService>;
   let mockNumRule: DeepMocked<NumRuleService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  let mockDataSource: { manager: { query: jest.Mock } };
 
   beforeEach(async () => {
     mockSeqGenerator = createMock<SeqGeneratorService>();
     mockNumRule = createMock<NumRuleService>();
     mockQueryRunner = createMock<QueryRunner>();
+    mockDataSource = { manager: { query: jest.fn() } };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NumberingService,
         { provide: SeqGeneratorService, useValue: mockSeqGenerator },
         { provide: NumRuleService, useValue: mockNumRule },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -134,6 +137,44 @@ describe('NumberingService', () => {
       // Assert
       expect(result).toBe('RM20260318-0001');
       expect(mockSeqGenerator.getNo).toHaveBeenCalledWith('MAT_UID', undefined);
+    });
+  });
+
+  describe('IQC005 Phase A — application-level format channels', () => {
+    const fixedDate = new Date('2026-05-26T12:00:00+09:00');
+
+    it('nextMatSerial: VH1-RM + YYMMDD + 5-digit zero pad', async () => {
+      mockDataSource.manager.query.mockResolvedValueOnce([{ NEXT_SEQ: 7 }]);
+      const result = await target.nextMatSerial(undefined, fixedDate);
+      expect(result).toBe('VH1-RM260526-00007');
+      expect(mockDataSource.manager.query).toHaveBeenCalledWith(
+        'SELECT SEQ_MAT_SERIAL_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+      );
+    });
+
+    it('nextMatSerial: handles seq = 1 with full zero-pad', async () => {
+      mockDataSource.manager.query.mockResolvedValueOnce([{ NEXT_SEQ: 1 }]);
+      const result = await target.nextMatSerial(undefined, fixedDate);
+      expect(result).toBe('VH1-RM260526-00001');
+    });
+
+    it('nextArrivalNoV2: R + YYMMDD + 5-digit (no separator)', async () => {
+      mockDataSource.manager.query.mockResolvedValueOnce([{ NEXT_SEQ: 3 }]);
+      const result = await target.nextArrivalNoV2(undefined, fixedDate);
+      expect(result).toBe('R26052600003');
+      expect(mockDataSource.manager.query).toHaveBeenCalledWith(
+        'SELECT SEQ_ARRIVAL_NO_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+      );
+    });
+
+    it('nextMatSerial: uses queryRunner.manager when qr passed', async () => {
+      const qrManagerQuery = jest.fn().mockResolvedValueOnce([{ NEXT_SEQ: 42 }]);
+      const qr = { manager: { query: qrManagerQuery } } as unknown as QueryRunner;
+      const result = await target.nextMatSerial(qr, fixedDate);
+      expect(result).toBe('VH1-RM260526-00042');
+      expect(qrManagerQuery).toHaveBeenCalled();
+      // dataSource는 호출되지 않아야 함
+      expect(mockDataSource.manager.query).not.toHaveBeenCalled();
     });
   });
 });

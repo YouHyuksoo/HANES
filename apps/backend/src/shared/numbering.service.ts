@@ -12,7 +12,7 @@
  * 기존 SeqGeneratorService/NumRuleService는 하위호환을 위해 유지됨
  */
 import { Injectable, Logger } from '@nestjs/common';
-import { QueryRunner } from 'typeorm';
+import { DataSource, QueryRunner } from 'typeorm';
 import { SeqGeneratorService } from './seq-generator.service';
 import { NumRuleService } from '../modules/num-rule/num-rule.service';
 
@@ -38,6 +38,7 @@ export class NumberingService {
   constructor(
     private readonly seqGenerator: SeqGeneratorService,
     private readonly numRule: NumRuleService,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -84,4 +85,43 @@ export class NumberingService {
   async nextSubconNo(qr?: QueryRunner): Promise<string> { return this.next('SUBCON', qr); }
   async nextShipmentNo(qr?: QueryRunner): Promise<string> { return this.next('SHIPMENT', qr); }
   async nextTrainingPlanNo(qr?: QueryRunner): Promise<string> { return this.next('TRAINING_PLAN', qr); }
+
+  // ─────────────────────────────────────────────
+  // IQC005 Phase A — application-level format channels
+  // PKG_SEQ_GENERATOR가 SEPARATOR를 PREFIX/DATE 양쪽 모두에 적용하는 제약을 우회한다.
+  // 신규 Oracle SEQUENCE (SEQ_MAT_SERIAL_DAILY / SEQ_ARRIVAL_NO_DAILY)를 직접 호출하고
+  // PDF 채번 규칙 (docs/standards/numbering-rules.md) 포맷을 코드에서 조립한다.
+  // 시퀀스 일별 리셋은 DBMS_SCHEDULER JOB_RESET_*_DAILY 잡이 매일 00:00 KST 처리.
+  // ─────────────────────────────────────────────
+
+  /** 자재 시리얼 채번: VH1-RM + YYMMDD + 5자리(당일 시퀀스). PDF 2026-05-19. */
+  async nextMatSerial(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_MAT_SERIAL_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+    return `VH1-RM${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
+  }
+
+  /** 입하실적코드 채번: R + YYMMDD + 5자리(당일 시퀀스, separator 없음). PDF 2026-05-19. */
+  async nextArrivalNoV2(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_ARRIVAL_NO_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+    return `R${this.yyMMdd(txDate)}${this.pad5(seq)}`;
+  }
+
+  private yyMMdd(d: Date): string {
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}${mm}${dd}`;
+  }
+
+  private pad5(n: number): string {
+    return String(n).padStart(5, '0');
+  }
 }
