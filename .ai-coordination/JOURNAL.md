@@ -2,6 +2,17 @@
 
 Append new entries at the top.
 
+## 2026-05-26 Claude (T-011 Phase A — 데모 PO 시드 추가)
+
+- 사용자 피드백: PO 시드 누락은 사용자 일감 아님 → 직접 작성·적용.
+- `2026-05-26_iqc005_seed_demo_po.sql` 작성·JSHANES 적용:
+  - PURCHASE_ORDERS 6건 (PROD 4 + DEV 2), STATUS=CONFIRMED
+  - PURCHASE_ORDER_ITEMS 9 라인 (OPEN 4 / PARTIAL 3 / CLOSE 2) — 4단계 행 색상 모두 확인 가능
+  - 공급사: VND-001(한국단자공업) / VND-002(대한전선) / VND-003(삼화부자재) — 기존 PARTNER_MASTERS 활용
+  - 품목: RM-TERM/WIRE/SEAL/TAPE/CONN/GROM 6종, LOT_UNIT_QTY 50~1000 분포
+- 컬럼명 주의: PURCHASE_ORDER_ITEMS PK는 (PO_ID, SEQ) — 엔티티 필드명 poNo와 다름. 첫 시도 PO_NO로 작성했다가 ORA-00904로 발견, PO_ID로 수정.
+- 멱등 MERGE 사용. 재실행 시 갱신.
+
 ## 2026-05-26 Claude (T-011 Phase A — 구현 완료)
 
 - 마이그레이션 5건 JSHANES 적용 (모두 idempotent):
