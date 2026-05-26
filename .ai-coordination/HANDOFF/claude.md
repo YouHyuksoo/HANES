@@ -2,29 +2,59 @@
 
 ## Last Update
 
-2026-05-26 T-010 closed (Claude Opus 4.7 1M context)
+2026-05-26 T-011 Phase A completed (Claude Opus 4.7 1M context)
 
 ## Recent Tasks
 
-- **T-010 Apply T-008 SQL migrations to JSHANES (operator)** — Done. UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS 인덱스를 JSHANES 에 적용 (UNIQUE/VALID). create_log_sequences.sql 은 이미 적용된 환경이라 rerun 불필요. 마이그 sql 자체에 컬럼명/RETURN/oracle_connector regex 호환성 3개 결함이 있어 함께 수정.
+- **T-011 IQC005 자재 입하관리 정렬 — Phase A** — Done. 5 마이그 JSHANES 적용, 백엔드 + 프론트 + i18n 모두 완료, 빌드 0 error, spec 59/59 PASS. PURCHASE_ORDER_ITEMS 행 0건이라 UI 시나리오는 사용자 PO 등록 후 검증 필요.
+- **T-010 Apply T-008 SQL migrations to JSHANES (operator)** — Done. UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS 인덱스를 JSHANES 에 적용.
 - **T-008 Fix 13 potential bugs from second-pass review** — Done in commit `aa11ca9`, board closed in `b768099`.
 
-## T-010 결과
+## T-011 Phase A 결과
 
-| 항목 | 결과 |
+### DB 변경 (JSHANES 적용 완료)
+| 마이그 | 결과 |
 |---|---|
-| JSHANES UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS | 생성 — UNIQUE / VALID |
-| 표현식 | `CASE "STATUS" WHEN 'IN_PROGRESS' THEN NVL("COMPANY",'')||'||'||NVL("PLANT_CD",'') END` |
-| Idempotent rerun | 성공 (ORA-00955 catch 동작 확인) |
-| create_log_sequences.sql JSHANES 재실행 | 불필요 (이미 모든 시퀀스 존재) |
+| MAT_LOTS.MFG_PARTNER_CODE + IX | 적용 ✅ |
+| SEQ_MAT_SERIAL_DAILY / SEQ_ARRIVAL_NO_DAILY | 적용 ✅ |
+| JOB_RESET_*_DAILY (DBMS_SCHEDULER) | ENABLED ✅ |
+| PARTNER_MASTERS MFG 5건 시드 | 적용 ✅ |
+| ITEM_MASTERS RAW_MATERIAL LOT_UNIT_QTY 백필 | 16건 ✅ |
+| PURCHASE_ORDER_ITEMS LINE_NO/REV_NO/LINE_STATUS + PURCHASE_ORDERS USE_TYPE | 적용 (행 0건) ✅ |
 
-## 마이그 sql 수정 사항 (T-010 작업 중 발견)
+### 백엔드 (commit `94029dc`, `1244932`)
+- `NumberingService.nextMatSerial` / `nextArrivalNoV2` 신규 (PKG_SEQ_GENERATOR가 SEPARATOR를 양쪽에 적용해 PDF 형식 불가 → application-level 포맷으로 우회)
+- `ArrivalService.receivePoLine` (PO 라인 → N 시리얼 발급), `listPoLines`
+- `GET /material/arrivals/po-lines`, `POST /material/arrivals/po-line`
+- 기존 `createPoArrival` / `ArrivalHistoryTable` `@deprecated` 처리
+
+### 프론트
+- `/material/arrival` PO 라인 메인 그리드로 재구조화, 4단계 행 배경, 잔량 RoyalBlue Bold, L/N/R/N
+- 신규 컴포넌트: `PoLineGrid`, `PoLineReceiptModal`, `SerialIssueConfirmModal`, `MatLabelPreviewModal`, 공용 `MfgPartnerSelect`
+- jsbarcode CODE128 라벨 미리보기 + `window.print`
+- i18n ko/en/zh/vi 19개 신규 키, BOM 없음
+
+## 사용자 액션 필요
+
+1. **PO 등록 또는 시드 보강** — `PURCHASE_ORDER_ITEMS` 행 0건이라 IQC005 UI 첫 진입 시 빈 그리드. PO 등록 화면 사용 또는 별도 시드 SQL 작성.
+2. **검증 시나리오**:
+   - PO 라인 [자재입하] 클릭 → 수량 200, 제조사 M001, 입하일 오늘, 창고 → 저장
+   - "4건의 시리얼을 발급합니다" 확인 → 라벨 4건 + 바코드 → 인쇄 동작
+   - oracle-db로 `SELECT MAT_UID, INIT_QTY, ARRIVAL_NO, MFG_PARTNER_CODE FROM MAT_LOTS WHERE ARRIVAL_NO=...` 4건 확인
+
+## Phase B/C/D 후속 작업
+
+- **Phase B**: IQC006 입하실적조회 (`/material/receive-history`), 시리얼 상세 그리드, 입하 취소, 자투리 정책
+- **Phase C**: 라벨 백엔드/프린터 연동, 재인쇄 흐름
+- **Phase D**: 자재 분할/병합 화면, parent/root 트리
+
+## 마이그 sql 수정 사항 (T-010 작업 중 발견 — T-011에서도 동일 패턴 사용)
 
 1. 컬럼명 `PLANT` → `PLANT_CD` (실제 스키마 컬럼).
 2. PL/SQL 익명 블록의 `RETURN` 제거 → IF/ELSE 구조로 변경.
 3. 헤더 코멘트를 BEGIN 안쪽 `/* ... */` 블록 코멘트로 이동. oracle_connector `--execute-file` 의 split regex (`^\s*(DECLARE|BEGIN)\b`) 가 SQL 시작 부분의 `-- ...` 줄 코멘트를 인식하지 못해 PL/SQL 블록의 trailing `;` 를 silent strip 하던 결함 우회.
 
-## 향후 작업 후보 (시간 날 때)
+## 향후 작업 후보
 
 - oracle_connector `execute_file` 의 PL/SQL 시작 검출 regex 를 코멘트 skip 가능하게 보강 (스킬 자체 변경 — 별도 task).
 - 다음 환경 deploy 시 `2026-05-26_create_log_sequences.sql` 의 IQC_TEMPLATES USER_TABLES 가드 효과 확인 (신규 환경).

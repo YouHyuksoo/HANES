@@ -30,32 +30,36 @@ notes:
 ## Active Tasks
 
 ## T-011 IQC005 자재 입하관리 정렬 — Phase A
-status: IN_PROGRESS
+status: REVIEW
 owner: claude
 role: implementer
 scope:
-- apps/backend/src/migrations/2026-05-26_iqc005_*.sql
-- apps/backend/src/entities/mat-lot.entity.ts
-- apps/backend/src/modules/material/services/mat-serial-number.service.ts
-- apps/backend/src/modules/material/services/arrival.service.ts
+- apps/backend/src/migrations/2026-05-26_iqc005_*.sql (5건)
+- apps/backend/src/entities/{mat-lot,purchase-order,purchase-order-item}.entity.ts
+- apps/backend/src/shared/numbering.service.ts (+ spec)
+- apps/backend/src/modules/material/services/arrival.service.ts (+ spec, module)
 - apps/backend/src/modules/material/controllers/arrival.controller.ts
 - apps/backend/src/modules/material/dto/arrival.dto.ts
+- apps/backend/src/modules/material/receiving/receiving.module.ts
 - apps/frontend/src/app/(authenticated)/material/arrival/page.tsx
-- apps/frontend/src/app/(authenticated)/material/arrival/components/*
+- apps/frontend/src/app/(authenticated)/material/arrival/components/{PoLineGrid,PoLineReceiptModal,SerialIssueConfirmModal,MatLabelPreviewModal,types}.tsx
 - apps/frontend/src/components/shared/MfgPartnerSelect.tsx
 - apps/frontend/src/locales/{ko,en,zh,vi}.json
 - docs/superpowers/specs/2026-05-26-iqc005-alignment-phase-a-design.md
+- docs/superpowers/plans/2026-05-26-iqc005-alignment-phase-a.md
 - docs/standards/numbering-rules.md
-files:
-- (위 scope 참조)
 verification:
-- pnpm --filter @hanes/backend build (0 error)
-- pnpm --filter @hanes/frontend build (0 error)
-- oracle-db JSHANES: MAT_LOTS.MFG_PARTNER_CODE 컬럼, SEQ_MAT_SERIAL_DAILY/SEQ_ARRIVAL_NO_DAILY 시퀀스, JOB_RESET_*_DAILY 잡 확인
-- UI: PO 1라인 입하 → 시리얼 N건 발급 + 라벨 모달 + MAT_LOTS oracle-db 조회
+- pnpm --filter @harness/backend build (0 error) ✅
+- pnpm --filter @harness/frontend build (0 error) ✅
+- numbering.service spec 28/28 PASS ✅
+- arrival.service spec 31/31 PASS ✅
+- oracle-db JSHANES: 5 마이그 모두 적용, DB 객체(컬럼/시퀀스/잡/시드) 검증 통과 ✅
+- UI 수동 시나리오 (PO 라인 입하 → 시리얼 발급): **사용자 검증 필요** (PURCHASE_ORDER_ITEMS 시드 부족 → 사용자가 PO 등록 후 테스트)
 review:
-- needs-review
+- needs-user-verification
 notes:
-- 디자인 승인 완료. 스펙: docs/superpowers/specs/2026-05-26-iqc005-alignment-phase-a-design.md
-- 사용자 결정: 제조사=PARTNER_MASTERS partnerType='MFG', 채번=Oracle SEQUENCE, 시리얼 접두 VH1-RM은 상수
-- Phase B(IQC006 receive-history) / Phase C(라벨) / Phase D(분할/병합)은 별도 task로 분리
+- 패키지명 정정: @hanes/* → @harness/* (실제 monorepo 네이밍)
+- PKG_SEQ_GENERATOR가 SEPARATOR를 양쪽에 적용해 PDF 형식 불가 → NumberingService에 application-level 포맷 메서드 2개 신설로 우회
+- 결정 B 반영: PURCHASE_ORDER 메타 컬럼 신설 (LINE_NO/REV_NO/LINE_STATUS/USE_TYPE)
+- PURCHASE_ORDER_ITEMS 행 0건 — UI 첫 진입 시 빈 그리드. PO 시드 또는 사용자 등록 필요. Phase B에서 시드 보강 검토.
+- Phase B/C/D는 별도 task로 분리. ArrivalHistoryTable / PoArrivalModal는 @deprecated, Phase B에서 receive-history로 이동/제거.

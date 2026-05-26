@@ -17,37 +17,24 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 - owner: claude
   task: T-011 IQC005 자재 입하관리 정렬 — Phase A
-  status: active
+  status: released
   files:
-    - apps/backend/src/migrations/2026-05-26_iqc005_*.sql
-    - apps/backend/src/entities/mat-lot.entity.ts
-    - apps/backend/src/modules/material/services/mat-serial-number.service.ts
-    - apps/backend/src/modules/material/services/arrival.service.ts
+    - apps/backend/src/migrations/2026-05-26_iqc005_*.sql (5건 적용)
+    - apps/backend/src/entities/{mat-lot,purchase-order,purchase-order-item}.entity.ts
+    - apps/backend/src/shared/numbering.service.ts (+ spec)
+    - apps/backend/src/modules/material/services/arrival.service.ts (+ module)
     - apps/backend/src/modules/material/controllers/arrival.controller.ts
     - apps/backend/src/modules/material/dto/arrival.dto.ts
     - apps/frontend/src/app/(authenticated)/material/arrival/**
     - apps/frontend/src/components/shared/MfgPartnerSelect.tsx
     - apps/frontend/src/locales/{ko,en,zh,vi}.json
   started: 2026-05-26T15:50:00+09:00
-  last_seen: 2026-05-26T15:50:00+09:00
-  expires: 2026-05-26T19:50:00+09:00
+  last_seen: 2026-05-26T17:30:00+09:00
+  released: 2026-05-26T17:30:00+09:00
   notes: |
-    IQC005 정렬 Phase A 작업. 스펙 docs/superpowers/specs/2026-05-26-iqc005-alignment-phase-a-design.md.
-    DB 마이그레이션 + 백엔드 시리얼 채번 + 입하 API 개편 + 프론트 UI 재구조화.
-    Phase B/C/D는 별도 task. arrival.service의 기존 receive 메서드는 deprecate 주석만 추가, 제거는 Phase B에서.
-
-- owner: kimi
-  task: T-009 Build AI Command Center dashboard
-  status: released
-  files:
-    - apps/frontend/src/app/ai-command/page.tsx
-    - apps/frontend/src/components/ai-command/*.tsx
-    - apps/frontend/src/app/ai-command/lib/parser.ts
-    - apps/frontend/src/app/globals.css
-  started: 2026-05-26T14:00:00+09:00
-  last_seen: 2026-05-26T14:30:00+09:00
-  expires: 2026-05-26T16:00:00+09:00
-  notes: Cyberpunk-themed AI coordination dashboard built and verified. 6 panels render correctly with live .ai-coordination data.
+    Phase A 구현 완료. 빌드 0 error, 백엔드 spec 59/59 PASS.
+    PURCHASE_ORDER_ITEMS 행 0건 → 사용자 PO 등록 후 UI 시나리오 검증 필요.
+    Phase B(IQC006) / C(라벨 백엔드) / D(분할/병합)은 별도 task.
 
 ## History
 

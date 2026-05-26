@@ -2,6 +2,30 @@
 
 Append new entries at the top.
 
+## 2026-05-26 Claude (T-011 Phase A — 구현 완료)
+
+- 마이그레이션 5건 JSHANES 적용 (모두 idempotent):
+  1. MAT_LOTS.MFG_PARTNER_CODE + IX_MAT_LOTS_MFG
+  2. SEQ_MAT_SERIAL_DAILY / SEQ_ARRIVAL_NO_DAILY (MAXVALUE 99999, NOCYCLE, NOCACHE, ORDER)
+  3. JOB_RESET_*_DAILY (DBMS_SCHEDULER, 매일 00:00 KST `ALTER SEQUENCE RESTART`)
+  4. PARTNER_MASTERS MFG 5건 시드 + ITEM_MASTERS RAW_MATERIAL LOT_UNIT_QTY=50 백필
+  5. PURCHASE_ORDER_ITEMS(LINE_NO/REV_NO/LINE_STATUS) + PURCHASE_ORDERS(USE_TYPE) + 백필
+- 백엔드:
+  - NumberingService.nextMatSerial / nextArrivalNoV2 신규 (PKG 우회, application-level 포맷)
+  - ArrivalService.receivePoLine: PO 라인 1건 → N MAT_LOT(시리얼) 발급, 동일 ARRIVAL_NO 그룹핑, STOCK_TRANSACTION/MAT_ARRIVALS 동기 기록
+  - ArrivalService.listPoLines: PO 라인 평면화 + LINE_NO/REV_NO/LINE_STATUS/USE_TYPE 노출
+  - 신규 엔드포인트: GET /material/arrivals/po-lines, POST /material/arrivals/po-line
+  - 기존 createPoArrival / ArrivalHistoryTable: @deprecated 주석 (Phase B 정리)
+- 프론트엔드:
+  - /material/arrival 페이지를 PO 라인 단위 메인 그리드로 재구조화
+  - 4단계 행 배경, 잔량 RoyalBlue Bold, L/N/R/N 표시
+  - PoLineGrid / PoLineReceiptModal / SerialIssueConfirmModal / MatLabelPreviewModal 신규
+  - MfgPartnerSelect 공용 컴포넌트 (PARTNER_TYPE='MFG' 캐시)
+  - jsbarcode 의존성 추가, CODE128 바코드 라벨 미리보기 + window.print
+- i18n: ko/en/zh/vi 19개 신규 키 추가, BOM 없음 확인
+- 검증: pnpm build (backend/frontend) 모두 0 error, numbering.service 28/28 + arrival.service 31/31 spec PASS
+- 미해결: PURCHASE_ORDER_ITEMS 행 0건 (T-006 inventory flow 리셋 결과) → UI 첫 진입 시 빈 그리드. 사용자가 PO 시드를 별도 등록 또는 등록 화면으로 입력 필요. Phase B에서 시드 보강 검토.
+
 ## 2026-05-26 Claude (T-011 Phase A — 사전 조사)
 
 - 사용자 요청: IQC005 자재 입하관리를 목업 + 채번규칙 PDF 기준으로 정렬 (Phase A).

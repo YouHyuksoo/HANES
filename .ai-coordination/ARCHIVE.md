@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-011 | 2026-05-26 | claude | IQC005 Phase A aligned to mockup + PDF: 5 migrations applied (MAT_LOTS.MFG_PARTNER_CODE, 2 SEQUENCEs + DBMS_SCHEDULER reset jobs, MFG partners seed, PO line meta), NumberingService.nextMatSerial/nextArrivalNoV2 added, ArrivalService.receivePoLine issues N serials per LOT_UNIT_QTY, PO-line-driven frontend with 4-stage row bg + label preview (jsbarcode), i18n ko/en/zh/vi synced. Builds 0 error, 59/59 spec PASS. PO seed deficit → UI scenario verification deferred to user. | evidence: JOURNAL 2026-05-26 Claude (T-011 Phase A)
 - T-007 | 2026-05-26 | codex | Fixed BOM left product/semi-product filter alias mismatch for FG/CM item types | evidence: JOURNAL 2026-05-26 Codex
 - T-006 | 2026-05-26 | codex | Seeded IQC specs from ITEM_MASTERS and reset receiving, stock, issue, IQC log flow tables on JSHANES | evidence: JOURNAL 2026-05-26 Codex
 - T-005 | 2026-05-26 | codex | Reset JSHANES ITEM_MASTERS/BOM_MASTERS and seeded 10 HANES harness FG models, 10 CM subassemblies, 16 RM components, 92 BOM rows | evidence: JOURNAL 2026-05-26 Codex
