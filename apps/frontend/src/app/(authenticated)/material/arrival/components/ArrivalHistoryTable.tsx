@@ -4,6 +4,9 @@
  * @file src/app/(authenticated)/material/arrival/components/ArrivalHistoryTable.tsx
  * @description 입하 이력 테이블 - MAT_IN / MAT_IN_CANCEL 트랜잭션 표시
  *
+ * @deprecated IQC005 Phase A부터 이 화면은 별도 페이지 `/material/receive-history` (Phase B)로 이동 예정.
+ * 현재 어디서도 사용하지 않음. Phase B에서 components/ 디렉토리 이동.
+ *
  * 초보자 가이드:
  * 1. **컬럼**: 트랜잭션번호, 날짜, PO번호, 품목, 수량(+/-), 창고, 상태, 액션
  * 2. **수량 표시**: 입하는 녹색(+), 취소는 빨간색(-)

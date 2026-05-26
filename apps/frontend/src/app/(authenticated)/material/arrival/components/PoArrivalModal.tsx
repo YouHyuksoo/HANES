@@ -4,6 +4,9 @@
  * @file src/app/(authenticated)/material/arrival/components/PoArrivalModal.tsx
  * @description PO 기반 입하 등록 모달 - 2단계 UI
  *
+ * @deprecated IQC005 Phase A에서 PoLineReceiptModal로 대체. Phase B에서 본 파일 제거 예정.
+ * 현재 어디서도 사용하지 않음.
+ *
  * 초보자 가이드:
  * 1. **Step 1**: 입하 가능 PO 목록에서 PO 선택
  * 2. **Step 2**: 선택된 PO의 품목별 입하수량 입력 + 창고 선택

@@ -93,3 +93,46 @@ export interface ArrivalStats {
   unrecevedPoCount: number;
   totalCount: number;
 }
+
+/* ──────────────────────────────────────────────────────────
+ * IQC005 Phase A 타입
+ * ────────────────────────────────────────────────────────── */
+
+/** IQC005 메인 그리드 행 (PO 라인 단위) */
+export interface PoLineRow {
+  poNo: string;
+  poSeq: number;
+  lineNo: number;
+  revNo: number;
+  itemCode: string;
+  itemName: string;
+  orderQty: number;
+  receivedQty: number;
+  remainingQty: number;
+  orderDate: string | null;
+  partnerName: string;
+  useType: string;
+  lineStatus: 'OPEN' | 'PARTIAL' | 'CLOSE';
+}
+
+/** PO 라인 입하 등록 입력 (POST /material/arrivals/po-line) */
+export interface PoLineReceiptInput {
+  poNo: string;
+  poSeq: number;
+  receivedQty: number;
+  mfgPartnerCode: string;
+  receivedDate: string;
+  warehouseCode: string;
+  remark?: string;
+}
+
+/** PO 라인 입하 등록 응답 — 발급된 시리얼 목록 */
+export interface PoLineReceiptResponse {
+  arrivalNo: string;
+  serials: Array<{
+    matUid: string;
+    initQty: number;
+    arrivalSeq: number;
+    itemCode: string;
+  }>;
+}

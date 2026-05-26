@@ -1,0 +1,196 @@
+"use client";
+
+/**
+ * @file PoLineReceiptModal.tsx
+ * @description IQC005 PO 1라인 입하 등록 모달
+ *
+ * 초보자 가이드:
+ * 1. 단일 라인 폼: 입하수량, 입하일, 제조사(필수), 시리얼수량단위(read-only), 예상시리얼수, 비고
+ * 2. 저장 → onConfirm 호출 (부모에서 SerialIssueConfirmModal 띄움)
+ */
+
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Modal, Button, Input, Select } from '@/components/ui';
+import MfgPartnerSelect from '@/components/shared/MfgPartnerSelect';
+import { useWarehouseOptions } from '@/hooks/useMasterOptions';
+import api from '@/services/api';
+import type { PoLineRow, PoLineReceiptInput } from './types';
+
+interface PoLineReceiptModalProps {
+  isOpen: boolean;
+  line: PoLineRow | null;
+  onClose: () => void;
+  onConfirm: (input: PoLineReceiptInput, expectedCount: number) => void;
+}
+
+export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }: PoLineReceiptModalProps) {
+  const { t } = useTranslation();
+  const { options: warehouses } = useWarehouseOptions();
+
+  const [receivedQty, setReceivedQty] = useState<number>(0);
+  const [mfgPartnerCode, setMfgPartnerCode] = useState('');
+  const [receivedDate, setReceivedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [remark, setRemark] = useState('');
+  const [warehouseCode, setWarehouseCode] = useState('');
+  const [lotUnitQty, setLotUnitQty] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isOpen && line) {
+      setReceivedQty(line.remainingQty);
+      setMfgPartnerCode('');
+      setReceivedDate(new Date().toISOString().slice(0, 10));
+      setRemark('');
+      setWarehouseCode(warehouses[0]?.value ?? '');
+      api.get(`/master/parts/code/${encodeURIComponent(line.itemCode)}`)
+        .then((res) => setLotUnitQty(res.data?.data?.lotUnitQty ?? null))
+        .catch(() => setLotUnitQty(null));
+    }
+  }, [isOpen, line, warehouses]);
+
+  const expectedCount = useMemo(() => {
+    if (!receivedQty) return 0;
+    if (!lotUnitQty || lotUnitQty <= 0) return 1;
+    return Math.ceil(receivedQty / lotUnitQty);
+  }, [receivedQty, lotUnitQty]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const canSave = !!line
+    && receivedQty > 0
+    && receivedQty <= (line?.remainingQty ?? 0)
+    && !!mfgPartnerCode
+    && !!warehouseCode
+    && receivedDate <= today;
+
+  const handleSave = () => {
+    if (!canSave || !line) return;
+    onConfirm({
+      poNo: line.poNo,
+      poSeq: line.poSeq,
+      receivedQty,
+      mfgPartnerCode,
+      receivedDate,
+      remark: remark || undefined,
+      warehouseCode,
+    }, expectedCount);
+  };
+
+  if (!line) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={t('material.arrival.modal.receiveTitle')} size="lg">
+      <div className="flex flex-col gap-4">
+        {/* PO 정보 */}
+        <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm">
+          <div className="font-semibold text-slate-800">
+            {line.poNo} / L{line.lineNo} / R{line.revNo}
+          </div>
+          <div>
+            <span className="font-bold text-slate-800">[{line.itemCode}]</span> {line.itemName}
+          </div>
+          <div className="text-xs text-slate-600 mt-1">
+            {t('material.arrival.col.vendor')}: <b>{line.partnerName}</b>
+          </div>
+        </div>
+
+        {/* 입하/발주/잔량 */}
+        <div className="bg-gray-50 border border-gray-200 rounded p-3 flex items-center justify-end gap-2 text-sm">
+          <span className="font-bold text-teal-600 text-base">{line.receivedQty.toLocaleString()}</span>
+          <span className="text-slate-500">/</span>
+          <span>{line.orderQty.toLocaleString()}</span>
+          <span className="ml-4 text-blue-700 font-bold">
+            {t('material.arrival.col.remainingQty')} {line.remainingQty.toLocaleString()}
+          </span>
+        </div>
+
+        {/* 폼 그리드 */}
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm flex flex-col gap-1">
+            <span>{t('material.arrival.col.receivedQty')} *</span>
+            <Input
+              type="number" min={1} max={line.remainingQty}
+              value={receivedQty}
+              onChange={(e) => setReceivedQty(Math.min(Number(e.target.value) || 0, line.remainingQty))}
+              className="text-right font-semibold"
+            />
+          </label>
+
+          <label className="text-sm flex flex-col gap-1">
+            <span>{t('material.arrival.col.receivedDate')} *</span>
+            <Input
+              type="date"
+              max={today}
+              value={receivedDate}
+              onChange={(e) => setReceivedDate(e.target.value)}
+            />
+          </label>
+
+          <label className="text-sm flex flex-col gap-1">
+            <span>{t('material.arrival.col.mfgPartner')} *</span>
+            <MfgPartnerSelect
+              value={mfgPartnerCode}
+              onChange={setMfgPartnerCode}
+              required
+              fullWidth
+            />
+          </label>
+
+          <label className="text-sm flex flex-col gap-1">
+            <span>{t('material.arrival.col.warehouse')} *</span>
+            <Select
+              options={warehouses}
+              value={warehouseCode}
+              onChange={setWarehouseCode}
+              placeholder={t('material.arrival.selectWarehouse')}
+              fullWidth
+            />
+          </label>
+
+          <label className="text-sm flex flex-col gap-1">
+            <span>{t('material.arrival.col.serialUnitQty')}</span>
+            <Input
+              type="text"
+              value={lotUnitQty === null ? t('material.arrival.singleLot') : String(lotUnitQty)}
+              disabled
+              className="text-right bg-gray-50 text-slate-600"
+            />
+            <span className="text-xs text-slate-500">{t('material.arrival.serialUnitNote')}</span>
+          </label>
+
+          <label className="text-sm flex flex-col gap-1">
+            <span>{t('material.arrival.col.expectedSerialCount')}</span>
+            <div className="h-10 border border-gray-200 rounded px-3 flex items-center justify-between bg-white">
+              <span className="text-xs text-slate-500">
+                {receivedQty.toLocaleString()} ÷ {lotUnitQty ?? '-'} →
+              </span>
+              <span className="font-bold text-pink-600 text-lg">{expectedCount}개</span>
+            </div>
+          </label>
+        </div>
+
+        <label className="text-sm flex flex-col gap-1">
+          <span>{t('common.remark')}</span>
+          <textarea
+            rows={2}
+            value={remark}
+            onChange={(e) => setRemark(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 text-sm"
+            placeholder={t('common.remarkOptional')}
+          />
+        </label>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-slate-600">
+          <b className="text-yellow-700">⚠ {t('common.confirm')}</b> · {t('material.arrival.confirm.notice')}
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center pt-4 border-t border-gray-200 mt-4">
+        <span className="text-xs text-slate-500">{t('common.requiredMark')}</span>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button onClick={handleSave} disabled={!canSave}>{t('common.save')}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
