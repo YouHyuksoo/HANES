@@ -2,6 +2,26 @@
 
 Append new entries at the top.
 
+## 2026-05-26 Claude (T-011 Phase A — End-to-End 검증 + 후속 수정)
+
+- 사용자가 dev 서버 띄움 (backend 3003, frontend turbopack). 실제 API 호출 + 화면 에러 1건 보고.
+- **사용자 화면 에러**: `GET /master/partners?type=MFG&useYn=Y` → 400 Bad Request.
+  - 원인 3종:
+    1. PartnerQueryDto 키는 `partnerType`인데 `type`으로 호출
+    2. `PARTNER_TYPE_VALUES = ['SUPPLIER','CUSTOMER']`에 `'MFG'` 없어 IsIn 검증 fail
+    3. 우리가 시드한 PARTNER 5건도 enum 위반
+  - 수정: `packages/shared/src/constants/com-code-values.ts`에 `'MFG'` 추가 + `MfgPartnerSelect`를 `partnerType` 키로 정정 + shared 빌드.
+- **실제 API E2E 검증** (admin@hanes.com 로그인 후):
+  - `GET /api/v1/master/partners?partnerType=MFG&useYn=Y` → MFG 5건 반환 ✅
+  - `GET /api/v1/material/arrivals/po-lines` → PO 라인 9건 (모든 필드 포함) ✅
+  - `POST /api/v1/material/arrivals/po-line` (PO-26-006#2, qty=220, mfg=M001):
+    - 첫 시도 → 500 `ORA-01400 CURRENT_QTY NULL 삽입 불가` (엔티티에 컬럼 없었음)
+    - `mat-lot.entity.ts`에 `CURRENT_QTY` 컬럼 추가, service에서 `currentQty: qty` 채움 → hot reload 후 성공
+    - DB 결과: MAT_LOTS 5건 (`VH1-RM260526-00007~00011`, INIT_QTY=50,50,50,50,**20** 자투리), 모두 동일 `ARRIVAL_NO=R26052600003`, MFG='M001', VENDOR='VND-003'
+    - MAT_STOCKS 5건, STOCK_TRANSACTIONS 5건(REF_TYPE='ARRIVAL'), MAT_ARRIVALS 5건 동기 기록 ✅
+    - 잔량 초과 검증도 정상 (재호출 시 "잔량 180 초과" reject)
+- 프론트 캐시 race (`.next/static/development/_buildManifest.js.tmp.*` ENOENT)는 turbopack hot reload 알려진 증상. 일시적 — 사용자가 페이지 새로고침 시 자동 회복. 만성이면 `apps/frontend/.next` 삭제 후 dev 재시작.
+
 ## 2026-05-26 Claude (T-011 Phase A — 마무리)
 
 - 사용자 피드백: "남은 작업 없냐" → 4건 식별 후 처리.

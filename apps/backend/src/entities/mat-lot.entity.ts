@@ -33,6 +33,10 @@ export class MatLot {
   @Column({ name: 'INIT_QTY', type: 'int' })
   initQty: number;
 
+  /** 현재 잔량 (수불에 따라 감소). 신규 LOT는 initQty 동일하게 시작. */
+  @Column({ name: 'CURRENT_QTY', type: 'int' })
+  currentQty: number;
+
   @Column({ name: 'RECV_DATE', type: 'date', nullable: true })
   recvDate: Date | null;
 

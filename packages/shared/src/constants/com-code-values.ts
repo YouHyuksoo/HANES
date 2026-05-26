@@ -225,7 +225,8 @@ export const USAGE_REPORT_STATUS_VALUES = ['DRAFT', 'REPORTED', 'CONFIRMED'] as 
 export type UsageReportStatusValue = typeof USAGE_REPORT_STATUS_VALUES[number];
 
 // ===== 거래처 유형 =====
-export const PARTNER_TYPE_VALUES = ['SUPPLIER', 'CUSTOMER'] as const;
+// MFG: 제조사 (IQC005 자재 입하 시 필수, 발주처와 별개)
+export const PARTNER_TYPE_VALUES = ['SUPPLIER', 'CUSTOMER', 'MFG'] as const;
 export type PartnerTypeValue = typeof PARTNER_TYPE_VALUES[number];
 
 // ===== 협력사 유형 =====

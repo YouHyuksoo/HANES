@@ -40,7 +40,10 @@ export default function MfgPartnerSelect({
     let active = true;
     (async () => {
       try {
-        const res = await api.get('/master/partners', { params: { type: 'MFG', useYn: 'Y' } });
+        // GET /master/partners 는 PartnerQueryDto 사용 (partnerType 키, useYn enum 검증)
+        const res = await api.get('/master/partners', {
+          params: { partnerType: 'MFG', useYn: 'Y', limit: 200 },
+        });
         const raw = res.data?.data ?? res.data ?? [];
         const list: any[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
         const data: MfgPartner[] = list.map((p: any) => ({

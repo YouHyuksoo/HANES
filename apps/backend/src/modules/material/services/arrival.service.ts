@@ -1129,6 +1129,7 @@ export class ArrivalService {
           matUid: serialNos[i],
           itemCode: poItem.itemCode,
           initQty: qty,
+          currentQty: qty,
           recvDate: txDate,
           manufactureDate: null,
           expireDate: null,
