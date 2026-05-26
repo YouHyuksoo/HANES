@@ -197,3 +197,65 @@ export class CancelArrivalDto {
   @IsString()
   workerId?: string;
 }
+
+/**
+ * IQC005 Phase A — PO 1라인 입하 등록 DTO
+ *
+ * 초보자 가이드:
+ * - 식별자: (poNo, poSeq) 복합. PurchaseOrderItem 자연 PK.
+ * - receivedQty: 잔량 이하. LOT_UNIT_QTY로 나눠서 N개 시리얼(MAT_LOT) 발급.
+ * - mfgPartnerCode: PARTNER_MASTERS.PARTNER_TYPE='MFG' 필수.
+ * - receivedDate: 입하일. 오늘 이하.
+ * - warehouseCode: 입고 창고.
+ */
+export class PoLineReceiptDto {
+  @ApiProperty({ description: 'PO 번호' })
+  @IsString()
+  poNo!: string;
+
+  @ApiProperty({ description: 'PO 라인 SEQ' })
+  @IsInt()
+  @Min(1)
+  poSeq!: number;
+
+  @ApiProperty({ description: '입하 수량 (잔량 이하)' })
+  @IsInt()
+  @Min(1)
+  receivedQty!: number;
+
+  @ApiProperty({ description: '제조사 거래처 코드 (PARTNER_TYPE=MFG)' })
+  @IsString()
+  mfgPartnerCode!: string;
+
+  @ApiProperty({ description: '입하일 (YYYY-MM-DD, 오늘 이하)' })
+  @IsDateString()
+  receivedDate!: string;
+
+  @ApiProperty({ description: '입고 창고 코드' })
+  @IsString()
+  warehouseCode!: string;
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+}
+
+/** PO 라인 그리드 조회 쿼리 DTO (IQC005) */
+export class PoLineQueryDto {
+  @ApiPropertyOptional({ description: '라인 상태 (OPEN/PARTIAL/CLOSE)' })
+  @IsOptional()
+  @IsString()
+  status?: 'OPEN' | 'PARTIAL' | 'CLOSE';
+
+  @ApiPropertyOptional({ description: '품목 코드' })
+  @IsOptional()
+  @IsString()
+  itemCode?: string;
+
+  @ApiPropertyOptional({ description: 'PO 번호 (부분 일치)' })
+  @IsOptional()
+  @IsString()
+  poNo?: string;
+}

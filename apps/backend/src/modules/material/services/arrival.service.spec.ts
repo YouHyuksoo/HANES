@@ -24,6 +24,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -40,6 +41,7 @@ describe('ArrivalService', () => {
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockVendorBarcodeRepo: DeepMocked<Repository<VendorBarcodeMapping>>;
   let mockIqcLogRepo: DeepMocked<Repository<IqcLog>>;
+  let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
@@ -56,6 +58,7 @@ describe('ArrivalService', () => {
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
     mockVendorBarcodeRepo = createMock<Repository<VendorBarcodeMapping>>();
     mockIqcLogRepo = createMock<Repository<IqcLog>>();
+    mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
@@ -82,6 +85,7 @@ describe('ArrivalService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(VendorBarcodeMapping), useValue: mockVendorBarcodeRepo },
         { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },

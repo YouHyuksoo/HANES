@@ -7,6 +7,8 @@ import {
   ArrivalQueryDto,
   ArrivalStockQueryDto,
   CancelArrivalDto,
+  PoLineReceiptDto,
+  PoLineQueryDto,
 } from '../dto/arrival.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
@@ -81,5 +83,36 @@ export class ArrivalController {
   async cancel(@Body() dto: CancelArrivalDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.arrivalService.cancel(dto, company, plant);
     return ResponseUtil.success(data, 'Arrival canceled');
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // IQC005 Phase A endpoints
+  // ─────────────────────────────────────────────────────────────────
+
+  @Get('po-lines')
+  @ApiOperation({ summary: 'IQC005 — list PO lines (per-line view)' })
+  async listPoLines(
+    @Query() query: PoLineQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.arrivalService.listPoLines(query, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Post('po-line')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'IQC005 — register PO line receipt (issue N serials)' })
+  async receivePoLine(
+    @Body() dto: PoLineReceiptDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.arrivalService.receivePoLine(dto, {
+      username: 'SYSTEM', // JWT decorator로 user 주입은 별도 task
+      company,
+      plant,
+    });
+    return ResponseUtil.success(data, 'Material receipt issued');
   }
 }

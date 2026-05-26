@@ -14,7 +14,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Between, DataSource, EntityManager, FindOptionsWhere } from 'typeorm';
+import { Repository, In, Between, DataSource, EntityManager, FindOptionsWhere, QueryRunner } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -22,6 +22,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
@@ -34,6 +35,8 @@ import {
   ArrivalQueryDto,
   ArrivalStockQueryDto,
   CancelArrivalDto,
+  PoLineReceiptDto,
+  PoLineQueryDto,
 } from '../dto/arrival.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -61,6 +64,8 @@ export class ArrivalService {
     private readonly vendorBarcodeMappingRepository: Repository<VendorBarcodeMapping>,
     @InjectRepository(IqcLog)
     private readonly iqcLogRepository: Repository<IqcLog>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
@@ -988,5 +993,251 @@ export class ArrivalService {
       });
       await manager.save(newStock);
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // IQC005 Phase A — PO 라인 단위 입하 (시리얼 N건 발급)
+  // ─────────────────────────────────────────────────────────────────────
+
+  /**
+   * IQC005 메인 그리드용 PO 라인 목록.
+   * PO 라인 단위로 평면화하여 (poNo, seq, lineNo, revNo, status, useType 등) 반환.
+   */
+  async listPoLines(query: PoLineQueryDto, company?: string | null, plant?: string | null) {
+    const qb = this.purchaseOrderItemRepository
+      .createQueryBuilder('pi')
+      .innerJoin(PurchaseOrder, 'po', 'po.PO_NO = pi.PO_ID')
+      .leftJoin(PartMaster, 'item', 'item.ITEM_CODE = pi.ITEM_CODE')
+      .select([
+        'pi.PO_ID AS "poNo"',
+        'pi.SEQ AS "poSeq"',
+        'NVL(pi.LINE_NO, pi.SEQ) AS "lineNo"',
+        'NVL(pi.REV_NO, 1) AS "revNo"',
+        'pi.ITEM_CODE AS "itemCode"',
+        'item.ITEM_NAME AS "itemName"',
+        'pi.ORDER_QTY AS "orderQty"',
+        'pi.RECEIVED_QTY AS "receivedQty"',
+        '(pi.ORDER_QTY - pi.RECEIVED_QTY) AS "remainingQty"',
+        'po.ORDER_DATE AS "orderDate"',
+        'po.PARTNER_NAME AS "partnerName"',
+        "NVL(po.USE_TYPE, 'PROD') AS \"useType\"",
+        "NVL(pi.LINE_STATUS, 'OPEN') AS \"lineStatus\"",
+      ]);
+
+    if (query.status) {
+      qb.where("NVL(pi.LINE_STATUS, 'OPEN') = :st", { st: query.status });
+    }
+    if (query.itemCode) qb.andWhere('pi.ITEM_CODE = :ic', { ic: query.itemCode });
+    if (query.poNo) qb.andWhere('pi.PO_ID LIKE :pno', { pno: `%${query.poNo}%` });
+    if (company) qb.andWhere('pi.COMPANY = :co', { co: company });
+    if (plant) qb.andWhere('pi.PLANT_CD = :pl', { pl: plant });
+
+    qb.orderBy('po.ORDER_DATE', 'DESC').addOrderBy('NVL(pi.LINE_NO, pi.SEQ)', 'ASC');
+
+    const rows = await qb.getRawMany();
+    return rows.map((r) => ({
+      poNo: r.poNo,
+      poSeq: Number(r.poSeq),
+      lineNo: Number(r.lineNo),
+      revNo: Number(r.revNo),
+      itemCode: r.itemCode,
+      itemName: r.itemName ?? '',
+      orderQty: Number(r.orderQty),
+      receivedQty: Number(r.receivedQty),
+      remainingQty: Number(r.remainingQty),
+      orderDate: r.orderDate ? new Date(r.orderDate).toISOString().slice(0, 10) : null,
+      partnerName: r.partnerName ?? '',
+      useType: r.useType ?? 'PROD',
+      lineStatus:
+        r.lineStatus === 'CLOSE' ? 'CLOSE' : r.lineStatus === 'PARTIAL' ? 'PARTIAL' : 'OPEN',
+    }));
+  }
+
+  /**
+   * IQC005 PO 1라인 입하 등록.
+   *
+   * 흐름:
+   * 1. PO 라인 조회 (poNo, seq) + 잔량 검증
+   * 2. PO 헤더 조회 (partner 등)
+   * 3. 제조사 검증 (PARTNER_TYPE='MFG')
+   * 4. ITEM_MASTERS.LOT_UNIT_QTY로 시리얼 개수 산정 (자투리 포함)
+   * 5. 채번: ARRIVAL_NO 1건, MAT_UID N건 (NumberingService.nextArrivalNoV2 / nextMatSerial)
+   * 6. MAT_LOTS N건 insert (동일 ARRIVAL_NO, 시리얼별 INIT_QTY)
+   * 7. PO 라인 누적 입하 수량 + 상태 갱신
+   * 8. MAT_STOCK upsert + STOCK_TRANSACTION(MAT_IN) N건 기록
+   * 9. MAT_ARRIVALS 헤더 N건 기록
+   *
+   * @returns 발급된 시리얼 목록 (UI 라벨 모달용)
+   */
+  async receivePoLine(
+    dto: PoLineReceiptDto,
+    user: { username?: string; company?: string | null; plant?: string | null },
+  ): Promise<{ arrivalNo: string; serials: MatLot[] }> {
+    const username = user?.username ?? 'SYSTEM';
+    return this.tx.run(async (qr) => {
+      // 1. PO 라인 (복합 PK)
+      const poItem = await qr.manager.findOne(PurchaseOrderItem, {
+        where: { poNo: dto.poNo, seq: dto.poSeq },
+      });
+      if (!poItem) {
+        throw new NotFoundException(`PO 라인 없음: ${dto.poNo}#${dto.poSeq}`);
+      }
+      const remaining = poItem.orderQty - poItem.receivedQty;
+      if (dto.receivedQty > remaining) {
+        throw new BadRequestException(
+          `입하 수량(${dto.receivedQty})이 PO 잔량(${remaining}) 초과`,
+        );
+      }
+
+      // 2. PO 헤더
+      const po = await qr.manager.findOne(PurchaseOrder, { where: { poNo: dto.poNo } });
+      if (!po) throw new NotFoundException(`PO 헤더 없음: ${dto.poNo}`);
+
+      // 3. 제조사
+      const mfg = await qr.manager.findOne(PartnerMaster, {
+        where: { partnerCode: dto.mfgPartnerCode, partnerType: 'MFG' },
+      });
+      if (!mfg) {
+        throw new BadRequestException(
+          `제조사 없음 또는 MFG 타입 아님: ${dto.mfgPartnerCode}`,
+        );
+      }
+
+      // 4. 시리얼 단위 (LOT_UNIT_QTY)
+      const item = await qr.manager.findOne(PartMaster, {
+        where: { itemCode: poItem.itemCode },
+      });
+      if (!item) throw new NotFoundException(`품목 없음: ${poItem.itemCode}`);
+      const unit = item.lotUnitQty && item.lotUnitQty > 0 ? item.lotUnitQty : dto.receivedQty;
+      const serialCount = Math.ceil(dto.receivedQty / unit);
+
+      // 5. 채번 (IQC005 신규 채번 메서드, 트랜잭션 내)
+      const txDate = new Date(dto.receivedDate);
+      const arrivalNo = await this.numbering.nextArrivalNoV2(qr, txDate);
+      const serialNos: string[] = [];
+      for (let i = 0; i < serialCount; i++) {
+        serialNos.push(await this.numbering.nextMatSerial(qr, txDate));
+      }
+
+      // 6. MAT_LOTS N건 생성 (자투리 포함)
+      const lots: MatLot[] = [];
+      let qtyLeft = dto.receivedQty;
+      for (let i = 0; i < serialCount; i++) {
+        const qty = Math.min(unit, qtyLeft);
+        qtyLeft -= qty;
+        const lot = qr.manager.create(MatLot, {
+          matUid: serialNos[i],
+          itemCode: poItem.itemCode,
+          initQty: qty,
+          recvDate: txDate,
+          manufactureDate: null,
+          expireDate: null,
+          arrivalNo,
+          arrivalSeq: i + 1,
+          origin: serialNos[i],
+          vendor: po.partnerId ?? '',
+          invoiceNo: '',
+          poNo: po.poNo,
+          mfgPartnerCode: dto.mfgPartnerCode,
+          iqcStatus: 'PENDING',
+          status: 'NORMAL',
+          company: user?.company ?? null,
+          plant: user?.plant ?? null,
+          createdBy: username,
+        });
+        lots.push(lot);
+      }
+      const savedLots = await qr.manager.save(MatLot, lots);
+
+      // 7. PO 라인 잔량 + 상태 갱신
+      poItem.receivedQty += dto.receivedQty;
+      poItem.lineStatus = poItem.receivedQty >= poItem.orderQty ? 'CLOSE' : 'PARTIAL';
+      await qr.manager.save(PurchaseOrderItem, poItem);
+
+      // 8. MAT_STOCK upsert + STOCK_TRANSACTION 기록 (시리얼당 1건)
+      for (const lot of savedLots) {
+        await this.recordIqc005StockArrival(qr, lot, dto.warehouseCode, {
+          company: user?.company ?? null,
+          plant: user?.plant ?? null,
+          username,
+        });
+      }
+
+      // 9. MAT_ARRIVALS 헤더 기록 (시리얼당 1행, 같은 ARRIVAL_NO + 다른 SEQ)
+      let arrivalSeqCounter = 1;
+      for (const lot of savedLots) {
+        const arrivalRow = qr.manager.create(MatArrival, {
+          arrivalNo,
+          seq: arrivalSeqCounter++,
+          invoiceNo: '',
+          poId: po.poNo,
+          poItemId: `${po.poNo}#${poItem.seq}`,
+          poNo: po.poNo,
+          vendorId: po.partnerId ?? '',
+          vendorName: po.partnerName ?? '',
+          itemCode: lot.itemCode,
+          qty: lot.initQty,
+          warehouseCode: dto.warehouseCode,
+          arrivalDate: txDate,
+          arrivalType: 'PO',
+          workerId: username,
+          remark: dto.remark ?? null,
+          iqcStatus: 'PENDING',
+          supUid: lot.matUid,
+          status: 'DONE',
+          company: user?.company ?? null,
+          plant: user?.plant ?? null,
+          createdBy: username,
+        });
+        await qr.manager.save(MatArrival, arrivalRow);
+      }
+
+      return { arrivalNo, serials: savedLots };
+    });
+  }
+
+  /**
+   * IQC005 — 단일 시리얼 단위 MAT_STOCK upsert + STOCK_TRANSACTION(MAT_IN) 1건.
+   * 기존 createPoArrival/upsertStock과 동일 패턴이나 새 채번(transNo) + refType='ARRIVAL'.
+   */
+  private async recordIqc005StockArrival(
+    qr: QueryRunner,
+    lot: MatLot,
+    warehouseCode: string,
+    ctx: { company: string | null; plant: string | null; username: string },
+  ): Promise<void> {
+    // MAT_STOCK 신규 (시리얼 단위 1행)
+    const stock = qr.manager.create(MatStock, {
+      warehouseCode,
+      itemCode: lot.itemCode,
+      matUid: lot.matUid,
+      qty: lot.initQty,
+      reservedQty: 0,
+      availableQty: lot.initQty,
+      company: ctx.company ?? '',
+      plant: ctx.plant ?? '',
+      createdBy: ctx.username,
+    });
+    await qr.manager.save(MatStock, stock);
+
+    // STOCK_TRANSACTION (MAT_IN)
+    const transNo = await this.numbering.next('STOCK_TX', qr, ctx.username);
+    const tx = qr.manager.create(StockTransaction, {
+      transNo,
+      transType: 'MAT_IN',
+      transDate: new Date(),
+      toWarehouseId: warehouseCode,
+      itemCode: lot.itemCode,
+      matUid: lot.matUid,
+      qty: lot.initQty,
+      refType: 'ARRIVAL',
+      refId: lot.arrivalNo,
+      workerId: ctx.username,
+      status: 'DONE',
+      company: ctx.company,
+      plant: ctx.plant,
+      createdBy: ctx.username,
+    });
+    await qr.manager.save(StockTransaction, tx);
   }
 }

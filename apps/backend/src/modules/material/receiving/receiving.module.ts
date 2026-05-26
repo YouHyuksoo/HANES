@@ -8,6 +8,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
@@ -35,6 +36,7 @@ import { ReceivingService } from '../services/receiving.service';
       MatReceiving,
       MatStock,
       PartMaster,
+      PartnerMaster,
       PurchaseOrder,
       PurchaseOrderItem,
       StockTransaction,
