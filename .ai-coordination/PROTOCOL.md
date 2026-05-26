@@ -23,6 +23,7 @@ TODO -> IN_PROGRESS -> BLOCKED
 
 - A lock must include owner, task, files/modules, started, last_seen, expires, and status.
 - Refresh `last_seen` during long work.
+- Agent presence는 증거 기반으로 표시한다. fresh heartbeat 또는 최근 `last_seen`이 있을 때만 `online`으로 보고, fresh 신호가 없으면 `offline`, 만료됐거나 오래된 active lock은 `stale`로 본다.
 - If `expires` has passed, mark the lock `stale` in `LOCKS.md` before taking over.
 - Never overwrite another active lock silently.
 

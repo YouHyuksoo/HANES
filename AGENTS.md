@@ -51,3 +51,8 @@
 - 작업 종료 전 `JOURNAL.md`와 `.ai-coordination/HANDOFF/<agent-name>.md`를 갱신한다.
 - 다른 AI가 lock한 파일은 사용자 허가 없이 수정하지 않는다.
 - `AGENTS.md`의 프로젝트 규칙이 최우선이며, 불확실하면 구현하지 말고 `TASKS.md`에 BLOCKED로 남긴다.
+
+### 언어 규칙
+- `.ai-coordination/`의 모든 문서(TASKS, DECISIONS, JOURNAL, STATE, PROTOCOL, LOCKS, ARCHIVE, HANDOFF)는 **한글로 기록**한다.
+- 영어로 적힌 기존 항목은 수정할 때 한글로 갱신한다.
+- 코드, 파일 경로, DB 테이블명, API 엔드포인트 등 기술 식별자는 원문을 유지한다.

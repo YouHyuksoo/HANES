@@ -33,6 +33,12 @@
 
 작은 작업은 한 AI가 여러 역할을 맡을 수 있지만, DB 변경·공유 모듈·대량 수정은 최소 리뷰 역할을 분리한다.
 
+## 언어 규칙
+
+- `.ai-coordination/`의 모든 문서(TASKS, DECISIONS, JOURNAL, STATE, PROTOCOL, LOCKS, ARCHIVE, HANDOFF)는 **한글로 기록**한다.
+- 영어로 적힌 기존 항목은 수정할 때 한글로 갱신한다.
+- 코드, 파일 경로, DB 테이블명, API 엔드포인트 등 기술 식별자는 원문을 유지한다.
+
 ## 컨텍스트 절약 규칙
 
 - `TASKS.md`에는 `TODO`, `IN_PROGRESS`, `BLOCKED` 작업만 둔다.
