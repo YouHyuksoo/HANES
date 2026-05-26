@@ -2,6 +2,18 @@
 
 Append new entries at the top.
 
+## 2026-05-26 Claude (T-010)
+
+- 사용자 요청: T-008 의 SQL 마이그를 JSHANES 에 적용.
+- 사전 점검: 10개 로그 시퀀스 (Codex T-005/T-006 적용분) 모두 존재 확인. PHYSICAL_INV_SESSIONS 테이블 존재. (COMPANY, PLANT_CD) 기준 중복 IN_PROGRESS 행 0건.
+- 마이그 SQL 자체 결함 3개 발견 후 수정:
+  1. 컬럼명을 PLANT 로 작성했으나 실제 스키마는 PLANT_CD.
+  2. PL/SQL 익명 블록에서 RETURN 사용 (PLS-00103) — IF/ELSE 구조로 변경.
+  3. oracle_connector `--execute-file` 의 split regex 가 PL/SQL 블록 시작 전 `-- ...` 헤더 코멘트를 인식하지 못해 trailing `;` 를 silent strip → PLS-00103. 헤더를 `BEGIN` 안의 `/* ... */` 블록 코멘트로 이동.
+- 최종 형태: 단일 BEGIN/EXCEPTION 블록 + ORA-00955(-942 포함) catch → idempotent rerun 가능.
+- 적용 결과: UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS — UNIQUENESS=UNIQUE, STATUS=VALID, 표현식 `CASE "STATUS" WHEN 'IN_PROGRESS' THEN NVL("COMPANY",'')||'||'||NVL("PLANT_CD",'') END` 검증. 재실행도 success/skip.
+- create_log_sequences.sql 은 JSHANES 에 모든 시퀀스가 이미 존재하므로 rerun 불필요. IQC_TEMPLATES USER_TABLES guard 보강은 신규 환경 대상.
+
 ## 2026-05-26 Claude (T-008)
 
 - 2차 코드 리뷰의 15건 잠재 버그 중 13건 처리. iqc-template는 T-007 잠금 해제 후 함께 처리.

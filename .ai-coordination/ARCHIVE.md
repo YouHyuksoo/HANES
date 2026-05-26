@@ -19,3 +19,4 @@ Format:
 - T-001 | 2026-05-26 | codex | Created shared AI coordination workflow and onboarding prompt | evidence: JOURNAL 2026-05-26 Codex
 - T-009 | 2026-05-26 | kimi | Built cyberpunk AI Command Center dashboard (/ai-command) with 6 HUD panels reading live .ai-coordination files | evidence: JOURNAL 2026-05-26 Kimi
 - T-008 | 2026-05-26 | claude | Fixed 13 backend bugs from second-pass review (SQL exec sanitization, SCRAP cross-tenant, physical-inv race, retryLog NULL+precision, iqc-template overflow, training worker fallback, KST TZ, migration guard/README) | evidence: JOURNAL 2026-05-26 Claude (T-008)
+- T-010 | 2026-05-26 | claude | Applied UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS partial unique index on JSHANES; rewrote sql to use BEGIN/EXCEPTION + PLANT_CD column + ORA-00955 idempotent catch | evidence: JOURNAL 2026-05-26 Claude (T-010)

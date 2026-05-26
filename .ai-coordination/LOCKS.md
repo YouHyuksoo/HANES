@@ -31,6 +31,22 @@ Before editing, add a lock entry. Remove or mark it released when done.
 ## History
 
 - owner: claude
+  task: T-010 Apply T-008 SQL migrations to JSHANES
+  status: released
+  role: operator
+  files:
+    - Oracle JSHANES — UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS (created, UNIQUE/VALID)
+    - apps/backend/src/migrations/2026-05-26_physical_inv_session_uniq.sql (rewritten — column PLANT→PLANT_CD, BEGIN/EXCEPTION pattern with idempotent ORA-00955/-942 catch, header comment relocated into BEGIN to bypass oracle_connector regex limitation)
+  started: 2026-05-26T13:50:00+09:00
+  last_seen: 2026-05-26T14:05:00+09:00
+  expires: 2026-05-26T14:50:00+09:00
+  notes: |
+    Applied UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS partial unique index on JSHANES.
+    Pre-check: all 10 log sequences already exist (Codex T-005/T-006). create_log_sequences.sql rerun unnecessary on this environment.
+    Migration sql had to be rewritten — original column name was PLANT but actual schema uses PLANT_CD; RETURN inside anonymous PL/SQL is invalid; and oracle_connector's execute_file regex doesn't recognize PL/SQL blocks whose file starts with a comment block (silently strips trailing ; on the PL/SQL end, causing PLS-00103). Final form puts the comment inside BEGIN.
+    Post-check: USER_INDEXES.STATUS = VALID, UNIQUENESS = UNIQUE, expression = `CASE "STATUS" WHEN 'IN_PROGRESS' THEN NVL("COMPANY",'')||'||'||NVL("PLANT_CD",'') END`. Idempotent rerun verified.
+
+- owner: claude
   task: T-008 Fix 13 potential bugs from second-pass code review
   status: released
   files:
