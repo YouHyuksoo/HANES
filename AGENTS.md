@@ -31,3 +31,23 @@
 - TypeORM CLI는 ES Module 이슈로 직접 사용 불가 → Raw SQL via oracle-db Python connector 사용
 - 마이그레이션 파일은 `apps/backend/src/migrations/`에 보관
 - `SEQ` 채번은 Oracle `SEQUENCE.NEXTVAL`만 사용한다. `MAX(SEQ)+1`, `NVL(MAX(...))+1`, 날짜별 1부터 재시작 채번은 금지한다.
+
+---
+
+## AI 협업 규칙
+
+여러 AI 세션이 동시에 작업할 수 있으므로 모든 AI는 작업 시작 전 아래 파일을 먼저 읽어야 한다.
+
+1. `.ai-coordination/README.md`
+2. `.ai-coordination/STATE.md`
+3. `.ai-coordination/TASKS.md`
+4. `.ai-coordination/DECISIONS.md`
+5. `.ai-coordination/LOCKS.md`
+
+### 필수 절차
+- 작업 시작 전 `LOCKS.md`에 담당 영역과 파일을 기록한다.
+- 코드 수정 전 `TASKS.md`에서 작업 ID를 확인하거나 새 작업 ID를 만든다.
+- 작업 중 중요한 판단은 `DECISIONS.md`에 남긴다.
+- 작업 종료 전 `JOURNAL.md`와 `.ai-coordination/HANDOFF/<agent-name>.md`를 갱신한다.
+- 다른 AI가 lock한 파일은 사용자 허가 없이 수정하지 않는다.
+- `AGENTS.md`의 프로젝트 규칙이 최우선이며, 불확실하면 구현하지 말고 `TASKS.md`에 BLOCKED로 남긴다.

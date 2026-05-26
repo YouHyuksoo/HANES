@@ -1,5 +1,32 @@
 ﻿# HARNESS MES 프로젝트 설정
 
+## AI 협업 보드 (다중 AI 작업 시 필수)
+
+이 repo는 여러 AI 세션(Claude, Codex 등)이 동시에 작업할 수 있다. 작업 시작 전 다음을 순서대로 읽는다:
+
+1. `AGENTS.md`
+2. `.ai-coordination/README.md`
+3. `.ai-coordination/STATE.md`
+4. `.ai-coordination/TASKS.md`
+5. `.ai-coordination/DECISIONS.md`
+6. `.ai-coordination/LOCKS.md`
+
+다음 상황일 때 추가로 `.ai-coordination/PROTOCOL.md`를 읽는다:
+- 충돌, stale lock, DB 변경, 마이그레이션, 큰 리팩토링, 리뷰 핸드오프, 위험한 공유 모듈 수정
+
+규칙:
+
+- 다른 AI가 `.ai-coordination/LOCKS.md`에 잠근 파일은 사용자 승인 없이 수정하지 않는다.
+- 편집 전에 본인 agent 이름·task ID·예정 파일을 `LOCKS.md`에 기록한다.
+- `.ai-coordination/TASKS.md`는 active-work-only로 유지한다(`TODO`/`IN_PROGRESS`/`REVIEW`/`BLOCKED`).
+- 완료 작업은 `TASKS.md`에서 제거하고 `.ai-coordination/ARCHIVE.md`에 한 줄만 남긴다. 상세 내역·검증은 `.ai-coordination/JOURNAL.md`에 적는다.
+- 세션 종료 전 `.ai-coordination/HANDOFF/claude.md`를 갱신한다.
+- 사용자나 다른 agent의 변경을 되돌리지 않는다.
+- 협업 변경(`.ai-coordination/`, `AGENTS.md`)과 기능 변경은 별도 커밋으로 분리한다.
+- `AGENTS.md`의 프로젝트 규칙은 본 문서와 함께 따른다.
+
+스킬: 보드 셋업·점검·핸드오프 자동화가 필요하면 `ai-coordination` 스킬을 호출한다.
+
 ## 패키지 매니저
 
 - `pnpm`을 사용한다. `npm`은 사용하지 않는다.
