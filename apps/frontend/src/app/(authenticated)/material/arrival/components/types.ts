@@ -118,7 +118,8 @@ export interface PoLineRow {
 /** PO 라인 입하 등록 입력 (POST /material/arrivals/po-line) */
 export interface PoLineReceiptInput {
   poNo: string;
-  poSeq: number;
+  lineNo: number;
+  revNo: number;
   receivedQty: number;
   mfgPartnerCode: string;
   receivedDate: string;

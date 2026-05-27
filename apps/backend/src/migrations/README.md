@@ -11,6 +11,20 @@ pnpm --filter @harness/backend exec oracle-db apply src/migrations/<file>.sql --
 
 또는 직접 SQL\*Plus / SQL Developer 로 실행합니다.
 
+## 스키마 문서 갱신 필수
+
+테이블, 컬럼, PK, FK, UK, CHECK 제약, 컬럼 기본값, 컬럼 주석, `COM_CODES` 기반 코드 도메인을 변경하는 마이그레이션을 추가하거나 적용하면 반드시 아래 명령으로 DB 스키마/ERD 문서를 갱신합니다.
+
+```powershell
+python tools/generate_db_schema_doc.py
+```
+
+갱신 대상:
+
+- `docs/reports/db-schema-erd.md`
+
+스키마 변경 작업은 마이그레이션 SQL만으로 완료된 것으로 보지 않습니다. 문서 갱신 결과를 같은 작업 범위에 포함하고, 검증 로그에 문서 재생성 명령을 남깁니다.
+
 ## 실행 순서
 
 | Order | File | Purpose |

@@ -1075,12 +1075,12 @@ export class ArrivalService {
   ): Promise<{ arrivalNo: string; serials: MatLot[] }> {
     const username = user?.username ?? 'SYSTEM';
     return this.tx.run(async (qr) => {
-      // 1. PO 라인 (복합 PK)
+      // 1. PO 라인 — ERP 비즈니스 3키 (poNo + lineNo + revNo)로 식별
       const poItem = await qr.manager.findOne(PurchaseOrderItem, {
-        where: { poNo: dto.poNo, seq: dto.poSeq },
+        where: { poNo: dto.poNo, lineNo: dto.lineNo, revNo: dto.revNo },
       });
       if (!poItem) {
-        throw new NotFoundException(`PO 라인 없음: ${dto.poNo}#${dto.poSeq}`);
+        throw new NotFoundException(`PO 라인 없음: ${dto.poNo} L${dto.lineNo} R${dto.revNo}`);
       }
       const remaining = poItem.orderQty - poItem.receivedQty;
       if (dto.receivedQty > remaining) {
@@ -1103,12 +1103,11 @@ export class ArrivalService {
         );
       }
 
-      // 4. 시리얼 단위 (LOT_UNIT_QTY)
+      // 4. 시리얼 단위 (LOT_UNIT_QTY) — 품목 마스터 미등록(ERP 인터페이스 전)이면 단일 LOT으로 처리
       const item = await qr.manager.findOne(PartMaster, {
         where: { itemCode: poItem.itemCode },
       });
-      if (!item) throw new NotFoundException(`품목 없음: ${poItem.itemCode}`);
-      const unit = item.lotUnitQty && item.lotUnitQty > 0 ? item.lotUnitQty : dto.receivedQty;
+      const unit = item?.lotUnitQty && item.lotUnitQty > 0 ? item.lotUnitQty : dto.receivedQty;
       const serialCount = Math.ceil(dto.receivedQty / unit);
 
       // 5. 채번 (IQC005 신규 채번 메서드, 트랜잭션 내)

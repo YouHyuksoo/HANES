@@ -106,39 +106,11 @@ export default function ArrivalPage() {
           <Button variant="secondary" size="sm" onClick={fetchLines}>
             <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => setIsManualOpen(true)}>
+          <Button size="sm" onClick={() => setIsManualOpen(true)}>
             <Plus className="w-4 h-4 mr-1" /> {t('material.arrival.manualArrival')}
           </Button>
         </div>
       </div>
-
-      {/* 필터 카드 */}
-      <Card padding="sm">
-        <CardContent>
-          <div className="grid items-center gap-2"
-               style={{ display: 'grid', gridTemplateColumns: '160px 220px 1fr 110px' }}>
-            <ComCodeSelect
-              groupCode="PO_LINE_STATUS"
-              labelPrefix={t('common.status')}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              fullWidth
-            />
-            <Input
-              placeholder={t('common.partCode')}
-              value={itemCode}
-              onChange={(e) => setItemCode(e.target.value)}
-            />
-            <Input
-              placeholder={t('material.arrival.col.poNo')}
-              value={poNo}
-              onChange={(e) => setPoNo(e.target.value)}
-              leftIcon={<Search className="w-4 h-4" />}
-            />
-            <Button onClick={fetchLines}>🔍 {t('common.search')}</Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* PO 라인 그리드 */}
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
@@ -147,6 +119,37 @@ export default function ArrivalPage() {
             data={rows}
             isLoading={loading}
             onSelectLine={setSelectedLine}
+            toolbarLeft={
+              <div className="flex gap-2 flex-1 min-w-0">
+                <div className="w-40 flex-shrink-0">
+                  <ComCodeSelect
+                    groupCode="PO_LINE_STATUS"
+                    labelPrefix={t('common.status')}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    fullWidth
+                  />
+                </div>
+                <Input
+                  placeholder={t('common.partCode')}
+                  value={itemCode}
+                  onChange={(e) => setItemCode(e.target.value)}
+                  className="w-44 flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t('material.arrival.col.poNo')}
+                    value={poNo}
+                    onChange={(e) => setPoNo(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <Button variant="secondary" size="sm" onClick={fetchLines}>
+                  <Search className="w-4 h-4 mr-1" />{t('common.search')}
+                </Button>
+              </div>
+            }
           />
         </CardContent>
       </Card>

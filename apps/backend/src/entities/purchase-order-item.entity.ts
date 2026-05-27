@@ -35,14 +35,17 @@ export class PurchaseOrderItem {
   @Column({ name: 'RECEIVED_QTY', type: 'int', default: 0 })
   receivedQty: number;
 
-  @Column({ name: 'LINE_NO', type: 'int', nullable: true })
-  lineNo: number | null;
+  @Column({ name: 'LINE_NO', type: 'int' })
+  lineNo: number;
 
   @Column({ name: 'REV_NO', type: 'int', default: 1 })
   revNo: number;
 
   @Column({ name: 'LINE_STATUS', length: 20, default: 'OPEN' })
   lineStatus: string;
+
+  @Column({ name: 'REL_NO', type: 'int', nullable: true })
+  relNo: number | null;
 
   @Column({ name: 'UNIT_PRICE', type: 'decimal', precision: 12, scale: 4, nullable: true })
   unitPrice: number | null;

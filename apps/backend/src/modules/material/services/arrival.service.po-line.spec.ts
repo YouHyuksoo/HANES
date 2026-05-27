@@ -126,7 +126,8 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
 
   const baseDto = {
     poNo: 'PO-26-001',
-    poSeq: 1,
+    lineNo: 1,
+    revNo: 1,
     mfgPartnerCode: 'M001',
     receivedDate: '2026-05-26',
     warehouseCode: 'W01',

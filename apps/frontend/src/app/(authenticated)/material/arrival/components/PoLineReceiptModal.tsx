@@ -42,7 +42,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
       setReceivedDate(new Date().toISOString().slice(0, 10));
       setRemark('');
       setWarehouseCode(warehouses[0]?.value ?? '');
-      api.get(`/master/parts/code/${encodeURIComponent(line.itemCode)}`)
+      api.get(`/master/parts/code/${encodeURIComponent(line.itemCode)}`, { suppressErrorModal: true })
         .then((res) => setLotUnitQty(res.data?.data?.lotUnitQty ?? null))
         .catch(() => setLotUnitQty(null));
     }
@@ -66,7 +66,8 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
     if (!canSave || !line) return;
     onConfirm({
       poNo: line.poNo,
-      poSeq: line.poSeq,
+      lineNo: line.lineNo,
+      revNo: line.revNo,
       receivedQty,
       mfgPartnerCode,
       receivedDate,

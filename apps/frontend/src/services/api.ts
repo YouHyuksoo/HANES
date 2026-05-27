@@ -7,7 +7,14 @@
  * 2. **interceptors**: 요청/응답 전처리 (토큰 추가, 에러 핸들링)
  * 3. **api**: 앱 전체에서 사용하는 axios 인스턴스
  */
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
+
+/** suppressErrorModal: true 시 에러 모달 표시 안 함 */
+declare module "axios" {
+  interface AxiosRequestConfig {
+    suppressErrorModal?: boolean;
+  }
+}
 
 /** API 에러 응답 타입 */
 interface ApiErrorResponse {
@@ -158,6 +165,11 @@ api.interceptors.response.use(
       }
     } catch {
       requestBody = String(error.config?.data);
+    }
+
+    // suppressErrorModal 플래그가 있으면 모달 생략
+    if ((error.config as AxiosRequestConfig)?.suppressErrorModal) {
+      return Promise.reject(error);
     }
 
     // 에러 상세 모달 표시

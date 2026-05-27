@@ -202,7 +202,7 @@ export class CancelArrivalDto {
  * IQC005 Phase A — PO 1라인 입하 등록 DTO
  *
  * 초보자 가이드:
- * - 식별자: (poNo, poSeq) 복합. PurchaseOrderItem 자연 PK.
+ * - 식별자: (poNo, lineNo, revNo) — ERP 기준 비즈니스 3키.
  * - receivedQty: 잔량 이하. LOT_UNIT_QTY로 나눠서 N개 시리얼(MAT_LOT) 발급.
  * - mfgPartnerCode: PARTNER_MASTERS.PARTNER_TYPE='MFG' 필수.
  * - receivedDate: 입하일. 오늘 이하.
@@ -213,10 +213,15 @@ export class PoLineReceiptDto {
   @IsString()
   poNo!: string;
 
-  @ApiProperty({ description: 'PO 라인 SEQ' })
+  @ApiProperty({ description: 'PO Line 번호 (ERP L/N)' })
   @IsInt()
   @Min(1)
-  poSeq!: number;
+  lineNo!: number;
+
+  @ApiProperty({ description: 'Release 번호 (ERP R/N)', default: 1 })
+  @IsInt()
+  @Min(1)
+  revNo!: number;
 
   @ApiProperty({ description: '입하 수량 (잔량 이하)' })
   @IsInt()
