@@ -284,7 +284,8 @@ export default function SchedulerJobTab() {
                   onChange={setTypeFilter} labelPrefix={t("scheduler.execType")} />
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM SYS_SCHEDULER_JOBS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent>
       </Card>
 

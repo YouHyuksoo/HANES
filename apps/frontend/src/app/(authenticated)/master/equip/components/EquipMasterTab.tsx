@@ -251,7 +251,8 @@ export default function EquipMasterTab() {
                   <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("master.equip.line", "라인")} />
                   <ComCodeSelect groupCode="COMM_TYPE" value={commFilter} onChange={setCommFilter} labelPrefix="통신" />
                 </div>
-              } />
+              } 
+              sqlQuery={`SELECT *\nFROM EQUIP_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>

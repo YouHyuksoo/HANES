@@ -157,7 +157,8 @@ export default function WorkInstructionPage() {
                 </div>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM WORK_INSTRUCTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 

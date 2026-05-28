@@ -167,7 +167,8 @@ export default function ProtocolPage() {
                   </div>
                 </div>
               }
-            />
+            
+            sqlQuery={`SELECT *\nFROM INSPECT_PROTOCOLS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>

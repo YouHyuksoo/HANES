@@ -393,7 +393,8 @@ export default function ReworkPage() {
                 <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("quality.rework.line")} />
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM REWORKS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
 
         {/* 확인 모달 */}

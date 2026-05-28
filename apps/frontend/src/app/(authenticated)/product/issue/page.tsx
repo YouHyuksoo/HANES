@@ -233,7 +233,8 @@ export default function ProductIssuePage() {
                   <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth />
                 </div>
               </div>
-            } />
+            } 
+            sqlQuery={`SELECT *\nFROM PROD_ISSUES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 

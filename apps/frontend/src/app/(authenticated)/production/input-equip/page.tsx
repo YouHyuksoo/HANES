@@ -414,7 +414,8 @@ export default function InputEquipPage() {
                 <Input placeholder={t('production.inputEquip.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM PROD_INPUT_EQUIPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 검사장비 결과 입력 모달 */}

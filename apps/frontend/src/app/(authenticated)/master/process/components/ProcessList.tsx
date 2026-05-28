@@ -196,7 +196,8 @@ export default function ProcessList({
               {t("master.process.addProcess")}
             </Button>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM PROCESSES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent>
     </Card>
   );

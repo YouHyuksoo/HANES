@@ -303,7 +303,8 @@ export default function PpapPage() {
                 </select>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM QA_PPAPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
 
         {/* 확인 모달 */}

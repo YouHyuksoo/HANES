@@ -226,7 +226,8 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
                 pageSize={10}
                 isLoading={loading}
                 onRowClick={(row) => handleSelectPO(row)}
-              />
+              
+              sqlQuery={`SELECT *\nFROM PO_LINES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
             </div>
           )}
         </div>
@@ -244,7 +245,8 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
             <div className="py-10 text-center text-text-muted">{t('common.loading')}</div>
           ) : (
             <div className="max-h-[400px] overflow-auto">
-              <DataGrid data={poItems} columns={itemColumns} pageSize={50} isLoading={loading} />
+              <DataGrid data={poItems} columns={itemColumns} pageSize={50} isLoading={loading} 
+              sqlQuery={`SELECT *\nFROM PO_LINES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
             </div>
           )}
           <div className="flex justify-end gap-2 pt-4 border-t border-border mt-4">

@@ -172,7 +172,8 @@ export default function SubconOrderPage() {
               </div>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM OS_ORDERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("outsourcing.order.register")} size="lg">

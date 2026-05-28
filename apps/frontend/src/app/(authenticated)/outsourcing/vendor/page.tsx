@@ -164,7 +164,8 @@ export default function VendorPage() {
               </div>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM OS_VENDORS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedItem ? t("outsourcing.vendor.editVendor") : t("outsourcing.vendor.register")} size="lg">

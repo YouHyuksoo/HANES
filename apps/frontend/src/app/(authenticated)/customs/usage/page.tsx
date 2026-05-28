@@ -176,7 +176,8 @@ export default function CustomsUsagePage() {
               </div>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM CUSTOMS_USAGE\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("customs.usage.registerUsage")} size="lg">

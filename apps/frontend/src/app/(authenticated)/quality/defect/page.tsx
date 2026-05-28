@@ -178,7 +178,8 @@ export default function DefectPage() {
               <ComCodeSelect groupCode="DEFECT_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM QA_DEFECTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("quality.defect.register")} size="lg">

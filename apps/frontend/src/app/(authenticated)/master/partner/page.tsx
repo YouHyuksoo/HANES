@@ -186,7 +186,8 @@ function PartnerPage() {
                 </div>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM PARTNER_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 

@@ -207,7 +207,8 @@ export default function IqcLinkTab() {
                 </Button>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM IQC_PART_LINKS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent>
       </Card>
 

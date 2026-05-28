@@ -193,7 +193,8 @@ export default function VisualInspectPage() {
               enableColumnFilter
               enableExport
               exportFileName={t("quality.inspect.title")}
-            />
+            
+            sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>

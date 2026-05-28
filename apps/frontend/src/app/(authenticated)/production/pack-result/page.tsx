@@ -122,7 +122,8 @@ export default function PackResultPage() {
                 <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM PACK_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

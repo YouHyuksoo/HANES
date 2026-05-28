@@ -119,7 +119,8 @@ export default function ShipHistoryPage() {
                 <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM SHIPPING_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

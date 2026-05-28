@@ -183,7 +183,8 @@ export default function InspectionHistoryPage() {
                 <ComCodeSelect groupCode="INSPECT_RESULT" labelPrefix={t('common.result', '결과')} value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent>
       </Card>
     </div>

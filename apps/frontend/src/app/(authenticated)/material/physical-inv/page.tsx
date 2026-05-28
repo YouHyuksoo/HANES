@@ -204,7 +204,8 @@ export default function PhysicalInvPage() {
                 <WarehouseSelect includeAll labelPrefix={t("common.warehouse", "창고")} value={warehouseFilter} onChange={setWarehouseFilter} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM MAT_PHYSICAL_INV\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 실사반영 확인 모달 */}

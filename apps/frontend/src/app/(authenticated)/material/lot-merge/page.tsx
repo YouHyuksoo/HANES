@@ -210,7 +210,8 @@ export default function LotMergePage() {
               </Button>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM MAT_LOT_MERGES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 병합 확인 모달 */}

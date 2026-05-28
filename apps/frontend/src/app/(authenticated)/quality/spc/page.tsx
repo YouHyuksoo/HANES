@@ -211,7 +211,8 @@ export default function SpcPage() {
                   onChange={setStatusFilter} labelPrefix={t("common.status")} />
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM QA_SPC_DATA\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
 
         {/* 확인 모달 */}

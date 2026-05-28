@@ -255,7 +255,8 @@ export default function IqcHistoryPage() {
                   value={endDate} onChange={e => setEndDate(e.target.value)} className="w-36" />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM IQC_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 판정 취소 모달  */}

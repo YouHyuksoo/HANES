@@ -187,7 +187,8 @@ export default function SampleInspectPage() {
                   value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM SAMPLE_INSPECTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <SampleInspectInputModal isOpen={showInput} onClose={() => setShowInput(false)} onCreated={fetchData} />

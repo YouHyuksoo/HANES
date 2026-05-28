@@ -269,7 +269,8 @@ export default function EquipInspectItemPage() {
                 <Select options={typeFilterOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM EQUIP_INSPECT_ITEMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 등록/수정 모달 */}

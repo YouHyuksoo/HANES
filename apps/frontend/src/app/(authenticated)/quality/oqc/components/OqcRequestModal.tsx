@@ -171,7 +171,8 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
             {boxes.length > 0 && <span className="text-text-muted ml-2">({boxes.length}{t("common.count")})</span>}
           </h3>
           <div className="max-h-[400px] overflow-auto">
-            <DataGrid data={boxes} columns={columns} isLoading={loading} />
+            <DataGrid data={boxes} columns={columns} isLoading={loading} 
+            sqlQuery={`SELECT *\nFROM OQC_REQUESTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </div>
         </div>
 

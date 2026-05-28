@@ -213,7 +213,8 @@ export default function PoPage() {
                         value={statusFilter} onChange={setStatusFilter} fullWidth />
                     </div>
                   </div>
-                } />
+                } 
+                sqlQuery={`SELECT *\nFROM PO_HEADERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
             </CardContent>
           </Card>
         </div>

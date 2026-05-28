@@ -132,5 +132,6 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
     },
   ], [t, onCancel]);
 
-  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName="arrival_history" toolbarLeft={toolbarLeft} />;
+  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName="arrival_history" toolbarLeft={toolbarLeft} 
+  sqlQuery={`SELECT *\nFROM MAT_ARRIVALS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>;
 }

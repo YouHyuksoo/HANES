@@ -186,7 +186,8 @@ export default function ResultSummaryPage() {
                 <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM PROD_RESULT_SUMMARIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

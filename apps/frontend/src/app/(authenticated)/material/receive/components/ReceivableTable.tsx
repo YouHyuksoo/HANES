@@ -152,6 +152,7 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       enableExport
       exportFileName={t('material.receive.title')}
       toolbarLeft={toolbarLeft}
-    />
+    
+    sqlQuery={`SELECT *\nFROM MAT_RECEIVES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
   );
 }

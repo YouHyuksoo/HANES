@@ -212,7 +212,8 @@ export default function FaiPage() {
                   onChange={setTriggerFilter} labelPrefix={t("quality.fai.triggerType")} />
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM QA_FAIS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
 
         {/* 검사항목 상세 */}

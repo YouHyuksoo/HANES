@@ -303,7 +303,8 @@ export default function CommConfigPage() {
               </div>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM SYS_COMM_CONFIGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 생성/수정 모달 */}

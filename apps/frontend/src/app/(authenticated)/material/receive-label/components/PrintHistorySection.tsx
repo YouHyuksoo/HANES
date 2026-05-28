@@ -192,7 +192,8 @@ export default function PrintHistorySection({ category = 'mat_lot' }: PrintHisto
             columns={columns}
             isLoading={loading}
             enableColumnFilter
-          />
+          
+          sqlQuery={`SELECT *\nFROM RECEIVE_LABELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </div>
       )}
     </div>

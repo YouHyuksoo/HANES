@@ -116,7 +116,8 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
         </div>
       ) : (
         <DataGrid data={items} columns={columns} isLoading={loading} enableColumnFilter
-          enableExport exportFileName={`${equip.equipCode}_inspect_items`} />
+          enableExport exportFileName={`${equip.equipCode}_inspect_items`} 
+          sqlQuery={`SELECT *\nFROM EQUIP_INSPECT_ITEMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       )}
 
       <ConfirmModal

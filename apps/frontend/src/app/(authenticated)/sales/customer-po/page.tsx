@@ -171,7 +171,8 @@ export default function CustomerPoPage() {
                 </div>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM CUSTOMER_POS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 

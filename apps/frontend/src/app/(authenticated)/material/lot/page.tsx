@@ -205,7 +205,8 @@ export default function MatLotPage() {
                 <Select options={IQC_STATUS} value={iqcFilter} onChange={setIqcFilter} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM MAT_LOTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)}

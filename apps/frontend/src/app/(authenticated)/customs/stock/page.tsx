@@ -126,7 +126,8 @@ export default function CustomsStockPage() {
               <Select options={[{ value: "", label: t("common.allStatus") }, { value: "BONDED", label: t("customs.stock.statusBonded") }, { value: "PARTIAL", label: t("customs.stock.statusPartial") }, { value: "RELEASED", label: t("customs.stock.statusReleased") }]} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM CUSTOMS_STOCKS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

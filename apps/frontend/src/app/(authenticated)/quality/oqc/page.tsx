@@ -213,7 +213,8 @@ export default function OqcPage() {
               <ComCodeSelect groupCode="OQC_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM OQC_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <OqcRequestModal

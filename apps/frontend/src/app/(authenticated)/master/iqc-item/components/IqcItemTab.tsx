@@ -197,7 +197,8 @@ export default function IqcItemTab() {
                   </Button>
                 </div>
               }
-            />
+            
+            sqlQuery={`SELECT *\nFROM IQC_ITEMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>

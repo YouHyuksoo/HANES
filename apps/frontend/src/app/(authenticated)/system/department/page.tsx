@@ -202,7 +202,8 @@ function DepartmentPage() {
                   leftIcon={<Search className="w-4 h-4" />}
                 />
               }
-            />
+            
+            sqlQuery={`SELECT *\nFROM DEPARTMENTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>

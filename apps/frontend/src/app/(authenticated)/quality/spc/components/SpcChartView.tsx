@@ -362,7 +362,8 @@ export default function SpcChartView({ chart, onClose }: Props) {
         {/* 데이터 테이블 */}
         <div className="p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
-            getRowId={row => String((row as SpcDataRow).subgroupNo)} />
+            getRowId={row => String((row as SpcDataRow).subgroupNo)} 
+            sqlQuery={`SELECT *\nFROM QA_SPC_DATA\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </div>
       </div>
     </div>

@@ -231,7 +231,8 @@ function ConsumableMasterPage() {
                   <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix="분류" />
                 </div>
               }
-            />
+            
+            sqlQuery={`SELECT *\nFROM CONSUMABLES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>

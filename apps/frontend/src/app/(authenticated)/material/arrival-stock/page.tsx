@@ -321,7 +321,8 @@ export default function ArrivalStockPage() {
                 </div>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM MAT_ARRIVAL_STOCKS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

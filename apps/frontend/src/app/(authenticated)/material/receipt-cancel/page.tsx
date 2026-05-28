@@ -203,7 +203,8 @@ export default function ReceiptCancelPage() {
                   value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM MAT_RECEIPT_CANCELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}

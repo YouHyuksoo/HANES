@@ -180,7 +180,8 @@ export default function MaterialPhysicalInvHistoryPage() {
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM MAT_PHYSICAL_INV_HIST\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

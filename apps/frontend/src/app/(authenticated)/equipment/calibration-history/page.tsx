@@ -158,7 +158,8 @@ export default function CalibrationHistoryPage() {
                   value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM EQUIP_CALIBRATIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

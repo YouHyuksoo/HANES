@@ -58,5 +58,6 @@ export default function ReceivingHistoryTable({ data }: ReceivingHistoryTablePro
     },
   ], [t]);
 
-  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter />;
+  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter 
+  sqlQuery={`SELECT *\nFROM MAT_RECEIVE_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>;
 }

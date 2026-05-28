@@ -274,7 +274,8 @@ export default function ChangeControlPage() {
                   onChange={setPriorityFilter} labelPrefix={t("quality.change.priority")} />
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM QA_CHANGE_CONTROLS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
 
         {/* 확인 모달 */}

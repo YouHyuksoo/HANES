@@ -203,7 +203,8 @@ export default function InspectPanel({ order }: Props) {
             </Button>
           </div>
           <div className="max-h-36 overflow-y-auto min-h-0">
-            <DataGrid data={pendingBarcodes} columns={pendingColumns} isLoading={false} />
+            <DataGrid data={pendingBarcodes} columns={pendingColumns} isLoading={false} 
+            sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </div>
         </CardContent></Card>
       )}
@@ -253,7 +254,8 @@ export default function InspectPanel({ order }: Props) {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
-        <DataGrid data={labels} columns={columns} isLoading={loading} />
+        <DataGrid data={labels} columns={columns} isLoading={loading} 
+        sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <FailModal isOpen={failModalOpen} onClose={() => setFailModalOpen(false)}

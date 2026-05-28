@@ -221,7 +221,8 @@ export default function PoStatusPage() {
                       value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
                 </div>
-              } />
+              } 
+              sqlQuery={`SELECT *\nFROM PO_HEADERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent></Card>
         </div>
 
@@ -233,7 +234,8 @@ export default function PoStatusPage() {
                 <div className="h-full">
                   <DataGrid data={detailItems} columns={detailColumns}
                     enableExport exportFileName={`${selectedPo.poNo}_status`}
-                    enableFullscreen />
+                    enableFullscreen 
+                    sqlQuery={`SELECT *\nFROM PO_HEADERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-text-muted">

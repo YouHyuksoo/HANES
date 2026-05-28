@@ -223,7 +223,8 @@ export default function ProductReceiptCancelPage() {
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM PROD_RECEIPT_CANCELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 취소 모달 */}

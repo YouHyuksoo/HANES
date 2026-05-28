@@ -189,7 +189,8 @@ export default function WarehouseList({ onHeaderActions }: Props) {
               </div>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM WAREHOUSES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))} onConfirm={confirmModal.onConfirm} title={confirmModal.title} message={confirmModal.message} variant="danger" />

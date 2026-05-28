@@ -132,6 +132,7 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       onRowClick={(row) => {
         if (row.lineStatus !== 'CLOSE' && row.remainingQty > 0) onSelectLine(row);
       }}
-    />
+    
+    sqlQuery={`SELECT *\nFROM PO_LINES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
   );
 }

@@ -177,7 +177,8 @@ export default function VendorBarcodeMappingPage() {
                   <Select options={matchTypeOptions} value={matchTypeFilter} onChange={setMatchTypeFilter} fullWidth />
                 </div>
               </div>
-            } />
+            } 
+            sqlQuery={`SELECT *\nFROM VENDOR_BARCODES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 

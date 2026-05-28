@@ -200,7 +200,8 @@ function ConsumableLabelPage() {
             <Input placeholder={t("consumables.label.searchPlaceholder")}
               value={searchText} onChange={(e) => setSearchText(e.target.value)}
               leftIcon={<Search className="w-4 h-4" />} />
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM CON_LABELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 숨김 인쇄 영역 */}

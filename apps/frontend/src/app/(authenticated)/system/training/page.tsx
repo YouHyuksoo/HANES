@@ -267,7 +267,8 @@ export default function TrainingPage() {
                       onChange={setStatusFilter} labelPrefix={t("common.status")} />
                   </div>
                 }
-              />
+              
+              sqlQuery={`SELECT *\nFROM SYS_TRAININGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
             </CardContent>
           </Card>
 

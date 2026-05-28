@@ -242,7 +242,8 @@ export default function MaterialPhysicalInvPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM MAT_PHYSICAL_INV\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <StartSessionModal isOpen={showStartModal} onClose={() => setShowStartModal(false)}

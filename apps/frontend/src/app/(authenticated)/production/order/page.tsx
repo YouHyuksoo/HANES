@@ -420,7 +420,8 @@ export default function JobOrderPage() {
                     onChange={e => setEndDate(e.target.value)} fullWidth />
                 </div>
               </div>
-            } />
+            } 
+            sqlQuery={`SELECT *\nFROM PROD_ORDERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 

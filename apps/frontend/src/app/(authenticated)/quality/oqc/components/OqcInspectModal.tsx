@@ -191,7 +191,8 @@ export default function OqcInspectModal({ isOpen, onClose, requestId, onSuccess 
         <div>
           <h3 className="text-sm font-medium text-text mb-2">{t("quality.oqc.linkedBoxes")}</h3>
           <div className="max-h-[300px] overflow-auto">
-            <DataGrid data={detail.boxes || []} columns={columns} />
+            <DataGrid data={detail.boxes || []} columns={columns} 
+            sqlQuery={`SELECT *\nFROM OQC_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </div>
         </div>
 

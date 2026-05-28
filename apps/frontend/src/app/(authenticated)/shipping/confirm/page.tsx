@@ -222,7 +222,8 @@ export default function ShipmentPage() {
               </div>
             </div>
           }
-          onRowClick={(row) => { setSelectedShipment(row); setIsDetailModalOpen(true); }} />
+          onRowClick={(row) => { setSelectedShipment(row); setIsDetailModalOpen(true); }} 
+          sqlQuery={`SELECT *\nFROM SHIPPING_CONFIRMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 출하 등록 모달 */}

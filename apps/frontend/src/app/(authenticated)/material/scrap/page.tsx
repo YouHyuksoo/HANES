@@ -162,7 +162,8 @@ export default function ScrapPage() {
                   value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM MAT_SCRAPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <ScrapRegisterModal isOpen={showRegister} onClose={() => setShowRegister(false)} onCreated={fetchData} />

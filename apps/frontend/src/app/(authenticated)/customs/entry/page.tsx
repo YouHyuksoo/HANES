@@ -169,7 +169,8 @@ export default function CustomsEntryPage() {
               </div>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM CUSTOMS_ENTRIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedEntry ? t("customs.entry.detail") : t("customs.entry.register")} size="lg">

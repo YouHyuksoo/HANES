@@ -322,7 +322,8 @@ export default function TransactionPage() {
                 </div>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM STOCK_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       {/* 취소 확인 모달 */}

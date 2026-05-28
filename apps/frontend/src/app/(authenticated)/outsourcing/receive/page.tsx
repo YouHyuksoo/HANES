@@ -156,7 +156,8 @@ export default function SubconReceivePage() {
               </div>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM OS_RECEIVES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("outsourcing.receive.register")} size="lg">

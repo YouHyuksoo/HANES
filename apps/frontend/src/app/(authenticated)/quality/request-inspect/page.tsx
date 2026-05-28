@@ -151,7 +151,8 @@ export default function RequestInspectPage() {
                   onRowClick={handleSelect}
                   maxHeight="100%"
                   enableColumnFilter={false}
-                />
+                
+                sqlQuery={`SELECT *\nFROM INSPECT_REQUESTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
               </div>
             </CardContent>
           </Card>

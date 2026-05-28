@@ -165,7 +165,8 @@ export default function InterfaceLogPage() {
               <Select options={[{ value: "", label: `${t("common.status")}: ${t("common.all")}` }, { value: "SUCCESS", label: `${t("common.status")}: ${t("interface.log.statusSuccess")}` }, { value: "FAIL", label: `${t("common.status")}: ${t("interface.log.statusFail")}` }, { value: "PENDING", label: `${t("common.status")}: ${t("interface.log.statusPending")}` }, { value: "RETRY", label: `${t("common.status")}: ${t("interface.log.statusRetry")}` }]} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM IF_LOGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title={t("interface.log.detailTitle")} size="lg">

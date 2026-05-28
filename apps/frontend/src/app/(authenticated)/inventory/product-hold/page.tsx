@@ -224,7 +224,8 @@ export default function ProductHoldPage() {
               </div>
             </div>
           }
-        />
+        
+        sqlQuery={`SELECT *\nFROM PROD_HOLDS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal

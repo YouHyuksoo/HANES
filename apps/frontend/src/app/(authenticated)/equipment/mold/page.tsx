@@ -119,7 +119,8 @@ function MoldPage() {
                 <Button variant="outline" onClick={resetFilters}>{t('common.reset')}</Button>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM MOLDS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent>
       </Card>
 

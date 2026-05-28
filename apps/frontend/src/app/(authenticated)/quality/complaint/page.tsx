@@ -282,7 +282,8 @@ export default function ComplaintPage() {
                   onChange={setUrgencyFilter} labelPrefix={t("quality.complaint.urgency")} />
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM QA_COMPLAINTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
 
         {/* 확인 모달 */}

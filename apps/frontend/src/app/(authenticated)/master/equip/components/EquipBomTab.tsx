@@ -533,7 +533,8 @@ export default function EquipBomTab() {
                       columns={bomRelColumns}
                       pageSize={10}
                       isLoading={loading}
-                    />
+                    
+                    sqlQuery={`SELECT *\nFROM EQUIP_BOM\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
                   </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-text-muted">

@@ -164,7 +164,8 @@ export default function CalibrationList({ gaugeId, onCalibrationAdded }: Props) 
       {/* 교정 이력 DataGrid */}
       <div className="flex-1 min-h-0">
         <DataGrid data={data} columns={columns} isLoading={loading}
-          getRowId={row => (row as CalibrationLog).calibrationNo} />
+          getRowId={row => (row as CalibrationLog).calibrationNo} 
+          sqlQuery={`SELECT *\nFROM QA_CALIBRATIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </div>
     </div>
   );

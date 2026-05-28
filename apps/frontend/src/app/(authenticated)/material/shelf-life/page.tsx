@@ -171,7 +171,8 @@ export default function ShelfLifePage() {
                 <Select options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM MAT_SHELF_LIFE\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

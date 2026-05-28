@@ -225,7 +225,8 @@ export default function PeriodicInspectPage() {
                 <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} fullWidth />
               </div>
             </div>
-          } />
+          } 
+          sqlQuery={`SELECT *\nFROM PERIODIC_INSPECTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}

@@ -322,7 +322,8 @@ export default function ProcessCapaPage() {
                   </div>
                 </div>
               }
-            />
+            
+            sqlQuery={`SELECT *\nFROM PROCESS_CAPAS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
 

@@ -224,7 +224,8 @@ export default function SelfInspectHistoryPage() {
                   onRowClick={handleSelect}
                   maxHeight="100%"
                   enableColumnFilter={false}
-                />
+                
+                sqlQuery={`SELECT *\nFROM SELF_INSPECT_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
               </div>
             </CardContent>
           </Card>
@@ -252,7 +253,8 @@ export default function SelfInspectHistoryPage() {
                       getRowId={(row) => row.id}
                       maxHeight="100%"
                       enableColumnFilter={false}
-                    />
+                    
+                    sqlQuery={`SELECT *\nFROM SELF_INSPECT_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
                   </div>
                 </>
               )}

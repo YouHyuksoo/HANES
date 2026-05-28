@@ -241,7 +241,8 @@ export default function IqcGroupTab() {
                 </Button>
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM IQC_GROUPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent>
       </Card>
 

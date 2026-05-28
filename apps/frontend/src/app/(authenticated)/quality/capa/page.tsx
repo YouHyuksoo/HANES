@@ -266,7 +266,8 @@ export default function CapaPage() {
                   onChange={setSourceFilter} labelPrefix={t("quality.capa.sourceType")} />
               </div>
             }
-          />
+          
+          sqlQuery={`SELECT *\nFROM QA_CAPAS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
 
         {/* 확인 모달 */}
