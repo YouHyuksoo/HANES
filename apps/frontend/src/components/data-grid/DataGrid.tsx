@@ -35,7 +35,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown, GripVertical, X, Pin, PinOff, M
 import Button from '@/components/ui/Button';
 import { useExport } from '@/hooks/useExport';
 import type { ExportFormat } from '@/hooks/useExport';
-import { SqlViewerModal } from './SqlViewerModal';
+import { SqlViewerModal, type ActiveFilter } from './SqlViewerModal';
 import { ResizeHandle } from './ResizeHandle';
 import { ColumnFilterInput } from './ColumnFilterInput';
 import { ScrollHandle } from './ScrollHandle';
@@ -632,7 +632,21 @@ function DataGrid<T>({
         onPaginationChange={setPagination}
       />
       {showSql && sqlQuery && (
-        <SqlViewerModal sql={sqlQuery} onClose={() => setShowSql(false)} />
+        <SqlViewerModal
+          sql={sqlQuery}
+          activeFilters={columnFilters.map((f): ActiveFilter => {
+            const col = table.getColumn(f.id);
+            const ft = col?.columnDef.meta?.filterType ?? 'text';
+            const hdr = col?.columnDef.header;
+            return {
+              id: f.id,
+              value: f.value,
+              filterType: ft === 'none' ? 'text' : ft,
+              header: typeof hdr === 'string' ? hdr : f.id,
+            };
+          })}
+          onClose={() => setShowSql(false)}
+        />
       )}
     </div>
   );

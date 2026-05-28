@@ -28,8 +28,16 @@ interface TableSchemaResult {
   columns: ColumnInfo[];
 }
 
+export interface ActiveFilter {
+  id: string;
+  value: unknown;
+  filterType: 'text' | 'select' | 'multi' | 'number' | 'date' | 'none';
+  header: string;
+}
+
 interface SqlViewerModalProps {
   sql: string;
+  activeFilters?: ActiveFilter[];
   onClose: () => void;
 }
 
@@ -71,6 +79,58 @@ function extractTableName(sql: string): string | null {
   return m ? m[1].toUpperCase() : null;
 }
 
+// camelCase → UPPER_SNAKE_CASE
+function toSqlCol(id: string): string {
+  return id.replace(/([A-Z])/g, "_$1").toUpperCase();
+}
+
+// 필터 → SQL WHERE 조건 문자열 배열
+function buildFilterConditions(filters: ActiveFilter[]): string[] {
+  return filters.flatMap((f) => {
+    const col = toSqlCol(f.id);
+    const { filterType, value } = f;
+
+    if (filterType === "multi" && Array.isArray(value) && value.length) {
+      const list = (value as string[]).map((v) => `'${v}'`).join(", ");
+      return [`  AND ${col} IN (${list})`];
+    }
+    if (filterType === "number" && Array.isArray(value)) {
+      const [min, max] = value as [number | null, number | null];
+      if (min != null && max != null) return [`  AND ${col} BETWEEN ${min} AND ${max}`];
+      if (min != null) return [`  AND ${col} >= ${min}`];
+      if (max != null) return [`  AND ${col} <= ${max}`];
+    }
+    if (filterType === "date" && Array.isArray(value)) {
+      const [d1, d2] = value as [string, string];
+      if (d1 && d2) return [`  AND ${col} BETWEEN TO_DATE('${d1}', 'YYYY-MM-DD') AND TO_DATE('${d2}', 'YYYY-MM-DD')`];
+      if (d1) return [`  AND ${col} >= TO_DATE('${d1}', 'YYYY-MM-DD')`];
+    }
+    if (filterType === "select" && value) {
+      return [`  AND ${col} = '${value}'`];
+    }
+    if (value && typeof value === "string" && value.trim()) {
+      return [`  AND ${col} LIKE '%${value.trim()}%'`];
+    }
+    return [];
+  });
+}
+
+// 기본 SQL에 필터 조건 삽입 (ORDER BY 앞)
+function buildEffectiveSql(baseSql: string, filters: ActiveFilter[]): string {
+  const conditions = buildFilterConditions(filters);
+  if (!conditions.length) return baseSql;
+
+  const orderByMatch = baseSql.match(/\n?(ORDER\s+BY\b.*)/is);
+  if (orderByMatch && orderByMatch.index !== undefined) {
+    return (
+      baseSql.slice(0, orderByMatch.index).trimEnd() +
+      "\n" + conditions.join("\n") +
+      "\n" + orderByMatch[1]
+    );
+  }
+  return baseSql.trimEnd() + "\n" + conditions.join("\n");
+}
+
 // 컬럼 타입 표시 (Oracle 형식)
 function formatType(col: ColumnInfo): string {
   const t = col.dataType;
@@ -89,7 +149,9 @@ function formatType(col: ColumnInfo): string {
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
-export function SqlViewerModal({ sql, onClose }: SqlViewerModalProps) {
+export function SqlViewerModal({ sql, activeFilters = [], onClose }: SqlViewerModalProps) {
+  const effectiveSql = buildEffectiveSql(sql, activeFilters);
+
   const [copied, setCopied] = useState(false);
   const [schema, setSchema] = useState<TableSchemaResult | null>(null);
   const [schemaLoading, setSchemaLoading] = useState(false);
@@ -118,7 +180,7 @@ export function SqlViewerModal({ sql, onClose }: SqlViewerModalProps) {
   }, [sql]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(sql);
+    await navigator.clipboard.writeText(effectiveSql);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -156,6 +218,11 @@ export function SqlViewerModal({ sql, onClose }: SqlViewerModalProps) {
                 {schema?.tableComment ? ` · ${schema.tableComment}` : ""}
               </span>
             )}
+            {activeFilters.length > 0 && (
+              <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-xs text-amber-400">
+                필터 {activeFilters.length}건 적용됨
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -187,7 +254,7 @@ export function SqlViewerModal({ sql, onClose }: SqlViewerModalProps) {
             </div>
             <div className="overflow-auto flex-1 p-4">
               <pre className="font-mono text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-                {highlightSql(sql)}
+                {highlightSql(effectiveSql)}
               </pre>
             </div>
           </div>
