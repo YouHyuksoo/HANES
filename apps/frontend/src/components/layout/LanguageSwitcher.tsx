@@ -12,17 +12,22 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Globe } from "lucide-react";
-import { supportedLanguages } from "@/lib/i18n";
+import {
+  I18N_LANGUAGE_STORAGE_KEY,
+  normalizeLanguageCode,
+  supportedLanguages,
+} from "@/lib/i18n";
 
 function LanguageSwitcher() {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   const currentLang = supportedLanguages.find(
-    (lang) => lang.code === i18n.language
+    (lang) => lang.code === normalizeLanguageCode(i18n.language)
   ) || supportedLanguages[0];
 
   const handleChange = (code: string) => {
+    window.localStorage.setItem(I18N_LANGUAGE_STORAGE_KEY, code);
     i18n.changeLanguage(code);
     setIsOpen(false);
   };
@@ -63,7 +68,7 @@ function LanguageSwitcher() {
                   flex items-center gap-2
                   transition-colors
                   ${
-                    i18n.language === lang.code
+                    normalizeLanguageCode(i18n.language) === lang.code
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-text hover:bg-background"
                   }

@@ -31,9 +31,11 @@ import {
 } from '@tanstack/react-table';
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { flushSync, createPortal } from 'react-dom';
-import { ChevronUp, ChevronDown, ChevronsUpDown, GripVertical, X, Pin, PinOff, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, GripVertical, X, Pin, PinOff, Maximize2, Minimize2, Database, SlidersHorizontal, FileSpreadsheet, FileText, FileCode, FileType } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import ExportDropdown from './ExportDropdown';
+import { useExport } from '@/hooks/useExport';
+import type { ExportFormat } from '@/hooks/useExport';
+import { SqlViewerModal } from './SqlViewerModal';
 import { ResizeHandle } from './ResizeHandle';
 import { ColumnFilterInput } from './ColumnFilterInput';
 import { ScrollHandle } from './ScrollHandle';
@@ -42,6 +44,15 @@ import { detectAlignment, getAlignmentClass, getPinnedStyle } from './utils';
 import { numberRangeFilterFn } from './numberFilterFn';
 import { dateRangeFilterFn } from './dateFilterFn';
 import { textInFilterFn } from './textFilterFn';
+
+const EXPORT_FORMATS: { format: ExportFormat; label: string; ext: string; colorClass: string }[] = [
+  { format: 'xlsx', label: 'Excel',    ext: '.xlsx', colorClass: 'text-green-600 dark:text-green-400' },
+  { format: 'pdf',  label: 'PDF',      ext: '.pdf',  colorClass: 'text-red-500' },
+  { format: 'csv',  label: 'CSV',      ext: '.csv',  colorClass: 'text-blue-500' },
+  { format: 'html', label: 'HTML',     ext: '.html', colorClass: 'text-orange-500' },
+  { format: 'md',   label: 'Markdown', ext: '.md',   colorClass: 'text-purple-500' },
+  { format: 'txt',  label: 'TXT',      ext: '.txt',  colorClass: 'text-gray-500' },
+];
 
 // 컬럼 메타 타입 확장
 declare module '@tanstack/react-table' {
@@ -98,6 +109,8 @@ export interface DataGridProps<T> {
   showColumnBorder?: boolean;
   /** 전체화면 버튼 표시 여부 (기본: false) */
   enableFullscreen?: boolean;
+  /** SQL 조회문 — 지정 시 툴바에 DB 아이콘 버튼 표시 */
+  sqlQuery?: string;
 }
 
 function DataGrid<T>({
@@ -123,6 +136,7 @@ function DataGrid<T>({
   getRowId,
   showColumnBorder = true,
   enableFullscreen = true,
+  sqlQuery,
 }: DataGridProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -137,10 +151,15 @@ function DataGrid<T>({
   });
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [showFilterRow, setShowFilterRow] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSql, setShowSql] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const { exportData } = useExport();
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -148,6 +167,15 @@ function DataGrid<T>({
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [isFullscreen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   // 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
@@ -186,6 +214,19 @@ function DataGrid<T>({
   });
 
   const activeFilterCount = columnFilters.length;
+
+  const handleExport = useCallback(async (format: ExportFormat) => {
+    setIsExporting(true);
+    try {
+      const exportRows = activeFilterCount > 0
+        ? table.getPrePaginationRowModel().rows.map(r => r.original)
+        : data;
+      await exportData({ data: exportRows, columns, fileName: exportFileName, excludeColumns: exportExcludeColumns }, format);
+    } finally {
+      setIsExporting(false);
+      setMenuOpen(false);
+    }
+  }, [activeFilterCount, table, data, columns, exportFileName, exportExcludeColumns, exportData]);
 
   // 컬럼 순서 초기화
   useEffect(() => {
@@ -303,56 +344,96 @@ function DataGrid<T>({
       : "w-full h-full flex flex-col"}
     >
       {/* Toolbar */}
-      {(toolbarLeft || enableExport || enableColumnFilter || enableFullscreen || isFullscreen) && (
+      {(toolbarLeft || enableExport || enableColumnFilter || enableFullscreen || isFullscreen || sqlQuery || activeFilterCount > 0) && (
         <div className="flex items-center justify-between gap-3 mb-1.5">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {toolbarLeft}
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {enableExport && (
-              <ExportDropdown
-                data={activeFilterCount > 0
-                  ? table.getPrePaginationRowModel().rows.map((r) => r.original)
-                  : data}
-                columns={columns}
-                fileName={exportFileName}
-                excludeColumns={exportExcludeColumns}
-              />
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* 활성 필터 초기화 */}
+            {enableColumnFilter && activeFilterCount > 0 && (
+              <button
+                onClick={() => setColumnFilters([])}
+                className="flex items-center gap-1 px-2 h-7 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800 transition-colors"
+              >
+                <X className="w-3 h-3" />
+                {activeFilterCount}건
+              </button>
             )}
-            {enableColumnFilter && (
-              <>
-                {activeFilterCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setColumnFilters([])}
-                    className="text-xs text-text-muted hover:text-error"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    필터 초기화
-                  </Button>
-                )}
-                <Button
-                  variant={showFilterRow ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setShowFilterRow((v) => !v)}
-                  className="text-xs"
+
+            {/* 통합 메뉴 드롭다운 */}
+            {(enableExport || enableColumnFilter || sqlQuery) && (
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setMenuOpen(v => !v)}
+                  className={`flex items-center h-7 px-2 rounded-md border transition-colors ${menuOpen ? 'bg-primary/10 border-primary/40 text-primary' : 'border-border text-text-muted hover:text-text hover:bg-surface'}`}
+                  title="그리드 옵션"
                 >
-                  필터 {showFilterRow ? 'OFF' : 'ON'}
-                </Button>
-              </>
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute top-full right-0 mt-1 z-50 w-52 bg-background border border-border rounded-xl shadow-xl overflow-hidden">
+                    {enableExport && (
+                      <>
+                        <div className="px-3 py-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-wider bg-surface/60 border-b border-border">
+                          내보내기
+                        </div>
+                        {EXPORT_FORMATS.map(item => (
+                          <button
+                            key={item.format}
+                            onClick={() => handleExport(item.format)}
+                            disabled={!data.length || isExporting}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 text-xs text-text hover:bg-primary/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <FileSpreadsheet className={`w-3.5 h-3.5 ${item.colorClass}`} />
+                            <span>{item.label}</span>
+                            <span className="ml-auto text-[10px] text-text-muted">{item.ext}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {enableColumnFilter && (
+                      <>
+                        {enableExport && <div className="h-px bg-border" />}
+                        <button
+                          onClick={() => { setShowFilterRow(v => !v); setMenuOpen(false); }}
+                          className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs text-text hover:bg-primary/5 transition-colors"
+                        >
+                          <SlidersHorizontal className="w-3.5 h-3.5 text-text-muted" />
+                          <span>컬럼 필터</span>
+                          <span className={`ml-auto text-[10px] font-semibold ${showFilterRow ? 'text-primary' : 'text-text-muted'}`}>
+                            {showFilterRow ? 'ON' : 'OFF'}
+                          </span>
+                        </button>
+                      </>
+                    )}
+                    {sqlQuery && (
+                      <>
+                        <div className="h-px bg-border" />
+                        <button
+                          onClick={() => { setShowSql(true); setMenuOpen(false); }}
+                          className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs text-text hover:bg-primary/5 transition-colors"
+                        >
+                          <Database className="w-3.5 h-3.5 text-text-muted" />
+                          <span>SQL 조회문</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
-            {enableFullscreen && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsFullscreen((v) => !v)}
+
+            {/* 전체화면 */}
+            {(enableFullscreen || isFullscreen) && (
+              <button
+                onClick={() => setIsFullscreen(v => !v)}
+                className="flex items-center h-7 px-2 text-text-muted hover:text-text hover:bg-surface rounded-md border border-border transition-colors"
                 title={isFullscreen ? '전체화면 종료 (ESC)' : '전체화면'}
               >
-                {isFullscreen
-                  ? <Minimize2 className="w-4 h-4" />
-                  : <Maximize2 className="w-4 h-4" />}
-              </Button>
+                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
             )}
           </div>
         </div>
@@ -550,6 +631,9 @@ function DataGrid<T>({
         pagination={pagination}
         onPaginationChange={setPagination}
       />
+      {showSql && sqlQuery && (
+        <SqlViewerModal sql={sqlQuery} onClose={() => setShowSql(false)} />
+      )}
     </div>
   );
 

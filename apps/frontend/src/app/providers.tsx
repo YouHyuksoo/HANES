@@ -16,6 +16,7 @@ import { Toaster } from "react-hot-toast";
 import ErrorDetailModal from "@/components/shared/ErrorDetailModal";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
+import { I18N_LANGUAGE_STORAGE_KEY, normalizeLanguageCode } from "@/lib/i18n";
 import { useComCodes } from "@/hooks/useComCode";
 import { useThemeStore, listenSystemThemeChange } from "@/stores/themeStore";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
@@ -110,9 +111,34 @@ function SysConfigPrefetch() {
 /** HTML lang 속성 동기화 */
 function LanguageSync() {
   const { i18n } = useTranslation();
+
   useEffect(() => {
-    document.documentElement.lang = i18n.language;
-  }, [i18n.language]);
+    const syncLanguage = (value: string) => {
+      const language = normalizeLanguageCode(value) ?? "ko";
+      document.documentElement.lang = language;
+      window.localStorage.setItem(I18N_LANGUAGE_STORAGE_KEY, language);
+    };
+
+    const storedLanguage = normalizeLanguageCode(
+      window.localStorage.getItem(I18N_LANGUAGE_STORAGE_KEY)
+    );
+    const browserLanguage = normalizeLanguageCode(
+      window.navigator.languages?.[0] ?? window.navigator.language
+    );
+    const detectedLanguage = storedLanguage ?? browserLanguage;
+
+    if (detectedLanguage && detectedLanguage !== i18n.language) {
+      void i18n.changeLanguage(detectedLanguage);
+    } else {
+      syncLanguage(i18n.language);
+    }
+
+    i18n.on("languageChanged", syncLanguage);
+    return () => {
+      i18n.off("languageChanged", syncLanguage);
+    };
+  }, [i18n]);
+
   return null;
 }
 
