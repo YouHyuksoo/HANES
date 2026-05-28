@@ -39,6 +39,8 @@ import { PdaRoleMenu } from '../../entities/pda-role-menu.entity';
 import { ImprRequest } from '../../entities/impr-request.entity';
 import { ImprRequestController } from './controllers/impr-request.controller';
 import { ImprRequestService } from './services/impr-request.service';
+import { TableSchemaController } from './controllers/table-schema.controller';
+import { TableSchemaService } from './services/table-schema.service';
 
 @Module({
   imports: [
@@ -62,6 +64,7 @@ import { ImprRequestService } from './services/impr-request.service';
     DocumentController,
     PdaRoleController,
     ImprRequestController,
+    TableSchemaController,
   ],
   providers: [
     CommConfigService,
@@ -72,6 +75,7 @@ import { ImprRequestService } from './services/impr-request.service';
     DocumentService,
     PdaRoleService,
     ImprRequestService,
+    TableSchemaService,
   ],
   exports: [
     CommConfigService,
