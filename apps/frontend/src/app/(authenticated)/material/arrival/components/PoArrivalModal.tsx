@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useComCodeMap } from '@/hooks/useComCode';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowLeft } from 'lucide-react';
 import { Modal, Button, Input, Select } from '@/components/ui';
@@ -31,6 +32,7 @@ interface PoArrivalModalProps {
 
 export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrivalModalProps) {
   const { t } = useTranslation();
+  const poStatusMap = useComCodeMap("PO_STATUS");
   const { options: warehouses } = useWarehouseOptions();
   const [step, setStep] = useState<1 | 2>(1);
   const [poList, setPoList] = useState<ReceivablePO[]>([]);
@@ -133,8 +135,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const st = getValue() as string;
-        const color = st === 'PARTIAL' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-        return <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{st}</span>;
+        return <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${poStatusMap[st]?.attr1 || ""}`}>{poStatusMap[st]?.codeName || st}</span>;
       },
     },
     {
@@ -146,7 +147,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
         <span className="font-medium text-orange-600">{row.original.totalRemainingQty.toLocaleString()}</span>
       ),
     },
-  ], [t]);
+  ], [t, poStatusMap]);
 
   /** Step 2: PO 품목 컬럼 */
   const itemColumns = useMemo<ColumnDef<PoItemForArrival>[]>(() => [

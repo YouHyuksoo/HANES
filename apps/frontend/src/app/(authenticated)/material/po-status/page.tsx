@@ -12,11 +12,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ClipboardList, Search, RefreshCw, ShoppingCart,
-  CheckCircle, Clock, Package, Truck,
-} from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { useComCodeMap } from "@/hooks/useComCode";
+import { ClipboardList, Search, RefreshCw, Package } from "lucide-react";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -46,16 +44,9 @@ interface PoStatusRaw {
   items: PoStatusItemRaw[];
 }
 
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  CONFIRMED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  PARTIAL: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  RECEIVED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CLOSED: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-};
-
 export default function PoStatusPage() {
   const { t } = useTranslation();
+  const poStatusMap = useComCodeMap("PO_STATUS");
 
   const [data, setData] = useState<PoStatusRaw[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,13 +78,6 @@ export default function PoStatusPage() {
   }, [searchText, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => ({
-    total: data.length,
-    confirmed: data.filter(d => d.status === "CONFIRMED").length,
-    partial: data.filter(d => d.status === "PARTIAL").length,
-    received: data.filter(d => d.status === "RECEIVED").length,
-  }), [data]);
 
   /** 마스터 그리드 컬럼 */
   const masterColumns = useMemo<ColumnDef<PoStatusRaw>[]>(() => [
@@ -134,13 +118,13 @@ export default function PoStatusPage() {
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return (
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>
-            {s}
+          <span className={`px-2 py-0.5 rounded text-xs font-medium ${poStatusMap[s]?.attr1 || ""}`}>
+            {poStatusMap[s]?.codeName || s}
           </span>
         );
       },
     },
-  ], [t]);
+  ], [t, poStatusMap]);
 
   /** 디테일 그리드 컬럼 (품목별 입고현황) */
   const detailColumns = useMemo<ColumnDef<PoStatusItemRaw>[]>(() => [
@@ -214,25 +198,13 @@ export default function PoStatusPage() {
         </Button>
       </div>
 
-      {/* 통계 */}
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("material.poStatus.stats.total")} value={stats.total}
-          icon={ShoppingCart} color="blue" />
-        <StatCard label={t("material.poStatus.stats.confirmed")} value={stats.confirmed}
-          icon={Clock} color="yellow" />
-        <StatCard label={t("material.poStatus.stats.partial")} value={stats.partial}
-          icon={Truck} color="orange" />
-        <StatCard label={t("material.poStatus.stats.received")} value={stats.received}
-          icon={CheckCircle} color="green" />
-      </div>
-
       {/* 마스터-디테일 좌우 분할 */}
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
         {/* 좌측: PO 마스터 */}
-        <div className="col-span-7 min-h-0">
+        <div className="col-span-5 min-h-0">
           <Card className="h-full overflow-hidden" padding="none"><CardContent className="h-full p-4">
             <DataGrid data={data} columns={masterColumns} isLoading={loading}
-              enableColumnFilter enableExport
+              enableColumnFilter enableExport enableFullscreen
               exportFileName={t("material.poStatus.title")}
               onRowClick={(row) => setSelectedPo(row)}
               selectedRowId={selectedPo?.poNo}
@@ -254,47 +226,14 @@ export default function PoStatusPage() {
         </div>
 
         {/* 우측: 품목 입고현황 디테일 */}
-        <div className="col-span-5 min-h-0">
+        <div className="col-span-7 min-h-0">
           <Card className="h-full overflow-hidden" padding="none">
             <CardContent className="h-full p-4">
               {selectedPo ? (
-                <div className="space-y-3">
-                  {/* 선택된 PO 헤더 정보 */}
-                  <div className="p-3 rounded-lg bg-surface-secondary dark:bg-slate-800/50 border border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono font-bold text-primary text-lg">
-                        {selectedPo.poNo}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[selectedPo.status] || ""}`}>
-                        {selectedPo.status}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                      <div>
-                        <span className="text-text-muted">{t("material.po.partnerName")}:</span>{" "}
-                        <span className="font-medium">{selectedPo.partnerName}</span>
-                      </div>
-                      <div>
-                        <span className="text-text-muted">{t("material.poStatus.receiveRate")}:</span>{" "}
-                        <span className={`font-bold ${selectedPo.receiveRate >= 100 ? "text-green-600" : "text-yellow-600"}`}>
-                          {selectedPo.receiveRate}%
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-text-muted">{t("material.po.orderDate")}:</span>{" "}
-                        {selectedPo.orderDate}
-                      </div>
-                      <div>
-                        <span className="text-text-muted">{t("material.po.dueDate")}:</span>{" "}
-                        {selectedPo.dueDate}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 품목별 입고현황 */}
+                <div className="h-full">
                   <DataGrid data={detailItems} columns={detailColumns}
-                    enableColumnFilter={false}
-                    enableExport exportFileName={`${selectedPo.poNo}_status`} />
+                    enableExport exportFileName={`${selectedPo.poNo}_status`}
+                    enableFullscreen />
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-text-muted">

@@ -30,8 +30,8 @@ import {
   Cell,
 } from '@tanstack/react-table';
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { flushSync } from 'react-dom';
-import { ChevronUp, ChevronDown, ChevronsUpDown, GripVertical, X, Pin, PinOff } from 'lucide-react';
+import { flushSync, createPortal } from 'react-dom';
+import { ChevronUp, ChevronDown, ChevronsUpDown, GripVertical, X, Pin, PinOff, Maximize2, Minimize2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ExportDropdown from './ExportDropdown';
 import { ResizeHandle } from './ResizeHandle';
@@ -96,6 +96,8 @@ export interface DataGridProps<T> {
   getRowId?: (row: T) => string;
   /** 컬럼 간 세로 경계선 표시 (기본: false) */
   showColumnBorder?: boolean;
+  /** 전체화면 버튼 표시 여부 (기본: false) */
+  enableFullscreen?: boolean;
 }
 
 function DataGrid<T>({
@@ -120,6 +122,7 @@ function DataGrid<T>({
   selectedRowId,
   getRowId,
   showColumnBorder = true,
+  enableFullscreen = true,
 }: DataGridProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -137,6 +140,14 @@ function DataGrid<T>({
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [showFilterRow, setShowFilterRow] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsFullscreen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isFullscreen]);
 
   // 필터 변경 시 첫 페이지로 이동
   useEffect(() => {
@@ -286,10 +297,13 @@ function DataGrid<T>({
     flushSync(() => { setColumnSizing(currentSizing); });
   }, [table]);
 
-  return (
-    <div className="w-full h-full flex flex-col">
+  const gridContent = (
+    <div className={isFullscreen
+      ? "fixed inset-0 z-[9999] bg-background flex flex-col p-4 overflow-hidden"
+      : "w-full h-full flex flex-col"}
+    >
       {/* Toolbar */}
-      {(toolbarLeft || enableExport || enableColumnFilter) && (
+      {(toolbarLeft || enableExport || enableColumnFilter || enableFullscreen || isFullscreen) && (
         <div className="flex items-center justify-between gap-3 mb-1.5">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {toolbarLeft}
@@ -327,6 +341,18 @@ function DataGrid<T>({
                   필터 {showFilterRow ? 'OFF' : 'ON'}
                 </Button>
               </>
+            )}
+            {enableFullscreen && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsFullscreen((v) => !v)}
+                title={isFullscreen ? '전체화면 종료 (ESC)' : '전체화면'}
+              >
+                {isFullscreen
+                  ? <Minimize2 className="w-4 h-4" />
+                  : <Maximize2 className="w-4 h-4" />}
+              </Button>
             )}
           </div>
         </div>
@@ -526,6 +552,11 @@ function DataGrid<T>({
       />
     </div>
   );
+
+  if (isFullscreen && typeof document !== 'undefined') {
+    return createPortal(gridContent, document.body);
+  }
+  return gridContent;
 }
 
 export default DataGrid;

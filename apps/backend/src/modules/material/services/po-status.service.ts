@@ -6,6 +6,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like, In, FindOptionsWhere } from 'typeorm';
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size));
+  return result;
+}
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -61,14 +67,22 @@ export class PoStatusService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
-    const items = await this.purchaseOrderItemRepository.find({
-      where: poNos.length > 0 ? { poNo: In(poNos), ...tenantWhere } : tenantWhere,
-    });
+    const items = poNos.length > 0
+      ? (await Promise.all(
+          chunkArray(poNos, 999).map((chunk) =>
+            this.purchaseOrderItemRepository.find({ where: { poNo: In(chunk), ...tenantWhere } }),
+          ),
+        )).flat()
+      : await this.purchaseOrderItemRepository.find({ where: tenantWhere });
 
     // part 정보 조회
     const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
+      ? (await Promise.all(
+          chunkArray(itemCodes, 999).map((chunk) =>
+            this.partMasterRepository.find({ where: { itemCode: In(chunk), ...tenantWhere } }),
+          ),
+        )).flat()
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 

@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useComCodeMap } from "@/hooks/useComCode";
 import {
   ShoppingCart, Plus, Edit2, Trash2, Search, RefreshCw,
   CheckCircle, Truck, Archive,
@@ -24,16 +25,9 @@ import api from "@/services/api";
 import PoFormPanel from "./components/PoFormPanel";
 import type { PurchaseOrder } from "./components/PoFormPanel";
 
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  CONFIRMED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  PARTIAL: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  RECEIVED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CLOSED: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-};
-
 export default function PoPage() {
   const { t } = useTranslation();
+  const poStatusMap = useComCodeMap("PO_STATUS");
 
   const [data, setData] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(false);
@@ -157,13 +151,13 @@ export default function PoPage() {
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return (
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>
-            {s}
+          <span className={`px-2 py-0.5 rounded text-xs font-medium ${poStatusMap[s]?.attr1 || ""}`}>
+            {poStatusMap[s]?.codeName || s}
           </span>
         );
       },
     },
-  ], [t, openEdit]);
+  ], [t, openEdit, poStatusMap]);
 
   return (
     <div className="h-full flex overflow-hidden animate-fade-in">
