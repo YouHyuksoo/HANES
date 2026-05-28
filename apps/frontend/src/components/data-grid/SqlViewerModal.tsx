@@ -109,10 +109,10 @@ export function SqlViewerModal({ sql, onClose }: SqlViewerModalProps) {
 
     setSchemaLoading(true);
     setSchemaError(null);
-    api.get<{ tableName: string; tableComment: string | null; columns: ColumnInfo[] }>(
+    api.get<{ data: { tableName: string; tableComment: string | null; columns: ColumnInfo[] } }>(
       `/system/table-schema?table=${tableName}`
     )
-      .then((res) => setSchema(res.data))
+      .then((res) => setSchema(res.data.data))
       .catch(() => setSchemaError("테이블 명세를 불러올 수 없습니다"))
       .finally(() => setSchemaLoading(false));
   }, [sql]);
