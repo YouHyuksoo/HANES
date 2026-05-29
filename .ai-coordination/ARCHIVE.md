@@ -10,14 +10,4 @@ Format:
 
 ## Completed
 
-- T-011 | 2026-05-26 | claude | IQC005 Phase A aligned to mockup + PDF: 5 migrations applied (MAT_LOTS.MFG_PARTNER_CODE, 2 SEQUENCEs + DBMS_SCHEDULER reset jobs, MFG partners seed, PO line meta), NumberingService.nextMatSerial/nextArrivalNoV2 added, ArrivalService.receivePoLine issues N serials per LOT_UNIT_QTY, PO-line-driven frontend with 4-stage row bg + label preview (jsbarcode), i18n ko/en/zh/vi synced. Builds 0 error, 59/59 spec PASS. PO seed deficit → UI scenario verification deferred to user. | evidence: JOURNAL 2026-05-26 Claude (T-011 Phase A)
-- T-007 | 2026-05-26 | codex | Fixed BOM left product/semi-product filter alias mismatch for FG/CM item types | evidence: JOURNAL 2026-05-26 Codex
-- T-006 | 2026-05-26 | codex | Seeded IQC specs from ITEM_MASTERS and reset receiving, stock, issue, IQC log flow tables on JSHANES | evidence: JOURNAL 2026-05-26 Codex
-- T-005 | 2026-05-26 | codex | Reset JSHANES ITEM_MASTERS/BOM_MASTERS and seeded 10 HANES harness FG models, 10 CM subassemblies, 16 RM components, 92 BOM rows | evidence: JOURNAL 2026-05-26 Codex
-- T-004 | 2026-05-26 | codex | Committed backend functional/test changes as c79b4c6 and prepared coordination/tooling commit | evidence: JOURNAL 2026-05-26 Codex
-- T-003 | 2026-05-26 | codex | Added deeper roles, review, stale lock, conflict, DB gate, and context-budget process | evidence: JOURNAL 2026-05-26 Codex
-- T-002 | 2026-05-26 | codex | Added context-saving lifecycle for completed tasks | evidence: JOURNAL 2026-05-26 Codex
-- T-001 | 2026-05-26 | codex | Created shared AI coordination workflow and onboarding prompt | evidence: JOURNAL 2026-05-26 Codex
-- T-009 | 2026-05-26 | kimi | Built cyberpunk AI Command Center dashboard (/ai-command) with 6 HUD panels reading live .ai-coordination files | evidence: JOURNAL 2026-05-26 Kimi
-- T-008 | 2026-05-26 | claude | Fixed 13 backend bugs from second-pass review (SQL exec sanitization, SCRAP cross-tenant, physical-inv race, retryLog NULL+precision, iqc-template overflow, training worker fallback, KST TZ, migration guard/README) | evidence: JOURNAL 2026-05-26 Claude (T-008)
-- T-010 | 2026-05-26 | claude | Applied UK_PHYSICAL_INV_SESSIONS_IN_PROGRESS partial unique index on JSHANES; rewrote sql to use BEGIN/EXCEPTION + PLANT_CD column + ORA-00955 idempotent catch | evidence: JOURNAL 2026-05-26 Claude (T-010)
+- T-IQC-ARRIVAL-UNIT | 2026-05-29 | claude | IQC를 개별 시리얼 전수검사 → 입하번호+품목 단위 샘플검사로 재설계 (백엔드 pending-arrivals/arrival 엔드포인트 + 일괄판정/취소, 프론트 목록·모달, i18n 4파일) | evidence: 백엔드·프론트 빌드 통과

@@ -2,9 +2,18 @@
 
 ## Last Update
 
-2026-05-27 16:10
+2026-05-28
 
 ## Completed
+
+- **DataGrid sqlQuery prop 일괄 추가 (T-SQL-QUERY-PROPS)**: 전체 24개 페이지/컴포넌트 완료
+  - material/*: stock, lot, lot-merge, lot-split, hold, iqc-history, scrap, shelf-life, physical-inv, physical-inv-history, receipt-cancel, arrival-stock (12개)
+  - master/*: part, partner, worker, warehouse(WarehouseList), gauge, company (6개)
+  - production/*: order, progress, result, result-summary (4개)
+  - quality/*: inspect, oqc, oqc-history (3개)
+  - inventory/*: material-stock, stock, transaction (3개)
+  - 기존 완료 파일(po, po-status) 포함 총 26개
+  - TypeScript noEmit 에러 0건 확인
 
 - **IQC005 ERP 3-key 입하 플로우**: PO/PO Line/Release Number 개념 반영 완료
   - `PurchaseOrderItem.lineNo` NOT NULL, `revNo` DEFAULT 1 마이그레이션 완료
