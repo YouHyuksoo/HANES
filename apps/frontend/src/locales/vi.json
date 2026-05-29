@@ -1659,6 +1659,9 @@
       "inspectClassSample": "Kiểm tra mẫu",
       "inspectClassNone": "Không kiểm tra",
       "destructSampleQty": "Số lượng mẫu phá hủy",
+      "sampleQty": "Số lượng mẫu",
+      "serialCount": "Số serial",
+      "totalQty": "Tổng số lượng",
       "certFile": "Giấy chứng nhận kiểm tra",
       "uploadCert": "Chọn tệp"
     },

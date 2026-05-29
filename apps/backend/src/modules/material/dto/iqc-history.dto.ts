@@ -53,6 +53,69 @@ export class CreateIqcResultDto {
   destructSampleQty?: number;
 }
 
+export class CreateArrivalIqcResultDto {
+  @ApiProperty({ description: '입하번호 (ARRIVAL_NO)' })
+  @IsString()
+  @IsNotEmpty()
+  arrivalNo: string;
+
+  @ApiProperty({ description: '품목코드 (ITEM_CODE)' })
+  @IsString()
+  @IsNotEmpty()
+  itemCode: string;
+
+  @ApiProperty({ description: '검사 결과', enum: ['PASS', 'FAIL'] })
+  @IsString()
+  @IsIn(['PASS', 'FAIL'])
+  result: string;
+
+  @ApiPropertyOptional({ description: '검사자' })
+  @IsOptional()
+  @IsString()
+  inspectorName?: string;
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  remark?: string;
+
+  @ApiPropertyOptional({ description: '검사유형', enum: ['INITIAL', 'RETEST'], default: 'INITIAL' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['INITIAL', 'RETEST'])
+  inspectType?: string;
+
+  @ApiPropertyOptional({ description: '검사항목별 계측값 상세 (JSON)' })
+  @IsOptional()
+  @IsString()
+  details?: string;
+
+  @ApiPropertyOptional({ description: '검사분류', enum: ['FULL', 'SAMPLE', 'NONE'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['FULL', 'SAMPLE', 'NONE'])
+  inspectClass?: string;
+
+  @ApiPropertyOptional({ description: '샘플 수량 (검사자 수동 입력 시료 개수)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  sampleQty?: number;
+}
+
+export class PendingArrivalQueryDto {
+  @ApiPropertyOptional({ description: 'IQC 상태 필터', enum: ['PENDING', 'PASS', 'FAIL'], default: 'PENDING' })
+  @IsOptional()
+  @IsString()
+  iqcStatus?: string;
+
+  @ApiPropertyOptional({ description: '검색어 (입하번호/품목)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
 export class CancelIqcResultDto {
   @ApiProperty({ description: '취소 사유' })
   @IsString()

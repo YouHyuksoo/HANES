@@ -1,30 +1,32 @@
 /**
  * @file src/hooks/material/useIqcData.ts
- * @description IQC 수입검사 데이터 훅 - API 연동 (검사 대상 조회 및 결과 등록)
+ * @description IQC 수입검사 데이터 훅 - 입하단위(입하번호+품목) 검사 대상 조회 및 일괄 판정
  *
  * 초보자 가이드:
- * 1. GET /material/lots 에서 LOT 목록 조회
- * 2. POST /material/iqc-history 로 검사결과 등록 + LOT 상태 업데이트
+ * 1. GET /material/iqc-history/pending-arrivals 에서 입하번호+품목 단위로 묶인 검사 대상 조회
+ * 2. POST /material/iqc-history/arrival 로 입하건 전체 시리얼을 일괄 판정
+ *    (개별 시리얼 전수검사가 아니라 입하건당 1회 샘플검사)
  */
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { IqcStatus } from '@/components/material';
 import api from '@/services/api';
 
-/** IQC 검사 항목 인터페이스 */
+/** IQC 검사 대상 (입하번호 + 품목 단위 그룹) */
 export interface IqcItem {
+  /** `${arrivalNo}::${itemCode}` */
   id: string;
+  arrivalNo: string;
   itemCode: string;
-  receiveNo: string;
-  arrivalDate: string;
-  supplierName: string;
   itemName: string;
-  matUid: string;
-  quantity: number;
+  supplierName: string;
+  /** 입하건 총수량 (SUM INIT_QTY) */
+  totalQty: number;
+  /** 입하건에 속한 시리얼 수 */
+  serialCount: number;
   unit: string;
+  arrivalDate: string;
   status: IqcStatus;
   inspector: string | null;
-  inspectedAt: string | null;
-  remark: string | null;
 }
 
 /** IQC 검사결과 폼 */
@@ -32,6 +34,13 @@ export interface IqcResultForm {
   result: 'PASSED' | 'FAILED' | '';
   inspector: string;
   remark: string;
+}
+
+/** IQC 모달 제출 시 부가 정보 */
+export interface IqcSubmitExtra {
+  inspectClass?: string;
+  sampleQty?: number;
+  certFile?: File;
 }
 
 const INITIAL_RESULT_FORM: IqcResultForm = { result: '', inspector: '', remark: '' };
@@ -55,22 +64,22 @@ export function useIqcData() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/material/lots', { params: { limit: 200, iqcStatus: 'PENDING' } });
-      const lots = res.data?.data ?? [];
-      const mapped: IqcItem[] = lots.map((lot: any) => ({
-        id: lot.id,
-        itemCode: lot.itemCode || '',
-        receiveNo: lot.matUid || '-',
-        arrivalDate: lot.createdAt || '',
-        supplierName: lot.vendor || '-',
-        itemName: lot.itemName || '',
-        matUid: lot.matUid || '',
-        quantity: lot.qty ?? 0,
-        unit: lot.unit || 'EA',
-        status: mapToFrontendStatus(lot.iqcStatus || 'PENDING'),
+      const res = await api.get('/material/iqc-history/pending-arrivals', {
+        params: { iqcStatus: 'PENDING' },
+      });
+      const groups = res.data?.data ?? [];
+      const mapped: IqcItem[] = groups.map((g: any) => ({
+        id: `${g.arrivalNo}::${g.itemCode}`,
+        arrivalNo: g.arrivalNo || '-',
+        itemCode: g.itemCode || '',
+        itemName: g.itemName || '',
+        supplierName: g.vendor || '-',
+        totalQty: g.totalQty ?? 0,
+        serialCount: g.serialCount ?? 0,
+        unit: g.unit || 'EA',
+        arrivalDate: g.recvDate || g.createdAt || '',
+        status: mapToFrontendStatus(g.iqcStatus || 'PENDING'),
         inspector: null,
-        inspectedAt: null,
-        remark: null,
       }));
       setItems(mapped);
     } catch {
@@ -87,9 +96,9 @@ export function useIqcData() {
       const matchStatus = !statusFilter || item.status === statusFilter;
       const matchSearch =
         !searchText ||
-        item.receiveNo.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.arrivalNo.toLowerCase().includes(searchText.toLowerCase()) ||
         item.itemName.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.matUid.toLowerCase().includes(searchText.toLowerCase());
+        item.itemCode.toLowerCase().includes(searchText.toLowerCase());
       return matchStatus && matchSearch;
     });
   }, [items, statusFilter, searchText]);
@@ -110,23 +119,24 @@ export function useIqcData() {
   const handleIqcSubmit = useCallback(async (
     details?: any[],
     overrideResult?: string,
-    extra?: { inspectClass?: string; destructSampleQty?: number; certFile?: File },
+    extra?: IqcSubmitExtra,
   ) => {
     const finalResult = overrideResult || resultForm.result;
     if (!selectedItem || !finalResult) return;
     try {
       const result = finalResult === 'PASSED' ? 'PASS' : 'FAIL';
-      const res = await api.post('/material/iqc-history', {
-        matUid: selectedItem.id,
+      const res = await api.post('/material/iqc-history/arrival', {
+        arrivalNo: selectedItem.arrivalNo,
+        itemCode: selectedItem.itemCode,
         result,
         inspectorName: resultForm.inspector || undefined,
         remark: resultForm.remark || undefined,
         details: details ? JSON.stringify(details) : undefined,
         inspectClass: extra?.inspectClass || undefined,
-        destructSampleQty: extra?.destructSampleQty || undefined,
+        sampleQty: extra?.sampleQty || undefined,
       });
 
-      // G4: 검사성적서 파일 업로드 (결과 등록 후)
+      // 검사성적서 파일 업로드 (결과 등록 후)
       if (extra?.certFile && res.data?.data) {
         const logData = res.data.data;
         const formData = new FormData();

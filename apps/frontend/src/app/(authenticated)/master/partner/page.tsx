@@ -187,7 +187,8 @@ function PartnerPage() {
               </div>
             }
           
-          sqlQuery={`SELECT *\nFROM PARTNER_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={`SELECT *\nFROM PARTNER_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
+          sqlFilters={{ search: searchText, partnerType: typeFilter, useYn: useYnFilter }}/>
         </CardContent></Card>
       </div>
 

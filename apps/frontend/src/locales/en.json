@@ -1673,6 +1673,9 @@
       "inspectClassSample": "Sample Inspection",
       "inspectClassNone": "No Inspection",
       "destructSampleQty": "Destructive Sample Qty",
+      "sampleQty": "Sample Qty",
+      "serialCount": "Serials",
+      "totalQty": "Total Qty",
       "certFile": "Inspection Certificate",
       "uploadCert": "Select File"
     },

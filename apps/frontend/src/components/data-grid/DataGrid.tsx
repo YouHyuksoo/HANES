@@ -111,6 +111,8 @@ export interface DataGridProps<T> {
   enableFullscreen?: boolean;
   /** SQL 조회문 — 지정 시 툴바에 DB 아이콘 버튼 표시 */
   sqlQuery?: string;
+  /** 서버사이드 필터 상태 — SQL 뷰어에 WHERE 조건으로 반영 (빈 문자열/null/undefined 자동 제외) */
+  sqlFilters?: Record<string, unknown>;
 }
 
 function DataGrid<T>({
@@ -137,6 +139,7 @@ function DataGrid<T>({
   showColumnBorder = true,
   enableFullscreen = true,
   sqlQuery,
+  sqlFilters,
 }: DataGridProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -634,17 +637,27 @@ function DataGrid<T>({
       {showSql && sqlQuery && (
         <SqlViewerModal
           sql={sqlQuery}
-          activeFilters={columnFilters.map((f): ActiveFilter => {
-            const col = table.getColumn(f.id);
-            const ft = col?.columnDef.meta?.filterType ?? 'text';
-            const hdr = col?.columnDef.header;
-            return {
-              id: f.id,
-              value: f.value,
-              filterType: ft === 'none' ? 'text' : ft,
-              header: typeof hdr === 'string' ? hdr : f.id,
-            };
-          })}
+          activeFilters={[
+            ...Object.entries(sqlFilters ?? {})
+              .filter(([, v]) => v !== undefined && v !== null && v !== '')
+              .map(([key, value]): ActiveFilter => ({
+                id: key,
+                value,
+                filterType: Array.isArray(value) ? 'multi' : 'select',
+                header: key,
+              })),
+            ...columnFilters.map((f): ActiveFilter => {
+              const col = table.getColumn(f.id);
+              const ft = col?.columnDef.meta?.filterType ?? 'text';
+              const hdr = col?.columnDef.header;
+              return {
+                id: f.id,
+                value: f.value,
+                filterType: ft === 'none' ? 'text' : ft,
+                header: typeof hdr === 'string' ? hdr : f.id,
+              };
+            }),
+          ]}
           onClose={() => setShowSql(false)}
         />
       )}

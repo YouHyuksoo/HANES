@@ -1990,6 +1990,9 @@
       "inspectClassSample": "선별검사",
       "inspectClassNone": "무검사",
       "destructSampleQty": "파괴검사 시료수량",
+      "sampleQty": "샘플 시료수량",
+      "serialCount": "시리얼수",
+      "totalQty": "총수량",
       "certFile": "검사성적서",
       "uploadCert": "파일 선택"
     },
@@ -5872,8 +5875,8 @@
       "noHistory": "작업이력 없음"
     },
     "input": {
-      "selfInspect": "자주검사 입력",
-      "selfInspectComingSoon": "자주검사 기능은 Phase 3에서 연동됩니다",
+      "selfInspect": "공정샘플검사 입력",
+      "selfInspectComingSoon": "공정샘플검사 기능은 Phase 3에서 연동됩니다",
       "defect": "불량입력",
       "defectComingSoon": "불량입력 기능은 Phase 3에서 연동됩니다",
       "lotSize": "묶음단위",
@@ -5979,7 +5982,7 @@
       "check5": "품질 기준서 비치 여부"
     },
     "selfInspect": {
-      "title": "자주검사",
+      "title": "공정샘플검사",
       "inspect": "검사",
       "first": "초물",
       "mid": "중물",
@@ -5992,9 +5995,9 @@
       "delegateWarning": "의뢰검사 항목은 품질팀에 의뢰됩니다. 결과 확인 전까지 실적입력이 차단됩니다.",
       "delegateBlocking": "의뢰검사 결과 대기 중 — 결과 확인 후 실적입력 가능합니다",
       "delegatePending": "의뢰검사 {{count}}건이 등록되었습니다. 결과 대기 중...",
-      "allPass": "자주검사가 완료되었습니다 (전항목 PASS)",
+      "allPass": "공정샘플검사가 완료되었습니다 (전항목 PASS)",
       "savedWithFail": "{{count}}개 항목이 FAIL입니다. 품질팀에 확인하세요.",
-      "saveError": "자주검사 저장에 실패했습니다",
+      "saveError": "공정샘플검사 저장에 실패했습니다",
       "save": "검사 완료",
       "resultCount": "현재 {{count}}번째 실적",
       "sampleTab": "시료 {{n}}",
@@ -6004,8 +6007,8 @@
       "reInspectTitle": "재검사 ({{n}}차)",
       "overallPass": "종합 PASS",
       "overallFail": "종합 FAIL — {{count}}개 항목 불합격",
-      "midNotify": "중물 자주검사 시점입니다",
-      "midBlock": "중물 자주검사 완료 후 실적입력 가능합니다",
+      "midNotify": "중물 공정샘플검사 시점입니다",
+      "midBlock": "중물 공정샘플검사 완료 후 실적입력 가능합니다",
       "destructiveWarning": "파괴검사 항목이 포함되어 있습니다. 시료 채취 시 자재가 차감됩니다.",
       "prevNgSummary": "이전 SEQ {{n}} 결과 (NG)",
       "reInspectCount": "재검사 수량 선택",

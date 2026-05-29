@@ -44,7 +44,7 @@ interface IqcModalProps {
   selectedItem: IqcItem | null;
   form: IqcResultForm;
   setForm: React.Dispatch<React.SetStateAction<IqcResultForm>>;
-  onSubmit: (details?: MeasurementRow[], overrideResult?: string, extra?: { inspectClass?: string; destructSampleQty?: number; certFile?: File }) => void;
+  onSubmit: (details?: MeasurementRow[], overrideResult?: string, extra?: { inspectClass?: string; sampleQty?: number; certFile?: File }) => void;
 }
 
 function judgeValue(value: string, lsl: number | null, usl: number | null): "PASS" | "FAIL" | "" {
@@ -62,9 +62,9 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [measurements, setMeasurements] = useState<MeasurementRow[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
-  // G4: 검사분류, 파괴검사 시료, 검사성적서 파일
-  const [inspectClass, setInspectClass] = useState("FULL");
-  const [destructSampleQty, setDestructSampleQty] = useState("");
+  // 검사분류(기본 샘플검사), 샘플 시료수량, 검사성적서 파일
+  const [inspectClass, setInspectClass] = useState("SAMPLE");
+  const [sampleQty, setSampleQty] = useState("");
   const [certFile, setCertFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,9 +136,9 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
 
   const buildExtra = useCallback(() => ({
     inspectClass,
-    destructSampleQty: destructSampleQty ? parseInt(destructSampleQty, 10) : undefined,
+    sampleQty: sampleQty ? parseInt(sampleQty, 10) : undefined,
     certFile: certFile ?? undefined,
-  }), [inspectClass, destructSampleQty, certFile]);
+  }), [inspectClass, sampleQty, certFile]);
 
   const handleSubmitWithDetails = useCallback(() => {
     const finalResult = overallJudge || form.result;
@@ -154,13 +154,13 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t("material.iqc.modalTitle")} size={hasInspectItems ? "xl" : "lg"}>
       <div className="space-y-4">
-        {/* 입하 정보 표시 */}
+        {/* 입하 정보 표시 (입하번호 + 품목 단위) */}
         <div className="p-3 bg-background rounded-lg grid grid-cols-2 gap-x-6 gap-y-1">
-          <p className="text-sm text-text-muted">{t("material.iqc.arrivalNoLabel")}: <span className="font-medium text-text">{selectedItem.receiveNo}</span></p>
+          <p className="text-sm text-text-muted">{t("material.iqc.arrivalNoLabel")}: <span className="font-medium text-text">{selectedItem.arrivalNo}</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.supplierLabel")}: <span className="font-medium text-text">{selectedItem.supplierName}</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.partLabel")}: <span className="font-medium text-text">{selectedItem.itemName} ({selectedItem.itemCode})</span></p>
-          <p className="text-sm text-text-muted">{t("material.iqc.matUidLabel")}: <span className="font-medium text-text">{selectedItem.matUid}</span></p>
-          <p className="text-sm text-text-muted">{t("material.iqc.quantityLabel")}: <span className="font-medium text-text">{selectedItem.quantity.toLocaleString()} {selectedItem.unit}</span></p>
+          <p className="text-sm text-text-muted">{t("material.iqc.serialCount", "시리얼수")}: <span className="font-medium text-text">{selectedItem.serialCount.toLocaleString()}</span></p>
+          <p className="text-sm text-text-muted">{t("material.iqc.totalQty", "총수량")}: <span className="font-medium text-text">{selectedItem.totalQty.toLocaleString()} {selectedItem.unit}</span></p>
         </div>
 
         {/* 검사항목별 계측값 입력 */}
@@ -263,12 +263,12 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
             fullWidth
           />
           <Input
-            label={t("material.iqc.destructSampleQty", "파괴검사 시료수량")}
+            label={t("material.iqc.sampleQty", "샘플 시료수량")}
             type="number"
             min={0}
             placeholder="0"
-            value={destructSampleQty}
-            onChange={(e) => setDestructSampleQty(e.target.value)}
+            value={sampleQty}
+            onChange={(e) => setSampleQty(e.target.value)}
             fullWidth
           />
           <div>

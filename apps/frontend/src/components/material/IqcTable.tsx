@@ -24,20 +24,28 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IqcItem>[]>(
     () => [
-      { accessorKey: 'receiveNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
+      { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
       { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100, meta: { filterType: 'date' as const } },
       { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100, meta: { filterType: 'text' as const } },
       { accessorKey: 'itemCode', header: t('common.partCode'), size: 110, meta: { filterType: 'text' as const } },
       { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
-      { accessorKey: 'matUid', header: t('material.col.matUid'), size: 150, meta: { filterType: 'text' as const } },
       {
-        accessorKey: 'quantity',
-        header: t('common.quantity'),
+        accessorKey: 'serialCount',
+        header: t('material.iqc.serialCount', '시리얼수'),
+        size: 90,
+        meta: { filterType: 'number' as const },
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.serialCount.toLocaleString()}</span>
+        ),
+      },
+      {
+        accessorKey: 'totalQty',
+        header: t('material.iqc.totalQty', '총수량'),
         size: 100,
         meta: { filterType: 'number' as const },
         cell: ({ row }) => (
           <span className="font-medium">
-            {row.original.quantity.toLocaleString()} {row.original.unit}
+            {row.original.totalQty.toLocaleString()} {row.original.unit}
           </span>
         ),
       },

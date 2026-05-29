@@ -1659,6 +1659,9 @@
       "inspectClassSample": "抽样检查",
       "inspectClassNone": "免检",
       "destructSampleQty": "破坏性检查样品数量",
+      "sampleQty": "抽样数量",
+      "serialCount": "序列号数",
+      "totalQty": "总数量",
       "certFile": "检查成绩书",
       "uploadCert": "选择文件"
     },

@@ -11,7 +11,7 @@ import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { ApiTags, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { IqcHistoryService } from '../services/iqc-history.service';
-import { IqcHistoryQueryDto, CreateIqcResultDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
+import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -31,12 +31,27 @@ export class IqcHistoryController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
+  @Get('pending-arrivals')
+  @ApiOperation({ summary: 'IQC 검사 대상 목록 (입하번호+품목 단위 그룹)' })
+  async findPendingArrivals(@Query() query: PendingArrivalQueryDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.iqcHistoryService.findPendingArrivals(query, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'IQC 검사결과 등록 (LOT 상태 업데이트 + 이력 생성)' })
   async createResult(@Body() dto: CreateIqcResultDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.iqcHistoryService.createResult(dto, company, plant);
     return ResponseUtil.success(data, 'IQC 검사결과가 등록되었습니다.');
+  }
+
+  @Post('arrival')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '입하단위 IQC 검사결과 등록 (입하건 전체 시리얼 일괄 판정)' })
+  async createArrivalResult(@Body() dto: CreateArrivalIqcResultDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.iqcHistoryService.createArrivalResult(dto, company, plant);
+    return ResponseUtil.success(data, '입하단위 IQC 검사결과가 등록되었습니다.');
   }
 
   @Post('cancel')

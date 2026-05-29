@@ -8,7 +8,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { IqcHistoryQueryDto, CreateIqcResultDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
+import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -203,6 +203,167 @@ export class IqcHistoryService {
     };
   }
 
+  /**
+   * 입하단위 IQC 검사 대상 목록 (입하번호 + 품목 단위 그룹 집계)
+   * - 개별 시리얼이 아니라 ARRIVAL_NO + ITEM_CODE 로 묶어서 1행으로 반환
+   * - 집계는 SQL GROUP BY 로 수행 (메모리 집계 금지)
+   */
+  async findPendingArrivals(query: PendingArrivalQueryDto, company?: string, plant?: string) {
+    const iqcStatus = query.iqcStatus || 'PENDING';
+
+    const qb = this.matLotRepository
+      .createQueryBuilder('lot')
+      .select('lot.arrivalNo', 'arrivalNo')
+      .addSelect('lot.itemCode', 'itemCode')
+      .addSelect('lot.vendor', 'vendor')
+      .addSelect('SUM(lot.initQty)', 'totalQty')
+      .addSelect('COUNT(*)', 'serialCount')
+      .addSelect('MIN(lot.recvDate)', 'recvDate')
+      .addSelect('MIN(lot.createdAt)', 'createdAt')
+      .where('lot.arrivalNo IS NOT NULL')
+      .andWhere('lot.iqcStatus = :iqcStatus', { iqcStatus });
+
+    if (company) qb.andWhere('lot.company = :company', { company });
+    if (plant) qb.andWhere('lot.plant = :plant', { plant });
+    if (query.search) {
+      qb.andWhere('(lot.arrivalNo LIKE :search OR lot.itemCode LIKE :search)', {
+        search: `%${query.search}%`,
+      });
+    }
+
+    qb.groupBy('lot.arrivalNo')
+      .addGroupBy('lot.itemCode')
+      .addGroupBy('lot.vendor')
+      .orderBy('MIN(lot.createdAt)', 'DESC');
+
+    const rows = await qb.getRawMany<{
+      arrivalNo: string;
+      itemCode: string;
+      vendor: string;
+      totalQty: string;
+      serialCount: string;
+      recvDate: Date | null;
+      createdAt: Date | null;
+    }>();
+
+    const itemCodes = [...new Set(rows.map((r) => r.itemCode).filter(Boolean))];
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({
+        where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
+      })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    return rows.map((r) => {
+      const part = partMap.get(r.itemCode);
+      return {
+        arrivalNo: r.arrivalNo,
+        itemCode: r.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        vendor: r.vendor,
+        totalQty: Number(r.totalQty) || 0,
+        serialCount: Number(r.serialCount) || 0,
+        recvDate: r.recvDate,
+        createdAt: r.createdAt,
+        iqcStatus,
+      };
+    });
+  }
+
+  /**
+   * 입하단위 IQC 검사결과 등록
+   * - 입하번호 + 품목에 속한 PENDING 시리얼 전체를 일괄 판정 (전수검사 아님, 샘플검사)
+   * - PASS → 전체 시리얼 iqcStatus=PASS
+   * - FAIL → 전체 시리얼 iqcStatus=FAIL + 각 시리얼 불용창고 이동
+   * - 검사 이력(IqcLog)은 입하건당 1건 (matUid=null, arrivalNo+itemCode 기준)
+   */
+  async createArrivalResult(dto: CreateArrivalIqcResultDto, company?: string, plant?: string) {
+    const lots = await this.matLotRepository.find({
+      where: {
+        arrivalNo: dto.arrivalNo,
+        itemCode: dto.itemCode,
+        iqcStatus: 'PENDING',
+        ...this.tenantWhere(company, plant),
+      },
+    });
+    if (lots.length === 0) {
+      throw new NotFoundException(
+        `검사 대상(PENDING) 시리얼이 없습니다: 입하 ${dto.arrivalNo} / 품목 ${dto.itemCode}`,
+      );
+    }
+
+    const tenantCompany = lots[0].company;
+    const tenantPlant = lots[0].plant;
+
+    // 1) 입하건의 PENDING 시리얼 전체 일괄 판정
+    await this.matLotRepository.update(
+      {
+        arrivalNo: dto.arrivalNo,
+        itemCode: dto.itemCode,
+        iqcStatus: 'PENDING',
+        ...this.tenantWhere(tenantCompany, tenantPlant),
+      },
+      { iqcStatus: dto.result },
+    );
+
+    // 2) 검사 이력 1건 생성 (matUid=null → 입하단위 검사 표식)
+    const log = this.iqcLogRepository.create({
+      arrivalNo: dto.arrivalNo,
+      matUid: null,
+      itemCode: dto.itemCode,
+      inspectType: dto.inspectType || 'INITIAL',
+      result: dto.result,
+      details: dto.details || null,
+      inspectorName: dto.inspectorName || null,
+      inspectClass: dto.inspectClass || 'SAMPLE',
+      destructSampleQty: dto.sampleQty || null,
+      remark: dto.remark || null,
+      inspectDate: new Date(),
+      company: tenantCompany,
+      plant: tenantPlant,
+    });
+    const saved = await this.iqcLogRepository.save(log);
+
+    // 3) FAIL → 입하건 전체 시리얼을 불용창고로 이동
+    if (dto.result === 'FAIL') {
+      for (const lot of lots) {
+        await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
+      }
+    }
+
+    // 4) PASS + 샘플수량 → 파괴검사 시료 자동출고 (AUTO_ISSUE 모드, 시리얼 순서대로 차감)
+    if (dto.result === 'PASS' && dto.sampleQty && dto.sampleQty > 0) {
+      const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE');
+      if (issueMode === 'AUTO_ISSUE') {
+        let remaining = dto.sampleQty;
+        for (const lot of lots) {
+          if (remaining <= 0) break;
+          const stock = await this.matStockRepository.findOne({
+            where: { matUid: lot.matUid, itemCode: lot.itemCode, ...this.tenantWhere(lot.company, lot.plant) },
+          });
+          const avail = stock?.qty ?? 0;
+          if (avail <= 0) continue;
+          const take = Math.min(avail, remaining);
+          await this.autoIssueDestructSample(lot.matUid, lot.itemCode, take, lot.company, lot.plant);
+          remaining -= take;
+        }
+      }
+    }
+
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: dto.itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
+    });
+
+    return {
+      ...saved,
+      arrivalNo: dto.arrivalNo,
+      itemCode: dto.itemCode,
+      itemName: part?.itemName ?? null,
+      affectedSerials: lots.length,
+    };
+  }
+
   private async handleIqcFail(
     matUid: string,
     itemCode: string,
@@ -336,6 +497,16 @@ export class IqcHistoryService {
           `이미 입고된 LOT입니다. LOT ${log.matUid}의 입고부터 먼저 정리한 뒤 IQC 판정을 취소해 주세요.`,
         );
       }
+    } else if (log.arrivalNo) {
+      // 입하단위 검사 이력 → 해당 입하건에 입고 DONE이 있으면 취소 불가
+      const receiving = await this.matReceivingRepository.findOne({
+        where: { arrivalNo: log.arrivalNo, status: 'DONE', ...this.tenantWhere(log.company, log.plant) },
+      });
+      if (receiving) {
+        throw new BadRequestException(
+          `이미 입고된 입하건입니다. 입하 ${log.arrivalNo}의 입고부터 먼저 정리한 뒤 IQC 판정을 취소해 주세요.`,
+        );
+      }
     } else if (log.itemCode) {
       const receiving = await this.matReceivingRepository.findOne({
         where: { itemCode: log.itemCode, status: 'DONE', ...this.tenantWhere(log.company, log.plant) },
@@ -371,6 +542,21 @@ export class IqcHistoryService {
         await this.reverseIqcFailMove(queryRunner, log.matUid, log.itemCode, log.company, log.plant);
       }
 
+      // 입하단위 검사(matUid=null) FAIL → 입하건 전체 시리얼의 불용창고 이동을 원복
+      if (!log.matUid && log.arrivalNo && log.itemCode && log.result === 'FAIL') {
+        const failedLots = await queryRunner.manager.find(MatLot, {
+          where: {
+            arrivalNo: log.arrivalNo,
+            itemCode: log.itemCode,
+            iqcStatus: 'FAIL',
+            ...this.tenantWhere(log.company, log.plant),
+          },
+        });
+        for (const lot of failedLots) {
+          await this.reverseIqcFailMove(queryRunner, lot.matUid, lot.itemCode, lot.company, lot.plant);
+        }
+      }
+
       await queryRunner.manager.update(
         IqcLog,
         { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(log.company, log.plant) },
@@ -381,6 +567,18 @@ export class IqcHistoryService {
         await queryRunner.manager.update(
           MatLot,
           { matUid: log.matUid, ...this.tenantWhere(log.company, log.plant) },
+          { iqcStatus: 'PENDING' },
+        );
+      } else if (log.arrivalNo && log.itemCode) {
+        // 입하단위 검사 → 해당 입하건 전체 시리얼을 일괄 PENDING 복원
+        await queryRunner.manager.update(
+          MatLot,
+          {
+            arrivalNo: log.arrivalNo,
+            itemCode: log.itemCode,
+            iqcStatus: log.result,
+            ...this.tenantWhere(log.company, log.plant),
+          },
           { iqcStatus: 'PENDING' },
         );
       } else if (log.itemCode) {
