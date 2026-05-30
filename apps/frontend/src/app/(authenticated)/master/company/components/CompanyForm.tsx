@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { X, Plus, Trash2, MapPin } from "lucide-react";
 import { Button, Input, ConfirmModal } from "@/components/ui";
 import api from "@/services/api";
-import { Company, Plant } from "../types";
+import { Company, Plant, getCompanyKey, getPlantKey } from "../types";
 
 interface Props {
   editingCompany: Company | null;
@@ -101,8 +101,8 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
         email: form.email || undefined,
         remark: form.remark || undefined,
       };
-      if (isEdit && editingCompany?.id) {
-        await api.put(`/master/companies/${editingCompany.id}`, payload);
+      if (isEdit && editingCompany) {
+        await api.put(`/master/companies/${getCompanyKey(editingCompany)}`, payload);
       } else {
         await api.post("/master/companies", payload);
       }
@@ -137,7 +137,7 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
   const handleDeletePlantConfirm = async () => {
     if (!deletePlantTarget) return;
     try {
-      await api.delete(`/master/plants/${deletePlantTarget.id}`);
+      await api.delete(`/master/plants/${deletePlantTarget.plantCode}`);
       fetchPlants();
     } catch {
       // 에러는 api 인터셉터에서 처리
@@ -248,7 +248,7 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
                   </thead>
                   <tbody>
                     {plants.map((plant) => (
-                      <tr key={plant.id} className="border-t border-border hover:bg-surface/50">
+                      <tr key={getPlantKey(plant)} className="border-t border-border hover:bg-surface/50">
                         <td className="px-3 py-1.5 font-mono font-medium text-text">{plant.plantCode}</td>
                         <td className="px-3 py-1.5 text-text">{plant.plantName}</td>
                         <td className="px-3 py-1.5 text-center">

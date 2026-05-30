@@ -93,7 +93,7 @@ export default function ProductionInputBar({
         matUid: serialNo || undefined,
         goodQty: good,
         defectQty: defect,
-      });
+      }, { skipSuccessToast: true });
       const resultNo: string = res.data?.data?.resultNo ?? res.data?.data?.id ?? '';
 
       // 불량 상세 로그 저장 (pendingDefects가 있는 경우)
@@ -105,7 +105,7 @@ export default function ProductionInputBar({
               defectCode: d.defectCode,
               defectName: d.defectName,
               qty: d.qty,
-            })
+            }, { skipSuccessToast: true })
           )
         );
       }

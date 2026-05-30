@@ -42,7 +42,6 @@ export interface LinkedGroupInfo {
 
 /** 모든 그룹 옵션 (Select용) */
 export interface GroupOption {
-  id: string;
   groupCode: string;
   groupName: string;
 }
@@ -98,7 +97,7 @@ export default function IqcDetailPanel({
   const groupSelectOptions = useMemo(
     () =>
       allGroups.map((g) => ({
-        value: g.id,
+        value: g.groupCode,
         label: `${g.groupCode} - ${g.groupName}`,
       })),
     [allGroups]

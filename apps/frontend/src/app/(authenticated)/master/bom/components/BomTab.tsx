@@ -17,7 +17,7 @@ import { Button, ConfirmModal } from "@/components/ui";
 import api from "@/services/api";
 import BomFormModal from "./BomFormModal";
 import BomUploadModal from "./BomUploadModal";
-import { ParentPart, BomTreeItem, RoutingTarget } from "../types";
+import { ParentPart, BomTreeItem, RoutingTarget, getBomKey } from "../types";
 
 const partTypeConfig: Record<string, { icon: typeof Package; color: string; bg: string }> = {
   FINISHED: { icon: Package, color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-100 dark:bg-emerald-900/50" },
@@ -26,6 +26,22 @@ const partTypeConfig: Record<string, { icon: typeof Package; color: string; bg: 
 };
 
 const levelColors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-purple-500", "bg-pink-500"];
+
+type RawBomTreeItem = Omit<BomTreeItem, "bomKey" | "children"> & {
+  id?: string;
+  bomKey?: string;
+  children?: RawBomTreeItem[];
+};
+
+const normalizeBomTree = (items: RawBomTreeItem[]): BomTreeItem[] =>
+  items.map((item) => {
+    const { id, bomKey, children, ...rest } = item;
+    return {
+      ...rest,
+      bomKey: bomKey || id || `${item.itemCode}::${item.childItemCode || item.itemCode}::${item.revision}`,
+      children: children ? normalizeBomTree(children) : undefined,
+    };
+  });
 
 interface BomTabProps {
   selectedParent: ParentPart | null;
@@ -53,7 +69,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
       const params: Record<string, string | number> = { depth: 5 };
       if (effectiveDate) params.effectiveDate = effectiveDate;
       const res = await api.get(`/master/boms/hierarchy/${selectedParent.itemCode}`, { params });
-      if (res.data.success) setBomTree(res.data.data || []);
+      if (res.data.success) setBomTree(normalizeBomTree(res.data.data || []));
     } catch { setBomTree([]); }
     finally { setLoading(false); }
   }, [selectedParent, effectiveDate]);
@@ -67,7 +83,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
   const rootId = selectedParent ? `ROOT::${selectedParent.itemCode}` : "";
 
   const treeWithRoot: BomTreeItem[] = selectedParent ? [{
-    id: rootId,
+    bomKey: rootId,
     level: 0,
     itemCode: selectedParent.itemCode,
     itemNo: selectedParent.itemNo || null,
@@ -89,7 +105,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
 
   const expandAll = useCallback(() => {
     const allIds = new Set<string>();
-    const collect = (items: BomTreeItem[]) => { items.forEach((item) => { if (item.children?.length) { allIds.add(item.id); collect(item.children); } }); };
+    const collect = (items: BomTreeItem[]) => { items.forEach((item) => { if (item.children?.length) { allIds.add(getBomKey(item)); collect(item.children); } }); };
     collect(treeWithRoot);
     setExpanded(allIds);
   }, [treeWithRoot]);
@@ -104,7 +120,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
   const handleDelete = useCallback(async () => {
     if (!deletingBom) return;
     try {
-      await api.delete(`/master/boms/${deletingBom.id}`);
+      await api.delete(`/master/boms/${getBomKey(deletingBom)}`);
       setDeletingBom(null);
       fetchBomTree();
     } catch { /* API 에러는 인터셉터에서 처리 */ }
@@ -226,7 +242,8 @@ function BomTreeRows({
     <>
       {items.map((item, idx) => {
         const hasChildren = item.children && item.children.length > 0;
-        const isExpanded = expanded.has(item.id);
+        const itemKey = getBomKey(item);
+        const isExpanded = expanded.has(itemKey);
         const cfg = partTypeConfig[item.itemType] || partTypeConfig.RAW_MATERIAL;
         const Icon = cfg.icon;
         const levelColor = levelColors[item.level % levelColors.length];
@@ -237,7 +254,7 @@ function BomTreeRows({
         const isSelected = selectedItemCode === itemCode;
 
         return (
-          <Fragment key={item.id}>
+          <Fragment key={itemKey}>
             <tr
               onClick={() => onSelectItem?.({ itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb: itemBreadcrumb })}
               className={`border-b border-border last:border-b-0 transition-colors cursor-pointer ${
@@ -250,7 +267,7 @@ function BomTreeRows({
               <td className="px-2 py-1.5 border-r border-border whitespace-nowrap">
                 <div className="flex items-center" style={{ paddingLeft: `${depth * 24}px` }}>
                   {hasChildren ? (
-                    <button onClick={(event) => { event.stopPropagation(); onToggle(item.id); }} className="mr-2 p-0.5 rounded hover:bg-surface transition-colors">
+                    <button onClick={(event) => { event.stopPropagation(); onToggle(itemKey); }} className="mr-2 p-0.5 rounded hover:bg-surface transition-colors">
                       {isExpanded ? <ChevronDown className={`w-4 h-4 ${isSelected ? "text-white/80" : "text-text-muted"}`} /> : <ChevronRight className={`w-4 h-4 ${isSelected ? "text-white/80" : "text-text-muted"}`} />}
                     </button>
                   ) : (
@@ -288,7 +305,7 @@ function BomTreeRows({
               </td>
             </tr>
             {hasChildren && isExpanded && (
-              <BomTreeRows key={`${item.id}-children`} items={item.children!} expanded={expanded} onToggle={onToggle}
+              <BomTreeRows key={`${itemKey}-children`} items={item.children!} expanded={expanded} onToggle={onToggle}
                 onEdit={onEdit} onDelete={onDelete} onViewRouting={onViewRouting}
                 onSelectItem={onSelectItem} selectedItemCode={selectedItemCode}
                 parentCode={parentCode} t={t} depth={depth + 1} breadcrumb={itemBreadcrumb} />

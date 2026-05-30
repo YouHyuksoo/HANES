@@ -4,6 +4,7 @@
     "cancel": "취소",
     "delete": "삭제",
     "edit": "수정",
+    "change": "변경",
     "add": "추가",
     "search": "검색",
     "period": "기간",
@@ -1407,7 +1408,7 @@
       "equipTypePlaceholder": "설비유형 선택",
       "stdTimeSec": "표준시간(초)",
       "setupTimeSec": "셋업시간(초)",
-      "sampleInspect": "샘플검사 필요",
+      "sampleInspect": "공정생품검사",
       "sampleInspectRequired": "필요",
       "sampleInspectNotRequired": "불필요",
       "wireLength": "전선길이(mm)",
@@ -1442,7 +1443,7 @@
       "backflush": "백플러시",
       "preIssue": "선투입",
       "noBomMaterial": "이 라우팅 품목에 등록된 BOM 자재가 없습니다.",
-      "selfInspectEditorTitle": "자주검사 설정"
+      "selfInspectEditorTitle": "공정생품검사"
     },
     "workCalendar": {
       "title": "생산월력관리",

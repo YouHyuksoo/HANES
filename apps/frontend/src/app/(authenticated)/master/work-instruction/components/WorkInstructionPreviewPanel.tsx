@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { X, Edit2, FileText, Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui";
 import api from "@/services/api";
-import type { WorkInstruction } from "./WorkInstructionFormPanel";
+import { getWorkInstructionKey, type WorkInstruction } from "./WorkInstructionFormPanel";
 
 interface WorkInstructionDetail extends WorkInstruction {
   content?: string;
@@ -47,9 +47,8 @@ export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, ani
   /** 상세 데이터 조회 (content 포함) */
   useEffect(() => {
     if (!item.itemCode || !item.processCode) return;
-    const compositeId = `${item.itemCode}::${item.processCode}::${item.revision ?? 'A'}`;
     setLoading(true);
-    api.get(`/master/work-instructions/${encodeURIComponent(compositeId)}`)
+    api.get(`/master/work-instructions/${encodeURIComponent(getWorkInstructionKey(item))}`)
       .then((res) => {
         if (res.data?.success) {
           setDetail({ ...item, ...res.data.data });

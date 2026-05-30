@@ -386,7 +386,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
         </CardContent>
       </Card>
 
-      <div className="col-span-7 grid grid-rows-[minmax(0,1fr)_260px] gap-3 min-h-0">
+      <div className="col-span-7 grid grid-rows-[minmax(0,1fr)_420px] gap-3 min-h-0">
         <Card padding="none" className="flex flex-col min-h-0 rounded-lg">
           <CardContent className="flex-1 min-h-0 p-3 overflow-y-auto">
             {selectedGroup ? (

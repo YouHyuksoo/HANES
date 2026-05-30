@@ -18,7 +18,6 @@ import { JUDGE_METHOD_COLORS } from "../types";
 import api from "@/services/api";
 
 interface PoolItem {
-  id: string;
   inspItemCode: string;
   inspItemName: string;
   judgeMethod: "VISUAL" | "MEASURE";
@@ -33,7 +32,7 @@ interface GroupFormData {
   groupName: string;
   inspectMethod: string;
   sampleQty: string;
-  selectedItemIds: string[];
+  selectedItemCodes: string[];
 }
 
 interface Props {
@@ -41,7 +40,6 @@ interface Props {
   onClose: () => void;
   onSave: (data: GroupFormData) => void;
   editing?: {
-    id: string;
     groupCode: string;
     groupName: string;
     inspectMethod: string;
@@ -51,7 +49,7 @@ interface Props {
 }
 
 const EMPTY_FORM: GroupFormData = {
-  groupCode: "", groupName: "", inspectMethod: "SAMPLE", sampleQty: "", selectedItemIds: [],
+  groupCode: "", groupName: "", inspectMethod: "SAMPLE", sampleQty: "", selectedItemCodes: [],
 };
 
 export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Props) {
@@ -63,8 +61,7 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
   const fetchPoolItems = useCallback(async () => {
     try {
       const res = await api.get("/master/iqc-item-pool", { params: { limit: "5000", useYn: "Y" } });
-      const items = (res.data?.data ?? []).map((i: any) => ({ ...i, id: String(i.id) }));
-      setAllItems(items);
+      setAllItems(res.data?.data ?? []);
     } catch {
       setAllItems([]);
     }
@@ -79,7 +76,7 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
           groupName: editing.groupName,
           inspectMethod: editing.inspectMethod,
           sampleQty: editing.sampleQty?.toString() ?? "",
-          selectedItemIds: editing.items?.sort((a, b) => a.seq - b.seq).map(i => String(i.inspItemCode)) ?? [],
+          selectedItemCodes: editing.items?.sort((a, b) => a.seq - b.seq).map(i => String(i.inspItemCode)) ?? [],
         });
       } else {
         setForm(EMPTY_FORM);
@@ -107,20 +104,20 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
     );
   }, [allItems, itemSearch]);
 
-  const toggleItem = (itemId: string) => {
+  const toggleItem = (inspItemCode: string) => {
     setForm(prev => {
-      const selected = prev.selectedItemIds.includes(itemId)
-        ? prev.selectedItemIds.filter(id => id !== itemId)
-        : [...prev.selectedItemIds, itemId];
-      return { ...prev, selectedItemIds: selected };
+      const selected = prev.selectedItemCodes.includes(inspItemCode)
+        ? prev.selectedItemCodes.filter(code => code !== inspItemCode)
+        : [...prev.selectedItemCodes, inspItemCode];
+      return { ...prev, selectedItemCodes: selected };
     });
   };
 
   const selectedItems = useMemo(() => {
-    return form.selectedItemIds
-      .map(id => allItems.find(i => i.id === id))
+    return form.selectedItemCodes
+      .map(code => allItems.find(i => i.inspItemCode === code))
       .filter(Boolean) as PoolItem[];
-  }, [form.selectedItemIds, allItems]);
+  }, [form.selectedItemCodes, allItems]);
 
   const handleSubmit = () => {
     if (!form.groupCode || !form.groupName) return;
@@ -161,7 +158,7 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
               </h4>
               <div className="space-y-1 max-h-[180px] overflow-y-auto">
                 {selectedItems.map((item, idx) => (
-                  <div key={item.id} className="flex items-center gap-2 text-xs py-1 px-2 bg-primary/5 rounded">
+                  <div key={item.inspItemCode} className="flex items-center gap-2 text-xs py-1 px-2 bg-primary/5 rounded">
                     <span className="text-text-muted w-5">{idx + 1}</span>
                     <span className="font-mono text-text-muted">{item.inspItemCode}</span>
                     <span className="flex-1 truncate">{item.inspItemName}</span>
@@ -183,13 +180,13 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
 
           <div className="space-y-1 max-h-[340px] overflow-y-auto">
             {filteredItems.map(item => {
-              const isSelected = form.selectedItemIds.includes(item.id);
+              const isSelected = form.selectedItemCodes.includes(item.inspItemCode);
               return (
-                <label key={item.id}
+                <label key={item.inspItemCode}
                   className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
                     isSelected ? "border-primary bg-primary/5" : "border-border hover:bg-surface"
                   }`}>
-                  <input type="checkbox" checked={isSelected} onChange={() => toggleItem(item.id)}
+                  <input type="checkbox" checked={isSelected} onChange={() => toggleItem(item.inspItemCode)}
                     className="w-4 h-4 rounded border-border text-primary focus:ring-primary shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

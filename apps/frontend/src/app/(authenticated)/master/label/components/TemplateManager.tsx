@@ -26,7 +26,7 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
   const { t } = useTranslation();
   const { templates, loading, fetchList, save, update, remove } = useLabelTemplates();
   const [saveName, setSaveName] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
   const [showSave, setShowSave] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -47,18 +47,18 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
   };
 
   const handleOverwrite = async (tpl: LabelTemplateItem) => {
-    await update(tpl.id, design);
+    await update(tpl.templateKey, design);
     fetchList(category);
   };
 
   const handleLoad = (tpl: LabelTemplateItem) => {
-    setSelectedId(tpl.id);
+    setSelectedTemplateKey(tpl.templateKey);
     onLoad(tpl.designData);
   };
 
-  const handleDelete = async (id: string) => {
-    await remove(id);
-    if (selectedId === id) setSelectedId(null);
+  const handleDelete = async (templateKey: string) => {
+    await remove(templateKey);
+    if (selectedTemplateKey === templateKey) setSelectedTemplateKey(null);
     fetchList(category);
   };
 
@@ -104,9 +104,9 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
         )}
         {templates.map((tpl) => (
           <div
-            key={tpl.id}
+            key={tpl.templateKey}
             className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm cursor-pointer transition-colors ${
-              selectedId === tpl.id
+              selectedTemplateKey === tpl.templateKey
                 ? "bg-primary/10 border border-primary/30"
                 : "bg-surface hover:bg-primary/5 border border-transparent"
             }`}
@@ -122,7 +122,7 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
               <Save className="w-3 h-3" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); handleDelete(tpl.id); }}
+              onClick={(e) => { e.stopPropagation(); handleDelete(tpl.templateKey); }}
               className="text-text-muted hover:text-red-500 p-0.5"
               title={t("master.label.delete")}
             >

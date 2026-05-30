@@ -4,6 +4,7 @@
     "cancel": "取消",
     "delete": "删除",
     "edit": "编辑",
+    "change": "更改",
     "add": "添加",
     "search": "搜索",
     "period": "期间",
@@ -1075,7 +1076,7 @@
       "equipTypePlaceholder": "选择设备类型",
       "stdTimeSec": "标准时间(秒)",
       "setupTimeSec": "换线时间(秒)",
-      "sampleInspect": "抽样检查",
+      "sampleInspect": "工序产品检验",
       "sampleInspectRequired": "需要",
       "sampleInspectNotRequired": "不需要",
       "wireLength": "电线长度(mm)",
@@ -1114,7 +1115,7 @@
       "backflush": "倒冲",
       "preIssue": "预发料",
       "noBomMaterial": "此工艺路线物料没有注册的 BOM 物料。",
-      "selfInspectEditorTitle": "自检设置"
+      "selfInspectEditorTitle": "工序产品检验"
     },
     "workCalendar": {
       "title": "生产月历管理",

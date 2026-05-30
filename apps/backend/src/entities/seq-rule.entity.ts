@@ -26,8 +26,8 @@ export class SeqRule {
   @Column({ type: 'varchar2', name: 'DATE_FORMAT', length: 10, nullable: true })
   dateFormat: string | null;
 
-  @Column({ name: 'SEPARATOR', length: 2, default: '' })
-  separator: string;
+  @Column({ type: 'varchar2', name: 'SEPARATOR', length: 2, nullable: true, default: null })
+  separator: string | null;
 
   @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 100, nullable: true })
   description: string | null;
@@ -35,11 +35,11 @@ export class SeqRule {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;

@@ -139,7 +139,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
         inspectType: 'WORKER',
         overallResult: anyNg ? 'FAIL' : 'PASS',
         details,
-      });
+      }, { skipSuccessToast: true });
       setInterlock('workerInspectDone', !anyNg || startWork);
       toast.success(t('kiosk.prep.workerInspectSaved'));
       if (startWork || !anyNg) onDone();
@@ -153,7 +153,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   }, [selectedEquip, allAnswered, items, results, ngReasons, selectedWorkers, anyNg, setInterlock, onDone, t]);
 
   return (
-    <Modal isOpen={isOpen} onClose={saving ? () => {} : onClose} title={t('kiosk.prep.workerInspectTitle')} size="xl">
+    <Modal isOpen={isOpen} onClose={saving ? () => {} : onClose} title={t('kiosk.prep.workerInspectTitle')} size="full">
       <div className="space-y-3">
         {/* 다크 헤더 카드 */}
         <div className="p-3 bg-slate-800 dark:bg-slate-900 text-white rounded-lg text-sm space-y-1.5">
@@ -195,9 +195,9 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                   const isNg = r === 'NG';
                   return (
                     <div key={item.seq} className={`p-2.5 border rounded-lg transition-colors ${
-                      r === 'OK' ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800'
-                      : r === 'NG' ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'
-                      : isActive ? 'border-blue-400 bg-blue-50/40 dark:bg-blue-900/10'
+                      r === 'OK' ? 'border-green-500'
+                      : r === 'NG' ? 'border-red-500'
+                      : isActive ? 'border-blue-400'
                       : 'border-border'
                     }`}>
                       <div className="flex items-center gap-2">
@@ -218,14 +218,14 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                             <button onClick={() => handleResult(item.seq, 'OK')}
                               className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                                 r === 'OK' ? 'bg-green-500 text-white border-green-500'
-                                : 'border-border text-text-muted hover:bg-green-50 hover:border-green-400 hover:text-green-700'
+                                : 'border-border text-text-muted hover:border-green-400 hover:text-green-700'
                               }`}>
                               <CheckCircle2 className="w-3.5 h-3.5" /> OK
                             </button>
                             <button onClick={() => handleResult(item.seq, 'NG')}
                               className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                                 r === 'NG' ? 'bg-red-500 text-white border-red-500'
-                                : 'border-border text-text-muted hover:bg-red-50 hover:border-red-400 hover:text-red-700'
+                                : 'border-border text-text-muted hover:border-red-400 hover:text-red-700'
                               }`}>
                               <XCircle className="w-3.5 h-3.5" /> NG
                             </button>
@@ -256,7 +256,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
           <div className="flex flex-col gap-3">
             {/* QR 스캐너 */}
             {items.some(i => i.workerQrCode) && (
-              <div className="p-2.5 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50/40 dark:bg-blue-900/10">
+              <div className="p-2.5 border border-blue-400 dark:border-blue-700 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
                   <QrCode className="w-4 h-4 text-blue-500 shrink-0" />
                   <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{t('kiosk.prep.workerQrScanner')}</span>
@@ -298,8 +298,8 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
             {allAnswered && (
               <div className={`p-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 ${
                 anyNg
-                  ? 'animate-pulse bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
-                  : 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300'
+                  ? 'animate-pulse border-red-500 text-red-700 dark:text-red-300'
+                  : 'border-green-500 text-green-700 dark:text-green-300'
               }`}>
                 {anyNg ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                 {anyNg ? t('kiosk.prep.failWarning') : t('kiosk.selfInspect.overallPass')}

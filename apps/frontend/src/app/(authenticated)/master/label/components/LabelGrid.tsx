@@ -30,7 +30,7 @@ export default function LabelGrid({ items, selectedIds, onSelectionChange, loadi
   }, [selectedIds, onSelectionChange]);
 
   const toggleAll = useCallback(() => {
-    onSelectionChange(selectedIds.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
+    onSelectionChange(selectedIds.size === items.length ? new Set() : new Set(items.map((i) => i.itemKey)));
   }, [items, selectedIds.size, onSelectionChange]);
 
   return (
@@ -69,17 +69,17 @@ export default function LabelGrid({ items, selectedIds, onSelectionChange, loadi
             ) : (
               items.map((item, idx) => (
                 <tr
-                  key={item.id}
-                  onClick={() => toggleItem(item.id)}
+                  key={item.itemKey}
+                  onClick={() => toggleItem(item.itemKey)}
                   className={`cursor-pointer transition-colors border-b border-border last:border-b-0 ${
-                    selectedIds.has(item.id) ? "bg-primary/5" : idx % 2 === 0 ? "bg-surface" : "bg-background/50"
+                    selectedIds.has(item.itemKey) ? "bg-primary/5" : idx % 2 === 0 ? "bg-surface" : "bg-background/50"
                   } hover:bg-primary/10`}
                 >
                   <td className="px-3 py-2.5 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedIds.has(item.id)}
-                      onChange={() => toggleItem(item.id)}
+                      checked={selectedIds.has(item.itemKey)}
+                      onChange={() => toggleItem(item.itemKey)}
                       className="accent-primary"
                       onClick={(e) => e.stopPropagation()}
                     />

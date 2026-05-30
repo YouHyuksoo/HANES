@@ -61,8 +61,8 @@ export class MatLot {
   @Column({ type: 'varchar2', name: 'MFG_PARTNER_CODE', length: 50, nullable: true })
   mfgPartnerCode: string | null;
 
-  @Column({ name: 'INVOICE_NO', length: 50 })
-  invoiceNo: string;
+  @Column({ type: 'varchar2', name: 'INVOICE_NO', length: 50, nullable: true })
+  invoiceNo: string | null;
 
   @Column({ type: 'varchar2', name: 'PO_NO', length: 50, nullable: true })
   poNo: string | null;
@@ -73,11 +73,11 @@ export class MatLot {
   @Column({ name: 'STATUS', length: 20, default: 'NORMAL' })
   status: string;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

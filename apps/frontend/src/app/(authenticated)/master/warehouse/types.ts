@@ -17,7 +17,6 @@ export interface WarehouseData {
 }
 
 export interface TransferRule {
-  id: string;
   fromWarehouseCode: string;
   fromWarehouseName: string;
   toWarehouseCode: string;

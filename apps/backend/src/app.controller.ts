@@ -27,6 +27,25 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('db-info')
+  getDbInfo() {
+    // 실제 런타임 접속 정보를 DataSource 옵션에서 추출 (비밀번호 미포함)
+    const opts = this.dataSource.options as {
+      host?: string;
+      port?: number;
+      sid?: string;
+      serviceName?: string;
+      username?: string;
+    };
+    return {
+      host: opts.host ?? null,
+      port: opts.port ?? null,
+      database: opts.serviceName ?? opts.sid ?? null,
+      username: opts.username ?? null,
+      connected: this.dataSource.isInitialized,
+    };
+  }
+
   @Get('health')
   async getHealth() {
     const uptime = process.uptime();

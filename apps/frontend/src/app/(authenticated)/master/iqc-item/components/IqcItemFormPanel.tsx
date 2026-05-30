@@ -10,7 +10,6 @@ import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
 
 export interface IqcItemPool {
-  id: string;
   inspItemCode: string;
   inspItemName: string;
   judgeMethod: "VISUAL" | "MEASURE";

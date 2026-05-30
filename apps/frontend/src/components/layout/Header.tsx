@@ -12,8 +12,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette } from "lucide-react";
+import { Sun, Moon, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette, Database } from "lucide-react";
 import NotificationBell from "@/components/shared/NotificationBell";
+import api from "@/services/api";
 import { useTheme } from "@/hooks/useTheme";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -37,6 +38,23 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  /* 접속 DB 정보 (네비게이션 바 표시용) */
+  const [dbInfo, setDbInfo] = useState<{
+    host: string | null;
+    port: number | null;
+    database: string | null;
+    username: string | null;
+    connected: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    api.get("/db-info")
+      .then((res) => { if (active) setDbInfo(res.data?.data ?? res.data ?? null); })
+      .catch(() => { if (active) setDbInfo(null); });
+    return () => { active = false; };
+  }, []);
 
   const closeMenu = useCallback(() => setShowUserMenu(false), []);
 
@@ -151,6 +169,19 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
             <Building className="w-4 h-4 text-primary" />
             <span className="text-xs font-medium text-primary">
               {selectedCompany}{selectedPlant ? ` / ${selectedPlant}` : ''}
+            </span>
+          </div>
+        )}
+
+        {/* 접속 DB 정보 표시 (사업장 옆) */}
+        {dbInfo?.database && (
+          <div
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 border border-border rounded-md"
+            title={`${dbInfo.username ?? ''}@${dbInfo.host ?? ''}:${dbInfo.port ?? ''}`}
+          >
+            <Database className={`w-4 h-4 ${dbInfo.connected ? 'text-primary' : 'text-text-muted'}`} />
+            <span className="text-xs font-medium text-text">
+              {dbInfo.database}{dbInfo.host ? ` @ ${dbInfo.host}` : ''}
             </span>
           </div>
         )}

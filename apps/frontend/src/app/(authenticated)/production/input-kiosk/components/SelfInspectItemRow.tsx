@@ -78,13 +78,8 @@ export default function SelfInspectItemRow({ rowIndex, item, result, onChange }:
   const isPass = r === 'PASS';
   const isPending = r === 'PENDING';
 
-  const rowBg = isPass
-    ? 'bg-green-50 dark:bg-green-950/30'
-    : isFail
-    ? 'bg-red-50 dark:bg-red-950/30'
-    : isPending
-    ? 'bg-orange-50 dark:bg-orange-950/30'
-    : '';
+  // 상태는 입력 테두리·판정 텍스트로 구분 (파스텔 행 배경 미사용)
+  const rowBg = '';
 
   return (
     <tr className={`border-b border-border last:border-0 transition-colors ${rowBg}`}>
@@ -96,12 +91,12 @@ export default function SelfInspectItemRow({ rowIndex, item, result, onChange }:
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-sm font-medium text-text">{item.itemName}</span>
           {item.isDestructive && (
-            <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded">
               {t('kiosk.selfInspect.destructive')}
             </span>
           )}
           {item.inspectMethod === 'DELEGATE' && (
-            <span className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] border border-orange-400 dark:border-orange-600 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded">
               {t('kiosk.selfInspect.delegate')}
             </span>
           )}
@@ -112,8 +107,8 @@ export default function SelfInspectItemRow({ rowIndex, item, result, onChange }:
       <td className="px-2 py-2 text-center">
         <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${
           item.itemType === 'MEASURE'
-            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-            : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+            ? 'border border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300'
+            : 'border border-purple-400 dark:border-purple-600 text-purple-700 dark:text-purple-300'
         }`}>
           {item.itemType === 'MEASURE' ? t('kiosk.prep.measureType') : t('kiosk.prep.visualType')}
         </span>
@@ -141,7 +136,7 @@ export default function SelfInspectItemRow({ rowIndex, item, result, onChange }:
             className={`flex items-center gap-1 px-2.5 py-1 rounded border text-xs font-medium transition-colors ${
               isPending
                 ? 'bg-orange-500 text-white border-orange-500'
-                : 'bg-surface border-border text-text-muted hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600'
+                : 'bg-surface border-border text-text-muted hover:border-orange-400 hover:text-orange-600'
             }`}
           >
             <Send className="w-3 h-3" />
@@ -166,7 +161,7 @@ export default function SelfInspectItemRow({ rowIndex, item, result, onChange }:
               className={`flex items-center gap-1 px-2.5 py-1 rounded border text-xs font-medium transition-colors ${
                 isPass
                   ? 'bg-green-500 text-white border-green-500'
-                  : 'border-border text-text-muted hover:bg-green-50 hover:border-green-400 hover:text-green-700'
+                  : 'border-border text-text-muted hover:border-green-400 hover:text-green-700'
               }`}
             >
               <CheckCircle2 className="w-3 h-3" /> PASS
@@ -176,7 +171,7 @@ export default function SelfInspectItemRow({ rowIndex, item, result, onChange }:
               className={`flex items-center gap-1 px-2.5 py-1 rounded border text-xs font-medium transition-colors ${
                 isFail
                   ? 'bg-red-500 text-white border-red-500'
-                  : 'border-border text-text-muted hover:bg-red-50 hover:border-red-400 hover:text-red-700'
+                  : 'border-border text-text-muted hover:border-red-400 hover:text-red-700'
               }`}
             >
               <XCircle className="w-3 h-3" /> FAIL

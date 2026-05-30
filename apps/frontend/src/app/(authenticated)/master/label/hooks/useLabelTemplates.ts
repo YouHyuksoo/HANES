@@ -13,8 +13,8 @@ import { api } from "@/services/api";
 import { LabelDesign, LabelCategory } from "../types";
 
 export interface LabelTemplateItem {
-  /** 복합키 식별자: "templateName::category" */
-  id: string;
+  /** DB 복합키: "templateName::category" */
+  templateKey: string;
   templateName: string;
   category: string;
   designData: LabelDesign;
@@ -39,10 +39,10 @@ export function useLabelTemplates() {
       const params = category ? { category } : {};
       const res = await api.get(BASE, { params });
       const raw = res.data?.data ?? [];
-      // 복합키를 id 필드로 생성
+      // DB 복합키를 화면/API 호출용 key로 생성
       setTemplates(raw.map((tpl: any) => ({
         ...tpl,
-        id: `${tpl.templateName}::${tpl.category}`,
+        templateKey: `${tpl.templateName}::${tpl.category}`,
         designData: typeof tpl.designData === 'string' ? JSON.parse(tpl.designData) : tpl.designData,
       })));
     } catch {
@@ -69,8 +69,8 @@ export function useLabelTemplates() {
 
   /** 기존 템플릿 덮어쓰기 */
   const update = useCallback(
-    async (id: string, design: LabelDesign, extras?: { templateName?: string; isDefault?: boolean; zplCode?: string; printMode?: string }) => {
-      const res = await api.put(`${BASE}/${id}`, {
+    async (templateKey: string, design: LabelDesign, extras?: { templateName?: string; isDefault?: boolean; zplCode?: string; printMode?: string }) => {
+      const res = await api.put(`${BASE}/${templateKey}`, {
         designData: design,
         ...extras,
       });
@@ -80,8 +80,8 @@ export function useLabelTemplates() {
   );
 
   /** 삭제 */
-  const remove = useCallback(async (id: string) => {
-    await api.delete(`${BASE}/${id}`);
+  const remove = useCallback(async (templateKey: string) => {
+    await api.delete(`${BASE}/${templateKey}`);
   }, []);
 
   return { templates, loading, fetchList, save, update, remove };

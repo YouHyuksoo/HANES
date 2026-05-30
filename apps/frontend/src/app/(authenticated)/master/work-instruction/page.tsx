@@ -17,7 +17,7 @@ import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-import WorkInstructionFormPanel, { type WorkInstruction } from "./components/WorkInstructionFormPanel";
+import WorkInstructionFormPanel, { getWorkInstructionKey, type WorkInstruction } from "./components/WorkInstructionFormPanel";
 import WorkInstructionPreviewPanel from "./components/WorkInstructionPreviewPanel";
 
 type PanelMode = "none" | "preview" | "edit";
@@ -173,7 +173,7 @@ export default function WorkInstructionPage() {
 
       {panelMode === "edit" && (
         <WorkInstructionFormPanel
-          key={editingItem?.id ?? "__new__"}
+          key={editingItem ? getWorkInstructionKey(editingItem) : "__new__"}
           editingItem={editingItem}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

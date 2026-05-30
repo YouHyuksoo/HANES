@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. 복합 PK: printedAt(PRINTED_AT) + seq(SEQ)
- * 2. templateId: 라벨 템플릿 ID (number)
+ * 2. templateId: 라벨 템플릿 ID (문자열)
  * 3. STATUS: SUCCESS(성공), FAILED(실패)
  * 4. printMode: BROWSER(브라우저) / ZPL(직접출력)
  */
@@ -29,8 +29,8 @@ export class LabelPrintLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ name: 'TEMPLATE_ID', type: 'number', nullable: true })
-  templateId: number | null;
+  @Column({ type: 'varchar2', name: 'TEMPLATE_ID', length: 36, nullable: true })
+  templateId: string | null;
 
   @Column({ name: 'CATEGORY', length: 20 })
   category: string;
@@ -56,11 +56,11 @@ export class LabelPrintLog {
   @Column({ type: 'varchar2', name: 'ERROR_MSG', length: 500, nullable: true })
   errorMsg: string | null;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;

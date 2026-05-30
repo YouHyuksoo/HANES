@@ -71,7 +71,7 @@ export default function LabelPreview({ items, design }: LabelPreviewProps) {
         <div ref={printRef} className="flex flex-wrap gap-2">
           {items.map((item) => (
             <div
-              key={item.id}
+              key={item.itemKey}
               className="border border-dashed border-border rounded relative overflow-hidden"
               style={{
                 width: `${design.labelWidth}mm`,

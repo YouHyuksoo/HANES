@@ -134,7 +134,7 @@ export default function CodeDetailGrid({
       />
       <CardContent className="flex-1 flex flex-col min-h-0 px-4 pb-4">
         <DataGrid data={codes} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName={`${groupCode}_codes`} 
-        sqlQuery={`SELECT *\nFROM COM_CODE_DETAILS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        sqlQuery={`SELECT *\nFROM COM_CODES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent>
     </Card>
   );

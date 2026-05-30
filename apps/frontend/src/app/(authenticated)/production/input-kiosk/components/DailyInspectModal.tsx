@@ -149,7 +149,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
         inspectType: 'DAILY',
         overallResult: anyFail ? 'FAIL' : 'PASS',
         details,
-      });
+      }, { skipSuccessToast: true });
       setInterlock('dailyInspectDone', true);
       toast.success(t('kiosk.prep.dailyInspectSaved'));
       onDone();
@@ -174,7 +174,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
         inspectType: 'DAILY',
         overallResult: 'PASS',
         remark: '항목 없음 - 자동완료',
-      });
+      }, { skipSuccessToast: true });
       setInterlock('dailyInspectDone', true);
       toast.success(t('kiosk.prep.dailyInspectSaved'));
       onDone();
@@ -187,7 +187,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
   }, [selectedEquip, today, inspectorName, setInterlock, onDone, t]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.dailyInspectTitle')} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.dailyInspectTitle')} size="full">
       {alreadyDone ? (
         <div className="flex flex-col items-center gap-4 py-8">
           <CheckCircle2 className="w-16 h-16 text-green-500" />
@@ -222,7 +222,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
             </div>
 
             {/* 오른쪽: 점검자 (필수 — 핑크 강조) */}
-            <div className="border border-rose-400 bg-rose-50 dark:bg-rose-950/20 rounded-lg p-3 space-y-2">
+            <div className="border border-rose-400 rounded-lg p-3 space-y-2">
               <div className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 {t('kiosk.prep.inspectorRequired')}
@@ -263,9 +263,9 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
               {/* 종합 판정 배너 — 항상 표시 */}
               <div className={`flex items-center justify-between p-3 rounded-lg border text-sm font-medium transition-colors ${
                 allAnswered && anyFail
-                  ? 'animate-pulse bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                  ? 'animate-pulse border-red-500 text-red-700 dark:text-red-300'
                   : allAnswered
-                  ? 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300'
+                  ? 'border-green-500 text-green-700 dark:text-green-300'
                   : 'bg-surface border-border text-text-muted'
               }`}>
                 <div>
@@ -292,13 +292,13 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                 <table className="w-full text-sm border-collapse">
                   <thead className="sticky top-0 bg-surface z-10">
                     <tr className="border-b border-border">
-                      <th className="w-10 px-3 py-2 text-center text-xs text-text-muted font-medium">No</th>
-                      <th className="px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
-                      <th className="w-20 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.judgeMethod')}</th>
-                      <th className="w-36 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
-                      <th className="w-36 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.measureOrJudge')}</th>
-                      <th className="w-16 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.result')}</th>
-                      <th className="w-32 px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.remark')}</th>
+                      <th className="w-12 px-3 py-2 text-center text-xs text-text-muted font-medium">No</th>
+                      <th className="w-56 px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
+                      <th className="w-24 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.judgeMethod')}</th>
+                      <th className="w-80 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
+                      <th className="w-44 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.measureOrJudge')}</th>
+                      <th className="w-20 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.result')}</th>
+                      <th className="px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.remark')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -307,16 +307,14 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                       const isFail = r === 'FAIL';
                       const isPass = r === 'PASS';
                       return (
-                        <tr key={item.seq} className={`border-b border-border last:border-0 transition-colors ${
-                          isFail ? 'bg-red-50 dark:bg-red-950/30' : isPass ? 'bg-green-50 dark:bg-green-950/20' : ''
-                        }`}>
+                        <tr key={item.seq} className="border-b border-border last:border-0 transition-colors">
                           <td className="px-3 py-2 text-center text-xs text-text-muted">{item.seq}</td>
-                          <td className="px-3 py-2 font-medium text-text">{item.itemName}</td>
+                          <td className="px-3 py-2 font-medium text-text whitespace-nowrap">{item.itemName}</td>
                           <td className="px-3 py-2 text-center">
                             <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
                               item.itemType === 'MEASURE'
-                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                ? 'border border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300'
+                                : 'border border-purple-400 dark:border-purple-600 text-purple-700 dark:text-purple-300'
                             }`}>
                               {item.itemType === 'MEASURE' ? t('kiosk.prep.measureType') : t('kiosk.prep.visualType')}
                             </span>
@@ -358,10 +356,10 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                           </td>
                           <td className="px-3 py-2 text-center">
                             {isPass && (
-                              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">OK</span>
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold border border-green-500 text-green-700 dark:text-green-400">OK</span>
                             )}
                             {isFail && (
-                              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">NG</span>
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold border border-red-500 text-red-700 dark:text-red-400">NG</span>
                             )}
                           </td>
                           <td className="px-3 py-2">
@@ -384,10 +382,10 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
               <div className="space-y-1 pt-2 border-t border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="px-2 py-0.5 rounded font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                    <span className="px-2 py-0.5 rounded font-semibold border border-green-500 text-green-700 dark:text-green-400">
                       OK {okCount}
                     </span>
-                    <span className="px-2 py-0.5 rounded font-semibold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
+                    <span className="px-2 py-0.5 rounded font-semibold border border-red-500 text-red-700 dark:text-red-400">
                       NG {ngCount}
                     </span>
                     {allAnswered && (

@@ -16,7 +16,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import CompanyFormPanel from "./components/CompanyForm";
-import { Company } from "./types";
+import { Company, getCompanyKey } from "./types";
 
 function CompanyPage() {
   const { t } = useTranslation();
@@ -49,7 +49,7 @@ function CompanyPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/companies/${deleteTarget.id}`);
+      await api.delete(`/master/companies/${getCompanyKey(deleteTarget)}`);
       fetchCompanies();
     } catch {
       // 에러는 api 인터셉터에서 처리
@@ -135,7 +135,7 @@ function CompanyPage() {
                 leftIcon={<Search className="w-4 h-4" />} />
             }
           
-          sqlQuery={`SELECT *\nFROM COMPANIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={`SELECT *\nFROM COMPANY_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 

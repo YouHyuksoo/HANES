@@ -26,6 +26,14 @@ import toast from "react-hot-toast";
 import { useErrorStore } from "@/stores/errorStore";
 import { useAuthStore } from "@/stores/authStore";
 
+// 응답 인터셉터의 자동 성공 토스트를 끄는 opt-out 플래그.
+// 컴포넌트가 자체 토스트(i18n·조건부)를 띄우는 호출에서 { skipSuccessToast: true } 지정 → 중복 토스트 방지.
+declare module "axios" {
+  interface AxiosRequestConfig {
+    skipSuccessToast?: boolean;
+  }
+}
+
 const READONLY_HTTP_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const VIEWER_READONLY_MESSAGE = "조회 전용 권한은 데이터를 변경할 수 없습니다.";
 
@@ -122,7 +130,7 @@ api.interceptors.response.use(
   (response) => {
     const method = response.config.method?.toUpperCase();
     const msg = response.data?.message;
-    if (msg && method && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    if (msg && method && ["POST", "PUT", "PATCH", "DELETE"].includes(method) && !response.config.skipSuccessToast) {
       toast.success(msg);
     }
     return response;

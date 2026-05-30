@@ -17,7 +17,6 @@ import { Button, Input } from "@/components/ui";
 import api from "@/services/api";
 
 interface WorkInstruction {
-  id: string;
   itemCode: string;
   itemName: string;
   processCode?: string;
@@ -27,6 +26,10 @@ interface WorkInstruction {
   useYn: string;
   updatedAt: string;
 }
+
+export const getWorkInstructionKey = (
+  item: Pick<WorkInstruction, "itemCode" | "processCode" | "revision">,
+) => `${item.itemCode}::${item.processCode || ""}::${item.revision || "A"}`;
 
 interface Props {
   editingItem: WorkInstruction | null;
@@ -111,8 +114,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
     setSaving(true);
     try {
       if (isEdit && editingItem?.itemCode && editingItem?.processCode) {
-        const compositeId = `${editingItem.itemCode}::${editingItem.processCode}::${editingItem.revision ?? 'A'}`;
-        await api.put(`/master/work-instructions/${encodeURIComponent(compositeId)}`, form);
+        await api.put(`/master/work-instructions/${encodeURIComponent(getWorkInstructionKey(editingItem))}`, form);
       } else {
         await api.post("/master/work-instructions", form);
       }

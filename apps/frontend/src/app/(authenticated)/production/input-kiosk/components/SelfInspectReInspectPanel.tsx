@@ -39,7 +39,7 @@ export default function SelfInspectReInspectPanel({
     <div className="space-y-2">
       {/* 이전 NG 결과 요약 */}
       {prevNgSummary.length > 0 && (
-        <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-700 rounded-lg">
+        <div className="p-3 border border-red-500 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <XCircle className="w-4 h-4 text-red-500 shrink-0" />
             <span className="text-xs font-bold text-red-700 dark:text-red-300">
@@ -53,7 +53,7 @@ export default function SelfInspectReInspectPanel({
             {prevNgSummary.map((ng, i) => (
               <span
                 key={i}
-                className="text-xs bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 px-2 py-0.5 rounded border border-red-200 dark:border-red-700"
+                className="text-xs text-red-700 dark:text-red-300 px-2 py-0.5 rounded border border-red-400 dark:border-red-600"
               >
                 {t('kiosk.selfInspect.sampleTab', { n: ng.sampleIdx + 1 })} {ng.itemName}
                 {ng.value ? ` (${ng.value})` : ''}
@@ -64,7 +64,7 @@ export default function SelfInspectReInspectPanel({
       )}
 
       {/* 재검사 수량 선택 */}
-      <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+      <div className="p-3 border border-yellow-500 rounded-lg">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-bold text-yellow-800 dark:text-yellow-200 shrink-0">
             {t('kiosk.selfInspect.reInspectCount')}
@@ -77,7 +77,7 @@ export default function SelfInspectReInspectPanel({
                 className={`px-3 py-1 text-xs rounded border font-medium transition-colors ${
                   reInspectSampleCount === n
                     ? 'bg-yellow-500 text-white border-yellow-500'
-                    : 'bg-white dark:bg-slate-800 border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
+                    : 'bg-surface border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:border-yellow-500'
                 }`}
               >
                 {t('kiosk.selfInspect.nSamples', { n })}

@@ -28,7 +28,7 @@ export class PmWorkOrder {
   @PrimaryColumn({ name: 'WORK_ORDER_NO', length: 20 })
   workOrderNo: string;
 
-  @Column({ name: 'PM_PLAN_ID', type: 'raw', nullable: true })
+  @Column({ type: 'varchar2', name: 'PM_PLAN_ID', length: 50, nullable: true })
   pmPlanCode: string | null;
 
   @Column({ name: 'EQUIP_CODE', length: 50 })
@@ -67,11 +67,11 @@ export class PmWorkOrder {
   @Column({ type: 'varchar2', name: 'REMARK', length: 1000, nullable: true })
   remark: string | null;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

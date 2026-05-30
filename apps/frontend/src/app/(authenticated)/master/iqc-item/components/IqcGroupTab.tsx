@@ -22,7 +22,6 @@ import IqcGroupModal from "./IqcGroupModal";
 import api from "@/services/api";
 
 interface IqcGroupRow {
-  id: string;
   groupCode: string;
   groupName: string;
   inspectMethod: string;
@@ -88,7 +87,7 @@ export default function IqcGroupTab() {
 
   const handleSave = useCallback(async (formData: {
     groupCode: string; groupName: string; inspectMethod: string;
-    sampleQty: string; selectedItemIds: string[];
+    sampleQty: string; selectedItemCodes: string[];
   }) => {
     setSaving(true);
     try {
@@ -98,8 +97,8 @@ export default function IqcGroupTab() {
         inspectMethod: formData.inspectMethod,
         sampleQty: formData.inspectMethod === "SAMPLE" && formData.sampleQty
           ? parseInt(formData.sampleQty) : undefined,
-        items: formData.selectedItemIds.map((itemId, idx) => ({
-          itemId, seq: idx + 1,
+        items: formData.selectedItemCodes.map((inspItemCode, idx) => ({
+          itemId: inspItemCode, seq: idx + 1,
         })),
       };
       if (editingGroup) {

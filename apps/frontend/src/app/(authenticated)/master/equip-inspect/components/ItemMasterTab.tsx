@@ -238,7 +238,7 @@ export default function ItemMasterTab() {
             </div>
           }
         
-        sqlQuery={`SELECT *\nFROM EQUIP_INSPECT_ITEMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        sqlQuery={`SELECT *\nFROM EQUIP_INSPECT_ITEM_POOL\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </div>
 
       <Modal

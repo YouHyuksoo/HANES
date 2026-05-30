@@ -178,13 +178,13 @@ export default function VendorBarcodeMappingPage() {
                 </div>
               </div>
             } 
-            sqlQuery={`SELECT *\nFROM VENDOR_BARCODES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+            sqlQuery={`SELECT *\nFROM VENDOR_BARCODE_MAPPINGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 
       {isPanelOpen && (
         <VendorBarcodeFormPanel
-          key={editingItem?.id ?? "__new__"}
+          key={editingItem?.vendorBarcode ?? "__new__"}
           editingItem={editingItem}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

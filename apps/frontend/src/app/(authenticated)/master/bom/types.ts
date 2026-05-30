@@ -23,7 +23,7 @@ export interface ParentPart {
 }
 
 export interface BomItem {
-  id: string;
+  bomKey: string;
   childItemCode: string;
   childItemName: string;
   childItemType: string;
@@ -38,8 +38,9 @@ export interface BomItem {
 
 /** 트리 구조 BOM 아이템 (API hierarchy 응답) */
 export interface BomTreeItem {
-  id: string;
+  bomKey: string;
   level: number;
+  parentItemCode?: string;
   itemCode: string;
   itemNo?: string | null;
   itemName: string;
@@ -57,6 +58,11 @@ export interface BomTreeItem {
   children?: BomTreeItem[];
   isRoot?: boolean;
 }
+
+export const getBomKey = (
+  item: Pick<BomTreeItem, "bomKey" | "parentItemCode" | "itemCode" | "childItemCode" | "revision" | "isRoot">,
+) =>
+  item.bomKey || (item.isRoot ? `ROOT::${item.itemCode}` : `${item.parentItemCode || item.itemCode}::${item.childItemCode || item.itemCode}::${item.revision}`);
 
 /** BOM에서 라우팅관리 화면으로 연결할 때 사용하는 타겟 정보 */
 export interface RoutingTarget {

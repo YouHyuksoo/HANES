@@ -20,9 +20,8 @@ import { INSPECT_METHOD_COLORS, JUDGE_METHOD_COLORS } from "../../iqc-item/types
 import api from "@/services/api";
 
 interface PoolItem {
-  id: string;
-  itemCode: string;
-  itemName: string;
+  inspItemCode: string;
+  inspItemName: string;
   judgeMethod: string;
   lsl: number | null;
   usl: number | null;
@@ -30,12 +29,11 @@ interface PoolItem {
 }
 
 interface GroupRow {
-  id: string;
   groupCode: string;
   groupName: string;
   inspectMethod: string;
   sampleQty?: number | null;
-  items?: { itemId: string; seq: number }[];
+  items?: { inspItemCode: string; seq: number }[];
 }
 
 interface Props {
@@ -85,14 +83,14 @@ export default function IqcSettingModal({ isOpen, onClose, part, currentLink, on
     MEASURE: t("master.part.iqc.measure", "계측"),
   }), [t]);
 
-  const itemMap = useMemo(() => new Map(poolItems.map(i => [i.id, i])), [poolItems]);
+  const itemMap = useMemo(() => new Map(poolItems.map(i => [i.inspItemCode, i])), [poolItems]);
 
   const selectedGroup = groups.find(g => g.groupCode === selected);
   const selectedItems = useMemo(() => {
     if (!selectedGroup?.items) return [];
     return selectedGroup.items
       .sort((a, b) => a.seq - b.seq)
-      .map(gi => itemMap.get(gi.itemId))
+      .map(gi => itemMap.get(gi.inspItemCode))
       .filter(Boolean) as PoolItem[];
   }, [selectedGroup, itemMap]);
 
@@ -113,7 +111,7 @@ export default function IqcSettingModal({ isOpen, onClose, part, currentLink, on
 
       <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {groups.map(group => (
-          <label key={group.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+          <label key={group.groupCode} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
             selected === group.groupCode ? "border-primary bg-primary/5" : "border-border hover:bg-surface"
           }`} onClick={() => setSelected(group.groupCode)}>
             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
@@ -144,9 +142,9 @@ export default function IqcSettingModal({ isOpen, onClose, part, currentLink, on
           </h4>
           <div className="space-y-1">
             {selectedItems.map(item => (
-              <div key={item.id} className="flex items-center gap-2 text-sm">
-                <span className="font-mono text-xs text-text-muted w-16">{item.itemCode}</span>
-                <span className="flex-1">{item.itemName}</span>
+              <div key={item.inspItemCode} className="flex items-center gap-2 text-sm">
+                <span className="font-mono text-xs text-text-muted w-16">{item.inspItemCode}</span>
+                <span className="flex-1">{item.inspItemName}</span>
                 <span className={`px-1.5 py-0.5 text-[10px] rounded ${JUDGE_METHOD_COLORS[item.judgeMethod]}`}>
                   {judgeLabels[item.judgeMethod]}
                 </span>

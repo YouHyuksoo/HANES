@@ -46,11 +46,11 @@ export class BoxMaster {
   @Column({ name: 'CLOSE_TIME', type: 'timestamp', nullable: true })
   closeAt: Date | null;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

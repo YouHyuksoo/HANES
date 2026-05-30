@@ -152,7 +152,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const hasInspectItems = inspectItems.length > 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t("material.iqc.modalTitle")} size={hasInspectItems ? "xl" : "lg"}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t("material.iqc.modalTitle")} size={hasInspectItems ? "2xl" : "lg"}>
       <div className="space-y-4">
         {/* 입하 정보 표시 (입하번호 + 품목 단위) */}
         <div className="p-3 bg-background rounded-lg grid grid-cols-2 gap-x-6 gap-y-1">

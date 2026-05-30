@@ -29,6 +29,10 @@ interface Step {
   labelKey: string;
   status: StepStatus;
   errorMsg?: string;
+  /** 연결 대상 주요 정보 (서버 URL, DB host:port/service) */
+  target?: string;
+  /** 연결 대상 보조 정보 (DB 계정 · 응답 지연 등) */
+  targetSub?: string;
 }
 
 interface Props {
@@ -73,6 +77,19 @@ export default function ConnectionCheckOverlay({ onReady }: Props) {
   const [hasError, setHasError] = useState(false);
   const didRun = useRef(false);
 
+  // 연결 대상 서버 주소 — SSR 첫 렌더는 환경변수/상대경로, 마운트 후 origin으로 보정 (hydration mismatch 방지)
+  const [serverTarget, setServerTarget] = useState(
+    process.env.NEXT_PUBLIC_API_URL || "/api",
+  );
+  useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_API_URL || "/api";
+    if (!base.startsWith("http") && typeof window !== "undefined") {
+      setServerTarget(
+        `${window.location.origin}${base.startsWith("/") ? base : `/${base}`}`,
+      );
+    }
+  }, []);
+
   const update = (id: string, patch: Partial<Step>) => {
     setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   };
@@ -91,6 +108,32 @@ export default function ConnectionCheckOverlay({ onReady }: Props) {
 
       // Step 2: DB 연결 (health 응답 내 database.status 확인)
       update("database", { status: "checking" });
+
+      // DB 접속 대상 정보 조회 (host:port/service + 계정 · 응답 지연)
+      try {
+        const dbRes = await api.get("/db-info", { timeout: 8000 });
+        const info = dbRes.data?.data ?? dbRes.data;
+        if (info) {
+          const hostPort = info.host
+            ? `${info.host}${info.port ? `:${info.port}` : ""}`
+            : "";
+          const target = [hostPort, info.database].filter(Boolean).join(" / ");
+          const latencyMs = health.database?.latencyMs;
+          const sub = [
+            info.username,
+            latencyMs != null ? `${latencyMs}ms` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          update("database", {
+            target: target || undefined,
+            targetSub: sub || undefined,
+          });
+        }
+      } catch {
+        // db-info 조회 실패는 무시 — 연결 상태 판정은 health 기준
+      }
+
       await new Promise((r) => setTimeout(r, 300));
 
       if (health.database?.status === "connected") {
@@ -153,6 +196,22 @@ export default function ConnectionCheckOverlay({ onReady }: Props) {
               <MainIcon id={step.id} status={step.status} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text">{t(step.labelKey)}</p>
+                {(() => {
+                  const target = step.id === "server" ? serverTarget : step.target;
+                  return target ? (
+                    <p
+                      className="text-xs text-text-muted mt-0.5 truncate font-mono"
+                      title={target}
+                    >
+                      {target}
+                    </p>
+                  ) : null;
+                })()}
+                {step.targetSub && (
+                  <p className="text-xs text-text-muted/80 truncate font-mono">
+                    {step.targetSub}
+                  </p>
+                )}
                 {step.errorMsg && (
                   <p className="text-xs text-red-500 dark:text-red-400 mt-0.5 truncate">
                     {step.errorMsg}

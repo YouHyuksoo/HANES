@@ -4,6 +4,7 @@
     "cancel": "Hủy",
     "delete": "Xóa",
     "edit": "Sửa",
+    "change": "Thay đổi",
     "add": "Thêm",
     "search": "Tìm kiếm",
     "period": "Thời gian",
@@ -1075,7 +1076,7 @@
       "equipTypePlaceholder": "Chọn loại thiết bị",
       "stdTimeSec": "Thời gian chuẩn (giây)",
       "setupTimeSec": "Thời gian cài đặt (giây)",
-      "sampleInspect": "Kiểm tra mẫu",
+      "sampleInspect": "Kiểm tra sản phẩm công đoạn",
       "sampleInspectRequired": "Cần thiết",
       "sampleInspectNotRequired": "Không cần",
       "wireLength": "Chiều dài dây (mm)",
@@ -1114,7 +1115,7 @@
       "backflush": "Backflush",
       "preIssue": "Xuất trước",
       "noBomMaterial": "Không có vật tư BOM được đăng ký cho mặt hàng định tuyến này.",
-      "selfInspectEditorTitle": "Cài đặt tự kiểm"
+      "selfInspectEditorTitle": "Kiểm tra sản phẩm công đoạn"
     },
     "workCalendar": {
       "title": "Quản lý lịch sản xuất",

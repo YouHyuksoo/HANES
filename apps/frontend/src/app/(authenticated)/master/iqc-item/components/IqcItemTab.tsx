@@ -198,7 +198,7 @@ export default function IqcItemTab() {
                 </div>
               }
             
-            sqlQuery={`SELECT *\nFROM IQC_ITEMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+            sqlQuery={`SELECT *\nFROM IQC_ITEM_POOL\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>

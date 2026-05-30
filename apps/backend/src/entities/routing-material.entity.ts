@@ -11,6 +11,12 @@ import {
 @Index(['routingCode', 'seq'])
 @Index(['childItemCode'])
 export class RoutingMaterial {
+  @PrimaryColumn({ name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'ROUTING_CODE', length: 50 })
   routingCode: string;
 
@@ -28,12 +34,6 @@ export class RoutingMaterial {
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
-
-  @PrimaryColumn({ name: 'COMPANY', length: 50 })
-  company: string;
-
-  @PrimaryColumn({ name: 'PLANT_CD', length: 50 })
-  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

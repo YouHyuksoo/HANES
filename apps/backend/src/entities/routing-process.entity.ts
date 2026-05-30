@@ -20,6 +20,12 @@ import {
 @Entity({ name: 'ROUTING_PROCESSES' })
 @Index(['routingCode'])
 export class RoutingProcess {
+  @PrimaryColumn({ name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'ROUTING_CODE', length: 50 })
   routingCode: string;
 
@@ -61,12 +67,6 @@ export class RoutingProcess {
 
   @Column({ name: 'SAMPLE_QTY', type: 'number', default: 1, nullable: true })
   sampleQty: number | null;
-
-  @PrimaryColumn({ name: 'COMPANY', length: 50 })
-  company: string;
-
-  @PrimaryColumn({ name: 'PLANT_CD', length: 50 })
-  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

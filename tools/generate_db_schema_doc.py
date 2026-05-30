@@ -6,7 +6,7 @@ from datetime import datetime
 import oracledb
 
 
-SITE = "JSHANES"
+SITE = os.environ.get("ORACLE_SITE", "MYDBPDB")
 OUTPUT = os.path.join("docs", "reports", "db-schema-erd.md")
 
 

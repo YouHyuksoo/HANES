@@ -4,6 +4,7 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
+    "change": "Change",
     "add": "Add",
     "search": "Search",
     "period": "Period",
@@ -1093,7 +1094,7 @@
       "equipTypePlaceholder": "Select equipment type",
       "stdTimeSec": "Std Time (sec)",
       "setupTimeSec": "Setup Time (sec)",
-      "sampleInspect": "Sample Inspection",
+      "sampleInspect": "In-Process Inspection",
       "sampleInspectRequired": "Required",
       "sampleInspectNotRequired": "Not Required",
       "wireLength": "Wire Length (mm)",
@@ -1128,7 +1129,7 @@
       "backflush": "Backflush",
       "preIssue": "Pre-Issue",
       "noBomMaterial": "No BOM materials are registered for this routing item.",
-      "selfInspectEditorTitle": "Self-Inspect Config"
+      "selfInspectEditorTitle": "In-Process Inspection"
     },
     "workCalendar": {
       "title": "Work Calendar",

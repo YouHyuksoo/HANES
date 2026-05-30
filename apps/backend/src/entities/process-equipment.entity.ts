@@ -14,17 +14,17 @@ import { EquipMaster } from './equip-master.entity';
 @Entity({ name: 'PROCESS_EQUIPMENTS' })
 @Index(['equipCode'])
 export class ProcessEquipment {
-  @PrimaryColumn({ name: 'PROCESS_CODE', length: 50 })
-  processCode: string;
-
-  @PrimaryColumn({ name: 'EQUIP_CODE', length: 50 })
-  equipCode: string;
-
   @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
   company: string | null;
 
   @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
   plant: string | null;
+
+  @PrimaryColumn({ name: 'PROCESS_CODE', length: 50 })
+  processCode: string;
+
+  @PrimaryColumn({ name: 'EQUIP_CODE', length: 50 })
+  equipCode: string;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;

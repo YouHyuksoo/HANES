@@ -172,7 +172,7 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
             remark: r?.remark,
             sampleNo,
             measureValue: item.itemType === 'MEASURE' && r?.value ? Number(r.value) : undefined,
-          }));
+          }, { skipSuccessToast: true }));
         }
       }
       await Promise.all(promises);
@@ -237,7 +237,7 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
     : `${timingLabel[currentTiming]} ${t('kiosk.selfInspect.title')}`;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="full">
       <div className="space-y-3">
         {/* 다크 헤더 카드 */}
         <div className="p-3 bg-slate-800 dark:bg-slate-900 text-white rounded-lg">
@@ -277,7 +277,7 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
 
         {/* 파괴검사 경고 배너 */}
         {hasDestructive && !reInspectMode && (
-          <div className="flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-700 rounded-lg text-xs text-red-700 dark:text-red-300">
+          <div className="flex items-center gap-2 p-2.5 border border-red-500 rounded-lg text-xs text-red-700 dark:text-red-300">
             <Flame className="w-4 h-4 shrink-0" />
             {t('kiosk.selfInspect.destructiveWarning')}
           </div>
@@ -296,8 +296,8 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
                   onClick={() => setActiveTab(i)}
                   className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-1.5 ${
                     activeTab === i ? 'bg-primary text-white'
-                    : complete && hasFail ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                    : complete ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                    : complete && hasFail ? 'border border-red-500 text-red-700 dark:text-red-300'
+                    : complete ? 'border border-green-500 text-green-700 dark:text-green-300'
                     : 'text-text-muted hover:bg-surface'
                   }`}
                 >
@@ -324,13 +324,13 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
             <table className="w-full text-sm border-collapse">
               <thead className="sticky top-0 bg-surface z-10">
                 <tr className="border-b border-border">
-                  <th className="w-8 px-2 py-2 text-center text-xs text-text-muted font-medium">No</th>
-                  <th className="px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
-                  <th className="w-20 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.judgeMethod')}</th>
-                  <th className="w-36 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
-                  <th className="w-40 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.measureOrJudge')}</th>
-                  <th className="w-16 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.result')}</th>
-                  <th className="w-32 px-2 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.remark')}</th>
+                  <th className="w-12 px-2 py-2 text-center text-xs text-text-muted font-medium">No</th>
+                  <th className="w-56 px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
+                  <th className="w-24 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.judgeMethod')}</th>
+                  <th className="w-80 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
+                  <th className="w-44 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.measureOrJudge')}</th>
+                  <th className="w-20 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.result')}</th>
+                  <th className="px-2 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.remark')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,7 +350,7 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
 
         {/* 의뢰검사 안내 */}
         {hasDelegates && !reInspectMode && (
-          <div className="flex items-start gap-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg">
+          <div className="flex items-start gap-2 p-2.5 border border-orange-400 dark:border-orange-700 rounded-lg">
             <Clock className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
             <p className="text-xs text-orange-700 dark:text-orange-300">
               {t('kiosk.selfInspect.delegateWarning')}

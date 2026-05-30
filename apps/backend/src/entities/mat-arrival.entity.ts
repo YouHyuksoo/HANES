@@ -32,8 +32,8 @@ export class MatArrival {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ name: 'INVOICE_NO', length: 100 })
-  invoiceNo: string;
+  @Column({ type: 'varchar2', name: 'INVOICE_NO', length: 100, nullable: true })
+  invoiceNo: string | null;
 
   @Column({ type: 'varchar2', name: 'PO_ID', length: 50, nullable: true })
   poId: string | null;
@@ -80,11 +80,11 @@ export class MatArrival {
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

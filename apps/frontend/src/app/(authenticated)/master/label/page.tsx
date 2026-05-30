@@ -39,7 +39,7 @@ const categoryApiMap: Record<LabelCategory, {
   equip: {
     url: "/equipment/equips",
     mapFn: (item) => ({
-      id: item.id as string,
+      itemKey: item.equipCode as string,
       code: item.equipCode as string,
       name: item.equipName as string,
       sub: (item.lineCode as string) || (item.equipType as string) || "",
@@ -48,7 +48,7 @@ const categoryApiMap: Record<LabelCategory, {
   jig: {
     url: "/consumables",
     mapFn: (item) => ({
-      id: item.id as string,
+      itemKey: item.consumableCode as string,
       code: item.consumableCode as string,
       name: item.consumableName as string,
       sub: (item.category as string) || "",
@@ -57,7 +57,7 @@ const categoryApiMap: Record<LabelCategory, {
   worker: {
     url: "/master/workers",
     mapFn: (item) => ({
-      id: item.id as string,
+      itemKey: item.workerCode as string,
       code: item.workerCode as string,
       name: item.workerName as string,
       sub: (item.dept as string) || "",
@@ -66,7 +66,7 @@ const categoryApiMap: Record<LabelCategory, {
   part: {
     url: "/master/parts",
     mapFn: (item) => ({
-      id: item.id as string,
+      itemKey: item.itemCode as string,
       code: item.itemCode as string,
       name: item.itemName as string,
       sub: (item.itemType as string) || "",
@@ -74,7 +74,7 @@ const categoryApiMap: Record<LabelCategory, {
   },
   mat_lot: {
     url: "",
-    mapFn: () => ({ id: "", code: "", name: "" }),
+    mapFn: () => ({ itemKey: "", code: "", name: "" }),
   },
 };
 
@@ -114,7 +114,7 @@ function LabelPage() {
     fetchItems(category);
   }, [category, fetchItems]);
 
-  const selectedItems = useMemo(() => items.filter((i) => selectedIds.has(i.id)), [items, selectedIds]);
+  const selectedItems = useMemo(() => items.filter((i) => selectedIds.has(i.itemKey)), [items, selectedIds]);
   const firstSelected = selectedItems[0];
 
   const handleCategoryChange = useCallback((cat: LabelCategory) => {

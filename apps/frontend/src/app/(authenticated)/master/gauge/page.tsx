@@ -8,7 +8,7 @@
  * 1. **DataGrid**: 계측기 목록 (코드, 명칭, 유형, 교정주기, 상태 등)
  * 2. **Modal**: 등록/수정 폼 (계측기 정보 + 교정 정보)
  * 3. **ComCodeBadge**: GAUGE_TYPE(유형), GAUGE_STATUS(상태) 코드값 표시
- * 4. API: GET/POST /quality/msa/gauges, PUT/DELETE /quality/msa/gauges/:id
+ * 4. API: GET/POST /quality/msa/gauges, PUT/DELETE /quality/msa/gauges/:gaugeCode
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,7 +23,6 @@ import api from "@/services/api";
 
 /** 계측기 데이터 타입 */
 interface Gauge {
-  id: number;
   gaugeCode: string;
   gaugeName: string;
   gaugeType: string;
@@ -284,7 +283,7 @@ export default function GaugeMasterPage() {
                 </div>
               }
             
-            sqlQuery={`SELECT *\nFROM GAUGES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+            sqlQuery={`SELECT *\nFROM GAUGE_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>

@@ -48,11 +48,11 @@ export class User {
   @Column({ name: 'LAST_LOGIN', type: 'timestamp', nullable: true })
   lastLoginAt: Date | null;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   /** PDA 역할 코드 (FK → PDA_ROLE.CODE, nullable) */
   @Column({ type: 'varchar2', name: 'PDA_ROLE_CODE', length: 50, nullable: true })

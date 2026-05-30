@@ -15,7 +15,7 @@ import { Search } from "lucide-react";
 import { Button, Modal, Input } from "@/components/ui";
 import { ComCodeSelect, ProcessSelect } from "@/components/shared";
 import api from "@/services/api";
-import { BomTreeItem } from "../types";
+import { BomTreeItem, getBomKey } from "../types";
 
 interface BomFormModalProps {
   isOpen: boolean;
@@ -27,7 +27,6 @@ interface BomFormModalProps {
 }
 
 interface PartOption {
-  id: string;
   itemCode: string;
   itemName: string;
   itemType: string;
@@ -54,7 +53,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
   useEffect(() => {
     if (!isOpen) return;
     if (editingItem) {
-      setSelectedChild({ id: editingItem.childItemCode || "", itemCode: editingItem.itemCode, itemName: editingItem.itemName, itemType: editingItem.itemType });
+      setSelectedChild({ itemCode: editingItem.childItemCode || editingItem.itemCode, itemName: editingItem.itemName, itemType: editingItem.itemType });
       setChildSearch(editingItem.itemCode);
       setQtyPer(String(editingItem.qtyPer));
       setSeq(String(editingItem.seq));
@@ -95,14 +94,14 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
     setSaving(true);
     try {
       const body = {
-        parentItemCode, childItemCode: selectedChild.id,
+        parentItemCode, childItemCode: selectedChild.itemCode,
         qtyPer: Number(qtyPer), seq: Number(seq), revision,
         processCode: processCode || undefined, side: side || undefined,
         validFrom: validFrom || undefined, validTo: validTo || undefined,
         remark: remark || undefined, useYn: "Y",
       };
       if (editingItem) {
-        await api.put(`/master/boms/${editingItem.id}`, body);
+        await api.put(`/master/boms/${getBomKey(editingItem)}`, body);
       } else {
         await api.post("/master/boms", body);
       }
@@ -124,7 +123,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
           {showDropdown && childOptions.length > 0 && !selectedChild && (
             <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg">
               {childOptions.map((opt) => (
-                <button key={opt.id} onClick={() => handleSelectChild(opt)}
+                <button key={opt.itemCode} onClick={() => handleSelectChild(opt)}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-primary/5 flex justify-between">
                   <span className="font-mono">{opt.itemCode}</span>
                   <span className="text-text-muted">{opt.itemName}</span>

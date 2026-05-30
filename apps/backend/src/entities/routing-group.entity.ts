@@ -18,6 +18,12 @@ import {
 
 @Entity({ name: 'ROUTING_GROUPS' })
 export class RoutingGroup {
+  @PrimaryColumn({ name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'ROUTING_CODE', length: 50 })
   routingCode: string;
 
@@ -32,12 +38,6 @@ export class RoutingGroup {
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
-
-  @PrimaryColumn({ name: 'COMPANY', length: 50 })
-  company: string;
-
-  @PrimaryColumn({ name: 'PLANT_CD', length: 50 })
-  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

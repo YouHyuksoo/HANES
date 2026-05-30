@@ -135,7 +135,7 @@ export default function ProcessEquipGrid({
           enableExport
           exportFileName={`${processCode}_${t("master.process.assignedEquipments")}`}
         
-        sqlQuery={`SELECT *\nFROM PROCESS_EQUIPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        sqlQuery={`SELECT *\nFROM PROCESS_EQUIPMENTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent>
     </Card>
   );

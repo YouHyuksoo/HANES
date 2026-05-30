@@ -20,6 +20,12 @@ import {
 @Index(['warehouseCode'])
 @Index(['itemCode'])
 export class MatStock {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string | null;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string | null;
+
   @PrimaryColumn({ name: 'WAREHOUSE_CODE', length: 50 })
   warehouseCode: string;
 
@@ -43,12 +49,6 @@ export class MatStock {
 
   @Column({ name: 'LAST_COUNT', type: 'timestamp', nullable: true })
   lastCountAt: Date | null;
-
-  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
-  company: string | null;
-
-  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
-  plant: string | null;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

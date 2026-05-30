@@ -18,12 +18,12 @@ import { Button, Input, Modal, Select } from "@/components/ui";
 import { INSPECT_METHOD_COLORS } from "../types";
 import api from "@/services/api";
 
-interface PartOption { id: string; itemCode: string; itemName: string; }
-interface PartnerOption { id: string; partnerCode: string; partnerName: string; }
+interface PartOption { itemCode: string; itemName: string; }
+interface PartnerOption { partnerCode: string; partnerName: string; }
 interface GroupOption {
   groupCode: string; groupName: string;
   inspectMethod: string; sampleQty?: number | null;
-  items?: { itemId: string; seq: number }[];
+  items?: { inspItemCode: string; seq: number }[];
 }
 
 interface LinkFormData {
@@ -100,7 +100,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
           remark: editing.remark ?? "",
         });
         if (editing.part) {
-          setParts([{ id: editing.itemCode, itemCode: editing.part.itemCode, itemName: editing.part.itemName }]);
+          setParts([{ itemCode: editing.part.itemCode, itemName: editing.part.itemName }]);
         }
       } else {
         setForm(EMPTY_FORM);
@@ -114,7 +114,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
 
   const partnerOptions = useMemo(() => [
     { value: "", label: t("master.iqcLink.allVendors", "전체 (기본)") },
-    ...partners.map(p => ({ value: p.id, label: `${p.partnerCode} - ${p.partnerName}` })),
+    ...partners.map(p => ({ value: p.partnerCode, label: `${p.partnerCode} - ${p.partnerName}` })),
   ], [partners, t]);
 
   const groupOptions = useMemo(() =>

@@ -17,6 +17,12 @@ import {
 
 @Entity({ name: 'WAREHOUSE_TRANSFER_RULES' })
 export class WarehouseTransferRule {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string | null;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string | null;
+
   @PrimaryColumn({ name: 'FROM_WAREHOUSE_ID', length: 50 })
   fromWarehouseId: string;
 
@@ -28,12 +34,6 @@ export class WarehouseTransferRule {
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
-
-  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
-  company: string | null;
-
-  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
-  plant: string | null;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

@@ -69,14 +69,14 @@ export class TraceLog {
   @Column({ name: 'EVENT_DATA', type: 'clob', nullable: true })
   eventData: string | null;
 
-  @Column({ name: 'PARENT_ID', type: 'int', nullable: true })
-  parentId: number | null;
+  @Column({ type: 'varchar2', name: 'PARENT_ID', length: 36, nullable: true })
+  parentId: string | null;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

@@ -16,7 +16,6 @@ import { Button, Input, Select } from "@/components/ui";
 import api from "@/services/api";
 
 interface VendorBarcodeMapping {
-  id: string;
   vendorBarcode: string;
   itemCode: string | null;
   itemName: string | null;

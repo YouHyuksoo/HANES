@@ -11,7 +11,7 @@ export type LabelCategory = "equip" | "jig" | "worker" | "part" | "mat_lot";
 
 /** 라벨 출력 대상 아이템 */
 export interface LabelItem {
-  id: string;
+  itemKey: string;
   code: string;
   name: string;
   sub?: string;

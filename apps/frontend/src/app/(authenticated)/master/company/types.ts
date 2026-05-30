@@ -4,8 +4,9 @@
  */
 
 export interface Company {
-  id: string;
   companyCode: string;
+  plant: string;
+  plantName?: string;
   companyName: string;
   bizNo?: string;
   ceoName?: string;
@@ -18,11 +19,22 @@ export interface Company {
 }
 
 export interface Plant {
-  id: string;
   plantCode: string;
+  shopCode?: string;
+  lineCode?: string;
+  cellCode?: string;
   plantName: string;
   plantType?: string;
   sortOrder: number;
   useYn: string;
   company?: string;
+  plant?: string;
 }
+
+export const getCompanyKey = (company: Pick<Company, "companyCode" | "plant">) =>
+  `${company.companyCode}::${company.plant || "-"}`;
+
+export const getPlantKey = (
+  plant: Pick<Plant, "plantCode" | "shopCode" | "lineCode" | "cellCode">,
+) =>
+  [plant.plantCode, plant.shopCode || "-", plant.lineCode || "-", plant.cellCode || "-"].join("::");

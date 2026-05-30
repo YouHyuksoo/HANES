@@ -30,8 +30,8 @@ export class DefectLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ type: 'varchar2', name: 'PROD_RESULT_ID', length: 50, nullable: true })
-  prodResultNo: string | null;
+  @Column({ type: 'varchar2', name: 'PROD_RESULT_ID', length: 50 })
+  prodResultNo: string;
 
   @ManyToOne(() => ProdResult, (prodResult) => prodResult.defectLogs)
   @JoinColumn({ name: 'PROD_RESULT_ID', referencedColumnName: 'resultNo' })
@@ -55,11 +55,11 @@ export class DefectLog {
   @Column({ type: 'varchar2', name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string | null;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

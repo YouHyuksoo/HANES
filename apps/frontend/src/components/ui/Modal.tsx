@@ -21,7 +21,7 @@ export interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   closeOnEsc?: boolean;
@@ -71,6 +71,7 @@ function Modal({
     md: 'max-w-lg',         // 512px (일반 폼)
     lg: 'max-w-xl',         // 576px (복잡한 폼)
     xl: 'max-w-2xl',        // 672px (대형 폼/테이블)
+    '2xl': 'max-w-5xl',     // 1024px (다컬럼 테이블 모달)
     full: 'max-w-[90vw] max-h-[90vh]',
   };
 

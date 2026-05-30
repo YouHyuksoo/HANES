@@ -197,7 +197,7 @@ export default function ProcessList({
             </Button>
           }
         
-        sqlQuery={`SELECT *\nFROM PROCESSES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        sqlQuery={`SELECT *\nFROM PROCESS_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent>
     </Card>
   );

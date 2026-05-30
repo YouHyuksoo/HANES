@@ -32,7 +32,6 @@ import api from "@/services/api";
 type ItemFormMode = "item" | "rel" | null;
 
 interface ItemFormState {
-  id?: string;
   itemCode: string;
   itemName: string;
   itemType: BomItemType;
@@ -221,7 +220,6 @@ export default function EquipBomTab() {
   const openItemEdit = (item: EquipBomItem) => {
     setEditingItem(item);
     setItemForm({
-      id: item.bomItemCode,
       itemCode: item.itemCode,
       itemName: item.itemName,
       itemType: item.itemType,
@@ -534,7 +532,7 @@ export default function EquipBomTab() {
                       pageSize={10}
                       isLoading={loading}
                     
-                    sqlQuery={`SELECT *\nFROM EQUIP_BOM\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+                    sqlQuery={`SELECT *\nFROM EQUIP_BOM_ITEMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
                   </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-text-muted">

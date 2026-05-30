@@ -56,11 +56,11 @@ export class PhysicalInvSession {
   @Column({ type: 'varchar2', name: 'WAREHOUSE_CODE', length: 50, nullable: true })
   warehouseCode: string | null;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
 
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
 
   @Column({ type: 'varchar2', name: 'STARTED_BY', length: 50, nullable: true })
   startedBy: string | null;
