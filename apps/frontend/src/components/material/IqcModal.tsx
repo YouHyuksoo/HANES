@@ -19,7 +19,8 @@ import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import api from "@/services/api";
 
 interface IqcInspectItem {
-  id: string;
+  itemCode: string;
+  seq: number;
   inspectItem: string;
   spec: string | null;
   lsl: number | null;
@@ -94,7 +95,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
         const items: IqcInspectItem[] = res.data?.data ?? [];
         setInspectItems(items);
         setMeasurements(items.map((item) => ({
-          itemId: item.id,
+          itemId: `${item.itemCode}::${item.seq}`,
           inspectItem: item.inspectItem,
           spec: item.spec || "",
           lsl: item.lsl,

@@ -26,7 +26,7 @@ interface PoLineReceiptModalProps {
 
 export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }: PoLineReceiptModalProps) {
   const { t } = useTranslation();
-  const { options: warehouses } = useWarehouseOptions();
+  const { options: warehouses } = useWarehouseOptions('RAW');
 
   const [receivedQty, setReceivedQty] = useState<number>(0);
   const [mfgPartnerCode, setMfgPartnerCode] = useState('');

@@ -50,14 +50,19 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       ),
       size: 40,
       meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          checked={inputs[row.original.matUid]?.selected || false}
-          onChange={(e) => onInputChange(row.original.matUid, 'selected', e.target.checked)}
-          className="w-4 h-4 rounded border-border"
-        />
-      ),
+      cell: ({ row }) => {
+        const blocked = !!row.original.receivingBlockedReason;
+        return (
+          <input
+            type="checkbox"
+            checked={!blocked && (inputs[row.original.matUid]?.selected || false)}
+            disabled={blocked}
+            title={row.original.receivingBlockedReason || undefined}
+            onChange={(e) => onInputChange(row.original.matUid, 'selected', e.target.checked)}
+            className="w-4 h-4 rounded border-border disabled:opacity-40 disabled:cursor-not-allowed"
+          />
+        );
+      },
     },
     { id: 'matUid', header: t('material.col.matUid'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.matUid },
     { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.poNo || '-' },
@@ -95,6 +100,28 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       cell: ({ row }) => (
         <span className="text-orange-600 font-medium">{row.original.remainingQty.toLocaleString()}</span>
       ),
+    },
+    {
+      id: 'certStatus',
+      header: '성적서',
+      size: 95,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => {
+        if (!row.original.certRequired) {
+          return <span className="text-xs text-text-muted">불필요</span>;
+        }
+        if (row.original.certUploaded) {
+          return <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700">첨부</span>;
+        }
+        return (
+          <span
+            className="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700"
+            title={row.original.receivingBlockedReason || undefined}
+          >
+            미첨부
+          </span>
+        );
+      },
     },
     {
       id: 'manufactureDate',

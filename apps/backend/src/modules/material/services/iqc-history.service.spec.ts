@@ -5,6 +5,7 @@ import { BadRequestException } from '@nestjs/common';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { IqcHistoryService } from './iqc-history.service';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -19,6 +20,7 @@ import { MockLoggerService } from '@test/mock-logger.service';
 describe('IqcHistoryService cancel policy', () => {
   let target: IqcHistoryService;
   let mockIqcLogRepo: DeepMocked<Repository<IqcLog>>;
+  let mockMatArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockMatReceivingRepo: DeepMocked<Repository<MatReceiving>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
@@ -33,6 +35,7 @@ describe('IqcHistoryService cancel policy', () => {
 
   beforeEach(async () => {
     mockIqcLogRepo = createMock<Repository<IqcLog>>();
+    mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockMatReceivingRepo = createMock<Repository<MatReceiving>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
@@ -57,6 +60,7 @@ describe('IqcHistoryService cancel policy', () => {
       providers: [
         IqcHistoryService,
         { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
+        { provide: getRepositoryToken(MatArrival), useValue: mockMatArrivalRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(MatReceiving), useValue: mockMatReceivingRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
@@ -198,6 +202,48 @@ describe('IqcHistoryService cancel policy', () => {
     });
   });
 
+  describe('createArrivalResult', () => {
+    it('입하단위 IQC 판정은 LOT과 입하 행 상태를 같은 결과로 갱신한다', async () => {
+      mockMatLotRepo.find.mockResolvedValue([
+        {
+          matUid: 'MAT-001',
+          arrivalNo: 'ARR-001',
+          itemCode: 'ITEM-001',
+          iqcStatus: 'PENDING',
+          company: 'HANES',
+          plant: 'P01',
+        } as MatLot,
+        {
+          matUid: 'MAT-002',
+          arrivalNo: 'ARR-001',
+          itemCode: 'ITEM-001',
+          iqcStatus: 'PENDING',
+          company: 'HANES',
+          plant: 'P01',
+        } as MatLot,
+      ]);
+      mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001' } as IqcLog);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+
+      const result = await target.createArrivalResult({
+        arrivalNo: 'ARR-001',
+        itemCode: 'ITEM-001',
+        result: 'PASS',
+      } as any, 'HANES', 'P01');
+
+      expect(mockMatLotRepo.update).toHaveBeenCalledWith(
+        { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' },
+        { iqcStatus: 'PASS' },
+      );
+      expect(mockMatArrivalRepo.update).toHaveBeenCalledWith(
+        { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' },
+        { iqcStatus: 'PASS' },
+      );
+      expect(result).toEqual(expect.objectContaining({ affectedSerials: 2 }));
+    });
+  });
+
   it('blocks cancel when receiving already exists', async () => {
     mockIqcLogRepo.findOne.mockResolvedValue({
       inspectDate: new Date('2026-04-08'),
@@ -289,6 +335,40 @@ describe('IqcHistoryService cancel policy', () => {
     expect(manager.update).toHaveBeenCalledWith(
       MatLot,
       { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      { iqcStatus: 'PENDING' },
+    );
+  });
+
+  it('입하단위 IQC 취소는 LOT과 입하 행 상태를 함께 PENDING으로 복원한다', async () => {
+    mockIqcLogRepo.findOne.mockResolvedValue({
+      inspectDate: new Date('2026-04-08'),
+      seq: 1,
+      arrivalNo: 'ARR-001',
+      matUid: null,
+      itemCode: 'ITEM-001',
+      result: 'PASS',
+      status: 'DONE',
+      company: 'HANES',
+      plant: 'P01',
+    } as any);
+    mockMatReceivingRepo.findOne.mockResolvedValue(null);
+
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    const result = await target.cancel('2026-04-08', 1, { reason: 'retest' } as any);
+
+    expect(result.status).toBe('CANCELED');
+    expect(manager.update).toHaveBeenCalledWith(
+      MatLot,
+      { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', company: 'HANES', plant: 'P01' },
+      { iqcStatus: 'PENDING' },
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      MatArrival,
+      { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', company: 'HANES', plant: 'P01' },
       { iqcStatus: 'PENDING' },
     );
   });

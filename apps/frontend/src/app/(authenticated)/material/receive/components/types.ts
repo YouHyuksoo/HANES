@@ -41,6 +41,9 @@ export interface ReceivableLot {
   part: PartInfo;
   arrivalWarehouse?: WarehouseInfo | null;
   arrivalWarehouseCode?: string | null;
+  certRequired?: boolean;
+  certUploaded?: boolean;
+  receivingBlockedReason?: string | null;
 }
 
 /** 입고 이력 레코드 */

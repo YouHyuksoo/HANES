@@ -73,15 +73,6 @@ export default function ReceivingPage() {
     setInputs((prev) => ({ ...prev, [matUid]: { ...prev[matUid], [field]: value } }));
   };
 
-  /** 전체 선택 */
-  const handleSelectAll = (checked: boolean) => {
-    setInputs((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((k) => { next[k] = { ...next[k], selected: checked }; });
-      return next;
-    });
-  };
-
   /** 검색 필터링 */
   const filtered = searchText
     ? receivable.filter((lot) => {
@@ -94,8 +85,24 @@ export default function ReceivingPage() {
       })
     : receivable;
 
-  const allSelected = filtered.length > 0 && filtered.every((lot) => inputs[lot.matUid]?.selected);
-  const selectedItems = Object.values(inputs).filter((inp) => inp.selected && inp.qty > 0);
+  /** 전체 선택 */
+  const handleSelectAll = (checked: boolean) => {
+    const selectableMatUids = new Set(
+      filtered.filter((lot) => !lot.receivingBlockedReason).map((lot) => lot.matUid),
+    );
+    setInputs((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((k) => {
+        next[k] = { ...next[k], selected: selectableMatUids.has(k) ? checked : false };
+      });
+      return next;
+    });
+  };
+
+  const blockedMatUids = new Set(receivable.filter((lot) => lot.receivingBlockedReason).map((lot) => lot.matUid));
+  const selectableFiltered = filtered.filter((lot) => !lot.receivingBlockedReason);
+  const allSelected = selectableFiltered.length > 0 && selectableFiltered.every((lot) => inputs[lot.matUid]?.selected);
+  const selectedItems = Object.values(inputs).filter((inp) => inp.selected && inp.qty > 0 && !blockedMatUids.has(inp.matUid));
 
   /** 일괄 입고 등록 */
   const handleBulkReceive = async () => {

@@ -878,6 +878,53 @@ describe('ArrivalService', () => {
     });
   });
 
+  describe('receivePoLine', () => {
+    it('불량/폐기 창고로 PO 라인 입하를 등록하지 않는다', async () => {
+      const manager = {
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce({
+            poNo: 'PO-001',
+            lineNo: 1,
+            revNo: 1,
+            seq: 1,
+            itemCode: 'ITEM-001',
+            orderQty: 10,
+            receivedQty: 0,
+          } as PurchaseOrderItem)
+          .mockResolvedValueOnce({
+            poNo: 'PO-001',
+            partnerId: 'V001',
+            partnerName: 'Vendor',
+          } as PurchaseOrder)
+          .mockResolvedValueOnce({
+            partnerCode: 'M001',
+            partnerType: 'MFG',
+          } as PartnerMaster)
+          .mockResolvedValueOnce({
+            warehouseCode: 'DEFECT',
+            warehouseType: 'DEFECT',
+          } as Warehouse),
+        save: jest.fn(),
+      };
+      (mockQueryRunner as any).manager = manager;
+
+      await expect(
+        target.receivePoLine({
+          poNo: 'PO-001',
+          lineNo: 1,
+          revNo: 1,
+          receivedQty: 1,
+          mfgPartnerCode: 'M001',
+          receivedDate: '2026-05-30',
+          warehouseCode: 'DEFECT',
+        } as any, { username: 'tester', company: 'C1', plant: 'P1' }),
+      ).rejects.toThrow('원자재 창고만 선택');
+
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+  });
+
   // ─── findByBarcode ───
   describe('findByBarcode', () => {
     it('바코드로 입하 정보를 찾는다 (arrivalNo 매치)', async () => {

@@ -14,6 +14,7 @@ import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
+import { IqcLog } from '../../../entities/iqc-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -31,6 +32,7 @@ describe('ReceivingService', () => {
   let mockPurchaseOrderItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockLabelPrintLogRepo: DeepMocked<Repository<LabelPrintLog>>;
+  let mockIqcLogRepo: DeepMocked<Repository<IqcLog>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
@@ -48,6 +50,7 @@ describe('ReceivingService', () => {
     mockPurchaseOrderItemRepo = createMock<Repository<PurchaseOrderItem>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
     mockLabelPrintLogRepo = createMock<Repository<LabelPrintLog>>();
+    mockIqcLogRepo = createMock<Repository<IqcLog>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
@@ -70,6 +73,7 @@ describe('ReceivingService', () => {
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPurchaseOrderItemRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(LabelPrintLog), useValue: mockLabelPrintLogRepo },
+        { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },
@@ -305,6 +309,7 @@ describe('ReceivingService', () => {
       andWhere: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
     } as any);
+    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'N' } as PartMaster);
     mockNumbering.nextInTx
       .mockResolvedValueOnce('RCV-001')
       .mockResolvedValueOnce('TX-001');
@@ -331,6 +336,101 @@ describe('ReceivingService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ receiveNo: 'RCV-001' }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', transType: 'RECEIVE' }));
+    expect(manager.findOne).toHaveBeenCalledWith(MatStock, {
+      where: { warehouseCode: 'ARR-WH', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'CO', plant: 'P01' },
+    });
+  });
+
+  it('createBulkReceive는 IQC 대상품의 PASS 성적서가 없으면 입고를 차단한다', async () => {
+    mockMatLotRepo.findOne.mockResolvedValue({
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      initQty: 10,
+      iqcStatus: 'PASS',
+      arrivalNo: 'ARR-001',
+      arrivalSeq: 1,
+      company: 'CO',
+      plant: 'P01',
+    } as MatLot);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
+    } as any);
+    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'Y' } as PartMaster);
+    mockIqcLogRepo.findOne.mockResolvedValue({
+      arrivalNo: 'ARR-001',
+      itemCode: 'ITEM-001',
+      result: 'PASS',
+      status: 'DONE',
+      certFilePath: null,
+      company: 'CO',
+      plant: 'P01',
+    } as IqcLog);
+
+    await expect(target.createBulkReceive({
+      workerId: 'user',
+      items: [{ matUid: 'MAT-001', qty: 5, warehouseId: 'MAIN-WH' }],
+    } as any, 'CO', 'P01')).rejects.toThrow('검사성적서');
+
+    expect(mockTx.run).not.toHaveBeenCalled();
+  });
+
+  it('createBulkReceive는 IQC 대상품의 PASS 성적서가 있으면 입고를 허용한다', async () => {
+    const lot = {
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      initQty: 10,
+      iqcStatus: 'PASS',
+      arrivalNo: 'ARR-001',
+      arrivalSeq: 1,
+      company: 'CO',
+      plant: 'P01',
+    } as MatLot;
+    mockMatLotRepo.findOne.mockResolvedValue(lot);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
+    } as any);
+    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'Y' } as PartMaster);
+    mockIqcLogRepo.findOne.mockResolvedValue({
+      arrivalNo: 'ARR-001',
+      itemCode: 'ITEM-001',
+      result: 'PASS',
+      status: 'DONE',
+      certFilePath: 'uploads/iqc-certs/test.pdf',
+      company: 'CO',
+      plant: 'P01',
+    } as IqcLog);
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('RCV-001')
+      .mockResolvedValueOnce('TX-001');
+
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce(lot)
+        .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.createBulkReceive({
+      workerId: 'user',
+      items: [{ matUid: 'MAT-001', qty: 5, warehouseId: 'MAIN-WH' }],
+    } as any, 'CO', 'P01');
+
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(manager.findOne).toHaveBeenCalledWith(MatStock, {
+      where: { warehouseCode: 'ARR-WH', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'CO', plant: 'P01' },
+    });
   });
 
   it('createBulkReceive는 요청 테넌트와 LOT 테넌트가 다르면 차단한다', async () => {
@@ -413,11 +513,15 @@ describe('ReceivingService', () => {
     expect(mockPurchaseOrderItemRepo.findOne).toHaveBeenCalledWith({
       where: { poNo: 'PO-001', itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
     });
-    expect(mockPartMasterRepo.findOne).toHaveBeenNthCalledWith(1, {
+    expect(stockTxQb.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('plant_cd = :plant'),
+      { poNo: 'PO-001', company: 'CO', plant: 'P01' },
+    );
+    expect(mockPartMasterRepo.findOne).toHaveBeenNthCalledWith(2, {
       where: { itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
       select: ['itemCode', 'toleranceRate'],
     });
-    expect(mockPartMasterRepo.findOne).toHaveBeenNthCalledWith(2, {
+    expect(mockPartMasterRepo.findOne).toHaveBeenNthCalledWith(3, {
       where: { itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
     });
     expect(manager.update).toHaveBeenCalledWith(

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like, In, DataSource, IsNull, QueryRunner } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -18,6 +19,8 @@ export class IqcHistoryService {
   constructor(
     @InjectRepository(IqcLog)
     private readonly iqcLogRepository: Repository<IqcLog>,
+    @InjectRepository(MatArrival)
+    private readonly matArrivalRepository: Repository<MatArrival>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatReceiving)
@@ -306,6 +309,15 @@ export class IqcHistoryService {
       },
       { iqcStatus: dto.result },
     );
+    await this.matArrivalRepository.update(
+      {
+        arrivalNo: dto.arrivalNo,
+        itemCode: dto.itemCode,
+        iqcStatus: 'PENDING',
+        ...this.tenantWhere(tenantCompany, tenantPlant),
+      },
+      { iqcStatus: dto.result },
+    );
 
     // 2) 검사 이력 1건 생성 (matUid=null → 입하단위 검사 표식)
     const log = this.iqcLogRepository.create({
@@ -573,6 +585,16 @@ export class IqcHistoryService {
         // 입하단위 검사 → 해당 입하건 전체 시리얼을 일괄 PENDING 복원
         await queryRunner.manager.update(
           MatLot,
+          {
+            arrivalNo: log.arrivalNo,
+            itemCode: log.itemCode,
+            iqcStatus: log.result,
+            ...this.tenantWhere(log.company, log.plant),
+          },
+          { iqcStatus: 'PENDING' },
+        );
+        await queryRunner.manager.update(
+          MatArrival,
           {
             arrivalNo: log.arrivalNo,
             itemCode: log.itemCode,

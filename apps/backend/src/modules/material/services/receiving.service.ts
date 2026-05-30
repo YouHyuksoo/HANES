@@ -21,6 +21,7 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { IqcLog } from '../../../entities/iqc-log.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -53,6 +54,8 @@ export class ReceivingService {
     private readonly warehouseRepository: Repository<Warehouse>,
     @InjectRepository(LabelPrintLog)
     private readonly labelPrintLogRepository: Repository<LabelPrintLog>,
+    @InjectRepository(IqcLog)
+    private readonly iqcLogRepository: Repository<IqcLog>,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
@@ -77,6 +80,42 @@ export class ReceivingService {
     }
     if (plant && row.plant !== plant) {
       throw new BadRequestException(`${context} 사업장 정보가 일치하지 않습니다. request=${plant}, row=${row.plant ?? 'NULL'}`);
+    }
+  }
+
+  private async assertIqcCertificatePolicy(lot: MatLot): Promise<void> {
+    const tenantWhere = this.tenantWhere(lot.company, lot.plant);
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: lot.itemCode, ...tenantWhere },
+      select: ['itemCode', 'iqcYn'],
+    });
+    if (part?.iqcYn !== 'Y') {
+      return;
+    }
+
+    const iqcLog = await this.iqcLogRepository.findOne({
+      where: lot.arrivalNo
+        ? {
+            arrivalNo: lot.arrivalNo,
+            itemCode: lot.itemCode,
+            result: 'PASS',
+            status: 'DONE',
+            ...tenantWhere,
+          }
+        : {
+            matUid: lot.matUid,
+            itemCode: lot.itemCode,
+            result: 'PASS',
+            status: 'DONE',
+            ...tenantWhere,
+          },
+      order: { inspectDate: 'DESC' },
+    });
+
+    if (!iqcLog?.certFilePath) {
+      throw new BadRequestException(
+        `검사대상품은 검사성적서 업로드 후 입고할 수 있습니다. LOT: ${lot.matUid}`,
+      );
     }
   }
 
@@ -165,6 +204,26 @@ export class ReceivingService {
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
+    const arrivalNos = [...new Set(validLots.map((lot) => lot.arrivalNo).filter(Boolean))] as string[];
+    const passedIqcLogs = arrivalNos.length > 0 && itemCodes.length > 0
+      ? await this.iqcLogRepository.find({
+          where: {
+            arrivalNo: In(arrivalNos),
+            itemCode: In(itemCodes),
+            result: 'PASS',
+            status: 'DONE',
+            ...this.tenantWhere(company, plant),
+          },
+          order: { inspectDate: 'DESC' },
+        })
+      : [];
+    const iqcLogByArrivalItem = new Map<string, IqcLog>();
+    for (const log of passedIqcLogs) {
+      if (!log.arrivalNo || !log.itemCode) continue;
+      const key = `${log.arrivalNo}::${log.itemCode}`;
+      if (!iqcLogByArrivalItem.has(key)) iqcLogByArrivalItem.set(key, log);
+    }
+
     // 라벨 발행 여부 확인 (LABEL_PRINT_LOGS에서 성공 이력 조회)
     const printLogs = await this.labelPrintLogRepository
       .createQueryBuilder('log')
@@ -194,6 +253,11 @@ export class ReceivingService {
           : null;
         const arrivalWarehouse = arrivalWhCode ? warehouseMap.get(arrivalWhCode) : null;
         const part = partMap.get(lot.itemCode);
+        const certRequired = part?.iqcYn === 'Y';
+        const iqcLog = lot.arrivalNo
+          ? iqcLogByArrivalItem.get(`${lot.arrivalNo}::${lot.itemCode}`)
+          : null;
+        const certUploaded = !certRequired || !!iqcLog?.certFilePath;
 
         return {
           ...lot,
@@ -205,6 +269,9 @@ export class ReceivingService {
           arrivalWarehouseCode: arrivalWarehouse?.warehouseCode || defaultWarehouse?.warehouseCode,
           arrivalWarehouseName: arrivalWarehouse?.warehouseName || defaultWarehouse?.warehouseName,
           labelPrinted: printedLotNos.has(lot.matUid),
+          certRequired,
+          certUploaded,
+          receivingBlockedReason: certRequired && !certUploaded ? '검사성적서 미첨부' : null,
         };
       })
       .filter((lot) => lot.remainingQty > 0);
@@ -250,7 +317,7 @@ export class ReceivingService {
           SELECT mat_uid FROM mat_lots
           WHERE po_no = :poNo
           ${lot.company ? 'AND company = :company' : ''}
-          ${lot.plant ? 'AND plant = :plant' : ''}
+          ${lot.plant ? 'AND plant_cd = :plant' : ''}
         )`,
         { poNo: lot.poNo, company: lot.company, plant: lot.plant }
       )
@@ -289,6 +356,7 @@ export class ReceivingService {
       if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${item.matUid}`);
       this.assertSameTenant('입고 대상 LOT', lot, company, plant);
       if (lot.iqcStatus !== 'PASS') throw new BadRequestException(`IQC 합격되지 않은 LOT입니다: ${lot.matUid}`);
+      await this.assertIqcCertificatePolicy(lot);
 
       // 기입고수량 확인
       const receivedAgg = await this.stockTransactionRepository
@@ -410,10 +478,10 @@ export class ReceivingService {
 
         const savedTx = await queryRunner.manager.save(stockTx);
 
-        // 3. 입하 창고의 bulk(*) 재고 차감 → LOT(matUid) 재고로 전환
-        //    입하 시 matUid='*'로 적재했으므로 '*' 기준으로 차감해야 함
+        // 3. 입하 창고의 LOT(matUid) 재고 차감
+        //    IQC005 입하는 시리얼 채번과 동시에 matUid 단위 재고를 생성한다.
         if (arrivalWarehouseCode) {
-          await this.upsertStock(queryRunner.manager, arrivalWarehouseCode, lot.itemCode, null, -item.qty, lot.company, lot.plant);
+          await this.upsertStock(queryRunner.manager, arrivalWarehouseCode, lot.itemCode, item.matUid, -item.qty, lot.company, lot.plant);
         }
 
         // 4. 입고 창고에 LOT 단위(matUid) 재고 증가

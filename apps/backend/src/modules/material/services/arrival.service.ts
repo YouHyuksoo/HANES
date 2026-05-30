@@ -1103,6 +1103,22 @@ export class ArrivalService {
         );
       }
 
+      const warehouse = await qr.manager.findOne(Warehouse, {
+        where: {
+          warehouseCode: dto.warehouseCode,
+          ...(user?.company ? { company: user.company } : {}),
+          ...(user?.plant ? { plant: user.plant } : {}),
+        },
+      });
+      if (!warehouse) {
+        throw new NotFoundException(`입하 창고 없음: ${dto.warehouseCode}`);
+      }
+      if (!['RAW', 'RM'].includes(warehouse.warehouseType)) {
+        throw new BadRequestException(
+          `자재 입하는 원자재 창고만 선택할 수 있습니다: ${dto.warehouseCode} (${warehouse.warehouseType})`,
+        );
+      }
+
       // 4. 시리얼 단위 (LOT_UNIT_QTY) — 품목 마스터 미등록(ERP 인터페이스 전)이면 단일 LOT으로 처리
       const item = await qr.manager.findOne(PartMaster, {
         where: { itemCode: poItem.itemCode },
