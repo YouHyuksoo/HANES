@@ -1,6 +1,6 @@
 ﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, In, FindOptionsWhere } from 'typeorm';
+import { Repository, Between, Like, In, FindOptionsWhere, IsNull } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -188,7 +188,7 @@ export class MiscReceiptService {
         where: {
           warehouseCode: warehouse.warehouseCode,
           itemCode,
-          ...(matUid && { matUid }),
+          matUid: matUid ?? IsNull(),
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },

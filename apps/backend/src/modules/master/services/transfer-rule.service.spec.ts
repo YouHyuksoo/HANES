@@ -52,16 +52,16 @@ describe('TransferRuleService', () => {
 
       await target.findAll({ page: 1, limit: 10 }, 'TESTV', 'WAREHOUSES');
 
-      expect(qb.leftJoin).toHaveBeenCalledWith(
-        'WAREHOUSES',
-        'fw',
-        'fw.WAREHOUSE_CODE = rule.fromWarehouseId AND fw.COMPANY = rule.company AND fw.PLANT_CD = rule.plant',
-      );
-      expect(qb.leftJoin).toHaveBeenCalledWith(
-        'WAREHOUSES',
-        'tw',
-        'tw.WAREHOUSE_CODE = rule.toWarehouseId AND tw.COMPANY = rule.company AND tw.PLANT_CD = rule.plant',
-      );
+    expect(qb.leftJoin).toHaveBeenCalledWith(
+      'WAREHOUSES',
+      'fw',
+      'fw.WAREHOUSE_CODE = rule.FROM_WAREHOUSE_ID AND fw.COMPANY = rule.COMPANY AND fw.PLANT_CD = rule.PLANT_CD',
+    );
+    expect(qb.leftJoin).toHaveBeenCalledWith(
+      'WAREHOUSES',
+      'tw',
+      'tw.WAREHOUSE_CODE = rule.TO_WAREHOUSE_ID AND tw.COMPANY = rule.COMPANY AND tw.PLANT_CD = rule.PLANT_CD',
+    );
     });
   });
 

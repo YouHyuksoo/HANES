@@ -109,7 +109,7 @@ describe('RoutingGroupService', () => {
       expect(qb.leftJoin).toHaveBeenCalledWith(
         'ITEM_MASTERS',
         'p',
-        'g.itemCode = p.ITEM_CODE AND g.company = p.COMPANY AND g.plant = p.PLANT_CD',
+        'g.ITEM_CODE = p.ITEM_CODE AND g.COMPANY = p.COMPANY AND g.PLANT_CD = p.PLANT_CD',
       );
     });
   });

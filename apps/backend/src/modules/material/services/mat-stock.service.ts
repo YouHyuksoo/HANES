@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In, FindOptionsWhere } from 'typeorm';
+import { Repository, DataSource, In, FindOptionsWhere, IsNull } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -204,7 +204,7 @@ export class MatStockService {
       ...(plant ? { plant } : {}),
     };
     const stock = await this.matStockRepository.findOne({
-      where: { itemCode, warehouseCode, ...(matUid && { matUid }), ...tenantWhere },
+      where: { itemCode, warehouseCode, matUid: matUid ?? IsNull(), ...tenantWhere },
     });
 
     if (!stock) return null;
@@ -261,7 +261,7 @@ export class MatStockService {
         where: {
           itemCode,
           warehouseCode,
-          ...(matUid && { matUid }),
+          matUid: matUid ?? IsNull(),
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
@@ -346,7 +346,7 @@ export class MatStockService {
     return this.tx.run(async (queryRunner) => {
       // 출고 창고 재고 확인
       const fromStock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode, warehouseCode: fromWarehouseCode, ...(matUid && { matUid }), ...tenantWhere },
+        where: { itemCode, warehouseCode: fromWarehouseCode, matUid: matUid ?? IsNull(), ...tenantWhere },
       });
 
       if (!fromStock || fromStock.qty < qty) {
@@ -366,7 +366,7 @@ export class MatStockService {
 
       // 입고 창고 재고 확인 또는 생성
       let toStock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode, warehouseCode: toWarehouseCode, ...(matUid && { matUid }), ...tenantWhere },
+        where: { itemCode, warehouseCode: toWarehouseCode, matUid: matUid ?? IsNull(), ...tenantWhere },
       });
       if (toStock) {
         this.assertSameTenant('입고 재고', { company, plant }, toStock);

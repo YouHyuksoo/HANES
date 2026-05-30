@@ -54,7 +54,7 @@ export class RoutingGroupService {
     const { page = 1, limit = 50, search, useYn } = query;
     const skip = (page - 1) * limit;
     const qb = this.groupRepo.createQueryBuilder('g')
-      .leftJoin('ITEM_MASTERS', 'p', 'g.itemCode = p.ITEM_CODE AND g.company = p.COMPANY AND g.plant = p.PLANT_CD')
+      .leftJoin('ITEM_MASTERS', 'p', 'g.ITEM_CODE = p.ITEM_CODE AND g.COMPANY = p.COMPANY AND g.PLANT_CD = p.PLANT_CD')
       .addSelect('p.ITEM_NAME', 'itemName')
       .addSelect('p.ITEM_TYPE', 'itemType');
 

@@ -115,7 +115,7 @@ export class ReceiptCancelService {
 
       // 재고 확인 및 차감
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode, warehouseCode: toWarehouseId, ...(matUid && { matUid }), ...txTenantWhere },
+        where: { itemCode, warehouseCode: toWarehouseId, matUid: matUid ?? IsNull(), ...txTenantWhere },
       });
 
       if (!stock || stock.qty < qty) {

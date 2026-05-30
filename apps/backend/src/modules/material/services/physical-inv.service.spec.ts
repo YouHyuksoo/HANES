@@ -407,13 +407,15 @@ describe('PhysicalInvService', () => {
       expect(stockQb.innerJoin).toHaveBeenCalledWith(
         'MAT_LOTS',
         'l',
-        's.itemCode = l.ITEM_CODE AND s.matUid = l.MAT_UID AND s.company = l.COMPANY AND s.plant = l.PLANT_CD',
+        's.ITEM_CODE = l.ITEM_CODE AND s.MAT_UID = l.MAT_UID AND s.COMPANY = l.COMPANY AND s.PLANT_CD = l.PLANT_CD',
       );
       expect(stockQb.leftJoin).toHaveBeenCalledWith(
         'ITEM_MASTERS',
         'p',
-        's.itemCode = p.ITEM_CODE AND s.company = p.COMPANY AND s.plant = p.PLANT_CD',
+        's.ITEM_CODE = p.ITEM_CODE AND s.COMPANY = p.COMPANY AND s.PLANT_CD = p.PLANT_CD',
       );
+      expect(stockQb.andWhere).toHaveBeenCalledWith('s.COMPANY = :company', { company: 'C1' });
+      expect(stockQb.andWhere).toHaveBeenCalledWith('s.PLANT_CD = :plant', { plant: 'P1' });
     });
   });
 

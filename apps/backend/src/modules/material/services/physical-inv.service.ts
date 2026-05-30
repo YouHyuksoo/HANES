@@ -431,19 +431,19 @@ export class PhysicalInvService {
     // lot + stock + part瑜?JOIN 1?뚮줈 議고쉶 (湲곗〈 4????1??
     const qb = this.matStockRepository
       .createQueryBuilder('s')
-      .innerJoin('MAT_LOTS', 'l', 's.itemCode = l.ITEM_CODE AND s.matUid = l.MAT_UID AND s.company = l.COMPANY AND s.plant = l.PLANT_CD')
-      .leftJoin('ITEM_MASTERS', 'p', 's.itemCode = p.ITEM_CODE AND s.company = p.COMPANY AND s.plant = p.PLANT_CD')
+      .innerJoin('MAT_LOTS', 'l', 's.ITEM_CODE = l.ITEM_CODE AND s.MAT_UID = l.MAT_UID AND s.COMPANY = l.COMPANY AND s.PLANT_CD = l.PLANT_CD')
+      .leftJoin('ITEM_MASTERS', 'p', 's.ITEM_CODE = p.ITEM_CODE AND s.COMPANY = p.COMPANY AND s.PLANT_CD = p.PLANT_CD')
       .select([
-        's.warehouseCode AS "warehouseCode"',
-        's.itemCode AS "itemCode"',
-        's.locationCode AS "locationCode"',
-        's.matUid AS "matUid"',
-        's.qty AS "qty"',
+        's.WAREHOUSE_CODE AS "warehouseCode"',
+        's.ITEM_CODE AS "itemCode"',
+        's.LOCATION_CODE AS "locationCode"',
+        's.MAT_UID AS "matUid"',
+        's.QTY AS "qty"',
         'p.ITEM_NAME AS "itemName"',
       ])
       .where('l.MAT_UID = :barcode', { barcode });
-    if (company) qb.andWhere('s.company = :company', { company });
-    if (plant) qb.andWhere('s.plant = :plant', { plant });
+    if (company) qb.andWhere('s.COMPANY = :company', { company });
+    if (plant) qb.andWhere('s.PLANT_CD = :plant', { plant });
 
     const row = await qb.getRawOne();
     if (!row) {

@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like, Between, In, FindOptionsWhere } from 'typeorm';
+import { Repository, DataSource, Like, Between, In, FindOptionsWhere, IsNull } from 'typeorm';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -140,7 +140,7 @@ export class AdjustmentService {
         where: {
           warehouseCode,
           itemCode,
-          ...(matUid && { matUid }),
+          matUid: matUid ?? IsNull(),
           ...tenantWhere,
         },
       });
@@ -210,7 +210,7 @@ export class AdjustmentService {
     return this.tx.run(async (queryRunner) => {
       // ?ш퀬 ?낅뜲?댄듃
       let stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode, itemCode, ...(matUid && { matUid }), ...adjTenantWhere },
+        where: { warehouseCode, itemCode, matUid: matUid ?? IsNull(), ...adjTenantWhere },
       });
 
       if (stock) {
@@ -342,7 +342,7 @@ export class AdjustmentService {
         where: {
           warehouseCode,
           itemCode,
-          ...(matUid && { matUid }),
+          matUid: matUid ?? IsNull(),
           ...tenantWhere,
         },
       });
