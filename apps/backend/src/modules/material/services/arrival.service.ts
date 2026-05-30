@@ -433,7 +433,7 @@ export class ArrivalService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(tx.transNo LIKE :search OR tx.itemCode IN (SELECT item_code FROM item_masters WHERE item_code LIKE :search OR part_name LIKE :search))',
+        '(tx.transNo LIKE :search OR tx.itemCode IN (SELECT item_code FROM item_masters WHERE item_code LIKE :search OR item_name LIKE :search))',
         { search: `%${search}%` },
       );
     }
@@ -466,18 +466,45 @@ export class ArrivalService {
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
-    // MatArrival 정보 조회 (인보이스번호, 거래처 등) — arrivalNo 기준으로 조회
-    // NOTE: MatArrival에는 matUid 필드가 없음. itemCode 기준으로 매칭
-    const arrivalRecords = itemCodes.length > 0
-      ? await this.matArrivalRepository.find({ where: { itemCode: In(itemCodes), status: 'DONE', ...tenantWhere } })
-      : [];
+    // MatArrival 정보 조회 (인보이스번호, 거래처 등)
+    // refId(ARRIVAL) 또는 LOT FK 기준으로 먼저 매칭하고, 레거시 데이터만 itemCode fallback을 사용한다.
+    const arrivalWhere = data
+      .map((tx) => {
+        const lot = tx.matUid ? lotMap.get(tx.matUid) : null;
+        const arrivalNo = tx.refType === 'ARRIVAL' && tx.refId ? tx.refId : lot?.arrivalNo;
+        if (!arrivalNo) return null;
+        return {
+          arrivalNo,
+          ...(lot?.arrivalSeq != null ? { seq: lot.arrivalSeq } : {}),
+          ...(tx.itemCode ? { itemCode: tx.itemCode } : {}),
+          ...tenantWhere,
+        };
+      })
+      .filter(Boolean) as Array<Partial<MatArrival>>;
+
+    const arrivalRecords = arrivalWhere.length > 0
+      ? await this.matArrivalRepository.find({ where: arrivalWhere })
+      : itemCodes.length > 0
+        ? await this.matArrivalRepository.find({ where: { itemCode: In(itemCodes), status: 'DONE', ...tenantWhere } })
+        : [];
+    const arrivalByExactKey = new Map<string, MatArrival>();
+    for (const arrival of arrivalRecords) {
+      arrivalByExactKey.set(`${arrival.arrivalNo}::${arrival.seq}::${arrival.itemCode}`, arrival);
+      arrivalByExactKey.set(`${arrival.arrivalNo}::${arrival.itemCode}`, arrival);
+      arrivalByExactKey.set(arrival.arrivalNo, arrival);
+    }
     const arrivalByItemCode = new Map(arrivalRecords.map((a) => [a.itemCode, a]));
 
     const flattenedData = data.map((item) => {
       const part = partMap.get(item.itemCode);
       const lot = item.matUid ? lotMap.get(item.matUid) : null;
       const warehouse = item.toWarehouseId ? warehouseMap.get(item.toWarehouseId) : null;
-      const arrival = item.itemCode ? arrivalByItemCode.get(item.itemCode) : null;
+      const arrivalNo = item.refType === 'ARRIVAL' && item.refId ? item.refId : lot?.arrivalNo;
+      const arrival = arrivalNo && item.itemCode
+        ? arrivalByExactKey.get(`${arrivalNo}::${lot?.arrivalSeq ?? ''}::${item.itemCode}`)
+          ?? arrivalByExactKey.get(`${arrivalNo}::${item.itemCode}`)
+          ?? arrivalByExactKey.get(arrivalNo)
+        : item.itemCode ? arrivalByItemCode.get(item.itemCode) : null;
 
       return {
         ...item,

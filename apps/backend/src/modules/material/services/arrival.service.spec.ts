@@ -555,6 +555,77 @@ describe('ArrivalService', () => {
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
+
+    it('입하 이력 검색은 실제 ITEM_MASTERS.ITEM_NAME 컬럼을 사용한다', async () => {
+      const queryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      mockStockTxRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+      mockMatArrivalRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10, search: 'LEAD' });
+
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('item_name LIKE :search'),
+        { search: '%LEAD%' },
+      );
+      expect(queryBuilder.andWhere).not.toHaveBeenCalledWith(
+        expect.stringContaining('part_name'),
+        expect.anything(),
+      );
+    });
+
+    it('입하 이력 보강은 품목만이 아니라 거래 refId의 arrivalNo로 매칭한다', async () => {
+      const queryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          {
+            transNo: 'TX-002',
+            transType: 'MAT_IN',
+            itemCode: 'ITEM-001',
+            matUid: 'MAT-002',
+            toWarehouseId: 'WH-001',
+            refType: 'ARRIVAL',
+            refId: 'ARR-002',
+            qty: 1,
+            company: 'C1',
+            plant: 'P1',
+          } as StockTransaction,
+        ]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockStockTxRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-002', itemCode: 'ITEM-001', arrivalNo: 'ARR-002', arrivalSeq: 1, company: 'C1', plant: 'P1' } as MatLot,
+      ]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+      mockMatArrivalRepo.find.mockResolvedValue([
+        { arrivalNo: 'ARR-002', seq: 1, itemCode: 'ITEM-001', vendorId: 'V-002', company: 'C1', plant: 'P1' } as MatArrival,
+      ]);
+
+      const result = await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockMatArrivalRepo.find).toHaveBeenCalledWith({
+        where: expect.arrayContaining([
+          expect.objectContaining({ arrivalNo: 'ARR-002', seq: 1, itemCode: 'ITEM-001', company: 'C1', plant: 'P1' }),
+        ]),
+      });
+      expect(result.data[0]).toEqual(expect.objectContaining({ arrivalNo: 'ARR-002', vendorId: 'V-002' }));
+    });
   });
 
   // ─── cancel ───
