@@ -27,6 +27,7 @@ interface PoStatusItemRaw {
   itemName: string;
   spec: string | null;
   unit: string | null;
+  relNo: number | null;
   orderQty: number;
   receivedQty: number;
   receiveRate: number;
@@ -148,6 +149,14 @@ export default function PoStatusPage() {
       accessorKey: "unit", header: t("material.poStatus.unit"), size: 60,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span>{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "relNo", header: t("material.poStatus.relNo"), size: 90,
+      meta: { filterType: "number" as const, align: "right" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        return <span className="font-mono text-sm">{v ?? "-"}</span>;
+      },
     },
     {
       accessorKey: "orderQty", header: t("material.poStatus.orderQty"), size: 100,

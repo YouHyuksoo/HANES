@@ -1980,6 +1980,7 @@
       "itemName": "Tên mục",
       "spec": "Quy cách",
       "unit": "Đơn vị",
+      "relNo": "Số phát hành",
       "orderQty": "SL đặt hàng",
       "receivedQty": "SL đã nhận",
       "receiveRate": "Tỷ lệ nhận",

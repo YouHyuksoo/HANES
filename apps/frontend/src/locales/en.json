@@ -1994,6 +1994,7 @@
       "itemName": "Item Name",
       "spec": "Spec",
       "unit": "Unit",
+      "relNo": "Release No.",
       "orderQty": "Order Qty",
       "receivedQty": "Received Qty",
       "receiveRate": "Receive Rate",

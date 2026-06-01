@@ -1980,6 +1980,7 @@
       "itemName": "品目名称",
       "spec": "规格",
       "unit": "单位",
+      "relNo": "发布号",
       "orderQty": "订单数量",
       "receivedQty": "入库数量",
       "receiveRate": "入库率",

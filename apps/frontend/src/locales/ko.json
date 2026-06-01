@@ -2311,6 +2311,7 @@
       "itemName": "품목명",
       "spec": "규격",
       "unit": "단위",
+      "relNo": "릴리즈번호",
       "orderQty": "발주수량",
       "receivedQty": "입고수량",
       "receiveRate": "입고율",
