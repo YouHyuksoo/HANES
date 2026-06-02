@@ -7,11 +7,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
-import { Calendar, GitBranch, Layers, RefreshCw, Search, X } from "lucide-react";
+import { Calendar, Download, FileSpreadsheet, GitBranch, Layers, RefreshCw, Search, X } from "lucide-react";
 import { Button, Card, CardContent, Input } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import BomTab from "./components/BomTab";
+import BomUploadModal from "./components/BomUploadModal";
 import QualityConditionEditor from "../routing/components/QualityConditionEditor";
 import RoutingMaterialEditor from "../routing/components/RoutingMaterialEditor";
 import type { BomRoutingInfo, BomRoutingProcess, ParentPart, RoutingTarget } from "./types";
@@ -22,7 +23,7 @@ const getToday = () => new Date().toISOString().split("T")[0];
 export default function BomPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const partTypeOptions = useComCodeOptions("PART_TYPE");
+  const itemTypeOptions = useComCodeOptions("ITEM_TYPE");
   const [parents, setParents] = useState<ParentPart[]>([]);
   const [selectedParent, setSelectedParent] = useState<ParentPart | null>(null);
   const [selectedBomItem, setSelectedBomItem] = useState<RoutingTarget | null>(null);
@@ -34,6 +35,7 @@ export default function BomPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [effectiveDate, setEffectiveDate] = useState(getToday());
   const [loadingParents, setLoadingParents] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [loadingRouting, setLoadingRouting] = useState(false);
 
   const filteredParents = useMemo(() => {
@@ -153,6 +155,23 @@ export default function BomPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              const a = document.createElement("a");
+              a.href = `${process.env.NEXT_PUBLIC_API_URL ?? ""}/master/boms/template`;
+              a.download = "BOM_template.xlsx";
+              a.click();
+            }}
+          >
+            <Download className="w-4 h-4 mr-1" />
+            {t("master.bom.downloadTemplate")}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setUploadOpen(true)}>
+            <FileSpreadsheet className="w-4 h-4 mr-1" />
+            {t("master.bom.excelUpload")}
+          </Button>
           <div className="flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-1.5">
             <Calendar className="w-4 h-4 text-primary" />
             <span className="text-sm text-text-muted whitespace-nowrap">{t("master.bom.effectiveDate")}:</span>
@@ -193,7 +212,7 @@ export default function BomPage() {
                 >
                   {t("common.all")}
                 </button>
-                {partTypeOptions.filter((option) => option.value !== "RAW_MATERIAL").map((option) => (
+                {itemTypeOptions.filter((option) => option.value !== "RAW_MATERIAL").map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -388,6 +407,11 @@ export default function BomPage() {
           </Card>
         </div>}
       </div>
+      <BomUploadModal
+        isOpen={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onComplete={() => { setUploadOpen(false); fetchParents(); }}
+      />
     </div>
   );
 }
