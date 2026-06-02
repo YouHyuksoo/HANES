@@ -158,11 +158,14 @@ export default function BomPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => {
+            onClick={async () => {
+              const res = await api.get("/master/boms/template", { responseType: "blob" });
+              const url = URL.createObjectURL(res.data);
               const a = document.createElement("a");
-              a.href = `${process.env.NEXT_PUBLIC_API_URL ?? ""}/master/boms/template`;
+              a.href = url;
               a.download = "BOM_template.xlsx";
               a.click();
+              URL.revokeObjectURL(url);
             }}
           >
             <Download className="w-4 h-4 mr-1" />
