@@ -899,7 +899,7 @@
       "description": "Manage Bill of Materials.",
       "childPartCode": "Child Part Code",
       "childPartName": "Child Part Name",
-      "type": "Type",
+      "type": "Item Type",
       "qtyPer": "Qty Per",
       "revision": "Revision",
       "use": "Use",
@@ -924,6 +924,9 @@
       "effectiveDate": "Effective Date",
       "validFrom": "Valid From",
       "validTo": "Valid To",
+      "oper": "Input Process",
+      "excelUpload": "Excel Upload",
+      "downloadTemplate": "Download Template",
       "childItem": "Material"
     },
     "gauge": {

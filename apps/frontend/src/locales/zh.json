@@ -899,7 +899,7 @@
       "description": "管理物料清单(BOM)。",
       "childPartCode": "子零件代码",
       "childPartName": "子零件名称",
-      "type": "类型",
+      "type": "品目类型",
       "qtyPer": "用量",
       "revision": "版本",
       "use": "使用",
@@ -921,6 +921,9 @@
       "effectiveDate": "基准日期",
       "validFrom": "生效日",
       "validTo": "失效日",
+      "oper": "投入工序",
+      "excelUpload": "Excel上传",
+      "downloadTemplate": "下载模板",
       "childItem": "??"
     },
     "gauge": {

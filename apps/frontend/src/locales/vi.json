@@ -899,7 +899,7 @@
       "description": "Quản lý danh sách vật tư (BOM).",
       "childPartCode": "Mã linh kiện con",
       "childPartName": "Tên linh kiện con",
-      "type": "Loại",
+      "type": "Loại mặt hàng",
       "qtyPer": "Định mức",
       "revision": "Phiên bản",
       "use": "Sử dụng",
@@ -921,6 +921,9 @@
       "effectiveDate": "Ngày cơ sở",
       "validFrom": "Ngày áp dụng",
       "validTo": "Ngày kết thúc",
+      "oper": "Công đoạn sử dụng",
+      "excelUpload": "Tải lên Excel",
+      "downloadTemplate": "Tải mẫu",
       "childItem": "V?t t?"
     },
     "gauge": {
