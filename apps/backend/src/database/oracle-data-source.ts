@@ -1,6 +1,6 @@
 /**
  * @file database/oracle-data-source.ts
- * @description Oracle Database DataSource for MYDBPDB
+ * @description Oracle Database DataSource for JSHANES
  * 
  * Oracle 단일 DB 설정
  */
@@ -11,7 +11,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
-// Oracle MYDBPDB DataSource
+// Oracle JSHANES DataSource
 export const OracleDataSource = new DataSource({
   type: 'oracle',
   host: process.env.ORACLE_HOST || 'localhost',
@@ -41,7 +41,7 @@ export const OracleDataSource = new DataSource({
 export async function testOracleConnection(): Promise<boolean> {
   try {
     await OracleDataSource.initialize();
-    console.log('✅ Oracle MYDBPDB connected successfully');
+    console.log('✅ Oracle JSHANES connected successfully');
     return true;
   } catch (error) {
     console.error('❌ Oracle connection failed:', error);

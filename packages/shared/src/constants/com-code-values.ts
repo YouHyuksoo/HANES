@@ -112,6 +112,27 @@ export type ProcessTypeValue = typeof PROCESS_TYPE_VALUES[number];
 export const ITEM_TYPE_VALUES = ['RAW_MATERIAL', 'SEMI_PRODUCT', 'FINISHED', 'CONSUMABLE'] as const;
 export type ItemTypeValue = typeof ITEM_TYPE_VALUES[number];
 
+// ===== 제품 유형 =====
+export const PRODUCT_TYPE_VALUES = [
+  'HARNESS',
+  'MODEL',
+  'SUB_ASSY',
+  'WIRE',
+  'TERMINAL',
+  'CONNECTOR',
+  'HOLDER',
+  'SEAL',
+  'SHIELD',
+  'TAPE',
+  'TUBE',
+  'HOUSING',
+  'LABEL',
+  'CLIP',
+  'ELECTRIC',
+  'GROMMET',
+] as const;
+export type ProductTypeValue = typeof PRODUCT_TYPE_VALUES[number];
+
 // ===== BOM 유형 =====
 export const BOM_TYPE_VALUES = ['PRODUCTION', 'STANDARD', 'ENGINEERING'] as const;
 export type BomTypeValue = typeof BOM_TYPE_VALUES[number];

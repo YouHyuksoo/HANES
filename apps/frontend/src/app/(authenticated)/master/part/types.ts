@@ -73,11 +73,22 @@ export const PART_TYPE_COLORS: Record<
 /** 제품유형 옵션 */
 export const PRODUCT_TYPE_OPTIONS = [
   { value: "", label: "전체" },
-  { value: "2011", label: "하네스" },
-  { value: "2012", label: "반제품" },
-  { value: "2013", label: "원자재" },
-  { value: "2014", label: "부자재" },
-  { value: "7011", label: "김산K" },
+  { value: "HARNESS", label: "하네스" },
+  { value: "MODEL", label: "모델/판매코드" },
+  { value: "SUB_ASSY", label: "서브조립" },
+  { value: "WIRE", label: "전선/케이블" },
+  { value: "TERMINAL", label: "터미널" },
+  { value: "CONNECTOR", label: "커넥터" },
+  { value: "HOLDER", label: "홀더" },
+  { value: "SEAL", label: "씰/고무" },
+  { value: "SHIELD", label: "쉴드/클램프" },
+  { value: "TAPE", label: "테이프" },
+  { value: "TUBE", label: "튜브" },
+  { value: "HOUSING", label: "하우징" },
+  { value: "LABEL", label: "라벨" },
+  { value: "CLIP", label: "클립" },
+  { value: "ELECTRIC", label: "전장부품" },
+  { value: "GROMMET", label: "그로멧" },
 ];
 
 /** IQC 연결 데이터 (추후 DB 연동 시 제거) */

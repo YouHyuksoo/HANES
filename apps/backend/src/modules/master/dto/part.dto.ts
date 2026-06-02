@@ -6,7 +6,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, IsNumber, Min, Max, MaxLength, IsIn, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ITEM_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { ITEM_TYPE_VALUES, PRODUCT_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreatePartDto {
@@ -37,9 +37,10 @@ export class CreatePartDto {
   @MaxLength(100)
   custPartNo?: string;
 
-  @ApiPropertyOptional({ description: '제품유형 코드', example: '2011' })
+  @ApiPropertyOptional({ description: '제품유형 코드', example: 'HARNESS', enum: PRODUCT_TYPE_VALUES })
   @IsOptional()
   @IsString()
+  @IsIn([...PRODUCT_TYPE_VALUES])
   @MaxLength(20)
   productType?: string;
 
