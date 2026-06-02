@@ -68,6 +68,18 @@ export class BomController {
     res.end(buffer);
   }
 
+  @Get('template')
+  @ApiOperation({ summary: 'Download blank BOM Excel template' })
+  async downloadTemplate(@Res() res: Response) {
+    const buffer = this.bomService.downloadTemplate();
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="BOM_template.xlsx"',
+      'Content-Length': buffer.length.toString(),
+    });
+    res.end(buffer);
+  }
+
   @Post('upload')
   @ApiOperation({ summary: 'Upload BOM from Excel' })
   @ApiConsumes('multipart/form-data')
