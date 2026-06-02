@@ -507,6 +507,16 @@ export class BomService {
     return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
   }
 
+  /** 업로드 양식용 빈 xlsx 템플릿 반환 (헤더 행만 포함) */
+  downloadTemplate(): Buffer {
+    const headers = ['상위품목코드', '하위품목코드', '소요량', '리비전', '순서', 'BOM그룹', '공정코드', '사이드', 'ECO번호', '유효시작일', '유효종료일', '비고'];
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    ws['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 14 }, { wch: 14 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'BOM');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  }
+
   /** Excel(xlsx)에서 BOM 일괄 등록 (신규만 INSERT, 기존 PK 스킵) */
   async uploadFromExcel(buffer: Buffer, company?: string, plant?: string, userId?: string): Promise<BomUploadResult> {
     const wb = XLSX.read(buffer, { type: 'buffer' });
