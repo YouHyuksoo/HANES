@@ -10,6 +10,87 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-02 12:52 codex
+
+### T-BOM-PRODUCT-TYPE-SEMANTIC-FIX 완료
+
+**원인:**
+- 직전 정정에서 `PRODUCT_TYPE`을 `2011=하네스`, `2012=반제품`, `2013=원자재`, `2014=부자재`로 바꿨으나, 이는 `ITEM_TYPE`의 `FINISHED/SEMI_PRODUCT/RAW_MATERIAL`와 의미가 겹쳤다.
+- 기존 HANES seed/IQC 로직은 `PRODUCT_TYPE`을 `HARNESS`, `SUB_ASSY`, `WIRE`, `TERMINAL`, `CONNECTOR`, `SEAL`, `TAPE`, `TUBE` 같은 품목군으로 사용하고 있었다.
+
+**정의:**
+- `ITEM_TYPE`: 재고/생산 흐름 분류. `FINISHED`, `SEMI_PRODUCT`, `RAW_MATERIAL`, `CONSUMABLE`.
+- `PRODUCT_TYPE`: 품목군/물성 분류. `HARNESS`, `MODEL`, `SUB_ASSY`, `WIRE`, `TERMINAL`, `CONNECTOR`, `HOLDER`, `SEAL`, `SHIELD`, `TAPE`, `TUBE`, `HOUSING`, `LABEL`, `CLIP`, `ELECTRIC`, `GROMMET`.
+
+**조치:**
+- JSHANES `40/1000` `ITEM_MASTERS.PRODUCT_TYPE` 18건을 품목군 코드로 정정했다.
+- `tools/generated/bom-from-production-sheet-seed.sql` 재실행 기준도 같은 값으로 수정했다.
+- `packages/shared/src/constants/com-code-values.ts`의 `PRODUCT_TYPE_VALUES`를 품목군 코드로 수정했다.
+- `apps/frontend/src/app/(authenticated)/master/part/types.ts`의 `PRODUCT_TYPE_OPTIONS`를 품목군 라벨로 수정했다.
+- `apps/backend/src/modules/master/dto/part.dto.ts`의 Swagger 예시를 `HARNESS`로 수정했다.
+
+**검증:**
+- JSHANES 분포: `FINISHED/HARNESS=1`, `FINISHED/MODEL=1`, `SEMI_PRODUCT/SUB_ASSY=2`, `RAW_MATERIAL`은 `WIRE/TERMINAL/CONNECTOR/HOLDER/SEAL/SHIELD/TAPE/TUBE/HOUSING`으로 분산.
+- invalid count query 결과: `0`.
+- `pnpm --filter @harness/shared build` 통과.
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과.
+- `git diff --check` 통과.
+
+## 2026-06-02 12:35 codex
+
+### T-BOM-PRODUCT-TYPE-CLEANUP 완료
+
+**확인 결과:**
+- `ITEM_TYPE`은 코드 상수 기준 `RAW_MATERIAL`, `SEMI_PRODUCT`, `FINISHED`, `CONSUMABLE`이며 수불/생산 흐름 분류로 쓰인다.
+- `PRODUCT_TYPE`은 품목 화면의 제품유형 코드이며 현재 옵션은 `2011=하네스`, `2012=반제품`, `2013=원자재`, `2014=부자재`, `7011=김산K`이다.
+- 최초 HTML 시드에서 `PRODUCT_TYPE`에 `RAW_MATERIAL`, `PURCHASED_PART`, `MODEL`, `CIRCUIT` 같은 설명성 값을 넣어 화면 코드 체계와 맞지 않았다.
+
+**조치:**
+- JSHANES `40/1000` `ITEM_MASTERS.PRODUCT_TYPE` 18건을 화면 코드 체계로 정정했다.
+  - `FINISHED` 품목 `HNS001`, `HNS01`: `2011`
+  - `SEMI_PRODUCT` 품목 `HNS01-C1`, `HNS01-C2`: `2012`
+  - 원자재성 `RAW_MATERIAL` 품목 `CBL-A`, `CBL-B`, `TUB-A`, `TP0001`: `2013`
+  - 구매/부자재성 `RAW_MATERIAL` 품목 10건: `2014`
+- 재실행용 SQL `tools/generated/bom-from-production-sheet-seed.sql`도 같은 코드값으로 수정했다.
+- `packages/shared/src/constants/com-code-values.ts`에 `PRODUCT_TYPE_VALUES`를 추가했다.
+- `apps/backend/src/modules/master/dto/part.dto.ts`에서 `productType`을 `PRODUCT_TYPE_VALUES`로 검증하도록 추가했다.
+
+**검증:**
+- `python C:\Users\hsyou\.codex\skills\oracle-db\scripts\oracle_connector.py --site JSHANES --query "... GROUP BY item_type, product_type ..."` 결과: `FINISHED/2011=2`, `SEMI_PRODUCT/2012=2`, `RAW_MATERIAL/2013=4`, `RAW_MATERIAL/2014=10`.
+- invalid count query 결과: `0`.
+- `pnpm --filter @harness/shared build` 통과.
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+- `git diff --check` 통과.
+
+## 2026-06-02 12:12 codex
+
+### T-BOM-PROD-SHEET-SEED 완료
+
+**대상:** `JSHANES` / `40` / `1000`.
+
+**원천 파일:**
+- `C:\Users\hsyou\Desktop\bom-from-production-sheet.html`
+
+**실행 파일:**
+- `tools/generated/bom-from-production-sheet-seed.sql`
+
+**처리 내용:**
+- 기존 `PROCESS_QUALITY_CONDITIONS`, `ROUTING_MATERIALS`, `ROUTING_PROCESSES`, `ROUTING_GROUPS`, `BOM_MASTERS`, `PROD_PLANS`, `PROCESS_MASTERS`, `ITEM_MASTERS`의 `40/1000` 데이터를 삭제했다.
+- HTML 기준으로 품목 18건, BOM 16건, 공정 16건, 라우팅 그룹 3건, 라우팅 공정 18건, 라우팅 자재 17건을 생성했다.
+- `HNS001`은 HTML 설명대로 `HNS01`의 판매/모델 관리 코드로 품목마스터에만 등록하고 BOM 레벨에는 넣지 않았다.
+- `TP0001`은 `BOM_MASTERS` PK가 `PARENT_ITEM_CODE + CHILD_ITEM_CODE + REVISION`이라 동일 부모/자식 2행을 둘 수 없어 BOM에는 800MM로 합산하고, `ROUTING_MATERIALS`에는 `TAPPN` 500MM + `MASSY` 300MM로 분리했다.
+- HTML의 `구매품`은 코드 상수에 별도 `PURCHASED` 타입이 없어 `ITEM_TYPE=RAW_MATERIAL`, `PRODUCT_TYPE=PURCHASED_PART`로 기록했다.
+
+**검증:**
+- 실행 명령: `python C:\Users\hsyou\.codex\skills\oracle-db\scripts\oracle_connector.py --site JSHANES --execute-file tools\generated\bom-from-production-sheet-seed.sql`
+- 실행 결과: `success=true`, `blocks_executed=1`.
+- 후속 건수: `ITEM_MASTERS=18`, `BOM_MASTERS=16`, `PROCESS_MASTERS=16`, `ROUTING_GROUPS=3`, `ROUTING_PROCESSES=18`, `ROUTING_MATERIALS=17`.
+- 무결성 확인: BOM 부모 누락 0, BOM 자식 누락 0, 라우팅 품목 누락 0, 라우팅 자재 누락 0.
+
+**남은 위험:**
+- 기존 `40/1000` 품목마스터 21,561건과 BOM/라우팅 기준정보는 사용자 요청대로 삭제했다. 운영성 주문/재고성 테이블까지 전체 정리한 것은 아니다.
+
 ## 2026-05-30 11:10 codex
 
 ### T-MASTER-ALL-DB-KEY-AUDIT 완료
