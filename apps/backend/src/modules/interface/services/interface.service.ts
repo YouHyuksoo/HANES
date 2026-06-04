@@ -376,7 +376,6 @@ export class InterfaceService {
               spec: dto.spec,
               unit: dto.unit ?? 'EA',
               drawNo: dto.drawNo,
-              customer: dto.customer,
             },
           );
         } else {
@@ -387,7 +386,6 @@ export class InterfaceService {
             spec: dto.spec,
             unit: dto.unit ?? 'EA',
             drawNo: dto.drawNo,
-            customer: dto.customer,
             company,
             plant,
           });

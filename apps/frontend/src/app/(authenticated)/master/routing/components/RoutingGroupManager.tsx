@@ -256,8 +256,27 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     await fetchGroups();
   };
 
-  const openNewProcess = () => {
-    if (!routingInfo) return;
+  const openNewProcess = async () => {
+    if (!selectedBomItem) return;
+    let current = routingInfo;
+    if (!current) {
+      try {
+        await api.post("/master/routing-groups", {
+          routingCode: selectedBomItem.itemCode,
+          routingName: selectedBomItem.itemName,
+          itemCode: selectedBomItem.itemCode,
+          useYn: "Y",
+        });
+        const res = await api.get(`/master/routing-groups/by-item/${selectedBomItem.itemCode}`);
+        current = res.data?.data ?? null;
+        setRoutingInfo(current);
+        setProcesses(current?.processes || []);
+        await fetchGroups();
+      } catch {
+        return;
+      }
+    }
+    if (!current) return;
     setEditingProcess(null);
     setProcessForm({ ...EMPTY_PROCESS, seq: nextSeq });
     setProcessModalOpen(true);
@@ -432,7 +451,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                   </div>
                 )}
               </div>
-              <Button size="sm" onClick={openNewProcess} disabled={!routingInfo}><Plus className="w-4 h-4 mr-1" />{t("master.routing.addProcess")}</Button>
+              <Button size="sm" onClick={openNewProcess} disabled={!selectedBomItem || !["FINISHED", "SEMI_PRODUCT", "FG", "WIP"].includes(selectedBomItem.itemType || "")}><Plus className="w-4 h-4 mr-1" />{t("master.routing.addProcess")}</Button>
             </div>
             <div className="flex-1 overflow-y-auto min-h-0">
           {loadingProcesses ? (
@@ -585,7 +604,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   );
 }
 
-const RAW_TYPES = new Set(["RAW", "RAW_MATERIAL", "RM", "M"]);
+const EXCLUDED_TYPES = new Set(["RAW", "RAW_MATERIAL", "RM", "M", "CONSUMABLE"]);
 
 function BomTreeRows({
   items,
@@ -604,8 +623,8 @@ function BomTreeRows({
   depth?: number;
   breadcrumb?: string;
 }) {
-  // 원자재(RAW_MATERIAL 등) 제외: 루트는 항상 표시
-  const filtered = items.filter((item) => item.isRoot || !RAW_TYPES.has(item.itemType));
+  // 원자재·소모품 제외: 루트는 항상 표시
+  const filtered = items.filter((item) => item.isRoot || !EXCLUDED_TYPES.has(item.itemType));
   return (
     <div className="space-y-1">
       {filtered.map((item) => {
