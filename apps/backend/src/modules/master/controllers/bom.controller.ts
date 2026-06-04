@@ -80,6 +80,29 @@ export class BomController {
     res.end(buffer);
   }
 
+  @Post('upload/preview')
+  @ApiOperation({ summary: 'Preview BOM Excel upload — check duplicates before actual upload' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req: Request, file: Express.Multer.File, cb: (error: Error | null, accept: boolean) => void) => {
+        if (!file.originalname.match(/\.xlsx$/i)) return cb(new BadRequestException('Only .xlsx is allowed'), false);
+        cb(null, true);
+      },
+    }),
+  )
+  async previewUpload(
+    @UploadedFile() file: Express.Multer.File,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    if (!file) throw new BadRequestException('File is required');
+    const result = await this.bomService.previewUpload(file.buffer, company, plant);
+    return ResponseUtil.success(result, `미리보기 완료 — 신규: ${result.newCount}, 중복: ${result.duplicateCount}, 오류: ${result.errorCount}`);
+  }
+
   @Post('upload')
   @ApiOperation({ summary: 'Upload BOM from Excel' })
   @ApiConsumes('multipart/form-data')

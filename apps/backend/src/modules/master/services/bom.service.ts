@@ -25,6 +25,26 @@ export interface BomUploadResult {
   errors: { row: number; message: string }[];
 }
 
+/** 업로드 미리보기 행 */
+export interface BomPreviewRow {
+  row: number;
+  parentItemCode: string;
+  childItemCode: string;
+  validFrom: string | null;
+  qtyPer: number | null;
+  revision: string;
+  status: 'new' | 'duplicate_db' | 'duplicate_file' | 'error';
+  message?: string;
+}
+
+/** 업로드 미리보기 결과 */
+export interface BomPreviewResult {
+  rows: BomPreviewRow[];
+  duplicateCount: number;
+  newCount: number;
+  errorCount: number;
+}
+
 type BomParentRow = {
   itemCode: string;
   itemName: string | null;
@@ -513,6 +533,87 @@ export class BomService {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'BOM');
     return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  }
+
+  /** 업로드 미리보기 — 중복(모+자+유효시작일) 및 오류 행 사전 확인 */
+  async previewUpload(buffer: Buffer, company?: string, plant?: string): Promise<BomPreviewResult> {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    const jsonRows = XLSX.utils.sheet_to_json<BomExcelRow>(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    const str = (v: unknown) => String(v ?? '').trim();
+    const fmtDate = (v: unknown): string | null => {
+      const s = str(v);
+      if (!s) return null;
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+    };
+
+    const rows: BomPreviewRow[] = [];
+    const fileKeySet = new Set<string>();
+    const dbKeys: { parentItemCode: string; childItemCode: string; validFrom: Date | null }[] = [];
+
+    for (let i = 0; i < jsonRows.length; i++) {
+      const r = jsonRows[i];
+      const rowNum = i + 2;
+      const parentCode = str(r['상위품목코드']);
+      const childCode = str(r['하위품목코드']);
+      const qtyRaw = r['소요량'];
+      const revision = str(r['리비전']) || 'A';
+      const validFrom = fmtDate(r['유효시작일']);
+
+      if (!parentCode || !childCode) {
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: null, revision, status: 'error', message: '상위/하위품목코드 필수' });
+        continue;
+      }
+      if (qtyRaw === '' || qtyRaw === null || isNaN(Number(qtyRaw))) {
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: null, revision, status: 'error', message: '소요량 누락 또는 숫자 아님' });
+        continue;
+      }
+      if (parentCode === childCode) {
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: Number(qtyRaw), revision, status: 'error', message: '상위=하위 불가' });
+        continue;
+      }
+
+      const fileKey = `${parentCode}::${childCode}::${validFrom ?? ''}`;
+      if (fileKeySet.has(fileKey)) {
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: Number(qtyRaw), revision, status: 'duplicate_file', message: '파일 내 중복' });
+        continue;
+      }
+      fileKeySet.add(fileKey);
+      dbKeys.push({ parentItemCode: parentCode, childItemCode: childCode, validFrom: validFrom ? new Date(validFrom) : null });
+      rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: Number(qtyRaw), revision, status: 'new' });
+    }
+
+    // DB 중복 확인 (모+자+유효시작일)
+    if (dbKeys.length > 0) {
+      const existBoms = await this.bomRepository.find({
+        where: dbKeys.map((k) => ({
+          parentItemCode: k.parentItemCode,
+          childItemCode: k.childItemCode,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        })),
+        select: ['parentItemCode', 'childItemCode', 'validFrom'],
+      });
+      // DB 기존 행의 모+자+유효시작일 키 셋
+      const dbKeySet = new Set(existBoms.map((b) => {
+        const vf = b.validFrom ? new Date(b.validFrom).toISOString().slice(0, 10) : '';
+        return `${b.parentItemCode}::${b.childItemCode}::${vf}`;
+      }));
+
+      for (const row of rows) {
+        if (row.status !== 'new') continue;
+        const key = `${row.parentItemCode}::${row.childItemCode}::${row.validFrom ?? ''}`;
+        if (dbKeySet.has(key)) {
+          row.status = 'duplicate_db';
+          row.message = 'DB에 동일 모·자·적용일자 존재';
+        }
+      }
+    }
+
+    const duplicateCount = rows.filter((r) => r.status === 'duplicate_db' || r.status === 'duplicate_file').length;
+    const newCount = rows.filter((r) => r.status === 'new').length;
+    const errorCount = rows.filter((r) => r.status === 'error').length;
+    return { rows, duplicateCount, newCount, errorCount };
   }
 
   /** Excel(xlsx)에서 BOM 일괄 등록 (신규만 INSERT, 기존 PK 스킵) */
