@@ -24,8 +24,6 @@ export interface Part {
   spec?: string;
   rev?: string; // 리비전 (Oracle REV)
   unit?: string; // 단위 (기본값: EA)
-  customer?: string;
-  vendor?: string;
   safetyStock?: number; // 안전재고 (기본값: 0)
   lotUnitQty?: number; // LOT 단위수량 (Oracle LOTUNITQTY)
   boxQty?: number; // 박스 입수량 (Oracle BOXQTY) (기본값: 0)

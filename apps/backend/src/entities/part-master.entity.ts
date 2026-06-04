@@ -15,7 +15,6 @@ import {
 
 @Entity({ name: 'ITEM_MASTERS' })
 @Index(['itemType'])
-@Index(['customer'])
 export class PartMaster {
   @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
@@ -46,12 +45,6 @@ export class PartMaster {
 
   @Column({ type: 'varchar2', name: 'DRAW_NO', length: 50, nullable: true })
   drawNo: string | null;
-
-  @Column({ type: 'varchar2', name: 'CUSTOMER', length: 50, nullable: true })
-  customer: string | null;
-
-  @Column({ type: 'varchar2', name: 'VENDOR', length: 50, nullable: true })
-  vendor: string | null;
 
   @Column({ name: 'LEAD_TIME', type: 'int', default: 0 })
   leadTime: number;

@@ -24,7 +24,7 @@ export class PartService {
   }
 
   async findAll(query: PartQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 20, itemType, search, customer, useYn } = query;
+    const { page = 1, limit = 20, itemType, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.partRepository.createQueryBuilder('p')
@@ -42,11 +42,6 @@ export class PartService {
 
     if (useYn) {
       queryBuilder.andWhere('p.useYn = :useYn', { useYn });
-    }
-
-    if (customer) {
-      const upperCustomer = customer.toUpperCase();
-      queryBuilder.andWhere('p.customer LIKE :customer', { customer: `%${upperCustomer}%` });
     }
 
     if (search) {
@@ -103,8 +98,6 @@ export class PartService {
       rev: dto.rev,
       unit: dto.unit ?? 'EA',
       drawNo: dto.drawNo,
-      customer: dto.customer,
-      vendor: dto.vendor,
       leadTime: dto.leadTime ?? 0,
       safetyStock: dto.safetyStock ?? 0,
       lotUnitQty: dto.lotUnitQty,
@@ -134,8 +127,6 @@ export class PartService {
       | 'rev'
       | 'unit'
       | 'drawNo'
-      | 'customer'
-      | 'vendor'
       | 'leadTime'
       | 'safetyStock'
       | 'lotUnitQty'
@@ -161,8 +152,6 @@ export class PartService {
       ...(dto.rev !== undefined ? { rev: dto.rev } : {}),
       ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
       ...(dto.drawNo !== undefined ? { drawNo: dto.drawNo } : {}),
-      ...(dto.customer !== undefined ? { customer: dto.customer } : {}),
-      ...(dto.vendor !== undefined ? { vendor: dto.vendor } : {}),
       ...(dto.leadTime !== undefined ? { leadTime: dto.leadTime } : {}),
       ...(dto.safetyStock !== undefined ? { safetyStock: dto.safetyStock } : {}),
       ...(dto.lotUnitQty !== undefined ? { lotUnitQty: dto.lotUnitQty } : {}),

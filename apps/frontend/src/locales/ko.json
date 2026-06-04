@@ -1170,8 +1170,6 @@
       "type": "유형",
       "spec": "규격",
       "unit": "단위",
-      "vendor": "공급처",
-      "customer": "고객사",
       "safetyStock": "안전재고",
       "use": "사용",
       "addPart": "품목 추가",

@@ -867,8 +867,6 @@
       "type": "Loại",
       "spec": "Quy cách",
       "unit": "Đơn vị",
-      "vendor": "Nhà cung cấp",
-      "customer": "Khách hàng",
       "safetyStock": "Tồn kho an toàn",
       "use": "Sử dụng",
       "addPart": "Thêm linh kiện",

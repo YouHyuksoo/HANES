@@ -867,8 +867,6 @@
       "type": "类型",
       "spec": "规格",
       "unit": "单位",
-      "vendor": "供应商",
-      "customer": "客户",
       "safetyStock": "安全库存",
       "use": "使用",
       "addPart": "添加零件",

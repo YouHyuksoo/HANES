@@ -14,7 +14,6 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Modal, Select } from "@/components/ui";
 import api from "@/services/api";
-import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import { Part, PRODUCT_TYPE_OPTIONS } from "../types";
 
 interface Props {
@@ -27,9 +26,6 @@ interface Props {
 export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingPart;
-  const { options: supplierOptions } = usePartnerOptions("SUPPLIER");
-  const { options: customerOptions } = usePartnerOptions("CUSTOMER");
-
   const partTypeOptions = useMemo(() => [
     { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
     { value: "SEMI_PRODUCT", label: t("inventory.stock.wip", "반제품") },
@@ -52,8 +48,6 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     spec: editingPart?.spec || "",
     rev: editingPart?.rev || "",
     unit: editingPart?.unit || "EA",
-    vendor: editingPart?.vendor || "",
-    customer: editingPart?.customer || "",
     boxQty: editingPart?.boxQty ?? 0,
     lotUnitQty: editingPart?.lotUnitQty ?? 0,
     safetyStock: editingPart?.safetyStock ?? 0,
@@ -81,8 +75,6 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         productType: form.productType || undefined,
         spec: form.spec || undefined,
         rev: form.rev || undefined,
-        vendor: form.vendor || undefined,
-        customer: form.customer || undefined,
         remark: form.remark || undefined,
         packUnit: form.packUnit || undefined,
         storageLocation: form.storageLocation || undefined,
@@ -145,10 +137,6 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         {t("master.part.sectionQty", "거래처 / 수량관리")}
       </h3>
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <Select label={t("master.part.vendor")} options={supplierOptions}
-          value={form.vendor} onChange={v => setField("vendor", v)} fullWidth />
-        <Select label={t("master.part.customer")} options={customerOptions}
-          value={form.customer} onChange={v => setField("customer", v)} fullWidth />
         <Input label={t("master.part.boxQty", "박스입수량")} type="number"
           value={String(form.boxQty)} onChange={e => setField("boxQty", Number(e.target.value))} fullWidth />
         <Input label={t("master.part.lotUnitQty", "LOT단위수량")} type="number"

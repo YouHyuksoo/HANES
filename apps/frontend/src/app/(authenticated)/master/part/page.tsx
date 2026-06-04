@@ -188,8 +188,6 @@ export default function PartPage() {
     { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
     { accessorKey: "packUnit", header: t("master.part.packUnit", "포장단위"), size: 70, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "storageLocation", header: t("master.part.storageLocation", "적재위치"), size: 90, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "vendor", header: t("master.part.vendor"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "customer", header: t("master.part.customer"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     {
       accessorKey: "useYn", header: t("common.useYn", "사용여부"), size: 60,
       meta: { filterType: "multi" as const },

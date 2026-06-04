@@ -867,8 +867,6 @@
       "type": "Type",
       "spec": "Spec",
       "unit": "Unit",
-      "vendor": "Vendor",
-      "customer": "Customer",
       "safetyStock": "Safety Stock",
       "use": "Use",
       "addPart": "Add Part",

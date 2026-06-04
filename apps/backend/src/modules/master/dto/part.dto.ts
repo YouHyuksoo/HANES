@@ -68,18 +68,6 @@ export class CreatePartDto {
   @MaxLength(100)
   drawNo?: string;
 
-  @ApiPropertyOptional({ description: '고객사' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  customer?: string;
-
-  @ApiPropertyOptional({ description: '공급업체' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  vendor?: string;
-
   @ApiPropertyOptional({ description: '리드타임 (일)', default: 0 })
   @IsOptional()
   @Type(() => Number)
@@ -195,11 +183,6 @@ export class PartQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  customer?: string;
 
   @ApiPropertyOptional({ enum: USE_YN_VALUES })
   @IsOptional()
