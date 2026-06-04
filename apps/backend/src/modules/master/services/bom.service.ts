@@ -147,7 +147,7 @@ export class BomService {
            JOIN ITEM_MASTERS p ON p.ITEM_CODE = b.PARENT_ITEM_CODE
           WHERE b.USE_YN = 'Y' ${dateFilter} ${searchFilter} ${tenantFilter}
           GROUP BY p.ITEM_CODE, p.ITEM_NAME, p.PART_NO, p.ITEM_TYPE,
-                   p.SPEC, p.UNIT, p.CUSTOMER, p.REMARK
+                   p.SPEC, p.UNIT, p.REMARK
           ORDER BY p.ITEM_CODE ASC`,
         params,
       );
