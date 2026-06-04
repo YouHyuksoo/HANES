@@ -10,6 +10,9 @@ Format:
 
 ## Completed
 
+- T-AUDIT-COLUMN-DEFAULT-FIX | 2026-06-04 | claude | ORA-01400(ITEM_MASTERS.CREATED_AT NULL) 근본원인=TypeORM Oracle이 감사컬럼을 DB DEFAULT에 의존. 33개 테이블/64개 컬럼에 `DEFAULT SYSTIMESTAMP` 일괄 보정(멱등 마이그레이션) + create-hanes-schema.sql 실DB 실측 재생성(148 테이블) | evidence: JOURNAL 2026-06-04 claude
+- T-BOM-LABEL-CLARIFY | 2026-06-02 | codex | BOM 화면 컬럼 라벨을 `품목유형`/`투입공정`으로 명확화해 `ITEM_TYPE`과 `BOM_MASTERS.OPER` 의미 구분 | evidence: JOURNAL 2026-06-02 13:13 codex
+- T-ITEM-TYPE-COMCODE-UNIFY | 2026-06-02 | codex | `ITEM_MASTERS.ITEM_TYPE` 품목유형 공통코드 기준을 `ITEM_TYPE`으로 통일하고 JSHANES 주석/활성 코드/런타임 화면/schema SQL/ERD 정리 | evidence: JOURNAL 2026-06-02 12:55 codex
 - T-BOM-PRODUCT-TYPE-SEMANTIC-FIX | 2026-06-02 | codex | `PRODUCT_TYPE`을 품목군 코드로 재정의해 `ITEM_TYPE`과 의미 중복 제거, JSHANES 데이터/DTO/프론트 옵션/시드 SQL 정정 | evidence: JOURNAL 2026-06-02 12:52 codex
 - T-BOM-PRODUCT-TYPE-CLEANUP | 2026-06-02 | codex | `ITEM_TYPE`은 수불/생산 분류, `PRODUCT_TYPE`은 화면 제품유형 코드로 분리되도록 JSHANES 데이터와 DTO 검증 정렬 | evidence: JOURNAL 2026-06-02 12:35 codex
 - T-BOM-PROD-SHEET-SEED | 2026-06-02 | codex | JSHANES `40/1000` BOM/품목/공정/라우팅 기준정보를 기존 데이터 삭제 후 `bom-from-production-sheet.html` 기준으로 재생성 | evidence: JOURNAL 2026-06-02 12:12 codex

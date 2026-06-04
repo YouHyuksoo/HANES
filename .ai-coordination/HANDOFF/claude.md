@@ -2,9 +2,16 @@
 
 ## Last Update
 
-2026-05-28
+2026-06-04
 
 ## Completed
+
+- **감사 컬럼 DEFAULT 누락 systemic 수정 (T-AUDIT-COLUMN-DEFAULT-FIX)**: `POST /master/parts` ORA-01400 해결
+  - 근본원인: TypeORM 0.3.28 Oracle 드라이버는 `@CreateDateColumn`/`@UpdateDateColumn`을 JS에서 안 채우고 DB 컬럼 `DEFAULT`에 의존(`SubjectExecutor`의 `new Date()`는 mongodb 전용 분기). DB DEFAULT 없으면 `DEFAULT`→NULL→NOT NULL 위반.
+  - 실측 범위: NOT NULL & DEFAULT 없는 감사 컬럼 33개 테이블/64개 컬럼
+  - `apps/backend/src/migrations/2026-06-04_fix_audit_column_defaults.sql`(멱등) JSHANES·HNSMES(MYDBPDB) 적용, 재스캔 0건·INSERT 검증 완료 (환경 2개가 전부)
+  - `scripts/gen-live-schema.py` 신규 + `create-hanes-schema.sql` 실DB 실측 재생성(148 테이블) — 기존은 구 PART_MASTERS 구조로 stale
+  - 원칙 메모: DB 스키마는 문서 참조 말고 항상 실측
 
 - **DataGrid sqlQuery prop 일괄 추가 (T-SQL-QUERY-PROPS)**: 전체 24개 페이지/컴포넌트 완료
   - material/*: stock, lot, lot-merge, lot-split, hold, iqc-history, scrap, shelf-life, physical-inv, physical-inv-history, receipt-cancel, arrival-stock (12개)

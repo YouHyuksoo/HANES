@@ -1,5 +1,74 @@
 # JOURNAL
 
+## 2026-06-04 claude
+
+### T-AUDIT-COLUMN-DEFAULT-FIX 완료
+
+**증상:** `POST /master/parts` 500 — `ORA-01400: NULL을 ("TEST"."ITEM_MASTERS"."CREATED_AT") 안에 삽입할 수 없습니다`.
+
+**근본 원인(primary source 확인):**
+- TypeORM 0.3.28 Oracle 드라이버는 `@CreateDateColumn`/`@UpdateDateColumn` 값을 JS에서 채우지 않는다. `SubjectExecutor.js`의 `new Date()` 채움 로직은 `mongodb` 드라이버 전용 분기 안에만 존재(Oracle 분기는 그냥 single insert로 넘김).
+- 값이 undefined인 채 단건 Oracle INSERT가 빌드되면 `InsertQueryBuilder.js`가 컬럼에 리터럴 `DEFAULT` 키워드를 출력(주석에 "이미 컬럼 default에 있으니 안 넣는다" 명시).
+- 즉 이 스키마는 감사 컬럼 값을 DB 컬럼 `DEFAULT SYSTIMESTAMP`에 의존하는데, `synchronize:false`라 재생성/리네임 과정에서 누락된 테이블은 `DEFAULT`→NULL→NOT NULL 위반.
+
+**범위(실측):** JSHANES(test)에서 감사 컬럼이 NOT NULL & DEFAULT 없는 컬럼 = **33개 테이블 / 64개 컬럼** (ITEM_MASTERS, BOM_MASTERS, PURCHASE_ORDERS, JOB_ORDERS, USERS, ROLES, PARTNER_MASTERS, COM_CODES 등). ITEM_MASTERS만 고치면 에러가 UPDATED_AT 등으로 옮겨갈 뿐이라 systemic 일괄 처리.
+
+**변경 내용:**
+- `apps/backend/src/migrations/2026-06-04_fix_audit_column_defaults.sql` 추가(멱등 PL/SQL: NOT NULL & default 없는 CREATED_AT/UPDATED_AT에 `DEFAULT SYSTIMESTAMP` 부여). **JSHANES, HNSMES(MYDBPDB) 적용 완료**(둘 다 33테이블/64컬럼, 보정 후 0건). 앱 코드/엔티티 변경 없음(DB-level 컨벤션 유지).
+- `scripts/gen-live-schema.py` 추가 + `apps/backend/src/database/create-hanes-schema.sql`을 라이브 DB 실측(DBMS_METADATA, 148개 테이블)으로 재생성. 기존 파일은 구 아키텍처(PART_MASTERS/UUID PK, 21/148 테이블)로 stale였음.
+
+**검증:**
+- 보정 후 재스캔: NOT NULL & default 없는 감사 컬럼 0건.
+- CREATED_AT/UPDATED_AT 생략 INSERT를 ROLLBACK으로 실행 → 성공(ORA-01400 해소), 잔여 데이터 0.
+- 재생성 스키마의 ITEM_MASTERS가 ITEM_CODE 자연키 PK + CREATED_AT/UPDATED_AT DEFAULT SYSTIMESTAMP로 실DB와 일치.
+
+## 2026-06-02 13:13 codex
+
+### T-BOM-LABEL-CLARIFY 완료
+
+**변경 내용:**
+- BOM 화면 컬럼 `유형` 라벨을 `품목유형`으로 변경했다.
+- BOM 화면 컬럼 `공정` 라벨을 `투입공정`으로 변경했다.
+- `ko/en/vi/zh` locale에 같은 의미로 반영했고, 누락되어 있던 BOM `oper` 다국어 키도 추가했다.
+
+**근거:**
+- `품목유형`은 `ITEM_MASTERS.ITEM_TYPE`이다.
+- `투입공정`은 `BOM_MASTERS.OPER`이며 자재가 투입되는 공정 코드다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `git diff --check -- apps/frontend/src/locales/ko.json apps/frontend/src/locales/en.json apps/frontend/src/locales/vi.json apps/frontend/src/locales/zh.json .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` 통과.
+
+## 2026-06-02 12:55 codex
+
+### T-ITEM-TYPE-COMCODE-UNIFY 완료
+
+**대상:** `JSHANES`, `ITEM_MASTERS.ITEM_TYPE`.
+
+**확인한 원인:**
+- JSHANES `ITEM_MASTERS.ITEM_TYPE` 실제 값은 `FINISHED`, `RAW_MATERIAL`, `SEMI_PRODUCT`로 이미 정규화되어 있었다.
+- `ITEM_MASTERS.ITEM_TYPE` 컬럼 주석은 아직 `품목유형 [공통코드:PART_TYPE] (RAW/WIP/FG)`로 남아 있었다.
+- 일부 런타임 화면/Swagger/shared 상수와 schema SQL/문서 생성 스크립트가 `PART_TYPE`을 품목유형 기준처럼 재사용하고 있었다.
+
+**변경 내용:**
+- `apps/backend/src/migrations/2026-06-02_unify_item_type_comcode.sql` 추가.
+- JSHANES 컬럼 주석을 `품목유형 [공통코드:ITEM_TYPE] (RAW_MATERIAL/SEMI_PRODUCT/FINISHED/CONSUMABLE)`로 변경.
+- JSHANES `COM_CODES.GROUP_CODE='PART_TYPE'` 활성 행 3건을 `USE_YN='N'`으로 변경.
+- 품목/BOM/제품홀드 화면과 Swagger enum/shared 상수에서 품목유형 공통코드 참조를 `ITEM_TYPE`으로 통일.
+- schema SQL, 제품재고/트랜잭션 SQL, 문서 생성 스크립트, material flow 검증 스크립트의 재발 지점을 `ITEM_TYPE` 기준으로 정리.
+- `docs/reports/db-schema-erd.md`를 `ORACLE_SITE=JSHANES` 기준으로 재생성했다.
+
+**검증:**
+- `pnpm --filter @harness/backend test -- item-type-comcode.spec.ts` 통과.
+- `pnpm --filter @harness/backend build` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `python C:/Users/hsyou/.codex/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-02_unify_item_type_comcode.sql` 통과.
+- Oracle 확인: `ITEM_TYPE` 공통코드 4건은 활성, `PART_TYPE` 3건은 비활성, `ITEM_MASTERS.ITEM_TYPE` 컬럼 주석은 `공통코드:ITEM_TYPE`.
+- 선택 범위 `PART_TYPE` 검색 통과: `apps/backend/src/database`, `scripts`, `packages/shared`, `docs/standards`, `agent-harness`에서 과거 rename migration을 제외하고 잔여 없음.
+
+**남은 위험:**
+- `docs/superpowers` 과거 계획/스펙과 frontend locale의 과거 `PART_TYPE` 번역 키는 이력/비활성 그룹 표시용 잔재라 이번 런타임 기준 정리 범위에서 제외했다.
+
 Append new entries at the top.
 
 Use this heading format for every new entry:
