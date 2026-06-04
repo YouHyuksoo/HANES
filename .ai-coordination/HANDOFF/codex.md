@@ -2,10 +2,16 @@
 
 ## Last Update
 
-2026-06-02 12:52
+2026-06-02 13:13
 
 ## Completed
 
+- BOM 화면 컬럼 라벨을 `유형`에서 `품목유형`, `공정`에서 `투입공정`으로 명확화했다.
+- `ko/en/vi/zh` locale에 반영했고 프론트 `tsc --noEmit` 통과했다.
+- `ITEM_MASTERS.ITEM_TYPE` 품목유형 기준을 `ITEM_TYPE` 공통코드로 통일했다.
+- JSHANES 컬럼 주석은 `공통코드:ITEM_TYPE`, `COM_CODES.PART_TYPE` 활성 행은 `N`으로 정리했다.
+- 런타임 화면/Swagger/shared 상수와 schema SQL/생성 스크립트/ERD 문서의 품목유형 `PART_TYPE` 혼용을 정리했다.
+- 검증: focused Jest, backend build, frontend `tsc --noEmit`, JSHANES migration execute-file, Oracle post-query 통과.
 - `PRODUCT_TYPE`을 `2011/2012/2013/2014` 단계 코드에서 `HARNESS/SUB_ASSY/WIRE/TERMINAL/...` 품목군 코드로 재정의했다.
 - 현재 기준: `ITEM_TYPE`은 재고/생산 흐름 분류, `PRODUCT_TYPE`은 품목군/물성 분류다.
 - JSHANES `40/1000` 품목 18건, 재실행 SQL, 공유 상수, 프론트 옵션, 백엔드 DTO 예시를 모두 같은 기준으로 정정했다.
