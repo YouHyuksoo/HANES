@@ -32,7 +32,6 @@ type BomParentRow = {
   itemType: string | null;
   spec: string | null;
   unit: string | null;
-  customer: string | null;
   remark: string | null;
   bomCount: string | number;
   revisions: string | null;
@@ -141,7 +140,6 @@ export class BomService {
                 p.ITEM_TYPE   AS "itemType",
                 p.SPEC        AS "spec",
                 p.UNIT        AS "unit",
-                p.CUSTOMER    AS "customer",
                 p.REMARK     AS "remark",
                 COUNT(*)      AS "bomCount",
                 LISTAGG(DISTINCT b.REVISION, ',') WITHIN GROUP (ORDER BY b.REVISION) AS "revisions"
