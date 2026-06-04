@@ -32,7 +32,7 @@ export default function BomPage() {
   const [routingPanelOpen, setRoutingPanelOpen] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<"conditions" | "materials">("conditions");
   const [searchText, setSearchText] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("FINISHED");
   const [effectiveDate, setEffectiveDate] = useState(getToday());
   const [loadingParents, setLoadingParents] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -215,7 +215,7 @@ export default function BomPage() {
                 >
                   {t("common.all")}
                 </button>
-                {itemTypeOptions.filter((option) => option.value !== "RAW_MATERIAL").map((option) => (
+                {itemTypeOptions.filter((option) => !["RAW_MATERIAL", "CONSUMABLE"].includes(option.value)).map((option) => (
                   <button
                     key={option.value}
                     type="button"
