@@ -27,7 +27,7 @@ import { ApiTags, ApiOperation, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { PartService } from '../services/part.service';
 import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
-import { PART_TYPE_VALUES } from '@harness/shared';
+import { ITEM_TYPE_VALUES } from '@harness/shared';
 
 @ApiTags('기준정보 - 품목마스터')
 @Controller('master/parts')
@@ -36,7 +36,7 @@ export class PartController {
 
   @Get('types/:type')
   @ApiOperation({ summary: '품목 유형별 목록 조회' })
-  @ApiParam({ name: 'type', enum: PART_TYPE_VALUES })
+  @ApiParam({ name: 'type', enum: ITEM_TYPE_VALUES })
   async findByType(@Param('type') type: string, @Company() company: string, @Plant() plant: string) {
     const data = await this.partService.findByType(type, company, plant);
     return ResponseUtil.success(data);

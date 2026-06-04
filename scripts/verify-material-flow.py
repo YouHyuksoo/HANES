@@ -93,7 +93,7 @@ class MaterialFlowVerifier:
         header(0, "Prerequisites Check")
 
         # RAW parts
-        resp, _ = api_get("/master/parts", {"limit": "5", "partType": "RAW"})
+        resp, _ = api_get("/master/parts", {"limit": "5", "itemType": "RAW_MATERIAL"})
         parts = resp.get("data", [])
         assert len(parts) >= 3, f"RAW parts insufficient: {len(parts)}"
         self.part_ids = [p["id"] for p in parts[:3]]

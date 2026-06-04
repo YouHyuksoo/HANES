@@ -132,7 +132,7 @@ export default function ProductHoldPage() {
       accessorKey: "itemType", header: t("productHold.partType"), size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
-        <ComCodeBadge groupCode="PART_TYPE" code={getValue() as string} />
+        <ComCodeBadge groupCode="ITEM_TYPE" code={getValue() as string} />
       ),
     },
     {
@@ -252,7 +252,7 @@ export default function ProductHoldPage() {
                 </div>
                 <div>
                   <span className="text-text-muted">{t("productHold.partType")}:</span>{" "}
-                  <ComCodeBadge groupCode="PART_TYPE" code={selectedStock.itemType} />
+                  <ComCodeBadge groupCode="ITEM_TYPE" code={selectedStock.itemType} />
                 </div>
                 <div>
                   <span className="text-text-muted">{t("productHold.qty")}:</span>{" "}

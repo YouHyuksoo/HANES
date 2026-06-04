@@ -54,7 +54,7 @@ function h2(t) { return new Paragraph({ heading: HeadingLevel.HEADING_2, childre
 
 // ── 코드그룹 데이터 (코드에서 추출) ──
 const groups = [
-  { code: 'PART_TYPE', name: '품목유형', desc: '품목의 종류 구분', usage: 'BOM관리, 품목관리',
+  { code: 'ITEM_TYPE', name: '품목유형', desc: '품목의 종류 구분', usage: 'BOM관리, 품목관리',
     codes: [['MAT', '원자재', 1], ['SEMI', '반제품', 2], ['PROD', '완제품', 3], ['SUB', '부자재', 4]] },
   { code: 'PROCESS_TYPE', name: '공정유형', desc: '생산 공정의 종류', usage: '공정관리, 라우팅, BOM, 생산실적',
     codes: [['CUT', '절단', 1], ['CRIMP', '압착', 2], ['ASSY', '조립', 3], ['INSP', '검사', 4], ['PACK', '포장', 5], ['TEST', '통전검사', 6]] },
@@ -189,7 +189,7 @@ function buildDoc() {
   body.push(pb(), h1('4. \uCF54\uB4DC \uD1B5\uACC4'));
   // 도메인별 그룹핑
   const domains = {
-    '기준정보': ['PART_TYPE', 'PROCESS_TYPE', 'EQUIP_TYPE', 'UNIT_TYPE', 'QUALITY_CONDITION'],
+    '기준정보': ['ITEM_TYPE', 'PROCESS_TYPE', 'EQUIP_TYPE', 'UNIT_TYPE', 'QUALITY_CONDITION'],
     '생산관리': ['JOB_ORDER_STATUS', 'JOB_STATUS', 'PROD_PLAN_STATUS'],
     '자재관리': ['ISSUE_TYPE'],
     '품질관리': ['DEFECT_STATUS', 'REWORK_STATUS', 'VISUAL_DEFECT', 'JUDGE_YN', 'INSPECT_METHOD', 'SAMPLE_SIZE', 'SAMPLE_FREQ', 'CONTROL_METHOD'],

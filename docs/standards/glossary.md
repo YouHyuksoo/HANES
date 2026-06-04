@@ -43,7 +43,7 @@
 | 품목명 | Part Name | 품목의 명칭 | `PartMaster.partName` |
 | 품목번호 | Part No | 품목 번호 (납품처/고객사 납품용) | `PartMaster.partNo` |
 | 고객품번 | Customer Part No | 고객사별 품목 번호 | `PartMaster.custPartNo` |
-| 품목유형 | Part Type | 품목 분류 (원자재, 반제품, 완제품 등) | `PartMaster.partType` |
+| 품목유형 | Item Type | 품목 분류 (원자재, 반제품, 완제품 등) | `PartMaster.itemType` |
 | 제품유형 | Product Type | 제품별 유형 분류 | `PartMaster.productType` |
 | 규격 | Specification | 품목 규격 사양 | `PartMaster.spec` |
 | 리비전 | Revision | 도면/사양 변경 버전 (REV) | `PartMaster.rev` |

@@ -161,10 +161,6 @@ export type UseYnValue = typeof USE_YN_VALUES[number];
 export const PLANT_TYPE_VALUES = ['PLANT', 'SHOP', 'LINE', 'CELL'] as const;
 export type PlantTypeValue = typeof PLANT_TYPE_VALUES[number];
 
-// ===== 품목 분류 (DTO용) =====
-export const PART_TYPE_VALUES = ['RAW', 'WIP', 'FG'] as const;
-export type PartTypeValue = typeof PART_TYPE_VALUES[number];
-
 // ===== 자재 LOT IQC 상태 =====
 export const IQC_STATUS_VALUES = ['PENDING', 'PASS', 'FAIL', 'HOLD'] as const;
 export type IqcStatusValue = typeof IQC_STATUS_VALUES[number];
