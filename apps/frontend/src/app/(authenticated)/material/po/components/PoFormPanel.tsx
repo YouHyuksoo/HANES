@@ -92,8 +92,12 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
         })),
       );
     } else {
-      setForm(INIT_FORM);
+      const today = new Date().toISOString().slice(0, 10);
+      setForm({ ...INIT_FORM, orderDate: today });
       setItems([]);
+      api.get("/material/purchase-orders/next-no").then(res => {
+        if (res.data?.data) setField("poNo", res.data.data);
+      }).catch(() => {});
     }
   }, [editData]);
 

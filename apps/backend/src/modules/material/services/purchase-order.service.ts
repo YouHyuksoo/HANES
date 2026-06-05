@@ -14,9 +14,11 @@ import { Repository, In } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto } from '../dto/purchase-order.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -29,8 +31,15 @@ export class PurchaseOrderService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(MatArrival)
     private readonly matArrivalRepository: Repository<MatArrival>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerRepository: Repository<PartnerMaster>,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
+
+  async nextPoNo(): Promise<string> {
+    return this.numbering.nextPoNo();
+  }
 
   private tenantWhere(company?: string, plant?: string) {
     return {
@@ -161,12 +170,20 @@ export class PurchaseOrderService {
     };
   }
 
+  private async resolvePartnerName(partnerId?: string, fallback?: string): Promise<string | null> {
+    if (!partnerId) return fallback ?? null;
+    if (fallback) return fallback;
+    const partner = await this.partnerRepository.findOne({ where: { partnerCode: partnerId }, select: ['partnerName'] });
+    return partner?.partnerName ?? null;
+  }
+
   async create(dto: CreatePurchaseOrderDto, company?: string, plant?: string) {
     const existing = await this.purchaseOrderRepository.findOne({
       where: { poNo: dto.poNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 PO 번호입니다: ${dto.poNo}`);
 
+    const resolvedPartnerName = await this.resolvePartnerName(dto.partnerId, dto.partnerName);
     const totalAmount = dto.items.reduce((sum, item) => {
       return sum + (item.orderQty * (item.unitPrice ?? 0));
     }, 0);
@@ -176,7 +193,7 @@ export class PurchaseOrderService {
       const po = queryRunner.manager.create(PurchaseOrder, {
         poNo: dto.poNo,
         partnerId: dto.partnerId,
-        partnerName: dto.partnerName,
+        partnerName: resolvedPartnerName,
         orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date(),
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
         remark: dto.remark,
@@ -233,6 +250,8 @@ export class PurchaseOrderService {
     await this.findById(poNo, company, plant);
     const { items, poNo: _ignoredPoNo, ...poData } = dto;
 
+    const resolvedPartnerName = await this.resolvePartnerName(dto.partnerId, dto.partnerName);
+
     await this.tx.run(async (queryRunner) => {
       if (items) {
         // 기존 품목 삭제
@@ -241,7 +260,7 @@ export class PurchaseOrderService {
         const totalAmount = items.reduce((sum, item) => sum + (item.orderQty * (item.unitPrice ?? 0)), 0);
 
         // PO 업데이트
-        const updateData = this.buildPurchaseOrderUpdate(poData, totalAmount);
+        const updateData = { ...this.buildPurchaseOrderUpdate(poData, totalAmount), ...(resolvedPartnerName !== null ? { partnerName: resolvedPartnerName } : {}) };
 
         await queryRunner.manager.update(PurchaseOrder, { poNo, ...tenantWhere }, updateData);
 
@@ -262,7 +281,7 @@ export class PurchaseOrderService {
         );
         await queryRunner.manager.save(itemEntities);
       } else {
-        const updateData = this.buildPurchaseOrderUpdate(poData);
+        const updateData = { ...this.buildPurchaseOrderUpdate(poData), ...(resolvedPartnerName !== null ? { partnerName: resolvedPartnerName } : {}) };
         if (Object.keys(updateData).length > 0) {
           await queryRunner.manager.update(PurchaseOrder, { poNo, ...tenantWhere }, updateData);
         }

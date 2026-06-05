@@ -15,6 +15,13 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 export class PurchaseOrderController {
   constructor(private readonly purchaseOrderService: PurchaseOrderService) {}
 
+  @Get('next-no')
+  @ApiOperation({ summary: '다음 PO 번호 채번' })
+  async nextPoNo() {
+    const poNo = await this.purchaseOrderService.nextPoNo();
+    return { success: true, data: poNo };
+  }
+
   @Get()
   @ApiOperation({ summary: 'PO 목록 조회' })
   async findAll(@Query() query: PurchaseOrderQueryDto, @Company() company: string, @Plant() plant: string) {
