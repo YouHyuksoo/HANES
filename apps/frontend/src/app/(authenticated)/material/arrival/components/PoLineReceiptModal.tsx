@@ -37,7 +37,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
 
   useEffect(() => {
     if (isOpen && line) {
-      setReceivedQty(line.remainingQty);
+      setReceivedQty(0);
       setMfgPartnerCode('');
       setReceivedDate(new Date().toISOString().slice(0, 10));
       setRemark('');

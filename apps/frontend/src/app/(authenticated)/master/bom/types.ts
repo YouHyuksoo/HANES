@@ -50,6 +50,7 @@ export interface BomTreeItem {
   revision: string;
   seq: number;
   processCode?: string;
+  processName?: string | null;
   side?: string;
   validFrom?: string;
   validTo?: string;

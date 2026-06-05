@@ -70,6 +70,9 @@ export class PartMaster {
   @Column({ name: 'EXPIRY_DATE', type: 'int', default: 0 })
   expiryDate: number;
 
+  @Column({ name: 'EXPIRY_EXT_DAYS', type: 'int', default: 0 })
+  expiryExtDays: number;
+
   @Column({ name: 'TOLERANCE_RATE', type: 'decimal', precision: 5, scale: 2, default: 5.0 })
   toleranceRate: number; // PO 수량 오차 허용률 (%)
 

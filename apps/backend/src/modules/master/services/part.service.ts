@@ -103,8 +103,10 @@ export class PartService {
       lotUnitQty: dto.lotUnitQty,
       boxQty: dto.boxQty ?? 0,
       iqcYn: dto.iqcYn ?? 'Y',
+      inspectMethod: dto.inspectMethod ?? null,
       tactTime: dto.tactTime ?? 0,
       expiryDate: dto.expiryDate ?? 0,
+      expiryExtDays: dto.expiryExtDays ?? 0,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
       imageUrl: dto.imageUrl,
@@ -132,8 +134,10 @@ export class PartService {
       | 'lotUnitQty'
       | 'boxQty'
       | 'iqcYn'
+      | 'inspectMethod'
       | 'tactTime'
       | 'expiryDate'
+      | 'expiryExtDays'
       | 'toleranceRate'
       | 'isSplittable'
       | 'sampleQty'
@@ -157,8 +161,10 @@ export class PartService {
       ...(dto.lotUnitQty !== undefined ? { lotUnitQty: dto.lotUnitQty } : {}),
       ...(dto.boxQty !== undefined ? { boxQty: dto.boxQty } : {}),
       ...(dto.iqcYn !== undefined ? { iqcYn: dto.iqcYn } : {}),
+      ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),
       ...(dto.tactTime !== undefined ? { tactTime: dto.tactTime } : {}),
       ...(dto.expiryDate !== undefined ? { expiryDate: dto.expiryDate } : {}),
+      ...(dto.expiryExtDays !== undefined ? { expiryExtDays: dto.expiryExtDays } : {}),
       ...(dto.toleranceRate !== undefined ? { toleranceRate: dto.toleranceRate } : {}),
       ...(dto.isSplittable !== undefined ? { isSplittable: dto.isSplittable } : {}),
       ...(dto.sampleQty !== undefined ? { sampleQty: dto.sampleQty } : {}),

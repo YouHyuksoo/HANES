@@ -19,10 +19,11 @@ import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
 
 interface ItemRow {
+  lineNo: number;
+  revNo: number;
   itemCode: string;
   itemName: string;
   orderQty: number;
-  unitPrice: number;
   remark: string;
 }
 
@@ -44,10 +45,11 @@ export interface PurchaseOrder {
   totalAmount: number | null;
   remark: string | null;
   items: {
+    lineNo: number;
+    revNo: number;
     itemCode: string;
     itemName: string;
     orderQty: number;
-    unitPrice: number | null;
     remark: string | null;
   }[];
 }
@@ -80,11 +82,12 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
         remark: editData.remark || "",
       });
       setItems(
-        editData.items.map(it => ({
+        editData.items.map((it, idx) => ({
+          lineNo: it.lineNo ?? idx + 1,
+          revNo: it.revNo ?? 1,
           itemCode: it.itemCode || "",
           itemName: it.itemName || "",
           orderQty: it.orderQty ?? 0,
-          unitPrice: it.unitPrice ?? 0,
           remark: it.remark || "",
         })),
       );
@@ -98,10 +101,10 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
     setForm(prev => ({ ...prev, [key]: value }));
 
   const handlePartSelect = useCallback((part: PartItem) => {
-    setItems(prev => [
-      ...prev,
-      { itemCode: part.itemCode, itemName: part.itemName, orderQty: 1, unitPrice: 0, remark: "" },
-    ]);
+    setItems(prev => {
+      const nextLineNo = prev.length > 0 ? Math.max(...prev.map(i => i.lineNo)) + 1 : 1;
+      return [...prev, { lineNo: nextLineNo, revNo: 1, itemCode: part.itemCode, itemName: part.itemName, orderQty: 1, remark: "" }];
+    });
   }, []);
 
   const updateItem = (idx: number, key: keyof ItemRow, value: string | number) => {
@@ -111,8 +114,6 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
   const removeItem = (idx: number) => {
     setItems(prev => prev.filter((_, i) => i !== idx));
   };
-
-  const totalAmount = items.reduce((s, it) => s + it.orderQty * it.unitPrice, 0);
 
   const handleSave = useCallback(async () => {
     if (!form.poNo || !form.partnerId || items.length === 0) return;
@@ -198,11 +199,13 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
                       <Trash2 className="w-3.5 h-3.5 text-red-500" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
+                    <Input label={t("material.po.lineNo", "라인번호")} type="number" value={String(item.lineNo)}
+                      onChange={e => updateItem(idx, "lineNo", Number(e.target.value) || 1)} fullWidth />
+                    <Input label={t("material.po.revNo", "릴리즈번호")} type="number" value={String(item.revNo)}
+                      onChange={e => updateItem(idx, "revNo", Number(e.target.value) || 1)} fullWidth />
                     <Input label={t("material.po.orderQty")} type="number" value={String(item.orderQty)}
                       onChange={e => updateItem(idx, "orderQty", Number(e.target.value) || 0)} fullWidth />
-                    <Input label={t("material.po.unitPrice")} type="number" value={String(item.unitPrice)}
-                      onChange={e => updateItem(idx, "unitPrice", Number(e.target.value) || 0)} fullWidth />
                     <Input label={t("common.remark")} value={item.remark}
                       onChange={e => updateItem(idx, "remark", e.target.value)} fullWidth />
                   </div>
@@ -211,13 +214,6 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
             </div>
           )}
 
-          {/* 합계 */}
-          {items.length > 0 && (
-            <div className="flex justify-end mt-2 text-xs">
-              <span className="text-text-muted mr-2">{t("material.po.totalAmount")}:</span>
-              <span className="font-bold text-primary">{totalAmount.toLocaleString()}</span>
-            </div>
-          )}
         </div>
       </div>
 

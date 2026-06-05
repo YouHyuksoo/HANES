@@ -31,6 +31,7 @@ export interface Part {
   inspectMethod?: string; // 검사방법 (FULL/SAMPLE/SKIP)
   tactTime?: number; // 택타임 초 (Oracle TACTTIME) (기본값: 0)
   expiryDate?: number; // 유효기간 일 (Oracle EXPIRYDATE) (기본값: 0)
+  expiryExtDays?: number; // 유효기간 연장 최대 일수 (Oracle EXPIRY_EXT_DAYS) (기본값: 0)
   packUnit?: string; // 포장단위 (EA, BOX, BAG 등)
   storageLocation?: string; // 적재 로케이션 (창고 내 위치)
   remark?: string; // 비고 (Oracle REMARKS)

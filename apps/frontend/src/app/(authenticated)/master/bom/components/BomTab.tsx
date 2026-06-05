@@ -23,6 +23,7 @@ const partTypeConfig: Record<string, { icon: typeof Package; color: string; bg: 
   FINISHED: { icon: Package, color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-100 dark:bg-emerald-900/50" },
   SEMI_PRODUCT: { icon: Boxes, color: "text-amber-700 dark:text-amber-300", bg: "bg-amber-100 dark:bg-amber-900/50" },
   RAW_MATERIAL: { icon: CircleDot, color: "text-blue-700 dark:text-blue-300", bg: "bg-blue-100 dark:bg-blue-900/50" },
+  CONSUMABLE: { icon: CircleDot, color: "text-violet-700 dark:text-violet-300", bg: "bg-violet-100 dark:bg-violet-900/50" },
 };
 
 const levelColors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-purple-500", "bg-pink-500"];
@@ -61,12 +62,13 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
   const [editingBom, setEditingBom] = useState<BomTreeItem | null>(null);
   const [deletingBom, setDeletingBom] = useState<BomTreeItem | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<BomTreeItem | null>(null);
 
   const fetchBomTree = useCallback(async () => {
     if (!selectedParent) { setBomTree([]); return; }
     setLoading(true);
     try {
-      const params: Record<string, string | number> = { depth: 5 };
+      const params: Record<string, string | number> = { depth: 10 };
       if (effectiveDate) params.effectiveDate = effectiveDate;
       const res = await api.get(`/master/boms/hierarchy/${selectedParent.itemCode}`, { params });
       if (res.data.success) setBomTree(normalizeBomTree(res.data.data || []));
@@ -102,6 +104,8 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
     if (!rootId) return;
     setExpanded((prev) => new Set(prev).add(rootId));
   }, [rootId]);
+
+  useEffect(() => { setSelectedNode(null); }, [selectedParent]);
 
   const expandAll = useCallback(() => {
     const allIds = new Set<string>();
@@ -147,8 +151,8 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
   }
 
   return (
-    <>
-      <div className={`flex justify-between items-center ${compact ? "mb-2" : "mb-4"}`}>
+    <div className="flex flex-col min-h-0 h-full">
+      <div className={`flex justify-between items-center flex-shrink-0 ${compact ? "mb-2" : "mb-4"}`}>
         <div className="flex items-center gap-2 min-w-0">
           <p className="text-sm text-text-muted">{selectedParent.itemName} ({countItems(treeWithRoot)}{t("master.bom.materialsCount")})</p>
           <div className="flex gap-1 shrink-0">
@@ -173,7 +177,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
         </div>
       </div>
 
-      <div className="overflow-auto rounded-[var(--radius)] border border-border">
+      <div className="flex-1 overflow-auto min-h-0 rounded-[var(--radius)] border border-border">
         <table className="font-data text-xs min-w-[1160px] table-fixed">
           <thead className="bg-background">
             <tr>
@@ -181,7 +185,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
               <th className="px-2 py-2 text-left font-semibold text-text border-b border-r border-border w-[190px] whitespace-nowrap">{t("master.bom.childPartCode")}</th>
               <th className="px-2 py-2 text-left font-semibold text-text border-b border-r border-border w-[220px] whitespace-nowrap">{t("master.bom.childPartName")}</th>
               <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-24 whitespace-nowrap">{t("master.bom.type")}</th>
-              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-16 whitespace-nowrap">{t("master.bom.oper", "공정")}</th>
+              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-36 whitespace-nowrap">{t("master.bom.oper", "공정")}</th>
               <th className="px-2 py-2 text-right font-semibold text-text border-b border-r border-border w-24 whitespace-nowrap">{t("master.bom.qtyPer")}</th>
               <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-16 whitespace-nowrap">{t("master.bom.revision")}</th>
               <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-14 whitespace-nowrap">{t("master.bom.side", "사이드")}</th>
@@ -198,14 +202,14 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
             ) : (
               <BomTreeRows items={treeWithRoot} expanded={expanded} onToggle={toggleExpand}
                 onEdit={handleEdit} onDelete={setDeletingBom} onViewRouting={handleViewRouting}
-                onSelectItem={onSelectItem} selectedItemCode={selectedItemCode}
+                onSelectItem={onSelectItem} onSelectNode={setSelectedNode} selectedItemCode={selectedItemCode}
                 parentCode={selectedParent.itemCode} t={t} />
             )}
           </tbody>
         </table>
       </div>
 
-      {!compact && <div className="flex gap-4 mt-3 text-xs text-text-muted">
+      {!compact && <div className="flex gap-4 mt-3 text-xs text-text-muted flex-shrink-0">
         {Object.entries(partTypeConfig).map(([key, cfg]) => (
           <div key={key} className="flex items-center gap-1.5">
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color} text-[10px] font-medium`}>{key}</span>
@@ -215,7 +219,9 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
       </div>}
 
       <BomFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={fetchBomTree}
-        editingItem={editingBom} parentItemCode={selectedParent.itemCode} parentItemCodeDisplay={selectedParent.itemCode} />
+        editingItem={editingBom}
+        parentItemCode={editingBom ? selectedParent.itemCode : (selectedNode && !selectedNode.isRoot ? (selectedNode.childItemCode || selectedNode.itemCode) : selectedParent.itemCode)}
+        parentItemCodeDisplay={editingBom ? selectedParent.itemCode : (selectedNode && !selectedNode.isRoot ? (selectedNode.itemNo || selectedNode.childItemCode || selectedNode.itemCode) : selectedParent.itemCode)} />
 
       <ConfirmModal isOpen={!!deletingBom} onClose={() => setDeletingBom(null)} onConfirm={handleDelete}
         title={t("common.delete")} message={t("master.bom.deleteConfirm")} variant="danger" />
@@ -225,17 +231,19 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
         onClose={() => setUploadModalOpen(false)}
         onComplete={() => { fetchBomTree(); setUploadModalOpen(false); }}
       />
-    </>
+    </div>
   );
 }
 
 function BomTreeRows({
-  items, expanded, onToggle, onEdit, onDelete, onViewRouting, onSelectItem, selectedItemCode, parentCode, t, depth = 0, breadcrumb = "",
+  items, expanded, onToggle, onEdit, onDelete, onViewRouting, onSelectItem, onSelectNode, selectedItemCode, parentCode, t, depth = 0, breadcrumb = "",
 }: {
   items: BomTreeItem[]; expanded: Set<string>; onToggle: (id: string) => void;
   onEdit: (item: BomTreeItem) => void; onDelete: (item: BomTreeItem) => void;
   onViewRouting: (item: BomTreeItem, breadcrumb: string) => void;
-  onSelectItem?: (target: RoutingTarget) => void; selectedItemCode?: string | null;
+  onSelectItem?: (target: RoutingTarget) => void;
+  onSelectNode?: (item: BomTreeItem) => void;
+  selectedItemCode?: string | null;
   parentCode: string; t: any; depth?: number; breadcrumb?: string;
 }) {
   return (
@@ -256,7 +264,7 @@ function BomTreeRows({
         return (
           <Fragment key={itemKey}>
             <tr
-              onClick={() => onSelectItem?.({ itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb: itemBreadcrumb })}
+              onClick={() => { onSelectItem?.({ itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb: itemBreadcrumb }); onSelectNode?.(item); }}
               className={`border-b border-border last:border-b-0 transition-colors cursor-pointer ${
                 isSelected ? "bg-primary text-white" : idx % 2 === 0 ? "bg-surface hover:bg-primary/5" : "bg-background/50 hover:bg-primary/5"
               }`}
@@ -284,7 +292,14 @@ function BomTreeRows({
               <td className="px-2 py-1.5 border-r border-border text-center whitespace-nowrap">
                 <span className={`inline-flex px-1.5 py-0.5 text-[10px] rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.itemType}</span>
               </td>
-              <td className={`px-2 py-1.5 border-r border-border text-center font-mono whitespace-nowrap ${isSelected ? "text-white/80" : "text-text-muted"}`}>{item.processCode || "-"}</td>
+              <td className={`px-2 py-1.5 border-r border-border text-center font-mono ${isSelected ? "text-white/80" : "text-text-muted"}`}>
+                {item.processCode ? (
+                  <div>
+                    <div className="text-[11px] whitespace-nowrap">{item.processCode}</div>
+                    {item.processName && <div className={`text-[10px] whitespace-nowrap ${isSelected ? "text-white/60" : "text-text-muted/70"}`}>{item.processName}</div>}
+                  </div>
+                ) : "-"}
+              </td>
               <td className="px-2 py-1.5 border-r border-border text-right font-mono whitespace-nowrap">{item.qtyPer} {item.unit}</td>
               <td className="px-2 py-1.5 border-r border-border text-center whitespace-nowrap">{item.revision}</td>
               <td className={`px-2 py-1.5 border-r border-border text-center whitespace-nowrap ${isSelected ? "text-white/80" : "text-text-muted"}`}>{item.side || "-"}</td>
@@ -307,7 +322,7 @@ function BomTreeRows({
             {hasChildren && isExpanded && (
               <BomTreeRows key={`${itemKey}-children`} items={item.children!} expanded={expanded} onToggle={onToggle}
                 onEdit={onEdit} onDelete={onDelete} onViewRouting={onViewRouting}
-                onSelectItem={onSelectItem} selectedItemCode={selectedItemCode}
+                onSelectItem={onSelectItem} onSelectNode={onSelectNode} selectedItemCode={selectedItemCode}
                 parentCode={parentCode} t={t} depth={depth + 1} breadcrumb={itemBreadcrumb} />
             )}
           </Fragment>

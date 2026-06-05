@@ -73,6 +73,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     safetyStock: editingPart?.safetyStock ?? 0,
     tactTime: editingPart?.tactTime ?? 0,
     expiryDate: editingPart?.expiryDate ?? 0,
+    expiryExtDays: editingPart?.expiryExtDays ?? 0,
     iqcYn: editingPart?.iqcYn || "Y",
     inspectMethod: editingPart?.inspectMethod || "",
     useYn: editingPart?.useYn || "Y",
@@ -104,6 +105,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       safetyStock: editingPart?.safetyStock ?? 0,
       tactTime: editingPart?.tactTime ?? 0,
       expiryDate: editingPart?.expiryDate ?? 0,
+      expiryExtDays: editingPart?.expiryExtDays ?? 0,
       iqcYn: editingPart?.iqcYn || "Y",
       inspectMethod: editingPart?.inspectMethod || "",
       useYn: editingPart?.useYn || "Y",
@@ -173,6 +175,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         safetyStock: form.safetyStock,
         tactTime: form.tactTime,
         expiryDate: form.expiryDate,
+        expiryExtDays: form.expiryExtDays,
         iqcYn: form.iqcYn,
         inspectMethod: form.inspectMethod || undefined,
         useYn: form.useYn,
@@ -244,7 +247,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={form.itemType} 
               onChange={v => setField("itemType", v)}
               fullWidth />
-            <Select label={t("master.part.productType", "제품유형")}
+            <Select label={t("master.part.productType", "품목그룹")}
               options={PRODUCT_TYPE_OPTIONS.filter(o => o.value)}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
             <div className="col-span-2">
@@ -253,8 +256,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             </div>
             <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false}
               value={form.unit} onChange={v => setField("unit", v)} fullWidth />
-            <YnRadio label={t("master.part.iqcFlag", "IQC대상")} value={form.iqcYn} onChange={v => setField("iqcYn", v)} />
-            <Select label={t("master.part.inspectMethod", "검사방법")}
+            <Select label={t("master.part.inspectMethod", "IQC검사방법")}
               options={[
                 { value: "", label: "-" },
                 { value: "FULL", label: t("master.part.inspect", "검사") },
@@ -281,6 +283,8 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={String(form.tactTime)} onChange={e => setField("tactTime", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.expiryDate", "유효기간(일)")} type="number"
               value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
+            <Input label={t("master.part.expiryExtDays", "유효기간 연장(일)")} type="number"
+              value={String(form.expiryExtDays)} onChange={e => setField("expiryExtDays", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.packUnit", "포장단위")}
               value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
             <div className="col-span-2">

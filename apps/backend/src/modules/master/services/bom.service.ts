@@ -81,6 +81,7 @@ type BomTreeFlatRow = BomChildRow & {
   itemName: string | null;
   itemType: string | null;
   unit: string | null;
+  processName: string | null;
 };
 
 export type BomTreeNode = {
@@ -97,6 +98,7 @@ export type BomTreeNode = {
   revision: string;
   seq: number;
   processCode: string | null;
+  processName: string | null;
   side: string | null;
   validFrom: Date | null;
   validTo: Date | null;
@@ -354,6 +356,7 @@ export class BomService {
         b.SEQ              AS "seq",
         b.REVISION         AS "revision",
         b.OPER             AS "processCode",
+        pm.PROCESS_NAME    AS "processName",
         b.SIDE             AS "side",
         b.VALID_FROM       AS "validFrom",
         b.VALID_TO         AS "validTo",
@@ -366,6 +369,7 @@ export class BomService {
         LEVEL              AS "lvl"
       FROM BOM_MASTERS b
       JOIN ITEM_MASTERS p ON b.CHILD_ITEM_CODE = p.ITEM_CODE
+      LEFT JOIN PROCESS_MASTERS pm ON b.OPER = pm.PROCESS_CODE
       WHERE b.USE_YN = 'Y'
         ${dateFilter}
         ${tenantFilterWhere}
@@ -405,6 +409,7 @@ export class BomService {
         revision: row.revision,
         seq: Number(row.seq),
         processCode: row.processCode,
+        processName: row.processName,
         side: row.side,
         validFrom: row.validFrom,
         validTo: row.validTo,

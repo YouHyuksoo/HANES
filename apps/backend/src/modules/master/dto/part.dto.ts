@@ -102,6 +102,12 @@ export class CreatePartDto {
   @IsIn([...USE_YN_VALUES])
   iqcYn?: string;
 
+  @ApiPropertyOptional({ description: 'IQC 검사방법 (FULL/SKIP)', enum: ['FULL', 'SKIP'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['FULL', 'SKIP'])
+  inspectMethod?: string;
+
   @ApiPropertyOptional({ description: '택타임 (초)', default: 0 })
   @IsOptional()
   @Type(() => Number)
@@ -115,6 +121,13 @@ export class CreatePartDto {
   @IsInt()
   @Min(0)
   expiryDate?: number;
+
+  @ApiPropertyOptional({ description: '유효기간 연장 최대 일수', default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  expiryExtDays?: number;
 
   @ApiPropertyOptional({ description: 'PO 수량 오차 허용률 (%)', default: 5.0, minimum: 0, maximum: 100 })
   @IsOptional()
