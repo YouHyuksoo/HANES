@@ -104,7 +104,7 @@ export class NumberingService {
     return `VH1-RM${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
   }
 
-  /** 구매발주번호 채번: PO-YYMMDD-NNN (3자리 당일 시퀀스). */
+  /** 구매발주번호 채번: PO-YYMMDD-NNN (3자리 순환, 1~999 CYCLE). */
   async nextPoNo(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
     const manager = qr?.manager ?? this.dataSource.manager;
     const rows = await manager.query(
