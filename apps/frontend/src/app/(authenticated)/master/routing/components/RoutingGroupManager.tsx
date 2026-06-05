@@ -93,7 +93,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   const fetchGroups = useCallback(async () => {
     setLoadingGroups(true);
     try {
-      const res = await api.get("/master/routing-groups", { params: { limit: 5000, search: search || undefined, useYn: "Y" } });
+      const res = await api.get("/master/routing-groups", { params: { limit: 5000, search: search || undefined, useYn: "Y", itemType: "FINISHED" } });
       const data = res.data?.data || [];
       setGroups(data);
       setSelectedGroup((prev) => prev ?? data[0] ?? null);
@@ -132,11 +132,12 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     }
     setLoadingBomTree(true);
     try {
-      const res = await api.get(`/master/boms/hierarchy/${selectedGroup.itemCode}`, { params: { depth: 5 } });
+      const res = await api.get(`/master/boms/hierarchy/${selectedGroup.itemCode}`, { params: { depth: 10 } });
       const data = res.data?.data || [];
       setBomTree(data);
       const rootId = `ROOT::${selectedGroup.itemCode}`;
-      setExpandedBomIds(new Set([rootId]));
+      const allIds = collectAllBomIds(data);
+      setExpandedBomIds(new Set([rootId, ...allIds]));
       setSelectedBomItem({
         itemCode: selectedGroup.itemCode,
         itemName: selectedGroup.itemName || selectedGroup.routingName,
@@ -604,6 +605,15 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   );
 }
 
+function collectAllBomIds(items: BomTreeItem[]): string[] {
+  const result: string[] = [];
+  for (const item of items) {
+    result.push(item.id);
+    if (item.children?.length) result.push(...collectAllBomIds(item.children));
+  }
+  return result;
+}
+
 const EXCLUDED_TYPES = new Set(["RAW", "RAW_MATERIAL", "RM", "M", "CONSUMABLE"]);
 
 function BomTreeRows({
@@ -626,7 +636,7 @@ function BomTreeRows({
   // 원자재·소모품 제외: 루트는 항상 표시
   const filtered = items.filter((item) => item.isRoot || !EXCLUDED_TYPES.has(item.itemType));
   return (
-    <div className="space-y-1">
+    <div className="space-y-0">
       {filtered.map((item) => {
         const itemCode = item.childItemCode || item.itemCode;
         const itemBreadcrumb = item.isRoot ? itemCode : breadcrumb ? `${breadcrumb} > ${itemCode}` : itemCode;
@@ -646,7 +656,7 @@ function BomTreeRows({
                   onSelectItem({ itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb: itemBreadcrumb });
                 }
               }}
-              className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
+              className={`flex items-center gap-1.5 rounded px-2 py-0.5 text-xs transition-colors ${
                 isSelected ? "bg-primary text-white" : "hover:bg-surface-hover text-text dark:text-gray-200"
               }`}
               style={{ marginLeft: depth * 20 }}
@@ -662,8 +672,8 @@ function BomTreeRows({
               ) : (
                 <span className="flex w-5 justify-center"><span className="h-1.5 w-1.5 rounded-full bg-border" /></span>
               )}
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${isSelected ? "bg-white/20" : "bg-surface"}`}>
-                <Icon className="h-3.5 w-3.5" />
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${isSelected ? "bg-white/20" : "bg-surface"}`}>
+                <Icon className="h-3 w-3" />
               </span>
               <span className="min-w-0 flex-1 truncate">
                 <span className="font-medium">{item.itemName}</span>

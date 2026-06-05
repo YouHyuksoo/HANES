@@ -51,7 +51,7 @@ export class RoutingGroupService {
   // ??? ?쇱슦??洹몃９ CRUD ???
 
   async findAllGroups(query: RoutingGroupQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, search, useYn } = query;
+    const { page = 1, limit = 50, search, useYn, itemType } = query;
     const skip = (page - 1) * limit;
     const qb = this.groupRepo.createQueryBuilder('g')
       .leftJoin('ITEM_MASTERS', 'p', 'g.ITEM_CODE = p.ITEM_CODE AND g.COMPANY = p.COMPANY AND g.PLANT_CD = p.PLANT_CD')
@@ -61,6 +61,7 @@ export class RoutingGroupService {
     if (company) qb.andWhere('g.company = :company', { company });
     if (plant) qb.andWhere('g.plant = :plant', { plant });
     if (useYn) qb.andWhere('g.useYn = :useYn', { useYn });
+    if (itemType) qb.andWhere('p.ITEM_TYPE = :itemType', { itemType });
     if (search) {
       const upper = search.toUpperCase();
       qb.andWhere(

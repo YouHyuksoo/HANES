@@ -43,7 +43,6 @@ export class UpdateRoutingGroupDto extends PartialType(CreateRoutingGroupDto) {}
 
 export class RoutingGroupQueryDto extends PaginationQueryDto {
 
-
   @ApiPropertyOptional()
   @IsOptional() @IsString()
   search?: string;
@@ -51,6 +50,10 @@ export class RoutingGroupQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional() @IsString() @IsIn(['Y', 'N'])
   useYn?: string;
+
+  @ApiPropertyOptional({ description: '연결 품목 유형 필터 (예: FINISHED)' })
+  @IsOptional() @IsString()
+  itemType?: string;
 }
 
 // ─── 공정순서 ───

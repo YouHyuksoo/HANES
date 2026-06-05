@@ -18,17 +18,39 @@ import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** PO 품목 DTO */
 export class CreatePurchaseOrderItemDto {
+  @ApiPropertyOptional({ description: '라인 번호' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  lineNo?: number;
+
+  @ApiPropertyOptional({ description: '개정 번호' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  revNo?: number;
+
   @ApiProperty({ description: '품목 코드' })
   @IsString()
   itemCode: string;
 
+  @ApiPropertyOptional({ description: '품목명' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  itemName?: string;
+
   @ApiProperty({ description: '발주 수량' })
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   orderQty: number;
 
   @ApiPropertyOptional({ description: '단가' })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   unitPrice?: number;
