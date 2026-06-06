@@ -82,24 +82,24 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
     <Modal isOpen={isOpen} onClose={onClose} title={t('material.arrival.modal.receiveTitle')} size="lg">
       <div className="flex flex-col gap-4">
         {/* PO 정보 */}
-        <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm">
-          <div className="font-semibold text-slate-800">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded p-3 text-sm">
+          <div className="font-semibold text-slate-800 dark:text-slate-200">
             {line.poNo} / L{line.lineNo} / R{line.revNo}
           </div>
           <div>
-            <span className="font-bold text-slate-800">[{line.itemCode}]</span> {line.itemName}
+            <span className="font-bold text-slate-800 dark:text-slate-200">[{line.itemCode}]</span> {line.itemName}
           </div>
-          <div className="text-xs text-slate-600 mt-1">
+          <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             {t('material.arrival.col.vendor')}: <b>{line.partnerName}</b>
           </div>
         </div>
 
         {/* 입하/발주/잔량 */}
-        <div className="bg-gray-50 border border-gray-200 rounded p-3 flex items-center justify-end gap-2 text-sm">
-          <span className="font-bold text-teal-600 text-base">{line.receivedQty.toLocaleString()}</span>
-          <span className="text-slate-500">/</span>
+        <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded p-3 flex items-center justify-end gap-2 text-sm">
+          <span className="font-bold text-teal-600 dark:text-teal-400 text-base">{line.receivedQty.toLocaleString()}</span>
+          <span className="text-slate-500 dark:text-slate-400">/</span>
           <span>{line.orderQty.toLocaleString()}</span>
-          <span className="ml-4 text-blue-700 font-bold">
+          <span className="ml-4 text-blue-700 dark:text-blue-400 font-bold">
             {t('material.arrival.col.remainingQty')} {line.remainingQty.toLocaleString()}
           </span>
         </div>
@@ -153,7 +153,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
               type="text"
               value={lotUnitQty === null ? t('material.arrival.singleLot') : String(lotUnitQty)}
               disabled
-              className="text-right bg-gray-50 text-slate-600"
+              className="text-right bg-gray-50 dark:bg-gray-800/50 text-slate-600 dark:text-slate-400"
             />
             <span className="text-xs text-slate-500">{t('material.arrival.serialUnitNote')}</span>
           </label>
@@ -180,8 +180,8 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
           />
         </label>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-slate-600">
-          <b className="text-yellow-700">⚠ {t('common.confirm')}</b> · {t('material.arrival.confirm.notice')}
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded p-2 text-xs text-slate-600 dark:text-slate-400">
+          <b className="text-yellow-700 dark:text-yellow-400">⚠ {t('common.confirm')}</b> · {t('material.arrival.confirm.notice')}
         </div>
       </div>
 

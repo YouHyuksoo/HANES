@@ -218,14 +218,14 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                             <button onClick={() => handleResult(item.seq, 'OK')}
                               className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                                 r === 'OK' ? 'bg-green-500 text-white border-green-500'
-                                : 'border-border text-text-muted hover:border-green-400 hover:text-green-700'
+                                : 'border-border text-text-muted hover:border-green-400 hover:text-green-700 dark:hover:text-green-400'
                               }`}>
                               <CheckCircle2 className="w-3.5 h-3.5" /> OK
                             </button>
                             <button onClick={() => handleResult(item.seq, 'NG')}
                               className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                                 r === 'NG' ? 'bg-red-500 text-white border-red-500'
-                                : 'border-border text-text-muted hover:border-red-400 hover:text-red-700'
+                                : 'border-border text-text-muted hover:border-red-400 hover:text-red-700 dark:hover:text-red-400'
                               }`}>
                               <XCircle className="w-3.5 h-3.5" /> NG
                             </button>

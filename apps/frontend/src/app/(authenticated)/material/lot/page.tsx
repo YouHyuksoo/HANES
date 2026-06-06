@@ -38,7 +38,7 @@ const getStatusColor = (status: string) => {
     HOLD: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
     DEPLETED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
   };
-  return c[status] || "bg-gray-100 text-gray-800";
+  return c[status] || "bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300";
 };
 
 const getIqcColor = (status: string) => {
@@ -48,7 +48,7 @@ const getIqcColor = (status: string) => {
     HOLD: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
     PENDING: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
   };
-  return c[status] || "bg-gray-100 text-gray-800";
+  return c[status] || "bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300";
 };
 
 export default function MatLotPage() {

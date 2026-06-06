@@ -187,7 +187,7 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
                     </span>
                   )}
                   {isExpired && !done && (
-                    <span className="text-xs text-red-600 font-bold shrink-0">
+                    <span className="text-xs text-red-600 dark:text-red-400 font-bold shrink-0">
                       {t('kiosk.prep.lifeExpired')}
                     </span>
                   )}

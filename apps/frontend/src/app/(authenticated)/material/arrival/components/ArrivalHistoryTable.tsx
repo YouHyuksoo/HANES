@@ -78,7 +78,7 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
         const unit = row.original.part?.unit || '';
         const isPositive = qty > 0;
         return (
-          <span className={`font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          <span className={`font-medium ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {isPositive ? '+' : ''}{qty.toLocaleString()} {unit}
           </span>
         );

@@ -50,6 +50,7 @@ interface IqcModalProps {
 
 function judgeValue(value: string, lsl: number | null, usl: number | null): "PASS" | "FAIL" | "" {
   if (!value.trim()) return "";
+  if (lsl === null && usl === null) return "PASS"; // 정성검사: 값 입력 시 자동 합격
   const num = parseFloat(value);
   if (isNaN(num)) return "";
   if (lsl !== null && num < lsl) return "FAIL";
@@ -126,6 +127,19 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     });
   }, []);
 
+  // 정성검사 항목: 직접 PASS/FAIL 토글
+  const updateJudge = useCallback((idx: number, judge: "PASS" | "FAIL") => {
+    setMeasurements((prev) => {
+      const updated = [...prev];
+      updated[idx] = {
+        ...updated[idx],
+        measuredValue: judge,
+        judge,
+      };
+      return updated;
+    });
+  }, []);
+
   // 전체 자동 판정
   const overallJudge = useMemo(() => {
     if (measurements.length === 0) return form.result;
@@ -190,14 +204,39 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                     <td className="px-3 py-2 text-center text-text-muted">{row.lsl !== null ? row.lsl : "-"}</td>
                     <td className="px-3 py-2 text-center text-text-muted">{row.usl !== null ? row.usl : "-"}</td>
                     <td className="px-3 py-1 text-center">
-                      <input
-                        type="number"
-                        step="any"
-                        className="w-24 px-2 py-1 text-center border border-border rounded bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary"
-                        value={row.measuredValue}
-                        onChange={(e) => updateMeasurement(idx, e.target.value)}
-                        placeholder={row.unit || ""}
-                      />
+                      {row.lsl === null && row.usl === null ? (
+                        // 정성검사: PASS/FAIL 직접 토글
+                        <div className="flex gap-1 justify-center">
+                          <button
+                            type="button"
+                            className={`px-2 py-1 text-xs rounded border transition-colors ${
+                              row.judge === "PASS"
+                                ? "bg-green-100 text-green-700 border-green-400 dark:bg-green-900/40 dark:text-green-300 dark:border-green-600 font-semibold"
+                                : "bg-surface text-text-muted border-border hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20"
+                            }`}
+                            onClick={() => updateJudge(idx, "PASS")}
+                          >PASS</button>
+                          <button
+                            type="button"
+                            className={`px-2 py-1 text-xs rounded border transition-colors ${
+                              row.judge === "FAIL"
+                                ? "bg-red-100 text-red-700 border-red-400 dark:bg-red-900/40 dark:text-red-300 dark:border-red-600 font-semibold"
+                                : "bg-surface text-text-muted border-border hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
+                            }`}
+                            onClick={() => updateJudge(idx, "FAIL")}
+                          >FAIL</button>
+                        </div>
+                      ) : (
+                        // 정량검사: 숫자 입력 후 자동 판정
+                        <input
+                          type="number"
+                          step="any"
+                          className="w-24 px-2 py-1 text-center border border-border rounded bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary"
+                          value={row.measuredValue}
+                          onChange={(e) => updateMeasurement(idx, e.target.value)}
+                          placeholder={row.unit || ""}
+                        />
+                      )}
                     </td>
                     <td className="px-3 py-2 text-center">
                       {row.judge === "PASS" && <CheckCircle className="w-5 h-5 text-green-500 inline" />}

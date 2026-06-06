@@ -25,9 +25,9 @@ interface PoLineGridProps {
 }
 
 const rowClass = (row: PoLineRow) => {
-  if (row.lineStatus === 'CLOSE') return 'bg-gray-100 text-gray-500';
-  if (row.remainingQty === 0) return 'bg-blue-50/60';
-  if (row.receivedQty > 0) return 'bg-yellow-50/60';
+  if (row.lineStatus === 'CLOSE') return 'bg-gray-100 dark:bg-gray-700/40 text-gray-500 dark:text-gray-400';
+  if (row.remainingQty === 0) return 'bg-blue-50/60 dark:bg-blue-900/20';
+  if (row.receivedQty > 0) return 'bg-yellow-50/60 dark:bg-yellow-900/20';
   return '';
 };
 
@@ -62,7 +62,7 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       header: t('material.arrival.col.poNo'),
       size: 130,
       meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => <span className="font-semibold text-slate-800">{getValue() as string}</span>,
+      cell: ({ getValue }) => <span className="font-semibold text-slate-800 dark:text-slate-200">{getValue() as string}</span>,
     },
     { accessorKey: 'lineNo', header: 'L/N', size: 50, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <div className="text-center">{getValue() as number}</div> },
     { accessorKey: 'revNo', header: 'R/N', size: 50, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <div className="text-center">R{getValue() as number}</div> },
@@ -71,7 +71,7 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       header: t('common.partCode'),
       size: 110,
       meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => <span className="font-semibold text-slate-800">{getValue() as string}</span>,
+      cell: ({ getValue }) => <span className="font-semibold text-slate-800 dark:text-slate-200">{getValue() as string}</span>,
     },
     { accessorKey: 'itemName', header: t('common.partName'), meta: { filterType: 'text' as const } },
     {
@@ -93,7 +93,7 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       header: t('material.arrival.col.remainingQty'),
       size: 90,
       meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <div className="text-right text-blue-700 font-bold">{((getValue() as number) ?? 0).toLocaleString()}</div>,
+      cell: ({ getValue }) => <div className="text-right text-blue-700 dark:text-blue-400 font-bold">{((getValue() as number) ?? 0).toLocaleString()}</div>,
     },
     {
       accessorKey: 'orderDate',

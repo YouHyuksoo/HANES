@@ -42,11 +42,11 @@ const getTransTypeColor = (type: string) => {
   const isIn = type.includes('IN') || type.includes('PLUS') || type === 'RECEIVE';
   const isOut = type.includes('OUT') || type.includes('MINUS') || type.includes('SCRAP');
 
-  if (isCancel) return 'bg-red-100 text-red-800';
-  if (isIn) return 'bg-blue-100 text-blue-800';
-  if (isOut) return 'bg-orange-100 text-orange-800';
-  if (type === 'TRANSFER') return 'bg-purple-100 text-purple-800';
-  return 'bg-gray-100 text-gray-800';
+  if (isCancel) return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
+  if (isIn) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
+  if (isOut) return 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300';
+  if (type === 'TRANSFER') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
+  return 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300';
 };
 
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
@@ -229,9 +229,9 @@ export default function TransactionPage() {
       meta: { filterType: 'multi' as const },
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs ${
-          row.original.status === 'DONE' ? 'bg-green-100 text-green-800' :
-          row.original.status === 'CANCELED' ? 'bg-red-100 text-red-800' :
-          'bg-gray-100 text-gray-800'
+          row.original.status === 'DONE' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' :
+          row.original.status === 'CANCELED' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
+          'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300'
         }`}>
           {row.original.status === 'DONE' ? t('inventory.transaction.statusDone') : row.original.status === 'CANCELED' ? t('inventory.transaction.statusCanceled') : row.original.status}
         </span>
@@ -337,7 +337,7 @@ export default function TransactionPage() {
             <p className="text-sm text-text-muted">
               {t('inventory.transaction.cancelWarning')}
             </p>
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">{t('inventory.transaction.transNo')}:</span>
                 <span className="font-medium">{selectedTrans.transNo}</span>

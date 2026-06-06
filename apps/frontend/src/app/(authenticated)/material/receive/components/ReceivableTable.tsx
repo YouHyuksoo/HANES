@@ -111,11 +111,11 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
           return <span className="text-xs text-text-muted">불필요</span>;
         }
         if (row.original.certUploaded) {
-          return <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700">첨부</span>;
+          return <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">첨부</span>;
         }
         return (
           <span
-            className="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700"
+            className="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
             title={row.original.receivingBlockedReason || undefined}
           >
             미첨부

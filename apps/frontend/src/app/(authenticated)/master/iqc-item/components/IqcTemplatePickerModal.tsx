@@ -154,7 +154,7 @@ export default function IqcTemplatePickerModal({
           <div className="col-span-4 flex flex-col border border-border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-bg-elevated">
               <span className="text-sm font-medium text-text">{t("master.iqcTemplate.list", "템플릿 목록")}</span>
-              <button onClick={handleDelete} disabled={!selectedId} className="text-red-500 hover:text-red-700 disabled:text-text-muted disabled:cursor-not-allowed" aria-label="삭제">
+              <button onClick={handleDelete} disabled={!selectedId} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 disabled:text-text-muted disabled:cursor-not-allowed" aria-label="삭제">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>

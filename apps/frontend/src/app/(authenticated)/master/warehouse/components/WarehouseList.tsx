@@ -158,7 +158,7 @@ export default function WarehouseList({ onHeaderActions }: Props) {
     { accessorKey: "warehouseName", header: t("inventory.warehouse.warehouseName"), size: 150, meta: { filterType: "text" as const } },
     { accessorKey: "warehouseType", header: t("inventory.warehouse.warehouseType"), size: 120, meta: { filterType: "multi" as const }, cell: ({ getValue }) => {
       const type = getValue() as string;
-      return <span className={`px-2 py-1 rounded text-xs font-medium ${WAREHOUSE_TYPE_COLORS[type] || "bg-gray-100 text-gray-800"}`}>{getTypeLabel(type)}</span>;
+      return <span className={`px-2 py-1 rounded text-xs font-medium ${WAREHOUSE_TYPE_COLORS[type] || "bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300"}`}>{getTypeLabel(type)}</span>;
     }},
     { accessorKey: "lineCode", header: t("inventory.warehouse.line"), size: 80, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "processCode", header: t("inventory.warehouse.process"), size: 80, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },

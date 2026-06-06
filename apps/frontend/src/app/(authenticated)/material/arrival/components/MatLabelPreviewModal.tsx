@@ -56,13 +56,13 @@ export default function MatLabelPreviewModal({
       </div>
       <div id="label-print-area" className="grid grid-cols-2 gap-3">
         {data.serials.map((s) => (
-          <div key={s.matUid} className="border border-gray-300 p-3 rounded text-sm bg-white">
-            <div className="font-mono font-bold text-base text-slate-900">{s.matUid}</div>
+          <div key={s.matUid} className="border border-gray-300 dark:border-gray-600 p-3 rounded text-sm bg-white dark:bg-gray-800">
+            <div className="font-mono font-bold text-base text-slate-900 dark:text-slate-100">{s.matUid}</div>
             <div className="mt-1">{s.itemCode} / {itemName}</div>
-            <div className="text-xs text-slate-600">
+            <div className="text-xs text-slate-600 dark:text-slate-400">
               {t('material.arrival.col.receivedDate')}: {receivedDate} · {s.initQty} EA
             </div>
-            <div className="text-xs text-slate-600">
+            <div className="text-xs text-slate-600 dark:text-slate-400">
               {t('material.arrival.col.mfgPartner')}: {mfgPartnerLabel}
             </div>
             <svg id={`bc-${s.matUid}`} className="mt-1 w-full" />
@@ -76,7 +76,7 @@ export default function MatLabelPreviewModal({
           #label-print-area { position: absolute; top: 0; left: 0; width: 100%; }
         }
       `}</style>
-      <div className="flex justify-end pt-4 border-t border-gray-200 mt-4 print:hidden">
+      <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 print:hidden">
         <Button variant="secondary" onClick={onClose}>{t('common.close')}</Button>
       </div>
     </Modal>

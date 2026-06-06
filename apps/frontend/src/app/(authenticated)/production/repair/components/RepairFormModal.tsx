@@ -315,7 +315,7 @@ export default function RepairFormModal({
                           />
                         </td>
                         <td className="px-3 py-1.5 text-center">
-                          <button onClick={() => handleRemoveUsedPart(idx)} className="text-red-500 hover:text-red-700">
+                          <button onClick={() => handleRemoveUsedPart(idx)} className="text-red-500 hover:text-red-700 dark:hover:text-red-400">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>

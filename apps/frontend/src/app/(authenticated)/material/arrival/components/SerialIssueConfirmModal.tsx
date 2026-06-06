@@ -22,11 +22,11 @@ export default function SerialIssueConfirmModal({
   const { t } = useTranslation();
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title={t('material.arrival.confirm.serialIssueTitle')} size="md">
-      <p className="text-sm text-slate-700">
+      <p className="text-sm text-slate-700 dark:text-slate-300">
         {t('material.arrival.confirm.serialIssueBody', { count: expectedCount })}
       </p>
-      <p className="text-xs text-slate-500 mt-2">{t('material.arrival.confirm.serialIssueNote')}</p>
-      <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 mt-4">
+      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">{t('material.arrival.confirm.serialIssueNote')}</p>
+      <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
         <Button variant="secondary" onClick={onCancel} disabled={submitting}>{t('common.cancel')}</Button>
         <Button onClick={onConfirm} disabled={submitting}>
           {submitting ? t('common.processing') : t('common.confirm')}
