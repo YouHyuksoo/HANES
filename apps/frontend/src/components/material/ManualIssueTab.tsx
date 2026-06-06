@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 /**
  * @file src/components/material/ManualIssueTab.tsx
@@ -115,7 +115,7 @@ export default function ManualIssueTab() {
       size: 100,
       meta: { filterType: 'number' as const },
       cell: ({ getValue }) => (
-        <span className="font-medium">{(getValue() as number).toLocaleString()}</span>
+        <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>
       ),
     },
     {

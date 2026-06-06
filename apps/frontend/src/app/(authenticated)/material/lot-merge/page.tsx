@@ -125,7 +125,7 @@ export default function LotMergePage() {
     { accessorKey: "qty", header: t("common.quantity"), size: 90,
       meta: { filterType: "number" as const },
       cell: ({ getValue, row }) => (
-        <span className="font-semibold">{(getValue() as number).toLocaleString()} {row.original.unit || "EA"}</span>
+        <span className="font-semibold">{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || "EA"}</span>
       ),
     },
     { accessorKey: "vendor", header: t("material.lotMerge.vendor"), size: 100,

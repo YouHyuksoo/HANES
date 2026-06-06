@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/inventory/material-physical-inv-history/page.tsx
@@ -102,14 +102,14 @@ export default function MaterialPhysicalInvHistoryPage() {
     {
       accessorKey: "beforeQty", header: t("material.physicalInvHistory.systemQty"), size: 100,
       cell: ({ getValue, row }) => (
-        <span>{(getValue() as number).toLocaleString()} {row.original.unit || ""}</span>
+        <span>{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || ""}</span>
       ),
       meta: { align: "right" as const },
     },
     {
       accessorKey: "afterQty", header: t("material.physicalInvHistory.countedQty"), size: 100,
       cell: ({ getValue, row }) => (
-        <span className="font-medium">{(getValue() as number).toLocaleString()} {row.original.unit || ""}</span>
+        <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || ""}</span>
       ),
       meta: { align: "right" as const },
     },

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file components/EquipBomTab.tsx
@@ -379,7 +379,7 @@ export default function EquipBomTab() {
     { accessorKey: "unit", header: t("common.unit", "단위"), size: 60 },
     {
       accessorKey: "unitPrice", header: t("master.equip.unitPrice", "단가"), size: 100,
-      cell: ({ getValue }) => getValue() ? `₩${(getValue() as number).toLocaleString()}` : "-",
+      cell: ({ getValue }) => getValue() ? `₩${((getValue() as number) ?? 0).toLocaleString()}` : "-",
     },
     {
       accessorKey: "stockQty", header: t("master.equip.stockQty", "재고"), size: 80,

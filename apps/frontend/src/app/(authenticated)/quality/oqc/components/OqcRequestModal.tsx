@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/quality/oqc/components/OqcRequestModal.tsx
@@ -133,7 +133,7 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
     },
     {
       accessorKey: "qty", header: t("quality.oqc.qty"), size: 80, meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
   ], [t, selectedBoxIds, boxes, toggleAll, toggleBox]);
 

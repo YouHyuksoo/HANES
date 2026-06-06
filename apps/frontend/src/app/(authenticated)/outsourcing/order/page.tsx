@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/outsourcing/order/page.tsx
@@ -109,9 +109,9 @@ export default function SubconOrderPage() {
     { accessorKey: "vendorName", header: t("outsourcing.order.vendor"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "orderQty", header: t("outsourcing.order.orderQty"), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: "deliveredQty", header: t("outsourcing.order.deliveredQty"), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: "receivedQty", header: t("outsourcing.order.receivedQty"), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "orderQty", header: t("outsourcing.order.orderQty"), size: 80, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
+    { accessorKey: "deliveredQty", header: t("outsourcing.order.deliveredQty"), size: 80, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
+    { accessorKey: "receivedQty", header: t("outsourcing.order.receivedQty"), size: 80, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
     { accessorKey: "orderDate", header: t("outsourcing.order.orderDate"), size: 100 },
     { accessorKey: "dueDate", header: t("outsourcing.order.dueDate"), size: 100 },
     {

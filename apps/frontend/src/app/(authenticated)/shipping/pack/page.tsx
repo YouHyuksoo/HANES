@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/shipping/pack/page.tsx
@@ -133,7 +133,7 @@ export default function PackPage() {
     { accessorKey: "boxNo", header: t("shipping.pack.boxNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "quantity", header: t("common.quantity"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "quantity", header: t("common.quantity"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
     { accessorKey: "closedAt", header: t("shipping.pack.closedAt"), size: 140, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
   ], [t, handleCloseBox]);

@@ -205,6 +205,7 @@
     "material.lotSplit": "Quản lý phân tách lô",
     "material.lotMerge": "Gộp LOT",
     "material.shelfLife": "Hạn sử dụng vật tư",
+    "material.shelfLifeReinspect": "Tái kiểm tra hạn sử dụng",
     "material.hold": "Giữ tồn kho vật tư",
     "material.scrap": "Xử lý hủy vật tư",
     "material.adjustment": "Xử lý điều chỉnh tồn kho",
@@ -1592,8 +1593,12 @@
       },
       "iqc005Title": "Quản lý nhập kho vật tư",
       "iqc005Description": "Tìm PO và đăng ký nhập vật tư.",
-      "action": { "receive": "Nhập kho" },
-      "modal": { "receiveTitle": "Đăng ký nhập vật tư" },
+      "action": {
+        "receive": "Nhập kho"
+      },
+      "modal": {
+        "receiveTitle": "Đăng ký nhập vật tư"
+      },
       "singleLot": "LOT đơn",
       "serialUnitNote": "ITEM_MASTERS.LOT_UNIT_QTY (chỉ đọc).",
       "confirm": {
@@ -1602,7 +1607,10 @@
         "serialIssueBody": "Sẽ phát hành {{count}} serial. Tiếp tục?",
         "serialIssueNote": "Bản xem trước nhãn sẽ mở tự động sau khi phát hành."
       },
-      "label": { "title": "Xem trước nhãn vật tư", "print": "In" },
+      "label": {
+        "title": "Xem trước nhãn vật tư",
+        "print": "In"
+      },
       "selectPoDesc": "Chọn PO có thể nhập hàng.",
       "selectWarehouse": "Chọn kho",
       "selectPart": "Chọn linh kiện",
@@ -2107,8 +2115,17 @@
         "total": "Tổng",
         "expired": "Đã hết hạn",
         "nearExpiry": "Sắp hết hạn",
-        "valid": "Còn hiệu lực"
-      }
+        "valid": "Còn hiệu lực",
+        "discarded": "Đã loại bỏ"
+      },
+      "discarded": "Đã loại bỏ",
+      "reinspect": "Kiểm tra lại",
+      "reinspectTitle": "Tái kiểm tra hạn sử dụng",
+      "reinspectHistory": "Lịch sử kiểm tra lại",
+      "extendDays": "Số ngày gia hạn",
+      "retestRound": "Lần",
+      "pass": "Đạt",
+      "fail": "Không đạt"
     },
     "hold": {
       "title": "Giữ tồn kho vật tư",

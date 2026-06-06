@@ -1,44 +1,40 @@
 "use client";
 
-/**
- * @file src/app/(authenticated)/material/shelf-life/page.tsx
- * @description 유수명자재 페이지 - 유효기한이 있는 LOT 현황 조회
- *
- * 초보자 가이드:
- * 1. **유수명**: 유효기한(Shelf Life)이 있는 자재
- * 2. **만료 임박**: 30일 이내 만료 예정 자재 경고
- * 3. API: GET /material/shelf-life
- */
-
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Timer, Search, RefreshCw, AlertTriangle, CheckCircle, XCircle, Clock } from "lucide-react";
+import {
+  Timer, Search, RefreshCw, AlertTriangle, CheckCircle,
+  XCircle, Clock, FlaskConical,
+} from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface ShelfLifeItem {
-  id: string;
   matUid: string;
   itemCode?: string;
   itemName?: string;
-  qty: number;
+  currentQty: number;
   unit?: string;
   expireDate?: string;
   expiryStatus: string;
   daysUntilExpiry: number | null;
   vendor?: string;
+  status?: string;
 }
 
 const expiryColors: Record<string, string> = {
-  EXPIRED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  NEAR_EXPIRY: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  VALID: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  EXPIRED: "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300",
+  NEAR_EXPIRY: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-300",
+  VALID: "text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700",
+  DISCARDED: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
 };
 
 export default function ShelfLifePage() {
   const { t } = useTranslation();
+  const router = useRouter();
 
   const [data, setData] = useState<ShelfLifeItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,16 +63,19 @@ export default function ShelfLifePage() {
     { value: "EXPIRED", label: t("material.shelfLife.expired") },
     { value: "NEAR_EXPIRY", label: t("material.shelfLife.nearExpiry") },
     { value: "VALID", label: t("material.shelfLife.valid") },
+    { value: "DISCARDED", label: t("material.shelfLife.discarded") },
   ], [t]);
 
   const stats = useMemo(() => ({
-    total: data.length,
+    total: data.filter(d => d.expiryStatus !== "DISCARDED").length,
     expired: data.filter(d => d.expiryStatus === "EXPIRED").length,
     nearExpiry: data.filter(d => d.expiryStatus === "NEAR_EXPIRY").length,
     valid: data.filter(d => d.expiryStatus === "VALID").length,
+    discarded: data.filter(d => d.expiryStatus === "DISCARDED").length,
   }), [data]);
 
   const rowClassName = useCallback((row: ShelfLifeItem) => {
+    if (row.expiryStatus === "DISCARDED") return "!bg-gray-50/50 dark:!bg-gray-900/20 opacity-60";
     if (row.expiryStatus === "EXPIRED") return "!bg-red-50/50 dark:!bg-red-950/20";
     if (row.expiryStatus === "NEAR_EXPIRY") return "!bg-yellow-50/50 dark:!bg-yellow-950/20";
     return "";
@@ -98,9 +97,9 @@ export default function ShelfLifePage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "qty", header: t("material.shelfLife.currentQty"), size: 110,
+      accessorKey: "currentQty", header: t("material.shelfLife.currentQty"), size: 110,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ row }) => <span>{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>,
+      cell: ({ row }) => <span>{(row.original.currentQty ?? 0).toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
       accessorKey: "vendor", header: t("material.shelfLife.vendor"), size: 100,
@@ -117,10 +116,11 @@ export default function ShelfLifePage() {
     {
       accessorKey: "daysUntilExpiry", header: t("material.shelfLife.remainDays"), size: 100,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => {
+      cell: ({ row, getValue }) => {
+        if (row.original.expiryStatus === "DISCARDED") return <span className="text-text-muted">-</span>;
         const days = getValue() as number | null;
         if (days === null) return <span className="text-text-muted">-</span>;
-        const cls = days < 0 ? "text-red-600 dark:text-red-400" : days <= 30 ? "text-yellow-600 dark:text-yellow-400" : "text-green-600 dark:text-green-400";
+        const cls = days < 0 ? "text-red-600 dark:text-red-400" : days <= 10 ? "text-yellow-600 dark:text-yellow-400" : "text-green-600 dark:text-green-400";
         return <span className={`font-medium ${cls}`}>{days}{t("material.shelfLife.days")}</span>;
       },
     },
@@ -130,14 +130,30 @@ export default function ShelfLifePage() {
         const label = getValue() as string;
         const displayName = label === "EXPIRED" ? t("material.shelfLife.expired")
           : label === "NEAR_EXPIRY" ? t("material.shelfLife.nearExpiry")
+          : label === "DISCARDED" ? t("material.shelfLife.discarded")
           : t("material.shelfLife.valid");
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${expiryColors[label] || ""}`}>{displayName}</span>;
       },
     },
-  ], [t]);
+    {
+      id: "actions", header: "", size: 80, enableSorting: false,
+      cell: ({ row }) => {
+        const item = row.original;
+        const canReinspect = item.expiryStatus === "EXPIRED" || item.expiryStatus === "NEAR_EXPIRY";
+        if (!canReinspect) return null;
+        return (
+          <Button size="sm" variant="secondary" className="h-6 px-2 text-xs"
+            onClick={() => router.push(`/material/shelf-life-reinspect?matUid=${item.matUid}`)}>
+            <FlaskConical className="w-3 h-3 mr-1" />{t("material.shelfLife.reinspect")}
+          </Button>
+        );
+      },
+    },
+  ], [t, router]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      {/* 헤더 */}
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -146,34 +162,41 @@ export default function ShelfLifePage() {
           <p className="text-text-muted mt-1">{t("material.shelfLife.subtitle")}</p>
         </div>
         <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+          {t("common.refresh")}
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+      {/* 통계 카드 */}
+      <div className="grid grid-cols-5 gap-3 flex-shrink-0">
         <StatCard label={t("material.shelfLife.stats.total")} value={stats.total} icon={Clock} color="blue" />
         <StatCard label={t("material.shelfLife.stats.expired")} value={stats.expired} icon={XCircle} color="red" />
         <StatCard label={t("material.shelfLife.stats.nearExpiry")} value={stats.nearExpiry} icon={AlertTriangle} color="yellow" />
         <StatCard label={t("material.shelfLife.stats.valid")} value={stats.valid} icon={CheckCircle} color="green" />
+        <StatCard label={t("material.shelfLife.stats.discarded")} value={stats.discarded} icon={XCircle} color="gray" />
       </div>
 
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter rowClassName={rowClassName}
-          enableExport exportFileName={t("material.shelfLife.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("material.shelfLife.searchPlaceholder")}
-                  value={searchText} onChange={e => setSearchText(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
+      {/* 데이터 그리드 */}
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+        <CardContent className="h-full p-4">
+          <DataGrid data={data} columns={columns} isLoading={loading}
+            enableColumnFilter enableExport exportFileName={t("material.shelfLife.title")}
+            rowClassName={rowClassName}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("material.shelfLife.searchPlaceholder")}
+                    value={searchText} onChange={e => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <Select options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} fullWidth />
+                </div>
               </div>
-              <div className="w-40 flex-shrink-0">
-                <Select options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} fullWidth />
-              </div>
-            </div>
-          } 
-          sqlQuery={`SELECT *\nFROM MAT_SHELF_LIFE\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
+            }
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

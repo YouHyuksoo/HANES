@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file production/monthly-plan/components/PlanColumns.tsx
  * @description 월간생산계획 DataGrid 컬럼 정의 훅
  *
@@ -127,7 +127,7 @@ export function usePlanColumns({ onConfirm, onUnconfirm, onIssue }: UsePlanColum
       size: 90,
       meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => (
-        <span className="font-medium">{(getValue() as number).toLocaleString()}</span>
+        <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>
       ),
     },
     {
@@ -136,7 +136,7 @@ export function usePlanColumns({ onConfirm, onUnconfirm, onIssue }: UsePlanColum
       size: 90,
       meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => (
-        <span>{(getValue() as number).toLocaleString()}</span>
+        <span>{((getValue() as number) ?? 0).toLocaleString()}</span>
       ),
     },
     {

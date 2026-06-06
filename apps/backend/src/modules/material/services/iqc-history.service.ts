@@ -177,6 +177,18 @@ export class IqcHistoryService {
     });
     const saved = await this.iqcLogRepository.save(log);
 
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: lot.itemCode, ...lotTenantWhere },
+    });
+
+    // IQC PASS + 품목에 유효기간이 설정된 경우 → expireDate 자동 계산
+    if (dto.result === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
+      const baseDate = lot.recvDate ? new Date(lot.recvDate) : new Date();
+      baseDate.setHours(0, 0, 0, 0);
+      const expireDate = new Date(baseDate.getTime() + part.expiryDate * 24 * 60 * 60 * 1000);
+      await this.matLotRepository.update({ matUid: dto.matUid, ...lotTenantWhere }, { expireDate });
+    }
+
     if (dto.result === 'FAIL') {
       await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
     }
@@ -193,10 +205,6 @@ export class IqcHistoryService {
         );
       }
     }
-
-    const part = await this.partMasterRepository.findOne({
-      where: { itemCode: lot.itemCode, ...lotTenantWhere },
-    });
 
     return {
       ...saved,
@@ -337,14 +345,31 @@ export class IqcHistoryService {
     });
     const saved = await this.iqcLogRepository.save(log);
 
-    // 3) FAIL → 입하건 전체 시리얼을 불용창고로 이동
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: dto.itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
+    });
+
+    // 3) PASS + 품목에 유효기간 설정 시 → 각 시리얼 expireDate 자동 계산
+    if (dto.result === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
+      for (const lot of lots) {
+        const baseDate = lot.recvDate ? new Date(lot.recvDate) : new Date();
+        baseDate.setHours(0, 0, 0, 0);
+        const expireDate = new Date(baseDate.getTime() + part.expiryDate * 24 * 60 * 60 * 1000);
+        await this.matLotRepository.update(
+          { matUid: lot.matUid, ...this.tenantWhere(lot.company, lot.plant) },
+          { expireDate },
+        );
+      }
+    }
+
+    // 4) FAIL → 입하건 전체 시리얼을 불용창고로 이동
     if (dto.result === 'FAIL') {
       for (const lot of lots) {
         await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
       }
     }
 
-    // 4) PASS + 샘플수량 → 파괴검사 시료 자동출고 (AUTO_ISSUE 모드, 시리얼 순서대로 차감)
+    // 5) PASS + 샘플수량 → 파괴검사 시료 자동출고 (AUTO_ISSUE 모드, 시리얼 순서대로 차감)
     if (dto.result === 'PASS' && dto.sampleQty && dto.sampleQty > 0) {
       const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE');
       if (issueMode === 'AUTO_ISSUE') {
@@ -362,10 +387,6 @@ export class IqcHistoryService {
         }
       }
     }
-
-    const part = await this.partMasterRepository.findOne({
-      where: { itemCode: dto.itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
-    });
 
     return {
       ...saved,

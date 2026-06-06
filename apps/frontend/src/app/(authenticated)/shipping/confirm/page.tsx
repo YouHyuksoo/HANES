@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/shipping/confirm/page.tsx
@@ -156,7 +156,7 @@ export default function ShipmentPage() {
     { accessorKey: 'customer', header: t('shipping.confirm.customer'), size: 120, meta: { filterType: 'text' as const } },
     { accessorKey: 'palletCount', header: t('shipping.confirm.pallet'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: 'boxCount', header: t('shipping.confirm.box'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: 'totalQty', header: t('common.totalQty'), size: 100, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'totalQty', header: t('common.totalQty'), size: 100, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: 'status', header: t('common.status'), size: 100, meta: { filterType: 'multi' as const }, cell: ({ getValue }) => <ShipmentStatusBadge status={getValue() as ShipmentStatus} /> },
     { accessorKey: 'vehicleNo', header: t('shipping.confirm.vehicleNo'), size: 100, meta: { filterType: 'text' as const } },
     { id: 'actions', header: '', size: 130, meta: { filterType: 'none' as const }, cell: ({ row }) => {

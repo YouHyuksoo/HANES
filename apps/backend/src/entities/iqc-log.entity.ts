@@ -69,6 +69,10 @@ export class IqcLog {
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 
+  /** 수명 재검사 회차 (inspectType=RETEST 전용) */
+  @Column({ name: 'RETEST_ROUND', type: 'number', nullable: true, default: null })
+  retestRound: number | null;
+
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 

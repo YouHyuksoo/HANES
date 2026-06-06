@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/quality/oqc/page.tsx
@@ -136,7 +136,7 @@ export default function OqcPage() {
     {
       accessorKey: "totalQty", header: t("quality.oqc.totalQty"), size: 90,
       meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: "sampleSize", header: t("quality.oqc.sampleSize"), size: 80,

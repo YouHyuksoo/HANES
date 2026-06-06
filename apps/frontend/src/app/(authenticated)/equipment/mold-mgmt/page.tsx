@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/equipment/mold-mgmt/page.tsx
@@ -168,10 +168,10 @@ export default function MoldMgmtPage() {
       cell: ({ getValue }) => <span className="font-mono text-right block">{getValue() as number}</span> },
     { accessorKey: "currentShots", header: t("equipment.mold.currentShots"), size: 100,
       meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span> },
+      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "guaranteedShots", header: t("equipment.mold.guaranteedShots"), size: 100,
       meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span> },
+      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "shotRate", header: t("equipment.mold.shotRate"), size: 90,
       accessorFn: (row) => row.guaranteedShots > 0
         ? Math.round((row.currentShots / row.guaranteedShots) * 100) : 0,

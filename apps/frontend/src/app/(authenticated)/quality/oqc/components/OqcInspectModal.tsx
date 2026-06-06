@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/quality/oqc/components/OqcInspectModal.tsx
@@ -124,7 +124,7 @@ export default function OqcInspectModal({ isOpen, onClose, requestId, onSuccess 
     },
     {
       accessorKey: "qty", header: t("quality.oqc.qty"), size: 80, meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: "isSample", header: t("quality.oqc.isSample"), size: 80, meta: { filterType: "multi" as const },

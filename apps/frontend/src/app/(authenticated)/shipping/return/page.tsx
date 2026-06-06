@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/shipping/return/page.tsx
@@ -137,7 +137,7 @@ export default function ShipReturnPage() {
     { accessorKey: "customerName", header: t("shipping.return.customer"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "returnDate", header: t("shipping.return.returnDate"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "returnReason", header: t("shipping.return.returnReason"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "totalQty", header: t("shipping.return.returnQty"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "totalQty", header: t("shipping.return.returnQty"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => {
       const s = getValue() as string;
       const label = statusOptions.find(o => o.value === s)?.label || s;

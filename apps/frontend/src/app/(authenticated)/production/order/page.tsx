@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/order/page.tsx
@@ -288,12 +288,12 @@ export default function JobOrderPage() {
     },
     {
       accessorKey: "planQty", header: t("production.order.planQty"), size: 80,
-      cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>,
       meta: { filterType: "number" as const, align: "right" as const },
     },
     {
       accessorKey: "goodQty", header: t("production.order.prodQty"), size: 80,
-      cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
       meta: { filterType: "number" as const, align: "right" as const },
     },
     {

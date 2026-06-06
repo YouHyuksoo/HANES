@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/quality/rework/page.tsx
@@ -211,7 +211,7 @@ export default function ReworkPage() {
     { accessorKey: "itemCode", header: t("quality.rework.itemCode"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("quality.rework.itemName"), size: 180, meta: { filterType: "text" as const } },
     { accessorKey: "reworkQty", header: t("quality.rework.reworkQty"), size: 90, meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span> },
+      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "defectType", header: t("quality.rework.defectType"), size: 110, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_TYPE" code={getValue() as string} /> },
     { accessorKey: "status", header: t("common.status"), size: 120, meta: { filterType: "multi" as const },

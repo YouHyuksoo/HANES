@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/input-manual/page.tsx
@@ -204,8 +204,8 @@ export default function InputManualPage() {
     { accessorKey: 'itemName', header: t('production.inputManual.partName'), size: 150, meta: { filterType: 'text' as const } },
     { accessorKey: 'workerName', header: t('production.inputManual.worker'), size: 80, meta: { filterType: 'text' as const } },
     { accessorKey: 'matUid', header: t('production.inputManual.matUid'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'goodQty', header: t('production.inputManual.good'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'defectQty', header: t('production.inputManual.defect'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'goodQty', header: t('production.inputManual.good'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
+    { accessorKey: 'defectQty', header: t('production.inputManual.defect'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: 'workDate', header: t('production.inputManual.workDate'), size: 100, meta: { filterType: 'date' as const } },
     { id: 'time', header: t('production.inputManual.workTime'), size: 130, meta: { filterType: 'none' as const }, cell: ({ row }) => <span className="text-text-muted">{row.original.startAt} ~ {row.original.endAt}</span> },
   ], [t]);

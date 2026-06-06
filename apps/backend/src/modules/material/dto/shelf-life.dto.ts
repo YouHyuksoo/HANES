@@ -16,16 +16,16 @@ export class ShelfLifeQueryDto extends PaginationQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '만료 상태 필터', enum: ['EXPIRED', 'NEAR_EXPIRY', 'VALID'] })
+  @ApiPropertyOptional({ description: '만료 상태 필터', enum: ['EXPIRED', 'NEAR_EXPIRY', 'VALID', 'DISCARDED'] })
   @IsOptional()
   @IsString()
-  @IsIn(['EXPIRED', 'NEAR_EXPIRY', 'VALID'])
+  @IsIn(['EXPIRED', 'NEAR_EXPIRY', 'VALID', 'DISCARDED'])
   expiryStatus?: string;
 
-  @ApiPropertyOptional({ description: '만료 임박 일수 (기본 30일)', default: 30 })
+  @ApiPropertyOptional({ description: '만료 임박 일수 (기본 10일)', default: 10 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  nearExpiryDays?: number = 30;
+  nearExpiryDays?: number = 10;
 }

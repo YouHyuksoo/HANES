@@ -205,6 +205,7 @@
     "material.lotSplit": "物料分割管理",
     "material.lotMerge": "物料合并",
     "material.shelfLife": "物料保质期管理",
+    "material.shelfLifeReinspect": "保质期复检",
     "material.hold": "物料库存冻结管理",
     "material.scrap": "物料报废处理",
     "material.adjustment": "库存调整处理",
@@ -1592,8 +1593,12 @@
       },
       "iqc005Title": "材料入库管理",
       "iqc005Description": "查询采购订单并登记物料入库。",
-      "action": { "receive": "入库" },
-      "modal": { "receiveTitle": "登记物料入库" },
+      "action": {
+        "receive": "入库"
+      },
+      "modal": {
+        "receiveTitle": "登记物料入库"
+      },
       "singleLot": "单批次",
       "serialUnitNote": "ITEM_MASTERS.LOT_UNIT_QTY (只读)。",
       "confirm": {
@@ -1602,7 +1607,10 @@
         "serialIssueBody": "将发行 {{count}} 个序列号。继续吗?",
         "serialIssueNote": "发行后将自动打开标签预览。"
       },
-      "label": { "title": "材料标签预览", "print": "打印" },
+      "label": {
+        "title": "材料标签预览",
+        "print": "打印"
+      },
       "selectPoDesc": "请选择可到货的PO。",
       "selectWarehouse": "选择仓库",
       "selectPart": "选择零件",
@@ -2107,8 +2115,17 @@
         "total": "全部",
         "expired": "已过期",
         "nearExpiry": "即将到期",
-        "valid": "有效"
-      }
+        "valid": "有效",
+        "discarded": "已废弃"
+      },
+      "discarded": "已废弃",
+      "reinspect": "复检",
+      "reinspectTitle": "保质期复检",
+      "reinspectHistory": "复检历史",
+      "extendDays": "延长天数",
+      "retestRound": "次数",
+      "pass": "合格",
+      "fail": "不合格"
     },
     "hold": {
       "title": "物料库存冻结",

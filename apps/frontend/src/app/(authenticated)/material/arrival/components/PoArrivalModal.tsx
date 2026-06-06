@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/material/arrival/components/PoArrivalModal.tsx
@@ -160,7 +160,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       header: t('material.arrival.col.remainingQty'),
       size: 80,
       meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="text-orange-600 font-medium">{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="text-orange-600 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       id: 'inputQty',

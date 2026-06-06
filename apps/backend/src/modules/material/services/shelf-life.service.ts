@@ -20,7 +20,7 @@ export class ShelfLifeService {
   ) {}
 
   async findAll(query: ShelfLifeQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, search, expiryStatus, nearExpiryDays = 30 } = query;
+    const { page = 1, limit = 10, search, expiryStatus, nearExpiryDays = 10 } = query;
     const skip = (page - 1) * limit;
 
     const where: FindOptionsWhere<MatLot> = {
@@ -60,10 +60,13 @@ export class ShelfLifeService {
     let result = data.map((lot) => {
       const part = partMap.get(lot.itemCode);
       const expireDate = lot.expireDate ? new Date(lot.expireDate) : null;
-      let status: 'EXPIRED' | 'NEAR_EXPIRY' | 'VALID' = 'VALID';
+      let status: 'EXPIRED' | 'NEAR_EXPIRY' | 'VALID' | 'DISCARDED' = 'VALID';
       let daysUntilExpiry: number | null = null;
 
-      if (expireDate) {
+      // 폐기 처리된 LOT는 별도 상태로 표시
+      if (lot.status === 'DISCARDED') {
+        status = 'DISCARDED';
+      } else if (expireDate) {
         expireDate.setHours(0, 0, 0, 0);
         daysUntilExpiry = Math.ceil((expireDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 

@@ -17,6 +17,7 @@ import { MiscReceiptController } from '../controllers/misc-receipt.controller';
 import { PhysicalInvController } from '../controllers/physical-inv.controller';
 import { ScrapController } from '../controllers/scrap.controller';
 import { ShelfLifeController } from '../controllers/shelf-life.controller';
+import { ShelfLifeReInspectController } from '../controllers/shelf-life-reinspect.controller';
 import { AdjustmentService } from '../services/adjustment.service';
 import { HoldService } from '../services/hold.service';
 import { MatStockService } from '../services/mat-stock.service';
@@ -44,6 +45,7 @@ import { ShelfLifeService } from '../services/shelf-life.service';
   controllers: [
     MatStockController,
     ShelfLifeController,
+    ShelfLifeReInspectController,
     HoldController,
     ScrapController,
     AdjustmentController,

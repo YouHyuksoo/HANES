@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/customs/stock/page.tsx
@@ -73,8 +73,8 @@ export default function CustomsStockPage() {
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "origin", header: t("customs.entry.origin"), size: 70, meta: { filterType: "text" as const } },
-    { accessorKey: "qty", header: t("customs.stock.receivedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: "usedQty", header: t("customs.stock.usedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "qty", header: t("customs.stock.receivedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
+    { accessorKey: "usedQty", header: t("customs.stock.usedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
     {
       accessorKey: "remainQty", header: t("customs.stock.remainQty"), size: 90, meta: { filterType: "number" as const },
       cell: ({ getValue }) => { const val = getValue() as number; return <span className={val === 0 ? "text-text-muted" : "font-semibold text-primary"}>{val.toLocaleString()}</span>; },

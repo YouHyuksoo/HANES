@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/customs/usage/page.tsx
@@ -120,7 +120,7 @@ export default function CustomsUsagePage() {
     { accessorKey: "matUid", header: t("customs.stock.matUid"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "usageQty", header: t("customs.usage.usageQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "usageQty", header: t("customs.usage.usageQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
     { accessorKey: "usageDate", header: t("customs.usage.usageDate"), size: 130, meta: { filterType: "date" as const } },
     { accessorKey: "reportDate", header: t("customs.usage.reportDate"), size: 130, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "jobOrderNo", header: t("customs.usage.jobOrder"), size: 110, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },

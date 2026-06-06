@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 /**
  * @file src/components/material/IssueFromRequestModal.tsx
@@ -139,14 +139,14 @@ export default function IssueFromRequestModal({
       header: t('material.col.requestQty'),
       size: 100,
       meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: 'issuedQty',
       header: t('material.issue.issuedLabel'),
       size: 90,
       meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: 'remainQty',
@@ -154,7 +154,7 @@ export default function IssueFromRequestModal({
       size: 90,
       meta: { filterType: 'number' as const },
       cell: ({ getValue }) => (
-        <span className="font-medium text-primary">{(getValue() as number).toLocaleString()}</span>
+        <span className="font-medium text-primary">{((getValue() as number) ?? 0).toLocaleString()}</span>
       ),
     },
     {

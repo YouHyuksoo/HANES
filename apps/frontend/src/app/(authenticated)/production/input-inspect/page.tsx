@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/input-inspect/page.tsx
@@ -196,9 +196,9 @@ export default function InputInspectPage() {
     { accessorKey: 'orderNo', header: t('production.inputInspect.orderNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemName', header: t('production.inputInspect.partName'), size: 140, meta: { filterType: 'text' as const } },
     { accessorKey: 'matUid', header: t('production.inputInspect.matUid'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'inspectQty', header: t('production.inputInspect.inspectQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'passQty', header: t('production.inputInspect.pass'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'failQty', header: t('production.inputInspect.fail'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'inspectQty', header: t('production.inputInspect.inspectQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
+    { accessorKey: 'passQty', header: t('production.inputInspect.pass'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
+    { accessorKey: 'failQty', header: t('production.inputInspect.fail'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     {
       accessorKey: 'passYn', header: t('production.inputInspect.judgment'), size: 80,
       meta: { filterType: 'multi' as const },

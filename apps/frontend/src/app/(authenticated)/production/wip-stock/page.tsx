@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/wip-stock/page.tsx
@@ -81,7 +81,7 @@ export default function WipStockPage() {
       },
     },
     { accessorKey: 'whName', header: t('production.wipStock.warehouse'), size: 110, meta: { filterType: 'text' as const } },
-    { accessorKey: 'qty', header: t('production.wipStock.stockQty'), size: 100, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'qty', header: t('production.wipStock.stockQty'), size: 100, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: 'unit', header: t('production.wipStock.unit'), size: 60, meta: { filterType: 'text' as const } },
     { accessorKey: 'prdUid', header: t('production.wipStock.prdUid'), size: 130, meta: { filterType: 'text' as const } },
     { accessorKey: 'updatedAt', header: t('production.wipStock.updatedAt'), size: 110, meta: { filterType: 'date' as const } },

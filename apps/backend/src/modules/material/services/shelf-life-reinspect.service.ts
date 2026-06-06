@@ -4,9 +4,9 @@
  *
  * 초보자 가이드:
  * 1. create(): IqcLog에 inspectType='RETEST'로 기록 + 합격/불합격 후속 처리
- * 2. 합격: 기본 재검 연장일수(90일)만큼 MatLot.expireDate 연장
- * 3. 불합격: G6과 동일한 불합격 자동처리 (불용창고 이동)
- * 4. 별도 테이블 없이 기존 IQC_LOGS 재사용 (심플이즈베스트)
+ * 2. 합격: 새 만료일 = 검사일 + 적용연장일(item.expiryExtDays 상한)
+ * 3. 불합격: 불용창고 이동 + MatLot.status = 'DISCARDED'
+ * 4. 회차: 해당 시리얼의 이전 RETEST IqcLog 수 + 1
  */
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,6 +24,7 @@ interface CreateReInspectDto {
   matUid: string;
   inspectorName?: string;
   result: 'PASS' | 'FAIL';
+  extendDays?: number;
   destructSampleQty?: number;
   details?: string;
   remark?: string;
@@ -70,12 +71,14 @@ export class ShelfLifeReInspectService {
   }
 
   /** 재검사 이력 조회 (inspectType = RETEST) */
-  async findAll(query: { page?: number; limit?: number }, company?: string, plant?: string) {
+  async findAll(query: { page?: number; limit?: number; matUid?: string; result?: string }, company?: string, plant?: string) {
     const { page = 1, limit = 20 } = query;
     const where: FindOptionsWhere<IqcLog> = {
       inspectType: 'RETEST',
       ...(company && { company }),
       ...(plant && { plant }),
+      ...(query.matUid && { matUid: query.matUid }),
+      ...(query.result && { result: query.result }),
     };
     const [data, total] = await this.iqcLogRepo.findAndCount({
       where,
@@ -83,7 +86,22 @@ export class ShelfLifeReInspectService {
       take: limit,
       order: { inspectDate: 'DESC' },
     });
-    return { data, total, page, limit };
+
+    // 품목명 보강
+    const itemCodes = [...new Set(data.map(d => d.itemCode).filter(Boolean))];
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepo.find({ where: itemCodes.map(code => ({ itemCode: code, ...(company && { company }), ...(plant && { plant }) })) })
+      : [];
+    const partMap = new Map(parts.map(p => [p.itemCode, p]));
+
+    return {
+      data: data.map(d => ({
+        ...d,
+        itemName: partMap.get(d.itemCode)?.itemName ?? null,
+        unit: partMap.get(d.itemCode)?.unit ?? null,
+      })),
+      total, page, limit,
+    };
   }
 
   /** 재검사 실적 등록 + 후속처리 */
@@ -94,10 +112,44 @@ export class ShelfLifeReInspectService {
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
     this.assertSameTenant(lot, company, plant, 'LOT');
 
+    if (lot.status === 'DISCARDED') {
+      throw new BadRequestException('이미 폐기 처리된 LOT입니다.');
+    }
+
     const lotTenant = this.tenantWhere(lot.company, lot.plant);
-    // IqcLog에 RETEST로 기록
+
+    // 품목 조회 (최대 연장일 확인)
+    const item = await this.partMasterRepo.findOne({
+      where: { itemCode: lot.itemCode, ...lotTenant },
+    });
+    const maxExtDays = item?.expiryExtDays ?? 0;
+
+    // 연장일 검증 및 결정
+    if (dto.extendDays !== undefined && dto.extendDays !== null) {
+      if (dto.extendDays < 0) {
+        throw new BadRequestException('연장일은 0 이상이어야 합니다.');
+      }
+      if (maxExtDays > 0 && dto.extendDays > maxExtDays) {
+        throw new BadRequestException(
+          `적용연장일(${dto.extendDays}일)이 품목의 최대 연장일(${maxExtDays}일)을 초과합니다.`,
+        );
+      }
+    }
+    const extendDays = dto.extendDays ?? maxExtDays;
+
+    // 회차 계산: 이 시리얼의 기존 RETEST 이력 수 + 1
+    const prevCount = await this.iqcLogRepo.count({
+      where: { matUid: dto.matUid, inspectType: 'RETEST', ...lotTenant },
+    });
+    const retestRound = prevCount + 1;
+
+    const inspectionDate = new Date();
+    inspectionDate.setHours(0, 0, 0, 0);
+
+    // IqcLog 기록 (matUid + retestRound 포함)
     const log = this.iqcLogRepo.create({
       arrivalNo: null,
+      matUid: dto.matUid,
       itemCode: lot.itemCode,
       inspectType: 'RETEST',
       result: dto.result,
@@ -105,29 +157,28 @@ export class ShelfLifeReInspectService {
       inspectorName: dto.inspectorName || null,
       destructSampleQty: dto.destructSampleQty || null,
       remark: dto.remark || null,
+      retestRound,
       inspectDate: new Date(),
       company: lot.company,
       plant: lot.plant,
     });
     const saved = await this.iqcLogRepo.save(log);
 
-    // 합격: 만료기간 연장
-    if (dto.result === 'PASS' && lot.expireDate) {
-      const extendDays = 90;
-      const prevExpiry = new Date(lot.expireDate);
-      const newExpiry = new Date(prevExpiry.getTime() + extendDays * 24 * 60 * 60 * 1000);
+    // 합격: 새 만료일 = 검사일 + 연장일 (prevExpiry 기준 아님)
+    if (dto.result === 'PASS' && extendDays > 0) {
+      const newExpiry = new Date(inspectionDate.getTime() + extendDays * 24 * 60 * 60 * 1000);
       await this.matLotRepo.update({ matUid: lot.matUid, ...lotTenant }, { expireDate: newExpiry });
     }
 
-    // 불합격: 불용창고 자동이동
+    // 불합격: 불용창고 이동 + DISCARDED 처리
     if (dto.result === 'FAIL') {
       await this.handleFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
     }
 
-    return { ...saved, matUid: dto.matUid };
+    return { ...saved, matUid: dto.matUid, retestRound };
   }
 
-  /** 불합격 처리: 불용창고 자동이동 (G6과 동일 로직) */
+  /** 불합격 처리: 불용창고 자동이동 + status = DISCARDED */
   private async handleFail(matUid: string, itemCode: string, company?: string | null, plant?: string | null) {
     const tenantWhere = this.tenantWhere(company, plant);
     const defectWh = await this.warehouseRepo.findOne({
@@ -139,11 +190,16 @@ export class ShelfLifeReInspectService {
     const stock = await this.matStockRepo.findOne({
       where: { matUid, itemCode, ...tenantWhere },
     });
-    if (!stock || stock.qty <= 0) return;
+    if (!stock || stock.qty <= 0) {
+      // 재고 없어도 DISCARDED 처리는 진행
+      await this.matLotRepo.update({ matUid, ...tenantWhere }, { status: 'DISCARDED' });
+      return;
+    }
     this.assertSameTenant(stock, company, plant, '재검 대상 재고');
-    if (stock.availableQty < stock.qty) {
+
+    if ((stock.availableQty ?? stock.qty) < stock.qty) {
       throw new BadRequestException(
-        `??? ??? ?? ?? FAIL ??? ??? ? ????. ????: ${stock.availableQty}`,
+        `예약된 수량이 남아 있어 폐기 처리를 할 수 없습니다. 가용수량: ${stock.availableQty ?? 0}`,
       );
     }
 
@@ -182,7 +238,7 @@ export class ShelfLifeReInspectService {
         company, plant,
       });
 
-      await queryRunner.manager.update(MatLot, { matUid, ...tenantWhere }, { status: 'SCRAPPED' });
+      await queryRunner.manager.update(MatLot, { matUid, ...tenantWhere }, { status: 'DISCARDED' });
     });
   }
 }

@@ -206,6 +206,7 @@
     "material.lotSplit": "자재분할관리",
     "material.lotMerge": "자재병합관리",
     "material.shelfLife": "자재유수명관리",
+    "material.shelfLifeReinspect": "유수명자재 재검사",
     "material.hold": "자재재고홀드관리",
     "material.scrap": "자재폐기처리",
     "material.adjustment": "재고보정처리",
@@ -1922,8 +1923,12 @@
       },
       "iqc005Title": "자재 입하관리",
       "iqc005Description": "PO를 조회하여 자재를 입하 등록합니다.",
-      "action": { "receive": "자재입하" },
-      "modal": { "receiveTitle": "자재입하 등록" },
+      "action": {
+        "receive": "자재입하"
+      },
+      "modal": {
+        "receiveTitle": "자재입하 등록"
+      },
       "singleLot": "단일 LOT 발급",
       "serialUnitNote": "품목 마스터 LOT_UNIT_QTY 값. 수정 불가.",
       "confirm": {
@@ -1932,7 +1937,10 @@
         "serialIssueBody": "{{count}}건의 시리얼을 발급합니다. 계속하시겠습니까?",
         "serialIssueNote": "발급 후 자동으로 라벨 미리보기가 표시됩니다."
       },
-      "label": { "title": "자재 라벨 미리보기", "print": "인쇄" },
+      "label": {
+        "title": "자재 라벨 미리보기",
+        "print": "인쇄"
+      },
       "selectPoDesc": "입하 가능한 PO를 선택해주세요.",
       "selectWarehouse": "창고 선택",
       "selectPart": "품목 선택",
@@ -2437,8 +2445,17 @@
         "total": "전체",
         "expired": "만료됨",
         "nearExpiry": "만료임박",
-        "valid": "유효"
-      }
+        "valid": "유효",
+        "discarded": "폐기됨"
+      },
+      "discarded": "폐기됨",
+      "reinspect": "재검사",
+      "reinspectTitle": "유수명자재 재검사",
+      "reinspectHistory": "재검사 이력",
+      "extendDays": "적용연장일(일)",
+      "retestRound": "회차",
+      "pass": "합격",
+      "fail": "불합격"
     },
     "hold": {
       "title": "자재재고홀드",

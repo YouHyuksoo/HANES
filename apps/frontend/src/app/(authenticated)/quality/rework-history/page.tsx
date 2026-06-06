@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/quality/rework-history/page.tsx
@@ -140,7 +140,7 @@ export default function ReworkHistoryPage() {
         meta: { filterType: "number" as const },
         cell: ({ getValue }) => (
           <span className="font-mono text-right block">
-            {(getValue() as number).toLocaleString()}
+            {((getValue() as number) ?? 0).toLocaleString()}
           </span>
         ),
       },
@@ -151,7 +151,7 @@ export default function ReworkHistoryPage() {
         meta: { filterType: "number" as const },
         cell: ({ getValue }) => (
           <span className="font-mono text-right block text-green-600 dark:text-green-400">
-            {(getValue() as number).toLocaleString()}
+            {((getValue() as number) ?? 0).toLocaleString()}
           </span>
         ),
       },
@@ -162,7 +162,7 @@ export default function ReworkHistoryPage() {
         meta: { filterType: "number" as const },
         cell: ({ getValue }) => (
           <span className="font-mono text-right block text-red-600 dark:text-red-400">
-            {(getValue() as number).toLocaleString()}
+            {((getValue() as number) ?? 0).toLocaleString()}
           </span>
         ),
       },

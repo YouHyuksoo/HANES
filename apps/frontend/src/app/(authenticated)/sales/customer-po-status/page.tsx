@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/shipping/customer-po-status/page.tsx
@@ -81,8 +81,8 @@ export default function CustomerPoStatusPage() {
     { accessorKey: "orderNo", header: t("shipping.customerPoStatus.orderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.customerPoStatus.customer"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "dueDate", header: t("shipping.customerPoStatus.dueDate"), size: 100, meta: { filterType: "date" as const } },
-    { accessorKey: "orderQty", header: t("shipping.customerPoStatus.orderQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "shippedQty", header: t("shipping.customerPoStatus.shippedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "orderQty", header: t("shipping.customerPoStatus.orderQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
+    { accessorKey: "shippedQty", header: t("shipping.customerPoStatus.shippedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     {
       accessorKey: "shipRate", header: t("shipping.customerPoStatus.shipRate"), size: 100,
       meta: { filterType: "none" as const },

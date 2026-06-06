@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file PoLineGrid.tsx
@@ -79,21 +79,21 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       header: t('material.arrival.col.orderQty'),
       size: 90,
       meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <div className="text-right">{(getValue() as number).toLocaleString()}</div>,
+      cell: ({ getValue }) => <div className="text-right">{((getValue() as number) ?? 0).toLocaleString()}</div>,
     },
     {
       accessorKey: 'receivedQty',
       header: t('material.arrival.col.accReceived'),
       size: 90,
       meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <div className="text-right">{(getValue() as number).toLocaleString()}</div>,
+      cell: ({ getValue }) => <div className="text-right">{((getValue() as number) ?? 0).toLocaleString()}</div>,
     },
     {
       accessorKey: 'remainingQty',
       header: t('material.arrival.col.remainingQty'),
       size: 90,
       meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <div className="text-right text-blue-700 font-bold">{(getValue() as number).toLocaleString()}</div>,
+      cell: ({ getValue }) => <div className="text-right text-blue-700 font-bold">{((getValue() as number) ?? 0).toLocaleString()}</div>,
     },
     {
       accessorKey: 'orderDate',

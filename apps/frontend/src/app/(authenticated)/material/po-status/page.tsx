@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/material/po-status/page.tsx
@@ -162,13 +162,13 @@ export default function PoStatusPage() {
       accessorKey: "orderQty", header: t("material.poStatus.orderQty"), size: 100,
       meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => (
-        <span className="font-semibold">{(getValue() as number).toLocaleString()}</span>
+        <span className="font-semibold">{((getValue() as number) ?? 0).toLocaleString()}</span>
       ),
     },
     {
       accessorKey: "receivedQty", header: t("material.poStatus.receivedQty"), size: 100,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: "receiveRate", header: t("material.poStatus.receiveRate"), size: 130,

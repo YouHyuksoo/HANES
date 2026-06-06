@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/material/scrap/page.tsx
@@ -107,7 +107,7 @@ export default function ScrapPage() {
     {
       accessorKey: "qty", header: t("material.scrap.qty"), size: 90,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">-{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">-{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: "warehouseName", header: t("material.scrap.warehouse"), size: 100,

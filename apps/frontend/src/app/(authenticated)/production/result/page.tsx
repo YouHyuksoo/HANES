@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/result/page.tsx
@@ -126,12 +126,12 @@ export default function ProdResultPage() {
       {
         accessorKey: 'goodQty', header: t('production.result.goodQty'), size: 70,
         meta: { filterType: 'number' as const },
-        cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span>
+        cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>
       },
       {
         accessorKey: 'defectQty', header: t('production.result.defectQty'), size: 70,
         meta: { filterType: 'number' as const },
-        cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span>
+        cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>
       },
       {
         id: 'defectRate', header: t('production.result.defectRate'), size: 80,

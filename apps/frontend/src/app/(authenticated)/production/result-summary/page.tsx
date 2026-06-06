@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/result-summary/page.tsx
@@ -109,12 +109,12 @@ export default function ResultSummaryPage() {
     {
       accessorKey: "totalPlanQty", header: t("production.resultSummary.planQty"), size: 90,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: "totalGoodQty", header: t("production.resultSummary.goodQty"), size: 90,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: "totalDefectQty", header: t("production.resultSummary.defectQty"), size: 90,
@@ -142,7 +142,7 @@ export default function ResultSummaryPage() {
     {
       accessorKey: "orderCount", header: t("production.resultSummary.orderCount"), size: 70,
       meta: { filterType: "number" as const, align: "center" as const },
-      cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="text-text-muted">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
   ], [t]);
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/shipping/customer-po/page.tsx
@@ -112,7 +112,7 @@ export default function CustomerPoPage() {
     { accessorKey: "orderDate", header: t("shipping.customerPo.orderDate"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "dueDate", header: t("shipping.customerPo.dueDate"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "itemCount", header: t("shipping.customerPo.itemCount"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: "totalAmount", header: t("shipping.customerPo.totalAmount"), size: 120, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "totalAmount", header: t("shipping.customerPo.totalAmount"), size: 120, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     {
       accessorKey: "status", header: t("common.status"), size: 90,
       meta: { filterType: "multi" as const },

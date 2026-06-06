@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/shipping/history/page.tsx
@@ -79,7 +79,7 @@ export default function ShipHistoryPage() {
     { accessorKey: "dueDate", header: t("shipping.history.dueDate"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "shipDate", header: t("shipping.history.shipDateCol"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "itemCount", header: t("shipping.history.itemCount"), size: 70, meta: { filterType: "number" as const } },
-    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 100, meta: { filterType: "date" as const } },
   ], [t]);

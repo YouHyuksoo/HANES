@@ -122,6 +122,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MAT_LOT_SPLIT", labelKey: "menu.material.lotSplit", path: "/material/lot-split" },
       { code: "MAT_LOT_MERGE", labelKey: "menu.material.lotMerge", path: "/material/lot-merge" },
       { code: "MAT_SHELF_LIFE", labelKey: "menu.material.shelfLife", path: "/material/shelf-life" },
+      { code: "MAT_SHELF_LIFE_REINSPECT", labelKey: "menu.material.shelfLifeReinspect", path: "/material/shelf-life-reinspect" },
       { code: "MAT_SCRAP", labelKey: "menu.material.scrap", path: "/material/scrap" },
       { code: "MAT_ADJUSTMENT", labelKey: "menu.material.adjustment", path: "/material/adjustment" },
       { code: "MAT_MISC_RECEIPT", labelKey: "menu.material.miscReceipt", path: "/material/misc-receipt" },

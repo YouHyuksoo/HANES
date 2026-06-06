@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/pages/material/issue/components/IssueTable.tsx
@@ -41,11 +41,11 @@ export default function IssueTable({ data, onApprove, onReject, onProcess }: Iss
     { accessorKey: 'itemName', header: t('common.partName'), size: 120, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'requestQty', header: t('material.col.requestQty'), size: 90, meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: 'issuedQty', header: t('material.col.issuedQty'), size: 90, meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span>,
+      cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: 'status', header: t('common.status'), size: 90, meta: { filterType: 'multi' as const },

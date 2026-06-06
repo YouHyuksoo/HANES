@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/material/arrival-stock/page.tsx
@@ -161,7 +161,7 @@ export default function ArrivalStockPage() {
         size: 100,
         meta: { filterType: "number" as const, align: "right" as const },
         cell: ({ getValue }) => (
-          <span>{(getValue() as number).toLocaleString()}</span>
+          <span>{((getValue() as number) ?? 0).toLocaleString()}</span>
         ),
       },
       {

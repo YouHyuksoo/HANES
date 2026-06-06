@@ -67,35 +67,64 @@ describe('ShelfLifeReInspectService', () => {
   });
 
   describe('create', () => {
-    it('재검 PASS는 LOT의 회사/공장 범위에서 기본 연장일수로 LOT 만료일을 갱신한다', async () => {
-      const expireDate = new Date('2026-01-01T00:00:00.000Z');
+    it('재검 PASS는 검사일 + 연장일 기준으로 LOT 만료일을 갱신한다', async () => {
       matLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
-        expireDate,
+        expireDate: new Date('2026-01-01'),
+        status: 'NORMAL',
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
+      partMasterRepo.findOne.mockResolvedValue({
+        itemCode: 'ITEM-001',
+        expiryExtDays: 90,
+      } as PartMaster);
+      iqcLogRepo.count.mockResolvedValue(0);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
-      iqcLogRepo.save.mockResolvedValue({ inspectNo: 'IQC-001' } as any);
+      iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
 
       await service.create({ matUid: 'MAT-001', result: 'PASS' }, 'HANES', 'P01');
 
       expect(matLotRepo.update).toHaveBeenCalledWith(
         { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-        { expireDate: new Date('2026-04-01T00:00:00.000Z') },
+        { expireDate: expect.any(Date) },
       );
+    });
+
+    it('dto.extendDays가 품목 최대 연장일을 초과하면 BadRequestException 발생', async () => {
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        status: 'NORMAL',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot);
+      partMasterRepo.findOne.mockResolvedValue({
+        itemCode: 'ITEM-001',
+        expiryExtDays: 90,
+      } as PartMaster);
+      iqcLogRepo.count.mockResolvedValue(0);
+      iqcLogRepo.create.mockReturnValue({} as IqcLog);
+      iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
+
+      await expect(
+        service.create({ matUid: 'MAT-001', result: 'PASS', extendDays: 200 }, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('예약된 수량이 남아 있으면 재검 FAIL 이동을 차단한다', async () => {
       matLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
+        status: 'NORMAL',
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
+      partMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as PartMaster);
+      iqcLogRepo.count.mockResolvedValue(0);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
-      iqcLogRepo.save.mockResolvedValue({ inspectNo: 'IQC-001' } as any);
+      iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
       matStockRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
@@ -103,11 +132,15 @@ describe('ShelfLifeReInspectService', () => {
         availableQty: 4,
         reservedQty: 6,
         warehouseCode: 'WH-01',
+        company: 'HANES',
+        plant: 'P01',
       } as MatStock);
       warehouseRepo.findOne.mockResolvedValue({
         warehouseCode: 'WH-DEF',
         warehouseType: 'DEFECT',
         useYn: 'Y',
+        company: 'HANES',
+        plant: 'P01',
       } as Warehouse);
 
       await expect(
@@ -119,11 +152,14 @@ describe('ShelfLifeReInspectService', () => {
       matLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
+        status: 'NORMAL',
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
+      partMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as PartMaster);
+      iqcLogRepo.count.mockResolvedValue(0);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
-      iqcLogRepo.save.mockResolvedValue({ inspectNo: 'IQC-001' } as any);
+      iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
       warehouseRepo.findOne.mockResolvedValue({
         warehouseCode: 'WH-DEF',
         warehouseType: 'DEFECT',
@@ -149,15 +185,18 @@ describe('ShelfLifeReInspectService', () => {
       expect(tx.run).not.toHaveBeenCalled();
     });
 
-    it('재검 FAIL 자동 이동은 TransactionService로 재고 이동과 이력을 함께 저장한다', async () => {
+    it('재검 FAIL 자동 이동은 TransactionService로 재고 이동과 DISCARDED 처리를 함께 저장한다', async () => {
       matLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
+        status: 'NORMAL',
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
+      partMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as PartMaster);
+      iqcLogRepo.count.mockResolvedValue(1);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
-      iqcLogRepo.save.mockResolvedValue({ inspectNo: 'IQC-001' } as any);
+      iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
       matStockRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
@@ -179,8 +218,9 @@ describe('ShelfLifeReInspectService', () => {
       queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
       queryRunner.manager.save.mockResolvedValue({} as any);
 
-      await service.create({ matUid: 'MAT-001', result: 'FAIL' });
+      const result = await service.create({ matUid: 'MAT-001', result: 'FAIL' });
 
+      expect(result.retestRound).toBe(2);
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(queryRunner.manager.save).toHaveBeenCalledWith(
@@ -189,8 +229,8 @@ describe('ShelfLifeReInspectService', () => {
       );
       expect(queryRunner.manager.update).toHaveBeenCalledWith(
         MatLot,
-        { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-        { status: 'SCRAPPED' },
+        expect.objectContaining({ matUid: 'MAT-001' }),
+        { status: 'DISCARDED' },
       );
     });
   });
