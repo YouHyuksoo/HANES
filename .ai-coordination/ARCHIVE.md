@@ -10,6 +10,8 @@ Format:
 
 ## Completed
 
+- T-MAT-CYCLE-E2E-QA | 2026-06-08 | codex | PO `PO-260608-013`부터 입하 `R26060800001`, LOT `VH1-RM260608-00004`, IQC PASS, 입고 `RCV20260608-0001`, 출고 `ISS20260608-0001`, 재고 0/LOT DEPLETED까지 실데이터 검증. UI 결함 5건 확인 | evidence: JOURNAL 2026-06-08 codex
+- T-LOT-SPLIT-MERGE | 2026-06-08 | claude | 자재분할/병합 재설계(#4·5·6): 원본 폐기(SPLIT/MERGED)→신규 시리얼 발번(분할 2조각/병합 통합1, nextMatSerial), 입고완료 게이팅(RECEIVE+분할·병합IN, 재가공 허용), 바코드 스캔 병합, STOCK_TX 채번, #4 currentQty 누락 해소. 회귀수정: IQC006 카운트 origin 필터, MAT_LOT_STATUS 공통코드 SPLIT/MERGED. tsc·jest16·API풀사이클·실DB 검증, 테스트데이터 원상복구 | evidence: HANDOFF/claude.md 2026-06-08
 - T-AUDIT-COLUMN-DEFAULT-FIX | 2026-06-04 | claude | ORA-01400(ITEM_MASTERS.CREATED_AT NULL) 근본원인=TypeORM Oracle이 감사컬럼을 DB DEFAULT에 의존. 33개 테이블/64개 컬럼에 `DEFAULT SYSTIMESTAMP` 일괄 보정(멱등 마이그레이션) + create-hanes-schema.sql 실DB 실측 재생성(148 테이블) | evidence: JOURNAL 2026-06-04 claude
 - T-BOM-LABEL-CLARIFY | 2026-06-02 | codex | BOM 화면 컬럼 라벨을 `품목유형`/`투입공정`으로 명확화해 `ITEM_TYPE`과 `BOM_MASTERS.OPER` 의미 구분 | evidence: JOURNAL 2026-06-02 13:13 codex
 - T-ITEM-TYPE-COMCODE-UNIFY | 2026-06-02 | codex | `ITEM_MASTERS.ITEM_TYPE` 품목유형 공통코드 기준을 `ITEM_TYPE`으로 통일하고 JSHANES 주석/활성 코드/런타임 화면/schema SQL/ERD 정리 | evidence: JOURNAL 2026-06-02 12:55 codex

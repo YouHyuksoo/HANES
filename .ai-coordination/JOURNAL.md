@@ -1,5 +1,90 @@
 # JOURNAL
 
+## 2026-06-08 11:08 codex
+
+### T-MAT-CYCLE-E2E-QA 완료
+
+**범위:** `PO -> 자재입하 -> IQC 검사 -> 자재입고 -> 자재출고 -> 자재재고` 실데이터 헤드리스 브라우저 QA.
+
+**테스트 데이터:**
+- PO: `PO-260608-013`, 공급처 `HS0001`, 품목 `CBL-A`, 수량 `25`.
+- 입하: `R26060800001`, LOT `VH1-RM260608-00004`, 제조사 `M001`, 입하창고 `W001`.
+- IQC: `PASS`, 검사자 `E2E검사자`, 시료수량 `1`, 성적서 업로드 경로 `apps/backend/uploads/iqc-certs/...txt`.
+- 입고: `RCV20260608-0001`, 수량 `25`, 창고 `W001`.
+- 출고: `ISS20260608-0001`, 수량 `25`, 출고계정 `PRODUCTION`.
+
+**통과 확인:**
+- PO 등록 버튼, 품목 추가/품목검색 모달, 저장 후 API/DB 조회 확인.
+- 자재입하 버튼, 제조사 선택, 시리얼 발급 확인 모달, 라벨 미리보기 확인.
+- IQC 검사 버튼, PASS/측정값/검사자/시료수량 입력, 합격 등록 확인.
+- 수동출고 탭, 출고처리 버튼, 확인 모달, `POST /material/issues => 201` 확인.
+- DB 확인: `MAT_RECEIVINGS` 1건, `MAT_ISSUES` 1건, `STOCK_TRANSACTIONS` `MAT_IN/RECEIVE/MAT_OUT`, `MAT_STOCKS.qty=0`, `MAT_LOTS.status=DEPLETED`.
+
+**발견 결함:**
+- 자재입고 화면 `POST /material/receiving` 요청이 `warehouseCode`를 보내지만 백엔드는 `warehouseId`를 요구해 400 실패. 화면 입고 버튼만으로는 사이클이 중단된다.
+- IQC 성적서 업로드 API는 있으나 IQC/IQC이력 화면에 업로드 버튼이 없어, 성적서 필수 품목은 UI만으로 입고 가능 상태까지 진행할 수 없다.
+- 입하/IQC 화면 일부 일자가 `2026-06-07T15:00:00.000Z` 또는 하루 전 날짜처럼 노출된다.
+- 수동출고에서 1건 선택 후 하단은 `선택됨 1건`이지만 다른 행 체크박스가 시각적으로 checked처럼 표시된다.
+- 자재재고 API/화면 검색은 `matUid`를 검색하지 않아 `VH1-RM260608-00004` 검색 시 빈 결과가 나오지만 전체 목록에는 해당 LOT 0 재고가 표시된다.
+
+**비고:**
+- 구현 파일은 수정하지 않았다. `T-MAT-RECV-FIXES` Claude 잠금 영역은 건드리지 않고 QA 증거만 남겼다.
+
+## 2026-06-07 claude
+
+### T-MAT-RECV-FIXES Phase 1 (빠른 버그) — 진행중
+
+스테이크홀더(행성) 자재입고 프로세스 지적 목록 대응. 참조: 목업 `C:\Document\고객별프로젝트\행성사\THN_MockUp`(MT\IQC001~006), 채번 pptx `HANES_MES_채번규칙.pptx`.
+
+**#1 PO 등록 오류 — 완료(API 재현 검증)**
+- 근본원인(systemic): `common/filters/http-exception.filter.ts`가 class-validator `message`(문자열 배열)를 버리고 `exception.message`("Bad Request Exception")로 폴백 → 앱 전체 폼 검증 오류가 무의미하게 표시.
+- 수정: 필터에서 배열 message를 줄바꿈 결합해 노출 + 원본 배열 `details` 보존.
+- PO DTO: orderQty 한글 메시지(@IsInt/@Min), itemCode `@IsNotEmpty`(빈값 시 500 ORA-01400→400), poNo `@IsNotEmpty`, items `@ArrayNotEmpty`.
+- 프론트 PoFormPanel: orderQty 정수≥1 클라 검증(저장 차단 + 인라인 error), i18n 4파일(`material.po.invalidQty/qtyMin`).
+- 검증: `POST /material/purchase-orders` qty=0→"발주수량은 1 이상이어야 합니다.", 소수점→"정수로 입력하세요.", 빈 itemCode→"품목코드는 필수입니다."(400), 정상건 생성 성공.
+
+**#2 입하관리 일부입하 상태 안 보임 — 수정완료(CLI검증), dev 재시작 필요**
+- 근본원인(systemic): ComCodeBadge가 DB `COM_CODES.ATTR1`의 Tailwind 클래스를 className으로 직접 사용. 소스에 없는 클래스(`bg-yellow-600` 등)는 Tailwind v4 JIT가 purge → 배경 사라짐(일부입하 배지가 배경색과 동일). `bg-blue-600`(OPEN)은 코드에 정적 존재라 살아남아 대비됨.
+- 수정: `app/globals.css`에 `@source inline(...)`로 ATTR1 사용 색상/음영(16색×{100,200,300,600,700,800,900}, dark 포함) + `text-white` safelist.
+- 검증: `@tailwindcss/cli`로 `.bg-yellow-600`/`.text-white` 생성 확인. **Turbopack dev 서버는 @source 변경 재스캔에 재시작 필요** — 재시작 후 브라우저 확인 예정.
+
+**작업지시 품목검색 제품·반제품만 — 완료(API 검증, tsc 통과)**
+- 백엔드 `PartQueryDto.itemTypes`(콤마구분→배열) + `part.service.findAll` `itemType IN (:...)`.
+- 프론트 `PartSearchModal` `allowedItemTypes` prop(유형 드롭다운 제한 + 미선택 시 허용유형으로 조회). JobOrderFormPanel에서 `["FINISHED","SEMI_PRODUCT"]` 전달. i18n `inventory.stock.consumable` 4파일.
+- 검증: `GET /master/parts?itemTypes=FINISHED,SEMI_PRODUCT` → FINISHED 3 + SEMI_PRODUCT 18, 원자재/소모품 제외.
+
+**#7 자재 입고 — 조사완료: 미구현 아님**
+- `/material/receive`(자재입고관리) 화면 정상 존재·동작(입고대기 12건). menuConfig 등록 + DB MENU_CATEGORY_ITEMS(MATERIAL) 할당 확인. 좌측 `자재수불관리`로 접근 가능.
+- 결론: discoverability(상단 탭바는 메뉴 아님/붐빔) 또는 흐름 안내 이슈. 사용자 확인 대기.
+
+### IQC006 입하실적조회 — 설계 승인 + Slice ① 백엔드 완료
+
+설계 spec: `docs/superpowers/specs/2026-06-07-iqc006-arrival-result-design.md` (사용자 승인: 슬라이스대로, 메뉴=입하관리 바로 뒤).
+사전검증(실측): 제조사=`MAT_LOTS.MFG_PARTNER_CODE`(시리얼단위), 입고판정=RECEIVE 트랜잭션합≥INIT_QTY, IQC대상=`ITEM_MASTERS.IQC_FLAG`, findAll은 거래단위라 신규 집계 필요, 기존 IQC006 라우트 없음.
+
+**Slice ① (목록+시리얼 조회) — 완료, API 검증**
+- DTO: `ArrivalResultQueryDto`, `ChangeManufacturerDto`(arrival.dto.ts).
+- 서비스(arrival.service.ts): `listArrivalResults`(입하번호+SEQ 집계, 상태CASE 도출, 페이징/필터, raw SQL `dataSource.query` `:n` 바인드), `getArrivalSerials`(시리얼+입고/취소/checkable). 상태코드: ARRIVED/IQC_PROGRESS/IQC_DONE/RECEIVED/CANCELED.
+- 컨트롤러: `GET /material/arrivals/results`, `GET /material/arrivals/results/:arrivalNo/:seq/serials`.
+- 검증: results 5건(serialCount/receivedCount/poType=RM/status=IQC_PROGRESS/cancelable), serials(VH1-RM260607-00001, stockInYn=N).
+
+**Slice ②③④ + 프론트 — 완료, API/브라우저 검증**
+- 백엔드: `cancelByArrival`(POST results/:arrivalNo/cancel, 시리얼 MAT_IN 트랜잭션 모아 기존 cancel 재사용), `changeManufacturer`(PATCH results/:arrivalNo/manufacturer, MAT_LOTS.mfgPartnerCode 일괄 갱신, MFG 검증). DTO `CancelArrivalByNoDto`/`ChangeManufacturerDto`.
+- 프론트: `material/arrival-result/page.tsx`(목업 IQC006: 좌 DataGrid 목록+입하취소버튼 / 우 정보카드+제조사변경 + 전체선택+라벨재발행(MatLabelPreviewModal 재사용) + 시리얼표). PartnerSelect에 `MFG` 타입 추가(useMasterOptions/PartnerSelect).
+- 공통코드 seed(`apps/backend/src/migrations/2026-06-07_iqc006_arrival_result_seed.sql`): `ARRIVAL_RESULT_STATUS`(5) + `ARRIVAL_PO_TYPE`(RM/CM) + 메뉴 `MAT_ARRIVAL_RESULT`(MATERIAL, sort35). 모든 색상 globals.css safelist 포함.
+- 메뉴: menuConfig `MAT_ARRIVAL_RESULT`(입하관리 뒤) + i18n `menu.material.arrivalResult` + `material.arrivalResult.*` 4파일. (Sidebar는 admin 권한 우회 → 노출 OK)
+- 검증: results/serials 조회, 제조사변경(M001 OK / 비-MFG HS0001 거부), 입하취소(seq=5→CANCELED) 모두 통과. tsc 통과, JSON 유효(BOM 없음). 브라우저: 좌목록/우패널/시리얼 렌더 확인.
+
+**IQC006 잔여(선택)**: 비-admin 역할용 ROLE_MENU_PERMISSIONS(MAT_ARRIVAL_RESULT) 추가는 역할별 관리 작업.
+
+**Phase 1 잔여 확인**: #2 배지 safelist는 dev 서버 재시작 후 브라우저 라이트/다크 대비 육안 확인 필요(CLI 검증만 됨).
+
+### 자재분할/병합 재설계 — 설계 승인(2026-06-08), 구현 대기
+spec: `docs/superpowers/specs/2026-06-08-lot-split-merge-redesign.md`. 승인: pptx 모델(원 시리얼 전부 폐기→결과 전부 신규 발번) / 분할=2분할(분할량+잔량) / 신규시리얼 날짜=오늘(SEQ_MAT_SERIAL_DAILY, 추적은 origin). 게이팅=입고완료만, 병합=바코드스캔, 채번=nextMatSerial+STOCK_TX, 박스=범위외, 기존검증 유지.
+**#4 근본원인 확인(재현)**: `lot-split.service.split()`이 신규 MatLot에 `currentQty` 미설정 → `MAT_LOTS.CURRENT_QTY` NOT NULL 위반 → 분할 전건 500(ORA-01400). 재작성으로 해소 예정.
+
+**남은 항목**: 자재분할/병합 구현(설계완료), 라인→공정설비 지정(구조변경·설계 필요). (#7은 입하실적조회를 입하관리 뒤(sort35) 배치로 부분 개선; 자재입고 기존 노출 확인됨.)
+
 ## 2026-06-04 claude
 
 ### T-AUDIT-COLUMN-DEFAULT-FIX 완료

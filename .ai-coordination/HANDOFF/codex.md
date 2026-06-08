@@ -2,7 +2,16 @@
 
 ## Last Update
 
-2026-06-02 13:13
+2026-06-08 11:08
+
+## Latest
+
+- `T-MAT-CYCLE-E2E-QA` 완료. 테스트 데이터는 `PO-260608-013`, `R26060800001`, `VH1-RM260608-00004`, `RCV20260608-0001`, `ISS20260608-0001`.
+- 헤드리스 브라우저와 JSHANES DB/API로 PO 등록, 입하, IQC PASS, 성적서 업로드, 입고, 출고, 재고 0/LOT DEPLETED까지 확인했다.
+- 화면 입고 버튼은 실패한다. 원인: 프론트 `warehouseCode` 전송, 백엔드 DTO는 `warehouseId` 요구. 실제 오류: `items.0.property warehouseCode should not exist`, `items.0.warehouseId must be a string`.
+- IQC 성적서 업로드는 API만 있고 화면 버튼이 없어 성적서 필수 품목은 UI 단독으로 입고 단계까지 못 간다.
+- 추가 UI 결함: 입하/IQC 날짜 UTC 표시, 수동출고 체크박스 시각 상태 불일치, 자재재고 검색 `matUid` 미포함.
+- 구현 파일은 수정하지 않았다. Claude의 `T-MAT-RECV-FIXES` 잠금 영역과 충돌하지 않게 QA 기록만 남겼다.
 
 ## Completed
 
