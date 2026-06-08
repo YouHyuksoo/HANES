@@ -4,7 +4,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, IsDateString, IsIn, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, Max, IsDateString, IsIn, IsNotEmpty, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -102,6 +102,12 @@ export class CreateArrivalIqcResultDto {
   @IsInt()
   @Min(0)
   sampleQty?: number;
+
+  @ApiPropertyOptional({ description: '검사 시료 바코드(시리얼). 여러 개는 콤마 구분' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  sampleBarcode?: string;
 }
 
 export class PendingArrivalQueryDto {

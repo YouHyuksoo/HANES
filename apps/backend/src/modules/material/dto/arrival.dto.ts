@@ -278,12 +278,11 @@ export class ArrivalResultQueryDto extends PaginationQueryDto {
   status?: string;
 }
 
-/** IQC006 — 입하(arrivalNo+seq) 단위 취소 DTO */
+/** IQC006 — 입하 그룹(arrivalNo+품번) 단위 취소 DTO */
 export class CancelArrivalByNoDto {
-  @ApiProperty({ description: '입하 SEQ' })
-  @IsInt()
-  @Min(1)
-  seq!: number;
+  @ApiProperty({ description: '품번(ITEM_CODE)' })
+  @IsString()
+  itemCode!: string;
 
   @ApiPropertyOptional({ description: '취소 사유' })
   @IsOptional()
@@ -292,12 +291,11 @@ export class CancelArrivalByNoDto {
   reason?: string;
 }
 
-/** IQC006 — 입하 제조사 변경 DTO */
+/** IQC006 — 입하 그룹 제조사 변경 DTO */
 export class ChangeManufacturerDto {
-  @ApiProperty({ description: '입하 SEQ' })
-  @IsInt()
-  @Min(1)
-  seq!: number;
+  @ApiProperty({ description: '품번(ITEM_CODE)' })
+  @IsString()
+  itemCode!: string;
 
   @ApiProperty({ description: '신규 제조사 거래처 코드 (PARTNER_TYPE=MFG)' })
   @IsString()

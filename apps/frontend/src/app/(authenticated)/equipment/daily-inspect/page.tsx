@@ -19,7 +19,7 @@ import EquipListPanel, { type EquipTarget } from "./components/EquipListPanel";
 import InspectEntryPanel from "./components/InspectEntryPanel";
 
 export interface Worker {
-  id: string;
+  workerCode: string;
   workerName: string;
   dept: string;
 }

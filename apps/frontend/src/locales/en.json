@@ -1712,7 +1712,9 @@
       "serialCount": "Serials",
       "totalQty": "Total Qty",
       "certFile": "Inspection Certificate",
-      "uploadCert": "Select File"
+      "uploadCert": "Select File",
+      "sampleBarcode": "Sample Barcode",
+      "sampleBarcodePlaceholder": "Scan or enter barcode (comma-separated for multiple)"
     },
     "receive": {
       "title": "Material Receiving",

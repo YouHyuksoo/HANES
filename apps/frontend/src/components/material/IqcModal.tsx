@@ -13,7 +13,7 @@
  */
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle, AlertCircle, Upload } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine } from "lucide-react";
 import { Button, Input, Modal, Select } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import api from "@/services/api";
@@ -45,7 +45,7 @@ interface IqcModalProps {
   selectedItem: IqcItem | null;
   form: IqcResultForm;
   setForm: React.Dispatch<React.SetStateAction<IqcResultForm>>;
-  onSubmit: (details?: MeasurementRow[], overrideResult?: string, extra?: { inspectClass?: string; sampleQty?: number; certFile?: File }) => void;
+  onSubmit: (details?: MeasurementRow[], overrideResult?: string, extra?: { inspectClass?: string; sampleQty?: number; certFile?: File; sampleBarcode?: string }) => void;
 }
 
 function judgeValue(value: string, lsl: number | null, usl: number | null): "PASS" | "FAIL" | "" {
@@ -67,6 +67,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   // 검사분류(기본 샘플검사), 샘플 시료수량, 검사성적서 파일
   const [inspectClass, setInspectClass] = useState("SAMPLE");
   const [sampleQty, setSampleQty] = useState("");
+  const [sampleBarcode, setSampleBarcode] = useState("");
   const [certFile, setCertFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -89,6 +90,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       setMeasurements([]);
       return;
     }
+    setSampleBarcode("");
     const fetchItems = async () => {
       setLoadingItems(true);
       try {
@@ -153,7 +155,8 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     inspectClass,
     sampleQty: sampleQty ? parseInt(sampleQty, 10) : undefined,
     certFile: certFile ?? undefined,
-  }), [inspectClass, sampleQty, certFile]);
+    sampleBarcode: sampleBarcode.trim() || undefined,
+  }), [inspectClass, sampleQty, certFile, sampleBarcode]);
 
   const handleSubmitWithDetails = useCallback(() => {
     const finalResult = overallJudge || form.result;
@@ -292,6 +295,16 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
             fullWidth
           />
         </div>
+
+        {/* 시료 바코드 (입력 또는 바코드 스캔) */}
+        <Input
+          label={t("material.iqc.sampleBarcode", "시료 바코드")}
+          placeholder={t("material.iqc.sampleBarcodePlaceholder", "바코드 스캔 또는 입력 (여러 개는 콤마로 구분)")}
+          value={sampleBarcode}
+          onChange={(e) => setSampleBarcode(e.target.value)}
+          leftIcon={<ScanLine className="w-4 h-4" />}
+          fullWidth
+        />
 
         {/* G4: 검사분류 / 파괴검사 시료 / 검사성적서 */}
         <div className="grid grid-cols-3 gap-4">

@@ -61,40 +61,40 @@ export class ArrivalController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('results/:arrivalNo/:seq/serials')
-  @ApiOperation({ summary: 'IQC006 — 입하별 시리얼 목록 (입고/취소 여부)' })
+  @Get('results/:arrivalNo/serials')
+  @ApiOperation({ summary: 'IQC006 — 입하 그룹(arrivalNo+품번)별 시리얼 목록 (입고/취소 여부)' })
   async getArrivalSerials(
     @Param('arrivalNo') arrivalNo: string,
-    @Param('seq') seq: string,
+    @Query('itemCode') itemCode: string,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const data = await this.arrivalService.getArrivalSerials(arrivalNo, Number(seq), company, plant);
+    const data = await this.arrivalService.getArrivalSerials(arrivalNo, itemCode, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Patch('results/:arrivalNo/manufacturer')
-  @ApiOperation({ summary: 'IQC006 — 입하 제조사 변경 (시리얼 mfgPartnerCode 일괄 갱신)' })
+  @ApiOperation({ summary: 'IQC006 — 입하 그룹 제조사 변경 (시리얼 mfgPartnerCode 일괄 갱신)' })
   async changeManufacturer(
     @Param('arrivalNo') arrivalNo: string,
     @Body() dto: ChangeManufacturerDto,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const data = await this.arrivalService.changeManufacturer(arrivalNo, dto.seq, dto.mfgPartnerCode, company, plant);
+    const data = await this.arrivalService.changeManufacturer(arrivalNo, dto.itemCode, dto.mfgPartnerCode, company, plant);
     return ResponseUtil.success(data, '제조사가 변경되었습니다.');
   }
 
   @Post('results/:arrivalNo/cancel')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'IQC006 — 입하(arrivalNo+seq) 단위 취소' })
+  @ApiOperation({ summary: 'IQC006 — 입하 그룹(arrivalNo+품번) 단위 취소' })
   async cancelByArrival(
     @Param('arrivalNo') arrivalNo: string,
     @Body() dto: CancelArrivalByNoDto,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const data = await this.arrivalService.cancelByArrival(arrivalNo, dto.seq, dto.reason ?? '입하실적조회 취소', company, plant);
+    const data = await this.arrivalService.cancelByArrival(arrivalNo, dto.itemCode, dto.reason ?? '입하실적조회 취소', company, plant);
     return ResponseUtil.success(data, '입하가 취소되었습니다.');
   }
 

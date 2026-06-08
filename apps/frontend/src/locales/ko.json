@@ -2028,7 +2028,9 @@
       "serialCount": "시리얼수",
       "totalQty": "총수량",
       "certFile": "검사성적서",
-      "uploadCert": "파일 선택"
+      "uploadCert": "파일 선택",
+      "sampleBarcode": "시료 바코드",
+      "sampleBarcodePlaceholder": "바코드 스캔 또는 입력 (여러 개는 콤마로 구분)"
     },
     "receive": {
       "title": "자재입고관리",

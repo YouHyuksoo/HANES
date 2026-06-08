@@ -115,7 +115,9 @@ export default function ArrivalResultPage() {
     setChecked(new Set());
     setSerialLoading(true);
     try {
-      const res = await api.get(`/material/arrivals/results/${encodeURIComponent(row.arrivalNo)}/${row.seq}/serials`);
+      const res = await api.get(`/material/arrivals/results/${encodeURIComponent(row.arrivalNo)}/serials`, {
+        params: { itemCode: row.itemCode },
+      });
       setSerials(res.data?.data ?? []);
     } catch {
       setSerials([]);
@@ -144,10 +146,10 @@ export default function ArrivalResultPage() {
     const picked = serials.filter((s) => checked.has(s.matUid));
     setLabelData({
       arrivalNo: selected.arrivalNo,
-      serials: picked.map((s) => ({
+      serials: picked.map((s, idx) => ({
         matUid: s.matUid,
         initQty: s.qty,
-        arrivalSeq: selected.seq,
+        arrivalSeq: idx + 1,
         itemCode: selected.itemCode,
       })),
     });
@@ -159,10 +161,10 @@ export default function ArrivalResultPage() {
     setCanceling(true);
     try {
       await api.post(`/material/arrivals/results/${encodeURIComponent(cancelTarget.arrivalNo)}/cancel`, {
-        seq: cancelTarget.seq,
+        itemCode: cancelTarget.itemCode,
       });
       setCancelTarget(null);
-      if (selected && selected.arrivalNo === cancelTarget.arrivalNo && selected.seq === cancelTarget.seq) {
+      if (selected && selected.arrivalNo === cancelTarget.arrivalNo && selected.itemCode === cancelTarget.itemCode) {
         setSelected(null);
         setSerials([]);
       }
@@ -185,7 +187,7 @@ export default function ArrivalResultPage() {
     setMfgSaving(true);
     try {
       await api.patch(`/material/arrivals/results/${encodeURIComponent(selected.arrivalNo)}/manufacturer`, {
-        seq: selected.seq,
+        itemCode: selected.itemCode,
         mfgPartnerCode: mfgCode,
       });
       setMfgOpen(false);

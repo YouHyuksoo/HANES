@@ -66,6 +66,10 @@ export class IqcLog {
   @Column({ type: 'varchar2', name: 'CERT_FILE_PATH', length: 500, nullable: true, default: null })
   certFilePath: string | null;
 
+  /** 검사 시료 바코드(시리얼) — 입력/스캔. 여러 개는 콤마 구분 */
+  @Column({ type: 'varchar2', name: 'SAMPLE_BARCODE', length: 500, nullable: true, default: null })
+  sampleBarcode: string | null;
+
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 

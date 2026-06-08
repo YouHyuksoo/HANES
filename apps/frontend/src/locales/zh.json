@@ -1698,7 +1698,9 @@
       "serialCount": "序列号数",
       "totalQty": "总数量",
       "certFile": "检查成绩书",
-      "uploadCert": "选择文件"
+      "uploadCert": "选择文件",
+      "sampleBarcode": "试料条码",
+      "sampleBarcodePlaceholder": "扫描或输入条码（多个用逗号分隔）"
     },
     "receive": {
       "title": "物料入库管理",

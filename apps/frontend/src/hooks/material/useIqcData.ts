@@ -41,6 +41,7 @@ export interface IqcSubmitExtra {
   inspectClass?: string;
   sampleQty?: number;
   certFile?: File;
+  sampleBarcode?: string;
 }
 
 const INITIAL_RESULT_FORM: IqcResultForm = { result: '', inspector: '', remark: '' };
@@ -134,6 +135,7 @@ export function useIqcData() {
         details: details ? JSON.stringify(details) : undefined,
         inspectClass: extra?.inspectClass || undefined,
         sampleQty: extra?.sampleQty || undefined,
+        sampleBarcode: extra?.sampleBarcode || undefined,
       });
 
       // 검사성적서 파일 업로드 (결과 등록 후)

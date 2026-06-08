@@ -535,13 +535,13 @@ export class ArrivalService {
   // IQC006 입하실적조회
   // ─────────────────────────────────────────────────────────────────
 
-  /** 입하번호+SEQ 단위 시리얼 수 서브쿼리 (입하 당시 시리얼만, origin=자기자신/NULL — 분할·병합 파생 제외) */
+  /** 입하번호+품번 그룹 단위 시리얼 수 서브쿼리 (입하 당시 시리얼만, origin=자기자신/NULL — 분할·병합 파생 제외) */
   private static readonly SERIAL_COUNT_EXPR =
-    `(SELECT COUNT(*) FROM "MAT_LOTS" ml WHERE ml."ARRIVAL_NO"=a."ARRIVAL_NO" AND ml."ARRIVAL_SEQ"=a."SEQ" AND ml."COMPANY"=a."COMPANY" AND ml."PLANT_CD"=a."PLANT_CD" AND (ml."ORIGIN"=ml."MAT_UID" OR ml."ORIGIN" IS NULL))`;
+    `(SELECT COUNT(*) FROM "MAT_LOTS" ml WHERE ml."ARRIVAL_NO"=a."ARRIVAL_NO" AND ml."ITEM_CODE"=a."ITEM_CODE" AND ml."COMPANY"=a."COMPANY" AND ml."PLANT_CD"=a."PLANT_CD" AND (ml."ORIGIN"=ml."MAT_UID" OR ml."ORIGIN" IS NULL))`;
 
-  /** 입고완료(RECEIVE 합계 >= INIT_QTY)된 시리얼 수 서브쿼리 (입하 당시 시리얼만) */
+  /** 입고완료(RECEIVE 합계 >= INIT_QTY)된 시리얼 수 서브쿼리 (입하번호+품번 그룹, 입하 당시 시리얼만) */
   private static readonly RECEIVED_COUNT_EXPR =
-    `(SELECT COUNT(*) FROM "MAT_LOTS" ml WHERE ml."ARRIVAL_NO"=a."ARRIVAL_NO" AND ml."ARRIVAL_SEQ"=a."SEQ" AND ml."COMPANY"=a."COMPANY" AND ml."PLANT_CD"=a."PLANT_CD" AND (ml."ORIGIN"=ml."MAT_UID" OR ml."ORIGIN" IS NULL) AND ml."INIT_QTY" <= NVL((SELECT SUM(st."QTY") FROM "STOCK_TRANSACTIONS" st WHERE st."MAT_UID"=ml."MAT_UID" AND st."TRANS_TYPE"='RECEIVE' AND st."STATUS"<>'CANCELED'),0))`;
+    `(SELECT COUNT(*) FROM "MAT_LOTS" ml WHERE ml."ARRIVAL_NO"=a."ARRIVAL_NO" AND ml."ITEM_CODE"=a."ITEM_CODE" AND ml."COMPANY"=a."COMPANY" AND ml."PLANT_CD"=a."PLANT_CD" AND (ml."ORIGIN"=ml."MAT_UID" OR ml."ORIGIN" IS NULL) AND ml."INIT_QTY" <= NVL((SELECT SUM(st."QTY") FROM "STOCK_TRANSACTIONS" st WHERE st."MAT_UID"=ml."MAT_UID" AND st."TRANS_TYPE"='RECEIVE' AND st."STATUS"<>'CANCELED'),0))`;
 
   /**
    * IQC006 — 입하실적 목록 (입하번호+SEQ 단위 집계)
@@ -553,12 +553,6 @@ export class ArrivalService {
 
     const sc = ArrivalService.SERIAL_COUNT_EXPR;
     const rc = ArrivalService.RECEIVED_COUNT_EXPR;
-    const statusCase =
-      `CASE WHEN a."STATUS"='CANCELED' THEN 'CANCELED'` +
-      ` WHEN ${sc}>0 AND ${rc}>=${sc} THEN 'RECEIVED'` +
-      ` WHEN a."IQC_STATUS" IN ('PASS','FAIL') THEN 'IQC_DONE'` +
-      ` WHEN NVL(i."IQC_FLAG",'N')='Y' THEN 'IQC_PROGRESS'` +
-      ` ELSE 'ARRIVED' END`;
 
     const binds: unknown[] = [];
     const cond: string[] = [];
@@ -569,17 +563,30 @@ export class ArrivalService {
     if (itemCode) cond.push(`a."ITEM_CODE" LIKE :${binds.push(`%${itemCode.toUpperCase()}%`)}`);
     if (arrivalNo) cond.push(`a."ARRIVAL_NO" LIKE :${binds.push(`%${arrivalNo.toUpperCase()}%`)}`);
 
-    const inner =
-      `SELECT a."ARRIVAL_NO" AS "arrivalNo", a."SEQ" AS "seq", a."PO_NO" AS "poNo",` +
-      ` a."ARRIVAL_DATE" AS "arrivalDate", a."ITEM_CODE" AS "itemCode", a."QTY" AS "qty",` +
-      ` a."IQC_STATUS" AS "iqcStatus", a."VENDOR_ID" AS "vendorId", a."VENDOR_NAME" AS "vendorName",` +
-      ` i."ITEM_NAME" AS "itemName", i."ITEM_TYPE" AS "itemType",` +
+    // 입하번호 + PO + 품번 그룹 단위 집계 (시리얼은 우측에서 별도 조회)
+    const grouped =
+      `SELECT a."ARRIVAL_NO" AS "arrivalNo", a."PO_NO" AS "poNo", a."ITEM_CODE" AS "itemCode",` +
+      ` MIN(a."SEQ") AS "seq", MIN(a."ARRIVAL_DATE") AS "arrivalDate", SUM(a."QTY") AS "qty",` +
+      ` MAX(a."IQC_STATUS") AS "iqcStatus", MAX(a."VENDOR_ID") AS "vendorId", MAX(a."VENDOR_NAME") AS "vendorName",` +
+      ` MAX(i."ITEM_NAME") AS "itemName", MAX(i."ITEM_TYPE") AS "itemType", MAX(NVL(i."IQC_FLAG",'N')) AS "iqcFlag",` +
+      ` COUNT(CASE WHEN a."STATUS" <> 'CANCELED' THEN 1 END) AS "activeCount",` +
       ` (SELECT MIN(poi."LINE_NO") FROM "PURCHASE_ORDER_ITEMS" poi WHERE poi."PO_ID"=a."PO_NO" AND poi."ITEM_CODE"=a."ITEM_CODE" AND poi."COMPANY"=a."COMPANY" AND poi."PLANT_CD"=a."PLANT_CD") AS "lineNo",` +
       ` (SELECT MIN(poi."REL_NO") FROM "PURCHASE_ORDER_ITEMS" poi WHERE poi."PO_ID"=a."PO_NO" AND poi."ITEM_CODE"=a."ITEM_CODE" AND poi."COMPANY"=a."COMPANY" AND poi."PLANT_CD"=a."PLANT_CD") AS "relNo",` +
-      ` ${sc} AS "serialCount", ${rc} AS "receivedCount", ${statusCase} AS "derivedStatus"` +
+      ` ${sc} AS "serialCount", ${rc} AS "receivedCount"` +
       ` FROM "MAT_ARRIVALS" a` +
       ` LEFT JOIN "ITEM_MASTERS" i ON i."ITEM_CODE"=a."ITEM_CODE" AND i."COMPANY"=a."COMPANY" AND i."PLANT_CD"=a."PLANT_CD"` +
-      ` WHERE ${cond.join(' AND ')}`;
+      ` WHERE ${cond.join(' AND ')}` +
+      ` GROUP BY a."ARRIVAL_NO", a."PO_NO", a."ITEM_CODE", a."COMPANY", a."PLANT_CD"`;
+
+    // 그룹 대표 상태(우선순위): 전량취소 → 입고완료 → IQC완료 → IQC진행중 → 입하완료
+    const inner =
+      `SELECT g.*, CASE` +
+      ` WHEN g."activeCount"=0 THEN 'CANCELED'` +
+      ` WHEN g."serialCount">0 AND g."receivedCount">=g."serialCount" THEN 'RECEIVED'` +
+      ` WHEN g."iqcStatus" IN ('PASS','FAIL') THEN 'IQC_DONE'` +
+      ` WHEN g."iqcFlag"='Y' THEN 'IQC_PROGRESS'` +
+      ` ELSE 'ARRIVED' END AS "derivedStatus"` +
+      ` FROM (${grouped}) g`;
 
     let filter = '';
     if (status) filter = ` WHERE base."derivedStatus" = :${binds.push(status)}`;
@@ -594,7 +601,7 @@ export class ArrivalService {
     const limBind = binds.push(limit);
     const dataSql =
       `SELECT base.* FROM (${inner}) base${filter}` +
-      ` ORDER BY base."arrivalDate" DESC, base."arrivalNo" DESC, base."seq"` +
+      ` ORDER BY base."arrivalDate" DESC, base."arrivalNo" DESC, base."itemCode"` +
       ` OFFSET :${offBind} ROWS FETCH NEXT :${limBind} ROWS ONLY`;
     const rows = await this.dataSource.query(dataSql, binds);
 
@@ -628,14 +635,14 @@ export class ArrivalService {
     return { data, total, page, limit };
   }
 
-  /** IQC006 — 특정 입하(arrivalNo+seq)의 시리얼 목록 (입고/취소 여부 포함) */
-  async getArrivalSerials(arrivalNo: string, seq: number, company?: string, plant?: string) {
-    const binds: unknown[] = [arrivalNo, seq, company ?? null, plant ?? null];
+  /** IQC006 — 특정 입하 그룹(arrivalNo+품번)의 시리얼 목록 (입고/취소 여부 포함) */
+  async getArrivalSerials(arrivalNo: string, itemCode: string, company?: string, plant?: string) {
+    const binds: unknown[] = [arrivalNo, itemCode, company ?? null, plant ?? null];
     const sql =
       `SELECT ml."MAT_UID" AS "matUid", ml."INIT_QTY" AS "qty", ml."STATUS" AS "lotStatus", ml."IQC_STATUS" AS "iqcStatus",` +
       ` NVL((SELECT SUM(st."QTY") FROM "STOCK_TRANSACTIONS" st WHERE st."MAT_UID"=ml."MAT_UID" AND st."TRANS_TYPE"='RECEIVE' AND st."STATUS"<>'CANCELED'),0) AS "receivedQty"` +
       ` FROM "MAT_LOTS" ml` +
-      ` WHERE ml."ARRIVAL_NO"=:1 AND ml."ARRIVAL_SEQ"=:2 AND ml."COMPANY"=:3 AND ml."PLANT_CD"=:4` +
+      ` WHERE ml."ARRIVAL_NO"=:1 AND ml."ITEM_CODE"=:2 AND ml."COMPANY"=:3 AND ml."PLANT_CD"=:4` +
       ` AND (ml."ORIGIN"=ml."MAT_UID" OR ml."ORIGIN" IS NULL)` + // 분할/병합 파생 시리얼 제외
       ` ORDER BY ml."MAT_UID"`;
     const rows = await this.dataSource.query(sql, binds);
@@ -661,7 +668,7 @@ export class ArrivalService {
    */
   async changeManufacturer(
     arrivalNo: string,
-    seq: number,
+    itemCode: string,
     mfgPartnerCode: string,
     company?: string,
     plant?: string,
@@ -671,12 +678,14 @@ export class ArrivalService {
       ...(plant ? { plant } : {}),
     };
 
-    // 입하 존재 확인
-    const arrival = await this.matArrivalRepository.findOne({
-      where: { arrivalNo, seq, ...tenantWhere },
+    // 입하 그룹(arrivalNo+품번) 존재 확인 (미취소 행 1건 이상)
+    const arrivals = await this.matArrivalRepository.find({
+      where: { arrivalNo, itemCode, ...tenantWhere },
     });
-    if (!arrival) throw new NotFoundException(`입하 정보를 찾을 수 없습니다: ${arrivalNo}/${seq}`);
-    if (arrival.status === 'CANCELED') throw new BadRequestException('취소된 입하는 제조사를 변경할 수 없습니다.');
+    if (arrivals.length === 0) throw new NotFoundException(`입하 정보를 찾을 수 없습니다: ${arrivalNo}/${itemCode}`);
+    if (arrivals.every((a) => a.status === 'CANCELED')) {
+      throw new BadRequestException('취소된 입하는 제조사를 변경할 수 없습니다.');
+    }
 
     // 제조사 거래처 검증 (PARTNER_TYPE='MFG')
     const partner = await this.partnerMasterRepository.findOne({
@@ -688,13 +697,13 @@ export class ArrivalService {
       throw new BadRequestException('제조사(PARTNER_TYPE=MFG) 거래처만 지정할 수 있습니다.');
     }
 
-    // 해당 입하의 시리얼들 mfgPartnerCode 갱신
+    // 해당 입하 그룹의 입하 당시 시리얼들 mfgPartnerCode 갱신
     const result = await this.matLotRepository.update(
-      { arrivalNo, arrivalSeq: seq, ...tenantWhere },
+      { arrivalNo, itemCode, ...tenantWhere },
       { mfgPartnerCode },
     );
 
-    return { arrivalNo, seq, mfgPartnerCode, updatedSerials: result.affected ?? 0 };
+    return { arrivalNo, itemCode, mfgPartnerCode, updatedSerials: result.affected ?? 0 };
   }
 
   /**
@@ -704,7 +713,7 @@ export class ArrivalService {
    */
   async cancelByArrival(
     arrivalNo: string,
-    seq: number,
+    itemCode: string,
     reason: string,
     company?: string,
     plant?: string,
@@ -715,14 +724,16 @@ export class ArrivalService {
       ...(plant ? { plant } : {}),
     };
 
+    // 입하 그룹(arrivalNo+품번)의 입하 당시 시리얼 (분할/병합 파생 제외)
     const lots = await this.matLotRepository.find({
-      where: { arrivalNo, arrivalSeq: seq, ...tenantWhere },
-      select: ['matUid'],
+      where: { arrivalNo, itemCode, ...tenantWhere },
+      select: ['matUid', 'origin'],
     });
-    if (lots.length === 0) {
-      throw new NotFoundException(`입하 시리얼을 찾을 수 없습니다: ${arrivalNo}/${seq}`);
+    const sourceLots = lots.filter((l) => !l.origin || l.origin === l.matUid);
+    if (sourceLots.length === 0) {
+      throw new NotFoundException(`입하 시리얼을 찾을 수 없습니다: ${arrivalNo}/${itemCode}`);
     }
-    const matUids = lots.map((l) => l.matUid);
+    const matUids = sourceLots.map((l) => l.matUid);
 
     const txns = await this.stockTransactionRepository.find({
       where: { matUid: In(matUids), transType: 'MAT_IN', status: 'DONE', ...tenantWhere },
@@ -737,7 +748,7 @@ export class ArrivalService {
       await this.cancel({ transactionId: tx.transNo, reason, workerId }, company, plant);
       canceled++;
     }
-    return { arrivalNo, seq, canceledTransactions: canceled };
+    return { arrivalNo, itemCode, canceledTransactions: canceled };
   }
 
   /** 입하 취소 (역분개 트랜잭션) */

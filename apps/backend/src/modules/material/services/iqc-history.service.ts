@@ -63,16 +63,33 @@ export class IqcHistoryService {
     }
   }
 
+  private buildDateRange(fromDate?: string, toDate?: string) {
+    if (!fromDate || !toDate) return null;
+
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
+      from.setUTCHours(0, 0, 0, 0);
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+      to.setUTCHours(23, 59, 59, 999);
+    }
+
+    return { from, to };
+  }
+
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, inspectType, result, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
+    const dateRange = this.buildDateRange(fromDate, toDate);
 
     const where: Record<string, unknown> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(inspectType && { inspectType }),
       ...(result && { result }),
-      ...(fromDate && toDate && { inspectDate: Between(new Date(fromDate), new Date(toDate)) }),
+      ...(dateRange && { inspectDate: Between(dateRange.from, dateRange.to) }),
     };
 
     let data: IqcLog[];
@@ -93,10 +110,10 @@ export class IqcHistoryService {
       if (plant) queryBuilder.andWhere('iqc.plant = :plant', { plant });
       if (inspectType) queryBuilder.andWhere('iqc.inspectType = :inspectType', { inspectType });
       if (result) queryBuilder.andWhere('iqc.result = :result', { result });
-      if (fromDate && toDate) {
+      if (dateRange) {
         queryBuilder.andWhere('iqc.inspectDate BETWEEN :fromDate AND :toDate', {
-          fromDate: new Date(fromDate),
-          toDate: new Date(toDate),
+          fromDate: dateRange.from,
+          toDate: dateRange.to,
         });
       }
 
@@ -338,6 +355,7 @@ export class IqcHistoryService {
       inspectorName: dto.inspectorName || null,
       inspectClass: dto.inspectClass || 'SAMPLE',
       destructSampleQty: dto.sampleQty || null,
+      sampleBarcode: dto.sampleBarcode || null,
       remark: dto.remark || null,
       inspectDate: new Date(),
       company: tenantCompany,

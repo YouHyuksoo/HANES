@@ -272,7 +272,7 @@ export default function InspectEntryPanel({
             >
               <option value="">-- 선택 --</option>
               {workers.map((w) => (
-                <option key={w.id} value={w.workerName}>
+                <option key={w.workerCode} value={w.workerName}>
                   {w.workerName} ({w.dept})
                 </option>
               ))}

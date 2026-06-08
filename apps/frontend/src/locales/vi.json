@@ -1698,7 +1698,9 @@
       "serialCount": "Số serial",
       "totalQty": "Tổng số lượng",
       "certFile": "Giấy chứng nhận kiểm tra",
-      "uploadCert": "Chọn tệp"
+      "uploadCert": "Chọn tệp",
+      "sampleBarcode": "Mã vạch mẫu",
+      "sampleBarcodePlaceholder": "Quét hoặc nhập mã vạch (nhiều mã ngăn cách bằng dấu phẩy)"
     },
     "receive": {
       "title": "Nhập kho vật tư",
