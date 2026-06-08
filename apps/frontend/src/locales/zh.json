@@ -81,7 +81,8 @@
     "title": "标题",
     "requester": "申请人",
     "reject": "驳回",
-    "deleteMessage": "确定要删除此项目吗？"
+    "deleteMessage": "确定要删除此项目吗？",
+    "print": "打印"
   },
   "menu": {
     "dashboard": "仪表盘",
@@ -2676,7 +2677,20 @@
       "confirmCancel": "确定要取消选中的工单吗？",
       "preIssueBtn": "预发行条码",
       "preIssueQty": "发行数量",
-      "preIssueSuccess": "已发行{{count}}个条码。"
+      "preIssueSuccess": "已发行{{count}}个条码。",
+      "printTitle": "作业指示书",
+      "printBtn": "打印作业指示书",
+      "printDate": "打印日期",
+      "materialRequest": "物料申请明细",
+      "spec": "规格",
+      "bomQty": "BOM数量",
+      "reqQty": "需求量",
+      "checkCol": "确认",
+      "noBom": "无BOM物料",
+      "preparedBy": "制单人",
+      "warehouseConfirm": "仓库确认",
+      "receivedBy": "领取人",
+      "noRawMaterial": "无原材料"
     },
     "result": {
       "title": "生产实绩查询",

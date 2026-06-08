@@ -81,7 +81,8 @@
     "title": "Title",
     "requester": "Requester",
     "reject": "Reject",
-    "deleteMessage": "Delete this item?"
+    "deleteMessage": "Delete this item?",
+    "print": "Print"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -2690,7 +2691,20 @@
       "confirmCancel": "Cancel the selected job order?",
       "preIssueBtn": "Pre-issue Barcodes",
       "preIssueQty": "Issue Quantity",
-      "preIssueSuccess": "{{count}} barcodes issued."
+      "preIssueSuccess": "{{count}} barcodes issued.",
+      "printTitle": "Work Order",
+      "printBtn": "Print Work Order",
+      "printDate": "Print Date",
+      "materialRequest": "Material Request",
+      "spec": "Spec",
+      "bomQty": "BOM Qty",
+      "reqQty": "Required Qty",
+      "checkCol": "Check",
+      "noBom": "No BOM materials",
+      "preparedBy": "Prepared By",
+      "warehouseConfirm": "Warehouse",
+      "receivedBy": "Received By",
+      "noRawMaterial": "No raw materials"
     },
     "result": {
       "title": "Production Result",

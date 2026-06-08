@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 import {
   Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown,
   Edit2, Trash2, Play, CheckCircle2, PauseCircle, PlayCircle, XCircle,
-  Barcode,
+  Barcode, Printer,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, StatCard, ConfirmModal, Modal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
@@ -27,6 +27,7 @@ import api from "@/services/api";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
 import JobOrderFormPanel from "./components/JobOrderFormPanel";
 import type { JobOrderFormData } from "./components/JobOrderFormPanel";
+import JobOrderPrintModal from "./components/JobOrderPrintModal";
 import type { ProductionJobOrderRow } from "@harness/shared";
 
 type JobOrderItem = ProductionJobOrderRow;
@@ -67,6 +68,9 @@ export default function JobOrderPage() {
   // 삭제/액션 확인 모달
   const [deleteTarget, setDeleteTarget] = useState<JobOrderItem | null>(null);
   const [pendingAction, setPendingAction] = useState<ActionType | null>(null);
+
+  // 작업지시서 출력
+  const [printOrderNo, setPrintOrderNo] = useState<string | null>(null);
 
   // 사전발행 모달
   const issueTiming = useSysConfigStore((s) => s.getConfig("FG_BARCODE_ISSUE_TIMING")) ?? "ON_INSPECT";
@@ -360,6 +364,9 @@ export default function JobOrderPage() {
             </span>
             <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedRow.status} />
             <div className="flex-1" />
+            <Button size="sm" variant="secondary" onClick={() => setPrintOrderNo(selectedRow.orderNo)}>
+              <Printer className="w-3.5 h-3.5 mr-1" />{t("production.order.printBtn", "작업지시서 출력")}
+            </Button>
             <Button size="sm" variant="secondary" disabled={!canStart}
               onClick={() => setPendingAction("start")}>
               <Play className="w-3.5 h-3.5 mr-1" />{t("production.order.actionStart")}
@@ -435,6 +442,13 @@ export default function JobOrderPage() {
           animate={panelAnimateRef.current}
         />
       )}
+
+      {/* 작업지시서 출력 (A4: 상단 작업지시 + 하단 자재요청) */}
+      <JobOrderPrintModal
+        isOpen={!!printOrderNo}
+        orderNo={printOrderNo}
+        onClose={() => setPrintOrderNo(null)}
+      />
 
       {/* 삭제 확인 모달 */}
       <ConfirmModal

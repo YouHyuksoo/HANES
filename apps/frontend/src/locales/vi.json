@@ -81,7 +81,8 @@
     "title": "Tiêu đề",
     "requester": "Người yêu cầu",
     "reject": "Từ chối",
-    "deleteMessage": "Bạn có muốn xóa không?"
+    "deleteMessage": "Bạn có muốn xóa không?",
+    "print": "In"
   },
   "menu": {
     "dashboard": "Bảng điều khiển",
@@ -2676,7 +2677,20 @@
       "confirmCancel": "Hủy bỏ lệnh sản xuất đã chọn?",
       "preIssueBtn": "Phát hành mã trước",
       "preIssueQty": "Số lượng phát hành",
-      "preIssueSuccess": "Đã phát hành {{count}} mã vạch."
+      "preIssueSuccess": "Đã phát hành {{count}} mã vạch.",
+      "printTitle": "Lệnh sản xuất",
+      "printBtn": "In lệnh sản xuất",
+      "printDate": "Ngày in",
+      "materialRequest": "Chi tiết yêu cầu vật tư",
+      "spec": "Quy cách",
+      "bomQty": "SL BOM",
+      "reqQty": "SL cần",
+      "checkCol": "Xác nhận",
+      "noBom": "Không có vật tư BOM",
+      "preparedBy": "Người lập",
+      "warehouseConfirm": "Kho xác nhận",
+      "receivedBy": "Người nhận",
+      "noRawMaterial": "Không có nguyên vật liệu"
     },
     "result": {
       "title": "Kết quả sản xuất",
