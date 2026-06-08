@@ -11,7 +11,8 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsString, IsOptional, IsInt, Min, Max, MaxLength,
-  IsDateString, IsIn, IsArray, ValidateNested, IsNumber,
+  IsDateString, IsIn, IsArray, ValidateNested, IsNumber, IsNotEmpty,
+  ArrayNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
@@ -34,6 +35,7 @@ export class CreatePurchaseOrderItemDto {
 
   @ApiProperty({ description: '품목 코드' })
   @IsString()
+  @IsNotEmpty({ message: '품목코드는 필수입니다. 품목을 선택하세요.' })
   itemCode: string;
 
   @ApiPropertyOptional({ description: '품목명' })
@@ -44,8 +46,8 @@ export class CreatePurchaseOrderItemDto {
 
   @ApiProperty({ description: '발주 수량' })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: '발주수량은 정수로 입력하세요.' })
+  @Min(1, { message: '발주수량은 1 이상이어야 합니다.' })
   orderQty: number;
 
   @ApiPropertyOptional({ description: '단가' })
@@ -66,6 +68,7 @@ export class CreatePurchaseOrderItemDto {
 export class CreatePurchaseOrderDto {
   @ApiProperty({ description: 'PO 번호', example: 'PO-20260213-001' })
   @IsString()
+  @IsNotEmpty({ message: 'PO번호는 필수입니다.' })
   @MaxLength(50)
   poNo: string;
 
@@ -98,6 +101,7 @@ export class CreatePurchaseOrderDto {
 
   @ApiProperty({ description: 'PO 품목 목록', type: [CreatePurchaseOrderItemDto] })
   @IsArray()
+  @ArrayNotEmpty({ message: '발주 품목을 1개 이상 추가하세요.' })
   @ValidateNested({ each: true })
   @Type(() => CreatePurchaseOrderItemDto)
   items: CreatePurchaseOrderItemDto[];

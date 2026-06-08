@@ -251,6 +251,7 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
       <PartSearchModal
         isOpen={partSearchOpen}
         onClose={() => setPartSearchOpen(false)}
+        allowedItemTypes={["FINISHED", "SEMI_PRODUCT"]}
         onSelect={(part) => {
           setForm(p => ({ ...p, itemCode: part.itemCode }));
           fetchRouting(part.itemCode);

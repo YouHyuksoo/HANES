@@ -9,21 +9,14 @@
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsArray, ArrayMinSize, MaxLength } from 'class-validator';
-import { Type } from 'class-transformer';
-import { IsInt, Min, Max } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class LotMergeDto {
-  @ApiProperty({ description: '병합할 LOT ID 목록 (2개 이상)', type: [String] })
+  @ApiProperty({ description: '병합할 LOT 시리얼(MAT_UID) 목록 (2개 이상). 전부 폐기되고 신규 통합 시리얼 1개가 발번됨.', type: [String] })
   @IsArray()
   @ArrayMinSize(2)
   @IsString({ each: true })
   sourceLotIds: string[];
-
-  @ApiPropertyOptional({ description: '병합 대상(수신) LOT ID — 미지정 시 첫 번째 LOT이 대상' })
-  @IsOptional()
-  @IsString()
-  targetLotId?: string;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

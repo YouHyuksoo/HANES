@@ -247,6 +247,63 @@ export class PoLineReceiptDto {
   remark?: string;
 }
 
+/**
+ * IQC006 입하실적조회 — 입하실적 목록 조회 쿼리 DTO
+ * status: 도출 상태 코드 (ARRIVED/IQC_PROGRESS/IQC_DONE/RECEIVED/CANCELED)
+ */
+export class ArrivalResultQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ description: '입하 시작일' })
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: '입하 종료일' })
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
+
+  @ApiPropertyOptional({ description: '품번 (부분 일치)' })
+  @IsOptional()
+  @IsString()
+  itemCode?: string;
+
+  @ApiPropertyOptional({ description: '입하번호 (부분 일치)' })
+  @IsOptional()
+  @IsString()
+  arrivalNo?: string;
+
+  @ApiPropertyOptional({ description: '도출 상태 (ARRIVED/IQC_PROGRESS/IQC_DONE/RECEIVED/CANCELED)' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+}
+
+/** IQC006 — 입하(arrivalNo+seq) 단위 취소 DTO */
+export class CancelArrivalByNoDto {
+  @ApiProperty({ description: '입하 SEQ' })
+  @IsInt()
+  @Min(1)
+  seq!: number;
+
+  @ApiPropertyOptional({ description: '취소 사유' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+/** IQC006 — 입하 제조사 변경 DTO */
+export class ChangeManufacturerDto {
+  @ApiProperty({ description: '입하 SEQ' })
+  @IsInt()
+  @Min(1)
+  seq!: number;
+
+  @ApiProperty({ description: '신규 제조사 거래처 코드 (PARTNER_TYPE=MFG)' })
+  @IsString()
+  mfgPartnerCode!: string;
+}
+
 /** PO 라인 그리드 조회 쿼리 DTO (IQC005) */
 export class PoLineQueryDto {
   @ApiPropertyOptional({ description: '라인 상태 (OPEN/PARTIAL/CLOSE)' })

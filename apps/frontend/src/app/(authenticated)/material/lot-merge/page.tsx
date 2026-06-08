@@ -4,28 +4,31 @@
  * @file src/app/(authenticated)/material/lot-merge/page.tsx
  * @description 자재 LOT 병합 관리 페이지
  *
- * 초보자 가이드:
- * 1. 같은 품목의 LOT 2개 이상을 선택하여 하나로 병합
- * 2. 체크박스로 병합할 LOT 선택 → 병합 버튼 → 확인
- * 3. 대상 LOT에 수량 합산, 원본 LOT은 소진(DEPLETED) 처리
+ * 재설계(2026-06-08):
+ * 1. 바코드 스캔으로 병합 대상 시리얼을 누적(동일 품목 + 동일 최초시리얼 origin)
+ * 2. 병합 시 원본 전부 폐기(MERGED) → 합산 수량의 신규 통합 시리얼 1개 발번
+ * 3. 신규 시리얼 자재라벨 발행(MatLabelPreviewModal 재사용)
+ * API: GET /material/lot-merge, GET /material/lot-merge/by-barcode/:matUid, POST /material/lot-merge
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Merge, Search, RefreshCw, CheckSquare, AlertCircle } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, Modal, StatCard } from "@/components/ui";
+import { Merge, Search, RefreshCw, ScanLine, X, AlertCircle, Plus } from "lucide-react";
+import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
+import type { PoLineReceiptResponse } from "../arrival/components/types";
 
 interface MergeableLot {
-  id: string;
   matUid: string;
   itemCode: string;
   itemName?: string;
   unit?: string;
   qty: number;
   status: string;
+  origin?: string | null;
   expireDate?: string;
   vendor?: string;
 }
@@ -36,9 +39,21 @@ export default function LotMergePage() {
   const [data, setData] = useState<MergeableLot[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // 바코드 스캔 누적
+  const [scanned, setScanned] = useState<MergeableLot[]>([]);
+  const [scanInput, setScanInput] = useState("");
+  const [scanError, setScanError] = useState<string | null>(null);
+  const scanRef = useRef<HTMLInputElement>(null);
+
   const [merging, setMerging] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [mergeError, setMergeError] = useState<string | null>(null);
+
+  // 병합 결과 라벨
+  const [labelData, setLabelData] = useState<PoLineReceiptResponse | null>(null);
+  const [labelItemName, setLabelItemName] = useState("");
+  const [isLabelOpen, setIsLabelOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -56,141 +71,188 @@ export default function LotMergePage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  const extractMsg = (e: unknown, fallback: string): string => {
+    const msg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(", ");
+    return msg ?? fallback;
+  };
+
+  // 바코드(또는 목록 클릭)로 시리얼 누적 추가
+  const addByBarcode = useCallback(async (raw: string) => {
+    const matUid = raw.trim();
+    if (!matUid) return;
+    setScanError(null);
+    if (scanned.some((s) => s.matUid === matUid)) {
+      setScanError(t("material.lotMerge.alreadyScanned", { matUid }));
+      setScanInput("");
+      return;
+    }
+    try {
+      const res = await api.get(`/material/lot-merge/by-barcode/${encodeURIComponent(matUid)}`);
+      const lot: MergeableLot = res.data?.data;
+      if (!lot) {
+        setScanError(t("material.lotMerge.notFound", { matUid }));
+        return;
+      }
+      // 누적된 첫 항목과 품목/origin 일치 검증(프론트 선제 안내)
+      if (scanned.length > 0) {
+        const base = scanned[0];
+        if (base.itemCode !== lot.itemCode) {
+          setScanError(t("material.lotMerge.itemMismatchScan", { matUid }));
+          return;
+        }
+        const baseOrigin = base.origin || base.matUid;
+        const lotOrigin = lot.origin || lot.matUid;
+        if (baseOrigin !== lotOrigin) {
+          setScanError(t("material.lotMerge.originMismatchScan", { matUid }));
+          return;
+        }
+      }
+      setScanned((prev) => [...prev, lot]);
+      setScanInput("");
+    } catch (e: unknown) {
+      setScanError(extractMsg(e, t("material.lotMerge.scanFailed")));
+    } finally {
+      scanRef.current?.focus();
+    }
+  }, [scanned, t]);
+
+  const removeScanned = useCallback((matUid: string) => {
+    setScanned((prev) => prev.filter((s) => s.matUid !== matUid));
+    setScanError(null);
   }, []);
 
-  const selectedLots = useMemo(
-    () => data.filter(d => selectedIds.has(d.id)),
-    [data, selectedIds],
-  );
-
-  const canMerge = useMemo(() => {
-    if (selectedLots.length < 2) return false;
-    const partIds = new Set(selectedLots.map(l => l.itemCode));
-    return partIds.size === 1;
-  }, [selectedLots]);
-
-  const totalMergeQty = useMemo(
-    () => selectedLots.reduce((sum, l) => sum + l.qty, 0),
-    [selectedLots],
-  );
+  const totalMergeQty = useMemo(() => scanned.reduce((s, l) => s + (l.qty ?? 0), 0), [scanned]);
+  const canMerge = scanned.length >= 2;
 
   const handleMerge = useCallback(async () => {
     if (!canMerge) return;
     setMerging(true);
+    setMergeError(null);
     try {
-      await api.post("/material/lot-merge", {
-        sourceLotIds: Array.from(selectedIds),
+      const res = await api.post("/material/lot-merge", {
+        sourceLotIds: scanned.map((s) => s.matUid),
       });
+      const result = res.data?.data;
       setShowConfirm(false);
-      setSelectedIds(new Set());
+      if (result?.label) {
+        setLabelData(result.label);
+        setLabelItemName(result.itemName ?? scanned[0]?.itemName ?? "");
+        setIsLabelOpen(true);
+      }
+      setScanned([]);
       fetchData();
-    } catch (e) {
-      console.error("Merge failed:", e);
+    } catch (e: unknown) {
+      setMergeError(extractMsg(e, t("material.lotMerge.mergeFailed")));
     } finally {
       setMerging(false);
     }
-  }, [canMerge, selectedIds, fetchData]);
-
-  const partMismatch = useMemo(() => {
-    if (selectedLots.length < 2) return false;
-    const partIds = new Set(selectedLots.map(l => l.itemCode));
-    return partIds.size > 1;
-  }, [selectedLots]);
+  }, [canMerge, scanned, fetchData, t]);
 
   const columns = useMemo<ColumnDef<MergeableLot>[]>(() => [
     {
-      id: "select", header: "", size: 40,
-      meta: { filterType: "none" as const },
+      id: "add", header: "", size: 60, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
-        <input type="checkbox" checked={selectedIds.has(row.original.id)}
-          onChange={() => toggleSelect(row.original.id)}
-          className="w-4 h-4 rounded border-border accent-primary" />
+        <Button size="sm" variant="secondary" disabled={scanned.some((s) => s.matUid === row.original.matUid)}
+          onClick={() => addByBarcode(row.original.matUid)}>
+          <Plus className="w-4 h-4" />
+        </Button>
       ),
     },
     { accessorKey: "matUid", header: t("material.lotMerge.matUid"), size: 160,
       meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
-    { accessorKey: "itemCode", header: t("common.partCode"), size: 110,
-      meta: { filterType: "text" as const },
-    },
-    { accessorKey: "itemName", header: t("common.partName"), size: 140,
-      meta: { filterType: "text" as const },
-    },
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 110, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "qty", header: t("common.quantity"), size: 90,
-      meta: { filterType: "number" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue, row }) => (
         <span className="font-semibold">{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || "EA"}</span>
       ),
     },
+    { accessorKey: "origin", header: t("material.lotMerge.origin"), size: 150,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue, row }) => <span className="font-mono text-xs text-text-muted">{(getValue() as string) || row.original.matUid}</span>,
+    },
     { accessorKey: "vendor", header: t("material.lotMerge.vendor"), size: 100,
       meta: { filterType: "text" as const },
-      cell: ({ getValue }) => getValue() || "-",
+      cell: ({ getValue }) => (getValue() as string) || "-",
     },
-    { accessorKey: "status", header: t("common.status"), size: 80, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        const color = v === "NORMAL"
-          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-          : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400";
-        return <span className={`px-2 py-0.5 text-xs rounded-full ${color}`}>{v}</span>;
-      },
-    },
-    { accessorKey: "expireDate", header: t("material.lotMerge.expireDate"), size: 100,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? new Date(v).toLocaleDateString() : "-";
-      },
-    },
-  ], [t, selectedIds, toggleSelect]);
+  ], [t, scanned, addByBarcode]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Merge className="w-7 h-7 text-primary" />
-            {t("material.lotMerge.title")}
+            <Merge className="w-7 h-7 text-primary" />{t("material.lotMerge.title")}
           </h1>
           <p className="text-text-muted mt-1">{t("material.lotMerge.subtitle")}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
-          </Button>
-          <Button size="sm" onClick={() => setShowConfirm(true)}
-            disabled={!canMerge}>
-            <CheckSquare className="w-4 h-4 mr-1" />
-            {t("material.lotMerge.mergeSelected")} ({selectedLots.length})
-          </Button>
-        </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
+        </Button>
       </div>
 
-      {/* 선택 상태 */}
-      {selectedLots.length > 0 && (
-        <div className="grid grid-cols-4 gap-4 flex-shrink-0">
-          <StatCard label={t("material.lotMerge.selectedCount")} value={selectedLots.length} icon={CheckSquare} color="blue" />
-          <StatCard label={t("material.lotMerge.totalQty")} value={totalMergeQty.toLocaleString()} icon={Merge} color="purple" />
-          <StatCard label={t("material.lotMerge.targetLot")} value={selectedLots[0]?.matUid || "-"} icon={Merge} color="green" />
-          <StatCard label={t("common.status")}
-            value={partMismatch ? t("material.lotMerge.partMismatch") : t("material.lotMerge.ready")}
-            icon={AlertCircle} color={partMismatch ? "red" : "green"} />
+      {/* 바코드 스캔 영역 */}
+      <Card className="flex-shrink-0" padding="none"><CardContent className="p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <Input
+              ref={scanRef}
+              placeholder={t("material.lotMerge.scanPlaceholder")}
+              value={scanInput}
+              onChange={(e) => setScanInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addByBarcode(scanInput); } }}
+              leftIcon={<ScanLine className="w-4 h-4" />}
+              fullWidth
+              autoFocus
+            />
+          </div>
+          <Button onClick={() => addByBarcode(scanInput)} disabled={!scanInput.trim()}>
+            <Plus className="w-4 h-4 mr-1" />{t("material.lotMerge.addScan")}
+          </Button>
         </div>
-      )}
+        {scanError && (
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="w-4 h-4" />{scanError}
+          </div>
+        )}
 
-      {partMismatch && (
-        <div className="flex items-center gap-2 p-3 flex-shrink-0 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
-          <AlertCircle className="w-4 h-4" />
-          {t("material.lotMerge.partMismatchWarning")}
-        </div>
-      )}
+        {/* 누적 시리얼 */}
+        {scanned.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {scanned.map((s) => (
+              <span key={s.matUid}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary/40 text-sm">
+                <span className="font-mono">{s.matUid}</span>
+                <span className="text-text-muted">{(s.qty ?? 0).toLocaleString()} {s.unit || "EA"}</span>
+                <button onClick={() => removeScanned(s.matUid)} className="text-text-muted hover:text-red-500">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
+        {scanned.length > 0 && (
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard label={t("material.lotMerge.selectedCount")} value={scanned.length} icon={ScanLine} color="blue" />
+            <StatCard label={t("material.lotMerge.totalQty")} value={totalMergeQty.toLocaleString()} icon={Merge} color="green" />
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="secondary" onClick={() => { setScanned([]); setScanError(null); }}>
+                {t("material.lotMerge.clearSelection")}
+              </Button>
+              <Button onClick={() => { setMergeError(null); setShowConfirm(true); }} disabled={!canMerge}>
+                <Merge className="w-4 h-4 mr-1" />{t("material.lotMerge.mergeSelected")} ({scanned.length})
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent></Card>
+
+      {/* 병합 가능 LOT 목록 (참조 — + 버튼으로 누적에 추가) */}
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
@@ -204,35 +266,27 @@ export default function LotMergePage() {
               <Input placeholder={t("material.lotMerge.searchPlaceholder")}
                 value={searchText} onChange={(e) => setSearchText(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />} />
-              <Button variant="secondary" size="sm"
-                onClick={() => setSelectedIds(new Set())}>
-                {t("material.lotMerge.clearSelection")}
-              </Button>
             </div>
           }
-        
-        sqlQuery={`SELECT *\nFROM MAT_LOT_MERGES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={`SELECT ml.*\nFROM MAT_LOTS ml\nWHERE ml.STATUS = 'NORMAL'\n  AND ml.COMPANY = '40'\n  AND ml.PLANT_CD = '1000'\n  AND ml.INIT_QTY <= NVL((SELECT SUM(st.QTY) FROM STOCK_TRANSACTIONS st\n    WHERE st.MAT_UID = ml.MAT_UID AND st.TRANS_TYPE IN ('RECEIVE','LOT_SPLIT_IN','LOT_MERGE_IN') AND st.STATUS <> 'CANCELED'), 0)\nORDER BY ml.ITEM_CODE, ml.ORIGIN, ml.MAT_UID`}/>
       </CardContent></Card>
 
       {/* 병합 확인 모달 */}
       <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)}
         title={t("material.lotMerge.confirmTitle")} size="lg">
         <div className="space-y-4">
-          <p className="text-text">{t("material.lotMerge.confirmMessage")}</p>
+          <p className="text-text">{t("material.lotMerge.confirmMessageNew")}</p>
           <div className="bg-surface-alt dark:bg-surface rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-text-muted">{t("material.lotMerge.targetLot")}:</span>
-              <span className="font-semibold text-text">{selectedLots[0]?.matUid}</span>
-            </div>
-            <div className="flex justify-between text-sm">
               <span className="text-text-muted">{t("material.lotMerge.mergingLots")}:</span>
-              <span className="text-text">{selectedLots.slice(1).map(l => l.matUid).join(", ")}</span>
+              <span className="text-text font-mono text-right">{scanned.map((l) => l.matUid).join(", ")}</span>
             </div>
             <div className="flex justify-between text-sm border-t border-border pt-2">
               <span className="text-text-muted">{t("material.lotMerge.totalQty")}:</span>
-              <span className="font-bold text-primary">{totalMergeQty.toLocaleString()} EA</span>
+              <span className="font-bold text-primary">{totalMergeQty.toLocaleString()} {scanned[0]?.unit || "EA"}</span>
             </div>
           </div>
+          {mergeError && <div className="text-sm text-red-600 dark:text-red-400">{mergeError}</div>}
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setShowConfirm(false)}>{t("common.cancel")}</Button>
@@ -241,6 +295,13 @@ export default function LotMergePage() {
           </Button>
         </div>
       </Modal>
+
+      <MatLabelPreviewModal
+        isOpen={isLabelOpen}
+        data={labelData}
+        itemName={labelItemName}
+        onClose={() => setIsLabelOpen(false)}
+      />
     </div>
   );
 }

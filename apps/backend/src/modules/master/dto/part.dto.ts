@@ -4,8 +4,8 @@
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, IsNumber, Min, Max, MaxLength, IsIn, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsInt, IsNumber, Min, Max, MaxLength, IsIn, IsBoolean, IsArray } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { ITEM_TYPE_VALUES, PRODUCT_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -191,6 +191,17 @@ export class PartQueryDto extends PaginationQueryDto {
   @IsString()
   @IsIn([...ITEM_TYPE_VALUES])
   itemType?: string;
+
+  @ApiPropertyOptional({ description: '품목 유형 다중 필터 (콤마 구분)', example: 'FINISHED,SEMI_PRODUCT' })
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? value.split(',').map((v) => v.trim()).filter(Boolean)
+      : value,
+  )
+  @IsArray()
+  @IsIn([...ITEM_TYPE_VALUES], { each: true })
+  itemTypes?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -1,0 +1,38 @@
+-- =====================================================================
+-- 2026-06-08  자재분할/병합 재설계: MAT_LOT_STATUS 공통코드 추가
+-- 분할 원본 → SPLIT, 병합 원본 → MERGED (재고 0, 목록 제외, 계보는 ORIGIN 추적)
+-- 색상은 globals.css @source inline safelist 범위 내(폐기성 상태 = 회색조)
+-- 멱등 실행(존재 시 갱신)
+-- 대상: JSHANES (company=40 / plant=1000)
+-- =====================================================================
+
+MERGE INTO COM_CODES t
+USING (
+  SELECT 'MAT_LOT_STATUS' AS GROUP_CODE, 'SPLIT' AS DETAIL_CODE, '분할완료' AS CODE_NAME,
+         4 AS SORT_ORDER, 'Y' AS USE_YN,
+         'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' AS ATTR1,
+         '40' AS COMPANY, '1000' AS PLANT_CD FROM DUAL
+) s
+ON (t.GROUP_CODE = s.GROUP_CODE AND t.DETAIL_CODE = s.DETAIL_CODE AND t.COMPANY = s.COMPANY AND t.PLANT_CD = s.PLANT_CD)
+WHEN MATCHED THEN UPDATE SET t.CODE_NAME = s.CODE_NAME, t.SORT_ORDER = s.SORT_ORDER, t.USE_YN = s.USE_YN, t.ATTR1 = s.ATTR1
+WHEN NOT MATCHED THEN
+  INSERT (GROUP_CODE, DETAIL_CODE, CODE_NAME, SORT_ORDER, USE_YN, ATTR1, COMPANY, PLANT_CD, CREATED_BY)
+  VALUES (s.GROUP_CODE, s.DETAIL_CODE, s.CODE_NAME, s.SORT_ORDER, s.USE_YN, s.ATTR1, s.COMPANY, s.PLANT_CD, 'SYSTEM');
+/
+
+MERGE INTO COM_CODES t
+USING (
+  SELECT 'MAT_LOT_STATUS' AS GROUP_CODE, 'MERGED' AS DETAIL_CODE, '병합완료' AS CODE_NAME,
+         5 AS SORT_ORDER, 'Y' AS USE_YN,
+         'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' AS ATTR1,
+         '40' AS COMPANY, '1000' AS PLANT_CD FROM DUAL
+) s
+ON (t.GROUP_CODE = s.GROUP_CODE AND t.DETAIL_CODE = s.DETAIL_CODE AND t.COMPANY = s.COMPANY AND t.PLANT_CD = s.PLANT_CD)
+WHEN MATCHED THEN UPDATE SET t.CODE_NAME = s.CODE_NAME, t.SORT_ORDER = s.SORT_ORDER, t.USE_YN = s.USE_YN, t.ATTR1 = s.ATTR1
+WHEN NOT MATCHED THEN
+  INSERT (GROUP_CODE, DETAIL_CODE, CODE_NAME, SORT_ORDER, USE_YN, ATTR1, COMPANY, PLANT_CD, CREATED_BY)
+  VALUES (s.GROUP_CODE, s.DETAIL_CODE, s.CODE_NAME, s.SORT_ORDER, s.USE_YN, s.ATTR1, s.COMPANY, s.PLANT_CD, 'SYSTEM');
+/
+
+COMMIT;
+/

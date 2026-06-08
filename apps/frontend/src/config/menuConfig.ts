@@ -113,6 +113,7 @@ export const menuConfig: MenuConfigItem[] = [
     icon: Package,
     children: [
       { code: "MAT_ARRIVAL", labelKey: "menu.material.arrival", path: "/material/arrival" },
+      { code: "MAT_ARRIVAL_RESULT", labelKey: "menu.material.arrivalResult", path: "/material/arrival-result" },
       { code: "MAT_RECEIVE_LABEL", labelKey: "menu.material.receiveLabel", path: "/material/receive-label" },
       { code: "MAT_RECEIVE", labelKey: "menu.material.receive", path: "/material/receive" },
       { code: "MAT_RECEIVE_HISTORY", labelKey: "menu.material.receiveHistory", path: "/material/receive-history" },

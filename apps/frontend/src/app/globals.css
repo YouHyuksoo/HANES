@@ -31,6 +31,19 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================
+   동적 배지 색상 Safelist
+   --------------------------------------------
+   ComCodeBadge / ComCodeSelect 등은 DB(COM_CODES.ATTR1)에 저장된
+   Tailwind 클래스 문자열을 className으로 직접 사용한다. 이 클래스들은
+   소스 코드에 정적으로 나타나지 않아 Tailwind JIT가 purge하여 배경색이
+   사라지는 문제가 있었다(예: 일부입하 배지가 배경과 동일 색으로 안 보임).
+   COM_CODES.ATTR1에서 실제 사용하는 색상/음영을 safelist로 강제 생성한다.
+   새 색상 추가 시 아래 목록도 함께 갱신할 것.
+   ============================================ */
+@source inline("{,dark:}{bg,text}-{amber,blue,cyan,gray,green,indigo,orange,pink,purple,red,rose,sky,slate,teal,violet,yellow}-{100,200,300,600,700,800,900}");
+@source inline("text-white");
+
+/* ============================================
    CSS 변수 정의 - 라이트 모드 (기본)
    tweakcn 테마 적용 (https://tweakcn.com/)
    ============================================ */

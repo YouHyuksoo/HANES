@@ -2,12 +2,13 @@
 
 /**
  * @file src/app/(authenticated)/material/lot-split/page.tsx
- * @description 자재분할 페이지 - 자재시리얼 분할 관리
+ * @description 자재분할 페이지 - 입고완료 시리얼을 2조각으로 분할
  *
- * 초보자 가이드:
- * 1. **자재분할**: 하나의 자재시리얼에서 일부 수량을 분리하여 새 시리얼 생성
- * 2. **추적성**: 분할 후에도 parentLotId로 추적 가능
- * 3. API: GET /material/lot-split, POST /material/lot-split
+ * 재설계(2026-06-08):
+ * 1. 입고완료(RECEIVE) LOT만 분할 대상
+ * 2. 분할 시 원본 폐기(SPLIT) → 신규 시리얼 2개 발번
+ * 3. 분할 결과 신규 2건 자재라벨 발행(MatLabelPreviewModal 재사용)
+ * API: GET /material/lot-split, POST /material/lot-split
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -17,9 +18,10 @@ import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
+import type { PoLineReceiptResponse } from "../arrival/components/types";
 
 interface SplittableLot {
-  id: string;
   matUid: string;
   itemCode?: string;
   itemName?: string;
@@ -39,6 +41,12 @@ export default function LotSplitPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState<SplittableLot | null>(null);
   const [splitForm, setSplitForm] = useState({ splitQty: "", remark: "" });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // 분할 결과 라벨
+  const [labelData, setLabelData] = useState<PoLineReceiptResponse | null>(null);
+  const [labelItemName, setLabelItemName] = useState("");
+  const [isLabelOpen, setIsLabelOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -64,22 +72,33 @@ export default function LotSplitPage() {
   const handleSplit = useCallback(async () => {
     if (!selectedLot || !splitForm.splitQty) return;
     setSaving(true);
+    setErrorMsg(null);
     try {
-      await api.post("/material/lot-split", {
-        sourceLotId: selectedLot.id,
+      const res = await api.post("/material/lot-split", {
+        sourceLotId: selectedLot.matUid,
         splitQty: Number(splitForm.splitQty),
         remark: splitForm.remark || undefined,
       });
+      const result = res.data?.data;
       setIsModalOpen(false);
       setSplitForm({ splitQty: "", remark: "" });
+      // 분할 결과 라벨 발행
+      if (result?.label) {
+        setLabelData(result.label);
+        setLabelItemName(result.itemName ?? selectedLot.itemName ?? "");
+        setIsLabelOpen(true);
+      }
       setSelectedLot(null);
       fetchData();
-    } catch (e) {
-      console.error("Split failed:", e);
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        t("material.lotSplit.splitFailed");
+      setErrorMsg(Array.isArray(msg) ? msg.join(", ") : msg);
     } finally {
       setSaving(false);
     }
-  }, [selectedLot, splitForm, fetchData]);
+  }, [selectedLot, splitForm, fetchData, t]);
 
   const columns = useMemo<ColumnDef<SplittableLot>[]>(() => [
     {
@@ -88,6 +107,7 @@ export default function LotSplitPage() {
         <Button size="sm" variant="secondary" onClick={() => {
           setSelectedLot(row.original);
           setSplitForm({ splitQty: "", remark: "" });
+          setErrorMsg(null);
           setIsModalOpen(true);
         }}>
           <Scissors className="w-4 h-4 mr-1" />{t("material.lotSplit.split")}
@@ -149,8 +169,8 @@ export default function LotSplitPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
             </div>
-          } 
-          sqlQuery={`SELECT *\nFROM MAT_LOT_SPLITS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          }
+          sqlQuery={`SELECT ml.*\nFROM MAT_LOTS ml\nWHERE ml.STATUS = 'NORMAL'\n  AND ml.COMPANY = '40'\n  AND ml.PLANT_CD = '1000'\n  AND ml.INIT_QTY <= NVL((SELECT SUM(st.QTY) FROM STOCK_TRANSACTIONS st\n    WHERE st.MAT_UID = ml.MAT_UID AND st.TRANS_TYPE IN ('RECEIVE','LOT_SPLIT_IN','LOT_MERGE_IN') AND st.STATUS <> 'CANCELED'), 0)\nORDER BY ml.CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
@@ -167,8 +187,19 @@ export default function LotSplitPage() {
             </div>
             <Input label={t("material.lotSplit.splitQty")} type="number" placeholder="0"
               value={splitForm.splitQty} onChange={e => setSplitForm(p => ({ ...p, splitQty: e.target.value }))} fullWidth />
+            {splitForm.splitQty && Number(splitForm.splitQty) > 0 && Number(splitForm.splitQty) < selectedLot.qty && (
+              <div className="text-sm text-text-muted">
+                {t("material.lotSplit.splitPreview", {
+                  a: Number(splitForm.splitQty),
+                  b: selectedLot.qty - Number(splitForm.splitQty),
+                })}
+              </div>
+            )}
             <Input label={t("material.lotSplit.remark")} placeholder={t("material.lotSplit.remarkPlaceholder")}
               value={splitForm.remark} onChange={e => setSplitForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
+            {errorMsg && (
+              <div className="text-sm text-red-600 dark:text-red-400">{errorMsg}</div>
+            )}
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
               <Button onClick={handleSplit}
@@ -179,6 +210,13 @@ export default function LotSplitPage() {
           </div>
         )}
       </Modal>
+
+      <MatLabelPreviewModal
+        isOpen={isLabelOpen}
+        data={labelData}
+        itemName={labelItemName}
+        onClose={() => setIsLabelOpen(false)}
+      />
     </div>
   );
 }

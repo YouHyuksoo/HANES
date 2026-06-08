@@ -11,6 +11,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import { Plus, Trash2, Search } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { PartnerSelect } from "@/components/shared";
@@ -119,8 +120,27 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
     setItems(prev => prev.filter((_, i) => i !== idx));
   };
 
+  // 수량 검증: 모든 품목은 1 이상의 정수여야 한다 (서버 400 방지)
+  const invalidQtyItem = items.find(
+    (it) => !Number.isInteger(it.orderQty) || it.orderQty < 1,
+  );
+  const hasInvalidQty = !!invalidQtyItem;
+
   const handleSave = useCallback(async () => {
     if (!form.poNo || !form.partnerId || items.length === 0) return;
+    const badItem = items.find(
+      (it) => !Number.isInteger(it.orderQty) || it.orderQty < 1,
+    );
+    if (badItem) {
+      toast.error(
+        t(
+          "material.po.invalidQty",
+          "발주수량은 1 이상의 정수로 입력하세요. (품목: {{code}})",
+          { code: badItem.itemCode },
+        ),
+      );
+      return;
+    }
     setSaving(true);
     try {
       const payload = { ...form, items };
@@ -136,7 +156,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [form, items, isEdit, editData, onSave, onClose]);
+  }, [form, items, isEdit, editData, onSave, onClose, t]);
 
   return (
     <div className="w-[560px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
@@ -148,7 +168,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSave}
-            disabled={saving || !form.poNo || !form.partnerId || items.length === 0}>
+            disabled={saving || !form.poNo || !form.partnerId || items.length === 0 || hasInvalidQty}>
             {saving ? t("common.saving") : isEdit ? t("common.edit") : t("common.register")}
           </Button>
         </div>
@@ -208,8 +228,12 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
                       onChange={e => updateItem(idx, "lineNo", Number(e.target.value) || 1)} fullWidth />
                     <Input label={t("material.po.revNo", "릴리즈번호")} type="number" value={String(item.revNo)}
                       onChange={e => updateItem(idx, "revNo", Number(e.target.value) || 1)} fullWidth />
-                    <Input label={t("material.po.orderQty")} type="number" value={String(item.orderQty)}
-                      onChange={e => updateItem(idx, "orderQty", Number(e.target.value) || 0)} fullWidth />
+                    <Input label={t("material.po.orderQty")} type="number" min={1} step={1}
+                      value={String(item.orderQty)}
+                      error={(!Number.isInteger(item.orderQty) || item.orderQty < 1)
+                        ? t("material.po.qtyMin", "1 이상")
+                        : undefined}
+                      onChange={e => updateItem(idx, "orderQty", Math.trunc(Number(e.target.value)) || 0)} fullWidth />
                     <Input label={t("common.remark")} value={item.remark}
                       onChange={e => updateItem(idx, "remark", e.target.value)} fullWidth />
                   </div>

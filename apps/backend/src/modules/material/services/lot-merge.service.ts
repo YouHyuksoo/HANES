@@ -2,15 +2,16 @@
  * @file src/modules/material/services/lot-merge.service.ts
  * @description 자재 LOT 병합 비즈니스 로직 (TypeORM)
  *
- * 초보자 가이드:
- * 1. 같은 품목(itemCode)의 LOT만 병합 가능
- * 2. 대상 LOT에 수량 합산, 원본 LOT은 DEPLETED 처리
- * 3. MatStock도 동기화, StockTransaction 이력 기록
+ * 재설계(2026-06-08, spec: docs/superpowers/specs/2026-06-08-lot-split-merge-redesign.md):
+ * - 원 시리얼 전부 폐기(status='MERGED', 재고0) → 합산 수량의 신규 통합 시리얼 1개 발번.
+ * - 동일 itemCode + 동일 origin(최초시리얼) + 입고완료 LOT만 병합 가능.
+ * - 채번은 NumberingService 사용(시리얼: SEQ_MAT_SERIAL_DAILY, 수불: STOCK_TX).
+ * - 프론트는 바코드 스캔으로 대상 누적(GET by-barcode로 단건 검증).
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Like, FindOptionsWhere } from 'typeorm';
+import { Repository, In, QueryRunner, EntityManager } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
@@ -18,6 +19,16 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
+
+/**
+ * 입고완료 게이팅: 해당 matUid의 유효 입고(RECEIVE + 분할/병합 IN) 합 >= INIT_QTY.
+ * 분할/병합 결과 시리얼도 재가공(재분할·재병합) 가능하도록 LOT_SPLIT_IN/LOT_MERGE_IN을 입고완료로 인정.
+ */
+const RECEIVED_TRANS_TYPES = "'RECEIVE','LOT_SPLIT_IN','LOT_MERGE_IN'";
+const RECEIVED_GATE_SQL =
+  `lot.initQty <= NVL((SELECT SUM(st."QTY") FROM "STOCK_TRANSACTIONS" st` +
+  ` WHERE st."MAT_UID" = lot.matUid AND st."TRANS_TYPE" IN (${RECEIVED_TRANS_TYPES}) AND st."STATUS" <> 'CANCELED'), 0)`;
 
 @Injectable()
 export class LotMergeService {
@@ -33,6 +44,7 @@ export class LotMergeService {
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -63,109 +75,135 @@ export class LotMergeService {
     const qb = this.matLotRepository.createQueryBuilder('lot')
       .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid AND stock.company = lot.company AND stock.plant = lot.plant')
       .where('stock.qty > 0')
-      .andWhere("lot.status != 'DEPLETED'")
-      .andWhere("lot.status != 'HOLD'");
+      .andWhere("lot.status = 'NORMAL'")
+      .andWhere('NVL(stock.reservedQty, 0) = 0')
+      .andWhere(RECEIVED_GATE_SQL);
 
     if (company) qb.andWhere('lot.company = :company', { company });
     if (plant) qb.andWhere('lot.plant = :plant', { plant });
-
-    if (itemCode) {
-      qb.andWhere('lot.itemCode = :itemCode', { itemCode });
-    }
+    if (itemCode) qb.andWhere('lot.itemCode = :itemCode', { itemCode });
     if (search) {
-      const upper = search.toUpperCase();
-      qb.andWhere(
-        '(lot.matUid LIKE :search)',
-        { search: `%${upper}%` },
-      );
+      qb.andWhere('(lot.matUid LIKE :search OR lot.itemCode LIKE :search)', { search: `%${search}%` });
     }
 
     const [lots, total] = await Promise.all([
       qb.orderBy('lot.itemCode', 'ASC')
+        .addOrderBy('lot.origin', 'ASC')
         .addOrderBy('lot.matUid', 'ASC')
         .skip(skip).take(limit).getMany(),
       qb.getCount(),
     ]);
 
-    const itemCodes = lots.map(l => l.itemCode).filter(Boolean);
-    const tenantWhere = {
-      ...(company ? { company } : {}),
-      ...(plant ? { plant } : {}),
-    };
-    const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere }, select: ['itemCode', 'itemName', 'unit'] })
-      : [];
-    const partMap = new Map(parts.map(p => [p.itemCode, p]));
-
-    const data = lots.map(lot => {
-      const part = partMap.get(lot.itemCode);
-      return {
-        ...lot,
-        itemCode: lot.itemCode,
-        itemName: part?.itemName ?? null,
-        unit: part?.unit ?? null,
-      };
-    });
-
+    const data = await this.attachMeta(lots, company, plant);
     return { data, total, page, limit };
   }
 
-  async merge(dto: LotMergeDto, company?: string, plant?: string) {
-    const { sourceLotIds, targetLotId, remark } = dto;
+  /** 바코드 스캔 단건 조회 — 병합 후보 자격을 검증해 반환 (프론트 누적용) */
+  async findByBarcode(matUid: string, company?: string, plant?: string) {
     const tenantWhere = this.tenantWhere(company, plant);
+    const lot = await this.matLotRepository.findOne({ where: { matUid, ...tenantWhere } });
+    if (!lot) {
+      throw new NotFoundException(`해당 시리얼을 찾을 수 없습니다: ${matUid}`);
+    }
+    this.assertSameTenant(lot, company, plant, '시리얼');
+
+    if (lot.status === 'HOLD') {
+      throw new BadRequestException(`HOLD 상태인 LOT은 병합할 수 없습니다: ${matUid}`);
+    }
+    if (lot.status !== 'NORMAL') {
+      throw new BadRequestException(`정상(NORMAL) 상태가 아닌 LOT은 병합할 수 없습니다. 현재 상태: ${lot.status}`);
+    }
+
+    const stock = await this.matStockRepository.findOne({ where: { matUid, ...tenantWhere } });
+    if (!stock || stock.qty <= 0) {
+      throw new BadRequestException(`재고가 없는 LOT은 병합할 수 없습니다: ${matUid}`);
+    }
+    if ((stock.reservedQty ?? 0) > 0) {
+      throw new BadRequestException(`예약 수량이 있는 LOT은 병합할 수 없습니다: ${matUid}`);
+    }
+
+    // 입고완료 게이팅
+    const received = await this.receivedQty(this.matLotRepository.manager, matUid);
+    if (received < lot.initQty) {
+      throw new BadRequestException(`입고완료된 LOT만 병합할 수 있습니다. 입고확정을 먼저 진행해 주세요: ${matUid}`);
+    }
+
+    // 출고이력
+    const issues = await this.matIssueRepository.find({ where: { matUid, ...tenantWhere } });
+    if (issues.some((i) => i.status !== 'CANCELED')) {
+      throw new BadRequestException(`이미 자재출고 이력이 있는 LOT은 병합할 수 없습니다: ${matUid}`);
+    }
+
+    const [meta] = await this.attachMeta([lot], company, plant);
+    return meta;
+  }
+
+  async merge(dto: LotMergeDto, company?: string, plant?: string, userId?: string) {
+    const { sourceLotIds, remark } = dto;
+    const tenantWhere = this.tenantWhere(company, plant);
+    const uniqueIds = [...new Set(sourceLotIds)];
+    if (uniqueIds.length < 2) {
+      throw new BadRequestException('병합하려면 서로 다른 2개 이상의 LOT이 필요합니다.');
+    }
 
     return this.tx.run(async (queryRunner) => {
-      // 모든 LOT 조회
+      // 1) 모든 LOT 조회
       const lots = await queryRunner.manager.find(MatLot, {
-        where: { matUid: In(sourceLotIds), ...tenantWhere },
+        where: { matUid: In(uniqueIds), ...tenantWhere },
       });
-
-      if (lots.length < 2) {
-        throw new BadRequestException('병합하려면 2개 이상의 유효한 LOT이 필요합니다.');
+      if (lots.length !== uniqueIds.length) {
+        const found = new Set(lots.map((l) => l.matUid));
+        const missing = uniqueIds.filter((id) => !found.has(id));
+        throw new NotFoundException(`존재하지 않는 LOT이 있습니다: ${missing.join(', ')}`);
       }
       lots.forEach((lot) => this.assertSameTenant(lot, company, plant, `LOT ${lot.matUid}`));
 
-      // 같은 품목인지 검증
-      const itemCodes = new Set(lots.map(l => l.itemCode));
+      // 2) 동일 품목 검증
+      const itemCodes = new Set(lots.map((l) => l.itemCode));
       if (itemCodes.size > 1) {
         throw new BadRequestException('서로 다른 품목의 LOT은 병합할 수 없습니다.');
       }
 
-      // Minor: 최초 시리얼(origin) 동일 여부 검증 — THN 문서 요구사항
-      const origins = new Set(lots.map(l => l.origin || l.matUid));
+      // 3) 동일 origin(최초시리얼) 검증
+      const origins = new Set(lots.map((l) => l.origin || l.matUid));
       if (origins.size > 1) {
-        throw new BadRequestException('최초 시리얼이 다른 LOT은 병합할 수 없습니다.');
+        throw new BadRequestException('최초 시리얼(origin)이 다른 LOT은 병합할 수 없습니다.');
       }
 
-      // 모든 LOT의 재고 조회 (MatStock 기준)
-      const lotMatUids = lots.map(l => l.matUid);
+      // 4) 재고 조회
       const stocks = await queryRunner.manager.find(MatStock, {
-        where: { matUid: In(lotMatUids), ...tenantWhere },
+        where: { matUid: In(uniqueIds), ...tenantWhere },
       });
-      const stockMap = new Map(stocks.map(s => [s.matUid, s]));
+      const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
 
-      // HOLD/DEPLETED/재고없음 상태 검증
+      // 5) 상태/재고/예약/입고완료 검증
       for (const lot of lots) {
         if (lot.status === 'HOLD') {
           throw new BadRequestException(`HOLD 상태인 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
+        if (lot.status !== 'NORMAL') {
+          throw new BadRequestException(`정상(NORMAL) 상태가 아닌 LOT은 병합할 수 없습니다: ${lot.matUid} (${lot.status})`);
+        }
         const lotStock = stockMap.get(lot.matUid);
-        if (lot.status === 'DEPLETED' || !lotStock || lotStock.qty <= 0) {
+        if (!lotStock || lotStock.qty <= 0) {
           throw new BadRequestException(`재고가 없는 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
         this.assertSameTenant(lotStock, lot.company, lot.plant, `재고 ${lot.matUid}`);
         if ((lotStock.reservedQty ?? 0) > 0) {
           throw new BadRequestException(`예약 수량이 있는 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
+        const received = await this.receivedQty(queryRunner.manager, lot.matUid);
+        if (received < lot.initQty) {
+          throw new BadRequestException(`입고완료된 LOT만 병합할 수 있습니다. 입고확정을 먼저 진행해 주세요: ${lot.matUid}`);
+        }
       }
 
+      // 6) 출고이력 검증
       const issueHistories = await queryRunner.manager.find(MatIssue, {
-        where: { matUid: In(lotMatUids), ...tenantWhere },
+        where: { matUid: In(uniqueIds), ...tenantWhere },
       });
       const activeIssueLotNos = [...new Set(
-        issueHistories
-          .filter((issue) => issue.status !== 'CANCELED')
-          .map((issue) => issue.matUid),
+        issueHistories.filter((i) => i.status !== 'CANCELED').map((i) => i.matUid),
       )];
       if (activeIssueLotNos.length > 0) {
         throw new BadRequestException(
@@ -173,101 +211,179 @@ export class LotMergeService {
         );
       }
 
-      // 대상 LOT 결정 (지정되지 않으면 첫 번째)
-      const target = targetLotId
-        ? lots.find(l => l.matUid === targetLotId)
-        : lots[0];
-      if (!target) {
-        throw new NotFoundException('대상 LOT을 찾을 수 없습니다.');
-      }
-
-      const sources = lots.filter(l => l.matUid !== target.matUid);
-
-      // MatStock 기준으로 병합 수량 합산
-      const totalMergeQty = sources.reduce((sum, l) => {
-        const s = stockMap.get(l.matUid);
-        return sum + (s?.qty ?? 0);
-      }, 0);
-
-      // 품목 정보 (배치 선조회 — 병합 대상은 동일 품목이므로 1건)
-      const partsForMerge = await queryRunner.manager.find(PartMaster, {
-        where: { itemCode: In([...itemCodes]), ...tenantWhere },
+      // 7) 품목 정보
+      const part = await queryRunner.manager.findOne(PartMaster, {
+        where: { itemCode: lots[0].itemCode, ...tenantWhere },
       });
-      const partMapForMerge = new Map(partsForMerge.map(p => [p.itemCode, p] as const));
-      const part = partMapForMerge.get(target.itemCode);
-      if (part) {
-        this.assertSameTenant(part, target.company, target.plant, `품목 ${target.itemCode}`);
+      if (!part) {
+        throw new NotFoundException(`품목을 찾을 수 없습니다: ${lots[0].itemCode}`);
       }
+      this.assertSameTenant(part, lots[0].company, lots[0].plant, `품목 ${lots[0].itemCode}`);
 
-      // 원본 LOT들 소진 처리 (상태만 변경, currentQty 업데이트 없음)
-      for (const src of sources) {
-        await queryRunner.manager.update(MatLot, { matUid: src.matUid, ...tenantWhere }, {
-          status: 'DEPLETED',
+      // ── 처리 ──
+      const base = lots[0];
+      const origin = base.origin || base.matUid;
+      const totalQty = lots.reduce((sum, l) => sum + (stockMap.get(l.matUid)?.qty ?? 0), 0);
+      const warehouseCode = stockMap.get(base.matUid)?.warehouseCode ?? null;
+      // 유효기한은 가장 이른 일자를 보수적으로 계승
+      const expireDate = lots.reduce<Date | null>((min, l) => {
+        if (!l.expireDate) return min;
+        if (!min) return l.expireDate;
+        return l.expireDate < min ? l.expireDate : min;
+      }, null);
+      const sourceNos = lots.map((l) => l.matUid).join(', ');
+      const mergeRemark = remark || `자재병합: [${sourceNos}] → 신규 (${totalQty})`;
+
+      // 8) 원 시리얼 전부 OUT + 폐기(MERGED)
+      for (const lot of lots) {
+        const lotStock = stockMap.get(lot.matUid)!;
+        const outTransNo = await this.numbering.next('STOCK_TX', queryRunner, userId);
+        await queryRunner.manager.save(StockTransaction, queryRunner.manager.create(StockTransaction, {
+          transNo: outTransNo,
+          transType: 'LOT_MERGE_OUT',
+          transDate: new Date(),
+          fromWarehouseId: lotStock.warehouseCode,
+          itemCode: lot.itemCode,
+          matUid: lot.matUid,
+          qty: -lotStock.qty,
+          refType: 'LOT_MERGE',
+          refId: lot.matUid,
+          remark: mergeRemark,
+          workerId: userId ?? null,
+          status: 'DONE',
+          company: lot.company,
+          plant: lot.plant,
+          createdBy: userId ?? null,
+        }));
+
+        await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, {
+          status: 'MERGED',
+          currentQty: 0,
+          updatedBy: userId ?? null,
         });
-      }
-
-      // MatStock 동기화 — 대상 재고에 합산, 원본 재고 0으로
-      const targetStock = stockMap.get(target.matUid);
-      const newTargetQty = (targetStock?.qty ?? 0) + totalMergeQty;
-
-      if (targetStock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, matUid: targetStock.matUid, ...tenantWhere },
-          { qty: newTargetQty, availableQty: targetStock.availableQty + totalMergeQty },
+          { warehouseCode: lotStock.warehouseCode, itemCode: lotStock.itemCode, matUid: lotStock.matUid, ...tenantWhere },
+          { qty: 0, availableQty: 0, updatedBy: userId ?? null },
         );
       }
 
-      for (const src of sources) {
-        const srcStock = stockMap.get(src.matUid);
-        if (srcStock) {
-          await queryRunner.manager.update(MatStock,
-            { warehouseCode: srcStock.warehouseCode, itemCode: srcStock.itemCode, matUid: srcStock.matUid, ...tenantWhere },
-            { qty: 0, availableQty: 0 },
-          );
-        }
-      }
-
-      // 트랜잭션 이력
-      const transNo = await this.generateTransNo();
-      const sourceNos = sources.map(s => s.matUid).join(', ');
-      await queryRunner.manager.save(StockTransaction, {
-        transNo,
-        transType: 'LOT_MERGE',
-        transDate: new Date(),
-        itemCode: target.itemCode,
-        matUid: target.matUid,
-        qty: totalMergeQty,
-        refType: 'LOT_MERGE',
-        refId: target.matUid,
-        remark: remark || `LOT 병합: [${sourceNos}] → ${target.matUid}`,
-        status: 'DONE',
-        company: target.company,
-        plant: target.plant,
+      // 9) 신규 통합 시리얼 발번/생성
+      const newSerial = await this.numbering.nextMatSerial(queryRunner);
+      const baseStock = stockMap.get(base.matUid)!;
+      const newLot = queryRunner.manager.create(MatLot, {
+        matUid: newSerial,
+        itemCode: base.itemCode,
+        initQty: totalQty,
+        currentQty: totalQty,
+        recvDate: base.recvDate,
+        manufactureDate: base.manufactureDate,
+        expireDate,
+        arrivalNo: base.arrivalNo,
+        arrivalSeq: base.arrivalSeq,
+        origin,
+        vendor: base.vendor,
+        mfgPartnerCode: base.mfgPartnerCode,
+        invoiceNo: base.invoiceNo,
+        poNo: base.poNo,
+        iqcStatus: base.iqcStatus,
+        status: 'NORMAL',
+        company: base.company,
+        plant: base.plant,
+        createdBy: userId ?? null,
       });
+      await queryRunner.manager.save(newLot);
+
+      await queryRunner.manager.save(MatStock, queryRunner.manager.create(MatStock, {
+        warehouseCode: baseStock.warehouseCode,
+        locationCode: baseStock.locationCode,
+        itemCode: base.itemCode,
+        matUid: newSerial,
+        qty: totalQty,
+        availableQty: totalQty,
+        reservedQty: 0,
+        company: base.company,
+        plant: base.plant,
+        createdBy: userId ?? null,
+      }));
+
+      // 10) 신규 IN
+      const inTransNo = await this.numbering.next('STOCK_TX', queryRunner, userId);
+      await queryRunner.manager.save(StockTransaction, queryRunner.manager.create(StockTransaction, {
+        transNo: inTransNo,
+        transType: 'LOT_MERGE_IN',
+        transDate: new Date(),
+        toWarehouseId: warehouseCode,
+        itemCode: base.itemCode,
+        matUid: newSerial,
+        qty: totalQty,
+        refType: 'LOT_MERGE',
+        refId: origin, // 원본 목록은 remark에 기록(refId 50자 제한)
+        remark: mergeRemark,
+        workerId: userId ?? null,
+        status: 'DONE',
+        company: base.company,
+        plant: base.plant,
+        createdBy: userId ?? null,
+      }));
 
       return {
-        targetLotNo: target.matUid,
-        mergedLotNos: sources.map(s => s.matUid),
-        totalMergedQty: totalMergeQty,
-        newTotalQty: newTargetQty,
-        itemCode: target.itemCode,
-        itemName: part?.itemName ?? null,
+        newLotNo: newSerial,
+        mergedLotNos: lots.map((l) => l.matUid),
+        totalQty,
+        itemCode: part.itemCode,
+        itemName: part.itemName,
+        arrivalNo: base.arrivalNo,
+        // MatLabelPreviewModal 재사용용 라벨 데이터
+        label: {
+          arrivalNo: base.arrivalNo ?? '',
+          serials: [{
+            matUid: newSerial,
+            initQty: totalQty,
+            arrivalSeq: base.arrivalSeq ?? 1,
+            itemCode: part.itemCode,
+          }],
+        },
       };
     });
   }
 
-  private async generateTransNo(): Promise<string> {
-    const today = new Date();
-    const prefix = `MRG${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-    const lastTrans = await this.stockTransactionRepository.findOne({
-      where: { transNo: Like(`${prefix}%`) } as FindOptionsWhere<StockTransaction>,
-      order: { transNo: 'DESC' },
+  /** matUid의 RECEIVE(취소 제외) 합계 */
+  private async receivedQty(manager: EntityManager, matUid: string): Promise<number> {
+    const rows = await manager.query(
+      `SELECT NVL(SUM(st."QTY"), 0) AS "RECVD" FROM "STOCK_TRANSACTIONS" st` +
+      ` WHERE st."MAT_UID" = :1 AND st."TRANS_TYPE" IN (${RECEIVED_TRANS_TYPES}) AND st."STATUS" <> 'CANCELED'`,
+      [matUid],
+    );
+    return Number(rows[0]?.RECVD ?? rows[0]?.recvd ?? 0);
+  }
+
+  /** LOT 목록에 품목명/단위/재고수량 메타 부착 */
+  private async attachMeta(lots: MatLot[], company?: string, plant?: string) {
+    if (lots.length === 0) return [];
+    const tenantWhere = this.tenantWhere(company, plant);
+    const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
+    const matUids = lots.map((l) => l.matUid);
+
+    const [parts, stocks] = await Promise.all([
+      itemCodes.length > 0
+        ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere }, select: ['itemCode', 'itemName', 'unit'] })
+        : Promise.resolve([]),
+      this.matStockRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }),
+    ]);
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
+
+    return lots.map((lot) => {
+      const part = partMap.get(lot.itemCode);
+      const stock = stockMap.get(lot.matUid);
+      return {
+        ...lot,
+        itemCode: lot.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        qty: stock?.qty ?? 0,
+        warehouseCode: stock?.warehouseCode ?? null,
+      };
     });
-    let seq = 1;
-    if (lastTrans) {
-      const lastSeq = parseInt(lastTrans.transNo.slice(-5), 10);
-      seq = lastSeq + 1;
-    }
-    return `${prefix}${String(seq).padStart(5, '0')}`;
   }
 }

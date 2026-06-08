@@ -4,25 +4,18 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, MaxLength } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsInt, Min, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class LotSplitDto {
-  @ApiProperty({ description: '원본 LOT ID' })
+  @ApiProperty({ description: '원본 LOT 시리얼(MAT_UID)' })
   @IsString()
   sourceLotId: string;
 
-  @ApiProperty({ description: '분할 수량' })
+  @ApiProperty({ description: '분할 수량 (원본 재고보다 작아야 함)' })
   @IsInt()
   @Min(1)
   splitQty: number;
-
-  @ApiPropertyOptional({ description: '새 LOT 번호 (미지정 시 자동 생성)' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  newLotNo?: string;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

@@ -42,6 +42,8 @@ interface PartSearchModalProps {
   onSelect: (part: PartItem) => void;
   /** 품목유형 사전 필터 (FG/WIP/RAW) — 미지정 시 전체 */
   itemType?: string;
+  /** 허용 품목유형 다중 제한 (예: 제품·반제품만). 지정 시 이 유형들만 조회·선택 가능 */
+  allowedItemTypes?: string[];
 }
 
 export default function PartSearchModal({
@@ -49,6 +51,7 @@ export default function PartSearchModal({
   onClose,
   onSelect,
   itemType: defaultItemType,
+  allowedItemTypes,
 }: PartSearchModalProps) {
   const { t } = useTranslation();
 
@@ -57,13 +60,7 @@ export default function PartSearchModal({
   const [data, setData] = useState<PartItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  /** 모달 열릴 때 초기화 및 자동 조회 */
-  useEffect(() => {
-    if (!isOpen) return;
-    setKeyword("");
-    setItemType(defaultItemType ?? "");
-    fetchParts("", defaultItemType ?? "");
-  }, [isOpen, defaultItemType]);
+  const allowedKey = (allowedItemTypes ?? []).join(",");
 
   /** API 호출 */
   const fetchParts = useCallback(async (search: string, type: string) => {
@@ -71,7 +68,13 @@ export default function PartSearchModal({
     try {
       const params: Record<string, string | number> = { limit: 200 };
       if (search.trim()) params.search = search.trim();
-      if (type) params.itemType = type;
+      if (type) {
+        // 단일 유형이 선택된 경우 우선 적용
+        params.itemType = type;
+      } else if (allowedKey) {
+        // 선택이 없으면 허용 유형 전체로 제한
+        params.itemTypes = allowedKey;
+      }
       const res = await api.get("/master/parts", { params });
       const raw = res.data?.data;
       setData(Array.isArray(raw) ? raw : raw?.data ?? []);
@@ -80,7 +83,15 @@ export default function PartSearchModal({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [allowedKey]);
+
+  /** 모달 열릴 때 초기화 및 자동 조회 */
+  useEffect(() => {
+    if (!isOpen) return;
+    setKeyword("");
+    setItemType(defaultItemType ?? "");
+    fetchParts("", defaultItemType ?? "");
+  }, [isOpen, defaultItemType, fetchParts]);
 
   /** 검색 실행 */
   const handleSearch = useCallback(() => {
@@ -104,16 +115,23 @@ export default function PartSearchModal({
     [onSelect, onClose]
   );
 
-  /** 품목유형 옵션 */
-  const typeOptions = useMemo(
-    () => [
+  /** 품목유형 옵션 (allowedItemTypes 지정 시 해당 유형만 노출) */
+  const typeOptions = useMemo(() => {
+    const labelMap: Record<string, string> = {
+      FINISHED: t("inventory.stock.fg", "완제품"),
+      SEMI_PRODUCT: t("inventory.stock.wip", "반제품"),
+      RAW_MATERIAL: t("inventory.stock.raw", "원자재"),
+      CONSUMABLE: t("inventory.stock.consumable", "소모품"),
+    };
+    const allowed = allowedItemTypes ?? [];
+    const base = allowed.length > 0
+      ? allowed
+      : ["FINISHED", "SEMI_PRODUCT", "RAW_MATERIAL"];
+    return [
       { value: "", label: t("common.all") },
-      { value: "FINISHED", label: t("inventory.stock.fg", "완제품") },
-      { value: "SEMI_PRODUCT", label: t("inventory.stock.wip", "반제품") },
-      { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
-    ],
-    [t]
-  );
+      ...base.map((v) => ({ value: v, label: labelMap[v] ?? v })),
+    ];
+  }, [t, allowedKey, allowedItemTypes]);
 
   /** DataGrid 컬럼 정의 */
   const columns = useMemo<ColumnDef<PartItem, unknown>[]>(

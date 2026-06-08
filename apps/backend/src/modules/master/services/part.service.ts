@@ -24,7 +24,7 @@ export class PartService {
   }
 
   async findAll(query: PartQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 20, itemType, search, useYn } = query;
+    const { page = 1, limit = 20, itemType, itemTypes, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.partRepository.createQueryBuilder('p')
@@ -36,7 +36,9 @@ export class PartService {
       queryBuilder.andWhere('p.plant = :plant', { plant });
     }
 
-    if (itemType) {
+    if (itemTypes && itemTypes.length > 0) {
+      queryBuilder.andWhere('p.itemType IN (:...itemTypes)', { itemTypes });
+    } else if (itemType) {
       queryBuilder.andWhere('p.itemType = :itemType', { itemType });
     }
 

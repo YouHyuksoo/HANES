@@ -456,6 +456,7 @@
       "raw": "原材料",
       "wip": "半成品",
       "fg": "成品",
+      "consumable": "耗材",
       "floor": "在制品",
       "defect": "不良品",
       "scrap": "废品"
@@ -1549,6 +1550,30 @@
       "pending": "待处理",
       "issueCompleted": "出库完成"
     },
+    "arrivalResult": {
+      "title": "到货实绩查询",
+      "subtitle": "查询到货历史，重印序列号标签及取消到货。",
+      "cancel": "取消到货",
+      "cancelTitle": "取消到货",
+      "cancelConfirm": "确认取消所选到货？",
+      "changeMfg": "变更制造商",
+      "manufacturer": "制造商",
+      "reprint": "重印标签",
+      "selectAll": "全选",
+      "selectHint": "请在左侧选择到货",
+      "noSerials": "无序列号",
+      "col": {
+        "arrivalNo": "到货编号",
+        "arrivalDate": "到货日",
+        "qty": "到货数量",
+        "serialCount": "序列号",
+        "poType": "区分",
+        "serialNo": "序列号",
+        "serialQty": "数量",
+        "stockIn": "入库",
+        "canceled": "取消"
+      }
+    },
     "arrival": {
       "title": "到货管理",
       "subtitle": "基于PO/手动到货登记及历史管理",
@@ -1970,6 +1995,8 @@
       "spec": "规格",
       "unit": "单位",
       "orderQty": "订单数量",
+      "qtyMin": "≥1",
+      "invalidQty": "订购数量必须为1以上的整数。(品目: {{code}})",
       "receivedQty": "入库数量",
       "unitPrice": "单价",
       "amount": "金额",
@@ -2075,12 +2102,14 @@
       "stats": {
         "total": "全部LOT",
         "totalQty": "总数量"
-      }
+      },
+      "splitFailed": "拆分失败。",
+      "splitPreview": "拆分为 {{a}} + {{b}}。"
     },
     "lotMerge": {
       "title": "物料合并",
-      "subtitle": "选择相同零件的LOT进行合并。",
-      "matUid": "材料序列号",
+      "subtitle": "通过扫码合并相同物料和初始序列的批次。",
+      "matUid": "物料序列",
       "vendor": "供应商",
       "expireDate": "有效期",
       "mergeSelected": "合并所选",
@@ -2095,7 +2124,17 @@
       "confirmTitle": "确认LOT合并",
       "confirmMessage": "是否合并所选LOT？原LOT将标记为耗尽(DEPLETED)。",
       "confirmMerge": "执行合并",
-      "searchPlaceholder": "搜索LOT编号..."
+      "searchPlaceholder": "搜索LOT编号...",
+      "origin": "初始序列",
+      "scanPlaceholder": "扫描条码或输入物料序列后按回车",
+      "addScan": "添加",
+      "alreadyScanned": "已添加：{{matUid}}",
+      "notFound": "未找到序列：{{matUid}}",
+      "itemMismatchScan": "无法合并不同物料：{{matUid}}",
+      "originMismatchScan": "无法合并初始序列不同的批次：{{matUid}}",
+      "scanFailed": "查询序列失败。",
+      "confirmMessageNew": "确认合并以下批次？原批次全部作废，并生成一个合计数量的新序列。",
+      "mergeFailed": "合并失败。"
     },
     "shelfLife": {
       "title": "保质期物料",
@@ -5679,6 +5718,7 @@
     "material": {
       "title": "物料管理",
       "arrival": "到货",
+      "arrivalResult": "到货实绩查询",
       "label": "标签",
       "iqc": "IQC",
       "receive": "入库",

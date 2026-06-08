@@ -456,6 +456,7 @@
       "raw": "Raw Material",
       "wip": "WIP",
       "fg": "Finished Goods",
+      "consumable": "Consumable",
       "floor": "Floor WIP",
       "defect": "Defect",
       "scrap": "Scrap"
@@ -1563,6 +1564,30 @@
       "pending": "Pending",
       "issueCompleted": "Issue Completed"
     },
+    "arrivalResult": {
+      "title": "Arrival Result",
+      "subtitle": "Review arrival history, reprint serial labels and cancel arrivals.",
+      "cancel": "Cancel Arrival",
+      "cancelTitle": "Cancel Arrival",
+      "cancelConfirm": "Cancel the selected arrival?",
+      "changeMfg": "Change Manufacturer",
+      "manufacturer": "Manufacturer",
+      "reprint": "Reprint Label",
+      "selectAll": "Select All",
+      "selectHint": "Select an arrival on the left",
+      "noSerials": "No serials",
+      "col": {
+        "arrivalNo": "Arrival No.",
+        "arrivalDate": "Arrival Date",
+        "qty": "Arrival Qty",
+        "serialCount": "Serials",
+        "poType": "Type",
+        "serialNo": "Serial No.",
+        "serialQty": "Qty",
+        "stockIn": "In",
+        "canceled": "Cancel"
+      }
+    },
     "arrival": {
       "title": "Material Arrival",
       "subtitle": "PO-based / manual arrival registration and history",
@@ -1984,6 +2009,8 @@
       "spec": "Spec",
       "unit": "Unit",
       "orderQty": "Order Qty",
+      "qtyMin": "Min 1",
+      "invalidQty": "Order qty must be a whole number of 1 or more. (Item: {{code}})",
       "receivedQty": "Received Qty",
       "unitPrice": "Unit Price",
       "amount": "Amount",
@@ -2089,11 +2116,13 @@
       "stats": {
         "total": "Total LOTs",
         "totalQty": "Total Qty"
-      }
+      },
+      "splitFailed": "Failed to split the LOT.",
+      "splitPreview": "Split into {{a}} + {{b}}."
     },
     "lotMerge": {
       "title": "Lot Merge",
-      "subtitle": "Select and merge lots of the same part.",
+      "subtitle": "Merge LOTs of the same item and origin via barcode scan.",
       "matUid": "Material Serial",
       "vendor": "Vendor",
       "expireDate": "Expiry Date",
@@ -2109,7 +2138,17 @@
       "confirmTitle": "Confirm Lot Merge",
       "confirmMessage": "Merge the selected lots? Source lots will be marked as DEPLETED.",
       "confirmMerge": "Confirm Merge",
-      "searchPlaceholder": "Search lot number..."
+      "searchPlaceholder": "Search lot number...",
+      "origin": "Origin",
+      "scanPlaceholder": "Scan a barcode or enter a material serial, then press Enter",
+      "addScan": "Add",
+      "alreadyScanned": "Already added: {{matUid}}",
+      "notFound": "Serial not found: {{matUid}}",
+      "itemMismatchScan": "Cannot merge different items: {{matUid}}",
+      "originMismatchScan": "Cannot merge LOTs with a different origin: {{matUid}}",
+      "scanFailed": "Failed to look up the serial.",
+      "confirmMessageNew": "Merge the LOTs below? All originals are discarded and one new serial with the combined quantity is issued.",
+      "mergeFailed": "Failed to merge."
     },
     "shelfLife": {
       "title": "Shelf Life Material",
@@ -5693,6 +5732,7 @@
     "material": {
       "title": "Material",
       "arrival": "Arrival",
+      "arrivalResult": "Arrival Result",
       "label": "Label",
       "iqc": "IQC",
       "receive": "Receive",

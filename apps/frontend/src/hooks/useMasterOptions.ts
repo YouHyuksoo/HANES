@@ -245,7 +245,7 @@ export function useEquipOptions() {
  * 거래처 목록을 SelectOption[]으로 반환
  * @param partnerType - 'SUPPLIER' | 'CUSTOMER' (미지정 시 전체)
  */
-export function usePartnerOptions(partnerType?: "SUPPLIER" | "CUSTOMER" | "VENDOR") {
+export function usePartnerOptions(partnerType?: "SUPPLIER" | "CUSTOMER" | "VENDOR" | "MFG") {
   const params = new URLSearchParams({ limit: "100" });
   if (partnerType) params.set("partnerType", partnerType);
 

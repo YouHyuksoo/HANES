@@ -456,6 +456,7 @@
       "raw": "Nguyên vật liệu",
       "wip": "Bán thành phẩm",
       "fg": "Thành phẩm",
+      "consumable": "Vật tư tiêu hao",
       "floor": "Hàng tại xưởng",
       "defect": "Hàng lỗi",
       "scrap": "Phế phẩm"
@@ -1549,6 +1550,30 @@
       "pending": "Chờ xử lý",
       "issueCompleted": "Đã xuất kho"
     },
+    "arrivalResult": {
+      "title": "Kết quả nhập hàng",
+      "subtitle": "Tra cứu lịch sử nhập hàng, in lại nhãn serial và hủy nhập hàng.",
+      "cancel": "Hủy nhập",
+      "cancelTitle": "Hủy nhập hàng",
+      "cancelConfirm": "Hủy mục nhập hàng đã chọn?",
+      "changeMfg": "Đổi nhà sản xuất",
+      "manufacturer": "Nhà sản xuất",
+      "reprint": "In lại nhãn",
+      "selectAll": "Chọn tất cả",
+      "selectHint": "Chọn mục nhập hàng bên trái",
+      "noSerials": "Không có serial",
+      "col": {
+        "arrivalNo": "Số nhập hàng",
+        "arrivalDate": "Ngày nhập",
+        "qty": "SL nhập",
+        "serialCount": "Serial",
+        "poType": "Phân loại",
+        "serialNo": "Số serial",
+        "serialQty": "SL",
+        "stockIn": "Nhập kho",
+        "canceled": "Hủy"
+      }
+    },
     "arrival": {
       "title": "Quản lý nhập hàng",
       "subtitle": "Đăng ký nhập hàng theo PO/thủ công và quản lý lịch sử",
@@ -1970,6 +1995,8 @@
       "spec": "Quy cách",
       "unit": "Đơn vị",
       "orderQty": "SL đặt hàng",
+      "qtyMin": "Tối thiểu 1",
+      "invalidQty": "Số lượng đặt phải là số nguyên từ 1 trở lên. (Mục: {{code}})",
       "receivedQty": "SL nhập kho",
       "unitPrice": "Đơn giá",
       "amount": "Thành tiền",
@@ -2075,12 +2102,14 @@
       "stats": {
         "total": "Tổng LOT",
         "totalQty": "Tổng số lượng"
-      }
+      },
+      "splitFailed": "Tách LOT thất bại.",
+      "splitPreview": "Tách thành {{a}} + {{b}}."
     },
     "lotMerge": {
       "title": "Gộp LOT",
-      "subtitle": "Chọn và gộp các LOT cùng linh kiện.",
-      "matUid": "Số Serial Vật Liệu",
+      "subtitle": "Gộp các LOT cùng vật tư và cùng serial gốc bằng cách quét mã.",
+      "matUid": "Serial vật tư",
       "vendor": "Nhà cung cấp",
       "expireDate": "Hạn sử dụng",
       "mergeSelected": "Gộp đã chọn",
@@ -2095,7 +2124,17 @@
       "confirmTitle": "Xác nhận gộp LOT",
       "confirmMessage": "Gộp các LOT đã chọn? LOT nguồn sẽ được đánh dấu là đã tiêu thụ (DEPLETED).",
       "confirmMerge": "Xác nhận gộp",
-      "searchPlaceholder": "Tìm số LOT..."
+      "searchPlaceholder": "Tìm số LOT...",
+      "origin": "Serial gốc",
+      "scanPlaceholder": "Quét mã vạch hoặc nhập serial vật tư rồi nhấn Enter",
+      "addScan": "Thêm",
+      "alreadyScanned": "Đã thêm: {{matUid}}",
+      "notFound": "Không tìm thấy serial: {{matUid}}",
+      "itemMismatchScan": "Không thể gộp vật tư khác nhau: {{matUid}}",
+      "originMismatchScan": "Không thể gộp LOT có serial gốc khác nhau: {{matUid}}",
+      "scanFailed": "Tra cứu serial thất bại.",
+      "confirmMessageNew": "Gộp các LOT bên dưới? Tất cả bản gốc bị hủy và phát hành 1 serial mới với số lượng tổng.",
+      "mergeFailed": "Gộp thất bại."
     },
     "shelfLife": {
       "title": "Vật tư có hạn sử dụng",
@@ -5679,6 +5718,7 @@
     "material": {
       "title": "Vật tư",
       "arrival": "Nhập hàng",
+      "arrivalResult": "Kết quả nhập hàng",
       "label": "Nhãn",
       "iqc": "IQC",
       "receive": "Nhập kho",

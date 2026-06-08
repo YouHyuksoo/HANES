@@ -73,9 +73,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
         errorCode = `HTTP_${status}`;
       } else if (isRecord(exceptionResponse)) {
         const responseObj = exceptionResponse;
-        message = typeof responseObj.message === 'string' ? responseObj.message : exception.message;
+        const rawMessage = responseObj.message;
+        if (Array.isArray(rawMessage)) {
+          // class-validator(ValidationPipe)는 검증 오류를 문자열 배열로 반환한다.
+          // 배열을 버리면 "Bad Request Exception"만 남아 사용자가 원인을 알 수 없으므로
+          // 줄바꿈으로 합쳐 노출하고 원본 배열은 details에 보존한다.
+          message = rawMessage.filter((m): m is string => typeof m === 'string').join('\n');
+          details = rawMessage;
+        } else {
+          message = typeof rawMessage === 'string' ? rawMessage : exception.message;
+        }
         errorCode = typeof responseObj.errorCode === 'string' ? responseObj.errorCode : `HTTP_${status}`;
-        details = responseObj.details;
+        if (details === undefined) details = responseObj.details;
       } else {
         message = exception.message;
         errorCode = `HTTP_${status}`;

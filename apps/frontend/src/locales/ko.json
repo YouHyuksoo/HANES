@@ -457,6 +457,7 @@
       "raw": "원자재",
       "wip": "반제품",
       "fg": "완제품",
+      "consumable": "소모품",
       "floor": "공정재공",
       "defect": "불량",
       "scrap": "폐기"
@@ -1879,6 +1880,30 @@
       "pending": "대기",
       "issueCompleted": "출고완료"
     },
+    "arrivalResult": {
+      "title": "입하실적조회",
+      "subtitle": "입하 이력을 조회하고 시리얼 라벨 재발행·입하 취소를 처리합니다.",
+      "cancel": "입하취소",
+      "cancelTitle": "입하 취소",
+      "cancelConfirm": "선택한 입하 건을 취소하시겠습니까?",
+      "changeMfg": "제조사 변경",
+      "manufacturer": "제조사",
+      "reprint": "라벨 재발행",
+      "selectAll": "전체 선택",
+      "selectHint": "좌측에서 입하 건을 선택하세요",
+      "noSerials": "시리얼이 없습니다",
+      "col": {
+        "arrivalNo": "입하번호",
+        "arrivalDate": "입하일",
+        "qty": "입하수량",
+        "serialCount": "시리얼",
+        "poType": "구분",
+        "serialNo": "시리얼번호",
+        "serialQty": "수량",
+        "stockIn": "입고",
+        "canceled": "취소"
+      }
+    },
     "arrival": {
       "title": "입하관리",
       "subtitle": "PO 기반/수동 입하 등록 및 이력 관리",
@@ -2300,6 +2325,8 @@
       "spec": "규격",
       "unit": "단위",
       "orderQty": "발주수량",
+      "qtyMin": "1 이상",
+      "invalidQty": "발주수량은 1 이상의 정수로 입력하세요. (품목: {{code}})",
       "receivedQty": "입고수량",
       "unitPrice": "단가",
       "amount": "금액",
@@ -2405,11 +2432,13 @@
       "stats": {
         "total": "전체LOT",
         "totalQty": "총수량"
-      }
+      },
+      "splitFailed": "분할에 실패했습니다.",
+      "splitPreview": "{{a}} + {{b}} (으)로 분할됩니다."
     },
     "lotMerge": {
       "title": "자재병합",
-      "subtitle": "같은 품목의 LOT을 선택하여 병합합니다.",
+      "subtitle": "바코드 스캔으로 같은 품목·최초시리얼의 LOT을 병합합니다.",
       "matUid": "자재시리얼",
       "vendor": "공급처",
       "expireDate": "유효기한",
@@ -2425,7 +2454,17 @@
       "confirmTitle": "LOT 병합 확인",
       "confirmMessage": "아래 LOT들을 병합하시겠습니까? 원본 LOT은 소진(DEPLETED) 처리됩니다.",
       "confirmMerge": "병합 실행",
-      "searchPlaceholder": "LOT번호 검색..."
+      "searchPlaceholder": "LOT번호 검색...",
+      "origin": "최초시리얼",
+      "scanPlaceholder": "바코드를 스캔하거나 자재시리얼 입력 후 Enter",
+      "addScan": "추가",
+      "alreadyScanned": "이미 추가된 시리얼입니다: {{matUid}}",
+      "notFound": "시리얼을 찾을 수 없습니다: {{matUid}}",
+      "itemMismatchScan": "다른 품목은 함께 병합할 수 없습니다: {{matUid}}",
+      "originMismatchScan": "최초 시리얼이 다른 LOT은 병합할 수 없습니다: {{matUid}}",
+      "scanFailed": "시리얼 조회에 실패했습니다.",
+      "confirmMessageNew": "아래 LOT을 병합하시겠습니까? 원본은 모두 폐기되고 합산 수량의 신규 시리얼 1개가 발번됩니다.",
+      "mergeFailed": "병합에 실패했습니다."
     },
     "shelfLife": {
       "title": "유수명자재",
@@ -5713,6 +5752,7 @@
     "material": {
       "title": "자재관리",
       "arrival": "입하",
+      "arrivalResult": "입하실적조회",
       "label": "입고라벨",
       "iqc": "IQC",
       "receive": "입고",

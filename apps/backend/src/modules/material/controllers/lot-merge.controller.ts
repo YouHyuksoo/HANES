@@ -7,7 +7,7 @@
  * 2. POST /material/lot-merge — LOT 병합 실행
  */
 
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LotMergeService } from '../services/lot-merge.service';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
@@ -25,6 +25,13 @@ export class LotMergeController {
   async findMergeable(@Query() query: LotMergeQueryDto, @Company() company: string, @Plant() plant: string) {
     const result = await this.lotMergeService.findMergeableLots(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  @Get('by-barcode/:matUid')
+  @ApiOperation({ summary: '바코드 스캔 단건 조회 (병합 후보 자격 검증)' })
+  async findByBarcode(@Param('matUid') matUid: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.lotMergeService.findByBarcode(matUid, company, plant);
+    return ResponseUtil.success(data);
   }
 
   @Post()
