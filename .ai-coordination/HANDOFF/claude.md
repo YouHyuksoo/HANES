@@ -5,6 +5,22 @@
 
 ---
 
+## ✅ 완료: IQC006 그룹 집계 + IQC 시료바코드 (2026-06-08, 미커밋)
+
+### T-IQC006-GROUP — 입하실적조회 그룹화
+- 문제: `MAT_ARRIVALS`가 시리얼당 1행(SEQ)이라 한 입하의 시리얼 N개가 좌측 N줄로 펼쳐짐. 목업은 입하번호+PO+품번 1행 + 우측 시리얼 묶음.
+- `arrival.service.listArrivalResults`: GROUP BY (ARRIVAL_NO, PO_NO, ITEM_CODE) 집계. 입하수량=SUM, 시리얼수=COUNT, 대표상태 CASE(전량취소→CANCELED / 입고완료 / IQC완료 / IQC진행 / 입하완료).
+- `SERIAL_COUNT_EXPR`/`RECEIVED_COUNT_EXPR`: SEQ→ITEM_CODE 그룹키, **origin 필터(분할/병합 파생 제외) 유지**.
+- `getArrivalSerials`·`cancelByArrival`·`changeManufacturer`: seq→itemCode 그룹키로 이전. 컨트롤러 경로 `results/:arrivalNo/serials?itemCode=`, DTO seq→itemCode. cancel은 그룹 미입고·미취소 전량 1트랜잭션.
+- 검증(실DB): R26060700001 10행→1행(입하수량2000/시리얼10), 우측 시리얼 10건, 전체 18그룹, 상태분포 정상(RECEIVED 입고건 cancelable=false). tsc 백/프론트 통과.
+
+### T-IQC-SAMPLE-BARCODE — IQC 검사결과 등록 시료바코드
+- `IQC_LOGS.SAMPLE_BARCODE` VARCHAR2(500) 컬럼 추가(`2026-06-08_iqc_log_sample_barcode.sql`, 실DB 적용). IqcLog 엔티티 + `CreateArrivalIqcResultDto.sampleBarcode` + `createArrivalResult` 저장.
+- 프론트 `IqcModal`에 시료바코드 입력 필드(ScanLine, G4 위) — 일반 input이라 바코드 스캐너 입력·수기 입력 모두 가능. `useIqcData` 전달. i18n 4파일.
+- tsc 통과. **end-to-end는 pending 입하 0건이라 미검증** — 새 입하 IQC 등록 시 브라우저 확인 필요.
+
+---
+
 ## ✅ 완료: 자재분할/병합 재설계 (T-LOT-SPLIT-MERGE, 2026-06-08)
 
 spec: `docs/superpowers/specs/2026-06-08-lot-split-merge-redesign.md`. 사용자 결정 반영(재가공 허용 + 검증데이터 원상복구).

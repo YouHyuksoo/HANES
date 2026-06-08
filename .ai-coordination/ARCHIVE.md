@@ -10,6 +10,11 @@ Format:
 
 ## Completed
 
+- T-ROUTING-PROCESS-TYPE-SOURCE | 2026-06-08 | codex | 라우팅 공정 추가 모달에서 공정유형 선택/저장 제거, 공정 마스터 `processType` 표시 전용으로 변경. 프론트 tsc·브라우저 모달 확인 통과 | evidence: JOURNAL 2026-06-08 15:11 codex
+- T-IQC006-GROUP | 2026-06-08 | claude | IQC006 입하실적조회 좌측을 입하번호+PO+품번 그룹 1행으로 집계(시리얼당 펼침 해소), 우측 시리얼은 arrivalNo+품번 조회. cancel/manufacturer/getArrivalSerials seq→itemCode 그룹키 이전. 실DB 검증(R26060700001 10행→1행)·tsc 통과 | evidence: HANDOFF/claude.md 2026-06-08
+- T-IQC-SAMPLE-BARCODE | 2026-06-08 | claude | IQC 검사결과 등록 모달에 시료 바코드(입력/스캔) 필드 추가. IQC_LOGS.SAMPLE_BARCODE 컬럼+엔티티+DTO+서비스+IqcModal+i18n4. tsc·DB컬럼 확인(end-to-end는 pending 0건 미검증) | evidence: HANDOFF/claude.md 2026-06-08
+- T-MAT-RECEIVE-TESTDATA | 2026-06-08 | codex | `/material/receive` 정상 입고 테스트용 JSHANES 데이터 3건 생성: `RECV-TEST-260608-00003/00004/00005`, 입하 `RCVT26060800003`, 창고 `WH-MAT-A`, 화면 검색/체크박스 확인 | evidence: JOURNAL 2026-06-08 11:50 codex
+- T-MAT-CYCLE-E2E-FIX | 2026-06-08 | codex | QA 결함 수정: 자재입고 창고 DTO 계약, IQC 성적서 업로드 UI, 날짜 표시/필터, 수동출고 체크박스 key, 재고 matUid 검색 보정. 스펙 53건·프론트/백엔드 tsc·헤드리스 브라우저 재확인 통과 | evidence: JOURNAL 2026-06-08 11:27 codex
 - T-MAT-CYCLE-E2E-QA | 2026-06-08 | codex | PO `PO-260608-013`부터 입하 `R26060800001`, LOT `VH1-RM260608-00004`, IQC PASS, 입고 `RCV20260608-0001`, 출고 `ISS20260608-0001`, 재고 0/LOT DEPLETED까지 실데이터 검증. UI 결함 5건 확인 | evidence: JOURNAL 2026-06-08 codex
 - T-LOT-SPLIT-MERGE | 2026-06-08 | claude | 자재분할/병합 재설계(#4·5·6): 원본 폐기(SPLIT/MERGED)→신규 시리얼 발번(분할 2조각/병합 통합1, nextMatSerial), 입고완료 게이팅(RECEIVE+분할·병합IN, 재가공 허용), 바코드 스캔 병합, STOCK_TX 채번, #4 currentQty 누락 해소. 회귀수정: IQC006 카운트 origin 필터, MAT_LOT_STATUS 공통코드 SPLIT/MERGED. tsc·jest16·API풀사이클·실DB 검증, 테스트데이터 원상복구 | evidence: HANDOFF/claude.md 2026-06-08
 - T-AUDIT-COLUMN-DEFAULT-FIX | 2026-06-04 | claude | ORA-01400(ITEM_MASTERS.CREATED_AT NULL) 근본원인=TypeORM Oracle이 감사컬럼을 DB DEFAULT에 의존. 33개 테이블/64개 컬럼에 `DEFAULT SYSTIMESTAMP` 일괄 보정(멱등 마이그레이션) + create-hanes-schema.sql 실DB 실측 재생성(148 테이블) | evidence: JOURNAL 2026-06-04 claude
