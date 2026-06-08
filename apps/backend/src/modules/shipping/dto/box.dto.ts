@@ -36,10 +36,11 @@ export type BoxStatus = typeof BOX_STATUS_VALUES[number];
  * 박스 생성 DTO
  */
 export class CreateBoxDto {
-  @ApiProperty({ description: '박스 번호 (QR)', example: 'BOX-20250126-001', maxLength: 50 })
+  @ApiPropertyOptional({ description: '박스 번호 (미지정 시 자동 채번: BX+YYMMDD+4자리)', example: 'BX2606080001', maxLength: 50 })
+  @IsOptional()
   @IsString()
   @MaxLength(50)
-  boxNo: string;
+  boxNo?: string;
 
   @ApiProperty({ description: '품목 ID', example: 'clxxx...' })
   @IsString()

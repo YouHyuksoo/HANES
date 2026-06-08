@@ -322,7 +322,8 @@
     "system.training": "교육훈련",
     "system.menuCategory": "메뉴 카테고리 관리",
     "root": "최상위",
-    "system.improvementRequests": "개선요청 관리"
+    "system.improvementRequests": "개선요청 관리",
+    "material.arrivalResult": "입하실적조회"
   },
   "header": {
     "theme": "테마",
@@ -5917,7 +5918,10 @@
       "removeLot": "롯트 취소",
       "allLotScanned": "모든 자재 롯트 등록 완료",
       "scanPlaceholder": "바코드를 스캔하세요...",
-      "remaining": "{{count}}종 남음"
+      "remaining": "{{count}}종 남음",
+      "cancelAll": "투입취소",
+      "cancelAllTitle": "자재투입 취소",
+      "cancelAllConfirm": "투입된 자재 {{count}}건을 모두 취소하시겠습니까?"
     },
     "instruction": {
       "title": "작업지도서",

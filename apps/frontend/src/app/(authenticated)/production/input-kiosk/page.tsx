@@ -108,8 +108,10 @@ export default function InputKioskPage() {
       try {
         await api.patch(`/equipment/equips/${selectedEquip.equipCode}/job-order`, {
           orderNo: jobOrder.orderNo,
-        });
+        }, { suppressErrorModal: true });
       } catch (e: unknown) {
+        // 설비 STOP 등 할당 실패는 전역 모달 대신 인라인 toast로 안내(화면 차단 방지).
+        // 작업지시 자체는 위에서 이미 선택되어 자재리스트/작업지도서는 정상 표시됨.
         const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
           ?? t('kiosk.jobOrder.assignError');
         toast.error(msg);

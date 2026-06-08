@@ -30,7 +30,7 @@ interface Box {
   boxNo: string;
   itemCode: string;
   itemName: string;
-  quantity: number;
+  qty: number;
   status: BoxStatus;
   closedAt: string | null;
   createdAt: string;
@@ -52,7 +52,7 @@ export default function PackPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
   const [selectedBox, setSelectedBox] = useState<Box | null>(null);
-  const [createForm, setCreateForm] = useState({ itemCode: "", quantity: "" });
+  const [createForm, setCreateForm] = useState({ itemCode: "", qty: "" });
   const [serialInput, setSerialInput] = useState("");
 
   const fetchData = useCallback(async () => {
@@ -76,15 +76,19 @@ export default function PackPage() {
     open: data.filter((b) => b.status === "OPEN").length,
     closed: data.filter((b) => b.status === "CLOSED").length,
     shipped: data.filter((b) => b.status === "SHIPPED").length,
-    totalQty: data.reduce((sum, b) => sum + b.quantity, 0),
+    totalQty: data.reduce((sum, b) => sum + b.qty, 0),
   }), [data]);
 
   const handleCreate = useCallback(async () => {
     setSaving(true);
     try {
-      await api.post("/shipping/boxes", createForm);
+      await api.post("/shipping/boxes", {
+        itemCode: createForm.itemCode,
+        qty: Number(createForm.qty),
+        // boxNo는 백엔드에서 자동 채번(BX+YYMMDD+4자리)
+      });
       setIsCreateModalOpen(false);
-      setCreateForm({ itemCode: "", quantity: "" });
+      setCreateForm({ itemCode: "", qty: "" });
       fetchData();
     } catch (e) {
       console.error("Create failed:", e);
@@ -133,7 +137,7 @@ export default function PackPage() {
     { accessorKey: "boxNo", header: t("shipping.pack.boxNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "quantity", header: t("common.quantity"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
+    { accessorKey: "qty", header: t("common.quantity"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
     { accessorKey: "closedAt", header: t("shipping.pack.closedAt"), size: 140, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
   ], [t, handleCloseBox]);
@@ -185,7 +189,7 @@ export default function PackPage() {
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t("shipping.pack.createBox")} size="lg">
         <div className="space-y-4">
           <Input label={t("common.partCode")} placeholder="H-001" value={createForm.itemCode} onChange={(e) => setCreateForm((prev) => ({ ...prev, itemCode: e.target.value }))} fullWidth />
-          <Input label={t("common.quantity")} type="number" placeholder="0" value={createForm.quantity} onChange={(e) => setCreateForm((prev) => ({ ...prev, quantity: e.target.value }))} fullWidth />
+          <Input label={t("common.quantity")} type="number" placeholder="0" value={createForm.qty} onChange={(e) => setCreateForm((prev) => ({ ...prev, qty: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t("common.cancel")}</Button>
             <Button onClick={handleCreate} disabled={saving}>

@@ -110,14 +110,14 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
   };
 
   const handleSubmit = useCallback(async () => {
-    if (!form.itemCode || !form.planQty) return;
+    if (!form.itemCode || !form.planQty || !form.planDate) return;
     setSaving(true);
     try {
       const payload = {
         orderNo: form.orderNo,
         itemCode: form.itemCode,
         planQty: Number(form.planQty),
-        planDate: form.planDate || undefined,
+        planDate: form.planDate,
         lineCode: form.lineCode || undefined,
         custPoNo: form.custPoNo || undefined,
         priority: Number(form.priority),
@@ -148,7 +148,7 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
           </h2>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-            <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode || !form.planQty}>
+            <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode || !form.planQty || !form.planDate}>
               {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
             </Button>
           </div>
@@ -176,7 +176,7 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
               </div>
               <Input label={t("production.order.planQty")} type="number" value={form.planQty}
                 onChange={e => setField("planQty", e.target.value)} fullWidth />
-              <Input label={t("production.order.planDate")} type="date" value={form.planDate}
+              <Input label={`${t("production.order.planDate")} *`} type="date" value={form.planDate}
                 onChange={e => setField("planDate", e.target.value)} fullWidth />
               <Input label={t("production.order.priority")} type="number" value={form.priority}
                 onChange={e => setField("priority", e.target.value)} fullWidth />

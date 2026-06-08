@@ -321,7 +321,9 @@
     "system.training": "Quản lý đào tạo",
     "system.menuCategory": "Quản lý danh mục menu",
     "root": "Cấp cao nhất",
-    "system.improvementRequests": "Quản lý yêu cầu cải tiến"
+    "system.improvementRequests": "Quản lý yêu cầu cải tiến",
+    "material.arrivalResult": "Kết quả nhập hàng",
+    "material.receiveLabel": "Phát hành nhãn nhập kho"
   },
   "header": {
     "theme": "Giao diện",
@@ -5883,7 +5885,10 @@
       "removeLot": "Huỷ lô",
       "allLotScanned": "Đã đăng ký đủ lô vật tư",
       "scanPlaceholder": "Quét mã vạch...",
-      "remaining": "Còn {{count}} loại"
+      "remaining": "Còn {{count}} loại",
+      "cancelAll": "Hủy nhập",
+      "cancelAllTitle": "Hủy nhập vật tư",
+      "cancelAllConfirm": "Hủy toàn bộ {{count}} lô vật tư đã nhập?"
     },
     "instruction": {
       "title": "Hướng dẫn sản xuất",

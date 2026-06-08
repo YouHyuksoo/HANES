@@ -31,6 +31,9 @@ import { useAuthStore } from "@/stores/authStore";
 declare module "axios" {
   interface AxiosRequestConfig {
     skipSuccessToast?: boolean;
+    // 응답 인터셉터의 전역 에러 상세 모달을 끄는 opt-out 플래그.
+    // 컴포넌트가 자체 toast/인라인 안내로 에러를 처리하는 호출에서 사용.
+    suppressErrorModal?: boolean;
   }
 }
 

@@ -124,6 +124,16 @@ export class NumberingService {
     return `R${this.yyMMdd(txDate)}${this.pad5(seq)}`;
   }
 
+  /** 박스번호 채번: BX + YYMMDD + 4자리(당일 시퀀스, separator 없음). numbering-rules.md 3장. */
+  async nextBoxNo(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_BOX_NO_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+    return `BX${this.yyMMdd(txDate)}${this.pad4(seq)}`;
+  }
+
   private yyMMdd(d: Date): string {
     const yy = String(d.getFullYear()).slice(-2);
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -133,5 +143,9 @@ export class NumberingService {
 
   private pad5(n: number): string {
     return String(n).padStart(5, '0');
+  }
+
+  private pad4(n: number): string {
+    return String(n).padStart(4, '0');
   }
 }

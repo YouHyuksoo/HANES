@@ -321,7 +321,9 @@
     "system.training": "培训管理",
     "system.menuCategory": "菜单类别管理",
     "root": "顶级",
-    "system.improvementRequests": "改善申请管理"
+    "system.improvementRequests": "改善申请管理",
+    "material.arrivalResult": "到货实绩查询",
+    "material.receiveLabel": "入库标签发行"
   },
   "header": {
     "theme": "主题",
@@ -5883,7 +5885,10 @@
       "removeLot": "取消批次",
       "allLotScanned": "所有物料批次登记完成",
       "scanPlaceholder": "请扫描条码...",
-      "remaining": "{{count}} 种未登记"
+      "remaining": "{{count}} 种未登记",
+      "cancelAll": "取消投入",
+      "cancelAllTitle": "取消物料投入",
+      "cancelAllConfirm": "确认取消已投入的 {{count}} 项物料吗？"
     },
     "instruction": {
       "title": "作业指导书",

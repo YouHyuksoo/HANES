@@ -12,8 +12,9 @@
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Package, AlertTriangle, AlertCircle, X, Scan, CheckCircle2 } from 'lucide-react';
+import { Package, AlertTriangle, AlertCircle, X, Scan, CheckCircle2, Trash2 } from 'lucide-react';
 import api from '@/services/api';
+import { ConfirmModal } from '@/components/ui';
 import { useKioskStore } from '@/stores/kioskStore';
 
 interface MaterialListPanelProps {
@@ -39,6 +40,32 @@ interface ConsumableItem {
   currentCount: number;
   maxCount: number;
   category: string;
+}
+
+interface ConsumableApiItem {
+  id?: string;
+  consumableCode: string;
+  consumableName: string;
+  currentCount?: number | null;
+  maxCount?: number | null;
+  expectedLife?: number | null;
+  category?: string | null;
+}
+
+function toNumber(value: number | string | null | undefined): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeConsumable(item: ConsumableApiItem): ConsumableItem {
+  return {
+    id: item.id ?? item.consumableCode,
+    consumableCode: item.consumableCode,
+    consumableName: item.consumableName,
+    currentCount: toNumber(item.currentCount),
+    maxCount: toNumber(item.maxCount ?? item.expectedLife),
+    category: item.category ?? '',
+  };
 }
 
 function lifeBarColor(current: number, max: number): string {
@@ -78,7 +105,10 @@ export default function MaterialListPanel({
   useEffect(() => {
     if (!selectedEquip?.equipCode) { setConsumables([]); return; }
     api.get(`/equipment/consumables/mounted/${selectedEquip.equipCode}`)
-      .then(res => setConsumables(res.data?.data ?? []))
+      .then(res => {
+        const data: ConsumableApiItem[] = res.data?.data ?? [];
+        setConsumables(data.map(normalizeConsumable));
+      })
       .catch(() => setConsumables([]));
   }, [selectedEquip?.equipCode]);
 
@@ -120,6 +150,24 @@ export default function MaterialListPanel({
     }
   };
 
+  // 자재투입 전체 취소 (스캔 등록된 롯트 일괄 삭제)
+  const [cancelAllOpen, setCancelAllOpen] = useState(false);
+  const handleRemoveAllLots = async () => {
+    if (!selectedJobOrder?.orderNo) return;
+    for (const lot of [...scannedMaterialLots]) {
+      try {
+        await api.delete(
+          `/production/job-orders/${selectedJobOrder.orderNo}/material-lots/${lot.itemCode}/${lot.seq}`,
+          { suppressErrorModal: true },
+        );
+        removeScannedMaterialLot(lot.itemCode, lot.seq);
+      } catch {
+        // 개별 실패는 무시하고 계속
+      }
+    }
+    setCancelAllOpen(false);
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* BOM 자재리스트 */}
@@ -147,6 +195,16 @@ export default function MaterialListPanel({
               <Scan className="h-3 w-3" />
               {t('kiosk.prep.materialScan')}
               {interlock.materialScanDone && <CheckCircle2 className="h-3 w-3 text-teal-500" />}
+            </button>
+          )}
+          {scannedMaterialLots.length > 0 && (
+            <button
+              onClick={() => setCancelAllOpen(true)}
+              title={t('kiosk.material.cancelAll', '자재투입 전체 취소')}
+              className="inline-flex items-center gap-1 rounded border border-red-300 bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-100 dark:border-red-700 dark:bg-red-900/20 dark:text-red-300"
+            >
+              <Trash2 className="h-3 w-3" />
+              {t('kiosk.material.cancelAll', '투입취소')}
             </button>
           )}
           {(!interlock.workerInspectDone || !selectedJobOrder) && (
@@ -288,6 +346,16 @@ export default function MaterialListPanel({
           </ul>
         )}
       </div>
+
+      {/* 자재투입 전체 취소 확인 */}
+      <ConfirmModal
+        isOpen={cancelAllOpen}
+        onClose={() => setCancelAllOpen(false)}
+        onConfirm={handleRemoveAllLots}
+        title={t('kiosk.material.cancelAllTitle', '자재투입 취소')}
+        message={t('kiosk.material.cancelAllConfirm', '투입된 자재 {{count}}건을 모두 취소하시겠습니까?', { count: scannedMaterialLots.length })}
+        variant="danger"
+      />
     </div>
   );
 }

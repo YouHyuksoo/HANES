@@ -23,6 +23,7 @@ import {
   BoxStatus,
 } from '../dto/box.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class BoxService {
@@ -44,6 +45,7 @@ export class BoxService {
     @InjectRepository(OqcRequestBox)
     private readonly oqcRequestBoxRepository: Repository<OqcRequestBox>,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -128,11 +130,14 @@ export class BoxService {
   }
 
   async create(dto: CreateBoxDto, company?: string, plant?: string) {
+    // 박스번호 미지정 시 자동 채번 (BX+YYMMDD+4자리, SEQ_BOX_NO_DAILY)
+    const boxNo = dto.boxNo ?? await this.numbering.nextBoxNo();
+
     const existing = await this.boxRepository.findOne({
-      where: { boxNo: dto.boxNo, ...this.tenantWhere(company, plant) },
+      where: { boxNo, ...this.tenantWhere(company, plant) },
     });
     if (existing) {
-      throw new ConflictException(`이미 존재하는 박스번호입니다: ${dto.boxNo}`);
+      throw new ConflictException(`이미 존재하는 박스번호입니다: ${boxNo}`);
     }
 
     const part = await this.partRepository.findOne({
@@ -143,7 +148,7 @@ export class BoxService {
     }
 
     const box = this.boxRepository.create({
-      boxNo: dto.boxNo,
+      boxNo,
       itemCode: dto.itemCode,
       qty: dto.qty,
       serialList: dto.serialList ? JSON.stringify(dto.serialList) : null,

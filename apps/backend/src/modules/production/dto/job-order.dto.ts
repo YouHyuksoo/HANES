@@ -19,6 +19,7 @@ import {
   IsOptional,
   IsInt,
   IsDateString,
+  IsNotEmpty,
   Min,
   Max,
   MaxLength,
@@ -54,10 +55,10 @@ export class CreateJobOrderDto {
   @Min(1)
   planQty: number;
 
-  @ApiPropertyOptional({ description: '계획일 (YYYY-MM-DD)', example: '2025-01-26' })
-  @IsOptional()
+  @ApiProperty({ description: '계획일 (YYYY-MM-DD) — 필수', example: '2025-01-26' })
   @IsDateString()
-  planDate?: string;
+  @IsNotEmpty({ message: '계획일은 필수입니다.' })
+  planDate: string;
 
   @ApiPropertyOptional({ description: '우선순위 (1:최상 ~ 10:최하)', default: 5, minimum: 1, maximum: 10 })
   @IsOptional()
