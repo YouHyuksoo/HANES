@@ -17,7 +17,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, QueryRunner, FindOptionsSelect, IsNull, In } from 'typeorm';
+import { Repository, QueryRunner, FindOptionsSelect, IsNull, In, Brackets } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -136,8 +136,22 @@ export class JobOrderService {
       qb.andWhere('jo.status = :status', { status });
     }
     if (erpSyncYn) qb.andWhere('jo.erpSyncYn = :erpSyncYn', { erpSyncYn });
-    if (planDateFrom) qb.andWhere('jo.planDate >= :planDateFrom', { planDateFrom: new Date(planDateFrom) });
-    if (planDateTo) qb.andWhere('jo.planDate <= :planDateTo', { planDateTo: new Date(planDateTo) });
+    // 계획일 필터: 범위 내 작업지시 + 계획일 미지정(NULL) 작업지시는 항상 노출
+    // (NULL은 범위 비교에서 제외되어 즉시지시/계획일 미입력 건이 숨겨지던 문제 해소)
+    if (planDateFrom || planDateTo) {
+      qb.andWhere(new Brackets((qb2) => {
+        qb2.where('jo.planDate IS NULL');
+        if (planDateFrom && planDateTo) {
+          qb2.orWhere('(jo.planDate >= :planDateFrom AND jo.planDate <= :planDateTo)', {
+            planDateFrom: new Date(planDateFrom), planDateTo: new Date(planDateTo),
+          });
+        } else if (planDateFrom) {
+          qb2.orWhere('jo.planDate >= :planDateFrom', { planDateFrom: new Date(planDateFrom) });
+        } else {
+          qb2.orWhere('jo.planDate <= :planDateTo', { planDateTo: new Date(planDateTo) });
+        }
+      }));
+    }
     if (search) {
       const upper = search.toUpperCase();
       qb.andWhere(
