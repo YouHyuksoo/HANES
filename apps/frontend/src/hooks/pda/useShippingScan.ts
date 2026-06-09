@@ -126,10 +126,15 @@ export function useShippingScan(): UseShippingScanReturn {
     setIsScanning(true);
     setError(null);
     try {
-      const { data } = await api.get<WorkerQrResponse>(
+      const { data } = await api.get(
         `/master/workers/by-qr/${encodeURIComponent(qr.trim())}`,
       );
-      setWorker({ id: data.id, workerNo: data.workerNo, workerName: data.workerName });
+      const w = (data?.data ?? data) as WorkerQrResponse;
+      if (!w?.workerCode) {
+        setError("WORKER_NOT_FOUND");
+        return;
+      }
+      setWorker({ workerCode: w.workerCode, workerName: w.workerName });
       setPhase("SCAN_PRODUCT");
     } catch (err) {
       setError(extractErrMsg(err, "WORKER_NOT_FOUND"));
@@ -171,7 +176,7 @@ export function useShippingScan(): UseShippingScanReturn {
             `/shipping/orders/${encodeURIComponent(scannedOrder.shipOrderNo)}/ship-box`,
             {
               boxNo: box.boxNo,
-              workerId: worker?.id != null ? String(worker.id) : undefined,
+              workerId: worker?.workerCode || undefined,
             },
           );
           const d = res.data?.data;

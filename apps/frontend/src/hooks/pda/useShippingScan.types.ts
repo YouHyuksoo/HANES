@@ -47,8 +47,7 @@ export interface ScannedShipItem {
 
 /** 작업자 정보 */
 export interface WorkerInfo {
-  id: number;
-  workerNo: string;
+  workerCode: string;
   workerName: string;
 }
 
@@ -84,9 +83,9 @@ export interface BoxResponse {
 
 /** 작업자 QR API 응답 */
 export interface WorkerQrResponse {
-  id: number;
-  workerNo: string;
+  workerCode: string;
   workerName: string;
+  dept?: string;
 }
 
 /** useShippingScan 훅 반환 타입 */
