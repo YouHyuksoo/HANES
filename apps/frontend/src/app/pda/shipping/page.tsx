@@ -80,6 +80,12 @@ export default function ShippingPage() {
         return t("pda.shipping.wrongItem");
       case "OVER_QTY":
         return t("pda.shipping.overQty");
+      case "NOT_CONFIRMED":
+        return t("pda.shipping.notConfirmed");
+      case "ORDER_NOT_FOUND":
+        return t("pda.shipping.orderNotFound");
+      case "SHIP_FAILED":
+        return t("pda.shipping.shipFailed");
       default:
         return error;
     }
@@ -109,8 +115,10 @@ export default function ShippingPage() {
         highlight: true,
       },
       { label: t("pda.shipping.customer"), value: scannedOrder.customerName },
-      { label: t("pda.shipping.partCode"), value: scannedOrder.itemCode },
-      { label: t("pda.shipping.partName"), value: scannedOrder.itemName },
+      {
+        label: t("pda.shipping.itemCount", "품목수"),
+        value: scannedOrder.items.length,
+      },
       { label: t("pda.shipping.orderQty"), value: scannedOrder.orderQty },
     ];
   }, [scannedOrder, t]);

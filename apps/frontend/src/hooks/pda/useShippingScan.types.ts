@@ -13,14 +13,24 @@ export type ShippingPhase =
   | "SCAN_WORKER"
   | "SCAN_PRODUCT";
 
-/** 서버에서 받아오는 출하지시 데이터 */
+/** 출하지시 라인(품목 단위) */
+export interface ShipOrderLine {
+  itemCode: string;
+  itemName?: string;
+  orderQty: number;
+  shippedQty: number;
+}
+
+/** 서버에서 받아오는 출하지시 데이터 (다품목) */
 export interface ShipOrderData {
-  id: string;
   shipOrderNo: string;
   customerName: string;
-  itemCode: string;
-  itemName: string;
+  status: string;
+  items: ShipOrderLine[];
+  /** 전체 라인 지시수량 합계 (진행률용) */
   orderQty: number;
+  /** 전체 라인 출하수량 합계 */
+  shippedQty: number;
 }
 
 /** 스캔된 제품 항목 (박스 단위) */
