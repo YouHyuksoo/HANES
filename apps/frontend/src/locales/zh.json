@@ -283,6 +283,7 @@
     "equipment.gauge": "量具主数据",
     "shipping": "出货管理",
     "shipping.pack": "包装管理",
+    "shipping.boxStock": "产品库存查询",
     "shipping.pallet": "托盘装载管理",
     "shipping.confirm": "出货确认处理",
     "shipping.order": "出货指示登记",
@@ -1390,7 +1391,9 @@
       "preview": "预览",
       "openNewTab": "在新标签页中打开",
       "clickToDownload": "点击下载",
-      "noContent": "没有注册的内容。"
+      "noContent": "没有注册的内容。",
+      "deleteTitle": "删除作业指导书",
+      "deleteConfirm": "确定要删除此作业指导书吗？删除后无法恢复。"
     },
     "transferRule": {
       "title": "仓库移转规则",
@@ -1746,7 +1749,9 @@
     },
     "receiveHistory": {
       "title": "入库历史查询",
-      "description": "查询物料入库历史记录。"
+      "description": "查询物料入库历史记录。",
+      "itemPlaceholder": "搜索品目编码/名称...",
+      "serialPlaceholder": "搜索物料序列号..."
     },
     "receiveLabel": {
       "title": "入库标签发行",
@@ -1841,6 +1846,23 @@
       "requestItemCount": "请求品目（{{count}}条）",
       "requestQtyLabel": "请求数量",
       "registerRequest": "提交请求",
+      "manualRequest": "手动出库请求",
+      "workOrderListTitle": "工单列表",
+      "workOrderSearchPlaceholder": "搜索工单号、物料...",
+      "filterOrderNo": "工单号",
+      "filterModel": "型号 (物料编码/名称)",
+      "newRequest": "新建",
+      "backToHistory": "返回明细",
+      "noRequestForOrder": "该工单没有出库请求记录。",
+      "noWorkOrder": "无工单",
+      "planQtyShort": "计划",
+      "recentRequestsTitle": "最近出库请求",
+      "bomReqQty": "BOM需求",
+      "prevIssueQty": "已发料",
+      "floorStockQty": "现场库存",
+      "noBomItems": "没有基于BOM的待出库原材料。",
+      "bomLoadError": "无法加载工单BOM待出库物料。",
+      "bomCalculating": "正在计算工单BOM待出库物料...",
       "items": "件"
     },
     "issue": {
@@ -2386,6 +2408,23 @@
         "notClosed": "仅CLOSED状态的箱可入库",
         "success": "箱码入库完成"
       },
+      "boxList": {
+        "title": "待入库箱",
+        "count": "{{count}}件",
+        "empty": "没有待入库的箱",
+        "receiveSelected": "入库所选 ({{count}})",
+        "selectedTotal": "已选 {{count}} 件合计",
+        "partialFail": "{{count}} 件入库失败",
+        "received": "已入库"
+      },
+      "scanModal": {
+        "title": "扫描入库",
+        "add": "添加",
+        "empty": "扫描箱码以添加",
+        "alreadyAdded": "该箱已添加：{{boxNo}}",
+        "typeMismatch": "箱的品目类型与当前标签页不一致"
+      },
+      "scanReceive": "扫描入库",
       "individualReceive": "单独入库"
     },
     "receiptCancel": {
@@ -3951,6 +3990,18 @@
     }
   },
   "shipping": {
+    "boxScan": {
+      "title": "扫描装箱出货",
+      "shipOrderNo": "出货指示单号",
+      "scanOrder": "扫描/输入出货指示条码",
+      "customer": "客户",
+      "boxNo": "箱条码",
+      "scanBox": "扫描箱条码",
+      "notConfirmed": "仅可出货已确认(CONFIRMED)的出货指示。",
+      "orderNotFound": "未找到出货指示。",
+      "duplicate": "该箱已扫描。",
+      "shipFailed": "出货处理失败。"
+    },
     "shipOrder": {
       "title": "出货指示登记",
       "subtitle": "登记和管理出货指示。",
@@ -4064,12 +4115,42 @@
       "statOpen": "开放",
       "statClosed": "已封箱",
       "statShipped": "已出货",
-      "statTotalQty": "总数量",
       "searchPlaceholder": "搜索箱号、零件代码...",
       "allParts": "全部零件",
       "box": "箱子",
       "currentQty": "当前数量",
-      "serialPlaceholder": "输入序列号"
+      "serialPlaceholder": "输入序列号",
+      "packedQty": "装箱数量",
+      "selectItem": "装箱物料",
+      "selectItemFirst": "请选择要装箱的物料。",
+      "createHint": "箱号自动生成，数量随序列号添加自动填充。",
+      "reopenBox": "重新打开箱",
+      "removeSerial": "移除序列号",
+      "capacity": "已装",
+      "packLimitReached": "已达到装箱单位上限。",
+      "noSerials": "暂无序列号。",
+      "loadError": "无法加载箱列表。",
+      "createError": "创建箱失败。",
+      "addSerialError": "添加序列号失败。",
+      "removeSerialError": "移除序列号失败。",
+      "closeError": "关箱失败。",
+      "reopenError": "重新打开箱失败。"
+    },
+    "boxStock": {
+      "title": "产品库存查询",
+      "subtitle": "查询通过箱扫描入库的待出货库存及箱内单个产品。",
+      "searchPlaceholder": "搜索箱号...",
+      "boxQty": "箱数量",
+      "itemsTitle": "箱内单个产品",
+      "itemCount": "产品数",
+      "selectBox": "请选择箱",
+      "noItems": "此箱中没有产品。",
+      "loadError": "无法加载箱库存列表。",
+      "itemLoadError": "无法加载箱内产品。",
+      "orderNo": "工单号",
+      "inspectPassYn": "检验",
+      "issuedAt": "发行时间",
+      "missingLabel": "标签缺失"
     },
     "pallet": {
       "title": "托盘装载",
@@ -5293,7 +5374,25 @@
       "adjustment": "库存调整",
       "invCount": "物料盘点",
       "productInv": "产品库存盘点",
+      "productReceiving": "产品装箱入库",
       "logout": "登出"
+    },
+    "productReceiving": {
+      "title": "产品装箱入库",
+      "scanBox": "请扫描箱条码",
+      "boxNo": "箱号",
+      "qty": "数量",
+      "warehouse": "入库仓库",
+      "selectWarehouse": "请选择入库仓库。",
+      "confirmReceive": "确认入库",
+      "cancel": "取消入库",
+      "canceled": "已取消",
+      "notFound": "未找到箱。",
+      "notClosed": "仅可入库已关箱(CLOSED)的箱。",
+      "alreadyShipped": "该箱已出货。",
+      "alreadyReceived": "该箱已入库。",
+      "receiveError": "入库失败。",
+      "cancelError": "取消入库失败。"
     },
     "scan": {
       "placeholder": "请扫描条码",
@@ -5857,7 +5956,6 @@
       "selectEquip": "请选择设备",
       "dailyInspect": "设备日常点检",
       "workerInspect": "作业者设备点检",
-      "masterSample": "主样品判定",
       "selectJobOrder": "请选择作业指示",
       "addWorker": "添加作业者",
       "workerRequired": "需要登记作业者",
@@ -5865,7 +5963,6 @@
       "done": "完成",
       "notDone": "未完成",
       "notTarget": "非对象",
-      "masterSampleNotTarget": "非对象（仅限路由指定工序）",
       "barcodePlaceholder": "条码信息（材料、消耗性设备部件、捆绑序列号等...）",
       "menuView": "返回菜单界面",
       "workView": "作业全屏"

@@ -284,6 +284,7 @@
     "equipment.gauge": "계측기마스터",
     "shipping": "출하관리",
     "shipping.pack": "제품포장관리",
+    "shipping.boxStock": "제품재고조회",
     "shipping.pallet": "팔레트적재관리",
     "shipping.confirm": "출하확정처리",
     "shipping.order": "출하지시등록",
@@ -1716,7 +1717,9 @@
       "preview": "조회",
       "openNewTab": "새 탭에서 열기",
       "clickToDownload": "클릭하여 다운로드",
-      "noContent": "등록된 내용이 없습니다."
+      "noContent": "등록된 내용이 없습니다.",
+      "deleteTitle": "작업지도서 삭제",
+      "deleteConfirm": "이 작업지도서를 삭제하시겠습니까? 삭제 후에는 복구할 수 없습니다."
     },
     "transferRule": {
       "title": "창고이동규칙",
@@ -2075,7 +2078,9 @@
     },
     "receiveHistory": {
       "title": "입고이력조회",
-      "description": "자재 입고 이력을 조회합니다."
+      "description": "자재 입고 이력을 조회합니다.",
+      "itemPlaceholder": "품목 코드/명 검색...",
+      "serialPlaceholder": "자재 시리얼 검색..."
     },
     "receiveLabel": {
       "title": "입고라벨 발행",
@@ -2170,6 +2175,23 @@
       "requestItemCount": "요청 품목 ({{count}}건)",
       "requestQtyLabel": "요청수량",
       "registerRequest": "요청등록",
+      "manualRequest": "수동 출고요청",
+      "workOrderListTitle": "작업지시 목록",
+      "workOrderSearchPlaceholder": "작업지시번호, 품목 검색...",
+      "filterOrderNo": "작업지시번호",
+      "filterModel": "모델 (품목코드/품목명)",
+      "newRequest": "신규 작성",
+      "backToHistory": "내역으로",
+      "noRequestForOrder": "이 작업지시의 출고요청 내역이 없습니다.",
+      "noWorkOrder": "작업지시가 없습니다",
+      "planQtyShort": "계획",
+      "recentRequestsTitle": "최근 출고요청",
+      "bomReqQty": "BOM필요",
+      "prevIssueQty": "기불출",
+      "floorStockQty": "현장재고",
+      "noBomItems": "BOM 기준 출고 예정 원자재가 없습니다.",
+      "bomLoadError": "작업지시 BOM 기준 출고 예정 품목을 불러오지 못했습니다.",
+      "bomCalculating": "작업지시 BOM 기준 출고 예정 품목을 계산 중입니다.",
       "items": "건"
     },
     "issue": {
@@ -2715,6 +2737,23 @@
         "notClosed": "CLOSED 상태의 박스만 입고 가능합니다",
         "success": "박스 입고가 완료되었습니다"
       },
+      "boxList": {
+        "title": "입고 대상 박스",
+        "count": "{{count}}건",
+        "empty": "입고할 박스가 없습니다",
+        "receiveSelected": "선택 입고 ({{count}})",
+        "selectedTotal": "선택 {{count}}건 합계",
+        "partialFail": "{{count}}건 입고 실패",
+        "received": "입고완료"
+      },
+      "scanModal": {
+        "title": "스캔 입고",
+        "add": "추가",
+        "empty": "박스를 스캔하여 추가하세요",
+        "alreadyAdded": "이미 추가된 박스입니다: {{boxNo}}",
+        "typeMismatch": "현재 탭의 품목유형과 일치하지 않는 박스입니다"
+      },
+      "scanReceive": "스캔입고",
       "individualReceive": "개별입고"
     },
     "receiptCancel": {
@@ -3984,6 +4023,18 @@
     }
   },
   "shipping": {
+    "boxScan": {
+      "title": "박스 스캔 출하",
+      "shipOrderNo": "출하지시번호",
+      "scanOrder": "출하지시 바코드 스캔/입력",
+      "customer": "고객사",
+      "boxNo": "박스 바코드",
+      "scanBox": "박스 바코드 스캔",
+      "notConfirmed": "확정(CONFIRMED) 상태의 출하지시만 출하할 수 있습니다.",
+      "orderNotFound": "출하지시를 찾을 수 없습니다.",
+      "duplicate": "이미 스캔한 박스입니다.",
+      "shipFailed": "출하 처리에 실패했습니다."
+    },
     "shipOrder": {
       "title": "출하지시등록",
       "subtitle": "출하지시를 등록하고 관리합니다.",
@@ -4097,12 +4148,42 @@
       "statOpen": "오픈",
       "statClosed": "마감",
       "statShipped": "출하",
-      "statTotalQty": "총 수량",
       "searchPlaceholder": "박스번호, 품목코드 검색...",
       "allParts": "전체 품목",
       "box": "박스",
       "currentQty": "현재수량",
-      "serialPlaceholder": "시리얼번호 입력"
+      "serialPlaceholder": "시리얼번호 입력",
+      "packedQty": "포장수량",
+      "selectItem": "포장 품목",
+      "selectItemFirst": "포장할 품목을 선택하세요.",
+      "createHint": "박스번호는 자동 생성되며, 수량은 시리얼 추가 시 채워집니다.",
+      "reopenBox": "박스 재오픈",
+      "removeSerial": "시리얼 제거",
+      "capacity": "구성",
+      "packLimitReached": "박스 구성단위에 도달했습니다.",
+      "noSerials": "담긴 시리얼이 없습니다.",
+      "loadError": "박스 목록을 불러오지 못했습니다.",
+      "createError": "박스 생성에 실패했습니다.",
+      "addSerialError": "시리얼 추가에 실패했습니다.",
+      "removeSerialError": "시리얼 제거에 실패했습니다.",
+      "closeError": "박스 마감에 실패했습니다.",
+      "reopenError": "박스 재오픈에 실패했습니다."
+    },
+    "boxStock": {
+      "title": "제품재고조회",
+      "subtitle": "박스 스캔으로 입고된 출하 대기 재고와 박스 내 개별제품을 조회합니다.",
+      "searchPlaceholder": "박스번호 검색...",
+      "boxQty": "박스수량",
+      "itemsTitle": "박스 내 개별제품",
+      "itemCount": "제품 수",
+      "selectBox": "박스를 선택하세요",
+      "noItems": "박스에 담긴 개별제품이 없습니다.",
+      "loadError": "박스 재고 목록을 불러오지 못했습니다.",
+      "itemLoadError": "박스 내 개별제품을 불러오지 못했습니다.",
+      "orderNo": "작업지시번호",
+      "inspectPassYn": "검사",
+      "issuedAt": "발행일시",
+      "missingLabel": "라벨없음"
     },
     "pallet": {
       "title": "팔레트적재",
@@ -5326,7 +5407,25 @@
       "adjustment": "재고조정",
       "invCount": "자재실사",
       "productInv": "제품재고실사",
+      "productReceiving": "제품박스입고",
       "logout": "로그아웃"
+    },
+    "productReceiving": {
+      "title": "제품 박스 입고",
+      "scanBox": "박스 바코드를 스캔하세요",
+      "boxNo": "박스번호",
+      "qty": "수량",
+      "warehouse": "입고창고",
+      "selectWarehouse": "입고창고를 선택하세요.",
+      "confirmReceive": "입고 확인",
+      "cancel": "입고취소",
+      "canceled": "취소됨",
+      "notFound": "박스를 찾을 수 없습니다.",
+      "notClosed": "마감(CLOSED)된 박스만 입고할 수 있습니다.",
+      "alreadyShipped": "이미 출하된 박스입니다.",
+      "alreadyReceived": "이미 입고된 박스입니다.",
+      "receiveError": "입고 처리에 실패했습니다.",
+      "cancelError": "입고취소에 실패했습니다."
     },
     "scan": {
       "placeholder": "바코드를 스캔하세요",
@@ -5890,7 +5989,6 @@
       "selectEquip": "설비를 선택하세요",
       "dailyInspect": "설비일일점검",
       "workerInspect": "작업자설비점검",
-      "masterSample": "마스터샘플 판정",
       "selectJobOrder": "작업지시를 선택하세요",
       "addWorker": "작업자 추가",
       "workerRequired": "작업자 등록 필요",
@@ -5898,7 +5996,6 @@
       "done": "완료",
       "notDone": "미완료",
       "notTarget": "대상 아님",
-      "masterSampleNotTarget": "대상 아님 (라우팅 지정 공정만)",
       "barcodePlaceholder": "바코드 정보 (자재, 소모성 설비부품, 묶음 시리얼 등...)",
       "menuView": "메뉴 화면으로",
       "workView": "작업 전체화면"

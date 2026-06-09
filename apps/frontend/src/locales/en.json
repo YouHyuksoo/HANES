@@ -283,6 +283,7 @@
     "equipment.gauge": "Gauge Master",
     "shipping": "Shipping",
     "shipping.pack": "Packing",
+    "shipping.boxStock": "Product Stock",
     "shipping.pallet": "Pallet Load Mgmt",
     "shipping.confirm": "Ship Confirm Process",
     "shipping.order": "Shipment Order",
@@ -1404,7 +1405,9 @@
       "preview": "Preview",
       "openNewTab": "Open in new tab",
       "clickToDownload": "Click to download",
-      "noContent": "No content registered."
+      "noContent": "No content registered.",
+      "deleteTitle": "Delete Work Instruction",
+      "deleteConfirm": "Are you sure you want to delete this work instruction? This action cannot be undone."
     },
     "transferRule": {
       "title": "Transfer Rules",
@@ -1760,7 +1763,9 @@
     },
     "receiveHistory": {
       "title": "Receiving History",
-      "description": "View material receiving history."
+      "description": "View material receiving history.",
+      "itemPlaceholder": "Search item code/name...",
+      "serialPlaceholder": "Search material serial..."
     },
     "receiveLabel": {
       "title": "Receive Label",
@@ -1855,6 +1860,23 @@
       "requestItemCount": "Request Items ({{count}})",
       "requestQtyLabel": "Request Qty",
       "registerRequest": "Submit Request",
+      "manualRequest": "Manual Request",
+      "workOrderListTitle": "Work Orders",
+      "workOrderSearchPlaceholder": "Search order no., item...",
+      "filterOrderNo": "Order No.",
+      "filterModel": "Model (item code/name)",
+      "newRequest": "New Request",
+      "backToHistory": "Back to List",
+      "noRequestForOrder": "No issue requests for this work order.",
+      "noWorkOrder": "No work orders",
+      "planQtyShort": "Plan",
+      "recentRequestsTitle": "Recent Requests",
+      "bomReqQty": "BOM Req",
+      "prevIssueQty": "Prev Issued",
+      "floorStockQty": "Floor Stock",
+      "noBomItems": "No materials to issue based on BOM.",
+      "bomLoadError": "Failed to load BOM-based issue items for the work order.",
+      "bomCalculating": "Calculating BOM-based issue items...",
       "items": "items"
     },
     "issue": {
@@ -2400,6 +2422,23 @@
         "notClosed": "Only CLOSED boxes can be received",
         "success": "Box receiving completed"
       },
+      "boxList": {
+        "title": "Boxes to Receive",
+        "count": "{{count}}",
+        "empty": "No boxes to receive",
+        "receiveSelected": "Receive Selected ({{count}})",
+        "selectedTotal": "Total of {{count}} selected",
+        "partialFail": "{{count}} failed to receive",
+        "received": "Received"
+      },
+      "scanModal": {
+        "title": "Scan Receiving",
+        "add": "Add",
+        "empty": "Scan a box to add it",
+        "alreadyAdded": "Box already added: {{boxNo}}",
+        "typeMismatch": "Box item type does not match the current tab"
+      },
+      "scanReceive": "Scan Receive",
       "individualReceive": "Individual Receive"
     },
     "receiptCancel": {
@@ -3965,6 +4004,18 @@
     }
   },
   "shipping": {
+    "boxScan": {
+      "title": "Ship by Box Scan",
+      "shipOrderNo": "Ship Order No.",
+      "scanOrder": "Scan/enter ship order barcode",
+      "customer": "Customer",
+      "boxNo": "Box Barcode",
+      "scanBox": "Scan box barcode",
+      "notConfirmed": "Only CONFIRMED ship orders can be shipped.",
+      "orderNotFound": "Ship order not found.",
+      "duplicate": "Box already scanned.",
+      "shipFailed": "Failed to ship the box."
+    },
     "shipOrder": {
       "title": "Shipment Order",
       "subtitle": "Register and manage shipment orders.",
@@ -4078,12 +4129,42 @@
       "statOpen": "Open",
       "statClosed": "Closed",
       "statShipped": "Shipped",
-      "statTotalQty": "Total Qty",
       "searchPlaceholder": "Search box no, part code...",
       "allParts": "All Parts",
       "box": "Box",
       "currentQty": "Current Qty",
-      "serialPlaceholder": "Enter serial number"
+      "serialPlaceholder": "Enter serial number",
+      "packedQty": "Packed Qty",
+      "selectItem": "Packing Item",
+      "selectItemFirst": "Please select an item to pack.",
+      "createHint": "Box number is auto-generated; quantity is filled as serials are added.",
+      "reopenBox": "Reopen Box",
+      "removeSerial": "Remove Serial",
+      "capacity": "Filled",
+      "packLimitReached": "Box pack unit limit reached.",
+      "noSerials": "No serials packed.",
+      "loadError": "Failed to load box list.",
+      "createError": "Failed to create box.",
+      "addSerialError": "Failed to add serial.",
+      "removeSerialError": "Failed to remove serial.",
+      "closeError": "Failed to close box.",
+      "reopenError": "Failed to reopen box."
+    },
+    "boxStock": {
+      "title": "Product Stock",
+      "subtitle": "View scanned box stock waiting for shipment and the individual products inside each box.",
+      "searchPlaceholder": "Search box no...",
+      "boxQty": "Box Qty",
+      "itemsTitle": "Products in Box",
+      "itemCount": "Products",
+      "selectBox": "Select a box",
+      "noItems": "No products are packed in this box.",
+      "loadError": "Failed to load box stock.",
+      "itemLoadError": "Failed to load products in box.",
+      "orderNo": "Job Order No.",
+      "inspectPassYn": "Inspect",
+      "issuedAt": "Issued At",
+      "missingLabel": "Missing Label"
     },
     "pallet": {
       "title": "Palletizing",
@@ -5307,7 +5388,25 @@
       "adjustment": "Adjustment",
       "invCount": "Inventory Count",
       "productInv": "Product Inventory",
+      "productReceiving": "Product Box Receiving",
       "logout": "Logout"
+    },
+    "productReceiving": {
+      "title": "Product Box Receiving",
+      "scanBox": "Scan box barcode",
+      "boxNo": "Box No.",
+      "qty": "Quantity",
+      "warehouse": "Receiving Warehouse",
+      "selectWarehouse": "Please select a warehouse.",
+      "confirmReceive": "Confirm Receive",
+      "cancel": "Cancel Receive",
+      "canceled": "Canceled",
+      "notFound": "Box not found.",
+      "notClosed": "Only CLOSED boxes can be received.",
+      "alreadyShipped": "This box has already been shipped.",
+      "alreadyReceived": "This box has already been received.",
+      "receiveError": "Failed to receive.",
+      "cancelError": "Failed to cancel receive."
     },
     "scan": {
       "placeholder": "Scan barcode",
@@ -5871,7 +5970,6 @@
       "selectEquip": "Select equipment",
       "dailyInspect": "Daily Inspection",
       "workerInspect": "Worker Inspection",
-      "masterSample": "Master Sample",
       "selectJobOrder": "Select a job order",
       "addWorker": "Add Worker",
       "workerRequired": "Worker registration required",
@@ -5879,7 +5977,6 @@
       "done": "Done",
       "notDone": "Not done",
       "notTarget": "Not applicable",
-      "masterSampleNotTarget": "Not applicable (routing-designated process only)",
       "barcodePlaceholder": "Barcode (material, consumable part, batch serial, etc.)",
       "menuView": "To menu view",
       "workView": "Fullscreen work view"

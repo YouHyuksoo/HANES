@@ -283,6 +283,7 @@
     "equipment.gauge": "Dụng cụ đo",
     "shipping": "Quản lý xuất hàng",
     "shipping.pack": "Quản lý đóng gói",
+    "shipping.boxStock": "Tra cứu tồn kho sản phẩm",
     "shipping.pallet": "Quản lý xếp pallet",
     "shipping.confirm": "Xử lý xác nhận xuất hàng",
     "shipping.order": "Đăng ký lệnh xuất hàng",
@@ -1390,7 +1391,9 @@
       "preview": "Xem trước",
       "openNewTab": "Mở trong tab mới",
       "clickToDownload": "Nhấp để tải xuống",
-      "noContent": "Không có nội dung nào được đăng ký."
+      "noContent": "Không có nội dung nào được đăng ký.",
+      "deleteTitle": "Xóa hướng dẫn công việc",
+      "deleteConfirm": "Bạn có chắc muốn xóa hướng dẫn công việc này? Hành động này không thể hoàn tác."
     },
     "transferRule": {
       "title": "Quy tắc chuyển kho",
@@ -1746,7 +1749,9 @@
     },
     "receiveHistory": {
       "title": "Tra cứu lịch sử nhập kho",
-      "description": "Xem lịch sử nhập kho vật tư."
+      "description": "Xem lịch sử nhập kho vật tư.",
+      "itemPlaceholder": "Tìm mã/tên vật tư...",
+      "serialPlaceholder": "Tìm serial vật tư..."
     },
     "receiveLabel": {
       "title": "Phát hành nhãn nhập kho",
@@ -1841,6 +1846,23 @@
       "requestItemCount": "Mục yêu cầu ({{count}})",
       "requestQtyLabel": "SL yêu cầu",
       "registerRequest": "Đăng ký yêu cầu",
+      "manualRequest": "Yêu cầu thủ công",
+      "workOrderListTitle": "Danh sách lệnh sản xuất",
+      "workOrderSearchPlaceholder": "Tìm số lệnh, vật tư...",
+      "filterOrderNo": "Số lệnh SX",
+      "filterModel": "Model (mã/tên vật tư)",
+      "newRequest": "Tạo mới",
+      "backToHistory": "Về danh sách",
+      "noRequestForOrder": "Không có yêu cầu xuất kho cho lệnh sản xuất này.",
+      "noWorkOrder": "Không có lệnh sản xuất",
+      "planQtyShort": "Kế hoạch",
+      "recentRequestsTitle": "Yêu cầu gần đây",
+      "bomReqQty": "BOM cần",
+      "prevIssueQty": "Đã xuất",
+      "floorStockQty": "Tồn hiện trường",
+      "noBomItems": "Không có nguyên vật liệu cần xuất theo BOM.",
+      "bomLoadError": "Không thể tải vật tư xuất theo BOM của lệnh sản xuất.",
+      "bomCalculating": "Đang tính vật tư xuất theo BOM...",
       "items": "mục"
     },
     "issue": {
@@ -2386,6 +2408,23 @@
         "notClosed": "Chỉ hộp trạng thái CLOSED mới có thể nhập kho",
         "success": "Nhập kho hộp hoàn tất"
       },
+      "boxList": {
+        "title": "Hộp cần nhập kho",
+        "count": "{{count}}",
+        "empty": "Không có hộp cần nhập kho",
+        "receiveSelected": "Nhập đã chọn ({{count}})",
+        "selectedTotal": "Tổng {{count}} đã chọn",
+        "partialFail": "{{count}} hộp nhập kho thất bại",
+        "received": "Đã nhập kho"
+      },
+      "scanModal": {
+        "title": "Nhập kho quét",
+        "add": "Thêm",
+        "empty": "Quét hộp để thêm",
+        "alreadyAdded": "Hộp đã được thêm: {{boxNo}}",
+        "typeMismatch": "Loại sản phẩm của hộp không khớp với tab hiện tại"
+      },
+      "scanReceive": "Nhập kho quét",
       "individualReceive": "Nhập kho thủ công"
     },
     "receiptCancel": {
@@ -3951,6 +3990,18 @@
     }
   },
   "shipping": {
+    "boxScan": {
+      "title": "Xuất hàng theo quét thùng",
+      "shipOrderNo": "Số lệnh xuất hàng",
+      "scanOrder": "Quét/nhập mã vạch lệnh xuất hàng",
+      "customer": "Khách hàng",
+      "boxNo": "Mã vạch thùng",
+      "scanBox": "Quét mã vạch thùng",
+      "notConfirmed": "Chỉ lệnh xuất hàng đã xác nhận (CONFIRMED) mới được xuất.",
+      "orderNotFound": "Không tìm thấy lệnh xuất hàng.",
+      "duplicate": "Thùng đã được quét.",
+      "shipFailed": "Xử lý xuất hàng thất bại."
+    },
     "shipOrder": {
       "title": "Đăng ký lệnh xuất hàng",
       "subtitle": "Đăng ký và quản lý lệnh xuất hàng.",
@@ -4064,12 +4115,42 @@
       "statOpen": "Mở",
       "statClosed": "Đã đóng",
       "statShipped": "Đã xuất",
-      "statTotalQty": "Tổng số lượng",
       "searchPlaceholder": "Tìm mã thùng, mã linh kiện...",
       "allParts": "Tất cả linh kiện",
       "box": "Thùng",
       "currentQty": "Số lượng hiện tại",
-      "serialPlaceholder": "Nhập số serial"
+      "serialPlaceholder": "Nhập số serial",
+      "packedQty": "SL đóng gói",
+      "selectItem": "Vật tư đóng gói",
+      "selectItemFirst": "Vui lòng chọn vật tư để đóng gói.",
+      "createHint": "Số hộp tự động tạo; số lượng được điền khi thêm serial.",
+      "reopenBox": "Mở lại hộp",
+      "removeSerial": "Xóa serial",
+      "capacity": "Đã chứa",
+      "packLimitReached": "Đã đạt giới hạn đơn vị đóng gói của hộp.",
+      "noSerials": "Chưa có serial nào.",
+      "loadError": "Không thể tải danh sách hộp.",
+      "createError": "Tạo hộp thất bại.",
+      "addSerialError": "Thêm serial thất bại.",
+      "removeSerialError": "Xóa serial thất bại.",
+      "closeError": "Đóng hộp thất bại.",
+      "reopenError": "Mở lại hộp thất bại."
+    },
+    "boxStock": {
+      "title": "Tra cứu tồn kho sản phẩm",
+      "subtitle": "Xem tồn chờ xuất được nhập bằng quét thùng và từng sản phẩm trong thùng.",
+      "searchPlaceholder": "Tìm mã thùng...",
+      "boxQty": "SL thùng",
+      "itemsTitle": "Sản phẩm trong thùng",
+      "itemCount": "Số sản phẩm",
+      "selectBox": "Chọn một thùng",
+      "noItems": "Không có sản phẩm trong thùng này.",
+      "loadError": "Không thể tải tồn thùng.",
+      "itemLoadError": "Không thể tải sản phẩm trong thùng.",
+      "orderNo": "Mã lệnh SX",
+      "inspectPassYn": "Kiểm tra",
+      "issuedAt": "Thời gian phát hành",
+      "missingLabel": "Thiếu nhãn"
     },
     "pallet": {
       "title": "Xếp pallet",
@@ -5293,7 +5374,25 @@
       "adjustment": "Điều chỉnh tồn kho",
       "invCount": "Kiểm kê vật tư",
       "productInv": "Kiểm kê sản phẩm",
+      "productReceiving": "Nhập kho thùng SP",
       "logout": "Đăng xuất"
+    },
+    "productReceiving": {
+      "title": "Nhập kho thùng sản phẩm",
+      "scanBox": "Quét mã vạch thùng",
+      "boxNo": "Số thùng",
+      "qty": "Số lượng",
+      "warehouse": "Kho nhập",
+      "selectWarehouse": "Vui lòng chọn kho nhập.",
+      "confirmReceive": "Xác nhận nhập kho",
+      "cancel": "Hủy nhập kho",
+      "canceled": "Đã hủy",
+      "notFound": "Không tìm thấy thùng.",
+      "notClosed": "Chỉ nhập kho được thùng đã đóng (CLOSED).",
+      "alreadyShipped": "Thùng này đã xuất hàng.",
+      "alreadyReceived": "Thùng này đã nhập kho.",
+      "receiveError": "Nhập kho thất bại.",
+      "cancelError": "Hủy nhập kho thất bại."
     },
     "scan": {
       "placeholder": "Quét mã vạch",
@@ -5857,7 +5956,6 @@
       "selectEquip": "Chọn thiết bị",
       "dailyInspect": "Kiểm tra hàng ngày",
       "workerInspect": "Kiểm tra thiết bị người dùng",
-      "masterSample": "Phán định mẫu chuẩn",
       "selectJobOrder": "Chọn lệnh sản xuất",
       "addWorker": "Thêm người vận hành",
       "workerRequired": "Cần đăng ký người vận hành",
@@ -5865,7 +5963,6 @@
       "done": "Hoàn thành",
       "notDone": "Chưa xong",
       "notTarget": "Không áp dụng",
-      "masterSampleNotTarget": "Không áp dụng (chỉ công đoạn được chỉ định trong routing)",
       "barcodePlaceholder": "Thông tin mã vạch (vật liệu, linh kiện tiêu hao, serial lô, v.v...)",
       "menuView": "Về màn hình menu",
       "workView": "Toàn màn hình làm việc"
