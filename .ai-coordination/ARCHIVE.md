@@ -10,6 +10,22 @@ Format:
 
 ## Completed
 
+- T-MAT-RECEIVE-SCAN | 2026-06-09 | codex | `/material/receive`를 그리드 선택 입고에서 거래처 바코드/자체부착 바코드 순환 스캔 입고 전용으로 변경. `MAT_RECEIVINGS.VENDOR_BARCODE` 컬럼 추가 및 JSHANES 적용, ERD 갱신, 백/프론트 tsc와 receiving 서비스 테스트 통과 | evidence: JOURNAL 2026-06-09 20:05 codex
+- T-INPUT-KIOSK-EQUIP-LIST | 2026-06-09 | codex | `/production/input-kiosk` 설비선택 모달 기본목록 표시 보정. `/equipment/equips` paged/items 응답 정규화 유틸과 node:test 추가, 프론트 tsc/라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 19:35 codex
+- T-INPUT-KIOSK-REMOVE-MASTER-SAMPLE | 2026-06-09 | codex | `/production/input-kiosk` 헤더의 마스터샘플 판정 카드와 kiosk 전용 번역 키 제거. 프론트 tsc, 참조 검색, 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 14:40 codex
+- T-MAT-RECEIVE-REMOVE-INFO-CARDS | 2026-06-09 | codex | `/material/receive` 상단 정보카드 4개 제거. `StatCard` 렌더링과 `/material/receiving/stats` 호출, 관련 import/state 정리. 프론트 tsc와 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 14:25 codex
+- T-SHIP-BOX-STOCK-STATUS-UI | 2026-06-09 | codex | `/shipping/box-stock` 상태 드롭다운/상태별 통계를 제거하고 박스 수·총 수량·품목 수·선택 박스수량 통계로 변경. 상태 컬럼은 추적용으로 유지. 프론트 tsc와 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 14:10 codex
+- T-SHIP-BOX-STOCK-MENU | 2026-06-09 | codex | `SHIP_BOX_STOCK` 좌측 메뉴 미노출 원인 수정. 코드 leaf는 있었지만 JSHANES `MENU_CATEGORY_ITEMS` 배치와 MANAGER 권한이 없어 숨김 처리됨. validator/seed 등록, DB 배치/권한 추가, tsc/DB 조회 검증 | evidence: JOURNAL 2026-06-09 13:55 codex
+- T-SHIP-BOX-STOCK | 2026-06-09 | codex | 출하관리 `/shipping/box-stock` 박스입고재고 조회 화면 추가. `/shipping/boxes` 기반 박스 목록과 행 선택 시 `/shipping/boxes/:id/items`로 박스 내 FG_LABELS 개별제품 상세 조회. 백엔드/프론트 tsc와 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 13:20 codex
+- T-QUALITY-REWORK-DEFECT-RELATION | 2026-06-08 | codex | `/quality/reworks` 500 수정. `REWORK_ORDERS.DEFECT_LOG_ID` 문자열과 `DEFECT_LOGS` 복합 PK 사이에 없는 `defectLog` relation join/load 제거, 회귀 테스트 추가. Jest 11건·백엔드 tsc·실 API 성공 확인 | evidence: JOURNAL 2026-06-08 21:03 codex
+- T-MAT-REQ-DETAIL | 2026-06-08 | codex | `/material/request` 출고요청 목록에 상세보기 모달 추가. 요청 헤더/상태/수량 합계와 품목별 요청·출고·잔여·BOM소요·기불출·현장재고 표시. 프론트 tsc 및 헤드리스 브라우저 `MR2606080003` 상세 확인 | evidence: JOURNAL 2026-06-08 20:55 codex
+- T-SHIP-PACK-REMOVE-INFO-CARDS | 2026-06-09 | codex | `/shipping/pack` 상단 정보카드 4개 제거. `stats`/`StatCard`/카드 아이콘 정리, 기존 시리얼 스캔·즉시취소 변경 보존. 프론트 tsc와 헤드리스 브라우저 mock 확인 통과 | evidence: JOURNAL 2026-06-09 00:45 codex
+- T-SHIP-ORDER-REMOVE-INFO-CARDS | 2026-06-09 | codex | `/shipping/order` 상단 정보카드 4개 제거. `stats`/`StatCard`/카드 아이콘 정리, 기존 `/shipping/orders` API 경로 변경 보존. 프론트 tsc와 헤드리스 브라우저 mock 확인 통과 | evidence: JOURNAL 2026-06-09 00:30 codex
+- T-SHIP-PACK-SCAN-ENTER-CANCEL | 2026-06-09 | codex | `/shipping/pack` 시리얼 스캔 Enter/CR/LF 자동등록과 방금 등록 시리얼 즉시취소 UI 추가. 등록/삭제 후 포커스 유지. 프론트 tsc와 헤드리스 브라우저 mock 확인 통과 | evidence: JOURNAL 2026-06-09 00:30 codex
+- T-SHIP-PACK-SERIAL-FOCUS | 2026-06-09 | codex | `/shipping/pack` 시리얼 추가 모달 열림/Enter 추가 후 입력 포커스 유지 적용, 모달 `2xl` 확대. 프론트 tsc와 헤드리스 브라우저 mock 검증 통과 | evidence: JOURNAL 2026-06-09 00:00 codex
+- T-INPUT-KIOSK-CONSUMABLE-COUNT | 2026-06-08 | codex | 입력키오스크 소모품 수명 카운트 렌더 오류 수정. API 원본 필드 `expectedLife`를 화면 `maxCount`로 정규화하고 숫자 fallback 적용. 프론트 build, 실 API, 헤드리스 브라우저 패널/모달 표시 확인 | evidence: JOURNAL 2026-06-08 20:38 codex
+- T-MAT-REQ-BOM-AUTO | 2026-06-08 | codex | `/material/request` 작업지시 선택 시 BOM 직하위 원자재만 자동 산출(`BOM소요-기불출-현장재고`)해 요청 품목 생성/저장. 생성 직후 미커밋 재조회 404 결함 수정. 백엔드 스펙·빌드, 프론트 빌드, 브라우저 자동채움, API/DB 실생성 `MR2606080002` 확인 | evidence: JOURNAL 2026-06-08 20:20 codex
+- T-MAT-ARRIVAL-LABEL-FORMAT | 2026-06-08 | codex | 입하시 발행 라벨을 80mm x 40mm 형식(좌측 QR, 품번/수량/단위, 제조사, IN/SERIAL/LOT, 검사필 도장 영역)으로 변경하고 라벨 발행 저장 결함(currentQty, 로그 tenant/PK, uidList payload) 수정. 프론트/백엔드 tsc·헤드리스 실제 발행 5장 확인 통과 | evidence: JOURNAL 2026-06-08 16:50 codex
 - T-ROUTING-PROCESS-TYPE-SOURCE | 2026-06-08 | codex | 라우팅 공정 추가 모달에서 공정유형 선택/저장 제거, 공정 마스터 `processType` 표시 전용으로 변경. 프론트 tsc·브라우저 모달 확인 통과 | evidence: JOURNAL 2026-06-08 15:11 codex
 - T-IQC006-GROUP | 2026-06-08 | claude | IQC006 입하실적조회 좌측을 입하번호+PO+품번 그룹 1행으로 집계(시리얼당 펼침 해소), 우측 시리얼은 arrivalNo+품번 조회. cancel/manufacturer/getArrivalSerials seq→itemCode 그룹키 이전. 실DB 검증(R26060700001 10행→1행)·tsc 통과 | evidence: HANDOFF/claude.md 2026-06-08
 - T-IQC-SAMPLE-BARCODE | 2026-06-08 | claude | IQC 검사결과 등록 모달에 시료 바코드(입력/스캔) 필드 추가. IQC_LOGS.SAMPLE_BARCODE 컬럼+엔티티+DTO+서비스+IqcModal+i18n4. tsc·DB컬럼 확인(end-to-end는 pending 0건 미검증) | evidence: HANDOFF/claude.md 2026-06-08

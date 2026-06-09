@@ -2,68 +2,29 @@
 
 /**
  * @file src/app/(authenticated)/material/receive/components/ReceivableTable.tsx
- * @description 입고 가능 LOT 테이블 - 체크박스 선택 + 수량/창고 입력
+ * @description 입고 가능 LOT 테이블 - 스캔 입고 대상 조회 전용
  *
  * 초보자 가이드:
- * 1. **체크박스**: 여러 LOT 동시 선택하여 일괄 입고
- * 2. **수량 입력**: 잔량 범위 내 분할 입고 가능
- * 3. **창고 선택**: useWarehouseOptions 훅으로 자동 로드
+ * 1. 입고 처리는 별도 스캔 모달에서만 수행한다.
+ * 2. 이 테이블은 어떤 LOT이 입고 대상인지 확인하는 조회 화면이다.
  */
 
-import { useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
-import { Input, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
-import { useWarehouseOptions } from '@/hooks/useMasterOptions';
-import type { ReceivableLot, ReceiveInput } from './types';
+import type { ReceivableLot } from './types';
 
 interface ReceivableTableProps {
   data: ReceivableLot[];
-  inputs: Record<string, ReceiveInput>;
-  onInputChange: (matUid: string, field: keyof ReceiveInput, value: string | number | boolean) => void;
-  onSelectAll: (checked: boolean) => void;
-  allSelected: boolean;
   isLoading?: boolean;
   toolbarLeft?: React.ReactNode;
 }
 
-export default function ReceivableTable({ data, inputs, onInputChange, onSelectAll, allSelected, isLoading, toolbarLeft }: ReceivableTableProps) {
+export default function ReceivableTable({ data, isLoading, toolbarLeft }: ReceivableTableProps) {
   const { t } = useTranslation();
-  const { options: warehouses } = useWarehouseOptions();
-
-  const handleQtyChange = useCallback((matUid: string, value: string, max: number) => {
-    const num = Math.min(Math.max(0, Number(value) || 0), max);
-    onInputChange(matUid, 'qty', num);
-  }, [onInputChange]);
 
   const columns = useMemo<ColumnDef<ReceivableLot>[]>(() => [
-    {
-      id: 'select',
-      header: () => (
-        <input
-          type="checkbox"
-          checked={allSelected}
-          onChange={(e) => onSelectAll(e.target.checked)}
-          className="w-4 h-4 rounded border-border"
-        />
-      ),
-      size: 40,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => {
-        const blocked = !!row.original.receivingBlockedReason;
-        return (
-          <input
-            type="checkbox"
-            checked={!blocked && (inputs[row.original.matUid]?.selected || false)}
-            disabled={blocked}
-            title={row.original.receivingBlockedReason || undefined}
-            onChange={(e) => onInputChange(row.original.matUid, 'selected', e.target.checked)}
-            className="w-4 h-4 rounded border-border disabled:opacity-40 disabled:cursor-not-allowed"
-          />
-        );
-      },
-    },
     { id: 'matUid', header: t('material.col.matUid'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.matUid },
     { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.poNo || '-' },
     { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemCode || '-' },
@@ -124,50 +85,13 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       },
     },
     {
-      id: 'manufactureDate',
-      header: t('material.arrival.col.manufactureDate'),
-      size: 140,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <Input
-          type="date"
-          value={inputs[row.original.matUid]?.manufactureDate || ''}
-          onChange={(e) => onInputChange(row.original.matUid, 'manufactureDate', e.target.value)}
-          className="w-[130px]"
-        />
-      ),
-    },
-    {
-      id: 'inputQty',
-      header: t('material.receive.col.inputQty'),
-      size: 100,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <Input
-          type="number"
-          min={0}
-          max={row.original.remainingQty}
-          value={inputs[row.original.matUid]?.qty || 0}
-          onChange={(e) => handleQtyChange(row.original.matUid, e.target.value, row.original.remainingQty)}
-          className="w-20"
-        />
-      ),
-    },
-    {
-      id: 'warehouse',
+      id: 'arrivalWarehouse',
       header: t('material.arrival.col.warehouse'),
       size: 140,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <Select
-          options={warehouses}
-          value={inputs[row.original.matUid]?.warehouseCode || ''}
-          onChange={(v) => onInputChange(row.original.matUid, 'warehouseCode', v)}
-          placeholder={t('material.arrival.selectWarehouse')}
-        />
-      ),
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => row.original.arrivalWarehouse?.warehouseName || row.original.arrivalWarehouseCode || '-',
     },
-  ], [t, inputs, warehouses, onInputChange, onSelectAll, allSelected, handleQtyChange]);
+  ], [t]);
 
   return (
     <DataGrid

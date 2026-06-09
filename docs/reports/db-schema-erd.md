@@ -1,6 +1,6 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-02 12:51:22
+- 작성일: 2026-06-09 19:51:46
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -8,10 +8,10 @@
 ## 1. 요약
 
 - 테이블 수: 148
-- 컬럼 수: 2393
+- 컬럼 수: 2395
 - PK 보유 테이블: 148
 - DB FK 수: 12
-- COM_CODES 그룹 수: 116
+- COM_CODES 그룹 수: 118
 
 ## 2. 모듈별 테이블
 
@@ -994,8 +994,8 @@ erDiagram
     VARCHAR2_20 REV
     VARCHAR2_20 UNIT NOT_NULL
     VARCHAR2_100 DRAW_NO
-    VARCHAR2_100 CUSTOMER
-    VARCHAR2_100 VENDOR
+    NUMBER LEAD_TIME NOT_NULL
+    NUMBER SAFETY_STOCK NOT_NULL
     string more_columns
   }
   JOB_MATERIAL_LOTS {
@@ -2899,8 +2899,8 @@ erDiagram
     VARCHAR2_20 REV
     VARCHAR2_20 UNIT NOT_NULL
     VARCHAR2_100 DRAW_NO
-    VARCHAR2_100 CUSTOMER
-    VARCHAR2_100 VENDOR
+    NUMBER LEAD_TIME NOT_NULL
+    NUMBER SAFETY_STOCK NOT_NULL
     string more_columns
   }
   LABEL_PRINT_LOGS {
@@ -4896,8 +4896,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `BOX_MASTERS`
 
@@ -4918,8 +4918,8 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `OQC_STATUS` | `VARCHAR2(50)` | `Y` |  |  | 출하검사상태 (WAIT/PASS/FAIL) |
 | `CLOSE_TIME` | `TIMESTAMP(6)` | `Y` |  |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `CALIBRATION_LOGS`
 
@@ -5055,8 +5055,8 @@ erDiagram
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `LINE_ENDING` | `VARCHAR2(10)` | `Y` |  | 기본값 `'NONE'` | 줄끝문자 (CR/LF/CRLF) |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `COMPANY_MASTERS`
 
@@ -5080,8 +5080,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `PLANT_NAME` | `VARCHAR2(100)` | `Y` |  |  |  |
 
 ### `COM_CODES`
@@ -5105,8 +5105,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `CONSUMABLE_LOGS`
 
@@ -5137,7 +5137,7 @@ erDiagram
 | `CON_UID` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `TRANS_DATE` | `DATE` | `N` | PK | 기본값 `SYSDATE` |  |
 | `SEQ` | `NUMBER(5)` | `N` | PK | 기본값 `1` |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `CONSUMABLE_MASTERS`
 
@@ -5166,10 +5166,10 @@ erDiagram
 | `OPER_STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'WAREHOUSE'` | 운용상태 (IN_USE/IN_STOCK/DISPOSED) |
 | `MOUNTED_EQUIP_ID` | `VARCHAR2(50)` | `Y` |  |  | 장착설비ID (FK -> EQUIP_MASTERS) |
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  | 소모품 이미지 URL |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `LAST_REPLACE` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `NEXT_REPLACE` | `TIMESTAMP(6)` | `Y` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `CONSUMABLE_MOUNT_LOGS`
 
@@ -5319,8 +5319,8 @@ erDiagram
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  | 비고 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `CUSTOMER_ORDER_ITEMS`
 
@@ -5340,8 +5340,8 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  | 비고 |
 | `SEQ` | `NUMBER` | `N` | PK |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `CUSTOMS_ENTRIES`
 
@@ -5455,8 +5455,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `DOCUMENT_MASTERS`
 
@@ -5571,8 +5571,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK<br>FK->EQUIP_INSPECT_ITEM_POOL(COMPANY, PLANT_CD, ITEM_CODE) | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `ITEM_CODE` | `VARCHAR2(30)` | `Y` | FK->EQUIP_INSPECT_ITEM_POOL(COMPANY, PLANT_CD, ITEM_CODE) |  | ??? ?? ??? Pool ?? |
 | `ITEM_TYPE` | `VARCHAR2(20)` | `N` |  | 기본값 `'VISUAL'`<br>COM_CODES.ITEM_TYPE: RAW_MATERIAL=원자재, SEMI_PRODUCT=반제품, FINISHED=완제품, CONSUMABLE=소모품 |  |
 | `UNIT` | `VARCHAR2(20)` | `Y` |  |  |  |
@@ -5619,8 +5619,8 @@ erDiagram
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  | 비고 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `EQUIP_MASTERS`
 
@@ -5648,8 +5648,8 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `PROCESS_CODE` | `VARCHAR2(50)` | `Y` |  |  | 공정코드 [공통코드:PROCESS_TYPE] |
 | `CURRENT_JOB_ORDER_ID` | `VARCHAR2(50)` | `Y` |  |  | 현재작업지시ID (FK -> JOB_ORDERS) |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `EQUIP_PROTOCOLS`
 
@@ -5818,7 +5818,7 @@ erDiagram
 | `INSPECT_SCOPE` | `VARCHAR2(20)` | `Y` |  |  | 검사범위 (FULL: 전수검사, SAMPLE: 샘플링검사) |
 | `FG_BARCODE` | `VARCHAR2(30)` | `Y` |  | 기본값 `NULL` |  |
 | `RESULT_NO` | `VARCHAR2(30)` | `N` | PK | 기본값 `NULL` |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `INSPECT_TIME` | `TIMESTAMP(6)` | `N` |  |  |  |
 
 ### `INTER_LOGS`
@@ -5889,8 +5889,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `IQC_GROUP_ITEMS`
 
@@ -5985,6 +5985,8 @@ erDiagram
 | `DESTRUCT_SAMPLE_QTY` | `NUMBER(10)` | `Y` |  |  |  |
 | `CERT_FILE_PATH` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `MAT_UID` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `RETEST_ROUND` | `NUMBER` | `Y` |  |  |  |
+| `SAMPLE_BARCODE` | `VARCHAR2(500)` | `Y` |  | 기본값 `NULL` |  |
 
 ### `IQC_PART_LINKS`
 
@@ -6002,8 +6004,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `IQC_PART_SPECS`
 
@@ -6099,8 +6101,6 @@ erDiagram
 | `REV` | `VARCHAR2(20)` | `Y` |  |  | 리비전 |
 | `UNIT` | `VARCHAR2(20)` | `N` |  | 기본값 `'EA'` | 단위 (EA/M/KG 등) |
 | `DRAW_NO` | `VARCHAR2(100)` | `Y` |  |  | 도면번호 |
-| `CUSTOMER` | `VARCHAR2(100)` | `Y` |  |  | 고객사 |
-| `VENDOR` | `VARCHAR2(100)` | `Y` |  |  | 공급업체 |
 | `LEAD_TIME` | `NUMBER` | `N` |  | 기본값 `0` | 리드타임 (일) |
 | `SAFETY_STOCK` | `NUMBER` | `N` |  | 기본값 `0` | 안전재고 수량 |
 | `LOT_UNIT_QTY` | `NUMBER` | `Y` |  |  | LOT 단위수량 |
@@ -6120,10 +6120,11 @@ erDiagram
 | `IS_SPLITTABLE` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'` | 자재 분할 가능 여부 (Y/N) |
 | `SAMPLE_QTY` | `NUMBER(10)` | `Y` |  |  | 샘플검사 수량 |
 | `INSPECT_METHOD` | `VARCHAR2(20)` | `Y` |  | 기본값 `NULL`<br>COM_CODES.INSPECT_METHOD: VISUAL=육안검사, MEASUREMENT=계측검사, FUNCTIONAL=기능검사, ELECTRICAL=전기검사, DESTRUCTIVE=파괴검사 |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `ERP_LAST_UPD_DATE` | `DATE` | `Y` |  |  |  |
+| `EXPIRY_EXT_DAYS` | `NUMBER(6)` | `N` |  | 기본값 `0` |  |
 
 ### `JOB_MATERIAL_LOTS`
 
@@ -6167,10 +6168,10 @@ erDiagram
 | `CUST_PO_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `ROUTING_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `PLAN_NO` | `VARCHAR2(200)` | `Y` |  |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `END_TIME` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `START_TIME` | `TIMESTAMP(6)` | `Y` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `LABEL_PRINT_LOGS`
 
@@ -6382,6 +6383,7 @@ erDiagram
 | `SEQ` | `NUMBER` | `N` | PK | 기본값 `"TEST"."SEQ_MAT_RECEIVINGS"."NEXTVAL"` |  |
 | `ARRIVAL_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `ARRIVAL_SEQ` | `NUMBER` | `Y` |  |  |  |
+| `VENDOR_BARCODE` | `VARCHAR2(200)` | `Y` |  |  | 거래처/제조사 부착 바코드 원본 |
 
 ### `MAT_STOCKS`
 
@@ -6594,8 +6596,8 @@ erDiagram
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CLOSE_TIME` | `TIMESTAMP(6)` | `Y` |  |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `PARTNER_MASTERS`
 
@@ -6620,8 +6622,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `PDA_ROLE`
 
@@ -6925,8 +6927,8 @@ erDiagram
 | `CRIMP_WIDTH` | `NUMBER(10,3)` | `Y` |  |  | 크림프 폭 (mm) |
 | `WELD_CONDITION` | `VARCHAR2(500)` | `Y` |  |  | 용접 조건 |
 | `PROCESS_PARAMS` | `VARCHAR2(2000)` | `Y` |  |  | 공정 파라미터 (JSON) |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `PROCESS_MASTERS`
 
@@ -6946,8 +6948,8 @@ erDiagram
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `PROCESS_CATEGORY` | `VARCHAR2(50)` | `Y` |  |  | 공정 카테고리 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `PROCESS_QUALITY_CONDITIONS`
 
@@ -6968,8 +6970,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `PRODUCT_STOCKS`
 
@@ -7052,8 +7054,8 @@ erDiagram
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `LINE_NAME` | `VARCHAR2(255)` | `N` |  |  | 라인명 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `PROD_PLANS`
 
@@ -7126,8 +7128,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `USE_TYPE` | `VARCHAR2(20)` | `N` |  | 기본값 `'PROD'`<br>COM_CODES.PO_USE_TYPE: PROD=양산, DEV=개발, SAMPLE=샘플 | 사용 구분: PROD(양산) \| DEV(개발) \| SAMPLE 등 |
 
 ### `PURCHASE_ORDER_ITEMS`
@@ -7359,8 +7361,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `ROLE_MENU_PERMISSIONS`
 
@@ -7391,8 +7393,8 @@ erDiagram
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `ROUTING_MATERIALS`
 
@@ -7432,8 +7434,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `SAMPLE_INSPECT_YN` | `VARCHAR2(1)` | `Y` |  | 기본값 `'N'` |  |
 | `QC_SELF_YN` | `VARCHAR2(1)` | `Y` |  | 기본값 `'N'` |  |
 | `INSPECT_METHOD` | `VARCHAR2(20)` | `Y` |  | 기본값 `'DIRECT'`<br>COM_CODES.INSPECT_METHOD: VISUAL=육안검사, MEASUREMENT=계측검사, FUNCTIONAL=기능검사, ELECTRICAL=전기검사, DESTRUCTIVE=파괴검사 |  |
@@ -7662,9 +7664,9 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `SHIP_TIME` | `TIMESTAMP(6)` | `Y` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `SHIP_ORDER_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
 
 ### `SHIPMENT_ORDERS`
@@ -7987,8 +7989,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `TRACE_LOGS`
 
@@ -8081,9 +8083,9 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `PHOTO_URL` | `VARCHAR2(500)` | `Y` |  |  | 프로필 사진 URL |
 | `PDA_ROLE_CODE` | `VARCHAR2(50)` | `Y` |  | 기본값 `NULL` |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `LAST_LOGIN` | `TIMESTAMP(6)` | `Y` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `USER_AUTHS`
 
@@ -8174,8 +8176,8 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `IS_DEFAULT` | `VARCHAR2(1)` | `N` |  | 기본값 `'N'` |  |
 | `WAREHOUSE_GROUP` | `VARCHAR2(20)` | `Y` |  |  |  |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `WAREHOUSE_LOCATIONS`
 
@@ -8243,8 +8245,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
-| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
-| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `WORK_CALENDARS`
 

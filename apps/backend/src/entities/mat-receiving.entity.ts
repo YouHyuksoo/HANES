@@ -41,6 +41,9 @@ export class MatReceiving {
   @Column({ name: 'WAREHOUSE_CODE', length: 50 })
   warehouseCode: string;
 
+  @Column({ type: 'varchar2', name: 'VENDOR_BARCODE', length: 200, nullable: true })
+  vendorBarcode: string | null;
+
   @Column({ type: 'varchar2', name: 'ARRIVAL_NO', length: 50, nullable: true })
   arrivalNo: string | null;
 

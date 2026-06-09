@@ -27,14 +27,26 @@ export class ReceiveItemDto {
   @Min(1)
   qty: number;
 
-  @ApiProperty({ description: '입고 창고 ID' })
+  @ApiPropertyOptional({ description: '입고 창고 ID' })
+  @IsOptional()
   @IsString()
-  warehouseId: string;
+  warehouseId?: string;
+
+  @ApiPropertyOptional({ description: '입고 창고 코드 (프론트 호환)' })
+  @IsOptional()
+  @IsString()
+  warehouseCode?: string;
 
   @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD) - 수정 시 유효기한 재계산' })
   @IsOptional()
   @IsDateString()
   manufactureDate?: string;
+
+  @ApiPropertyOptional({ description: '거래처/제조사 부착 바코드 원본' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  vendorBarcode?: string;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
@@ -75,6 +87,11 @@ export class ReceivingQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsDateString()
   toDate?: string;
+
+  @ApiPropertyOptional({ description: '자재 시리얼(LOT/matUid) 부분 일치' })
+  @IsOptional()
+  @IsString()
+  matUid?: string;
 }
 
 /** 자동입고 요청 DTO (라벨 발행 시 호출) */

@@ -329,16 +329,67 @@ describe('ReceivingService', () => {
 
     await target.createBulkReceive({
       workerId: 'user',
-      items: [{ matUid: 'MAT-001', qty: 5, warehouseId: 'MAIN-WH' }],
+      items: [{ matUid: 'MAT-001', qty: 5, warehouseId: 'MAIN-WH', vendorBarcode: 'VENDOR-001' }],
     } as any, 'CO', 'P01');
 
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
-    expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ receiveNo: 'RCV-001' }));
+    expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ receiveNo: 'RCV-001', vendorBarcode: 'VENDOR-001' }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', transType: 'RECEIVE' }));
     expect(manager.findOne).toHaveBeenCalledWith(MatStock, {
       where: { warehouseCode: 'ARR-WH', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'CO', plant: 'P01' },
     });
+  });
+
+  it('createBulkReceive는 프론트 입고 화면의 warehouseCode 요청도 입고 창고로 처리한다', async () => {
+    const lot = {
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      initQty: 10,
+      iqcStatus: 'PASS',
+      arrivalNo: 'ARR-001',
+      arrivalSeq: 1,
+      company: 'CO',
+      plant: 'P01',
+    } as MatLot;
+    mockMatLotRepo.findOne.mockResolvedValue(lot);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
+    } as any);
+    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'N' } as PartMaster);
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('RCV-001')
+      .mockResolvedValueOnce('TX-001');
+
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce(lot)
+        .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.createBulkReceive({
+      workerId: 'user',
+      items: [{ matUid: 'MAT-001', qty: 5, warehouseCode: 'MAIN-WH' }],
+    } as any, 'CO', 'P01');
+
+    expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({
+      receiveNo: 'RCV-001',
+      warehouseCode: 'MAIN-WH',
+    }));
+    expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({
+      transNo: 'TX-001',
+      toWarehouseId: 'MAIN-WH',
+    }));
   });
 
   it('createBulkReceive는 IQC 대상품의 PASS 성적서가 없으면 입고를 차단한다', async () => {

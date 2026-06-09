@@ -357,3 +357,395 @@ Use local time in 24-hour format.
 - 입하 100개, 제조사 M001 → 저장 → 시리얼 발급 확인 모달 ✅
 - 시리얼 `VH1-RM260527-00001` 채번, 라벨 미리보기 ✅
 - 잔량 35,380 → 35,280 실시간 반영 ✅
+# 2026-06-08 20:20 codex
+
+## T-MAT-REQ-BOM-AUTO 완료
+
+**대상:** `/material/request` 자재출고요청 생성 모달.
+
+**수정 내용:**
+- 작업지시 선택 시 `GET /material/issue-requests/job-orders/:orderNo/bom-items`로 BOM 직하위 품목을 조회하고, 원자재만 요청 품목으로 자동 채운다.
+- 요청수량 산식은 사용자 승인 기준대로 `BOM 소요량 - 작업지시 기불출량 - 현장재고`이며, 음수는 제외한다.
+- `BOM 소요량`, `기불출량`, `현장재고`를 요청 상세에 저장하도록 DTO/서비스 저장 경로를 보강했다.
+- 이전 출고량은 `MAT_ISSUES -> MAT_LOTS`, 현장재고는 `MAT_STOCKS -> WAREHOUSES(FLOOR)`로 집계한다.
+- 실제 저장 중 발견한 결함 수정: `create()`가 트랜잭션 안에서 외부 repository로 상세 재조회해 Oracle 미커밋 행을 못 보고 404가 나던 문제를 커밋 후 재조회로 변경했다.
+
+**검증:**
+- TDD 실패 확인: 신규 스펙 추가 후 `service.buildBomRequestItems is not a function`, BOM 산출 필드 미저장, 미커밋 재조회 실패를 재현했다.
+- `pnpm --filter @harness/backend test -- issue-request.service.spec.ts --runInBand` 통과, 14건.
+- `pnpm --filter @harness/backend build` 통과.
+- `pnpm --filter @harness/frontend build` 통과.
+- API `GET /api/v1/material/issue-requests/job-orders/W2026-001/bom-items` 확인: `HNS01` BOM에서 `SEMI_PRODUCT` 2건 제외, 원자재 `CNTR001/HLD-01/TP0001/HSG0001` 4건 산출.
+- 헤드리스 브라우저 `http://localhost:3004/material/request`: 작업지시 `W2026-001 - HNS01` 선택 시 요청 품목 4건과 `BOM / 기불출 / 현장` 근거 표시 확인.
+- API `POST /api/v1/material/issue-requests`로 `MR2606080002` 생성 성공.
+- JSHANES 확인: `MAT_ISSUE_REQUESTS` 헤더 1건, `MAT_ISSUE_REQUEST_ITEMS` 상세 4건과 `BOM_REQ_QTY/PREV_ISSUE_QTY/FLOOR_STOCK_QTY` 저장 확인.
+
+# 2026-06-08 16:50 codex
+
+## T-MAT-ARRIVAL-LABEL-FORMAT 완료
+
+**수정 내용:**
+- 입하시 발행되는 자재 라벨 형식을 사용자 첨부 이미지 기준 80mm x 40mm로 변경했다.
+- 공용 컴포넌트 `MaterialArrivalLabel`을 추가해 입하 직후 라벨 미리보기와 `/material/receive-label` 브라우저 인쇄가 같은 형식을 사용한다.
+- 라벨 구성: 좌측 QR, `품목코드 / 수량 단위`, 제조사, `IN`, `SERIAL`, `LOT`, 우측 `MP/CM` 배지, `검사필 도장날인` 원형 영역, 하단 품명.
+- 기존 canvas 바코드 복사 방식은 새 인쇄창에서 빈 canvas가 될 수 있어 QR을 data URL 이미지로 렌더링하도록 변경했다.
+- `/material/receive-label` 발행 결과에 입하행의 수량, 단위, 업체, 입하일, 입하번호를 붙여 라벨 필드가 채워지게 했다.
+- 실제 발행 중 발견한 저장 결함도 같이 수정했다:
+  - `ReceiveLabelService.createMatLabels`가 `MAT_LOTS.CURRENT_QTY`를 누락해 ORA-01400 발생.
+  - 발행된 LOT가 입고 대상으로 이어지도록 `origin`, `iqcStatus=PASS`, `status=NORMAL`을 명시.
+  - `LABEL_PRINT_LOGS.COMPANY/PLANT_CD/PRINTED_AT/SEQ` 누락으로 ORA-01400 발생.
+  - 브라우저 인쇄 로그 payload가 DTO와 다른 `matUids`를 보내던 문제를 `uidList`로 수정.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과.
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+- 헤드리스 브라우저로 `http://localhost:3002/material/receive-label` 실제 접근 확인.
+- 테스트 계정 `codex-label-verify@harness.com` 생성 후 검증 완료 뒤 삭제.
+- APPCT-A 입하행 1건 선택 후 실제 라벨 발행 실행:
+  - `POST /api/material/receive-label/create` 201.
+  - `POST /api/material/label-print/log` 201.
+  - 인쇄 HTML에서 `.material-arrival-label` 5개, QR data image 5개 확인.
+  - 첫 라벨 텍스트: `APPCT-A / 5 EA`, 업체 `입고테스트거래처`, `IN : 2026-06-08`, `LOT : RCVT26060800003`, 품명 `어플리케이터A`.
+
+# 2026-06-08 11:27 codex
+
+## T-MAT-CYCLE-E2E-FIX 완료
+
+**대상:** PO-입하-IQC-입고-출고-재고 E2E QA에서 확인한 결함 수정.
+
+**수정 내용:**
+- 자재입고 화면/백엔드 계약 불일치 수정: 프론트는 `warehouseId`를 전송하고, 백엔드는 기존 화면 호환을 위해 `warehouseCode`도 수용한다. 입고 재고/수불 트랜잭션 창고값은 동일 값으로 기록한다.
+- IQC 이력 화면에 성적서 컬럼과 PASS/DONE 행의 업로드/재업로드 버튼을 추가했다.
+- 입하/IQC 날짜 표시를 날짜 전용 또는 로컬 일시 포맷으로 정리했다.
+- IQC 이력 날짜 필터의 종료일이 `YYYY-MM-DD 00:00:00`으로만 잡혀 당일 데이터를 숨기던 문제를, 해당 일자 23:59:59.999까지 포함하도록 수정했다.
+- 수동출고 재고 행의 `id`가 비어 모든 체크박스가 선택된 것처럼 보이던 문제를 `warehouseCode::matUid` 기반 fallback key로 수정했다.
+- 자재재고 검색 조건에 `matUid`를 포함했다.
+
+**검증:**
+- `pnpm --filter @harness/backend test -- receiving.service.spec.ts mat-stock.service.spec.ts iqc-history.service.spec.ts --runInBand` 통과, 53건.
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과.
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+- 런타임 API: `/api/v1/material/receiving`에 `warehouseCode`만 보낸 요청이 DTO 오류가 아니라 잔량 초과 업무 오류로 진행됨을 확인.
+- 런타임 API/화면: `/material/stock`에서 `VH1-RM260608-00004` 검색 시 LOT 행 반환 확인.
+- 헤드리스 브라우저: `/material/issue` 수동출고에서 1행 체크 시 해당 행만 checked, 하단 `선택됨 1건` 확인.
+- 헤드리스 브라우저: `/material/iqc-history` 기본 날짜 `2026-06-08 ~ 2026-06-08`에서 오늘 IQC 1건 표시, `성적서: 첨부`, 재업로드 아이콘 확인.
+# 2026-06-08 15:11 codex
+
+## T-ROUTING-PROCESS-TYPE-SOURCE 완료
+
+**수정 내용:**
+- 라우팅 공정 추가/수정 모달에서 `공정유형` 선택박스를 제거했다.
+- `공정유형`은 `/master/processes` 공정 마스터 응답의 `processType`을 읽어 표시만 한다.
+- 라우팅 공정 저장 payload에서 `processType`을 제거했다. 공정유형의 source of truth는 공정 마스터다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과.
+- `git diff --check -- apps/frontend/src/app/(authenticated)/master/routing/components/RoutingGroupManager.tsx .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` 통과.
+- 헤드리스 브라우저 `/master/routing` 공정추가 모달 확인: `공정유형`은 combobox가 아닌 표시값으로 렌더링.
+- `MTASY` 선택 시 공정명 `자재장착`, 공정유형 `조립` 표시 확인. 저장은 수행하지 않았다.
+
+# 2026-06-08 14:23 codex
+
+## T-MAT-RECEIVE-TESTDATA 입고 처리 완료
+
+**처리 내용:**
+- 사용자 요청으로 자재입고 테스트 데이터 3건을 실제 입고 처리했다.
+- 입고번호: `RCV20260608-0002`.
+- 대상:
+  - `RECV-TEST-260608-00003` / `CBL-A` / 12 / `WH-MAT-A`.
+  - `RECV-TEST-260608-00004` / `CNTR001` / 8 / `WH-MAT-A`.
+  - `RECV-TEST-260608-00005` / `APPCT-A` / 5 / `WH-MAT-A`.
+
+**검증:**
+- API `POST /api/v1/material/receiving` 성공.
+- 입고대기 API에서 `RECV-TEST-260608-*` 미반환 확인.
+- JSHANES `MAT_RECEIVINGS` 3행 `DONE` 확인.
+- JSHANES `MAT_STOCKS` 3행 생성 및 `QTY=AVAILABLE_QTY` 확인.
+- JSHANES `STOCK_TRANSACTIONS` `TX20260608-00014~00016` `RECEIVE/DONE` 확인.
+
+# 2026-06-08 11:50 codex
+
+## T-MAT-RECEIVE-TESTDATA 완료
+
+**대상:** `http://localhost:3002/material/receive` 자재입고 테스트용 실DB 데이터.
+
+**생성 내용:**
+- SQL: `tools/generated/receive-testdata-2026-06-08.sql`.
+- 입하번호: `RCVT26060800003`.
+- LOT 3건:
+  - `RECV-TEST-260608-00003` / `CBL-A` / 12 / 성적서 첨부 / 창고 `WH-MAT-A`.
+  - `RECV-TEST-260608-00004` / `CNTR001` / 8 / 성적서 첨부 / 창고 `WH-MAT-A`.
+  - `RECV-TEST-260608-00005` / `APPCT-A` / 5 / 성적서 불필요 / 창고 `WH-MAT-A`.
+- 생성 테이블: `MAT_ARRIVALS`, `MAT_LOTS`, `IQC_LOGS`.
+- 채번은 `SEQ_ARRIVAL_NO_DAILY`, `SEQ_MAT_ARRIVALS`, `MAT_UID_SEQ`, `SEQ_IQC_LOGS`를 사용했다. `MAX+1`은 사용하지 않았다.
+
+**검증:**
+- JSHANES 조회로 3건의 `IQC_STATUS=PASS`, `STATUS=NORMAL`, `WAREHOUSE_CODE=WH-MAT-A`, IQC 필수 2건의 `CERT_FILE_PATH` 존재 확인.
+- API `/api/v1/material/receiving/receivable`에서 3건 반환 확인.
+- 헤드리스 브라우저 `/material/receive`에서 `RECV-TEST-260608` 검색 시 3건 표시 및 체크박스 활성 확인.
+- 실제 입고 처리는 수행하지 않았다.
+
+# 2026-06-08 20:38 codex
+
+## T-INPUT-KIOSK-CONSUMABLE-COUNT 완료
+
+**원인:**
+- `GET /equipment/consumables/mounted/:equipCode` 응답은 소모품 수명 한도를 `expectedLife`로 내려준다.
+- 입력키오스크 프론트 `MaterialListPanel`과 `ConsumableScanModal`은 `maxCount`를 기대해 `undefined.toLocaleString()`이 발생했다.
+
+**수정 내용:**
+- mounted consumable 응답을 화면 모델로 정규화하면서 `maxCount ?? expectedLife`를 사용하도록 변경했다.
+- `currentCount`, `maxCount`는 숫자로 변환하고 비정상 값은 0으로 fallback 처리했다.
+
+**검증:**
+- JSHANES 실데이터 `EQ-CUT-01` 장착 소모품 2건 확인: `CM-BL-F01` expectedLife 2,500,000 / `CM-BL-V01` expectedLife 3,000,000.
+- API `GET /api/v1/equipment/consumables/mounted/EQ-CUT-01` 응답이 `expectedLife`를 반환하고 `maxCount`는 없음을 확인.
+- `pnpm --filter @harness/frontend build` 통과.
+- 헤드리스 브라우저 `/production/input-kiosk`에서 소모품 패널과 소모품 스캔 모달 모두 `1,800,000/2,500,000`, `0/3,000,000` 표시 확인.
+- 브라우저 콘솔에 해당 runtime TypeError 없음.
+
+# 2026-06-08 20:55 codex
+
+## T-MAT-REQ-DETAIL 완료
+
+**대상:** `/material/request` 출고요청 목록 상세 보기.
+
+**수정 내용:**
+- 출고요청 목록 행 클릭과 `상세보기` 아이콘 버튼으로 상세 모달을 열 수 있게 했다.
+- 상세 모달에 요청번호, 작업지시, 상태, 출고계정, 요청일, 요청자, 승인 정보, 요청/출고/잔여수량 합계를 표시한다.
+- 품목 상세 표에 품목코드, 품목명, 요청/출고/잔여, 현재고, BOM소요, 기불출, 현장재고, 단위를 표시한다.
+- 백엔드 목록 응답의 `orderNo`, `totalRequestQty`, `totalIssuedQty`도 프론트에서 정상 표시하도록 fallback 타입을 보강했다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과.
+- API `GET /api/v1/material/issue-requests?limit=3`에서 `MR2606080003`, `MR2606080002`와 상세 품목 반환 확인.
+- 헤드리스 브라우저 `http://localhost:3002/material/request`에서 요청 2건 표시 확인.
+- `MR2606080003` 상세 모달 열림 확인: 6개 품목, 총 요청수량 15,250, BOM소요/기불출/현장재고 표시.
+- 브라우저 콘솔 기능 오류 없음. `favicon.ico` 404만 확인.
+
+# 2026-06-08 21:03 codex
+
+## T-QUALITY-REWORK-DEFECT-RELATION 완료
+
+**원인:**
+- `REWORK_ORDERS.DEFECT_LOG_ID`는 `"occurAt|seq"` 문자열이고, `DEFECT_LOGS`는 `OCCUR_TIME + SEQ` 복합 PK다.
+- `ReworkOrder` 엔티티에는 `defectLog` relation이 없는데 `ReworkService.findAll()`이 `leftJoinAndSelect('r.defectLog', 'dl')`, `findById()`가 `relations: ['defectLog']`를 사용해 TypeORM 500이 발생했다.
+
+**수정 내용:**
+- 재작업 목록 조회에서 존재하지 않는 `defectLog` relation join을 제거했다.
+- 재작업 단건 조회에서 존재하지 않는 `defectLog` relation preload를 제거했다.
+- 서비스 테스트에 `findAll`이 존재하지 않는 relation을 join하지 않는 회귀 테스트를 추가했다.
+
+**검증:**
+- 수정 전 API `GET /api/v1/quality/reworks?limit=5000`에서 동일한 500 재현.
+- `pnpm --filter @harness/backend test -- rework.service.spec.ts --runInBand` 통과, 11건.
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+- 수정 후 API `GET /api/v1/quality/reworks?limit=5000` 성공. 현재 데이터 0건, `success: true`.
+
+# 2026-06-09 00:00 codex
+
+## T-SHIP-PACK-SERIAL-FOCUS 완료
+
+**대상:** `/shipping/pack` 시리얼 추가 모달.
+
+**수정 내용:**
+- 시리얼 추가 모달 입력박스에 `ref`를 연결하고, 모달 열림 직후 입력박스로 자동 포커스되게 했다.
+- 시리얼 Enter 추가 성공 또는 실패 후에도 스캐너 연속 입력이 가능하도록 입력박스 포커스를 다시 잡는다.
+- 시리얼 추가 모달 크기를 `lg`에서 `2xl`로 확대했다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 백엔드 3001은 미실행 상태라, Chrome DevTools Protocol에서 `/api/shipping/boxes`와 `/api/auth/me`를 mock 응답으로 채워 실제 `/shipping/pack` 컴포넌트를 렌더링했다.
+- 헤드리스 브라우저 확인 결과: 모달 열림 직후 `focusedOnOpen=true`, Enter 추가 후 `focusedAfterEnter=true`, 추가 시리얼 표시 `serialAddedVisible=true`, 모달 폭 726px 확인.
+
+# 2026-06-09 00:30 codex
+
+## T-SHIP-PACK-SCAN-ENTER-CANCEL 완료
+
+**대상:** `/shipping/pack` 시리얼 추가 모달.
+
+**수정 내용:**
+- 시리얼 입력값을 React state만 보지 않고 입력 DOM 현재값으로도 읽어, 스캐너가 값과 Enter를 거의 동시에 보내도 등록되게 했다.
+- 입력값에 CR/LF가 포함돼 들어오는 스캐너 케이스도 즉시 등록하도록 처리했다.
+- 방금 등록한 시리얼을 모달 상단에 표시하고, `취소` 버튼으로 즉시 삭제할 수 있게 했다.
+- 등록/삭제 후에도 시리얼 입력박스 포커스를 유지한다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 헤드리스 브라우저 CDP mock으로 `/shipping/pack` 실제 컴포넌트 렌더링 확인.
+- 확인 결과: `focusedOnOpen=true`, `serialAddedVisible=true`, `focusedAfterEnter=true`, `serialRemoved=true`, `focusedAfterCancel=true`.
+
+## T-SHIP-ORDER-REMOVE-INFO-CARDS 완료
+
+**대상:** `/shipping/order` 출하지시등록 화면.
+
+**수정 내용:**
+- 상단 정보카드 4개(`전체`, `임시저장`, `확정`, `출하`) 렌더링 블록을 제거했다.
+- 이에 따라 `stats`, `StatCard`, 카드 전용 아이콘 import를 제거했다.
+- 기존 미커밋 변경인 API 경로 `/shipping/orders`는 건드리지 않고 보존했다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 헤드리스 브라우저 CDP mock으로 `/shipping/order` 실제 컴포넌트 렌더링 확인.
+- 확인 결과: 정보카드 grid count `0`, 출하지시 목록 행 `SO2606090001` 표시 정상.
+
+# 2026-06-09 14:25 codex
+
+## T-MAT-RECEIVE-REMOVE-INFO-CARDS 완료
+
+**대상:** `/material/receive` 자재입고관리 화면.
+
+**수정 내용:**
+- 상단 정보카드 4개(`입고대기`, `입고대기수량`, `금일 입고건수`, `금일 입고수량`) 렌더링 블록을 제거했다.
+- 카드 제거에 따라 `StatCard`, 카드 전용 아이콘, `stats` 상태, `/material/receiving/stats` 조회를 제거했다.
+- 기존 dirty 변경인 입고 등록 payload `warehouseId: warehouseCode`는 보존했다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `http://localhost:3002/material/receive` HTTP 200 확인.
+- `page.tsx` 내 `StatCard`, `receiving/stats` 잔여 참조 없음 확인.
+
+# 2026-06-09 00:45 codex
+
+## T-SHIP-PACK-REMOVE-INFO-CARDS 완료
+
+**대상:** `/shipping/pack` 제품포장관리 화면.
+
+**수정 내용:**
+- 상단 정보카드 4개(`진행`, `마감`, `출하`, `총 수량`) 렌더링 블록을 제거했다.
+- 이에 따라 `stats`, `StatCard`, 카드 전용 아이콘 import를 제거했다.
+- 기존 시리얼 스캔 Enter 자동등록/즉시취소 변경은 보존했다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 헤드리스 브라우저 CDP mock으로 `/shipping/pack` 실제 컴포넌트 렌더링 확인.
+- 확인 결과: 정보카드 grid count `0`, 박스 목록 행 `BX2606090001` 표시 정상.
+
+# 2026-06-09 13:20 codex
+
+## T-SHIP-BOX-STOCK 완료
+
+**대상:** 출하관리 박스입고재고 조회.
+
+**수정 내용:**
+- 출하관리 메뉴에 `SHIP_BOX_STOCK` / `/shipping/box-stock`를 추가했다.
+- 새 화면은 `/shipping/boxes` 기반으로 박스번호, 품목, 수량, 상태, 팔레트, OQC, 마감일시를 조회한다.
+- 박스 행 선택 시 우측 패널에서 `/shipping/boxes/:id/items`를 호출해 `BOX_MASTERS.SERIAL_LIST` 안의 `FG_LABELS` 개별제품 상세를 표시한다.
+- 개별제품 상세에는 제품시리얼, 품번/품명, 작업지시번호, FG 상태, 검사합격 여부, 발행일시를 표시한다.
+- `ko/en/zh/vi` 메뉴명과 화면 문구를 추가했다.
+
+**검증:**
+- `pnpm --filter @harness/backend exec tsc --noEmit` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 기존 프론트 dev 서버 `localhost:3002`에서 `GET /shipping/box-stock` HTTP 200 확인.
+- 로컬 Playwright CLI가 없어 브라우저 스크린샷 검증은 수행하지 못했다.
+
+# 2026-06-09 20:05 codex
+
+## T-MAT-RECEIVE-SCAN 완료
+
+**대상:** `/material/receive` 자재입고.
+
+**수정 내용:**
+- 입고대기 그리드에서 체크박스 선택, 수량 입력, 창고 선택 컬럼을 제거해 조회 전용으로 바꿨다.
+- 헤더 `입고처리` 버튼은 새 `ReceiveScanModal`만 열도록 변경했다.
+- 스캔 모달은 거래처 바코드 → 자체부착 바코드(`matUid`) 순서로 Enter 입력을 받아 매핑 목록을 누적한다.
+- 자체부착 바코드는 현재 입고대기 목록에 존재해야 하며, 성적서 차단 사유와 입고 창고 누락, 중복 스캔을 클라이언트에서 차단한다.
+- 입고 수량은 수동 입력하지 않고 해당 `matUid`의 잔량 전체로 전송한다.
+- `ReceiveItemDto.vendorBarcode`를 추가하고 `ReceivingService.createBulkReceive()`가 `MAT_RECEIVINGS.VENDOR_BARCODE`에 거래처 바코드 원본을 저장하도록 했다.
+- 마이그레이션 `apps/backend/src/migrations/2026-06-09_mat_receiving_vendor_barcode.sql`을 추가하고 JSHANES에 적용했다.
+- `docs/reports/db-schema-erd.md`를 JSHANES 실DB 기준으로 재생성했다.
+
+**검증:**
+- `python scripts/migration/run_migration.py apps/backend/src/migrations/2026-06-09_mat_receiving_vendor_barcode.sql --site JSHANES` 성공.
+- JSHANES `USER_TAB_COLUMNS` 확인: `MAT_RECEIVINGS.VENDOR_BARCODE VARCHAR2(200) NULL`.
+- `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py` 성공, 148 tables / 2395 columns.
+- `pnpm --filter @harness/backend test -- receiving.service.spec.ts --runInBand` 통과(11/11).
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과.
+- `GET http://localhost:3002/material/receive` HTTP 200 확인.
+
+**남은 위험:**
+- gstack browse와 Playwright 실행 바이너리가 없어 실제 인증 세션의 모달 클릭/스캔 DOM 검증은 수행하지 못했다. 코드/타입/라우트 수준 검증은 통과했다.
+
+# 2026-06-09 19:35 codex
+
+## T-INPUT-KIOSK-EQUIP-LIST 완료
+
+**대상:** `/production/input-kiosk` 설비선택 모달.
+
+**원인:**
+- 설비선택 모달은 `equips` prop이 있으면 검색어 없이 전체 목록을 보여주는 구조다.
+- 부모 페이지의 설비 로딩은 `/equipment/equips` 응답을 `res.data.data` 배열로만 처리했다.
+- 실제/호환 응답이 paged 또는 items wrapper 형태로 올 경우 모달에는 빈 배열이 전달될 수 있다.
+
+**수정 내용:**
+- `utils/equipOptions.ts`를 추가해 direct array, `ResponseUtil.paged`의 `data` 배열, `{ data: { items: [...] } }`, `{ data: { rows: [...] } }`를 모두 `EquipOption[]`으로 정규화한다.
+- `page.tsx` 설비 목록 로딩에서 `normalizeEquipOptions(res.data)`를 사용하도록 변경했다.
+- 정규화 동작을 `node:test` 기반 테스트로 추가했다.
+
+**검증:**
+- RED: `node --test apps/frontend/src/app/(authenticated)/production/input-kiosk/utils/equipOptions.test.ts`가 `ERR_MODULE_NOT_FOUND`로 실패해 함수 부재 확인.
+- GREEN: `node --no-warnings --test apps/frontend/src/app/(authenticated)/production/input-kiosk/utils/equipOptions.test.mjs` 통과(2/2).
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `GET http://localhost:3002/production/input-kiosk` HTTP 200 확인.
+- 인증 없는 브라우저 접근은 `/login`으로 리다이렉트되어 실제 모달 DOM 클릭 검증은 수행하지 못했다.
+
+# 2026-06-09 14:40 codex
+
+## T-INPUT-KIOSK-REMOVE-MASTER-SAMPLE 완료
+
+**대상:** `/production/input-kiosk`.
+
+**수정 내용:**
+- `EquipHeader` Row2에서 마스터샘플 판정 `HeaderCheckItem`을 제거했다.
+- 남은 작업자설비검사 카드는 기존 우측 칼럼 폭을 채우도록 유지했다.
+- `page.tsx`, `EquipHeader.tsx`, `HeaderCheckItem.tsx`의 입력키오스크 설명에서 마스터샘플검사 문구를 제거했다.
+- `ko/en/zh/vi`의 `kiosk.header.masterSample`, `kiosk.header.masterSampleNotTarget` 키를 제거했다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 입력키오스크 경로와 kiosk 전용 locale에서 `kiosk.header.masterSample`, `masterSampleNotTarget`, `마스터샘플검사`, `마스터샘플 판정` 참조 0건 확인.
+- `GET http://localhost:3002/production/input-kiosk` HTTP 200 확인.
+- 인증 없는 브라우저 접근은 `/login`으로 리다이렉트되어 실제 작업 화면 DOM 검증은 수행하지 못했다.
+
+# 2026-06-09 13:55 codex
+
+## T-SHIP-BOX-STOCK-MENU 완료
+
+**원인:**
+- 사이드바는 `menuConfig.ts`만 렌더하지 않고 `/menu-categories/tree`에서 받은 `MENU_CATEGORY_ITEMS` 배치와 merge한다.
+- 새 leaf `SHIP_BOX_STOCK`은 코드에는 있었지만 JSHANES `MENU_CATEGORY_ITEMS`에 없어서 사이드바에서 제외됐다.
+- `menu-code-validator.ts`에도 새 코드가 없어 메뉴관리 화면/API에서 배치하려 해도 유효성 검증에 걸릴 수 있었다.
+
+**수정 내용:**
+- `apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts`에 `SHIP_BOX_STOCK` 추가.
+- `apps/backend/src/seeds/menu-config.json`의 `SHIPPING` 하위에 `SHIP_BOX_STOCK` 추가.
+- 재실행 가능한 DB 보정 SQL `scripts/migration/2026-06-09_seed_ship_box_stock_menu.sql` 추가.
+- JSHANES 실DB에 `MENU_CATEGORY_ITEMS(CATEGORY_CODE='SHIPPING', MENU_CODE='SHIP_BOX_STOCK', SORT_ORDER=25)` 추가.
+- `ROLE_MENU_PERMISSIONS`에서 `SHIP_PACK` 접근권한이 있는 MANAGER 역할에 `SHIP_BOX_STOCK` 접근권한 추가.
+
+**검증:**
+- JSHANES `MENU_CATEGORY_ITEMS` 조회: SHIPPING 하위에 `SHIP_BOX_STOCK`이 `SHIP_PACK` 다음, `SHIP_ORDER` 전 `SORT_ORDER=25`로 확인.
+- JSHANES `ROLE_MENU_PERMISSIONS` 조회: `MANAGER / SHIP_BOX_STOCK / Y` 확인.
+- `scripts/migration/2026-06-09_seed_ship_box_stock_menu.sql`을 `oracle_connector --execute-file`로 재실행해 성공 확인.
+- `pnpm --filter @harness/backend exec tsc --noEmit` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 백엔드 3001은 실행 중이 아니어서 `/menu-categories/tree` HTTP 확인은 못 했다.
+- 기존 브라우저 탭은 `hanes-menu-tree` sessionStorage 캐시가 남을 수 있어 새로고침 또는 sessionStorage 삭제가 필요할 수 있다.
+
+# 2026-06-09 14:10 codex
+
+## T-SHIP-BOX-STOCK-STATUS-UI 완료
+
+**대상:** `/shipping/box-stock`.
+
+**수정 내용:**
+- 박스입고재고조회 화면에서 상태 드롭다운 필터를 제거했다.
+- 상단 상태별 통계(`마감`, `출하`)를 제거하고 재고 조회 목적에 맞게 `박스 수`, `총 수량`, `품목 수`, `선택 박스수량`으로 바꿨다.
+- API 호출에서 `status` 파라미터 전송을 제거했다.
+- 상태 컬럼은 박스 추적용 정보로 유지했다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 기존 프론트 dev 서버 `localhost:3002`에서 `GET /shipping/box-stock` HTTP 200 확인.

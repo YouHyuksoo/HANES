@@ -4,11 +4,54 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
+- T-SHIP-BOX-SCAN (claude, 2026-06-09): 출하지시 기반 박스 스캔 출하 + 완제품 입고 FG_MAIN 단순화.
+  파일: apps/backend/src/modules/shipping/services/ship-order.service.ts, ship-order.controller.ts,
+        apps/backend/src/modules/shipping/dto/ship-box.dto.ts, shipping.module.ts,
+        apps/backend/src/modules/inventory/inventory.controller.ts(+module),
+        apps/frontend/src/components/shipping/BoxScanShipModal.tsx(+index.ts),
+        apps/frontend/src/app/(authenticated)/shipping/confirm/page.tsx,
+        apps/frontend/src/hooks/pda/useShippingScan.ts(.types.ts),
+        apps/frontend/src/app/pda/shipping/page.tsx, apps/frontend/src/app/pda/product/receiving/page.tsx,
+        apps/frontend/src/locales/{ko,en,zh,vi}/translation.json.
+  계획: docs/superpowers/plans/2026-06-09-shipping-box-scan.md
+
 - T-MAT-RECV-FIXES (claude, 2026-06-07): 자재입고 프로세스 이슈 일괄 수정.
   완료(검증): #1 PO오류(http-exception.filter/purchase-order.dto/PoFormPanel), #2 배지(globals.css safelist), 작업지시 품목필터(part.dto/part.service/PartSearchModal/JobOrderFormPanel), IQC006 입하실적조회 전체(arrival.controller/service/dto, material/arrival-result/*, menuConfig, PartnerSelect/useMasterOptions, 2026-06-07_iqc006_arrival_result_seed.sql, locales 4).
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-MAT-RECEIVE-SCAN (codex, 2026-06-09): `/material/receive`를 거래처 바코드/자체부착 바코드 순환 스캔 입고 전용으로 변경. `MAT_RECEIVINGS.VENDOR_BARCODE` JSHANES 적용, ERD 갱신, receiving 테스트/백·프론트 tsc/라우트 HTTP 200 확인 후 lock 해제.
+
+- T-INPUT-KIOSK-EQUIP-LIST (codex, 2026-06-09): `/production/input-kiosk` 설비선택 모달 기본목록 표시 보정. `/equipment/equips` paged/items 응답을 설비 선택 배열로 정규화. node:test, 프론트 tsc, 라우트 HTTP 200 확인 후 lock 해제.
+
+- T-INPUT-KIOSK-REMOVE-MASTER-SAMPLE (codex, 2026-06-09): `/production/input-kiosk` 헤더의 마스터샘플 판정 카드와 kiosk 전용 번역 키 제거. 프론트 tsc, 참조 검색, 라우트 HTTP 200 확인 후 lock 해제.
+
+- T-MAT-RECEIVE-REMOVE-INFO-CARDS (codex, 2026-06-09): `/material/receive` 상단 정보카드 4개 제거. 통계 조회 API 호출과 관련 import/state 정리. 프론트 tsc와 라우트 HTTP 200 확인 후 lock 해제.
+
+- T-SHIP-BOX-STOCK-STATUS-UI (codex, 2026-06-09): `/shipping/box-stock` 상태 드롭다운과 상태별 통계 제거. 재고 조회 목적에 맞게 박스 수/총 수량/품목 수/선택 박스수량 통계로 변경. 프론트 tsc와 라우트 HTTP 200 확인 후 lock 해제.
+
+- T-SHIP-BOX-STOCK-MENU (codex, 2026-06-09): `SHIP_BOX_STOCK` 메뉴 노출 보정. validator/seed 등록, JSHANES `MENU_CATEGORY_ITEMS` SHIPPING sort 25 배치, `ROLE_MENU_PERMISSIONS` MANAGER 권한 추가. DB 조회와 tsc 검증 후 lock 해제.
+
+- T-SHIP-PACK-REMOVE-INFO-CARDS (codex, 2026-06-09): `/shipping/pack` 상단 정보카드 4개 제거. 기존 시리얼 스캔/즉시취소 변경 보존. 프론트 tsc와 헤드리스 브라우저 mock 확인 후 lock 해제.
+
+- T-SHIP-BOX-STOCK (codex, 2026-06-09): 출하관리 `/shipping/box-stock` 박스입고재고 조회 화면 추가. `/shipping/boxes/:id/items`로 박스 내 `FG_LABELS` 개별제품 상세 조회. 백엔드/프론트 tsc와 라우트 HTTP 200 확인 후 lock 해제.
+
+- T-SHIP-ORDER-REMOVE-INFO-CARDS (codex, 2026-06-09): `/shipping/order` 상단 정보카드 4개 제거. 기존 `/shipping/orders` API 경로 변경은 보존. 프론트 tsc와 헤드리스 브라우저 mock 확인 후 lock 해제.
+
+- T-SHIP-PACK-SCAN-ENTER-CANCEL (codex, 2026-06-09): `/shipping/pack` 시리얼 입력에서 스캐너 Enter/CR/LF 자동등록과 방금 등록 시리얼 즉시취소 UI 추가. 프론트 tsc와 헤드리스 브라우저 mock 확인 후 lock 해제.
+
+- T-SHIP-PACK-SERIAL-FOCUS (codex, 2026-06-09): `/shipping/pack` 시리얼 추가 모달에 열림/스캔 후 입력 포커스 유지 적용, 모달 크기 `2xl`로 확대. 프론트 tsc와 헤드리스 브라우저 mock 검증 후 lock 해제.
+
+- T-QUALITY-REWORK-DEFECT-RELATION (codex, 2026-06-08): `/quality/reworks` 500 원인인 존재하지 않는 `defectLog` TypeORM relation join/load 제거. 회귀 테스트·백엔드 tsc·실 API 확인 후 lock 해제.
+
+- T-MAT-REQ-DETAIL (codex, 2026-06-08): `/material/request` 출고요청 목록에 행 클릭/상세보기 버튼 기반 상세 모달 추가. 요청 헤더, 상태, 수량 합계, 품목별 BOM소요/기불출/현장재고 표시. 프론트 tsc·브라우저 확인 후 lock 해제.
+
+- T-INPUT-KIOSK-CONSUMABLE-COUNT (codex, 2026-06-08): 입력키오스크 소모품 수명 카운트 API 응답의 `expectedLife`를 `maxCount`로 정규화하고 숫자 fallback을 적용해 `toLocaleString()` runtime 오류 수정. 프론트 build·API·브라우저 확인 후 lock 해제.
+
+- T-MAT-REQ-BOM-AUTO (codex, 2026-06-08): 자재출고요청 작업지시 선택 시 BOM 직하위 원자재 기준 자동 요청품목 생성/저장 완료. 테스트·빌드·API/DB 검증 후 lock 해제.
+
+- T-MAT-ARRIVAL-LABEL-FORMAT (codex, 2026-06-08): 입하시 발행 라벨을 80mm x 40mm 형식으로 변경. 좌측 QR, 품번/수량/단위, 제조사, IN/SERIAL/LOT, 품명, 우측 검사필 도장 영역 적용. 라벨 발행 저장 결함(currentQty, 로그 tenant/PK, uidList payload) 수정. 프론트/백엔드 tsc 및 헤드리스 실제 발행 5장 확인 통과.
 
 - T-ROUTING-PROCESS-TYPE-SOURCE (codex, 2026-06-08): 라우팅 공정 추가 모달에서 공정유형 선택/저장 제거. 공정유형은 공정 마스터 값으로 표시만 한다. 프론트 tsc 및 브라우저 모달 확인 통과.
 

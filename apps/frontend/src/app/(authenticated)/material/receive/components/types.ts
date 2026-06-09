@@ -68,11 +68,7 @@ export interface ReceivingStats {
   todayReceivedQty: number;
 }
 
-/** 일괄 입고 입력 항목 */
-export interface ReceiveInput {
+export interface ReceiveScanPair {
+  vendorBarcode: string;
   matUid: string;
-  qty: number;
-  warehouseCode: string;
-  manufactureDate: string;
-  selected: boolean;
 }

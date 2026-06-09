@@ -350,6 +350,10 @@ export class ReceivingService {
   async createBulkReceive(dto: CreateBulkReceiveDto, company?: string, plant?: string) {
     // LOT 검증
     for (const item of dto.items) {
+      const receiveWarehouseCode = item.warehouseId ?? item.warehouseCode;
+      if (!receiveWarehouseCode) {
+        throw new BadRequestException(`입고 창고를 선택해야 합니다. LOT: ${item.matUid}`);
+      }
       const lot = await this.matLotRepository.findOne({
         where: { matUid: item.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
@@ -388,6 +392,10 @@ export class ReceivingService {
       let seqCounter = 1;
 
       for (const item of dto.items) {
+        const receiveWarehouseCode = item.warehouseId ?? item.warehouseCode;
+        if (!receiveWarehouseCode) {
+          throw new BadRequestException(`입고 창고를 선택해야 합니다. LOT: ${item.matUid}`);
+        }
         const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
         const lot = await queryRunner.manager.findOne(MatLot, {
@@ -448,7 +456,8 @@ export class ReceivingService {
           matUid: item.matUid,
           itemCode: lot.itemCode,
           qty: item.qty,
-          warehouseCode: item.warehouseId,
+          warehouseCode: receiveWarehouseCode,
+          vendorBarcode: item.vendorBarcode?.trim() || null,
           workerId: dto.workerId,
           remark: item.remark,
           status: 'DONE',
@@ -464,7 +473,7 @@ export class ReceivingService {
           transNo,
           transType: 'RECEIVE',
           fromWarehouseId: arrivalWarehouseCode,
-          toWarehouseId: item.warehouseId,
+          toWarehouseId: receiveWarehouseCode,
           itemCode: lot.itemCode,
           matUid: item.matUid,
           qty: item.qty,
@@ -485,7 +494,7 @@ export class ReceivingService {
         }
 
         // 4. 입고 창고에 LOT 단위(matUid) 재고 증가
-        await this.upsertStock(queryRunner.manager, item.warehouseId, lot.itemCode, item.matUid, item.qty, lot.company, lot.plant);
+        await this.upsertStock(queryRunner.manager, receiveWarehouseCode, lot.itemCode, item.matUid, item.qty, lot.company, lot.plant);
 
         results.push({ ...savedTx, receiveNo });
       }
@@ -496,7 +505,7 @@ export class ReceivingService {
 
   /** 입고 이력 조회 (MAT_RECEIVINGS 기반) */
   async findAll(query: ReceivingQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, search, fromDate, toDate } = query;
+    const { page = 1, limit = 10, search, fromDate, toDate, matUid } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.matReceivingRepository.createQueryBuilder('r')
@@ -514,6 +523,10 @@ export class ReceivingService {
       queryBuilder.andWhere('r.receiveDate >= :fromDate', { fromDate: new Date(fromDate) });
     } else if (toDate) {
       queryBuilder.andWhere('r.receiveDate <= :toDate', { toDate: new Date(toDate) });
+    }
+
+    if (matUid) {
+      queryBuilder.andWhere('r.matUid LIKE :matUid', { matUid: `%${matUid}%` });
     }
 
     if (search) {

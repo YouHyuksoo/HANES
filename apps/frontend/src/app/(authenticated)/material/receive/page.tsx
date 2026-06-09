@@ -2,34 +2,30 @@
 
 /**
  * @file src/app/(authenticated)/material/receive/page.tsx
- * @description 자재입고관리 페이지 - IQC 합격건 일괄/분할 입고 등록
+ * @description 자재입고관리 페이지 - IQC 합격건 스캔 방식 입고 등록
  *
  * 초보자 가이드:
- * 1. IQC 합격 LOT 중 미입고 건을 체크박스로 선택 -> 수량/창고 입력 -> 일괄 입고
- * 2. 분할 입고: 잔량 범위 내에서 일부 수량만 입고 가능
- * 3. 통계 카드: 입고대기 건수/수량, 금일 입고건수/수량
- * 4. 입고이력은 별도 페이지(/material/receive-history)에서 조회
+ * 1. 입고대기 그리드는 입고 대상 확인용이다.
+ * 2. 입고처리 버튼을 누른 뒤 거래처 바코드와 자체부착 바코드를 순환 스캔한다.
+ * 3. 스캔된 매핑만 입고 확정된다.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PackagePlus, Clock, Package, CheckCircle, Hash, RefreshCw, Search } from 'lucide-react';
-import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
+import { PackagePlus, RefreshCw, ScanLine, Search } from 'lucide-react';
+import { Card, CardContent, Button, Input } from '@/components/ui';
 import api from '@/services/api';
 import ReceivableTable from './components/ReceivableTable';
-import type { ReceivableLot, ReceivingStats, ReceiveInput } from './components/types';
-
-const INITIAL_STATS: ReceivingStats = { pendingCount: 0, pendingQty: 0, todayReceivedCount: 0, todayReceivedQty: 0 };
+import ReceiveScanModal from './components/ReceiveScanModal';
+import type { ReceivableLot } from './components/types';
 
 export default function ReceivingPage() {
   const { t } = useTranslation();
 
   const [receivable, setReceivable] = useState<ReceivableLot[]>([]);
-  const [stats, setStats] = useState<ReceivingStats>(INITIAL_STATS);
-  const [inputs, setInputs] = useState<Record<string, ReceiveInput>>({});
   const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [scanOpen, setScanOpen] = useState(false);
 
   /** 입고 가능 LOT 조회 */
   const fetchReceivable = useCallback(async () => {
@@ -37,41 +33,17 @@ export default function ReceivingPage() {
       const res = await api.get('/material/receiving/receivable');
       const lots: ReceivableLot[] = res.data.data || [];
       setReceivable(lots);
-      const init: Record<string, ReceiveInput> = {};
-      lots.forEach((lot) => {
-        init[lot.matUid] = {
-          matUid: lot.matUid,
-          qty: lot.remainingQty,
-          warehouseCode: lot.arrivalWarehouseCode || '',
-          manufactureDate: lot.manufactureDate ? String(lot.manufactureDate).slice(0, 10) : '',
-          selected: false,
-        };
-      });
-      setInputs(init);
     } catch { setReceivable([]); }
-  }, []);
-
-  /** 통계 조회 */
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await api.get('/material/receiving/stats');
-      setStats(res.data.data || INITIAL_STATS);
-    } catch { /* 무시 */ }
   }, []);
 
   /** 전체 새로고침 */
   const refresh = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchReceivable(), fetchStats()]);
+    await fetchReceivable();
     setLoading(false);
-  }, [fetchReceivable, fetchStats]);
+  }, [fetchReceivable]);
 
   useEffect(() => { refresh(); }, [refresh]);
-
-  /** 입력 변경 핸들러 */
-  const handleInputChange = (matUid: string, field: keyof ReceiveInput, value: string | number | boolean) => {
-    setInputs((prev) => ({ ...prev, [matUid]: { ...prev[matUid], [field]: value } }));
-  };
 
   /** 검색 필터링 */
   const filtered = searchText
@@ -82,43 +54,8 @@ export default function ReceivingPage() {
           || lot.part?.itemName?.toLowerCase().includes(q)
           || lot.vendor?.toLowerCase().includes(q)
           || lot.poNo?.toLowerCase().includes(q);
-      })
+    })
     : receivable;
-
-  /** 전체 선택 */
-  const handleSelectAll = (checked: boolean) => {
-    const selectableMatUids = new Set(
-      filtered.filter((lot) => !lot.receivingBlockedReason).map((lot) => lot.matUid),
-    );
-    setInputs((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((k) => {
-        next[k] = { ...next[k], selected: selectableMatUids.has(k) ? checked : false };
-      });
-      return next;
-    });
-  };
-
-  const blockedMatUids = new Set(receivable.filter((lot) => lot.receivingBlockedReason).map((lot) => lot.matUid));
-  const selectableFiltered = filtered.filter((lot) => !lot.receivingBlockedReason);
-  const allSelected = selectableFiltered.length > 0 && selectableFiltered.every((lot) => inputs[lot.matUid]?.selected);
-  const selectedItems = Object.values(inputs).filter((inp) => inp.selected && inp.qty > 0 && !blockedMatUids.has(inp.matUid));
-
-  /** 일괄 입고 등록 */
-  const handleBulkReceive = async () => {
-    if (selectedItems.length === 0) return;
-    setSubmitting(true);
-    try {
-      await api.post('/material/receiving', {
-        items: selectedItems.map(({ matUid, qty, warehouseCode, manufactureDate }) => ({
-          matUid, qty, warehouseCode,
-          ...(manufactureDate && { manufactureDate }),
-        })),
-      });
-      refresh();
-    } catch { /* 에러는 API 인터셉터에서 처리 */ }
-    setSubmitting(false);
-  };
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -131,20 +68,10 @@ export default function ReceivingPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('material.receive.description')}</p>
         </div>
-        {selectedItems.length > 0 && (
-          <Button size="sm" onClick={handleBulkReceive} disabled={submitting}>
-            <PackagePlus className="w-4 h-4 mr-1" />
-            {t('material.receive.bulkReceive')} ({selectedItems.length})
-          </Button>
-        )}
-      </div>
-
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t('material.receive.stats.pendingCount')} value={stats.pendingCount} icon={Clock} color="yellow" />
-        <StatCard label={t('material.receive.stats.pendingQty')} value={stats.pendingQty} icon={Package} color="blue" />
-        <StatCard label={t('material.receive.stats.todayReceivedCount')} value={stats.todayReceivedCount} icon={CheckCircle} color="green" />
-        <StatCard label={t('material.receive.stats.todayReceivedQty')} value={stats.todayReceivedQty} icon={Hash} color="purple" />
+        <Button size="sm" onClick={() => setScanOpen(true)}>
+          <ScanLine className="w-4 h-4 mr-1" />
+          입고처리
+        </Button>
       </div>
 
       {/* 입고대기 테이블 */}
@@ -152,10 +79,6 @@ export default function ReceivingPage() {
         <CardContent className="h-full p-4">
           <ReceivableTable
             data={filtered}
-            inputs={inputs}
-            onInputChange={handleInputChange}
-            onSelectAll={handleSelectAll}
-            allSelected={allSelected}
             isLoading={loading}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
@@ -176,6 +99,13 @@ export default function ReceivingPage() {
           />
         </CardContent>
       </Card>
+
+      <ReceiveScanModal
+        isOpen={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onSuccess={refresh}
+        receivable={receivable}
+      />
     </div>
   );
 }
