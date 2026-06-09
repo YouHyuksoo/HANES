@@ -1,7 +1,24 @@
 # claude Handoff
 
 ## Last Update
-2026-06-08
+2026-06-09
+
+---
+
+## ✅ 완료: 출하지시 기반 박스 스캔 출하 (T-SHIP-BOX-SCAN, 2026-06-09, 커밋됨)
+
+spec `docs/superpowers/specs/2026-06-09-shipping-box-scan-design.md`, plan `docs/superpowers/plans/2026-06-09-shipping-box-scan.md`.
+
+### 핵심 (실DB end-to-end 검증 완료)
+- **백엔드** `POST /shipping/orders/:id/ship-box` (`ShipOrderService.shipBox`, 단일 트랜잭션): 지시 CONFIRMED → 박스 tx내 재조회(CLOSED+OQC PASS+미출하+**팔레트 미적재**) → 품목 매칭/초과 검증 → FG 기본창고(`warehouseType='FG' && isDefault='Y'` = FG_MAIN) `issueStockInTx` FG_OUT 차감(`prdUid '*'`, refType `SHIP_ORDER`) → 박스 SHIPPED → 라인 `shippedQty` 증가 → 전 라인 완출 시 지시 CLOSED. 반환 `{lineShippedQty, lineOrderQty, orderStatus, fullyShipped}`.
+- **이중차감 가드**: `palletNo` 있는 박스는 박스 스캔 출하 거부(팔레트 출하 경로 전용). box.service `assignToPallet`은 CLOSED-only 가드 기존 존재.
+- **입고 단순화**: `inventory.controller.receiveFg`를 FG 기본창고로 강제(WH-FG 임의 입고 차단). 모듈: ShippingModule→InventoryModule import.
+- **웹** `components/shipping/BoxScanShipModal.tsx` + `/shipping/confirm` 헤더 버튼(작업자=로그인 사용자). **PDA** `useShippingScan` 수리: 미구현 `by-barcode`/`register` → `GET /shipping/orders/:id` + `ship-box` 1건 호출(작업자 QR 유지, 다중 라인 진행률). i18n 4파일(`shipping.boxScan.*`, `pda.shipping` 에러키).
+- 검증: 백엔드 jest 18건·tsc 0, 프론트 tsc 0, 실DB(SO-SBX-TEST/BXPDATEST01/FG_MAIN×5) GET→ship-box→DB확인(박스 SHIPPED·FG_MAIN 5→0·shippedQty 5·지시 CLOSED·FG_OUT -5)→재출하 400→**전량 원복**.
+
+### 보류·주의 (다음 세션)
+- **Task9 보류**: 제품입고 PDA `apps/frontend/src/app/pda/product/receiving/page.tsx` 창고선택 숨김(완제품 FG 자동입고 안내). 해당 파일이 **untracked 신규(타 작업자 진행 중)**라 흡수 커밋 부적절해 보류. 백엔드 FG_MAIN 강제로 기능은 정상, UI 정합성만 미적용. 그 파일이 커밋된 뒤 진행 권장.
+- i18n 커밋 `8a5b44a`에 working tree의 타 작업자 미커밋 번역이 함께 포함됨(코드 손실 없음).
 
 ---
 

@@ -1,5 +1,30 @@
 # JOURNAL
 
+## 2026-06-09 20:15 claude
+
+### T-SHIP-BOX-SCAN 완료
+
+**범위:** 출하지시 기반 박스 스캔 출하 신설 + 완제품 입고 FG_MAIN 단순화. 웹(`/shipping/confirm` 모달) + PDA(`/pda/shipping` 수리) 공용.
+
+**백엔드:**
+- `POST /shipping/orders/:id/ship-box` (ShipOrderService.shipBox, 단일 트랜잭션): 지시 CONFIRMED 검증 → 박스 tx내 재조회(CLOSED+OQC PASS+미출하+팔레트 미적재) → 품목 매칭/초과 검증 → FG 기본창고(IS_DEFAULT=Y) `issueStockInTx`로 FG_OUT 차감(prdUid '*') → 박스 SHIPPED → 라인 shippedQty 증가 → 전 라인 완출 시 지시 CLOSED. 반환 `{lineShippedQty, lineOrderQty, orderStatus, fullyShipped}`.
+- 이중차감 가드: 팔레트 적재(`palletNo`) 박스는 박스 스캔 출하 거부(팔레트 출하 경로 전용). `assignToPallet`은 기존 CLOSED-only 가드 존재 확인.
+- `inventory.controller.receiveFg`를 FG 기본창고로 강제(WH-FG 임의 입고 차단).
+- 모듈 와이어링: ShippingModule→InventoryModule import(ProductInventoryService 재사용).
+
+**프론트:**
+- 웹 `components/shipping/BoxScanShipModal.tsx` 신설 + `/shipping/confirm` 헤더 버튼/모달 연결(작업자=로그인 사용자).
+- PDA `useShippingScan` 수리: 미구현 `by-barcode`/`register` → `GET /shipping/orders/:id` + `ship-box` 1건 호출, 다중 라인 진행률, 작업자 QR 유지. `handleConfirmShip`은 완료/리셋 액션으로 유지.
+- i18n 4파일(`shipping.boxScan.*`, `pda.shipping` 에러키).
+
+**검증:** 백엔드 tsc 0 / jest 18건(shipBox 8 케이스 포함). 프론트 tsc 0. 실DB end-to-end(JSHANES): 테스트 출하지시 SO-SBX-TEST(CONFIRMED, HNS01×5)+FG_MAIN 재고5+박스 BXPDATEST01 OQC PASS 생성 → `GET orders` 200 → `POST ship-box` 200(fullyShipped) → DB확인(박스 SHIPPED, FG_MAIN 5→0, shippedQty 5, 지시 CLOSED, FG_OUT -5 트랜잭션) → 재출하 400 → 테스트데이터 전량 원복(원상 확인).
+
+**보류:** Task9(제품입고 PDA `pda/product/receiving/page.tsx` 창고선택 숨김) — 해당 파일이 untracked 신규(타 작업자 진행 중)라 흡수 커밋 부적절. 백엔드 FG_MAIN 강제로 기능은 정상, UI 정합성만 미적용. 사용자 승인하에 보류.
+
+**비고:** i18n 커밋(8a5b44a)에 working tree의 타 작업자 미커밋 번역이 함께 포함됨(코드 손실 없음).
+
+**커밋:** b013519, 1d966d2, dfdf781, fe85fe7, f3cfb59, 7c98b5f, bd9c519, 8a5b44a, 9488142, cffc9da, 7b95be5
+
 ## 2026-06-08 11:08 codex
 
 ### T-MAT-CYCLE-E2E-QA 완료
@@ -639,6 +664,43 @@ Use local time in 24-hour format.
 - `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
 - 기존 프론트 dev 서버 `localhost:3002`에서 `GET /shipping/box-stock` HTTP 200 확인.
 - 로컬 Playwright CLI가 없어 브라우저 스크린샷 검증은 수행하지 못했다.
+
+# 2026-06-09 20:35 codex
+
+## T-ITEM-MARKING-TEXT 완료
+
+**대상:** 품목마스터 `/master/part`, `ITEM_MASTERS`.
+
+**수정 내용:**
+- `ITEM_MASTERS.MARKING_TEXT VARCHAR2(100)` 컬럼을 추가하는 멱등 마이그레이션 `apps/backend/src/migrations/2026-06-09_item_masters_marking_text.sql` 추가.
+- JSHANES 실DB에 컬럼 적용.
+- `PartMaster.markingText`, `CreatePartDto/UpdatePartDto.markingText`, `PartService.create/update/findAll 검색조건` 반영.
+- 품목마스터 목록에 `마킹문구` 컬럼 추가.
+- `PartFormPanel`과 남아있는 `PartFormModal` 모두에 `마킹문구` 입력 추가, `maxLength=100` 적용.
+- `docs/reports/db-schema-erd.md`를 JSHANES 실DB 기준으로 재생성.
+
+**검증:**
+- `python scripts/migration/run_migration.py apps/backend/src/migrations/2026-06-09_item_masters_marking_text.sql --site JSHANES` 성공.
+- JSHANES `USER_TAB_COLUMNS` 확인: `ITEM_MASTERS.MARKING_TEXT VARCHAR2(100) NULL`.
+- `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py` 성공, 148 tables / 2397 columns.
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과.
+- `GET http://localhost:3002/master/part` HTTP 200 확인.
+
+## T-EQUIP-INSPECT-ADD-TYPE 완료
+
+**대상:** `/master/equip-inspect` 점검항목 추가 모달.
+
+**수정 내용:**
+- `AddInspectItemModal`에서 점검유형을 읽기 전용 Input이 아니라 Select로 선택 가능하게 변경.
+- 점검항목 Pool 선택 시 기본 점검유형은 Pool의 `inspectType`으로 자동 세팅하되 사용자가 변경할 수 있게 했다.
+- 저장 payload에 선택한 `inspectType`을 전송한다.
+- `EquipInspectService.create()`에서 Pool 항목을 선택한 경우에도 요청 `inspectType`을 Pool 기본값보다 우선 반영하도록 수정.
+
+**검증:**
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과.
+- `GET http://localhost:3002/master/equip-inspect` HTTP 200 확인.
 
 # 2026-06-09 20:05 codex
 

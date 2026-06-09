@@ -10,6 +10,9 @@ Format:
 
 ## Completed
 
+- T-EQUIP-INSPECT-ADD-TYPE | 2026-06-09 | codex | `/master/equip-inspect` 점검항목 추가 모달에서 점검유형 선택 가능. 생성 API도 요청 `inspectType`을 Pool 기본값보다 우선 반영하도록 수정. 백/프론트 tsc 및 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 20:35 codex
+- T-ITEM-MARKING-TEXT | 2026-06-09 | codex | `ITEM_MASTERS.MARKING_TEXT VARCHAR2(100)` 추가 및 JSHANES 적용. 품목마스터 엔티티/DTO/서비스 검색/프론트 목록·폼 반영, ERD 갱신, 백/프론트 tsc 및 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 20:35 codex
+- T-SHIP-BOX-SCAN | 2026-06-09 | claude | 출하지시 기반 박스 스캔 출하 신설(`POST /shipping/orders/:id/ship-box` 단일 트랜잭션: 박스 SHIPPED+FG_MAIN 차감+shippedQty 갱신+완출 시 지시 CLOSED, 이중차감 가드). 완제품 `fg/receive`를 FG 기본창고 강제. 웹 `BoxScanShipModal`+confirm 연결, 깨진 PDA `/pda/shipping` 수리(미구현 API→ship-box, 다중라인), i18n 4파일. 백엔드 jest 18건·tsc, 프론트 tsc, 실DB end-to-end(생성→API→DB확인→원복) 통과. Task9(제품입고 창고선택 숨김)은 untracked 신규파일이라 보류 | evidence: JOURNAL 2026-06-09 20:15 claude, commit 7b95be5
 - T-MAT-RECEIVE-SCAN | 2026-06-09 | codex | `/material/receive`를 그리드 선택 입고에서 거래처 바코드/자체부착 바코드 순환 스캔 입고 전용으로 변경. `MAT_RECEIVINGS.VENDOR_BARCODE` 컬럼 추가 및 JSHANES 적용, ERD 갱신, 백/프론트 tsc와 receiving 서비스 테스트 통과 | evidence: JOURNAL 2026-06-09 20:05 codex
 - T-INPUT-KIOSK-EQUIP-LIST | 2026-06-09 | codex | `/production/input-kiosk` 설비선택 모달 기본목록 표시 보정. `/equipment/equips` paged/items 응답 정규화 유틸과 node:test 추가, 프론트 tsc/라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 19:35 codex
 - T-INPUT-KIOSK-REMOVE-MASTER-SAMPLE | 2026-06-09 | codex | `/production/input-kiosk` 헤더의 마스터샘플 판정 카드와 kiosk 전용 번역 키 제거. 프론트 tsc, 참조 검색, 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 14:40 codex

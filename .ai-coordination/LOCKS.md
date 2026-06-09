@@ -4,22 +4,21 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
-- T-SHIP-BOX-SCAN (claude, 2026-06-09): 출하지시 기반 박스 스캔 출하 + 완제품 입고 FG_MAIN 단순화.
-  파일: apps/backend/src/modules/shipping/services/ship-order.service.ts, ship-order.controller.ts,
-        apps/backend/src/modules/shipping/dto/ship-box.dto.ts, shipping.module.ts,
-        apps/backend/src/modules/inventory/inventory.controller.ts(+module),
-        apps/frontend/src/components/shipping/BoxScanShipModal.tsx(+index.ts),
-        apps/frontend/src/app/(authenticated)/shipping/confirm/page.tsx,
-        apps/frontend/src/hooks/pda/useShippingScan.ts(.types.ts),
-        apps/frontend/src/app/pda/shipping/page.tsx, apps/frontend/src/app/pda/product/receiving/page.tsx,
-        apps/frontend/src/locales/{ko,en,zh,vi}/translation.json.
-  계획: docs/superpowers/plans/2026-06-09-shipping-box-scan.md
+- T-EQUIP-INSPECT-WORKER-TYPE (codex, 2026-06-09): `/master/equip-inspect` 점검유형 `작업자설비점검` 노출 보정.
+  파일: apps/frontend/src/app/(authenticated)/master/equip-inspect/page.tsx,
+        apps/frontend/src/app/(authenticated)/master/equip-inspect/page.structure.test.mjs,
+        apps/frontend/src/app/(authenticated)/master/equip-inspect/components/ItemMasterTab.tsx,
+        apps/frontend/src/app/(authenticated)/master/equip-inspect/components/AddInspectItemModal.tsx.
 
 - T-MAT-RECV-FIXES (claude, 2026-06-07): 자재입고 프로세스 이슈 일괄 수정.
   완료(검증): #1 PO오류(http-exception.filter/purchase-order.dto/PoFormPanel), #2 배지(globals.css safelist), 작업지시 품목필터(part.dto/part.service/PartSearchModal/JobOrderFormPanel), IQC006 입하실적조회 전체(arrival.controller/service/dto, material/arrival-result/*, menuConfig, PartnerSelect/useMasterOptions, 2026-06-07_iqc006_arrival_result_seed.sql, locales 4).
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-EQUIP-INSPECT-ADD-TYPE (codex, 2026-06-09): `/master/equip-inspect` 점검항목 추가 모달에서 점검유형 Select 선택 가능하게 변경. 생성 API가 Pool 기본값보다 요청 `inspectType`을 우선 반영하도록 수정. 백/프론트 tsc와 라우트 HTTP 200 확인 후 lock 해제.
+
+- T-ITEM-MARKING-TEXT (codex, 2026-06-09): `ITEM_MASTERS.MARKING_TEXT VARCHAR2(100)` 추가, JSHANES 적용, 품목마스터 엔티티/DTO/서비스/프론트 목록·폼 반영, ERD 갱신, 백/프론트 tsc와 라우트 HTTP 200 확인 후 lock 해제.
 
 - T-MAT-RECEIVE-SCAN (codex, 2026-06-09): `/material/receive`를 거래처 바코드/자체부착 바코드 순환 스캔 입고 전용으로 변경. `MAT_RECEIVINGS.VENDOR_BARCODE` JSHANES 적용, ERD 갱신, receiving 테스트/백·프론트 tsc/라우트 HTTP 200 확인 후 lock 해제.
 
