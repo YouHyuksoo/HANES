@@ -268,6 +268,14 @@ describe('ShipOrderService.shipBox', () => {
     await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(BadRequestException);
   });
 
+  it('팔레트 적재 박스 거부 (이중 차감 방지)', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 5, status: 'CLOSED', oqcStatus: 'PASS', palletNo: 'PLT-1' },
+    });
+    await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(BadRequestException);
+  });
+
   it('지시에 없는 품목 거부', async () => {
     await buildService({
       order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },

@@ -295,6 +295,8 @@ export class ShipOrderService {
       if (box.status === 'SHIPPED') throw new BadRequestException(`이미 출하된 박스입니다: ${dto.boxNo}`);
       if (box.status !== 'CLOSED') throw new BadRequestException(`마감(CLOSED)된 박스만 출하할 수 있습니다: ${dto.boxNo}`);
       if (box.oqcStatus !== 'PASS') throw new BadRequestException(`OQC 합격(PASS) 박스만 출하할 수 있습니다: ${dto.boxNo}`);
+      // 팔레트에 적재된 박스는 팔레트 출하(markAsShipped) 경로 전용 → 이중 차감 방지를 위해 박스 스캔 출하에서 제외
+      if (box.palletNo) throw new BadRequestException(`팔레트에 적재된 박스는 박스 스캔 출하 대상이 아닙니다. 팔레트 출하를 사용하세요: ${dto.boxNo}`);
 
       const line = await qr.manager.findOne(ShipmentOrderItem, { where: { shipOrderNo, itemCode: box.itemCode, ...where } });
       if (!line) throw new BadRequestException(`출하지시에 없는 품목입니다: ${box.itemCode}`);
