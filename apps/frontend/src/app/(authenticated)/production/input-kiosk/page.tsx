@@ -6,7 +6,7 @@
  *
  * 초보자 가이드:
  * 화면 구성 (PAGE 10 작업실적 화면):
- *   ① 상단 헤더 2단: 설비ID·바코드·설비일일검사 / 작업지시·작업자·생산실적·작업자설비검사·마스터샘플검사
+ *   ① 상단 헤더 2단: 설비ID·바코드·설비일일검사 / 작업지시·작업자·생산실적·작업자설비검사
  *   ② 좌측 패널: BOM 자재리스트 + 소모성 설비부품
  *   ③ 중앙 패널: 작업지도서 + 하단 3칸(자주검사 | 불량 | 실적입력)
  *   ④ 우측 패널: 양품조건 + 작업이력
@@ -38,8 +38,7 @@ import MaterialScanModal from './components/MaterialScanModal';
 import ConsumableScanModal from './components/ConsumableScanModal';
 import DefectInputModal from './components/DefectInputModal';
 import SelfInspectModal from './components/SelfInspectModal';
-
-interface EquipOption { equipCode: string; equipName: string; }
+import { normalizeEquipOptions, type EquipOption } from './utils/equipOptions';
 
 export default function InputKioskPage() {
   const { t } = useTranslation();
@@ -67,7 +66,7 @@ export default function InputKioskPage() {
   // 설비 목록 로드
   useEffect(() => {
     api.get('/equipment/equips', { params: { limit: '500' } })
-      .then(res => setEquips(res.data?.data ?? []))
+      .then(res => setEquips(normalizeEquipOptions(res.data)))
       .catch(() => setEquips([]));
   }, []);
 

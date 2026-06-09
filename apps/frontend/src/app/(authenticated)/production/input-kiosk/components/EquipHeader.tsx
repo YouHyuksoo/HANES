@@ -6,7 +6,7 @@
  *
  * 초보자 가이드:
  * - Row1: 설비ID(클릭→선택) / 바코드 입력 / 설비일일검사(상태+입력) / 전체화면 토글
- * - Row2: 작업지시+모델 / 작업자+생산실적 / 작업자설비검사·마스터샘플검사(상태+입력)
+ * - Row2: 작업지시+모델 / 작업자+생산실적 / 작업자설비검사(상태+입력)
  * - 점검 상태는 store interlock 기준, 입력 버튼은 부모(page.tsx) 콜백으로 모달 오픈
  * - 바코드 스캔: 자재 롯트 등록(handleBarcodeSubmit) → 모든 BOM 완료 시 인터락 해제
  */
@@ -182,7 +182,7 @@ export default function EquipHeader({
           </button>
         </div>
 
-        {/* ── Row 2: 작업지시 / 작업자·생산실적 / 작업자설비검사·마스터샘플 ── */}
+        {/* ── Row 2: 작업지시 / 작업자·생산실적 / 작업자설비검사 ── */}
         <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_280px] items-stretch gap-3 px-4 py-2">
           {/* 작업지시 */}
           <div className="flex items-center gap-2 border-r border-border/50 pr-3">
@@ -246,21 +246,14 @@ export default function EquipHeader({
             )}
           </div>
 
-          {/* 작업자설비검사 + 마스터샘플검사 */}
-          <div className="flex flex-col gap-1.5">
+          {/* 작업자설비검사 */}
+          <div className="flex items-center [&>*]:w-full">
             <HeaderCheckItem
               label={t('kiosk.header.workerInspect')}
               done={interlock.workerInspectDone}
               disabled={!interlock.dailyInspectDone || selectedWorkers.length === 0}
               disabledReason={workerInspectDisabledReason}
               onInput={onOpenWorkerInspect}
-            />
-            <HeaderCheckItem
-              label={t('kiosk.header.masterSample')}
-              done={false}
-              notTarget
-              notTargetDetail={t('kiosk.header.masterSampleNotTarget', '대상 아님 (라우팅 지정 공정만)')}
-              onInput={() => { /* 마스터샘플 검사 — 추후 연동 */ }}
             />
           </div>
         </div>
