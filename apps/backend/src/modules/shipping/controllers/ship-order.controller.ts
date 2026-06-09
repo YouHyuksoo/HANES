@@ -32,6 +32,7 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { ShipOrderService } from '../services/ship-order.service';
 import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dto/ship-order.dto';
+import { ShipBoxDto } from '../dto/ship-box.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('출하관리 - 출하지시')
@@ -86,5 +87,14 @@ export class ShipOrderController {
   async confirm(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
     const data = await this.shipOrderService.confirm(id, company, plant);
     return ResponseUtil.success(data, '출하지시가 확정되었습니다.');
+  }
+
+  @Post(':id/ship-box')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '박스 단건 출하 (출하지시 기반)', description: '박스를 스캔해 즉시 출하 처리(SHIPPED + FG_MAIN 차감 + shippedQty 갱신)' })
+  @ApiParam({ name: 'id', description: '출하지시 번호' })
+  async shipBox(@Param('id') id: string, @Body() dto: ShipBoxDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.shipBox(id, dto, company, plant);
+    return ResponseUtil.success(data, '박스가 출하되었습니다.');
   }
 }
