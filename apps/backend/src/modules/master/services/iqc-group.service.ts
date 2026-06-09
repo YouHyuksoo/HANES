@@ -121,16 +121,19 @@ export class IqcGroupService {
   async update(groupCode: string, dto: UpdateIqcGroupDto, company?: string, plant?: string) {
     const group = await this.findByCode(groupCode, company, plant);
 
-    if (dto.groupName !== undefined) group.groupName = dto.groupName;
-    if (dto.inspectMethod !== undefined) group.inspectMethod = dto.inspectMethod;
+    const updateData: Partial<Pick<IqcGroup, 'groupName' | 'inspectMethod' | 'sampleQty' | 'useYn'>> = {};
+    if (dto.groupName !== undefined) updateData.groupName = dto.groupName;
+    if (dto.inspectMethod !== undefined) updateData.inspectMethod = dto.inspectMethod;
     if (dto.inspectMethod === 'SAMPLE' && dto.sampleQty !== undefined) {
-      group.sampleQty = dto.sampleQty ?? null;
+      updateData.sampleQty = dto.sampleQty ?? null;
     } else if (dto.inspectMethod && dto.inspectMethod !== 'SAMPLE') {
-      group.sampleQty = null;
+      updateData.sampleQty = null;
     }
-    if (dto.useYn !== undefined) group.useYn = dto.useYn;
+    if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.groupRepo.save(group);
+    if (Object.keys(updateData).length) {
+      await this.groupRepo.update({ groupCode: group.groupCode, ...this.tenantWhere(company, plant) }, updateData);
+    }
 
     if (dto.items !== undefined) {
       await this.groupItemRepo.delete({ groupCode: group.groupCode, ...this.tenantWhere(company, plant) });
@@ -154,7 +157,8 @@ export class IqcGroupService {
 
   async delete(groupCode: string, company?: string, plant?: string) {
     const group = await this.findByCode(groupCode, company, plant);
-    await this.groupRepo.remove(group);
+    await this.groupItemRepo.delete({ groupCode: group.groupCode, ...this.tenantWhere(company, plant) });
+    await this.groupRepo.delete({ groupCode: group.groupCode, ...this.tenantWhere(company, plant) });
     return { groupCode, deleted: true };
   }
 }

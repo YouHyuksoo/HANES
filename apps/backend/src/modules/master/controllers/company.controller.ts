@@ -16,6 +16,7 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CompanyService } from '../services/company.service';
 import { CreateCompanyDto, UpdateCompanyDto, CompanyQueryDto } from '../dto/company.dto';
 import { Public } from '../../../common/decorators/public.decorator';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - 회사마스터')
@@ -59,15 +60,15 @@ export class CompanyController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '회사 생성' })
-  async create(@Body() dto: CreateCompanyDto) {
-    const data = await this.companyService.create(dto);
+  async create(@Body() dto: CreateCompanyDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.companyService.create(dto, company, plant);
     return ResponseUtil.success(data, '회사가 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: '회사 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateCompanyDto) {
-    const data = await this.companyService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateCompanyDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.companyService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '회사가 수정되었습니다.');
   }
 

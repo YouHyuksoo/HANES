@@ -106,10 +106,14 @@ describe('CompanyService', () => {
       mockRepo.save.mockResolvedValue(created);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, '40', '1000');
 
       // Assert
       expect(result).toEqual(created);
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: '40',
+        plant: '1000',
+      }));
     });
 
     it('should throw ConflictException when company code exists', async () => {
@@ -135,6 +139,10 @@ describe('CompanyService', () => {
 
       // Assert
       expect(result).toEqual(existing);
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { companyCode: 'C01', plant: 'P01' },
+        { companyName: 'Updated' },
+      );
     });
   });
 
@@ -151,6 +159,7 @@ describe('CompanyService', () => {
 
       // Assert
       expect(result).toEqual({ id: 'C01::P01' });
+      expect(mockRepo.delete).toHaveBeenCalledWith({ companyCode: 'C01', plant: 'P01' });
     });
   });
 });

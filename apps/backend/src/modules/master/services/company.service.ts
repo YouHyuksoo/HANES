@@ -89,13 +89,13 @@ export class CompanyService {
   }
 
   /** 생성 */
-  async create(dto: CreateCompanyDto) {
+  async create(dto: CreateCompanyDto, company?: string, plant?: string) {
     const existing = await this.companyRepository.findOne({
       where: { companyCode: dto.companyCode },
     });
     if (existing) throw new ConflictException(`이미 존재하는 회사 코드입니다: ${dto.companyCode}`);
 
-    const company = this.companyRepository.create({
+    const entity = this.companyRepository.create({
       companyCode: dto.companyCode,
       companyName: dto.companyName,
       bizNo: dto.bizNo,
@@ -106,14 +106,16 @@ export class CompanyService {
       email: dto.email,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
+      company,
+      plant: plant ?? '-',
     });
 
-    return this.companyRepository.save(company);
+    return this.companyRepository.save(entity);
   }
 
   /** 수정 */
-  async update(id: string, dto: UpdateCompanyDto) {
-    await this.findById(id);
+  async update(id: string, dto: UpdateCompanyDto, company?: string, plant?: string) {
+    const existing = await this.findById(id);
     const updateData: Partial<Pick<
       CompanyMaster,
       | 'companyName'
@@ -136,14 +138,14 @@ export class CompanyService {
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
     };
-    await this.companyRepository.update(id, updateData);
+    await this.companyRepository.update({ companyCode: existing.companyCode, plant: existing.plant }, updateData);
     return this.findById(id);
   }
 
   /** 소프트 삭제 */
   async delete(id: string) {
-    await this.findById(id);
-    await this.companyRepository.delete(id);
+    const existing = await this.findById(id);
+    await this.companyRepository.delete({ companyCode: existing.companyCode, plant: existing.plant });
     return { id };
   }
 }

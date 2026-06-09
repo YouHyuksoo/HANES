@@ -5,7 +5,7 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { Company } from '../../../common/decorators/tenant.decorator';
+import { Company, Plant as PlantTenant } from '../../../common/decorators/tenant.decorator';
 import { PlantService } from '../services/plant.service';
 import { CreatePlantDto, UpdatePlantDto, PlantQueryDto } from '../dto/plant.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -48,22 +48,22 @@ export class PlantController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '생성' })
-  async create(@Body() dto: CreatePlantDto) {
-    const data = await this.plantService.create(dto);
+  async create(@Body() dto: CreatePlantDto, @Company() company: string, @PlantTenant() plant: string) {
+    const data = await this.plantService.create(dto, company, plant);
     return ResponseUtil.success(data, '공장/라인이 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: '수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdatePlantDto) {
-    const data = await this.plantService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdatePlantDto, @Company() company: string, @PlantTenant() plant: string) {
+    const data = await this.plantService.update(id, dto, '-', '-', '-', company, plant);
     return ResponseUtil.success(data, '공장/라인이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '삭제' })
-  async delete(@Param('id') id: string) {
-    await this.plantService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @PlantTenant() plant: string) {
+    await this.plantService.delete(id, '-', '-', '-', company, plant);
     return ResponseUtil.success(null, '공장/라인이 삭제되었습니다.');
   }
 }

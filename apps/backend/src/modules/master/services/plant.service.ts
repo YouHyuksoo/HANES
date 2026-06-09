@@ -55,13 +55,20 @@ export class PlantService {
     return { data, total, page, limit };
   }
 
-  async findById(plantCode: string, shopCode = '-', lineCode = '-', cellCode = '-') {
-    const plant = await this.plantRepository.findOne({
-      where: { plantCode, shopCode, lineCode, cellCode },
+  async findById(plantCode: string, shopCode = '-', lineCode = '-', cellCode = '-', company?: string, tenantPlant?: string) {
+    const plantEntity = await this.plantRepository.findOne({
+      where: {
+        plantCode,
+        shopCode,
+        lineCode,
+        cellCode,
+        ...(company ? { company } : {}),
+        ...(tenantPlant ? { plant: tenantPlant } : {}),
+      },
     });
 
-    if (!plant) throw new NotFoundException(`공장/라인을 찾을 수 없습니다: ${plantCode}/${shopCode}/${lineCode}/${cellCode}`);
-    return plant;
+    if (!plantEntity) throw new NotFoundException(`공장/라인을 찾을 수 없습니다: ${plantCode}/${shopCode}/${lineCode}/${cellCode}`);
+    return plantEntity;
   }
 
   async findHierarchy(plantCode?: string) {
@@ -76,19 +83,21 @@ export class PlantService {
     });
   }
 
-  async create(dto: CreatePlantDto) {
+  async create(dto: CreatePlantDto, company?: string, tenantPlant?: string) {
     const existing = await this.plantRepository.findOne({
       where: {
         plantCode: dto.plantCode,
         shopCode: dto.shopCode ?? '-',
         lineCode: dto.lineCode ?? '-',
         cellCode: dto.cellCode ?? '-',
+        ...(company ? { company } : {}),
+        ...(tenantPlant ? { plant: tenantPlant } : {}),
       },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 공장/라인입니다`);
 
-    const plant = this.plantRepository.create({
+    const plantEntity = this.plantRepository.create({
       plantCode: dto.plantCode,
       shopCode: dto.shopCode ?? '-',
       lineCode: dto.lineCode ?? '-',
@@ -97,27 +106,32 @@ export class PlantService {
       plantType: dto.plantType,
       sortOrder: dto.sortOrder ?? 0,
       useYn: dto.useYn ?? 'Y',
+      company,
+      plant: tenantPlant,
     });
 
-    return this.plantRepository.save(plant);
+    return this.plantRepository.save(plantEntity);
   }
 
-  async update(plantCode: string, dto: UpdatePlantDto, shopCode = '-', lineCode = '-', cellCode = '-') {
-    await this.findById(plantCode, shopCode, lineCode, cellCode);
+  async update(plantCode: string, dto: UpdatePlantDto, shopCode = '-', lineCode = '-', cellCode = '-', company?: string, tenantPlant?: string) {
+    await this.findById(plantCode, shopCode, lineCode, cellCode, company, tenantPlant);
     const updateData: Partial<Pick<Plant, 'plantName' | 'plantType' | 'sortOrder' | 'useYn'>> = {
       ...(dto.plantName !== undefined ? { plantName: dto.plantName } : {}),
       ...(dto.plantType !== undefined ? { plantType: dto.plantType } : {}),
       ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
     };
-    await this.plantRepository.update({ plantCode, shopCode, lineCode, cellCode }, updateData);
-    return this.findById(plantCode, shopCode, lineCode, cellCode);
+    await this.plantRepository.update(
+      { plantCode, shopCode, lineCode, cellCode, ...(company ? { company } : {}), ...(tenantPlant ? { plant: tenantPlant } : {}) },
+      updateData,
+    );
+    return this.findById(plantCode, shopCode, lineCode, cellCode, company, tenantPlant);
   }
 
-  async delete(plantCode: string, shopCode = '-', lineCode = '-', cellCode = '-') {
-    await this.findById(plantCode, shopCode, lineCode, cellCode);
+  async delete(plantCode: string, shopCode = '-', lineCode = '-', cellCode = '-', company?: string, tenantPlant?: string) {
+    await this.findById(plantCode, shopCode, lineCode, cellCode, company, tenantPlant);
 
-    await this.plantRepository.delete({ plantCode, shopCode, lineCode, cellCode });
+    await this.plantRepository.delete({ plantCode, shopCode, lineCode, cellCode, ...(company ? { company } : {}), ...(tenantPlant ? { plant: tenantPlant } : {}) });
     return { plantCode, shopCode, lineCode, cellCode };
   }
 

@@ -158,7 +158,7 @@ describe('IqcGroupService', () => {
       // Arrange
       const existing = { groupCode: 'IG01', groupName: 'Old', items: [] } as any;
       mockGroupRepo.findOne.mockResolvedValue(existing);
-      mockGroupRepo.save.mockResolvedValue(existing);
+      mockGroupRepo.update.mockResolvedValue({ affected: 1 } as any);
       mockGroupItemRepo.delete.mockResolvedValue({ affected: 1 } as any);
       mockGroupItemRepo.create.mockReturnValue({} as any);
       mockGroupItemRepo.save.mockResolvedValue([] as any);
@@ -170,6 +170,11 @@ describe('IqcGroupService', () => {
       } as any, 'C1', 'P1');
 
       // Assert
+      expect(mockGroupRepo.save).not.toHaveBeenCalled();
+      expect(mockGroupRepo.update).toHaveBeenCalledWith(
+        { groupCode: 'IG01', company: 'C1', plant: 'P1' },
+        { groupName: 'New' },
+      );
       expect(mockGroupItemRepo.delete).toHaveBeenCalledWith({ groupCode: 'IG01', company: 'C1', plant: 'P1' });
       expect(mockGroupItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
         company: 'C1',
@@ -182,13 +187,16 @@ describe('IqcGroupService', () => {
       // Arrange
       const existing = { groupCode: 'IG01', inspectMethod: 'SAMPLE', sampleQty: 5, items: [] } as any;
       mockGroupRepo.findOne.mockResolvedValue(existing);
-      mockGroupRepo.save.mockResolvedValue(existing);
+      mockGroupRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
       await target.update('IG01', { inspectMethod: 'FULL' } as any);
 
       // Assert
-      expect(existing.sampleQty).toBeNull();
+      expect(mockGroupRepo.update).toHaveBeenCalledWith(
+        { groupCode: 'IG01' },
+        { inspectMethod: 'FULL', sampleQty: null },
+      );
     });
   });
 
@@ -198,13 +206,17 @@ describe('IqcGroupService', () => {
       // Arrange
       const existing = { groupCode: 'IG01', items: [] } as any;
       mockGroupRepo.findOne.mockResolvedValue(existing);
-      mockGroupRepo.remove.mockResolvedValue(existing);
+      mockGroupItemRepo.delete.mockResolvedValue({ affected: 1 } as any);
+      mockGroupRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
       const result = await target.delete('IG01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ groupCode: 'IG01', deleted: true });
+      expect(mockGroupItemRepo.delete).toHaveBeenCalledWith({ groupCode: 'IG01', company: 'C1', plant: 'P1' });
+      expect(mockGroupRepo.delete).toHaveBeenCalledWith({ groupCode: 'IG01', company: 'C1', plant: 'P1' });
+      expect(mockGroupRepo.remove).not.toHaveBeenCalled();
     });
   });
 });

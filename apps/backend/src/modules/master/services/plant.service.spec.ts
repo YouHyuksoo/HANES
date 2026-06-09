@@ -108,10 +108,14 @@ describe('PlantService', () => {
       mockRepo.save.mockResolvedValue(created);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, '40', '1000');
 
       // Assert
       expect(result).toEqual(created);
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: '40',
+        plant: '1000',
+      }));
     });
 
     it('should throw ConflictException when plant exists', async () => {
@@ -137,6 +141,10 @@ describe('PlantService', () => {
 
       // Assert
       expect(result).toEqual(existing);
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { plantCode: 'PL01', shopCode: '-', lineCode: '-', cellCode: '-' },
+        { plantName: 'Updated' },
+      );
     });
   });
 
@@ -153,6 +161,7 @@ describe('PlantService', () => {
 
       // Assert
       expect(result).toEqual({ plantCode: 'PL01', shopCode: '-', lineCode: '-', cellCode: '-' });
+      expect(mockRepo.delete).toHaveBeenCalledWith({ plantCode: 'PL01', shopCode: '-', lineCode: '-', cellCode: '-' });
     });
   });
 
