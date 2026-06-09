@@ -22,8 +22,12 @@ import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, FindO
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { BoxMaster } from '../../../entities/box-master.entity';
 import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dto/ship-order.dto';
+import { ShipBoxDto } from '../dto/ship-box.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 
 @Injectable()
 export class ShipOrderService {
@@ -34,6 +38,11 @@ export class ShipOrderService {
     private readonly shipOrderItemRepository: Repository<ShipmentOrderItem>,
     @InjectRepository(PartMaster)
     private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(BoxMaster)
+    private readonly boxRepository: Repository<BoxMaster>,
+    private readonly productInventory: ProductInventoryService,
     private readonly tx: TransactionService,
   ) {}
 
@@ -269,5 +278,76 @@ export class ShipOrderService {
     );
 
     return this.findById(shipOrderNo, company, plant);
+  }
+
+  /**
+   * 출하지시 기반 박스 단건 출하 (웹 모달 / PDA 공용)
+   * 단일 트랜잭션: 박스 SHIPPED + FG_MAIN 재고차감 + 라인 shippedQty 증가 + 완출 시 지시 CLOSED
+   */
+  async shipBox(shipOrderNo: string, dto: ShipBoxDto, company?: string, plant?: string) {
+    return this.tx.run(async (qr) => {
+      const where = this.tenantWhere(company, plant);
+
+      const order = await qr.manager.findOne(ShipmentOrder, { where: { shipOrderNo, ...where } });
+      if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${shipOrderNo}`);
+      if (order.status !== 'CONFIRMED') {
+        throw new BadRequestException(`확정(CONFIRMED) 상태의 출하지시만 출하할 수 있습니다. 현재: ${order.status}`);
+      }
+
+      const box = await qr.manager.findOne(BoxMaster, { where: { boxNo: dto.boxNo, ...where } });
+      if (!box) throw new NotFoundException(`박스를 찾을 수 없습니다: ${dto.boxNo}`);
+      if (box.status === 'SHIPPED') throw new BadRequestException(`이미 출하된 박스입니다: ${dto.boxNo}`);
+      if (box.status !== 'CLOSED') throw new BadRequestException(`마감(CLOSED)된 박스만 출하할 수 있습니다: ${dto.boxNo}`);
+      if (box.oqcStatus !== 'PASS') throw new BadRequestException(`OQC 합격(PASS) 박스만 출하할 수 있습니다: ${dto.boxNo}`);
+
+      const line = await qr.manager.findOne(ShipmentOrderItem, { where: { shipOrderNo, itemCode: box.itemCode, ...where } });
+      if (!line) throw new BadRequestException(`출하지시에 없는 품목입니다: ${box.itemCode}`);
+
+      if (line.shippedQty + box.qty > line.orderQty) {
+        throw new BadRequestException(`출하수량 초과: 지시 ${line.orderQty}, 기출하 ${line.shippedQty}, 요청 ${box.qty}`);
+      }
+
+      const warehouse = await qr.manager.findOne(Warehouse, { where: { warehouseType: 'FG', isDefault: 'Y', ...where } });
+      if (!warehouse) throw new BadRequestException('FG 기본창고(IS_DEFAULT=Y)가 설정되어 있지 않습니다.');
+
+      await this.productInventory.issueStockInTx(qr, {
+        warehouseId: warehouse.warehouseCode,
+        itemCode: box.itemCode,
+        itemType: 'FINISHED',
+        prdUid: '*',
+        qty: box.qty,
+        transType: 'FG_OUT',
+        refType: 'SHIP_ORDER',
+        refId: shipOrderNo,
+        workerId: dto.workerId,
+        remark: `출하지시 박스출하:${dto.boxNo}`,
+        company,
+        plant,
+      });
+
+      await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'SHIPPED' });
+
+      const newShipped = line.shippedQty + box.qty;
+      await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });
+
+      const allLines = await qr.manager.find(ShipmentOrderItem, { where: { shipOrderNo, ...where } });
+      const fullyShipped = allLines.every((l) =>
+        (l.seq === line.seq ? newShipped : l.shippedQty) >= l.orderQty,
+      );
+      if (fullyShipped) {
+        await qr.manager.update(ShipmentOrder, { shipOrderNo, ...where }, { status: 'CLOSED' });
+      }
+
+      return {
+        shipOrderNo,
+        boxNo: box.boxNo,
+        itemCode: box.itemCode,
+        qty: box.qty,
+        lineShippedQty: newShipped,
+        lineOrderQty: line.orderQty,
+        orderStatus: fullyShipped ? 'CLOSED' : 'CONFIRMED',
+        fullyShipped,
+      };
+    });
   }
 }

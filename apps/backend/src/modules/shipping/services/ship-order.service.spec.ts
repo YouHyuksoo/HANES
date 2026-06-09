@@ -11,8 +11,11 @@ import { ShipOrderService } from './ship-order.service';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { BoxMaster } from '../../../entities/box-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 
 describe('ShipOrderService', () => {
   let target: ShipOrderService;
@@ -44,6 +47,9 @@ describe('ShipOrderService', () => {
         { provide: getRepositoryToken(ShipmentOrder), useValue: mockOrderRepo },
         { provide: getRepositoryToken(ShipmentOrderItem), useValue: mockItemRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(Warehouse), useValue: createMock<Repository<Warehouse>>() },
+        { provide: getRepositoryToken(BoxMaster), useValue: createMock<Repository<BoxMaster>>() },
+        { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],
@@ -182,5 +188,114 @@ describe('ShipOrderService', () => {
       expect(mockQr.commitTransaction).not.toHaveBeenCalled();
       expect(mockQr.release).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('ShipOrderService.shipBox', () => {
+  let service: ShipOrderService;
+  let issueStockInTx: jest.Mock;
+  let managed: Record<string, any>;
+
+  const makeManager = (overrides: Partial<Record<string, any>>) => ({
+    findOne: jest.fn((entity: any) => {
+      if (entity === ShipmentOrder) return overrides.order ?? null;
+      if (entity === BoxMaster) return overrides.box ?? null;
+      if (entity === ShipmentOrderItem) return overrides.line ?? null;
+      if (entity === Warehouse) return overrides.warehouse ?? null;
+      return null;
+    }),
+    find: jest.fn((entity: any) => {
+      if (entity === ShipmentOrderItem) return overrides.allLines ?? [];
+      return [];
+    }),
+    update: jest.fn(),
+  });
+
+  const buildService = async (overrides: Partial<Record<string, any>>) => {
+    managed = makeManager(overrides);
+    issueStockInTx = jest.fn().mockResolvedValue({ transNo: 'PTX_TEST' });
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ShipOrderService,
+        { provide: getRepositoryToken(ShipmentOrder), useValue: {} },
+        { provide: getRepositoryToken(ShipmentOrderItem), useValue: {} },
+        { provide: getRepositoryToken(PartMaster), useValue: {} },
+        { provide: getRepositoryToken(Warehouse), useValue: {} },
+        { provide: getRepositoryToken(BoxMaster), useValue: {} },
+        { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed }) } },
+        { provide: ProductInventoryService, useValue: { issueStockInTx } },
+      ],
+    }).compile();
+    service = moduleRef.get(ShipOrderService);
+  };
+
+  it('정상 출하: 박스 SHIPPED + 재고차감 + shippedQty 증가', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 5, status: 'CLOSED', oqcStatus: 'PASS' },
+      line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 },
+      warehouse: { warehouseCode: 'FG_MAIN' },
+      allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 }],
+    });
+    const res = await service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000');
+    expect(issueStockInTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 5, transType: 'FG_OUT', prdUid: '*', refType: 'SHIP_ORDER', refId: 'SO1' }),
+    );
+    expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), { status: 'SHIPPED' });
+    expect(res.lineShippedQty).toBe(5);
+    expect(res.fullyShipped).toBe(false);
+  });
+
+  it('CONFIRMED 아니면 거부', async () => {
+    await buildService({ order: { shipOrderNo: 'SO1', status: 'DRAFT' } });
+    await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(BadRequestException);
+  });
+
+  it('이미 SHIPPED 박스 거부', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 5, status: 'SHIPPED', oqcStatus: 'PASS' },
+    });
+    await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(BadRequestException);
+  });
+
+  it('OQC 미합격 박스 거부', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 5, status: 'CLOSED', oqcStatus: 'PENDING' },
+    });
+    await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(BadRequestException);
+  });
+
+  it('지시에 없는 품목 거부', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'OTHER', qty: 5, status: 'CLOSED', oqcStatus: 'PASS' },
+      line: null,
+    });
+    await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(BadRequestException);
+  });
+
+  it('초과 출하 거부', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 7, status: 'CLOSED', oqcStatus: 'PASS' },
+      line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 5 },
+    });
+    await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(BadRequestException);
+  });
+
+  it('전 라인 완출 시 지시 CLOSED', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 10, status: 'CLOSED', oqcStatus: 'PASS' },
+      line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 },
+      warehouse: { warehouseCode: 'FG_MAIN' },
+      allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 }],
+    });
+    const res = await service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000');
+    expect(res.fullyShipped).toBe(true);
+    expect(managed.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO1' }), { status: 'CLOSED' });
   });
 });
