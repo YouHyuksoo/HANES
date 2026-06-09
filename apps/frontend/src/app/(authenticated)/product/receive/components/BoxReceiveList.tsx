@@ -58,8 +58,11 @@ export default function BoxReceiveList({ itemType, onSuccess }: BoxReceiveListPr
     );
   }, [candidates]);
 
+  const isFinished = itemType === "FINISHED";
+
   const handleReceive = useCallback(async () => {
-    if (!warehouseId || selected.size === 0) return;
+    if (selected.size === 0) return;
+    if (!isFinished && !warehouseId) return;
     setSaving(true);
     setFailed([]);
     try {
@@ -73,7 +76,7 @@ export default function BoxReceiveList({ itemType, onSuccess }: BoxReceiveListPr
     } finally {
       setSaving(false);
     }
-  }, [warehouseId, selected, candidates, refetch, onSuccess]);
+  }, [warehouseId, isFinished, selected, candidates, refetch, onSuccess]);
 
   return (
     <Card className="h-full flex flex-col" padding="none">
@@ -94,15 +97,27 @@ export default function BoxReceiveList({ itemType, onSuccess }: BoxReceiveListPr
         {/* 입고창고 + 일괄입고 */}
         <div className="flex items-end gap-2 mb-3 flex-shrink-0">
           <div className="flex-1 min-w-0">
-            <Select
-              label={t("productMgmt.receive.modal.warehouseId")}
-              options={whOptions}
-              value={warehouseId}
-              onChange={setWarehouseId}
-              fullWidth
-            />
+            {isFinished ? (
+              <p className="text-sm text-text-muted rounded-md border border-border bg-muted px-3 py-2 w-full">
+                {t(
+                  "productMgmt.receive.fgAutoWarehouse",
+                  "완제품은 양품창고(FG 기본창고)로 자동 입고됩니다.",
+                )}
+              </p>
+            ) : (
+              <Select
+                label={t("productMgmt.receive.modal.warehouseId")}
+                options={whOptions}
+                value={warehouseId}
+                onChange={setWarehouseId}
+                fullWidth
+              />
+            )}
           </div>
-          <Button onClick={handleReceive} disabled={saving || selectedCount === 0 || !warehouseId}>
+          <Button
+            onClick={handleReceive}
+            disabled={saving || selectedCount === 0 || (!isFinished && !warehouseId)}
+          >
             <PackageCheck className="w-4 h-4 mr-1" />
             {saving
               ? t("common.saving")

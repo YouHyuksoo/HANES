@@ -62,7 +62,8 @@ export default function ReceiveModal({
 
   /** 입고 처리 */
   const handleSubmit = useCallback(async () => {
-    if (!form.itemCode || !form.warehouseCode || form.qty < 1) return;
+    if (!form.itemCode || form.qty < 1) return;
+    if (modalPartType === "SEMI_PRODUCT" && !form.warehouseCode) return;
     setSaving(true);
     try {
       const endpoint =
@@ -124,12 +125,23 @@ export default function ReceiveModal({
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Select
-            label={t("productMgmt.receive.modal.warehouseId")}
-            options={warehouseOptions}
-            value={form.warehouseCode}
-            onChange={(v) => setForm({ ...form, warehouseCode: v })}
-          />
+          {modalPartType === "FINISHED" ? (
+            <div className="flex items-end">
+              <p className="text-sm text-text-muted rounded-md border border-border bg-muted px-3 py-2 w-full">
+                {t(
+                  "productMgmt.receive.modal.fgAutoWarehouse",
+                  "완제품은 양품창고(FG 기본창고)로 자동 입고됩니다.",
+                )}
+              </p>
+            </div>
+          ) : (
+            <Select
+              label={t("productMgmt.receive.modal.warehouseId")}
+              options={warehouseOptions}
+              value={form.warehouseCode}
+              onChange={(v) => setForm({ ...form, warehouseCode: v })}
+            />
+          )}
           <Input
             label={t("productMgmt.receive.modal.qty")}
             type="number"
@@ -165,7 +177,7 @@ export default function ReceiveModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={saving || !form.itemCode || !form.warehouseCode}
+            disabled={saving || !form.itemCode || (modalPartType === "SEMI_PRODUCT" && !form.warehouseCode)}
           >
             {saving ? t("common.saving") : t("productMgmt.receive.modal.confirm")}
           </Button>

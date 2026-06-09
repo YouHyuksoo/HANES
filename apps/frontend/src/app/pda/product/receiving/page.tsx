@@ -62,6 +62,7 @@ export default function ProductReceivingPage() {
 
   const itemType = box?.part?.itemType ?? "FINISHED";
   const warehouseType = itemType === "SEMI_PRODUCT" ? "WIP" : "FG";
+  const isFinished = itemType !== "SEMI_PRODUCT";
 
   const handleReset = useCallback(() => {
     setBox(null);
@@ -114,7 +115,8 @@ export default function ProductReceivingPage() {
 
   /** 입고 확인 */
   const handleReceive = useCallback(async () => {
-    if (!box || !warehouseCode) return;
+    if (!box) return;
+    if (!isFinished && !warehouseCode) return;
     setIsSaving(true);
     setError("");
     try {
@@ -148,7 +150,7 @@ export default function ProductReceivingPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [box, warehouseCode, itemType, t, playSuccess, playError, handleReset]);
+  }, [box, warehouseCode, itemType, isFinished, t, playSuccess, playError, handleReset]);
 
   /** 입고 취소 */
   const handleCancel = useCallback(async (item: ReceiptItem) => {
@@ -182,9 +184,9 @@ export default function ProductReceivingPage() {
   }, [box, t]);
 
   const receiveDisabledReason = useMemo(() => {
-    if (!warehouseCode) return t("pda.productReceiving.selectWarehouse");
+    if (!isFinished && !warehouseCode) return t("pda.productReceiving.selectWarehouse");
     return undefined;
-  }, [warehouseCode, t]);
+  }, [isFinished, warehouseCode, t]);
 
   return (
     <>
@@ -226,17 +228,26 @@ export default function ProductReceivingPage() {
       {/* 입고 창고 선택 */}
       {box && (
         <div className="px-4 mt-3 space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t("pda.productReceiving.warehouse")}
-            </label>
-            <WarehouseSelect
-              value={warehouseCode}
-              onChange={(v) => setWarehouseCode(v)}
-              warehouseType={warehouseType}
-              fullWidth
-            />
-          </div>
+          {isFinished ? (
+            <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm text-slate-600 dark:text-slate-300">
+              {t(
+                "pda.productReceiving.fgAutoWarehouse",
+                "완제품은 양품창고(FG 기본창고)로 자동 입고됩니다.",
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                {t("pda.productReceiving.warehouse")}
+              </label>
+              <WarehouseSelect
+                value={warehouseCode}
+                onChange={(v) => setWarehouseCode(v)}
+                warehouseType={warehouseType}
+                fullWidth
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -285,7 +296,7 @@ export default function ProductReceivingPage() {
               onClick: handleReceive,
               variant: "primary",
               isLoading: isSaving,
-              disabled: !warehouseCode,
+              disabled: !isFinished && !warehouseCode,
               disabledReason: receiveDisabledReason,
             },
             {
