@@ -23,6 +23,7 @@ export interface Part {
   productType?: string; // 제품유형 코드 (Oracle PRODUCTTYPE)
   spec?: string;
   rev?: string; // 리비전 (Oracle REV)
+  markingText?: string | null; // 마킹 문구
   unit?: string; // 단위 (기본값: EA)
   safetyStock?: number; // 안전재고 (기본값: 0)
   lotUnitQty?: number; // LOT 단위수량 (Oracle LOTUNITQTY)

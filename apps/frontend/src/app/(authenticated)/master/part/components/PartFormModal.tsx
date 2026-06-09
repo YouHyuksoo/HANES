@@ -47,6 +47,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     productType: editingPart?.productType || "",
     spec: editingPart?.spec || "",
     rev: editingPart?.rev || "",
+    markingText: editingPart?.markingText || "",
     unit: editingPart?.unit || "EA",
     boxQty: editingPart?.boxQty ?? 0,
     lotUnitQty: editingPart?.lotUnitQty ?? 0,
@@ -75,6 +76,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         productType: form.productType || undefined,
         spec: form.spec || undefined,
         rev: form.rev || undefined,
+        markingText: form.markingText || undefined,
         remark: form.remark || undefined,
         packUnit: form.packUnit || undefined,
         storageLocation: form.storageLocation || undefined,
@@ -113,6 +115,11 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
           value={form.custPartNo} onChange={e => setField("custPartNo", e.target.value)} fullWidth />
         <Input label={t("master.part.rev", "리비전")}
           value={form.rev} onChange={e => setField("rev", e.target.value)} fullWidth />
+        <div className="col-span-2">
+          <Input label={t("master.part.markingText", "마킹문구")}
+            value={form.markingText} maxLength={100}
+            onChange={e => setField("markingText", e.target.value)} fullWidth />
+        </div>
         <div className="col-span-2">
           <Input label={t("master.part.partName")}
             value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />

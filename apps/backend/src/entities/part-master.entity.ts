@@ -40,6 +40,9 @@ export class PartMaster {
   @Column({ type: 'varchar2', name: 'REV', length: 20, nullable: true })
   rev: string | null;
 
+  @Column({ type: 'varchar2', name: 'MARKING_TEXT', length: 100, nullable: true })
+  markingText: string | null;
+
   @Column({ name: 'UNIT', length: 20, default: 'EA' })
   unit: string;
 

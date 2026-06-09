@@ -56,6 +56,12 @@ export class CreatePartDto {
   @MaxLength(10)
   rev?: string;
 
+  @ApiPropertyOptional({ description: '마킹 문구', example: 'HNS-001' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  markingText?: string;
+
   @ApiPropertyOptional({ description: '단위', default: 'EA' })
   @IsOptional()
   @IsString()

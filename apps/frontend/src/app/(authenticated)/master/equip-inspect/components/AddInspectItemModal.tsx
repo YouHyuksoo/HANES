@@ -28,12 +28,21 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
   const { t } = useTranslation();
   const [poolItems, setPoolItems] = useState<InspectItemPoolRow[]>([]);
   const [selectedItemCode, setSelectedItemCode] = useState("");
+  const [inspectType, setInspectType] = useState<InspectItemPoolRow["inspectType"]>("DAILY");
   const [seq, setSeq] = useState(String(currentMaxSeq + 1));
   const [saving, setSaving] = useState(false);
+
+  const typeOptions = useMemo(() => [
+    { value: "DAILY", label: t("master.equipInspect.typeDaily") },
+    { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
+    { value: "PM", label: t("master.equipInspect.typePM", "예방보전") },
+    { value: "WORKER", label: t("master.equipInspect.typeWorker", "작업자설비점검") },
+  ], [t]);
 
   useEffect(() => {
     if (!isOpen) return;
     setSeq(String(currentMaxSeq + 1));
+    setInspectType("DAILY");
 
     (async () => {
       try {
@@ -52,6 +61,12 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
     [poolItems, selectedItemCode],
   );
 
+  useEffect(() => {
+    if (selectedItem?.inspectType) {
+      setInspectType(selectedItem.inspectType);
+    }
+  }, [selectedItem]);
+
   const poolOptions = useMemo(() => poolItems.map(item => ({
     value: item.itemCode,
     label: `${item.itemCode} - ${item.itemName}`,
@@ -59,6 +74,7 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
 
   const resetForm = () => {
     setSelectedItemCode("");
+    setInspectType("DAILY");
     setSeq(String(currentMaxSeq + 1));
   };
 
@@ -69,6 +85,7 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
       await api.post("/master/equip-inspect-items", {
         equipCode,
         itemCode: selectedItem.itemCode,
+        inspectType,
         seq: parseInt(seq, 10) || (currentMaxSeq + 1),
         useYn: "Y",
       });
@@ -105,8 +122,13 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
         <div className="grid grid-cols-3 gap-4">
           <Input label={t("master.equipInspect.itemCode", "항목코드")} value={selectedItem?.itemCode || ""}
             disabled fullWidth />
-          <Input label={t("master.equipInspect.inspectType")} value={selectedItem?.inspectType || ""}
-            disabled fullWidth />
+          <Select
+            label={t("master.equipInspect.inspectType")}
+            options={typeOptions}
+            value={inspectType}
+            onChange={value => setInspectType(value as InspectItemPoolRow["inspectType"])}
+            fullWidth
+          />
           <Input label={t("master.equipInspect.seq")} type="number" value={seq}
             onChange={e => setSeq(e.target.value)} fullWidth />
         </div>

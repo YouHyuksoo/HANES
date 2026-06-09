@@ -72,7 +72,7 @@ export class EquipInspectService {
       plant,
       equipCode: dto.equipCode,
       itemCode: source?.itemCode || dto.itemCode || null,
-      inspectType: source?.inspectType || dto.inspectType,
+      inspectType: dto.inspectType || source?.inspectType,
       seq: dto.seq,
       itemName: source?.itemName || dto.itemName,
       criteria: source?.criteria ?? dto.criteria ?? null,

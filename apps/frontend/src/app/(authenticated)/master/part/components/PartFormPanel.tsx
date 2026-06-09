@@ -67,6 +67,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     productType: editingPart?.productType || "",
     spec: editingPart?.spec || "",
     rev: editingPart?.rev || "",
+    markingText: editingPart?.markingText || "",
     unit: editingPart?.unit || "EA",
     boxQty: editingPart?.boxQty ?? 0,
     lotUnitQty: editingPart?.lotUnitQty ?? 0,
@@ -99,6 +100,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       productType: editingPart?.productType || "",
       spec: editingPart?.spec || "",
       rev: editingPart?.rev || "",
+      markingText: editingPart?.markingText || "",
       unit: editingPart?.unit || "EA",
       boxQty: editingPart?.boxQty ?? 0,
       lotUnitQty: editingPart?.lotUnitQty ?? 0,
@@ -169,6 +171,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         productType: form.productType || undefined,
         spec: form.spec || undefined,
         rev: form.rev || undefined,
+        markingText: form.markingText || undefined,
         unit: form.unit,
         boxQty: form.boxQty,
         lotUnitQty: form.lotUnitQty || undefined,
@@ -243,6 +246,11 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={form.custPartNo} onChange={e => setField("custPartNo", e.target.value)} fullWidth />
             <Input label={t("master.part.rev", "리비전")}
               value={form.rev} onChange={e => setField("rev", e.target.value)} fullWidth />
+            <div className="col-span-2">
+              <Input label={t("master.part.markingText", "마킹문구")}
+                value={form.markingText} maxLength={100}
+                onChange={e => setField("markingText", e.target.value)} fullWidth />
+            </div>
             <Select label={t("master.part.type")} options={partTypeOptions}
               value={form.itemType} 
               onChange={v => setField("itemType", v)}

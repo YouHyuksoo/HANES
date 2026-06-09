@@ -1,6 +1,6 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-09 19:51:46
+- 작성일: 2026-06-09 20:10:30
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -8,7 +8,7 @@
 ## 1. 요약
 
 - 테이블 수: 148
-- 컬럼 수: 2395
+- 컬럼 수: 2397
 - PK 보유 테이블: 148
 - DB FK 수: 12
 - COM_CODES 그룹 수: 118
@@ -5747,6 +5747,7 @@ erDiagram
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` |  |
 | `INSPECT_PASS_YN` | `VARCHAR2(1)` | `Y` |  |  |  |
 | `INSPECT_RESULT_ID` | `VARCHAR2(30)` | `Y` |  |  |  |
+| `BOX_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
 
 ### `GAUGE_MASTERS`
 
@@ -6125,6 +6126,7 @@ erDiagram
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `ERP_LAST_UPD_DATE` | `DATE` | `Y` |  |  |  |
 | `EXPIRY_EXT_DAYS` | `NUMBER(6)` | `N` |  | 기본값 `0` |  |
+| `MARKING_TEXT` | `VARCHAR2(100)` | `Y` |  |  | 마킹 문구 |
 
 ### `JOB_MATERIAL_LOTS`
 

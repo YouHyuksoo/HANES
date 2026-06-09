@@ -153,6 +153,7 @@ export default function PartPage() {
     },
     { accessorKey: "spec", header: t("master.part.spec"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "rev", header: t("master.part.rev", "Rev"), size: 45 },
+    { accessorKey: "markingText", header: t("master.part.markingText", "마킹문구"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "custPartNo", header: t("master.part.custPartNo", "고객품번"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "unit", header: t("master.part.unit"), size: 45 },
     { accessorKey: "boxQty", header: t("master.part.boxQty", "박스입수"), size: 70, meta: { filterType: "number" as const } },

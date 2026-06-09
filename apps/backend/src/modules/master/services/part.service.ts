@@ -49,7 +49,7 @@ export class PartService {
     if (search) {
       const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(p.itemCode LIKE :search OR p.itemName LIKE :searchRaw OR p.itemNo LIKE :search OR p.custPartNo LIKE :search OR p.spec LIKE :searchRaw)',
+        '(p.itemCode LIKE :search OR p.itemName LIKE :searchRaw OR p.itemNo LIKE :search OR p.custPartNo LIKE :search OR p.spec LIKE :searchRaw OR p.markingText LIKE :searchRaw)',
         { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
@@ -98,6 +98,7 @@ export class PartService {
       productType: dto.productType,
       spec: dto.spec,
       rev: dto.rev,
+      markingText: dto.markingText,
       unit: dto.unit ?? 'EA',
       drawNo: dto.drawNo,
       leadTime: dto.leadTime ?? 0,
@@ -129,6 +130,7 @@ export class PartService {
       | 'productType'
       | 'spec'
       | 'rev'
+      | 'markingText'
       | 'unit'
       | 'drawNo'
       | 'leadTime'
@@ -156,6 +158,7 @@ export class PartService {
       ...(dto.productType !== undefined ? { productType: dto.productType } : {}),
       ...(dto.spec !== undefined ? { spec: dto.spec } : {}),
       ...(dto.rev !== undefined ? { rev: dto.rev } : {}),
+      ...(dto.markingText !== undefined ? { markingText: dto.markingText } : {}),
       ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
       ...(dto.drawNo !== undefined ? { drawNo: dto.drawNo } : {}),
       ...(dto.leadTime !== undefined ? { leadTime: dto.leadTime } : {}),

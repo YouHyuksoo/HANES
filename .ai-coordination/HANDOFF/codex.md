@@ -2,10 +2,13 @@
 
 ## Last Update
 
-2026-06-09 20:05
+2026-06-09 20:35
 
 ## Latest
 
+- `T-ITEM-MARKING-TEXT` 완료. `ITEM_MASTERS.MARKING_TEXT VARCHAR2(100)` 추가, JSHANES 적용, 엔티티/DTO/서비스 검색/품목마스터 목록·폼 반영, ERD 재생성 완료.
+- `T-EQUIP-INSPECT-ADD-TYPE` 완료. `/master/equip-inspect` 점검항목 추가 모달의 점검유형을 Select로 바꾸고, 생성 API가 요청 `inspectType`을 Pool 기본값보다 우선 반영하도록 했다.
+- 검증: JSHANES 컬럼 확인, `generate_db_schema_doc.py`, 백엔드 tsc, 프론트 tsc, `/master/part`와 `/master/equip-inspect` HTTP 200 확인.
 - `T-MAT-RECEIVE-SCAN` 완료. `/material/receive`는 입고대기 그리드 선택 입고를 제거하고, `입고처리` 버튼으로 여는 스캔 모달에서만 입고 처리한다.
 - 스캔 모달은 거래처 바코드 → 자체부착 바코드(`matUid`) 순환 Enter 입력을 받아 매핑을 누적하고, 입고대기 대상/성적서 차단/창고 누락/중복을 검사한다. 입고 수량은 잔량 전체다.
 - `MAT_RECEIVINGS.VENDOR_BARCODE` 컬럼을 추가해 거래처 바코드 원본을 입고 행에 저장한다. JSHANES 적용 완료, `docs/reports/db-schema-erd.md` 재생성 완료.
