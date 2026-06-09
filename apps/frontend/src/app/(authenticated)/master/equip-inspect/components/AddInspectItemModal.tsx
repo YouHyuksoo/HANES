@@ -126,7 +126,7 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
           fullWidth
         />
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Input label={t("master.equipInspect.itemCode", "항목코드")} value={selectedItem?.itemCode || ""}
             disabled fullWidth />
           <Input label={t("master.equipInspect.seq")} type="number" value={seq}
