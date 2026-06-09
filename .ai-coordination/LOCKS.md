@@ -4,11 +4,39 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
+- T-QUALITY-WORKFLOW-DOCS (claude, 2026-06-10): 품질관리(IQC/OQC/검사) workflow 문서 작성.
+  파일: docs/workflows/quality/wf-quality.md
+  상태: IN_PROGRESS
+
 - T-MAT-RECV-FIXES (claude, 2026-06-07): 자재입고 프로세스 이슈 일괄 수정.
   완료(검증): #1 PO오류(http-exception.filter/purchase-order.dto/PoFormPanel), #2 배지(globals.css safelist), 작업지시 품목필터(part.dto/part.service/PartSearchModal/JobOrderFormPanel), IQC006 입하실적조회 전체(arrival.controller/service/dto, material/arrival-result/*, menuConfig, PartnerSelect/useMasterOptions, 2026-06-07_iqc006_arrival_result_seed.sql, locales 4).
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-MASTER-API-DEEP-QA-FIX (codex, 2026-06-10): 기준정보 API 미통과 3건 수정 완료. 회사/사업장 생성 tenant 저장 누락과 IQC 검사그룹 수정/삭제 자식행 처리 결함 보정. focused Jest 26건, backend tsc, 실제 HTTP 11건, JSHANES 잔여 0 확인 후 lock 해제.
+
+- T-PROD-WORKFLOW-DOC (claude, 2026-06-10): 생산관리 workflow 문서 작성 완료. docs/workflows/production/wf-production.md 15개 화면(월간계획, 시뮬레이션, 작업지시, 생산실적, 진도, 수동투입, 입력키오스크, 설비투입, 투입검사, 설비점검, 실적집계, WIP재고, 재작업, 재작업이력, 수리) 포함. 실제 구현 기준으로 API/DTO/엔티티/프론트 반영.
+
+- T-MASTER-API-DEEP-QA (codex, 2026-06-10): 기준정보 API 세부 재검증. 조회/보조 GET 49건 통과, CRUD/업로드/JSHANES 잔여 0 확인. 미통과 결함 3건(회사 생성 500, 사업장 생성 500, IQC 검사그룹 수정 500) 확인 후 lock 해제.
+
+- T-PROD-INPUT-PRDUID-FIX (claude, 2026-06-10): 생산실적 입력화면 4종(input-machine/equip/inspect/manual) POST 본문 matUid→prdUid 수정(키오스크와 동일). input-equip는 measuredValue도 비허용 → 측정값을 비고에 보존하도록 변경(저장 컬럼 없음). whitelist 계약 probe(404 작업지시 도달) + 프론트 tsc 0 확인 후 lock 해제.
+
+- T-PROD-RESULT-WORKER-VALIDATION (claude, 2026-06-10): 생산실적 생성 작업자 검증을 USERS.email→WorkerMaster.workerCode 우선(+email 폴백)으로 비회귀 수정. 입력화면들이 보내는 workerCode(W010)로 항상 404 차단되던 키오스크 실적저장 해소. jest 17/17·backend tsc 0·재현 POST 201 확인, 부수로 HNS01 BOM 누락 5종 MAT_LOTS 시딩 후 lock 해제.
+
+- T-MASTER-API-QA (codex, 2026-06-10): 기준정보 API 전체 HTTP 검증. 조회 GET 39건+상세/보조 GET 34건 200, 임시코드 핵심 CRUD 통과, JSHANES 임시 데이터 잔여 0건 확인 후 lock 해제.
+
+- T-INPUT-KIOSK-WORKER-CODE-BUTTONS (codex, 2026-06-10): 작업자설비점검 모달에 점검항목코드와 QR 값을 표시하고 OK/NG 버튼을 QR 스캔 전에도 상시 표시. 항목 렌더 완료 후 QR 입력 포커스 재보정. 프론트 tsc, git diff check, 브라우저 확인 후 lock 해제.
+
+- T-INPUT-KIOSK-WORKER-QR-FOCUS (codex, 2026-06-10): 작업자설비점검 모달 QR 입력창 자동 포커스/포커스 유지, 설비일일점검 완료 상세 표시, 모든 사용 설비 DAILY 표준항목 할당 seed 추가 및 JSHANES 적용. 프론트 tsc, backend focused Jest, git diff check, 브라우저 QR 포커스/완료상세 검증 후 lock 해제.
+
+- T-DOCS-CLEANUP (claude, 2026-06-10): docs/ 아래 불필요/오래된 문서 정리. tenant gap reports 7개(2026-04-12 생성, 내용 outdated), docs/tools/*.js scripts 3개(미사용) 삭제. docs/readme.md 참조 목록 갱신.
+
+- T-EQUIP-INSPECT-WORKER-ASSIGN-SEED (codex, 2026-06-09): 모든 사용 설비 8대에 WORKER 표준 점검항목 8건씩 총 64건 할당 seed 추가 및 JSHANES 적용. 설비별 API와 입력키오스크 모달 표시 확인 후 lock 해제.
+
+- T-INPUT-KIOSK-WORKER-QR-SIMPLE (codex, 2026-06-09): `/production/input-kiosk` 작업자설비점검 QR 입력 처리를 스캐너 키보드 입력값 기준으로 단순화. 입력값과 `WORKER_QR_CODE` 직접 비교, 프론트 tsc/diff check 통과 후 lock 해제.
+
+- T-INPUT-KIOSK-WORKER-INSPECT-QR (codex, 2026-06-09): `/production/input-kiosk` 작업자설비점검 QR 스캔 행 포커싱/OK-NG 저장 흐름 수정. WORKER 저장 타입 보존, QR 후보 매칭, 설비별 항목 QR 필드 보존. backend focused Jest, 백/프론트 tsc, diff check, HTTP 200 확인 후 lock 해제.
 
 - T-EQUIP-INSPECT-WORKER-SEED (codex, 2026-06-09): `EQUIP_INSPECT_ITEM_POOL` 작업자설비점검 표준 seed 8건 추가. JSHANES 적용·재실행, 유형별 건수/항목 조회, `/master/equip-inspect` HTTP 200 확인 후 lock 해제.
 

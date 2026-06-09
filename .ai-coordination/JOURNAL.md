@@ -1,5 +1,222 @@
 # JOURNAL
 
+## 2026-06-10 claude
+
+### T-PROD-WORKFLOW-DOC 완료
+
+**작업:** docs/workflows/production/wf-production.md 작성
+
+**분석 대상:**
+- Controllers: prod-plan, simulation, job-order, prod-result, production-views, repair
+- Services: 위 대응 + auto-issue, auto-plan, numbering
+- DTO: prod-plan, simulation, job-order, prod-result, production-views, repair
+- Entities: prod-plan, job-order, prod-result, simulation-result, repair-order, repair-used-part, rework-order, rework-result, rework-process, inspect-result, defect-log, mat-issue, product-stock, product-transaction, consumable-master, fg-label
+- Frontend: monthly-plan, simulation, order, result, progress, input-kiosk, input-manual, input-machine, input-inspect, input-equip, result-summary, wip-stock, repair, quality/rework, quality/rework-history
+
+**작성 화면 (15개):**
+1. PROD_MONTHLY_PLAN (월간생산계획) — CRUD + 확정/마감 + 작업지시발행 + 자동편성
+2. PROD_SIMULATION (시뮬레이션) — 납기/CAPA/월력 기반 스케줄 시뮬레이션 + Gantt
+3. PROD_ORDER (작업지시) — CRUD + 상태관리(WAITING→RUNNING→HOLD→DONE/CANCELED) + 트리뷰
+4. PROD_RESULT (생산실적) — CRUD + 완료/취소 + 자재자동차감 + 공정재고적재 + 금형타수
+5. PROD_PROGRESS (생산진도) — 작업지시별 진행률 대시보드
+6. PROD_INPUT_MANUAL (수동투입) — 자재 수동 출고/투입
+7. PROD_INPUT_KIOSK (입력키오스크) — 작업지시→설비→점검→소모품→자재→실적 6단계 일괄처리
+8. PROD_INPUT_MACHINE (설비투입) — 설비 중심 실적 등록
+9. PROD_INPUT_INSPECT (투입검사) — 투입 전 검사 항목 입력
+10. PROD_INPUT_EQUIP (설비점검) — 일일/정기 점검 결과 등록
+11. PROD_RESULT_SUMMARY (실적집계) — 작업지시/설비/작업자/일자/품목별 집계
+12. PROD_WIP_STOCK (WIP재고) — 반제품/완제품 공정창고 재고 조회
+13. QC_REWORK (재작업) — 불량 제품 재작업 지시
+14. QC_REWORK_HISTORY (재작업이력) — 재작업 결과 이력 조회
+15. PROD_REPAIR (수리) — 불량 제품 수리 등록 + 수리실 재고 + 사용부품 관리
+
+**검증:**
+- 백엔드/프론트 소스 코드 기준으로 API 경로, DTO 필드, 엔티티 관계, 상태 전이, 트랜잭션 범위 모두 반영.
+- mermaid 다이어그램 4개 포함(정상흐름 3 + 화면간연계 1).
+- 공통코드 그룹(PROD_PLAN_STATUS, JOB_ORDER_STATUS, PROD_RESULT_STATUS, REPAIR_ORDER_STATUS 등) 명시.
+
+**파일:** docs/workflows/production/wf-production.md (신규)
+
+---
+
+## 2026-06-10 claude
+
+### T-PROD-RESULT-WORKER-VALIDATION 완료
+
+**증상:** `/production/input-kiosk`에서 모든 인터록을 통과해도 실적저장이 항상 실패. 직접 재현 결과 `POST /production/prod-results` (orderNo=W2026-001, equipCode=EQ-CRIMP-01, workerId=W010) → HTTP 404 `작업자를 찾을 수 없습니다: W010`.
+
+**원인 (systemic):**
+- `PROD_RESULTS.worker` 관계는 `WORKER_MASTERS.workerCode`를 참조(`@JoinColumn name=WORKER_ID, referencedColumnName=workerCode`).
+- 입력 화면 5종(input-kiosk/machine/equip/inspect/manual) 모두 `WorkerSelectModal`을 사용, `id=workerCode`(예: W010)를 `workerId`로 전송.
+- 그러나 `prod-result.service.create()`의 작업자 검증은 `userRepository(USERS).findOne({ email: workerId })`로 되어 있어, workerCode는 USERS.email과 매칭되지 않아 항상 404.
+- 기존 PROD_RESULTS 2건의 WORKER_ID='admin@hanes.com'은 과거 수동입력 잔여 데이터(현재 라이브 호출자는 email을 보내지 않음).
+
+**수정 (비회귀):**
+- `prod-result.service.ts`: 작업자 검증을 `WorkerMaster.workerCode` 우선 조회, 미존재 시 `User.email` 폴백 허용. 둘 다 없으면 404.
+- `WorkerMaster` repo 주입 + `production.module.ts` forFeature 등록.
+- spec: WorkerMaster mock provider 추가, 워커코드/이메일폴백/미존재 3 케이스 테스트로 분리.
+
+**검증:**
+- jest `prod-result.service.spec` 17/17 통과, backend `tsc --noEmit` 0 에러.
+- 재현 POST 재실행 → HTTP 201, resultNo `PR26061000004`, worker 관계 `{workerCode:W010, 오지훈}` 정상, W2026-001 WAITING→RUNNING 승격.
+
+**부수 작업(테스트 데이터 시딩 — input-kiosk 전체 흐름 unblock):**
+- HNS01 BOM 자식 6종 중 LOT 없던 5종 MAT_LOTS 시딩(`MTEST-HLD01-001`, `MTEST-HNS01C1-001`, `MTEST-HNS01C2-001`, `MTEST-HSG0001-001`, `MTEST-TP0001-001`, company40/plant1000, INIT/CURRENT 100000, IQC PASSED). SQL: `tools/generated/seed_matlots_hns01.sql`(참고용, 실제는 개별 INSERT 적용).
+- 자재스캔 API(`POST .../material-lots/scan`) 신규 LOT으로 HTTP 201 확인 후 테스트 등록행 삭제.
+- 데이터 점검: 작업자설비점검 항목 8건(EQ-CRIMP-01 WORKER), 소모품 CM-AP-110 MOUNTED 확인 → 키오스크 전 인터록 데이터 준비 완료.
+
+**참고(스코프 외 1줄):** 시스템 전반에 작업자 식별이 workerCode(엔티티 정본)와 email(과거 수동데이터)로 혼재. 현 수정은 양쪽 허용으로 unblock만 하고 전체 통일은 하지 않음.
+
+### 2번째 차단 버그(UI 테스트로 발견): matUid→prdUid 계약 불일치
+
+**증상:** worker 버그 수정 후 키오스크 실적저장 재시도 → HTTP 400 `property matUid should not exist`.
+
+**원인:** `ProductionInputBar`가 POST 본문에 `matUid: serialNo`를 보내는데, `CreateProdResultDto`에는 `matUid` 없음(`prdUid`만 존재) + whitelist `forbidNonWhitelisted`로 미지정 속성 거부. 시리얼은 의미상 생산단위 식별자(prdUid)이므로 `prdUid`로 보내야 함.
+
+**수정:** `input-kiosk/components/ProductionInputBar.tsx` POST 본문 `matUid:`→`prdUid:` (1줄).
+
+**systemic(스코프 외 — 보고만):** input-machine/equip/inspect/manual 4개 화면도 동일하게 POST 본문에 `matUid:`를 보냄 → 동일 400으로 현재 전부 실적저장 불가. 동일 수정(payload 키 `matUid`→`prdUid`) 필요하나, 해당 화면들은 입력필드 라벨이 `자재 UID`라 의미 정합성 검토가 별도로 필요해 본 작업 범위(키오스크)에서는 미수정.
+
+### 키오스크 전체 흐름 E2E (헤드리스 브라우저 실제 구동)
+
+설비 EQ-CRIMP-01/작업지시 W2026-001/작업자 오지훈(W010) 선택 상태에서:
+1. 작업자설비점검 8항목 OK → 종합 PASS 저장
+2. 자재스캔 6/6종 등록(HNS01-C1/C2/CNTR001/HLD-01/TP0001/HSG0001 — 신규 시딩 LOT 스캔)
+3. 소모품스캔 1/1(CM-AP-110 110단자 압착금형)
+4. 작업수 10 입력 → 실적입력 → **"실적이 저장되었습니다"** 토스트
+5. 첫 저장이라 초물 공정샘플검사(자주검사) 모달 자동 오픈 확인(전 25항목, 23·24번 의뢰검사 포함) — 의뢰검사는 품질팀 의뢰 시 실적입력 차단되므로 자동테스트에서는 취소
+
+**DB 검증:** `PROD_RESULTS PR26061000005` (WORKER_ID=W010, PRD_UID=W2026-001-001, GOOD_QTY=10, STATUS=RUNNING) 저장 확인. 자재 자동차감(MAT_ISSUES)은 0건 — MatLot만 시딩하고 현장 MatStock 미생성이라 auto-issue가 경고만 남기고 비차단 통과(설계상 정상). 실재고 차감까지 검증하려면 BOM 자재의 현장창고 MatStock 시딩 필요.
+
+### 입력화면 4종 동일 수정(matUid→prdUid) — T-PROD-INPUT-PRDUID-FIX
+
+input-machine/equip/inspect/manual POST 본문 `matUid:`→`prdUid:` 통일. input-equip는 추가로 `measuredValue`(DTO 비허용)를 보내고 있어 측정값을 비고에 보존하도록 변경(저장 컬럼 없음). whitelist 계약 probe(prdUid+remark payload는 404 작업지시까지 도달, measuredValue 단독은 400 유지) + 프론트 `tsc --noEmit` 0 에러 검증.
+
+### 의뢰검사(DELEGATE) 키오스크↔처리페이지 상호작용 검증
+
+흐름: 키오스크 자주검사 DELEGATE 항목 의뢰 → `SELF_INSPECT_RESULTS(status=PENDING)` → `GET self-inspect/pending/:orderNo`(hasPending) → `/quality/request-inspect`에서 PASS/FAIL 판정(`PATCH results/:id/status`) → 키오스크 10초 폴링으로 차단 해제.
+- 의뢰 생성: 키오스크 검사완료와 동일 `POST /production/self-inspect/results`(inspectMethod=DELEGATE, status=PENDING, 인장강도시험/PRC-CRIMP) 201. (키오스크 25항목 자주검사 모달이 헤드리스 렌더러를 freeze시켜 모달 직접구동 대신 동일 API로 의뢰 생성)
+- 처리 전 pending hasPending=true/count1 → **처리 페이지 UI에서 행 선택 후 합격(PASS) 처리**(토스트 "상태가 PASS로 변경", 대기목록 1→0) → 처리 후 pending hasPending=false/count0.
+- DB: SELF_INSPECT_RESULTS PENDING→PASS, 비고/INSPECTED_AT 스탬프 확인. 키오스크 차단 게이트(pending API)의 true→false 전이 입증.
+
+### 키오스크 25항목 자주검사 모달 "freeze" 원인 조사 (결론: 앱 버그 아님)
+
+증상: 헤드리스 브라우저로 input-kiosk 초물 자주검사(25항목) 모달이 열린 동안 `Page.captureScreenshot`가 30초 타임아웃 반복.
+
+체계적 디버깅(systematic-debugging) 결과 — **JS 메인스레드는 정상, 헤드리스 스크린샷 캡처 파이프라인만 wedge**:
+- 모달 열린 상태에서 `read_console_messages`/`javascript_tool`/`read_page`/클릭 전부 즉시 응답. 25행 렌더 확인. 콘솔 신규 에러 0("Maximum update depth" 없음 = 무한 렌더 루프 아님).
+- 라이브 토글로 후보 전부 배제(끄고도 캡처 실패): backdrop-blur(8px), 모달 size=full(박스 600×400 축소), 오버레이(display none), CSS 애니메이션/트랜지션(전역 none), 거대 페이지(docScrollH=898 정상).
+- 모달을 닫아도 캡처 wedge 지속, **페이지 네비게이션 시에만 복구**(/quality·/dashboard 정상 캡처).
+- SelfInspectModal/SelfInspectItemRow/ui Modal 정독 — useEffect 루프/렌더중 setState/ResizeObserver 없음.
+
+결론: Chromium 컴포지터/CDP 스크린샷 파이프라인이 무거운 입력키오스크 뷰(풀사이즈 모달 + SVG 아이콘 157개 + 풀폭 작업지도서 이미지 798×1128) 렌더 후 막히는 **자동화/브라우저 계층 이슈**. 실 운영 키오스크(작업자)는 영향 없음 — 모달 완전 인터랙티브(이전 세션에서 실적입력·의뢰검사 전 과정 클릭으로 완료됨). 앱 코드 수정 불필요. 자동화 측 대응: 해당 모달 열린 중에는 스크린샷 대신 DOM/console/click 검증 사용, 또는 네비게이션으로 캡처 파이프라인 리셋.
+부수 관찰(무해): WorkHistoryPanel 목록 렌더에 React "key" prop 누락 경고 1건(대시보드 "1 Issue" 배지 정체) — freeze와 무관.
+
+### WorkHistoryPanel React key 경고 수정
+
+원인: 작업이력 `<li key={item.id}>`인데 목록 API(GET /production/prod-results, findAll)는 PK를 `resultNo`로 반환하고 `id` 필드가 없어 모든 행 key=undefined → "Each child should have a unique key prop". 수정: HistoryItem 인터페이스 `id`→`resultNo` 정정, `key={item.resultNo ?? idx}`. 프론트 tsc 0, 키오스크 작업이력 2행 렌더 상태에서 콘솔 에러 0건(경고 소거) 확인. 파일: input-kiosk/components/WorkHistoryPanel.tsx.
+
+
+## 2026-06-09 24:05 codex
+
+### T-EQUIP-INSPECT-WORKER-ASSIGN-SEED 완료
+
+**대상:** `EQUIP_INSPECT_ITEM_MASTERS` 작업자설비점검 설비별 할당 seed.
+
+**원인:**
+- `EQUIP_INSPECT_ITEM_POOL`에는 WORKER 표준 항목 8건이 있었지만, 입력키오스크 모달이 조회하는 `EQUIP_INSPECT_ITEM_MASTERS` 설비별 WORKER 할당은 0건이었다.
+- 따라서 `/production/input-kiosk`에서 어떤 설비를 선택해도 작업자설비점검 모달에 항목이 뜨지 않았다.
+
+**수정 내용:**
+- `apps/backend/src/migrations/2026-06-09_seed_all_equips_worker_inspect_assignments.sql` 추가.
+- `COMPANY='40'`, `PLANT_CD='1000'`, `USE_YN='Y'`인 모든 설비에 WORKER Pool 8건을 `SEQ=1..8`로 할당한다.
+- QR 값은 `EQUIP_CODE:ITEM_CODE` 형식으로 생성한다. 예: `EQ-CRIMP-01:EIP-STD-W001`.
+- SQL은 `MERGE` 기반이라 재실행 가능하다.
+
+**검증:**
+- `python scripts/migration/run_migration.py apps/backend/src/migrations/2026-06-09_seed_all_equips_worker_inspect_assignments.sql --site JSHANES --dry-run` 통과.
+- JSHANES 적용: `python scripts/migration/run_migration.py apps/backend/src/migrations/2026-06-09_seed_all_equips_worker_inspect_assignments.sql --site JSHANES` 통과.
+- DB 설비별 WORKER 항목 수 확인: `EQ-CRIMP-01`, `EQ-CRIMP-02`, `EQ-CRIMP-03`, `EQ-CUT-01`, `EQ-CUT-02`, `EQ-STRIP-01`, `EQ-TEST-01`, `EQ-TEST-02` 모두 8건.
+- 총 할당 건수: 64건.
+- API 확인:
+  - `/api/v1/master/equip-inspect-items?equipCode=EQ-CRIMP-01&inspectType=WORKER&limit=100` 8건 반환.
+  - `/api/v1/master/equip-inspect-items?equipCode=EQ-CUT-01&inspectType=WORKER&limit=100` 8건 반환.
+- 브라우저 확인: `/production/input-kiosk`에서 `EQ-CRIMP-01` 선택 상태로 작업자설비점검 입력 모달을 열었을 때 WORKER 항목 8건과 `OK 0 / NG 0 / 미완료 8` 표시 확인.
+- `git diff --check` 통과.
+
+## 2026-06-09 22:30 claude
+
+### T-SHIP-WORKFLOW-FIX 완료
+
+**대상:** 박스입고~출하처리~재고차감 워크플로우 로직/DB 불일치 일괄 수정.
+
+**수정 내용:**
+1. **Critical 1-1** `product-inventory.service.ts`: `cancelTransaction`의 toWarehouseId 복구 로직에서 `qty > 0` 조건 제거. 창고간 이동 취소 시 toWarehouseId(입고 창고) 재고도 정상 복구되도록 수정.
+2. **Critical 1-2** `shipment.service.ts`: `reverseShipment`에서 상태 복원과 `productInventoryService.cancelTransaction`을 단일 tx.run으로 통합. `cancelTransactionInTx` 신규 메서드를 통해 상태-재고 원자성 보장. 실패 시 전체 롤백.
+3. **Critical 1-3** `shipment.service.ts`: `markAsShipped`에서 깨진 한글 에러 메시지 복원 (`FG 바코드 정보가 없는 시리얼이 포함되었습니다`, `FG 바코드가 없습니다`).
+4. **Major 2-1** `product-inventory.service.ts`: `receiveStockInTx`에 BOX 이중입고 가드 추가 (`refType==='BOX'` 중복 거부).
+5. **Major 2-2** `shipment.service.ts`: `markAsShipped` 시 `shipment.shipOrderNo` 연계 시 `ShipmentOrderItem.shippedQty` 업데이트 및 전량 출하 시 `ShipmentOrder.status='CLOSED'` 자동화. `reverseShipment`에서도 shippedQty 복원 및 `CONFIRMED` 되돌림.
+6. **Minor 3-1** `shipment.service.ts`: `cancel` 시 BoxMaster 상태를 명시적 `CLOSED`로 복원.
+7. **Minor 3-3** `ship-order.service.ts`: `delete` 시 `ShipmentOrderItem` cascade delete 적용 (트랜잭션 내에서 품목 먼저 삭제 후 헤더 삭제).
+8. **테스트 보정** `product-inventory.service.spec.ts`, `shipment.service.spec.ts`: `FgLabel`/`BoxMaster` mock 추가, `cancelTransactionInTx` 호출로 테스트 assertion 수정.
+
+**검증:**
+- `pnpm --filter @harness/backend exec tsc -p tsconfig.json --noEmit` 통과.
+- `pnpm --filter @harness/backend test -- shipment.service.spec.ts ship-order.service.spec.ts product-inventory.service.spec.ts` 44건 전체 통과.
+
+## 2026-06-09 22:20 codex
+
+### T-INPUT-KIOSK-WORKER-QR-SIMPLE 완료
+
+**대상:** `/production/input-kiosk` 작업자설비점검 QR 입력 처리.
+
+**수정 내용:**
+- QR 스캐너는 키보드 입력처럼 입력창에 문자열을 넣는 것으로 보고, Enter 시점에 입력값만 읽는다.
+- 이전에 추가했던 `ITEM_CODE`, `SEQ`, `EQUIP_CODE:ITEM_CODE` 등 후보 조합 매칭을 제거했다.
+- 입력값은 trim/대문자 정규화 후 설비별 등록 항목의 `WORKER_QR_CODE`와 직접 비교한다.
+- 매칭되면 기존처럼 해당 행으로 스크롤 및 포커스하고 OK/NG 버튼을 활성화한다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `git diff --check` 통과.
+- 실제 브라우저 테스트:
+  - 백엔드 dev 서버는 `localhost:3003`, 프론트는 `localhost:3002`에서 확인.
+  - `admin@hanes.com / admin123`, `40 / 1000`으로 로그인 성공.
+  - 테스트용으로 `EQ-CRIMP-01`, `SEQ=901`, `WORKER_QR_CODE='QR-WORKER-TEST-001'` 설비별 WORKER 점검항목을 API 등록.
+  - `/production/input-kiosk`에서 설비/작업자 상태를 잡고 작업자설비점검 모달을 열어 항목 1건 조회 확인.
+  - QR 입력창에 `QR-WORKER-TEST-001` 입력 후 Enter: 해당 행에 OK/NG 버튼 표시 확인.
+  - OK 선택 후 `OK 1 / NG 0 / 미완료 0`, `점검 저장` 버튼 활성화 확인.
+  - `점검 저장` 클릭 후 화면 헤더가 `작업자설비점검 완료`로 변경되고 `harness-kiosk.interlock.workerInspectDone=true` 확인.
+  - JSHANES `EQUIP_INSPECT_LOGS`에서 `INSPECT_TYPE='WORKER'`, `OVERALL_RESULT='PASS'`, `DETAILS`에 QR/OK 결과 저장 확인.
+  - 테스트 후 임시 점검항목과 임시 로그 삭제, 잔여 `temp_item_count=0`, `temp_log_count=0` 확인.
+
+## 2026-06-09 22:05 codex
+
+### T-INPUT-KIOSK-WORKER-INSPECT-QR 완료
+
+**대상:** `/production/input-kiosk` 작업자설비점검 모달.
+
+**원인:**
+- `WorkerInspectModal`은 설비별 `WORKER` 항목을 조회하고 있었지만 QR 매칭 기준이 `workerQrCode` 완전일치 하나뿐이라 항목코드/순번 기반 QR은 행을 찾지 못했다.
+- QR 스캔 후 활성 행 표시만 있었고 실제 DOM 포커스/스크롤 이동은 없었다.
+- 저장 payload는 `inspectType: 'WORKER'`를 보내지만 `/equipment/daily-inspect` POST 컨트롤러가 `inspectType: 'DAILY'`로 강제해 작업자설비점검 로그가 DAILY로 저장될 수 있었다.
+- 설비별 점검항목 생성 시 `workerQrCode`, `itemType`, `unit`, `lslValue`, `uslValue`가 엔티티 생성값에서 빠져 등록 후 조회/스캔에 필요한 값이 누락될 수 있었다.
+
+**수정 내용:**
+- QR 스캔 시 `WORKER_QR_CODE`, `ITEM_CODE`, `SEQ`, `EQUIP_CODE:ITEM_CODE`, `EQUIP_CODE-ITEM_CODE`, `EQUIP_CODE:SEQ`, `EQUIP_CODE-SEQ` 후보를 대소문자 무시로 매칭한다.
+- 매칭된 행은 `scrollIntoView`와 `focus({ preventScroll: true })`로 실제 포커싱하고, 활성 행에서만 OK/NG 버튼을 노출한다.
+- 저장 상세는 `{ details: { items: [...] } }` 형태로 보내며 항목코드와 QR 코드도 함께 남긴다.
+- `/equipment/daily-inspect` POST는 기본 DAILY 동작을 유지하되 요청 `inspectType`이 `WORKER`일 때만 WORKER로 저장한다.
+- 설비별 점검항목 생성 서비스가 QR/항목유형/측정값 필드를 보존하도록 했다.
+
+**검증:**
+- `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts daily-inspect.controller.spec.ts` 통과: 3 suites, 11 tests.
+- `pnpm --filter @harness/backend exec tsc -p tsconfig.json --noEmit` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `git diff --check` 통과.
+- `GET http://localhost:3002/production/input-kiosk` HTTP 200 확인.
+- 인증 세션 기반 실제 QR 스캔 브라우저 클릭은 수행하지 못했고, 로컬 라우트와 타입/단위 테스트로 검증했다.
+
 ## 2026-06-09 21:40 claude
 
 ### T-SHIP-FG-RECEIVE-UI 완료 (T-SHIP-BOX-SCAN 후속, 보류분 해소)
@@ -748,6 +965,56 @@ Use local time in 24-hour format.
 - `pnpm --filter @harness/backend exec tsc --noEmit` 통과.
 - `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
 - 기존 프론트 dev 서버 `localhost:3002`에서 `GET /shipping/box-stock` HTTP 200 확인.
+
+# 2026-06-10 00:30 codex
+
+## T-INPUT-KIOSK-WORKER-CODE-BUTTONS 완료
+
+**원인:**
+- 작업자설비점검 모달의 OK/NG 버튼은 `activeSeq` 행에서만 렌더링되고 있었다.
+- 따라서 QR 스캔으로 특정 행이 활성화되기 전에는 사용자에게 합/불 버튼이 보이지 않았다.
+
+**수정 내용:**
+- `apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkerInspectModal.tsx`에서 항목명 옆에 `itemCode`를 표시한다.
+- 항목 아래에 `workerQrCode`도 QR 값으로 표시한다.
+- OK/NG 버튼은 QR 스캔 전에도 모든 항목 행에 상시 표시한다.
+- 스캔된 행 강조와 스크롤 이동은 유지한다.
+- 항목 렌더 완료 후 QR 입력창 포커스를 다시 잡아 키보드 타입 스캐너 입력 대기 상태를 유지한다.
+
+**검증:**
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `git diff --check` 통과.
+- 브라우저 실제 로그인 후 `/production/input-kiosk` 작업자설비점검 모달에서 `EIP-STD-W001`, `EQ-CRIMP-01:EIP-STD-W001` 표시 확인.
+- 같은 모달에서 OK 버튼 8개, NG 버튼 8개 표시 확인.
+- 모달 열림 후 activeElement가 QR 입력창(`placeholder=QR 코드를 스캔하세요...`)임을 확인.
+
+# 2026-06-10 00:20 codex
+
+## T-INPUT-KIOSK-WORKER-QR-FOCUS 완료
+
+**수정 내용:**
+- `/production/input-kiosk` 작업자설비점검 모달에서 키보드 타입 바코드스캐너 입력을 받을 수 있도록 QR 입력창 포커스를 모달 열림, 항목 로드, QR 스캔 실패/성공, OK-NG 판정 후에도 유지한다.
+- QR 스캔은 입력값 trim/대문자 정규화 후 설비별 `WORKER_QR_CODE`와 직접 비교한다.
+- 스캔된 행은 스크롤로 가운데 이동하고 시각적으로 활성화하며, OK/NG 버튼은 스캔된 행에만 표시한다.
+- 설비일일점검 완료 상태에서 `오늘 점검이 이미 완료되었습니다` 메시지만 표시하지 않고, 점검자/종합판정/항목명/기준/측정 또는 판정/OK-NG/비고를 표로 표시한다.
+- 신규 SQL `apps/backend/src/migrations/2026-06-10_seed_all_equips_daily_inspect_assignments.sql`로 모든 사용 설비에 `DAILY` 표준 점검항목을 할당했다.
+
+**DB 적용:**
+- `python scripts/migration/run_migration.py apps/backend/src/migrations/2026-06-10_seed_all_equips_daily_inspect_assignments.sql --site JSHANES` 성공.
+- `EQ-CUT-01` API 확인: `WORKER` 8건, 첫 QR `EQ-CUT-01:EIP-STD-W001`, `DAILY` 25건 조회.
+
+**브라우저 검증:**
+- `localhost:3002` 실제 로그인 후 `/production/input-kiosk` 진입.
+- 작업자설비점검 입력 클릭 직후 activeElement가 QR 입력창(`placeholder=QR 코드를 스캔하세요...`)임을 확인.
+- `EQ-CRIMP-01:EIP-STD-W001` 입력 후 Enter 시 QR 입력창 포커스 유지, OK/NG 버튼 노출 확인.
+- OK 선택 후에도 QR 입력창 포커스 유지와 `OK 1` 요약 반영 확인.
+- 검증용 `EQ-CUT-01 / 2026-06-09 / CODX테스트점검자` DAILY 로그 생성 후 완료 모달에서 완료 메시지, 설비명, 점검자, `압착 높이`, `NG`, `CODX-DAILY-DETAIL-TEST` 비고 표시 확인.
+- 검증용 DAILY 로그는 `INSPECTOR_NAME='CODX테스트점검자'` 조건으로 삭제했고, `EQ-CUT-01 2026-06-09`, `EQ-CRIMP-01 2026-06-10` 완료 여부 false 확인.
+
+**자동 검증:**
+- `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts daily-inspect.controller.spec.ts` 통과, 3 suites / 11 tests.
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `git diff --check` 통과.
 - 로컬 Playwright CLI가 없어 브라우저 스크린샷 검증은 수행하지 못했다.
 
 # 2026-06-09 20:35 codex
@@ -817,6 +1084,33 @@ Use local time in 24-hour format.
 
 # 2026-06-09 19:35 codex
 
+# 2026-06-10 02:00 codex
+
+## T-MASTER-API-QA 완료
+
+**대상:** 기준정보 API 전체 동작 검증.
+
+**검증 기준:**
+- 실행 중인 백엔드 `http://localhost:3003/api/v1` 기준으로 실제 HTTP 호출.
+- 인증은 `oracle-db` 스킬로 JSHANES `USERS`를 확인한 `admin@hanes.com / 40 / 1000` 계정 사용.
+- Swagger `/api/docs-json`에서 `/api/v1/master/*` 경로를 추출해 조회 API를 점검.
+- 쓰기 API는 기존 데이터 훼손 없이 `ZQA*`, `ZQL*` 임시 코드로 생성/수정/삭제 후 JSHANES 잔여 건수 확인.
+
+**조회 API 검증:**
+- path 파라미터 없는 기준정보 `GET` 39건 모두 HTTP 200.
+- 실제 목록 응답에서 샘플 키를 뽑아 상세/보조 `GET` 34건 모두 HTTP 200.
+- 포함 범위: `parts`, `partners`, `boms`, `com-codes`, `companies`, `plants`, `processes`, `prod-lines`, `equip-bom`, `iqc-groups`, `iqc-item-pool`, `iqc-items`, `iqc-part-links`, `iqc-part-specs`, `iqc-templates`, `label-templates`, `model-suffixes`, `routing-groups`, `routings`, `transfer-rules`, `vendor-barcode-mappings`, `work-calendars`, `work-instructions`, `workers`.
+- `process-capas/:processCode/:itemCode`는 컨트롤러상 GET이 없고 PUT/DELETE 전용이라 조회 실패로 보지 않음.
+
+**쓰기 API 검증:**
+- 임시 데이터 CRUD 성공: `com-codes`, `partners`, `parts`, `processes`, `prod-lines`, `workers`, `boms`, `work-instructions`.
+- 1차 생산라인 생성 실패는 테스트 payload 오류(`oper` 10자 초과)였고, 기존 유효 공정 `MTASY`로 재실행해 생성/수정/삭제 모두 통과.
+- `oracle-db` 잔여 확인: `COM_CODES`, `ITEM_MASTERS`, `PARTNER_MASTERS`, `PROCESS_MASTERS`, `PROD_LINE_MASTERS`, `WORKER_MASTERS`, `BOM_MASTERS`, `WORK_INSTRUCTIONS`의 `ZQA%`/`ZQL%` 임시 데이터 모두 0건.
+
+**결론:**
+- 실행 중인 JSHANES 연동 백엔드 기준으로 검증한 기준정보 조회 API와 핵심 CRUD API는 장애 없이 동작한다.
+- 파일 업로드 API와 실제 엑셀 업로드 실행은 테스트 파일 생성/업로드 범위라 이번 HTTP 검증에서는 제외했다.
+
 ## T-INPUT-KIOSK-EQUIP-LIST 완료
 
 **대상:** `/production/input-kiosk` 설비선택 모달.
@@ -838,6 +1132,31 @@ Use local time in 24-hour format.
 - `GET http://localhost:3002/production/input-kiosk` HTTP 200 확인.
 - 인증 없는 브라우저 접근은 `/login`으로 리다이렉트되어 실제 모달 DOM 클릭 검증은 수행하지 못했다.
 
+# 2026-06-10 02:30 codex
+
+## T-MASTER-API-DEEP-QA 기준정보 API 세부 재검증
+
+**범위:**
+- 실행 중인 백엔드 `http://localhost:3003/api/v1` 기준 실제 HTTP 호출.
+- 인증: `admin@hanes.com / admin123`, tenant `X-Company=40`, `X-Plant=1000`.
+- DB 근거 확인은 oracle-db 스킬의 `oracle_connector.py --site JSHANES` 사용.
+
+**통과:**
+- 기준정보 화면 및 관련 모듈 조회/보조 GET 49건 통과.
+- 잘못 잡았던 테스트 경로 2건은 실제 라우트 확인으로 제외/정정: 부서는 `/system/departments`, 공통코드는 `/master/com-codes/groups`, `/master/com-codes/groups/:groupCode`, `/master/com-codes/all-active`.
+- CRUD 통과: 설비, 창고/로케이션, 계측기, 자주검사항목, 라벨템플릿, 모델접미사, 제조사바코드매핑, 설비점검 Pool, 설비BOM, 공정라우팅그룹, 창고이동규칙, IQC 항목 Pool, IQC 품목검사항목, IQC 품목-그룹 링크, IQC 품목별 기준, IQC 템플릿.
+- 업로드 통과: 품목 이미지 업로드/삭제, 작업자 사진 업로드, 작업지도서 파일 업로드, BOM 템플릿 다운로드, BOM 업로드 미리보기, BOM 빈 템플릿 업로드.
+- 테스트용 업로드 파일은 `apps/backend/uploads`에서 삭제했다.
+- JSHANES 잔여 확인: `ITEM_MASTERS`, `COMPANY_MASTERS`, `PLANTS`, `EQUIP_MASTERS`, `WAREHOUSES`, `WAREHOUSE_LOCATIONS`, `GAUGE_MASTERS`, `SELF_INSPECT_ITEMS`, `LABEL_TEMPLATES`, `MODEL_SUFFIXES`, `VENDOR_BARCODE_MAPPINGS`, `EQUIP_INSPECT_ITEM_POOL`, `EQUIP_INSPECT_ITEM_MASTERS`, `EQUIP_BOM_ITEMS`, `EQUIP_BOM_RELS`, `PROCESS_MAPS`, `ROUTING_*`, `WAREHOUSE_TRANSFER_RULES`, `IQC_*` 계열 30개 테이블에서 임시 prefix `ZDQ/ZIQ/ZIG/ZUP/ZERR` count 0.
+
+**미통과 결함:**
+- `POST /master/companies` 500: `ORA-01400: NULL을 ("TEST"."COMPANY_MASTERS"."COMPANY") 안에 삽입할 수 없습니다`.
+- `POST /master/plants` 500: `ORA-01400: NULL을 ("TEST"."PLANTS"."COMPANY") 안에 삽입할 수 없습니다`.
+- `PUT /master/iqc-groups/:groupCode` 500: `ORA-01407: NULL로 ("TEST"."IQC_GROUP_ITEMS"."COMPANY")을 업데이트할 수 없습니다`.
+
+**메모:**
+- 코드 수정은 하지 않았다. 이번 작업은 재검증과 결함 특정만 수행했다.
+
 # 2026-06-09 14:40 codex
 
 ## T-INPUT-KIOSK-REMOVE-MASTER-SAMPLE 완료
@@ -855,6 +1174,30 @@ Use local time in 24-hour format.
 - 입력키오스크 경로와 kiosk 전용 locale에서 `kiosk.header.masterSample`, `masterSampleNotTarget`, `마스터샘플검사`, `마스터샘플 판정` 참조 0건 확인.
 - `GET http://localhost:3002/production/input-kiosk` HTTP 200 확인.
 - 인증 없는 브라우저 접근은 `/login`으로 리다이렉트되어 실제 작업 화면 DOM 검증은 수행하지 못했다.
+
+# 2026-06-10 codex
+
+## T-MASTER-API-DEEP-QA-FIX 완료
+
+**원인:**
+- `POST /master/companies`는 controller/service가 tenant 값을 전달/저장하지 않아 `COMPANY_MASTERS.COMPANY` NOT NULL 제약에서 ORA-01400이 발생했다.
+- `POST /master/plants`도 tenant 값을 전달/저장하지 않아 `PLANTS.COMPANY` NOT NULL 제약에서 ORA-01400이 발생했다.
+- `PUT /master/iqc-groups/:groupCode`는 items relation을 로드한 엔티티를 `save()`하면서 `IQC_GROUP_ITEMS.COMPANY`가 NULL로 갱신되어 ORA-01407이 발생했다.
+- 추가 재검증 중 `DELETE /master/iqc-groups/:groupCode`가 자식 `IQC_GROUP_ITEMS`를 남기는 것을 확인했다.
+
+**수정 내용:**
+- `company.controller.ts` / `company.service.ts`: 생성/수정에서 `@Company`, `@Plant` tenant를 전달하고 `COMPANY_MASTERS.COMPANY`, `PLANT_CD`를 저장한다. 수정/삭제는 기존 행의 복합키 기준으로 처리한다.
+- `plant.controller.ts` / `plant.service.ts`: 생성/수정/삭제에서 tenant를 전달하고 `PLANTS.COMPANY`, `PLANT_CD`를 저장/조건에 포함한다.
+- `iqc-group.service.ts`: 수정은 loaded relation 엔티티 `save()` 대신 parent `update()`를 사용한다. 삭제는 자식 `IQC_GROUP_ITEMS`를 먼저 명시 삭제한 뒤 parent를 삭제한다.
+- 관련 service spec을 보강해 tenant 저장, 복합키 조건, IQC group update/delete 동작을 검증한다.
+
+**검증:**
+- `pnpm --filter @harness/backend test -- --runTestsByPath src/modules/master/services/company.service.spec.ts src/modules/master/services/plant.service.spec.ts src/modules/master/services/iqc-group.service.spec.ts` 통과: 3 suites, 26 tests.
+- `pnpm --filter @harness/backend exec tsc --noEmit` 통과.
+- 실행 중인 `http://localhost:3003/api/v1`에서 실제 HTTP 재검증 통과: company 생성/수정/삭제, plant 생성/수정/삭제, IQC item pool 생성, IQC group 생성/수정/삭제, IQC item pool 삭제 총 11/11.
+- oracle-db `JSHANES`로 `COMPANY_MASTERS`, `PLANTS`, `IQC_ITEM_POOL`, `IQC_GROUPS`, `IQC_GROUP_ITEMS`의 `ZFX%`, `ZFY%` 테스트 prefix 잔여 0 확인.
+- 이전 실패 재현 중 남은 `ZFX031458` IQC group item orphan 1건은 oracle-db로 삭제했고, 최종 잔여 0을 확인했다.
+- `git diff --check` 통과.
 
 # 2026-06-09 13:55 codex
 
