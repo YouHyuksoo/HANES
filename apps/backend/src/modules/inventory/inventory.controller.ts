@@ -12,7 +12,11 @@ import {
   Param,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Warehouse } from '../../entities/warehouse.entity';
 import { Company, Plant } from '../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { InventoryService } from './services/inventory.service';
@@ -42,6 +46,8 @@ export class InventoryController {
     private readonly inventoryService: InventoryService,
     private readonly warehouseService: WarehouseService,
     private readonly productInventoryService: ProductInventoryService,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
   ) {}
 
   private receivePayload(dto: ReceiveStockDto, transType: string): ReceiveStockDto {
@@ -372,8 +378,14 @@ export class InventoryController {
    */
   @Post('fg/receive')
   async receiveFg(@Body() dto: ProductReceiveStockDto, @Company() company: string, @Plant() plant: string) {
+    const fg = await this.warehouseRepository.findOne({
+      where: { warehouseType: 'FG', isDefault: 'Y', company, plant },
+    });
+    if (!fg) {
+      throw new BadRequestException('FG 기본창고(IS_DEFAULT=Y)가 설정되어 있지 않습니다.');
+    }
     return this.productInventoryService.receiveStock(
-      this.productReceivePayload(dto, 'FINISHED', 'FG_IN', company, plant),
+      this.productReceivePayload({ ...dto, warehouseId: fg.warehouseCode }, 'FINISHED', 'FG_IN', company, plant),
     );
   }
 
