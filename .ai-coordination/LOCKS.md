@@ -10,6 +10,8 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## History
 
+- T-EQUIP-INSPECT-WORKER-SEED (codex, 2026-06-09): `EQUIP_INSPECT_ITEM_POOL` 작업자설비점검 표준 seed 8건 추가. JSHANES 적용·재실행, 유형별 건수/항목 조회, `/master/equip-inspect` HTTP 200 확인 후 lock 해제.
+
 - T-EQUIP-INSPECT-ADD-MODAL-TYPE (codex, 2026-06-09): `/master/equip-inspect` 점검항목추가 모달 상단에 점검유형 드롭다운을 선노출하고 선택 유형으로 Pool 항목을 필터링. node:test, 프론트 tsc, 라우트 HTTP 200 확인 후 lock 해제.
 
 - T-EQUIP-INSPECT-WORKER-TYPE (codex, 2026-06-09): `/master/equip-inspect`에 점검항목 마스터 탭을 실제 노출해 `WORKER=작업자설비점검` 유형 등록/필터 접근 가능하게 보정. node:test, 프론트 tsc, 라우트 HTTP 200 확인 후 lock 해제.

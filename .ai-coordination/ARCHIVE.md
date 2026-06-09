@@ -10,6 +10,8 @@ Format:
 
 ## Completed
 
+- T-SHIP-FG-RECEIVE-UI | 2026-06-09 | claude | 완제품 제품입고 창고선택 UI 정리(T-SHIP-BOX-SCAN 후속): 백엔드 fg/receive가 FG_MAIN 강제이므로 웹 ReceiveModal·BoxReceiveList·PDA product/receiving에서 FINISHED일 때 창고선택 숨김+FG 자동입고 안내, WIP 경로 불변. i18n fgAutoWarehouse 3키×4파일(타 작업자 WIP는 hunk 분리로 미흡수). 프론트 tsc 0, /product/receive·/pda/product/receiving HTTP 200 | evidence: JOURNAL 2026-06-09 21:40 claude, commit d7af956·12971b9
+- T-EQUIP-INSPECT-WORKER-SEED | 2026-06-09 | codex | `EQUIP_INSPECT_ITEM_POOL` 작업자설비점검 표준 seed 8건 추가. JSHANES 적용·재실행, 유형별 건수/항목 조회, `/master/equip-inspect` HTTP 200 확인 | evidence: JOURNAL 2026-06-09 21:30 codex
 - T-EQUIP-INSPECT-ADD-MODAL-TYPE | 2026-06-09 | codex | `/master/equip-inspect` 점검항목추가 모달 상단에 점검유형 드롭다운을 선노출하고 선택 유형으로 Pool 항목을 필터링. node:test, 프론트 tsc, 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 21:15 codex
 - T-EQUIP-INSPECT-WORKER-TYPE | 2026-06-09 | codex | `/master/equip-inspect`에 점검항목 마스터 탭을 실제 노출해 `WORKER=작업자설비점검` 유형 등록/필터 접근 가능하게 보정. node:test, 프론트 tsc, 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 21:00 codex
 - T-EQUIP-INSPECT-ADD-TYPE | 2026-06-09 | codex | `/master/equip-inspect` 점검항목 추가 모달에서 점검유형 선택 가능. 생성 API도 요청 `inspectType`을 Pool 기본값보다 우선 반영하도록 수정. 백/프론트 tsc 및 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 20:35 codex

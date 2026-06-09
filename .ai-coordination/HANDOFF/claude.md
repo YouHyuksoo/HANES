@@ -16,9 +16,9 @@ spec `docs/superpowers/specs/2026-06-09-shipping-box-scan-design.md`, plan `docs
 - **웹** `components/shipping/BoxScanShipModal.tsx` + `/shipping/confirm` 헤더 버튼(작업자=로그인 사용자). **PDA** `useShippingScan` 수리: 미구현 `by-barcode`/`register` → `GET /shipping/orders/:id` + `ship-box` 1건 호출(작업자 QR 유지, 다중 라인 진행률). i18n 4파일(`shipping.boxScan.*`, `pda.shipping` 에러키).
 - 검증: 백엔드 jest 18건·tsc 0, 프론트 tsc 0, 실DB(SO-SBX-TEST/BXPDATEST01/FG_MAIN×5) GET→ship-box→DB확인(박스 SHIPPED·FG_MAIN 5→0·shippedQty 5·지시 CLOSED·FG_OUT -5)→재출하 400→**전량 원복**.
 
-### 보류·주의 (다음 세션)
-- **Task9 보류**: 제품입고 PDA `apps/frontend/src/app/pda/product/receiving/page.tsx` 창고선택 숨김(완제품 FG 자동입고 안내). 해당 파일이 **untracked 신규(타 작업자 진행 중)**라 흡수 커밋 부적절해 보류. 백엔드 FG_MAIN 강제로 기능은 정상, UI 정합성만 미적용. 그 파일이 커밋된 뒤 진행 권장.
-- i18n 커밋 `8a5b44a`에 working tree의 타 작업자 미커밋 번역이 함께 포함됨(코드 손실 없음).
+### 후속·주의
+- **Task9 완료(T-SHIP-FG-RECEIVE-UI, commit d7af956·12971b9)**: 웹 ReceiveModal·BoxReceiveList·PDA product/receiving에서 완제품(FINISHED) 창고선택 숨김+FG 자동입고 안내(WIP 불변). i18n fgAutoWarehouse 3키. PDA 파일은 그 사이 tracked로 전환되어 정상 커밋.
+- i18n 커밋 `8a5b44a`에 working tree의 타 작업자 미커밋 번역이 함께 포함됨(코드 손실 없음). 이후 i18n 커밋(cffc9da·12971b9)은 hunk 분리로 타 작업분 미흡수.
 
 ---
 

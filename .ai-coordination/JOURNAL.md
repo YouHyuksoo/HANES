@@ -1,5 +1,44 @@
 # JOURNAL
 
+## 2026-06-09 21:40 claude
+
+### T-SHIP-FG-RECEIVE-UI 완료 (T-SHIP-BOX-SCAN 후속, 보류분 해소)
+
+**배경:** 백엔드 `fg/receive`가 FG 기본창고(FG_MAIN) 강제 입고로 바뀌어, 완제품 입고 화면의 창고선택 UI가 무의미(사용자가 골라도 무시)해짐.
+
+**변경 (FINISHED 경로만, WIP/SEMI_PRODUCT 불변):**
+- 웹 `product/receive/components/ReceiveModal.tsx`(개별입고): FINISHED일 때 창고 Select 숨김+`fgAutoWarehouse` 안내, submit/버튼 disabled에서 FINISHED는 warehouseCode 불요.
+- 웹 `product/receive/components/BoxReceiveList.tsx`(박스입고): FINISHED일 때 창고 Select 숨김+안내, receive 가드 완화. `useBoxReceive.ts`는 미변경(warehouseId 릴레이).
+- PDA `pda/product/receiving/page.tsx`(이번엔 tracked): FINISHED일 때 `WarehouseSelect` 숨김+안내.
+- i18n `fgAutoWarehouse` 3키(productMgmt.receive.modal / productMgmt.receive / pda.productReceiving)×4파일. **타 작업자 미커밋 WIP가 locales에 섞여 있어 hunk 분리(git apply --cached)로 내 12줄만 커밋, 타 작업분 working tree 보존.**
+
+**검증:** 프론트 tsc 0, `/product/receive`·`/pda/product/receiving` HTTP 200, ko 3키 확인.
+
+**커밋:** d7af956(코드), 12971b9(i18n).
+
+## 2026-06-09 21:30 codex
+
+### T-EQUIP-INSPECT-WORKER-SEED 완료
+
+**대상:** `EQUIP_INSPECT_ITEM_POOL` 점검항목 마스터.
+
+**원인:**
+- 기존 표준 seed(`2026-05-19_seed_equip_inspect_item_pool.sql`)에는 `DAILY`, `PERIODIC`, `PM` 항목만 있었다.
+- JSHANES 실DB 확인 결과 `WORKER` 유형은 0건이었다.
+
+**수정 내용:**
+- 재실행 가능한 seed SQL `apps/backend/src/migrations/2026-06-09_seed_equip_inspect_worker_items.sql`을 추가했다.
+- `WORKER=작업자설비점검` 표준 항목 8건을 `EIP-STD-W001~W008` 코드로 추가했다.
+- 항목은 작업 전 정리, 안전커버/보호장치, 비상정지 접근성, 치공구 장착, 자재 투입 방향, 표시등/알람, 작업부 청결, 작업 종료 후 원위치 확인이다.
+
+**검증:**
+- 사전 JSHANES 조회: `WORKER` 0건.
+- `python scripts/migration/run_migration.py apps/backend/src/migrations/2026-06-09_seed_equip_inspect_worker_items.sql --site JSHANES` 성공.
+- 동일 명령 재실행 성공(MERGE 기반 idempotent 확인).
+- JSHANES 유형별 건수: `DAILY=25`, `PERIODIC=17`, `PM=4`, `WORKER=8`.
+- JSHANES `WORKER` 항목 8건 조회 확인.
+- `GET http://localhost:3002/master/equip-inspect` HTTP 200 확인.
+
 ## 2026-06-09 21:15 codex
 
 ### T-EQUIP-INSPECT-ADD-MODAL-TYPE 완료
