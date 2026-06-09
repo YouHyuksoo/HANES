@@ -2372,6 +2372,7 @@
       "subtitle": "处理半成品/成品入库。",
       "tabWip": "半成品(WIP)",
       "tabFg": "成品(FG)",
+      "fgAutoWarehouse": "成品自动入库至良品仓库(FG 默认仓库)。",
       "registerReceive": "入库登记",
       "stats": {
         "todayCount": "今日入库数",
@@ -2391,6 +2392,7 @@
         "partType": "品目类型",
         "partId": "品目",
         "warehouseId": "入库仓库",
+        "fgAutoWarehouse": "成品自动入库至良品仓库(FG 默认仓库)。",
         "qty": "数量",
         "jobOrderId": "工单号",
         "processCode": "工序代码",
@@ -5377,6 +5379,7 @@
       "logout": "登出"
     },
     "productReceiving": {
+      "fgAutoWarehouse": "成品自动入库至良品仓库(FG 默认仓库)。",
       "title": "产品装箱入库",
       "scanBox": "请扫描箱条码",
       "boxNo": "箱号",

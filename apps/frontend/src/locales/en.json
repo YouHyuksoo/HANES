@@ -2386,6 +2386,7 @@
       "subtitle": "Process WIP/FG product receiving.",
       "tabWip": "WIP",
       "tabFg": "FG",
+      "fgAutoWarehouse": "Finished goods are auto-received into the default FG warehouse.",
       "registerReceive": "Register Receive",
       "stats": {
         "todayCount": "Today Receipts",
@@ -2405,6 +2406,7 @@
         "partType": "Part Type",
         "partId": "Part",
         "warehouseId": "Warehouse",
+        "fgAutoWarehouse": "Finished goods are auto-received into the default FG warehouse.",
         "qty": "Quantity",
         "jobOrderId": "Job Order No.",
         "processCode": "Process Code",
@@ -5391,6 +5393,7 @@
       "logout": "Logout"
     },
     "productReceiving": {
+      "fgAutoWarehouse": "Finished goods are auto-received into the default FG warehouse.",
       "title": "Product Box Receiving",
       "scanBox": "Scan box barcode",
       "boxNo": "Box No.",

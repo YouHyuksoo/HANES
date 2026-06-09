@@ -2372,6 +2372,7 @@
       "subtitle": "Xử lý nhập kho bán thành phẩm/thành phẩm.",
       "tabWip": "Bán thành phẩm (WIP)",
       "tabFg": "Thành phẩm (FG)",
+      "fgAutoWarehouse": "Thành phẩm được tự động nhập vào kho FG mặc định.",
       "registerReceive": "Đăng ký nhập kho",
       "stats": {
         "todayCount": "Nhập kho hôm nay",
@@ -2391,6 +2392,7 @@
         "partType": "Loại sản phẩm",
         "partId": "Sản phẩm",
         "warehouseId": "Kho nhập",
+        "fgAutoWarehouse": "Thành phẩm được tự động nhập vào kho FG mặc định.",
         "qty": "Số lượng",
         "jobOrderId": "Mã lệnh SX",
         "processCode": "Mã công đoạn",
@@ -5377,6 +5379,7 @@
       "logout": "Đăng xuất"
     },
     "productReceiving": {
+      "fgAutoWarehouse": "Thành phẩm được tự động nhập vào kho FG mặc định.",
       "title": "Nhập kho thùng sản phẩm",
       "scanBox": "Quét mã vạch thùng",
       "boxNo": "Số thùng",

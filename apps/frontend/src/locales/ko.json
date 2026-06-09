@@ -2701,6 +2701,7 @@
       "subtitle": "반제품/완제품 입고를 처리합니다.",
       "tabWip": "반제품(WIP)",
       "tabFg": "완제품(FG)",
+      "fgAutoWarehouse": "완제품은 양품창고(FG 기본창고)로 자동 입고됩니다.",
       "registerReceive": "입고등록",
       "stats": {
         "todayCount": "금일 입고건수",
@@ -2720,6 +2721,7 @@
         "partType": "품목유형",
         "partId": "품목",
         "warehouseId": "입고 창고",
+        "fgAutoWarehouse": "완제품은 양품창고(FG 기본창고)로 자동 입고됩니다.",
         "qty": "수량",
         "jobOrderId": "작업지시번호",
         "processCode": "공정코드",
@@ -5410,6 +5412,7 @@
       "logout": "로그아웃"
     },
     "productReceiving": {
+      "fgAutoWarehouse": "완제품은 양품창고(FG 기본창고)로 자동 입고됩니다.",
       "title": "제품 박스 입고",
       "scanBox": "박스 바코드를 스캔하세요",
       "boxNo": "박스번호",
