@@ -105,7 +105,22 @@ export class EquipMasterService {
       qb.clone().getCount(),
     ]);
 
-    return { data, total, page, limit };
+    // 공정명 매핑 — PROCESS_MASTERS 단일 출처 (단일 IN 조회, N+1 회피)
+    const processCodes = [...new Set(data.map((e) => e.processCode).filter((c): c is string => !!c))];
+    const nameMap = new Map<string, string>();
+    if (processCodes.length) {
+      const processes = await this.processRepository.find({
+        where: { processCode: In(processCodes) },
+        select: ['processCode', 'processName'],
+      });
+      processes.forEach((p) => nameMap.set(p.processCode, p.processName));
+    }
+    const enriched = data.map((e) => ({
+      ...e,
+      processName: e.processCode ? nameMap.get(e.processCode) ?? null : null,
+    }));
+
+    return { data: enriched, total, page, limit };
   }
 
   /**
