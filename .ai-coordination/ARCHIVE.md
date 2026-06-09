@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-EQUIP-INSPECT-ADD-MODAL-TYPE | 2026-06-09 | codex | `/master/equip-inspect` 점검항목추가 모달 상단에 점검유형 드롭다운을 선노출하고 선택 유형으로 Pool 항목을 필터링. node:test, 프론트 tsc, 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 21:15 codex
 - T-EQUIP-INSPECT-WORKER-TYPE | 2026-06-09 | codex | `/master/equip-inspect`에 점검항목 마스터 탭을 실제 노출해 `WORKER=작업자설비점검` 유형 등록/필터 접근 가능하게 보정. node:test, 프론트 tsc, 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 21:00 codex
 - T-EQUIP-INSPECT-ADD-TYPE | 2026-06-09 | codex | `/master/equip-inspect` 점검항목 추가 모달에서 점검유형 선택 가능. 생성 API도 요청 `inspectType`을 Pool 기본값보다 우선 반영하도록 수정. 백/프론트 tsc 및 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 20:35 codex
 - T-ITEM-MARKING-TEXT | 2026-06-09 | codex | `ITEM_MASTERS.MARKING_TEXT VARCHAR2(100)` 추가 및 JSHANES 적용. 품목마스터 엔티티/DTO/서비스 검색/프론트 목록·폼 반영, ERD 갱신, 백/프론트 tsc 및 라우트 HTTP 200 확인 | evidence: JOURNAL 2026-06-09 20:35 codex

@@ -1,5 +1,28 @@
 # JOURNAL
 
+## 2026-06-09 21:15 codex
+
+### T-EQUIP-INSPECT-ADD-MODAL-TYPE 완료
+
+**대상:** `/master/equip-inspect` 점검항목추가 모달.
+
+**원인:**
+- `AddInspectItemModal`에는 점검유형 `Select`가 있었지만 점검항목 선택 아래 3칸 그리드 안에 배치되어 있었다.
+- 선택한 Pool 항목의 `inspectType`이 다시 상태를 덮어써서, 사용자가 모달을 열자마자 점검유형을 먼저 선택하는 흐름이 아니었다.
+- 실제 사용 화면에서는 점검유형 드롭다운이 없거나 선택할 수 없는 컨트롤처럼 보일 수 있었다.
+
+**수정 내용:**
+- 점검유형 드롭다운을 모달 상단, 점검항목 선택보다 먼저 독립 행으로 배치했다.
+- 점검유형 변경 시 선택된 점검항목을 초기화하고, `/master/equip-inspect-item-pool` 조회에 `inspectType` 파라미터를 추가해 선택 유형의 Pool 항목만 표시한다.
+- Pool 항목 선택 시 점검유형을 자동으로 덮어쓰던 effect를 제거했다.
+- 모달 구조 회귀 방지용 `add-modal.structure.test.mjs`를 추가했다.
+
+**검증:**
+- RED: `node --test apps/frontend/src/app/(authenticated)/master/equip-inspect/add-modal.structure.test.mjs`가 점검유형 위치/필터 누락으로 실패 확인.
+- GREEN: `node --test apps/frontend/src/app/(authenticated)/master/equip-inspect/add-modal.structure.test.mjs` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `GET http://localhost:3002/master/equip-inspect` HTTP 200 확인.
+
 ## 2026-06-09 21:00 codex
 
 ### T-EQUIP-INSPECT-WORKER-TYPE 완료
