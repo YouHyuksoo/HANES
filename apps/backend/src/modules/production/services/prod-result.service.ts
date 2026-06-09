@@ -31,6 +31,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { User } from '../../../entities/user.entity';
+import { WorkerMaster } from '../../../entities/worker-master.entity';
 import {
   CreateProdResultDto,
   UpdateProdResultDto,
@@ -73,6 +74,8 @@ export class ProdResultService {
     private readonly matIssueRepository: Repository<MatIssue>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(WorkerMaster)
+    private readonly workerMasterRepository: Repository<WorkerMaster>,
     private readonly dataSource: DataSource,
     private readonly autoIssueService: AutoIssueService,
     private readonly productInventoryService: ProductInventoryService,
@@ -437,12 +440,23 @@ export class ProdResultService {
       });
     }
 
-    // 작업자 존재 확인 (옵션) — workerId로 User 테이블 조회
+    // 작업자 존재 확인 (옵션)
+    // PROD_RESULTS.worker 관계는 WORKER_MASTERS.workerCode를 참조하므로 작업자마스터를 우선 조회한다.
+    // (입력 화면들은 workerCode를 workerId로 전송). 과거 데이터 호환을 위해 USERS.email 폴백도 허용한다.
     if (dto.workerId) {
-      const worker = await this.userRepository.findOne({
-        where: { email: dto.workerId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      const tenantWhere = {
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      };
+      const worker = await this.workerMasterRepository.findOne({
+        where: { workerCode: dto.workerId, ...tenantWhere },
       });
-      if (!worker) {
+      const legacyUser = worker
+        ? null
+        : await this.userRepository.findOne({
+            where: { email: dto.workerId, ...tenantWhere },
+          });
+      if (!worker && !legacyUser) {
         throw new NotFoundException(`작업자를 찾을 수 없습니다: ${dto.workerId}`);
       }
     }

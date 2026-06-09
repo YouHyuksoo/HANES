@@ -170,7 +170,7 @@ export default function InputManualPage() {
         equipCode: selectedEquip.equipCode,
         workerId: selectedWorker.id,
         processCode: selectedProcess?.processCode,
-        matUid: form.matUid || undefined,
+        prdUid: form.matUid || undefined,
         goodQty: Number(form.goodQty) || 0,
         defectQty: Number(form.defectQty) || 0,
         startAt: form.startAt ? `${new Date().toISOString().split('T')[0]}T${form.startAt}` : undefined,

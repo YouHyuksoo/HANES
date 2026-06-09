@@ -90,10 +90,11 @@ import { SelfInspectResult } from '../../entities/self-inspect-result.entity';
 import { JobMaterialLot } from '../../entities/job-material-lot.entity';
 import { JobMaterialLotController } from './controllers/job-material-lot.controller';
 import { JobMaterialLotService } from './services/job-material-lot.service';
+import { WorkerMaster } from '../../entities/worker-master.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, WorkerMaster]),
     InventoryModule,
     SystemModule,
   ],

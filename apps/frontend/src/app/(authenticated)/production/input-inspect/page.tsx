@@ -166,7 +166,7 @@ export default function InputInspectPage() {
         workerId: selectedWorker.id,
         equipCode: selectedEquip.equipCode,
         processCode: selectedProcess?.processCode,
-        matUid: form.matUid || undefined,
+        prdUid: form.matUid || undefined,
         goodQty: Number(form.passQty) || 0,
         defectQty: Number(form.failQty) || 0,
         remark: form.remark || undefined,

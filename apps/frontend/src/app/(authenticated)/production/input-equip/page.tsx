@@ -169,9 +169,12 @@ export default function InputEquipPage() {
         workerId: selectedWorker.id,
         equipCode: selectedEquip.equipCode,
         processCode: selectedProcess?.processCode,
-        matUid: form.matUid || undefined,
-        measuredValue: Number(form.measuredValue) || undefined,
-        remark: form.remark || undefined,
+        prdUid: form.matUid || undefined,
+        // 측정값은 prod-results DTO/엔티티에 저장 컬럼이 없어 비고에 보존한다(없으면 비고만 전송).
+        remark: [
+          form.measuredValue ? `측정값: ${form.measuredValue}` : null,
+          form.remark || null,
+        ].filter(Boolean).join(' / ') || undefined,
       });
       setIsModalOpen(false);
       setForm({ matUid: '', measuredValue: '', remark: '' });

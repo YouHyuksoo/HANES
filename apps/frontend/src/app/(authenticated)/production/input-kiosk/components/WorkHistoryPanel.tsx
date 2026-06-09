@@ -27,7 +27,8 @@ interface QualityCondition {
 }
 
 interface HistoryItem {
-  id: string;
+  // 목록 API(GET /production/prod-results)는 PK를 resultNo로 반환한다(id 필드 없음)
+  resultNo: string;
   matUid?: string;
   goodQty: number;
   defectQty: number;
@@ -172,7 +173,7 @@ export default function WorkHistoryPanel() {
         ) : (
           <ul className="divide-y divide-border/30">
             {history.map((item, idx) => (
-              <li key={item.id} className="px-3 py-2 hover:bg-surface/50 transition-colors">
+              <li key={item.resultNo ?? idx} className="px-3 py-2 hover:bg-surface/50 transition-colors">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-xs text-text-muted tabular-nums w-4 text-right shrink-0">
                     {idx + 1}

@@ -107,14 +107,14 @@ export default function WorkInstructionView() {
       )}
 
       {/* 이미지 영역 */}
-      <div className="flex-1 overflow-auto flex items-center justify-center bg-surface/20 min-h-0">
+      <div className="flex-1 overflow-auto bg-surface/20 min-h-0">
         {!selectedJobOrder ? (
-          <div className="flex flex-col items-center gap-2 text-text-muted">
+          <div className="flex flex-col items-center justify-center gap-2 text-text-muted h-full">
             <BookOpen className="w-12 h-12 opacity-20" />
             <span className="text-sm">{t('kiosk.instruction.selectJobOrder')}</span>
           </div>
         ) : instructions.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 text-text-muted">
+          <div className="flex flex-col items-center justify-center gap-2 text-text-muted h-full">
             <BookOpen className="w-12 h-12 opacity-20" />
             <span className="text-sm">{t('kiosk.instruction.noInstruction')}</span>
             <span className="text-xs opacity-60">{t('kiosk.instruction.noInstructionHint')}</span>
@@ -123,11 +123,11 @@ export default function WorkInstructionView() {
           <img
             src={`${backendBase}${current.imageUrl}`}
             alt={current.title}
-            className="max-w-full max-h-full object-contain cursor-zoom-in"
+            className="w-full h-auto object-contain cursor-zoom-in"
             onClick={() => setZoomed(true)}
           />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-text-muted p-4 text-center">
+          <div className="flex flex-col items-center justify-center gap-2 text-text-muted p-4 text-center h-full">
             <BookOpen className="w-10 h-10 opacity-20" />
             <p className="text-sm font-medium text-text">{current?.title}</p>
             {current?.content && (

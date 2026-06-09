@@ -16,6 +16,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { User } from '../../../entities/user.entity';
+import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -35,6 +36,7 @@ describe('ProdResultService', () => {
   let consumableRepo: DeepMocked<Repository<ConsumableMaster>>;
   let matIssueRepo: DeepMocked<Repository<MatIssue>>;
   let userRepo: DeepMocked<Repository<User>>;
+  let workerMasterRepo: DeepMocked<Repository<WorkerMaster>>;
   let dataSource: DeepMocked<DataSource>;
   let autoIssueService: DeepMocked<AutoIssueService>;
   let productInventoryService: DeepMocked<ProductInventoryService>;
@@ -54,6 +56,7 @@ describe('ProdResultService', () => {
     consumableRepo = createMock<Repository<ConsumableMaster>>();
     matIssueRepo = createMock<Repository<MatIssue>>();
     userRepo = createMock<Repository<User>>();
+    workerMasterRepo = createMock<Repository<WorkerMaster>>();
     dataSource = createMock<DataSource>();
     autoIssueService = createMock<AutoIssueService>();
     productInventoryService = createMock<ProductInventoryService>();
@@ -83,6 +86,7 @@ describe('ProdResultService', () => {
         { provide: getRepositoryToken(ConsumableMaster), useValue: consumableRepo },
         { provide: getRepositoryToken(MatIssue), useValue: matIssueRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
+        { provide: getRepositoryToken(WorkerMaster), useValue: workerMasterRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: AutoIssueService, useValue: autoIssueService },
         { provide: ProductInventoryService, useValue: productInventoryService },
@@ -297,7 +301,7 @@ describe('ProdResultService', () => {
     });
   });
 
-  it('validates worker within tenant when creating result', async () => {
+  it('validates worker by workerCode (WorkerMaster) within tenant when creating result', async () => {
     jobOrderRepo.findOne.mockResolvedValue({
       orderNo: 'JO-1',
       status: 'RUNNING',
@@ -305,6 +309,45 @@ describe('ProdResultService', () => {
       company: 'C1',
       plant: 'P1',
     } as any);
+    // 입력 화면들은 workerCode를 workerId로 전송 → WorkerMaster.workerCode로 검증된다.
+    workerMasterRepo.findOne.mockResolvedValue({ workerCode: 'W010', company: 'C1', plant: 'P1' } as any);
+
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+
+    await service.create(
+      { orderNo: 'JO-1', workerId: 'W010', goodQty: 1, defectQty: 0 } as any,
+      'C1',
+      'P1',
+    );
+
+    expect(workerMasterRepo.findOne).toHaveBeenCalledWith({
+      where: { workerCode: 'W010', company: 'C1', plant: 'P1' },
+    });
+  });
+
+  it('falls back to USERS.email when workerId is not a workerCode (legacy data)', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-1',
+      status: 'RUNNING',
+      planQty: 100,
+      company: 'C1',
+      plant: 'P1',
+    } as any);
+    workerMasterRepo.findOne.mockResolvedValue(null as any);
     userRepo.findOne.mockResolvedValue({ email: 'worker@harness.com', company: 'C1', plant: 'P1' } as any);
 
     const qb = {
@@ -332,6 +375,35 @@ describe('ProdResultService', () => {
     expect(userRepo.findOne).toHaveBeenCalledWith({
       where: { email: 'worker@harness.com', company: 'C1', plant: 'P1' },
     });
+  });
+
+  it('throws when workerId matches neither WorkerMaster nor USERS', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-1',
+      status: 'RUNNING',
+      planQty: 100,
+      company: 'C1',
+      plant: 'P1',
+    } as any);
+    workerMasterRepo.findOne.mockResolvedValue(null as any);
+    userRepo.findOne.mockResolvedValue(null as any);
+
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+    await expect(
+      service.create(
+        { orderNo: 'JO-1', workerId: 'NOPE', goodQty: 1, defectQty: 0 } as any,
+        'C1',
+        'P1',
+      ),
+    ).rejects.toThrow('작업자를 찾을 수 없습니다: NOPE');
   });
 
   it('create promotes job-order status from WAITING to RUNNING', async () => {

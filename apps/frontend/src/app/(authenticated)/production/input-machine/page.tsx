@@ -186,7 +186,7 @@ export default function InputMachinePage() {
         workerId: selectedWorker.id,
         equipCode: selectedEquip.equipCode,
         processCode: selectedProcess?.processCode,
-        matUid: form.matUid || undefined,
+        prdUid: form.matUid || undefined,
         goodQty: Number(form.goodQty) || 0,
         defectQty: Number(form.defectQty) || 0,
         cycleTime: Number(form.cycleTime) || undefined,

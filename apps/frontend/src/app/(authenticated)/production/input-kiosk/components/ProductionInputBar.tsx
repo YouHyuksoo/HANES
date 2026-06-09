@@ -90,7 +90,7 @@ export default function ProductionInputBar({
         equipCode: selectedEquip!.equipCode,
         workerId: selectedWorkers[0].id,
         processCode: selectedJobOrder?.processCode,
-        matUid: serialNo || undefined,
+        prdUid: serialNo || undefined,
         goodQty: good,
         defectQty: defect,
       }, { skipSuccessToast: true });
