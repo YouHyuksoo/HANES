@@ -25,7 +25,7 @@ import EquipSelectModal from './EquipSelectModal';
 import HeaderCheckItem from './HeaderCheckItem';
 import type { BomItem } from './MaterialListPanel';
 
-interface EquipOption { equipCode: string; equipName: string; }
+interface EquipOption { equipCode: string; equipName: string; processCode?: string; processName?: string; }
 
 interface EquipHeaderProps {
   equips: EquipOption[];
@@ -66,7 +66,12 @@ export default function EquipHeader({
   }, []);
 
   const handleEquipSelect = useCallback((equip: EquipOption) => {
-    setSelectedEquip({ equipCode: equip.equipCode, equipName: equip.equipName });
+    setSelectedEquip({
+      equipCode: equip.equipCode,
+      equipName: equip.equipName,
+      processCode: equip.processCode,
+      processName: equip.processName,
+    });
   }, [setSelectedEquip]);
 
   const handleBarcodeSubmit = useCallback(async () => {
@@ -137,7 +142,14 @@ export default function EquipHeader({
               {selectedEquip ? (
                 <>
                   <div className="truncate text-sm font-extrabold text-text">{selectedEquip.equipName}</div>
-                  <div className="truncate text-[11px] text-text-muted">{selectedEquip.equipCode}</div>
+                  <div className="truncate text-[11px] text-text-muted">
+                    {selectedEquip.equipCode}
+                    {selectedEquip.processCode && (
+                      <span className="ml-1 text-primary font-semibold">
+                        · {selectedEquip.processName || selectedEquip.processCode}
+                      </span>
+                    )}
+                  </div>
                 </>
               ) : (
                 <span className="text-sm font-semibold text-text-muted">{t('kiosk.header.selectEquip')}</span>

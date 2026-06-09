@@ -46,10 +46,11 @@ export class CreateBoxDto {
   @IsString()
   itemCode: string;
 
-  @ApiProperty({ description: '수량', example: 100, minimum: 0 })
+  @ApiPropertyOptional({ description: '수량 (미지정 시 0, 시리얼 추가 시 자동 갱신)', example: 0, minimum: 0 })
+  @IsOptional()
   @IsInt()
   @Min(0)
-  qty: number;
+  qty?: number;
 
   @ApiPropertyOptional({ description: '시리얼 리스트', type: [String], example: ['SN-001', 'SN-002'] })
   @IsOptional()

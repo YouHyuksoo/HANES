@@ -115,9 +115,7 @@ export class ReworkService {
       endDate,
     } = query;
 
-    const qb = this.reworkRepo
-      .createQueryBuilder('r')
-      .leftJoinAndSelect('r.defectLog', 'dl');
+    const qb = this.reworkRepo.createQueryBuilder('r');
 
     if (company) qb.andWhere('r.company = :company', { company });
     if (plant) qb.andWhere('r.plant = :plant', { plant });
@@ -154,7 +152,6 @@ export class ReworkService {
   async findById(reworkNo: string, company?: string, plant?: string) {
     const item = await this.reworkRepo.findOne({
       where: { reworkNo, ...this.tenantWhere(company, plant) },
-      relations: ['defectLog'],
     });
     if (!item) {
       throw new NotFoundException('재작업 지시를 찾을 수 없습니다.');

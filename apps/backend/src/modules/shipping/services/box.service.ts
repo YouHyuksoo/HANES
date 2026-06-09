@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, IsNull, In, Repository } from 'typeorm';
+import { ILike, IsNull, In, Not, Repository } from 'typeorm';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -97,7 +97,24 @@ export class BoxService {
       this.boxRepository.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // 품목명·박스 구성단위(packUnit) 일괄 보강 (N+1 방지)
+    const itemCodes = [...new Set(data.map((b) => b.itemCode).filter(Boolean))];
+    const parts = itemCodes.length > 0
+      ? await this.partRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
+    const enriched = data.map((box) => {
+      const part = partMap.get(box.itemCode);
+      const pu = part?.packUnit ? Number(part.packUnit) : null;
+      return {
+        ...box,
+        itemName: part?.itemName ?? null,
+        itemType: part?.itemType ?? null,
+        packUnit: pu != null && Number.isFinite(pu) && pu > 0 ? pu : null,
+      };
+    });
+
+    return { data: enriched, total, page, limit };
   }
 
   async findById(boxNo: string, company?: string, plant?: string) {
@@ -129,6 +146,120 @@ export class BoxService {
     };
   }
 
+  async findBoxItems(boxNo: string, company?: string, plant?: string) {
+    const box = await this.findById(boxNo, company, plant);
+    const serials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
+    if (serials.length === 0) {
+      return [];
+    }
+
+    const [labels, part] = await Promise.all([
+      this.fgLabelRepository.find({
+        where: { fgBarcode: In(serials), ...this.tenantWhere(company, plant) },
+      }),
+      this.partRepository.findOne({
+        where: { itemCode: box.itemCode, ...this.tenantWhere(company, plant) },
+      }),
+    ]);
+    const labelMap = new Map(labels.map((label) => [label.fgBarcode, label] as const));
+
+    return serials.map((serial, index) => {
+      const label = labelMap.get(serial);
+      return {
+        seq: index + 1,
+        fgBarcode: serial,
+        itemCode: label?.itemCode ?? box.itemCode,
+        itemName: part?.itemName ?? null,
+        orderNo: label?.orderNo ?? null,
+        equipCode: label?.equipCode ?? null,
+        workerId: label?.workerId ?? null,
+        lineCode: label?.lineCode ?? null,
+        status: label?.status ?? null,
+        inspectPassYn: label?.inspectPassYn ?? null,
+        issuedAt: label?.issuedAt ?? null,
+        missingLabel: !label,
+      };
+    });
+  }
+
+  /**
+   * 박스별 제품재고 집계 (왼쪽 그리드)
+   * 재고 단위 = 시리얼(FG_LABELS). 재고 = BOX_NO 부여됨(입고) + 미출하.
+   * BOX_MASTERS(박스 포장 테이블)가 아니라 FG_LABELS 하나로 박스별 재고를 SQL 집계한다.
+   */
+  async findStockByBox(boxNo: string | undefined, company?: string, plant?: string) {
+    const qb = this.fgLabelRepository
+      .createQueryBuilder('l')
+      .select('l.boxNo', 'boxNo')
+      .addSelect('l.itemCode', 'itemCode')
+      .addSelect('COUNT(*)', 'qty')
+      .addSelect('MIN(l.orderNo)', 'orderNo')
+      .addSelect('MAX(l.issuedAt)', 'latestAt')
+      .where('l.boxNo IS NOT NULL')
+      .andWhere("l.status <> 'SHIPPED'")
+      .groupBy('l.boxNo')
+      .addGroupBy('l.itemCode')
+      .orderBy('l.boxNo', 'DESC');
+    if (company) qb.andWhere('l.company = :company', { company });
+    if (plant) qb.andWhere('l.plant = :plant', { plant });
+    if (boxNo) qb.andWhere('l.boxNo LIKE :boxNo', { boxNo: `%${boxNo}%` });
+
+    const rows = await qb.getRawMany<{
+      boxNo: string;
+      itemCode: string;
+      qty: string | number;
+      orderNo: string | null;
+      latestAt: Date | null;
+    }>();
+
+    // 품목명 일괄 보강 (N+1 방지)
+    const itemCodes = [...new Set(rows.map((r) => r.itemCode).filter(Boolean))];
+    const parts = itemCodes.length > 0
+      ? await this.partRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
+
+    return rows.map((r) => ({
+      boxNo: r.boxNo,
+      itemCode: r.itemCode,
+      itemName: partMap.get(r.itemCode)?.itemName ?? null,
+      qty: Number(r.qty) || 0,
+      orderNo: r.orderNo ?? null,
+      latestAt: r.latestAt ?? null,
+    }));
+  }
+
+  /**
+   * 박스 내 재고 시리얼 목록 (오른쪽 그리드)
+   * 선택 박스의 미출하 시리얼(FG_LABELS)을 반환한다.
+   */
+  async findStockSerials(boxNo: string, company?: string, plant?: string) {
+    const labels = await this.fgLabelRepository.find({
+      where: { boxNo, status: Not('SHIPPED'), ...this.tenantWhere(company, plant) },
+      order: { fgBarcode: 'ASC' },
+    });
+
+    const itemCodes = [...new Set(labels.map((l) => l.itemCode).filter(Boolean))];
+    const parts = itemCodes.length > 0
+      ? await this.partRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
+
+    return labels.map((label, index) => ({
+      seq: index + 1,
+      fgBarcode: label.fgBarcode,
+      itemCode: label.itemCode,
+      itemName: partMap.get(label.itemCode)?.itemName ?? null,
+      orderNo: label.orderNo ?? null,
+      equipCode: label.equipCode ?? null,
+      workerId: label.workerId ?? null,
+      lineCode: label.lineCode ?? null,
+      status: label.status ?? null,
+      inspectPassYn: label.inspectPassYn ?? null,
+      issuedAt: label.issuedAt ?? null,
+    }));
+  }
+
   async create(dto: CreateBoxDto, company?: string, plant?: string) {
     // 박스번호 미지정 시 자동 채번 (BX+YYMMDD+4자리, SEQ_BOX_NO_DAILY)
     const boxNo = dto.boxNo ?? await this.numbering.nextBoxNo();
@@ -150,7 +281,7 @@ export class BoxService {
     const box = this.boxRepository.create({
       boxNo,
       itemCode: dto.itemCode,
-      qty: dto.qty,
+      qty: dto.qty ?? 0,
       serialList: dto.serialList ? JSON.stringify(dto.serialList) : null,
       status: 'OPEN',
       oqcStatus: null,

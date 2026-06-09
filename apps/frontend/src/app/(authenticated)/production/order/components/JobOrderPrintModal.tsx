@@ -92,16 +92,11 @@ export default function JobOrderPrintModal({ isOpen, orderNo, onClose }: Props) 
     [boms],
   );
 
-  // QR: 작업지시번호 + 라인 + 품목 + 수량 (스캔으로 작업지시 식별)
+  // QR: 작업지시 조회 deep-link URL (모바일 카메라 스캔 시 해당 작업지시 자동 조회)
   const qrValue = useMemo(() => {
     if (!order) return "";
-    return JSON.stringify({
-      orderNo: order.orderNo,
-      itemCode: order.itemCode,
-      line: order.lineCode ?? "",
-      planQty: order.planQty,
-      planDate: fmtDate(order.planDate),
-    });
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/production/order?orderNo=${encodeURIComponent(order.orderNo)}`;
   }, [order]);
 
   const handlePrint = () => window.print();

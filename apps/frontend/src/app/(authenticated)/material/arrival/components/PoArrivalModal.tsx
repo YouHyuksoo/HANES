@@ -30,6 +30,13 @@ interface PoArrivalModalProps {
   onSuccess: () => void;
 }
 
+const formatDateOnly = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return new Intl.DateTimeFormat('sv-SE').format(date);
+};
+
 export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrivalModalProps) {
   const { t } = useTranslation();
   const poStatusMap = useComCodeMap("PO_STATUS");
@@ -119,14 +126,14 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       header: t('material.arrival.col.orderDate'),
       size: 100,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) || '-',
+      cell: ({ getValue }) => formatDateOnly(getValue() as string | null),
     },
     {
       accessorKey: 'dueDate',
       header: t('material.arrival.col.dueDate'),
       size: 100,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) || '-',
+      cell: ({ getValue }) => formatDateOnly(getValue() as string | null),
     },
     {
       accessorKey: 'status',

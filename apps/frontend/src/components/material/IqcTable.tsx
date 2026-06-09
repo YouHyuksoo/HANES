@@ -20,12 +20,25 @@ interface IqcTableProps {
   isLoading?: boolean;
 }
 
+const formatDateOnly = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return new Intl.DateTimeFormat('sv-SE').format(date);
+};
+
 export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: IqcTableProps) {
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IqcItem>[]>(
     () => [
       { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
-      { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100, meta: { filterType: 'date' as const } },
+      {
+        accessorKey: 'arrivalDate',
+        header: t('material.col.arrivalDate'),
+        size: 100,
+        meta: { filterType: 'date' as const },
+        cell: ({ getValue }) => formatDateOnly(getValue() as string | null),
+      },
       { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100, meta: { filterType: 'text' as const } },
       { accessorKey: 'itemCode', header: t('common.partCode'), size: 110, meta: { filterType: 'text' as const } },
       { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },

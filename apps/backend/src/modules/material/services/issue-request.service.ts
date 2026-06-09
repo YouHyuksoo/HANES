@@ -16,6 +16,12 @@ import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { JobOrder } from '../../../entities/job-order.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -35,6 +41,14 @@ export class IssueRequestService {
     private readonly requestItemRepository: Repository<MatIssueRequestItem>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(JobOrder)
+    private readonly jobOrderRepository: Repository<JobOrder>,
+    @InjectRepository(BomMaster)
+    private readonly bomRepository: Repository<BomMaster>,
+    @InjectRepository(MatIssue)
+    private readonly matIssueRepository: Repository<MatIssue>,
+    @InjectRepository(MatStock)
+    private readonly matStockRepository: Repository<MatStock>,
     private readonly matIssueService: MatIssueService,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
@@ -45,6 +59,77 @@ export class IssueRequestService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private toNumber(value: unknown): number {
+    if (value === null || value === undefined || value === '') return 0;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private isRawMaterial(part?: PartMaster): boolean {
+    if (!part?.itemType) return true;
+    const itemType = part.itemType.toUpperCase();
+    const productTypes = new Set(['FG', 'FERT', 'PRODUCT', 'FINISHED', 'WIP', 'SEMI', 'SEMI_PRODUCT', 'HALB']);
+    return !productTypes.has(itemType);
+  }
+
+  private async getPreviousIssueQtyMap(orderNo: string, itemCodes: string[], company?: string | null, plant?: string | null) {
+    if (itemCodes.length === 0) return new Map<string, number>();
+
+    const qb = this.matIssueRepository.createQueryBuilder('mi')
+      .select('lot.itemCode', 'itemCode')
+      .addSelect('SUM(mi.issueQty)', 'qty')
+      .innerJoin(
+        MatLot,
+        'lot',
+        'lot.matUid = mi.matUid AND lot.company = mi.company AND lot.plant = mi.plant',
+      )
+      .where('mi.orderNo = :orderNo', { orderNo })
+      .andWhere('mi.status = :status', { status: 'DONE' })
+      .andWhere('lot.itemCode IN (:...itemCodes)', { itemCodes });
+
+    if (company) qb.andWhere('mi.company = :company AND lot.company = :company', { company });
+    if (plant) qb.andWhere('mi.plant = :plant AND lot.plant = :plant', { plant });
+
+    const rows = await qb.groupBy('lot.itemCode').getRawMany<{ itemCode: string; qty: string | number }>();
+    return new Map(rows.map((row) => [row.itemCode, this.toNumber(row.qty)]));
+  }
+
+  private async getFloorStockQtyMap(itemCodes: string[], company?: string | null, plant?: string | null) {
+    if (itemCodes.length === 0) return new Map<string, number>();
+
+    const qb = this.matStockRepository.createQueryBuilder('s')
+      .select('s.itemCode', 'itemCode')
+      .addSelect('SUM(s.availableQty)', 'qty')
+      .innerJoin(
+        Warehouse,
+        'w',
+        'w.warehouseCode = s.warehouseCode AND w.company = s.company AND w.plant = s.plant',
+      )
+      .where('w.warehouseType = :warehouseType', { warehouseType: 'FLOOR' })
+      .andWhere('s.itemCode IN (:...itemCodes)', { itemCodes });
+
+    if (company) qb.andWhere('s.company = :company AND w.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant AND w.plant = :plant', { plant });
+
+    const rows = await qb.groupBy('s.itemCode').getRawMany<{ itemCode: string; qty: string | number }>();
+    return new Map(rows.map((row) => [row.itemCode, this.toNumber(row.qty)]));
+  }
+
+  private async getAvailableStockQtyMap(itemCodes: string[], company?: string | null, plant?: string | null) {
+    if (itemCodes.length === 0) return new Map<string, number>();
+
+    const qb = this.matStockRepository.createQueryBuilder('s')
+      .select('s.itemCode', 'itemCode')
+      .addSelect('SUM(s.availableQty)', 'qty')
+      .where('s.itemCode IN (:...itemCodes)', { itemCodes });
+
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant', { plant });
+
+    const rows = await qb.groupBy('s.itemCode').getRawMany<{ itemCode: string; qty: string | number }>();
+    return new Map(rows.map((row) => [row.itemCode, this.toNumber(row.qty)]));
   }
 
   private assertSameTenant(
@@ -95,9 +180,66 @@ export class IssueRequestService {
     return request;
   }
 
+  /** 작업지시 완제품의 BOM 직하위 원자재를 출고예정 품목으로 산출 */
+  async buildBomRequestItems(orderNo: string, company?: string, plant?: string) {
+    const jobOrder = await this.jobOrderRepository.findOne({
+      where: { orderNo, ...this.tenantWhere(company, plant) },
+    });
+    if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
+    this.assertSameTenant('작업지시', { company, plant }, jobOrder);
+
+    const effectiveCompany = jobOrder.company ?? company;
+    const effectivePlant = jobOrder.plant ?? plant;
+    const bomRows = await this.bomRepository.find({
+      where: {
+        parentItemCode: jobOrder.itemCode,
+        useYn: 'Y',
+        ...this.tenantWhere(effectiveCompany, effectivePlant),
+      },
+      order: { seq: 'ASC' },
+    });
+    if (bomRows.length === 0) return [];
+
+    const childCodes = [...new Set(bomRows.map((bom) => bom.childItemCode).filter(Boolean))];
+    const parts = childCodes.length > 0
+      ? await this.partMasterRepository.find({
+        where: { itemCode: In(childCodes), ...this.tenantWhere(effectiveCompany, effectivePlant) },
+      })
+      : [];
+    const partMap = new Map(parts.map((part) => [part.itemCode, part]));
+    const rawBomRows = bomRows.filter((bom) => this.isRawMaterial(partMap.get(bom.childItemCode)));
+    const rawCodes = [...new Set(rawBomRows.map((bom) => bom.childItemCode))];
+
+    const [prevIssueMap, floorStockMap, availableStockMap] = await Promise.all([
+      this.getPreviousIssueQtyMap(orderNo, rawCodes, effectiveCompany, effectivePlant),
+      this.getFloorStockQtyMap(rawCodes, effectiveCompany, effectivePlant),
+      this.getAvailableStockQtyMap(rawCodes, effectiveCompany, effectivePlant),
+    ]);
+
+    return rawBomRows
+      .map((bom) => {
+        const part = partMap.get(bom.childItemCode);
+        const bomReqQty = this.toNumber(bom.qtyPer) * this.toNumber(jobOrder.planQty);
+        const prevIssueQty = prevIssueMap.get(bom.childItemCode) ?? 0;
+        const floorStockQty = floorStockMap.get(bom.childItemCode) ?? 0;
+        const requestQty = Math.max(Math.ceil(bomReqQty - prevIssueQty - floorStockQty), 0);
+        return {
+          itemCode: bom.childItemCode,
+          itemName: part?.itemName ?? bom.childItemCode,
+          unit: part?.unit ?? 'EA',
+          currentStock: availableStockMap.get(bom.childItemCode) ?? 0,
+          requestQty,
+          bomReqQty,
+          prevIssueQty,
+          floorStockQty,
+        };
+      })
+      .filter((item) => item.requestQty > 0);
+  }
+
   /** 출고요청 생성 (헤더 + 품목 일괄 저장) */
   async create(dto: CreateIssueRequestDto, company?: string, plant?: string) {
-    return this.tx.run(async (queryRunner) => {
+    const requestNo = await this.tx.run(async (queryRunner) => {
       const requestNo = await this.generateRequestNo(queryRunner);
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
@@ -119,20 +261,25 @@ export class IssueRequestService {
           requestQty: item.requestQty,
           issuedQty: 0,
           unit: item.unit,
+          bomReqQty: item.bomReqQty ?? null,
+          prevIssueQty: item.prevIssueQty ?? null,
+          floorStockQty: item.floorStockQty ?? null,
           remark: item.remark ?? null,
           company,
           plant,
         }),
       );
       await queryRunner.manager.save(items);
-      return this.findByRequestNo(saved.requestNo, company, plant);
+      return saved.requestNo;
     });
+
+    return this.findByRequestNo(requestNo, company, plant);
   }
 
   /** 출고요청 목록 조회 (페이지네이션 + 필터) */
   async findAll(query: IssueRequestQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, status, search } = query;
-    const where: FindOptionsWhere<MatIssueRequest> = { ...(status && { status }), ...(company && { company }), ...(plant && { plant }) };
+    const { page = 1, limit = 10, status, search, orderNo } = query;
+    const where: FindOptionsWhere<MatIssueRequest> = { ...(status && { status }), ...(orderNo && { orderNo }), ...(company && { company }), ...(plant && { plant }) };
 
     const [data, total] = await Promise.all([
       this.requestRepository.find({

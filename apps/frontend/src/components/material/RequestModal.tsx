@@ -22,6 +22,7 @@ interface RequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   searchStockItems: (query: string) => Promise<StockItem[]>;
+  loadBomRequestItems: (orderNo: string) => Promise<RequestItem[]>;
   workOrderOptions: { value: string; label: string }[];
 }
 
@@ -29,6 +30,7 @@ export default function RequestModal({
   isOpen,
   onClose,
   searchStockItems,
+  loadBomRequestItems,
   workOrderOptions,
 }: RequestModalProps) {
   const { t } = useTranslation();
@@ -39,6 +41,7 @@ export default function RequestModal({
   const [searchResults, setSearchResults] = useState<StockItem[]>([]);
   const [requestItems, setRequestItems] = useState<RequestItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingBom, setIsLoadingBom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -67,6 +70,32 @@ export default function RequestModal({
     if (e.key === 'Enter') handleSearch();
   };
 
+  const handleWorkOrderChange = useCallback(async (orderNo: string) => {
+    setWorkOrderNo(orderNo);
+    setErrorMessage('');
+    if (!orderNo) {
+      setRequestItems([]);
+      return;
+    }
+
+    setIsLoadingBom(true);
+    try {
+      const items = await loadBomRequestItems(orderNo);
+      setRequestItems(items);
+      if (items.length === 0) {
+        setErrorMessage('BOM 기준 출고 예정 원자재가 없습니다.');
+      }
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || '작업지시 BOM 기준 출고 예정 품목을 불러오지 못했습니다.';
+      setRequestItems([]);
+      setErrorMessage(message);
+    } finally {
+      setIsLoadingBom(false);
+    }
+  }, [loadBomRequestItems]);
+
   const addItem = (item: StockItem) => {
     if (requestItems.some((r) => r.itemCode === item.itemCode)) return;
     setRequestItems((prev) => [
@@ -77,6 +106,9 @@ export default function RequestModal({
         unit: item.unit,
         currentStock: item.currentStock,
         requestQty: 0,
+        bomReqQty: undefined,
+        prevIssueQty: undefined,
+        floorStockQty: undefined,
       },
     ]);
   };
@@ -102,6 +134,9 @@ export default function RequestModal({
           itemCode: item.itemCode,
           requestQty: item.requestQty,
           unit: item.unit,
+          bomReqQty: item.bomReqQty,
+          prevIssueQty: item.prevIssueQty,
+          floorStockQty: item.floorStockQty,
         })),
         remark: remark || undefined,
       };
@@ -125,12 +160,13 @@ export default function RequestModal({
     setSearchQuery('');
     setSearchResults([]);
     setRequestItems([]);
+    setIsLoadingBom(false);
     setErrorMessage('');
     onClose();
   };
 
   const canSubmit =
-    requestItems.length > 0 && requestItems.every((r) => r.requestQty > 0) && !isSubmitting;
+    requestItems.length > 0 && requestItems.every((r) => r.requestQty > 0) && !isSubmitting && !isLoadingBom;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={t('material.request.modalTitle')} size="lg">
@@ -149,7 +185,7 @@ export default function RequestModal({
             label={t('material.col.workOrder')}
             options={workOrderOptions.filter((o) => o.value)}
             value={workOrderNo}
-            onChange={setWorkOrderNo}
+            onChange={handleWorkOrderChange}
             fullWidth
           />
           <Select
@@ -160,6 +196,13 @@ export default function RequestModal({
             fullWidth
           />
         </div>
+
+        {isLoadingBom && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>작업지시 BOM 기준 출고 예정 품목을 계산 중입니다.</span>
+          </div>
+        )}
 
         {/* 품목 검색 */}
         <div>
@@ -280,6 +323,11 @@ export default function RequestModal({
                       <td className="px-3 py-1.5">
                         <span>{item.itemName}</span>
                         <span className="ml-2 text-xs text-text-muted">({item.unit})</span>
+                        {item.bomReqQty !== undefined && (
+                          <div className="mt-1 text-xs text-text-muted">
+                            BOM {item.bomReqQty.toLocaleString()} / 기불출 {(item.prevIssueQty ?? 0).toLocaleString()} / 현장 {(item.floorStockQty ?? 0).toLocaleString()}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-1.5 text-right font-medium">
                         {item.currentStock.toLocaleString()}

@@ -29,6 +29,23 @@ notes:
 
 ## Active Tasks
 
+## T-EQUIP-INSPECT-ADD-MODAL-TYPE 설비점검항목 추가 모달 점검유형 선선택
+status: IN_PROGRESS
+owner: codex
+role: implementer
+scope:
+- master/equip-inspect
+files:
+- apps/frontend/src/app/(authenticated)/master/equip-inspect/components/AddInspectItemModal.tsx
+- apps/frontend/src/app/(authenticated)/master/equip-inspect/add-modal.structure.test.mjs
+verification:
+- node --test apps/frontend/src/app/(authenticated)/master/equip-inspect/add-modal.structure.test.mjs
+- pnpm --filter @harness/frontend exec tsc --noEmit
+review:
+- needs-review
+notes:
+- 사용자 요청: `/master/equip-inspect` 점검항목추가 모달에서 점검유형 드롭다운을 선택할 수 있어야 한다.
+
 ## T-MAT-RECV-FIXES 자재입고 프로세스 이슈 일괄 수정
 status: IN_PROGRESS
 owner: claude

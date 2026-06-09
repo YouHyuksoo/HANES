@@ -4173,7 +4173,7 @@
       "title": "제품재고조회",
       "subtitle": "박스 스캔으로 입고된 출하 대기 재고와 박스 내 개별제품을 조회합니다.",
       "searchPlaceholder": "박스번호 검색...",
-      "boxQty": "박스수량",
+      "boxQty": "재고수량",
       "itemsTitle": "박스 내 개별제품",
       "itemCount": "제품 수",
       "selectBox": "박스를 선택하세요",
@@ -4182,8 +4182,7 @@
       "itemLoadError": "박스 내 개별제품을 불러오지 못했습니다.",
       "orderNo": "작업지시번호",
       "inspectPassYn": "검사",
-      "issuedAt": "발행일시",
-      "missingLabel": "라벨없음"
+      "issuedAt": "발행일시"
     },
     "pallet": {
       "title": "팔레트적재",

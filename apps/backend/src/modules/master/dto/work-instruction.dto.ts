@@ -8,7 +8,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -17,11 +17,11 @@ export class CreateWorkInstructionDto {
   @IsString()
   itemCode: string;
 
-  @ApiPropertyOptional({ description: '공정 코드' })
-  @IsOptional()
+  @ApiProperty({ description: '공정 코드 (필수)' })
   @IsString()
+  @IsNotEmpty({ message: '공정코드는 필수입니다.' })
   @MaxLength(50)
-  processCode?: string;
+  processCode: string;
 
   @ApiProperty({ description: '제목', example: '메인하네스 조립 지침' })
   @IsString()

@@ -16,6 +16,7 @@ import {
   Truck,
   Wrench,
   ClipboardCheck,
+  PackagePlus,
   LogOut,
   Download,
   Upload,
@@ -66,6 +67,14 @@ export const pdaMainMenuItems: PdaMenuItem[] = [
     borderClass: "border-orange-200 dark:border-orange-800",
     iconColorClass: "text-orange-600 dark:text-orange-400",
     menuCode: "PDA_EQUIP_INSPECT",
+  },
+  {
+    labelKey: "pda.menu.productReceiving",
+    path: "/pda/product/receiving",
+    icon: PackagePlus,
+    borderClass: "border-teal-200 dark:border-teal-800",
+    iconColorClass: "text-teal-600 dark:text-teal-400",
+    menuCode: "PDA_PRODUCT_RECEIVING",
   },
   {
     labelKey: "pda.menu.productInv",

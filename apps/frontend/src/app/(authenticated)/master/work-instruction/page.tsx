@@ -12,8 +12,8 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Search, RefreshCw, FileText, Eye } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { Plus, Edit2, Trash2, Search, RefreshCw, FileText, Eye } from "lucide-react";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -31,6 +31,8 @@ export default function WorkInstructionPage() {
   const [panelMode, setPanelMode] = useState<PanelMode>("none");
   const [selectedItem, setSelectedItem] = useState<WorkInstruction | null>(null);
   const [editingItem, setEditingItem] = useState<WorkInstruction | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<WorkInstruction | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const panelAnimateRef = useRef(true);
 
   const fetchData = useCallback(async () => {
@@ -94,14 +96,35 @@ export default function WorkInstructionPage() {
     setPanelMode("edit");
   }, [panelMode]);
 
+  /** 삭제 확인 실행 */
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/master/work-instructions/${encodeURIComponent(getWorkInstructionKey(deleteTarget))}`);
+      setDeleteTarget(null);
+      handlePanelClose();
+      fetchData();
+    } catch {
+      // 에러는 api 인터셉터에서 처리
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteTarget, fetchData, handlePanelClose]);
+
   const columns = useMemo<ColumnDef<WorkInstruction>[]>(() => [
     {
-      id: "actions", header: t("common.actions"), size: 60,
+      id: "actions", header: t("common.actions"), size: 84,
       meta: { align: "center" as const },
       cell: ({ row }) => (
-        <button onClick={(e) => { e.stopPropagation(); handleEditClick(row.original); }} className="p-1 hover:bg-surface rounded">
-          <Edit2 className="w-4 h-4 text-primary" />
-        </button>
+        <div className="flex items-center justify-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); handleEditClick(row.original); }} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
       ),
     },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
@@ -167,6 +190,7 @@ export default function WorkInstructionPage() {
           item={selectedItem}
           onClose={handlePanelClose}
           onEdit={handleSwitchToEdit}
+          onDelete={setDeleteTarget}
           animate={panelAnimateRef.current}
         />
       )}
@@ -180,6 +204,17 @@ export default function WorkInstructionPage() {
           animate={panelAnimateRef.current}
         />
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t("master.workInstruction.deleteTitle", "작업지도서 삭제")}
+        message={t("master.workInstruction.deleteConfirm", "이 작업지도서를 삭제하시겠습니까? 삭제 후에는 복구할 수 없습니다.")}
+        confirmText={t("common.delete")}
+        variant="danger"
+        isLoading={deleting}
+      />
     </div>
   );
 }

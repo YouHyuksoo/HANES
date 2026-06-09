@@ -2,10 +2,12 @@
 
 ## Last Update
 
-2026-06-09 20:35
+2026-06-09 21:00
 
 ## Latest
 
+- `T-EQUIP-INSPECT-WORKER-TYPE` 완료. `/master/equip-inspect`에 `설비별 할당` / `점검항목 마스터` 탭을 추가해 `WORKER=작업자설비점검` 유형을 Pool에서 등록/필터할 수 있게 했다.
+- 검증: page 구조 node:test 통과, 프론트 tsc 통과, `/master/equip-inspect` HTTP 200 확인.
 - `T-ITEM-MARKING-TEXT` 완료. `ITEM_MASTERS.MARKING_TEXT VARCHAR2(100)` 추가, JSHANES 적용, 엔티티/DTO/서비스 검색/품목마스터 목록·폼 반영, ERD 재생성 완료.
 - `T-EQUIP-INSPECT-ADD-TYPE` 완료. `/master/equip-inspect` 점검항목 추가 모달의 점검유형을 Select로 바꾸고, 생성 API가 요청 `inspectType`을 Pool 기본값보다 우선 반영하도록 했다.
 - 검증: JSHANES 컬럼 확인, `generate_db_schema_doc.py`, 백엔드 tsc, 프론트 tsc, `/master/part`와 `/master/equip-inspect` HTTP 200 확인.

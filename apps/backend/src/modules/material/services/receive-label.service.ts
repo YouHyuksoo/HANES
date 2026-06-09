@@ -148,13 +148,20 @@ export class ReceiveLabelService {
           matUid,
           itemCode: arrival.itemCode,
           initQty: 1,
+          currentQty: 1,
           recvDate: new Date(),
+          manufactureDate: null,
+          expireDate: null,
           poNo: arrival.poNo,
           vendor: arrival.vendorName,
+          invoiceNo: arrival.invoiceNo,
           company: arrival.company,
           plant: arrival.plant,
           arrivalNo: arrival.arrivalNo,
           arrivalSeq: arrival.seq,
+          origin: matUid,
+          iqcStatus: 'PASS',
+          status: 'NORMAL',
         });
         await queryRunner.manager.save(lot);
 
@@ -167,11 +174,15 @@ export class ReceiveLabelService {
       }
 
       const log = queryRunner.manager.create(LabelPrintLog, {
+        printedAt: new Date(),
+        seq: 1,
         category: 'mat_uid',
         printMode: 'BROWSER',
         uidList: JSON.stringify(results.map((r) => r.matUid)),
         labelCount: dto.qty,
         status: 'SUCCESS',
+        company: arrival.company,
+        plant: arrival.plant,
       });
       await queryRunner.manager.save(log);
 

@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ClipboardCheck, Search, RefreshCw, CheckCircle, XCircle, FileText, BarChart3 } from "lucide-react";
+import { ClipboardCheck, Search, RefreshCw, CheckCircle, XCircle, FileText, BarChart3, Upload } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -34,6 +34,7 @@ interface IqcHistoryItem {
   seq?: number;
   remark?: string;
   received?: boolean;
+  certFilePath?: string | null;
 }
 
 const resultColors: Record<string, string> = {
@@ -44,6 +45,19 @@ const resultColors: Record<string, string> = {
 const typeColors: Record<string, string> = {
   INITIAL: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   RETEST: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 };
 
 export default function IqcHistoryPage() {
@@ -61,6 +75,7 @@ export default function IqcHistoryPage() {
   const [cancelTarget, setCancelTarget] = useState<IqcHistoryItem | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -106,6 +121,23 @@ export default function IqcHistoryPage() {
     setCancelReason("");
   };
 
+  const handleCertUpload = useCallback(async (record: IqcHistoryItem, file: File | null) => {
+    if (!file || !record.seq) return;
+    const key = `${record.inspectDate}:${record.seq}`;
+    setUploadingKey(key);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      await api.post(
+        `/material/iqc-history/${encodeURIComponent(record.inspectDate)}/${record.seq}/upload-cert`,
+        formData,
+      );
+      fetchData();
+    } finally {
+      setUploadingKey(null);
+    }
+  }, [fetchData]);
+
   const resultOptions = useMemo(() => [
     { value: "PASS", label: t("material.iqcHistory.pass") },
     { value: "FAIL", label: t("material.iqcHistory.fail") },
@@ -128,21 +160,44 @@ export default function IqcHistoryPage() {
     {
       id: "actions",
       header: t("common.actions"),
-      size: 50,
+      size: 82,
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const record = row.original;
-        if (record.status !== "DONE" || record.received) return null;
+        const uploadKey = `${record.inspectDate}:${record.seq}`;
         return (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); setCancelTarget(record); }}
-            className="text-red-500 hover:text-red-700"
-            title={t("material.iqcHistory.cancelAction")}
-          >
-            <XCircle className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {record.status === "DONE" && record.result === "PASS" && (
+              <label
+                className={`inline-flex h-8 w-8 items-center justify-center rounded cursor-pointer hover:bg-surface ${
+                  record.certFilePath ? "text-green-600" : "text-primary"
+                } ${uploadingKey === uploadKey ? "opacity-50 pointer-events-none" : ""}`}
+                title={record.certFilePath ? "검사성적서 재업로드" : "검사성적서 업로드"}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Upload className="w-4 h-4" />
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleCertUpload(record, e.target.files?.[0] ?? null);
+                    e.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            )}
+            {record.status === "DONE" && !record.received && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); setCancelTarget(record); }}
+                className="text-red-500 hover:text-red-700"
+                title={t("material.iqcHistory.cancelAction")}
+              >
+                <XCircle className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         );
       },
     },
@@ -150,8 +205,17 @@ export default function IqcHistoryPage() {
       accessorKey: "inspectDate", header: t("material.iqcHistory.inspectDate"), size: 140, meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const d = getValue() as string;
-        return d ? new Date(d).toLocaleString() : "-";
+        return formatDateTime(d);
       },
+    },
+    {
+      accessorKey: "certFilePath",
+      header: "성적서",
+      size: 80,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => (getValue() as string)
+        ? <span className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">첨부</span>
+        : <span className="text-xs text-text-muted">미첨부</span>,
     },
     {
       accessorKey: "matUid", header: "LOT No.", size: 160,
@@ -206,7 +270,7 @@ export default function IqcHistoryPage() {
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
-  ], [t]);
+  ], [t, handleCertUpload, uploadingKey]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

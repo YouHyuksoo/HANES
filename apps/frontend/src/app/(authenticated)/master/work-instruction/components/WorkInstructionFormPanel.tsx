@@ -110,7 +110,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
   }, [handleFileUpload]);
 
   const handleSubmit = async () => {
-    if (!form.itemCode.trim() || !form.title.trim()) return;
+    if (!form.itemCode.trim() || !form.processCode.trim() || !form.title.trim()) return;
     setSaving(true);
     try {
       if (isEdit && editingItem?.itemCode && editingItem?.processCode) {
@@ -135,7 +135,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.title.trim()}>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.processCode.trim() || !form.title.trim()}>
             {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
           </Button>
         </div>
@@ -146,16 +146,19 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.workInstruction.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("common.partCode")}
-              value={form.itemCode} onChange={e => setField("itemCode", e.target.value)} fullWidth />
-            <Input label={t("master.workInstruction.processCode")}
-              value={form.processCode} onChange={e => setField("processCode", e.target.value)} fullWidth />
+            <Input label={`${t("common.partCode")} *`} required
+              value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
+              readOnly={isEdit} disabled={isEdit} fullWidth />
+            <Input label={`${t("master.workInstruction.processCode")} *`} required
+              value={form.processCode} onChange={e => setField("processCode", e.target.value)}
+              readOnly={isEdit} disabled={isEdit} fullWidth />
             <div className="col-span-2">
-              <Input label={t("master.workInstruction.docTitle")}
+              <Input label={`${t("master.workInstruction.docTitle")} *`} required
                 value={form.title} onChange={e => setField("title", e.target.value)} fullWidth />
             </div>
             <Input label={t("master.workInstruction.revision")}
-              value={form.revision} onChange={e => setField("revision", e.target.value)} fullWidth />
+              value={form.revision} onChange={e => setField("revision", e.target.value)}
+              readOnly={isEdit} disabled={isEdit} placeholder="A" fullWidth />
           </div>
         </div>
 

@@ -18,6 +18,8 @@ import { Warehouse } from '../../entities/warehouse.entity';
 import { PartMaster } from '../../entities/part-master.entity';
 import { InvAdjLog } from '../../entities/inv-adj-log.entity';
 import { WarehouseLocation } from '../../entities/warehouse-location.entity';
+import { FgLabel } from '../../entities/fg-label.entity';
+import { BoxMaster } from '../../entities/box-master.entity';
 import { InventoryController } from './inventory.controller';
 import { ProductPhysicalInvController } from './controllers/product-physical-inv.controller';
 import { WarehouseLocationController } from './controllers/warehouse-location.controller';
@@ -32,7 +34,7 @@ import { ProductHoldService } from './services/product-hold.service';
 import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MatStock, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation])],
+  imports: [TypeOrmModule.forFeature([MatStock, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation, FgLabel, BoxMaster])],
   controllers: [InventoryController, ProductPhysicalInvController, WarehouseLocationController, ProductHoldController],
   providers: [
     InventoryService,

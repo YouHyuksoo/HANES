@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { Scan, Search, Cpu, CheckCircle2, XCircle, ChevronRight } from 'lucide-react';
 import { Modal } from '@/components/ui';
 
-interface EquipOption { equipCode: string; equipName: string; }
+interface EquipOption { equipCode: string; equipName: string; processCode?: string; processName?: string; }
 
 interface EquipSelectModalProps {
   isOpen: boolean;

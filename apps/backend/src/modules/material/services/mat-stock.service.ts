@@ -149,7 +149,8 @@ export class MatStockService {
       result = result.filter(
         (stock) =>
           stock.itemCode.toLowerCase().includes(searchLower) ||
-          (stock.itemName ?? '').toLowerCase().includes(searchLower),
+          (stock.itemName ?? '').toLowerCase().includes(searchLower) ||
+          (stock.matUid ?? '').toLowerCase().includes(searchLower),
       );
     }
 

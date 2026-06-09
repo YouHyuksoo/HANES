@@ -26,6 +26,30 @@ interface ConsumableItem {
   maxCount: number;
 }
 
+interface ConsumableApiItem {
+  id?: string;
+  consumableCode: string;
+  consumableName: string;
+  currentCount?: number | string | null;
+  maxCount?: number | string | null;
+  expectedLife?: number | string | null;
+}
+
+function toNumber(value: number | string | null | undefined): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeConsumable(item: ConsumableApiItem): ConsumableItem {
+  return {
+    id: item.id ?? item.consumableCode,
+    consumableCode: item.consumableCode,
+    consumableName: item.consumableName,
+    currentCount: toNumber(item.currentCount),
+    maxCount: toNumber(item.maxCount ?? item.expectedLife),
+  };
+}
+
 interface ConsumableScanModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -42,7 +66,10 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
   useEffect(() => {
     if (!isOpen || !selectedEquip?.equipCode) return;
     api.get(`/equipment/consumables/mounted/${selectedEquip.equipCode}`)
-      .then(res => setItems(res.data?.data ?? []))
+      .then(res => {
+        const data: ConsumableApiItem[] = res.data?.data ?? [];
+        setItems(data.map(normalizeConsumable));
+      })
       .catch(() => setItems([]));
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [isOpen, selectedEquip?.equipCode]);

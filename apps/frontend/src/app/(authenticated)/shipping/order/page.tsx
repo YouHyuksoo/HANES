@@ -7,16 +7,15 @@
  * 초보자 가이드:
  * 1. **출하지시**: 고객사에 출하할 품목과 수량을 지정하는 지시서
  * 2. **상태 흐름**: DRAFT -> CONFIRMED -> SHIPPING -> SHIPPED
- * 3. API: GET/POST/PUT/DELETE /shipping/ship-orders
+ * 3. API: GET/POST/PUT/DELETE /shipping/orders
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2,
-  FileText, Clock, CheckCircle, Truck,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
@@ -58,7 +57,7 @@ export default function ShipOrderPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
-      const res = await api.get("/shipping/ship-orders", { params });
+      const res = await api.get("/shipping/orders", { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);
@@ -68,13 +67,6 @@ export default function ShipOrderPage() {
   }, [searchText, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => ({
-    total: data.length,
-    draft: data.filter((d) => d.status === "DRAFT").length,
-    confirmed: data.filter((d) => d.status === "CONFIRMED").length,
-    shipped: data.filter((d) => d.status === "SHIPPED" || d.status === "SHIPPING").length,
-  }), [data]);
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
@@ -92,9 +84,9 @@ export default function ShipOrderPage() {
     setSaving(true);
     try {
       if (editingItem) {
-        await api.put(`/shipping/ship-orders/${editingItem.shipOrderNo}`, form);
+        await api.put(`/shipping/orders/${editingItem.shipOrderNo}`, form);
       } else {
-        await api.post("/shipping/ship-orders", form);
+        await api.post("/shipping/orders", form);
       }
       setIsModalOpen(false);
       fetchData();
@@ -108,7 +100,7 @@ export default function ShipOrderPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/shipping/ship-orders/${deleteTarget.shipOrderNo}`);
+      await api.delete(`/shipping/orders/${deleteTarget.shipOrderNo}`);
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);
@@ -146,12 +138,6 @@ export default function ShipOrderPage() {
           </Button>
           <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
         </div>
-      </div>
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("shipping.shipOrder.statTotal")} value={stats.total} icon={FileText} color="blue" />
-        <StatCard label={t("shipping.shipOrder.statusDraft")} value={stats.draft} icon={Clock} color="yellow" />
-        <StatCard label={t("shipping.shipOrder.statusConfirmed")} value={stats.confirmed} icon={CheckCircle} color="green" />
-        <StatCard label={t("shipping.shipOrder.statusShipped")} value={stats.shipped} icon={Truck} color="purple" />
       </div>
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter

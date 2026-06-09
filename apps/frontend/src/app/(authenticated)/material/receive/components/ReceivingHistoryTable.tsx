@@ -5,7 +5,7 @@
  * @description 입고 이력 테이블 - MAT_RECEIVINGS 기반 입고 이력 표시
  */
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -13,9 +13,11 @@ import type { ReceivingRecord } from './types';
 
 interface ReceivingHistoryTableProps {
   data: ReceivingRecord[];
+  isLoading?: boolean;
+  toolbarLeft?: ReactNode;
 }
 
-export default function ReceivingHistoryTable({ data }: ReceivingHistoryTableProps) {
+export default function ReceivingHistoryTable({ data, isLoading, toolbarLeft }: ReceivingHistoryTableProps) {
   const { t } = useTranslation();
 
   const columns = useMemo<ColumnDef<ReceivingRecord>[]>(() => [
@@ -58,6 +60,6 @@ export default function ReceivingHistoryTable({ data }: ReceivingHistoryTablePro
     },
   ], [t]);
 
-  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter 
+  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter isLoading={isLoading} toolbarLeft={toolbarLeft}
   sqlQuery={`SELECT *\nFROM MAT_RECEIVE_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>;
 }

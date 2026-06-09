@@ -1,6 +1,8 @@
 export interface EquipOption {
   equipCode: string;
   equipName: string;
+  processCode?: string;
+  processName?: string;
 }
 
 type UnknownRecord = Record<string, unknown>;
@@ -26,6 +28,8 @@ export function normalizeEquipOptions(payload: unknown): EquipOption[] {
     const equipName = typeof item.equipName === 'string' && item.equipName.trim()
       ? item.equipName
       : item.equipCode;
-    return [{ equipCode: item.equipCode, equipName }];
+    const processCode = typeof item.processCode === 'string' ? item.processCode : undefined;
+    const processName = typeof item.processName === 'string' ? item.processName : undefined;
+    return [{ equipCode: item.equipCode, equipName, processCode, processName }];
   });
 }

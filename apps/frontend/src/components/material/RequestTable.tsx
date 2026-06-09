@@ -13,6 +13,7 @@ import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { Eye } from 'lucide-react';
 import { IssueRequestStatusBadge } from '@/components/material';
 import type { IssueRequest } from '@/hooks/material/useIssueRequestData';
 import type { IssueRequestStatus } from '@/components/material';
@@ -21,17 +22,28 @@ interface RequestTableProps {
   data: IssueRequest[];
   toolbarLeft?: ReactNode;
   isLoading?: boolean;
+  onViewDetail?: (request: IssueRequest) => void;
 }
 
-export default function RequestTable({ data, toolbarLeft, isLoading }: RequestTableProps) {
+function toNumber(value: number | string | null | undefined): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function totalRequestQty(row: IssueRequest): number {
+  return toNumber(row.totalQty ?? row.totalRequestQty) || (row.items ?? []).reduce((sum, item) => sum + toNumber(item.requestQty), 0);
+}
+
+export default function RequestTable({ data, toolbarLeft, isLoading, onViewDetail }: RequestTableProps) {
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IssueRequest>[]>(() => [
     { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100, meta: { filterType: 'date' as const } },
     {
-      accessorKey: 'workOrderNo', header: t('material.col.workOrder'), size: 160, meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => (
-        <span className="text-primary font-medium">{getValue() as string}</span>
+      id: 'workOrderNo', header: t('material.col.workOrder'), size: 160, meta: { filterType: 'text' as const },
+      accessorFn: (row) => row.workOrderNo ?? row.orderNo ?? '',
+      cell: ({ row }) => (
+        <span className="text-primary font-medium">{row.original.workOrderNo ?? row.original.orderNo ?? '-'}</span>
       ),
     },
     {
@@ -41,8 +53,8 @@ export default function RequestTable({ data, toolbarLeft, isLoading }: RequestTa
     {
       accessorKey: 'totalQty', header: t('common.totalQty'), size: 100,
       meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => (
-        <span className="font-medium">{(getValue() as number ?? 0).toLocaleString()}</span>
+      cell: ({ row }) => (
+        <span className="font-medium">{totalRequestQty(row.original).toLocaleString()}</span>
       ),
     },
     {
@@ -52,7 +64,38 @@ export default function RequestTable({ data, toolbarLeft, isLoading }: RequestTa
       ),
     },
     { accessorKey: 'requester', header: t('material.col.requester'), size: 80, meta: { filterType: 'text' as const } },
-  ], [t]);
+    {
+      id: 'actions',
+      header: t('material.col.actions'),
+      size: 80,
+      meta: { filterType: 'none' as const },
+      cell: ({ row }) => (
+        <button
+          type="button"
+          className="inline-flex h-8 w-8 items-center justify-center rounded border border-border bg-card text-text-muted transition-colors hover:bg-card-hover hover:text-primary"
+          title={t('common.viewDetail')}
+          aria-label={t('common.viewDetail')}
+          onClick={(event) => {
+            event.stopPropagation();
+            onViewDetail?.(row.original);
+          }}
+        >
+          <Eye className="h-4 w-4" />
+        </button>
+      ),
+    },
+  ], [onViewDetail, t]);
 
-  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName="issue_request" toolbarLeft={toolbarLeft} />;
+  return (
+    <DataGrid
+      data={data}
+      columns={columns}
+      isLoading={isLoading}
+      enableColumnFilter
+      enableExport
+      exportFileName="issue_request"
+      toolbarLeft={toolbarLeft}
+      onRowClick={onViewDetail}
+    />
+  );
 }

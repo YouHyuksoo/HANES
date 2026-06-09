@@ -25,6 +25,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BoxController } from './controllers/box.controller';
+import { BoxStockController } from './controllers/box-stock.controller';
 import { BoxService } from './services/box.service';
 import { PalletController } from './controllers/pallet.controller';
 import { PalletService } from './services/pallet.service';
@@ -76,6 +77,7 @@ import { InventoryModule } from '../inventory/inventory.module';
   ],
   controllers: [
     BoxController,
+    BoxStockController,
     PalletController,
     ShipmentController,
     ShipOrderController,

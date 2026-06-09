@@ -7,7 +7,7 @@
  * 초보자 가이드:
  * 1. **조회 전용**: 출하지시 이력을 다양한 필터로 검색
  * 2. **필터**: 상태, 날짜 범위, 고객명 등으로 필터링
- * 3. API: GET /shipping/ship-orders (조회 전용)
+ * 3. API: GET /shipping/orders (조회 전용)
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -55,7 +55,7 @@ export default function ShipHistoryPage() {
       if (statusFilter) params.status = statusFilter;
       if (dateFrom) params.shipDateFrom = dateFrom;
       if (dateTo) params.shipDateTo = dateTo;
-      const res = await api.get("/shipping/ship-orders", { params });
+      const res = await api.get("/shipping/orders", { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);

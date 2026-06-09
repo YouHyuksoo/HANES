@@ -4154,7 +4154,7 @@
       "title": "Product Stock",
       "subtitle": "View scanned box stock waiting for shipment and the individual products inside each box.",
       "searchPlaceholder": "Search box no...",
-      "boxQty": "Box Qty",
+      "boxQty": "Stock Qty",
       "itemsTitle": "Products in Box",
       "itemCount": "Products",
       "selectBox": "Select a box",
@@ -4163,8 +4163,7 @@
       "itemLoadError": "Failed to load products in box.",
       "orderNo": "Job Order No.",
       "inspectPassYn": "Inspect",
-      "issuedAt": "Issued At",
-      "missingLabel": "Missing Label"
+      "issuedAt": "Issued At"
     },
     "pallet": {
       "title": "Palletizing",

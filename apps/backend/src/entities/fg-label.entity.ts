@@ -22,6 +22,7 @@ import {
 @Index(['itemCode'])
 @Index(['orderNo'])
 @Index(['status'])
+@Index(['boxNo'])
 export class FgLabel {
   @PrimaryColumn({ name: 'FG_BARCODE', length: 30 })
   fgBarcode: string;
@@ -46,6 +47,10 @@ export class FgLabel {
 
   @Column({ name: 'STATUS', length: 20, default: 'ISSUED' })
   status: string;
+
+  /** 입고 처리 시 부여되는 박스번호. 재고(미출하) 시리얼의 박스 소속을 나타낸다. NULL이면 미입고. */
+  @Column({ type: 'varchar2', name: 'BOX_NO', length: 50, nullable: true })
+  boxNo: string | null;
 
   @Column({ name: 'REPRINT_COUNT', type: 'int', default: 0 })
   reprintCount: number;

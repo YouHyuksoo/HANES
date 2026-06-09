@@ -70,7 +70,12 @@ export function useManualIssue() {
   const availableStocks = useMemo(() => {
     const raw = data?.data;
     if (!raw) return [];
-    return Array.isArray(raw) ? raw : (raw as AvailableStockResponse)?.data ?? [];
+    const stocks = Array.isArray(raw) ? raw : (raw as AvailableStockResponse)?.data ?? [];
+    return stocks.map((stock) => ({
+      ...stock,
+      id: stock.id || `${stock.warehouseCode}::${stock.matUid || stock.itemCode}`,
+      warehouseName: stock.warehouseName || stock.warehouseCode,
+    }));
   }, [data]);
 
   // 체크박스 토글 (선택 시 기본값 = 가용수량)

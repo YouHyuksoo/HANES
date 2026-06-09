@@ -20,6 +20,12 @@ export interface CreatedMatUid {
   itemCode: string;
   itemName: string;
   supUid: string | null;
+  qty?: number;
+  unit?: string | null;
+  vendor?: string | null;
+  arrivalDate?: string | Date | null;
+  arrivalNo?: string;
+  invoiceNo?: string | null;
 }
 
 /** 자동입고 결과 */
@@ -64,7 +70,15 @@ export function useLabelIssue({
           supUid: arrival.supUid ?? undefined,
         });
         const items: CreatedMatUid[] = res.data?.data ?? res.data ?? [];
-        allCreated.push(...items);
+        allCreated.push(...items.map((item) => ({
+          ...item,
+          qty: arrival.qty,
+          unit: arrival.unit,
+          vendor: arrival.vendor,
+          arrivalDate: arrival.arrivalDate,
+          arrivalNo: arrival.arrivalNo,
+          invoiceNo: arrival.invoiceNo,
+        })));
       }
       setCreatedUids(allCreated);
       return allCreated;
@@ -94,7 +108,7 @@ export function useLabelIssue({
     try {
       await api.post('/material/label-print/log', {
         category: 'mat_lot', printMode: 'BROWSER',
-        matUids, labelCount: matUids.length, status: 'SUCCESS',
+        uidList: matUids, labelCount: matUids.length, status: 'SUCCESS',
       });
     } catch { /* ignore logging errors */ }
   }, []);

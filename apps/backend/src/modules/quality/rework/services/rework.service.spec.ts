@@ -45,10 +45,34 @@ describe('ReworkService', () => {
       mockProcessRepo.find.mockResolvedValue([]);
       const r = await target.findById('RW-001');
       expect(r.reworkNo).toBe('RW-001');
+      expect(mockReworkRepo.findOne).toHaveBeenCalledWith({
+        where: { reworkNo: 'RW-001' },
+      });
     });
     it('should throw NotFoundException', async () => {
       mockReworkRepo.findOne.mockResolvedValue(null);
       await expect(target.findById('X')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('should not join a non-existent defectLog relation', async () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+      };
+      mockReworkRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      const result = await target.findAll({ limit: 5000 } as any, 'CO', 'P01');
+
+      expect(result).toEqual({ data: [], total: 0, page: 1, limit: 5000 });
+      expect(mockReworkRepo.createQueryBuilder).toHaveBeenCalledWith('r');
+      expect(qb.leftJoinAndSelect).not.toHaveBeenCalled();
     });
   });
 

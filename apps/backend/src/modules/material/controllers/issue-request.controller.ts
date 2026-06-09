@@ -60,6 +60,14 @@ export class IssueRequestController {
     );
   }
 
+  @Get('job-orders/:orderNo/bom-items')
+  @ApiOperation({ summary: '작업지시 BOM 기준 출고예정 품목 산출' })
+  @ApiParam({ name: 'orderNo', description: '작업지시 번호' })
+  async buildBomRequestItems(@Param('orderNo') orderNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.issueRequestService.buildBomRequestItems(orderNo, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Get(':requestNo')
   @ApiOperation({ summary: '출고요청 상세 조회' })
   @ApiParam({ name: 'requestNo', description: '출고요청 번호' })

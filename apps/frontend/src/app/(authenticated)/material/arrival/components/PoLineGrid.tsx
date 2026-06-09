@@ -31,6 +31,13 @@ const rowClass = (row: PoLineRow) => {
   return '';
 };
 
+const formatDateOnly = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return new Intl.DateTimeFormat('sv-SE').format(date);
+};
+
 export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine }: PoLineGridProps) {
   const { t } = useTranslation();
 
@@ -100,7 +107,7 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       header: t('material.arrival.col.orderDate'),
       size: 110,
       meta: { filterType: 'date' as const },
-      cell: ({ getValue }) => <div className="text-center">{(getValue() as string) ?? '-'}</div>,
+      cell: ({ getValue }) => <div className="text-center">{formatDateOnly(getValue() as string | null)}</div>,
     },
     { accessorKey: 'partnerName', header: t('material.arrival.col.vendor'), size: 130, meta: { filterType: 'text' as const } },
     {

@@ -54,14 +54,14 @@ export default function ItemMasterTab() {
     { value: "DAILY", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typeDaily")}` },
     { value: "PERIODIC", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typePeriodic")}` },
     { value: "PM", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typePM", "예방보전")}` },
-    { value: "WORKER", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typeWorker", "작업자점검")}` },
+    { value: "WORKER", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typeWorker", "작업자설비점검")}` },
   ], [t]);
 
   const typeOptions = useMemo(() => [
     { value: "DAILY", label: t("master.equipInspect.typeDaily") },
     { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
     { value: "PM", label: t("master.equipInspect.typePM", "예방보전") },
-    { value: "WORKER", label: t("master.equipInspect.typeWorker", "작업자점검") },
+    { value: "WORKER", label: t("master.equipInspect.typeWorker", "작업자설비점검") },
   ], [t]);
 
   const cycleOptions = useMemo(() => [
@@ -77,7 +77,7 @@ export default function ItemMasterTab() {
     DAILY: t("master.equipInspect.typeDaily"),
     PERIODIC: t("master.equipInspect.typePeriodic"),
     PM: t("master.equipInspect.typePM", "예방보전"),
-    WORKER: t("master.equipInspect.typeWorker", "작업자점검"),
+    WORKER: t("master.equipInspect.typeWorker", "작업자설비점검"),
   }), [t]);
 
   const cycleLabels = useMemo<Record<string, string>>(() => ({

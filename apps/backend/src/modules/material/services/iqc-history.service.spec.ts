@@ -127,6 +127,20 @@ describe('IqcHistoryService cancel policy', () => {
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
+
+    it('날짜만 넘어온 조회 종료일은 해당 일자 전체를 포함한다', async () => {
+      mockIqcLogRepo.find.mockResolvedValue([]);
+      mockIqcLogRepo.count.mockResolvedValue(0);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10, fromDate: '2026-06-08', toDate: '2026-06-08' });
+
+      const findArgs = mockIqcLogRepo.find.mock.calls[0][0] as any;
+      expect(findArgs.where.inspectDate._value).toEqual([
+        new Date('2026-06-08T00:00:00.000Z'),
+        new Date('2026-06-08T23:59:59.999Z'),
+      ]);
+    });
   });
 
   describe('createResult', () => {

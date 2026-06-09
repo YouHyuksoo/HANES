@@ -20,6 +20,10 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { api } from "@/services/api";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
 import { LabelDesign, MAT_LOT_DEFAULT_DESIGN } from "../../master/label/types";
+import {
+  MATERIAL_ARRIVAL_LABEL_HEIGHT_MM,
+  MATERIAL_ARRIVAL_LABEL_WIDTH_MM,
+} from "@/components/material/MaterialArrivalLabel";
 import PrintActionBar from "./components/PrintActionBar";
 import LabelPreviewRenderer, { LabelItem } from "./components/LabelPreviewRenderer";
 import PrintHistorySection from "./components/PrintHistorySection";
@@ -131,10 +135,9 @@ function ReceiveLabelPage() {
       const win = window.open("", "_blank");
       if (!win) { setPrinting(false); return; }
       win.document.write(`<html><head><title>${t("material.receiveLabel.printTitle")}</title>
-        <style>body{margin:0;font-family:sans-serif}.label-grid{display:flex;flex-wrap:wrap;gap:2px;padding:4px}
-        .label-card{border:1px dashed #ccc;position:relative;overflow:hidden;width:${labelDesign.labelWidth}mm;
-        height:${labelDesign.labelHeight}mm;page-break-inside:avoid;box-sizing:border-box}
-        canvas{max-width:100%;max-height:100%}@media print{.label-card{border:1px dashed #ddd}}</style>
+        <style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#fff}.label-grid{display:flex;flex-wrap:wrap;gap:0;padding:0}
+        .material-arrival-label{width:${MATERIAL_ARRIVAL_LABEL_WIDTH_MM}mm!important;height:${MATERIAL_ARRIVAL_LABEL_HEIGHT_MM}mm!important;page-break-inside:avoid;break-inside:avoid}
+        img{max-width:100%;max-height:100%}@page{size:${MATERIAL_ARRIVAL_LABEL_WIDTH_MM}mm ${MATERIAL_ARRIVAL_LABEL_HEIGHT_MM}mm;margin:0}</style>
         </head><body><div class="label-grid">${printRef.current.innerHTML}</div>
         <script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
       win.document.close();
@@ -144,13 +147,19 @@ function ReceiveLabelPage() {
       clearCreatedUids();
       fetchData();
     }, 500);
-  }, [selectedIds, createMatUids, handleAutoReceive, labelDesign, t, logBrowserPrint, fetchData, clearCreatedUids]);
+  }, [selectedIds, createMatUids, handleAutoReceive, t, logBrowserPrint, fetchData, clearCreatedUids]);
 
   /** 생성된 matUid → 라벨 데이터 */
   const labelItems = useMemo<LabelItem[]>(() =>
     createdUids.map((c) => ({
       key: c.matUid, matUid: c.matUid,
-      itemCode: c.itemCode ?? "", itemName: c.itemName ?? "", sub: "",
+      itemCode: c.itemCode ?? "",
+      itemName: c.itemName ?? "",
+      qty: c.qty,
+      unit: c.unit,
+      vendor: c.vendor,
+      arrivalDate: c.arrivalDate,
+      lotNo: c.arrivalNo,
     })), [createdUids]);
 
   return (

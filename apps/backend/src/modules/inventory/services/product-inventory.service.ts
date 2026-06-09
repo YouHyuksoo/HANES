@@ -7,13 +7,15 @@
  * - 제품(WIP/FG)은 이 서비스(PRODUCT_STOCKS) 사용
  * - 핵심 원칙: 모든 수불 이력 보존, 취소 시 역분개
  */
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In, QueryRunner, FindOptionsWhere } from 'typeorm';
+import { Repository, IsNull, In, QueryRunner, FindOptionsWhere, EntityManager } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
+import { BoxMaster } from '../../../entities/box-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import {
   ProductReceiveStockDto,
@@ -36,8 +38,45 @@ export class ProductInventoryService {
     private readonly warehouseRepository: Repository<Warehouse>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(FgLabel)
+    private readonly fgLabelRepository: Repository<FgLabel>,
+    @InjectRepository(BoxMaster)
+    private readonly boxRepository: Repository<BoxMaster>,
     private readonly tx: TransactionService,
   ) {}
+
+  /**
+   * 박스 입고/취소 시 박스에 담긴 시리얼(FG_LABELS)의 BOX_NO 스탬프.
+   * - 입고: 박스 serialList의 시리얼에 박스번호 부여 → 제품재고(미출하)로 인식
+   * - 취소: 해당 박스번호가 찍힌 시리얼을 NULL로 되돌림
+   * 재고 단위(시리얼)는 FG_LABELS가 단일 출처이므로 여기서 함께 관리한다.
+   */
+  private async stampBoxSerials(
+    manager: EntityManager,
+    boxNo: string,
+    assign: boolean,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<void> {
+    const tenantWhere = this.tenantWhere(company, plant);
+    if (assign) {
+      const box = await manager.findOne(BoxMaster, { where: { boxNo, ...tenantWhere } });
+      const serials: string[] = box?.serialList ? JSON.parse(box.serialList) : [];
+      if (serials.length === 0) return;
+      await manager.update(
+        FgLabel,
+        { fgBarcode: In(serials), ...tenantWhere },
+        { boxNo },
+      );
+    } else {
+      // 취소: 박스번호로 직접 해제 (serialList 의존 없이 안전)
+      await manager.update(
+        FgLabel,
+        { boxNo, ...tenantWhere },
+        { boxNo: null },
+      );
+    }
+  }
 
   private tenantWhere(company?: string | null, plant?: string | null) {
     return {
@@ -86,8 +125,26 @@ export class ProductInventoryService {
 
   /** 제품 입고 처리 */
   async receiveStock(dto: ProductReceiveStockDto) {
-    const transNo = await this.generateTransNo();
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
+
+    // 이중입고 가드: 박스(refType='BOX')는 1회만 입고. 동일 박스의 정상(DONE) 입고가 이미 있으면 거부.
+    // 취소(_CANCEL) 트랜잭션과 취소된(CANCELED) 원본은 제외 → 취소 후 재입고는 허용.
+    if (dto.refType === 'BOX' && dto.refId) {
+      const dup = await this.transactionRepository.findOne({
+        where: {
+          refType: 'BOX',
+          refId: dto.refId,
+          transType: In(['FG_IN', 'WIP_IN']),
+          status: 'DONE',
+          ...tenantWhere,
+        },
+      });
+      if (dup) {
+        throw new ConflictException(`이미 입고된 박스입니다: ${dto.refId} (${dup.transNo})`);
+      }
+    }
+
+    const transNo = await this.generateTransNo();
 
     return this.tx.run(async (queryRunner) => {
       // 1. 트랜잭션 생성
@@ -98,7 +155,8 @@ export class ProductInventoryService {
         toWarehouseId: dto.warehouseId,
         itemCode: dto.itemCode,
         itemType: dto.itemType,
-        prdUid: dto.prdUid,
+        // 집계(비직렬) 재고는 PRD_UID 센티넬 '*' 사용 (PRODUCT_STOCKS 복합 PK, NOT NULL). 취소 시 동일 키 매칭.
+        prdUid: dto.prdUid || '*',
         orderNo: dto.orderNo,
         processCode: dto.processCode,
         qty: dto.qty,
@@ -115,9 +173,14 @@ export class ProductInventoryService {
 
       const savedTransaction = await queryRunner.manager.save(ProductTransaction, transaction);
 
+      // 박스 입고: 박스 시리얼(FG_LABELS)에 BOX_NO 스탬프 → 제품재고(미출하)로 인식
+      if (dto.refType === 'BOX' && dto.refId) {
+        await this.stampBoxSerials(queryRunner.manager, dto.refId, true, dto.company, dto.plant);
+      }
+
       // 2. 재고 업데이트
       const existingStock = await queryRunner.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull(), ...tenantWhere },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*', ...tenantWhere },
         /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
       });
 
@@ -131,7 +194,7 @@ export class ProductInventoryService {
           warehouseCode: dto.warehouseId,
           itemCode: dto.itemCode,
           itemType: dto.itemType,
-          prdUid: dto.prdUid || null,
+          prdUid: dto.prdUid || '*',
           orderNo: dto.orderNo || null,
           processCode: dto.processCode || null,
           qty: dto.qty,
@@ -178,6 +241,11 @@ export class ProductInventoryService {
     });
 
     const saved = await qr.manager.save(ProductTransaction, transaction);
+
+    // 박스 입고: 박스 시리얼(FG_LABELS)에 BOX_NO 스탬프
+    if (dto.refType === 'BOX' && dto.refId) {
+      await this.stampBoxSerials(qr.manager, dto.refId, true, dto.company, dto.plant);
+    }
 
     const existingStock = await qr.manager.findOne(ProductStock, {
       where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*', ...tenantWhere },
@@ -430,6 +498,11 @@ export class ProductInventoryService {
       });
 
       const savedCancelTrans = await queryRunner.manager.save(ProductTransaction, cancelTrans);
+
+      // 박스 입고 취소: 해당 박스 시리얼(FG_LABELS)의 BOX_NO 해제 → 재고에서 제외
+      if (originalTrans.refType === 'BOX' && originalTrans.refId && originalTrans.qty > 0) {
+        await this.stampBoxSerials(queryRunner.manager, originalTrans.refId, false, originalTrans.company, originalTrans.plant);
+      }
 
       // 3. 재고 복구 — 원래 입고 창고에서 감소
       if (originalTrans.toWarehouseId && originalTrans.qty > 0) {

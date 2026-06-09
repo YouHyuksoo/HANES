@@ -94,6 +94,16 @@ export class BoxController {
     return ResponseUtil.success(data);
   }
 
+  @Get(':id/items')
+  @ApiOperation({ summary: '박스 내 개별제품 조회', description: '박스 serialList에 포함된 FG_LABELS 상세를 조회한다.' })
+  @ApiParam({ name: 'id', description: '박스 번호' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiResponse({ status: 404, description: '박스 없음' })
+  async findBoxItems(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.findBoxItems(id, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '박스 상세 조회' })
   @ApiParam({ name: 'id', description: '박스 ID' })

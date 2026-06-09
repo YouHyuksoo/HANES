@@ -16,6 +16,7 @@ interface Props {
 interface ProcessOption {
   processCode: string;
   processName: string;
+  processType: string | null;
 }
 
 interface PartOption {
@@ -195,7 +196,11 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   const fetchProcessOptions = useCallback(async () => {
     try {
       const res = await api.get("/master/processes", { params: { limit: 5000, useYn: "Y" } });
-      setProcessOptions((res.data?.data || []).map((p: any) => ({ processCode: p.processCode, processName: p.processName })));
+      setProcessOptions((res.data?.data || []).map((p: any) => ({
+        processCode: p.processCode,
+        processName: p.processName,
+        processType: p.processType ?? null,
+      })));
     } catch {
       setProcessOptions([]);
     }
@@ -220,6 +225,17 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     if (processes.length === 0) return "10";
     return String(Math.max(...processes.map((process) => process.seq)) + 10);
   }, [processes]);
+
+  const selectedProcessOption = useMemo(
+    () => processOptions.find((process) => process.processCode === processForm.processCode),
+    [processForm.processCode, processOptions],
+  );
+
+  const selectedProcessTypeLabel = useMemo(() => {
+    if (!selectedProcessOption?.processType) return "-";
+    return processTypeOptions.find((option) => option.value === selectedProcessOption.processType)?.label
+      || selectedProcessOption.processType;
+  }, [processTypeOptions, selectedProcessOption?.processType]);
 
   const openNewGroup = () => {
     setEditingGroup(null);
@@ -310,7 +326,6 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       seq: Number(processForm.seq),
       processCode: processForm.processCode,
       processName: processForm.processName,
-      processType: processForm.processType || undefined,
       equipType: processForm.equipType || undefined,
       stdTime: processForm.stdTime ? Number(processForm.stdTime) : undefined,
       setupTime: processForm.setupTime ? Number(processForm.setupTime) : undefined,
@@ -555,10 +570,9 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.processType")}</label>
-              <select value={processForm.processType} onChange={(e) => setProcessForm((f) => ({ ...f, processType: e.target.value }))} className={selectCls}>
-                <option value="">-- {t("common.select")} --</option>
-                {processTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
+              <div className="flex h-10 items-center rounded-lg border border-border bg-surface px-3 text-sm text-text dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                {selectedProcessTypeLabel}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.equipType")}</label>

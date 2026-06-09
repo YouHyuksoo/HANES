@@ -148,6 +148,24 @@ describe('MatStockService', () => {
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
+
+    it('검색어가 matUid와 일치하면 해당 LOT 재고도 반환한다', async () => {
+      const stock = createStock({ matUid: 'MAT-SEARCH-001', itemCode: 'ITEM-001' });
+      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockMatStockRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      ]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-SEARCH-001', itemCode: 'ITEM-001' } as MatLot,
+      ]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10, search: 'MAT-SEARCH' });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].matUid).toBe('MAT-SEARCH-001');
+    });
   });
 
   // ─── findAvailable ───

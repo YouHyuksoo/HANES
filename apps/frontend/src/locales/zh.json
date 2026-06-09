@@ -4140,7 +4140,7 @@
       "title": "产品库存查询",
       "subtitle": "查询通过箱扫描入库的待出货库存及箱内单个产品。",
       "searchPlaceholder": "搜索箱号...",
-      "boxQty": "箱数量",
+      "boxQty": "库存数量",
       "itemsTitle": "箱内单个产品",
       "itemCount": "产品数",
       "selectBox": "请选择箱",
@@ -4149,8 +4149,7 @@
       "itemLoadError": "无法加载箱内产品。",
       "orderNo": "工单号",
       "inspectPassYn": "检验",
-      "issuedAt": "发行时间",
-      "missingLabel": "标签缺失"
+      "issuedAt": "发行时间"
     },
     "pallet": {
       "title": "托盘装载",

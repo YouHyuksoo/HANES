@@ -8,7 +8,7 @@
  * 3. **stats**: API 응답 데이터에서 상태별 카운트 계산
  * 4. **workOrderOptions**: 작업지시 목록 API로 드롭다운 옵션 제공
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
 import type { IssueRequestStatus } from '@/components/material';
@@ -16,24 +16,39 @@ import type { ProductionJobOrderRow } from '@harness/shared';
 
 /** 요청 품목 아이템 */
 export interface RequestItem {
+  seq?: number;
+  requestId?: string;
   itemCode: string;
-  itemName: string;
-  unit: string;
+  itemName?: string | null;
+  unit?: string | null;
   currentStock: number;
   requestQty: number;
+  issuedQty?: number;
+  bomReqQty?: number;
+  prevIssueQty?: number;
+  floorStockQty?: number;
+  remark?: string | null;
 }
 
 /** 출고요청 레코드 */
 export interface IssueRequest {
-  id: string;
+  id?: string;
   requestNo: string;
-  requestDate: string;
-  workOrderNo: string;
+  requestDate?: string;
+  orderNo?: string | null;
+  workOrderNo?: string | null;
+  issueType?: string | null;
   items: RequestItem[];
-  totalQty: number;
+  itemCount?: number;
+  totalQty?: number;
+  totalRequestQty?: number;
+  totalIssuedQty?: number;
   status: IssueRequestStatus;
   requester: string;
-  rejectReason?: string;
+  approver?: string | null;
+  approvedAt?: string | null;
+  rejectReason?: string | null;
+  remark?: string | null;
 }
 
 /** 검색 가능한 품목 (재고 정보 포함) */
@@ -96,11 +111,30 @@ export function useIssueRequestData() {
     { staleTime: 30_000 },
   );
 
-  // 작업지시 목록 조회 (드롭다운 옵션용)
-  const { data: jobOrderData } = useApiQuery<JobOrderListResponse>(
-    ['job-orders', 'options'],
-    '/production/job-orders?limit=100',
-    { staleTime: 5 * 60_000 },
+  // 작업지시 조회 필터 (좌측 패널) - 작업지시번호 / 모델 / 상태
+  const [woOrderNo, setWoOrderNo] = useState('');
+  const [woModel, setWoModel] = useState('');
+  const [woStatus, setWoStatus] = useState('');
+  // 텍스트 입력 디바운스 (키 입력마다 요청 방지)
+  const [appliedWo, setAppliedWo] = useState({ orderNo: '', model: '' });
+  useEffect(() => {
+    const id = setTimeout(() => setAppliedWo({ orderNo: woOrderNo, model: woModel }), 300);
+    return () => clearTimeout(id);
+  }, [woOrderNo, woModel]);
+
+  const jobOrderQuery = useMemo(() => {
+    const params = new URLSearchParams({ limit: '100' });
+    if (appliedWo.orderNo.trim()) params.set('orderNo', appliedWo.orderNo.trim());
+    if (appliedWo.model.trim()) params.set('search', appliedWo.model.trim());
+    if (woStatus) params.set('status', woStatus);
+    return params.toString();
+  }, [appliedWo, woStatus]);
+
+  // 작업지시 목록 조회 (좌측 패널 + 드롭다운 옵션용)
+  const { data: jobOrderData, isLoading: isLoadingJobOrders } = useApiQuery<JobOrderListResponse>(
+    ['job-orders', 'options', jobOrderQuery],
+    `/production/job-orders?${jobOrderQuery}`,
+    { staleTime: 60_000 },
   );
 
   // 레코드 목록 추출
@@ -144,15 +178,48 @@ export function useIssueRequestData() {
     }
   }, []);
 
-  // 작업지시 드롭다운 옵션
-  const workOrderOptions = useMemo(() => {
+  const loadBomRequestItems = useCallback(async (orderNo: string): Promise<RequestItem[]> => {
+    if (!orderNo) return [];
+    const response = await api.get<{ success: boolean; data: RequestItem[] }>(
+      `/material/issue-requests/job-orders/${encodeURIComponent(orderNo)}/bom-items`,
+    );
+    const list = Array.isArray(response.data?.data) ? response.data.data : [];
+    return list.map((item) => ({
+      itemCode: item.itemCode,
+      itemName: item.itemName,
+      unit: item.unit ?? 'EA',
+      currentStock: Number(item.currentStock ?? 0),
+      requestQty: Number(item.requestQty ?? 0),
+      bomReqQty: Number(item.bomReqQty ?? 0),
+      prevIssueQty: Number(item.prevIssueQty ?? 0),
+      floorStockQty: Number(item.floorStockQty ?? 0),
+    }));
+  }, []);
+
+  // 특정 작업지시의 기존 출고요청 내역 조회 (우측 그룹 상세용)
+  const loadRequestsByOrder = useCallback(async (orderNo: string): Promise<IssueRequest[]> => {
+    if (!orderNo) return [];
+    const response = await api.get<{ success: boolean; data: IssueRequest[] | { data: IssueRequest[] } }>(
+      `/material/issue-requests?orderNo=${encodeURIComponent(orderNo)}&limit=50`,
+    );
+    const raw = response.data?.data;
+    return Array.isArray(raw) ? raw : raw?.data ?? [];
+  }, []);
+
+  // 작업지시 목록 (서버에서 orderNo/model/status 필터 적용)
+  const jobOrders = useMemo<ProductionJobOrderRow[]>(() => {
     const raw = jobOrderData?.data;
-    const list = Array.isArray(raw) ? raw : (raw as JobOrderListResponse)?.data ?? [];
-    return [
-      { value: '', label: '전체 작업지시' },
-      ...list.map((j) => ({ value: j.orderNo, label: j.orderNo })),
-    ];
+    return Array.isArray(raw) ? raw : (raw as JobOrderListResponse)?.data ?? [];
   }, [jobOrderData]);
+
+  // 작업지시 드롭다운 옵션
+  const workOrderOptions = useMemo(() => [
+    { value: '', label: '전체 작업지시' },
+    ...jobOrders.map((j) => ({
+      value: j.orderNo,
+      label: `${j.orderNo}${j.itemCode ? ` - ${j.itemCode}` : ''}`,
+    })),
+  ], [jobOrders]);
 
   return {
     filteredRequests,
@@ -162,6 +229,16 @@ export function useIssueRequestData() {
     searchText,
     setSearchText,
     searchStockItems,
+    loadBomRequestItems,
+    loadRequestsByOrder,
+    jobOrders,
+    isLoadingJobOrders,
+    woOrderNo,
+    setWoOrderNo,
+    woModel,
+    setWoModel,
+    woStatus,
+    setWoStatus,
     workOrderOptions,
     stockItems: [] as StockItem[],
     isLoading,

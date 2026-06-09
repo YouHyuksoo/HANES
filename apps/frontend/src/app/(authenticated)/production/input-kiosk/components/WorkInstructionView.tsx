@@ -6,6 +6,8 @@
  *
  * 초보자 가이드:
  * - API: GET /master/work-instructions?itemCode=&processCode=
+ * - 품목코드는 선택된 작업지시, 공정코드는 선택된 설비 기준으로 조회한다
+ *   → 같은 작업지시라도 설비(공정)가 다르면 다른 작업지도서가 표시된다
  * - imageUrl이 있으면 이미지 표시, 없으면 플레이스홀더
  * - 복수 페이지 지원: 목록 상단 탭으로 전환
  */
@@ -25,10 +27,13 @@ interface WorkInstruction {
 
 export default function WorkInstructionView() {
   const { t } = useTranslation();
-  const { selectedJobOrder } = useKioskStore();
+  const { selectedJobOrder, selectedEquip } = useKioskStore();
   const [instructions, setInstructions] = useState<WorkInstruction[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [zoomed, setZoomed] = useState(false);
+
+  // 공정코드: 선택된 설비 기준 우선, 없으면 작업지시 공정코드로 폴백
+  const processCode = selectedEquip?.processCode ?? selectedJobOrder?.processCode;
 
   useEffect(() => {
     if (!selectedJobOrder?.itemCode) { setInstructions([]); return; }
@@ -37,14 +42,14 @@ export default function WorkInstructionView() {
       useYn: 'Y',
       limit: '20',
     };
-    if (selectedJobOrder.processCode) params.processCode = selectedJobOrder.processCode;
+    if (processCode) params.processCode = processCode;
     api.get('/master/work-instructions', { params })
       .then(res => {
         setInstructions(res.data?.data ?? []);
         setActiveIdx(0);
       })
       .catch(() => setInstructions([]));
-  }, [selectedJobOrder?.itemCode, selectedJobOrder?.processCode]);
+  }, [selectedJobOrder?.itemCode, processCode]);
 
   const current = instructions[activeIdx];
   const backendBase = process.env.NEXT_PUBLIC_API_URL ?? '';

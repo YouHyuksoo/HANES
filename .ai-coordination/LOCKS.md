@@ -4,17 +4,17 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
-- T-EQUIP-INSPECT-WORKER-TYPE (codex, 2026-06-09): `/master/equip-inspect` 점검유형 `작업자설비점검` 노출 보정.
-  파일: apps/frontend/src/app/(authenticated)/master/equip-inspect/page.tsx,
-        apps/frontend/src/app/(authenticated)/master/equip-inspect/page.structure.test.mjs,
-        apps/frontend/src/app/(authenticated)/master/equip-inspect/components/ItemMasterTab.tsx,
-        apps/frontend/src/app/(authenticated)/master/equip-inspect/components/AddInspectItemModal.tsx.
+- T-EQUIP-INSPECT-ADD-MODAL-TYPE (codex, 2026-06-09): `/master/equip-inspect` 점검항목추가 모달 점검유형 드롭다운 선노출/선택 흐름 보정.
+  파일: apps/frontend/src/app/(authenticated)/master/equip-inspect/components/AddInspectItemModal.tsx,
+        apps/frontend/src/app/(authenticated)/master/equip-inspect/add-modal.structure.test.mjs.
 
 - T-MAT-RECV-FIXES (claude, 2026-06-07): 자재입고 프로세스 이슈 일괄 수정.
   완료(검증): #1 PO오류(http-exception.filter/purchase-order.dto/PoFormPanel), #2 배지(globals.css safelist), 작업지시 품목필터(part.dto/part.service/PartSearchModal/JobOrderFormPanel), IQC006 입하실적조회 전체(arrival.controller/service/dto, material/arrival-result/*, menuConfig, PartnerSelect/useMasterOptions, 2026-06-07_iqc006_arrival_result_seed.sql, locales 4).
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-EQUIP-INSPECT-WORKER-TYPE (codex, 2026-06-09): `/master/equip-inspect`에 점검항목 마스터 탭을 실제 노출해 `WORKER=작업자설비점검` 유형 등록/필터 접근 가능하게 보정. node:test, 프론트 tsc, 라우트 HTTP 200 확인 후 lock 해제.
 
 - T-EQUIP-INSPECT-ADD-TYPE (codex, 2026-06-09): `/master/equip-inspect` 점검항목 추가 모달에서 점검유형 Select 선택 가능하게 변경. 생성 API가 Pool 기본값보다 요청 `inspectType`을 우선 반영하도록 수정. 백/프론트 tsc와 라우트 HTTP 200 확인 후 lock 해제.
 

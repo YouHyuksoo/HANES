@@ -13,7 +13,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Edit2, FileText, Download, ExternalLink } from "lucide-react";
+import { X, Edit2, Trash2, FileText, Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui";
 import api from "@/services/api";
 import { getWorkInstructionKey, type WorkInstruction } from "./WorkInstructionFormPanel";
@@ -26,6 +26,7 @@ interface Props {
   item: WorkInstruction;
   onClose: () => void;
   onEdit: (item: WorkInstruction) => void;
+  onDelete?: (item: WorkInstruction) => void;
   animate?: boolean;
 }
 
@@ -39,7 +40,7 @@ const isPdfUrl = (url: string) => /\.pdf$/i.test(url);
 const resolveFileUrl = (url: string) =>
   url.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "")}${url}` : url;
 
-export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, animate = true }: Props) {
+export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, onDelete, animate = true }: Props) {
   const { t } = useTranslation();
   const [detail, setDetail] = useState<WorkInstructionDetail>(item);
   const [loading, setLoading] = useState(false);
@@ -76,6 +77,11 @@ export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, ani
           <Button size="sm" onClick={() => onEdit(detail)}>
             <Edit2 className="w-3.5 h-3.5 mr-1" />{t("common.edit")}
           </Button>
+          {onDelete && (
+            <Button size="sm" variant="danger" onClick={() => onDelete(detail)}>
+              <Trash2 className="w-3.5 h-3.5 mr-1" />{t("common.delete")}
+            </Button>
+          )}
           <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
             <X className="w-4 h-4 text-text-muted hover:text-text" />
           </button>

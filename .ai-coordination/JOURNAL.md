@@ -1,5 +1,28 @@
 # JOURNAL
 
+## 2026-06-09 21:00 codex
+
+### T-EQUIP-INSPECT-WORKER-TYPE 완료
+
+**대상:** `/master/equip-inspect`.
+
+**원인:**
+- 백엔드 DTO, 타입, 번역에는 `WORKER` 점검유형과 `작업자설비점검` 라벨이 이미 있었다.
+- 하지만 `/master/equip-inspect/page.tsx`는 `EquipAssignTab`만 렌더링하고 `ItemMasterTab`을 노출하지 않아, 사용자가 점검항목 Pool에서 `작업자설비점검` 유형을 등록/필터할 진입점이 없었다.
+- 일부 fallback 라벨은 `작업자점검`으로 되어 있어 요청 문구와 달랐다.
+
+**수정 내용:**
+- `/master/equip-inspect` 페이지에 `설비별 할당` / `점검항목 마스터` 탭 전환 UI를 추가했다.
+- `ItemMasterTab`을 실제 렌더링해 점검유형 `WORKER=작업자설비점검`을 선택/필터할 수 있게 했다.
+- `ItemMasterTab`, `AddInspectItemModal`의 `WORKER` fallback 라벨을 `작업자설비점검`으로 통일했다.
+- 페이지 구조 회귀 방지용 `page.structure.test.mjs`를 추가했다.
+
+**검증:**
+- RED: `node --test apps/frontend/src/app/(authenticated)/master/equip-inspect/page.structure.test.mjs`가 `ItemMasterTab` 미노출로 실패 확인.
+- GREEN: `node --test apps/frontend/src/app/(authenticated)/master/equip-inspect/page.structure.test.mjs` 통과.
+- `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- `GET http://localhost:3002/master/equip-inspect` HTTP 200 확인.
+
 ## 2026-06-09 20:15 claude
 
 ### T-SHIP-BOX-SCAN 완료

@@ -103,6 +103,17 @@ export default function JobOrderPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // QR 스캔 진입: URL ?orderNo= 가 있으면 해당 작업지시 자동 검색(목록 모드)
+  const [scanOrderNo, setScanOrderNo] = useState<string | null>(null);
+  useEffect(() => {
+    const o = new URLSearchParams(window.location.search).get("orderNo");
+    if (o) {
+      setScanOrderNo(o);
+      setViewMode("list");
+      setSearchText(o);
+    }
+  }, []);
+
   const displayData = useMemo(() => {
     if (viewMode === "tree") return flattenTree(data);
     return data.map(d => ({ ...d, _depth: 0 }));

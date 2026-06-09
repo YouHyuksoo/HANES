@@ -238,6 +238,7 @@ export const menuConfig: MenuConfigItem[] = [
     children: [
       { code: "SHIP_PACK_RESULT", labelKey: "menu.production.packResult", path: "/production/pack-result" },
       { code: "SHIP_PACK", labelKey: "menu.shipping.pack", path: "/shipping/pack" },
+      { code: "SHIP_BOX_STOCK", labelKey: "menu.shipping.boxStock", path: "/shipping/box-stock" },
       { code: "SHIP_PALLET", labelKey: "menu.shipping.pallet", path: "/shipping/pallet" },
       { code: "SHIP_CONFIRM", labelKey: "menu.shipping.confirm", path: "/shipping/confirm" },
       { code: "SHIP_ORDER", labelKey: "menu.shipping.order", path: "/shipping/order" },

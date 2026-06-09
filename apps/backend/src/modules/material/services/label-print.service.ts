@@ -208,6 +208,8 @@ export class LabelPrintService {
     plant?: string,
   ): Promise<LabelPrintLog> {
     const log = this.printLogRepo.create({
+      printedAt: new Date(),
+      seq: 1,
       templateId: dto.templateId ?? null,
       category: dto.category,
       printMode: dto.printMode,

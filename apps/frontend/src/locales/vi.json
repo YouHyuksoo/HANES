@@ -4140,7 +4140,7 @@
       "title": "Tra cứu tồn kho sản phẩm",
       "subtitle": "Xem tồn chờ xuất được nhập bằng quét thùng và từng sản phẩm trong thùng.",
       "searchPlaceholder": "Tìm mã thùng...",
-      "boxQty": "SL thùng",
+      "boxQty": "SL tồn",
       "itemsTitle": "Sản phẩm trong thùng",
       "itemCount": "Số sản phẩm",
       "selectBox": "Chọn một thùng",
@@ -4149,8 +4149,7 @@
       "itemLoadError": "Không thể tải sản phẩm trong thùng.",
       "orderNo": "Mã lệnh SX",
       "inspectPassYn": "Kiểm tra",
-      "issuedAt": "Thời gian phát hành",
-      "missingLabel": "Thiếu nhãn"
+      "issuedAt": "Thời gian phát hành"
     },
     "pallet": {
       "title": "Xếp pallet",

@@ -28,6 +28,13 @@ interface ArrivalHistoryTableProps {
   onCancel: (record: ArrivalRecord) => void;
 }
 
+const formatDateOnly = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return new Intl.DateTimeFormat('sv-SE').format(date);
+};
+
 export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCancel }: ArrivalHistoryTableProps) {
   const { t } = useTranslation();
 
@@ -38,7 +45,7 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
       header: t('material.arrival.col.transDate'),
       size: 100,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string).slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string | null),
     },
     {
       id: 'poNo',

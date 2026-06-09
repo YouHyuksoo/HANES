@@ -43,29 +43,28 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
     if (!isOpen) return;
     setSeq(String(currentMaxSeq + 1));
     setInspectType("DAILY");
+    setSelectedItemCode("");
+  }, [isOpen, currentMaxSeq]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedItemCode("");
     (async () => {
       try {
         const res = await api.get("/master/equip-inspect-item-pool", {
-          params: { useYn: "Y", limit: "1000" },
+          params: { useYn: "Y", inspectType, limit: "1000" },
         });
         setPoolItems(res.data?.data ?? []);
       } catch {
         setPoolItems([]);
       }
     })();
-  }, [isOpen, currentMaxSeq]);
+  }, [isOpen, inspectType]);
 
   const selectedItem = useMemo(
     () => poolItems.find(item => item.itemCode === selectedItemCode) || null,
     [poolItems, selectedItemCode],
   );
-
-  useEffect(() => {
-    if (selectedItem?.inspectType) {
-      setInspectType(selectedItem.inspectType);
-    }
-  }, [selectedItem]);
 
   const poolOptions = useMemo(() => poolItems.map(item => ({
     value: item.itemCode,
@@ -111,6 +110,14 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
 
       <div className="space-y-4">
         <Select
+          label={t("master.equipInspect.inspectType")}
+          options={typeOptions}
+          value={inspectType}
+          onChange={value => setInspectType(value as InspectItemPoolRow["inspectType"])}
+          fullWidth
+        />
+
+        <Select
           label={t("master.equipInspect.itemName", "점검항목")}
           placeholder={t("master.equipInspect.selectPoolItem", "점검항목 마스터 선택")}
           options={poolOptions}
@@ -122,13 +129,6 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
         <div className="grid grid-cols-3 gap-4">
           <Input label={t("master.equipInspect.itemCode", "항목코드")} value={selectedItem?.itemCode || ""}
             disabled fullWidth />
-          <Select
-            label={t("master.equipInspect.inspectType")}
-            options={typeOptions}
-            value={inspectType}
-            onChange={value => setInspectType(value as InspectItemPoolRow["inspectType"])}
-            fullWidth
-          />
           <Input label={t("master.equipInspect.seq")} type="number" value={seq}
             onChange={e => setSeq(e.target.value)} fullWidth />
         </div>

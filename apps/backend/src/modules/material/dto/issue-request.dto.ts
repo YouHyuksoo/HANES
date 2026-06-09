@@ -16,6 +16,7 @@ import {
   IsString,
   IsOptional,
   IsInt,
+  IsNumber,
   Min,
   Max,
   IsIn,
@@ -41,6 +42,24 @@ export class IssueRequestItemDto {
   @IsString()
   @MaxLength(20)
   unit: string;
+
+  @ApiPropertyOptional({ description: 'BOM 소요량 (= 작업지시수량 x BOM 소요량)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  bomReqQty?: number;
+
+  @ApiPropertyOptional({ description: '작업지시 기준 기불출량' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  prevIssueQty?: number;
+
+  @ApiPropertyOptional({ description: '현장 창고 보유량' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  floorStockQty?: number;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
@@ -92,6 +111,11 @@ export class IssueRequestQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ description: '작업지시번호 필터' })
+  @IsOptional()
+  @IsString()
+  orderNo?: string;
 }
 
 /** 출고요청 반려 DTO */
