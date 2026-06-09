@@ -12,13 +12,13 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Truck, Plus, Search, RefreshCw, CheckCircle, Package, Clock, MapPin, Upload, ArrowRight, XCircle } from 'lucide-react';
+import { Truck, Plus, Search, RefreshCw, CheckCircle, Package, Clock, MapPin, Upload, ArrowRight, XCircle, ScanLine } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { usePartnerOptions } from '@/hooks/useMasterOptions';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { ShipmentStatusBadge, ShipmentScanModal } from '@/components/shipping';
+import { ShipmentStatusBadge, ShipmentScanModal, BoxScanShipModal } from '@/components/shipping';
 import type { ShipmentStatus } from '@/components/shipping';
 import api from '@/services/api';
 
@@ -58,6 +58,7 @@ export default function ShipmentPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+  const [isBoxScanOpen, setIsBoxScanOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [scanTarget, setScanTarget] = useState<Shipment | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Shipment | null>(null);
@@ -195,6 +196,9 @@ export default function ShipmentPage() {
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
+          <Button variant="secondary" size="sm" onClick={() => setIsBoxScanOpen(true)}>
+            <ScanLine className="w-4 h-4 mr-1" /> {t('shipping.boxScan.title', '박스 스캔 출하')}
+          </Button>
           <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> {t('shipping.confirm.createShipment')}</Button>
         </div>
       </div>
@@ -308,6 +312,12 @@ export default function ShipmentPage() {
           onConfirm={fetchData}
         />
       )}
+
+      <BoxScanShipModal
+        isOpen={isBoxScanOpen}
+        onClose={() => { setIsBoxScanOpen(false); fetchData(); }}
+        onShipped={fetchData}
+      />
     </div>
   );
 }
