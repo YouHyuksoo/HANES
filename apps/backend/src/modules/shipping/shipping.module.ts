@@ -52,7 +52,6 @@ import { MatLot } from '../../entities/mat-lot.entity';
 import { FgLabel } from '../../entities/fg-label.entity';
 import { OqcRequest } from '../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../entities/oqc-request-box.entity';
-import { Warehouse } from '../../entities/warehouse.entity';
 import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
@@ -73,7 +72,6 @@ import { InventoryModule } from '../inventory/inventory.module';
       FgLabel,
       OqcRequest,
       OqcRequestBox,
-      Warehouse,
     ]),
   ],
   controllers: [

@@ -38,10 +38,6 @@ export class ShipOrderService {
     private readonly shipOrderItemRepository: Repository<ShipmentOrderItem>,
     @InjectRepository(PartMaster)
     private readonly partRepository: Repository<PartMaster>,
-    @InjectRepository(Warehouse)
-    private readonly warehouseRepository: Repository<Warehouse>,
-    @InjectRepository(BoxMaster)
-    private readonly boxRepository: Repository<BoxMaster>,
     private readonly productInventory: ProductInventoryService,
     private readonly tx: TransactionService,
   ) {}
