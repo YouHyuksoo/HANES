@@ -99,6 +99,8 @@ input-machine/equip/inspect/manual POST 본문 `matUid:`→`prdUid:` 통일. inp
 - 처리 전 pending hasPending=true/count1 → **처리 페이지 UI에서 행 선택 후 합격(PASS) 처리**(토스트 "상태가 PASS로 변경", 대기목록 1→0) → 처리 후 pending hasPending=false/count0.
 - DB: SELF_INSPECT_RESULTS PENDING→PASS, 비고/INSPECTED_AT 스탬프 확인. 키오스크 차단 게이트(pending API)의 true→false 전이 입증.
 
+**검증 임시데이터 정리 완료(사후)**: 위 검증으로 생성된 PROD_RESULTS PR26061000004/05, SELF_INSPECT_RESULTS(의뢰검사 PASS) 1건, JOB_MATERIAL_LOTS(W2026-001 자재스캔) 6건, 시드 MAT_LOTS MTEST-* 5건 삭제. W2026-001을 RUNNING→WAITING(START_TIME=NULL)로 pre-test 상태 복원. 하위 레코드(MAT_ISSUES/STOCK_TX/PRODUCT_TX/FG_LABELS/INSPECT_RESULTS) 전무 확인 후 삭제. 기존 실데이터(WO2604020003 실적 2건, CNTR001 실LOT) 보존. 재테스트 시 MatLot 재시드 필요(seed_matlots_hns01.sql 참조).
+
 ### 키오스크 25항목 자주검사 모달 "freeze" 원인 조사 (결론: 앱 버그 아님)
 
 증상: 헤드리스 브라우저로 input-kiosk 초물 자주검사(25항목) 모달이 열린 동안 `Page.captureScreenshot`가 30초 타임아웃 반복.
