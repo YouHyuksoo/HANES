@@ -77,7 +77,59 @@ describe('EquipInspectService', () => {
       criteria: '0.5~0.7 MPa',
       cycle: 'DAILY',
       useYn: 'Y',
+      itemType: 'VISUAL',
+      unit: null,
+      lslValue: null,
+      uslValue: null,
+      workerQrCode: null,
     });
+  });
+
+  it('preserves worker QR fields when creating a worker inspection assignment', async () => {
+    mockPoolService.findByCode.mockResolvedValue({
+      itemCode: 'EIP-STD-W001',
+      itemName: '작업 전 설비 주변 정리',
+      inspectType: 'WORKER',
+      criteria: '작업 공간 이상 없음',
+      cycle: 'DAILY',
+      useYn: 'Y',
+    } as any);
+
+    const created = {
+      company: '40',
+      plant: '1000',
+      equipCode: 'EQ-CUT-01',
+      itemCode: 'EIP-STD-W001',
+      inspectType: 'WORKER',
+      seq: 1,
+      itemName: '작업 전 설비 주변 정리',
+      criteria: '작업 공간 이상 없음',
+      cycle: 'DAILY',
+      useYn: 'Y',
+      itemType: 'VISUAL',
+      unit: null,
+      lslValue: null,
+      uslValue: null,
+      workerQrCode: 'EQ-CUT-01:W001',
+    } as EquipInspectItemMaster;
+
+    mockRepo.create.mockReturnValue(created);
+    mockRepo.save.mockResolvedValue(created);
+
+    await expect(target.create({
+      equipCode: 'EQ-CUT-01',
+      itemCode: 'EIP-STD-W001',
+      inspectType: 'WORKER',
+      seq: 1,
+      workerQrCode: 'EQ-CUT-01:W001',
+    } as any, '40', '1000')).resolves.toEqual(created);
+
+    expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+      inspectType: 'WORKER',
+      itemCode: 'EIP-STD-W001',
+      workerQrCode: 'EQ-CUT-01:W001',
+      itemType: 'VISUAL',
+    }));
   });
 
   it('keeps tenant key columns from the matched equipment assignment when update payload contains them', async () => {

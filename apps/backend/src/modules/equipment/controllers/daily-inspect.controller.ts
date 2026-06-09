@@ -1,11 +1,11 @@
 /**
  * @file src/modules/equipment/controllers/daily-inspect.controller.ts
- * @description 설비 일상점검 API 컨트롤러 (inspectType=DAILY 고정)
+ * @description 설비 일상점검 API 컨트롤러
  *
  * 초보자 가이드:
  * 1. **엔드포인트**: /api/v1/equipment/daily-inspect
- * 2. inspectType을 'DAILY'로 고정하여 일상점검만 처리
- * 3. 복합키: equipCode + inspectType(DAILY) + inspectDate
+ * 2. 기본 inspectType은 DAILY이며, 입력키오스크 작업자설비점검 저장은 WORKER를 허용
+ * 3. 복합키: equipCode + inspectType + inspectDate
  *
  * API 경로:
  * - GET    /equipment/daily-inspect                         일상점검 목록 조회
@@ -129,10 +129,11 @@ export class DailyInspectController {
     @Company() company: string,
     @Plant() plant: string,
   ) {
+    const inspectType = dto.inspectType === 'WORKER' ? 'WORKER' : 'DAILY';
     const data = await this.equipInspectService.create(
       {
         equipCode: dto.equipCode,
-        inspectType: 'DAILY',
+        inspectType,
         inspectDate: dto.inspectDate,
         inspectorName: dto.inspectorName,
         overallResult: dto.overallResult,
@@ -141,7 +142,10 @@ export class DailyInspectController {
       },
       { company, plant },
     );
-    return ResponseUtil.success(data, '일상점검이 등록되었습니다.');
+    return ResponseUtil.success(
+      data,
+      inspectType === 'WORKER' ? '작업자설비점검이 등록되었습니다.' : '일상점검이 등록되었습니다.',
+    );
   }
 
   @Put(':equipCode/:inspectDate')

@@ -78,6 +78,11 @@ export class EquipInspectService {
       criteria: source?.criteria ?? dto.criteria ?? null,
       cycle: source?.cycle ?? dto.cycle ?? null,
       useYn: dto.useYn || 'Y',
+      itemType: dto.itemType || 'VISUAL',
+      unit: dto.unit ?? null,
+      lslValue: dto.lslValue ?? null,
+      uslValue: dto.uslValue ?? null,
+      workerQrCode: dto.workerQrCode ?? null,
     });
     return this.equipInspectRepository.save(entity);
   }

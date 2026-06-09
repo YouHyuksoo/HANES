@@ -29,6 +29,15 @@ interface InspectItem {
 }
 
 type ItemResult = 'PASS' | 'FAIL' | '';
+type InspectDetails = Record<string, unknown>;
+
+interface CompletedInspectLog {
+  inspectDate?: string;
+  inspectorName?: string | null;
+  overallResult?: string | null;
+  details?: InspectDetails | string | null;
+  remark?: string | null;
+}
 
 interface DailyInspectModalProps {
   isOpen: boolean;
@@ -49,6 +58,27 @@ function judgeByRange(
   return 'PASS';
 }
 
+function parseInspectDetails(details: CompletedInspectLog['details']): InspectDetails {
+  if (!details) return {};
+  if (typeof details === 'object') return details;
+  try {
+    const parsed = JSON.parse(details);
+    return parsed && typeof parsed === 'object' ? parsed as InspectDetails : {};
+  } catch {
+    return {};
+  }
+}
+
+function getCompletedItemValue(
+  details: InspectDetails,
+  item: InspectItem,
+  suffix = '',
+): string {
+  const key = `${item.seq}_${item.itemName}${suffix}`;
+  const value = details[key];
+  return value == null ? '' : String(value);
+}
+
 export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInspectModalProps) {
   const { t } = useTranslation();
   const { selectedEquip, selectedWorkers, setInterlock } = useKioskStore();
@@ -61,12 +91,14 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
   const [inspectTime, setInspectTime] = useState('');
   const [saving, setSaving] = useState(false);
   const [alreadyDone, setAlreadyDone] = useState(false);
+  const [completedInspect, setCompletedInspect] = useState<CompletedInspectLog | null>(null);
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (!isOpen) return;
     const now = new Date();
     setInspectTime(`${today} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+    setCompletedInspect(null);
 
     const controller = new AbortController();
 
@@ -77,8 +109,14 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
       if (res.data?.data?.alreadyInspected) {
         setAlreadyDone(true);
         setInterlock('dailyInspectDone', true);
+        api.get(`/equipment/daily-inspect/${selectedEquip?.equipCode}/${today}`, {
+          signal: controller.signal,
+        }).then(detailRes => {
+          setCompletedInspect(detailRes.data?.data ?? null);
+        }).catch(() => setCompletedInspect(null));
       } else {
         setAlreadyDone(false);
+        setCompletedInspect(null);
       }
     }).catch(() => {});
 
@@ -189,11 +227,87 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.dailyInspectTitle')} size="full">
       {alreadyDone ? (
-        <div className="flex flex-col items-center gap-4 py-8">
-          <CheckCircle2 className="w-16 h-16 text-green-500" />
-          <p className="text-lg font-bold text-text">{t('kiosk.prep.alreadyInspected')}</p>
-          <p className="text-sm text-text-muted">{today}</p>
-          <Button onClick={onDone}>{t('common.confirm')}</Button>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 border border-green-500 rounded-lg text-green-700 dark:text-green-300">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-8 h-8" />
+              <div>
+                <p className="text-base font-bold">{t('kiosk.prep.alreadyInspected')}</p>
+                <p className="text-xs opacity-80">{selectedEquip?.equipName} ({selectedEquip?.equipCode})</p>
+              </div>
+            </div>
+            <div className="text-right text-xs space-y-1">
+              <p><span className="opacity-70">점검일</span> <span className="font-mono">{today}</span></p>
+              <p><span className="opacity-70">점검자</span> <span className="font-semibold">{completedInspect?.inspectorName || '-'}</span></p>
+              <p>
+                <span className="opacity-70">종합판정</span>{' '}
+                <span className={`font-bold ${completedInspect?.overallResult === 'FAIL' ? 'text-red-600 dark:text-red-400' : ''}`}>
+                  {completedInspect?.overallResult === 'FAIL' ? 'NG' : 'OK'}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {items.length > 0 ? (
+            <div className="overflow-x-auto max-h-[50vh] overflow-y-auto rounded-lg border border-border">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 bg-surface z-10">
+                  <tr className="border-b border-border">
+                    <th className="w-12 px-3 py-2 text-center text-xs text-text-muted font-medium">No</th>
+                    <th className="w-56 px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
+                    <th className="w-80 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
+                    <th className="w-32 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.measureOrJudge')}</th>
+                    <th className="w-20 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.result')}</th>
+                    <th className="px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.remark')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map(item => {
+                    const details = parseInspectDetails(completedInspect?.details);
+                    const result = getCompletedItemValue(details, item) || 'PASS';
+                    const value = getCompletedItemValue(details, item, '_value');
+                    const remark = getCompletedItemValue(details, item, '_remark');
+                    const isFail = result === 'FAIL';
+                    return (
+                      <tr key={item.seq} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 text-center text-xs text-text-muted">{item.seq}</td>
+                        <td className="px-3 py-2 font-medium text-text whitespace-nowrap">{item.itemName}</td>
+                        <td className="px-3 py-2 text-center text-xs text-text-muted">
+                          {item.itemType === 'MEASURE' && (item.lslValue != null || item.uslValue != null) ? (
+                            <span className="text-blue-600 dark:text-blue-400">
+                              {item.lslValue != null ? item.lslValue : '-'}{' ~ '}{item.uslValue != null ? item.uslValue : '-'}
+                              {item.unit ? ` ${item.unit}` : ''}
+                            </span>
+                          ) : item.criteria ? item.criteria : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-center text-sm">
+                          {item.itemType === 'MEASURE' ? (value || '-') : (result === 'FAIL' ? 'NG' : 'OK')}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold border ${
+                            isFail
+                              ? 'border-red-500 text-red-700 dark:text-red-400'
+                              : 'border-green-500 text-green-700 dark:text-green-400'
+                          }`}>
+                            {isFail ? 'NG' : 'OK'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-text-muted">{remark || '-'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-4 border border-border rounded-lg text-sm text-text-muted">
+              {completedInspect?.remark || t('kiosk.prep.noInspectItems')}
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2 border-t border-border">
+            <Button onClick={onDone}>{t('common.confirm')}</Button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

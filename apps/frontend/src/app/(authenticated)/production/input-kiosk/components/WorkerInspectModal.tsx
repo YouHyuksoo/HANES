@@ -18,9 +18,11 @@ import { CheckCircle2, XCircle, QrCode, Wrench, User, Clock, Play } from 'lucide
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
+import { useScanInputFocus } from '@/hooks/useScanInputFocus';
 
 interface WorkerInspectItem {
   seq: number;
+  itemCode?: string | null;
   itemName: string;
   criteria?: string | null;
   workerQrCode?: string | null;
@@ -47,6 +49,20 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const qrRef = useRef<HTMLInputElement>(null);
+  const rowRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  // 모달 열린 동안 QR 스캔 입력창 항상 포커스 유지
+  useScanInputFocus(qrRef, isOpen);
+
+  const focusQrInput = useCallback((delay = 0) => {
+    window.setTimeout(() => {
+      qrRef.current?.focus();
+      qrRef.current?.select();
+    }, delay);
+  }, []);
+
+  const normalizeQrCode = useCallback((value: string | null | undefined) => {
+    return String(value ?? '').trim().toUpperCase();
+  }, []);
 
   useEffect(() => {
     if (!isOpen || !selectedEquip) return;
@@ -58,6 +74,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
     setNgReasons({});
     setQrInput('');
     setActiveSeq(null);
+    rowRefs.current = {};
     api.get('/master/equip-inspect-items', {
       params: { equipCode: selectedEquip.equipCode, inspectType: 'WORKER', limit: '100' },
       signal: controller.signal,
@@ -67,6 +84,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
       const init: Record<number, ItemResult> = {};
       data.forEach(i => { init[i.seq] = ''; });
       setResults(init);
+      focusQrInput();
     }).catch((err: unknown) => {
       if ((err as { name?: string })?.name !== 'CanceledError') {
         setItems([]);
@@ -77,19 +95,28 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   }, [isOpen, selectedEquip]);
 
   useEffect(() => {
-    if (isOpen) setTimeout(() => qrRef.current?.focus(), 100);
-  }, [isOpen]);
+    if (isOpen) focusQrInput(100);
+  }, [focusQrInput, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && items.length > 0) focusQrInput(100);
+  }, [focusQrInput, isOpen, items.length]);
 
   const handleQrScan = useCallback((code: string) => {
-    const matched = items.find(i => i.workerQrCode && i.workerQrCode === code.trim());
+    const scanned = normalizeQrCode(code);
+    const matched = items.find(item => normalizeQrCode(item.workerQrCode) === scanned);
     if (!matched) {
       toast.error(t('kiosk.prep.workerQrNotFound', { code }));
       setQrInput('');
+      focusQrInput();
       return;
     }
     setActiveSeq(matched.seq);
+    const matchedRow = rowRefs.current[matched.seq];
+    matchedRow?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     setQrInput('');
-  }, [items, t]);
+    focusQrInput();
+  }, [focusQrInput, items, normalizeQrCode, t]);
 
   const handleQrKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && qrInput.trim()) handleQrScan(qrInput);
@@ -100,8 +127,8 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
     setResults(prev => ({ ...prev, [seq]: val }));
     setScanTimes(prev => ({ ...prev, [seq]: now }));
     setActiveSeq(null);
-    setTimeout(() => qrRef.current?.focus(), 50);
-  }, []);
+    focusQrInput(50);
+  }, [focusQrInput]);
 
   const okCount = items.filter(i => results[i.seq] === 'OK').length;
   const ngCount = items.filter(i => results[i.seq] === 'NG').length;
@@ -128,7 +155,9 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
     try {
       const details = items.map(i => ({
         seq: i.seq,
+        itemCode: i.itemCode ?? null,
         itemName: i.itemName,
+        workerQrCode: i.workerQrCode ?? null,
         result: results[i.seq],
         ngReason: ngReasons[i.seq] ?? '',
       }));
@@ -138,7 +167,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
         inspectorName: selectedWorkers.map(w => w.workerName).join(', '),
         inspectType: 'WORKER',
         overallResult: anyNg ? 'FAIL' : 'PASS',
-        details,
+        details: { items: details },
       }, { skipSuccessToast: true });
       setInterlock('workerInspectDone', !anyNg || startWork);
       toast.success(t('kiosk.prep.workerInspectSaved'));
@@ -194,45 +223,59 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                   const isActive = activeSeq === item.seq;
                   const isNg = r === 'NG';
                   return (
-                    <div key={item.seq} className={`p-2.5 border rounded-lg transition-colors ${
+                    <div
+                      key={item.seq}
+                      ref={el => { rowRefs.current[item.seq] = el; }}
+                      tabIndex={isActive ? 0 : -1}
+                      aria-current={isActive ? 'true' : undefined}
+                      className={`p-2.5 border rounded-lg transition-colors ${
                       r === 'OK' ? 'border-green-500'
                       : r === 'NG' ? 'border-red-500'
-                      : isActive ? 'border-blue-400'
+                      : isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 ring-2 ring-blue-300 dark:ring-blue-700'
                       : 'border-border'
-                    }`}>
+                    }`}
+                    >
                       <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
                           {item.seq}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-text">{item.itemName}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-medium text-text">{item.itemName}</p>
+                            {item.itemCode && (
+                              <span className="px-1.5 py-0.5 rounded border border-border text-[10px] font-mono text-text-muted">
+                                {item.itemCode}
+                              </span>
+                            )}
+                          </div>
                           {item.criteria && <p className="text-xs text-text-muted">{item.criteria}</p>}
+                          {item.workerQrCode && (
+                            <p className="text-[10px] text-blue-600 dark:text-blue-400 font-mono truncate">
+                              QR {item.workerQrCode}
+                            </p>
+                          )}
                         </div>
                         {scanTimes[item.seq] && (
                           <span className="text-[10px] text-text-muted flex items-center gap-1 shrink-0">
                             <Clock className="w-3 h-3" />{scanTimes[item.seq]}
                           </span>
                         )}
-                        {(isActive || !item.workerQrCode) ? (
-                          <div className="flex gap-1 shrink-0">
-                            <button onClick={() => handleResult(item.seq, 'OK')}
-                              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                                r === 'OK' ? 'bg-green-500 text-white border-green-500'
-                                : 'border-border text-text-muted hover:border-green-400 hover:text-green-700 dark:hover:text-green-400'
-                              }`}>
-                              <CheckCircle2 className="w-3.5 h-3.5" /> OK
-                            </button>
-                            <button onClick={() => handleResult(item.seq, 'NG')}
-                              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                                r === 'NG' ? 'bg-red-500 text-white border-red-500'
-                                : 'border-border text-text-muted hover:border-red-400 hover:text-red-700 dark:hover:text-red-400'
-                              }`}>
-                              <XCircle className="w-3.5 h-3.5" /> NG
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-text-muted shrink-0">{t('kiosk.prep.workerQrRequired')}</span>
-                        )}
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => handleResult(item.seq, 'OK')}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                              r === 'OK' ? 'bg-green-500 text-white border-green-500'
+                              : 'border-border text-text-muted hover:border-green-400 hover:text-green-700 dark:hover:text-green-400'
+                            }`}>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> OK
+                          </button>
+                          <button onClick={() => handleResult(item.seq, 'NG')}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                              r === 'NG' ? 'bg-red-500 text-white border-red-500'
+                              : 'border-border text-text-muted hover:border-red-400 hover:text-red-700 dark:hover:text-red-400'
+                            }`}>
+                            <XCircle className="w-3.5 h-3.5" /> NG
+                          </button>
+                        </div>
                       </div>
                       {isNg && (
                         <div className="mt-1.5 pl-8">
@@ -255,7 +298,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
           {/* 우측 패널 */}
           <div className="flex flex-col gap-3">
             {/* QR 스캐너 */}
-            {items.some(i => i.workerQrCode) && (
+            {items.length > 0 && (
               <div className="p-2.5 border border-blue-400 dark:border-blue-700 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
                   <QrCode className="w-4 h-4 text-blue-500 shrink-0" />

@@ -1,0 +1,85 @@
+-- 모든 사용 설비에 설비일일점검 표준 항목을 할당한다.
+
+MERGE INTO EQUIP_INSPECT_ITEM_MASTERS target
+USING (
+  SELECT e.COMPANY,
+         e.PLANT_CD,
+         e.EQUIP_CODE,
+         p.ITEM_CODE,
+         p.ITEM_NAME,
+         p.CRITERIA,
+         p.CYCLE,
+         ROW_NUMBER() OVER (PARTITION BY e.COMPANY, e.PLANT_CD, e.EQUIP_CODE ORDER BY p.ITEM_CODE) AS SEQ
+    FROM EQUIP_MASTERS e
+    JOIN EQUIP_INSPECT_ITEM_POOL p
+      ON p.COMPANY = e.COMPANY
+     AND p.PLANT_CD = e.PLANT_CD
+     AND p.INSPECT_TYPE = 'DAILY'
+     AND p.USE_YN = 'Y'
+   WHERE e.COMPANY = '40'
+     AND e.PLANT_CD = '1000'
+     AND e.USE_YN = 'Y'
+) src
+ON (
+  target.COMPANY = src.COMPANY
+  AND target.PLANT_CD = src.PLANT_CD
+  AND target.EQUIP_CODE = src.EQUIP_CODE
+  AND target.INSPECT_TYPE = 'DAILY'
+  AND target.SEQ = src.SEQ
+)
+WHEN MATCHED THEN UPDATE SET
+  target.ITEM_CODE = src.ITEM_CODE,
+  target.ITEM_NAME = src.ITEM_NAME,
+  target.CRITERIA = src.CRITERIA,
+  target.CYCLE = src.CYCLE,
+  target.USE_YN = 'Y',
+  target.ITEM_TYPE = 'VISUAL',
+  target.UNIT = NULL,
+  target.LSL_VALUE = NULL,
+  target.USL_VALUE = NULL,
+  target.WORKER_QR_CODE = NULL,
+  target.UPDATED_BY = 'seed',
+  target.UPDATED_AT = SYSTIMESTAMP
+WHEN NOT MATCHED THEN INSERT (
+  COMPANY,
+  PLANT_CD,
+  EQUIP_CODE,
+  INSPECT_TYPE,
+  SEQ,
+  ITEM_CODE,
+  ITEM_NAME,
+  CRITERIA,
+  CYCLE,
+  USE_YN,
+  ITEM_TYPE,
+  UNIT,
+  LSL_VALUE,
+  USL_VALUE,
+  WORKER_QR_CODE,
+  CREATED_BY,
+  UPDATED_BY,
+  CREATED_AT,
+  UPDATED_AT
+) VALUES (
+  src.COMPANY,
+  src.PLANT_CD,
+  src.EQUIP_CODE,
+  'DAILY',
+  src.SEQ,
+  src.ITEM_CODE,
+  src.ITEM_NAME,
+  src.CRITERIA,
+  src.CYCLE,
+  'Y',
+  'VISUAL',
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  'seed',
+  'seed',
+  SYSTIMESTAMP,
+  SYSTIMESTAMP
+);
+
+COMMIT;
