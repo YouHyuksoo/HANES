@@ -285,7 +285,26 @@ export class ReceivingService {
       .filter((lot) => lot.remainingQty > 0);
   }
 
-  /** 
+  /**
+   * 단건 입고가능 LOT 조회 (PDA 시리얼 스캔용)
+   * - 웹/PDA 입고 워크플로우 통일: 시리얼(matUid) 바코드 스캔 → 입고가능 LOT 반환
+   * - findReceivable의 검증/가공 로직을 재사용해 동일 계약 보장
+   */
+  async findReceivableByBarcode(matUid: string, company?: string, plant?: string) {
+    const code = matUid?.trim();
+    if (!code) throw new BadRequestException('바코드(시리얼)를 입력해 주세요.');
+    const list = await this.findReceivable(company, plant);
+    const lot = list.find((l) => l.matUid === code);
+    if (!lot) {
+      throw new NotFoundException(`입고 가능한 LOT이 아닙니다(미검사/입고완료/대상아님): ${code}`);
+    }
+    if (lot.receivingBlockedReason) {
+      throw new BadRequestException(`${code}: ${lot.receivingBlockedReason}`);
+    }
+    return lot;
+  }
+
+  /**
    * PO 수량 오차율 체크
    * - LOT의 PO 번호를 기준으로 주문 수량 대비 입고 수량이 오차율 내인지 확인
    * - 초과 시 BadRequestException 발생

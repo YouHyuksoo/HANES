@@ -10,6 +10,7 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -28,6 +29,7 @@ describe('ReceivingService', () => {
   let mockMatReceivingRepo: DeepMocked<Repository<MatReceiving>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockPurchaseOrderRepo: DeepMocked<Repository<PurchaseOrder>>;
   let mockPurchaseOrderItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
@@ -46,6 +48,7 @@ describe('ReceivingService', () => {
     mockMatReceivingRepo = createMock<Repository<MatReceiving>>();
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockPurchaseOrderRepo = createMock<Repository<PurchaseOrder>>();
     mockPurchaseOrderItemRepo = createMock<Repository<PurchaseOrderItem>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
@@ -69,6 +72,7 @@ describe('ReceivingService', () => {
         { provide: getRepositoryToken(MatReceiving), useValue: mockMatReceivingRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(PurchaseOrder), useValue: mockPurchaseOrderRepo },
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPurchaseOrderItemRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },

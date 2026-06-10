@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Query, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ReceivingService } from '../services/receiving.service';
 import { CreateBulkReceiveDto, ReceivingQueryDto, AutoReceiveDto } from '../dto/receiving.dto';
@@ -30,6 +30,13 @@ export class ReceivingController {
   @ApiOperation({ summary: 'Get receivable lots' })
   async findReceivable(@Company() company: string, @Plant() plant: string) {
     const data = await this.receivingService.findReceivable(company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Get('receivable/by-barcode/:matUid')
+  @ApiOperation({ summary: 'Get single receivable lot by serial barcode (PDA)' })
+  async findReceivableByBarcode(@Param('matUid') matUid: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.receivingService.findReceivableByBarcode(matUid, company, plant);
     return ResponseUtil.success(data);
   }
 

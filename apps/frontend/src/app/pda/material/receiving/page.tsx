@@ -2,15 +2,12 @@
 
 /**
  * @file src/app/pda/material/receiving/page.tsx
- * @description 자재입고 PDA 페이지 - 바코드 스캔 → IQC 확인 → 수량/창고/로케이션 입력 → 입고 확인
+ * @description 자재입고 PDA 페이지 (웹과 워크플로우 통일)
  *
  * 초보자 가이드:
- * 1. ScanInput (1번): 입고 발주 바코드 스캔
- * 2. IqcBadge: IQC 상태 표시 (PASS=초록, FAIL=빨강, IN_PROGRESS=노랑, NONE=회색)
- * 3. WarehouseSelect: 드롭다운으로 입고창고 선택
- * 4. ScanInput (2번): 로케이션 코드 스캔 입력
- * 5. PdaActionButton: 입고확인 + 다음스캔 버튼
- * 6. ScanHistoryList: 입고 완료 이력 표시
+ * 1. ScanInput: 자재 시리얼(matUid) 바코드 스캔 → 입고가능 LOT 조회
+ * 2. WarehouseSelect: 입고창고 선택 (기본창고 자동선택)
+ * 3. 수량 입력(기본=잔량) 후 입고확인 → 공통 입고 API(items[])로 확정
  */
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -28,7 +25,7 @@ import {
   useMatReceivingScan,
   type ScanResult,
 } from "@/hooks/pda/useMatReceivingScan";
-import { IqcBadge, ReceivingHistoryRow } from "./components";
+import { ReceivingHistoryRow } from "./components";
 
 export default function MaterialReceivingPage() {
   const { t } = useTranslation();
@@ -39,8 +36,6 @@ export default function MaterialReceivingPage() {
     isConfirming,
     error,
     history,
-    locationCode,
-    setLocationCode,
     handleScan,
     handleConfirm,
     handleReset,
@@ -49,7 +44,7 @@ export default function MaterialReceivingPage() {
   const [receivedQty, setReceivedQty] = useState<string>("");
   const [warehouseCode, setWarehouseCode] = useState<string>("");
 
-  /** 바코드 스캔 → IQC 검증 → 사운드 피드백 */
+  /** 바코드 스캔 → 입고가능 LOT 조회 → 사운드 피드백 */
   const onScan = useCallback(
     async (barcode: string) => {
       const result: ScanResult = await handleScan(barcode);
@@ -64,45 +59,40 @@ export default function MaterialReceivingPage() {
   /** 스캔 결과 필드 구성 */
   const resultFields: ScanResultField[] = useMemo(() => {
     if (!scannedData) return [];
-    if (receivedQty === "" && scannedData.orderQty) {
-      setReceivedQty(String(scannedData.orderQty));
+    if (receivedQty === "" && scannedData.remainingQty) {
+      setReceivedQty(String(scannedData.remainingQty));
     }
     return [
-      { label: t("pda.receiving.poNo"), value: scannedData.poNo },
-      { label: t("pda.receiving.partCode"), value: scannedData.itemCode, highlight: true },
-      { label: t("pda.receiving.partName"), value: scannedData.itemName },
-      { label: t("pda.receiving.orderQty"), value: `${scannedData.orderQty} ${scannedData.unit}` },
-      { label: t("pda.receiving.supplier"), value: scannedData.supplier },
+      { label: t("material.col.matUid"), value: scannedData.matUid, highlight: true },
+      { label: t("pda.receiving.partCode"), value: scannedData.itemCode },
+      { label: t("pda.receiving.partName"), value: scannedData.part?.itemName ?? "" },
+      {
+        label: t("pda.receiving.orderQty"),
+        value: `${scannedData.remainingQty} ${scannedData.part?.unit ?? "EA"}`,
+      },
+      { label: t("pda.receiving.supplier"), value: scannedData.vendor ?? "-" },
     ];
   }, [scannedData, receivedQty, t]);
 
-  /** IQC 에러 메시지 변환 */
-  const errorMessage = useMemo(() => {
-    if (!error) return null;
-    if (error === "IQC_FAIL") return t("pda.receiving.iqcFailMsg");
-    if (error === "IQC_IN_PROGRESS") return t("pda.receiving.iqcInProgressMsg");
-    return error;
-  }, [error, t]);
+  const errorMessage = useMemo(() => (error ? error : null), [error]);
 
   /** 입고 확인 */
   const onConfirm = useCallback(async () => {
     const qty = Number(receivedQty);
     if (!qty || qty <= 0) return;
-    const success = await handleConfirm(qty, warehouseCode, locationCode);
+    const success = await handleConfirm(qty, warehouseCode);
     if (success) {
       playSuccess();
       setReceivedQty("");
-      setWarehouseCode("");
     } else {
       playError();
     }
-  }, [receivedQty, warehouseCode, locationCode, handleConfirm, playSuccess, playError]);
+  }, [receivedQty, warehouseCode, handleConfirm, playSuccess, playError]);
 
   /** 다음 스캔 */
   const onNextScan = useCallback(() => {
     handleReset();
     setReceivedQty("");
-    setWarehouseCode("");
   }, [handleReset]);
 
   const receiveDisabledReason = useMemo(() => {
@@ -120,7 +110,7 @@ export default function MaterialReceivingPage() {
     <>
       <PdaHeader titleKey="pda.receiving.title" backPath="/pda/material/menu" />
 
-      {/* 발주 바코드 스캔 */}
+      {/* 시리얼 바코드 스캔 */}
       <ScanInput
         onScan={onScan}
         placeholderKey="pda.receiving.scanBarcode"
@@ -138,10 +128,10 @@ export default function MaterialReceivingPage() {
         />
       )}
 
-      {/* IQC 상태 배지 */}
-      {scannedData && (
-        <div className="px-4 mt-2">
-          <IqcBadge status={scannedData.iqcStatus} />
+      {/* 특채 안내 */}
+      {scannedData?.isConcession && (
+        <div className="mx-4 mt-2 px-3 py-2 rounded-lg border border-amber-500 text-amber-600 text-xs font-medium">
+          {t("material.concession.accepted", "특채")}
         </div>
       )}
 
@@ -160,7 +150,7 @@ export default function MaterialReceivingPage() {
         </div>
       )}
 
-      {/* 입고수량 / 창고 / 로케이션 입력 */}
+      {/* 입고수량 / 창고 입력 */}
       {scannedData && (
         <div className="px-4 mt-3 space-y-3">
           <div>
@@ -184,19 +174,8 @@ export default function MaterialReceivingPage() {
               value={warehouseCode}
               onChange={(v) => setWarehouseCode(v)}
               warehouseType="RAW"
+              autoSelectDefault
               fullWidth
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t("pda.receiving.location")}
-            </label>
-            <ScanInput
-              onScan={(val) => setLocationCode(val)}
-              value={locationCode}
-              onChange={(val) => setLocationCode(val)}
-              placeholderKey="pda.receiving.scanLocation"
-              autoClear={false}
             />
           </div>
         </div>
