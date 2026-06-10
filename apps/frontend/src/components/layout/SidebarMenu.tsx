@@ -11,6 +11,7 @@
  * 4. **부모 메뉴**: 하위 중 하나라도 허용이면 펼침 가능
  */
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { MenuConfigItem } from "@/config/menuConfig";
 import { useTabStore } from "@/stores/tabStore";
@@ -31,10 +32,12 @@ interface SidebarMenuProps {
 export default function SidebarMenu({
   items, collapsed, pathname, expandedMenus, onToggleMenu, isMenuActive, isMenuDisabled, onClose, t,
 }: SidebarMenuProps) {
+  const router = useRouter();
   const addTab = useTabStore((s) => s.addTab);
 
   const handleMenuClick = (menuItem: { code: string; path: string; labelKey: string }, parentCode: string) => {
     addTab({ id: menuItem.code, path: menuItem.path, labelKey: menuItem.labelKey, parentId: parentCode });
+    router.push(menuItem.path);
     onClose?.();
   };
 
