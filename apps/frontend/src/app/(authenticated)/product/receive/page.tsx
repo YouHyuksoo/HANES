@@ -5,7 +5,7 @@
  * @description 제품입고관리 페이지 - 박스 스캔 입고 + 개별입고(모달) 지원
  *
  * 초보자 가이드:
- * 1. 박스 스캔 섹션: 포장 완료 박스를 스캔하여 빠르게 입고
+ * 1. 스캔 입고 버튼: 포장 완료 박스를 스캔하여 빠르게 입고
  * 2. 개별입고 버튼: 수동으로 품목/수량 지정하여 입고
  * 3. 완제품(FG)/반제품(WIP) 탭으로 입고 이력 필터링 (FG 기본)
  */
@@ -17,7 +17,6 @@ import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-import BoxReceiveList from "./components/BoxReceiveList";
 import BoxScanModal from "./components/BoxScanModal";
 import ReceiveModal from "./components/ReceiveModal";
 
@@ -189,15 +188,9 @@ export default function ProductReceivePage() {
         ))}
       </div>
 
-      {/* 좌우 배치: 좌측=입고 대상 박스(Method A), 우측=입고 이력 */}
-      <div className="flex-1 min-h-0 flex gap-4">
-        {/* 좌: 입고 대상 체크선택 일괄입고 */}
-        <div className="w-1/2 min-w-0 flex flex-col">
-          <BoxReceiveList itemType={activeTab} onSuccess={fetchData} />
-        </div>
-
-        {/* 우: 입고 이력 */}
-        <Card className="w-1/2 min-w-0 flex flex-col overflow-hidden" padding="none">
+      {/* 입고 이력 */}
+      <div className="flex-1 min-h-0 flex">
+        <Card className="w-full min-w-0 flex flex-col overflow-hidden" padding="none">
           <CardContent className="h-full p-4">
             <DataGrid
               data={data}

@@ -183,6 +183,7 @@
     "inventory.productPhysicalInv": "제품재고실사관리",
     "inventory.productPhysicalInvHistory": "제품재고실사조회",
     "inventory.matPhysicalInv": "자재재고실사관리",
+    "inventory.matPhysicalInvApply": "자재재고실사반영",
     "inventory.matPhysicalInvHistory": "자재재고실사조회",
     "inventory.arrivalStock": "입하재고현황조회",
     "productInventory.hold": "제품재고홀드관리",
@@ -208,6 +209,7 @@
     "material.lotMerge": "자재병합관리",
     "material.shelfLife": "자재유수명관리",
     "material.shelfLifeReinspect": "유수명자재 재검사",
+    "material.shelfLifeHistory": "유수명자재 검사이력",
     "material.hold": "자재재고홀드관리",
     "material.scrap": "자재폐기처리",
     "material.adjustment": "재고보정처리",
@@ -241,6 +243,7 @@
     "production.repair": "수리관리",
     "inspection": "통전검사",
     "inspection.result": "통전검사관리",
+    "inspection.terminalResult": "단자검사",
     "inspection.history": "통전검사이력",
     "inspection.protocol": "검사기프로토콜",
     "inspection.equip": "검사기연동관리",
@@ -430,7 +433,11 @@
     },
     "matPhysicalInv": {
       "title": "자재재고실사 관리",
-      "description": "자재 재고의 시스템 수량과 실제 수량을 대사하고 반영합니다."
+      "description": "실사 세션을 개시·완료하고 PDA 스캔 수량을 모니터링합니다."
+    },
+    "matPhysicalInvApply": {
+      "title": "자재재고실사 반영",
+      "description": "실사 수량을 입력·보정하고 재고에 반영합니다."
     },
     "matPhysicalInvHistory": {
       "title": "자재재고실사 조회",
@@ -520,6 +527,7 @@
       "totalIn": "총 입고",
       "totalOut": "총 출고",
       "searchTransNo": "트랜잭션번호 검색...",
+      "searchMatUid": "품목 시리얼 검색...",
       "transNo": "트랜잭션번호",
       "transType": "유형",
       "transDate": "일시",
@@ -2289,6 +2297,15 @@
       "description": "자재 재고 현황을 조회합니다.",
       "allWarehouse": "전체 창고",
       "allCategory": "전체 분류",
+      "tabs": {
+        "serial": "시리얼별 상세",
+        "group": "품목별 그룹 합계"
+      },
+      "groupColumns": {
+        "totalQty": "총 재고수량",
+        "serialCount": "시리얼 수",
+        "warehouseCount": "창고 수"
+      },
       "level": {
         "shortage": "부족",
         "caution": "주의",
@@ -2787,9 +2804,6 @@
         "success": "박스 입고가 완료되었습니다"
       },
       "boxList": {
-        "title": "입고 대상 박스",
-        "count": "{{count}}건",
-        "empty": "입고할 박스가 없습니다",
         "receiveSelected": "선택 입고 ({{count}})",
         "selectedTotal": "선택 {{count}}건 합계",
         "partialFail": "{{count}}건 입고 실패",
@@ -3536,6 +3550,12 @@
       "scanBarcode": "바코드 스캔",
       "pendingList": "미검사 바코드"
     },
+    "terminalResult": {
+      "title": "단자검사 실적",
+      "description": "단자검사 결과와 합격률을 확인합니다.",
+      "searchPlaceholder": "작업지시번호/품목 검색...",
+      "selectOrder": "단자검사할 작업지시를 선택하세요"
+    },
     "protocol": {
       "title": "검사기 프로토콜 설정",
       "subtitle": "통전검사기 통신 프로토콜 관리",
@@ -3587,6 +3607,12 @@
       "defectCode": "불량코드",
       "defectName": "불량명",
       "quantity": "수량",
+      "cause": "원인",
+      "causePlaceholder": "불량 원인 (선택)",
+      "productBarcode": "제품 바코드 (스캔)",
+      "productBarcodePlaceholder": "제품 바코드를 스캔하세요",
+      "workOrderNoOptional": "작업지시 번호 (선택)",
+      "registerHint": "제품 바코드를 스캔하면 해당 제품의 생산실적에 불량이 연결됩니다. 바코드가 없으면 작업지시 번호 기준 최신 생산실적에 연결됩니다.",
       "operator": "작업자",
       "operatorPlaceholder": "작업자명",
       "changeStatus": "상태변경",
@@ -5792,6 +5818,8 @@
     "addPlan": "계획 추가",
     "editPlan": "계획 수정",
     "excelUpload": "엑셀 업로드",
+    "erpInterface": "ERP 인터페이스",
+    "erpInterfaceNotReady": "ERP 인터페이스 기능은 준비 중입니다.",
     "searchPlaceholder": "계획번호/품목코드/품목명 검색",
     "sectionBasic": "기본정보",
     "sectionDetail": "상세정보",

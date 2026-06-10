@@ -2,15 +2,13 @@
 
 /**
  * @file components/useBoxReceive.ts
- * @description 박스 입고 공유 훅 - 입고 대상(미입고 CLOSED 박스) 조회 + 일괄 입고 처리
+ * @description 박스 일괄 입고 처리 공유 유틸
  *
  * 초보자 가이드:
- * - 입고 대상 = CLOSED 상태 박스 중, 아직 정상(DONE) 입고가 잡히지 않은 박스
  * - 완제품(FINISHED) → FG 입고, 반제품(SEMI_PRODUCT) → WIP 입고
  * - 백엔드에도 이중입고 가드가 있으므로 프론트 필터는 UX 편의용
  */
 
-import { useState, useCallback, useEffect } from "react";
 import api from "@/services/api";
 
 export interface ReceiveCandidate {
@@ -63,67 +61,4 @@ export async function receiveBoxes(
   }
 
   return { ok, failed };
-}
-
-/**
- * 입고 대상(미입고 CLOSED 박스) 조회 훅
- * @param itemType FINISHED | SEMI_PRODUCT (탭 기준)
- */
-export function useReceiveCandidates(itemType: "FINISHED" | "SEMI_PRODUCT") {
-  const [candidates, setCandidates] = useState<ReceiveCandidate[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    try {
-      // 1) CLOSED 박스 목록 + 2) 정상 입고된 박스 refId 집합을 병렬 조회
-      const [boxRes, txRes] = await Promise.all([
-        api.get("/shipping/boxes", { params: { status: "CLOSED", limit: 500 } }),
-        api.get("/inventory/product/transactions", {
-          params: { refType: "BOX", transType: "FG_IN,WIP_IN", limit: 1000 },
-        }),
-      ]);
-
-      const boxes = (boxRes.data?.data ?? []) as Array<{
-        boxNo: string;
-        itemCode: string;
-        itemName: string | null;
-        itemType: string | null;
-        qty: number;
-        status: string;
-      }>;
-
-      // 정상(DONE) 입고만 입고완료로 간주 → 취소 후 재입고 가능
-      const receivedRefIds = new Set(
-        ((txRes.data?.data ?? []) as Array<{ refId: string | null; status: string }>)
-          .filter((t) => t.status === "DONE" && t.refId)
-          .map((t) => t.refId as string),
-      );
-
-      const filtered = boxes
-        .filter((b) => b.status === "CLOSED")
-        .filter((b) => !receivedRefIds.has(b.boxNo))
-        .filter((b) => (b.itemType ?? "FINISHED") === itemType)
-        .map((b) => ({
-          boxNo: b.boxNo,
-          itemCode: b.itemCode,
-          itemName: b.itemName,
-          itemType: b.itemType,
-          qty: Number(b.qty) || 0,
-          status: b.status,
-        }));
-
-      setCandidates(filtered);
-    } catch {
-      setCandidates([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [itemType]);
-
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  return { candidates, loading, refetch };
 }

@@ -183,6 +183,7 @@
     "inventory.productPhysicalInv": "产品盘点",
     "inventory.productPhysicalInvHistory": "产品盘点历史",
     "inventory.matPhysicalInv": "材料库存盘点管理",
+    "inventory.matPhysicalInvApply": "材料库存盘点反映",
     "inventory.matPhysicalInvHistory": "材料库存盘点查询",
     "inventory.arrivalStock": "到货库存现况查询",
     "productInventory.hold": "产品库存冻结管理",
@@ -240,6 +241,7 @@
     "production.repair": "修理管理",
     "inspection": "导通检测",
     "inspection.result": "通电检查管理",
+    "inspection.terminalResult": "端子检查",
     "inspection.history": "通电检查记录",
     "inspection.protocol": "检测协议设置",
     "inspection.equip": "检测设备联动管理",
@@ -430,7 +432,11 @@
     },
     "matPhysicalInv": {
       "title": "原材料盘点管理",
-      "description": "对比系统库存与实际数量并进行调整。"
+      "description": "开始/结束盘点会话并监控PDA扫描数量。"
+    },
+    "matPhysicalInvApply": {
+      "title": "原材料盘点反映",
+      "description": "输入/校正盘点数量并反映到库存。"
     },
     "matPhysicalInvHistory": {
       "title": "原材料盘点历史",
@@ -520,6 +526,7 @@
       "totalIn": "总入库",
       "totalOut": "总出库",
       "searchTransNo": "搜索事务编号...",
+      "searchMatUid": "搜索物料序列号...",
       "transNo": "事务编号",
       "transType": "类型",
       "transDate": "日期/时间",
@@ -1960,6 +1967,15 @@
       "description": "查看物料库存状况。",
       "allWarehouse": "全部仓库",
       "allCategory": "全部分类",
+      "tabs": {
+        "serial": "序列号明细",
+        "group": "物料分组合计"
+      },
+      "groupColumns": {
+        "totalQty": "总库存量",
+        "serialCount": "序列号数",
+        "warehouseCount": "仓库数"
+      },
       "level": {
         "shortage": "不足",
         "caution": "注意",
@@ -2458,9 +2474,6 @@
         "success": "箱码入库完成"
       },
       "boxList": {
-        "title": "待入库箱",
-        "count": "{{count}}件",
-        "empty": "没有待入库的箱",
         "receiveSelected": "入库所选 ({{count}})",
         "selectedTotal": "已选 {{count}} 件合计",
         "partialFail": "{{count}} 件入库失败",
@@ -3203,6 +3216,12 @@
       "scanBarcode": "扫描条码",
       "pendingList": "待检条码"
     },
+    "terminalResult": {
+      "title": "端子检查实绩",
+      "description": "查看端子检查结果和合格率。",
+      "searchPlaceholder": "搜索工单号/品目...",
+      "selectOrder": "请选择端子检查工单"
+    },
     "protocol": {
       "title": "检测协议设置",
       "subtitle": "通电检测设备通信协议管理",
@@ -3254,6 +3273,12 @@
       "defectCode": "不良代码",
       "defectName": "不良名称",
       "quantity": "数量",
+      "cause": "原因",
+      "causePlaceholder": "不良原因（可选）",
+      "productBarcode": "产品条码（扫描）",
+      "productBarcodePlaceholder": "请扫描产品条码",
+      "workOrderNoOptional": "作业指示编号（可选）",
+      "registerHint": "扫描产品条码后，不良将关联到该产品的生产实绩。若无条码，则关联到该作业指示的最新生产实绩。",
       "operator": "作业者",
       "operatorPlaceholder": "作业者姓名",
       "changeStatus": "状态变更",
@@ -5759,6 +5784,8 @@
     "addPlan": "添加计划",
     "editPlan": "编辑计划",
     "excelUpload": "Excel上传",
+    "erpInterface": "ERP接口",
+    "erpInterfaceNotReady": "ERP接口功能正在准备中。",
     "searchPlaceholder": "搜索计划编号/品目代码/品目名称",
     "sectionBasic": "基本信息",
     "sectionDetail": "详细信息",

@@ -183,6 +183,7 @@
     "inventory.productPhysicalInv": "Product Physical Inventory",
     "inventory.productPhysicalInvHistory": "Product Inventory History",
     "inventory.matPhysicalInv": "Material Physical Inv Mgmt",
+    "inventory.matPhysicalInvApply": "Material Phys Inv Apply",
     "inventory.matPhysicalInvHistory": "Material Physical Inv History",
     "inventory.arrivalStock": "Arrival Stock Status",
     "productInventory.hold": "Product Stock Hold",
@@ -240,6 +241,7 @@
     "production.repair": "Repair Management",
     "inspection": "Continuity Test",
     "inspection.result": "Continuity Inspect",
+    "inspection.terminalResult": "Terminal Inspect",
     "inspection.history": "Inspect History",
     "inspection.protocol": "Tester Protocol",
     "inspection.equip": "Equipment Link Mgmt",
@@ -430,7 +432,11 @@
     },
     "matPhysicalInv": {
       "title": "Material Physical Inventory",
-      "description": "Compare system stock with actual count and apply adjustments."
+      "description": "Start/complete inventory sessions and monitor PDA scan counts."
+    },
+    "matPhysicalInvApply": {
+      "title": "Material Physical Inv Apply",
+      "description": "Enter/adjust counted quantities and apply to stock."
     },
     "matPhysicalInvHistory": {
       "title": "Material Physical Inventory History",
@@ -520,6 +526,7 @@
       "totalIn": "Total In",
       "totalOut": "Total Out",
       "searchTransNo": "Search transaction no...",
+      "searchMatUid": "Search item serial...",
       "transNo": "Transaction No.",
       "transType": "Type",
       "transDate": "Date/Time",
@@ -1974,6 +1981,15 @@
       "description": "View material stock status.",
       "allWarehouse": "All Warehouses",
       "allCategory": "All Categories",
+      "tabs": {
+        "serial": "Serial Detail",
+        "group": "Item Group Total"
+      },
+      "groupColumns": {
+        "totalQty": "Total Qty",
+        "serialCount": "Serials",
+        "warehouseCount": "Warehouses"
+      },
       "level": {
         "shortage": "Shortage",
         "caution": "Caution",
@@ -2472,9 +2488,6 @@
         "success": "Box receiving completed"
       },
       "boxList": {
-        "title": "Boxes to Receive",
-        "count": "{{count}}",
-        "empty": "No boxes to receive",
         "receiveSelected": "Receive Selected ({{count}})",
         "selectedTotal": "Total of {{count}} selected",
         "partialFail": "{{count}} failed to receive",
@@ -3217,6 +3230,12 @@
       "scanBarcode": "Scan Barcode",
       "pendingList": "Pending Barcodes"
     },
+    "terminalResult": {
+      "title": "Terminal Inspect Result",
+      "description": "View terminal inspection results and pass rates.",
+      "searchPlaceholder": "Search order no / item...",
+      "selectOrder": "Select a job order for terminal inspection"
+    },
     "protocol": {
       "title": "Tester Protocol Settings",
       "subtitle": "Continuity tester communication protocol management",
@@ -3268,6 +3287,12 @@
       "defectCode": "Defect Code",
       "defectName": "Defect Name",
       "quantity": "Qty",
+      "cause": "Cause",
+      "causePlaceholder": "Defect cause (optional)",
+      "productBarcode": "Product Barcode (Scan)",
+      "productBarcodePlaceholder": "Scan the product barcode",
+      "workOrderNoOptional": "Work Order No. (optional)",
+      "registerHint": "Scanning a product barcode links the defect to that product's production result. Without a barcode, it links to the latest production result of the work order.",
       "operator": "Operator",
       "operatorPlaceholder": "Operator name",
       "changeStatus": "Change Status",
@@ -5773,6 +5798,8 @@
     "addPlan": "Add Plan",
     "editPlan": "Edit Plan",
     "excelUpload": "Excel Upload",
+    "erpInterface": "ERP Interface",
+    "erpInterfaceNotReady": "The ERP interface feature is under preparation.",
     "searchPlaceholder": "Search plan no / item code / item name",
     "sectionBasic": "Basic Info",
     "sectionDetail": "Details",

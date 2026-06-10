@@ -183,6 +183,7 @@
     "inventory.productPhysicalInv": "Kiểm kê sản phẩm",
     "inventory.productPhysicalInvHistory": "Lịch sử kiểm kê sản phẩm",
     "inventory.matPhysicalInv": "Quản lý kiểm kê VT",
+    "inventory.matPhysicalInvApply": "Áp dụng kiểm kê VT",
     "inventory.matPhysicalInvHistory": "Lịch sử kiểm kê VT",
     "inventory.arrivalStock": "Tình trạng tồn kho nhập hàng",
     "productInventory.hold": "Giữ tồn kho sản phẩm",
@@ -240,6 +241,7 @@
     "production.repair": "Quản lý sửa chữa",
     "inspection": "Kiểm tra điện",
     "inspection.result": "Quản lý KT thông điện",
+    "inspection.terminalResult": "Kiểm tra terminal",
     "inspection.history": "Lịch sử KT thông điện",
     "inspection.protocol": "Giao thức thiết bị KT",
     "inspection.equip": "Quản lý liên kết thiết bị",
@@ -430,7 +432,11 @@
     },
     "matPhysicalInv": {
       "title": "Kiểm kê nguyên vật liệu",
-      "description": "So sánh tồn kho hệ thống với số lượng thực tế và áp dụng điều chỉnh."
+      "description": "Bắt đầu/kết thúc phiên kiểm kê và theo dõi số lượng quét PDA."
+    },
+    "matPhysicalInvApply": {
+      "title": "Áp dụng kiểm kê NVL",
+      "description": "Nhập/điều chỉnh số lượng kiểm kê và áp dụng vào tồn kho."
     },
     "matPhysicalInvHistory": {
       "title": "Lịch sử kiểm kê nguyên vật liệu",
@@ -520,6 +526,7 @@
       "totalIn": "Tổng nhập",
       "totalOut": "Tổng xuất",
       "searchTransNo": "Tìm mã giao dịch...",
+      "searchMatUid": "Tìm serial vật tư...",
       "transNo": "Mã giao dịch",
       "transType": "Loại",
       "transDate": "Ngày/giờ",
@@ -1960,6 +1967,15 @@
       "description": "Xem tình trạng tồn kho vật tư.",
       "allWarehouse": "Tất cả kho",
       "allCategory": "Tất cả phân loại",
+      "tabs": {
+        "serial": "Chi tiết theo serial",
+        "group": "Tổng hợp theo nhóm vật tư"
+      },
+      "groupColumns": {
+        "totalQty": "Tổng tồn kho",
+        "serialCount": "Số serial",
+        "warehouseCount": "Số kho"
+      },
       "level": {
         "shortage": "Thiếu hụt",
         "caution": "Chú ý",
@@ -2458,9 +2474,6 @@
         "success": "Nhập kho hộp hoàn tất"
       },
       "boxList": {
-        "title": "Hộp cần nhập kho",
-        "count": "{{count}}",
-        "empty": "Không có hộp cần nhập kho",
         "receiveSelected": "Nhập đã chọn ({{count}})",
         "selectedTotal": "Tổng {{count}} đã chọn",
         "partialFail": "{{count}} hộp nhập kho thất bại",
@@ -3203,6 +3216,12 @@
       "scanBarcode": "Quét mã vạch",
       "pendingList": "Mã vạch chờ kiểm"
     },
+    "terminalResult": {
+      "title": "Kết quả kiểm tra terminal",
+      "description": "Xem kết quả kiểm tra terminal và tỷ lệ đạt.",
+      "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...",
+      "selectOrder": "Chọn lệnh sản xuất để kiểm tra terminal"
+    },
     "protocol": {
       "title": "Cài đặt giao thức KT",
       "subtitle": "Quản lý giao thức truyền thông thiết bị kiểm tra",
@@ -3254,6 +3273,12 @@
       "defectCode": "Mã lỗi",
       "defectName": "Tên lỗi",
       "quantity": "Số lượng",
+      "cause": "Nguyên nhân",
+      "causePlaceholder": "Nguyên nhân lỗi (tùy chọn)",
+      "productBarcode": "Mã vạch sản phẩm (Quét)",
+      "productBarcodePlaceholder": "Quét mã vạch sản phẩm",
+      "workOrderNoOptional": "Mã lệnh (tùy chọn)",
+      "registerHint": "Quét mã vạch sản phẩm sẽ liên kết lỗi với kết quả sản xuất của sản phẩm đó. Nếu không có mã vạch, lỗi liên kết với kết quả sản xuất mới nhất của lệnh.",
       "operator": "Công nhân",
       "operatorPlaceholder": "Tên công nhân",
       "changeStatus": "Đổi trạng thái",
@@ -5759,6 +5784,8 @@
     "addPlan": "Thêm KH",
     "editPlan": "Sửa KH",
     "excelUpload": "Tải lên Excel",
+    "erpInterface": "Giao diện ERP",
+    "erpInterfaceNotReady": "Tính năng giao diện ERP đang được chuẩn bị.",
     "searchPlaceholder": "Tìm mã KH / mã SP / tên SP",
     "sectionBasic": "Thông tin cơ bản",
     "sectionDetail": "Chi tiết",
