@@ -12,6 +12,7 @@
 
 import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Truck } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import ComCodeBadge from '@/components/ui/ComCodeBadge';
@@ -55,10 +56,11 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
             type="button"
             disabled={disabled}
             onClick={(e) => { e.stopPropagation(); if (!disabled) onSelectLine(r); }}
-            className={`px-3 py-1 rounded text-xs font-semibold text-white ${
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded text-xs font-semibold text-white ${
               disabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-700'
             }`}
           >
+            <Truck className="w-3.5 h-3.5" />
             {t('material.arrival.action.receive')}
           </button>
         );

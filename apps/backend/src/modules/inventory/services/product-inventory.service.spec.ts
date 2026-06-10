@@ -12,6 +12,8 @@ import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
+import { BoxMaster } from '../../../entities/box-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -21,6 +23,8 @@ describe('ProductInventoryService', () => {
   let mockStockRepo: DeepMocked<Repository<ProductStock>>;
   let mockWhRepo: DeepMocked<Repository<Warehouse>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
+  let mockBoxRepo: DeepMocked<Repository<BoxMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockTx: DeepMocked<TransactionService>;
@@ -30,6 +34,8 @@ describe('ProductInventoryService', () => {
     mockStockRepo = createMock<Repository<ProductStock>>();
     mockWhRepo = createMock<Repository<Warehouse>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
+    mockFgLabelRepo = createMock<Repository<FgLabel>>();
+    mockBoxRepo = createMock<Repository<BoxMaster>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockTx = createMock<TransactionService>();
@@ -48,6 +54,8 @@ describe('ProductInventoryService', () => {
         { provide: getRepositoryToken(ProductStock), useValue: mockStockRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWhRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
+        { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],

@@ -8,7 +8,7 @@ import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
-import { ProductStock } from '../../../entities/product-stock.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -62,7 +62,7 @@ describe('ShipmentService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('markAsShipped issues stock per FG barcode', async () => {
+  it('markAsShipped issues aggregate FG stock and marks labels shipped', async () => {
     mockShipmentRepo.findOne.mockResolvedValue({
       shipNo: 'SHIP-001',
       status: 'LOADED',
@@ -84,32 +84,29 @@ describe('ShipmentService', () => {
       { fgBarcode: 'FG-001', itemCode: 'ITEM-001' } as FgLabel,
       { fgBarcode: 'FG-002', itemCode: 'ITEM-001' } as FgLabel,
     ]) };
-    const productStockRepo = { find: jest.fn().mockResolvedValue([
-      { prdUid: 'FG-001', warehouseCode: 'FG-WH', availableQty: 1 } as ProductStock,
-      { prdUid: 'FG-002', warehouseCode: 'FG-WH', availableQty: 1 } as ProductStock,
-    ]) };
-
     (mockQueryRunner as any).manager = {
       update: jest.fn().mockResolvedValue(undefined),
+      findOne: jest.fn((entity) => {
+        if (entity === Warehouse) return { warehouseCode: 'FG-WH' };
+        return null;
+      }),
       getRepository: jest.fn((entity) => {
         if (entity === FgLabel) return fgLabelRepo;
-        if (entity === ProductStock) return productStockRepo;
         throw new Error('unexpected repository');
       }),
     };
 
     await target.markAsShipped('SHIP-001');
 
-    expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledTimes(2);
-    expect(mockProductInventoryService.issueStockInTx).toHaveBeenNthCalledWith(
-      1,
-      mockQueryRunner,
-      expect.objectContaining({ prdUid: 'FG-001', qty: 1 }),
+    expect((mockQueryRunner as any).manager.update).toHaveBeenCalledWith(
+      FgLabel,
+      expect.objectContaining({ fgBarcode: expect.anything() }),
+      { status: 'SHIPPED' },
     );
-    expect(mockProductInventoryService.issueStockInTx).toHaveBeenNthCalledWith(
-      2,
+    expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledTimes(1);
+    expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledWith(
       mockQueryRunner,
-      expect.objectContaining({ prdUid: 'FG-002', qty: 1 }),
+      expect.objectContaining({ warehouseId: 'FG-WH', itemCode: 'ITEM-001', prdUid: '*', qty: 2 }),
     );
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
@@ -166,18 +163,18 @@ describe('ShipmentService', () => {
 
     await target.reverseShipment('SHIP-001', 'rollback');
 
-    expect(mockProductInventoryService.cancelTransaction).toHaveBeenCalledTimes(2);
-    expect(mockProductInventoryService.cancelTransaction).toHaveBeenNthCalledWith(
+    expect(mockProductInventoryService.cancelTransactionInTx).toHaveBeenCalledTimes(2);
+    expect(mockProductInventoryService.cancelTransactionInTx).toHaveBeenNthCalledWith(
       1,
+      mockQueryRunner,
+      expect.objectContaining({ transNo: 'PTX-001' }),
       expect.objectContaining({ transactionId: 'PTX-001' }),
-      'HANES',
-      'P01',
     );
-    expect(mockProductInventoryService.cancelTransaction).toHaveBeenNthCalledWith(
+    expect(mockProductInventoryService.cancelTransactionInTx).toHaveBeenNthCalledWith(
       2,
+      mockQueryRunner,
+      expect.objectContaining({ transNo: 'PTX-002' }),
       expect.objectContaining({ transactionId: 'PTX-002' }),
-      'HANES',
-      'P01',
     );
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();

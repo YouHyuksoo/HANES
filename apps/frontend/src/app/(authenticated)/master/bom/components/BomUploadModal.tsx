@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
@@ -61,6 +61,13 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
     setResult(null);
     if (fileRef.current) fileRef.current.value = "";
   };
+
+  // 모달이 열릴 때마다 항상 초기화 — 직전 업로드의 잔존 상태(stage="done", 선택 파일)
+  // 때문에 같은 파일 재선택 시 onChange가 안 떠 미리보기/업로드 버튼이 안 나오는 문제 방지
+  useEffect(() => {
+    if (isOpen) reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleClose = () => { reset(); onClose(); };
 

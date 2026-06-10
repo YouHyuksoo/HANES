@@ -956,6 +956,7 @@
       "equipName": "设备名称",
       "type": "类型",
       "line": "产线",
+      "process": "工序",
       "commType": "通信方式",
       "ipPort": "IP/端口",
       "manufacturer": "制造商",
@@ -1314,6 +1315,9 @@
     "equipInspect": {
       "title": "设备点检项目",
       "subtitle": "管理设备日常/定期点检基准。",
+      "qrLabel": "QR标签",
+      "qrLabelTitle": "点检项目QR标签",
+      "qrLabelHeader": "设备点检项目",
       "tabAssign": "设备分配",
       "tabMaster": "点检项目主数据",
       "equipCode": "设备代码",
@@ -1548,6 +1552,7 @@
     "badge": {
       "arrived": "已入库",
       "iqcReady": "IQC待检",
+      "iqcWait": "待检验",
       "receivingWait": "待入库",
       "stocked": "入库完成",
       "requested": "请求",
@@ -1658,6 +1663,17 @@
     },
     "iqc": {
       "title": "来料检验(IQC)",
+      "method": "检验方法",
+      "serialJudge": "按序列号判定",
+      "serialNo": "序列号",
+      "qty": "数量",
+      "allPass": "全部PASS",
+      "allFail": "全部FAIL",
+      "serialSubmit": "按序列号登记",
+      "lotRuleNotice": "只要有1个序列号不良，该入库批次整体判为不合格（不可入库）。",
+      "lotFail": "整批不合格（不可入库）",
+      "lotPass": "批次合格",
+      "noPendingSerials": "没有待检验的试样序列号。",
       "subtitle": "管理来料检验结果。",
       "description": "管理来料检验结果。",
       "stats": {
@@ -2039,6 +2055,7 @@
     "poStatus": {
       "title": "PO现况",
       "subtitle": "查看采购订单现况。",
+      "lineNo": "行号",
       "itemCode": "品目编号",
       "itemName": "品目名称",
       "spec": "规格",

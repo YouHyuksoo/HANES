@@ -283,8 +283,8 @@ export default function MaterialListPanel({
           {onOpenConsumableScan && (
             <button
               onClick={onOpenConsumableScan}
-              disabled={!interlock.materialScanDone}
-              title={interlock.materialScanDone
+              disabled={consumableScanDisabledReasons.length > 0}
+              title={consumableScanDisabledReasons.length === 0
                 ? t('kiosk.prep.consumableScan')
                 : consumableScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.consumableScan')}
               className={[
@@ -299,7 +299,7 @@ export default function MaterialListPanel({
               {interlock.consumableScanDone && <CheckCircle2 className="h-3 w-3 text-teal-500" />}
             </button>
           )}
-          {(!interlock.materialScanDone && onOpenConsumableScan) && (
+          {(consumableScanDisabledReasons.length > 0 && onOpenConsumableScan) && (
             <span
               className="ml-2 text-[10px] text-text-muted max-w-[140px] truncate"
               title={consumableScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.consumableScan')}

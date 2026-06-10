@@ -215,8 +215,25 @@ export class ProductInventoryService {
    * - 호출측 트랜잭션에 참여하므로 commit/rollback은 호출측이 담당
    */
   async receiveStockInTx(qr: QueryRunner, dto: ProductReceiveStockDto): Promise<ProductTransaction> {
-    const transNo = await this.generateTransNo(qr);
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
+
+    // 이중입고 가드: 박스(refType='BOX')는 1회만 입고
+    if (dto.refType === 'BOX' && dto.refId) {
+      const dup = await qr.manager.findOne(ProductTransaction, {
+        where: {
+          refType: 'BOX',
+          refId: dto.refId,
+          transType: In(['FG_IN', 'WIP_IN']),
+          status: 'DONE',
+          ...tenantWhere,
+        },
+      });
+      if (dup) {
+        throw new ConflictException(`이미 입고된 박스입니다: ${dto.refId} (${dup.transNo})`);
+      }
+    }
+
+    const transNo = await this.generateTransNo(qr);
 
     const transaction = qr.manager.create(ProductTransaction, {
       transNo,
@@ -463,107 +480,119 @@ export class ProductInventoryService {
     }
     this.assertSameTenant('원본 제품거래', { company, plant }, originalTrans);
 
+    return this.tx.run(async (queryRunner) => {
+      return this.cancelTransactionInTx(queryRunner, originalTrans, dto);
+    });
+  }
+
+  /**
+   * 외부 트랜잭션(QueryRunner) 내에서 제품 트랜잭션 취소
+   * - 호출측 트랜잭션에 참여하므로 commit/rollback은 호출측이 담당
+   */
+  async cancelTransactionInTx(
+    qr: QueryRunner,
+    originalTrans: ProductTransaction,
+    dto: CancelTransactionDto,
+  ): Promise<ProductTransaction> {
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
-    const transNo = await this.generateTransNo();
+    const transNo = await this.generateTransNo(qr);
     const tenantWhere = this.tenantWhere(originalTrans.company, originalTrans.plant);
 
-    return this.tx.run(async (queryRunner) => {
-      // 1. 원본 트랜잭션 상태 변경
-      await queryRunner.manager.update(ProductTransaction, { transNo: originalTrans.transNo, ...tenantWhere }, { status: 'CANCELED' });
+    // 1. 원본 트랜잭션 상태 변경
+    await qr.manager.update(ProductTransaction, { transNo: originalTrans.transNo, ...tenantWhere }, { status: 'CANCELED' });
 
-      // 2. 취소 트랜잭션 생성 (반대 수량)
-      const cancelTrans = this.transactionRepository.create({
-        transNo,
-        transType: cancelTransType,
-        transDate: new Date(),
-        fromWarehouseId: originalTrans.toWarehouseId,
-        toWarehouseId: originalTrans.fromWarehouseId,
-        itemCode: originalTrans.itemCode,
-        itemType: originalTrans.itemType,
-        prdUid: originalTrans.prdUid,
-        orderNo: originalTrans.orderNo,
-        processCode: originalTrans.processCode,
-        qty: -originalTrans.qty,
-        unitPrice: originalTrans.unitPrice,
-        totalAmount: originalTrans.totalAmount ? -Number(originalTrans.totalAmount) : null,
-        refType: originalTrans.refType,
-        refId: originalTrans.refId,
-        cancelRefId: originalTrans.transNo,
-        workerId: dto.workerId,
-        issueType: originalTrans.issueType,
-        remark: dto.remark || `취소: ${originalTrans.transNo}`,
-        status: 'DONE',
-        company: originalTrans.company,
-        plant: originalTrans.plant,
+    // 2. 취소 트랜잭션 생성 (반대 수량)
+    const cancelTrans = qr.manager.create(ProductTransaction, {
+      transNo,
+      transType: cancelTransType,
+      transDate: new Date(),
+      fromWarehouseId: originalTrans.toWarehouseId,
+      toWarehouseId: originalTrans.fromWarehouseId,
+      itemCode: originalTrans.itemCode,
+      itemType: originalTrans.itemType,
+      prdUid: originalTrans.prdUid,
+      orderNo: originalTrans.orderNo,
+      processCode: originalTrans.processCode,
+      qty: -originalTrans.qty,
+      unitPrice: originalTrans.unitPrice,
+      totalAmount: originalTrans.totalAmount ? -Number(originalTrans.totalAmount) : null,
+      refType: originalTrans.refType,
+      refId: originalTrans.refId,
+      cancelRefId: originalTrans.transNo,
+      workerId: dto.workerId,
+      issueType: originalTrans.issueType,
+      remark: dto.remark || `취소: ${originalTrans.transNo}`,
+      status: 'DONE',
+      company: originalTrans.company,
+      plant: originalTrans.plant,
+    });
+
+    const savedCancelTrans = await qr.manager.save(ProductTransaction, cancelTrans);
+
+    // 박스 입고 취소: 해당 박스 시리얼(FG_LABELS)의 BOX_NO 해제 → 재고에서 제외
+    if (originalTrans.refType === 'BOX' && originalTrans.refId && originalTrans.qty > 0) {
+      await this.stampBoxSerials(qr.manager, originalTrans.refId, false, originalTrans.company, originalTrans.plant);
+    }
+
+    // 3. 재고 복구 — 원래 입고/이동-입고 창고에서 감소
+    if (originalTrans.toWarehouseId) {
+      const stock = await qr.manager.findOne(ProductStock, {
+        where: {
+          warehouseCode: originalTrans.toWarehouseId,
+          itemCode: originalTrans.itemCode,
+          prdUid: originalTrans.prdUid || IsNull(),
+          ...tenantWhere,
+        },
+        /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
       });
 
-      const savedCancelTrans = await queryRunner.manager.save(ProductTransaction, cancelTrans);
-
-      // 박스 입고 취소: 해당 박스 시리얼(FG_LABELS)의 BOX_NO 해제 → 재고에서 제외
-      if (originalTrans.refType === 'BOX' && originalTrans.refId && originalTrans.qty > 0) {
-        await this.stampBoxSerials(queryRunner.manager, originalTrans.refId, false, originalTrans.company, originalTrans.plant);
-      }
-
-      // 3. 재고 복구 — 원래 입고 창고에서 감소
-      if (originalTrans.toWarehouseId && originalTrans.qty > 0) {
-        const stock = await queryRunner.manager.findOne(ProductStock, {
-          where: {
-            warehouseCode: originalTrans.toWarehouseId,
-            itemCode: originalTrans.itemCode,
-            prdUid: originalTrans.prdUid || IsNull(),
-            ...tenantWhere,
-          },
-          /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
-        });
-
-        if (stock) {
-          this.assertSameTenant('취소 대상 제품재고', originalTrans, stock);
-          const newQty = stock.qty - Math.abs(originalTrans.qty);
-          if (newQty < 0) {
-            throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
-          }
-          await queryRunner.manager.update(ProductStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere },
-            { qty: newQty, availableQty: newQty - stock.reservedQty },
-          );
+      if (stock) {
+        this.assertSameTenant('취소 대상 제품재고', originalTrans, stock);
+        const newQty = stock.qty - Math.abs(originalTrans.qty);
+        if (newQty < 0) {
+          throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
         }
+        await qr.manager.update(ProductStock,
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere },
+          { qty: newQty, availableQty: newQty - stock.reservedQty },
+        );
       }
+    }
 
-      // 원래 출고 창고로 복구
-      if (originalTrans.fromWarehouseId && originalTrans.qty < 0) {
-        const stock = await queryRunner.manager.findOne(ProductStock, {
-          where: {
-            warehouseCode: originalTrans.fromWarehouseId,
-            itemCode: originalTrans.itemCode,
-            prdUid: originalTrans.prdUid || IsNull(),
-            ...tenantWhere,
-          },
-          /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
+    // 원래 출고 창고로 복구
+    if (originalTrans.fromWarehouseId) {
+      const stock = await qr.manager.findOne(ProductStock, {
+        where: {
+          warehouseCode: originalTrans.fromWarehouseId,
+          itemCode: originalTrans.itemCode,
+          prdUid: originalTrans.prdUid || IsNull(),
+          ...tenantWhere,
+        },
+        /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
+      });
+
+      if (stock) {
+        this.assertSameTenant('복구 대상 제품재고', originalTrans, stock);
+        await qr.manager.update(ProductStock,
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere },
+          { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
+        );
+      } else {
+        await qr.manager.save(ProductStock, {
+          warehouseCode: originalTrans.fromWarehouseId,
+          itemCode: originalTrans.itemCode,
+          itemType: originalTrans.itemType || 'SEMI_PRODUCT',
+          prdUid: originalTrans.prdUid || null,
+          qty: Math.abs(originalTrans.qty),
+          reservedQty: 0,
+          availableQty: Math.abs(originalTrans.qty),
+          company: originalTrans.company,
+          plant: originalTrans.plant,
         });
-
-        if (stock) {
-          this.assertSameTenant('복구 대상 제품재고', originalTrans, stock);
-          await queryRunner.manager.update(ProductStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere },
-            { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
-          );
-        } else {
-          await queryRunner.manager.save(ProductStock, {
-            warehouseCode: originalTrans.fromWarehouseId,
-            itemCode: originalTrans.itemCode,
-            itemType: originalTrans.itemType || 'SEMI_PRODUCT',
-            prdUid: originalTrans.prdUid || null,
-            qty: Math.abs(originalTrans.qty),
-            reservedQty: 0,
-            availableQty: Math.abs(originalTrans.qty),
-            company: originalTrans.company,
-            plant: originalTrans.plant,
-          });
-        }
       }
+    }
 
-      return savedCancelTrans;
-    });
+    return savedCancelTrans;
   }
 
   /** 취소 트랜잭션 유형 결정 */

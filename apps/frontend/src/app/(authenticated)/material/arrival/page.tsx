@@ -11,11 +11,11 @@
  * 4. ManualArrivalModal은 유지 (별도 워크플로)
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck, RefreshCw, Plus, Search } from 'lucide-react';
 import { Card, CardContent, Button, Input } from '@/components/ui';
-import ComCodeSelect from '@/components/shared/ComCodeSelect';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import api from '@/services/api';
 import PoLineGrid from './components/PoLineGrid';
 import PoLineReceiptModal from './components/PoLineReceiptModal';
@@ -30,9 +30,30 @@ export default function ArrivalPage() {
   // 데이터
   const [rows, setRows] = useState<PoLineRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('');
   const [itemCode, setItemCode] = useState('');
   const [poNo, setPoNo] = useState('');
+
+  // 상태 다중선택 필터 (체크조건) — 기본값: CLOSE 제외 전체. 클라이언트 사이드 필터.
+  const statusOptions = useComCodeOptions('PO_LINE_STATUS');
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [statusInitialized, setStatusInitialized] = useState(false);
+  useEffect(() => {
+    if (!statusInitialized && statusOptions.length) {
+      setSelectedStatuses(statusOptions.map((o) => o.value).filter((v) => v !== 'CLOSE'));
+      setStatusInitialized(true);
+    }
+  }, [statusOptions, statusInitialized]);
+
+  const toggleStatus = useCallback((code: string) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+  }, []);
+
+  const visibleRows = useMemo(
+    () => (statusInitialized ? rows.filter((r) => selectedStatuses.includes(r.lineStatus)) : rows),
+    [rows, selectedStatuses, statusInitialized],
+  );
 
   // 흐름 상태
   const [selectedLine, setSelectedLine] = useState<PoLineRow | null>(null);
@@ -47,7 +68,6 @@ export default function ArrivalPage() {
     try {
       const res = await api.get('/material/arrivals/po-lines', {
         params: {
-          ...(statusFilter && { status: statusFilter }),
           ...(itemCode && { itemCode }),
           ...(poNo && { poNo }),
         },
@@ -55,7 +75,7 @@ export default function ArrivalPage() {
       setRows(res.data?.data ?? []);
     } catch { setRows([]); }
     setLoading(false);
-  }, [statusFilter, itemCode, poNo]);
+  }, [itemCode, poNo]);
 
   useEffect(() => { fetchLines(); }, [fetchLines]);
 
@@ -116,19 +136,24 @@ export default function ArrivalPage() {
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
         <CardContent className="h-full p-4">
           <PoLineGrid
-            data={rows}
+            data={visibleRows}
             isLoading={loading}
             onSelectLine={setSelectedLine}
             toolbarLeft={
-              <div className="flex gap-2 flex-1 min-w-0">
-                <div className="w-40 flex-shrink-0">
-                  <ComCodeSelect
-                    groupCode="PO_LINE_STATUS"
-                    labelPrefix={t('common.status')}
-                    value={statusFilter}
-                    onChange={setStatusFilter}
-                    fullWidth
-                  />
+              <div className="flex gap-2 flex-1 min-w-0 items-center flex-wrap">
+                <div className="flex items-center gap-2 flex-shrink-0 rounded-lg border border-border bg-surface px-2.5 py-1.5">
+                  <span className="text-xs font-medium text-text-muted">{t('common.status')}</span>
+                  {statusOptions.map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-1 text-xs cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        className="accent-primary w-3.5 h-3.5"
+                        checked={selectedStatuses.includes(opt.value)}
+                        onChange={() => toggleStatus(opt.value)}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
                 </div>
                 <Input
                   placeholder={t('common.partCode')}

@@ -11,7 +11,7 @@ import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { ApiTags, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { IqcHistoryService } from '../services/iqc-history.service';
-import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
+import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto, PendingSerialsQueryDto } from '../dto/iqc-history.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -35,6 +35,13 @@ export class IqcHistoryController {
   @ApiOperation({ summary: 'IQC 검사 대상 목록 (입하번호+품목 단위 그룹)' })
   async findPendingArrivals(@Query() query: PendingArrivalQueryDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.iqcHistoryService.findPendingArrivals(query, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Get('pending-serials')
+  @ApiOperation({ summary: 'IQC 검사대기 시리얼 목록 (입하번호+품목 단위)' })
+  async findPendingSerials(@Query() query: PendingSerialsQueryDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.iqcHistoryService.findPendingSerials(query.arrivalNo, query.itemCode, company, plant);
     return ResponseUtil.success(data);
   }
 

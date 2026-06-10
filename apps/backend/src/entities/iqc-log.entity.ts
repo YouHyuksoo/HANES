@@ -33,13 +33,13 @@ export class IqcLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ type: 'varchar2', name: 'ARRIVAL_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ARRIVAL_NO', length: 100, nullable: true })
   arrivalNo: string | null;
 
   @Column({ type: 'varchar2', name: 'MAT_UID', length: 50, nullable: true })
   matUid: string | null;
 
-  @Column({ name: 'ITEM_CODE', length: 50 })
+  @Column({ name: 'ITEM_CODE', length: 255 })
   itemCode: string;
 
   @Column({ name: 'INSPECT_TYPE', length: 50, default: 'INITIAL' })

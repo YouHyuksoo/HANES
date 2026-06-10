@@ -47,7 +47,7 @@ export class MatIssue {
   @Column({ name: 'ISSUE_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   issueDate: Date;
 
-  @Column({ name: 'ISSUE_TYPE', length: 20 })
+  @Column({ name: 'ISSUE_TYPE', length: 20, default: 'PROD' })
   issueType: string;
 
   @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })

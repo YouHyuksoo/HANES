@@ -27,11 +27,16 @@ interface PoStatusItemRaw {
   itemName: string;
   spec: string | null;
   unit: string | null;
+  lineNo: number | null;
   relNo: number | null;
   orderQty: number;
   receivedQty: number;
   receiveRate: number;
 }
+
+/** Date → 'YYYY-MM-DD' (로컬 기준, UTC 변환으로 인한 하루 밀림 방지) */
+const toYmd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 interface PoStatusRaw {
   poNo: string;
@@ -54,6 +59,13 @@ export default function PoStatusPage() {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedPo, setSelectedPo] = useState<PoStatusRaw | null>(null);
+  // 발주일 필터 기본값: 과거 1개월 ~ 현시점
+  const [fromDate, setFromDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return toYmd(d);
+  });
+  const [toDate, setToDate] = useState(() => toYmd(new Date()));
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -61,6 +73,8 @@ export default function PoStatusPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/material/po-status", { params });
       const list = res.data?.data ?? [];
       setData(list);
@@ -76,7 +90,7 @@ export default function PoStatusPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter]);
+  }, [searchText, statusFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -129,6 +143,14 @@ export default function PoStatusPage() {
 
   /** 디테일 그리드 컬럼 (품목별 입고현황) */
   const detailColumns = useMemo<ColumnDef<PoStatusItemRaw>[]>(() => [
+    {
+      accessorKey: "lineNo", header: t("material.poStatus.lineNo", "LINE NO"), size: 80,
+      meta: { filterType: "number" as const, align: "right" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as number | null;
+        return <span className="font-mono text-sm">{v ?? "-"}</span>;
+      },
+    },
     {
       accessorKey: "itemCode", header: t("material.poStatus.itemCode"), size: 100,
       meta: { filterType: "text" as const },
@@ -219,8 +241,14 @@ export default function PoStatusPage() {
               selectedRowId={selectedPo?.poNo}
               getRowId={(row) => row.poNo}
               toolbarLeft={
-                <div className="flex gap-3 flex-1 min-w-0">
-                  <div className="flex-1 min-w-0">
+                <div className="flex gap-3 flex-1 min-w-0 items-center flex-wrap">
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className="text-text-muted text-xs whitespace-nowrap">{t("material.po.orderDate", "발주일")}</span>
+                    <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="w-36" />
+                    <span className="text-text-muted text-sm">~</span>
+                    <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="w-36" />
+                  </div>
+                  <div className="flex-1 min-w-[120px]">
                     <Input placeholder={t("material.poStatus.searchPlaceholder")}
                       value={searchText} onChange={e => setSearchText(e.target.value)}
                       leftIcon={<Search className="w-4 h-4" />} fullWidth />
@@ -230,7 +258,7 @@ export default function PoStatusPage() {
                       value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
                 </div>
-              } 
+              }
               sqlQuery={`SELECT *\nFROM PO_HEADERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent></Card>
         </div>

@@ -232,6 +232,25 @@ export class IqcHistoryService {
   }
 
   /**
+   * 입하+품목의 PENDING(검사대기) 시리얼 목록 조회 — 시리얼별 개별 판정용
+   */
+  async findPendingSerials(arrivalNo: string, itemCode: string, company?: string, plant?: string) {
+    const lots = await this.matLotRepository.find({
+      where: { arrivalNo, itemCode, iqcStatus: 'PENDING', ...this.tenantWhere(company, plant) },
+      order: { matUid: 'ASC' },
+    });
+    return lots.map((l) => ({
+      matUid: l.matUid,
+      itemCode: l.itemCode,
+      initQty: l.initQty,
+      currentQty: l.currentQty,
+      recvDate: l.recvDate,
+      vendor: l.vendor,
+    }));
+  }
+
+
+  /**
    * 입하단위 IQC 검사 대상 목록 (입하번호 + 품목 단위 그룹 집계)
    * - 개별 시리얼이 아니라 ARRIVAL_NO + ITEM_CODE 로 묶어서 1행으로 반환
    * - 집계는 SQL GROUP BY 로 수행 (메모리 집계 금지)
@@ -289,6 +308,7 @@ export class IqcHistoryService {
         itemCode: r.itemCode,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
+        inspectMethod: part?.inspectMethod ?? null,
         vendor: r.vendor,
         totalQty: Number(r.totalQty) || 0,
         serialCount: Number(r.serialCount) || 0,

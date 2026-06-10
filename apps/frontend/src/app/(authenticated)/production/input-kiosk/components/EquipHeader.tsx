@@ -10,9 +10,10 @@
  * - 점검 상태는 store interlock 기준, 입력 버튼은 부모(page.tsx) 콜백으로 모달 오픈
  * - 바코드 스캔: 자재 롯트 등록(handleBarcodeSubmit) → 모든 BOM 완료 시 인터락 해제
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { useScanInputFocus } from '@/hooks/useScanInputFocus';
 import {
   AlertTriangle, Barcode, ChevronDown, ClipboardList, Cpu,
   Maximize2, Minimize2, UserPlus, X, CheckCircle,
@@ -43,6 +44,9 @@ export default function EquipHeader({
   const searchParams = useSearchParams();
   const [isEquipModalOpen, setIsEquipModalOpen] = useState(false);
   const [barcodeValue, setBarcodeValue] = useState('');
+  const barcodeRef = useRef<HTMLInputElement>(null);
+  // 키오스크 주 스캔창 — 항상 포커스 유지 (모달 없을 때 빈 곳 클릭에도 회수)
+  useScanInputFocus(barcodeRef, true, { primary: true });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const {
     selectedEquip, selectedJobOrder, selectedWorkers, interlock,
@@ -162,6 +166,7 @@ export default function EquipHeader({
             <div className="relative flex-1">
               <Barcode className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
+                ref={barcodeRef}
                 value={barcodeValue}
                 onChange={(e) => setBarcodeValue(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleBarcodeSubmit(); }}

@@ -187,7 +187,19 @@ export default function EquipMasterTab() {
         return <span className="text-xs">{t(`master.equip.${v.toLowerCase()}`, v)}</span>;
       },
     },
-    { accessorKey: "lineCode", header: t("master.equip.line", "라인"), size: 60 },
+    {
+      accessorKey: "processCode", header: t("master.equip.process", "공정"), size: 110,
+      cell: ({ row }) => {
+        const e = row.original;
+        if (!e.processCode) return <span className="text-text-muted">-</span>;
+        return (
+          <div className="leading-tight">
+            <div className="text-xs">{e.processName || e.processCode}</div>
+            {e.processName && <div className="text-[10px] text-text-muted font-mono">{e.processCode}</div>}
+          </div>
+        );
+      },
+    },
     {
       accessorKey: "commType", header: t("master.equip.commType", "통신"), size: 80,
       cell: ({ getValue }) => {

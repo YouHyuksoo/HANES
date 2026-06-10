@@ -38,6 +38,8 @@ const statusColors: Record<string, string> = {
   NORMAL: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
 };
 
+const formatQty = (value?: number | null) => (typeof value === "number" ? value.toLocaleString() : "0");
+
 export default function HoldPage() {
   const { t } = useTranslation();
 
@@ -128,7 +130,7 @@ export default function HoldPage() {
       accessorKey: "qty", header: t("material.hold.currentQty"), size: 120,
       meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
-        <span className="font-semibold">{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>
+        <span className="font-semibold">{formatQty(row.original.qty)} {row.original.unit || ""}</span>
       ),
     },
     {
@@ -196,7 +198,7 @@ export default function HoldPage() {
                 <div><span className="text-text-muted">{t("common.matUid")}:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
                 <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.itemCode}</span></div>
                 <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.itemName}</div>
-                <div><span className="text-text-muted">{t("material.hold.currentQty")}:</span> <span className="font-medium">{selectedLot.qty.toLocaleString()}</span></div>
+                <div><span className="text-text-muted">{t("material.hold.currentQty")}:</span> <span className="font-medium">{formatQty(selectedLot.qty)}</span></div>
               </div>
             </div>
             <Input label={t("material.hold.reason")} placeholder={t("material.hold.reasonPlaceholder")}

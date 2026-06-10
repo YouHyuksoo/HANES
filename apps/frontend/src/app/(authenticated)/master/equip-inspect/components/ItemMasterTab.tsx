@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Edit2, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Edit2, Plus, QrCode, RefreshCw, Search, Trash2 } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { InspectItemPoolRow, INSPECT_TYPE_COLORS } from "../types";
+import InspectItemLabelModal from "./InspectItemLabelModal";
 
 type InspectType = InspectItemPoolRow["inspectType"];
 
@@ -30,6 +31,7 @@ export default function ItemMasterTab() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<InspectItemPoolRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InspectItemPoolRow | null>(null);
+  const [labelTarget, setLabelTarget] = useState<InspectItemPoolRow | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
   const fetchData = useCallback(async () => {
@@ -150,10 +152,13 @@ export default function ItemMasterTab() {
     {
       id: "actions",
       header: "",
-      size: 80,
+      size: 110,
       meta: { align: "center" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
+          <button onClick={() => setLabelTarget(row.original)} className="p-1 hover:bg-surface rounded" title={t("master.equipInspect.qrLabel", "QR 라벨")}>
+            <QrCode className="w-4 h-4 text-text-muted" />
+          </button>
           <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}>
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
@@ -313,6 +318,14 @@ export default function ItemMasterTab() {
         onConfirm={handleDeleteConfirm}
         title={t("common.delete")}
         message={t("common.confirmDelete")}
+      />
+
+      <InspectItemLabelModal
+        isOpen={!!labelTarget}
+        item={labelTarget}
+        inspectTypeLabel={labelTarget ? inspectTypeLabels[labelTarget.inspectType] : undefined}
+        cycleLabel={labelTarget?.cycle ? cycleLabels[labelTarget.cycle] : undefined}
+        onClose={() => setLabelTarget(null)}
       />
     </div>
   );

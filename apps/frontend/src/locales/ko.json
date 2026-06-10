@@ -1271,6 +1271,7 @@
       "equipName": "설비명",
       "type": "유형",
       "line": "라인",
+      "process": "공정",
       "commType": "통신방식",
       "ipPort": "IP/Port",
       "manufacturer": "제조사",
@@ -1640,6 +1641,9 @@
     "equipInspect": {
       "title": "설비점검항목",
       "subtitle": "설비별 일상/정기 점검 기준을 관리합니다.",
+      "qrLabel": "QR 라벨",
+      "qrLabelTitle": "점검항목 QR 라벨",
+      "qrLabelHeader": "설비 점검항목",
       "tabAssign": "설비별 할당",
       "tabMaster": "점검항목 마스터",
       "equipCode": "설비코드",
@@ -1877,6 +1881,7 @@
     "badge": {
       "arrived": "입하완료",
       "iqcReady": "IQC대기",
+      "iqcWait": "검사대기",
       "receivingWait": "입고대기",
       "stocked": "입고완료",
       "requested": "요청",
@@ -1987,6 +1992,17 @@
     },
     "iqc": {
       "title": "수입검사(IQC)",
+      "method": "검사방법",
+      "serialJudge": "시리얼별 판정",
+      "serialNo": "시리얼",
+      "qty": "수량",
+      "allPass": "전체 PASS",
+      "allFail": "전체 FAIL",
+      "serialSubmit": "시리얼별 등록",
+      "lotRuleNotice": "시리얼 1개라도 불량이면 입하롯트 전체가 불합격(입고 불가) 처리됩니다.",
+      "lotFail": "입하롯트 전체 불합격 (입고불가)",
+      "lotPass": "입하롯트 합격",
+      "noPendingSerials": "검사대기 시료 시리얼이 없습니다.",
       "subtitle": "수입검사 결과를 관리합니다.",
       "description": "수입검사 결과를 관리합니다.",
       "stats": {
@@ -2368,6 +2384,7 @@
     "poStatus": {
       "title": "PO현황",
       "subtitle": "구매발주 현황을 조회합니다.",
+      "lineNo": "LINE NO",
       "itemCode": "품목코드",
       "itemName": "품목명",
       "spec": "규격",

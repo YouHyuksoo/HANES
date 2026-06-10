@@ -956,6 +956,7 @@
       "equipName": "Tên thiết bị",
       "type": "Loại",
       "line": "Dây chuyền",
+      "process": "Công đoạn",
       "commType": "Phương thức truyền thông",
       "ipPort": "IP/Port",
       "manufacturer": "Nhà sản xuất",
@@ -1314,6 +1315,9 @@
     "equipInspect": {
       "title": "Hạng mục kiểm tra thiết bị",
       "subtitle": "Quản lý tiêu chuẩn kiểm tra hàng ngày/định kỳ thiết bị.",
+      "qrLabel": "Nhãn QR",
+      "qrLabelTitle": "Nhãn QR hạng mục kiểm tra",
+      "qrLabelHeader": "Hạng mục kiểm tra thiết bị",
       "tabAssign": "Phân bổ thiết bị",
       "tabMaster": "Dữ liệu chính hạng mục",
       "equipCode": "Mã thiết bị",
@@ -1548,6 +1552,7 @@
     "badge": {
       "arrived": "Đã nhập",
       "iqcReady": "Chờ IQC",
+      "iqcWait": "Chờ kiểm tra",
       "receivingWait": "Chờ nhập kho",
       "stocked": "Đã nhập kho",
       "requested": "Yêu cầu",
@@ -1658,6 +1663,17 @@
     },
     "iqc": {
       "title": "Kiểm tra đầu vào (IQC)",
+      "method": "Phương pháp kiểm tra",
+      "serialJudge": "Đánh giá theo serial",
+      "serialNo": "Serial",
+      "qty": "SL",
+      "allPass": "Tất cả PASS",
+      "allFail": "Tất cả FAIL",
+      "serialSubmit": "Đăng ký serial",
+      "lotRuleNotice": "Nếu bất kỳ serial nào không đạt, toàn bộ lô nhập bị từ chối (không thể nhập kho).",
+      "lotFail": "Cả lô không đạt (không nhập kho)",
+      "lotPass": "Lô đạt",
+      "noPendingSerials": "Không có serial mẫu chờ kiểm tra.",
       "subtitle": "Quản lý kết quả kiểm tra đầu vào.",
       "description": "Quản lý kết quả kiểm tra đầu vào.",
       "stats": {
@@ -2039,6 +2055,7 @@
     "poStatus": {
       "title": "Tình trạng PO",
       "subtitle": "Xem tình trạng đơn đặt hàng.",
+      "lineNo": "Số dòng",
       "itemCode": "Mã mục",
       "itemName": "Tên mục",
       "spec": "Quy cách",

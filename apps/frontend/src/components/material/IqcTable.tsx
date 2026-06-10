@@ -27,6 +27,13 @@ const formatDateOnly = (value?: string | null) => {
   return new Intl.DateTimeFormat('sv-SE').format(date);
 };
 
+/** 검사방법(FULL/SAMPLE/SKIP) 배지 색상 */
+const METHOD_COLORS: Record<string, string> = {
+  FULL: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  SAMPLE: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  SKIP: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+};
+
 export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: IqcTableProps) {
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IqcItem>[]>(
@@ -42,6 +49,22 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
       { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100, meta: { filterType: 'text' as const } },
       { accessorKey: 'itemCode', header: t('common.partCode'), size: 110, meta: { filterType: 'text' as const } },
       { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
+      {
+        accessorKey: 'inspectMethod',
+        header: t('material.iqc.method', '검사방법'),
+        size: 90,
+        meta: { filterType: 'multi' as const },
+        cell: ({ getValue }) => {
+          const m = getValue() as string | null;
+          if (!m) return <span className="text-text-muted">-</span>;
+          const label = ({
+            FULL: t('master.iqcGroup.methodFull', '전수검사'),
+            SAMPLE: t('master.iqcGroup.methodSample', '샘플검사'),
+            SKIP: t('master.iqcGroup.methodSkip', '무검사'),
+          } as Record<string, string>)[m] ?? m;
+          return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${METHOD_COLORS[m] ?? ''}`}>{label}</span>;
+        },
+      },
       {
         accessorKey: 'serialCount',
         header: t('material.iqc.serialCount', '시리얼수'),

@@ -8,7 +8,7 @@
 
 ## 📁 디렉토리 카테고리 구조
 
-모든 문서는 역할과 성격에 따라 다음 5대 카테고리로 나누어 관리한다.
+모든 문서는 역할과 성격에 따라 다음 카테고리로 나누어 관리한다.
 
 ### 1. 📁 [design/](file:///C:/Project/HANES/docs/design) (시스템 설계 및 API 사양)
 시스템 아키텍처 구성, ERD 및 데이터 모델, 라우팅 및 모듈 배치 지도 문서.
@@ -50,9 +50,8 @@
 
 ### 5. 📁 [reports/](file:///C:/Project/HANES/docs/reports) (분석 및 갭 리포트)
 프로젝트 전반의 성능, 아키텍처 및 ERP 연동을 위한 갭 분석 리포트 보관함.
-*   [architecture-analysis-report.md](file:///C:/Project/HANES/docs/reports/architecture-analysis-report.md): HANES MES 아키텍처 최종 재분석 보고서 (2026-05-23 최종)
-*   [tenant-controller-gap-report.md](file:///C:/Project/HANES/docs/reports/tenant-controller-gap-report.md): 멀티 테넌트 적용 대상 컨트롤러 식별 분석 보고서
-*   [tenant-service-query-gap-report.md](file:///C:/Project/HANES/docs/reports/tenant-service-query-gap-report.md): 서비스 쿼리 레벨에서의 테넌트 식별자 반영 갭 보고서
+*   [architecture-analysis-report.md](file:///C:/Project/HANES/docs/reports/architecture-analysis-report.md): HANES MES 아키텍처 재분석 보고서 (2026-05-23)
+*   [db-schema-erd.md](file:///C:/Project/HANES/docs/reports/db-schema-erd.md): DB 스키마 ERD 및 컬럼 상세 정의 (자동 생성)
 
 ---
 

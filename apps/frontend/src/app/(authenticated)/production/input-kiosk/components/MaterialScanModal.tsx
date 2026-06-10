@@ -16,6 +16,7 @@ import { Package, CheckCircle2, ScanLine } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
+import { useScanInputFocus } from '@/hooks/useScanInputFocus';
 import type { BomItem } from './MaterialListPanel';
 
 interface MaterialScanModalProps {
@@ -33,6 +34,8 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
   const [bomItems, setBomItems] = useState<BomItem[]>([]);
   const [scanInput, setScanInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  // 모달 열린 동안 스캔 입력창 항상 포커스 유지
+  useScanInputFocus(inputRef, isOpen);
 
   useEffect(() => {
     if (!isOpen || !selectedJobOrder?.itemCode) return;

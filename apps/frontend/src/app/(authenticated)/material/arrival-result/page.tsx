@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { ClipboardList, RefreshCw, Search, Printer, Pencil } from "lucide-react";
+import { ClipboardList, RefreshCw, Search, Printer, Pencil, Ban } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
@@ -212,10 +212,11 @@ export default function ArrivalResultPage() {
             type="button"
             disabled={!r.cancelable}
             onClick={(e) => { e.stopPropagation(); if (r.cancelable) setCancelTarget(r); }}
-            className={`px-2.5 py-1 rounded text-xs font-semibold text-white ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-white ${
               r.cancelable ? "bg-red-600 hover:bg-red-700" : "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
             }`}
           >
+            <Ban className="w-3.5 h-3.5" />
             {t("material.arrivalResult.cancel", "입하취소")}
           </button>
         );

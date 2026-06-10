@@ -24,6 +24,8 @@ export interface IqcItem {
   /** 입하건에 속한 시리얼 수 */
   serialCount: number;
   unit: string;
+  /** 검사방법 (FULL/SAMPLE/SKIP) — part master 기준 */
+  inspectMethod: string | null;
   arrivalDate: string;
   status: IqcStatus;
   inspector: string | null;
@@ -57,6 +59,7 @@ export function useIqcData() {
   const [items, setItems] = useState<IqcItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [methodFilter, setMethodFilter] = useState('');
   const [searchText, setSearchText] = useState('');
   const [isIqcModalOpen, setIsIqcModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<IqcItem | null>(null);
@@ -78,6 +81,7 @@ export function useIqcData() {
         totalQty: g.totalQty ?? 0,
         serialCount: g.serialCount ?? 0,
         unit: g.unit || 'EA',
+        inspectMethod: g.inspectMethod ?? null,
         arrivalDate: g.recvDate || g.createdAt || '',
         status: mapToFrontendStatus(g.iqcStatus || 'PENDING'),
         inspector: null,
@@ -95,14 +99,15 @@ export function useIqcData() {
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       const matchStatus = !statusFilter || item.status === statusFilter;
+      const matchMethod = !methodFilter || item.inspectMethod === methodFilter;
       const matchSearch =
         !searchText ||
         item.arrivalNo.toLowerCase().includes(searchText.toLowerCase()) ||
         item.itemName.toLowerCase().includes(searchText.toLowerCase()) ||
         item.itemCode.toLowerCase().includes(searchText.toLowerCase());
-      return matchStatus && matchSearch;
+      return matchStatus && matchMethod && matchSearch;
     });
-  }, [items, statusFilter, searchText]);
+  }, [items, statusFilter, methodFilter, searchText]);
 
   const stats = useMemo(() => ({
     pending: items.filter((i) => i.status === 'PENDING').length,
@@ -167,6 +172,7 @@ export function useIqcData() {
     stats,
     loading,
     statusFilter, setStatusFilter,
+    methodFilter, setMethodFilter,
     searchText, setSearchText,
     isIqcModalOpen, setIsIqcModalOpen,
     selectedItem,

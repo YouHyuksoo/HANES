@@ -71,7 +71,7 @@ export class MatArrival {
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'IQC_STATUS', length: 20, default: "'PENDING'" })
+  @Column({ name: 'IQC_STATUS', length: 20, default: 'PENDING' })
   iqcStatus: string;
 
   @Column({ type: 'varchar2', name: 'SUP_UID', length: 50, nullable: true })

@@ -24,6 +24,7 @@ import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity'
 import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
 import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dto/ship-order.dto';
 import { ShipBoxDto } from '../dto/ship-box.dto';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -249,7 +250,10 @@ export class ShipOrderService {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipOrderRepository.delete({ shipOrderNo, ...this.tenantWhere(company, plant) });
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderNo, ...this.tenantWhere(company, plant) });
+      await queryRunner.manager.delete(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) });
+    });
 
     return { shipOrderNo, deleted: true };
   }
@@ -324,6 +328,10 @@ export class ShipOrderService {
       });
 
       await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'SHIPPED' });
+      const serials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
+      if (serials.length > 0) {
+        await qr.manager.update(FgLabel, { fgBarcode: In(serials), ...where }, { status: 'SHIPPED' });
+      }
 
       const newShipped = line.shippedQty + box.qty;
       await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });

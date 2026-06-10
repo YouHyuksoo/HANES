@@ -141,6 +141,40 @@ const ScanInput = forwardRef<ScanInputHandle, ScanInputProps>(function ScanInput
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disabled]);
 
+  // ── 포커스 항상 유지 ──
+  // 스캔 입력은 PDA의 주 입력이다. 포커스를 잃으면(버튼/다른 입력으로 이동한 경우 제외) 다시 포커스한다.
+  // 재포커스는 plain .focus()로 처리해 현재 inputMode("none")를 유지 → 키보드가 다시 뜨지 않는다(트릭 보존).
+  useEffect(() => {
+    if (disabled) return;
+    const INTERACTIVE = 'input, textarea, select, button, a, [role="button"], [tabindex]';
+    const isVisible = () => {
+      const n = inputRef.current;
+      return !!(n && document.body.contains(n) && n.offsetParent !== null);
+    };
+    const refocus = () => {
+      if (document.activeElement === inputRef.current) return;
+      if (isVisible()) inputRef.current?.focus();
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      if (e.target !== inputRef.current) return;            // 자기 입력에서 빠진 경우만
+      const next = e.relatedTarget as HTMLElement | null;
+      if (next && next.closest(INTERACTIVE)) return;        // 버튼/다른 입력으로 이동은 허용
+      window.setTimeout(refocus, 0);
+    };
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target || target.closest(INTERACTIVE)) return;   // 버튼/입력 클릭 무시
+      if (!isVisible()) return;
+      window.setTimeout(refocus, 0);                        // 빈 영역 탭 → 포커스 회수
+    };
+    document.addEventListener('focusout', onFocusOut);
+    document.addEventListener('click', onClick);
+    return () => {
+      document.removeEventListener('focusout', onFocusOut);
+      document.removeEventListener('click', onClick);
+    };
+  }, [disabled]);
+
   // ── 키보드 토글 시 모드 전환 (SMMEX ScanInputs.tsx 패턴) ──
   const handleToggleKeyboard = useCallback(() => {
     const input = inputRef.current;

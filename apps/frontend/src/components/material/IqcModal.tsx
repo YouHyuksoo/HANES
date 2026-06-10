@@ -13,7 +13,7 @@
  */
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Upload } from "lucide-react";
 import { Button, Input, Modal, Select } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import api from "@/services/api";
@@ -48,6 +48,12 @@ interface IqcModalProps {
   onSubmit: (details?: MeasurementRow[], overrideResult?: string, extra?: { inspectClass?: string; sampleQty?: number; certFile?: File; sampleBarcode?: string }) => void;
 }
 
+interface PendingSerial {
+  matUid: string;
+  initQty: number;
+  currentQty: number;
+}
+
 function judgeValue(value: string, lsl: number | null, usl: number | null): "PASS" | "FAIL" | "" {
   if (!value.trim()) return "";
   if (lsl === null && usl === null) return "PASS"; // 정성검사: 값 입력 시 자동 합격
@@ -64,10 +70,13 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [measurements, setMeasurements] = useState<MeasurementRow[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
+  // 시료 시리얼 판정 (사용한 시료 시리얼 + 각 합/불 → 롯트 all-or-nothing)
+  const [serials, setSerials] = useState<PendingSerial[]>([]);
+  const [serialResults, setSerialResults] = useState<Record<string, "PASS" | "FAIL">>({});
+
   // 검사분류(기본 샘플검사), 샘플 시료수량, 검사성적서 파일
   const [inspectClass, setInspectClass] = useState("SAMPLE");
   const [sampleQty, setSampleQty] = useState("");
-  const [sampleBarcode, setSampleBarcode] = useState("");
   const [certFile, setCertFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,12 +86,6 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     { value: "NONE", label: t("material.iqc.inspectClassNone", "무검사") },
   ], [t]);
 
-  const resultOptions = useMemo(() => [
-    { value: "", label: t("material.iqc.resultSelect") },
-    { value: "PASSED", label: t("material.iqc.passed") },
-    { value: "FAILED", label: t("material.iqc.failed") },
-  ], [t]);
-
   // 모달 열릴 때 품목별 검사항목 조회
   useEffect(() => {
     if (!isOpen || !selectedItem) {
@@ -90,7 +93,6 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       setMeasurements([]);
       return;
     }
-    setSampleBarcode("");
     const fetchItems = async () => {
       setLoadingItems(true);
       try {
@@ -116,6 +118,45 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     };
     fetchItems();
   }, [isOpen, selectedItem]);
+
+  // 모달 열릴 때 검사대기 시리얼 목록 조회 (시리얼별 개별 판정용, 기본 전체 PASS)
+  useEffect(() => {
+    if (!isOpen || !selectedItem) { setSerials([]); setSerialResults({}); return; }
+    api.get("/material/iqc-history/pending-serials", {
+      params: { arrivalNo: selectedItem.arrivalNo, itemCode: selectedItem.itemCode },
+    })
+      .then((res) => {
+        const list: PendingSerial[] = res.data?.data ?? [];
+        setSerials(list);
+        const init: Record<string, "PASS" | "FAIL"> = {};
+        list.forEach((s) => { init[s.matUid] = "PASS"; });
+        setSerialResults(init);
+      })
+      .catch(() => { setSerials([]); setSerialResults({}); });
+  }, [isOpen, selectedItem]);
+
+  const setSerialResult = useCallback((matUid: string, r: "PASS" | "FAIL") => {
+    setSerialResults((prev) => ({ ...prev, [matUid]: r }));
+  }, []);
+  const setAllSerials = useCallback((r: "PASS" | "FAIL") => {
+    setSerialResults(() => Object.fromEntries(serials.map((s) => [s.matUid, r])));
+  }, [serials]);
+
+  // 시료 시리얼 판정 → 입하롯트 단위 등록(onSubmit→/arrival).
+  // 규칙: 시료 중 1개라도 FAIL이면 롯트 전체 FAIL(입고불가). 시료 시리얼+결과는 sampleBarcode에 근거로 기록.
+  const handleSerialSubmit = useCallback(() => {
+    if (!selectedItem || serials.length === 0) return;
+    const failed = serials.filter((s) => serialResults[s.matUid] === "FAIL").map((s) => s.matUid);
+    const verdict = failed.length > 0 ? "FAILED" : "PASSED";
+    const sampleEvidence = serials.map((s) => `${s.matUid}:${serialResults[s.matUid] || "PASS"}`).join(", ");
+    setForm((prev) => ({ ...prev, result: verdict as IqcResultForm["result"] }));
+    onSubmit(measurements.length > 0 ? measurements : undefined, verdict, {
+      inspectClass,
+      sampleQty: sampleQty ? parseInt(sampleQty, 10) : undefined,
+      certFile: certFile ?? undefined,
+      sampleBarcode: sampleEvidence,
+    });
+  }, [selectedItem, serials, serialResults, measurements, inspectClass, sampleQty, certFile, onSubmit, setForm]);
 
   const updateMeasurement = useCallback((idx: number, value: string) => {
     setMeasurements((prev) => {
@@ -151,26 +192,16 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     return hasFail ? "FAILED" : "PASSED";
   }, [measurements, form.result]);
 
-  const buildExtra = useCallback(() => ({
-    inspectClass,
-    sampleQty: sampleQty ? parseInt(sampleQty, 10) : undefined,
-    certFile: certFile ?? undefined,
-    sampleBarcode: sampleBarcode.trim() || undefined,
-  }), [inspectClass, sampleQty, certFile, sampleBarcode]);
-
-  const handleSubmitWithDetails = useCallback(() => {
-    const finalResult = overallJudge || form.result;
-    if (!finalResult) return;
-    setForm((prev) => ({ ...prev, result: finalResult as IqcResultForm["result"] }));
-    onSubmit(measurements.length > 0 ? measurements : undefined, finalResult, buildExtra());
-  }, [overallJudge, form.result, measurements, setForm, onSubmit, buildExtra]);
 
   if (!selectedItem) return null;
 
   const hasInspectItems = inspectItems.length > 0;
+  const serialPassCount = serials.filter((s) => serialResults[s.matUid] === "PASS").length;
+  // 규칙: 시리얼 1개라도 FAIL이면 입하롯트 전체 불합격(입고불가)
+  const anyFail = serials.length > 0 && serialPassCount < serials.length;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t("material.iqc.modalTitle")} size={hasInspectItems ? "2xl" : "lg"}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t("material.iqc.modalTitle")} size={hasInspectItems || serials.length > 0 ? "2xl" : "lg"}>
       <div className="space-y-4">
         {/* 입하 정보 표시 (입하번호 + 품목 단위) */}
         <div className="p-3 bg-background rounded-lg grid grid-cols-2 gap-x-6 gap-y-1">
@@ -180,6 +211,79 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
           <p className="text-sm text-text-muted">{t("material.iqc.serialCount", "시리얼수")}: <span className="font-medium text-text">{selectedItem.serialCount.toLocaleString()}</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.totalQty", "총수량")}: <span className="font-medium text-text">{selectedItem.totalQty.toLocaleString()} {selectedItem.unit}</span></p>
         </div>
+
+        {/* 시리얼별 개별 판정 (전수검사형 다중 등록) */}
+        {serials.length > 0 && (
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 bg-surface border-b border-border">
+              <span className="text-sm font-semibold text-text">
+                {t("material.iqc.serialJudge", "시리얼별 판정")}{" "}
+                <span className="text-text-muted font-normal">({serialPassCount} PASS / {serials.length - serialPassCount} FAIL)</span>
+              </span>
+              <div className="flex gap-1">
+                <button type="button" onClick={() => setAllSerials("PASS")}
+                  className="px-2 py-1 text-xs rounded border border-green-400 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20">
+                  {t("material.iqc.allPass", "전체 PASS")}
+                </button>
+                <button type="button" onClick={() => setAllSerials("FAIL")}
+                  className="px-2 py-1 text-xs rounded border border-red-400 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  {t("material.iqc.allFail", "전체 FAIL")}
+                </button>
+              </div>
+            </div>
+            <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border-b border-border text-[11px] text-amber-700 dark:text-amber-300">
+              ※ {t("material.iqc.lotRuleNotice", "시리얼 1개라도 불량이면 입하롯트 전체가 불합격(입고 불가) 처리됩니다.")}
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-surface">
+                  <tr>
+                    <th className="text-left px-3 py-1.5 font-medium text-text-muted">#</th>
+                    <th className="text-left px-3 py-1.5 font-medium text-text-muted">{t("material.iqc.serialNo", "시리얼")}</th>
+                    <th className="text-right px-3 py-1.5 font-medium text-text-muted">{t("material.iqc.qty", "수량")}</th>
+                    <th className="text-center px-3 py-1.5 font-medium text-text-muted">{t("material.iqc.judgment", "판정")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {serials.map((s, idx) => (
+                    <tr key={s.matUid} className="border-t border-border hover:bg-surface/50">
+                      <td className="px-3 py-1.5 text-text-muted">{idx + 1}</td>
+                      <td className="px-3 py-1.5 font-mono text-text">{s.matUid}</td>
+                      <td className="px-3 py-1.5 text-right text-text-muted">{(s.currentQty ?? s.initQty)?.toLocaleString?.() ?? s.initQty}</td>
+                      <td className="px-3 py-1.5">
+                        <div className="flex gap-1 justify-center">
+                          <button type="button" onClick={() => setSerialResult(s.matUid, "PASS")}
+                            className={`px-2 py-0.5 text-xs rounded border transition-colors ${
+                              serialResults[s.matUid] === "PASS"
+                                ? "bg-green-100 text-green-700 border-green-400 dark:bg-green-900/40 dark:text-green-300 font-semibold"
+                                : "bg-surface text-text-muted border-border hover:bg-green-50 dark:hover:bg-green-900/20"
+                            }`}>PASS</button>
+                          <button type="button" onClick={() => setSerialResult(s.matUid, "FAIL")}
+                            className={`px-2 py-0.5 text-xs rounded border transition-colors ${
+                              serialResults[s.matUid] === "FAIL"
+                                ? "bg-red-100 text-red-700 border-red-400 dark:bg-red-900/40 dark:text-red-300 font-semibold"
+                                : "bg-surface text-text-muted border-border hover:bg-red-50 dark:hover:bg-red-900/20"
+                            }`}>FAIL</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-3 py-2 bg-surface border-t border-border flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold">
+                {anyFail
+                  ? <span className="text-red-600 dark:text-red-400">→ {t("material.iqc.lotFail", "입하롯트 전체 불합격 (입고불가)")}</span>
+                  : <span className="text-green-600 dark:text-green-400">→ {t("material.iqc.lotPass", "입하롯트 합격")}</span>}
+              </span>
+              <Button size="sm" variant={anyFail ? "danger" : "primary"} onClick={handleSerialSubmit}>
+                {anyFail ? <XCircle className="w-4 h-4 mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+                {t("material.iqc.serialSubmit", "검사결과 등록")} ({serials.length})
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* 검사항목별 계측값 입력 */}
         {loadingItems && <p className="text-sm text-text-muted text-center py-4">{t("common.loading")}</p>}
@@ -268,17 +372,6 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
           </div>
         )}
 
-        {/* 검사결과 (검사항목 없을 때만 수동 선택) */}
-        {!hasInspectItems && !loadingItems && (
-          <Select
-            label={t("material.iqc.resultLabel")}
-            options={resultOptions}
-            value={form.result}
-            onChange={(v) => setForm((prev) => ({ ...prev, result: v as IqcResultForm["result"] }))}
-            fullWidth
-          />
-        )}
-
         <div className="grid grid-cols-2 gap-4">
           <Input
             label={t("material.iqc.inspectorLabel")}
@@ -295,16 +388,6 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
             fullWidth
           />
         </div>
-
-        {/* 시료 바코드 (입력 또는 바코드 스캔) */}
-        <Input
-          label={t("material.iqc.sampleBarcode", "시료 바코드")}
-          placeholder={t("material.iqc.sampleBarcodePlaceholder", "바코드 스캔 또는 입력 (여러 개는 콤마로 구분)")}
-          value={sampleBarcode}
-          onChange={(e) => setSampleBarcode(e.target.value)}
-          leftIcon={<ScanLine className="w-4 h-4" />}
-          fullWidth
-        />
 
         {/* G4: 검사분류 / 파괴검사 시료 / 검사성적서 */}
         <div className="grid grid-cols-3 gap-4">
@@ -347,27 +430,12 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
           </div>
         </div>
 
-        {/* 버튼 */}
-        <div className="flex gap-2 pt-4 border-t border-border">
-          {!hasInspectItems && (
-            <>
-              <Button className="flex-1" variant="secondary" onClick={() => { setForm((prev) => ({ ...prev, result: "FAILED" })); onSubmit(undefined, "FAILED", buildExtra()); }}>
-                <XCircle className="w-4 h-4 mr-1 text-red-500" /> {t("material.iqc.failed")}
-              </Button>
-              <Button className="flex-1" onClick={() => { setForm((prev) => ({ ...prev, result: "PASSED" })); onSubmit(undefined, "PASSED", buildExtra()); }}>
-                <CheckCircle className="w-4 h-4 mr-1" /> {t("material.iqc.passed")}
-              </Button>
-            </>
-          )}
-          {hasInspectItems && (
-            <>
-              <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-              <Button className="flex-1" onClick={handleSubmitWithDetails} disabled={!overallJudge}>
-                {overallJudge === "FAILED" ? <XCircle className="w-4 h-4 mr-1 text-red-500" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-                {overallJudge === "FAILED" ? t("material.iqc.submitFailed") : t("material.iqc.submitPassed")}
-              </Button>
-            </>
-          )}
+        {/* 등록은 시료 시리얼 패널의 [검사결과 등록] 버튼으로 단일화 */}
+        {serials.length === 0 && !loadingItems && (
+          <p className="text-sm text-text-muted text-center py-2">{t("material.iqc.noPendingSerials", "검사대기 시료 시리얼이 없습니다.")}</p>
+        )}
+        <div className="flex justify-end gap-2 pt-4 border-t border-border">
+          <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
         </div>
       </div>
     </Modal>

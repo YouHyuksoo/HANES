@@ -42,8 +42,12 @@ export function ArrivalStatusBadge({ status }: { status: ArrivalStatus }) {
   return <span className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}>{label}</span>;
 }
 
-/** IQC 상태 배지 */
+/** IQC 상태 배지 — PENDING은 IQC 맥락상 "검사대기"로 표시 (RECEIVE_STATUS의 "입하대기"와 구분) */
 export function IqcStatusBadge({ status }: { status: IqcStatus }) {
+  const { t } = useTranslation();
+  if (status === 'PENDING') {
+    return <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">{t('material.badge.iqcWait', '검사대기')}</span>;
+  }
   return <ComCodeBadge groupCode="RECEIVE_STATUS" code={status} />;
 }
 

@@ -13,6 +13,7 @@ import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('BoxService', () => {
   let target: BoxService;
@@ -59,6 +60,7 @@ describe('BoxService', () => {
         { provide: getRepositoryToken(OqcRequestBox), useValue: mockOqcRequestBoxRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: NumberingService, useValue: { nextBoxNo: jest.fn().mockResolvedValue('BX-TEST') } },
       ],
     })
       .setLogger(new MockLoggerService())

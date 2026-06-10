@@ -959,6 +959,7 @@
       "equipName": "Equipment Name",
       "type": "Type",
       "line": "Line",
+      "process": "Process",
       "commType": "Comm Type",
       "ipPort": "IP/Port",
       "manufacturer": "Manufacturer",
@@ -1328,6 +1329,9 @@
     "equipInspect": {
       "title": "Equipment Inspection Items",
       "subtitle": "Manage daily/periodic equipment inspection criteria.",
+      "qrLabel": "QR Label",
+      "qrLabelTitle": "Inspection Item QR Label",
+      "qrLabelHeader": "Equipment Inspection Item",
       "tabAssign": "Equipment Assignment",
       "tabMaster": "Inspection Item Master",
       "equipCode": "Equipment Code",
@@ -1562,6 +1566,7 @@
     "badge": {
       "arrived": "Arrived",
       "iqcReady": "IQC Ready",
+      "iqcWait": "Inspection Pending",
       "receivingWait": "Awaiting Receiving",
       "stocked": "Stocked",
       "requested": "Requested",
@@ -1672,6 +1677,17 @@
     },
     "iqc": {
       "title": "IQC Inspection",
+      "method": "Inspection Method",
+      "serialJudge": "Per-Serial Judgment",
+      "serialNo": "Serial",
+      "qty": "Qty",
+      "allPass": "All PASS",
+      "allFail": "All FAIL",
+      "serialSubmit": "Register Serials",
+      "lotRuleNotice": "If any serial fails, the entire arrival lot is rejected (cannot be received).",
+      "lotFail": "Entire lot rejected (no receiving)",
+      "lotPass": "Lot accepted",
+      "noPendingSerials": "No sample serials pending inspection.",
       "subtitle": "Manage incoming quality inspection results.",
       "description": "Manage incoming quality inspection results.",
       "stats": {
@@ -2053,6 +2069,7 @@
     "poStatus": {
       "title": "PO Status",
       "subtitle": "View purchase order status.",
+      "lineNo": "Line No",
       "itemCode": "Item Code",
       "itemName": "Item Name",
       "spec": "Spec",

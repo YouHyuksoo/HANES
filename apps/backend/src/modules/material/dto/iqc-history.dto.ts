@@ -8,6 +8,19 @@ import { IsString, IsOptional, IsInt, Min, Max, IsDateString, IsIn, IsNotEmpty, 
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+/** 입하+품목의 PENDING 시리얼 목록 조회 */
+export class PendingSerialsQueryDto {
+  @ApiProperty({ description: '입하번호' })
+  @IsString()
+  @IsNotEmpty()
+  arrivalNo: string;
+
+  @ApiProperty({ description: '품목코드' })
+  @IsString()
+  @IsNotEmpty()
+  itemCode: string;
+}
+
 export class CreateIqcResultDto {
   @ApiProperty({ description: '자재 UID' })
   @IsString()

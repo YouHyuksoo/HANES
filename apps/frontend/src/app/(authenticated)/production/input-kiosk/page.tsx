@@ -185,11 +185,12 @@ export default function InputKioskPage() {
     return reasons;
   }, [interlock.dailyInspectDone, interlock.workerInspectDone, selectedJobOrder, t]);
 
+  // 소모품 스캔은 자재 스캔과 독립(순서 무관). 설비가 선택돼 있어야 한다는 전제만 둔다.
   const consumableScanDisabledReasons = useMemo(() => {
     const reasons: string[] = [];
-    if (!interlock.materialScanDone) reasons.push(t('kiosk.input.disabledReasons.materialScan'));
+    if (!selectedEquip) reasons.push(t('kiosk.input.disabledReasons.noEquip'));
     return reasons;
-  }, [interlock.materialScanDone, t]);
+  }, [selectedEquip, t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">

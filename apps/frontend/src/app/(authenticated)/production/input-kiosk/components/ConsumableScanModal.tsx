@@ -17,6 +17,7 @@ import { Cog, CheckCircle2, ScanLine, AlertTriangle, AlertCircle } from 'lucide-
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
+import { useScanInputFocus } from '@/hooks/useScanInputFocus';
 
 interface ConsumableItem {
   id: string;
@@ -62,6 +63,8 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
   const [items, setItems] = useState<ConsumableItem[]>([]);
   const [scanInput, setScanInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  // 모달 열린 동안 스캔 입력창 항상 포커스 유지
+  useScanInputFocus(inputRef, isOpen);
 
   useEffect(() => {
     if (!isOpen || !selectedEquip?.equipCode) return;

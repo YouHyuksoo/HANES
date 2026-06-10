@@ -26,6 +26,7 @@ export default function IqcPage() {
     stats,
     loading,
     statusFilter, setStatusFilter,
+    methodFilter, setMethodFilter,
     searchText, setSearchText,
     isIqcModalOpen, setIsIqcModalOpen,
     selectedItem,
@@ -71,6 +72,19 @@ export default function IqcPage() {
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                     leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <div className="w-44 flex-shrink-0">
+                  <Select
+                    options={[
+                      { value: '', label: `${t('material.iqc.method', '검사방법')}: ${t('common.all')}` },
+                      { value: 'FULL', label: t('master.iqcGroup.methodFull', '전수검사') },
+                      { value: 'SAMPLE', label: t('master.iqcGroup.methodSample', '샘플검사') },
+                      { value: 'SKIP', label: t('master.iqcGroup.methodSkip', '무검사') },
+                    ]}
+                    value={methodFilter}
+                    onChange={setMethodFilter}
                     fullWidth
                   />
                 </div>

@@ -13,6 +13,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Scan, Search, Cpu, CheckCircle2, XCircle, ChevronRight } from 'lucide-react';
 import { Modal } from '@/components/ui';
+import { useScanInputFocus } from '@/hooks/useScanInputFocus';
 
 interface EquipOption { equipCode: string; equipName: string; processCode?: string; processName?: string; }
 
@@ -31,6 +32,8 @@ export default function EquipSelectModal({ isOpen, onClose, equips, onSelect }: 
   const [scanValue, setScanValue] = useState('');
   const [scanStatus, setScanStatus] = useState<ScanStatus>('idle');
   const [searchQuery, setSearchQuery] = useState('');
+  // 모달 열린 동안 스캔 입력창 항상 포커스 유지 (수동 검색 입력은 guard로 허용)
+  useScanInputFocus(scanRef, isOpen);
 
   // 모달 열릴 때마다 초기화 + 스캔창 포커스
   useEffect(() => {
