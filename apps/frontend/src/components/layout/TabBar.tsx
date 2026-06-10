@@ -90,7 +90,15 @@ export default function TabBar() {
 
   const handleClose = (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
+    const wasActive = useTabStore.getState().activeTabId === tabId;
     removeTab(tabId);
+    // keep-alive: 탭을 닫으면 라우트도 살아남은 활성 탭으로 이동해야 페이지가 사라진다.
+    // (removeTab은 스토어 activeTabId만 갱신하므로 router 이동을 명시적으로 수행)
+    if (wasActive) {
+      const s = useTabStore.getState();
+      const next = s.tabs.find((t) => t.id === s.activeTabId);
+      if (next) router.push(next.path);
+    }
   };
 
   if (tabs.length === 0) return null;
