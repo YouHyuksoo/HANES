@@ -1,7 +1,30 @@
 # claude Handoff
 
 ## Last Update
-2026-06-09
+2026-06-10
+
+---
+
+## ✅ 완료: 2026-06-10 자재 도메인 일괄 개선 (커밋 5건: bf4599c·826f845·d36a558·ec4dc1a + 이전 c445c2c)
+
+사용자 연속 요청 12건 처리. 모두 tsc 0·관련 jest 통과. **codex 동시작업(hold/inventory/shipping/equipment) 파일은 미접촉**.
+
+### 신규/변경
+- **특채처리(신규)** `/material/concession`: `MAT_LOTS.SPECIAL_ACCEPT_YN`(Y/N) 추가(JSHANES 적용). 불합격(FAIL) 입하+품목 그룹 특채처리/취소. **특채 LOT은 입고대상 포함→불용창고(재고 잔존지)에서 출고→양품창고 입고**(검사성적서 면제 `findReceivable`+`createBulkReceive` 양쪽). 컨트롤러/서비스 `material/concession`, 메뉴 `QC_CONCESSION`(MATERIAL/55)+권한+validator+i18n4. advisor 검증 반영.
+- **자재입고 창고선택** `/material/receive`: 공통 `WarehouseSelect`(RAW, **기본창고 자동선택**) 추가. `useWarehouseOptions` defaultCode 노출 + `autoSelectDefault` prop. **W001을 RAW 기본창고로 지정(JSHANES)**.
+- **입고이력** `/material/receive-history`: 공급처(lot.vendor)·제조사(MFG파트너명)·**양산/MRO 구분(CONSUMABLE=MRO)** 컬럼 + 공급사 필터. `receiving.findAll` PartnerMaster enrich.
+- **출고요청 원자재한정** `/material/request`: `isRawMaterial`에 CONSUMABLE 제외, 수동검색 `itemType=RAW_MATERIAL`.
+- **출고관리 분리** `/material/issue`(양산 PRODUCTION 전용, 수동출고탭/ManualIssueTab 삭제, 출고계정+스캔 한줄) + **기타출고(신규)** `/material/issue-other`(양산 외 계정 선택, 메뉴 `MAT_ISSUE_OTHER` MATERIAL/95). `BarcodeScanTab` 재사용화(fixedIssueType/excludeIssueTypes). ISSUE_TYPE: 양산=`PRODUCTION`.
+- **IQC 그리드** `/material/iqc`: 검사 컬럼 맨 앞 + "IQC 검사" 문구.
+- **자재병합 입하번호 게이트** `/material/lot-merge`: 병합 조건 **동일 origin→동일 arrivalNo**(merge()+spec jest9/9, 프론트 스캔 선검증, 컬럼 origin→입하번호, i18n `arrivalMismatchScan`).
+- **PDA 입고 통일**(버그수정): PDA가 `{arrivalId,...}` 보내 백엔드 `items[]`와 불일치→입고 실패였음. PDA도 **시리얼(matUid) 스캔→공통 `items[]` 입고**로 재작성. 신규 `GET /material/receiving/receivable/by-barcode/:matUid`. 공통 WarehouseSelect. **⚠ PDA 단말 실스캔 검증 필요**.
+
+### 변경 없음(이미 구현 확인)
+- **자재분할** `/material/lot-split`: 요청(출고→반품 새 matUid 2개 재고생성→라벨 2장)은 **기존 LOT_SPLIT_OUT/IN + MatLabelPreviewModal(serials 2건)로 이미 충족**. 코드 변경 불필요.
+
+### 주의/메모
+- 메뉴는 DB `MENU_CATEGORY_ITEMS`(CATEGORY_CODE) 기준 렌더 + 프론트 menuConfig가 path/label 매핑. 신규 메뉴는 둘 다 + `ROLE_MENU_PERMISSIONS` + validator 필요. CREATED_BY NOT NULL('system').
+- 미커밋(코디네이션): `.ai-coordination/LOCKS.md` 내 T-MAT-CONCESSION-RECV 항목(codex 동시편집 중이라 보류). 멀티라인 커밋은 임시파일+`-F`(메모리 참조).
 
 ---
 
