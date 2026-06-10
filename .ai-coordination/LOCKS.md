@@ -4,6 +4,11 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
+- T-MAT-IQC-SERIAL-SCAN-PANEL (codex, 2026-06-10): `/material/iqc` 검사결과 등록 모달을 스캔 시리얼 좌측 목록 + 선택 시리얼별 검사항목 우측 판정 구조로 수정.
+  파일: apps/frontend/src/components/material/IqcModal.tsx, apps/frontend/src/hooks/material/useIqcData.ts, apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs
+  상태: IN_PROGRESS
+  notes: locales 파일은 active lock 범위라 수정하지 않음.
+
 - T-KIOSK-DEFECT-DOUBLE-COUNT (claude, 2026-06-10): 입력키오스크 불량입력 defectQty 이중 카운트 수정 + quality/defect 화면 전면 정합화.
   파일: apps/backend/src/modules/production/dto/prod-result.dto.ts, apps/backend/src/modules/production/services/prod-result.service.ts(+spec), apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ProductionInputBar.tsx, apps/backend/src/modules/quality/defects/{dto/defect-log.dto.ts,services/defect-log.service.ts(+spec),defects.module.ts}, apps/frontend/src/app/(authenticated)/quality/defect/page.tsx, apps/frontend/src/locales/*
   상태: REVIEW
@@ -28,6 +33,8 @@ Before editing, add a lock entry. Remove or mark it released when done.
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-TAB-CLOSE-NAV (claude, 2026-06-10): 탭 X로 닫아도 keep-alive 페이지가 화면에 남던 문제 수정. removeTab/closeOtherTabs/closeAllTabs가 스토어 activeTabId만 바꾸고 router 이동을 안 해 pathname이 닫은 경로 유지→TabKeepAlive가 paths.add(pathname)로 재렌더. 수정=close 후 살아남은 active 탭 경로로 router.push(TabBar.handleClose, TabContextMenu gotoActiveTab). 실브라우저 탭 X→페이지 사라지고 대시보드 전환 확인, 프론트 tsc 0. 커밋 a19dd1e.
 
 - T-TAB-KEEPALIVE (claude, 2026-06-10): 탭 전환 시 페이지 상태(입력중 값·열린 패널) 보존. 근본원인=기존 KeepAlive(children 캐시+display:none)가 React19/Next15에서 동작 불가(실브라우저 A→B UNMOUNT, B→A MOUNT 실측). Next는 활성 라우트만 children 렌더+캐시된 LayoutRouter가 라우트 컨텍스트 전파로 언마운트됨. 해결=레이아웃이 열린 탭 페이지를 경로→컴포넌트 레지스트리(pageRegistry.generated.ts, 152경로 dynamic ssr:false)로 직접 렌더, 비활성 display:none 마운트 유지(TabKeepAlive). codegen(gen-page-registry.mjs) predev/prebuild 연결(dev=Turbopack/build=webpack라 동적 import 표현식 회피). useTabSync/tabStore 무변경(사이드바 addTab으로 탭 등록 충분, 검증). 검증: 실브라우저 입력값+필터 탭전환 후 보존 확인, 콘솔 에러 0, 프론트 tsc 0. 커밋 ebafb89. 잔여리스크: prod webpack build 미실행(dev서버 가동중이라 금지)—표준 정적 dynamic import라 저위험. 비용: 열린 탭(최대10) 마운트 유지(이 앱 대부분 mount시 1회 fetch라 유휴비용 낮음).
 
