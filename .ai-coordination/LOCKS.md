@@ -29,6 +29,12 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## History
 
+- T-PART-UNIT-CODE-LABEL (claude, 2026-06-10): 품목마스터 단위를 공통코드+실제단위("EA - 개")로 표시. useComCodeOptions/ComCodeSelect에 opt-in showCode(label=`코드 - 명칭`, 기본 off→타화면 무영향), 품목 입력폼 단위 드롭다운 showCode 적용, 그리드 단위 컬럼 useComCodeMap('UNIT_TYPE') 셀 렌더(+폭). 실브라우저 그리드/폼 모두 "EA - 개" 확인, 프론트 tsc 0. 커밋 cdebbcc.
+
+- T-MAT-LABEL-PRINT-IFRAME-MFG (claude, 2026-06-10): 라벨 인쇄 무반응(팝업 차단) → MatLabelPreviewModal 숨김 iframe 인쇄 전환 + lot-split/lot-merge 라벨 제조사(mfgPartnerCode→파트너명 해석, 백엔드 무변경). 구조테스트 GREEN·프론트 tsc 0·실API 확인 후 lock 해제.
+
+- T-MAT-LABEL-REPRINT-MULTIPAGE (claude, 2026-06-10): 라벨 재발행 인쇄 N장 중 1장만 출력 수정. MatLabelPreviewModal 모달 내 window.print(Modal 조상 fixed/overflow 클리핑이 원인)→receive-label과 동일한 새 창 인쇄 패턴 전환. 구조테스트 RED→GREEN, 프론트 tsc 0 후 lock 해제.
+
 - T-ID-PUT-DELETE-SWEEP (claude, 2026-06-10): 프론트 `.id` 기반 PUT/DELETE/PATCH 전수 점검·수정(prod-line 후속). 자연키 PK라 응답에 id 없는데 `.id` 전송→/undefined 404인 3건 수정: comm-config(→configName), department(→deptCode), users(→email, patch/photo/delete/key) + 각 인터페이스 가짜 id 제거. 점검 결과 정상(무수정): customer-po(서비스 id=orderNo), pallet(palletNo), vendor(vendorCode), equipment(equipCode, withClientId) 모두 서비스가 id 합성; self-inspect items·results는 실제 uuid PK. 실브라우저 가역검증: department 생성→삭제 정상(404·콘솔에러 0, 잔여0). comm-config/users는 동일 패턴+코드계약 확인+tsc 0(users 생성은 비밀번호 입력 필요로 라이브 생략). 커밋 90635e4.
 
 - T-PRODLINE-ID-FIX (claude, 2026-06-10): 생산라인 삭제/수정 DELETE/PUT /master/prod-lines/undefined 404 수정. ProdLineMaster PK=lineCode 자연키(id 없음)인데 ProdLineTab이 line.id 전송→undefined. line.lineCode 사용 + 인터페이스 가짜 id 제거. 백엔드 :id param은 실제 lineCode. 실브라우저 가역검증(테스트라인 생성→삭제 정상, 404 없음, 잔여0), 프론트 tsc 0. 커밋 66777d8. 참고: SelfInspectConfigEditor도 row.id 사용하나 다른 엔티티(/production/self-inspect/items, 자동 id 가능성)라 별건.
