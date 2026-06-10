@@ -29,6 +29,8 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## History
 
+- T-TAB-KEEPALIVE (claude, 2026-06-10): 탭 전환 시 페이지 상태(입력중 값·열린 패널) 보존. 근본원인=기존 KeepAlive(children 캐시+display:none)가 React19/Next15에서 동작 불가(실브라우저 A→B UNMOUNT, B→A MOUNT 실측). Next는 활성 라우트만 children 렌더+캐시된 LayoutRouter가 라우트 컨텍스트 전파로 언마운트됨. 해결=레이아웃이 열린 탭 페이지를 경로→컴포넌트 레지스트리(pageRegistry.generated.ts, 152경로 dynamic ssr:false)로 직접 렌더, 비활성 display:none 마운트 유지(TabKeepAlive). codegen(gen-page-registry.mjs) predev/prebuild 연결(dev=Turbopack/build=webpack라 동적 import 표현식 회피). useTabSync/tabStore 무변경(사이드바 addTab으로 탭 등록 충분, 검증). 검증: 실브라우저 입력값+필터 탭전환 후 보존 확인, 콘솔 에러 0, 프론트 tsc 0. 커밋 ebafb89. 잔여리스크: prod webpack build 미실행(dev서버 가동중이라 금지)—표준 정적 dynamic import라 저위험. 비용: 열린 탭(최대10) 마운트 유지(이 앱 대부분 mount시 1회 fetch라 유휴비용 낮음).
+
 - T-INSPECT-CIRCUIT-LABEL (claude, 2026-06-10): 통전검사 `/inspection/result` 회로라벨 매핑(스캔 모드). INSPECT_RESULTS.CIRCUIT_LABEL VARCHAR2(200)+함수기반 부분 UNIQUE 인덱스(UQ_INSPECT_RESULT_CIRCUIT, NULL허용·테넌트유일). 스캔모드 PASS 회로라벨 필수+중복차단(서버) + DB 하드가드. 이력 그리드 회로라벨 컬럼(In() 매핑). 프론트 InspectPanel 회로라벨 스캔 입력칸. continuity-inspect spec 17/17, 백·프론트 tsc 0, i18n 4파일, JSHANES 적용+가역테스트(중복→ORA-00001, NULL 허용) 검증. 코드/컬럼은 checkpoint(f4e1d53)에 codex 단자검사 리팩터와 함께 포함, UNIQUE 인덱스는 f8e1893 커밋 후 lock 해제.
 
 - T-SHIP-ORDER-ITEM-PAYLOAD (codex, 2026-06-10): `/shipping/order` 출하지시 생성 payload에 `items`가 누락되어 DTO 400이 나던 문제 수정. 품목 검색/수량 입력 UI 추가, 저장 payload `items` 포함, focused 구조 테스트/프론트 tsc/API 가역 생성삭제/브라우저 모달 확인 후 lock 해제.
