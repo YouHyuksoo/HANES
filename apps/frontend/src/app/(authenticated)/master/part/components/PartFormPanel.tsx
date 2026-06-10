@@ -16,8 +16,9 @@ import { ImageIcon, RefreshCw, Trash2, Upload } from "lucide-react";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button, Input, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import { useLocationOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
-import { Part, PRODUCT_TYPE_OPTIONS } from "../types";
+import { Part, PRODUCT_TYPE_VALUES } from "../types";
 
 interface Props {
   editingPart: Part | null;
@@ -31,6 +32,11 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   const { t } = useTranslation();
   const isEdit = !!editingPart;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { options: rawLocationOptions, isLoading: locationLoading } = useLocationOptions();
+  const locationOptions = useMemo(
+    () => [{ value: "", label: t("common.select", "선택하세요") }, ...rawLocationOptions],
+    [rawLocationOptions, t],
+  );
 
   const partTypeOptions = useMemo(() => [
     { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
@@ -38,6 +44,11 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     { value: "FINISHED", label: t("inventory.stock.fg", "완제품") },
     { value: "CONSUMABLE", label: t("inventory.stock.consumable", "소모품") },
   ], [t]);
+
+  const productTypeOptions = useMemo(
+    () => PRODUCT_TYPE_VALUES.map((v) => ({ value: v, label: t(`master.part.productTypeOptions.${v}`) })),
+    [t],
+  );
 
   /** Y/N 라디오 버튼 그룹 */
   const YnRadio = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
@@ -159,14 +170,14 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   };
 
   const handleSubmit = async () => {
-    if (!form.itemCode.trim() || !form.itemName.trim()) return;
+    if (!form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()) return;
     setSaving(true);
     try {
       const payload = {
         itemCode: form.itemCode,
         itemName: form.itemName,
         itemType: form.itemType,
-        itemNo: form.itemNo || undefined,
+        itemNo: form.itemNo,
         custPartNo: form.custPartNo || undefined,
         productType: form.productType || undefined,
         spec: form.spec || undefined,
@@ -219,7 +230,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemName.trim()}>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()}>
             {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
           </Button>
         </div>
@@ -233,13 +244,13 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             {t("master.part.sectionBasic", "기본정보")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.part.partCode")}
+            <Input label={t("master.part.partCode")} required
               value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
               disabled={isEdit} fullWidth />
-            <Input label={t("master.part.partNo", "품번")}
+            <Input label={t("master.part.partNo", "품번")} required
               value={form.itemNo} onChange={e => setField("itemNo", e.target.value)} fullWidth />
             <div className="col-span-2">
-              <Input label={t("master.part.partName")}
+              <Input label={t("master.part.partName")} required
                 value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
             </div>
             <Input label={t("master.part.custPartNo", "고객품번")}
@@ -256,7 +267,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               onChange={v => setField("itemType", v)}
               fullWidth />
             <Select label={t("master.part.productType", "품목그룹")}
-              options={PRODUCT_TYPE_OPTIONS.filter(o => o.value)}
+              options={productTypeOptions}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
             <div className="col-span-2">
               <Input label={t("master.part.spec")}
@@ -296,8 +307,10 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <Input label={t("master.part.packUnit", "포장단위")}
               value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
             <div className="col-span-2">
-              <Input label={t("master.part.storageLocation", "적재로케이션")}
-                value={form.storageLocation} onChange={e => setField("storageLocation", e.target.value)} fullWidth />
+              <Select label={t("master.part.storageLocation", "적재로케이션")}
+                options={locationOptions}
+                value={form.storageLocation} onChange={v => setField("storageLocation", v)}
+                disabled={locationLoading} fullWidth />
             </div>
           </div>
         </div>

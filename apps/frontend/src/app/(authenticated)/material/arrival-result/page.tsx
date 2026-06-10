@@ -45,6 +45,8 @@ interface ArrivalResultRow {
   iqcStatus: string | null;
   vendorId: string | null;
   vendorName: string | null;
+  mfgPartnerCode: string | null;
+  mfgPartnerName: string | null;
   cancelable: boolean;
 }
 
@@ -324,7 +326,12 @@ export default function ArrivalResultPage() {
                     <div className="text-xs text-text-muted mt-1">
                       {selected.arrivalNo} · {t("material.arrivalResult.col.qty", "입하수량")} {selected.qty.toLocaleString()} · {fmtDate(selected.arrivalDate)}
                     </div>
-                    <div className="text-xs text-text-muted mt-0.5">{selected.vendorName ?? "-"}</div>
+                    <div className="text-xs text-text-muted mt-0.5">
+                      {t("material.arrivalResult.supplier", "공급사")}: {selected.vendorName ?? "-"}
+                    </div>
+                    <div className="text-xs text-text-muted mt-0.5">
+                      {t("material.arrivalResult.manufacturer", "제조사")}: {selected.mfgPartnerName ?? "-"}
+                    </div>
                   </div>
                   <Button size="sm" variant="secondary" onClick={openMfg} disabled={selected.status === "CANCELED"}>
                     <Pencil className="w-3.5 h-3.5 mr-1" />{t("material.arrivalResult.changeMfg", "제조사 변경")}

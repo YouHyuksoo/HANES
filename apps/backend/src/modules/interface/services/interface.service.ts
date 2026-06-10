@@ -389,6 +389,8 @@ export class InterfaceService {
           const newPart = this.partMasterRepository.create({
             itemCode: dto.itemCode,
             itemName: dto.itemName,
+            // ERP는 품번을 전송하지 않으므로 품목코드로 대체 (PART_NO NOT NULL 보장)
+            itemNo: dto.itemCode,
             itemType: dto.itemType,
             spec: dto.spec,
             unit: dto.unit ?? 'EA',

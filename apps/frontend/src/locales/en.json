@@ -904,7 +904,25 @@
       "sectionBasic": "Basic Info",
       "sectionQty": "Vendor / Qty Management",
       "partType": "Part Type",
-      "itemCode": "Item Code"
+      "itemCode": "Item Code",
+      "productTypeOptions": {
+        "HARNESS": "Harness",
+        "MODEL": "Model/Sales Code",
+        "SUB_ASSY": "Sub-Assembly",
+        "WIRE": "Wire/Cable",
+        "TERMINAL": "Terminal",
+        "CONNECTOR": "Connector",
+        "HOLDER": "Holder",
+        "SEAL": "Seal/Rubber",
+        "SHIELD": "Shield/Clamp",
+        "TAPE": "Tape",
+        "TUBE": "Tube",
+        "HOUSING": "Housing",
+        "LABEL": "Label",
+        "CLIP": "Clip",
+        "ELECTRIC": "Electric Part",
+        "GROMMET": "Grommet"
+      }
     },
     "bom": {
       "title": "BOM Management",
@@ -1606,7 +1624,8 @@
         "serialQty": "Qty",
         "stockIn": "In",
         "canceled": "Cancel"
-      }
+      },
+      "supplier": "Supplier"
     },
     "arrival": {
       "title": "Material Arrival",

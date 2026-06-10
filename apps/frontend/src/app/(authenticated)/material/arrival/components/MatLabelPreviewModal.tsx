@@ -58,7 +58,11 @@ export default function MatLabelPreviewModal({
         @media print {
           body * { visibility: hidden; }
           #label-print-area, #label-print-area * { visibility: visible; }
-          #label-print-area { position: absolute; top: 0; left: 0; width: 100%; padding: 0; gap: 0; }
+          /* position:absolute 컨테이너는 페이지 분할이 안 돼 1장만 출력됨 → 정상 흐름(block)으로 전환 */
+          #label-print-area { display: block; width: 100%; padding: 0; gap: 0; overflow: visible; }
+          /* 시리얼당 1페이지: 라벨마다 페이지 넘김(마지막 라벨 뒤 빈 페이지 방지) */
+          #label-print-area > * { page-break-after: always; break-after: page; }
+          #label-print-area > *:last-child { page-break-after: auto; break-after: auto; }
           .material-arrival-label { page-break-inside: avoid; break-inside: avoid; }
           @page { size: 80mm 40mm; margin: 0; }
         }

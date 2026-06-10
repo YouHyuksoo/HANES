@@ -19,7 +19,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { createPartColumns, createUnitColumn } from "@/lib/table-utils";
-import { Part, PART_TYPE_COLORS, PRODUCT_TYPE_OPTIONS } from "./types";
+import { Part, PART_TYPE_COLORS, PRODUCT_TYPE_VALUES } from "./types";
 
 import PartFormPanel from "./components/PartFormPanel";
 
@@ -96,9 +96,9 @@ export default function PartPage() {
 
   const productTypeLabels = useMemo<Record<string, string>>(() => {
     const map: Record<string, string> = {};
-    PRODUCT_TYPE_OPTIONS.forEach(o => { if (o.value) map[o.value] = o.label; });
+    PRODUCT_TYPE_VALUES.forEach(v => { map[v] = t(`master.part.productTypeOptions.${v}`); });
     return map;
-  }, []);
+  }, [t]);
 
 
   const columns = useMemo<ColumnDef<Part>[]>(() => [

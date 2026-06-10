@@ -22,8 +22,8 @@ export class PartMaster {
   @Column({ name: 'ITEM_NAME', length: 100 })
   itemName: string;
 
-  @Column({ name: 'PART_NO', type: 'varchar2', length: 50, nullable: true })
-  itemNo: string | null;
+  @Column({ name: 'PART_NO', type: 'varchar2', length: 50 })
+  itemNo: string;
 
   @Column({ type: 'varchar2', name: 'CUST_PART_NO', length: 50, nullable: true })
   custPartNo: string | null;

@@ -13,8 +13,9 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Modal, Select } from "@/components/ui";
+import { useLocationOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
-import { Part, PRODUCT_TYPE_OPTIONS } from "../types";
+import { Part, PRODUCT_TYPE_VALUES } from "../types";
 
 interface Props {
   isOpen: boolean;
@@ -37,6 +38,17 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     { value: "Y", label: "Y (대상)" },
     { value: "N", label: "N (비대상)" },
   ];
+
+  const { options: rawLocationOptions, isLoading: locationLoading } = useLocationOptions();
+  const locationOptions = useMemo(
+    () => [{ value: "", label: t("common.select", "선택하세요") }, ...rawLocationOptions],
+    [rawLocationOptions, t],
+  );
+
+  const productTypeOptions = useMemo(
+    () => PRODUCT_TYPE_VALUES.map((v) => ({ value: v, label: t(`master.part.productTypeOptions.${v}`) })),
+    [t],
+  );
 
   const [form, setForm] = useState(() => ({
     itemCode: editingPart?.itemCode || "",
@@ -66,12 +78,12 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
   };
 
   const handleSubmit = async () => {
-    if (!form.itemCode.trim() || !form.itemName.trim()) return;
+    if (!form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()) return;
     setSaving(true);
     try {
       const payload = {
         ...form,
-        itemNo: form.itemNo || undefined,
+        itemNo: form.itemNo,
         custPartNo: form.custPartNo || undefined,
         productType: form.productType || undefined,
         spec: form.spec || undefined,
@@ -106,10 +118,10 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         {t("master.part.sectionBasic", "기본정보")}
       </h3>
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <Input label={t("master.part.partCode")}
+        <Input label={t("master.part.partCode")} required
           value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
           disabled={isEdit} fullWidth />
-        <Input label={t("master.part.partNo", "품번")}
+        <Input label={t("master.part.partNo", "품번")} required
           value={form.itemNo} onChange={e => setField("itemNo", e.target.value)} fullWidth />
         <Input label={t("master.part.custPartNo", "고객품번")}
           value={form.custPartNo} onChange={e => setField("custPartNo", e.target.value)} fullWidth />
@@ -121,13 +133,13 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
             onChange={e => setField("markingText", e.target.value)} fullWidth />
         </div>
         <div className="col-span-2">
-          <Input label={t("master.part.partName")}
+          <Input label={t("master.part.partName")} required
             value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
         </div>
         <Select label={t("master.part.type")} options={partTypeOptions}
           value={form.itemType} onChange={v => setField("itemType", v)} fullWidth />
         <Select label={t("master.part.productType", "제품유형")}
-          options={PRODUCT_TYPE_OPTIONS.filter(o => o.value)}
+          options={productTypeOptions}
           value={form.productType} onChange={v => setField("productType", v)} fullWidth />
         <div className="col-span-2">
           <Input label={t("master.part.spec")}
@@ -158,8 +170,10 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
           fullWidth />
         <Input label={t("master.part.packUnit", "포장단위")}
           value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
-        <Input label={t("master.part.storageLocation", "적재로케이션")}
-          value={form.storageLocation} onChange={e => setField("storageLocation", e.target.value)} fullWidth />
+        <Select label={t("master.part.storageLocation", "적재로케이션")}
+          options={locationOptions}
+          value={form.storageLocation} onChange={v => setField("storageLocation", v)}
+          disabled={locationLoading} fullWidth />
       </div>
 
       {/* 비고 */}
@@ -170,7 +184,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
 
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemName.trim()}>
+        <Button onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()}>
           {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
         </Button>
       </div>

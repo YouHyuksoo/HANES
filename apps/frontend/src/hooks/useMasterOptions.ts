@@ -36,6 +36,13 @@ interface PartItem {
   itemName: string;
 }
 
+interface LocationItem {
+  locationCode: string;
+  locationName: string;
+  warehouseCode?: string;
+  useYn?: string;
+}
+
 interface WorkerItem {
   id: string;
   workerName: string;
@@ -125,6 +132,33 @@ export function useWarehouseOptions(warehouseType?: string) {
   );
 
   return { options, isLoading, defaultCode };
+}
+
+/**
+ * 창고 로케이션(적재위치) 목록을 SelectOption[]으로 반환
+ * @param warehouseCode - 특정 창고로 필터 (미지정 시 전체 창고의 로케이션)
+ * @remarks value=로케이션코드, label="로케이션코드 - 로케이션명" (창고 종속이라 창고명 접두)
+ */
+export function useLocationOptions(warehouseCode?: string) {
+  const params = warehouseCode ? `?warehouseId=${encodeURIComponent(warehouseCode)}` : "";
+  const { data, isLoading } = useApiQuery<{ data: LocationItem[] }>(
+    ["warehouse-locations", "options", warehouseCode ?? "all"],
+    `/inventory/warehouse-locations${params}`,
+    { staleTime: 5 * 60 * 1000 },
+  );
+
+  const options = useMemo<SelectOption[]>(() => {
+    const raw = data?.data;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
+    return list
+      .filter((l) => (l.useYn ?? "Y") === "Y")
+      .map((l) => ({
+        value: l.locationCode,
+        label: l.locationName ? `${l.locationCode} - ${l.locationName}` : l.locationCode,
+      }));
+  }, [data]);
+
+  return { options, isLoading };
 }
 
 /**

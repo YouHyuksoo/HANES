@@ -120,8 +120,8 @@ export default function MaterialArrivalLabel({ item }: MaterialArrivalLabelProps
       <div style={{ marginLeft: '20.6mm', marginRight: '14.5mm', minWidth: 0 }}>
         <div
           style={{
-            fontSize: '3.9mm',
-            lineHeight: '4.6mm',
+            fontSize: '3.3mm',
+            lineHeight: '3.9mm',
             fontWeight: 800,
             color: '#020617',
             whiteSpace: 'nowrap',
@@ -134,8 +134,8 @@ export default function MaterialArrivalLabel({ item }: MaterialArrivalLabelProps
         <div
           style={{
             marginTop: '1.4mm',
-            fontSize: '2.8mm',
-            lineHeight: '3.5mm',
+            fontSize: '2.4mm',
+            lineHeight: '3.0mm',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -143,13 +143,13 @@ export default function MaterialArrivalLabel({ item }: MaterialArrivalLabelProps
         >
           {item.vendor || '-'}
         </div>
-        <div style={{ marginTop: '1.5mm', fontSize: '2.9mm', lineHeight: '3.7mm' }}>
+        <div style={{ marginTop: '1.5mm', fontSize: '2.5mm', lineHeight: '3.2mm' }}>
           <b>IN</b> : {dateText || '-'}
         </div>
         <div
           style={{
-            fontSize: '2.8mm',
-            lineHeight: '3.6mm',
+            fontSize: '2.4mm',
+            lineHeight: '3.1mm',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -159,8 +159,8 @@ export default function MaterialArrivalLabel({ item }: MaterialArrivalLabelProps
         </div>
         <div
           style={{
-            fontSize: '2.8mm',
-            lineHeight: '3.6mm',
+            fontSize: '2.4mm',
+            lineHeight: '3.1mm',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -178,8 +178,8 @@ export default function MaterialArrivalLabel({ item }: MaterialArrivalLabelProps
           display: 'flex',
           gap: '1mm',
           alignItems: 'center',
-          fontSize: '3mm',
-          lineHeight: '4.2mm',
+          fontSize: '2.6mm',
+          lineHeight: '3.7mm',
           fontWeight: 800,
           color: '#020617',
         }}
@@ -218,9 +218,8 @@ export default function MaterialArrivalLabel({ item }: MaterialArrivalLabelProps
           lineHeight: '4.1mm',
           fontStyle: 'italic',
         }}
-      >
-        검사필<br />도장날인
-      </div>
+      />
+
 
       <div
         style={{
@@ -228,8 +227,8 @@ export default function MaterialArrivalLabel({ item }: MaterialArrivalLabelProps
           left: '2.7mm',
           right: '29mm',
           bottom: '2.2mm',
-          fontSize: '2.9mm',
-          lineHeight: '3.55mm',
+          fontSize: '2.5mm',
+          lineHeight: '3.05mm',
           color: '#1e293b',
           whiteSpace: 'pre-line',
           overflow: 'hidden',

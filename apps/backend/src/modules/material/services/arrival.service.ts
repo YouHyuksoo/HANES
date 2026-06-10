@@ -572,6 +572,9 @@ export class ArrivalService {
       ` COUNT(CASE WHEN a."STATUS" <> 'CANCELED' THEN 1 END) AS "activeCount",` +
       ` (SELECT MIN(poi."LINE_NO") FROM "PURCHASE_ORDER_ITEMS" poi WHERE poi."PO_ID"=a."PO_NO" AND poi."ITEM_CODE"=a."ITEM_CODE" AND poi."COMPANY"=a."COMPANY" AND poi."PLANT_CD"=a."PLANT_CD") AS "lineNo",` +
       ` (SELECT MIN(poi."REL_NO") FROM "PURCHASE_ORDER_ITEMS" poi WHERE poi."PO_ID"=a."PO_NO" AND poi."ITEM_CODE"=a."ITEM_CODE" AND poi."COMPANY"=a."COMPANY" AND poi."PLANT_CD"=a."PLANT_CD") AS "relNo",` +
+      // 제조사: 입하 시리얼(MAT_LOTS)의 MFG_PARTNER_CODE 기준 (제조사 변경은 그룹 일괄 갱신이라 대표값 MAX 사용)
+      ` (SELECT MAX(ml."MFG_PARTNER_CODE") FROM "MAT_LOTS" ml WHERE ml."ARRIVAL_NO"=a."ARRIVAL_NO" AND ml."ITEM_CODE"=a."ITEM_CODE" AND ml."COMPANY"=a."COMPANY" AND ml."PLANT_CD"=a."PLANT_CD") AS "mfgPartnerCode",` +
+      ` (SELECT MAX(pm."PARTNER_NAME") FROM "MAT_LOTS" ml JOIN "PARTNER_MASTERS" pm ON pm."PARTNER_CODE"=ml."MFG_PARTNER_CODE" WHERE ml."ARRIVAL_NO"=a."ARRIVAL_NO" AND ml."ITEM_CODE"=a."ITEM_CODE" AND ml."COMPANY"=a."COMPANY" AND ml."PLANT_CD"=a."PLANT_CD") AS "mfgPartnerName",` +
       ` ${sc} AS "serialCount", ${rc} AS "receivedCount"` +
       ` FROM "MAT_ARRIVALS" a` +
       ` LEFT JOIN "ITEM_MASTERS" i ON i."ITEM_CODE"=a."ITEM_CODE" AND i."COMPANY"=a."COMPANY" AND i."PLANT_CD"=a."PLANT_CD"` +
@@ -627,6 +630,8 @@ export class ArrivalService {
         iqcStatus: r.iqcStatus ?? null,
         vendorId: r.vendorId ?? null,
         vendorName: r.vendorName ?? null,
+        mfgPartnerCode: r.mfgPartnerCode ?? null,
+        mfgPartnerName: r.mfgPartnerName ?? null,
         // 입하취소 가능: 미취소 & 입고 이력 없음
         cancelable: derivedStatus !== 'CANCELED' && receivedCount === 0,
       };

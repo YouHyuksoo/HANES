@@ -904,7 +904,25 @@
       "sectionBasic": "Thông tin cơ bản",
       "sectionQty": "Nhà cung cấp / Quản lý SL",
       "partType": "Loại sản phẩm",
-      "itemCode": "M? h?ng"
+      "itemCode": "M? h?ng",
+      "productTypeOptions": {
+        "HARNESS": "Bó dây",
+        "MODEL": "Mẫu/Mã bán hàng",
+        "SUB_ASSY": "Lắp ráp phụ",
+        "WIRE": "Dây/Cáp",
+        "TERMINAL": "Đầu cốt",
+        "CONNECTOR": "Đầu nối",
+        "HOLDER": "Giá đỡ",
+        "SEAL": "Gioăng/Cao su",
+        "SHIELD": "Chắn/Kẹp",
+        "TAPE": "Băng keo",
+        "TUBE": "Ống",
+        "HOUSING": "Vỏ",
+        "LABEL": "Nhãn",
+        "CLIP": "Kẹp",
+        "ELECTRIC": "Linh kiện điện",
+        "GROMMET": "Vòng đệm"
+      }
     },
     "bom": {
       "title": "Quản lý BOM",
@@ -1592,7 +1610,8 @@
         "serialQty": "SL",
         "stockIn": "Nhập kho",
         "canceled": "Hủy"
-      }
+      },
+      "supplier": "Nhà cung cấp"
     },
     "arrival": {
       "title": "Quản lý nhập hàng",

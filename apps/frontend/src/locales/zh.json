@@ -904,7 +904,25 @@
       "sectionBasic": "基本信息",
       "sectionQty": "供应商 / 数量管理",
       "partType": "品目类型",
-      "itemCode": "????"
+      "itemCode": "????",
+      "productTypeOptions": {
+        "HARNESS": "线束",
+        "MODEL": "型号/销售代码",
+        "SUB_ASSY": "半组装",
+        "WIRE": "电线/电缆",
+        "TERMINAL": "端子",
+        "CONNECTOR": "连接器",
+        "HOLDER": "支架",
+        "SEAL": "密封/橡胶",
+        "SHIELD": "屏蔽/夹具",
+        "TAPE": "胶带",
+        "TUBE": "套管",
+        "HOUSING": "外壳",
+        "LABEL": "标签",
+        "CLIP": "卡扣",
+        "ELECTRIC": "电装部品",
+        "GROMMET": "护线套"
+      }
     },
     "bom": {
       "title": "BOM管理",
@@ -1592,7 +1610,8 @@
         "serialQty": "数量",
         "stockIn": "入库",
         "canceled": "取消"
-      }
+      },
+      "supplier": "供应商"
     },
     "arrival": {
       "title": "到货管理",

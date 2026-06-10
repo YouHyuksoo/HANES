@@ -32,6 +32,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       rightIcon,
       fullWidth = false,
       disabled,
+      required,
       id,
       ...props
     },
@@ -66,6 +67,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             className="block text-sm font-medium text-text mb-1.5"
           >
             {label}
+            {required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
         )}
 
@@ -83,6 +85,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
+            required={required}
             className={`
               ${baseInputStyles}
               ${errorStyles}

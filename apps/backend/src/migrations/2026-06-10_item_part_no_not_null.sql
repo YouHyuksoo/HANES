@@ -1,0 +1,12 @@
+-- 품목마스터(ITEM_MASTERS) 품번(PART_NO) 필수화
+-- 배경: 품목관리에서 품목코드/품번/품목명을 필수 입력으로 강제.
+--       ITEM_CODE(PK)·ITEM_NAME은 이미 NOT NULL, PART_NO만 NULL 허용이었음.
+-- ERP 동기화(IF_ITEM_MASTER 프로시저)는 PART_NO=ITEM_CODE로 이미 채우므로 안전.
+-- 1) 기존 PART_NO NULL 행을 ITEM_CODE로 백필 (품번 미지정 = 품목코드로 대체)
+UPDATE ITEM_MASTERS SET PART_NO = ITEM_CODE WHERE PART_NO IS NULL
+/
+-- 2) PART_NO NOT NULL 제약 적용
+ALTER TABLE ITEM_MASTERS MODIFY (PART_NO VARCHAR2(100) NOT NULL)
+/
+COMMIT
+/
