@@ -29,6 +29,8 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## History
 
+- T-ID-PUT-DELETE-SWEEP (claude, 2026-06-10): 프론트 `.id` 기반 PUT/DELETE/PATCH 전수 점검·수정(prod-line 후속). 자연키 PK라 응답에 id 없는데 `.id` 전송→/undefined 404인 3건 수정: comm-config(→configName), department(→deptCode), users(→email, patch/photo/delete/key) + 각 인터페이스 가짜 id 제거. 점검 결과 정상(무수정): customer-po(서비스 id=orderNo), pallet(palletNo), vendor(vendorCode), equipment(equipCode, withClientId) 모두 서비스가 id 합성; self-inspect items·results는 실제 uuid PK. 실브라우저 가역검증: department 생성→삭제 정상(404·콘솔에러 0, 잔여0). comm-config/users는 동일 패턴+코드계약 확인+tsc 0(users 생성은 비밀번호 입력 필요로 라이브 생략). 커밋 90635e4.
+
 - T-PRODLINE-ID-FIX (claude, 2026-06-10): 생산라인 삭제/수정 DELETE/PUT /master/prod-lines/undefined 404 수정. ProdLineMaster PK=lineCode 자연키(id 없음)인데 ProdLineTab이 line.id 전송→undefined. line.lineCode 사용 + 인터페이스 가짜 id 제거. 백엔드 :id param은 실제 lineCode. 실브라우저 가역검증(테스트라인 생성→삭제 정상, 404 없음, 잔여0), 프론트 tsc 0. 커밋 66777d8. 참고: SelfInspectConfigEditor도 row.id 사용하나 다른 엔티티(/production/self-inspect/items, 자동 id 가능성)라 별건.
 
 - T-TAB-CLOSE-NAV (claude, 2026-06-10): 탭 X로 닫아도 keep-alive 페이지가 화면에 남던 문제 수정. removeTab/closeOtherTabs/closeAllTabs가 스토어 activeTabId만 바꾸고 router 이동을 안 해 pathname이 닫은 경로 유지→TabKeepAlive가 paths.add(pathname)로 재렌더. 수정=close 후 살아남은 active 탭 경로로 router.push(TabBar.handleClose, TabContextMenu gotoActiveTab). 실브라우저 탭 X→페이지 사라지고 대시보드 전환 확인, 프론트 tsc 0. 커밋 a19dd1e.
