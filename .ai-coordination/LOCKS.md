@@ -4,9 +4,13 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
-- T-QUALITY-WORKFLOW-DOCS (claude, 2026-06-10): 품질관리(IQC/OQC/검사) workflow 문서 작성.
-  파일: docs/workflows/quality/wf-quality.md
+- T-SHIP-WORKFLOW-API-QA (codex, 2026-06-10): 출하 workflow API 점검.
+  파일: apps/backend/src/modules/shipping, apps/backend/src/modules/inventory
   상태: IN_PROGRESS
+
+- T-WORKFLOW-DOCS (claude, 2026-06-10): 전체 도메인 workflow 문서 9종 작성 완료.
+  파일: docs/workflows/{material,production,quality,shipping,equipment,master,system}/*.md
+  상태: COMPLETED
 
 - T-MAT-RECV-FIXES (claude, 2026-06-07): 자재입고 프로세스 이슈 일괄 수정.
   완료(검증): #1 PO오류(http-exception.filter/purchase-order.dto/PoFormPanel), #2 배지(globals.css safelist), 작업지시 품목필터(part.dto/part.service/PartSearchModal/JobOrderFormPanel), IQC006 입하실적조회 전체(arrival.controller/service/dto, material/arrival-result/*, menuConfig, PartnerSelect/useMasterOptions, 2026-06-07_iqc006_arrival_result_seed.sql, locales 4).

@@ -29,6 +29,22 @@ notes:
 
 ## Active Tasks
 
+## T-SHIP-WORKFLOW-API-QA 출하 workflow API 점검
+status: IN_PROGRESS
+owner: codex
+role: operator
+scope:
+- shipping/pack, shipping/box-stock, shipping/order, shipping/shipment
+files:
+- apps/backend/src/modules/shipping
+- apps/backend/src/modules/inventory
+verification:
+- 실제 API 호출로 박스포장 → 제품 입고재고 → 출하지시 → 출하처리 흐름 점검
+review:
+- needs-review
+notes:
+- 코드 수정 없이 현재 구현/실행 API와 JSHANES 상태를 기준으로 워크플로우 자연스러움과 계약 불일치 여부를 확인한다.
+
 ## T-MAT-RECV-FIXES 자재입고 프로세스 이슈 일괄 수정
 status: IN_PROGRESS
 owner: claude

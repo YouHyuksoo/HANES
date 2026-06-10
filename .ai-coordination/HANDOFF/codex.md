@@ -2,10 +2,31 @@
 
 ## Last Update
 
-2026-06-09 21:15
+2026-06-10 03:25
 
 ## Latest
 
+- `T-MASTER-API-DEEP-QA-FIX` 완료. 기준정보 API 세부 재검증에서 남았던 미통과 3건을 수정했다. 회사 생성은 `COMPANY_MASTERS.COMPANY/PLANT_CD`, 사업장 생성은 `PLANTS.COMPANY/PLANT_CD` tenant 저장 누락이 원인이었다. IQC 검사그룹 수정은 relation 포함 엔티티 `save()`가 `IQC_GROUP_ITEMS.COMPANY`를 NULL로 갱신하는 것이 원인이었고, 삭제는 자식행 명시 삭제를 추가했다. 검증: focused Jest 3 suites/26 tests, 백엔드 tsc, 실제 HTTP 11/11, oracle-db JSHANES `ZFX/ZFY` 잔여 0, `git diff --check` 통과.
+- `T-MASTER-API-QA` 완료. 기준정보 API는 실행 중인 `localhost:3003` 백엔드와 JSHANES `40/1000` 기준으로 검증했다. `oracle-db` 스킬로 활성 계정 `admin@hanes.com`을 확인하고 로그인 토큰을 발급받아 호출했다. Swagger `/api/v1/master/*` 기준 path 파라미터 없는 GET 39건, 실제 샘플 키 기반 상세/보조 GET 34건이 모두 200. 임시코드 CRUD는 `com-codes`, `partners`, `parts`, `processes`, `prod-lines`, `workers`, `boms`, `work-instructions` 생성/수정/삭제 통과. JSHANES 임시 데이터 잔여 0건 확인. 파일 업로드/엑셀 업로드 API는 이번 검증 범위에서 제외.
+- `T-INPUT-KIOSK-WORKER-CODE-BUTTONS` 완료. 작업자설비점검 모달에 점검항목코드(`ITEM_CODE`)와 QR 값을 표시하고, OK/NG 버튼은 QR 스캔 전에도 8개 항목 모두 상시 보이게 했다. 항목 렌더 후 QR 입력창 포커스도 재보정했다. 검증: 프론트 tsc, `git diff --check`, 브라우저에서 `EIP-STD-W001`, `EQ-CRIMP-01:EIP-STD-W001`, OK 8개/NG 8개, QR 입력 포커스 확인.
+- `T-INPUT-KIOSK-WORKER-QR-FOCUS` 완료. `/production/input-kiosk` 작업자설비점검 모달은 QR 입력창에 자동 포커스되고, 항목 로드/스캔/OK-NG 판정 후에도 키보드 타입 스캐너가 바로 입력할 수 있도록 포커스를 유지한다.
+- 작업자설비점검 QR 매칭은 입력값 trim/대문자 정규화 후 설비별 `WORKER_QR_CODE`와 직접 비교한다. 스캔된 행은 스크롤로 가운데 이동하고 활성 표시하며 OK/NG 버튼을 노출한다.
+- 설비일일점검 완료 상태는 완료 메시지만 보이지 않고, 완료 로그의 점검자/종합판정/항목별 판정/비고를 표로 보여준다.
+- 신규 SQL: `apps/backend/src/migrations/2026-06-10_seed_all_equips_daily_inspect_assignments.sql`. 모든 사용 설비에 `DAILY` 표준 점검항목을 할당했고 JSHANES 적용 완료.
+- 검증: `EQ-CUT-01` API에서 WORKER 8건, DAILY 25건 조회. 브라우저에서 QR 입력 포커스 유지와 완료상세(`CODX테스트점검자`, `압착 높이`, `NG`, `CODX-DAILY-DETAIL-TEST`) 표시 확인. 검증용 DAILY 로그는 삭제 후 완료 여부 false 확인. backend focused Jest, 프론트 tsc, `git diff --check` 통과.
+- `T-EQUIP-INSPECT-WORKER-ASSIGN-SEED` 완료. 모든 사용 설비 8대에 WORKER 표준 점검항목 8건씩 총 64건을 `EQUIP_INSPECT_ITEM_MASTERS`에 할당했다.
+- 신규 SQL: `apps/backend/src/migrations/2026-06-09_seed_all_equips_worker_inspect_assignments.sql`. QR 값은 `EQUIP_CODE:ITEM_CODE` 형식이다.
+- 검증: JSHANES 적용, 설비별 8건/총 64건 확인, `EQ-CRIMP-01`/`EQ-CUT-01` API 8건 반환, 입력키오스크 작업자설비점검 모달에서 8건 표시 확인.
+- `T-INPUT-KIOSK-WORKER-QR-SIMPLE` 완료. 작업자설비점검 QR 스캔 처리는 스캐너가 입력창에 문자열을 넣고 Enter를 보내는 방식으로 단순화했다.
+- 매칭 기준은 입력값 trim/대문자 정규화 후 설비별 항목의 `WORKER_QR_CODE`와 직접 비교한다. 이전 `ITEM_CODE`/`SEQ`/복합 후보 매칭은 제거했다.
+- 검증: 프론트 tsc, `git diff --check`, 브라우저 실제 로그인/키오스크 모달/QR 입력/OK/저장/DB 로그 확인 통과. 테스트용 `EQ-CRIMP-01` `SEQ=901` 항목과 QR 로그는 삭제해 잔여 0건.
+- `T-INPUT-KIOSK-WORKER-INSPECT-QR` 완료. `/production/input-kiosk` 작업자설비점검 모달은 설비별 `WORKER` 점검항목을 조회하고, QR 스캔 입력값이 `WORKER_QR_CODE`와 일치하면 해당 행으로 스크롤 및 포커스한다.
+- OK/NG 버튼은 스캔으로 활성화된 행에서만 선택 가능하게 했고, 저장 payload는 `{ details: { items: [...] }, inspectType: 'WORKER' }`로 보낸다.
+- `/equipment/daily-inspect` POST는 기존 DAILY 기본 동작을 유지하되 입력키오스크의 `WORKER` 저장 요청은 실제 WORKER 타입으로 `EQUIP_INSPECT_LOGS`에 남기도록 했다.
+- 설비별 점검항목 생성 시 `workerQrCode`, `itemType`, `unit`, `lslValue`, `uslValue`도 보존한다.
+- 검증: `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts daily-inspect.controller.spec.ts`, 백엔드 tsc, 프론트 tsc, `git diff --check`, `/production/input-kiosk` HTTP 200 통과.
+- `T-EQUIP-INSPECT-WORKER-SEED` 완료. `EQUIP_INSPECT_ITEM_POOL`에 작업자설비점검 표준 seed 8건(`EIP-STD-W001~W008`)을 추가하고 JSHANES에 적용했다.
+- 검증: seed SQL 재실행 성공, JSHANES 유형별 건수 `WORKER=8`, `/master/equip-inspect` HTTP 200 확인.
 - `T-EQUIP-INSPECT-ADD-MODAL-TYPE` 완료. `/master/equip-inspect` 점검항목추가 모달 상단에 점검유형 드롭다운을 선노출하고, 선택 유형으로 점검항목 Pool을 필터링한다.
 - 검증: add-modal 구조 node:test 통과, 프론트 tsc 통과, `/master/equip-inspect` HTTP 200 확인.
 - `T-EQUIP-INSPECT-WORKER-TYPE` 완료. `/master/equip-inspect`에 `설비별 할당` / `점검항목 마스터` 탭을 추가해 `WORKER=작업자설비점검` 유형을 Pool에서 등록/필터할 수 있게 했다.
@@ -110,6 +131,8 @@
 
 ## Next
 
+- `T-MASTER-API-DEEP-QA-FIX` 완료. 기준정보 API 세부 재검증 미통과 3건은 수정 및 재검증 완료했다.
+- 통과 근거: focused Jest 26건, 백엔드 tsc, 실제 HTTP 11건, JSHANES 임시 prefix `ZFX/ZFY` 5개 관련 테이블 잔여 0.
 - codex active lock은 없다.
 - `MR2606080002`는 이번 작업에서 실제 생성한 출고요청 테스트 데이터다. 사용자가 정리 요청하면 삭제 또는 취소 정책에 맞춰 처리한다.
 - 이번 기준정보 재생성은 운영성 주문/재고성 테이블 전체 삭제가 아니라 BOM/품목/공정/라우팅 중심 삭제/재생성이다.
