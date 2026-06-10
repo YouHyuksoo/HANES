@@ -4,9 +4,25 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
-- T-SHIP-WORKFLOW-API-QA (codex, 2026-06-10): 출하 workflow API 점검.
-  파일: apps/backend/src/modules/shipping, apps/backend/src/modules/inventory
+- T-PROD-ISSUE-STOCK-ENDPOINT (codex, 2026-06-10): 제품출고 재고조회 API 경로 404 수정.
+  파일: apps/frontend/src/app/(authenticated)/product/issue/components/IssueFormPanel.tsx, apps/frontend/src/app/(authenticated)/product/issue/components/issue-endpoint.structure.test.mjs
   상태: IN_PROGRESS
+  notes: 프론트가 `/inventory/product/stock` 단수 호출, 백엔드는 `/inventory/product/stocks` 복수 route.
+
+- T-KIOSK-DEFECT-DOUBLE-COUNT (claude, 2026-06-10): 입력키오스크 불량입력 defectQty 이중 카운트 수정 + quality/defect 화면 전면 정합화.
+  파일: apps/backend/src/modules/production/dto/prod-result.dto.ts, apps/backend/src/modules/production/services/prod-result.service.ts(+spec), apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ProductionInputBar.tsx, apps/backend/src/modules/quality/defects/{dto/defect-log.dto.ts,services/defect-log.service.ts(+spec),defects.module.ts}, apps/frontend/src/app/(authenticated)/quality/defect/page.tsx, apps/frontend/src/locales/*
+  상태: REVIEW
+  notes: (A)kiosk 이중카운트=prod-results 집계 defectQty + 별도 /quality/defect-logs(증가 부작용) → 2배. 수정=불량 상세를 prod-result 생성 트랜잭션에 포함(CreateProdResultDto.defects, occurAt+seq1..N), defectQty 상세합계 1회 산정, 별도 호출 제거. (B)quality/defect 전면 정합화: 등록은 제품바코드 스캔 우선→생산실적 자동해석[prdUid 직접매칭 → FG_LABELS.fgBarcode→orderNo→최신 생산실적 폴백(FG_BARCODE_ISSUE_TIMING=ON_INSPECT라 prdUid≠fgBarcode 확인) → workOrderNo → prodResultNo], 상태 DEFECT_LOG_STATUS(WAIT/REPAIR/REWORK/SCRAP/DONE)+PATCH+복합식별자(occurAtISO|seq), 목록 생산실적 보강(작업지시/작업자/설비, N+1 batch), 에러 toast. standalone create 증가로직 유지. RED→GREEN, defect-log spec 37 + prod-result 18, 백 tsc 0, 프론트 tsc 0(내 파일). 실측: GET /quality/defect-logs 200+enrichment 확인, PATCH 상태변경 복합식별자 URL 라운드트립(WAIT→REPAIR→WAIT 원복) 확인. 등록 POST는 자재차감 부수효과로 미실행(단위검증+해석 데이터모델 실측 대체).
+
+- T-INV-STOCK-TABS (claude, 2026-06-10): 재고/생산계획 조회화면 일괄 개선.
+  파일: apps/frontend/src/app/(authenticated)/inventory/{material-stock,transaction,material-physical-inv,material-physical-inv-apply}/*, apps/frontend/src/app/(authenticated)/production/monthly-plan/*, apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts, apps/backend/src/seeds/menu-config.json, apps/frontend/src/config/menuConfig.ts, apps/backend/src/migrations/2026-06-10_mat_physical_inv_apply_menu_seed.sql, apps/frontend/src/locales/*
+  상태: REVIEW
+  notes: (1)material-stock 정보카드 제거+시리얼별상세/품목별그룹합계 2탭 (2)transaction 취소기능 제거+시리얼 검색추가(client-side contains, 백엔드 무변경—SQL 컬럼함수검색 금지 규칙 준수) (3)실사 등록/반영 페이지 분리+신규 메뉴 INV_MAT_PHYSICAL_INV_APPLY(JSHANES 시드 sort35/MANAGER) (4)monthly-plan 양식다운로드+ERP인터페이스(준비중) 버튼. 백/프론트 tsc·focused jest 통과.
+
+- T-MAT-CONCESSION-RECV (claude, 2026-06-10): 특채처리 신규화면 + 자재입고 창고선택/PDA 통일.
+  파일: apps/backend/src/entities/mat-lot.entity.ts, apps/backend/src/modules/material/{receiving/*,controllers/concession*,services/concession*,dto/concession*,services/receiving.service.ts}, apps/frontend/src/app/(authenticated)/material/{concession,receive}/*, apps/frontend/src/config/menuConfig.ts, apps/frontend/src/locales/*, apps/backend/src/migrations/2026-06-10_mat_lot_special_accept.sql
+  상태: IN_PROGRESS
+  notes: MAT_LOTS.SPECIAL_ACCEPT_YN 추가(특채여부). 특채 LOT은 불용창고→양품창고 입고. 입고 창고선택+기본창고. inventory 모듈은 read-only(/inventory/warehouses).
 
 - T-WORKFLOW-DOCS (claude, 2026-06-10): 전체 도메인 workflow 문서 9종 작성 완료.
   파일: docs/workflows/{material,production,quality,shipping,equipment,master,system}/*.md
@@ -17,6 +33,20 @@ Before editing, add a lock entry. Remove or mark it released when done.
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-PROD-RECEIVE-REMOVE-SELECTED (claude, 2026-06-10): 제품입고 `/product/receive` 선택입고(Method A, BoxReceiveList) 제거. 좌측 체크선택 일괄입고 패널 삭제→이력 그리드 전체폭, useReceiveCandidates 제거(BoxScanModal은 receiveBoxes/ReceiveCandidate만 사용), 사용처 없어진 boxList.title/count/empty 4개 언어 정리. 스캔입고/개별입고 무변경. 프론트 tsc 0·JSON 4파일 유효·잔여참조 0 확인 후 lock 해제.
+
+- T-PROD-RESULT-WORKER-AVATAR-FIX (codex, 2026-06-10): `/production/result`에서 작업자명 없는 행이 `WorkerAvatar name.charAt(0)`로 런타임 오류를 내던 문제 수정. 공통 아바타 fallback 유틸 추가, 생산실적 행의 `worker` relation/`workerId` fallback 평탄화. RED 확인 후 node:test 2건, 프론트 tsc, HTTP 200, diff check 통과 후 lock 해제.
+
+- T-PROD-PROGRESS-EQUIP-FILTER (codex, 2026-06-10): `/production/progress`에 설비 필터 추가. 화면 `EquipSelect` → `/production/job-orders?equipCode=` 전달, 백엔드는 `PROD_RESULTS` 존재 조건으로 작업지시 필터링. RED 확인 후 focused Jest 36건·백/프론트 tsc·HTTP 200·diff check 통과 후 lock 해제.
+
+- T-PROD-ORDER-REMOVE-INFO-CARDS (codex, 2026-06-10): `/production/order` 상단 정보카드 4개 제거. `StatCard` import와 stats 계산 정리. 프론트 tsc·HTTP 200·diff check 통과 후 lock 해제.
+
+- T-ID-PAYLOAD-SCAN (codex, 2026-06-10): `/material/hold`와 같은 `.id` payload 누락 유형을 전수 점검해 제품보류, 고객PO, 설비, PO입하, 외주처, 인터페이스 로그, OQC, 자재/제품 수불, 팔레트 목록 응답에 화면용 `id`를 보강. focused Jest 156건, backend/frontend tsc, diff check 통과 후 lock 해제.
+
+- T-MAT-HOLD-MATUID-FIX (codex, 2026-06-10): `/material/hold` 보류/해제 POST 본문이 `selectedLot.id`를 사용해 `matUid`가 누락되던 결함 수정. `selectedLot.matUid` 전송으로 변경, 프론트 tsc·diff check 통과 후 lock 해제.
+
+- T-SHIP-WORKFLOW-API-QA (codex, 2026-06-10): 박스포장→제품입고재고→출하지시→출하처리 API 흐름 점검. 현재 코드 기준 집계 재고(`prdUid='*'`)와 FG 라벨 상태 흐름 일치 확인, 테스트 보강, focused Jest 57건·backend tsc·diff check 통과. JSHANES/HTTP는 10.1.10.35:1527 타임아웃으로 미실행 후 lock 해제.
 
 - T-MASTER-API-DEEP-QA-FIX (codex, 2026-06-10): 기준정보 API 미통과 3건 수정 완료. 회사/사업장 생성 tenant 저장 누락과 IQC 검사그룹 수정/삭제 자식행 처리 결함 보정. focused Jest 26건, backend tsc, 실제 HTTP 11건, JSHANES 잔여 0 확인 후 lock 해제.
 
