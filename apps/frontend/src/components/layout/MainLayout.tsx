@@ -15,7 +15,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import TabBar from "./TabBar";
-import KeepAlive from "./KeepAlive";
+import TabKeepAlive from "./TabKeepAlive";
 import ConnectionCheckOverlay from "@/app/login/components/ConnectionCheckOverlay";
 import { api } from "@/services/api";
 import ImprovementFAB from "@/components/improvement/ImprovementFAB";
@@ -97,7 +97,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           >
             <TabBar />
             <div className="flex-1 min-h-0 overflow-hidden">
-              <KeepAlive>{children}</KeepAlive>
+              <TabKeepAlive>{children}</TabKeepAlive>
             </div>
           </main>
         </>
