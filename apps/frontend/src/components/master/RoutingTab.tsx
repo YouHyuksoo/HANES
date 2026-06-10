@@ -238,7 +238,8 @@ export default function RoutingTab({ onHeaderActions }: Props) {
     <>
       <Card>
         <CardContent>
-          <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="라우팅"
+          <DataGrid
+      sqlQuery={`SELECT *\nFROM PROCESS_MAPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`} data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="라우팅"
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">

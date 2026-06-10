@@ -198,6 +198,7 @@ export default function IssueHistoryTab() {
       <Card>
         <CardContent>
           <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_ISSUES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
             data={records}
             columns={columns}
             isLoading={loading}

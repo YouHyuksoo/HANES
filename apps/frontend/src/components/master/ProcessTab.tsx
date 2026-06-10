@@ -177,6 +177,7 @@ export default function ProcessTab({ onHeaderActions }: Props) {
       <Card>
         <CardContent>
           <DataGrid
+      sqlQuery={`SELECT *\nFROM PROCESS_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
             data={processes}
             columns={columns}
             isLoading={loading}

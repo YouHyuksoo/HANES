@@ -241,6 +241,7 @@ function ShelfLifeReinspectContent() {
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
         <CardContent className="h-full p-4">
           <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_LOTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
             data={history}
             columns={historyColumns}
             isLoading={historyLoading}

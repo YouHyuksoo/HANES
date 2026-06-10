@@ -231,6 +231,7 @@ export default function BarcodeScanPanel() {
               </span>
             </h3>
             <DataGrid
+      sqlQuery={`SELECT *\nFROM CONSUMABLE_LOGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
               data={pendingList}
               columns={pendingColumns}
               pageSize={5}

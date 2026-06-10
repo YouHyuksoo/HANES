@@ -95,7 +95,8 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
     [t]
   );
 
-  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="consumable_receiving" toolbarLeft={toolbarLeft} />;
+  return <DataGrid
+      sqlQuery={`SELECT *\nFROM CONSUMABLE_LOGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`} data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="consumable_receiving" toolbarLeft={toolbarLeft} />;
 }
 
 export default ReceivingTable;

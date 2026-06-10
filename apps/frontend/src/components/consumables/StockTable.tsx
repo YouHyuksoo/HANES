@@ -137,6 +137,7 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
 
   return (
     <DataGrid
+      sqlQuery={`SELECT *\nFROM CONSUMABLE_STOCKS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
       data={data}
       columns={columns}
       isLoading={isLoading}

@@ -183,6 +183,7 @@ export default function IssueRequestTab() {
       <Card>
         <CardContent>
           <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_ISSUE_REQUESTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
             data={records}
             columns={columns}
             isLoading={isLoading}

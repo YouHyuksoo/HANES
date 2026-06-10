@@ -128,5 +128,6 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
     [onInspect, t]
   );
 
-  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName="iqc_inspection" toolbarLeft={toolbarLeft} />;
+  return <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_ARRIVALS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`} data={data} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName="iqc_inspection" toolbarLeft={toolbarLeft} />;
 }

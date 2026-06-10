@@ -25,6 +25,7 @@ import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import { PartnerSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
+import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
 
@@ -63,6 +64,7 @@ const fmtDate = (v: string | null) => (v ? String(v).slice(0, 10) : "-");
 
 export default function ArrivalResultPage() {
   const { t } = useTranslation();
+  const { options: mfgPartnerOptions } = usePartnerOptions("MFG");
 
   // 필터
   const [fromDate, setFromDate] = useState("");
@@ -128,6 +130,13 @@ export default function ArrivalResultPage() {
     }
   }, []);
 
+  const resolveMfgPartnerName = useCallback((partnerCode: string) => {
+    const option = mfgPartnerOptions.find((o) => o.value === partnerCode);
+    if (!option) return partnerCode;
+    const codePrefix = `${partnerCode} - `;
+    return option.label.startsWith(codePrefix) ? option.label.slice(codePrefix.length) : option.label;
+  }, [mfgPartnerOptions]);
+
   const toggleCheck = (matUid: string) => {
     setChecked((prev) => {
       const next = new Set(prev);
@@ -192,8 +201,19 @@ export default function ArrivalResultPage() {
         itemCode: selected.itemCode,
         mfgPartnerCode: mfgCode,
       });
+      const nextMfgPartnerName = resolveMfgPartnerName(mfgCode);
+      const updatedSelected = {
+        ...selected,
+        mfgPartnerCode: mfgCode,
+        mfgPartnerName: nextMfgPartnerName,
+      };
+      setSelected(updatedSelected);
+      setRows((prev) => prev.map((row) => (
+        row.arrivalNo === selected.arrivalNo && row.itemCode === selected.itemCode
+          ? { ...row, mfgPartnerCode: mfgCode, mfgPartnerName: nextMfgPartnerName }
+          : row
+      )));
       setMfgOpen(false);
-      loadSerials(selected);
     } catch {
       // 인터셉터에서 에러 표시
     } finally {
@@ -287,6 +307,7 @@ export default function ArrivalResultPage() {
         <Card className="flex-1 min-w-0 overflow-hidden" padding="none">
           <CardContent className="h-full p-4 flex flex-col min-h-0">
             <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_ARRIVALS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
               data={rows}
               columns={columns}
               isLoading={loading}
@@ -441,6 +462,8 @@ export default function ArrivalResultPage() {
         isOpen={!!labelData}
         data={labelData}
         itemName={selected?.itemName ?? ""}
+        mfgPartnerLabel={selected?.mfgPartnerName
+          ?? (selected?.mfgPartnerCode ? resolveMfgPartnerName(selected.mfgPartnerCode) : "")}
         receivedDate={fmtDate(selected?.arrivalDate ?? null)}
         onClose={() => setLabelData(null)}
       />

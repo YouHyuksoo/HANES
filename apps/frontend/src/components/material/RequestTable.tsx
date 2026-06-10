@@ -88,6 +88,7 @@ export default function RequestTable({ data, toolbarLeft, isLoading, onViewDetai
 
   return (
     <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_ISSUE_REQUESTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
       data={data}
       columns={columns}
       isLoading={isLoading}

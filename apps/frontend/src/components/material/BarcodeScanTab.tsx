@@ -257,6 +257,7 @@ export default function BarcodeScanTab({ fixedIssueType, excludeIssueTypes }: Ba
             )}
           </h3>
           <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_RECEIVINGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
             data={scanHistory}
             columns={historyColumns}
             pageSize={10}

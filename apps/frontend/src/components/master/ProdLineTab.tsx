@@ -158,6 +158,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
       <Card>
         <CardContent>
           <DataGrid
+      sqlQuery={`SELECT *\nFROM PROD_LINE_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
             data={lines}
             columns={columns}
             isLoading={loading}

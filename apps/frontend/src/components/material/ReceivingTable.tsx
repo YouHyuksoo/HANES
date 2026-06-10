@@ -85,5 +85,6 @@ export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps)
     [onConfirm, t]
   );
 
-  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter />;
+  return <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_RECEIVINGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`} data={data} columns={columns} pageSize={10} enableColumnFilter />;
 }

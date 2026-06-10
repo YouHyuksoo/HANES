@@ -59,5 +59,6 @@ export default function ArrivalTable({ data }: ArrivalTableProps) {
     [t]
   );
 
-  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter />;
+  return <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_ARRIVALS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`} data={data} columns={columns} pageSize={10} enableColumnFilter />;
 }

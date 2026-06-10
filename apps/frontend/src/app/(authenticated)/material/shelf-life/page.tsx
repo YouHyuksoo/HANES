@@ -173,7 +173,8 @@ export default function ShelfLifePage() {
       {/* 데이터 그리드 */}
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
         <CardContent className="h-full p-4">
-          <DataGrid data={visibleData} columns={columns} isLoading={loading}
+          <DataGrid
+      sqlQuery={`SELECT *\nFROM MAT_LOTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`} data={visibleData} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("material.shelfLife.title")}
             rowClassName={rowClassName}
             toolbarLeft={
