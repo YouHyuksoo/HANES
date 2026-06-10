@@ -199,6 +199,8 @@
     "material.receiveHistory": "入库历史查询",
     "material.request": "出库申请管理",
     "material.issue": "物料出库管理",
+    "material.issueOther": "其他出库管理",
+    "material.concession": "特采处理",
     "material.issueAccount": "出库账户",
     "material.lot": "LOT管理",
     "material.po": "PO管理",

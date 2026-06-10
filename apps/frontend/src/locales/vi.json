@@ -199,6 +199,8 @@
     "material.receiveHistory": "Tra cứu lịch sử nhập kho",
     "material.request": "Quản lý yêu cầu xuất kho",
     "material.issue": "Xuất kho vật tư",
+    "material.issueOther": "Xuất kho khác",
+    "material.concession": "Xử lý đặc cách",
     "material.issueAccount": "Tài khoản xuất kho",
     "material.lot": "Quản lý LOT",
     "material.po": "Quản lý PO",

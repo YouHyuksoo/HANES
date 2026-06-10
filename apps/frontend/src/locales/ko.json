@@ -200,6 +200,8 @@
     "material.receiveHistory": "입고이력조회",
     "material.request": "출고요청관리",
     "material.issue": "자재출고관리",
+    "material.issueOther": "기타출고관리",
+    "material.concession": "특채처리",
     "material.issueAccount": "출고계정",
     "material.lot": "LOT관리",
     "material.po": "PO관리",

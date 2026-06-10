@@ -14,9 +14,8 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Undo2, Plus, Search, RefreshCw, Edit2, Trash2,
-  FileText, Clock, CheckCircle, AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
@@ -76,13 +75,6 @@ export default function ShipReturnPage() {
   }, [searchText, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => ({
-    total: data.length,
-    draft: data.filter((d) => d.status === "DRAFT").length,
-    confirmed: data.filter((d) => d.status === "CONFIRMED").length,
-    completed: data.filter((d) => d.status === "COMPLETED").length,
-  }), [data]);
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
@@ -158,12 +150,6 @@ export default function ShipReturnPage() {
           </Button>
           <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
         </div>
-      </div>
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("shipping.return.statTotal")} value={stats.total} icon={FileText} color="blue" />
-        <StatCard label={t("shipping.return.statusDraft")} value={stats.draft} icon={Clock} color="yellow" />
-        <StatCard label={t("shipping.return.statusConfirmed")} value={stats.confirmed} icon={AlertTriangle} color="red" />
-        <StatCard label={t("shipping.return.statusCompleted")} value={stats.completed} icon={CheckCircle} color="green" />
       </div>
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter

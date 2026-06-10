@@ -199,6 +199,8 @@
     "material.receiveHistory": "Receiving History",
     "material.request": "Issue Request Mgmt",
     "material.issue": "Material Issuing",
+    "material.issueOther": "Other Issuing",
+    "material.concession": "Concession",
     "material.issueAccount": "Issue Account",
     "material.lot": "LOT Management",
     "material.po": "Purchase Order",
