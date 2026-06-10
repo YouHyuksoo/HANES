@@ -17,7 +17,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface ProdLine {
-  id: string;
   lineCode: string;
   lineName: string;
   whLoc?: string;
@@ -88,7 +87,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
     setSaving(true);
     try {
       if (editingLine) {
-        await api.put(`/master/prod-lines/${editingLine.id}`, formData);
+        await api.put(`/master/prod-lines/${editingLine.lineCode}`, formData);
       } else {
         await api.post("/master/prod-lines", formData);
       }
@@ -103,7 +102,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
 
   const handleDelete = useCallback(async (line: ProdLine) => {
     try {
-      await api.delete(`/master/prod-lines/${line.id}`);
+      await api.delete(`/master/prod-lines/${line.lineCode}`);
       fetchLines();
     } catch (e: any) {
       console.error("Delete failed:", e);
