@@ -4,6 +4,11 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
+- T-PART-PRODUCT-TYPE-COMCODE (claude, 2026-06-11): 품목관리 제품유형을 코드마스터(PRODUCT_TYPE) 기반으로 전환.
+  파일: apps/backend/src/migrations/2026-06-11_product_type_com_codes.sql, apps/frontend/src/app/(authenticated)/master/part/{page.tsx,types.ts,components/PartFormPanel.tsx,components/PartFormModal.tsx}, apps/frontend/src/locales/*(comCode.PRODUCT_TYPE/comCodeGroup.PRODUCT_TYPE 추가 + master.part.productTypeOptions 이전)
+  상태: IN_PROGRESS
+  notes: COM_CODES에 PRODUCT_TYPE 그룹 부재 — 화면은 프론트 하드코딩(PRODUCT_TYPE_VALUES)+i18n으로만 동작해 코드마스터와 불일치. 16코드 시드(JSHANES 40/1000) + useComCodeOptions/Map 전환. 백엔드 DTO IsIn(@harness/shared)은 유지(값 동일).
+
 - T-KIOSK-DEFECT-DOUBLE-COUNT (claude, 2026-06-10): 입력키오스크 불량입력 defectQty 이중 카운트 수정 + quality/defect 화면 전면 정합화.
   파일: apps/backend/src/modules/production/dto/prod-result.dto.ts, apps/backend/src/modules/production/services/prod-result.service.ts(+spec), apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ProductionInputBar.tsx, apps/backend/src/modules/quality/defects/{dto/defect-log.dto.ts,services/defect-log.service.ts(+spec),defects.module.ts}, apps/frontend/src/app/(authenticated)/quality/defect/page.tsx, apps/frontend/src/locales/*
   상태: REVIEW
@@ -28,6 +33,10 @@ Before editing, add a lock entry. Remove or mark it released when done.
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-SQLVIEW-SWEEP (claude, 2026-06-11): DataGrid "SQL 조회문" 옵션 공통화 — 누락 그리드 19곳에 sqlQuery 추가(검색/선택 모달 5개는 의도적 제외). 도메인 엔티티 테이블로 FROM 지정: arrival-result/IqcTable/ArrivalTable=MAT_ARRIVALS, shelf-life류=MAT_LOTS, Receiving/BarcodeScan=MAT_RECEIVINGS, Issue=MAT_ISSUES, Request=MAT_ISSUE_REQUESTS, consumables=CONSUMABLE_STOCKS/LOGS, Process=PROCESS_MASTERS, ProdLine=PROD_LINE_MASTERS, Routing=PROCESS_MAPS. 일회성 codegen으로 일괄 삽입(스크립트는 삭제), 기존 132곳과 동일 형식. 프론트 tsc 0. 커밋 1c2e9da. 다른 세션 material/* 동시변경과 파일 분리 커밋. (iqc는 IqcTable이 DataGrid 사용했음 — 커스텀 아님)
+
+- T-COMCODE-GROUP-I18N (claude, 2026-06-11): /master/code 좌측 그룹 설명 영문/한글 혼재 — comCodeGroup 번역 키 43건 누락 보강(ko/en/zh/vi, 추가만). JSON 유효·BOM 없음·DB 117그룹 누락 0건 검증 후 lock 해제.
 
 - T-PART-UNIT-CODE-LABEL (claude, 2026-06-10): 품목마스터 단위를 공통코드+실제단위("EA - 개")로 표시. useComCodeOptions/ComCodeSelect에 opt-in showCode(label=`코드 - 명칭`, 기본 off→타화면 무영향), 품목 입력폼 단위 드롭다운 showCode 적용, 그리드 단위 컬럼 useComCodeMap('UNIT_TYPE') 셀 렌더(+폭). 실브라우저 그리드/폼 모두 "EA - 개" 확인, 프론트 tsc 0. 커밋 cdebbcc.
 
