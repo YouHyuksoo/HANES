@@ -66,7 +66,7 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
   /** 가용재고 조회 */
   const fetchStocks = useCallback(async (type: string) => {
     try {
-      const res = await api.get("/inventory/product/stock", {
+      const res = await api.get("/inventory/product/stocks", {
         params: { itemType: type, includeZero: false },
       });
       const list = res.data?.data ?? res.data;
