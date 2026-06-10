@@ -19,7 +19,6 @@ import { api } from "@/services/api";
 import ImageCropModal from "./ImageCropModal";
 
 interface User {
-  id: string;
   email: string;
   name: string | null;
   empNo: string | null;
@@ -144,17 +143,17 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
         if (formPdaRoleCode !== (editingUser.pdaRoleCode || ""))
           data.pdaRoleCode = formPdaRoleCode || null;
 
-        await api.patch(`/users/${editingUser.id}`, data);
+        await api.patch(`/users/${editingUser.email}`, data);
 
         if (croppedImage) {
           const formData = new FormData();
           formData.append("photo", croppedImage, "photo.jpg");
-          await api.post(`/users/${editingUser.id}/photo`, formData, {
+          await api.post(`/users/${editingUser.email}/photo`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
         }
         if (editingUser.photoUrl && previewUrl === "" && !croppedImage) {
-          await api.delete(`/users/${editingUser.id}/photo`);
+          await api.delete(`/users/${editingUser.email}/photo`);
         }
       } else {
         const res = await api.post("/users", {

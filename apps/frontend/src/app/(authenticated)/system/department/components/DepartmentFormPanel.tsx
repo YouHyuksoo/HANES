@@ -16,7 +16,6 @@ import { Button, Input, Select } from "@/components/ui";
 import { api } from "@/services/api";
 
 interface Department {
-  id: string;
   deptCode: string;
   deptName: string;
   parentDeptCode: string | null;
@@ -102,7 +101,7 @@ export default function DepartmentFormPanel({ editingDept, departments, onClose,
         useYn: form.useYn,
       };
       if (isEdit && editingDept) {
-        await api.put(`/system/departments/${editingDept.id}`, payload);
+        await api.put(`/system/departments/${editingDept.deptCode}`, payload);
       } else {
         await api.post("/system/departments", payload);
       }

@@ -12,7 +12,6 @@ import api from "@/services/api";
 
 /** 통신설정 데이터 인터페이스 */
 export interface CommConfig {
-  id: string;
   configName: string;
   commType: string;
   description?: string;
@@ -187,7 +186,7 @@ export function useCommConfigData() {
 
     try {
       if (editingConfig) {
-        await api.put(`/system/comm-configs/${editingConfig.id}`, payload);
+        await api.put(`/system/comm-configs/${editingConfig.configName}`, payload);
       } else {
         await api.post("/system/comm-configs", payload);
       }
@@ -203,7 +202,7 @@ export function useCommConfigData() {
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/system/comm-configs/${deleteTarget.id}`);
+      await api.delete(`/system/comm-configs/${deleteTarget.configName}`);
       setDeleteTarget(null);
       fetchConfigs();
     } catch {

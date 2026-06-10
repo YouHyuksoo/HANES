@@ -19,7 +19,6 @@ import { api } from "@/services/api";
 import UserFormPanel from "./components/UserFormPanel";
 
 interface User {
-  id: string;
   email: string;
   name: string | null;
   empNo: string | null;
@@ -93,7 +92,7 @@ export default function UserPage() {
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/users/${deleteTarget.id}`);
+      await api.delete(`/users/${deleteTarget.email}`);
       fetchUsers();
     } catch { /* ignore */ }
     finally { setDeleteTarget(null); }
@@ -215,7 +214,7 @@ export default function UserPage() {
 
       {isPanelOpen && (
         <UserFormPanel
-          key={editingUser?.id ?? "__new__"}
+          key={editingUser?.email ?? "__new__"}
           editingUser={editingUser}
           onClose={handlePanelClose}
           onSave={fetchUsers}

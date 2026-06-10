@@ -21,7 +21,6 @@ import { api } from "@/services/api";
 import DepartmentFormPanel from "./components/DepartmentFormPanel";
 
 interface Department {
-  id: string;
   deptCode: string;
   deptName: string;
   parentDeptCode: string | null;
@@ -75,7 +74,7 @@ function DepartmentPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/system/departments/${deleteTarget.id}`);
+      await api.delete(`/system/departments/${deleteTarget.deptCode}`);
       setDeleteTarget(null);
       fetchData();
     } catch {
