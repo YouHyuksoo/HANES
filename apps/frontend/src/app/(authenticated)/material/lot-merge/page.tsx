@@ -29,6 +29,7 @@ interface MergeableLot {
   qty: number;
   status: string;
   origin?: string | null;
+  arrivalNo?: string | null;
   expireDate?: string;
   vendor?: string;
 }
@@ -94,17 +95,15 @@ export default function LotMergePage() {
         setScanError(t("material.lotMerge.notFound", { matUid }));
         return;
       }
-      // 누적된 첫 항목과 품목/origin 일치 검증(프론트 선제 안내)
+      // 누적된 첫 항목과 품목/입하번호 일치 검증(프론트 선제 안내)
       if (scanned.length > 0) {
         const base = scanned[0];
         if (base.itemCode !== lot.itemCode) {
           setScanError(t("material.lotMerge.itemMismatchScan", { matUid }));
           return;
         }
-        const baseOrigin = base.origin || base.matUid;
-        const lotOrigin = lot.origin || lot.matUid;
-        if (baseOrigin !== lotOrigin) {
-          setScanError(t("material.lotMerge.originMismatchScan", { matUid }));
+        if (!lot.arrivalNo || base.arrivalNo !== lot.arrivalNo) {
+          setScanError(t("material.lotMerge.arrivalMismatchScan", { matUid }));
           return;
         }
       }
@@ -171,9 +170,9 @@ export default function LotMergePage() {
         <span className="font-semibold">{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || "EA"}</span>
       ),
     },
-    { accessorKey: "origin", header: t("material.lotMerge.origin"), size: 150,
+    { accessorKey: "arrivalNo", header: t("material.col.arrivalNo"), size: 150,
       meta: { filterType: "text" as const },
-      cell: ({ getValue, row }) => <span className="font-mono text-xs text-text-muted">{(getValue() as string) || row.original.matUid}</span>,
+      cell: ({ getValue }) => <span className="font-mono text-xs text-text-muted">{(getValue() as string) || "-"}</span>,
     },
     { accessorKey: "vendor", header: t("material.lotMerge.vendor"), size: 100,
       meta: { filterType: "text" as const },

@@ -32,7 +32,7 @@ describe('LotMergeService', () => {
 
   const lot = (matUid: string, over: Partial<MatLot> = {}): MatLot => ({
     matUid, itemCode: 'ITEM-001', status: 'NORMAL', initQty: 100,
-    origin: 'ROOT-001', company: 'C1', plant: 'P1', ...over,
+    origin: 'ROOT-001', arrivalNo: 'ARR-001', company: 'C1', plant: 'P1', ...over,
   } as MatLot);
 
   const stock = (matUid: string, qty = 50, over: Partial<MatStock> = {}): MatStock => ({
@@ -90,10 +90,10 @@ describe('LotMergeService', () => {
         .rejects.toThrow(BadRequestException);
     });
 
-    it('최초 시리얼(origin)이 다르면 BadRequestException', async () => {
+    it('입하번호(arrivalNo)가 다르면 BadRequestException', async () => {
       mockQueryRunner.manager.find.mockResolvedValueOnce([
-        lot('MAT-001', { origin: 'ROOT-A' }),
-        lot('MAT-002', { origin: 'ROOT-B' }),
+        lot('MAT-001', { arrivalNo: 'ARR-A' }),
+        lot('MAT-002', { arrivalNo: 'ARR-B' }),
       ]);
 
       await expect(target.merge({ sourceLotIds: ['MAT-001', 'MAT-002'] }, 'C1', 'P1'))

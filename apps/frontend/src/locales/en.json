@@ -2197,6 +2197,7 @@
       "notFound": "Serial not found: {{matUid}}",
       "itemMismatchScan": "Cannot merge different items: {{matUid}}",
       "originMismatchScan": "Cannot merge LOTs with a different origin: {{matUid}}",
+      "arrivalMismatchScan": "Cannot merge LOTs with a different arrival no: {{matUid}}",
       "scanFailed": "Failed to look up the serial.",
       "confirmMessageNew": "Merge the LOTs below? All originals are discarded and one new serial with the combined quantity is issued.",
       "mergeFailed": "Failed to merge."

@@ -4,7 +4,8 @@
  *
  * 재설계(2026-06-08, spec: docs/superpowers/specs/2026-06-08-lot-split-merge-redesign.md):
  * - 원 시리얼 전부 폐기(status='MERGED', 재고0) → 합산 수량의 신규 통합 시리얼 1개 발번.
- * - 동일 itemCode + 동일 origin(최초시리얼) + 입고완료 LOT만 병합 가능.
+ * - 동일 itemCode + 동일 입하번호(arrivalNo) + 입고완료 LOT만 병합 가능.
+ *   (입하건 단위 병합 — 입하 라벨 재부착을 위해 동일 입하건으로 제한)
  * - 채번은 NumberingService 사용(시리얼: SEQ_MAT_SERIAL_DAILY, 수불: STOCK_TX).
  * - 프론트는 바코드 스캔으로 대상 누적(GET by-barcode로 단건 검증).
  */
@@ -164,10 +165,13 @@ export class LotMergeService {
         throw new BadRequestException('서로 다른 품목의 LOT은 병합할 수 없습니다.');
       }
 
-      // 3) 동일 origin(최초시리얼) 검증
-      const origins = new Set(lots.map((l) => l.origin || l.matUid));
-      if (origins.size > 1) {
-        throw new BadRequestException('최초 시리얼(origin)이 다른 LOT은 병합할 수 없습니다.');
+      // 3) 동일 입하번호(arrivalNo) 검증 — 같은 입하건의 LOT만 병합 가능
+      const arrivalNos = new Set(lots.map((l) => l.arrivalNo ?? ''));
+      if (arrivalNos.has('')) {
+        throw new BadRequestException('입하번호가 없는 LOT은 병합할 수 없습니다.');
+      }
+      if (arrivalNos.size > 1) {
+        throw new BadRequestException('입하번호가 동일한 LOT만 병합할 수 있습니다.');
       }
 
       // 4) 재고 조회

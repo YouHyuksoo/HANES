@@ -2183,6 +2183,7 @@
       "notFound": "Không tìm thấy serial: {{matUid}}",
       "itemMismatchScan": "Không thể gộp vật tư khác nhau: {{matUid}}",
       "originMismatchScan": "Không thể gộp LOT có serial gốc khác nhau: {{matUid}}",
+      "arrivalMismatchScan": "Không thể gộp LOT có số nhập hàng khác nhau: {{matUid}}",
       "scanFailed": "Tra cứu serial thất bại.",
       "confirmMessageNew": "Gộp các LOT bên dưới? Tất cả bản gốc bị hủy và phát hành 1 serial mới với số lượng tổng.",
       "mergeFailed": "Gộp thất bại."

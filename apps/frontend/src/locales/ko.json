@@ -2512,6 +2512,7 @@
       "notFound": "시리얼을 찾을 수 없습니다: {{matUid}}",
       "itemMismatchScan": "다른 품목은 함께 병합할 수 없습니다: {{matUid}}",
       "originMismatchScan": "최초 시리얼이 다른 LOT은 병합할 수 없습니다: {{matUid}}",
+      "arrivalMismatchScan": "입하번호가 다른 LOT은 병합할 수 없습니다: {{matUid}}",
       "scanFailed": "시리얼 조회에 실패했습니다.",
       "confirmMessageNew": "아래 LOT을 병합하시겠습니까? 원본은 모두 폐기되고 합산 수량의 신규 시리얼 1개가 발번됩니다.",
       "mergeFailed": "병합에 실패했습니다."

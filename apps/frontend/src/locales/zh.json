@@ -2183,6 +2183,7 @@
       "notFound": "未找到序列：{{matUid}}",
       "itemMismatchScan": "无法合并不同物料：{{matUid}}",
       "originMismatchScan": "无法合并初始序列不同的批次：{{matUid}}",
+      "arrivalMismatchScan": "无法合并到货编号不同的批次：{{matUid}}",
       "scanFailed": "查询序列失败。",
       "confirmMessageNew": "确认合并以下批次？原批次全部作废，并生成一个合计数量的新序列。",
       "mergeFailed": "合并失败。"
