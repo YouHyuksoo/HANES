@@ -175,7 +175,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
       </div>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4 min-h-0">
+      <div className="flex-1 min-h-0 overflow-hidden px-5 py-3 flex flex-col gap-4">
         {/* PO 헤더 */}
         <div className="grid grid-cols-2 gap-3">
           <Input label={t("material.po.poNo")} placeholder="PO-YYYYMMDD-001"
@@ -194,8 +194,8 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
           onChange={e => setField("remark", e.target.value)} fullWidth />
 
         {/* 품목 섹션 */}
-        <div className="border-t border-border pt-3">
-          <div className="flex items-center justify-between mb-2">
+        <div className="border-t border-border pt-3 flex-1 min-h-0 flex flex-col">
+          <div className="flex items-center justify-between mb-2 flex-shrink-0">
             <span className="text-xs font-bold text-text">
               {t("material.po.itemList", "발주 품목")} ({items.length})
             </span>
@@ -205,12 +205,12 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
           </div>
 
           {items.length === 0 ? (
-            <div className="text-center py-8 text-text-muted">
+            <div className="flex-1 min-h-[160px] flex flex-col items-center justify-center text-center text-text-muted">
               <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p>{t("material.po.noItems", "품목을 추가하세요")}</p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[320px] overflow-y-auto">
+            <div className="flex-1 min-h-0 space-y-2 overflow-y-auto pr-1">
               {items.map((item, idx) => (
                 <div key={idx} className="p-3 rounded-lg border border-border bg-surface-secondary dark:bg-slate-800/50">
                   <div className="flex items-start justify-between mb-2">
