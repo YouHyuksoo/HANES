@@ -4,11 +4,6 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
-- T-MAT-IQC-SERIAL-SCAN-PANEL (codex, 2026-06-10): `/material/iqc` 검사결과 등록 모달을 스캔 시리얼 좌측 목록 + 선택 시리얼별 검사항목 우측 판정 구조로 수정.
-  파일: apps/frontend/src/components/material/IqcModal.tsx, apps/frontend/src/hooks/material/useIqcData.ts, apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs
-  상태: IN_PROGRESS
-  notes: locales 파일은 active lock 범위라 수정하지 않음.
-
 - T-KIOSK-DEFECT-DOUBLE-COUNT (claude, 2026-06-10): 입력키오스크 불량입력 defectQty 이중 카운트 수정 + quality/defect 화면 전면 정합화.
   파일: apps/backend/src/modules/production/dto/prod-result.dto.ts, apps/backend/src/modules/production/services/prod-result.service.ts(+spec), apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ProductionInputBar.tsx, apps/backend/src/modules/quality/defects/{dto/defect-log.dto.ts,services/defect-log.service.ts(+spec),defects.module.ts}, apps/frontend/src/app/(authenticated)/quality/defect/page.tsx, apps/frontend/src/locales/*
   상태: REVIEW
@@ -33,6 +28,8 @@ Before editing, add a lock entry. Remove or mark it released when done.
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-PRODLINE-ID-FIX (claude, 2026-06-10): 생산라인 삭제/수정 DELETE/PUT /master/prod-lines/undefined 404 수정. ProdLineMaster PK=lineCode 자연키(id 없음)인데 ProdLineTab이 line.id 전송→undefined. line.lineCode 사용 + 인터페이스 가짜 id 제거. 백엔드 :id param은 실제 lineCode. 실브라우저 가역검증(테스트라인 생성→삭제 정상, 404 없음, 잔여0), 프론트 tsc 0. 커밋 66777d8. 참고: SelfInspectConfigEditor도 row.id 사용하나 다른 엔티티(/production/self-inspect/items, 자동 id 가능성)라 별건.
 
 - T-TAB-CLOSE-NAV (claude, 2026-06-10): 탭 X로 닫아도 keep-alive 페이지가 화면에 남던 문제 수정. removeTab/closeOtherTabs/closeAllTabs가 스토어 activeTabId만 바꾸고 router 이동을 안 해 pathname이 닫은 경로 유지→TabKeepAlive가 paths.add(pathname)로 재렌더. 수정=close 후 살아남은 active 탭 경로로 router.push(TabBar.handleClose, TabContextMenu gotoActiveTab). 실브라우저 탭 X→페이지 사라지고 대시보드 전환 확인, 프론트 tsc 0. 커밋 a19dd1e.
 
