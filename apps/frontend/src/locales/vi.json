@@ -1767,7 +1767,10 @@
       "title": "Tra cứu lịch sử nhập kho",
       "description": "Xem lịch sử nhập kho vật tư.",
       "itemPlaceholder": "Tìm mã/tên vật tư...",
-      "serialPlaceholder": "Tìm serial vật tư..."
+      "serialPlaceholder": "Tìm serial vật tư...",
+      "materialClass": "Phân loại",
+      "prod": "Sản xuất",
+      "mro": "MRO"
     },
     "receiveLabel": {
       "title": "Phát hành nhãn nhập kho",
@@ -1881,10 +1884,14 @@
       "bomCalculating": "Đang tính vật tư xuất theo BOM...",
       "items": "mục"
     },
+    "issueOther": {
+      "title": "Xuất kho khác",
+      "description": "Chọn tài khoản xuất ngoài sản xuất (lỗi/mẫu/gia công ngoài/phế/trả hàng/khác) để xuất kho."
+    },
     "issue": {
-      "title": "Xuất kho vật tư",
-      "subtitle": "Xử lý xuất kho vật tư.",
-      "description": "Xử lý xuất kho vật tư.",
+      "title": "Xuất kho vật tư (Sản xuất)",
+      "subtitle": "Xử lý xuất kho vật tư tài khoản sản xuất.",
+      "description": "Xử lý xuất kho vật tư tài khoản sản xuất.",
       "tab": {
         "request": "Xử lý yêu cầu xuất",
         "manual": "Xuất thủ công",
@@ -5886,7 +5893,8 @@
       "concession": "Xử lý đặc cách",
       "receive": "Nhập kho",
       "request": "Yêu cầu xuất",
-      "issue": "Xuất kho"
+      "issue": "Xuất kho",
+      "issueOther": "Xuất kho khác"
     },
     "production": {
       "title": "Sản xuất",

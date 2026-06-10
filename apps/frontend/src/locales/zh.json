@@ -1767,7 +1767,10 @@
       "title": "入库历史查询",
       "description": "查询物料入库历史记录。",
       "itemPlaceholder": "搜索品目编码/名称...",
-      "serialPlaceholder": "搜索物料序列号..."
+      "serialPlaceholder": "搜索物料序列号...",
+      "materialClass": "区分",
+      "prod": "量产",
+      "mro": "MRO"
     },
     "receiveLabel": {
       "title": "入库标签发行",
@@ -1881,10 +1884,14 @@
       "bomCalculating": "正在计算工单BOM待出库物料...",
       "items": "件"
     },
+    "issueOther": {
+      "title": "其他出库",
+      "description": "选择量产以外的出库账户（不良/样品/外协/报废/退货/其他等）进行出库。"
+    },
     "issue": {
-      "title": "物料出库管理",
-      "subtitle": "处理物料出库。",
-      "description": "处理物料出库。",
+      "title": "物料出库管理(量产)",
+      "subtitle": "处理量产账户物料出库。",
+      "description": "处理量产账户物料出库。",
       "tab": {
         "request": "出库申请处理",
         "manual": "手动出库",
@@ -5886,7 +5893,8 @@
       "concession": "特采处理",
       "receive": "入库",
       "request": "出库申请",
-      "issue": "出库"
+      "issue": "出库",
+      "issueOther": "其他出库"
     },
     "production": {
       "title": "生产管理",

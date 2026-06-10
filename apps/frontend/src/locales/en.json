@@ -1781,7 +1781,10 @@
       "title": "Receiving History",
       "description": "View material receiving history.",
       "itemPlaceholder": "Search item code/name...",
-      "serialPlaceholder": "Search material serial..."
+      "serialPlaceholder": "Search material serial...",
+      "materialClass": "Class",
+      "prod": "Production",
+      "mro": "MRO"
     },
     "receiveLabel": {
       "title": "Receive Label",
@@ -1895,10 +1898,14 @@
       "bomCalculating": "Calculating BOM-based issue items...",
       "items": "items"
     },
+    "issueOther": {
+      "title": "Other Issue",
+      "description": "Issue with a non-production account (defect/sample/subcontract/scrap/return/etc.)."
+    },
     "issue": {
-      "title": "Material Issuing",
-      "subtitle": "Process material issuing.",
-      "description": "Process material issuing.",
+      "title": "Material Issuing (Production)",
+      "subtitle": "Process production-account material issuing.",
+      "description": "Process production-account material issuing.",
       "tab": {
         "request": "Issue Requests",
         "manual": "Manual Issue",
@@ -5900,7 +5907,8 @@
       "concession": "Concession",
       "receive": "Receive",
       "request": "Request",
-      "issue": "Issue"
+      "issue": "Issue",
+      "issueOther": "Other Issue"
     },
     "production": {
       "title": "Production",

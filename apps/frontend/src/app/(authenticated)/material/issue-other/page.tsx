@@ -1,47 +1,43 @@
 'use client';
 
 /**
- * @file src/app/(authenticated)/material/issue/page.tsx
- * @description 출고관리(양산) 페이지 - 양산계정(PRODUCTION) 전용 (출고요청처리 / 바코드스캔 / 이력)
+ * @file src/app/(authenticated)/material/issue-other/page.tsx
+ * @description 기타출고 페이지 - 양산 외 출고계정(불량/샘플/외주/폐기/반품/기타 등) 처리
  *
  * 초보자 가이드:
- * 1. **출고요청처리**: 생산현장 출고요청 목록 조회 + 승인/반려/출고처리
- * 2. **바코드스캔**: LOT 바코드 스캔 → 즉시 전량 출고 (출고계정=양산 고정)
- * 3. **이력**: 출고 이력 조회
- * 4. 양산 외 계정(불량/샘플/외주/폐기 등)은 별도 화면 '기타출고'에서 처리
+ * 1. 양산(PRODUCTION) 계정은 '출고관리(양산)' 화면에서 처리한다.
+ * 2. 이 화면은 그 외 출고계정을 담당자가 직접 선택하여 바코드 스캔 출고한다.
+ * 3. 탭: 바코드스캔(계정 선택) / 이력
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRightFromLine, ClipboardList, QrCode, History } from 'lucide-react';
-import IssueRequestTab from '@/components/material/IssueRequestTab';
+import { PackageMinus, QrCode, History } from 'lucide-react';
 import BarcodeScanTab from '@/components/material/BarcodeScanTab';
 import IssueHistoryTab from '@/components/material/IssueHistoryTab';
 
-/** 탭 키 타입 */
-type TabKey = 'request' | 'scan' | 'history';
+type TabKey = 'scan' | 'history';
 
-/** 탭 정의 */
-const TAB_CONFIG: { key: TabKey; labelKey: string; icon: typeof ClipboardList }[] = [
-  { key: 'request', labelKey: 'material.issue.tab.request', icon: ClipboardList },
+const TAB_CONFIG: { key: TabKey; labelKey: string; icon: typeof QrCode }[] = [
   { key: 'scan', labelKey: 'material.issue.tab.scan', icon: QrCode },
   { key: 'history', labelKey: 'material.issue.tab.history', icon: History },
 ];
 
-function IssuePage() {
+/** 기타출고에서 제외할 계정 (양산은 출고관리 화면에서 처리) */
+const EXCLUDED_ISSUE_TYPES = ['PRODUCTION'];
+
+export default function IssueOtherPage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<TabKey>('request');
-  /** 양산계정 고정 코드 */
-  const PRODUCTION_ISSUE_TYPE = 'PRODUCTION';
+  const [activeTab, setActiveTab] = useState<TabKey>('scan');
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* 헤더 */}
       <div>
         <h1 className="text-xl font-bold text-text flex items-center gap-2">
-          <ArrowRightFromLine className="w-7 h-7 text-primary" />
-          {t('material.issue.title')}
+          <PackageMinus className="w-7 h-7 text-primary" />
+          {t('material.issueOther.title')}
         </h1>
-        <p className="text-text-muted mt-1">{t('material.issue.description')}</p>
+        <p className="text-text-muted mt-1">{t('material.issueOther.description')}</p>
       </div>
 
       {/* 탭 네비게이션 */}
@@ -68,11 +64,8 @@ function IssuePage() {
       </div>
 
       {/* 탭 콘텐츠 */}
-      {activeTab === 'request' && <IssueRequestTab />}
-      {activeTab === 'scan' && <BarcodeScanTab fixedIssueType={PRODUCTION_ISSUE_TYPE} />}
+      {activeTab === 'scan' && <BarcodeScanTab excludeIssueTypes={EXCLUDED_ISSUE_TYPES} />}
       {activeTab === 'history' && <IssueHistoryTab />}
     </div>
   );
 }
-
-export default IssuePage;

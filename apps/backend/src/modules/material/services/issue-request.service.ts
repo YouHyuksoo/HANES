@@ -70,8 +70,13 @@ export class IssueRequestService {
   private isRawMaterial(part?: PartMaster): boolean {
     if (!part?.itemType) return true;
     const itemType = part.itemType.toUpperCase();
-    const productTypes = new Set(['FG', 'FERT', 'PRODUCT', 'FINISHED', 'WIP', 'SEMI', 'SEMI_PRODUCT', 'HALB']);
-    return !productTypes.has(itemType);
+    // 출고요청은 원자재만 대상으로 한다.
+    // 제품/반제품과 소모품(MRO)은 제외한다.
+    const excludedTypes = new Set([
+      'FG', 'FERT', 'PRODUCT', 'FINISHED', 'WIP', 'SEMI', 'SEMI_PRODUCT', 'HALB',
+      'CONSUMABLE', 'MRO',
+    ]);
+    return !excludedTypes.has(itemType);
   }
 
   private async getPreviousIssueQtyMap(orderNo: string, itemCodes: string[], company?: string | null, plant?: string | null) {

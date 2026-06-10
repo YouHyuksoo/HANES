@@ -159,8 +159,9 @@ export function useIssueRequestData() {
   const searchStockItems = useCallback(async (query: string): Promise<StockItem[]> => {
     if (!query.trim()) return [];
     try {
+      // 출고요청은 원자재만 대상 (소모품 등 제외)
       const response = await api.get<{ success: boolean; data: PartSearchResponse }>(
-        `/master/parts?search=${encodeURIComponent(query)}&limit=20`,
+        `/master/parts?search=${encodeURIComponent(query)}&itemType=RAW_MATERIAL&limit=20`,
       );
       const raw = response.data?.data;
       const list = Array.isArray(raw) ? raw : raw?.data ?? [];

@@ -21,6 +21,7 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
@@ -46,6 +47,8 @@ export class ReceivingService {
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(PurchaseOrder)
     private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
     @InjectRepository(PurchaseOrderItem)
@@ -594,6 +597,13 @@ export class ReceivingService {
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
+    // 제조사명 해소 (MAT_LOTS.MFG_PARTNER_CODE → PARTNER_MASTERS.PARTNER_NAME)
+    const mfgCodes = [...new Set(lots.map((l) => l.mfgPartnerCode).filter(Boolean))] as string[];
+    const partners = mfgCodes.length > 0
+      ? await this.partnerMasterRepository.find({ where: { partnerCode: In(mfgCodes), ...tenantWhere } })
+      : [];
+    const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
+
     // 프론트엔드가 기대하는 중첩 객체 형태로 반환
     const enrichedData = data.map((item) => {
       const part = partMap.get(item.itemCode);
@@ -611,6 +621,12 @@ export class ReceivingService {
         part: part ? { itemCode: part.itemCode, itemName: part.itemName, unit: part.unit } : null,
         lot: lot ? { matUid: lot.matUid, poNo: lot.poNo } : null,
         toWarehouse: warehouse ? { warehouseName: warehouse.warehouseName } : null,
+        // 공급처(LOT 입고 거래처)
+        vendor: lot?.vendor ?? null,
+        // 제조사(MFG 파트너명)
+        manufacturer: lot?.mfgPartnerCode ? (partnerMap.get(lot.mfgPartnerCode) ?? lot.mfgPartnerCode) : null,
+        // 양산/MRO 구분: 소모품(CONSUMABLE)=MRO, 그 외=양산(PROD)
+        materialClass: part?.itemType === 'CONSUMABLE' ? 'MRO' : 'PROD',
       };
     });
 

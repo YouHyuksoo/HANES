@@ -10,10 +10,10 @@
  * 3. 상단 필터(일자/품목/자재 시리얼)는 서버사이드로 조회한다
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClipboardList, RefreshCw, Search } from 'lucide-react';
-import { Button, Input, Card, CardContent } from '@/components/ui';
+import { Button, Input, Select, Card, CardContent } from '@/components/ui';
 import api from '@/services/api';
 import ReceivingHistoryTable from '../receive/components/ReceivingHistoryTable';
 import type { ReceivingRecord } from '../receive/components/types';
@@ -29,6 +29,7 @@ export default function ReceiveHistoryPage() {
   const [toDate, setToDate] = useState('');
   const [itemSearch, setItemSearch] = useState('');
   const [serial, setSerial] = useState('');
+  const [vendorFilter, setVendorFilter] = useState('');
 
   /** 입고 이력 조회 */
   const fetchHistory = useCallback(async () => {
@@ -50,6 +51,22 @@ export default function ReceiveHistoryPage() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
+  /** 공급사 옵션 (로드된 이력의 distinct 공급처) */
+  const vendorOptions = useMemo(() => {
+    const set = new Set<string>();
+    history.forEach((h) => { if (h.vendor) set.add(h.vendor); });
+    return [
+      { value: '', label: `${t('material.col.supplier', '공급처')}: ${t('common.all')}` },
+      ...[...set].sort().map((v) => ({ value: v, label: v })),
+    ];
+  }, [history, t]);
+
+  /** 공급사 필터 적용 (client-side) */
+  const filteredHistory = useMemo(
+    () => (vendorFilter ? history.filter((h) => h.vendor === vendorFilter) : history),
+    [history, vendorFilter],
+  );
+
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
@@ -70,7 +87,7 @@ export default function ReceiveHistoryPage() {
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
         <CardContent className="h-full p-4">
           <ReceivingHistoryTable
-            data={history}
+            data={filteredHistory}
             isLoading={loading}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0 items-center flex-wrap">
@@ -78,6 +95,9 @@ export default function ReceiveHistoryPage() {
                   <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="w-36" />
                   <span className="text-text-muted text-sm">~</span>
                   <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="w-36" />
+                </div>
+                <div className="w-44 flex-shrink-0">
+                  <Select options={vendorOptions} value={vendorFilter} onChange={setVendorFilter} fullWidth />
                 </div>
                 <div className="w-48 min-w-0 flex-shrink-0">
                   <Input

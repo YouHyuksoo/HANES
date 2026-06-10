@@ -2096,7 +2096,10 @@
       "title": "입고이력조회",
       "description": "자재 입고 이력을 조회합니다.",
       "itemPlaceholder": "품목 코드/명 검색...",
-      "serialPlaceholder": "자재 시리얼 검색..."
+      "serialPlaceholder": "자재 시리얼 검색...",
+      "materialClass": "구분",
+      "prod": "양산",
+      "mro": "MRO"
     },
     "receiveLabel": {
       "title": "입고라벨 발행",
@@ -2210,10 +2213,14 @@
       "bomCalculating": "작업지시 BOM 기준 출고 예정 품목을 계산 중입니다.",
       "items": "건"
     },
+    "issueOther": {
+      "title": "기타출고",
+      "description": "양산 외 출고계정(불량/샘플/외주/폐기/반품/기타 등)을 선택하여 출고합니다."
+    },
     "issue": {
-      "title": "자재출고관리",
-      "subtitle": "자재 출고를 처리합니다.",
-      "description": "자재 출고를 처리합니다.",
+      "title": "자재출고관리(양산)",
+      "subtitle": "양산계정 자재 출고를 처리합니다.",
+      "description": "양산계정 자재 출고를 처리합니다.",
       "tab": {
         "request": "출고요청처리",
         "manual": "수동출고",
@@ -5919,7 +5926,8 @@
       "concession": "특채처리",
       "receive": "입고",
       "request": "출고요청",
-      "issue": "출고"
+      "issue": "출고",
+      "issueOther": "기타출고"
     },
     "production": {
       "title": "생산관리",

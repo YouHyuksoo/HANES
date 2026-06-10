@@ -119,6 +119,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MAT_RECEIVE_HISTORY", labelKey: "menu.material.receiveHistory", path: "/material/receive-history" },
       { code: "MAT_REQUEST", labelKey: "menu.material.request", path: "/material/request" },
       { code: "MAT_ISSUE", labelKey: "menu.material.issue", path: "/material/issue" },
+      { code: "MAT_ISSUE_OTHER", labelKey: "menu.material.issueOther", path: "/material/issue-other" },
       { code: "MAT_LOT", labelKey: "menu.material.lot", path: "/material/lot" },
       { code: "MAT_LOT_SPLIT", labelKey: "menu.material.lotSplit", path: "/material/lot-split" },
       { code: "MAT_LOT_MERGE", labelKey: "menu.material.lotMerge", path: "/material/lot-merge" },

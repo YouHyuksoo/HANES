@@ -34,6 +34,25 @@ export default function ReceivingHistoryTable({ data, isLoading, toolbarLeft }: 
     { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemCode },
     { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemName },
     {
+      id: 'materialClass',
+      header: t('material.receiveHistory.materialClass', '구분'),
+      size: 80,
+      meta: { filterType: "multi" as const, align: "center" as const },
+      accessorFn: (row) => (row.materialClass === 'MRO' ? 'MRO' : 'PROD'),
+      cell: ({ row }) => {
+        const isMro = row.original.materialClass === 'MRO';
+        return (
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
+            isMro ? 'text-amber-600 border-amber-500' : 'text-primary border-primary'
+          }`}>
+            {isMro ? t('material.receiveHistory.mro', 'MRO') : t('material.receiveHistory.prod', '양산')}
+          </span>
+        );
+      },
+    },
+    { id: 'vendor', header: t('material.col.supplier', '공급처'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendor || '-' },
+    { id: 'manufacturer', header: t('common.manufacturer', '제조사'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.manufacturer || '-' },
+    {
       accessorKey: 'qty',
       header: t('common.quantity'),
       size: 100,

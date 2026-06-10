@@ -23,7 +23,14 @@ import { useBarcodeScan } from '@/hooks/material/useBarcodeScan';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import type { ScanHistoryItem } from '@/hooks/material/useBarcodeScan';
 
-export default function BarcodeScanTab() {
+interface BarcodeScanTabProps {
+  /** 출고계정 고정 (예: 'PRODUCTION'=양산). 지정 시 선택 불가, 라벨만 표시 */
+  fixedIssueType?: string;
+  /** 출고계정 선택목록에서 제외할 코드 (예: 기타출고에서 양산 제외) */
+  excludeIssueTypes?: string[];
+}
+
+export default function BarcodeScanTab({ fixedIssueType, excludeIssueTypes }: BarcodeScanTabProps = {}) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,7 +40,27 @@ export default function BarcodeScanTab() {
     scannedLot, scanHistory, isScanning, error,
     handleScan, handleIssue, handleCancel,
   } = useBarcodeScan();
-  const issueTypeOptions = useComCodeOptions('ISSUE_TYPE');
+  const allIssueTypeOptions = useComCodeOptions('ISSUE_TYPE');
+
+  // 출고계정 고정 시 마운트 시점에 설정
+  useEffect(() => {
+    if (fixedIssueType && issueType !== fixedIssueType) {
+      setIssueType(fixedIssueType);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixedIssueType]);
+
+  // 선택 가능한 출고계정 옵션 (제외 코드 필터)
+  const issueTypeOptions = useMemo(() => {
+    if (!excludeIssueTypes?.length) return allIssueTypeOptions;
+    return allIssueTypeOptions.filter((o) => !excludeIssueTypes.includes(String(o.value)));
+  }, [allIssueTypeOptions, excludeIssueTypes]);
+
+  // 고정 계정의 표시 라벨
+  const fixedIssueTypeLabel = useMemo(() => {
+    if (!fixedIssueType) return '';
+    return allIssueTypeOptions.find((o) => String(o.value) === fixedIssueType)?.label ?? fixedIssueType;
+  }, [fixedIssueType, allIssueTypeOptions]);
 
   // 페이지 로드 시 입력 필드에 자동 포커스
   useEffect(() => {
@@ -96,27 +123,34 @@ export default function BarcodeScanTab() {
 
   return (
     <div className="space-y-6">
-      {/* 출고계정 선택 */}
+      {/* 출고계정 + 바코드 스캔 (한 줄 배치) */}
       <Card>
         <CardContent>
-          <div className="w-64">
-            <Select
-              label={t('material.issueAccount')}
-              options={issueTypeOptions}
-              value={issueType}
-              onChange={setIssueType}
-              required
-              fullWidth
-            />
-          </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-end gap-4">
+            {/* 출고계정: 고정(라벨) 또는 선택(Select) */}
+            <div className="w-56 flex-shrink-0">
+              {fixedIssueType ? (
+                <div>
+                  <span className="block text-sm font-medium text-text mb-1">{t('material.issueAccount')}</span>
+                  <div className="h-14 flex items-center px-4 rounded-lg border border-border bg-muted/40 text-base font-semibold text-text">
+                    {fixedIssueTypeLabel}
+                  </div>
+                </div>
+              ) : (
+                <Select
+                  label={t('material.issueAccount')}
+                  options={issueTypeOptions}
+                  value={issueType}
+                  onChange={setIssueType}
+                  required
+                  fullWidth
+                  className="h-14 text-base"
+                />
+              )}
+            </div>
 
-      {/* 스캔 입력 영역 */}
-      <Card>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
+            {/* 바코드 스캔 입력 */}
+            <div className="flex-1 min-w-0">
               <div className="relative">
                 <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-text-muted" />
                 <input
@@ -134,7 +168,7 @@ export default function BarcodeScanTab() {
             <Button
               onClick={handleScan}
               disabled={!scanInput.trim() || isScanning}
-              className="h-14 px-6"
+              className="h-14 px-6 flex-shrink-0"
             >
               {isScanning ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
