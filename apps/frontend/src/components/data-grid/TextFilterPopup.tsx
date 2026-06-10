@@ -146,6 +146,9 @@ export function TextFilterPopup<T>({ column, data, anchorRect, onClose }: TextFi
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("textFilter.searchPlaceholder")}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
           className="w-full h-7 px-2 text-xs bg-surface border border-border rounded text-text placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
           autoFocus
         />

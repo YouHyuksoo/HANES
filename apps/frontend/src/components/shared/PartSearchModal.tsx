@@ -40,6 +40,10 @@ interface PartSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (part: PartItem) => void;
+  /** 다중 선택 모드. 지정하지 않으면 기존 단건 선택 동작 유지 */
+  multiSelect?: boolean;
+  /** 다중 선택 확정 콜백 */
+  onSelectMany?: (parts: PartItem[]) => void;
   /** 품목유형 사전 필터 (FG/WIP/RAW) — 미지정 시 전체 */
   itemType?: string;
   /** 허용 품목유형 다중 제한 (예: 제품·반제품만). 지정 시 이 유형들만 조회·선택 가능 */
@@ -50,6 +54,8 @@ export default function PartSearchModal({
   isOpen,
   onClose,
   onSelect,
+  multiSelect = false,
+  onSelectMany,
   itemType: defaultItemType,
   allowedItemTypes,
 }: PartSearchModalProps) {
@@ -59,6 +65,7 @@ export default function PartSearchModal({
   const [itemType, setItemType] = useState(defaultItemType ?? "");
   const [data, setData] = useState<PartItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedItemCodes, setSelectedItemCodes] = useState<Set<string>>(() => new Set());
 
   const allowedKey = (allowedItemTypes ?? []).join(",");
 
@@ -90,6 +97,7 @@ export default function PartSearchModal({
     if (!isOpen) return;
     setKeyword("");
     setItemType(defaultItemType ?? "");
+    setSelectedItemCodes(new Set());
     fetchParts("", defaultItemType ?? "");
   }, [isOpen, defaultItemType, fetchParts]);
 
@@ -106,13 +114,52 @@ export default function PartSearchModal({
     [handleSearch]
   );
 
-  /** 행 클릭 → 선택 후 닫기 */
+  const togglePartSelection = useCallback((part: PartItem) => {
+    setSelectedItemCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(part.itemCode)) next.delete(part.itemCode);
+      else next.add(part.itemCode);
+      return next;
+    });
+  }, []);
+
+  const selectedParts = useMemo(
+    () => data.filter((part) => selectedItemCodes.has(part.itemCode)),
+    [data, selectedItemCodes],
+  );
+
+  const allVisibleSelected = data.length > 0 && data.every((part) => selectedItemCodes.has(part.itemCode));
+
+  const toggleAllVisible = useCallback(() => {
+    setSelectedItemCodes((prev) => {
+      const next = new Set(prev);
+      if (data.length > 0 && data.every((part) => next.has(part.itemCode))) {
+        data.forEach((part) => next.delete(part.itemCode));
+      } else {
+        data.forEach((part) => next.add(part.itemCode));
+      }
+      return next;
+    });
+  }, [data]);
+
+  const handleSelectMany = useCallback(() => {
+    if (selectedParts.length === 0) return;
+    onSelectMany?.(selectedParts);
+    setSelectedItemCodes(new Set());
+    onClose();
+  }, [onClose, onSelectMany, selectedParts]);
+
+  /** 행 클릭 → 단건 선택 또는 다중선택 토글 */
   const handleRowClick = useCallback(
     (row: PartItem) => {
+      if (multiSelect) {
+        togglePartSelection(row);
+        return;
+      }
       onSelect(row);
       onClose();
     },
-    [onSelect, onClose]
+    [multiSelect, onSelect, onClose, togglePartSelection]
   );
 
   /** 품목유형 옵션 (allowedItemTypes 지정 시 해당 유형만 노출) */
@@ -135,34 +182,70 @@ export default function PartSearchModal({
 
   /** DataGrid 컬럼 정의 */
   const columns = useMemo<ColumnDef<PartItem, unknown>[]>(
-    () => [
-      {
-        accessorKey: "itemCode",
-        header: t("common.partCode"),
-        size: 160,
-      },
-      {
-        accessorKey: "itemName",
-        header: t("common.partName"),
-        size: 220,
-      },
-      {
-        accessorKey: "itemType",
-        header: t("common.itemType", "품목유형"),
-        size: 100,
-      },
-      {
-        accessorKey: "spec",
-        header: t("master.part.spec", "규격"),
-        size: 160,
-      },
-      {
-        accessorKey: "unit",
-        header: t("common.unit"),
-        size: 80,
-      },
-    ],
-    [t]
+    () => {
+      const baseColumns: ColumnDef<PartItem, unknown>[] = [
+        {
+          accessorKey: "itemCode",
+          header: t("common.partCode"),
+          size: 160,
+        },
+        {
+          accessorKey: "itemName",
+          header: t("common.partName"),
+          size: 220,
+        },
+        {
+          accessorKey: "itemType",
+          header: t("common.itemType", "품목유형"),
+          size: 100,
+        },
+        {
+          accessorKey: "spec",
+          header: t("master.part.spec", "규격"),
+          size: 160,
+        },
+        {
+          accessorKey: "unit",
+          header: t("common.unit"),
+          size: 80,
+        },
+      ];
+
+      if (!multiSelect) return baseColumns;
+
+      return [
+        {
+          id: "select",
+          header: () => (
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={toggleAllVisible}
+              onClick={(e) => e.stopPropagation()}
+              className="w-4 h-4 accent-primary"
+              aria-label={t("common.selectAll", "전체 선택")}
+            />
+          ),
+          size: 48,
+          meta: { align: "center" as const, filterType: "none" as const },
+          cell: ({ row }) => {
+            const part = row.original;
+            return (
+              <input
+                type="checkbox"
+                checked={selectedItemCodes.has(part.itemCode)}
+                onChange={() => togglePartSelection(part)}
+                onClick={(e) => e.stopPropagation()}
+                className="w-4 h-4 accent-primary"
+                aria-label={t("common.select", "선택")}
+              />
+            );
+          },
+        },
+        ...baseColumns,
+      ];
+    },
+    [t, multiSelect, allVisibleSelected, toggleAllVisible, selectedItemCodes, togglePartSelection]
   );
 
   return (
@@ -170,7 +253,20 @@ export default function PartSearchModal({
       isOpen={isOpen}
       onClose={onClose}
       title={t("common.partSearch", "품목 검색")}
-      size="xl"
+      size={multiSelect ? "2xl" : "xl"}
+      footer={multiSelect ? (
+        <>
+          <div className="mr-auto text-sm text-text-muted">
+            {t("common.selectedCount", "선택 {{count}}건", { count: selectedItemCodes.size })}
+          </div>
+          <Button variant="ghost" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={handleSelectMany} disabled={selectedItemCodes.size === 0}>
+            {t("common.addSelectedItems", "선택 품목 추가")}
+          </Button>
+        </>
+      ) : undefined}
     >
       {/* 검색 바 */}
       <div className="flex items-end gap-2 mb-3">
@@ -199,10 +295,10 @@ export default function PartSearchModal({
         columns={columns}
         isLoading={loading}
         onRowClick={handleRowClick}
-        pageSize={10}
+        pageSize={multiSelect ? 15 : 10}
         enableColumnFilter={false}
         enableColumnReordering={false}
-        maxHeight="400px"
+        maxHeight={multiSelect ? "560px" : "400px"}
       />
     </Modal>
   );

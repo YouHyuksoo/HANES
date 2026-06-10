@@ -80,6 +80,9 @@ export function ColumnFilterInput<T>({ column, data: allData }: ColumnFilterInpu
       value={filterValue}
       onChange={(e) => column.setFilterValue(e.target.value || undefined)}
       placeholder={meta?.filterPlaceholder ?? '검색...'}
+      autoComplete="off"
+      autoCorrect="off"
+      spellCheck={false}
       className="w-full h-7 px-2 text-xs bg-surface border border-border rounded text-text placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
     />
   );

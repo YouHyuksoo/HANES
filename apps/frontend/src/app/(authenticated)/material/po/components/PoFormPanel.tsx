@@ -59,6 +59,49 @@ const INIT_FORM: PoFormData = {
   poNo: "", partnerId: "", orderDate: "", dueDate: "", remark: "",
 };
 
+interface CompactItemInputProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  min?: number;
+  step?: number;
+  error?: string;
+}
+
+function CompactItemInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+  min,
+  step,
+  error,
+}: CompactItemInputProps) {
+  return (
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="block text-[10px] font-medium leading-none text-text-muted">
+        {label}
+      </span>
+      <input
+        type={type}
+        min={min}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={!!error}
+        title={error}
+        className={`h-7 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary ${
+          error ? "border-error focus:border-error focus:ring-error" : ""
+        }`}
+      />
+      {error && (
+        <span className="text-[10px] leading-none text-error">{error}</span>
+      )}
+    </label>
+  );
+}
+
 interface Props {
   editData: PurchaseOrder | null;
   onClose: () => void;
@@ -105,12 +148,32 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
   const setField = (key: keyof PoFormData, value: string) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
-  const handlePartSelect = useCallback((part: PartItem) => {
+  const appendParts = useCallback((parts: PartItem[]) => {
     setItems(prev => {
       const nextLineNo = prev.length > 0 ? Math.max(...prev.map(i => i.lineNo)) + 1 : 1;
-      return [...prev, { lineNo: nextLineNo, revNo: 1, itemCode: part.itemCode, itemName: part.itemName, orderQty: 1, remark: "" }];
+      const existingCodes = new Set(prev.map((item) => item.itemCode));
+      const newParts = parts.filter((part) => !existingCodes.has(part.itemCode));
+      return [
+        ...prev,
+        ...newParts.map((part, index) => ({
+          lineNo: nextLineNo + index,
+          revNo: 1,
+          itemCode: part.itemCode,
+          itemName: part.itemName,
+          orderQty: 1,
+          remark: "",
+        })),
+      ];
     });
   }, []);
+
+  const handlePartSelect = useCallback((part: PartItem) => {
+    appendParts([part]);
+  }, [appendParts]);
+
+  const handlePartSelectMany = useCallback((parts: PartItem[]) => {
+    appendParts(parts);
+  }, [appendParts]);
 
   const updateItem = (idx: number, key: keyof ItemRow, value: string | number) => {
     setItems(prev => prev.map((it, i) => i === idx ? { ...it, [key]: value } : it));
@@ -210,32 +273,32 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
               <p>{t("material.po.noItems", "품목을 추가하세요")}</p>
             </div>
           ) : (
-            <div className="flex-1 min-h-0 space-y-2 overflow-y-auto pr-1">
+            <div className="flex-1 min-h-0 space-y-1.5 overflow-y-auto pr-1">
               {items.map((item, idx) => (
-                <div key={idx} className="p-3 rounded-lg border border-border bg-surface-secondary dark:bg-slate-800/50">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <span className="font-mono font-medium text-primary">{item.itemCode}</span>
-                      <span className="ml-2 text-text-muted">{item.itemName}</span>
+                <div key={idx} className="p-2 rounded-md border border-border bg-surface-secondary dark:bg-slate-800/50">
+                  <div className="flex items-start justify-between mb-1.5">
+                    <div className="min-w-0">
+                      <span className="font-mono text-xs font-medium text-primary">{item.itemCode}</span>
+                      <span className="ml-2 text-[11px] text-text-muted">{item.itemName}</span>
                     </div>
                     <button onClick={() => removeItem(idx)}
                       className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
                       <Trash2 className="w-3.5 h-3.5 text-red-500" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    <Input label={t("material.po.lineNo", "라인번호")} type="number" value={String(item.lineNo)}
-                      onChange={e => updateItem(idx, "lineNo", Number(e.target.value) || 1)} fullWidth />
-                    <Input label={t("material.po.revNo", "릴리즈번호")} type="number" value={String(item.revNo)}
-                      onChange={e => updateItem(idx, "revNo", Number(e.target.value) || 1)} fullWidth />
-                    <Input label={t("material.po.orderQty")} type="number" min={1} step={1}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    <CompactItemInput label={t("material.po.lineNo", "라인번호")} type="number" value={String(item.lineNo)}
+                      onChange={(value) => updateItem(idx, "lineNo", Number(value) || 1)} />
+                    <CompactItemInput label={t("material.po.revNo", "릴리즈번호")} type="number" value={String(item.revNo)}
+                      onChange={(value) => updateItem(idx, "revNo", Number(value) || 1)} />
+                    <CompactItemInput label={t("material.po.orderQty")} type="number" min={1} step={1}
                       value={String(item.orderQty)}
                       error={(!Number.isInteger(item.orderQty) || item.orderQty < 1)
                         ? t("material.po.qtyMin", "1 이상")
                         : undefined}
-                      onChange={e => updateItem(idx, "orderQty", Math.trunc(Number(e.target.value)) || 0)} fullWidth />
-                    <Input label={t("common.remark")} value={item.remark}
-                      onChange={e => updateItem(idx, "remark", e.target.value)} fullWidth />
+                      onChange={(value) => updateItem(idx, "orderQty", Math.trunc(Number(value)) || 0)} />
+                    <CompactItemInput label={t("common.remark")} value={item.remark}
+                      onChange={(value) => updateItem(idx, "remark", value)} />
                   </div>
                 </div>
               ))}
@@ -246,7 +309,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
       </div>
 
       <PartSearchModal isOpen={partModalOpen} onClose={() => setPartModalOpen(false)}
-        onSelect={handlePartSelect} itemType="RAW_MATERIAL" />
+        onSelect={handlePartSelect} multiSelect onSelectMany={handlePartSelectMany} itemType="RAW_MATERIAL" />
     </div>
   );
 }

@@ -214,7 +214,7 @@ export function NumberFilterPopup<T>({ column, data, anchorRect, onClose }: Numb
           {operatorOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         {needsValue(cond1Op) && (
-          <input type="number" value={cond1Val} onChange={(e) => setCond1Val(e.target.value)} placeholder={t("numberFilter.valuePlaceholder")} className={inputCls} />
+          <input type="number" value={cond1Val} onChange={(e) => setCond1Val(e.target.value)} placeholder={t("numberFilter.valuePlaceholder")} autoComplete="off" inputMode="decimal" className={inputCls} />
         )}
 
         {/* Connector */}
@@ -234,7 +234,7 @@ export function NumberFilterPopup<T>({ column, data, anchorRect, onClose }: Numb
           {operatorOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         {needsValue(cond2Op) && (
-          <input type="number" value={cond2Val} onChange={(e) => setCond2Val(e.target.value)} placeholder={t("numberFilter.valuePlaceholder")} className={inputCls} />
+          <input type="number" value={cond2Val} onChange={(e) => setCond2Val(e.target.value)} placeholder={t("numberFilter.valuePlaceholder")} autoComplete="off" inputMode="decimal" className={inputCls} />
         )}
       </div>
 

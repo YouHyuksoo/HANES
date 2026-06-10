@@ -29,7 +29,7 @@ test('PO item list expands to fill available side panel height', () => {
 
   assert.match(
     source,
-    /className="flex-1 min-h-0 space-y-2 overflow-y-auto pr-1"/,
+    /className="flex-1 min-h-0 space-y-1\.5 overflow-y-auto pr-1"/,
     'item list should scroll within the remaining flexible area',
   );
 });

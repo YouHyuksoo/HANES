@@ -104,6 +104,7 @@ export function DateFilterPopup<T>({ column, anchorRect, onClose }: DateFilterPo
             value={from}
             onChange={(e) => setFrom(e.target.value)}
             max={to || undefined}
+            autoComplete="off"
             className={inputCls}
           />
         </div>
@@ -118,6 +119,7 @@ export function DateFilterPopup<T>({ column, anchorRect, onClose }: DateFilterPo
             value={to}
             onChange={(e) => setTo(e.target.value)}
             min={from || undefined}
+            autoComplete="off"
             className={inputCls}
           />
         </div>
