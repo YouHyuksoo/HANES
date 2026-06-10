@@ -1,11 +1,11 @@
 /**
  * @file src/hooks/material/useIqcData.ts
- * @description IQC 수입검사 데이터 훅 - 입하단위(입하번호+품목) 검사 대상 조회 및 일괄 판정
+ * @description IQC 수입검사 데이터 훅 - 입하단위(입하번호+품목) 검사 대상 조회 및 시리얼별 검사결과 저장
  *
  * 초보자 가이드:
  * 1. GET /material/iqc-history/pending-arrivals 에서 입하번호+품목 단위로 묶인 검사 대상 조회
- * 2. POST /material/iqc-history/arrival 로 입하건 전체 시리얼을 일괄 판정
- *    (개별 시리얼 전수검사가 아니라 입하건당 1회 샘플검사)
+ * 2. 모달에서 스캔한 시리얼별 검사항목 판정 결과를 details JSON으로 구성
+ * 3. POST /material/iqc-history/arrival 로 입하건 IQC 로그와 시리얼별 상세 결과를 저장
  */
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { IqcStatus } from '@/components/material';
@@ -123,7 +123,7 @@ export function useIqcData() {
   };
 
   const handleIqcSubmit = useCallback(async (
-    details?: any[],
+    details?: unknown,
     overrideResult?: string,
     extra?: IqcSubmitExtra,
   ) => {
