@@ -61,6 +61,10 @@ export class PalletService {
     };
   }
 
+  private withClientId(pallet: PalletMaster) {
+    return { ...pallet, id: pallet.palletNo };
+  }
+
   /**
    * 팔레트 목록 조회
    */
@@ -94,7 +98,7 @@ export class PalletService {
       this.palletRepository.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return { data: data.map((pallet) => this.withClientId(pallet)), total, page, limit };
   }
 
   /**
@@ -109,7 +113,7 @@ export class PalletService {
       throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${id}`);
     }
 
-    return pallet;
+    return this.withClientId(pallet);
   }
 
   /**

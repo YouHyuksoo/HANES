@@ -16,18 +16,22 @@ import { PurchaseOrderService } from './purchase-order.service';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('PurchaseOrderService', () => {
   let target: PurchaseOrderService;
   let mockPoRepo: DeepMocked<Repository<PurchaseOrder>>;
   let mockPoItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartnerRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockMatArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
+  let mockNumbering: DeepMocked<NumberingService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   const createPo = (overrides: Partial<PurchaseOrder> = {}): PurchaseOrder =>
@@ -46,9 +50,11 @@ describe('PurchaseOrderService', () => {
     mockPoRepo = createMock<Repository<PurchaseOrder>>();
     mockPoItemRepo = createMock<Repository<PurchaseOrderItem>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockPartnerRepo = createMock<Repository<PartnerMaster>>();
     mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
+    mockNumbering = createMock<NumberingService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
@@ -66,8 +72,10 @@ describe('PurchaseOrderService', () => {
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPoItemRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
         { provide: getRepositoryToken(MatArrival), useValue: mockMatArrivalRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -106,6 +114,24 @@ describe('PurchaseOrderService', () => {
           unit: null,
         }),
       );
+    });
+
+    it('입하 모달 poId로 사용할 id에 poNo를 함께 반환한다', async () => {
+      const queryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([createPo({ poNo: 'PO-001' })]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockPoRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      mockPoItemRepo.find.mockResolvedValue([]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 } as any);
+
+      expect(result.data[0]).toEqual(expect.objectContaining({ id: 'PO-001', poNo: 'PO-001' }));
     });
 
     it('PO 목록 품목과 품목마스터 보강 조회도 요청 테넌트 범위로 제한한다', async () => {

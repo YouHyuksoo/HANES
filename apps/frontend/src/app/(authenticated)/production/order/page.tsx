@@ -19,7 +19,7 @@ import {
   Edit2, Trash2, Play, CheckCircle2, PauseCircle, PlayCircle, XCircle,
   Barcode, Printer,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge, StatCard, ConfirmModal, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -118,13 +118,6 @@ export default function JobOrderPage() {
     if (viewMode === "tree") return flattenTree(data);
     return data.map(d => ({ ...d, _depth: 0 }));
   }, [viewMode, data]);
-
-  const stats = useMemo(() => ({
-    total: displayData.length,
-    waiting: displayData.filter(d => d.status === "WAITING").length,
-    running: displayData.filter(d => d.status === "RUNNING").length,
-    done: displayData.filter(d => d.status === "DONE").length,
-  }), [displayData]);
 
   const getProgress = (row: JobOrderItem) => {
     if (row.planQty === 0) return 0;
@@ -406,13 +399,6 @@ export default function JobOrderPage() {
             )}
           </div>
         )}
-
-        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-          <StatCard label={t("production.order.stats.total")} value={stats.total} icon={ClipboardList} color="blue" />
-          <StatCard label={t("production.order.stats.waiting")} value={stats.waiting} icon={ClipboardList} color="yellow" />
-          <StatCard label={t("production.order.stats.running")} value={stats.running} icon={ClipboardList} color="green" />
-          <StatCard label={t("production.order.stats.done")} value={stats.done} icon={ClipboardList} color="purple" />
-        </div>
 
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={displayData} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="작업지시"

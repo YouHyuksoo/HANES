@@ -3548,7 +3548,10 @@
       "inspectOne": "1개 검사",
       "lastBarcode": "최근 발행",
       "scanBarcode": "바코드 스캔",
-      "pendingList": "미검사 바코드"
+      "pendingList": "미검사 바코드",
+      "circuitLabel": "회로라벨",
+      "scanCircuitLabel": "회로라벨 스캔",
+      "circuitRequired": "합격하려면 회로라벨을 스캔해주세요."
     },
     "terminalResult": {
       "title": "단자검사 실적",

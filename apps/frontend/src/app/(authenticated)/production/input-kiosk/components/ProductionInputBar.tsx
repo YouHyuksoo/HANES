@@ -85,7 +85,8 @@ export default function ProductionInputBar({
     }
     setSaving(true);
     try {
-      const res = await api.post('/production/prod-results', {
+      // 불량 상세는 생산실적 생성과 같은 트랜잭션에서 저장된다(별도 defect-logs 호출 시 defectQty 이중 카운트되던 결함 해소).
+      await api.post('/production/prod-results', {
         orderNo: selectedJobOrder!.orderNo,
         equipCode: selectedEquip!.equipCode,
         workerId: selectedWorkers[0].id,
@@ -93,22 +94,14 @@ export default function ProductionInputBar({
         prdUid: serialNo || undefined,
         goodQty: good,
         defectQty: defect,
+        ...(pendingDefects.length > 0 && {
+          defects: pendingDefects.map(d => ({
+            defectCode: d.defectCode,
+            defectName: d.defectName,
+            qty: d.qty,
+          })),
+        }),
       }, { skipSuccessToast: true });
-      const resultNo: string = res.data?.data?.resultNo ?? res.data?.data?.id ?? '';
-
-      // 불량 상세 로그 저장 (pendingDefects가 있는 경우)
-      if (resultNo && pendingDefects.length > 0) {
-        await Promise.allSettled(
-          pendingDefects.map(d =>
-            api.post('/quality/defect-logs', {
-              prodResultNo: resultNo,
-              defectCode: d.defectCode,
-              defectName: d.defectName,
-              qty: d.qty,
-            }, { skipSuccessToast: true })
-          )
-        );
-      }
 
       toast.success(t('kiosk.input.saveSuccess'));
       incrementSerial();

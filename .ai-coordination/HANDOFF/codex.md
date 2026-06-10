@@ -2,10 +2,19 @@
 
 ## Last Update
 
-2026-06-10 03:25
+2026-06-10 17:33
 
 ## Latest
 
+- `T-SHIP-ORDER-ITEM-PAYLOAD` 완료. `/shipping/order` 등록 화면이 `POST /shipping/orders`에 `items` 없이 header form만 보내서 백엔드 DTO가 `items must be an array` 400을 반환하던 문제를 수정했다. 모달에 완제품 품목 검색/수량/비고 입력을 추가했고, 저장 payload는 `items: [{ itemCode, orderQty, remark }]`를 포함한다. 품목이 없거나 수량이 1 미만이면 저장 버튼은 비활성화된다. 검증: node 구조 테스트, 프론트 tsc, diff check, JSHANES/API 가역 생성삭제(`SO-CODEX-260610-173104`, 잔여 0), 브라우저 `/shipping/order` 렌더 및 모달 품목 섹션/저장 비활성 확인.
+- `T-PROD-ISSUE-STOCK-ENDPOINT` 완료. `/product/issue` 출고등록 패널이 제품 재고조회 시 단수 `/inventory/product/stock`을 호출해 404가 발생했다. 백엔드 실제 route는 `@Get('product/stocks')`라 프론트 호출을 `/inventory/product/stocks`로 변경했다. 검증: RED 확인 후 node:test 1/1, 프론트 tsc, 복수 route 401(인증단계 도달)/단수 route 404, `/product/issue` 200, diff check 통과.
+- `T-INSP-TERMINAL-RESULT` 완료. `/inspection/terminal-result` 단자검사 결과등록 페이지와 좌측 메뉴를 추가했다. 기존 `/inspection/result` 2패널 워크플로우는 `InspectionResultWorkflow`로 공통화했고, 기존 통전검사는 `CONTINUITY`, 단자검사는 `TERMINAL`을 `InspectPanel`에 전달한다. 백엔드는 `ContinuityInspectDto.inspectType`을 받아 `INSPECT_RESULTS.INSPECT_TYPE`에 저장하고, 통계/라벨 조회도 `inspectType` query로 분리한다. JSHANES에는 `INSP_TERMINAL_RESULT` 메뉴 배치와 `MANAGER`/`OPERATOR` 권한을 적용했다. 검증: RED 확인 후 focused Jest 13/13, node:test 3/3, 백/프론트 tsc, JSON parse, scoped diff check, `/inspection/terminal-result` 200 및 기존 `/inspection/result` 200 통과.
+- `T-PROD-RESULT-WORKER-AVATAR-FIX` 완료. `/production/result`에서 작업자명 없는 행이 `WorkerAvatar`의 `name.charAt(0)`로 런타임 오류를 내던 문제를 수정했다. 원인은 백엔드가 `worker` relation을 내려도 화면은 평탄화된 `workerName/workerDept`만 가정한 것. 공통 `workerAvatar.ts` fallback 유틸을 추가했고, 화면은 `worker.workerName` 또는 `workerId`를 fallback으로 평탄화한다. 검증: RED 확인 후 node:test 2/2, 프론트 tsc, diff check, 라우트 HTTP 200 통과.
+- `T-PROD-PROGRESS-EQUIP-FILTER` 완료. `/production/progress`에 설비 필터를 추가했다. 프론트는 `EquipSelect` 선택값을 `/production/job-orders?equipCode=`로 전달하고, 백엔드는 `PROD_RESULTS`의 `ORDER_NO/EQUIP_CODE/COMPANY/PLANT_CD` 존재 조건으로 작업지시를 필터링한다. 테스트는 RED를 먼저 확인한 뒤 focused Jest 36/36, 백/프론트 tsc, diff check, 라우트 HTTP 200 통과. gstack browse 실행 파일 부재로 브라우저 스냅샷은 미수행.
+- `T-PROD-ORDER-REMOVE-INFO-CARDS` 완료. `/production/order` 상단 정보카드 4개를 제거했고 `StatCard` import와 stats 계산도 정리했다. 프론트 tsc, diff check, 라우트 HTTP 200 통과. gstack browse 실행 파일 부재로 브라우저 스냅샷은 미수행.
+- `T-ID-PAYLOAD-SCAN` 완료. `/material/hold`와 같은 `.id` payload 누락 유형을 전수 점검했고, 목록 응답이 자연키만 내려 화면의 `selected*.id` 호출이 깨질 수 있는 경로를 백엔드 응답 계약으로 보강했다. 보강 대상: `/inventory/product-hold`(`id=warehouseCode::itemCode::prdUid`), 고객PO(`id=orderNo`), 설비(`id=equipCode`), 구매PO 입하(`id=poNo`), 외주처(`id=vendorCode`), 인터페이스 로그(`id=transDateIso/seq`), OQC(`id=requestNo`), 자재/제품 수불(`id=transNo`), 팔레트(`id=palletNo`). 검증: focused Jest 10 suites/156 tests, backend tsc, frontend tsc, diff check 통과.
+- `T-MAT-HOLD-MATUID-FIX` 완료. `/material/hold`의 보류/해제 POST 본문이 `selectedLot.id`를 사용해 `matUid`가 빠지던 원인을 확인했고, `selectedLot.matUid` 전송으로 수정했다. 검증: 프론트 tsc, diff check 통과.
+- `T-SHIP-WORKFLOW-API-QA` 완료. 박스포장→제품입고재고→출하지시→출하처리 API 흐름을 코드/테스트 기준으로 점검했다. 현재 백엔드 계약은 박스 입고 시 `PRODUCT_STOCKS.PRD_UID='*'` 집계 재고와 `FG_LABELS.BOX_NO` 스탬프를 만들고, 출하 시 집계 재고 차감 + `FG_LABELS.STATUS='SHIPPED'` 전환으로 `/shipping/box-stock`에서 제외하는 흐름이다. `ship-order.service.spec.ts`는 단건 출하의 FG 라벨 상태 전환까지 검증하도록 보강했고, `box.service.spec.ts`의 `NumberingService` mock 누락을 보정했다. 검증: backend tsc, focused Jest 57/57, diff check 통과. 실 HTTP/JSHANES 호출은 `10.1.10.35:1527` 타임아웃과 3003 미기동으로 미수행.
 - `T-MASTER-API-DEEP-QA-FIX` 완료. 기준정보 API 세부 재검증에서 남았던 미통과 3건을 수정했다. 회사 생성은 `COMPANY_MASTERS.COMPANY/PLANT_CD`, 사업장 생성은 `PLANTS.COMPANY/PLANT_CD` tenant 저장 누락이 원인이었다. IQC 검사그룹 수정은 relation 포함 엔티티 `save()`가 `IQC_GROUP_ITEMS.COMPANY`를 NULL로 갱신하는 것이 원인이었고, 삭제는 자식행 명시 삭제를 추가했다. 검증: focused Jest 3 suites/26 tests, 백엔드 tsc, 실제 HTTP 11/11, oracle-db JSHANES `ZFX/ZFY` 잔여 0, `git diff --check` 통과.
 - `T-MASTER-API-QA` 완료. 기준정보 API는 실행 중인 `localhost:3003` 백엔드와 JSHANES `40/1000` 기준으로 검증했다. `oracle-db` 스킬로 활성 계정 `admin@hanes.com`을 확인하고 로그인 토큰을 발급받아 호출했다. Swagger `/api/v1/master/*` 기준 path 파라미터 없는 GET 39건, 실제 샘플 키 기반 상세/보조 GET 34건이 모두 200. 임시코드 CRUD는 `com-codes`, `partners`, `parts`, `processes`, `prod-lines`, `workers`, `boms`, `work-instructions` 생성/수정/삭제 통과. JSHANES 임시 데이터 잔여 0건 확인. 파일 업로드/엑셀 업로드 API는 이번 검증 범위에서 제외.
 - `T-INPUT-KIOSK-WORKER-CODE-BUTTONS` 완료. 작업자설비점검 모달에 점검항목코드(`ITEM_CODE`)와 QR 값을 표시하고, OK/NG 버튼은 QR 스캔 전에도 8개 항목 모두 상시 보이게 했다. 항목 렌더 후 QR 입력창 포커스도 재보정했다. 검증: 프론트 tsc, `git diff --check`, 브라우저에서 `EIP-STD-W001`, `EQ-CRIMP-01:EIP-STD-W001`, OK 8개/NG 8개, QR 입력 포커스 확인.
@@ -131,6 +140,8 @@
 
 ## Next
 
+- `T-PROD-MONTHLY-ERP-LABEL`은 사용자 요청으로 좌측 메뉴 `월간생산계획`을 `ERP생산계획`으로 바꾸려 했으나, `apps/frontend/src/locales/*`와 `apps/frontend/src/config/menuConfig.ts`가 `T-MAT-CONCESSION-RECV` active lock 범위라 수정하지 않고 `BLOCKED` 처리했다. 사용자 허가 또는 lock owner handoff 후 `apps/frontend/src/locales/ko.json`의 `menu.production.monthlyPlan` 값만 변경하면 된다.
+- `T-MAT-HOLD-MATUID-FIX` 완료. `/material/hold`의 보류/해제 POST 본문이 `selectedLot.id`를 사용해 `matUid`가 빠지던 원인을 `selectedLot.matUid` 전송으로 수정했다. 프론트 tsc와 diff check 통과.
 - `T-MASTER-API-DEEP-QA-FIX` 완료. 기준정보 API 세부 재검증 미통과 3건은 수정 및 재검증 완료했다.
 - 통과 근거: focused Jest 26건, 백엔드 tsc, 실제 HTTP 11건, JSHANES 임시 prefix `ZFX/ZFY` 5개 관련 테이블 잔여 0.
 - codex active lock은 없다.

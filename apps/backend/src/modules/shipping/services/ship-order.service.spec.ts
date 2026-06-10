@@ -13,6 +13,7 @@ import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity'
 import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
@@ -232,7 +233,7 @@ describe('ShipOrderService.shipBox', () => {
   it('정상 출하: 박스 SHIPPED + 재고차감 + shippedQty 증가', async () => {
     await buildService({
       order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
-      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 5, status: 'CLOSED', oqcStatus: 'PASS' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 5, status: 'CLOSED', oqcStatus: 'PASS', serialList: JSON.stringify(['FG1', 'FG2']) },
       line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 },
       warehouse: { warehouseCode: 'FG_MAIN' },
       allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 }],
@@ -243,6 +244,7 @@ describe('ShipOrderService.shipBox', () => {
       expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 5, transType: 'FG_OUT', prdUid: '*', refType: 'SHIP_ORDER', refId: 'SO1' }),
     );
     expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), { status: 'SHIPPED' });
+    expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'SHIPPED' });
     expect(res.lineShippedQty).toBe(5);
     expect(res.fullyShipped).toBe(false);
   });

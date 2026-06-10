@@ -181,6 +181,29 @@ describe('ProductHoldService', () => {
       );
     });
 
+    it('화면에서 보류/해제 stockId로 사용할 복합 id를 포함한다', async () => {
+      mockStockRepo.find.mockResolvedValue([
+        {
+          warehouseCode: 'FG-WH',
+          itemCode: 'ITEM-001',
+          prdUid: 'FG-001',
+          itemType: 'FINISHED',
+          qty: 10,
+          status: 'NORMAL',
+        } as ProductStock,
+      ]);
+      mockStockRepo.count.mockResolvedValue(1);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 } as any);
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          id: 'FG-WH::ITEM-001::FG-001',
+        }),
+      );
+    });
+
     it('제품 HOLD 목록 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
       mockStockRepo.find.mockResolvedValue([
         {

@@ -81,7 +81,7 @@ export default function ProductHoldPage() {
   }), [data]);
 
   const handleAction = useCallback(async () => {
-    if (!selectedStock) return;
+    if (!selectedStock?.id) return;
     setSaving(true);
     try {
       const url = actionType === "hold"

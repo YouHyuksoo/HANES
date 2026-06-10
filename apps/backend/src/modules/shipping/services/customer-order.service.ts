@@ -118,7 +118,7 @@ export class CustomerOrderService {
         ...item,
         part: partMap.get(item.itemCode) || undefined,
       }));
-      return { ...order, items: itemsWithPart };
+      return { ...order, id: order.orderNo, items: itemsWithPart };
     });
 
     return { data: resultData, total, page, limit };
@@ -152,6 +152,7 @@ export class CustomerOrderService {
 
     return {
       ...order,
+      id: order.orderNo,
       items: itemsWithPart,
     };
   }

@@ -26,6 +26,8 @@ export interface FgLabelRow {
   issuedAt: string;
   status: string;
   reprintCount: number;
+  /** 회로라벨 (설비 출력 바코드, 스캔 모드 PASS 시 매핑) */
+  circuitLabel?: string | null;
 }
 
 /** 검사 통계 */

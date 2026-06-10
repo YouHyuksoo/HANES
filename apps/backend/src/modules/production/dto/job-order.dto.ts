@@ -167,6 +167,11 @@ export class JobOrderQueryDto extends PaginationQueryDto {
   @IsString()
   lineCode?: string;
 
+  @ApiPropertyOptional({ description: '설비 코드 필터 (생산실적 기준)' })
+  @IsOptional()
+  @IsString()
+  equipCode?: string;
+
   @ApiPropertyOptional({
     description: '상태 필터 (단일 값)',
     enum: [...JOB_ORDER_STATUS_VALUES],

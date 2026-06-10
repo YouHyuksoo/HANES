@@ -140,6 +140,15 @@ describe('PalletService', () => {
       const r = await target.findAll({} as any);
       expect(r.data).toEqual([]);
     });
+
+    it('화면 적재/상태변경 URL에서 사용할 id로 palletNo를 함께 반환한다', async () => {
+      mockPalletRepo.find.mockResolvedValue([{ palletNo: 'PAL-001', status: 'OPEN' }] as any);
+      mockPalletRepo.count.mockResolvedValue(1);
+
+      const result = await target.findAll({} as any);
+
+      expect(result.data[0]).toEqual(expect.objectContaining({ id: 'PAL-001', palletNo: 'PAL-001' }));
+    });
   });
 
   describe('transactional workflows', () => {

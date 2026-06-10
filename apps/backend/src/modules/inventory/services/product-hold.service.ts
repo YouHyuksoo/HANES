@@ -47,8 +47,10 @@ export class ProductHoldService {
 
     const flatData = data.map((stock) => {
       const part = partMap.get(stock.itemCode);
+      const stockId = `${stock.warehouseCode}::${stock.itemCode}::${stock.prdUid}`;
       return {
         ...stock,
+        id: stockId,
         itemCode: stock.itemCode,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,

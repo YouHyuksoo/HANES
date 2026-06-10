@@ -115,7 +115,7 @@ export class JobOrderService {
   async findAll(query: JobOrderQueryDto, company?: string, plant?: string) {
     const {
       page = 1, limit = 50, search, orderNo, itemCode,
-      lineCode, status, statuses, planDateFrom, planDateTo, erpSyncYn,
+      lineCode, equipCode, status, statuses, planDateFrom, planDateTo, erpSyncYn,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -129,6 +129,17 @@ export class JobOrderService {
     if (orderNo) qb.andWhere('jo.orderNo LIKE :orderNo', { orderNo: `%${orderNo.toUpperCase()}%` });
     if (itemCode) qb.andWhere('jo.itemCode = :itemCode', { itemCode });
     if (lineCode) qb.andWhere('jo.lineCode = :lineCode', { lineCode });
+    if (equipCode) {
+      const conditions = [
+        'EXISTS (SELECT 1 FROM PROD_RESULTS pr',
+        'WHERE pr.ORDER_NO = jo.ORDER_NO',
+        'AND pr.EQUIP_CODE = :equipCode',
+      ];
+      if (company) conditions.push('AND pr.COMPANY = :company');
+      if (plant) conditions.push('AND pr.PLANT_CD = :plant');
+      conditions.push(')');
+      qb.andWhere(conditions.join(' '), { equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) });
+    }
     if (statuses) {
       const statusList = statuses.split(',').map(s => s.trim()).filter(Boolean);
       if (statusList.length > 0) qb.andWhere('jo.status IN (:...statusList)', { statusList });

@@ -78,6 +78,13 @@ export class InterfaceService {
   // 인터페이스 로그 관리
   // ============================================================================
 
+  private logWithClientId(log: InterLog) {
+    const transDate = log.transDate instanceof Date
+      ? log.transDate.toISOString()
+      : new Date(log.transDate).toISOString();
+    return { ...log, id: `${transDate}/${log.seq}` };
+  }
+
   async findAllLogs(query: InterLogQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, direction, messageType, status, startDate, endDate } = query;
     const skip = (page - 1) * limit;
@@ -103,7 +110,7 @@ export class InterfaceService {
       this.interLogRepository.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return { data: data.map((log) => this.logWithClientId(log)), total, page, limit };
   }
 
   async findLogById(transDate: Date, seq: number, company?: string, plant?: string) {

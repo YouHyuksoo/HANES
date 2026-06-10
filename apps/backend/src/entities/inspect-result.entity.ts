@@ -59,6 +59,9 @@ export class InspectResult {
   @Column({ type: 'varchar2', name: 'FG_BARCODE', length: 30, nullable: true })
   fgBarcode: string | null;
 
+  @Column({ type: 'varchar2', name: 'CIRCUIT_LABEL', length: 200, nullable: true, comment: '회로라벨 (설비 출력 바코드, 스캔 모드 PASS 시 매핑)' })
+  circuitLabel: string | null;
+
   @Column({ name: 'INSPECT_TIME', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   inspectAt: Date;
 

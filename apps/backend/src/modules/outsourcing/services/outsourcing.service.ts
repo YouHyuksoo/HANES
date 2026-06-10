@@ -62,6 +62,10 @@ export class OutsourcingService {
     };
   }
 
+  private vendorWithClientId(vendor: VendorMaster) {
+    return { ...vendor, id: vendor.vendorCode };
+  }
+
   // ============================================================================
   // 외주처 마스터
   // ============================================================================
@@ -104,7 +108,7 @@ export class OutsourcingService {
       queryBuilder.getCount(),
     ]);
 
-    return { data, total, page, limit };
+    return { data: data.map((vendor) => this.vendorWithClientId(vendor)), total, page, limit };
   }
 
   async findVendorById(vendorCode: string, company?: string, plant?: string) {
@@ -122,7 +126,7 @@ export class OutsourcingService {
       take: 10,
     });
 
-    return { ...vendor, subconOrders };
+    return { ...this.vendorWithClientId(vendor), subconOrders };
   }
 
   async createVendor(dto: CreateVendorDto, company?: string, plant?: string) {

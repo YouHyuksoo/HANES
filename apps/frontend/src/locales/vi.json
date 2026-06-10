@@ -3214,7 +3214,10 @@
       "inspectOne": "Kiểm tra 1",
       "lastBarcode": "Mã gần nhất",
       "scanBarcode": "Quét mã vạch",
-      "pendingList": "Mã vạch chờ kiểm"
+      "pendingList": "Mã vạch chờ kiểm",
+      "circuitLabel": "Nhãn mạch",
+      "scanCircuitLabel": "Quét nhãn mạch",
+      "circuitRequired": "Quét nhãn mạch để đạt."
     },
     "terminalResult": {
       "title": "Kết quả kiểm tra terminal",

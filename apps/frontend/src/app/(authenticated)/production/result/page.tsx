@@ -21,6 +21,7 @@ import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { WorkerAvatar } from '@/components/worker/WorkerSelector';
+import { getWorkerDisplayName } from '@/components/worker/workerAvatar';
 import api from '@/services/api';
 
 /** 생산실적 인터페이스 */
@@ -34,8 +35,10 @@ interface ProdResult {
   lineName: string;
   processName: string;
   equipName: string;
-  workerName: string;
-  workerDept: string;
+  workerName?: string | null;
+  workerDept?: string | null;
+  workerId?: string | null;
+  worker?: { workerName?: string | null; dept?: string | null };
   prdUid: string;
   goodQty: number;
   defectQty: number;
@@ -73,7 +76,12 @@ export default function ProdResultPage() {
       if (startDate) params.startTimeFrom = startDate;
       if (endDate) params.startTimeTo = endDate;
       const res = await api.get('/production/prod-results', { params });
-      setData(res.data?.data ?? []);
+      const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+      setData(rows.map((row: ProdResult) => ({
+        ...row,
+        workerName: row.workerName ?? row.worker?.workerName ?? row.workerId ?? null,
+        workerDept: row.workerDept ?? row.worker?.dept ?? null,
+      })));
     } catch {
       setData([]);
     } finally {
@@ -115,12 +123,16 @@ export default function ProdResultPage() {
       {
         accessorKey: 'workerName', header: t('production.result.worker'), size: 110,
         meta: { filterType: 'text' as const },
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <WorkerAvatar name={row.original.workerName} dept={row.original.workerDept} size="sm" />
-            <span className="text-sm">{row.original.workerName}</span>
-          </div>
-        )
+        cell: ({ row }) => {
+          const workerName = row.original.workerName ?? row.original.worker?.workerName ?? row.original.workerId;
+          const workerDept = row.original.workerDept ?? row.original.worker?.dept;
+          return (
+            <div className="flex items-center gap-2">
+              <WorkerAvatar name={workerName} dept={workerDept} size="sm" />
+              <span className="text-sm">{getWorkerDisplayName(workerName)}</span>
+            </div>
+          );
+        }
       },
       { accessorKey: 'prdUid', header: t('production.result.prdUid'), size: 150, meta: { filterType: 'text' as const } },
       {

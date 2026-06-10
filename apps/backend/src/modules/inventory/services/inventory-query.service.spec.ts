@@ -104,6 +104,27 @@ describe('InventoryQueryService', () => {
     });
   });
 
+  it('자재 수불 취소 화면에서 사용할 id로 transNo를 함께 반환한다', async () => {
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        { transNo: 'TX-001', itemCode: 'ITEM-001', matUid: 'MAT-001' } as StockTransaction,
+      ]),
+    };
+    stockTransactionRepo.createQueryBuilder.mockReturnValue(qb as any);
+    warehouseRepo.find.mockResolvedValue([]);
+    partRepo.find.mockResolvedValue([]);
+    lotRepo.find.mockResolvedValue([]);
+
+    const result = await service.getTransactions({} as any);
+
+    expect(result[0]).toEqual(expect.objectContaining({ id: 'TX-001', transNo: 'TX-001' }));
+  });
+
   it('LOT 상세 조회도 요청 테넌트 범위로 제한한다', async () => {
     lotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as MatLot);
     partRepo.findOne.mockResolvedValue(null);

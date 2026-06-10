@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
-  Timer, Search, RefreshCw, AlertTriangle, CheckCircle,
-  XCircle, Clock, FlaskConical,
+  Timer, Search, RefreshCw, FlaskConical,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import { PartSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -40,6 +40,7 @@ export default function ShelfLifePage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [expiryFilter, setExpiryFilter] = useState("");
+  const [itemFilter, setItemFilter] = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -58,21 +59,23 @@ export default function ShelfLifePage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // 만료임박·만료됨만 대상으로 한다
   const expiryOptions = useMemo(() => [
-    { value: "", label: t("common.status") },
+    { value: "", label: `${t("material.shelfLife.nearExpiry")} + ${t("material.shelfLife.expired")}` },
     { value: "EXPIRED", label: t("material.shelfLife.expired") },
     { value: "NEAR_EXPIRY", label: t("material.shelfLife.nearExpiry") },
-    { value: "VALID", label: t("material.shelfLife.valid") },
-    { value: "DISCARDED", label: t("material.shelfLife.discarded") },
   ], [t]);
 
-  const stats = useMemo(() => ({
-    total: data.filter(d => d.expiryStatus !== "DISCARDED").length,
-    expired: data.filter(d => d.expiryStatus === "EXPIRED").length,
-    nearExpiry: data.filter(d => d.expiryStatus === "NEAR_EXPIRY").length,
-    valid: data.filter(d => d.expiryStatus === "VALID").length,
-    discarded: data.filter(d => d.expiryStatus === "DISCARDED").length,
-  }), [data]);
+  // 만료임박/만료됨만 노출 + 품목 필터 적용
+  const visibleData = useMemo(
+    () =>
+      data.filter(
+        (d) =>
+          (d.expiryStatus === "EXPIRED" || d.expiryStatus === "NEAR_EXPIRY") &&
+          (!itemFilter || d.itemCode === itemFilter)
+      ),
+    [data, itemFilter]
+  );
 
   const rowClassName = useCallback((row: ShelfLifeItem) => {
     if (row.expiryStatus === "DISCARDED") return "!bg-gray-50/50 dark:!bg-gray-900/20 opacity-60";
@@ -167,19 +170,10 @@ export default function ShelfLifePage() {
         </Button>
       </div>
 
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-5 gap-3 flex-shrink-0">
-        <StatCard label={t("material.shelfLife.stats.total")} value={stats.total} icon={Clock} color="blue" />
-        <StatCard label={t("material.shelfLife.stats.expired")} value={stats.expired} icon={XCircle} color="red" />
-        <StatCard label={t("material.shelfLife.stats.nearExpiry")} value={stats.nearExpiry} icon={AlertTriangle} color="yellow" />
-        <StatCard label={t("material.shelfLife.stats.valid")} value={stats.valid} icon={CheckCircle} color="green" />
-        <StatCard label={t("material.shelfLife.stats.discarded")} value={stats.discarded} icon={XCircle} color="gray" />
-      </div>
-
       {/* 데이터 그리드 */}
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
         <CardContent className="h-full p-4">
-          <DataGrid data={data} columns={columns} isLoading={loading}
+          <DataGrid data={visibleData} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("material.shelfLife.title")}
             rowClassName={rowClassName}
             toolbarLeft={
@@ -188,6 +182,9 @@ export default function ShelfLifePage() {
                   <Input placeholder={t("material.shelfLife.searchPlaceholder")}
                     value={searchText} onChange={e => setSearchText(e.target.value)}
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-48 flex-shrink-0">
+                  <PartSelect labelPrefix={t("common.partName", "품목")} value={itemFilter} onChange={setItemFilter} fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
                   <Select options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} fullWidth />

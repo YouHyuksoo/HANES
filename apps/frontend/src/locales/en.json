@@ -3228,7 +3228,10 @@
       "inspectOne": "Inspect 1",
       "lastBarcode": "Last Barcode",
       "scanBarcode": "Scan Barcode",
-      "pendingList": "Pending Barcodes"
+      "pendingList": "Pending Barcodes",
+      "circuitLabel": "Circuit Label",
+      "scanCircuitLabel": "Scan Circuit Label",
+      "circuitRequired": "Scan the circuit label to pass."
     },
     "terminalResult": {
       "title": "Terminal Inspect Result",

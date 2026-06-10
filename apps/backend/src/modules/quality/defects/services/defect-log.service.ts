@@ -25,6 +25,7 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
+import { FgLabel } from '../../../../entities/fg-label.entity';
 import {
   CreateDefectLogDto,
   UpdateDefectLogDto,
@@ -48,6 +49,8 @@ export class DefectLogService {
     private readonly prodResultRepository: Repository<ProdResult>,
     @InjectRepository(ReworkOrder)
     private readonly reworkOrderRepository: Repository<ReworkOrder>,
+    @InjectRepository(FgLabel)
+    private readonly fgLabelRepository: Repository<FgLabel>,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -157,7 +160,28 @@ export class DefectLogService {
       this.defectLogRepository.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // 생산실적을 배치 로드(N+1 방지)해 작업지시/작업자/설비를 보강하고, 화면용 복합 식별자(id)를 부여한다.
+    const resultNos = [...new Set(data.map((d) => d.prodResultNo).filter(Boolean))];
+    const prodResults = resultNos.length
+      ? (await this.prodResultRepository.find({
+          where: { resultNo: In(resultNos), ...this.tenantWhere(company, plant) },
+          select: ['resultNo', 'orderNo', 'workerId', 'equipCode'],
+        })) ?? []
+      : [];
+    const prMap = new Map(prodResults.map((p) => [p.resultNo, p] as const));
+
+    const enriched = data.map((d) => {
+      const pr = prMap.get(d.prodResultNo);
+      return {
+        ...d,
+        id: this.buildDefectLogId(d),
+        workOrderNo: pr?.orderNo ?? null,
+        operator: pr?.workerId ?? null,
+        equipmentNo: pr?.equipCode ?? null,
+      };
+    });
+
+    return { data: enriched, total, page, limit };
   }
 
   /**
@@ -182,12 +206,23 @@ export class DefectLogService {
   }
 
   /**
-   * 불량로그 단건 조회 (id 기준 — 기존 FK 호환)
+   * 불량로그 단건 조회
+   * - 화면 식별자(`occurAtISO|seq` 복합키)와 레거시 seq 단독을 모두 허용한다.
+   *   복합 PK(occurAt+seq)에서 seq는 단독으로 유일하지 않으므로 화면은 복합 식별자를 사용한다.
    */
   async findById(id: string, company?: string, plant?: string) {
-    const defect = await this.defectLogRepository.findOne({
-      where: { seq: +id, ...this.tenantWhere(company, plant) },
-    });
+    const defect = id.includes('|')
+      ? await (async () => {
+          const sep = id.lastIndexOf('|');
+          const occurIso = id.slice(0, sep);
+          const seqStr = id.slice(sep + 1);
+          return this.defectLogRepository.findOne({
+            where: { occurAt: new Date(occurIso), seq: +seqStr, ...this.tenantWhere(company, plant) },
+          });
+        })()
+      : await this.defectLogRepository.findOne({
+          where: { seq: +id, ...this.tenantWhere(company, plant) },
+        });
 
     if (!defect) {
       throw new NotFoundException(`불량로그를 찾을 수 없습니다: ${id}`);
@@ -217,19 +252,64 @@ export class DefectLogService {
    * 불량로그 생성
    */
   async create(dto: CreateDefectLogDto, company?: string, plant?: string) {
+    // 대상 생산실적 식별 우선순위: prodResultNo > prdUid(제품 바코드) > workOrderNo
+    let prodResultNo = dto.prodResultNo;
+    if (!prodResultNo && dto.prdUid) {
+      // (1) 생산 시리얼이 prod_result.prdUid에 직접 기록된 경우
+      let byProduct = await this.prodResultRepository.findOne({
+        where: { prdUid: dto.prdUid, ...this.tenantWhere(company, plant) },
+        order: { createdAt: 'DESC' },
+      });
+      // (2) 제품 바코드가 FG 라벨인 경우(검사 시 발행): FG_LABELS → 작업지시 → 최신 생산실적
+      if (!byProduct) {
+        const fgLabel = await this.fgLabelRepository.findOne({
+          where: { fgBarcode: dto.prdUid, ...this.tenantWhere(company, plant) },
+        });
+        if (fgLabel?.orderNo) {
+          byProduct = await this.prodResultRepository.findOne({
+            where: { orderNo: fgLabel.orderNo, ...this.tenantWhere(company, plant) },
+            order: { createdAt: 'DESC' },
+          });
+        }
+      }
+      if (!byProduct) {
+        throw new NotFoundException(
+          `제품 바코드 ${dto.prdUid}에 해당하는 생산실적을 찾을 수 없습니다.`,
+        );
+      }
+      prodResultNo = byProduct.resultNo;
+    }
+    if (!prodResultNo) {
+      if (!dto.workOrderNo) {
+        throw new BadRequestException(
+          '제품 바코드(prdUid), 생산실적 번호(prodResultNo), 작업지시 번호(workOrderNo) 중 하나는 필요합니다.',
+        );
+      }
+      const latest = await this.prodResultRepository.findOne({
+        where: { orderNo: dto.workOrderNo, ...this.tenantWhere(company, plant) },
+        order: { createdAt: 'DESC' },
+      });
+      if (!latest) {
+        throw new NotFoundException(
+          `작업지시 ${dto.workOrderNo}에 해당하는 생산실적이 없습니다. 먼저 생산실적을 등록해 주세요.`,
+        );
+      }
+      prodResultNo = latest.resultNo;
+    }
+
     // 생산실적 존재 확인
     const prodResult = await this.prodResultRepository.findOne({
-      where: { resultNo: dto.prodResultNo, ...this.tenantWhere(company, plant) },
+      where: { resultNo: prodResultNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!prodResult) {
-      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultNo}`);
+      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${prodResultNo}`);
     }
     this.assertSameTenant('생산실적', prodResult, company, plant);
 
     // 불량 등록 및 생산실적 불량수량 증가를 트랜잭션으로 처리
     const defectLog = this.defectLogRepository.create({
-      prodResultNo: dto.prodResultNo,
+      prodResultNo,
       defectCode: dto.defectCode,
       defectName: dto.defectName,
       qty: dto.qty ?? 1,
@@ -245,7 +325,7 @@ export class DefectLogService {
 
     // 생산실적의 불량수량 증가
     await this.prodResultRepository.update(
-      { resultNo: dto.prodResultNo, ...this.tenantWhere(company, plant) },
+      { resultNo: prodResultNo, ...this.tenantWhere(company, plant) },
       { defectQty: prodResult.defectQty + (dto.qty ?? 1) }
     );
 

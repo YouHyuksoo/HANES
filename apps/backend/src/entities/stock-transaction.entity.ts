@@ -76,6 +76,10 @@ export class StockTransaction {
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 
+  /** 재고 계정: 입고계정(RECEIPT_ACCOUNT) / 재고보정계정(ADJUST_ACCOUNT) 공통코드 값 */
+  @Column({ type: 'varchar2', name: 'ACCOUNT', length: 20, nullable: true })
+  account: string | null;
+
   /** G9: 승인자 ID (기타출고 승인 워크플로우) */
   @Column({ type: 'varchar2', name: 'APPROVER_ID', length: 20, nullable: true })
   approverId: string | null;

@@ -21,7 +21,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
@@ -223,15 +223,50 @@ export class ContinuityInspectService {
   /**
    * 작업지시별 발행된 FG_LABELS 목록 조회
    */
-  async findFgLabelsByOrder(orderNo: string, company?: string, plant?: string) {
-    return this.fgLabelRepo.find({
-      where: {
-        orderNo,
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-      },
-      order: { issuedAt: 'DESC' },
+  async findFgLabelsByOrder(
+    orderNo: string,
+    company?: string,
+    plant?: string,
+    inspectType = 'CONTINUITY',
+  ) {
+    const qb = this.fgLabelRepo
+      .createQueryBuilder('fg')
+      .leftJoin(InspectResult, 'ir', 'ir.resultNo = fg.inspectResultId')
+      .where('fg.orderNo = :orderNo', { orderNo })
+      .orderBy('fg.issuedAt', 'DESC');
+
+    if (company) {
+      qb.andWhere('fg.company = :company', { company });
+    }
+    if (plant) {
+      qb.andWhere('fg.plant = :plant', { plant });
+    }
+    if (inspectType) {
+      qb.andWhere('ir.inspectType = :inspectType', { inspectType });
+    }
+
+    const labels = await qb.getMany();
+
+    /** 회로라벨은 INSPECT_RESULTS에 저장되므로 inspectResultId로 단일 조회 후 매핑(N+1 회피) */
+    const inspectIds = labels
+      .map((l) => l.inspectResultId)
+      .filter((v): v is string => !!v);
+    if (inspectIds.length === 0) {
+      return labels.map((l) => ({ ...l, circuitLabel: null }));
+    }
+    const inspects = await this.inspectResultRepo.find({
+      where: { resultNo: In(inspectIds) },
+      select: ['resultNo', 'circuitLabel'],
     });
+    const circuitMap = new Map(
+      inspects.map((i) => [i.resultNo, i.circuitLabel ?? null]),
+    );
+    return labels.map((l) => ({
+      ...l,
+      circuitLabel: l.inspectResultId
+        ? circuitMap.get(l.inspectResultId) ?? null
+        : null,
+    }));
   }
 
   /**
@@ -268,6 +303,25 @@ export class ContinuityInspectService {
         plant: jobOrder.plant,
       });
 
+      /** 1-2. 스캔 모드 합격 시 회로라벨 필수 + 중복 차단 */
+      if (timing !== 'ON_INSPECT' && dto.passYn === 'Y') {
+        if (!dto.circuitLabel) {
+          throw new BadRequestException('합격 시 회로라벨 스캔이 필요합니다.');
+        }
+        const dupCount = await queryRunner.manager.count(InspectResult, {
+          where: {
+            circuitLabel: dto.circuitLabel,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+        });
+        if (dupCount > 0) {
+          throw new BadRequestException(
+            `이미 사용된 회로라벨입니다: ${dto.circuitLabel}`,
+          );
+        }
+      }
+
       /** 2. InspectResult 생성 */
       const prodResult = await this.resolveProdResult(
         dto.orderNo,
@@ -282,11 +336,12 @@ export class ContinuityInspectService {
       const inspectResult = queryRunner.manager.create(InspectResult, {
         resultNo: inspectResultNo,
         prodResultNo: prodResult?.resultNo ?? null,
-        inspectType: 'CONTINUITY',
+        inspectType: dto.inspectType ?? 'CONTINUITY',
         inspectScope: 'FULL',
         passYn: dto.passYn,
         errorCode: dto.errorCode ?? null,
         errorDetail: dto.errorDetail ?? null,
+        circuitLabel: dto.circuitLabel ?? null,
         inspectorId: dto.workerId ?? null,
         inspectAt: new Date(),
         company: company ?? jobOrder.company,
@@ -580,14 +635,23 @@ export class ContinuityInspectService {
   /**
    * 작업지시별 통전검사 통계
    */
-  async getStats(orderNo: string, company?: string, plant?: string) {
-    const labels = await this.fgLabelRepo.count({
-      where: {
-        orderNo,
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-      },
-    });
+  async getStats(orderNo: string, company?: string, plant?: string, inspectType = 'CONTINUITY') {
+    const labelsQb = this.fgLabelRepo
+      .createQueryBuilder('fg')
+      .leftJoin(InspectResult, 'ir', 'ir.resultNo = fg.inspectResultId')
+      .where('fg.orderNo = :orderNo', { orderNo });
+
+    if (company) {
+      labelsQb.andWhere('fg.company = :company', { company });
+    }
+    if (plant) {
+      labelsQb.andWhere('fg.plant = :plant', { plant });
+    }
+    if (inspectType) {
+      labelsQb.andWhere('ir.inspectType = :inspectType', { inspectType });
+    }
+
+    const labels = await labelsQb.getCount();
 
     const jobOrder = await this.jobOrderRepo.findOne({
       where: {
@@ -609,7 +673,7 @@ export class ContinuityInspectService {
       .addSelect('SUM(CASE WHEN ir.passYn = :failYn THEN 1 ELSE 0 END)', 'failed')
       .where('pr.orderNo = :orderNo', { orderNo })
       .andWhere('pr.status != :canceled', { canceled: 'CANCELED' })
-      .andWhere('ir.inspectType = :inspectType', { inspectType: 'CONTINUITY' })
+      .andWhere('ir.inspectType = :inspectType', { inspectType })
       .setParameters({ passYn: 'Y', failYn: 'N' });
 
     if (company) {

@@ -22,7 +22,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface HoldLot {
-  id: string;
   matUid: string;
   itemCode: string;
   itemName: string;
@@ -77,11 +76,11 @@ export default function HoldPage() {
   }), [data]);
 
   const handleAction = useCallback(async () => {
-    if (!selectedLot) return;
+    if (!selectedLot?.matUid) return;
     setSaving(true);
     try {
       const url = actionType === "hold" ? "/material/hold/hold" : "/material/hold/release";
-      await api.post(url, { matUid: selectedLot.id, reason });
+      await api.post(url, { matUid: selectedLot.matUid, reason });
       setIsModalOpen(false);
       setReason("");
       setSelectedLot(null);

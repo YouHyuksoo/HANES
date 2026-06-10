@@ -533,6 +533,7 @@ export class ReceivingService {
           workerId: dto.workerId,
           refType: isConcession ? 'RECEIVE_CONCESSION' : 'RECEIVE',
           refId: `${receiving.receiveNo}-${receiving.seq}`,
+          account: 'PROD', // 정상입고 기본 양산계정
           company: lot.company,
           plant: lot.plant,
         });

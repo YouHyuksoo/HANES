@@ -3214,7 +3214,10 @@
       "inspectOne": "检查1个",
       "lastBarcode": "最近发行",
       "scanBarcode": "扫描条码",
-      "pendingList": "待检条码"
+      "pendingList": "待检条码",
+      "circuitLabel": "电路标签",
+      "scanCircuitLabel": "扫描电路标签",
+      "circuitRequired": "合格需先扫描电路标签。"
     },
     "terminalResult": {
       "title": "端子检查实绩",

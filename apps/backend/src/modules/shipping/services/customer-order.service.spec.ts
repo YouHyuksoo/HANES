@@ -78,6 +78,17 @@ describe('CustomerOrderService', () => {
   });
 
   describe('findAll', () => {
+    it('화면 수정 URL에서 사용할 id로 orderNo를 함께 반환한다', async () => {
+      mockOrderRepo.find.mockResolvedValue([{ orderNo: 'CO-001', company: 'C1', plant: 'P1' }] as any);
+      mockOrderRepo.count.mockResolvedValue(1);
+      mockItemRepo.find.mockResolvedValue([]);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({} as any, 'C1', 'P1');
+
+      expect(result.data[0]).toEqual(expect.objectContaining({ id: 'CO-001', orderNo: 'CO-001' }));
+    });
+
     it('should enrich listed order items with part names within tenant only', async () => {
       mockOrderRepo.find.mockResolvedValue([{ orderNo: 'CO-001', company: 'C1', plant: 'P1' }] as any);
       mockOrderRepo.count.mockResolvedValue(1);

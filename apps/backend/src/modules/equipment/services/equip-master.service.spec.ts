@@ -35,6 +35,34 @@ describe('EquipMasterService', () => {
   });
   afterEach(() => jest.clearAllMocks());
 
+  describe('findAll', () => {
+    it('생산투입 화면 작업지시 배정 URL에서 사용할 id로 equipCode를 함께 반환한다', async () => {
+      const rows = [
+        { equipCode: 'EQ-001', equipName: 'Cutting 1', processCode: 'CUT' },
+      ] as any;
+      const qb: any = {
+        andWhere: jest.fn().mockReturnThis(),
+        clone: jest.fn(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(rows),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      qb.clone.mockReturnValue(qb);
+      mockEquipRepo.createQueryBuilder.mockReturnValue(qb);
+      mockProcessRepo.find.mockResolvedValue([{ processCode: 'CUT', processName: 'Cutting' }] as any);
+
+      const result = await target.findAll({ page: 1, limit: 20 } as any);
+
+      expect(result.data[0]).toEqual(expect.objectContaining({
+        id: 'EQ-001',
+        equipCode: 'EQ-001',
+        processName: 'Cutting',
+      }));
+    });
+  });
+
   describe('findById', () => {
     it('should return equip', async () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001' } as any);

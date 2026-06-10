@@ -189,6 +189,30 @@ describe('JobOrderService', () => {
       expect(result.data).toHaveLength(1);
       expect(result.page).toBe(1);
     });
+
+    it('filters job orders by production result equipment code', async () => {
+      // Arrange
+      const mockQb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockJobOrderRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+
+      // Act
+      await target.findAll({ page: 1, limit: 10, equipCode: 'EQ-CUT-01' } as any, '40', '1000');
+
+      // Assert
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('pr.EQUIP_CODE = :equipCode'),
+        expect.objectContaining({ equipCode: 'EQ-CUT-01' }),
+      );
+    });
   });
 
   // ─────────────────────────────────────────────

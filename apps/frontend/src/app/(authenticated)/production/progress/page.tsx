@@ -16,6 +16,7 @@ import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
+import { EquipSelect } from '@/components/shared';
 import api from '@/services/api';
 
 interface ProgressItem {
@@ -42,6 +43,7 @@ export default function ProgressPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [equipFilter, setEquipFilter] = useState('');
   const [shiftFilter, setShiftFilter] = useState('');
   const [shiftOptions, setShiftOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [planDateFrom, setPlanDateFrom] = useState(getToday());
@@ -69,6 +71,7 @@ export default function ProgressPage() {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
+      if (equipFilter) params.equipCode = equipFilter;
       if (shiftFilter) params.shift = shiftFilter;
       if (planDateFrom) params.planDateFrom = planDateFrom;
       if (planDateTo) params.planDateTo = planDateTo;
@@ -79,7 +82,7 @@ export default function ProgressPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter, shiftFilter, planDateFrom, planDateTo]);
+  }, [searchText, statusFilter, equipFilter, shiftFilter, planDateFrom, planDateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -155,6 +158,9 @@ export default function ProgressPage() {
               </div>
               <div className="w-36 flex-shrink-0">
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+              </div>
+              <div className="w-48 flex-shrink-0">
+                <EquipSelect labelPrefix="설비" value={equipFilter} onChange={setEquipFilter} fullWidth />
               </div>
               <div className="w-44 flex-shrink-0">
                 <Select options={[{ value: '', label: t('common.all') }, ...shiftOptions]} value={shiftFilter} onChange={setShiftFilter} fullWidth />

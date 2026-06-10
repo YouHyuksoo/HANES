@@ -4,15 +4,15 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
-- T-PROD-ISSUE-STOCK-ENDPOINT (codex, 2026-06-10): 제품출고 재고조회 API 경로 404 수정.
-  파일: apps/frontend/src/app/(authenticated)/product/issue/components/IssueFormPanel.tsx, apps/frontend/src/app/(authenticated)/product/issue/components/issue-endpoint.structure.test.mjs
+- T-INSPECT-CIRCUIT-LABEL (claude, 2026-06-10): 통전검사 `/inspection/result` 회로라벨 매핑(스캔 모드).
+  파일: apps/backend/src/migrations/2026-06-10_inspect_result_circuit_label.sql, apps/backend/src/entities/inspect-result.entity.ts, apps/backend/src/modules/quality/continuity-inspect/dto/continuity-inspect.dto.ts, apps/backend/src/modules/quality/continuity-inspect/services/continuity-inspect.service.ts(+spec), apps/frontend/src/app/(authenticated)/inspection/result/{types.ts,components/InspectPanel.tsx}, apps/frontend/src/locales/{ko,en,zh,vi}.json
   상태: IN_PROGRESS
-  notes: 프론트가 `/inventory/product/stock` 단수 호출, 백엔드는 `/inventory/product/stocks` 복수 route.
+  notes: INSPECT_RESULTS.CIRCUIT_LABEL VARCHAR2(200) 추가. 스캔모드 PASS 시 회로라벨 필수+중복차단(서버), 저장. 이력 그리드 회로라벨 컬럼(inspectResultId→In() 단일쿼리 매핑). 설계: docs/superpowers/specs/2026-06-10-inspection-circuit-label-design.md
 
 - T-KIOSK-DEFECT-DOUBLE-COUNT (claude, 2026-06-10): 입력키오스크 불량입력 defectQty 이중 카운트 수정 + quality/defect 화면 전면 정합화.
   파일: apps/backend/src/modules/production/dto/prod-result.dto.ts, apps/backend/src/modules/production/services/prod-result.service.ts(+spec), apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ProductionInputBar.tsx, apps/backend/src/modules/quality/defects/{dto/defect-log.dto.ts,services/defect-log.service.ts(+spec),defects.module.ts}, apps/frontend/src/app/(authenticated)/quality/defect/page.tsx, apps/frontend/src/locales/*
   상태: REVIEW
-  notes: (A)kiosk 이중카운트=prod-results 집계 defectQty + 별도 /quality/defect-logs(증가 부작용) → 2배. 수정=불량 상세를 prod-result 생성 트랜잭션에 포함(CreateProdResultDto.defects, occurAt+seq1..N), defectQty 상세합계 1회 산정, 별도 호출 제거. (B)quality/defect 전면 정합화: 등록은 제품바코드 스캔 우선→생산실적 자동해석[prdUid 직접매칭 → FG_LABELS.fgBarcode→orderNo→최신 생산실적 폴백(FG_BARCODE_ISSUE_TIMING=ON_INSPECT라 prdUid≠fgBarcode 확인) → workOrderNo → prodResultNo], 상태 DEFECT_LOG_STATUS(WAIT/REPAIR/REWORK/SCRAP/DONE)+PATCH+복합식별자(occurAtISO|seq), 목록 생산실적 보강(작업지시/작업자/설비, N+1 batch), 에러 toast. standalone create 증가로직 유지. RED→GREEN, defect-log spec 37 + prod-result 18, 백 tsc 0, 프론트 tsc 0(내 파일). 실측: GET /quality/defect-logs 200+enrichment 확인, PATCH 상태변경 복합식별자 URL 라운드트립(WAIT→REPAIR→WAIT 원복) 확인. 등록 POST는 자재차감 부수효과로 미실행(단위검증+해석 데이터모델 실측 대체).
+  notes: (A)kiosk 이중카운트=prod-results 집계 defectQty + 별도 /quality/defect-logs(증가 부작용) → 2배. 수정=불량 상세를 prod-result 생성 트랜잭션에 포함(CreateProdResultDto.defects, occurAt+seq1..N), defectQty 상세합계 1회 산정, 별도 호출 제거. (B)quality/defect 전면 정합화: 등록은 제품바코드 스캔 우선→생산실적 자동해석[prdUid 직접매칭 → FG_LABELS.fgBarcode→orderNo→최신 생산실적 폴백(FG_BARCODE_ISSUE_TIMING=ON_INSPECT라 prdUid≠fgBarcode 확인) → workOrderNo → prodResultNo], 상태 DEFECT_LOG_STATUS(WAIT/REPAIR/REWORK/SCRAP/DONE)+PATCH+복합식별자(occurAtISO|seq), 목록 생산실적 보강(작업지시/작업자/설비, N+1 batch), 에러 toast. standalone create 증가로직 유지. RED→GREEN, defect-log spec 37 + prod-result 18, 백 tsc 0, 프론트 tsc 0(내 파일). 실측: GET /quality/defect-logs 200+enrichment, PATCH 상태변경 복합식별자 URL 라운드트립(WAIT→REPAIR→WAIT). 등록 e2e(가역 사이클 POST→DB검증→DELETE 원복) 3경로 전부 통과: prdUid직접(+3), workOrderNo(+4), FG라벨폴백(임시FG시드→+2, advisor #1 핵심경로) — 모두 PR26061000011 해석·단일카운트(이중 아님) 확인, 테스트데이터 전량 정리(defectQty=2 원복, E2E잔여 0).
 
 - T-INV-STOCK-TABS (claude, 2026-06-10): 재고/생산계획 조회화면 일괄 개선.
   파일: apps/frontend/src/app/(authenticated)/inventory/{material-stock,transaction,material-physical-inv,material-physical-inv-apply}/*, apps/frontend/src/app/(authenticated)/production/monthly-plan/*, apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts, apps/backend/src/seeds/menu-config.json, apps/frontend/src/config/menuConfig.ts, apps/backend/src/migrations/2026-06-10_mat_physical_inv_apply_menu_seed.sql, apps/frontend/src/locales/*
@@ -33,6 +33,8 @@ Before editing, add a lock entry. Remove or mark it released when done.
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-SHIP-ORDER-ITEM-PAYLOAD (codex, 2026-06-10): `/shipping/order` 출하지시 생성 payload에 `items`가 누락되어 DTO 400이 나던 문제 수정. 품목 검색/수량 입력 UI 추가, 저장 payload `items` 포함, focused 구조 테스트/프론트 tsc/API 가역 생성삭제/브라우저 모달 확인 후 lock 해제.
 
 - T-PROD-RECEIVE-REMOVE-SELECTED (claude, 2026-06-10): 제품입고 `/product/receive` 선택입고(Method A, BoxReceiveList) 제거. 좌측 체크선택 일괄입고 패널 삭제→이력 그리드 전체폭, useReceiveCandidates 제거(BoxScanModal은 receiveBoxes/ReceiveCandidate만 사용), 사용처 없어진 boxList.title/count/empty 4개 언어 정리. 스캔입고/개별입고 무변경. 프론트 tsc 0·JSON 4파일 유효·잔여참조 0 확인 후 lock 해제.
 

@@ -35,9 +35,29 @@ import { PaginationQueryDto } from '../../../../common/dto/base-query.dto';
  * 불량로그 생성 DTO
  */
 export class CreateDefectLogDto {
-  @ApiProperty({ description: '생산실적 번호 (RESULT_NO)', example: 'PR260316-00001' })
+  @ApiPropertyOptional({
+    description: '생산실적 번호 (RESULT_NO). 미지정 시 workOrderNo로 자동 해석한다.',
+    example: 'PR260316-00001',
+  })
+  @IsOptional()
   @IsString()
-  prodResultNo: string;
+  prodResultNo?: string;
+
+  @ApiPropertyOptional({
+    description: '제품 바코드(prdUid/FG 바코드). 스캔 등록 시 해당 제품의 생산실적으로 자동 연결한다.',
+    example: 'FG260610-00001',
+  })
+  @IsOptional()
+  @IsString()
+  prdUid?: string;
+
+  @ApiPropertyOptional({
+    description: '작업지시 번호. prodResultNo/prdUid 미지정 시 해당 작업지시의 최신 생산실적으로 자동 연결한다.',
+    example: 'WO2606100004',
+  })
+  @IsOptional()
+  @IsString()
+  workOrderNo?: string;
 
   @ApiProperty({ description: '불량 코드', example: 'DEF001', maxLength: 50 })
   @IsString()

@@ -125,6 +125,37 @@ describe('ContinuityInspectService', () => {
     expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
+  it('inspect stores the requested inspect type for terminal inspection', async () => {
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
+      increment: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    mockSysConfigService.getValue.mockResolvedValue('ON_INSPECT');
+    mockProdResultRepo.find.mockResolvedValue([]);
+    mockSeqGen.getNo.mockResolvedValue('IR-001');
+    mockSeqGen.nextFgBarcode.mockResolvedValue('FG-001');
+
+    const result = await target.inspect({
+      orderNo: 'JO-001',
+      itemCode: 'ITEM-001',
+      passYn: 'Y',
+      inspectType: 'TERMINAL',
+    } as any, 'C1', 'P1');
+
+    expect(result.inspectResult.inspectType).toBe('TERMINAL');
+    expect(manager.create).toHaveBeenCalledWith(
+      InspectResult,
+      expect.objectContaining({ inspectType: 'TERMINAL' }),
+    );
+  });
+
   it('inspect blocks when request tenant differs from loaded job order tenant', async () => {
     const manager = {
       findOne: jest
@@ -262,7 +293,117 @@ describe('ContinuityInspectService', () => {
     await expect(target.voidLabel('FG-999', 'mistake')).rejects.toThrow(BadRequestException);
   });
 
+  it('inspect requires a circuit label on PASS in scan mode', async () => {
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
+      count: jest.fn().mockResolvedValue(0),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+    mockSysConfigService.getValue.mockResolvedValue('ON_PRODUCTION');
+
+    await expect(
+      target.inspect(
+        { orderNo: 'JO-001', itemCode: 'ITEM-001', passYn: 'Y', fgBarcode: 'FG-1' } as any,
+        'C1',
+        'P1',
+      ),
+    ).rejects.toThrow(BadRequestException);
+    expect(manager.create).not.toHaveBeenCalled();
+  });
+
+  it('inspect blocks a duplicate circuit label on PASS in scan mode', async () => {
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
+      count: jest.fn().mockResolvedValue(1),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+    mockSysConfigService.getValue.mockResolvedValue('ON_PRODUCTION');
+
+    await expect(
+      target.inspect(
+        { orderNo: 'JO-001', itemCode: 'ITEM-001', passYn: 'Y', fgBarcode: 'FG-1', circuitLabel: 'CL-DUP' } as any,
+        'C1',
+        'P1',
+      ),
+    ).rejects.toThrow(BadRequestException);
+    expect(manager.count).toHaveBeenCalledWith(
+      InspectResult,
+      expect.objectContaining({ where: expect.objectContaining({ circuitLabel: 'CL-DUP', company: 'C1', plant: 'P1' }) }),
+    );
+    expect(manager.create).not.toHaveBeenCalled();
+  });
+
+  it('inspect stores the circuit label and issues the pending label on PASS in scan mode', async () => {
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder)
+        .mockResolvedValueOnce({ fgBarcode: 'FG-1', status: 'PENDING', company: 'C1', plant: 'P1' } as FgLabel),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
+      count: jest.fn().mockResolvedValue(0),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+    mockSysConfigService.getValue.mockResolvedValue('ON_PRODUCTION');
+    mockProdResultRepo.findOne.mockResolvedValue(null);
+    mockProdResultRepo.find.mockResolvedValue([]);
+    mockSeqGen.getNo.mockResolvedValue('IR-001');
+
+    const result = await target.inspect(
+      { orderNo: 'JO-001', itemCode: 'ITEM-001', passYn: 'Y', fgBarcode: 'FG-1', circuitLabel: 'CL-1' } as any,
+      'C1',
+      'P1',
+    );
+
+    expect(result.fgBarcode).toBe('FG-1');
+    expect(manager.create).toHaveBeenCalledWith(
+      InspectResult,
+      expect.objectContaining({ circuitLabel: 'CL-1' }),
+    );
+  });
+
+  it('findFgLabelsByOrder maps circuit labels from inspect results', async () => {
+    const qb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        { fgBarcode: 'FG-1', inspectResultId: 'IR-1' },
+        { fgBarcode: 'FG-2', inspectResultId: null },
+      ]),
+    };
+    mockFgLabelRepo.createQueryBuilder.mockReturnValue(qb as any);
+    mockInspectRepo.find.mockResolvedValue([
+      { resultNo: 'IR-1', circuitLabel: 'CL-1' },
+    ] as InspectResult[]);
+
+    const rows = await target.findFgLabelsByOrder('JO-1', 'C1', 'P1');
+
+    expect(rows).toEqual([
+      expect.objectContaining({ fgBarcode: 'FG-1', circuitLabel: 'CL-1' }),
+      expect.objectContaining({ fgBarcode: 'FG-2', circuitLabel: null }),
+    ]);
+  });
+
   it('getStats excludes canceled prod results from continuity totals', async () => {
+    const labelsQb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(4),
+    };
     const qb = {
       innerJoin: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
@@ -273,7 +414,7 @@ describe('ContinuityInspectService', () => {
       getRawOne: jest.fn().mockResolvedValue({ passed: '2', failed: '1' }),
     };
 
-    mockFgLabelRepo.count.mockResolvedValue(4);
+    mockFgLabelRepo.createQueryBuilder.mockReturnValue(labelsQb as any);
     mockJobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-001', planQty: 10 } as JobOrder);
     mockInspectRepo.createQueryBuilder.mockReturnValue(qb as any);
 

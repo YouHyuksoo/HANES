@@ -2,12 +2,14 @@
 
 /**
  * @file material/scrap/components/ScrapRegisterModal.tsx
- * @description 폐기 등록 모달 - 창고/품목/LOT 선택 → 수량/사유 입력 → 폐기 처리
+ * @description 폐기 등록 모달 - 폐기창고(SCRAP) 재고의 출고(재고차감) 처리
  *
  * 초보자 가이드:
- * 1. 창고 선택 → 해당 창고의 가용재고만 표시 (availableQty > 0)
- * 2. 재고 선택 → 품목/LOT 상세 + 가용수량 표시
- * 3. 폐기 수량 + 사유 입력 → POST /inventory/scrap
+ * 1. 폐기는 "폐기창고(type=SCRAP)로 창고이동된 폐기품"을 대상으로 한다.
+ * 2. 폐기창고 선택 → 해당 창고의 가용재고만 표시 (availableQty > 0)
+ * 3. 재고 선택 → 품목/LOT 상세 + 가용수량 표시
+ * 4. 폐기 수량 + 사유 입력 → POST /inventory/scrap (= issueStock SCRAP, 재고차감 + 수불 1건)
+ *    ※ 폐기창고로의 재고증가는 별도 "창고이동" 기능(transferStock)으로 처리한다.
  */
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -36,7 +38,8 @@ const INITIAL_FORM = { warehouseCode: "", stockId: "", qty: "", reason: "" };
 
 export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props) {
   const { t } = useTranslation();
-  const { options: warehouseOptions } = useWarehouseOptions("RAW");
+  // 폐기는 폐기창고(type=SCRAP)에 있는 재고를 대상으로 출고(재고차감)한다.
+  const { options: warehouseOptions } = useWarehouseOptions("SCRAP");
   const [saving, setSaving] = useState(false);
   const [loadingStocks, setLoadingStocks] = useState(false);
   const [stocks, setStocks] = useState<StockItem[]>([]);

@@ -80,6 +80,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "INV_MAT_STOCK", labelKey: "menu.inventory.matStock", path: "/inventory/material-stock" },
       { code: "INV_TRANSACTION", labelKey: "menu.inventory.transaction", path: "/inventory/transaction" },
       { code: "INV_MAT_PHYSICAL_INV", labelKey: "menu.inventory.matPhysicalInv", path: "/inventory/material-physical-inv" },
+      { code: "INV_MAT_PHYSICAL_INV_APPLY", labelKey: "menu.inventory.matPhysicalInvApply", path: "/inventory/material-physical-inv-apply" },
       { code: "INV_MAT_PHYSICAL_INV_HISTORY", labelKey: "menu.inventory.matPhysicalInvHistory", path: "/inventory/material-physical-inv-history" },
       { code: "INV_ARRIVAL_STOCK", labelKey: "menu.inventory.arrivalStock", path: "/material/arrival-stock" },
       { code: "MAT_HOLD", labelKey: "menu.material.hold", path: "/material/hold" },
@@ -125,6 +126,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MAT_LOT_MERGE", labelKey: "menu.material.lotMerge", path: "/material/lot-merge" },
       { code: "MAT_SHELF_LIFE", labelKey: "menu.material.shelfLife", path: "/material/shelf-life" },
       { code: "MAT_SHELF_LIFE_REINSPECT", labelKey: "menu.material.shelfLifeReinspect", path: "/material/shelf-life-reinspect" },
+      { code: "MAT_SHELF_LIFE_HISTORY", labelKey: "menu.material.shelfLifeHistory", path: "/material/shelf-life-history" },
       { code: "MAT_SCRAP", labelKey: "menu.material.scrap", path: "/material/scrap" },
       { code: "MAT_ADJUSTMENT", labelKey: "menu.material.adjustment", path: "/material/adjustment" },
       { code: "MAT_MISC_RECEIPT", labelKey: "menu.material.miscReceipt", path: "/material/misc-receipt" },
@@ -168,6 +170,7 @@ export const menuConfig: MenuConfigItem[] = [
     icon: ScanLine,
     children: [
       { code: "INSP_RESULT", labelKey: "menu.inspection.result", path: "/inspection/result" },
+      { code: "INSP_TERMINAL_RESULT", labelKey: "menu.inspection.terminalResult", path: "/inspection/terminal-result" },
       { code: "INSP_HISTORY", labelKey: "menu.inspection.history", path: "/inspection/history" },
       { code: "INSP_PROTOCOL", labelKey: "menu.inspection.protocol", path: "/inspection/protocol" },
     ],

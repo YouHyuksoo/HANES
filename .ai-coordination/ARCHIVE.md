@@ -10,6 +10,10 @@ Format:
 
 ## Completed
 
+- T-SHIP-ORDER-ITEM-PAYLOAD | 2026-06-10 | codex | `/shipping/order` 생성/수정 모달에 완제품 품목 검색과 수량 입력을 추가해 `POST /shipping/orders` payload에 `items`를 포함하도록 수정. 빈 품목 저장 버튼은 비활성화 | evidence: JOURNAL 2026-06-10 17:33 codex
+- T-PROD-RESULT-WORKER-AVATAR-FIX | 2026-06-10 | codex | `/production/result` 작업자명 누락 행에서 `WorkerAvatar name.charAt(0)` 런타임 오류 수정. 공통 fallback 유틸과 생산실적 worker relation/workerId 평탄화 적용. RED 확인 후 node:test 2건, 프론트 tsc, HTTP 200, diff check 통과 | evidence: JOURNAL 2026-06-10 codex
+- T-PROD-PROGRESS-EQUIP-FILTER | 2026-06-10 | codex | `/production/progress` 설비 필터 추가. `equipCode` 쿼리를 `PROD_RESULTS` 존재 조건으로 반영하고 화면에 설비 Select 연결. RED 확인 후 focused Jest 36/36, 백/프론트 tsc, HTTP 200, diff check 통과 | evidence: JOURNAL 2026-06-10 codex
+- T-PROD-ORDER-REMOVE-INFO-CARDS | 2026-06-10 | codex | `/production/order` 상단 정보카드 4개 제거. `StatCard` import와 stats 계산 정리. 프론트 tsc, HTTP 200, diff check 통과 | evidence: JOURNAL 2026-06-10 codex
 - T-PROD-INPUT-PRDUID-FIX | 2026-06-10 | claude | 생산실적 입력화면 4종(input-machine/equip/inspect/manual) POST 본문 matUid→prdUid 통일(키오스크 동일 버그). input-equip 추가 비허용필드 measuredValue는 비고 보존으로 전환. whitelist 계약 probe + 프론트 tsc 0 검증 | evidence: JOURNAL 2026-06-10 claude
 - T-PROD-RESULT-WORKER-VALIDATION | 2026-06-10 | claude | 키오스크 실적저장 차단 버그 2건 수정+E2E 검증. (1)작업자 검증 USERS.email→WorkerMaster.workerCode 우선+email폴백(jest 17/17, tsc 0). (2)ProductionInputBar POST 본문 matUid→prdUid(DTO whitelist 400). HNS01 BOM 누락 5종 MAT_LOTS 시딩. 헤드리스 브라우저로 작업자점검→자재6종스캔→소모품스캔→실적입력 완주, PR26061000005(prdUid=W2026-001-001,good10) DB 저장 확인. systemic 미해결: input-machine/equip/inspect/manual 4화면 동일 matUid 버그(보고만) | evidence: JOURNAL 2026-06-10 claude
 - T-INPUT-KIOSK-WORKER-CODE-BUTTONS | 2026-06-10 | codex | `/production/input-kiosk` 작업자설비점검 모달에 점검항목코드와 QR 값을 표시하고 OK/NG 버튼을 QR 스캔 전에도 상시 노출. 항목 렌더 후 QR 입력 포커스 재보정. 프론트 tsc, git diff check, 브라우저 확인 통과 | evidence: JOURNAL 2026-06-10 00:30 codex
@@ -41,6 +45,7 @@ Format:
 - T-SHIP-PACK-SCAN-ENTER-CANCEL | 2026-06-09 | codex | `/shipping/pack` 시리얼 스캔 Enter/CR/LF 자동등록과 방금 등록 시리얼 즉시취소 UI 추가. 등록/삭제 후 포커스 유지. 프론트 tsc와 헤드리스 브라우저 mock 확인 통과 | evidence: JOURNAL 2026-06-09 00:30 codex
 - T-SHIP-PACK-SERIAL-FOCUS | 2026-06-09 | codex | `/shipping/pack` 시리얼 추가 모달 열림/Enter 추가 후 입력 포커스 유지 적용, 모달 `2xl` 확대. 프론트 tsc와 헤드리스 브라우저 mock 검증 통과 | evidence: JOURNAL 2026-06-09 00:00 codex
 - T-INPUT-KIOSK-CONSUMABLE-COUNT | 2026-06-08 | codex | 입력키오스크 소모품 수명 카운트 렌더 오류 수정. API 원본 필드 `expectedLife`를 화면 `maxCount`로 정규화하고 숫자 fallback 적용. 프론트 build, 실 API, 헤드리스 브라우저 패널/모달 표시 확인 | evidence: JOURNAL 2026-06-08 20:38 codex
+- T-SHIP-WORKFLOW-API-QA | 2026-06-10 | codex | 박스포장→제품입고재고→출하지시→출하처리 API 흐름 점검. 현재 코드 기준 제품입고와 출하 차감이 집계 재고(`prdUid='*'`)로 정렬되고 출하 시 FG 라벨 `SHIPPED` 전환됨을 확인, 테스트 보강. focused Jest 57/57, backend tsc, diff check 통과. JSHANES/HTTP는 10.1.10.35:1527 타임아웃으로 미실행 | evidence: JOURNAL 2026-06-10 codex
 - T-MAT-REQ-BOM-AUTO | 2026-06-08 | codex | `/material/request` 작업지시 선택 시 BOM 직하위 원자재만 자동 산출(`BOM소요-기불출-현장재고`)해 요청 품목 생성/저장. 생성 직후 미커밋 재조회 404 결함 수정. 백엔드 스펙·빌드, 프론트 빌드, 브라우저 자동채움, API/DB 실생성 `MR2606080002` 확인 | evidence: JOURNAL 2026-06-08 20:20 codex
 - T-MAT-ARRIVAL-LABEL-FORMAT | 2026-06-08 | codex | 입하시 발행 라벨을 80mm x 40mm 형식(좌측 QR, 품번/수량/단위, 제조사, IN/SERIAL/LOT, 검사필 도장 영역)으로 변경하고 라벨 발행 저장 결함(currentQty, 로그 tenant/PK, uidList payload) 수정. 프론트/백엔드 tsc·헤드리스 실제 발행 5장 확인 통과 | evidence: JOURNAL 2026-06-08 16:50 codex
 - T-ROUTING-PROCESS-TYPE-SOURCE | 2026-06-08 | codex | 라우팅 공정 추가 모달에서 공정유형 선택/저장 제거, 공정 마스터 `processType` 표시 전용으로 변경. 프론트 tsc·브라우저 모달 확인 통과 | evidence: JOURNAL 2026-06-08 15:11 codex
@@ -61,3 +66,7 @@ Format:
 - T-DB-TYPEORM-SCHEMA-AUDIT | 2026-05-30 | codex | MYDBPDB/HNSMES 기준 TypeORM 엔티티 147개와 DB 테이블 147개 비교 완료, 모든 mismatch 0건으로 정리 및 ERD/감사 문서 갱신 | evidence: JOURNAL 2026-05-30 10:11 codex
 - T-IQC-ARRIVAL-UNIT | 2026-05-29 | claude | IQC를 개별 시리얼 전수검사 → 입하번호+품목 단위 샘플검사로 재설계 (백엔드 pending-arrivals/arrival 엔드포인트 + 일괄판정/취소, 프론트 목록·모달, i18n 4파일) | evidence: 백엔드·프론트 빌드 통과
 - T-MASTER-API-DEEP-QA-FIX | 2026-06-10 | codex | 기준정보 API 미통과 3건 수정: 회사/사업장 생성 tenant 컬럼 저장, 회사/사업장 복합키 update/delete, IQC 검사그룹 update save cascade 제거 및 delete 자식행 명시 삭제. focused Jest 26/26, backend tsc, 실제 HTTP 11/11, JSHANES `ZFX/ZFY` 잔여 0 | evidence: JOURNAL 2026-06-10 codex
+- T-MAT-HOLD-MATUID-FIX | 2026-06-10 | codex | `/material/hold` 보류/해제 요청이 `selectedLot.id`를 `matUid`로 보내려 해 실제 본문에서 누락되던 결함 수정. `selectedLot.matUid` 전송으로 변경, 프론트 tsc와 diff check 통과 | evidence: JOURNAL 2026-06-10 codex
+- T-ID-PAYLOAD-SCAN | 2026-06-10 | codex | `.id` payload 누락 유형을 제품보류/고객PO/설비/PO입하/외주처/인터페이스/OQC/수불/팔레트까지 점검하고 목록 응답 `id` 계약 보강. focused Jest 156/156, backend/frontend tsc, diff check 통과 | evidence: JOURNAL 2026-06-10 codex
+- T-INSP-TERMINAL-RESULT | 2026-06-10 | codex | `/inspection/terminal-result` 단자검사 결과등록 페이지와 좌측 메뉴 추가. 기존 `/inspection/result` 워크플로우를 공통화하고 단자검사는 `INSPECT_TYPE=TERMINAL`로 저장/조회 분리. JSHANES 메뉴/권한 seed 적용, focused Jest 13/13, node:test 3/3, 백/프론트 tsc, HTTP 200 통과 | evidence: JOURNAL 2026-06-10 codex
+- T-PROD-ISSUE-STOCK-ENDPOINT | 2026-06-10 | codex | `/product/issue` 출고등록 패널의 제품 재고조회 API를 백엔드 실제 route `/inventory/product/stocks`로 수정해 단수 `/inventory/product/stock` 404 해소. node:test 1/1, frontend tsc, route/API 상태 확인 통과 | evidence: JOURNAL 2026-06-10 codex

@@ -56,6 +56,25 @@ describe('OqcService', () => {
   });
   afterEach(() => jest.clearAllMocks());
 
+  describe('findAll', () => {
+    it('검사 모달 requestId로 사용할 id에 requestNo를 함께 반환한다', async () => {
+      const qb: any = {
+        leftJoinAndMapOne: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[{ requestNo: 'OQC-001', itemCode: 'IT001' }], 1]),
+      };
+      mockOqcRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await target.findAll({ page: 1, limit: 50 } as any);
+
+      expect(result.data[0]).toEqual(expect.objectContaining({ id: 'OQC-001', requestNo: 'OQC-001' }));
+    });
+  });
+
   describe('findById', () => {
     it('should return OQC request with part', async () => {
       mockOqcRepo.findOne.mockResolvedValue({ requestNo: 'OQC-001', itemCode: 'IT001' } as any);

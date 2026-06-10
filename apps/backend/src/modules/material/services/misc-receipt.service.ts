@@ -148,6 +148,8 @@ export class MiscReceiptService {
 
   async create(dto: CreateMiscReceiptDto, company?: string, plant?: string) {
     const { warehouseId, itemCode, matUid, qty, remark, workerId } = dto;
+    // 입고계정: 미지정 시 기본 양산(PROD)
+    const account = dto.account || 'PROD';
 
     return this.tx.run(async (queryRunner) => {
       const warehouse = await queryRunner.manager.findOne(Warehouse, {
@@ -236,6 +238,7 @@ export class MiscReceiptService {
         refType: 'MISC_RECEIPT',
         workerId,
         remark,
+        account,
         status: 'DONE',
         company: existingStock?.company ?? company,
         plant: existingStock?.plant ?? plant,

@@ -16,6 +16,7 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
+import { FgLabel } from '../../../../entities/fg-label.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('DefectLogService', () => {
@@ -24,6 +25,7 @@ describe('DefectLogService', () => {
   let mockRepairLogRepo: DeepMocked<Repository<RepairLog>>;
   let mockProdResultRepo: DeepMocked<Repository<ProdResult>>;
   let mockReworkOrderRepo: DeepMocked<Repository<ReworkOrder>>;
+  let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
 
   /** 테스트용 불량로그 팩토리 */
   const createDefectLog = (overrides: Partial<DefectLog> = {}): DefectLog =>
@@ -58,6 +60,7 @@ describe('DefectLogService', () => {
     mockRepairLogRepo = createMock<Repository<RepairLog>>();
     mockProdResultRepo = createMock<Repository<ProdResult>>();
     mockReworkOrderRepo = createMock<Repository<ReworkOrder>>();
+    mockFgLabelRepo = createMock<Repository<FgLabel>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -66,6 +69,7 @@ describe('DefectLogService', () => {
         { provide: getRepositoryToken(RepairLog), useValue: mockRepairLogRepo },
         { provide: getRepositoryToken(ProdResult), useValue: mockProdResultRepo },
         { provide: getRepositoryToken(ReworkOrder), useValue: mockReworkOrderRepo },
+        { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -86,20 +90,32 @@ describe('DefectLogService', () => {
   // findAll
   // ─────────────────────────────────────────────
   describe('findAll', () => {
-    it('should return paginated defect logs', async () => {
+    it('should return paginated defect logs enriched with workOrderNo/operator/id', async () => {
       // Arrange
       const defects = [createDefectLog()];
       mockDefectLogRepo.find.mockResolvedValue(defects);
       mockDefectLogRepo.count.mockResolvedValue(1);
+      mockProdResultRepo.find.mockResolvedValue([
+        { resultNo: 'PR260318-00001', orderNo: 'WO-1', workerId: 'W003', equipCode: 'EQ-1' } as any,
+      ]);
 
       // Act
       const result = await target.findAll({ page: 1, limit: 20 } as any);
 
       // Assert
-      expect(result.data).toEqual(defects);
       expect(result.total).toBe(1);
-      expect(result.page).toBe(1);
-      expect(result.limit).toBe(20);
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          // 화면용 복합 식별자(occurAtISO|seq)와 생산실적 보강 필드
+          id: `${defects[0].occurAt.toISOString()}|1`,
+          workOrderNo: 'WO-1',
+          operator: 'W003',
+          equipmentNo: 'EQ-1',
+          defectCode: 'DEF001',
+          qty: 2,
+          status: 'WAIT',
+        }),
+      );
     });
 
     it('should apply search filter', async () => {
@@ -156,6 +172,17 @@ describe('DefectLogService', () => {
         where: { seq: 1, company: 'HANES', plant: 'P01' },
       });
     });
+
+    it('resolves composite identifier (occurAtISO|seq) via full PK', async () => {
+      const defect = createDefectLog({ occurAt: new Date('2026-06-10T05:00:00.000Z'), seq: 2 });
+      mockDefectLogRepo.findOne.mockResolvedValue(defect);
+
+      await target.findById('2026-06-10T05:00:00.000Z|2', 'HANES', 'P01');
+
+      expect(mockDefectLogRepo.findOne).toHaveBeenCalledWith({
+        where: { occurAt: new Date('2026-06-10T05:00:00.000Z'), seq: 2, company: 'HANES', plant: 'P01' },
+      });
+    });
   });
 
   // ─────────────────────────────────────────────
@@ -187,6 +214,90 @@ describe('DefectLogService', () => {
         { resultNo: 'PR260318-00001', company: 'HANES', plant: 'P01' },
         { defectQty: 5 }, // 3 + 2
       );
+    });
+
+    it('resolves prodResultNo from workOrderNo (latest prod-result) when prodResultNo is omitted', async () => {
+      const latest = createProdResult({ resultNo: 'PR-LATEST', defectQty: 1, company: 'HANES', plant: 'P01' } as any);
+      // 1st findOne: workOrderNo→최신 생산실적, 2nd findOne: 존재 확인
+      mockProdResultRepo.findOne
+        .mockResolvedValueOnce(latest)
+        .mockResolvedValueOnce(latest);
+      mockDefectLogRepo.create.mockReturnValue(createDefectLog({ prodResultNo: 'PR-LATEST' }));
+      mockDefectLogRepo.save.mockResolvedValue(createDefectLog({ prodResultNo: 'PR-LATEST' }));
+      mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.create({ workOrderNo: 'WO-1', defectCode: 'DEF001', qty: 2 } as any, 'HANES', 'P01');
+
+      expect(mockProdResultRepo.findOne).toHaveBeenNthCalledWith(1, {
+        where: { orderNo: 'WO-1', company: 'HANES', plant: 'P01' },
+        order: { createdAt: 'DESC' },
+      });
+      expect(mockDefectLogRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ prodResultNo: 'PR-LATEST' }),
+      );
+    });
+
+    it('resolves prodResultNo from prdUid (scanned product barcode)', async () => {
+      const byProduct = createProdResult({ resultNo: 'PR-BYUID', defectQty: 0, company: 'HANES', plant: 'P01' } as any);
+      mockProdResultRepo.findOne
+        .mockResolvedValueOnce(byProduct) // prdUid → 생산실적
+        .mockResolvedValueOnce(byProduct); // 존재 확인
+      mockDefectLogRepo.create.mockReturnValue(createDefectLog({ prodResultNo: 'PR-BYUID' }));
+      mockDefectLogRepo.save.mockResolvedValue(createDefectLog({ prodResultNo: 'PR-BYUID' }));
+      mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.create({ prdUid: 'FG-0001', defectCode: 'DEF001', qty: 1 } as any, 'HANES', 'P01');
+
+      expect(mockProdResultRepo.findOne).toHaveBeenNthCalledWith(1, {
+        where: { prdUid: 'FG-0001', company: 'HANES', plant: 'P01' },
+        order: { createdAt: 'DESC' },
+      });
+      expect(mockDefectLogRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ prodResultNo: 'PR-BYUID' }),
+      );
+    });
+
+    it('resolves prodResultNo via FG label fallback (barcode → orderNo → latest prod-result)', async () => {
+      const latest = createProdResult({ resultNo: 'PR-FG', defectQty: 0, company: 'HANES', plant: 'P01' } as any);
+      mockProdResultRepo.findOne
+        .mockResolvedValueOnce(null) // prdUid 직접 매칭 실패
+        .mockResolvedValueOnce(latest) // FG라벨 orderNo → 최신 생산실적
+        .mockResolvedValueOnce(latest); // 존재 확인
+      mockFgLabelRepo.findOne.mockResolvedValue({ fgBarcode: 'FG26060900006', orderNo: 'W2026-002' } as any);
+      mockDefectLogRepo.create.mockReturnValue(createDefectLog({ prodResultNo: 'PR-FG' }));
+      mockDefectLogRepo.save.mockResolvedValue(createDefectLog({ prodResultNo: 'PR-FG' }));
+      mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.create({ prdUid: 'FG26060900006', defectCode: 'DEF001' } as any, 'HANES', 'P01');
+
+      expect(mockFgLabelRepo.findOne).toHaveBeenCalledWith({
+        where: { fgBarcode: 'FG26060900006', company: 'HANES', plant: 'P01' },
+      });
+      expect(mockDefectLogRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ prodResultNo: 'PR-FG' }),
+      );
+    });
+
+    it('throws NotFound when scanned product barcode matches neither prod-result nor FG label', async () => {
+      mockProdResultRepo.findOne.mockResolvedValue(null);
+      mockFgLabelRepo.findOne.mockResolvedValue(null);
+      await expect(
+        target.create({ prdUid: 'FG-NONE', defectCode: 'DEF001' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequest when neither prodResultNo nor workOrderNo is provided', async () => {
+      await expect(
+        target.create({ defectCode: 'DEF001' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFound when workOrderNo has no prod-result', async () => {
+      mockProdResultRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        target.create({ workOrderNo: 'WO-NONE', defectCode: 'DEF001' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('rejects create when prodResult belongs to a different tenant', async () => {

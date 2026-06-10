@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RefreshCw, CalendarRange, Plus, Upload, Edit2, Trash2, Wand2 } from "lucide-react";
+import { Search, RefreshCw, CalendarRange, Plus, Upload, Download, Edit2, Trash2, Wand2, Network } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal, StatCard } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -25,6 +25,7 @@ import PlanFormPanel from "./components/PlanFormPanel";
 import ExcelUploadModal from "./components/ExcelUploadModal";
 import IssueJobOrderModal from "./components/IssueJobOrderModal";
 import AutoGenerateModal from "./components/AutoGenerateModal";
+import { downloadProdPlanTemplate } from "./components/prodPlanTemplate";
 
 export default function MonthlyPlanPage() {
   const { t } = useTranslation();
@@ -49,6 +50,7 @@ export default function MonthlyPlanPage() {
   const [deleteTarget, setDeleteTarget] = useState<ProdPlanItem | null>(null);
   const [showExcel, setShowExcel] = useState(false);
   const [showAutoGen, setShowAutoGen] = useState(false);
+  const [showErpNotice, setShowErpNotice] = useState(false);
   const [issueTarget, setIssueTarget] = useState<ProdPlanItem | null>(null);
   const panelAnimateRef = useRef(true);
 
@@ -173,8 +175,15 @@ export default function MonthlyPlanPage() {
             <Button variant="secondary" size="sm" onClick={fetchData}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
+            <Button variant="secondary" size="sm"
+              onClick={() => downloadProdPlanTemplate(t, startDate?.slice(0, 7) || new Date().toISOString().slice(0, 7))}>
+              <Download className="w-4 h-4 mr-1" />{t("monthlyPlan.excel.downloadTemplate")}
+            </Button>
             <Button variant="secondary" size="sm" onClick={() => setShowExcel(true)}>
               <Upload className="w-4 h-4 mr-1" />{t("monthlyPlan.excelUpload")}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowErpNotice(true)}>
+              <Network className="w-4 h-4 mr-1" />{t("monthlyPlan.erpInterface")}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setShowAutoGen(true)}>
               <Wand2 className="w-4 h-4 mr-1" />{t("monthlyPlan.autoGenerate.button")}
@@ -269,6 +278,17 @@ export default function MonthlyPlanPage() {
         onConfirm={handleDelete}
         variant="danger"
         message={`'${deleteTarget?.planNo || ""}'을(를) 삭제하시겠습니까?`}
+      />
+
+      {/* ERP 인터페이스 — 기능 미구현(준비중) 안내 */}
+      <ConfirmModal
+        isOpen={showErpNotice}
+        onClose={() => setShowErpNotice(false)}
+        onConfirm={() => setShowErpNotice(false)}
+        title={t("monthlyPlan.erpInterface")}
+        message={t("monthlyPlan.erpInterfaceNotReady")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.close")}
       />
     </div>
   );

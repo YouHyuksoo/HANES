@@ -367,5 +367,25 @@ describe('ProductInventoryService', () => {
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
+
+    it('제품 수불 취소 화면에서 사용할 id로 transNo를 함께 반환한다', async () => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { transNo: 'PTX-001', itemCode: 'FG-001' } as ProductTransaction,
+        ]),
+      };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb as any);
+      mockWhRepo.find.mockResolvedValue([]);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      const result = await target.getTransactions({} as any);
+
+      expect(result[0]).toEqual(expect.objectContaining({ id: 'PTX-001', transNo: 'PTX-001' }));
+    });
   });
 });

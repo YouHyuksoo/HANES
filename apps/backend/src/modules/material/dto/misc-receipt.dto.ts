@@ -37,6 +37,12 @@ export class CreateMiscReceiptDto {
   @IsOptional()
   @IsString()
   workerId?: string;
+
+  @ApiPropertyOptional({ description: '입고계정 (공통코드 RECEIPT_ACCOUNT, 기본 PROD=양산)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  account?: string;
 }
 
 export class MiscReceiptQueryDto extends PaginationQueryDto {

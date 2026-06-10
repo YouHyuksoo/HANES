@@ -55,6 +55,10 @@ export class EquipMasterService {
     };
   }
 
+  private withClientId(equip: EquipMaster) {
+    return { ...equip, id: equip.equipCode };
+  }
+
   // =============================================
   // CRUD 기본 기능
   // =============================================
@@ -116,7 +120,7 @@ export class EquipMasterService {
       processes.forEach((p) => nameMap.set(p.processCode, p.processName));
     }
     const enriched = data.map((e) => ({
-      ...e,
+      ...this.withClientId(e),
       processName: e.processCode ? nameMap.get(e.processCode) ?? null : null,
     }));
 
@@ -135,7 +139,7 @@ export class EquipMasterService {
       throw new NotFoundException(`설비를 찾을 수 없습니다: ${equipCode}`);
     }
 
-    return equip;
+    return this.withClientId(equip);
   }
 
   /**
@@ -150,7 +154,7 @@ export class EquipMasterService {
       throw new NotFoundException(`설비를 찾을 수 없습니다: ${equipCode}`);
     }
 
-    return equip;
+    return this.withClientId(equip);
   }
 
   /**
@@ -248,10 +252,11 @@ export class EquipMasterService {
    * 상태별 설비 목록 조회
    */
   async findByStatus(status: string, company?: string, plant?: string) {
-    return this.equipMasterRepository.find({
+    const equips = await this.equipMasterRepository.find({
       where: { status, useYn: 'Y', ...this.tenantWhere(company, plant) },
       order: { equipCode: 'ASC' },
     });
+    return equips.map((equip) => this.withClientId(equip));
   }
 
   // =============================================
@@ -262,20 +267,22 @@ export class EquipMasterService {
    * 라인별 설비 목록 조회
    */
   async findByLineCode(lineCode: string, company?: string, plant?: string) {
-    return this.equipMasterRepository.find({
+    const equips = await this.equipMasterRepository.find({
       where: { lineCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
       order: { equipCode: 'ASC' },
     });
+    return equips.map((equip) => this.withClientId(equip));
   }
 
   /**
    * 유형별 설비 목록 조회
    */
   async findByType(equipType: string, company?: string, plant?: string) {
-    return this.equipMasterRepository.find({
+    const equips = await this.equipMasterRepository.find({
       where: { equipType, useYn: 'Y', ...this.tenantWhere(company, plant) },
       order: { equipCode: 'ASC' },
     });
+    return equips.map((equip) => this.withClientId(equip));
   }
 
   // =============================================
@@ -328,7 +335,7 @@ export class EquipMasterService {
    * 정비중/중지 설비 목록 조회
    */
   async getMaintenanceEquipments(company?: string, plant?: string) {
-    return this.equipMasterRepository.find({
+    const equips = await this.equipMasterRepository.find({
       where: {
         status: In(['MAINT', 'STOP']),
         useYn: 'Y',
@@ -336,6 +343,7 @@ export class EquipMasterService {
       },
       order: { updatedAt: 'DESC' },
     });
+    return equips.map((equip) => this.withClientId(equip));
   }
 
   // =============================================

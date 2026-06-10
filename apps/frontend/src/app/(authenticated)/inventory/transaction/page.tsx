@@ -6,8 +6,8 @@
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { History, RefreshCw, Search, XCircle, ArrowDownToLine, ArrowUpFromLine, Calendar } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, Modal, StatCard } from '@/components/ui';
+import { History, RefreshCw, Search, ArrowDownToLine, ArrowUpFromLine, Calendar } from 'lucide-react';
+import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { api } from '@/services/api';
@@ -64,10 +64,7 @@ export default function TransactionPage() {
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [selectedTrans, setSelectedTrans] = useState<TransactionData | null>(null);
-  const [cancelRemark, setCancelRemark] = useState('');
-  const [alertModal, setAlertModal] = useState({ open: false, title: '', message: '' });
+  const [matUidInput, setMatUidInput] = useState('');
 
   const TRANS_TYPES = useMemo(() => [
     { value: '', label: t('common.all') },
@@ -121,35 +118,14 @@ export default function TransactionPage() {
     fetchTransactions();
   }, [fetchTransactions]);
 
-  const handleCancelClick = (trans: TransactionData) => {
-    if (trans.status === 'CANCELED') {
-      setAlertModal({ open: true, title: t('common.confirm'), message: t('inventory.transaction.alreadyCanceled') });
-      return;
-    }
-    if (trans.transType.includes('CANCEL')) {
-      setAlertModal({ open: true, title: t('common.confirm'), message: t('inventory.transaction.cannotCancelCancel') });
-      return;
-    }
-    setSelectedTrans(trans);
-    setCancelRemark('');
-    setCancelModalOpen(true);
-  };
-
-  const handleCancelConfirm = async () => {
-    if (!selectedTrans) return;
-    try {
-      await api.post('/inventory/cancel', {
-        transactionId: selectedTrans.id,
-        remark: cancelRemark,
-      });
-      setCancelModalOpen(false);
-      fetchTransactions();
-      setAlertModal({ open: true, title: t('common.confirm'), message: t('inventory.transaction.cancelComplete') });
-    } catch (error) {
-      console.error('트랜잭션 취소 실패:', error);
-      setAlertModal({ open: true, title: t('common.error'), message: t('inventory.transaction.cancelFailed') });
-    }
-  };
+  // 품목 시리얼(matUid) 부분 검색 — 조회된 목록 대상 client-side contains 필터
+  const displayedTransactions = useMemo(() => {
+    const kw = matUidInput.trim().toLowerCase();
+    if (!kw) return transactions;
+    return transactions.filter((tr) =>
+      (tr.matUid || tr.lot?.matUid || '').toLowerCase().includes(kw),
+    );
+  }, [transactions, matUidInput]);
 
   const columns: ColumnDef<TransactionData>[] = useMemo(() => [
     {
@@ -250,19 +226,6 @@ export default function TransactionPage() {
       size: 150,
       meta: { filterType: 'text' as const },
     },
-    {
-      id: 'actions',
-      header: '',
-      size: 80,
-      meta: { filterType: 'none' as const },
-      cell: ({ row }) => (
-        row.original.status === 'DONE' && !row.original.transType.includes('CANCEL') && (
-          <button onClick={() => handleCancelClick(row.original)} className="p-1 hover:bg-surface rounded" title={t('common.cancel')}>
-            <XCircle className="w-4 h-4 text-red-500" />
-          </button>
-        )
-      ),
-    },
   ], [t]);
 
   // 통계 계산 (useMemo로 불필요한 재계산 방지)
@@ -301,7 +264,7 @@ export default function TransactionPage() {
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
-            data={transactions}
+            data={displayedTransactions}
             columns={columns}
             isLoading={loading}
             emptyMessage={t('inventory.transaction.emptyMessage')}
@@ -318,74 +281,19 @@ export default function TransactionPage() {
                 </div>
                 <Select options={TRANS_TYPES} value={filters.transType} onChange={(v) => setFilters({ ...filters, transType: v })} placeholder={t('inventory.transaction.transType')} />
                 <div className="flex-1 min-w-0">
-                  <Input placeholder={t('inventory.transaction.searchTransNo')} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                  <Input
+                    value={matUidInput}
+                    onChange={(e) => setMatUidInput(e.target.value)}
+                    placeholder={t('inventory.transaction.searchMatUid')}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
                 </div>
               </div>
             }
           
           sqlQuery={`SELECT *\nFROM STOCK_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
-
-      {/* 취소 확인 모달 */}
-      <Modal
-        isOpen={cancelModalOpen}
-        onClose={() => setCancelModalOpen(false)}
-        title={t('inventory.transaction.cancelTitle')}
-      >
-        {selectedTrans && (
-          <div className="space-y-4">
-            <p className="text-sm text-text-muted">
-              {t('inventory.transaction.cancelWarning')}
-            </p>
-            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">{t('inventory.transaction.transNo')}:</span>
-                <span className="font-medium">{selectedTrans.transNo}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">{t('inventory.transaction.transType')}:</span>
-                <span className={`px-2 py-0.5 rounded text-xs ${getTransTypeColor(selectedTrans.transType)}`}>
-                  {getTransTypeLabel(selectedTrans.transType)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">{t('inventory.transaction.part')}:</span>
-                <span>{selectedTrans.part.itemName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">{t('inventory.transaction.qty')}:</span>
-                <span className={selectedTrans.qty > 0 ? 'text-blue-600' : 'text-red-600'}>
-                  {selectedTrans.qty > 0 ? '+' : ''}{selectedTrans.qty.toLocaleString()}
-                </span>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">{t('inventory.transaction.cancelReason')}</label>
-              <Input
-                value={cancelRemark}
-                onChange={(e) => setCancelRemark(e.target.value)}
-                placeholder={t('inventory.transaction.cancelReasonPlaceholder')}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="secondary" onClick={() => setCancelModalOpen(false)}>
-                {t('common.close')}
-              </Button>
-              <Button onClick={handleCancelConfirm}>
-                <XCircle className="w-4 h-4 mr-1" />{t('inventory.transaction.cancelProcess')}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* 알림 모달 */}
-      <Modal isOpen={alertModal.open} onClose={() => setAlertModal({ ...alertModal, open: false })} title={alertModal.title} size="sm">
-        <p className="text-text">{alertModal.message}</p>
-        <div className="flex justify-end pt-4">
-          <Button onClick={() => setAlertModal({ ...alertModal, open: false })}>{t('common.confirm')}</Button>
-        </div>
-      </Modal>
     </div>
   );
 }

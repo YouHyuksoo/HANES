@@ -41,6 +41,10 @@ export class OqcService {
     };
   }
 
+  private withClientId(request: OqcRequest) {
+    return { ...request, id: request.requestNo };
+  }
+
   async findAll(query: OqcRequestQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, status, customer, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -68,7 +72,7 @@ export class OqcService {
       .take(limit);
 
     const [data, total] = await qb.getManyAndCount();
-    return { data, total, page, limit };
+    return { data: data.map((request) => this.withClientId(request)), total, page, limit };
   }
 
   async findById(id: string, company?: string, plant?: string) {
@@ -83,7 +87,7 @@ export class OqcService {
     }
 
     const part = await this.partRepo.findOne({ where: { itemCode: oqcRequest.itemCode, ...tenantWhere } });
-    return { ...oqcRequest, part };
+    return { ...this.withClientId(oqcRequest), part };
   }
 
   async createRequest(dto: CreateOqcRequestDto, company?: string, plant?: string, createdBy?: string) {

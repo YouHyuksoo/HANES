@@ -29,21 +29,21 @@ notes:
 
 ## Active Tasks
 
-## T-SHIP-WORKFLOW-API-QA 출하 workflow API 점검
-status: IN_PROGRESS
+## T-PROD-MONTHLY-ERP-LABEL 좌측 메뉴 월간생산계획 라벨 변경
+status: BLOCKED
 owner: codex
-role: operator
+role: implementer
 scope:
-- shipping/pack, shipping/box-stock, shipping/order, shipping/shipment
+- production menu label
 files:
-- apps/backend/src/modules/shipping
-- apps/backend/src/modules/inventory
+- apps/frontend/src/locales/ko.json
 verification:
-- 실제 API 호출로 박스포장 → 제품 입고재고 → 출하지시 → 출하처리 흐름 점검
+- 미실행: `apps/frontend/src/locales/*`가 다른 active lock 범위라 코드 수정 전 중단
 review:
-- needs-review
+- 사용자 확인 필요
 notes:
-- 코드 수정 없이 현재 구현/실행 API와 JSHANES 상태를 기준으로 워크플로우 자연스러움과 계약 불일치 여부를 확인한다.
+- 요청: 좌측 메뉴 `월간생산계획`을 `ERP생산계획`으로 변경. 실제 라벨 키는 `menu.production.monthlyPlan`.
+- 충돌: `T-MAT-CONCESSION-RECV`가 `apps/frontend/src/locales/*`를 lock 중이라 사용자 허가 없이는 수정하지 않음.
 
 ## T-MAT-RECV-FIXES 자재입고 프로세스 이슈 일괄 수정
 status: IN_PROGRESS

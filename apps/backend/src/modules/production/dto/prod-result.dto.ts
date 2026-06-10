@@ -20,6 +20,8 @@ import {
   IsInt,
   IsNumber,
   IsDateString,
+  IsArray,
+  ValidateNested,
   Min,
   Max,
   MaxLength,
@@ -30,6 +32,30 @@ import { PROD_RESULT_STATUS_VALUES } from '@harness/shared';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export type ProdResultStatus = typeof PROD_RESULT_STATUS_VALUES[number];
+
+/**
+ * 생산실적 불량 상세 (불량입력 모달에서 등록된 유형별 불량)
+ * 생산실적 생성과 같은 트랜잭션에서 DefectLog로 저장된다.
+ */
+export class ProdResultDefectDto {
+  @ApiProperty({ description: '불량 코드', example: 'DEF001', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  defectCode: string;
+
+  @ApiPropertyOptional({ description: '불량명', maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  defectName?: string;
+
+  @ApiPropertyOptional({ description: '불량 수량', default: 1, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  qty?: number;
+}
 
 /**
  * 생산실적 생성 DTO
@@ -100,6 +126,16 @@ export class CreateProdResultDto {
   @IsString()
   @MaxLength(20)
   shiftCode?: string;
+
+  @ApiPropertyOptional({
+    type: [ProdResultDefectDto],
+    description: '불량 상세 목록 (불량입력 시). 제공되면 합계로 defectQty를 산정하고 DefectLog를 함께 저장한다.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProdResultDefectDto)
+  defects?: ProdResultDefectDto[];
 }
 
 /**

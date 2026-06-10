@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PackagePlus, Search, RefreshCw, Plus } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
 import { ColumnDef } from "@tanstack/react-table";
@@ -49,6 +50,7 @@ export default function MiscReceiptPage() {
     itemCode: "",
     qty: "",
     remark: "",
+    account: "PROD", // 입고계정 기본 양산
   });
   const [partSearch, setPartSearch] = useState("");
   const [partResults, setPartResults] = useState<{ itemCode: string; itemName: string }[]>([]);
@@ -99,9 +101,10 @@ export default function MiscReceiptPage() {
         itemCode: form.itemCode,
         qty: Number(form.qty),
         remark: form.remark,
+        account: form.account || "PROD",
       });
       setShowRegister(false);
-      setForm({ warehouseCode: "", itemCode: "", qty: "", remark: "" });
+      setForm({ warehouseCode: "", itemCode: "", qty: "", remark: "", account: "PROD" });
       setPartSearch("");
       setPartResults([]);
       fetchData();
@@ -204,8 +207,13 @@ export default function MiscReceiptPage() {
       <Modal isOpen={showRegister} onClose={() => setShowRegister(false)}
         title={t("material.miscReceipt.register")} size="lg">
         <div className="space-y-4">
-          <Select label={t("material.miscReceipt.warehouse")} options={warehouseOptions}
-            value={form.warehouseCode} onChange={v => setForm(p => ({ ...p, warehouseCode: v }))} fullWidth />
+          <div className="grid grid-cols-2 gap-4">
+            <Select label={t("material.miscReceipt.warehouse")} options={warehouseOptions}
+              value={form.warehouseCode} onChange={v => setForm(p => ({ ...p, warehouseCode: v }))} fullWidth />
+            <ComCodeSelect groupCode="RECEIPT_ACCOUNT" includeAll={false}
+              label={t("material.miscReceipt.account", "입고계정")}
+              value={form.account} onChange={v => setForm(p => ({ ...p, account: v }))} fullWidth />
+          </div>
 
           <div>
             <Input label={t("material.miscReceipt.partSearch")}

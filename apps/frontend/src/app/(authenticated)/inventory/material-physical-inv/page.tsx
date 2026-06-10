@@ -2,28 +2,26 @@
 
 /**
  * @file src/app/(authenticated)/inventory/material-physical-inv/page.tsx
- * @description 자재재고실사 관리 페이지 - 실사 개시 → PDA 스캔 → 확인/보정 → 반영 → 완료
+ * @description 자재재고실사 등록 페이지 - 실사 개시 → PDA 스캔 모니터링 → 실사 완료
  *
  * 초보자 가이드:
  * 1. **실사 개시**: [실사 개시] 버튼 → 기준년월/창고 선택 → 세션 생성 (트랜잭션 차단 시작)
- * 2. **PDA 스캔**: PDA에서 바코드 스캔 → PHYSICAL_INV_COUNT_DETAILS에 누적 → PC에서 실시간 조회
- * 3. **확인/보정**: PDA 수량 확인 + 수동 보정 가능
- * 4. **실사 반영**: [실사반영] 버튼 → MatStock 업데이트 + InvAdjLog 기록
- * 5. **실사 완료**: [실사 완료] 버튼 → 세션 COMPLETED (트랜잭션 차단 해제)
+ * 2. **PDA 스캔**: PDA에서 바코드 스캔 → PHYSICAL_INV_COUNT_DETAILS에 누적 → PC에서 실시간 조회(읽기전용)
+ * 3. **실사 완료**: [실사 완료] 버튼 → 세션 COMPLETED (트랜잭션 차단 해제)
+ * 4. **실사 반영**: 실제 수량 입력/보정 및 재고 반영은 별도 화면 '자재재고실사반영'에서 처리
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle,
-  CheckCircle, Calendar, Play, StopCircle,
+  ClipboardList, Search, RefreshCw, CheckCircle, Calendar, Play, StopCircle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { WarehouseSelect } from "@/components/shared";
 import api from "@/services/api";
-import { StartSessionModal, CompleteSessionModal, ApplyConfirmModal } from "./components/SessionModals";
+import { StartSessionModal, CompleteSessionModal } from "./components/SessionModals";
 
 interface SessionInfo {
   sessionDate: string;
@@ -67,7 +65,6 @@ export default function MaterialPhysicalInvPage() {
   const [searchText, setSearchText] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
   const [countMonth, setCountMonth] = useState(getCurrentMonth);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [startWarehouse, setStartWarehouse] = useState("");
@@ -116,29 +113,10 @@ export default function MaterialPhysicalInvPage() {
     finally { setSaving(false); }
   }, [session, fetchData]);
 
-  const updateCountedQty = useCallback((id: string, value: number | null) => {
-    setData(prev => prev.map(row => row.id === id ? { ...row, countedQty: value } : row));
-  }, []);
-
-  const countedItems = useMemo(() => data.filter(d => d.countedQty !== null), [data]);
-  const mismatchItems = useMemo(() => countedItems.filter(d => d.countedQty !== d.qty), [countedItems]);
-  const stats = useMemo(() => ({
-    total: data.length, counted: countedItems.length,
-    mismatch: mismatchItems.length,
-    matched: countedItems.filter(d => d.countedQty === d.qty).length,
-  }), [data, countedItems, mismatchItems]);
-
-  const handleApply = useCallback(async () => {
-    if (countedItems.length === 0) return;
-    setSaving(true);
-    try {
-      await api.post("/material/physical-inv", {
-        items: countedItems.map(item => ({ stockId: item.id, countedQty: item.countedQty!, remark: "재고실사" })),
-      });
-      setShowConfirm(false); fetchData();
-    } catch (e) { console.error("Apply failed:", e); }
-    finally { setSaving(false); }
-  }, [countedItems, fetchData]);
+  const mismatchCount = useMemo(
+    () => data.filter(d => d.countedQty !== null && d.countedQty !== d.qty).length,
+    [data],
+  );
 
   const columns = useMemo<ColumnDef<StockForCount>[]>(() => [
     { accessorKey: "warehouseName", header: t("material.physicalInv.warehouse"), size: 120, meta: { filterType: "text" as const } },
@@ -149,11 +127,11 @@ export default function MaterialPhysicalInvPage() {
       cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) || "-"}</span> },
     { accessorKey: "qty", header: t("material.physicalInv.systemQty"), size: 100, meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => <span>{row.original.qty.toLocaleString()} {row.original.unit || ""}</span> },
-    { id: "countedQty", header: t("material.physicalInv.countedQty"), size: 120, meta: { filterType: "none" as const },
+    { id: "countedQty", header: t("material.physicalInv.countedQty"), size: 110, meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
-        <input type="number" value={row.original.countedQty ?? ""} placeholder="-"
-          className="w-full px-2 py-1 text-sm border border-border rounded bg-surface text-text text-right focus:outline-none focus:ring-1 focus:ring-primary"
-          onChange={e => updateCountedQty(row.original.id, e.target.value === "" ? null : Number(e.target.value))} />
+        row.original.countedQty === null
+          ? <span className="text-text-muted">-</span>
+          : <span className="font-medium">{row.original.countedQty.toLocaleString()}</span>
       ) },
     { id: "diffQty", header: t("material.physicalInv.diffQty"), size: 90, meta: { align: "right" as const },
       cell: ({ row }) => {
@@ -168,7 +146,7 @@ export default function MaterialPhysicalInvPage() {
       cell: ({ getValue }) => { const v = getValue() as string; return v ? new Date(v).toLocaleString() : <span className="text-text-muted">-</span>; } },
     { accessorKey: "lastCountAt", header: t("material.physicalInv.lastCountDate"), size: 110, meta: { filterType: "date" as const },
       cell: ({ getValue }) => { const v = getValue() as string; return v ? new Date(v).toLocaleDateString() : <span className="text-text-muted">-</span>; } },
-  ], [t, updateCountedQty]);
+  ], [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -203,9 +181,6 @@ export default function MaterialPhysicalInvPage() {
           )}
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={() => setShowConfirm(true)} disabled={countedItems.length === 0}>
-            <CheckSquare className="w-4 h-4 mr-1" />{t("material.physicalInv.applyCount")} ({countedItems.length})
           </Button>
         </div>
       </div>
@@ -242,7 +217,7 @@ export default function MaterialPhysicalInvPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
             </div>
-          } 
+          }
           sqlQuery={`SELECT *\nFROM MAT_PHYSICAL_INV\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
@@ -251,9 +226,7 @@ export default function MaterialPhysicalInvPage() {
         warehouse={startWarehouse} onWarehouseChange={setStartWarehouse}
         onStart={handleStartSession} saving={saving} />
       <CompleteSessionModal isOpen={showCompleteModal} onClose={() => setShowCompleteModal(false)}
-        onComplete={handleCompleteSession} saving={saving} mismatchCount={mismatchItems.length} />
-      <ApplyConfirmModal isOpen={showConfirm} onClose={() => setShowConfirm(false)}
-        onApply={handleApply} saving={saving} countedCount={countedItems.length} mismatchItems={mismatchItems} />
+        onComplete={handleCompleteSession} saving={saving} mismatchCount={mismatchCount} />
     </div>
   );
 }

@@ -62,6 +62,25 @@ describe('OutsourcingService', () => {
   });
 
   // ─── Vendor CRUD ───
+  describe('findAllVendors', () => {
+    it('외주처 수정 URL에서 사용할 id로 vendorCode를 함께 반환한다', async () => {
+      const vendors = [{ vendorCode: 'V001', vendorName: 'Vendor 1' }] as any;
+      const queryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(vendors),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockVendorRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+
+      const result = await target.findAllVendors({ page: 1, limit: 10 } as any);
+
+      expect(result.data[0]).toEqual(expect.objectContaining({ id: 'V001', vendorCode: 'V001' }));
+    });
+  });
+
   describe('findVendorById', () => {
     it('should return vendor with recent orders', async () => {
       // Arrange

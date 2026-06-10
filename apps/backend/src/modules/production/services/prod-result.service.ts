@@ -47,6 +47,7 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { FgLabel } from '../../../entities/fg-label.entity';
+import { DefectLog } from '../../../entities/defect-log.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { ShiftResolver } from '../../../utils/shift-resolver';
 
@@ -420,8 +421,14 @@ export class ProdResultService {
       throw new BadRequestException(`홀딩된 작업지시에는 실적을 등록할 수 없습니다.`);
     }
 
+    // 불량 상세가 오면 합계로 defectQty를 산정한다(상세=권위). 이중 카운트 방지를 위해
+    // DefectLog는 본 트랜잭션에서 직접 저장하고 별도 증가 로직(defect-log.service)을 거치지 않는다.
+    const defectDetails = dto.defects ?? [];
+    const defectsTotal = defectDetails.reduce((sum, d) => sum + (d.qty ?? 1), 0);
+    const effectiveDefectQty = defectDetails.length > 0 ? defectsTotal : (dto.defectQty ?? 0);
+
     // 작업지시 수량 초과 체크
-    await this.checkJobOrderQtyLimit(dto.orderNo, dto.goodQty ?? 0, dto.defectQty ?? 0, company, plant);
+    await this.checkJobOrderQtyLimit(dto.orderNo, dto.goodQty ?? 0, effectiveDefectQty, company, plant);
 
     // 설비부품 인터락 체크
     await this.checkEquipBomInterlock(dto.equipCode, dto.orderNo, company, plant);
@@ -472,7 +479,7 @@ export class ProdResultService {
         prdUid: dto.prdUid,
         processCode: dto.processCode,
         goodQty: dto.goodQty ?? 0,
-        defectQty: dto.defectQty ?? 0,
+        defectQty: effectiveDefectQty,
         startAt: dto.startAt ? new Date(dto.startAt) : new Date(),
         endAt: dto.endAt ? new Date(dto.endAt) : null,
         cycleTime: dto.cycleTime,
@@ -537,8 +544,28 @@ export class ProdResultService {
         }
       }
 
+      // 불량 상세 로그 저장 (불량입력 모달에서 등록된 유형별 불량)
+      // 같은 occurAt에 seq 1..N으로 복합 PK 충돌을 방지하고, defectQty는 위에서 이미 산정했으므로 재증가하지 않는다.
+      if (defectDetails.length > 0) {
+        const occurAt = new Date();
+        for (let i = 0; i < defectDetails.length; i++) {
+          const d = defectDetails[i];
+          await queryRunner.manager.save(DefectLog, {
+            occurAt,
+            seq: i + 1,
+            prodResultNo: savedResultNo,
+            defectCode: d.defectCode,
+            defectName: d.defectName ?? null,
+            qty: d.qty ?? 1,
+            status: 'WAIT',
+            company: jobOrder.company,
+            plant: jobOrder.plant,
+          });
+        }
+      }
+
       // BOM 기반 자재 자동차감 (ON_CREATE)
-      const totalQty = (dto.goodQty ?? 0) + (dto.defectQty ?? 0);
+      const totalQty = (dto.goodQty ?? 0) + effectiveDefectQty;
       if (totalQty > 0) {
         const autoResult = await this.autoIssueService.execute(
           'ON_CREATE', saved.resultNo, dto.orderNo, totalQty, queryRunner,

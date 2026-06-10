@@ -65,7 +65,8 @@ describe('InterfaceService', () => {
   describe('findAllLogs', () => {
     it('should return paginated logs', async () => {
       // Arrange
-      const logs = [{ seq: 1 }] as InterLog[];
+      const transDate = new Date('2026-06-10T00:00:00.000Z');
+      const logs = [{ transDate, seq: 1 }] as InterLog[];
       mockLogRepo.find.mockResolvedValue(logs);
       mockLogRepo.count.mockResolvedValue(1);
 
@@ -73,7 +74,26 @@ describe('InterfaceService', () => {
       const result = await target.findAllLogs({ page: 1, limit: 10 } as any);
 
       // Assert
-      expect(result).toEqual({ data: logs, total: 1, page: 1, limit: 10 });
+      expect(result).toEqual({
+        data: [{ transDate, seq: 1, id: '2026-06-10T00:00:00.000Z/1' }],
+        total: 1,
+        page: 1,
+        limit: 10,
+      });
+    });
+
+    it('재시도 URL에서 사용할 복합 id를 transDate/seq로 함께 반환한다', async () => {
+      const transDate = new Date('2026-06-10T00:00:00.000Z');
+      mockLogRepo.find.mockResolvedValue([{ transDate, seq: 7, status: 'FAIL' }] as InterLog[]);
+      mockLogRepo.count.mockResolvedValue(1);
+
+      const result = await target.findAllLogs({ page: 1, limit: 10 } as any);
+
+      expect(result.data[0]).toEqual(expect.objectContaining({
+        id: '2026-06-10T00:00:00.000Z/7',
+        transDate,
+        seq: 7,
+      }));
     });
   });
 

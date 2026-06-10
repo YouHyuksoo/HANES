@@ -13,6 +13,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ScanLine, X } from "lucide-react";
 import api from "@/services/api";
+import { getWorkerDisplayName, getWorkerInitial } from "./workerAvatar";
 
 /** 작업자 인터페이스 */
 export interface Worker {
@@ -42,17 +43,18 @@ const deptColors: Record<string, string> = {
 };
 
 /** 이니셜 아바타 컴포넌트 (사진 있으면 사진 표시) */
-export function WorkerAvatar({ name, dept, photoUrl, size = "md" }: { name: string; dept: string; photoUrl?: string | null; size?: "sm" | "md" | "lg" }) {
+export function WorkerAvatar({ name, dept, photoUrl, size = "md" }: { name?: string | null; dept?: string | null; photoUrl?: string | null; size?: "sm" | "md" | "lg" }) {
   const sizeClass = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-12 h-12 text-base" : "w-10 h-10 text-sm";
+  const displayName = getWorkerDisplayName(name);
 
   if (photoUrl) {
     return (
-      <img src={photoUrl} alt={name} className={`${sizeClass} rounded-full object-cover shrink-0`} />
+      <img src={photoUrl} alt={displayName} className={`${sizeClass} rounded-full object-cover shrink-0`} />
     );
   }
 
-  const initial = name.charAt(0);
-  const bgColor = deptColors[dept] || "bg-gray-500";
+  const initial = getWorkerInitial(name);
+  const bgColor = dept ? deptColors[dept] || "bg-gray-500" : "bg-gray-500";
   return (
     <span className={`${sizeClass} ${bgColor} text-white rounded-full inline-flex items-center justify-center font-bold shrink-0`}>
       {initial}

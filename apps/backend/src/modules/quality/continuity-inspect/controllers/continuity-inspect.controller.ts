@@ -97,8 +97,9 @@ export class ContinuityInspectController {
     @Param('orderNo') orderNo: string,
     @Company() company: string,
     @Plant() plant: string,
+    @Query('inspectType') inspectType?: string,
   ) {
-    const data = await this.continuityInspectService.findFgLabelsByOrder(orderNo, company, plant);
+    const data = await this.continuityInspectService.findFgLabelsByOrder(orderNo, company, plant, inspectType);
     return ResponseUtil.success(data);
   }
 
@@ -207,8 +208,9 @@ export class ContinuityInspectController {
     @Param('orderNo') orderNo: string,
     @Company() company: string,
     @Plant() plant: string,
+    @Query('inspectType') inspectType?: string,
   ) {
-    const data = await this.continuityInspectService.getStats(orderNo, company, plant);
+    const data = await this.continuityInspectService.getStats(orderNo, company, plant, inspectType);
     return ResponseUtil.success(data);
   }
 

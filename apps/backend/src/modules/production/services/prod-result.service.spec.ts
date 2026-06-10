@@ -15,6 +15,7 @@ import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { DefectLog } from '../../../entities/defect-log.entity';
 import { User } from '../../../entities/user.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { AutoIssueService } from './auto-issue.service';
@@ -222,6 +223,57 @@ describe('ProdResultService', () => {
     expect(tx.run).toHaveBeenCalledTimes(1);
     expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(result?.resultNo).toBe('PR-1');
+  });
+
+  it('persists defect detail logs in the same transaction without double counting defectQty', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, company: 'C1', plant: 'P1' } as any);
+
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+
+    await service.create(
+      {
+        orderNo: 'JO-1',
+        goodQty: 5,
+        defectQty: 5,
+        defects: [
+          { defectCode: 'D1', defectName: 'a', qty: 2 },
+          { defectCode: 'D2', defectName: 'b', qty: 3 },
+        ],
+      } as any,
+      'C1',
+      'P1',
+    );
+
+    // 생산실적은 집계 defectQty(5)로 1회만 생성 — defect-logs로 재증가(이중 카운트) 없음
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      ProdResult,
+      expect.objectContaining({ goodQty: 5, defectQty: 5 }),
+    );
+    // 자재 자동차감은 good+defect(10) 기준 유지
+    expect(autoIssueService.execute).toHaveBeenCalledWith('ON_CREATE', 'PR-1', 'JO-1', 10, expect.anything());
+    // 불량 상세 2건이 같은 트랜잭션에서 DefectLog로 저장 (seq 1,2로 PK 충돌 방지)
+    const defectSaves = queryRunner.manager.save.mock.calls.filter((c: any[]) => c[0] === DefectLog);
+    expect(defectSaves).toHaveLength(2);
+    expect(defectSaves[0][1]).toEqual(
+      expect.objectContaining({ prodResultNo: 'PR-1', defectCode: 'D1', qty: 2, seq: 1, status: 'WAIT', company: 'C1', plant: 'P1' }),
+    );
+    expect(defectSaves[1][1]).toEqual(
+      expect.objectContaining({ prodResultNo: 'PR-1', defectCode: 'D2', qty: 3, seq: 2 }),
+    );
   });
 
   it('blocks create when the loaded job order belongs to a different tenant', async () => {

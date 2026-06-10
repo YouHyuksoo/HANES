@@ -267,6 +267,7 @@ export class AdjustmentService {
         refType: 'ADJUSTMENT',
         refId: `${adjDate}-${seq}`,
         remark: reason,
+        account: 'STOCK_ADJ', // 재고보정계정
         status: 'DONE',
         createdBy: approvedBy,
         company: adjLog.company,
@@ -419,6 +420,7 @@ export class AdjustmentService {
         refType: 'ADJUSTMENT',
         refId: `${invAdjLog.adjDate}-${invAdjLog.seq}`,
         remark: reason,
+        account: 'STOCK_ADJ', // 재고보정계정
         status: 'DONE',
         createdBy,
         company: stock?.company ?? company,

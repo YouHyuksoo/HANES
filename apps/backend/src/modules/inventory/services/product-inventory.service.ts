@@ -728,6 +728,7 @@ export class ProductInventoryService {
 
     return transactions.map((t) => ({
       ...t,
+      id: t.transNo,
       fromWarehouse: t.fromWarehouseId ? whMap.get(t.fromWarehouseId) || null : null,
       toWarehouse: t.toWarehouseId ? whMap.get(t.toWarehouseId) || null : null,
       part: partMap.get(t.itemCode) || null,

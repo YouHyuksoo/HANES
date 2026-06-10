@@ -48,6 +48,10 @@ export class PurchaseOrderService {
     };
   }
 
+  private withClientId(po: PurchaseOrder) {
+    return { ...po, id: po.poNo };
+  }
+
   private buildPurchaseOrderUpdate(
     dto: Omit<UpdatePurchaseOrderDto, 'items' | 'poNo'>,
     totalAmount?: number,
@@ -129,7 +133,7 @@ export class PurchaseOrderService {
       });
 
       return {
-        ...po,
+        ...this.withClientId(po),
         items: enrichedItems,
       };
     });
@@ -156,7 +160,7 @@ export class PurchaseOrderService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return {
-      ...po,
+      ...this.withClientId(po),
       items: items.map((item) => {
         const part = partMap.get(item.itemCode);
         return {

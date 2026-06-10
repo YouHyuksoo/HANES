@@ -16,6 +16,7 @@ import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lu
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui";
 import api from "@/services/api";
+import { downloadProdPlanTemplate } from "./prodPlanTemplate";
 
 interface Props {
   isOpen: boolean;
@@ -43,20 +44,7 @@ export default function ExcelUploadModal({ isOpen, onClose, onUploaded, planMont
   const [uploadResult, setUploadResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleDownloadTemplate = useCallback(() => {
-    const headers = [
-      t("monthlyPlan.excel.itemCode"),
-      t("monthlyPlan.excel.itemType"),
-      t("monthlyPlan.excel.planQty"),
-      t("monthlyPlan.excel.customer"),
-      t("monthlyPlan.excel.lineCode"),
-      t("monthlyPlan.excel.priority"),
-      t("monthlyPlan.excel.remark"),
-    ];
-    const ws = XLSX.utils.aoa_to_sheet([headers]);
-    ws["!cols"] = [{ wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 30 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, `prod-plan-template-${planMonth}.xlsx`);
+    downloadProdPlanTemplate(t, planMonth);
   }, [t, planMonth]);
 
   const validateRow = (row: ParsedRow, idx: number): string | undefined => {
