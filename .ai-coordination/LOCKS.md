@@ -4,11 +4,6 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
-- T-INSPECT-CIRCUIT-LABEL (claude, 2026-06-10): 통전검사 `/inspection/result` 회로라벨 매핑(스캔 모드).
-  파일: apps/backend/src/migrations/2026-06-10_inspect_result_circuit_label.sql, apps/backend/src/entities/inspect-result.entity.ts, apps/backend/src/modules/quality/continuity-inspect/dto/continuity-inspect.dto.ts, apps/backend/src/modules/quality/continuity-inspect/services/continuity-inspect.service.ts(+spec), apps/frontend/src/app/(authenticated)/inspection/result/{types.ts,components/InspectPanel.tsx}, apps/frontend/src/locales/{ko,en,zh,vi}.json
-  상태: IN_PROGRESS
-  notes: INSPECT_RESULTS.CIRCUIT_LABEL VARCHAR2(200) 추가. 스캔모드 PASS 시 회로라벨 필수+중복차단(서버), 저장. 이력 그리드 회로라벨 컬럼(inspectResultId→In() 단일쿼리 매핑). 설계: docs/superpowers/specs/2026-06-10-inspection-circuit-label-design.md
-
 - T-KIOSK-DEFECT-DOUBLE-COUNT (claude, 2026-06-10): 입력키오스크 불량입력 defectQty 이중 카운트 수정 + quality/defect 화면 전면 정합화.
   파일: apps/backend/src/modules/production/dto/prod-result.dto.ts, apps/backend/src/modules/production/services/prod-result.service.ts(+spec), apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ProductionInputBar.tsx, apps/backend/src/modules/quality/defects/{dto/defect-log.dto.ts,services/defect-log.service.ts(+spec),defects.module.ts}, apps/frontend/src/app/(authenticated)/quality/defect/page.tsx, apps/frontend/src/locales/*
   상태: REVIEW
@@ -33,6 +28,8 @@ Before editing, add a lock entry. Remove or mark it released when done.
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-INSPECT-CIRCUIT-LABEL (claude, 2026-06-10): 통전검사 `/inspection/result` 회로라벨 매핑(스캔 모드). INSPECT_RESULTS.CIRCUIT_LABEL VARCHAR2(200)+함수기반 부분 UNIQUE 인덱스(UQ_INSPECT_RESULT_CIRCUIT, NULL허용·테넌트유일). 스캔모드 PASS 회로라벨 필수+중복차단(서버) + DB 하드가드. 이력 그리드 회로라벨 컬럼(In() 매핑). 프론트 InspectPanel 회로라벨 스캔 입력칸. continuity-inspect spec 17/17, 백·프론트 tsc 0, i18n 4파일, JSHANES 적용+가역테스트(중복→ORA-00001, NULL 허용) 검증. 코드/컬럼은 checkpoint(f4e1d53)에 codex 단자검사 리팩터와 함께 포함, UNIQUE 인덱스는 f8e1893 커밋 후 lock 해제.
 
 - T-SHIP-ORDER-ITEM-PAYLOAD (codex, 2026-06-10): `/shipping/order` 출하지시 생성 payload에 `items`가 누락되어 DTO 400이 나던 문제 수정. 품목 검색/수량 입력 UI 추가, 저장 payload `items` 포함, focused 구조 테스트/프론트 tsc/API 가역 생성삭제/브라우저 모달 확인 후 lock 해제.
 
