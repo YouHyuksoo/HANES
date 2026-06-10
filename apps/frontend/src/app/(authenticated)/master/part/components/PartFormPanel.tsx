@@ -273,7 +273,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               <Input label={t("master.part.spec")}
                 value={form.spec} onChange={e => setField("spec", e.target.value)} fullWidth />
             </div>
-            <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false}
+            <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false} showCode
               value={form.unit} onChange={v => setField("unit", v)} fullWidth />
             <Select label={t("master.part.inspectMethod", "IQC검사방법")}
               options={[

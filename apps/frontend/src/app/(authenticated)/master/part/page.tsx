@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, Package, RefreshCw, ImageIcon, Download } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect, UseYnSelect } from "@/components/shared";
+import { useComCodeMap } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -100,6 +101,9 @@ export default function PartPage() {
     return map;
   }, [t]);
 
+  // 단위 공통코드 맵 (예: EA→개) — 단위 컬럼에 "코드 - 명칭" 표시용
+  const unitMap = useComCodeMap("UNIT_TYPE");
+
 
   const columns = useMemo<ColumnDef<Part>[]>(() => [
     {
@@ -155,7 +159,14 @@ export default function PartPage() {
     { accessorKey: "rev", header: t("master.part.rev", "Rev"), size: 45 },
     { accessorKey: "markingText", header: t("master.part.markingText", "마킹문구"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "custPartNo", header: t("master.part.custPartNo", "고객품번"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "unit", header: t("master.part.unit"), size: 45 },
+    { accessorKey: "unit", header: t("master.part.unit"), size: 90,
+      cell: ({ getValue }) => {
+        const code = getValue() as string;
+        if (!code) return "-";
+        const name = unitMap[code]?.codeName;
+        return name ? `${code} - ${name}` : code;
+      },
+    },
     { accessorKey: "boxQty", header: t("master.part.boxQty", "박스입수"), size: 70, meta: { filterType: "number" as const } },
     { accessorKey: "lotUnitQty", header: t("master.part.lotUnitQty", "LOT수량"), size: 75, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() ?? "-" },
     {
@@ -196,7 +207,7 @@ export default function PartPage() {
         );
       },
     },
-  ], [t, typeLabels, productTypeLabels, isPanelOpen]);
+  ], [t, typeLabels, productTypeLabels, unitMap, isPanelOpen]);
 
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);

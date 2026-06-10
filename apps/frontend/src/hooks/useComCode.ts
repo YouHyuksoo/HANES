@@ -60,20 +60,25 @@ function getLocalizedCodeName(
 export function useComCodeOptions(
   groupCode: string,
   includeAll: boolean = false,
+  showCode: boolean = false,
 ) {
   const { data } = useComCodes();
   const { t } = useTranslation();
   return useMemo(() => {
     const codes = data?.data?.[groupCode] ?? [];
-    const options = codes.map((c: ComCodeItem) => ({
-      value: c.detailCode,
-      label: getLocalizedCodeName(t, groupCode, c.detailCode, c.codeName),
-    }));
+    const options = codes.map((c: ComCodeItem) => {
+      const name = getLocalizedCodeName(t, groupCode, c.detailCode, c.codeName);
+      // showCode: 코드와 명칭을 함께 노출 (예: "EA - 개"). 코드가 곧 의미인 단위류에 사용.
+      return {
+        value: c.detailCode,
+        label: showCode && name !== c.detailCode ? `${c.detailCode} - ${name}` : name,
+      };
+    });
     if (includeAll) {
       return [{ value: "", label: t("common.all", { defaultValue: "전체" }) }, ...options];
     }
     return options;
-  }, [data, groupCode, includeAll, t]);
+  }, [data, groupCode, includeAll, showCode, t]);
 }
 
 export function useComCodeLabel(

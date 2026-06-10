@@ -21,15 +21,18 @@ interface ComCodeSelectProps extends Omit<SelectProps, "options"> {
   includeAll?: boolean;
   /** 필터용: 옵션 라벨 앞에 접두어 추가 (예: "품목유형: 전체") */
   labelPrefix?: string;
+  /** 코드와 명칭을 함께 노출 (예: "EA - 개"). 코드가 곧 의미인 단위류에 사용 */
+  showCode?: boolean;
 }
 
 export default function ComCodeSelect({
   groupCode,
   includeAll = true,
   labelPrefix,
+  showCode = false,
   ...props
 }: ComCodeSelectProps) {
-  const options = useComCodeOptions(groupCode, includeAll);
+  const options = useComCodeOptions(groupCode, includeAll, showCode);
   const prefixedOptions = labelPrefix
     ? options.map(o => ({ ...o, label: `${labelPrefix}: ${o.label}` }))
     : options;
