@@ -16,10 +16,12 @@ import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.e
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { SystemModule } from '../../system/system.module';
 import { ArrivalController } from '../controllers/arrival.controller';
+import { ConcessionController } from '../controllers/concession.controller';
 import { IqcHistoryController } from '../controllers/iqc-history.controller';
 import { ReceiptCancelController } from '../controllers/receipt-cancel.controller';
 import { ReceivingController } from '../controllers/receiving.controller';
 import { ArrivalService } from '../services/arrival.service';
+import { ConcessionService } from '../services/concession.service';
 import { IqcHistoryService } from '../services/iqc-history.service';
 import { ReceiptCancelService } from '../services/receipt-cancel.service';
 import { ReceivingService } from '../services/receiving.service';
@@ -49,12 +51,14 @@ import { ReceivingService } from '../services/receiving.service';
     ReceivingController,
     IqcHistoryController,
     ReceiptCancelController,
+    ConcessionController,
   ],
   providers: [
     ArrivalService,
     ReceivingService,
     IqcHistoryService,
     ReceiptCancelService,
+    ConcessionService,
   ],
 })
 export class ReceivingModule {}

@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CheckCircle2, PackageCheck, ScanLine, Trash2, X } from 'lucide-react';
 import { Button, Input, Modal } from '@/components/ui';
+import WarehouseSelect from '@/components/shared/WarehouseSelect';
 import api from '@/services/api';
 import type { ReceivableLot, ReceiveScanPair } from './types';
 
@@ -29,6 +30,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
   const [input, setInput] = useState('');
   const [pendingVendorBarcode, setPendingVendorBarcode] = useState('');
   const [pairs, setPairs] = useState<ReceiveScanPair[]>([]);
+  const [warehouseCode, setWarehouseCode] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -73,12 +75,6 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
       focusInput();
       return;
     }
-    if (!lot.arrivalWarehouseCode) {
-      setError(`${matUid}: 입고 창고 정보가 없습니다.`);
-      setInput('');
-      focusInput();
-      return;
-    }
     if (scannedOwnBarcodes.has(matUid)) {
       setError(`이미 스캔한 자체바코드입니다: ${matUid}`);
       setInput('');
@@ -119,6 +115,10 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
 
   const handleReceive = useCallback(async () => {
     if (pairs.length === 0) return;
+    if (!warehouseCode) {
+      setError('입고 창고를 선택해 주세요.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -131,7 +131,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
             return {
               matUid: pair.matUid,
               qty: lot?.remainingQty || 0,
-              warehouseId: lot?.arrivalWarehouseCode || '',
+              warehouseId: warehouseCode,
               vendorBarcode: pair.vendorBarcode,
             };
           }),
@@ -144,7 +144,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
       setSaving(false);
       focusInput();
     }
-  }, [focusInput, onClose, onSuccess, pairs, receivableByUid]);
+  }, [focusInput, onClose, onSuccess, pairs, receivableByUid, warehouseCode]);
 
   const phaseTitle = phase === 'vendor' ? '거래처 바코드 스캔' : '자체부착 바코드 스캔';
   const phaseHint = phase === 'vendor'
@@ -154,6 +154,19 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="스캔 입고처리" size="2xl" closeOnOverlayClick={false}>
       <div className="space-y-4">
+        <div className="grid grid-cols-[auto_1fr] items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2">
+          <label className="text-sm font-medium text-text whitespace-nowrap">
+            입고 창고
+          </label>
+          <WarehouseSelect
+            warehouseType="RAW"
+            autoSelectDefault
+            value={warehouseCode}
+            onChange={(v) => setWarehouseCode(v)}
+            fullWidth
+          />
+        </div>
+
         <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
           <Input
             ref={inputRef}
@@ -256,7 +269,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
               <X className="w-4 h-4 mr-1" />
               {t('common.close')}
             </Button>
-            <Button onClick={handleReceive} disabled={pairs.length === 0} isLoading={saving}>
+            <Button onClick={handleReceive} disabled={pairs.length === 0 || !warehouseCode} isLoading={saving}>
               <PackageCheck className="w-4 h-4 mr-1" />
               입고처리 ({pairs.length})
             </Button>

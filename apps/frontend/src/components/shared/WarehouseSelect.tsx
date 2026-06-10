@@ -8,7 +8,7 @@
  *    → "창고: 전체", "창고: WH001 - 원자재창고" 형태로 표시
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Select from "@/components/ui/Select";
 import type { SelectProps } from "@/components/ui/Select";
@@ -21,11 +21,20 @@ interface WarehouseSelectProps extends Omit<SelectProps, "options"> {
   includeAll?: boolean;
   /** 필터용: 옵션 라벨 앞에 접두어 추가 (예: "창고: 전체") */
   labelPrefix?: string;
+  /** true이면 값이 비어있을 때 기본창고(isDefault='Y')를 자동 선택 */
+  autoSelectDefault?: boolean;
 }
 
-export default function WarehouseSelect({ warehouseType, includeAll = false, labelPrefix, ...rest }: WarehouseSelectProps) {
+export default function WarehouseSelect({ warehouseType, includeAll = false, labelPrefix, autoSelectDefault = false, ...rest }: WarehouseSelectProps) {
   const { t } = useTranslation();
-  const { options, isLoading } = useWarehouseOptions(warehouseType);
+  const { options, isLoading, defaultCode } = useWarehouseOptions(warehouseType);
+
+  // 기본창고 자동 선택 (값이 비어있고 기본창고가 존재할 때 1회)
+  useEffect(() => {
+    if (autoSelectDefault && !rest.value && defaultCode && rest.onChange) {
+      rest.onChange(defaultCode);
+    }
+  }, [autoSelectDefault, rest.value, defaultCode, rest.onChange]);
 
   const finalOptions = useMemo(() => {
     let opts = includeAll

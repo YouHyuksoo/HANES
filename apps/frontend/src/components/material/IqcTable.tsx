@@ -38,6 +38,31 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IqcItem>[]>(
     () => [
+      {
+        id: 'actions',
+        header: t('material.col.inspect'),
+        size: 100,
+        meta: { filterType: 'none' as const },
+        cell: ({ row }) => {
+          const item = row.original;
+          const canInspect = item.status === 'PENDING' || item.status === 'IQC_IN_PROGRESS';
+          return (
+            <button
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors ${
+                canInspect
+                  ? 'text-primary border-primary hover:bg-primary hover:text-white'
+                  : 'text-text-muted border-border opacity-50 cursor-not-allowed'
+              }`}
+              title={t('material.iqc.iqcInspect')}
+              disabled={!canInspect}
+              onClick={() => onInspect(item)}
+            >
+              <ClipboardCheck className="w-4 h-4" />
+              {t('material.iqc.iqcInspect')}
+            </button>
+          );
+        },
+      },
       { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'arrivalDate',
@@ -98,28 +123,6 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
         size: 80,
         meta: { filterType: 'text' as const },
         cell: ({ getValue }) => <span>{(getValue() as string) || '-'}</span>,
-      },
-      {
-        id: 'actions',
-        header: t('material.col.inspect'),
-        size: 70,
-        meta: { filterType: 'none' as const },
-        cell: ({ row }) => {
-          const item = row.original;
-          const canInspect = item.status === 'PENDING' || item.status === 'IQC_IN_PROGRESS';
-          return (
-            <button
-              className="p-1 hover:bg-surface rounded"
-              title={t('material.iqc.iqcInspect')}
-              disabled={!canInspect}
-              onClick={() => onInspect(item)}
-            >
-              <ClipboardCheck
-                className={`w-4 h-4 ${canInspect ? 'text-primary' : 'text-text-muted opacity-50'}`}
-              />
-            </button>
-          );
-        },
       },
     ],
     [onInspect, t]

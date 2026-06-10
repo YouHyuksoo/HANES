@@ -2244,6 +2244,28 @@
         "normalCount": "Normal"
       }
     },
+    "concession": {
+      "title": "Concession",
+      "subtitle": "Specially accept failed materials to allow receiving into good stock.",
+      "action": "Action",
+      "apply": "Accept",
+      "cancel": "Cancel",
+      "status": "Concession",
+      "accepted": "Accepted",
+      "notAccepted": "Pending",
+      "applyTitle": "Apply Concession",
+      "cancelTitle": "Cancel Concession",
+      "applyHint": "After concession, the failed material can be received into a good warehouse from the receiving screen.",
+      "cancelHint": "Cancelling concession excludes the material from receiving again.",
+      "reason": "Concession Reason",
+      "reasonPlaceholder": "Enter concession reason",
+      "searchPlaceholder": "Search arrival no, part...",
+      "stats": {
+        "total": "Targets",
+        "accepted": "Accepted",
+        "pending": "Pending"
+      }
+    },
     "scrap": {
       "title": "Material Scrap",
       "subtitle": "Process scrap for defective/expired materials.",
@@ -5874,6 +5896,8 @@
       "arrivalResult": "Arrival Result",
       "label": "Label",
       "iqc": "IQC",
+      "iqcHistory": "Inspection History",
+      "concession": "Concession",
       "receive": "Receive",
       "request": "Request",
       "issue": "Issue"

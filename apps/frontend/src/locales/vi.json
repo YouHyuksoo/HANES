@@ -2230,6 +2230,28 @@
         "normalCount": "Bình thường"
       }
     },
+    "concession": {
+      "title": "Xử lý đặc cách",
+      "subtitle": "Đặc cách vật tư không đạt để cho phép nhập vào kho hàng tốt.",
+      "action": "Xử lý",
+      "apply": "Đặc cách",
+      "cancel": "Hủy đặc cách",
+      "status": "Đặc cách",
+      "accepted": "Đặc cách",
+      "notAccepted": "Chưa xử lý",
+      "applyTitle": "Xử lý đặc cách",
+      "cancelTitle": "Hủy đặc cách",
+      "applyHint": "Sau khi đặc cách, vật tư không đạt có thể được nhập vào kho hàng tốt từ màn hình nhập kho.",
+      "cancelHint": "Hủy đặc cách sẽ loại vật tư khỏi đối tượng nhập kho.",
+      "reason": "Lý do đặc cách",
+      "reasonPlaceholder": "Nhập lý do đặc cách",
+      "searchPlaceholder": "Tìm số nhập hàng, vật tư...",
+      "stats": {
+        "total": "Đối tượng",
+        "accepted": "Đã đặc cách",
+        "pending": "Chưa xử lý"
+      }
+    },
     "scrap": {
       "title": "Phế liệu vật tư",
       "subtitle": "Xử lý phế liệu vật tư lỗi/hết hạn.",
@@ -5860,6 +5882,8 @@
       "arrivalResult": "Kết quả nhập hàng",
       "label": "Nhãn",
       "iqc": "IQC",
+      "iqcHistory": "Lịch sử kiểm tra",
+      "concession": "Xử lý đặc cách",
       "receive": "Nhập kho",
       "request": "Yêu cầu xuất",
       "issue": "Xuất kho"

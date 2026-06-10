@@ -2559,6 +2559,28 @@
         "normalCount": "정상"
       }
     },
+    "concession": {
+      "title": "특채처리",
+      "subtitle": "검사 불합격 자재를 특별채택하여 양품입고를 허용합니다.",
+      "action": "처리",
+      "apply": "특채처리",
+      "cancel": "특채취소",
+      "status": "특채여부",
+      "accepted": "특채",
+      "notAccepted": "미처리",
+      "applyTitle": "특채 처리",
+      "cancelTitle": "특채 취소",
+      "applyHint": "특채 처리하면 해당 불합격 자재를 입고화면에서 양품창고로 입고할 수 있습니다.",
+      "cancelHint": "특채를 취소하면 해당 자재는 다시 입고 대상에서 제외됩니다.",
+      "reason": "특채 사유",
+      "reasonPlaceholder": "특채 사유를 입력하세요",
+      "searchPlaceholder": "입하번호, 품목 검색...",
+      "stats": {
+        "total": "특채대상",
+        "accepted": "특채처리",
+        "pending": "미처리"
+      }
+    },
     "scrap": {
       "title": "자재폐기",
       "subtitle": "불량/만료 자재 폐기를 처리합니다.",
@@ -5893,6 +5915,8 @@
       "arrivalResult": "입하실적조회",
       "label": "입고라벨",
       "iqc": "IQC",
+      "iqcHistory": "검사이력",
+      "concession": "특채처리",
       "receive": "입고",
       "request": "출고요청",
       "issue": "출고"

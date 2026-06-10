@@ -180,6 +180,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "QC_IQC_PART_SPEC", labelKey: "menu.master.iqcPartSpec", path: "/master/iqc-part-spec" },
       { code: "QC_IQC", labelKey: "menu.material.iqc", path: "/material/iqc" },
       { code: "QC_IQC_HISTORY", labelKey: "menu.material.iqcHistory", path: "/material/iqc-history" },
+      { code: "QC_CONCESSION", labelKey: "menu.material.concession", path: "/material/concession" },
       { code: "QC_DEFECT", labelKey: "menu.quality.defect", path: "/quality/defect" },
       { code: "QC_REWORK_INSPECT", labelKey: "menu.quality.reworkInspect", path: "/quality/rework-inspect" },
       { code: "QC_INSPECT", labelKey: "menu.quality.inspect", path: "/quality/inspect" },

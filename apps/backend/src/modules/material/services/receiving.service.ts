@@ -14,7 +14,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Between, DataSource, EntityManager } from 'typeorm';
+import { Repository, In, Between, DataSource, EntityManager, MoreThan } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
@@ -121,9 +121,11 @@ export class ReceivingService {
 
   /** 입고 가능 LOT 목록 (IQC 합격 + 미입고/부분입고) */
   async findReceivable(company?: string, plant?: string) {
-    // IQC 합격된 LOT 조회 (initQty > 0 조건으로 유효 LOT 필터)
+    // 입고 대상 LOT 조회 (initQty > 0 조건으로 유효 LOT 필터)
+    // - IQC 합격(PASS) LOT
+    // - IQC 불합격(FAIL)이지만 특채(SPECIAL_ACCEPT_YN='Y') 승인된 LOT → 양품입고 허용
     const qb = this.matLotRepository.createQueryBuilder('lot')
-      .where('lot.iqcStatus = :iqcStatus', { iqcStatus: 'PASS' })
+      .where("(lot.iqcStatus = 'PASS' OR (lot.iqcStatus = 'FAIL' AND lot.specialAcceptYn = 'Y'))")
       .andWhere('lot.status IN (:...statuses)', { statuses: ['NORMAL', 'HOLD'] })
       .andWhere('lot.initQty > 0');
 
@@ -253,7 +255,9 @@ export class ReceivingService {
           : null;
         const arrivalWarehouse = arrivalWhCode ? warehouseMap.get(arrivalWhCode) : null;
         const part = partMap.get(lot.itemCode);
-        const certRequired = part?.iqcYn === 'Y';
+        // 특채(불합격 + 특채승인) LOT은 검사성적서 정책에서 면제 (PASS 검사 이력이 없음)
+        const isConcession = lot.iqcStatus === 'FAIL' && lot.specialAcceptYn === 'Y';
+        const certRequired = !isConcession && part?.iqcYn === 'Y';
         const iqcLog = lot.arrivalNo
           ? iqcLogByArrivalItem.get(`${lot.arrivalNo}::${lot.itemCode}`)
           : null;
@@ -271,6 +275,7 @@ export class ReceivingService {
           labelPrinted: printedLotNos.has(lot.matUid),
           certRequired,
           certUploaded,
+          isConcession,
           receivingBlockedReason: certRequired && !certUploaded ? '검사성적서 미첨부' : null,
         };
       })
@@ -359,8 +364,13 @@ export class ReceivingService {
       });
       if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${item.matUid}`);
       this.assertSameTenant('입고 대상 LOT', lot, company, plant);
-      if (lot.iqcStatus !== 'PASS') throw new BadRequestException(`IQC 합격되지 않은 LOT입니다: ${lot.matUid}`);
-      await this.assertIqcCertificatePolicy(lot);
+      // 입고 가능: IQC 합격(PASS) 또는 특채(FAIL + SPECIAL_ACCEPT_YN='Y')
+      const isConcession = lot.iqcStatus === 'FAIL' && lot.specialAcceptYn === 'Y';
+      if (lot.iqcStatus !== 'PASS' && !isConcession) {
+        throw new BadRequestException(`IQC 합격 또는 특채 승인되지 않은 LOT입니다: ${lot.matUid}`);
+      }
+      // 특채 LOT은 검사성적서 정책에서 면제
+      if (!isConcession) await this.assertIqcCertificatePolicy(lot);
 
       // 기입고수량 확인
       const receivedAgg = await this.stockTransactionRepository
@@ -432,6 +442,26 @@ export class ReceivingService {
         }
         const arrivalWarehouseCode = arrivalRecord?.warehouseCode || null;
 
+        // 출고원천 창고 결정
+        // - 일반(PASS): 입하 창고에 LOT 재고가 있으므로 입하 창고에서 차감
+        // - 특채(FAIL+특채승인): IQC 불합격 시 불용창고로 이동된 상태이므로,
+        //   실제 재고가 남아있는 창고(불용창고)에서 차감해야 음수재고가 발생하지 않는다.
+        const isConcession = lot.iqcStatus === 'FAIL' && lot.specialAcceptYn === 'Y';
+        let sourceWarehouseCode = arrivalWarehouseCode;
+        if (isConcession) {
+          const stockRow = await queryRunner.manager.findOne(MatStock, {
+            where: {
+              matUid: item.matUid,
+              itemCode: lot.itemCode,
+              qty: MoreThan(0),
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
+            order: { qty: 'DESC' },
+          });
+          sourceWarehouseCode = stockRow?.warehouseCode ?? arrivalWarehouseCode;
+        }
+
         // 1-1. 제조일자 수정 시 LOT 업데이트 + 유효기한 재계산
         if (item.manufactureDate) {
           const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
@@ -472,14 +502,14 @@ export class ReceivingService {
         const stockTx = queryRunner.manager.create(StockTransaction, {
           transNo,
           transType: 'RECEIVE',
-          fromWarehouseId: arrivalWarehouseCode,
+          fromWarehouseId: sourceWarehouseCode,
           toWarehouseId: receiveWarehouseCode,
           itemCode: lot.itemCode,
           matUid: item.matUid,
           qty: item.qty,
-          remark: item.remark,
+          remark: isConcession ? (item.remark ? `${item.remark} (특채입고)` : '특채입고') : item.remark,
           workerId: dto.workerId,
-          refType: 'RECEIVE',
+          refType: isConcession ? 'RECEIVE_CONCESSION' : 'RECEIVE',
           refId: `${receiving.receiveNo}-${receiving.seq}`,
           company: lot.company,
           plant: lot.plant,
@@ -487,10 +517,10 @@ export class ReceivingService {
 
         const savedTx = await queryRunner.manager.save(stockTx);
 
-        // 3. 입하 창고의 LOT(matUid) 재고 차감
-        //    IQC005 입하는 시리얼 채번과 동시에 matUid 단위 재고를 생성한다.
-        if (arrivalWarehouseCode) {
-          await this.upsertStock(queryRunner.manager, arrivalWarehouseCode, lot.itemCode, item.matUid, -item.qty, lot.company, lot.plant);
+        // 3. 출고원천 창고의 LOT(matUid) 재고 차감
+        //    일반: 입하 창고 / 특채: 불용창고(재고 잔존 창고)
+        if (sourceWarehouseCode) {
+          await this.upsertStock(queryRunner.manager, sourceWarehouseCode, lot.itemCode, item.matUid, -item.qty, lot.company, lot.plant);
         }
 
         // 4. 입고 창고에 LOT 단위(matUid) 재고 증가

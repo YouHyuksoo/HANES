@@ -2230,6 +2230,28 @@
         "normalCount": "正常"
       }
     },
+    "concession": {
+      "title": "特采处理",
+      "subtitle": "对检验不合格物料进行特别采用，允许入库为良品。",
+      "action": "处理",
+      "apply": "特采",
+      "cancel": "取消特采",
+      "status": "特采状态",
+      "accepted": "特采",
+      "notAccepted": "未处理",
+      "applyTitle": "特采处理",
+      "cancelTitle": "取消特采",
+      "applyHint": "特采后，可在入库画面将该不合格物料入库至良品仓库。",
+      "cancelHint": "取消特采后，该物料将再次从入库对象中排除。",
+      "reason": "特采原因",
+      "reasonPlaceholder": "请输入特采原因",
+      "searchPlaceholder": "搜索入货编号、物料...",
+      "stats": {
+        "total": "特采对象",
+        "accepted": "已特采",
+        "pending": "未处理"
+      }
+    },
     "scrap": {
       "title": "物料报废",
       "subtitle": "处理不良/过期物料的报废。",
@@ -5860,6 +5882,8 @@
       "arrivalResult": "到货实绩查询",
       "label": "标签",
       "iqc": "IQC",
+      "iqcHistory": "检验履历",
+      "concession": "特采处理",
       "receive": "入库",
       "request": "出库申请",
       "issue": "出库"

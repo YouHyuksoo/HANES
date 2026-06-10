@@ -70,6 +70,10 @@ export class MatLot {
   @Column({ name: 'IQC_STATUS', length: 20, default: 'PENDING' })
   iqcStatus: string;
 
+  /** 특채여부: Y=특별채택(불합격 자재 양품입고 허용), N=일반 */
+  @Column({ name: 'SPECIAL_ACCEPT_YN', length: 1, default: 'N' })
+  specialAcceptYn: string;
+
   @Column({ name: 'STATUS', length: 20, default: 'NORMAL' })
   status: string;
 

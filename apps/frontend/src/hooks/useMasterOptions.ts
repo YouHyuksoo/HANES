@@ -28,6 +28,7 @@ interface DepartmentItem {
 interface WarehouseItem {
   warehouseCode: string;
   warehouseName: string;
+  isDefault?: string;
 }
 
 interface PartItem {
@@ -107,16 +108,23 @@ export function useWarehouseOptions(warehouseType?: string) {
     { staleTime: 5 * 60 * 1000 },
   );
 
-  const options = useMemo<SelectOption[]>(() => {
+  const list = useMemo<WarehouseItem[]>(() => {
     const raw = data?.data;
-    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
-    return list.map((w) => ({
-      value: w.warehouseCode,
-      label: w.warehouseName,
-    }));
+    return Array.isArray(raw) ? raw : raw?.data ?? [];
   }, [data]);
 
-  return { options, isLoading };
+  const options = useMemo<SelectOption[]>(
+    () => list.map((w) => ({ value: w.warehouseCode, label: w.warehouseName })),
+    [list],
+  );
+
+  /** 기본창고(isDefault='Y') 코드 — 입고 등 화면에서 기본 선택값으로 사용 */
+  const defaultCode = useMemo(
+    () => list.find((w) => w.isDefault === "Y")?.warehouseCode ?? "",
+    [list],
+  );
+
+  return { options, isLoading, defaultCode };
 }
 
 /**
