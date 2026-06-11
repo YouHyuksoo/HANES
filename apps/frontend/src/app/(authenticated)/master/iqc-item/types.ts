@@ -3,7 +3,7 @@
  * @description IQC 검사항목/검사그룹 공통 타입 및 색상 상수
  *
  * 초보자 가이드:
- * 1. 판정방법(VISUAL/MEASURE) 및 검사형태(FULL/SAMPLE/SKIP) 색상 정의
+ * 1. 판정방법(VISUAL/MEASURE) 및 검사구분(FULL/SAMPLE/SKIP) 색상 정의
  * 2. 실제 데이터는 API(/master/iqc-item-pool, /master/iqc-groups)에서 조회
  */
 

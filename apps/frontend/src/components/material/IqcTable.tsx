@@ -28,7 +28,7 @@ const formatDateOnly = (value?: string | null) => {
   return new Intl.DateTimeFormat('sv-SE').format(date);
 };
 
-/** 검사방법(FULL/SAMPLE/SKIP) 배지 색상 */
+/** 검사구분(FULL/SAMPLE/SKIP) 배지 색상 */
 const METHOD_COLORS: Record<string, string> = {
   FULL: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
   SAMPLE: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
@@ -78,7 +78,7 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
       { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'inspectMethod',
-        header: t('material.iqc.method', '검사방법'),
+        header: t('material.iqc.method', '검사구분'),
         size: 90,
         meta: { filterType: 'multi' as const },
         cell: ({ getValue }) => {

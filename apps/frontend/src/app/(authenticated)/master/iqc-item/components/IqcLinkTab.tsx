@@ -6,7 +6,7 @@
  *
  * 초보자 가이드:
  * 1. API: GET/POST/PUT/DELETE /master/iqc-part-links
- * 2. DataGrid: 품목코드 | 품목명 | 거래처 | 검사그룹 | 검사형태 | 비고
+ * 2. DataGrid: 품목코드 | 품목명 | 거래처 | 검사그룹 | 검사구분 | 비고
  * 3. 같은 품목이라도 거래처별로 다른 검사그룹 적용 가능
  * 4. 거래처 미지정 = 기본 검사그룹 (모든 거래처에 적용)
  */
@@ -42,8 +42,8 @@ export default function IqcLinkTab() {
   const [deleteTarget, setDeleteTarget] = useState<IqcPartLinkRow | null>(null);
 
   const methodLabels = useMemo<Record<string, string>>(() => ({
-    FULL: t("master.iqcGroup.methodFull", "전수검사"),
-    SAMPLE: t("master.iqcGroup.methodSample", "샘플검사"),
+    FULL: t("master.iqcGroup.methodFull", "검사"),
+    SAMPLE: t("master.iqcGroup.methodSample", "검사"),
     SKIP: t("master.iqcGroup.methodSkip", "무검사"),
   }), [t]);
 
@@ -161,7 +161,7 @@ export default function IqcLinkTab() {
       },
     },
     {
-      id: "inspectMethod", header: t("master.iqcGroup.inspectMethod", "검사형태"), size: 100,
+      id: "inspectMethod", header: t("master.iqcGroup.inspectMethod", "검사구분"), size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ row }) => {
         const g = row.original.group;

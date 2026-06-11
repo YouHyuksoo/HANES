@@ -7,7 +7,7 @@
  * 초보자 가이드:
  * 1. API: GET/POST/PUT/DELETE /master/iqc-groups
  * 2. DataGrid로 그룹 목록 표시 + 모달로 등록/수정
- * 3. 검사형태(전수/샘플/무검사) 필터링 + 검색 지원
+ * 3. 검사구분(검사/무검사) 필터링 + 검색 지원
  * 4. 각 그룹에 포함된 검사항목 수 표시
  */
 
@@ -188,7 +188,7 @@ export default function IqcGroupTab() {
       },
     },
     {
-      accessorKey: "inspectMethod", header: t("master.iqcGroup.inspectMethod", "검사형태"), size: 100,
+      accessorKey: "inspectMethod", header: t("master.iqcGroup.inspectMethod", "검사구분"), size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
@@ -226,7 +226,7 @@ export default function IqcGroupTab() {
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
-                  <ComCodeSelect groupCode="IQC_INSPECT_METHOD" labelPrefix={t("master.iqcGroup.inspectMethod", "검사형태")}
+                  <ComCodeSelect groupCode="IQC_INSPECT_METHOD" labelPrefix={t("master.iqcGroup.inspectMethod", "검사구분")}
                     value={methodFilter} onChange={setMethodFilter} fullWidth />
                 </div>
                 <Button variant="secondary" size="sm" onClick={fetchGroups} className="flex-shrink-0">

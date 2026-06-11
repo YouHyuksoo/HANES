@@ -68,7 +68,7 @@ export type InspectTypeValue = typeof INSPECT_TYPE_VALUES[number];
 export const INSPECT_METHOD_VALUES = ['VISUAL', 'MEASUREMENT', 'FUNCTIONAL', 'ELECTRICAL', 'DESTRUCTIVE'] as const;
 export type InspectMethodValue = typeof INSPECT_METHOD_VALUES[number];
 
-// ===== IQC 검사 방법 =====
+// ===== IQC 검사구분 =====
 export const IQC_INSPECT_METHOD_VALUES = ['FULL', 'SAMPLE', 'SKIP'] as const;
 export type IqcInspectMethodValue = typeof IQC_INSPECT_METHOD_VALUES[number];
 

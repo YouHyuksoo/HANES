@@ -87,8 +87,8 @@ export default function IqcDetailPanel({
 
   const methodLabels = useMemo<Record<string, string>>(
     () => ({
-      FULL: t("master.iqcGroup.methodFull", "전수검사"),
-      SAMPLE: t("master.iqcGroup.methodSample", "샘플검사"),
+      FULL: t("master.iqcGroup.methodFull", "검사"),
+      SAMPLE: t("master.iqcGroup.methodSample", "검사"),
       SKIP: t("master.iqcGroup.methodSkip", "무검사"),
     }),
     [t]

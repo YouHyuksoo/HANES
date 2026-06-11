@@ -78,7 +78,7 @@ export default function IqcPage() {
                 <div className="w-44 flex-shrink-0">
                   <ComCodeSelect
                     groupCode="IQC_INSPECT_METHOD"
-                    labelPrefix={t('material.iqc.method', '검사방법')}
+                    labelPrefix={t('material.iqc.method', '검사구분')}
                     value={methodFilter}
                     onChange={setMethodFilter}
                     fullWidth

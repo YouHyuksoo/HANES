@@ -129,7 +129,7 @@ export default function InspectionHistoryPage() {
       cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span>,
     },
     {
-      accessorKey: "inspectScope", header: t("master.part.inspectMethod", "검사방법"),
+      accessorKey: "inspectScope", header: t("master.part.inspectMethod", "검사구분"),
       size: 80,
       cell: ({ getValue }) => {
         const v = getValue() as string | null;

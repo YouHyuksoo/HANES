@@ -5,7 +5,7 @@
  * @description IQC 검사그룹 추가/수정 모달 — 그룹 정보 입력 + 검사항목 선택 (API 연동)
  *
  * 초보자 가이드:
- * 1. 좌측: 그룹코드, 그룹명, 검사형태(전수/샘플/무검사), 샘플수량
+ * 1. 좌측: 그룹코드, 그룹명, 검사구분(검사/무검사), 샘플수량
  * 2. 우측: /master/iqc-item-pool API에서 조회한 항목 체크박스 목록
  * 3. 선택된 항목은 순서(SEQ) 번호가 자동 부여됨
  */
@@ -146,7 +146,7 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
           <Input label={t("master.iqcGroup.groupName", "그룹명")} value={form.groupName}
             onChange={e => setForm(p => ({ ...p, groupName: e.target.value }))}
             fullWidth />
-          <Select label={t("master.iqcGroup.inspectMethod", "검사형태")} options={effectiveInspectMethodOptions}
+          <Select label={t("master.iqcGroup.inspectMethod", "검사구분")} options={effectiveInspectMethodOptions}
             value={form.inspectMethod}
             onChange={v => setForm(p => ({ ...p, inspectMethod: v }))} fullWidth />
           {form.inspectMethod === "SAMPLE" && (

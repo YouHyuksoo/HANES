@@ -62,3 +62,32 @@ test('IQC inspect method labels are only inspection or no-inspection', () => {
   assert.equal(ko.material.iqc.inspectClassFull, '검사');
   assert.equal(ko.material.iqc.inspectClassSample, '검사');
 });
+
+test('IQC inspection/no-inspection field labels use one Korean term', () => {
+  const ko = JSON.parse(read('apps/frontend/src/locales/ko.json'));
+  const labels = [
+    ko.menu['master.part.iqc.inspectMethod'],
+    ko.master.part.inspectMethod,
+    ko.master.iqcGroup.inspectMethod,
+    ko.material.iqc.method,
+    ko.material.iqc.inspectClassLabel,
+  ];
+
+  assert.deepEqual(labels, ['검사구분', '검사구분', '검사구분', '검사구분', '검사구분']);
+
+  const files = [
+    'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
+    'apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupTab.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkTab.tsx',
+    'apps/frontend/src/app/(authenticated)/material/iqc/page.tsx',
+    'apps/frontend/src/components/material/IqcTable.tsx',
+    'apps/frontend/src/components/material/IqcModal.tsx',
+  ];
+
+  for (const file of files) {
+    const source = read(file);
+    assert.doesNotMatch(source, /검사방법|검사형태|검사분류/, `${file} should not use mixed IQC field labels`);
+  }
+});

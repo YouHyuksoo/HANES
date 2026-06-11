@@ -173,7 +173,7 @@ export default function PartPage() {
     { accessorKey: "boxQty", header: t("master.part.boxQty", "박스입수"), size: 70, meta: { filterType: "number" as const } },
     { accessorKey: "lotUnitQty", header: t("master.part.lotUnitQty", "LOT수량"), size: 75, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() ?? "-" },
     {
-      accessorKey: "inspectMethod", header: t("master.part.inspectMethod", "IQC검사방법"), size: 80,
+      accessorKey: "inspectMethod", header: t("master.part.inspectMethod", "검사구분"), size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;

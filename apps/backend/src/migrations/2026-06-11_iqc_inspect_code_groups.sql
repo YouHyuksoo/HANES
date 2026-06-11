@@ -2,17 +2,17 @@ BEGIN
   MERGE INTO COM_CODES t
   USING (
     SELECT 'IQC_INSPECT_METHOD' AS GROUP_CODE, 'FULL' AS DETAIL_CODE, '검사' AS CODE_NAME,
-           'IQC 검사방법: 입하 수량 전체 검사' AS CODE_DESC, 1 AS SORT_ORDER,
+           'IQC 검사구분: 검사 대상' AS CODE_DESC, 1 AS SORT_ORDER,
            'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' AS ATTR1
     FROM DUAL
     UNION ALL
     SELECT 'IQC_INSPECT_METHOD', 'SAMPLE', '검사',
-           'IQC 검사방법: 일부 시료 검사', 2,
+           'IQC 검사구분: 검사 대상', 2,
            'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300'
     FROM DUAL
     UNION ALL
     SELECT 'IQC_INSPECT_METHOD', 'SKIP', '무검사',
-           'IQC 검사방법: 검사 생략', 3,
+           'IQC 검사구분: 검사 생략', 3,
            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
     FROM DUAL
     UNION ALL

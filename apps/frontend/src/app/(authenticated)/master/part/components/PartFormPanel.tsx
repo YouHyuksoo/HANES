@@ -279,7 +279,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             </div>
             <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false} showCode
               value={form.unit} onChange={v => setField("unit", v)} fullWidth />
-            <Select label={t("master.part.inspectMethod", "IQC검사방법")}
+            <Select label={t("master.part.inspectMethod", "검사구분")}
               options={iqcInspectMethodOptions}
               value={form.inspectMethod} onChange={v => setField("inspectMethod", v)} fullWidth />
             <YnRadio label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
