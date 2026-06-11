@@ -168,6 +168,36 @@ export class AutoIssueService {
     const scannedLots = await qr.manager.find(JobMaterialLot, {
       where: { jobOrderNo: orderNo, ...this.tenantWhere(tenant) },
     });
+    const bomChildItemCodes = new Set(bomList.map((bom) => bom.childItemCode));
+    const invalidScannedLot = scannedLots.find((lot) => !bomChildItemCodes.has(lot.itemCode));
+    if (invalidScannedLot) {
+      throw new BadRequestException(
+        `BOM에 없는 자재 LOT가 스캔되어 실적처리를 중단합니다. ` +
+        `itemCode=${invalidScannedLot.itemCode}, matUid=${invalidScannedLot.matUid}`,
+      );
+    }
+    if (scannedLots.length > 0) {
+      const scannedMatUidsForValidation = scannedLots.map((lot) => lot.matUid);
+      const scannedMatLots = await qr.manager.find(MatLot, {
+        where: { matUid: In(scannedMatUidsForValidation), ...this.tenantWhere(tenant) },
+      });
+      const matLotByUid = new Map(scannedMatLots.map((lot) => [lot.matUid, lot]));
+      for (const scannedLot of scannedLots) {
+        const actualLot = matLotByUid.get(scannedLot.matUid);
+        if (!actualLot) {
+          throw new BadRequestException(
+            `스캔 LOT를 찾을 수 없어 실적처리를 중단합니다. matUid=${scannedLot.matUid}`,
+          );
+        }
+        this.assertSameTenant('스캔 LOT', tenant, actualLot);
+        if (actualLot.itemCode !== scannedLot.itemCode || !bomChildItemCodes.has(actualLot.itemCode)) {
+          throw new BadRequestException(
+            `스캔 LOT의 실제 품목이 BOM 품목과 일치하지 않아 실적처리를 중단합니다. ` +
+            `registeredItemCode=${scannedLot.itemCode}, actualItemCode=${actualLot.itemCode}, matUid=${scannedLot.matUid}`,
+          );
+        }
+      }
+    }
     const scannedMatUids = new Set(scannedLots.map((l) => l.matUid));
 
     /* ── 6. 자식 품목별 차감 (스캔 LOT 우선 → FIFO) ── */

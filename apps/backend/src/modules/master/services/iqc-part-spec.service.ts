@@ -114,6 +114,40 @@ export class IqcPartSpecService {
     });
   }
 
+  async resolveItems(
+    itemCode: string,
+    company?: string,
+    plant?: string,
+  ): Promise<Array<{
+    itemCode: string;
+    seq: number;
+    inspectItem: string;
+    spec: string | null;
+    lsl: number | null;
+    usl: number | null;
+    unit: string | null;
+    judgeMethod: string;
+    judgeCriteria: string | null;
+  }>> {
+    const spec = await this.findByItemCode(itemCode, company, plant);
+    if (!spec || !spec.items || spec.items.length === 0) return [];
+
+    return spec.items
+      .filter((item) => item.useYn === 'Y' && item.inspItem)
+      .sort((a, b) => a.seq - b.seq)
+      .map((item) => ({
+        itemCode,
+        seq: item.seq,
+        inspectItem: item.inspItem.inspItemName,
+        spec: item.judgeCriteria ?? item.inspItem.criteria ?? null,
+        lsl: item.lsl !== null ? item.lsl : (item.inspItem.lsl ?? null),
+        usl: item.usl !== null ? item.usl : (item.inspItem.usl ?? null),
+        unit: item.inspItem.unit ?? null,
+        judgeMethod: item.inspItem.judgeMethod,
+        judgeCriteria: item.judgeCriteria ?? item.inspItem.criteria ?? null,
+      }));
+  }
+
   async delete(itemCode: string, company?: string, plant?: string): Promise<void> {
     const spec = await this.specRepo.findOne({ where: { itemCode, ...this.tenantWhere(company, plant) } });
     if (!spec) throw new NotFoundException(`IQC 기준이 없습니다: ${itemCode}`);

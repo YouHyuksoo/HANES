@@ -31,6 +31,17 @@ export class IqcPartSpecController {
     return ResponseUtil.success(data);
   }
 
+  @Get(':itemCode/resolve-items')
+  @ApiOperation({ summary: '품목별 IQC 검사항목 해석 (검사 모달용)' })
+  async resolveItems(
+    @Param('itemCode') itemCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.service.resolveItems(itemCode, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Get(':itemCode')
   @ApiOperation({ summary: '품목별 IQC 기준 상세 조회' })
   async findOne(

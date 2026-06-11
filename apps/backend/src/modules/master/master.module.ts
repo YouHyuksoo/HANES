@@ -28,10 +28,6 @@ import { WorkerController } from './controllers/worker.controller';
 import { WorkerService } from './services/worker.service';
 import { IqcItemController } from './controllers/iqc-item.controller';
 import { IqcItemService } from './services/iqc-item.service';
-import { IqcGroupController } from './controllers/iqc-group.controller';
-import { IqcGroupService } from './services/iqc-group.service';
-import { IqcPartLinkController } from './controllers/iqc-part-link.controller';
-import { IqcPartLinkService } from './services/iqc-part-link.service';
 import { EquipInspectController } from './controllers/equip-inspect.controller';
 import { EquipInspectService } from './services/equip-inspect.service';
 import { EquipInspectItemPoolController } from './controllers/equip-inspect-item-pool.controller';
@@ -88,9 +84,6 @@ import { PartnerMaster } from '../../entities/partner-master.entity';
 import { EquipInspectItemPool } from '../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master.entity';
 import { IqcItemMaster } from '../../entities/iqc-item-master.entity';
-import { IqcGroup } from '../../entities/iqc-group.entity';
-import { IqcGroupItem } from '../../entities/iqc-group-item.entity';
-import { IqcPartLink } from '../../entities/iqc-part-link.entity';
 import { LabelTemplate } from '../../entities/label-template.entity';
 import { EquipBomItem } from '../../entities/equip-bom-item.entity';
 import { EquipBomRel } from '../../entities/equip-bom-rel.entity';
@@ -131,9 +124,6 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       EquipInspectItemMaster,
       EquipInspectItemPool,
       IqcItemMaster,
-      IqcGroup,
-      IqcGroupItem,
-      IqcPartLink,
       LabelTemplate,
       ModelSuffix,
       EquipBomItem,
@@ -164,8 +154,6 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     RoutingController,
     WorkerController,
     IqcItemController,
-    IqcGroupController,
-    IqcPartLinkController,
     EquipInspectController,
     EquipInspectItemPoolController,
     EquipBomController,
@@ -195,8 +183,6 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     RoutingService,
     WorkerService,
     IqcItemService,
-    IqcGroupService,
-    IqcPartLinkService,
     EquipInspectService,
     EquipInspectItemPoolService,
     EquipBomService,
@@ -226,8 +212,6 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     RoutingService,
     WorkerService,
     IqcItemService,
-    IqcGroupService,
-    IqcPartLinkService,
     EquipInspectService,
     EquipInspectItemPoolService,
     EquipBomService,

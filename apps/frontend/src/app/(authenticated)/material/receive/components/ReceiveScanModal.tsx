@@ -26,9 +26,9 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [phase, setPhase] = useState<ScanPhase>('vendor');
+  const [phase, setPhase] = useState<ScanPhase>('own');
   const [input, setInput] = useState('');
-  const [pendingVendorBarcode, setPendingVendorBarcode] = useState('');
+  const [pendingMatUid, setPendingMatUid] = useState('');
   const [pairs, setPairs] = useState<ReceiveScanPair[]>([]);
   const [warehouseCode, setWarehouseCode] = useState('');
   const [error, setError] = useState('');
@@ -40,9 +40,9 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
 
   useEffect(() => {
     if (!isOpen) return;
-    setPhase('vendor');
+    setPhase('own');
     setInput('');
-    setPendingVendorBarcode('');
+    setPendingMatUid('');
     setPairs([]);
     setError('');
     setSaving(false);
@@ -52,14 +52,6 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
   const focusInput = useCallback(() => {
     setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
-
-  const handleVendorScan = useCallback((barcode: string) => {
-    setPendingVendorBarcode(barcode);
-    setPhase('own');
-    setInput('');
-    setError('');
-    focusInput();
-  }, [focusInput]);
 
   const handleOwnScan = useCallback((matUid: string) => {
     const lot = receivableByUid.get(matUid);
@@ -82,21 +74,29 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
       return;
     }
 
-    setPairs((prev) => [{ vendorBarcode: pendingVendorBarcode, matUid }, ...prev]);
-    setPendingVendorBarcode('');
+    setPendingMatUid(matUid);
     setPhase('vendor');
     setInput('');
     setError('');
     focusInput();
-  }, [focusInput, pendingVendorBarcode, receivableByUid, scannedOwnBarcodes]);
+  }, [focusInput, receivableByUid, scannedOwnBarcodes]);
+
+  const handleVendorScan = useCallback((barcode: string) => {
+    setPairs((prev) => [{ vendorBarcode: barcode, matUid: pendingMatUid }, ...prev]);
+    setPendingMatUid('');
+    setPhase('own');
+    setInput('');
+    setError('');
+    focusInput();
+  }, [focusInput, pendingMatUid]);
 
   const handleScan = useCallback(() => {
     const barcode = input.trim();
     if (!barcode) return;
-    if (phase === 'vendor') {
-      handleVendorScan(barcode);
-    } else {
+    if (phase === 'own') {
       handleOwnScan(barcode);
+    } else {
+      handleVendorScan(barcode);
     }
   }, [handleOwnScan, handleVendorScan, input, phase]);
 
@@ -105,9 +105,9 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
     focusInput();
   }, [focusInput]);
 
-  const resetPendingVendor = useCallback(() => {
-    setPendingVendorBarcode('');
-    setPhase('vendor');
+  const resetPendingMat = useCallback(() => {
+    setPendingMatUid('');
+    setPhase('own');
     setInput('');
     setError('');
     focusInput();
@@ -146,10 +146,10 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
     }
   }, [focusInput, onClose, onSuccess, pairs, receivableByUid, warehouseCode]);
 
-  const phaseTitle = phase === 'vendor' ? '거래처 바코드 스캔' : '자체부착 바코드 스캔';
-  const phaseHint = phase === 'vendor'
-    ? '거래처에서 붙여 온 바코드를 스캔하세요.'
-    : `거래처 바코드 ${pendingVendorBarcode}에 매핑할 자체부착 바코드를 스캔하세요.`;
+  const phaseTitle = phase === 'own' ? '자재 바코드 스캔' : '거래처 바코드 스캔';
+  const phaseHint = phase === 'own'
+    ? '자체부착 바코드(자재 시리얼)를 먼저 스캔하세요.'
+    : `자재 ${pendingMatUid}에 매핑할 거래처 바코드를 스캔하세요.`;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="스캔 입고처리" size="2xl" closeOnOverlayClick={false}>
@@ -176,7 +176,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleScan();
             }}
-            placeholder={phase === 'vendor' ? '거래처 바코드' : '자체부착 바코드'}
+            placeholder={phase === 'own' ? '자체부착 바코드' : '거래처 바코드'}
             hint={phaseHint}
             leftIcon={<ScanLine className="w-4 h-4" />}
             fullWidth
@@ -187,12 +187,12 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
           </Button>
         </div>
 
-        {phase === 'own' && (
+        {phase === 'vendor' && (
           <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
             <span>
-              대기 중인 거래처 바코드: <span className="font-mono font-semibold">{pendingVendorBarcode}</span>
+              스캔된 자재 바코드: <span className="font-mono font-semibold">{pendingMatUid}</span>
             </span>
-            <Button size="sm" variant="ghost" onClick={resetPendingVendor}>
+            <Button size="sm" variant="ghost" onClick={resetPendingMat}>
               <X className="w-4 h-4 mr-1" />
               취소
             </Button>

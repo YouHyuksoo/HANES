@@ -1,11 +1,6 @@
 /**
  * @file src/app/(authenticated)/master/part/types.ts
  * @description 품목 마스터 타입 + 상수 정의 (Oracle TM_ITEMS 기준 보강)
- *
- * 초보자 가이드:
- * 1. **Part**: DB part_masters 테이블 대응 인터페이스
- * 2. **PartIqcLink**: RAW 품목에 IQC 검사그룹 코드 연결 (추후 DB 연동)
- * 3. seedParts 제거됨 - 모든 데이터는 API를 통해 DB에서 조회
  */
 
 import type { UseYnValue } from "@harness/shared";
@@ -41,13 +36,6 @@ export interface Part {
   useYn: UseYnValue;
 }
 
-/** 품목-검사그룹 연결 (추후 DB 테이블로 이관 예정) */
-export interface PartIqcLink {
-  itemCode: string;
-  groupCode: string;
-  shelfLifeDays?: number;
-}
-
 /** 품목 분류별 색상 */
 export const PART_TYPE_COLORS: Record<
   PartType,
@@ -71,5 +59,3 @@ export const PART_TYPE_COLORS: Record<
   },
 };
 
-/** IQC 연결 데이터 (추후 DB 연동 시 제거) */
-export const seedPartIqcLinks: PartIqcLink[] = [];

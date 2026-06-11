@@ -361,6 +361,7 @@ describe('AutoIssueService', () => {
 
       mockQueryRunner.manager.find
         .mockResolvedValueOnce([{ jobOrderNo: 'JO-001', itemCode: 'RM-001', seq: 1, matUid: 'LOT-SCANNED' }]) // scanned lots
+        .mockResolvedValueOnce([{ matUid: 'LOT-SCANNED', itemCode: 'RM-001', company: 'C1', plant: 'P1' }]) // scanned MAT_LOTS
         .mockResolvedValueOnce([ // stocks for both candidate lots (IN batch)
           { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-OLD', qty: 100, availableQty: 100 },
           { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-SCANNED', qty: 100, availableQty: 100 },
@@ -381,6 +382,72 @@ describe('AutoIssueService', () => {
       expect(result.issued).toHaveLength(1);
       expect(result.issued[0].matUid).toBe('LOT-SCANNED');
       expect(result.issued[0].issueQty).toBe(10);
+    });
+
+    it('should reject scanned job-material lots that are not in the BOM before FIFO fallback', async () => {
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE')
+        .mockResolvedValueOnce('WARN');
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
+      ]);
+
+      mockQueryRunner.manager.find.mockResolvedValueOnce([
+        { jobOrderNo: 'JO-001', itemCode: 'RM-WRONG', seq: 1, matUid: 'LOT-WRONG', company: 'C1', plant: 'P1' },
+      ]);
+
+      const mockLotQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'LOT-001', itemCode: 'RM-001', company: 'C1', plant: 'P1' },
+        ]),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+
+      await expect(
+        target.execute('ON_CREATE', '1', 'JO-001', 10, mockQueryRunner),
+      ).rejects.toThrow('BOM에 없는 자재 LOT가 스캔되어 실적처리를 중단합니다');
+
+      expect(mockQueryRunner.manager.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('should reject scanned matUid whose actual lot item differs from the BOM item', async () => {
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE')
+        .mockResolvedValueOnce('WARN');
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
+      ]);
+
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([
+          { jobOrderNo: 'JO-001', itemCode: 'RM-001', seq: 1, matUid: 'LOT-WRONG', company: 'C1', plant: 'P1' },
+        ])
+        .mockResolvedValueOnce([
+          { matUid: 'LOT-WRONG', itemCode: 'RM-WRONG', company: 'C1', plant: 'P1' },
+        ]);
+
+      await expect(
+        target.execute('ON_CREATE', '1', 'JO-001', 10, mockQueryRunner),
+      ).rejects.toThrow('스캔 LOT의 실제 품목이 BOM 품목과 일치하지 않아 실적처리를 중단합니다');
+
+      expect(mockQueryRunner.manager.createQueryBuilder).not.toHaveBeenCalled();
     });
 
     it('should reject auto issue when returned LOT tenant differs from job order tenant', async () => {
