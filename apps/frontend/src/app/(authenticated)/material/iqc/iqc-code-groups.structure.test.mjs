@@ -91,3 +91,44 @@ test('IQC inspection/no-inspection field labels use one Korean term', () => {
     assert.doesNotMatch(source, /검사방법|검사형태|검사분류/, `${file} should not use mixed IQC field labels`);
   }
 });
+
+test('IQC inspection method axis no longer exposes SAMPLE', () => {
+  const forbiddenFiles = [
+    'apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql',
+    'apps/backend/src/modules/master/dto/iqc-group.dto.ts',
+    'apps/backend/src/modules/master/services/iqc-group.service.ts',
+    'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
+    'apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx',
+    'apps/frontend/src/app/(authenticated)/master/part/components/IqcSettingModal.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/types.ts',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupTab.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkModal.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkTab.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcDetailPanel.tsx',
+    'apps/frontend/src/components/material/IqcTable.tsx',
+    'packages/shared/src/constants/com-code-values.ts',
+  ];
+
+  for (const file of forbiddenFiles) {
+    const source = read(file);
+    assert.doesNotMatch(source, /\bSAMPLE\b|methodSample|inspectSample/, `${file} should not expose SAMPLE as an IQC inspection method`);
+  }
+
+  const ko = JSON.parse(read('apps/frontend/src/locales/ko.json'));
+  assert.equal(ko.menu['master.part.iqc.methodFull'], '검사');
+  assert.equal(ko.menu['master.part.iqc.methodSkip'], '무검사');
+  assert.equal(ko.master.iqcGroup.methodFull, '검사');
+  assert.equal(ko.master.iqcGroup.methodSkip, '무검사');
+  assert.equal(ko.menu['master.part.iqc.methodSample'], undefined);
+  assert.equal(ko.master.iqcGroup.methodSample, undefined);
+});
+
+test('IQC result modal does not map inspection method into INSPECT_CLASS', () => {
+  const source = read('apps/frontend/src/components/material/IqcModal.tsx');
+
+  assert.doesNotMatch(source, /selectedItem\.inspectMethod\s*\|\|\s*"SAMPLE"/);
+  assert.doesNotMatch(source, /setInspectClass/);
+  assert.doesNotMatch(source, /inspectClassOptions/);
+  assert.doesNotMatch(source, /inspectClass,/);
+});
