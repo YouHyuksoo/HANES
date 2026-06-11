@@ -12,6 +12,7 @@ import DataGrid from '@/components/data-grid/DataGrid';
 import { IqcStatusBadge } from '@/components/material';
 import type { IqcItem } from '@/hooks/material/useIqcData';
 import type { IqcStatus } from '@/components/material';
+import { useComCodeMap } from '@/hooks/useComCode';
 
 interface IqcTableProps {
   data: IqcItem[];
@@ -36,6 +37,7 @@ const METHOD_COLORS: Record<string, string> = {
 
 export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: IqcTableProps) {
   const { t } = useTranslation();
+  const iqcInspectMethodMap = useComCodeMap('IQC_INSPECT_METHOD');
   const columns = useMemo<ColumnDef<IqcItem>[]>(
     () => [
       {
@@ -83,9 +85,9 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
           const m = getValue() as string | null;
           if (!m) return <span className="text-text-muted">-</span>;
           const label = ({
-            FULL: t('master.iqcGroup.methodFull', '전수검사'),
-            SAMPLE: t('master.iqcGroup.methodSample', '샘플검사'),
-            SKIP: t('master.iqcGroup.methodSkip', '무검사'),
+            FULL: iqcInspectMethodMap.FULL?.codeName ?? t('master.iqcGroup.methodFull', '검사'),
+            SAMPLE: iqcInspectMethodMap.SAMPLE?.codeName ?? t('master.iqcGroup.methodSample', '검사'),
+            SKIP: iqcInspectMethodMap.SKIP?.codeName ?? t('master.iqcGroup.methodSkip', '무검사'),
           } as Record<string, string>)[m] ?? m;
           return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${METHOD_COLORS[m] ?? ''}`}>{label}</span>;
         },
@@ -125,7 +127,7 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
         cell: ({ getValue }) => <span>{(getValue() as string) || '-'}</span>,
       },
     ],
-    [onInspect, t]
+    [onInspect, t, iqcInspectMethodMap]
   );
 
   return <DataGrid

@@ -105,6 +105,7 @@ export default function PartPage() {
 
   // 단위 공통코드 맵 (예: EA→개) — 단위 컬럼에 "코드 - 명칭" 표시용
   const unitMap = useComCodeMap("UNIT_TYPE");
+  const iqcInspectMethodMap = useComCodeMap("IQC_INSPECT_METHOD");
 
 
   const columns = useMemo<ColumnDef<Part>[]>(() => [
@@ -183,9 +184,9 @@ export default function PartPage() {
           SKIP: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
         };
         const labels: Record<string, string> = {
-          FULL: t("master.part.inspect", "검사"),
-          SAMPLE: t("master.part.inspect", "검사"),
-          SKIP: t("master.part.inspectSkip", "무검사"),
+          FULL: iqcInspectMethodMap.FULL?.codeName ?? t("master.part.iqc.methodFull", "검사"),
+          SAMPLE: iqcInspectMethodMap.SAMPLE?.codeName ?? t("master.part.iqc.methodSample", "검사"),
+          SKIP: iqcInspectMethodMap.SKIP?.codeName ?? t("master.part.inspectSkip", "무검사"),
         };
         return <span className={`px-2 py-0.5 text-xs rounded-full ${colors[v] || ""}`}>{labels[v] || v}</span>;
       },
@@ -209,7 +210,7 @@ export default function PartPage() {
         );
       },
     },
-  ], [t, typeLabels, productTypeLabels, unitMap, isPanelOpen]);
+  ], [t, typeLabels, productTypeLabels, unitMap, iqcInspectMethodMap, isPanelOpen]);
 
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);

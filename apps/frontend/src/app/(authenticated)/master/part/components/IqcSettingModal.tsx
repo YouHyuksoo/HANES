@@ -17,6 +17,7 @@ import { Check } from "lucide-react";
 import { Button, Modal } from "@/components/ui";
 import { Part, PartIqcLink } from "../types";
 import { INSPECT_METHOD_COLORS, JUDGE_METHOD_COLORS } from "../../iqc-item/types";
+import { useComCodeMap } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 interface PoolItem {
@@ -47,6 +48,7 @@ interface Props {
 
 export default function IqcSettingModal({ isOpen, onClose, part, currentLink, onSave, onUnlink }: Props) {
   const { t } = useTranslation();
+  const iqcInspectMethodMap = useComCodeMap("IQC_INSPECT_METHOD");
   const [selected, setSelected] = useState<string>(currentLink?.groupCode ?? "");
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [poolItems, setPoolItems] = useState<PoolItem[]>([]);
@@ -73,10 +75,10 @@ export default function IqcSettingModal({ isOpen, onClose, part, currentLink, on
   }, [isOpen, currentLink, fetchData]);
 
   const methodLabels = useMemo<Record<string, string>>(() => ({
-    FULL: t("master.part.iqc.methodFull", "전수검사"),
-    SAMPLE: t("master.part.iqc.methodSample", "샘플검사"),
-    SKIP: t("master.part.iqc.methodSkip", "무검사"),
-  }), [t]);
+    FULL: iqcInspectMethodMap.FULL?.codeName ?? t("master.part.iqc.methodFull", "검사"),
+    SAMPLE: iqcInspectMethodMap.SAMPLE?.codeName ?? t("master.part.iqc.methodSample", "검사"),
+    SKIP: iqcInspectMethodMap.SKIP?.codeName ?? t("master.part.iqc.methodSkip", "무검사"),
+  }), [t, iqcInspectMethodMap]);
 
   const judgeLabels = useMemo<Record<string, string>>(() => ({
     VISUAL: t("master.part.iqc.visual", "육안"),

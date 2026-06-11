@@ -14,11 +14,13 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw, Layers } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { INSPECT_METHOD_COLORS } from "../types";
 import IqcGroupModal from "./IqcGroupModal";
+import { useComCodeMap } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 interface IqcGroupRow {
@@ -36,6 +38,7 @@ interface IqcGroupRow {
 
 export default function IqcGroupTab() {
   const { t } = useTranslation();
+  const iqcInspectMethodMap = useComCodeMap("IQC_INSPECT_METHOD");
   const [groups, setGroups] = useState<IqcGroupRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -45,18 +48,11 @@ export default function IqcGroupTab() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<IqcGroupRow | null>(null);
 
-  const methodOptions = useMemo(() => [
-    { value: "", label: t("master.iqcGroup.inspectMethod", "검사형태") },
-    { value: "FULL", label: t("master.iqcGroup.methodFull", "전수검사") },
-    { value: "SAMPLE", label: t("master.iqcGroup.methodSample", "샘플검사") },
-    { value: "SKIP", label: t("master.iqcGroup.methodSkip", "무검사") },
-  ], [t]);
-
   const methodLabels = useMemo<Record<string, string>>(() => ({
-    FULL: t("master.iqcGroup.methodFull", "전수검사"),
-    SAMPLE: t("master.iqcGroup.methodSample", "샘플검사"),
-    SKIP: t("master.iqcGroup.methodSkip", "무검사"),
-  }), [t]);
+    FULL: iqcInspectMethodMap.FULL?.codeName ?? t("master.iqcGroup.methodFull", "검사"),
+    SAMPLE: iqcInspectMethodMap.SAMPLE?.codeName ?? t("master.iqcGroup.methodSample", "검사"),
+    SKIP: iqcInspectMethodMap.SKIP?.codeName ?? t("master.iqcGroup.methodSkip", "무검사"),
+  }), [t, iqcInspectMethodMap]);
 
   const fetchGroups = useCallback(async () => {
     setLoading(true);
@@ -230,7 +226,8 @@ export default function IqcGroupTab() {
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
-                  <Select options={methodOptions} value={methodFilter} onChange={setMethodFilter} fullWidth />
+                  <ComCodeSelect groupCode="IQC_INSPECT_METHOD" labelPrefix={t("master.iqcGroup.inspectMethod", "검사형태")}
+                    value={methodFilter} onChange={setMethodFilter} fullWidth />
                 </div>
                 <Button variant="secondary" size="sm" onClick={fetchGroups} className="flex-shrink-0">
                   <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}

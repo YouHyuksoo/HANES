@@ -12,7 +12,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Shield, Search, RefreshCw, Clock, ClipboardCheck, CheckCircle, XCircle } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import IqcTable from '@/components/material/IqcTable';
 import IqcModal from '@/components/material/IqcModal';
@@ -76,13 +76,9 @@ export default function IqcPage() {
                   />
                 </div>
                 <div className="w-44 flex-shrink-0">
-                  <Select
-                    options={[
-                      { value: '', label: `${t('material.iqc.method', '검사방법')}: ${t('common.all')}` },
-                      { value: 'FULL', label: t('master.iqcGroup.methodFull', '전수검사') },
-                      { value: 'SAMPLE', label: t('master.iqcGroup.methodSample', '샘플검사') },
-                      { value: 'SKIP', label: t('master.iqcGroup.methodSkip', '무검사') },
-                    ]}
+                  <ComCodeSelect
+                    groupCode="IQC_INSPECT_METHOD"
+                    labelPrefix={t('material.iqc.method', '검사방법')}
                     value={methodFilter}
                     onChange={setMethodFilter}
                     fullWidth

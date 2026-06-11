@@ -1,0 +1,64 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { test } from 'node:test';
+
+const read = (path) => readFileSync(path, 'utf8');
+
+test('IQC inspect method screens use the IQC-specific method code group', () => {
+  const files = [
+    'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
+    'apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx',
+    'apps/frontend/src/app/(authenticated)/master/part/components/IqcSettingModal.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupTab.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
+    'apps/frontend/src/app/(authenticated)/material/iqc/page.tsx',
+    'apps/frontend/src/components/material/IqcTable.tsx',
+    'apps/frontend/src/components/material/IqcModal.tsx',
+  ];
+
+  for (const file of files) {
+    const source = read(file);
+    assert.match(source, /IQC_INSPECT_METHOD/, `${file} should use IQC_INSPECT_METHOD`);
+  }
+});
+
+test('IQC history inspect type uses IQC-specific type code group', () => {
+  const source = read('apps/frontend/src/app/(authenticated)/material/iqc-history/page.tsx');
+  assert.match(source, /IQC_INSPECT_TYPE/);
+  assert.doesNotMatch(source, /groupCode="IQC_TYPE"/);
+});
+
+test('IQC inspect input no longer submits legacy NONE inspect class', () => {
+  const source = read('apps/frontend/src/components/material/IqcModal.tsx');
+  assert.doesNotMatch(source, /value:\s*"NONE"/);
+  assert.match(source, /value:\s*"SKIP"/);
+  assert.match(source, /selectedItem\.inspectMethod\s*\|\|\s*"SAMPLE"/);
+});
+
+test('IQC inspect method labels are only inspection or no-inspection', () => {
+  const files = [
+    'apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql',
+    'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
+    'apps/frontend/src/app/(authenticated)/master/part/components/IqcSettingModal.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupTab.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkModal.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkTab.tsx',
+    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcDetailPanel.tsx',
+    'apps/frontend/src/components/material/IqcTable.tsx',
+    'apps/frontend/src/components/material/IqcModal.tsx',
+  ];
+
+  for (const file of files) {
+    const source = read(file);
+    assert.doesNotMatch(source, /전수검사|샘플검사|선별검사/, `${file} should not expose split IQC method labels`);
+  }
+
+  const ko = JSON.parse(read('apps/frontend/src/locales/ko.json'));
+  assert.equal(ko.menu['master.part.iqc.methodFull'], '검사');
+  assert.equal(ko.menu['master.part.iqc.methodSample'], '검사');
+  assert.equal(ko.master.iqcGroup.methodFull, '검사');
+  assert.equal(ko.master.iqcGroup.methodSample, '검사');
+  assert.equal(ko.material.iqc.inspectClassFull, '검사');
+  assert.equal(ko.material.iqc.inspectClassSample, '검사');
+});

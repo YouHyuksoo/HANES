@@ -52,10 +52,10 @@ export class CreateIqcResultDto {
   @IsString()
   details?: string;
 
-  @ApiPropertyOptional({ description: '검사분류', enum: ['FULL', 'SAMPLE', 'NONE'] })
+  @ApiPropertyOptional({ description: '검사방법', enum: ['FULL', 'SAMPLE', 'SKIP'] })
   @IsOptional()
   @IsString()
-  @IsIn(['FULL', 'SAMPLE', 'NONE'])
+  @IsIn(['FULL', 'SAMPLE', 'SKIP', 'NONE'])
   inspectClass?: string;
 
   @ApiPropertyOptional({ description: '파괴검사 시료 수량' })
@@ -103,10 +103,10 @@ export class CreateArrivalIqcResultDto {
   @IsString()
   details?: string;
 
-  @ApiPropertyOptional({ description: '검사분류', enum: ['FULL', 'SAMPLE', 'NONE'] })
+  @ApiPropertyOptional({ description: '검사방법', enum: ['FULL', 'SAMPLE', 'SKIP'] })
   @IsOptional()
   @IsString()
-  @IsIn(['FULL', 'SAMPLE', 'NONE'])
+  @IsIn(['FULL', 'SAMPLE', 'SKIP', 'NONE'])
   inspectClass?: string;
 
   @ApiPropertyOptional({ description: '샘플 수량 (검사자 수동 입력 시료 개수)' })

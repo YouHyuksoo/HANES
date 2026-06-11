@@ -79,6 +79,10 @@ export class IqcHistoryService {
     return { from, to };
   }
 
+  private normalizeIqcInspectClass(inspectClass?: string | null) {
+    return inspectClass === 'NONE' ? 'SKIP' : inspectClass;
+  }
+
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, inspectType, result, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -185,7 +189,7 @@ export class IqcHistoryService {
       result: dto.result,
       details: dto.details || null,
       inspectorName: dto.inspectorName || null,
-      inspectClass: dto.inspectClass || null,
+      inspectClass: this.normalizeIqcInspectClass(dto.inspectClass) || null,
       destructSampleQty: dto.destructSampleQty || null,
       remark: dto.remark || null,
       inspectDate: new Date(),
@@ -373,7 +377,7 @@ export class IqcHistoryService {
       result: dto.result,
       details: dto.details || null,
       inspectorName: dto.inspectorName || null,
-      inspectClass: dto.inspectClass || 'SAMPLE',
+      inspectClass: this.normalizeIqcInspectClass(dto.inspectClass) || 'SAMPLE',
       destructSampleQty: dto.sampleQty || null,
       sampleBarcode: dto.sampleBarcode || null,
       remark: dto.remark || null,

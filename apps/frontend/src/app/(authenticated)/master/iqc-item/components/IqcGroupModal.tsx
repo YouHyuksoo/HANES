@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Button, Input, Modal, Select } from "@/components/ui";
 import { JUDGE_METHOD_COLORS } from "../types";
+import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 interface PoolItem {
@@ -54,6 +55,7 @@ const EMPTY_FORM: GroupFormData = {
 
 export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Props) {
   const { t } = useTranslation();
+  const iqcInspectMethodOptions = useComCodeOptions("IQC_INSPECT_METHOD", false);
   const [form, setForm] = useState<GroupFormData>(EMPTY_FORM);
   const [itemSearch, setItemSearch] = useState("");
   const [allItems, setAllItems] = useState<PoolItem[]>([]);
@@ -86,10 +88,13 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
   }, [isOpen, editing, fetchPoolItems]);
 
   const inspectMethodOptions = useMemo(() => [
-    { value: "FULL", label: t("master.iqcGroup.methodFull", "전수검사") },
-    { value: "SAMPLE", label: t("master.iqcGroup.methodSample", "샘플검사") },
+    { value: "FULL", label: t("master.iqcGroup.methodFull", "검사") },
+    { value: "SAMPLE", label: t("master.iqcGroup.methodSample", "검사") },
     { value: "SKIP", label: t("master.iqcGroup.methodSkip", "무검사") },
   ], [t]);
+  const effectiveInspectMethodOptions = iqcInspectMethodOptions.length > 0
+    ? iqcInspectMethodOptions
+    : inspectMethodOptions;
 
   const judgeLabels = useMemo<Record<string, string>>(() => ({
     VISUAL: t("master.iqcItem.visual", "육안"),
@@ -141,7 +146,7 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
           <Input label={t("master.iqcGroup.groupName", "그룹명")} value={form.groupName}
             onChange={e => setForm(p => ({ ...p, groupName: e.target.value }))}
             fullWidth />
-          <Select label={t("master.iqcGroup.inspectMethod", "검사형태")} options={inspectMethodOptions}
+          <Select label={t("master.iqcGroup.inspectMethod", "검사형태")} options={effectiveInspectMethodOptions}
             value={form.inspectMethod}
             onChange={v => setForm(p => ({ ...p, inspectMethod: v }))} fullWidth />
           {form.inspectMethod === "SAMPLE" && (

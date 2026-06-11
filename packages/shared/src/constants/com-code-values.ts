@@ -68,6 +68,14 @@ export type InspectTypeValue = typeof INSPECT_TYPE_VALUES[number];
 export const INSPECT_METHOD_VALUES = ['VISUAL', 'MEASUREMENT', 'FUNCTIONAL', 'ELECTRICAL', 'DESTRUCTIVE'] as const;
 export type InspectMethodValue = typeof INSPECT_METHOD_VALUES[number];
 
+// ===== IQC 검사 방법 =====
+export const IQC_INSPECT_METHOD_VALUES = ['FULL', 'SAMPLE', 'SKIP'] as const;
+export type IqcInspectMethodValue = typeof IQC_INSPECT_METHOD_VALUES[number];
+
+// ===== IQC 검사 유형 =====
+export const IQC_INSPECT_TYPE_VALUES = ['INITIAL', 'RETEST'] as const;
+export type IqcInspectTypeValue = typeof IQC_INSPECT_TYPE_VALUES[number];
+
 // ===== 폐기 사유 =====
 export const SCRAP_REASON_VALUES = ['DAMAGE', 'EXPIRY', 'QUALITY', 'SURPLUS', 'OBSOLETE', 'ETC'] as const;
 export type ScrapReasonValue = typeof SCRAP_REASON_VALUES[number];

@@ -55,6 +55,10 @@ export const COM_CODE_GROUPS = {
   INSPECT_RESULT: 'INSPECT_RESULT',
   /** 검사 유형 */
   INSPECT_TYPE: 'INSPECT_TYPE',
+  /** IQC 검사방법 */
+  IQC_INSPECT_METHOD: 'IQC_INSPECT_METHOD',
+  /** IQC 검사유형 */
+  IQC_INSPECT_TYPE: 'IQC_INSPECT_TYPE',
   /** IQC 유형 */
   IQC_TYPE: 'IQC_TYPE',
   /** 품질 판정 */

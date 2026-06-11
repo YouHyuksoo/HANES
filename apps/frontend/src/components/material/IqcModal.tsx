@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine } from "lucide-react";
 import { Button, Modal } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
+import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 interface IqcInspectItem {
@@ -92,6 +93,7 @@ function getSerialResult(inspection: SerialInspection | undefined): "PASS" | "FA
 
 export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm, onSubmit }: IqcModalProps) {
   const { t } = useTranslation();
+  const iqcInspectMethodOptions = useComCodeOptions("IQC_INSPECT_METHOD", false);
   const [inspectItems, setInspectItems] = useState<IqcInspectItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [pendingSerials, setPendingSerials] = useState<PendingSerial[]>([]);
@@ -107,10 +109,13 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const inspectClassOptions = useMemo(() => [
-    { value: "FULL", label: t("material.iqc.inspectClassFull", "전수검사") },
-    { value: "SAMPLE", label: t("material.iqc.inspectClassSample", "선별검사") },
-    { value: "NONE", label: t("material.iqc.inspectClassNone", "무검사") },
+    { value: "FULL", label: t("material.iqc.inspectClassFull", "검사") },
+    { value: "SAMPLE", label: t("material.iqc.inspectClassSample", "검사") },
+    { value: "SKIP", label: t("material.iqc.inspectClassNone", "무검사") },
   ], [t]);
+  const effectiveInspectClassOptions = iqcInspectMethodOptions.length > 0
+    ? iqcInspectMethodOptions
+    : inspectClassOptions;
 
   useEffect(() => {
     if (!isOpen || !selectedItem) {
@@ -127,6 +132,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       return;
     }
 
+    setInspectClass(selectedItem.inspectMethod || "SAMPLE");
     const focusTimer = window.setTimeout(() => serialScanInputRef.current?.focus(), 80);
     return () => window.clearTimeout(focusTimer);
   }, [isOpen, selectedItem]);
@@ -349,7 +355,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                 onChange={(e) => setInspectClass(e.target.value)}
                 className="h-7 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
-                {inspectClassOptions.map((option) => (
+                {effectiveInspectClassOptions.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>

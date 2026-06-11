@@ -48,6 +48,11 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
 
   // 제품유형: 코드마스터(PRODUCT_TYPE) 기반 — 화면 하드코딩 금지
   const productTypeOptions = useComCodeOptions("PRODUCT_TYPE");
+  const rawIqcInspectMethodOptions = useComCodeOptions("IQC_INSPECT_METHOD", false);
+  const iqcInspectMethodOptions = useMemo(
+    () => [{ value: "", label: "-" }, ...rawIqcInspectMethodOptions],
+    [rawIqcInspectMethodOptions],
+  );
 
   /** Y/N 라디오 버튼 그룹 */
   const YnRadio = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
@@ -275,11 +280,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false} showCode
               value={form.unit} onChange={v => setField("unit", v)} fullWidth />
             <Select label={t("master.part.inspectMethod", "IQC검사방법")}
-              options={[
-                { value: "", label: "-" },
-                { value: "FULL", label: t("master.part.inspect", "검사") },
-                { value: "SKIP", label: t("master.part.inspectSkip", "무검사") },
-              ]}
+              options={iqcInspectMethodOptions}
               value={form.inspectMethod} onChange={v => setField("inspectMethod", v)} fullWidth />
             <YnRadio label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>

@@ -18,6 +18,7 @@ import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/com
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
+import { useComCodeMap } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 interface IqcHistoryItem {
@@ -62,6 +63,7 @@ const formatDateTime = (value?: string | null) => {
 
 export default function IqcHistoryPage() {
   const { t } = useTranslation();
+  const iqcInspectTypeMap = useComCodeMap("IQC_INSPECT_TYPE");
 
   const [data, setData] = useState<IqcHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -141,11 +143,6 @@ export default function IqcHistoryPage() {
   const resultOptions = useMemo(() => [
     { value: "PASS", label: t("material.iqcHistory.pass") },
     { value: "FAIL", label: t("material.iqcHistory.fail") },
-  ], [t]);
-
-  const typeOptions = useMemo(() => [
-    { value: "INITIAL", label: t("material.iqcHistory.initial") },
-    { value: "RETEST", label: t("material.iqcHistory.retest") },
   ], [t]);
 
   const stats = useMemo(() => {
@@ -235,7 +232,11 @@ export default function IqcHistoryPage() {
       accessorKey: "inspectType", header: t("material.iqcHistory.inspectType"), size: 100, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeColors[v] || ""}`}>{v}</span>;
+        const label = iqcInspectTypeMap[v]?.codeName ?? (
+          v === "INITIAL" ? t("material.iqcHistory.initial") :
+          v === "RETEST" ? t("material.iqcHistory.retest") : v
+        );
+        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeColors[v] || ""}`}>{label}</span>;
       },
     },
     {
@@ -270,7 +271,7 @@ export default function IqcHistoryPage() {
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
-  ], [t, handleCertUpload, uploadingKey]);
+  ], [t, handleCertUpload, uploadingKey, iqcInspectTypeMap]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -308,7 +309,7 @@ export default function IqcHistoryPage() {
                   value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
               <div className="w-32 flex-shrink-0">
-                <ComCodeSelect groupCode="IQC_TYPE" labelPrefix={t("material.iqcHistory.inspectType")}
+                <ComCodeSelect groupCode="IQC_INSPECT_TYPE" labelPrefix={t("material.iqcHistory.inspectType")}
                   value={typeFilter} onChange={setTypeFilter} fullWidth />
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
