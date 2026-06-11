@@ -10,6 +10,47 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-11 20:15 Claude
+
+- 작업: 유수명자재 검사이력(`/material/shelf-life-history`) 재검사 데이터 생성·조회 검증 (코드 수정 없음, 실 API+DB).
+- 데이터 모델: 재검사 = `IQC_LOGS(INSPECT_TYPE='RETEST')`. 등록 API `POST /material/shelf-life/reinspect {matUid, result, extendDays, inspectorName, details, remark, destructSampleQty}`. PASS→만료일=검사일+연장일(품목 EXPIRY_EXT_DAYS 상한), FAIL→불용창고 이동+LOT DISCARDED. 회차=기존 RETEST수+1.
+- 생성(실 API, 인증 브라우저): 유수명 품목 LOT 대상 5건 — PASS 4(RM-GROM-001 회차1·2 동일LOT, RSL-T, TMN-A) + FAIL 1(TMN-B). 기존 RETEST 0→5.
+- 검증: ①IQC_LOGS RETEST 5행(회차 1·2 증가 정상), ②PASS 만료연장 실측 — RM-GROM-001 +30→2026-07-11, RSL-T +90→2026-09-09, TMN-A +120→2026-10-09, ③FAIL 폐기 — VH1-RM260605-00002 status=DISCARDED + STOCK_TRANSACTIONS MAT_MOVE WH-MAT-A→DEFECT qty=500(REINSPECT_FAIL), ④페이지 "전체 5건" 4개 LOT·합격/불합격 라벨 표시 확인.
+- 주의: 검증 데이터는 사용자 요청대로 보존(미삭제). FAIL 1건이 실 LOT VH1-RM260605-00002(TMN-B, 500)를 폐기·불용이동시킴 — 원복 필요 시 알림.
+
+## 2026-06-11 20:00 Claude
+
+- 작업: 투입 키오스크(`/production/input-kiosk`) 전체 워크플로우 점검 + 후속 프로세스 연결성 실증 (코드 수정 없음, API+실DB).
+- 실증 시나리오: EQ-CRIMP-03/W2026-001/W010으로 일일점검→작업자점검→자재 LOT 스캔→실적 저장(양품2/불량1+상세)→통전검사 PASS→FG 라벨 포장→의뢰검사 PENDING 차단/해제 전 구간 실행.
+- 정상 연결(실증): ①점검 2종 EQUIP_INSPECT_LOGS 저장+check API 인터록 복원, ②자재 스캔 JOB_MATERIAL_LOTS 기록(BOM 오장착 검증), ③실적 PROD_RESULTS+DEFECT_LOGS(WAIT, 불량관리 동일 테이블) 단일 TX+planQty 초과 차단+WAITING→RUNNING 승격, ④통전검사 PASS→FG_LABELS(ISSUED, INSPECT_PASS_YN=Y) 발행→포장 박스 추가 성공(생산→검사→포장 체인), ⑤의뢰검사 PENDING→pending API 차단→PATCH PASS→해제(키오스크↔의뢰검사 화면 양방향).
+- 단절①(중대): `MAT_AUTO_ISSUE_TIMING` 설정이 SYS_CONFIGS에 부재 → `AutoIssueService.execute()` 항상 skip → **실적 저장해도 자재 백플러시 0건** (CNTR001 재고 8→8, MAT_ISSUES 0건 실측). 생산과 자재 재고가 완전 단절.
+- 단절②(구조): AutoIssue FIFO가 키오스크 스캔 LOT(JOB_MATERIAL_LOTS)을 참조하지 않음 — 켜져도 스캔 LOT 추적과 실제 차감 LOT이 따로 놂.
+- 단절③: `GET /production/job-orders/order-no/:orderNo` 응답 goodQty/defectQty가 실적 미집계(0 고정) — findAll/findById에만 집계 존재. 키오스크 진행률(savedResultCount)은 클라이언트 스토어 카운트라 새로고침 시 0 리셋 → 중물(60%) 차단이 실제 실적과 무관.
+- 관찰④: 통전검사 resolveProdResult는 prodResultNo/fgBarcode 미전달 시 실적 1건일 때만 자동 연결(다건이면 null — 실측 재현). 검사기 연동 시 prodResultNo 전달 필요.
+- 관찰⑤: planQty 도달해도 작업지시 자동 DONE 없음(수동 완료 전제). 관찰⑥: 소모품 스캔은 세션 기록만(사용 카운트 미증가).
+- 정리: PR26061100012/DEFECT_LOGS/FG26061100007/IR26061100007/SELF_INSPECT_RESULTS/EQUIP_INSPECT_LOGS/JOB_MATERIAL_LOTS/BXKIOSKVERIFY1 전부 삭제 검증(0건). W2026-001 기존 실적 11건·설비 할당은 보존.
+
+## 2026-06-11 19:35 Claude
+
+- 작업: T-OQC-SHIP-TOGGLE — OQC 사용여부 시스템 설정 추가 + 출하처리 게이트 조건부 적용.
+- 요구: OQC 사용 시 합격(PASS) 박스만 출하 가능, 미사용 시 모든 마감 박스 출하 가능.
+- config: `SYS_CONFIGS`에 `OQC_ENABLED`(QUALITY, BOOLEAN, 기본 'Y') 시드. ConfigItemRow가 BOOLEAN→토글로 렌더, label DB 직접사용이라 i18n 불필요. /system/config QUALITY 탭에 즉시 노출.
+- 백엔드: `ShippingModule`에 `SystemModule` import(순환참조 없음), `SysConfigService`를 `ShipOrderService`·`ShipmentService`에 주입. 출하 OQC 게이트 3곳을 `isEnabled('OQC_ENABLED')`로 분기 — ①`ship-order.shipBox`(박스 스캔), ②`shipment.loadPallets`(팔레트 적재), ③`shipment.markAsShipped`(출하확정). 켜짐=PASS만, 꺼짐=전부 통과. 기본 'Y'라 기존 동작 무회귀.
+- 인프라: 백엔드 localhost:3003은 `node dist/main`(빌드본, watch 아님) → nest build + 사용자 재시작 후 검증.
+- 검증(비파괴, 실 API): SO-OQCTEST-1(HNS01 라인) 생성·확정 후 — OQC=Y: ship-box BX2606110003(PENDING)→`400 "OQC 합격(PASS) 박스만..."`(게이트 ON). OQC=N(config flip): 동일 박스→`400 "출하지시에 없는 품목"`(게이트 우회→하류 도달), HNS01 박스(BX2606110002, PENDING)→`400 "재고 부족 가용0/요청5"`(OQC·품목·수량·창고 전부 통과, 재고만 별개=완전 우회 입증). 전부 throw 선에서 끝나 쓰기 없음.
+- 정리: config 'Y' 복원, 테스트 지시 삭제, 박스 미변경 확인.
+- 미커밋/미배포: 백엔드 코드 변경은 디스크+로컬 dist에만. **hswbs 적용은 백엔드 재배포 필요**(시드/토글은 DB공유라 hswbs에 이미 보이나 게이트 enforcement는 미반영).
+
+## 2026-06-11 19:20 Claude
+
+- 작업: T-PALLET-SCREEN-FIX — 팔레트 구성 관리 화면(`/shipping/pallet`)을 백엔드 계약에 정합 + 팔레트 자동채번 신설.
+- 검토 결과(수정 전 실증): 화면의 생성/적재/마감이 전부 400 — ①생성: 바디 없음인데 `palletNo` 필수+자동채번 미구현, ②적재: `{boxNos}` vs 백엔드 `{boxIds}`, ③마감: `PUT {status:CLOSED}` vs 전용 `POST /:id/close`(직접 변경 차단), ④`search` 파라미터 미지원, ⑤우측 포함박스 패널은 목록 응답에 없는 `boxes` 참조로 항상 빈 화면, ⑥필드명 불일치(`shipmentNo/closedAt/quantity/itemName`). 화면이 사실상 조회 전용이었음.
+- 백엔드: `SEQ_PALLET_NO_DAILY` 시퀀스+일별 리셋 잡 신설(`2026-06-11_seq_pallet_no_daily.sql`, JSHANES 적용), `NumberingService.nextPalletNo()`(PLT+YYMMDD+4자리), `CreatePalletDto.palletNo` optional, `pallet.service.create` 미지정 시 자동채번.
+- 프론트: `palletNo` 검색 파라미터, `{boxIds}` 적재, `POST /:id/close`/`/:id/reopen`, 우측 패널은 `GET /shipping/pallets/barcode/:no/boxes`로 실조회 + OPEN 팔레트에서 박스 제거 버튼(DELETE /:id/boxes), 적재 후보는 CLOSED+미할당 조회 후 OQC PASS 필터, 필드명 정합(shipmentId/closeAt/itemCode/qty), 액션 응답으로 선택 팔레트 동기화.
+- i18n: `shipping.pallet.reopenPallet/removeBox/noBoxes/noLoadableBoxes` 4개 언어 추가(카운트 검증).
+- 검증: pallet.service.spec 16건 통과, FE/BE tsc 통과. API 실증 — 빈 바디 생성 → `PLT2606110001` 자동채번, `boxIds` 검증 통과(없는 박스 404), 빈 팔레트 close 400 가드, barcode boxes 응답 구조 확인. 테스트 팔레트 삭제 정리.
+- 주의: 동시 작업 중인 T-OQC-SHIP-TOGGLE(ship-order/shipment.service)과 파일 겹침 없음. 미커밋.
+
 ## 2026-06-11 18:40 Claude
 
 - 작업: 포장실적조회(`/production/pack-result`) — ①날짜 당일 기본값 ②정보카드 제거 ③실제 포장 실적 생성.
@@ -76,6 +117,23 @@ Use local time in 24-hour format.
 - 파일: `apps/backend/src/migrations/2026-06-11_self_inspect_measure_specs_seed.sql`(idempotent UPDATE). 실행: `scripts/execute_sql.py`(JSHANES).
 - 검증: API JOIN(`r.INSPECT_ITEM_ID=i.ID`) 실DB 시뮬레이션 → PENDING 5행 중 인장강도 x2/절연저항 x1은 LSL/단위 표시, 도통검사 x2는 판정형으로 정상 해석.
 - 주의: LSL 값(60N)은 예시. 실 규격은 사용자 확인 후 공정생품검사 탭에서 조정 필요.
+
+## 2026-06-11 20:00 Codex
+
+- 작업: `T-MENU-SHELF-LIFE-REINSPECT` 유수명자재 재검사 메뉴 미배치/카테고리 이동 오류 수정.
+- 원인: `apps/frontend/src/config/menuConfig.ts`에는 `MAT_SHELF_LIFE_REINSPECT` / `MAT_SHELF_LIFE_HISTORY`가 있으나, 백엔드 `menu-code-validator.ts`의 `KNOWN_LEAF_CODES`에서 누락되어 있었다. 메뉴를 미배치로 삭제하면 DB 배치 행이 사라지고, 미배치 목록은 validator 목록 기준이라 해당 코드가 목록에도 나타나지 않으며, 다시 카테고리로 이동하면 `알 수 없는 메뉴 코드`로 실패하는 구조였다.
+- 변경: `menu-code-validator.ts`에 누락 leaf 7개(`MAT_ARRIVAL_RESULT`, `MAT_SHELF_LIFE_REINSPECT`, `MAT_SHELF_LIFE_HISTORY`, `PROD_INPUT_KIOSK`, `QC_IQC_PART_SPEC`, `QC_REQUEST_INSPECT`, `QC_SELF_INSPECT_HISTORY`) 추가. `menu-code-validator.structure.test.mjs`를 추가해 `menuConfig.ts`의 path-backed leaf가 validator에 모두 있는지 검증.
+- DB 적용: `apps/backend/src/migrations/2026-06-11_shelf_life_reinspect_menu_restore.sql` 작성 및 JSHANES 적용. `MAT_SHELF_LIFE`, `MAT_SHELF_LIFE_REINSPECT`, `MAT_SHELF_LIFE_HISTORY`를 `MATERIAL` 카테고리 sort 170/180/190으로 복구하고 `MANAGER` 권한을 `Y`로 보강.
+- 검증: `node --test apps/backend/src/modules/menu-categories/utils/menu-code-validator.structure.test.mjs` 통과. `pnpm --filter @harness/backend exec jest apps/backend/src/modules/menu-categories/services/menu-category-items.service.spec.ts apps/backend/src/modules/menu-categories/controllers/menu-category-items.controller.spec.ts --runInBand` 통과(2 suites, 10 tests).
+- 실측: JSHANES `MENU_CATEGORY_ITEMS` 조회 결과 유수명 3개 메뉴 모두 `MATERIAL`에 존재. `ROLE_MENU_PERMISSIONS` 조회 결과 `MANAGER` 3개 모두 `CAN_ACCESS='Y'`. `GET /api/v1/menu-categories/tree`에 `MAT_SHELF_LIFE_REINSPECT`가 MATERIAL 아래 노출됨. `PATCH /api/v1/menu-category-items/move`로 `MAT_SHELF_LIFE_REINSPECT`를 MATERIAL로 이동 호출 성공.
+
+## 2026-06-11 19:30 Codex
+
+- 작업: `T-FE-THEME-PRESET` 상단 컬러 테마 아이콘에서 선택 가능한 신규 테마 preset 추가.
+- 변경: `apps/frontend/src/app/globals.css`에 사용자가 제공한 OKLCH 기반 Orchid 테마를 `data-color-theme="orchid"` preset으로 추가. 기존 `default`/`custom` 테마와 HANES 호환 변수(`--text`, `--surface`, `--primary-hover` 등)는 유지.
+- 변경: `apps/frontend/src/stores/themeStore.ts`의 `ColorTheme` 타입을 `default | custom | orchid`로 확장. `apps/frontend/src/components/layout/Header.tsx`의 팔레트 아이콘은 `default → custom → orchid` 순환 선택으로 변경하고 활성 상태 점 표시를 추가.
+- 검증: `pnpm --filter @harness/frontend build` 실행. Next 컴파일과 타입 검사 단계는 통과했으나, 정적 페이지 생성에서 기존 누락 라우트(`/pda/login`, `/equipment/daily-inspect`, `/inventory/material-physical-inv`, `/shipping/customer-po-status`, `/production/result`, `/material/shelf-life-reinspect`, `/master/worker`)의 `PageNotFoundError`로 실패. 변경 파일 관련 컴파일 오류는 없음.
+- 런타임: 기존 3002 포트가 사용 중이라 `http://localhost:3004`로 dev 서버 기동, `Invoke-WebRequest http://localhost:3004` 응답 200 확인.
 
 ## 2026-06-11 16:24 Codex
 
