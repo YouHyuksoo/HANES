@@ -226,6 +226,14 @@ Use local time in 24-hour format.
 - 메뉴 보강: 품목마스터, BOM 관리, 공정/라인, 라우팅, IQC품목규격, 설비점검항목, 월간생산계획, 작업지시관리, 자재출고요청, 생산진도현황, WIP재고, 실적입력 키오스크, 통전검사 실적, 불량등록관리, 수리/재작업, OQC, SPC, 제품재고조회, 포장, 출하지시, 출하처리, 반품관리 등을 소개 흐름에 노출.
 - 검증: 로컬 Chrome + Playwright로 `docs/presentation/hanes-mes-introduction.html` 로드 확인. 슬라이드 12개, 본문 이미지 9개 참조 모두 로드, 모든 `.canvas` overflow X/Y 없음 확인.
 
+## 2026-06-11 21:37 Codex
+
+- 작업: `T-IQC-SAMPLE-REMOVE` IQC 검사구분에서 `SAMPLE` 제거.
+- 판단: `IQC_GROUPS.INSPECT_METHOD`는 검사그룹 마스터의 검사/무검사 구분이고, `IQC_LOGS.INSPECT_CLASS`는 별도/legacy 검사이력 컬럼이다. 두 컬럼을 같은 의미로 매핑하는 것은 잘못이므로 `IQC_LOGS.INSPECT_CLASS` 기존 값은 변경하지 않았다.
+- 변경: `IQC_INSPECT_METHOD` 활성 코드를 `FULL=검사`, `SKIP=무검사`만 남기고 `SAMPLE`은 비활성화하도록 마이그레이션 정리. JSHANES 기존 `IQC_GROUPS.INSPECT_METHOD='SAMPLE'` 4건은 `FULL`로 정규화하고 `SAMPLE_QTY`는 null 처리. 신규 수입검사 모달/훅은 검사구분 값을 `inspectClass`로 보내지 않도록 분리. `IqcGroupService`는 신규/수정 시 legacy `sampleQty`를 항상 null로 둔다.
+- DB 검증: 적용 전 `ITEM_MASTERS_SAMPLE=0`, `IQC_GROUPS_SAMPLE=4`, `IQC_LOGS_CLASS_SAMPLE=10`, `COM_CODES_SAMPLE_ACTIVE=1`. 적용 후 `ITEM_MASTERS_SAMPLE=0`, `IQC_GROUPS_SAMPLE=0`, `IQC_LOGS_CLASS_SAMPLE=10`, `COM_CODES_SAMPLE_ACTIVE=0`. `IQC_GROUPS`는 `FULL=5`만 존재.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/material/iqc/iqc-code-groups.structure.test.mjs"` 통과(7건). `pnpm --filter @harness/frontend exec tsc --noEmit` 통과. `pnpm --filter @harness/backend exec tsc --noEmit` 통과. `pnpm --filter @harness/backend test -- iqc-group.service.spec.ts` 통과(9건). `git diff --check` 통과.
+
 ## 2026-06-11 21:20 Codex
 
 - 작업: `T-MAT-LOT-IQC-UID-SEPARATE` MAT_LOTS 시드 LOT와 IQC 이력 UID 중복 해소.
