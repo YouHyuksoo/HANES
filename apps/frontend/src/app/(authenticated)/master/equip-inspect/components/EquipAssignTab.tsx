@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Search, Wrench, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardContent, Input } from "@/components/ui";
 import InspectItemPanel from "./InspectItemPanel";
-import AddInspectItemModal from "./AddInspectItemModal";
+import InspectItemSelectPanel from "./InspectItemSelectPanel";
 import api from "@/services/api";
 import { EquipSummary, InspectItemRow, EQUIP_TYPE_COLORS } from "../types";
 
@@ -89,6 +89,11 @@ export default function EquipAssignTab() {
   const filteredItems = useMemo(
     () => items.filter(item => item.inspectType === activeTab),
     [items, activeTab],
+  );
+
+  const registeredItemCodes = useMemo(
+    () => filteredItems.map(i => i.itemCode).filter((c): c is string => !!c),
+    [filteredItems],
   );
 
   return (
@@ -187,14 +192,15 @@ export default function EquipAssignTab() {
         </div>
       </div>
 
-      {/* 점검항목 추가 모달 */}
+      {/* 점검항목 일괄선택 패널 */}
       {selectedEquip && (
-        <AddInspectItemModal
+        <InspectItemSelectPanel
           isOpen={addModalOpen}
           onClose={() => setAddModalOpen(false)}
           equipCode={selectedEquip.equipCode}
           equipName={selectedEquip.equipName}
           inspectType={activeTab}
+          registeredItemCodes={registeredItemCodes}
           onAdded={handleAdded}
         />
       )}

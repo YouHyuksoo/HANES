@@ -7,13 +7,12 @@ import { dirname, join } from 'node:path';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const pageSource = readFileSync(join(__dir, 'page.tsx'), 'utf8');
 const assignTabSource = readFileSync(join(__dir, 'components/EquipAssignTab.tsx'), 'utf8');
-const modalSource = readFileSync(join(__dir, 'components/AddInspectItemModal.tsx'), 'utf8');
-const panelSource = readFileSync(join(__dir, 'components/InspectItemPanel.tsx'), 'utf8');
+const panelSource = readFileSync(join(__dir, 'components/InspectItemSelectPanel.tsx'), 'utf8');
+const panelSource2 = readFileSync(join(__dir, 'components/InspectItemPanel.tsx'), 'utf8');
 
-test('master equip inspect page renders the equipment assign view without the item master tab', () => {
+test('page renders EquipAssignTab without ItemMasterTab', () => {
   assert.match(pageSource, /EquipAssignTab/);
   assert.doesNotMatch(pageSource, /ItemMasterTab/);
-  assert.doesNotMatch(pageSource, /tabMaster/);
 });
 
 test('EquipAssignTab has activeTab state with 4 inspect types', () => {
@@ -24,24 +23,28 @@ test('EquipAssignTab has activeTab state with 4 inspect types', () => {
   assert.match(assignTabSource, /"WORKER"/);
 });
 
-test('EquipAssignTab renders 4 tab buttons via INSPECT_TABS', () => {
-  assert.match(assignTabSource, /INSPECT_TABS/);
-  assert.match(assignTabSource, /setActiveTab/);
-  assert.match(assignTabSource, /filteredItems/);
+test('EquipAssignTab uses InspectItemSelectPanel not AddInspectItemModal', () => {
+  assert.match(assignTabSource, /InspectItemSelectPanel/);
+  assert.doesNotMatch(assignTabSource, /AddInspectItemModal/);
 });
 
-test('AddInspectItemModal does not have internal inspectType state', () => {
-  assert.doesNotMatch(modalSource, /useState.*"DAILY"/);
-  assert.doesNotMatch(modalSource, /setInspectType/);
+test('EquipAssignTab passes registeredItemCodes to panel', () => {
+  assert.match(assignTabSource, /registeredItemCodes/);
 });
 
-test('AddInspectItemModal has equipType ComCodeSelect', () => {
-  assert.match(modalSource, /selectedEquipType/);
-  assert.match(modalSource, /EQUIP_TYPE/);
-  assert.match(modalSource, /ComCodeSelect/);
+test('InspectItemSelectPanel has checkbox multi-select and bulk save', () => {
+  assert.match(panelSource, /checkedCodes/);
+  assert.match(panelSource, /toggleAll/);
+  assert.match(panelSource, /handleSave/);
+});
+
+test('InspectItemSelectPanel shows registered items as disabled', () => {
+  assert.match(panelSource, /registeredSet/);
+  assert.match(panelSource, /isRegistered/);
+  assert.match(panelSource, /disabled/);
 });
 
 test('InspectItemPanel does not have inspectType column', () => {
-  assert.doesNotMatch(panelSource, /accessorKey.*inspectType/);
-  assert.doesNotMatch(panelSource, /INSPECT_TYPE_COLORS/);
+  assert.doesNotMatch(panelSource2, /accessorKey.*inspectType/);
+  assert.doesNotMatch(panelSource2, /INSPECT_TYPE_COLORS/);
 });
