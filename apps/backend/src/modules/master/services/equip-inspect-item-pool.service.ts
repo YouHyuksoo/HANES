@@ -65,6 +65,10 @@ export class EquipInspectItemPoolService {
       criteria: dto.criteria ?? null,
       cycle: dto.cycle ?? null,
       useYn: dto.useYn ?? 'Y',
+      itemType: dto.itemType ?? 'VISUAL',
+      unit: dto.unit ?? null,
+      lslValue: dto.lslValue ?? null,
+      uslValue: dto.uslValue ?? null,
       remark: dto.remark ?? null,
     });
     return this.repo.save(entity);
@@ -82,6 +86,10 @@ export class EquipInspectItemPoolService {
       ...(dto.criteria !== undefined ? { criteria: dto.criteria } : {}),
       ...(dto.cycle !== undefined ? { cycle: dto.cycle } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+      ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
+      ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
+      ...(dto.lslValue !== undefined ? { lslValue: dto.lslValue } : {}),
+      ...(dto.uslValue !== undefined ? { uslValue: dto.uslValue } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
     };
     Object.assign(item, updateData);

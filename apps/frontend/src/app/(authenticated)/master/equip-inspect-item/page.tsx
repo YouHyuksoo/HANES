@@ -18,6 +18,8 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
+type ItemType = "VISUAL" | "MEASURE";
+
 interface InspectItemRow {
   equipCode: string;
   inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
@@ -26,6 +28,10 @@ interface InspectItemRow {
   criteria: string | null;
   cycle: string | null;
   useYn: string;
+  itemType: ItemType;
+  unit: string | null;
+  lslValue: number | null;
+  uslValue: number | null;
 }
 
 type InspectType = InspectItemRow["inspectType"];
@@ -35,6 +41,11 @@ const INSPECT_TYPE_COLORS: Record<string, string> = {
   PERIODIC: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
   PM: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
   WORKER: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+};
+
+const ITEM_TYPE_COLORS: Record<string, string> = {
+  VISUAL: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  MEASURE: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300",
 };
 
 export default function EquipInspectItemPage() {
@@ -54,6 +65,10 @@ export default function EquipInspectItemPage() {
   const [formCriteria, setFormCriteria] = useState("");
   const [formCycle, setFormCycle] = useState("DAILY");
   const [formSeq, setFormSeq] = useState("1");
+  const [formItemType, setFormItemType] = useState<ItemType>("VISUAL");
+  const [formUnit, setFormUnit] = useState("");
+  const [formLsl, setFormLsl] = useState("");
+  const [formUsl, setFormUsl] = useState("");
 
   /* ── 설비 목록 (등록 시 선택용) ── */
   const [equipOptions, setEquipOptions] = useState<{ value: string; label: string }[]>([]);
@@ -98,6 +113,16 @@ export default function EquipInspectItemPage() {
     { value: "WORKER", label: t("master.equipInspect.typeWorker") },
   ], [t]);
 
+  const itemTypeOptions = useMemo(() => [
+    { value: "VISUAL", label: t("master.equipInspect.itemTypeVisual", "판정형") },
+    { value: "MEASURE", label: t("master.equipInspect.itemTypeMeasure", "측정형") },
+  ], [t]);
+
+  const itemTypeLabels = useMemo<Record<string, string>>(() => ({
+    VISUAL: t("master.equipInspect.itemTypeVisual", "판정형"),
+    MEASURE: t("master.equipInspect.itemTypeMeasure", "측정형"),
+  }), [t]);
+
   const cycleOptions = useMemo(() => [
     { value: "DAILY", label: t("master.equipInspect.cycleDaily") },
     { value: "WEEKLY", label: t("master.equipInspect.cycleWeekly") },
@@ -134,6 +159,7 @@ export default function EquipInspectItemPage() {
   const resetForm = () => {
     setFormEquipCode(""); setFormItemName(""); setFormInspectType("DAILY");
     setFormCriteria(""); setFormCycle("DAILY"); setFormSeq("1");
+    setFormItemType("VISUAL"); setFormUnit(""); setFormLsl(""); setFormUsl("");
   };
 
   const openCreate = () => { setEditing(null); resetForm(); setModalOpen(true); };
@@ -146,24 +172,35 @@ export default function EquipInspectItemPage() {
     setFormCriteria(item.criteria || "");
     setFormCycle(item.cycle || "DAILY");
     setFormSeq(String(item.seq));
+    setFormItemType(item.itemType || "VISUAL");
+    setFormUnit(item.unit || "");
+    setFormLsl(item.lslValue != null ? String(item.lslValue) : "");
+    setFormUsl(item.uslValue != null ? String(item.uslValue) : "");
     setModalOpen(true);
   };
 
   const handleSave = async () => {
     if (!formItemName.trim()) return;
+    const isMeasure = formItemType === "MEASURE";
+    const typeFields = {
+      itemType: formItemType,
+      unit: isMeasure ? (formUnit.trim() || null) : null,
+      lslValue: isMeasure && formLsl !== "" ? Number(formLsl) : null,
+      uslValue: isMeasure && formUsl !== "" ? Number(formUsl) : null,
+    };
     try {
       if (editing) {
         await api.put(`/master/equip-inspect-items/${editing.equipCode}/${editing.inspectType}/${editing.seq}`, {
           itemName: formItemName, inspectType: formInspectType,
           criteria: formCriteria || null, cycle: formCycle,
-          seq: parseInt(formSeq, 10) || 1,
+          seq: parseInt(formSeq, 10) || 1, ...typeFields,
         });
       } else {
         if (!formEquipCode) return;
         await api.post("/master/equip-inspect-items", {
           equipCode: formEquipCode, itemName: formItemName,
           inspectType: formInspectType, criteria: formCriteria || null,
-          cycle: formCycle, seq: parseInt(formSeq, 10) || 1, useYn: "Y",
+          cycle: formCycle, seq: parseInt(formSeq, 10) || 1, useYn: "Y", ...typeFields,
         });
       }
       setModalOpen(false);
@@ -210,7 +247,26 @@ export default function EquipInspectItemPage() {
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${INSPECT_TYPE_COLORS[type]}`}>{inspectTypeLabels[type]}</span>;
       },
     },
-    { accessorKey: "criteria", header: t("master.equipInspect.criteria"), size: 200 },
+    {
+      accessorKey: "itemType", header: t("master.equipInspect.itemType", "판정구분"), size: 90,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = (getValue() as string) || "VISUAL";
+        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${ITEM_TYPE_COLORS[v]}`}>{itemTypeLabels[v]}</span>;
+      },
+    },
+    {
+      accessorKey: "criteria", header: t("master.equipInspect.criteria"), size: 200,
+      cell: ({ row }) => {
+        const r = row.original;
+        if (r.itemType === "MEASURE") {
+          const lsl = r.lslValue != null ? r.lslValue : "";
+          const usl = r.uslValue != null ? r.uslValue : "";
+          return <span className="text-xs">{`${lsl} ~ ${usl}${r.unit ? ` (${r.unit})` : ""}`}</span>;
+        }
+        return r.criteria || "-";
+      },
+    },
     {
       accessorKey: "cycle", header: t("master.equipInspect.cycle"), size: 90,
       cell: ({ getValue }) => cycleLabels[getValue() as string] || getValue(),
@@ -221,7 +277,7 @@ export default function EquipInspectItemPage() {
         ? <span className="text-green-600 dark:text-green-400 font-medium">Y</span>
         : <span className="text-red-500 font-medium">N</span>,
     },
-  ], [t, inspectTypeLabels, cycleLabels]);
+  ], [t, inspectTypeLabels, cycleLabels, itemTypeLabels]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -287,16 +343,29 @@ export default function EquipInspectItemPage() {
           />
           <Input label={t("master.equipInspect.itemName")} value={formItemName}
             onChange={e => setFormItemName(e.target.value)} fullWidth />
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <Select label={t("master.equipInspect.inspectType")} options={typeOptions}
               value={formInspectType} onChange={v => setFormInspectType(v as InspectType)} />
+            <Select label={t("master.equipInspect.itemType", "판정구분")} options={itemTypeOptions}
+              value={formItemType} onChange={v => setFormItemType(v as ItemType)} />
             <Select label={t("master.equipInspect.cycle")} options={cycleOptions}
               value={formCycle} onChange={setFormCycle} />
             <Input label={t("master.equipInspect.seq")} type="number" value={formSeq}
               onChange={e => setFormSeq(e.target.value)} fullWidth />
           </div>
-          <Input label={t("master.equipInspect.criteria")} value={formCriteria}
-            onChange={e => setFormCriteria(e.target.value)} fullWidth />
+          {formItemType === "MEASURE" ? (
+            <div className="grid grid-cols-3 gap-4">
+              <Input label={t("master.equipInspect.unit", "단위")} value={formUnit}
+                onChange={e => setFormUnit(e.target.value)} fullWidth />
+              <Input label={t("master.equipInspect.lowerLimit", "하한")} type="number" value={formLsl}
+                onChange={e => setFormLsl(e.target.value)} fullWidth />
+              <Input label={t("master.equipInspect.upperLimit", "상한")} type="number" value={formUsl}
+                onChange={e => setFormUsl(e.target.value)} fullWidth />
+            </div>
+          ) : (
+            <Input label={t("master.equipInspect.criteria")} value={formCriteria}
+              onChange={e => setFormCriteria(e.target.value)} fullWidth />
+          )}
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>

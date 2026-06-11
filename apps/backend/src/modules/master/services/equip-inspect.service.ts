@@ -78,10 +78,11 @@ export class EquipInspectService {
       criteria: source?.criteria ?? dto.criteria ?? null,
       cycle: source?.cycle ?? dto.cycle ?? null,
       useYn: dto.useYn || 'Y',
-      itemType: dto.itemType || 'VISUAL',
-      unit: dto.unit ?? null,
-      lslValue: dto.lslValue ?? null,
-      uslValue: dto.uslValue ?? null,
+      // 판정구분/규격: POOL 항목 선택 시 POOL 값 우선 복사(없으면 dto)
+      itemType: source?.itemType ?? dto.itemType ?? 'VISUAL',
+      unit: source?.unit ?? dto.unit ?? null,
+      lslValue: source?.lslValue ?? dto.lslValue ?? null,
+      uslValue: source?.uslValue ?? dto.uslValue ?? null,
       workerQrCode: dto.workerQrCode ?? null,
     });
     return this.equipInspectRepository.save(entity);

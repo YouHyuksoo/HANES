@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreateEquipInspectItemPoolDto {
@@ -35,6 +36,30 @@ export class CreateEquipInspectItemPoolDto {
   @IsString()
   @IsIn(['Y', 'N'])
   useYn?: string;
+
+  @ApiPropertyOptional({ description: '판정구분 (VISUAL 판정형 | MEASURE 측정형)', default: 'VISUAL' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['VISUAL', 'MEASURE'])
+  itemType?: string;
+
+  @ApiPropertyOptional({ description: '측정 단위 (측정형만)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  unit?: string;
+
+  @ApiPropertyOptional({ description: '하한값 (측정형만)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lslValue?: number;
+
+  @ApiPropertyOptional({ description: '상한값 (측정형만)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  uslValue?: number;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

@@ -32,6 +32,22 @@ export class EquipInspectItemPool {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
+  /** 판정형(VISUAL) | 측정형(MEASURE) — IQC 방식과 동일 */
+  @Column({ name: 'ITEM_TYPE', length: 20, default: 'VISUAL' })
+  itemType: string;
+
+  /** 측정형 단위 (mm, ℃, bar 등) */
+  @Column({ type: 'varchar2', name: 'UNIT', length: 20, nullable: true })
+  unit: string | null;
+
+  /** 측정형 하한값 (Lower Specification Limit) */
+  @Column({ name: 'LSL_VALUE', type: 'number', nullable: true })
+  lslValue: number | null;
+
+  /** 측정형 상한값 (Upper Specification Limit) */
+  @Column({ name: 'USL_VALUE', type: 'number', nullable: true })
+  uslValue: number | null;
+
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 

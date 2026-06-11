@@ -7,7 +7,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
-import { InspectItemPoolRow, INSPECT_TYPE_COLORS } from "../types";
+import { InspectItemPoolRow, InspectItemType, INSPECT_TYPE_COLORS, ITEM_TYPE_COLORS } from "../types";
 import InspectItemLabelModal from "./InspectItemLabelModal";
 
 type InspectType = InspectItemPoolRow["inspectType"];
@@ -20,6 +20,10 @@ const EMPTY_FORM = {
   cycle: "DAILY",
   useYn: "Y",
   remark: "",
+  itemType: "VISUAL" as InspectItemType,
+  unit: "",
+  lslValue: "",
+  uslValue: "",
 };
 
 export default function ItemMasterTab() {
@@ -66,6 +70,16 @@ export default function ItemMasterTab() {
     { value: "WORKER", label: t("master.equipInspect.typeWorker", "작업자설비점검") },
   ], [t]);
 
+  const itemTypeOptions = useMemo(() => [
+    { value: "VISUAL", label: t("master.equipInspect.itemTypeVisual", "판정형") },
+    { value: "MEASURE", label: t("master.equipInspect.itemTypeMeasure", "측정형") },
+  ], [t]);
+
+  const itemTypeLabels = useMemo<Record<string, string>>(() => ({
+    VISUAL: t("master.equipInspect.itemTypeVisual", "판정형"),
+    MEASURE: t("master.equipInspect.itemTypeMeasure", "측정형"),
+  }), [t]);
+
   const cycleOptions = useMemo(() => [
     { value: "DAILY", label: t("master.equipInspect.cycleDaily") },
     { value: "WEEKLY", label: t("master.equipInspect.cycleWeekly") },
@@ -107,6 +121,10 @@ export default function ItemMasterTab() {
       cycle: item.cycle || "DAILY",
       useYn: item.useYn || "Y",
       remark: item.remark || "",
+      itemType: item.itemType || "VISUAL",
+      unit: item.unit || "",
+      lslValue: item.lslValue != null ? String(item.lslValue) : "",
+      uslValue: item.uslValue != null ? String(item.uslValue) : "",
     });
     setModalOpen(true);
   };
@@ -114,6 +132,7 @@ export default function ItemMasterTab() {
   const handleSave = async () => {
     if (!form.itemCode.trim() || !form.itemName.trim()) return;
 
+    const isMeasure = form.itemType === "MEASURE";
     const payload = {
       itemCode: form.itemCode.trim(),
       itemName: form.itemName.trim(),
@@ -122,6 +141,10 @@ export default function ItemMasterTab() {
       cycle: form.cycle || null,
       useYn: form.useYn,
       remark: form.remark.trim() || null,
+      itemType: form.itemType,
+      unit: isMeasure ? (form.unit.trim() || null) : null,
+      lslValue: isMeasure && form.lslValue !== "" ? Number(form.lslValue) : null,
+      uslValue: isMeasure && form.uslValue !== "" ? Number(form.uslValue) : null,
     };
 
     try {
@@ -186,7 +209,30 @@ export default function ItemMasterTab() {
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${INSPECT_TYPE_COLORS[type]}`}>{inspectTypeLabels[type]}</span>;
       },
     },
-    { accessorKey: "criteria", header: t("master.equipInspect.criteria"), size: 220 },
+    {
+      accessorKey: "itemType",
+      header: t("master.equipInspect.itemType", "판정구분"),
+      size: 90,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = (getValue() as string) || "VISUAL";
+        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${ITEM_TYPE_COLORS[v]}`}>{itemTypeLabels[v]}</span>;
+      },
+    },
+    {
+      accessorKey: "criteria",
+      header: t("master.equipInspect.criteria"),
+      size: 200,
+      cell: ({ row }) => {
+        const r = row.original;
+        if (r.itemType === "MEASURE") {
+          const lsl = r.lslValue != null ? r.lslValue : "";
+          const usl = r.uslValue != null ? r.uslValue : "";
+          return <span className="text-xs">{`${lsl} ~ ${usl}${r.unit ? ` (${r.unit})` : ""}`}</span>;
+        }
+        return r.criteria || "-";
+      },
+    },
     {
       accessorKey: "cycle",
       header: t("master.equipInspect.cycle"),
@@ -201,7 +247,7 @@ export default function ItemMasterTab() {
         ? <span className="text-green-600 dark:text-green-400 font-medium">Y</span>
         : <span className="text-red-500 font-medium">N</span>,
     },
-  ], [t, inspectTypeLabels, cycleLabels]);
+  ], [t, inspectTypeLabels, cycleLabels, itemTypeLabels]);
 
   return (
     <div className="h-full flex flex-col gap-4">
@@ -275,7 +321,14 @@ export default function ItemMasterTab() {
             onChange={e => setForm(prev => ({ ...prev, itemName: e.target.value }))}
             fullWidth
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <Select
+              label={t("master.equipInspect.itemType", "판정구분")}
+              options={itemTypeOptions}
+              value={form.itemType}
+              onChange={value => setForm(prev => ({ ...prev, itemType: value as InspectItemType }))}
+              fullWidth
+            />
             <Select
               label={t("master.equipInspect.cycle")}
               options={cycleOptions}
@@ -291,12 +344,37 @@ export default function ItemMasterTab() {
               fullWidth
             />
           </div>
-          <Input
-            label={t("master.equipInspect.criteria")}
-            value={form.criteria}
-            onChange={e => setForm(prev => ({ ...prev, criteria: e.target.value }))}
-            fullWidth
-          />
+          {form.itemType === "MEASURE" ? (
+            <div className="grid grid-cols-3 gap-4">
+              <Input
+                label={t("master.equipInspect.unit", "단위")}
+                value={form.unit}
+                onChange={e => setForm(prev => ({ ...prev, unit: e.target.value }))}
+                fullWidth
+              />
+              <Input
+                label={t("master.equipInspect.lowerLimit", "하한")}
+                type="number"
+                value={form.lslValue}
+                onChange={e => setForm(prev => ({ ...prev, lslValue: e.target.value }))}
+                fullWidth
+              />
+              <Input
+                label={t("master.equipInspect.upperLimit", "상한")}
+                type="number"
+                value={form.uslValue}
+                onChange={e => setForm(prev => ({ ...prev, uslValue: e.target.value }))}
+                fullWidth
+              />
+            </div>
+          ) : (
+            <Input
+              label={t("master.equipInspect.criteria")}
+              value={form.criteria}
+              onChange={e => setForm(prev => ({ ...prev, criteria: e.target.value }))}
+              fullWidth
+            />
+          )}
           <Input
             label={t("common.remark", "비고")}
             value={form.remark}

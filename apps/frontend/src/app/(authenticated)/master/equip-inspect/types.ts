@@ -15,6 +15,9 @@ export interface EquipSummary {
   lineCode: string | null;
 }
 
+/** 판정구분: 판정형(VISUAL) | 측정형(MEASURE) — IQC 방식과 동일 */
+export type InspectItemType = "VISUAL" | "MEASURE";
+
 export interface InspectItemPoolRow {
   itemCode: string;
   inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
@@ -23,6 +26,10 @@ export interface InspectItemPoolRow {
   cycle: string | null;
   useYn: string;
   remark: string | null;
+  itemType: InspectItemType;
+  unit: string | null;
+  lslValue: number | null;
+  uslValue: number | null;
 }
 
 /** 점검항목 (DB 엔티티 매핑 - 복합키) */
@@ -48,6 +55,12 @@ export interface InspectItemFormData {
   cycle?: string;
   useYn?: string;
 }
+
+/** 판정구분 배지 색상 (IQC JUDGE_METHOD_COLORS 패턴) */
+export const ITEM_TYPE_COLORS: Record<string, string> = {
+  VISUAL: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  MEASURE: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300",
+};
 
 export const INSPECT_TYPE_COLORS: Record<string, string> = {
   DAILY: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",

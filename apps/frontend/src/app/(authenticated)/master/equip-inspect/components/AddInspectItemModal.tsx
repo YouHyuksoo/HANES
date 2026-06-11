@@ -39,6 +39,11 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
     { value: "WORKER", label: t("master.equipInspect.typeWorker", "작업자설비점검") },
   ], [t]);
 
+  const itemTypeLabels = useMemo<Record<string, string>>(() => ({
+    VISUAL: t("master.equipInspect.itemTypeVisual", "판정형"),
+    MEASURE: t("master.equipInspect.itemTypeMeasure", "측정형"),
+  }), [t]);
+
   useEffect(() => {
     if (!isOpen) return;
     setSeq(String(currentMaxSeq + 1));
@@ -136,9 +141,18 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
         <div className="grid grid-cols-2 gap-4">
           <Input label={t("master.equipInspect.cycle")} value={selectedItem?.cycle || ""}
             disabled fullWidth />
-          <Input label={t("master.equipInspect.criteria")} value={selectedItem?.criteria || ""}
+          <Input label={t("master.equipInspect.itemType", "판정구분")}
+            value={selectedItem ? itemTypeLabels[selectedItem.itemType] || "" : ""}
             disabled fullWidth />
         </div>
+        <Input
+          label={selectedItem?.itemType === "MEASURE" ? t("master.equipInspect.spec", "규격") : t("master.equipInspect.criteria")}
+          value={
+            selectedItem?.itemType === "MEASURE"
+              ? `${selectedItem.lslValue ?? ""} ~ ${selectedItem.uslValue ?? ""}${selectedItem.unit ? ` (${selectedItem.unit})` : ""}`
+              : selectedItem?.criteria || ""
+          }
+          disabled fullWidth />
       </div>
 
       <div className="flex justify-end gap-2 pt-6">
