@@ -135,7 +135,7 @@ export default function RequestInspectPage() {
 
       <div className="grid grid-cols-12 gap-4 min-h-0 flex-1">
         {/* 좌측: 대기 목록 */}
-        <div className="col-span-5 flex flex-col min-h-0">
+        <div className="col-span-6 flex flex-col min-h-0">
           <Card padding="none" className="flex-1 flex flex-col min-h-0">
             <CardContent className="flex-1 flex flex-col min-h-0 p-3">
               <p className="text-xs font-semibold text-text-muted mb-2 shrink-0">
@@ -159,7 +159,7 @@ export default function RequestInspectPage() {
         </div>
 
         {/* 우측: 결과 입력 */}
-        <div className="col-span-7 flex flex-col min-h-0">
+        <div className="col-span-6 flex flex-col min-h-0">
           <Card padding="none" className="flex-1 flex flex-col min-h-0">
             <CardContent className="flex-1 flex flex-col p-5 gap-4">
               {!selected ? (
