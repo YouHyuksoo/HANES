@@ -94,7 +94,7 @@ export class IqcGroupService {
       groupCode: dto.groupCode,
       groupName: dto.groupName,
       inspectMethod: dto.inspectMethod,
-      sampleQty: dto.inspectMethod === 'SAMPLE' ? dto.sampleQty : null,
+      sampleQty: null,
       useYn: dto.useYn ?? 'Y',
       company,
       plant,
@@ -123,10 +123,8 @@ export class IqcGroupService {
 
     const updateData: Partial<Pick<IqcGroup, 'groupName' | 'inspectMethod' | 'sampleQty' | 'useYn'>> = {};
     if (dto.groupName !== undefined) updateData.groupName = dto.groupName;
-    if (dto.inspectMethod !== undefined) updateData.inspectMethod = dto.inspectMethod;
-    if (dto.inspectMethod === 'SAMPLE' && dto.sampleQty !== undefined) {
-      updateData.sampleQty = dto.sampleQty ?? null;
-    } else if (dto.inspectMethod && dto.inspectMethod !== 'SAMPLE') {
+    if (dto.inspectMethod !== undefined) {
+      updateData.inspectMethod = dto.inspectMethod;
       updateData.sampleQty = null;
     }
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;

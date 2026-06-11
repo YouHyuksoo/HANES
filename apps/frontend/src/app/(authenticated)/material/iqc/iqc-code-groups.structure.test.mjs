@@ -13,7 +13,6 @@ test('IQC inspect method screens use the IQC-specific method code group', () => 
     'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
     'apps/frontend/src/app/(authenticated)/material/iqc/page.tsx',
     'apps/frontend/src/components/material/IqcTable.tsx',
-    'apps/frontend/src/components/material/IqcModal.tsx',
   ];
 
   for (const file of files) {
@@ -31,8 +30,8 @@ test('IQC history inspect type uses IQC-specific type code group', () => {
 test('IQC inspect input no longer submits legacy NONE inspect class', () => {
   const source = read('apps/frontend/src/components/material/IqcModal.tsx');
   assert.doesNotMatch(source, /value:\s*"NONE"/);
-  assert.match(source, /value:\s*"SKIP"/);
-  assert.match(source, /selectedItem\.inspectMethod\s*\|\|\s*"SAMPLE"/);
+  assert.doesNotMatch(source, /inspectClass:\s*extra\?\.inspectClass/);
+  assert.doesNotMatch(source, /selectedItem\.inspectMethod/);
 });
 
 test('IQC inspect method labels are only inspection or no-inspection', () => {
@@ -46,7 +45,6 @@ test('IQC inspect method labels are only inspection or no-inspection', () => {
     'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkTab.tsx',
     'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcDetailPanel.tsx',
     'apps/frontend/src/components/material/IqcTable.tsx',
-    'apps/frontend/src/components/material/IqcModal.tsx',
   ];
 
   for (const file of files) {
@@ -56,11 +54,7 @@ test('IQC inspect method labels are only inspection or no-inspection', () => {
 
   const ko = JSON.parse(read('apps/frontend/src/locales/ko.json'));
   assert.equal(ko.menu['master.part.iqc.methodFull'], '검사');
-  assert.equal(ko.menu['master.part.iqc.methodSample'], '검사');
   assert.equal(ko.master.iqcGroup.methodFull, '검사');
-  assert.equal(ko.master.iqcGroup.methodSample, '검사');
-  assert.equal(ko.material.iqc.inspectClassFull, '검사');
-  assert.equal(ko.material.iqc.inspectClassSample, '검사');
 });
 
 test('IQC inspection/no-inspection field labels use one Korean term', () => {
@@ -70,10 +64,9 @@ test('IQC inspection/no-inspection field labels use one Korean term', () => {
     ko.master.part.inspectMethod,
     ko.master.iqcGroup.inspectMethod,
     ko.material.iqc.method,
-    ko.material.iqc.inspectClassLabel,
   ];
 
-  assert.deepEqual(labels, ['검사구분', '검사구분', '검사구분', '검사구분', '검사구분']);
+  assert.deepEqual(labels, ['검사구분', '검사구분', '검사구분', '검사구분']);
 
   const files = [
     'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
@@ -94,7 +87,6 @@ test('IQC inspection/no-inspection field labels use one Korean term', () => {
 
 test('IQC inspection method axis no longer exposes SAMPLE', () => {
   const forbiddenFiles = [
-    'apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql',
     'apps/backend/src/modules/master/dto/iqc-group.dto.ts',
     'apps/backend/src/modules/master/services/iqc-group.service.ts',
     'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
@@ -107,7 +99,6 @@ test('IQC inspection method axis no longer exposes SAMPLE', () => {
     'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkTab.tsx',
     'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcDetailPanel.tsx',
     'apps/frontend/src/components/material/IqcTable.tsx',
-    'packages/shared/src/constants/com-code-values.ts',
   ];
 
   for (const file of forbiddenFiles) {
@@ -122,6 +113,13 @@ test('IQC inspection method axis no longer exposes SAMPLE', () => {
   assert.equal(ko.master.iqcGroup.methodSkip, '무검사');
   assert.equal(ko.menu['master.part.iqc.methodSample'], undefined);
   assert.equal(ko.master.iqcGroup.methodSample, undefined);
+
+  const migration = read('apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql');
+  assert.doesNotMatch(migration, /SELECT 'IQC_INSPECT_METHOD', 'SAMPLE'/);
+  assert.match(migration, /GROUP_CODE = 'IQC_INSPECT_METHOD'[\s\S]+DETAIL_CODE = 'SAMPLE'/);
+
+  const sharedConstants = read('packages/shared/src/constants/com-code-values.ts');
+  assert.match(sharedConstants, /IQC_INSPECT_METHOD_VALUES = \['FULL', 'SKIP'\]/);
 });
 
 test('IQC result modal does not map inspection method into INSPECT_CLASS', () => {

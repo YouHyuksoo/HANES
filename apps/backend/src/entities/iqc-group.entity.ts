@@ -1,12 +1,12 @@
 /**
  * @file iqc-group.entity.ts
- * @description IQC 검사그룹 마스터 엔티티 - 검사항목 묶음 + 검사형태(전수/샘플/무검사)
+ * @description IQC 검사그룹 마스터 엔티티 - 검사항목 묶음 + 검사구분(검사/무검사)
  *              COMPANY + PLANT_CD + GROUP_CODE 복합키 사용.
  *
  * 초보자 가이드:
  * 1. COMPANY + PLANT_CD + GROUP_CODE가 자연키 PK (IGR-001 등)
- * 2. INSPECT_METHOD: FULL(전수), SAMPLE(샘플), SKIP(무검사)
- * 4. SAMPLE일 때만 SAMPLE_QTY 사용
+ * 2. INSPECT_METHOD: FULL(검사), SKIP(무검사)
+ * 4. SAMPLE_QTY는 legacy 컬럼으로 신규 검사구분 로직에서는 사용하지 않음
  * 5. IQC_GROUP_ITEMS 테이블과 OneToMany 관계
  */
 import {

@@ -9,7 +9,6 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine } from "lucide-react";
 import { Button, Modal } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
-import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 interface IqcInspectItem {
@@ -53,7 +52,7 @@ interface IqcModalProps {
   onSubmit: (
     details?: unknown,
     overrideResult?: string,
-    extra?: { inspectClass?: string; sampleQty?: number; certFile?: File; sampleBarcode?: string },
+    extra?: { sampleQty?: number; certFile?: File; sampleBarcode?: string },
   ) => void;
 }
 
@@ -93,7 +92,6 @@ function getSerialResult(inspection: SerialInspection | undefined): "PASS" | "FA
 
 export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm, onSubmit }: IqcModalProps) {
   const { t } = useTranslation();
-  const iqcInspectMethodOptions = useComCodeOptions("IQC_INSPECT_METHOD", false);
   const [inspectItems, setInspectItems] = useState<IqcInspectItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [pendingSerials, setPendingSerials] = useState<PendingSerial[]>([]);
@@ -102,20 +100,10 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [serialInspectionMap, setSerialInspectionMap] = useState<Record<string, SerialInspection>>({});
   const [serialScanValue, setSerialScanValue] = useState("");
   const [scanSerialError, setScanSerialError] = useState("");
-  const [inspectClass, setInspectClass] = useState("SAMPLE");
   const [sampleQty, setSampleQty] = useState("");
   const [certFile, setCertFile] = useState<File | null>(null);
   const serialScanInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const inspectClassOptions = useMemo(() => [
-    { value: "FULL", label: t("material.iqc.inspectClassFull", "검사") },
-    { value: "SAMPLE", label: t("material.iqc.inspectClassSample", "검사") },
-    { value: "SKIP", label: t("material.iqc.inspectClassNone", "무검사") },
-  ], [t]);
-  const effectiveInspectClassOptions = iqcInspectMethodOptions.length > 0
-    ? iqcInspectMethodOptions
-    : inspectClassOptions;
 
   useEffect(() => {
     if (!isOpen || !selectedItem) {
@@ -126,13 +114,11 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       setSerialInspectionMap({});
       setSerialScanValue("");
       setScanSerialError("");
-      setInspectClass("SAMPLE");
       setSampleQty("");
       setCertFile(null);
       return;
     }
 
-    setInspectClass(selectedItem.inspectMethod || "SAMPLE");
     const focusTimer = window.setTimeout(() => serialScanInputRef.current?.focus(), 80);
     return () => window.clearTimeout(focusTimer);
   }, [isOpen, selectedItem]);
@@ -286,12 +272,11 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       type: "SERIAL_INSPECTION",
       serials: serialInspectionPayload,
     }, verdict, {
-      inspectClass,
       sampleQty: sampleQty ? parseInt(sampleQty, 10) : undefined,
       certFile: certFile ?? undefined,
       sampleBarcode: scannedSerials.join(","),
     });
-  }, [anyFail, canSubmit, certFile, inspectClass, onSubmit, sampleQty, scannedSerials, selectedItem, serialInspectionPayload, setForm]);
+  }, [anyFail, canSubmit, certFile, onSubmit, sampleQty, scannedSerials, selectedItem, serialInspectionPayload, setForm]);
 
   if (!selectedItem) return null;
 
@@ -353,19 +338,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
               />
             </label>
             <label className="col-span-2">
-              <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.inspectClassLabel", "검사구분")}</span>
-              <select
-                value={inspectClass}
-                onChange={(e) => setInspectClass(e.target.value)}
-                className="h-7 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              >
-                {effectiveInspectClassOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="col-span-2">
-              <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.sampleQty", "샘플 시료수량")}</span>
+              <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.sampleQty", "시료수량")}</span>
               <input
                 type="number"
                 min={0}

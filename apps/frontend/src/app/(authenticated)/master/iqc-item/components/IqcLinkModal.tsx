@@ -123,7 +123,6 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
 
   const methodLabels = useMemo<Record<string, string>>(() => ({
     FULL: t("master.iqcGroup.methodFull", "검사"),
-    SAMPLE: t("master.iqcGroup.methodSample", "검사"),
     SKIP: t("master.iqcGroup.methodSkip", "무검사"),
   }), [t]);
 
@@ -198,8 +197,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm font-semibold text-text">{selectedGroup.groupName}</span>
               <span className={`px-2 py-0.5 text-xs rounded-full ${INSPECT_METHOD_COLORS[selectedGroup.inspectMethod]}`}>
-                {methodLabels[selectedGroup.inspectMethod]}
-                {selectedGroup.inspectMethod === "SAMPLE" && selectedGroup.sampleQty ? ` (${selectedGroup.sampleQty})` : ""}
+                {methodLabels[selectedGroup.inspectMethod] ?? selectedGroup.inspectMethod}
               </span>
             </div>
             <p className="text-xs text-text-muted">

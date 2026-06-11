@@ -43,7 +43,6 @@ export default function IqcLinkTab() {
 
   const methodLabels = useMemo<Record<string, string>>(() => ({
     FULL: t("master.iqcGroup.methodFull", "검사"),
-    SAMPLE: t("master.iqcGroup.methodSample", "검사"),
     SKIP: t("master.iqcGroup.methodSkip", "무검사"),
   }), [t]);
 
@@ -168,8 +167,7 @@ export default function IqcLinkTab() {
         if (!g) return "-";
         return (
           <span className={`px-2 py-0.5 text-xs rounded-full ${INSPECT_METHOD_COLORS[g.inspectMethod]}`}>
-            {methodLabels[g.inspectMethod]}
-            {g.inspectMethod === "SAMPLE" && g.sampleQty ? ` (${g.sampleQty})` : ""}
+            {methodLabels[g.inspectMethod] ?? g.inspectMethod}
           </span>
         );
       },

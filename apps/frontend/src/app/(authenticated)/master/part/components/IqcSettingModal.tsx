@@ -76,7 +76,6 @@ export default function IqcSettingModal({ isOpen, onClose, part, currentLink, on
 
   const methodLabels = useMemo<Record<string, string>>(() => ({
     FULL: iqcInspectMethodMap.FULL?.codeName ?? t("master.part.iqc.methodFull", "검사"),
-    SAMPLE: iqcInspectMethodMap.SAMPLE?.codeName ?? t("master.part.iqc.methodSample", "검사"),
     SKIP: iqcInspectMethodMap.SKIP?.codeName ?? t("master.part.iqc.methodSkip", "무검사"),
   }), [t, iqcInspectMethodMap]);
 
@@ -131,7 +130,7 @@ export default function IqcSettingModal({ isOpen, onClose, part, currentLink, on
               </span>
             </div>
             <span className={`px-2 py-0.5 text-xs rounded-full shrink-0 ${INSPECT_METHOD_COLORS[group.inspectMethod]}`}>
-              {methodLabels[group.inspectMethod]}{group.sampleQty ? `(${group.sampleQty})` : ""}
+              {methodLabels[group.inspectMethod] ?? group.inspectMethod}
             </span>
           </label>
         ))}

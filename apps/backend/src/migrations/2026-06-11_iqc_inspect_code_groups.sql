@@ -6,13 +6,8 @@ BEGIN
            'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' AS ATTR1
     FROM DUAL
     UNION ALL
-    SELECT 'IQC_INSPECT_METHOD', 'SAMPLE', '검사',
-           'IQC 검사구분: 검사 대상', 2,
-           'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300'
-    FROM DUAL
-    UNION ALL
     SELECT 'IQC_INSPECT_METHOD', 'SKIP', '무검사',
-           'IQC 검사구분: 검사 생략', 3,
+           'IQC 검사구분: 검사 생략', 2,
            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
     FROM DUAL
     UNION ALL
@@ -76,13 +71,31 @@ BEGIN
     SYSTIMESTAMP
   );
 
-  UPDATE IQC_LOGS
-     SET INSPECT_CLASS = 'SKIP',
+  UPDATE COM_CODES
+     SET USE_YN = 'N',
          UPDATED_BY = 'codex',
          UPDATED_AT = SYSTIMESTAMP
    WHERE COMPANY = '40'
      AND PLANT_CD = '1000'
-     AND INSPECT_CLASS = 'NONE';
+     AND GROUP_CODE = 'IQC_INSPECT_METHOD'
+     AND DETAIL_CODE = 'SAMPLE';
+
+  UPDATE ITEM_MASTERS
+     SET INSPECT_METHOD = 'FULL',
+         UPDATED_BY = 'codex',
+         UPDATED_AT = SYSTIMESTAMP
+   WHERE COMPANY = '40'
+     AND PLANT_CD = '1000'
+     AND INSPECT_METHOD = 'SAMPLE';
+
+  UPDATE IQC_GROUPS
+     SET INSPECT_METHOD = 'FULL',
+         SAMPLE_QTY = NULL,
+         UPDATED_BY = 'codex',
+         UPDATED_AT = SYSTIMESTAMP
+   WHERE COMPANY = '40'
+     AND PLANT_CD = '1000'
+     AND INSPECT_METHOD = 'SAMPLE';
 
   COMMIT;
 END;

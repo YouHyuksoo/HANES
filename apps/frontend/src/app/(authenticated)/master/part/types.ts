@@ -29,7 +29,7 @@ export interface Part {
   lotUnitQty?: number; // LOT 단위수량 (Oracle LOTUNITQTY)
   boxQty?: number; // 박스 입수량 (Oracle BOXQTY) (기본값: 0)
   iqcYn?: UseYnValue; // IQC 대상여부 Y/N (Oracle IQCFLAG) (기본값: Y)
-  inspectMethod?: string; // 검사구분 (FULL/SAMPLE/SKIP)
+  inspectMethod?: string; // 검사구분 (FULL/SKIP)
   tactTime?: number; // 택타임 초 (Oracle TACTTIME) (기본값: 0)
   expiryDate?: number; // 유효기간 일 (Oracle EXPIRYDATE) (기본값: 0)
   expiryExtDays?: number; // 유효기간 연장 최대 일수 (Oracle EXPIRY_EXT_DAYS) (기본값: 0)

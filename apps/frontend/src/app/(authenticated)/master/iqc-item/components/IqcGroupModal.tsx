@@ -5,7 +5,7 @@
  * @description IQC 검사그룹 추가/수정 모달 — 그룹 정보 입력 + 검사항목 선택 (API 연동)
  *
  * 초보자 가이드:
- * 1. 좌측: 그룹코드, 그룹명, 검사구분(검사/무검사), 샘플수량
+ * 1. 좌측: 그룹코드, 그룹명, 검사구분(검사/무검사)
  * 2. 우측: /master/iqc-item-pool API에서 조회한 항목 체크박스 목록
  * 3. 선택된 항목은 순서(SEQ) 번호가 자동 부여됨
  */
@@ -50,7 +50,7 @@ interface Props {
 }
 
 const EMPTY_FORM: GroupFormData = {
-  groupCode: "", groupName: "", inspectMethod: "SAMPLE", sampleQty: "", selectedItemCodes: [],
+  groupCode: "", groupName: "", inspectMethod: "FULL", sampleQty: "", selectedItemCodes: [],
 };
 
 export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Props) {
@@ -89,7 +89,6 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
 
   const inspectMethodOptions = useMemo(() => [
     { value: "FULL", label: t("master.iqcGroup.methodFull", "검사") },
-    { value: "SAMPLE", label: t("master.iqcGroup.methodSample", "검사") },
     { value: "SKIP", label: t("master.iqcGroup.methodSkip", "무검사") },
   ], [t]);
   const effectiveInspectMethodOptions = iqcInspectMethodOptions.length > 0
@@ -149,12 +148,6 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
           <Select label={t("master.iqcGroup.inspectMethod", "검사구분")} options={effectiveInspectMethodOptions}
             value={form.inspectMethod}
             onChange={v => setForm(p => ({ ...p, inspectMethod: v }))} fullWidth />
-          {form.inspectMethod === "SAMPLE" && (
-            <Input label={t("master.iqcGroup.sampleQty", "샘플 수량")} type="number" value={form.sampleQty}
-              onChange={e => setForm(p => ({ ...p, sampleQty: e.target.value }))}
-              fullWidth />
-          )}
-
           {/* 선택된 항목 미리보기 */}
           {selectedItems.length > 0 && (
             <div className="mt-2">

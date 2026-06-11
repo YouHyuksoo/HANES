@@ -28,10 +28,9 @@ const formatDateOnly = (value?: string | null) => {
   return new Intl.DateTimeFormat('sv-SE').format(date);
 };
 
-/** 검사구분(FULL/SAMPLE/SKIP) 배지 색상 */
+/** 검사구분(FULL/SKIP) 배지 색상 */
 const METHOD_COLORS: Record<string, string> = {
   FULL: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-  SAMPLE: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
   SKIP: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
 };
 
@@ -86,7 +85,6 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
           if (!m) return <span className="text-text-muted">-</span>;
           const label = ({
             FULL: iqcInspectMethodMap.FULL?.codeName ?? t('master.iqcGroup.methodFull', '검사'),
-            SAMPLE: iqcInspectMethodMap.SAMPLE?.codeName ?? t('master.iqcGroup.methodSample', '검사'),
             SKIP: iqcInspectMethodMap.SKIP?.codeName ?? t('master.iqcGroup.methodSkip', '무검사'),
           } as Record<string, string>)[m] ?? m;
           return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${METHOD_COLORS[m] ?? ''}`}>{label}</span>;

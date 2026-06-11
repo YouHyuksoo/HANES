@@ -40,7 +40,6 @@ export interface IqcResultForm {
 
 /** IQC 모달 제출 시 부가 정보 */
 export interface IqcSubmitExtra {
-  inspectClass?: string;
   sampleQty?: number;
   certFile?: File;
   sampleBarcode?: string;
@@ -138,7 +137,6 @@ export function useIqcData() {
         inspectorName: resultForm.inspector || undefined,
         remark: resultForm.remark || undefined,
         details: details ? JSON.stringify(details) : undefined,
-        inspectClass: extra?.inspectClass || undefined,
         sampleQty: extra?.sampleQty || undefined,
         sampleBarcode: extra?.sampleBarcode || undefined,
       });

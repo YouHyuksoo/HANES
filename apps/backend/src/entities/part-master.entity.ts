@@ -65,7 +65,7 @@ export class PartMaster {
   iqcYn: string;
 
   @Column({ type: 'varchar2', name: 'INSPECT_METHOD', length: 20, nullable: true })
-  inspectMethod: string | null; // 검사방법 (FULL/SAMPLE/SKIP)
+  inspectMethod: string | null; // 검사구분 (FULL/SKIP)
 
   @Column({ name: 'TACT_TIME', type: 'int', default: 0 })
   tactTime: number;

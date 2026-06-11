@@ -180,12 +180,10 @@ export default function PartPage() {
         if (!v) return <span className="text-xs text-text-muted">-</span>;
         const colors: Record<string, string> = {
           FULL: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-          SAMPLE: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
           SKIP: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
         };
         const labels: Record<string, string> = {
           FULL: iqcInspectMethodMap.FULL?.codeName ?? t("master.part.iqc.methodFull", "검사"),
-          SAMPLE: iqcInspectMethodMap.SAMPLE?.codeName ?? t("master.part.iqc.methodSample", "검사"),
           SKIP: iqcInspectMethodMap.SKIP?.codeName ?? t("master.part.inspectSkip", "무검사"),
         };
         return <span className={`px-2 py-0.5 text-xs rounded-full ${colors[v] || ""}`}>{labels[v] || v}</span>;

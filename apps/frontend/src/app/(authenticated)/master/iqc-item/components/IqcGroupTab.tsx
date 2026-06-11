@@ -50,7 +50,6 @@ export default function IqcGroupTab() {
 
   const methodLabels = useMemo<Record<string, string>>(() => ({
     FULL: iqcInspectMethodMap.FULL?.codeName ?? t("master.iqcGroup.methodFull", "검사"),
-    SAMPLE: iqcInspectMethodMap.SAMPLE?.codeName ?? t("master.iqcGroup.methodSample", "검사"),
     SKIP: iqcInspectMethodMap.SKIP?.codeName ?? t("master.iqcGroup.methodSkip", "무검사"),
   }), [t, iqcInspectMethodMap]);
 
@@ -91,8 +90,7 @@ export default function IqcGroupTab() {
         groupCode: formData.groupCode,
         groupName: formData.groupName,
         inspectMethod: formData.inspectMethod,
-        sampleQty: formData.inspectMethod === "SAMPLE" && formData.sampleQty
-          ? parseInt(formData.sampleQty) : undefined,
+        sampleQty: undefined,
         items: formData.selectedItemCodes.map((inspItemCode, idx) => ({
           itemId: inspItemCode, seq: idx + 1,
         })),
@@ -194,16 +192,10 @@ export default function IqcGroupTab() {
         const v = getValue() as string;
         return (
           <span className={`px-2 py-0.5 text-xs rounded-full ${INSPECT_METHOD_COLORS[v]}`}>
-            {methodLabels[v]}
+            {methodLabels[v] ?? v}
           </span>
         );
       },
-    },
-    {
-      accessorKey: "sampleQty", header: t("master.iqcGroup.sampleQty", "샘플수량"), size: 90,
-      meta: { filterType: "number" as const },
-      cell: ({ row }) => row.original.inspectMethod === "SAMPLE" && row.original.sampleQty
-        ? `${row.original.sampleQty}${t("common.ea", "개")}` : "-",
     },
   ], [t, methodLabels, openEdit]);
 

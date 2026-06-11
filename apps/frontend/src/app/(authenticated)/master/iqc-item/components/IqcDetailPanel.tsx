@@ -88,7 +88,6 @@ export default function IqcDetailPanel({
   const methodLabels = useMemo<Record<string, string>>(
     () => ({
       FULL: t("master.iqcGroup.methodFull", "검사"),
-      SAMPLE: t("master.iqcGroup.methodSample", "검사"),
       SKIP: t("master.iqcGroup.methodSkip", "무검사"),
     }),
     [t]
@@ -226,8 +225,7 @@ function GroupSection({
           <span className="font-mono text-xs text-text-muted">{group.groupCode}</span>
           <span className="font-semibold text-sm text-text">{group.groupName}</span>
           <span className={`px-2 py-0.5 text-xs rounded-full ${INSPECT_METHOD_COLORS[group.inspectMethod]}`}>
-            {methodLabels[group.inspectMethod]}
-            {group.inspectMethod === "SAMPLE" && group.sampleQty ? ` (${group.sampleQty})` : ""}
+            {methodLabels[group.inspectMethod] ?? group.inspectMethod}
           </span>
         </div>
         <button onClick={onUnlink} className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors" title={t("master.iqcItem.unlinkGroup", "연결 해제")}>

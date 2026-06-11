@@ -377,7 +377,7 @@ export class IqcHistoryService {
       result: dto.result,
       details: dto.details || null,
       inspectorName: dto.inspectorName || null,
-      inspectClass: this.normalizeIqcInspectClass(dto.inspectClass) || 'SAMPLE',
+      inspectClass: this.normalizeIqcInspectClass(dto.inspectClass) || null,
       destructSampleQty: dto.sampleQty || null,
       sampleBarcode: dto.sampleBarcode || null,
       remark: dto.remark || null,

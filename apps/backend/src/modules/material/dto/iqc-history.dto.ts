@@ -52,7 +52,7 @@ export class CreateIqcResultDto {
   @IsString()
   details?: string;
 
-  @ApiPropertyOptional({ description: '검사방법', enum: ['FULL', 'SAMPLE', 'SKIP'] })
+  @ApiPropertyOptional({ description: '검사분류 legacy 컬럼. 검사구분(FULL/SKIP)으로 사용하지 않음' })
   @IsOptional()
   @IsString()
   @IsIn(['FULL', 'SAMPLE', 'SKIP', 'NONE'])
@@ -103,7 +103,7 @@ export class CreateArrivalIqcResultDto {
   @IsString()
   details?: string;
 
-  @ApiPropertyOptional({ description: '검사방법', enum: ['FULL', 'SAMPLE', 'SKIP'] })
+  @ApiPropertyOptional({ description: '검사분류 legacy 컬럼. 검사구분(FULL/SKIP)으로 사용하지 않음' })
   @IsOptional()
   @IsString()
   @IsIn(['FULL', 'SAMPLE', 'SKIP', 'NONE'])

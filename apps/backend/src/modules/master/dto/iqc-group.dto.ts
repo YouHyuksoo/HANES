@@ -3,9 +3,9 @@
  * @description IQC 검사그룹 관련 DTO 정의
  *
  * 초보자 가이드:
- * 1. **CreateIqcGroupDto**: 그룹 생성 (그룹코드, 이름, 검사형태, 항목목록)
+ * 1. **CreateIqcGroupDto**: 그룹 생성 (그룹코드, 이름, 검사구분, 항목목록)
  * 2. **UpdateIqcGroupDto**: 그룹 수정 (모든 필드 optional)
- * 3. **IqcGroupQueryDto**: 목록 조회 필터 (검색, 검사형태, 사용여부)
+ * 3. **IqcGroupQueryDto**: 목록 조회 필터 (검색, 검사구분, 사용여부)
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -47,12 +47,12 @@ export class CreateIqcGroupDto {
   @MaxLength(100)
   groupName: string;
 
-  @ApiProperty({ description: '검사형태 (FULL/SAMPLE/SKIP)', example: 'SAMPLE' })
+  @ApiProperty({ description: '검사구분 (FULL=검사, SKIP=무검사)', enum: ['FULL', 'SKIP'], example: 'FULL' })
   @IsString()
-  @IsIn(['FULL', 'SAMPLE', 'SKIP'])
+  @IsIn(['FULL', 'SKIP'])
   inspectMethod: string;
 
-  @ApiPropertyOptional({ description: '샘플 수량 (SAMPLE일 때만)', example: 5 })
+  @ApiPropertyOptional({ description: '사용하지 않음 (legacy)', example: null })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -82,10 +82,10 @@ export class IqcGroupQueryDto extends PaginationQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '검사형태 필터' })
+  @ApiPropertyOptional({ description: '검사구분 필터', enum: ['FULL', 'SKIP'] })
   @IsOptional()
   @IsString()
-  @IsIn(['FULL', 'SAMPLE', 'SKIP'])
+  @IsIn(['FULL', 'SKIP'])
   inspectMethod?: string;
 
   @ApiPropertyOptional({ description: '사용여부' })
