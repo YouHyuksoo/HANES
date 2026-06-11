@@ -80,7 +80,7 @@ export class IqcHistoryService {
   }
 
   private normalizeIqcInspectClass(inspectClass?: string | null) {
-    return inspectClass === 'NONE' ? 'SKIP' : inspectClass;
+    return inspectClass ?? null;
   }
 
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {

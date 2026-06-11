@@ -24,7 +24,7 @@ export interface IqcItem {
   /** 입하건에 속한 시리얼 수 */
   serialCount: number;
   unit: string;
-  /** 검사방법 (FULL/SAMPLE/SKIP) — part master 기준 */
+  /** 검사구분 (FULL/SKIP) — part master 기준 */
   inspectMethod: string | null;
   arrivalDate: string;
   status: IqcStatus;

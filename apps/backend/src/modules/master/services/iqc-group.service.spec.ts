@@ -122,7 +122,7 @@ describe('IqcGroupService', () => {
       expect(mockGroupItemRepo.save).not.toHaveBeenCalled();
     });
 
-    it('should set sampleQty to null when inspectMethod is not SAMPLE', async () => {
+    it('should always set legacy sampleQty to null', async () => {
       // Arrange
       const dto = { groupCode: 'IG01', groupName: 'Group1', inspectMethod: 'FULL' } as any;
       const savedGroup = { groupCode: 'IG01' } as any;
@@ -183,9 +183,9 @@ describe('IqcGroupService', () => {
       expect(mockGroupItemRepo.save).toHaveBeenCalled();
     });
 
-    it('should set sampleQty to null when switching from SAMPLE to other', async () => {
+    it('should clear legacy sampleQty when inspectMethod changes', async () => {
       // Arrange
-      const existing = { groupCode: 'IG01', inspectMethod: 'SAMPLE', sampleQty: 5, items: [] } as any;
+      const existing = { groupCode: 'IG01', inspectMethod: 'FULL', sampleQty: 5, items: [] } as any;
       mockGroupRepo.findOne.mockResolvedValue(existing);
       mockGroupRepo.update.mockResolvedValue({ affected: 1 } as any);
 
