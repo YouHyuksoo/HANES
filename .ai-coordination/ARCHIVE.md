@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-TAB-LIMIT-10 | 2026-06-11 | codex | 페이지 탭 제한 개수를 10개로 변경하고 타입/구조 테스트 통과 | evidence: JOURNAL 2026-06-11 16:24 Codex
 - T-REQINSPECT-LSL-USL | 2026-06-11 | claude | 의뢰검사 입력 우측 패널에 공정생품검사 LSL/USL 검사기준 표시(SELF_INSPECT_RESULTS↔ITEMS JOIN), tsc 통과 | evidence: JOURNAL 2026-06-11 15:30 Claude
 - T-CUSTOMER-INTRO-WORK-INSTRUCTION | 2026-06-11 | codex | 고객용 제품 소개 자료 재생성 작업지시 문서 작성 완료 | evidence: JOURNAL 2026-06-11 14:43 Codex
 - T-CUSTOMER-INTRO-MENU-SCREEN-DECK | 2026-06-11 | codex | 현재 메뉴 화면 캡처 기반으로 고객용 제품 소개 PPTX/HTML 15장 확장 및 검증 완료 | evidence: JOURNAL 2026-06-11 13:59 Codex

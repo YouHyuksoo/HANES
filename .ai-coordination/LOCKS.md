@@ -10,6 +10,8 @@ No active locks.
 
 ## History
 
+- T-SHIP-CROSSBOX-GUARD (claude, 2026-06-11): 교차 박스 중복 포장 가드 추가 완료 후 lock 해제. 파일: `apps/backend/src/modules/shipping/services/box.service.ts`, `apps/backend/src/modules/shipping/services/box.service.spec.ts`.
+- T-TAB-LIMIT-10 (codex, 2026-06-11): 페이지 탭 제한 개수를 10개로 변경 완료 후 lock 해제. 파일: `apps/frontend/src/stores/tabStore.ts`, `apps/frontend/src/components/layout/TabKeepAlive.tsx`.
 - T-CUSTOMER-INTRO-WORK-INSTRUCTION (codex, 2026-06-11): 고객용 제품 소개 자료 재생성 작업지시 문서 작성 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction-work-instruction.md`.
 - T-CUSTOMER-INTRO-MENU-SCREEN-DECK (codex, 2026-06-11): 현재 메뉴 화면 캡처 기반으로 고객용 제품 소개 PPTX/HTML을 15장으로 확장 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.html`, `docs/presentation/hanes-mes-introduction.pptx`, `docs/presentation/assets/menu-captures/*`.
 - T-CUSTOMER-INTRO-PRODUCT-DECK (codex, 2026-06-11): 고객용 제품 소개 자료로 HTML/PPTX 전면 재작성 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.html`, `docs/presentation/hanes-mes-introduction.pptx`.
