@@ -10,6 +10,33 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-11 20:50 Claude
+
+- 작업: T-KIOSK-FLOW-FIX — 키오스크 점검에서 발견한 단절 3건 수정 (우선순위 ①→③→②) + 연쇄 버그 1건.
+- ①(설정 시드): `2026-06-11_mat_auto_issue_config_seed.sql` — `MAT_AUTO_ISSUE_TIMING='ON_CREATE'`(SELECT: OFF/ON_CREATE/ON_COMPLETE), `MAT_ISSUE_STOCK_CHECK='WARN'`(BLOCK/WARN — 자재 미입고 상태에서 생산 차단 방지를 위해 WARN 기본) PRODUCTION 그룹 시드, JSHANES 적용. SysConfig 무캐시라 즉시 효력.
+- ③(진행률 서버화): `job-order.service.findByOrderNo`에 PROD_RESULTS 집계(goodQty/defectQty, CANCELED 제외) 추가. 키오스크 `savedResultCount` 의미를 "누적 생산수량(서버 집계)"으로 정정 — `setSavedResultCount` 액션, `refreshProgress()`로 작업지시 선택/재진입/저장 후 서버 동기화. 초물 트리거·중물 차단·`prodQtyAtInspect`가 모두 실제 생산량 기준이 됨. `incrementResultCount` 제거.
+- ②(스캔 LOT 우선): `auto-issue.service` — JOB_MATERIAL_LOTS(키오스크 스캔 LOT)를 차감 1순위로 정렬 후 FIFO. 스캔 추적과 실제 차감 LOT 일치.
+- 연쇄버그(역분개 복원 불가): AutoIssue가 만들던 StockTransaction에 FROM_WAREHOUSE_ID 부재 → `reverseAutoIssue`가 복원을 skip(원거래 존재+창고 null은 fallback도 안 탐). 수정: `deductMatStock`이 창고별 차감 내역 반환 → 창고별 TX 생성(FROM_WAREHOUSE_ID 기록). 실증: 차감 7→6 → 취소 → 복원 6→7 + MAT_IN 보상 TX.
+- 검증: auto-issue/job-order spec 47건(신규 스캔우선 1건 포함) 통과, FE/BE tsc 통과, nest build 후 백엔드 재시작(node dist/main). 통합 실증 — by-order-no goodQty 14→15→복원, 백플러시 MAT_ISSUES(PROD_AUTO) 생성·차감 LOT=스캔 LOT 일치, WARN 정책으로 재고 없는 BOM 품목 있어도 실적 저장 성공.
+- 정리: 검증 잔여물(PR 2건, ISS 2건, TX 3건, 스캔기록) 삭제, 수정 전 미복원분 +1 보정(재고 8 원복), EQ-CRIMP-03 작업지시 할당 복원. 기존 실적 14/4 보존.
+- 미커밋. hswbs 반영은 백엔드 재배포 필요(시드는 DB 공유로 즉시 반영). 주의: 백엔드 3003 프로세스를 새 빌드본으로 재시작했음.
+
+## 2026-06-11 20:48 Codex
+
+- 작업: `T-IQC-CODE-ALIGN` 품목정보/IQC 검사그룹/IQC 검사입력/IQC 이력의 검사방법·검사유형 코드 매핑 통일.
+- 원인: `ITEM_MASTERS.INSPECT_METHOD`와 `IQC_GROUPS.INSPECT_METHOD`는 `FULL/SAMPLE/SKIP` 의미인데, 기존 공통코드 `INSPECT_METHOD`는 `VISUAL/MEASUREMENT/FUNCTIONAL/ELECTRICAL/DESTRUCTIVE` 의미였다. IQC 이력 필터는 `IQC_LOGS.INSPECT_TYPE=INITIAL/RETEST`를 조회하면서 `IQC_TYPE=IQC/PQC/FQC/OQC` 그룹을 사용해 라벨과 필터가 불일치했다. 검사입력 모달은 동일 의미에 `NONE`을 사용해 품목/그룹의 `SKIP`과도 달랐다.
+- 변경: JSHANES `COM_CODES`에 `IQC_INSPECT_METHOD`(`FULL=전수검사`, `SAMPLE=샘플검사`, `SKIP=무검사`)와 `IQC_INSPECT_TYPE`(`INITIAL=초기검사`, `RETEST=재검사`) 추가. 품목정보, 품목 폼, 품목별 IQC 그룹 선택, IQC 검사그룹 관리, 수입검사 목록/입력, IQC 이력 화면이 새 전용 그룹을 사용하도록 변경. 백엔드 DTO는 `SKIP`을 허용하고 legacy `NONE` 요청은 저장 전 `SKIP`으로 정규화한다.
+- 파일: `apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql`, `apps/backend/src/modules/material/dto/iqc-history.dto.ts`, `apps/backend/src/modules/material/services/iqc-history.service.ts`, IQC 관련 프론트 파일 9개, `packages/shared/src/{types/com-code.ts,constants/com-code-values.ts}`, `docs/reports/db-schema-erd.md`.
+- 실행/검증: JSHANES 마이그레이션 적용 성공(`blocks_executed=1`). DB 조회로 신규 공통코드 5건 확인. `IQC_LOGS.INSPECT_CLASS`는 `SAMPLE=10`, `NULL=6`, `NONE=0` 확인. `node --test apps/frontend/src/app/(authenticated)/material/iqc/iqc-code-groups.structure.test.mjs` 통과(3 tests). `pnpm --filter @harness/frontend exec tsc --noEmit`, `pnpm --filter @harness/backend exec tsc --noEmit` 통과. `python tools/generate_db_schema_doc.py` 실행해 ERD 문서 갱신.
+
+## 2026-06-11 20:27 Codex
+
+- 작업: `T-PROCESS-EQUIP-SEED` 공정별 설비 마스터/공정-설비 매핑 시드 생성 및 JSHANES 적용.
+- 변경: `apps/backend/src/migrations/2026-06-11_process_equipment_seed.sql` 추가. `PROCESS_MASTERS` 활성 공정(COMPANY=40, PLANT_CD=1000)을 기준으로 `EQ-<PROCESS_CODE>-NN` 설비코드를 생성하고 `EQUIP_MASTERS`, `PROCESS_EQUIPMENTS`에 `MERGE`한다. WIRE/TERMINAL/INSPECTION 공정은 2대, ASSEMBLY/HEAT/미분류 공정은 1대씩 생성한다.
+- 실행: `python C:\Users\hsyou\.codex\skills\oracle-db\scripts\oracle_connector.py --site JSHANES --execute-file apps\backend\src\migrations\2026-06-11_process_equipment_seed.sql` 성공(`blocks_executed=1`).
+- 검증: 활성 공정 21개, `EQUIP_MASTERS` 시드 설비 36건, `PROCESS_EQUIPMENTS` 시드 매핑 36건, 시드 매핑이 붙은 활성 공정 21개 확인.
+- 주의: 기존 활성 매핑은 삭제하지 않았다. 기존 데이터 때문에 ATCUT/STRPB는 전체 활성 매핑 3건, PRC-CUT은 전체 활성 매핑 4건으로 보인다. 신규 시드 기준으로는 각 공정 1~2건이 정상 생성됐다.
+
 ## 2026-06-11 20:15 Claude
 
 - 작업: 유수명자재 검사이력(`/material/shelf-life-history`) 재검사 데이터 생성·조회 검증 (코드 수정 없음, 실 API+DB).
@@ -189,6 +216,13 @@ Use local time in 24-hour format.
 - 변경: 기존 8장 자료를 12장으로 재구성. 글자 크기 축소, 제목 침범/겹침 보정, `기준정보 → 자재 입하 → IQC/입고 → 생산 준비 → 현장 실행 → 검사/품질 → 제품/출하` 순서의 워크플로우 맵 추가.
 - 메뉴 보강: 품목마스터, BOM 관리, 공정/라인, 라우팅, IQC품목규격, 설비점검항목, 월간생산계획, 작업지시관리, 자재출고요청, 생산진도현황, WIP재고, 실적입력 키오스크, 통전검사 실적, 불량등록관리, 수리/재작업, OQC, SPC, 제품재고조회, 포장, 출하지시, 출하처리, 반품관리 등을 소개 흐름에 노출.
 - 검증: 로컬 Chrome + Playwright로 `docs/presentation/hanes-mes-introduction.html` 로드 확인. 슬라이드 12개, 본문 이미지 9개 참조 모두 로드, 모든 `.canvas` overflow X/Y 없음 확인.
+
+## 2026-06-11 21:20 Codex
+
+- 작업: `T-MAT-LOT-IQC-UID-SEPARATE` MAT_LOTS 시드 LOT와 IQC 이력 UID 중복 해소.
+- 원인: JSHANES에서 `MAT_LOTS.MAT_UID`와 `IQC_LOGS.MAT_UID`가 `VH1-RM260526-00007`, `VH1-RM260603-00003`, `VH1-RM260605-00002`, `VH1-RM260607-00001` 4개 UID로 겹쳤고, IQC 이력은 6건이라 LOT 화면에서 이미 검사된 LOT처럼 혼동될 수 있었다.
+- 조치: `apps/backend/src/migrations/2026-06-11_mat_lot_iqc_uid_separate.sql` 추가. IQC 이력은 유지하고 `MAT_LOTS`, `MAT_STOCKS`, `STOCK_TRANSACTIONS`의 재고/LOT 쪽 UID만 `MLT-RM260526-00007`, `MLT-RM260603-00003`, `MLT-RM260605-00002`, `MLT-RM260607-00001`로 변경했다.
+- 검증: oracle-db connector로 JSHANES 적용 및 재실행 성공. `OLD_INVENTORY_REFS=0`, `NEW_INVENTORY_REFS=15`, `MAT_LOT_IQC_OVERLAP=0`. `git diff --check -- apps/backend/src/migrations/2026-06-11_mat_lot_iqc_uid_separate.sql .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` 통과.
 
 ## 2026-06-11 12:27 Claude
 
