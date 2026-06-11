@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { BoxService } from './box.service';
 import { BoxMaster } from '../../../entities/box-master.entity';
@@ -150,6 +150,7 @@ describe('BoxService', () => {
     mockFgLabelRepo.find.mockResolvedValue([
       { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'ISSUED' } as FgLabel,
     ]);
+    mockBoxRepo.find.mockResolvedValue([]);
 
     await target.addSerial('BOX-001', { serials: ['FG-001'] } as any, 'C1', 'P1');
 
@@ -165,6 +166,79 @@ describe('BoxService', () => {
     expect(mockBoxRepo.update).toHaveBeenCalledWith(
       { boxNo: 'BOX-001', company: 'C1', plant: 'P1' },
       expect.objectContaining({ qty: 1 }),
+    );
+  });
+
+  it('addSerial rejects serials already packed in another box', async () => {
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-001',
+      itemCode: 'ITEM-001',
+      status: 'OPEN',
+      serialList: null,
+      company: 'C1',
+      plant: 'P1',
+    } as BoxMaster);
+    mockLotRepo.find.mockResolvedValue([]);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', packUnit: '10' } as PartMaster);
+    mockFgLabelRepo.find.mockResolvedValue([
+      { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'VISUAL_PASS' } as FgLabel,
+    ]);
+    mockBoxRepo.find.mockResolvedValue([
+      { boxNo: 'BOX-OTHER', serialList: JSON.stringify(['FG-001']) } as BoxMaster,
+    ]);
+
+    await expect(
+      target.addSerial('BOX-001', { serials: ['FG-001'] } as any, 'C1', 'P1'),
+    ).rejects.toThrow(ConflictException);
+    expect(mockBoxRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('create rejects serialList already packed in another box', async () => {
+    mockBoxRepo.findOne.mockResolvedValue(null);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+    mockBoxRepo.find.mockResolvedValue([
+      { boxNo: 'BOX-OTHER', serialList: JSON.stringify(['FG-001']) } as BoxMaster,
+    ]);
+
+    await expect(
+      target.create({ boxNo: 'BOX-001', itemCode: 'ITEM-001', serialList: ['FG-001'] } as any, 'C1', 'P1'),
+    ).rejects.toThrow(ConflictException);
+    expect(mockBoxRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('update rejects serialList already packed in another box', async () => {
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-001',
+      itemCode: 'ITEM-001',
+      status: 'OPEN',
+      serialList: null,
+    } as BoxMaster);
+    mockBoxRepo.find.mockResolvedValue([
+      { boxNo: 'BOX-OTHER', serialList: JSON.stringify(['FG-001']) } as BoxMaster,
+    ]);
+
+    await expect(
+      target.update('BOX-001', { serialList: ['FG-001'] } as any),
+    ).rejects.toThrow(ConflictException);
+    expect(mockBoxRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('cross-box guard ignores LIKE false positives via exact JSON match', async () => {
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-001',
+      itemCode: 'ITEM-001',
+      status: 'OPEN',
+      serialList: null,
+    } as BoxMaster);
+    mockBoxRepo.find.mockResolvedValue([
+      { boxNo: 'BOX-OTHER', serialList: JSON.stringify(['FG-0010']) } as BoxMaster,
+    ]);
+
+    await target.update('BOX-001', { serialList: ['FG-001'] } as any);
+
+    expect(mockBoxRepo.update).toHaveBeenCalledWith(
+      { boxNo: 'BOX-001' },
+      expect.objectContaining({ serialList: JSON.stringify(['FG-001']) }),
     );
   });
 

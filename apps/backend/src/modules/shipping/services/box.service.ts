@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, IsNull, In, Not, Repository } from 'typeorm';
+import { ILike, IsNull, In, Like, Not, Repository } from 'typeorm';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -53,6 +53,49 @@ export class BoxService {
       ...(company && { company }),
       ...(plant && { plant }),
     };
+  }
+
+  /**
+   * 교차 박스 중복 포장 방지: 다른 박스의 SERIAL_LIST에 이미 담긴 시리얼이 있으면 409.
+   * FG 라벨 상태는 박스 마감 전까지 바뀌지 않으므로(OPEN 박스 간 중복은 라벨 상태로 못 막음)
+   * SERIAL_LIST 자체를 검사한다. LIKE 후보 조회 → JSON 파싱 정확 비교로 오탐 제거.
+   */
+  private async assertSerialsNotPackedElsewhere(
+    serials: string[],
+    excludeBoxNo: string | null,
+    company?: string,
+    plant?: string,
+  ) {
+    if (serials.length === 0) return;
+
+    const candidates = await this.boxRepository.find({
+      where: serials.map((serial) => ({
+        serialList: Like(`%"${serial}"%`),
+        ...(excludeBoxNo ? { boxNo: Not(excludeBoxNo) } : {}),
+        ...this.tenantWhere(company, plant),
+      })),
+    });
+
+    const conflictBoxBySerial = new Map<string, string>();
+    for (const other of candidates) {
+      let otherSerials: string[];
+      try {
+        otherSerials = other.serialList ? JSON.parse(other.serialList) : [];
+      } catch {
+        this.logger.warn(`박스 ${other.boxNo} serialList 파싱 실패 - 교차 포장 검사 제외`);
+        continue;
+      }
+      for (const serial of serials) {
+        if (!conflictBoxBySerial.has(serial) && otherSerials.includes(serial)) {
+          conflictBoxBySerial.set(serial, other.boxNo);
+        }
+      }
+    }
+
+    if (conflictBoxBySerial.size > 0) {
+      const detail = [...conflictBoxBySerial].map(([serial, boxNo]) => `${serial}(${boxNo})`).join(', ');
+      throw new ConflictException(`이미 다른 박스에 포장된 시리얼입니다: ${detail}`);
+    }
   }
 
   private async nextOqcRequestNo() {
@@ -278,6 +321,10 @@ export class BoxService {
       throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
     }
 
+    if (dto.serialList && dto.serialList.length > 0) {
+      await this.assertSerialsNotPackedElsewhere(dto.serialList, boxNo, company, plant);
+    }
+
     const box = this.boxRepository.create({
       boxNo,
       itemCode: dto.itemCode,
@@ -301,6 +348,10 @@ export class BoxService {
       throw new BadRequestException(
         `박스 상태(${dto.status})는 직접 변경할 수 없습니다. 포장/재오픈/적재/출하 전용 API를 사용해 주세요.`,
       );
+    }
+
+    if (dto.serialList && dto.serialList.length > 0) {
+      await this.assertSerialsNotPackedElsewhere(dto.serialList, id, company, plant);
     }
 
     const updateData: Record<string, unknown> = {};
@@ -382,6 +433,8 @@ export class BoxService {
     if (invalidLabels.length > 0) {
       throw new BadRequestException(`검사 합격 FG만 포장할 수 있습니다: ${invalidLabels.join(', ')}`);
     }
+
+    await this.assertSerialsNotPackedElsewhere(dto.serials, id, company, plant);
 
     const packUnit = part?.packUnit ? parseInt(part.packUnit, 10) : 0;
     if (packUnit > 0 && existingSerials.length + dto.serials.length > packUnit) {
