@@ -8,7 +8,30 @@ Format:
 - T-000 | YYYY-MM-DD | owner | short result | evidence: JOURNAL heading or commit
 ```
 
+- T-TAB-KEEPALIVE-DUPE-PATH-KEY | 2026-06-11 | codex | `TabKeepAlive`가 중복 탭 path(`/dashboard`)를 배열 그대로 렌더해 React duplicate key 경고를 내던 문제 수정. `openPaths`를 순서 유지 `Set`으로 dedupe하고 구조 테스트 추가. focused tests, frontend tsc, `/dashboard` HTTP 200, diff check 통과 | evidence: JOURNAL 2026-06-11 codex
+
+- T-MAT-IQC-MODAL-NO-INITIAL-SCROLL | 2026-06-11 | codex | `/material/iqc` IQC 모달 내부 높이를 공통 Modal `75vh` content 제한에 맞춰 낮추고 상단/하단 padding을 더 압축해 하단 등록 버튼이 초기 화면에 보이도록 수정. 구조 테스트 4/4, frontend tsc, diff check, route HTTP 200 통과 | evidence: JOURNAL 2026-06-11 codex
+
+- T-MAT-IQC-MODAL-COMPACT-SCAN | 2026-06-11 | codex | `/material/iqc` IQC 검사결과 등록 모달을 full 크기와 상단 조밀 스캔/정보/보조입력 영역으로 재배치하고, 하단 시리얼 목록·검사항목 판정 카드를 compact/flex 높이로 조정. 구조 테스트 4/4, frontend tsc, diff check, route HTTP 200(72초 지연) 통과 | evidence: JOURNAL 2026-06-11 codex
+
+- T-MAT-PO-PANEL-COMPACT-ROWS | 2026-06-11 | codex | `/material/po` 우측 패널 품목 행에 compact input을 적용해 라벨/입력 높이/폰트/카드 padding을 축소. 구조 테스트 3건, frontend tsc, HTTP 200, diff check 통과 | evidence: JOURNAL 2026-06-11 codex
+
+- T-MAT-PO-PART-BULK-ADD | 2026-06-11 | codex | `/material/po` 품목추가 모달을 2xl/560px 그리드로 확대하고 PO 전용 다중선택 일괄 추가를 적용. `PartSearchModal`은 opt-in props로 확장해 기존 단건 선택 사용처 유지. 구조 테스트 2건, frontend tsc, HTTP 200, diff check 통과 | evidence: JOURNAL 2026-06-11 codex
+
+- T-MAT-PO-ITEMLIST-FLEX-HEIGHT | 2026-06-11 | codex | `/material/po` 우측 패널 품목 목록의 `max-h-[320px]` 고정 높이를 제거하고 flex 기반 남은 높이 채움으로 변경. 구조 테스트 RED→GREEN, frontend tsc, HTTP 200, diff check 통과 | evidence: JOURNAL 2026-06-11 codex
+
+- T-DATAGRID-FILTER-AUTOCOMPLETE-OFF | 2026-06-10 | codex | DataGrid 컬럼 필터 입력의 브라우저 자동완성 이력 표시를 비활성화. 텍스트/멀티 검색/숫자 조건/날짜 from-to 필터 input에 `autoComplete="off"` 적용, 전역 Input은 미변경. node 구조 테스트와 frontend tsc, diff check 통과 | evidence: JOURNAL 2026-06-10 codex
+
 ## Completed
+
+- T-I18N-MOJIBAKE-FIX | 2026-06-11 | claude | locale 4파일 전수 스캔으로 깨진 값 6건 복원(master.part.itemCode, master.bom.childItem × ko/zh/vi). JSON 유효·BOM 없음 검증 | evidence: JOURNAL 2026-06-11 T-I18N-MOJIBAKE-FIX
+- T-PART-PRODUCT-TYPE-COMCODE | 2026-06-11 | claude | 품목관리 제품유형이 코드마스터에 없던 문제 해소 — COM_CODES PRODUCT_TYPE 16코드 시드(JSHANES) + 화면 useComCode 전환(하드코딩 제거) + i18n comCode.PRODUCT_TYPE 이전. DB 16건·API·tsc 0·JSON 4파일 검증 | evidence: JOURNAL 2026-06-11 T-PART-PRODUCT-TYPE-COMCODE
+- T-COMCODE-GROUP-I18N | 2026-06-11 | claude | /master/code 좌측 그룹 설명 영문/한글 혼재 수정 — comCodeGroup 번역 키 43건 누락이 원인, ko/en/zh/vi 4파일 보강(코드 무변경). JSON 유효·BOM 없음·DB 117그룹 누락 0건 검증 | evidence: JOURNAL 2026-06-11 T-COMCODE-GROUP-I18N
+
+- T-MAT-LABEL-PRINT-IFRAME-MFG | 2026-06-10 | claude | 라벨 인쇄 무반응(팝업 차단) → 숨김 iframe 인쇄 전환 + lot-split/lot-merge 라벨 제조사 표시(mfgPartnerCode→MFG 파트너명, 백엔드 무변경). 구조테스트 RED→GREEN, 프론트 tsc 0, 실API 확인 | evidence: JOURNAL 2026-06-10 T-MAT-LABEL-PRINT-IFRAME-MFG
+- T-MAT-LABEL-REPRINT-MFG | 2026-06-10 | claude | 라벨 재발행(arrival-result) 라벨 제조사 `-` 인쇄 수정 — MatLabelPreviewModal에 mfgPartnerLabel prop 누락이 원인, mfgPartnerName 전달. 프론트 tsc 0 | evidence: JOURNAL 2026-06-10 T-MAT-LABEL-REPRINT-MFG
+- T-MAT-LABEL-STAMP-REMOVE | 2026-06-10 | claude | 자재라벨(80x40) 우측 하단 원형 검사필 도장 영역 제거(MaterialArrivalLabel 공유 컴포넌트, 전 라벨 화면 반영). 프론트 tsc 0 | evidence: JOURNAL 2026-06-10 T-MAT-LABEL-STAMP-REMOVE
+- T-MAT-LABEL-REPRINT-MULTIPAGE | 2026-06-10 | claude | 라벨 재발행 인쇄 시 N장 중 1장만 출력되던 문제 수정. 모달 내 window.print(조상 클리핑)→새 창 인쇄 패턴 전환, arrival/arrival-result/lot-merge/lot-split 공통 해결. 구조테스트 RED→GREEN + 프론트 tsc 0 | evidence: JOURNAL 2026-06-10 T-MAT-LABEL-REPRINT-MULTIPAGE
 
 - T-SHIP-ORDER-ITEM-PAYLOAD | 2026-06-10 | codex | `/shipping/order` 생성/수정 모달에 완제품 품목 검색과 수량 입력을 추가해 `POST /shipping/orders` payload에 `items`를 포함하도록 수정. 빈 품목 저장 버튼은 비활성화 | evidence: JOURNAL 2026-06-10 17:33 codex
 - T-PROD-RESULT-WORKER-AVATAR-FIX | 2026-06-10 | codex | `/production/result` 작업자명 누락 행에서 `WorkerAvatar name.charAt(0)` 런타임 오류 수정. 공통 fallback 유틸과 생산실적 worker relation/workerId 평탄화 적용. RED 확인 후 node:test 2건, 프론트 tsc, HTTP 200, diff check 통과 | evidence: JOURNAL 2026-06-10 codex
@@ -70,3 +93,7 @@ Format:
 - T-ID-PAYLOAD-SCAN | 2026-06-10 | codex | `.id` payload 누락 유형을 제품보류/고객PO/설비/PO입하/외주처/인터페이스/OQC/수불/팔레트까지 점검하고 목록 응답 `id` 계약 보강. focused Jest 156/156, backend/frontend tsc, diff check 통과 | evidence: JOURNAL 2026-06-10 codex
 - T-INSP-TERMINAL-RESULT | 2026-06-10 | codex | `/inspection/terminal-result` 단자검사 결과등록 페이지와 좌측 메뉴 추가. 기존 `/inspection/result` 워크플로우를 공통화하고 단자검사는 `INSPECT_TYPE=TERMINAL`로 저장/조회 분리. JSHANES 메뉴/권한 seed 적용, focused Jest 13/13, node:test 3/3, 백/프론트 tsc, HTTP 200 통과 | evidence: JOURNAL 2026-06-10 codex
 - T-PROD-ISSUE-STOCK-ENDPOINT | 2026-06-10 | codex | `/product/issue` 출고등록 패널의 제품 재고조회 API를 백엔드 실제 route `/inventory/product/stocks`로 수정해 단수 `/inventory/product/stock` 404 해소. node:test 1/1, frontend tsc, route/API 상태 확인 통과 | evidence: JOURNAL 2026-06-10 codex
+- T-MASTER-CODE-I18N-SEARCH | 2026-06-10 | codex | `/master/code` 좌측 그룹 검색이 현재 언어의 공통코드 표시값으로 동작하도록 보정. `GET /master/com-codes/groups`가 `detailCodes`와 언어별 검색 텍스트를 내려주고, 프론트는 `comCode.GROUP.CODE` 번역값 및 DB `CODE_NAME/ATTR1/ATTR2/ATTR3` 검색 텍스트를 현재 언어 기준으로 필터링한다. focused Jest 19/19, backend tsc, diff check 통과. frontend 전체 tsc는 기존 `/master/part` dirty 타입 오류로 차단, `/master/code` 런타임 HTTP는 현 dev 서버 응답 타임아웃으로 미확인 | evidence: JOURNAL 2026-06-10 codex
+- T-MAT-IQC-SERIAL-SCAN-PANEL | 2026-06-10 | codex | `/material/iqc` 검사결과 등록 모달을 시리얼 스캔 우선 흐름으로 변경. 스캔한 시리얼은 좌측 목록에 쌓이고, 선택한 시리얼의 검사항목 판정은 우측에 표시되며 저장 시 시리얼별 판정 상세를 `details` JSON으로 전송한다. node 구조 테스트 2/2, frontend tsc, route HTTP 200 통과 | evidence: JOURNAL 2026-06-10 codex
+- T-LAYOUT-MENU-CLICK-NAV | 2026-06-10 | codex | 사이드바 메뉴 클릭 시 탭 추가와 URL 라우팅을 같은 핸들러에서 수행하도록 보강. `SidebarMenu`가 `addTab()` 후 `router.push(menuItem.path)`를 호출해 탭만 생기고 기존 페이지에 남는 상태를 방지. node 구조 테스트 1/1, frontend tsc, CDP 브라우저 재현 통과 | evidence: JOURNAL 2026-06-10 codex
+- T-MAT-ARRIVAL-RESULT-MFG-INSTANT | 2026-06-10 | codex | `/material/arrival-result` 우측 제조사 변경 후 `selected`와 좌측 `rows` 상태를 즉시 갱신하도록 수정. 저장 후 새로고침해야 보이던 제조사명 반영 지연 해소. node 구조 테스트 1/1, frontend tsc, API 원복 확인 통과 | evidence: JOURNAL 2026-06-10 codex

@@ -2,10 +2,20 @@
 
 ## Last Update
 
-2026-06-10 17:33
+2026-06-11 12:13
 
 ## Latest
 
+- `T-TAB-KEEPALIVE-DUPE-PATH-KEY` 완료. 사용자 제보 React 오류 `Encountered two children with the same key, /dashboard` 원인은 `TabKeepAlive` 성능 변경에서 `openPaths`가 배열로 바뀌며 `tabStore.tabs`의 중복 path가 그대로 `key={path}`에 전달된 것. `openPaths`를 `Array.from(new Set(...))`로 dedupe해 탭 순서는 유지하고 중복 key를 제거했다. `T-TAB-KEEPALIVE-PERF`의 memo/LRU 변경은 보존. 검증: 신규 구조 테스트 RED→GREEN, 기존 sidebar nav 구조 테스트, 프론트 tsc, `/dashboard` HTTP 200, diff check 통과. 참고: `TabKeepAlive.tsx`는 claude active lock 파일이라 이 최소 보정 사실을 JOURNAL에 남김.
+- `T-MAT-IQC-MODAL-NO-INITIAL-SCROLL` 완료. `/material/iqc` IQC 모달에 스크롤이 생겨 하단 `시리얼별 등록` 버튼이 초기 화면에서 안 보이던 원인은 공통 `Modal` content가 `max-h-[75vh]`인데 내부 컨테이너가 `90vh`+`min-h-[620px]` 기준이었던 것. 내부 높이를 `h-[calc(75vh-32px)] max-h-[620px]`로 낮추고 `min-h` 제거, 상단/하단 padding을 추가로 줄였다. 검증: compact 구조 테스트, 기존 시리얼 플로우 구조 테스트, 프론트 tsc, diff check, `/material/iqc` HTTP 200 통과.
+- `T-MAT-IQC-MODAL-COMPACT-SCAN` 완료. `/material/iqc` IQC 검사결과 등록 모달을 `full` 크기로 확장하고, 입하정보/바코드 스캔/검사자/비고/검사분류/샘플수량/성적서 선택을 상단 조밀 영역으로 합쳤다. 하단은 flex 기반으로 남은 높이를 채우며 시리얼 목록과 검사항목 표의 폰트/행높이/버튼을 compact 처리했다. 검증: compact 구조 테스트 RED→GREEN, 기존 시리얼 플로우 구조 테스트, 프론트 tsc, diff check 통과. `/material/iqc`는 인증 영역 응답 지연 중 72초 후 HTTP 200 확인.
+- `T-MAT-PO-PANEL-COMPACT-ROWS` 완료. `/material/po` 우측 패널 공간 확보를 위해 품목 행 내부 입력만 compact 렌더링으로 바꿨다. `CompactItemInput`은 라벨 `text-[10px]`, 입력 `h-7 text-xs`를 사용하고, 품목 카드 padding/radius/필드 gap/품목명 글꼴도 줄였다. 상단 PO 헤더 입력은 기존 공통 `Input` 유지. 검증: density 구조 테스트 RED→GREEN, 기존 bulk/layout 테스트, 프론트 tsc, `/material/po` HTTP 200, diff check 통과.
+- `T-MAT-PO-PART-BULK-ADD` 완료. `/material/po` 우측 패널 품목추가 모달을 크게 하고 다중선택 일괄 추가를 지원했다. `PartSearchModal`은 기본 단건 선택 동작을 유지하면서 opt-in `multiSelect`/`onSelectMany` props를 추가했고, 다중선택 모드에서 `2xl` 모달, 560px 그리드, 체크박스 선택/전체선택, footer의 선택 건수와 `선택 품목 추가` 버튼을 제공한다. PO 패널은 선택된 신규 품목들을 한 번에 라인으로 추가하며 이미 추가된 품목코드는 건너뛴다. 검증: 구조 테스트 2건 RED→GREEN, 기존 레이아웃 테스트, 프론트 tsc, `/material/po` HTTP 200, diff check 통과.
+- `T-MAT-PO-ITEMLIST-FLEX-HEIGHT` 완료. `/material/po` 우측 `PoFormPanel` 품목 목록이 `max-h-[320px]`로 고정돼 고해상도에서 하단 공백이 생기던 원인을 수정했다. 사용자 승인으로 기존 `T-MAT-RECV-FIXES` 파일 범위 충돌을 넘겨 진행했고, 본문/품목 섹션을 flex 기반으로 전환해 품목 목록이 남은 높이를 채우고 내부에서만 스크롤되도록 했다. 검증: 구조 테스트 RED→GREEN, 프론트 tsc, `/material/po` HTTP 200, diff check 통과.
+- `T-DATAGRID-FILTER-AUTOCOMPLETE-OFF` 완료. DataGrid 컬럼 필터 입력에서 브라우저가 이전 입력값을 자동완성으로 띄우는 것을 막기 위해 `ColumnFilterInput`, `TextFilterPopup`, `NumberFilterPopup`, `DateFilterPopup`의 필터 input에 `autoComplete="off"`를 적용했다. 텍스트 검색 input은 `autoCorrect="off"`, `spellCheck={false}`도 같이 적용했다. 전역 `Input`은 로그인/스캔/폼 영향 가능성이 있어 변경하지 않았다. 검증: node 구조 테스트 RED→GREEN, 프론트 tsc, diff check 통과.
+- `T-MAT-ARRIVAL-RESULT-MFG-INSTANT` 완료. `/material/arrival-result` 제조사 변경 저장 후 `loadSerials(selected)`만 호출해 우측/좌측 row 제조사 상태가 기존 값으로 남던 문제를 수정했다. PATCH 성공 직후 `selected`와 `rows`의 해당 row를 새 `mfgPartnerCode/mfgPartnerName`으로 갱신한다. 검증: node 구조 테스트 1/1, 프론트 tsc, API 테스트 후 `R26061000003/MAT_CABLE1` 제조사 `M004/대성하이텍` 원복 확인. CDP UI 검증은 로그인 플로우 타임아웃으로 미완료.
+- `T-LAYOUT-MENU-CLICK-NAV` 완료. 사이드바 메뉴 클릭 후 탭만 생기고 페이지가 열리지 않는 조건을 CDP로 재현했고, 원인은 탭 추가는 직접 수행하지만 라우팅은 `Link` 기본 동작에만 의존하던 구조였다. `SidebarMenu.handleMenuClick()`에서 `addTab()` 후 `router.push(menuItem.path)`를 명시 호출하도록 보강했다. 검증: node 구조 테스트 1/1, 프론트 tsc, CDP에서 `/dashboard` → `/material/iqc` 이동 및 화면 표시 확인.
+- `T-MASTER-CODE-I18N-SEARCH` 완료. `/master/code` 좌측 검색이 현재 언어의 공통코드 표시값으로 동작하도록 보정했다. 백엔드 `GET /master/com-codes/groups`는 `detailCodes`와 언어별 검색 텍스트(`CODE_NAME`, `ATTR1`, `ATTR2`, `ATTR3`)를 함께 반환하고, 프론트 `GroupList`는 현재 `i18n.language` 기준으로 `comCode.GROUP.CODE` 번역값과 DB 검색 텍스트를 모두 검색한다. 검증: RED 확인 후 focused Jest 19/19, backend tsc, diff check 통과. frontend 전체 tsc는 기존 `/master/part` dirty 타입 오류(`PRODUCT_TYPE_OPTIONS` 누락)로 실패했고, `/master/code` HTTP 확인은 현재 dev 서버 응답 60초 타임아웃으로 미완료.
 - `T-SHIP-ORDER-ITEM-PAYLOAD` 완료. `/shipping/order` 등록 화면이 `POST /shipping/orders`에 `items` 없이 header form만 보내서 백엔드 DTO가 `items must be an array` 400을 반환하던 문제를 수정했다. 모달에 완제품 품목 검색/수량/비고 입력을 추가했고, 저장 payload는 `items: [{ itemCode, orderQty, remark }]`를 포함한다. 품목이 없거나 수량이 1 미만이면 저장 버튼은 비활성화된다. 검증: node 구조 테스트, 프론트 tsc, diff check, JSHANES/API 가역 생성삭제(`SO-CODEX-260610-173104`, 잔여 0), 브라우저 `/shipping/order` 렌더 및 모달 품목 섹션/저장 비활성 확인.
 - `T-PROD-ISSUE-STOCK-ENDPOINT` 완료. `/product/issue` 출고등록 패널이 제품 재고조회 시 단수 `/inventory/product/stock`을 호출해 404가 발생했다. 백엔드 실제 route는 `@Get('product/stocks')`라 프론트 호출을 `/inventory/product/stocks`로 변경했다. 검증: RED 확인 후 node:test 1/1, 프론트 tsc, 복수 route 401(인증단계 도달)/단수 route 404, `/product/issue` 200, diff check 통과.
 - `T-INSP-TERMINAL-RESULT` 완료. `/inspection/terminal-result` 단자검사 결과등록 페이지와 좌측 메뉴를 추가했다. 기존 `/inspection/result` 2패널 워크플로우는 `InspectionResultWorkflow`로 공통화했고, 기존 통전검사는 `CONTINUITY`, 단자검사는 `TERMINAL`을 `InspectPanel`에 전달한다. 백엔드는 `ContinuityInspectDto.inspectType`을 받아 `INSPECT_RESULTS.INSPECT_TYPE`에 저장하고, 통계/라벨 조회도 `inspectType` query로 분리한다. JSHANES에는 `INSP_TERMINAL_RESULT` 메뉴 배치와 `MANAGER`/`OPERATOR` 권한을 적용했다. 검증: RED 확인 후 focused Jest 13/13, node:test 3/3, 백/프론트 tsc, JSON parse, scoped diff check, `/inspection/terminal-result` 200 및 기존 `/inspection/result` 200 통과.
@@ -140,6 +150,7 @@
 
 ## Next
 
+- `T-MAT-IQC-SERIAL-SCAN-PANEL` 완료. `/material/iqc` IQC 등록 모달은 시리얼 스캔 입력 → 좌측 스캔 시리얼 목록 → 우측 선택 시리얼 검사항목 판정 구조로 변경했다. 저장 payload는 `details.type=SERIAL_INSPECTION` 및 시리얼별 검사항목 판정 JSON이다. node 구조 테스트 2/2, 프론트 tsc, route HTTP 200 통과.
 - `T-PROD-MONTHLY-ERP-LABEL`은 사용자 요청으로 좌측 메뉴 `월간생산계획`을 `ERP생산계획`으로 바꾸려 했으나, `apps/frontend/src/locales/*`와 `apps/frontend/src/config/menuConfig.ts`가 `T-MAT-CONCESSION-RECV` active lock 범위라 수정하지 않고 `BLOCKED` 처리했다. 사용자 허가 또는 lock owner handoff 후 `apps/frontend/src/locales/ko.json`의 `menu.production.monthlyPlan` 값만 변경하면 된다.
 - `T-MAT-HOLD-MATUID-FIX` 완료. `/material/hold`의 보류/해제 POST 본문이 `selectedLot.id`를 사용해 `matUid`가 빠지던 원인을 `selectedLot.matUid` 전송으로 수정했다. 프론트 tsc와 diff check 통과.
 - `T-MASTER-API-DEEP-QA-FIX` 완료. 기준정보 API 세부 재검증 미통과 3건은 수정 및 재검증 완료했다.

@@ -4,10 +4,9 @@ Before editing, add a lock entry. Remove or mark it released when done.
 
 ## Active Locks
 
-- T-PART-PRODUCT-TYPE-COMCODE (claude, 2026-06-11): 품목관리 제품유형을 코드마스터(PRODUCT_TYPE) 기반으로 전환.
-  파일: apps/backend/src/migrations/2026-06-11_product_type_com_codes.sql, apps/frontend/src/app/(authenticated)/master/part/{page.tsx,types.ts,components/PartFormPanel.tsx,components/PartFormModal.tsx}, apps/frontend/src/locales/*(comCode.PRODUCT_TYPE/comCodeGroup.PRODUCT_TYPE 추가 + master.part.productTypeOptions 이전)
+- T-TAB-KEEPALIVE-PERF (claude, 2026-06-11): keep-alive 도입 후 메뉴 클릭(탭 추가)이 느려진 성능 회귀 수정. 원인=새 탭 추가 시 tabs 변경→TabKeepAlive 리렌더→열린 모든 페이지(<Comp/> memo 부재) 동시 리렌더 폭포 + 최대10 동시 마운트 누적. 수정=페이지 셀 React.memo 격리 + LRU 마운트 한도.
+  파일: apps/frontend/src/components/layout/TabKeepAlive.tsx
   상태: IN_PROGRESS
-  notes: COM_CODES에 PRODUCT_TYPE 그룹 부재 — 화면은 프론트 하드코딩(PRODUCT_TYPE_VALUES)+i18n으로만 동작해 코드마스터와 불일치. 16코드 시드(JSHANES 40/1000) + useComCodeOptions/Map 전환. 백엔드 DTO IsIn(@harness/shared)은 유지(값 동일).
 
 - T-KIOSK-DEFECT-DOUBLE-COUNT (claude, 2026-06-10): 입력키오스크 불량입력 defectQty 이중 카운트 수정 + quality/defect 화면 전면 정합화.
   파일: apps/backend/src/modules/production/dto/prod-result.dto.ts, apps/backend/src/modules/production/services/prod-result.service.ts(+spec), apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ProductionInputBar.tsx, apps/backend/src/modules/quality/defects/{dto/defect-log.dto.ts,services/defect-log.service.ts(+spec),defects.module.ts}, apps/frontend/src/app/(authenticated)/quality/defect/page.tsx, apps/frontend/src/locales/*
@@ -33,6 +32,8 @@ Before editing, add a lock entry. Remove or mark it released when done.
   잔여(미착수): 라인→공정설비 지정.
 
 ## History
+
+- T-PART-PRODUCT-TYPE-COMCODE (claude, 2026-06-11): 품목 제품유형 코드마스터 불일치 — COM_CODES PRODUCT_TYPE 그룹 부재가 원인. 16코드 시드(JSHANES)+화면 useComCode 전환(하드코딩 제거)+i18n comCode.PRODUCT_TYPE 이전. DB 16건·all-active API·프론트 tsc 0·JSON 4파일 검증 후 lock 해제.
 
 - T-SQLVIEW-SWEEP (claude, 2026-06-11): DataGrid "SQL 조회문" 옵션 공통화 — 누락 그리드 19곳에 sqlQuery 추가(검색/선택 모달 5개는 의도적 제외). 도메인 엔티티 테이블로 FROM 지정: arrival-result/IqcTable/ArrivalTable=MAT_ARRIVALS, shelf-life류=MAT_LOTS, Receiving/BarcodeScan=MAT_RECEIVINGS, Issue=MAT_ISSUES, Request=MAT_ISSUE_REQUESTS, consumables=CONSUMABLE_STOCKS/LOGS, Process=PROCESS_MASTERS, ProdLine=PROD_LINE_MASTERS, Routing=PROCESS_MAPS. 일회성 codegen으로 일괄 삽입(스크립트는 삭제), 기존 132곳과 동일 형식. 프론트 tsc 0. 커밋 1c2e9da. 다른 세션 material/* 동시변경과 파일 분리 커밋. (iqc는 IqcTable이 DataGrid 사용했음 — 커스텀 아님)
 

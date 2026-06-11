@@ -5,6 +5,18 @@
 
 ---
 
+## ✅ 완료: 자재라벨 인쇄/표시 일괄 수정 (2026-06-10, 미커밋)
+
+라벨 재발행 관련 사용자 연속 요청 4건. 모두 `MatLabelPreviewModal`(공유: arrival/arrival-result/lot-merge/lot-split) 중심.
+
+- **N장 중 1장만 인쇄(T-MAT-LABEL-REPRINT-MULTIPAGE)**: 모달 DOM `window.print()`가 Modal 조상(`body overflow:hidden`, `fixed inset-0`, `overflow-y-auto max-h-[75vh]`)에 클리핑되는 게 원인. 새 창 인쇄로 1차 수정.
+- **인쇄 버튼 무반응(T-MAT-LABEL-PRINT-IFRAME-MFG)**: 새 창(window.open) 인쇄가 팝업 차단 시 조용히 무반응 → **숨김 iframe 인쇄로 최종 교체**(doc.write→contentWindow.print, afterprint 시 iframe 제거). receive-label/consumables의 window.open 패턴도 팝업 차단 환경에선 같은 무반응 가능 — 증상 보고 시 동일 iframe 패턴 적용 후보.
+- **라벨 원형(검사필 도장 영역) 제거(T-MAT-LABEL-STAMP-REMOVE)**: `MaterialArrivalLabel.tsx` 우측 하단 빈 원형 div 삭제. 품명 영역 `right:29mm` 여백은 유지(범위 외).
+- **라벨 제조사 표시**: arrival-result는 `mfgPartnerLabel` prop 누락 보완(T-MAT-LABEL-REPRINT-MFG). lot-split/lot-merge는 목록/by-barcode 응답에 `mfgPartnerCode` 이미 포함(`...lot` 평탄화, 실API 확인) → 프론트에서 `usePartnerOptions("MFG")`로 이름 해석해 전달, 백엔드 무변경.
+- 검증: `mat-label-preview-modal-print.structure.test.mjs`(iframe 패턴+window.open 금지) GREEN, 프론트 tsc 0. **실프린터(Zebra) 다장 출력은 사용자 확인 필요**. Zebra 운영 안정화가 필요하면 재발행 모달에 ZPL 전송 모드(useZebraPrinter+라벨템플릿) 추가 후보.
+
+---
+
 ## ✅ 완료: 2026-06-10 자재 도메인 일괄 개선 (커밋 5건: bf4599c·826f845·d36a558·ec4dc1a + 이전 c445c2c)
 
 사용자 연속 요청 12건 처리. 모두 tsc 0·관련 jest 통과. **codex 동시작업(hold/inventory/shipping/equipment) 파일은 미접촉**.
