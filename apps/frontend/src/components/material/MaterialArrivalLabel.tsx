@@ -202,28 +202,6 @@ export default function MaterialArrivalLabel({ item }: MaterialArrivalLabelProps
       <div
         style={{
           position: 'absolute',
-          right: '4.6mm',
-          top: '14.6mm',
-          width: '22.2mm',
-          height: '22.2mm',
-          borderRadius: '50%',
-          border: '1px solid #e5e7eb',
-          background: '#f8fafc',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          color: '#e2531a',
-          fontSize: '3.2mm',
-          lineHeight: '4.1mm',
-          fontStyle: 'italic',
-        }}
-      />
-
-
-      <div
-        style={{
-          position: 'absolute',
           left: '2.7mm',
           right: '29mm',
           bottom: '2.2mm',

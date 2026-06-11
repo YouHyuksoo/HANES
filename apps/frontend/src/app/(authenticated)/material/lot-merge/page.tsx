@@ -18,6 +18,7 @@ import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
 
@@ -32,6 +33,7 @@ interface MergeableLot {
   arrivalNo?: string | null;
   expireDate?: string;
   vendor?: string;
+  mfgPartnerCode?: string | null;
 }
 
 export default function LotMergePage() {
@@ -54,7 +56,17 @@ export default function LotMergePage() {
   // 병합 결과 라벨
   const [labelData, setLabelData] = useState<PoLineReceiptResponse | null>(null);
   const [labelItemName, setLabelItemName] = useState("");
+  const [labelMfgName, setLabelMfgName] = useState("");
   const [isLabelOpen, setIsLabelOpen] = useState(false);
+
+  const { options: mfgPartnerOptions } = usePartnerOptions("MFG");
+  const resolveMfgPartnerName = useCallback((partnerCode?: string | null) => {
+    if (!partnerCode) return "";
+    const option = mfgPartnerOptions.find((o) => o.value === partnerCode);
+    if (!option) return partnerCode;
+    const codePrefix = `${partnerCode} - `;
+    return option.label.startsWith(codePrefix) ? option.label.slice(codePrefix.length) : option.label;
+  }, [mfgPartnerOptions]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -137,6 +149,8 @@ export default function LotMergePage() {
       if (result?.label) {
         setLabelData(result.label);
         setLabelItemName(result.itemName ?? scanned[0]?.itemName ?? "");
+        // 병합은 동일 입하번호 LOT만 허용 → 첫 스캔 LOT의 제조사를 계승
+        setLabelMfgName(resolveMfgPartnerName(scanned[0]?.mfgPartnerCode));
         setIsLabelOpen(true);
       }
       setScanned([]);
@@ -146,7 +160,7 @@ export default function LotMergePage() {
     } finally {
       setMerging(false);
     }
-  }, [canMerge, scanned, fetchData, t]);
+  }, [canMerge, scanned, fetchData, resolveMfgPartnerName, t]);
 
   const columns = useMemo<ColumnDef<MergeableLot>[]>(() => [
     {
@@ -299,6 +313,7 @@ export default function LotMergePage() {
         isOpen={isLabelOpen}
         data={labelData}
         itemName={labelItemName}
+        mfgPartnerLabel={labelMfgName}
         onClose={() => setIsLabelOpen(false)}
       />
     </div>
