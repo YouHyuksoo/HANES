@@ -60,6 +60,10 @@ export default function MaterialIssuingPage() {
     if (!error) return null;
     if (error === "NOT_IN_BOM") return t("pda.issuing.notInBom");
     if (error === "JOB_ORDER_NOT_FOUND") return t("pda.scan.noResult");
+    if (error === "BOM_NOT_FOUND") return t("pda.issuing.bomNotFound");
+    if (error === "DUPLICATE_LOT") return t("pda.issuing.duplicateLot");
+    if (error === "LOT_DEPLETED") return t("pda.issuing.lotDepleted");
+    if (error === "NO_SCANNED_LOTS") return t("pda.issuing.noScannedLots");
     return error;
   })();
 
@@ -155,7 +159,7 @@ export default function MaterialIssuingPage() {
                 {item.orderNo}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {item.partCode} · {item.partName}
+                {item.itemCode} · {item.itemName}
               </p>
             </div>
             <div className="text-right">

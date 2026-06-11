@@ -49,7 +49,7 @@ export function ConfirmPhase({
           {jobOrder.orderNo}
         </p>
         <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
-          {jobOrder.partCode} · {jobOrder.partName}
+          {jobOrder.itemCode} · {jobOrder.itemName}
         </p>
       </div>
 

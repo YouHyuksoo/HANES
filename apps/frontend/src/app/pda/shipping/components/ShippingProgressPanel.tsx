@@ -63,11 +63,6 @@ export function ShippingProgressPanel({
                 <span className="text-xs font-mono text-slate-700 dark:text-slate-300 truncate">
                   {item.boxNo}
                 </span>
-                {item.fromPallet && (
-                  <span className="text-xs text-blue-500 dark:text-blue-400 flex-shrink-0">
-                    ({item.fromPallet})
-                  </span>
-                )}
               </div>
               <span className="text-xs font-medium text-slate-600 dark:text-slate-400 flex-shrink-0 ml-2">
                 {item.qty}

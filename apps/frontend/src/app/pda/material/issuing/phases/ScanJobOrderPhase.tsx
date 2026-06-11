@@ -16,7 +16,7 @@ import type { IssueType } from "@/hooks/pda/useMatIssuingScan";
 
 const ISSUE_TYPE_OPTIONS: { value: IssueType; labelKey: string }[] = [
   { value: "PRODUCTION", labelKey: "pda.issuing.production" },
-  { value: "TRANSFER",   labelKey: "pda.issuing.transfer" },
+  { value: "SAMPLE",     labelKey: "pda.issuing.sample" },
   { value: "RETURN",     labelKey: "pda.issuing.return" },
 ];
 

@@ -41,8 +41,6 @@ export interface ScannedShipItem {
   itemCode: string;
   /** 수량 */
   qty: number;
-  /** 팔레트에서 일괄 추가된 경우 팔레트 번호 */
-  fromPallet?: string;
 }
 
 /** 작업자 정보 */
@@ -59,18 +57,6 @@ export interface ShipHistoryItem {
   scannedQty: number;
   workerName: string;
   timestamp: string;
-}
-
-/** 팔레트 박스 목록 API 응답 */
-export interface PalletBoxesResponse {
-  palletNo: string;
-  status: string;
-  boxes: Array<{
-    boxNo: string;
-    itemCode: string;
-    qty: number;
-    status: string;
-  }>;
 }
 
 /** 박스 단건 API 응답 */

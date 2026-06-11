@@ -7,8 +7,8 @@
  * 초보자 가이드:
  * Phase 1 (SCAN_SHIPMENT_ORDER): 출하지시 바코드 스캔 → 출하지시 정보 로드
  * Phase 2 (SCAN_WORKER): 작업자 QR 스캔 → 작업자 정보 저장
- * Phase 3 (SCAN_PRODUCT): 제품 박스/팔레트 반복 스캔 → 진행률 표시 → 출하확인
- * - 팔레트 바코드(PLT- 접두사): 하위 박스 일괄 추가
+ * Phase 3 (SCAN_PRODUCT): 제품 박스 반복 스캔 → 진행률 표시 → 출하확인
+ * - 팔레트 바코드(PLT 접두사): 미지원 안내 — 팔레트 출하는 웹 출하확정 화면 사용
  * - 부분출하 허용: 전량 미완료 상태에서도 확인 버튼 활성화
  */
 import { useCallback, useMemo } from "react";
@@ -86,6 +86,8 @@ export default function ShippingPage() {
         return t("pda.shipping.orderNotFound");
       case "SHIP_FAILED":
         return t("pda.shipping.shipFailed");
+      case "PALLET_NOT_SUPPORTED":
+        return t("pda.shipping.palletNotSupported");
       default:
         return error;
     }

@@ -5,9 +5,11 @@
  * 초보자 가이드:
  * Phase 1 (SCAN_SHIPMENT_ORDER): 출하지시 바코드 → GET /shipping/orders/:code (status CONFIRMED만 허용)
  * Phase 2 (SCAN_WORKER): 작업자 QR → GET /master/workers/by-qr/:qr → Phase 3 전환
- * Phase 3 (SCAN_PRODUCT): 박스/팔레트 반복 스캔 — 박스 1건마다 즉시 출하 처리
- *   - PLT- 접두사: GET /shipping/pallets/barcode/:barcode/boxes → 하위 박스 일괄 처리
- *   - 박스마다 POST /shipping/orders/:shipOrderNo/ship-box { boxNo, workerId? }
+ * Phase 3 (SCAN_PRODUCT): 박스 반복 스캔 — 박스 1건마다 즉시 출하 처리
+ *   - 박스마다 POST /shipping/orders/:shipOrderNo/ship-box { boxNo, workerId? } (웹과 동일 계약)
+ *   - 팔레트 바코드(PLT 접두사): 차단(PALLET_NOT_SUPPORTED) — 백엔드 shipBox()가
+ *     팔레트 적재 박스를 이중 차감 방지로 거부하므로, 팔레트 단위 출하는
+ *     웹 출하확정(shipment mark-shipped) 경로를 사용해야 한다.
  *   - 중복(DUPLICATE) → 차단, 서버 검증 실패(SHIP_FAILED)
  * 출하확인: 스캔 단위로 즉시 출하되므로 배치 확인 없음 (handleConfirmShip은 호환용 no-op)
  *
@@ -22,7 +24,6 @@ import type {
   ScannedShipItem,
   WorkerInfo,
   ShipHistoryItem,
-  PalletBoxesResponse,
   WorkerQrResponse,
   UseShippingScanReturn,
 } from "./useShippingScan.types";
@@ -38,9 +39,9 @@ export type {
 
 // ── 내부 헬퍼 ─────────────────────────────────────────
 
-/** PLT- 접두사로 팔레트 여부 판단 */
+/** PLT 접두사로 팔레트 여부 판단 (PLT-, PLT2606... 등 변형 포함) */
 const isPalletBarcode = (barcode: string) =>
-  barcode.toUpperCase().startsWith("PLT-");
+  barcode.toUpperCase().startsWith("PLT");
 
 /** API 에러 메시지 추출 */
 const extractErrMsg = (err: unknown, fallback: string): string =>
@@ -152,57 +153,52 @@ export function useShippingScan(): UseShippingScanReturn {
       setIsScanning(true);
       setError(null);
       try {
-        // 팔레트면 하위 박스 목록으로 확장, 아니면 박스 1건
-        let boxes: Array<{ boxNo: string; fromPallet?: string }> = [];
+        // 팔레트 출하는 shipment(출하확정) 경로 전용 — 박스 스캔 출하(ship-box)는
+        // 팔레트 적재 박스를 이중 차감 방지로 거부하므로 여기서 먼저 안내한다.
+        // TODO(T-PDA-PALLET-SHIP): PDA 팔레트 단위 출하 지원 — 출하지시-팔레트 연계
+        // 백엔드 설계(shipment 자동 생성 또는 ship-pallet 엔드포인트) 후 이 분기를 대체한다.
         if (isPalletBarcode(code)) {
-          const { data } = await api.get<PalletBoxesResponse>(
-            `/shipping/pallets/barcode/${encodeURIComponent(code)}/boxes`,
-          );
-          boxes = (data.boxes ?? []).map((b) => ({
-            boxNo: b.boxNo,
-            fromPallet: data.palletNo,
-          }));
-        } else {
-          boxes = [{ boxNo: code }];
+          setError("PALLET_NOT_SUPPORTED");
+          return;
         }
 
-        // 박스마다 즉시 출하 처리
-        for (const box of boxes) {
-          if (scannedItems.some((i) => i.boxNo === box.boxNo)) {
-            setError("DUPLICATE");
-            continue;
-          }
-          const res = await api.post(
-            `/shipping/orders/${encodeURIComponent(scannedOrder.shipOrderNo)}/ship-box`,
-            {
-              boxNo: box.boxNo,
-              workerId: worker?.workerCode || undefined,
-            },
-          );
-          const d = res.data?.data;
-          if (!d) {
-            setError("SHIP_FAILED");
-            continue;
-          }
-          setScannedItems((prev) => [
-            { boxNo: box.boxNo, itemCode: d.itemCode, qty: d.qty, fromPallet: box.fromPallet },
-            ...prev,
-          ]);
-          setScannedOrder((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  status: d.orderStatus,
-                  items: prev.items.map((it) =>
-                    it.itemCode === d.itemCode
-                      ? { ...it, shippedQty: d.lineShippedQty }
-                      : it,
-                  ),
-                  shippedQty: prev.shippedQty + d.qty,
-                }
-              : prev,
-          );
+        const boxNo = code;
+        if (scannedItems.some((i) => i.boxNo === boxNo)) {
+          setError("DUPLICATE");
+          return;
         }
+
+        // 박스 즉시 출하 처리 (웹과 동일 계약: POST /shipping/orders/:id/ship-box)
+        const res = await api.post(
+          `/shipping/orders/${encodeURIComponent(scannedOrder.shipOrderNo)}/ship-box`,
+          {
+            boxNo,
+            workerId: worker?.workerCode || undefined,
+          },
+        );
+        const d = res.data?.data;
+        if (!d) {
+          setError("SHIP_FAILED");
+          return;
+        }
+        setScannedItems((prev) => [
+          { boxNo, itemCode: d.itemCode, qty: d.qty },
+          ...prev,
+        ]);
+        setScannedOrder((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: d.orderStatus,
+                items: prev.items.map((it) =>
+                  it.itemCode === d.itemCode
+                    ? { ...it, shippedQty: d.lineShippedQty }
+                    : it,
+                ),
+                shippedQty: prev.shippedQty + d.qty,
+              }
+            : prev,
+        );
       } catch (err) {
         setError(extractErrMsg(err, "SHIP_FAILED"));
       } finally {

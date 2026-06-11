@@ -60,7 +60,7 @@ export function ScanMaterialPhase({
           {jobOrder.orderNo}
         </p>
         <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-          {jobOrder.partCode} · {jobOrder.partName}
+          {jobOrder.itemCode} · {jobOrder.itemName}
         </p>
       </div>
 
