@@ -34,6 +34,7 @@ import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity'
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 import {
   CreateShipmentDto,
   UpdateShipmentDto,
@@ -62,6 +63,7 @@ export class ShipmentService {
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
     private readonly productInventoryService: ProductInventoryService,
+    private readonly sysConfig: SysConfigService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -283,9 +285,9 @@ export class ShipmentService {
       throw new BadRequestException(`이미 다른 출하에 할당된 팔레트가 있습니다: ${assignedPallets.map(p => p.palletNo).join(', ')}`);
     }
 
-    // OQC 검증: 팔레트 내 박스 중 PASS가 아닌 박스가 있으면 적재 차단
+    // OQC 검증: OQC 사용여부(OQC_ENABLED) 설정이 켜진 경우에만 PASS 아닌 박스 적재 차단. 미사용이면 모두 적재 가능.
     const palletNos = pallets.map(p => p.palletNo);
-    if (palletNos.length > 0) {
+    if (palletNos.length > 0 && (await this.sysConfig.isEnabled('OQC_ENABLED'))) {
       const oqcBlockedBoxes = await this.boxRepository
         .createQueryBuilder('box')
         .where('box.palletNo IN (:...palletNos)', { palletNos })
@@ -440,14 +442,14 @@ export class ShipmentService {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 출하 처리할 수 없습니다. LOADED 상태여야 합니다.`);
     }
 
-    // OQC 검증: 팔레트 내 박스 중 PASS가 아닌 박스가 있으면 출하 차단
+    // OQC 검증: OQC 사용여부(OQC_ENABLED) 설정이 켜진 경우에만 PASS 아닌 박스 출하 차단. 미사용이면 모두 출하 가능.
     const pallets = await this.palletRepository.find({
       where: { shipmentId: id, ...this.tenantWhere(company, plant) },
       select: ['palletNo'],
     });
 
     const palletIds = pallets.map(p => p.palletNo);
-    if (palletIds.length > 0) {
+    if (palletIds.length > 0 && (await this.sysConfig.isEnabled('OQC_ENABLED'))) {
       const failedBoxes = await this.boxRepository
         .createQueryBuilder('box')
         .where('box.palletNo IN (:...palletIds)', { palletIds })

@@ -54,10 +54,12 @@ import { FgLabel } from '../../entities/fg-label.entity';
 import { OqcRequest } from '../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../entities/oqc-request-box.entity';
 import { InventoryModule } from '../inventory/inventory.module';
+import { SystemModule } from '../system/system.module';
 
 @Module({
   imports: [
     InventoryModule,
+    SystemModule,
     TypeOrmModule.forFeature([
       BoxMaster,
       PalletMaster,

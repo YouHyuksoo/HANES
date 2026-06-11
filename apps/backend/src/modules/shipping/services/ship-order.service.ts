@@ -29,6 +29,7 @@ import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dt
 import { ShipBoxDto } from '../dto/ship-box.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
 export class ShipOrderService {
@@ -41,6 +42,7 @@ export class ShipOrderService {
     private readonly partRepository: Repository<PartMaster>,
     private readonly productInventory: ProductInventoryService,
     private readonly tx: TransactionService,
+    private readonly sysConfig: SysConfigService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -298,7 +300,11 @@ export class ShipOrderService {
       if (!box) throw new NotFoundException(`박스를 찾을 수 없습니다: ${dto.boxNo}`);
       if (box.status === 'SHIPPED') throw new BadRequestException(`이미 출하된 박스입니다: ${dto.boxNo}`);
       if (box.status !== 'CLOSED') throw new BadRequestException(`마감(CLOSED)된 박스만 출하할 수 있습니다: ${dto.boxNo}`);
-      if (box.oqcStatus !== 'PASS') throw new BadRequestException(`OQC 합격(PASS) 박스만 출하할 수 있습니다: ${dto.boxNo}`);
+      // OQC 사용여부(OQC_ENABLED) 설정이 켜진 경우에만 합격(PASS) 박스만 출하 허용. 미사용이면 모든 마감 박스 출하 가능.
+      const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
+      if (oqcEnabled && box.oqcStatus !== 'PASS') {
+        throw new BadRequestException(`OQC 합격(PASS) 박스만 출하할 수 있습니다: ${dto.boxNo}`);
+      }
       // 팔레트에 적재된 박스는 팔레트 출하(markAsShipped) 경로 전용 → 이중 차감 방지를 위해 박스 스캔 출하에서 제외
       if (box.palletNo) throw new BadRequestException(`팔레트에 적재된 박스는 박스 스캔 출하 대상이 아닙니다. 팔레트 출하를 사용하세요: ${dto.boxNo}`);
 
