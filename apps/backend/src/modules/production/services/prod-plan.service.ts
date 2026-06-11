@@ -22,6 +22,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
+import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import {
@@ -47,6 +48,8 @@ export class ProdPlanService {
     private readonly routingGroupRepo: Repository<RoutingGroup>,
     @InjectRepository(BomMaster)
     private readonly bomMasterRepo: Repository<BomMaster>,
+    @InjectRepository(RoutingProcess)
+    private readonly routingProcessRepo: Repository<RoutingProcess>,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
   ) {}
@@ -344,12 +347,17 @@ export class ProdPlanService {
 
       const routingCode = await this.resolveRoutingCodeByItem(plan.itemCode, company, plant);
 
+      const rootProcessCode = await this.resolveFirstProcessCode(routingCode, company, plant);
+
       const jobOrder = queryRunner.manager.create(JobOrder, {
         orderNo,
         planNo,
         itemCode: plan.itemCode,
+        rootOrderNo: null,
         lineCode: dto.lineCode || plan.lineCode || null,
         routingCode,
+        processCode: rootProcessCode,
+        equipCode: null,
         planQty: dto.issueQty,
         planDate: dto.planDate ? new Date(dto.planDate) : null,
         priority: dto.priority ?? plan.priority,
@@ -363,7 +371,7 @@ export class ProdPlanService {
       const saved = await queryRunner.manager.save(jobOrder);
 
       if (dto.autoCreateChildren) {
-        await this.createChildOrdersFromPlan(queryRunner, saved, company, plant);
+        await this.createChildOrdersFromPlanRecursive(queryRunner, saved, saved.orderNo, company, plant, 0);
       }
 
       await queryRunner.manager
@@ -384,13 +392,17 @@ export class ProdPlanService {
     });
   }
 
-  /** BOM 기반 반제품 자식 작업지시 자동생성 */
-  private async createChildOrdersFromPlan(
+  /** BOM 기반 반제품 자식 작업지시 재귀 자동생성 (최대 5단계) */
+  private async createChildOrdersFromPlanRecursive(
     queryRunner: import('typeorm').QueryRunner,
     parent: JobOrder,
+    rootOrderNo: string,
     company?: string,
     plant?: string,
-  ) {
+    depth: number = 0,
+  ): Promise<void> {
+    if (depth >= 5) return;
+
     const bomItems = await this.bomMasterRepo.find({
       where: {
         parentItemCode: parent.itemCode,
@@ -412,33 +424,55 @@ export class ProdPlanService {
 
     const wipPartIds = new Set(wipParts.map(p => p.itemCode));
 
-    for (let i = 0; i < bomItems.length; i++) {
-      const bom = bomItems[i];
+    for (const bom of bomItems) {
       if (!wipPartIds.has(bom.childItemCode)) continue;
 
       const childRoutingCode = await this.resolveRoutingCodeByItem(bom.childItemCode, company, plant);
-
+      const childProcessCode = await this.resolveFirstProcessCode(childRoutingCode, company, plant);
       const childOrderNo = await this.numbering.nextJobOrderNo(queryRunner);
       const childQty = Math.ceil(parent.planQty * Number(bom.qtyPer || 1));
 
-      const child = queryRunner.manager.create(JobOrder, {
-        orderNo: childOrderNo,
-        parentOrderNo: parent.orderNo,
-        planNo: parent.planNo,
-        itemCode: bom.childItemCode,
-        lineCode: parent.lineCode,
-        routingCode: childRoutingCode,
-        planQty: childQty,
-        planDate: parent.planDate,
-        priority: parent.priority,
-        status: 'WAITING',
-        erpSyncYn: 'N',
-        company: company || null,
-        plant: plant || null,
-        remark: `${parent.orderNo} 하위 자동생성`,
-      });
-      await queryRunner.manager.save(child);
+      const child = await queryRunner.manager.save(
+        queryRunner.manager.create(JobOrder, {
+          orderNo: childOrderNo,
+          parentOrderNo: parent.orderNo,
+          rootOrderNo,
+          planNo: parent.planNo,
+          itemCode: bom.childItemCode,
+          lineCode: parent.lineCode,
+          routingCode: childRoutingCode,
+          processCode: childProcessCode,
+          equipCode: null,
+          planQty: childQty,
+          planDate: parent.planDate,
+          priority: parent.priority,
+          status: 'WAITING',
+          erpSyncYn: 'N',
+          company: company || null,
+          plant: plant || null,
+          remark: `${parent.orderNo} 하위 자동생성`,
+        }),
+      );
+
+      await this.createChildOrdersFromPlanRecursive(queryRunner, child, rootOrderNo, company, plant, depth + 1);
     }
+  }
+
+  private async resolveFirstProcessCode(
+    routingCode: string | null,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<string | null> {
+    if (!routingCode) return null;
+    const firstStep = await this.routingProcessRepo.findOne({
+      where: {
+        routingCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      order: { seq: 'ASC' },
+    });
+    return firstStep?.processCode ?? null;
   }
 
   /** 단건 조회 (내부) */
