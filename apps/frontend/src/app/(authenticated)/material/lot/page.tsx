@@ -25,6 +25,8 @@ interface MatLotItem {
   itemName?: string;
   initQty: number;
   qty: number;
+  /** GET /material/lots는 현재고를 currentQty로 반환한다(qty 미포함). fetch 경계에서 qty로 정규화한다. */
+  currentQty?: number;
   unit?: string;
   vendor?: string;
   recvDate?: string;
@@ -70,7 +72,13 @@ export default function MatLotPage() {
       if (statusFilter) params.status = statusFilter;
       if (iqcFilter) params.iqcStatus = iqcFilter;
       const res = await api.get("/material/lots", { params });
-      setData(res.data?.data ?? []);
+      // 백엔드는 현재고를 currentQty로 반환한다. 화면 모델(qty)로 정규화하고 수치 누락을 0으로 방어한다.
+      const rows: MatLotItem[] = (res.data?.data ?? []).map((r: MatLotItem) => ({
+        ...r,
+        initQty: r.initQty ?? 0,
+        qty: r.qty ?? r.currentQty ?? 0,
+      }));
+      setData(rows);
     } catch {
       setData([]);
     } finally {
@@ -140,14 +148,14 @@ export default function MatLotPage() {
     {
       accessorKey: "initQty", header: t("material.lot.columns.initQty"), size: 100,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ row }) => <span>{row.original.initQty.toLocaleString()} {row.original.unit || ""}</span>,
+      cell: ({ row }) => <span>{(row.original.initQty ?? 0).toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
       accessorKey: "qty", header: t("material.lot.columns.currentQty"), size: 100,
       meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
-        <span className={row.original.qty <= 0 ? "text-text-muted" : "font-semibold"}>
-          {row.original.qty.toLocaleString()} {row.original.unit || ""}
+        <span className={(row.original.qty ?? 0) <= 0 ? "text-text-muted" : "font-semibold"}>
+          {(row.original.qty ?? 0).toLocaleString()} {row.original.unit || ""}
         </span>
       ),
     },
@@ -239,11 +247,11 @@ export default function MatLotPage() {
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">{t("material.lot.columns.initQty")}</span>
-                  <span>{selectedLot.initQty.toLocaleString()} {selectedLot.unit || ""}</span>
+                  <span>{(selectedLot.initQty ?? 0).toLocaleString()} {selectedLot.unit || ""}</span>
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">{t("material.lot.columns.currentQty")}</span>
-                  <span className="font-semibold">{selectedLot.qty.toLocaleString()} {selectedLot.unit || ""}</span>
+                  <span className="font-semibold">{(selectedLot.qty ?? 0).toLocaleString()} {selectedLot.unit || ""}</span>
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">IQC</span>
