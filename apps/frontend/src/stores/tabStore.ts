@@ -6,7 +6,7 @@
  * 1. **Tab**: 열린 페이지를 나타내는 탭 객체 (id, path, labelKey, parentId)
  * 2. **pinned**: 고정 탭 (닫기 불가, 대시보드가 기본 고정)
  * 3. **비영속**: 탭 목록은 메모리에만 유지 — 새로고침/재진입 시 항상 초기 상태로 시작
- * 4. **최대 6개**: 탭이 6개인 상태에서 새 탭을 열면 추가를 차단하고 안내 모달을 띄운다
+ * 4. **최대 10개**: 탭이 10개인 상태에서 새 탭을 열면 추가를 차단하고 안내 모달을 띄운다
  */
 import { create } from "zustand";
 
@@ -25,7 +25,7 @@ export interface Tab {
 }
 
 /** 최대 탭 수 (고정 탭 포함) */
-export const MAX_TABS = 6;
+export const MAX_TABS = 10;
 
 /** 기본 대시보드 탭 */
 const DASHBOARD_TAB: Tab = {
