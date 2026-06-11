@@ -14,8 +14,9 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Modal, Select } from "@/components/ui";
 import { useLocationOptions } from "@/hooks/useMasterOptions";
+import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
-import { Part, PRODUCT_TYPE_VALUES } from "../types";
+import { Part } from "../types";
 
 interface Props {
   isOpen: boolean;
@@ -45,10 +46,8 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     [rawLocationOptions, t],
   );
 
-  const productTypeOptions = useMemo(
-    () => PRODUCT_TYPE_VALUES.map((v) => ({ value: v, label: t(`master.part.productTypeOptions.${v}`) })),
-    [t],
-  );
+  // 제품유형: 코드마스터(PRODUCT_TYPE) 기반 — 화면 하드코딩 금지
+  const productTypeOptions = useComCodeOptions("PRODUCT_TYPE");
 
   const [form, setForm] = useState(() => ({
     itemCode: editingPart?.itemCode || "",

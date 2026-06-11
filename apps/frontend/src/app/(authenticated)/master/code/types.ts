@@ -7,6 +7,13 @@
 export interface ComCodeGroup {
   groupCode: string;
   count: number;
+  detailCodes?: string[];
+  searchText?: {
+    ko?: string;
+    en?: string;
+    zh?: string;
+    vi?: string;
+  };
 }
 
 /** 공통코드 상세 (우측 그리드용) */

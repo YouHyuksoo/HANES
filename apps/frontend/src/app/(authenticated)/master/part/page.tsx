@@ -15,12 +15,12 @@ import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, Package, RefreshCw, ImageIcon, Download } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect, UseYnSelect } from "@/components/shared";
-import { useComCodeMap } from "@/hooks/useComCode";
+import { useComCodeMap, useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { createPartColumns, createUnitColumn } from "@/lib/table-utils";
-import { Part, PART_TYPE_COLORS, PRODUCT_TYPE_VALUES } from "./types";
+import { Part, PART_TYPE_COLORS } from "./types";
 
 import PartFormPanel from "./components/PartFormPanel";
 
@@ -95,11 +95,13 @@ export default function PartPage() {
     CONSUMABLE: t("inventory.stock.consumable", "소모품"),
   }), [t]);
 
+  // 제품유형: 코드마스터(PRODUCT_TYPE) 기반 — 화면 하드코딩 금지
+  const productTypeOptions = useComCodeOptions("PRODUCT_TYPE");
   const productTypeLabels = useMemo<Record<string, string>>(() => {
     const map: Record<string, string> = {};
-    PRODUCT_TYPE_VALUES.forEach(v => { map[v] = t(`master.part.productTypeOptions.${v}`); });
+    productTypeOptions.forEach((o) => { map[o.value] = o.label; });
     return map;
-  }, [t]);
+  }, [productTypeOptions]);
 
   // 단위 공통코드 맵 (예: EA→개) — 단위 컬럼에 "코드 - 명칭" 표시용
   const unitMap = useComCodeMap("UNIT_TYPE");

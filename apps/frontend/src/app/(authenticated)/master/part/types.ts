@@ -70,15 +70,5 @@ export const PART_TYPE_COLORS: Record<
   },
 };
 
-/**
- * 제품유형 코드값 목록 (단일 출처)
- * 라벨은 i18n 키 `master.part.productTypeOptions.<VALUE>` 로 다국어 처리한다.
- * (정적 한국어 라벨 하드코딩 금지 — 언어 변경 미반영 버그 방지)
- */
-export const PRODUCT_TYPE_VALUES = [
-  "HARNESS", "MODEL", "SUB_ASSY", "WIRE", "TERMINAL", "CONNECTOR", "HOLDER", "SEAL",
-  "SHIELD", "TAPE", "TUBE", "HOUSING", "LABEL", "CLIP", "ELECTRIC", "GROMMET",
-] as const;
-
 /** IQC 연결 데이터 (추후 DB 연동 시 제거) */
 export const seedPartIqcLinks: PartIqcLink[] = [];

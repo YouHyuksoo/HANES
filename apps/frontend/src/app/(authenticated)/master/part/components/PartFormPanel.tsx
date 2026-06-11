@@ -17,8 +17,9 @@ import { ImageIcon, RefreshCw, Trash2, Upload } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import { useLocationOptions } from "@/hooks/useMasterOptions";
+import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
-import { Part, PRODUCT_TYPE_VALUES } from "../types";
+import { Part } from "../types";
 
 interface Props {
   editingPart: Part | null;
@@ -45,10 +46,8 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     { value: "CONSUMABLE", label: t("inventory.stock.consumable", "소모품") },
   ], [t]);
 
-  const productTypeOptions = useMemo(
-    () => PRODUCT_TYPE_VALUES.map((v) => ({ value: v, label: t(`master.part.productTypeOptions.${v}`) })),
-    [t],
-  );
+  // 제품유형: 코드마스터(PRODUCT_TYPE) 기반 — 화면 하드코딩 금지
+  const productTypeOptions = useComCodeOptions("PRODUCT_TYPE");
 
   /** Y/N 라디오 버튼 그룹 */
   const YnRadio = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (

@@ -99,9 +99,72 @@ describe('ComCodeService', () => {
 
       const result = await target.findAllGroups('C1', 'P1');
 
-      expect(result).toEqual([{ groupCode: 'GRP1', count: 2 }]);
+      expect(result).toEqual([{
+        groupCode: 'GRP1',
+        count: 2,
+        detailCodes: [],
+        searchText: { ko: '', en: '', zh: '', vi: '' },
+      }]);
       expect(qb.andWhere).toHaveBeenCalledWith('code.company = :company', { company: 'C1' });
       expect(qb.andWhere).toHaveBeenCalledWith('code.plant = :plant', { plant: 'P1' });
+    });
+
+    it('should return language-specific search text for each group', async () => {
+      const qb: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          {
+            groupCode: 'JOB_ORDER_STATUS',
+            count: '2',
+            detailCodes: 'WAIT COMPLETE',
+            searchTextKo: '대기 완료',
+            searchTextEn: 'Waiting Complete',
+            searchTextZh: '等待 完成',
+            searchTextVi: 'Cho Hoan thanh',
+          },
+        ]),
+      };
+      mockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await target.findAllGroups();
+
+      expect(result).toEqual([
+        {
+          groupCode: 'JOB_ORDER_STATUS',
+          count: 2,
+          detailCodes: ['WAIT', 'COMPLETE'],
+          searchText: {
+            ko: '대기 완료',
+            en: 'Waiting Complete',
+            zh: '等待 完成',
+            vi: 'Cho Hoan thanh',
+          },
+        },
+      ]);
+      expect(qb.addSelect).toHaveBeenCalledWith(
+        expect.stringContaining('code.detailCode'),
+        'detailCodes',
+      );
+      expect(qb.addSelect).toHaveBeenCalledWith(
+        expect.stringContaining('code.codeName'),
+        'searchTextKo',
+      );
+      expect(qb.addSelect).toHaveBeenCalledWith(
+        expect.stringContaining('code.attr1'),
+        'searchTextEn',
+      );
+      expect(qb.addSelect).toHaveBeenCalledWith(
+        expect.stringContaining('code.attr2'),
+        'searchTextZh',
+      );
+      expect(qb.addSelect).toHaveBeenCalledWith(
+        expect.stringContaining('code.attr3'),
+        'searchTextVi',
+      );
     });
   });
 

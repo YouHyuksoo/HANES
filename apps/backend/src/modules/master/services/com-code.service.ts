@@ -104,6 +104,11 @@ export class ComCodeService {
     const queryBuilder = this.comCodeRepository.createQueryBuilder('code')
       .select('code.groupCode', 'groupCode')
       .addSelect('COUNT(*)', 'count')
+      .addSelect("LISTAGG(code.detailCode, ' ') WITHIN GROUP (ORDER BY code.sortOrder)", 'detailCodes')
+      .addSelect("LISTAGG(code.codeName, ' ') WITHIN GROUP (ORDER BY code.sortOrder)", 'searchTextKo')
+      .addSelect("LISTAGG(code.attr1, ' ') WITHIN GROUP (ORDER BY code.sortOrder)", 'searchTextEn')
+      .addSelect("LISTAGG(code.attr2, ' ') WITHIN GROUP (ORDER BY code.sortOrder)", 'searchTextZh')
+      .addSelect("LISTAGG(code.attr3, ' ') WITHIN GROUP (ORDER BY code.sortOrder)", 'searchTextVi')
       .groupBy('code.groupCode')
       .orderBy('code.groupCode', 'ASC');
 
@@ -119,6 +124,15 @@ export class ComCodeService {
     return groups.map((g) => ({
       groupCode: g.groupCode,
       count: parseInt(g.count, 10),
+      detailCodes: typeof g.detailCodes === 'string'
+        ? g.detailCodes.split(' ').filter(Boolean)
+        : [],
+      searchText: {
+        ko: g.searchTextKo ?? '',
+        en: g.searchTextEn ?? '',
+        zh: g.searchTextZh ?? '',
+        vi: g.searchTextVi ?? '',
+      },
     }));
   }
 

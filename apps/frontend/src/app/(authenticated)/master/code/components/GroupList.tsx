@@ -12,6 +12,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui";
+import { normalizeLanguageCode } from "@/lib/i18n";
 import type { ComCodeGroup } from "../types";
 
 interface GroupListProps {
@@ -21,8 +22,13 @@ interface GroupListProps {
   isLoading: boolean;
 }
 
+function getLanguageSearchText(group: ComCodeGroup, language: string | undefined) {
+  const languageCode = normalizeLanguageCode(language) ?? "ko";
+  return group.searchText?.[languageCode] ?? "";
+}
+
 export default function GroupList({ groups, selectedGroup, onSelect, isLoading }: GroupListProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -33,9 +39,15 @@ export default function GroupList({ groups, selectedGroup, onSelect, isLoading }
       if (g.groupCode.includes(keyword)) return true;
       // 그룹 설명(번역)으로도 검색 가능
       const desc = t(`comCodeGroup.${g.groupCode}`, { defaultValue: "" });
-      return desc.toLowerCase().includes(keywordLower);
+      if (desc.toLowerCase().includes(keywordLower)) return true;
+      const translatedCodeText = (g.detailCodes ?? [])
+        .map((detailCode) => t(`comCode.${g.groupCode}.${detailCode}`, { defaultValue: "" }))
+        .filter(Boolean)
+        .join(" ");
+      if (translatedCodeText.toLowerCase().includes(keywordLower)) return true;
+      return getLanguageSearchText(g, i18n.language).toLowerCase().includes(keywordLower);
     });
-  }, [groups, search, t]);
+  }, [groups, search, t, i18n.language]);
 
   return (
     <Card padding="none" className="flex-1 flex flex-col min-h-0">
