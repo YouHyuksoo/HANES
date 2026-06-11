@@ -10,6 +10,13 @@ Format:
 
 ## Completed
 
+- T-QUALITY-INSPECT-USEMEMO | 2026-06-12 | codex | `/quality/inspect` 외관검사 화면의 누락된 `useMemo` React import를 복원해 런타임 ReferenceError 수정 | evidence: JOURNAL 2026-06-12 04:19 Codex
+- T-INV-TRANSACTION-CARDS | 2026-06-12 | codex | `/inventory/transaction` 재고수불현황 상단 정보카드 3개와 전용 통계 계산 제거 | evidence: JOURNAL 2026-06-12 02:20 Codex
+- T-CUSTOMER-INTRO-HTML-DESIGN | 2026-06-12 | codex | 고객 소개 HTML의 카드형 AI 느낌을 줄이고 산업형 색상/공정 보드 레이아웃으로 재정리 | evidence: JOURNAL 2026-06-12 01:35 Codex
+- T-CUSTOMER-INTRO-HTML-V2 | 2026-06-12 | codex | 작업지시서 기준 고객 소개 HTML을 22장 가로형 슬라이드로 재구성, PPTX는 후속 단계로 보류 | evidence: JOURNAL 2026-06-12 01:21 Codex
+- T-EQUIP-INSPECT-POOL-TYPE | 2026-06-11 | claude | 점검항목 풀(EQUIP_INSPECT_ITEM_POOL)에 EQUIP_TYPE 추가, 점검항목 마스터 페이지를 설비유형 기준 POOL 편집기로 전환, 설비점검 추가 모달이 설비유형으로 풀 조회 | evidence: JOURNAL 2026-06-11 22:* Claude
+- T-DATA-CLEAN-HNS02 | 2026-06-11 | codex | JSHANES HNS02 BOM 기준 품목 47개만 유지하고 입하/입고/IQC/입출고/재고/제품/실적/작업지시/검사/시뮬레이션 데이터 클린징 완료 | evidence: JOURNAL 2026-06-11 22:03 Codex
+- T-IQC-SAMPLE-REMOVE | 2026-06-11 | codex | IQC 검사구분 SAMPLE 제거, 마스터 SAMPLE은 FULL 정규화, INSPECT_CLASS는 별도 legacy 이력으로 분리 유지 | evidence: JOURNAL 2026-06-11 21:37 Codex
 - T-IQC-METHOD-LABELS | 2026-06-11 | codex | IQC FULL/SAMPLE/SKIP 표시를 검사/검사/무검사로 통일하고 IQC 화면 라벨을 검사구분으로 정리, JSHANES 재적용 | evidence: JOURNAL 2026-06-11 21:21 Codex
 - T-MAT-LOT-IQC-UID-SEPARATE | 2026-06-11 | codex | JSHANES에서 MAT_LOTS/MAT_STOCKS/STOCK_TRANSACTIONS 시드성 MAT_UID를 MLT-*로 변경해 IQC_LOGS와 LOT 화면 UID 중복 해소 | evidence: JOURNAL 2026-06-11 21:20 Codex
 - T-IQC-CODE-ALIGN | 2026-06-11 | codex | IQC 검사방법(FULL/SAMPLE/SKIP)과 검사유형(INITIAL/RETEST)을 전용 공통코드로 분리하고 품목/IQC/이력 화면 매핑 통일 | evidence: JOURNAL 2026-06-11 20:48 Codex

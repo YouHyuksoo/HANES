@@ -5,11 +5,32 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
-No active locks.
+- task: T-DOCS-KNOWLEDGE-WIKI
+  owner: claude
+  files:
+    - wiki/** (신규 디렉토리 — docs/는 읽기 전용으로만 사용)
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-12 01:32 KST
+  last_seen: 2026-06-12 01:32 KST
+  expires: 2026-06-12 03:30 KST
+  status: active
 ```
 
 ## History
 
+- T-QUALITY-INSPECT-USEMEMO (codex, 2026-06-12): `/quality/inspect` 화면 `useMemo is not defined` 런타임 오류 수정 완료 후 lock 해제. 파일: `apps/frontend/src/app/(authenticated)/quality/inspect/page.tsx`.
+
+- T-INV-TRANSACTION-CARDS (codex, 2026-06-12): `/inventory/transaction` 상단 정보카드 3개 제거 완료 후 lock 해제. 파일: `apps/frontend/src/app/(authenticated)/inventory/transaction/page.tsx`.
+
+- T-CUSTOMER-INTRO-HTML-DESIGN (codex, 2026-06-12): 고객 소개 HTML의 카드형 AI 느낌을 줄이고 산업형 색상/공정 보드 레이아웃으로 재정리 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.html`.
+
+- T-CUSTOMER-INTRO-HTML-V2 (codex, 2026-06-12): 작업지시서 기준 고객 소개 HTML을 22장 가로형 슬라이드로 재구성 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.html`.
+
+- T-EQUIP-INSPECT-POOL-TYPE (claude, 2026-06-11): 점검항목 풀에 EQUIP_TYPE 추가, equip-inspect-item 마스터 페이지를 설비유형 기준 POOL 편집기로 전환, equip-inspect 추가 모달이 설비유형으로 풀 조회하도록 수정 완료 후 lock 해제. JSHANES 컬럼 적용·typecheck·구조테스트 통과. 파일: `apps/backend/src/migrations/2026-06-11_equip_inspect_pool_equip_type.sql`, `apps/backend/src/entities/equip-inspect-item-pool.entity.ts`, `apps/backend/src/modules/master/dto/equip-inspect-item-pool.dto.ts`, `apps/backend/src/modules/master/services/equip-inspect-item-pool.service.ts`, `apps/frontend/src/app/(authenticated)/master/equip-inspect-item/page.tsx`, `apps/frontend/src/app/(authenticated)/master/equip-inspect/{types.ts,components/AddInspectItemModal.tsx,components/EquipAssignTab.tsx,components/ItemMasterTab.tsx}`, `apps/frontend/src/locales/{ko,en,zh,vi}.json`.
+
+- T-ROUTING-TREE-OVERFLOW (claude, 2026-06-11): 라우팅 BOM 트리가 우측 패널 침범하는 레이아웃 버그 수정(grid 자식 min-w-0 + 트리 overflow-auto) 완료 후 lock 해제. 파일: `apps/frontend/src/app/(authenticated)/master/routing/{page.tsx,components/RoutingGroupManager.tsx}`.
+
+- T-DATA-CLEAN-HNS02 (codex, 2026-06-11): JSHANES HNS02 BOM 기준 데이터 클린징 실행 완료 후 lock 해제. HNS02 기준 `ITEM_MASTERS`/`BOM_MASTERS` 47건만 유지, 요청 업무 데이터 및 비-HNS02 `ITEM_CODE` 잔여 0건 확인. 범위: JSHANES DB 데이터, `.ai-coordination/*`.
 - T-IQC-SAMPLE-REMOVE (codex, 2026-06-11): IQC 검사구분에서 SAMPLE 제거, 기존 마스터 SAMPLE은 FULL로 정규화 완료 후 lock 해제. `IQC_LOGS.INSPECT_CLASS`는 별개/legacy 이력 컬럼으로 보고 기존 값은 변경하지 않음. 파일: `apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql`, `apps/backend/src/modules/master/{dto/iqc-group.dto.ts,services/iqc-group.service.ts,services/iqc-group.service.spec.ts}`, `apps/backend/src/modules/material/{dto/iqc-history.dto.ts,services/iqc-history.service.ts}`, `apps/backend/src/entities/{iqc-log.entity.ts,iqc-group.entity.ts,part-master.entity.ts}`, `apps/frontend/src/components/material/{IqcModal.tsx,IqcTable.tsx}`, `apps/frontend/src/hooks/material/useIqcData.ts`, `apps/frontend/src/app/(authenticated)/master/{part,iqc-item}/**`, `apps/frontend/src/locales/{ko,en,zh,vi}.json`, `packages/shared/src/constants/com-code-values.ts`.
 - T-PDA-RECEIVE-WORKER-GUARD (claude, 2026-06-11): PDA 자재입고 사전 게이트 검증·사용자 메시지 모달 + 작업자 스캔 등록·workerId 저장 완료 후 lock 해제. 파일: `apps/frontend/src/hooks/pda/useMatReceivingScan.ts`, `apps/frontend/src/app/pda/material/receiving/{page.tsx,components.tsx}`.
 

@@ -10,6 +10,40 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-11 23:30 Claude
+
+- 작업: T-EQUIP-INSPECT-TABLE-RESTRUCTURE — 두 테이블 역할 뒤바뀜 전면 수정 완료.
+- 결론: DB 재생성(두 테이블 모두 0건이라 데이터 마이그레이션 불필요), 엔티티 클래스명·데코레이터 스왑, 서비스·컨트롤러·DTO·프론트엔드 전면 재작성.
+- ① DB: `EQUIP_INSPECT_ITEM_MASTERS`(COMPANY+PLANT_CD+ITEM_CODE PK, EQUIP_TYPE 있음) / `EQUIP_INSPECT_ITEM_POOL`(EQUIP_CODE+ITEM_CODE+INSPECT_TYPE 복합PK, 린 링크 테이블). 마이그레이션: `2026-06-11_equip_inspect_tables_restructure.sql`.
+- ② 엔티티 파일: `equip-inspect-item-pool.entity.ts` → class `EquipInspectItemMaster` @Entity('EQUIP_INSPECT_ITEM_MASTERS') / `equip-inspect-item-master.entity.ts` → class `EquipInspectItemPool` @Entity('EQUIP_INSPECT_ITEM_POOL'). 파일명은 변경 없음(클래스명·데코레이터만 스왑).
+- ③ master/equip-inspect.service: POOL 레포 inject, findAll=POOL LEFT JOIN MASTERS(getRawMany), create=린(equipCode+itemCode+inspectType+useYn+sortSeq), delete=복합키.
+- ④ equipment/equip-inspect.service: POOL 레포 inject + MASTERS는 JOIN 타깃, `fetchItemsWithDetails` 헬퍼(JOIN), item.seq → item.itemCode, detailBySeq → detailByItemCode.
+- ⑤ equipment.module, master.module: 양쪽 entity 등록.
+- ⑥ spec 파일 4개 수정: 신 엔티티명/토큰으로 교체, master equip-inspect.service.spec 전면 재작성(update 제거, 신 create/delete 테스트).
+- ⑦ 프론트: types.ts(InspectItemMasterRow/InspectItemRow 재정의), AddInspectItemModal(마스터 endpoint), EquipAssignTab(delete 시그니처), InspectItemPanel(seq→sortSeq), equip-inspect-item page(마스터 endpoint).
+- 검증: 백엔드 tsc --noEmit 통과, 프론트 tsc --noEmit 통과.
+
+## 2026-06-11 22:30 Claude
+
+- 작업: T-EQUIP-INSPECT-POOL-TYPE — 설비점검 항목을 설비유형(EQUIP_TYPE) 기준으로 가져오도록 구조 정리.
+- 의도(사용자 확인): `/master/equip-inspect`(설비별 매핑·운영 기준)에서 점검항목 추가 시 풀(점검항목 마스터)을 그 설비의 설비유형으로 필터해 가져온다. `/master/equip-inspect-item`(마스터=구성용 기준정보)은 설비코드 대신 설비유형으로 관리.
+- 실측: EQUIP_INSPECT_ITEM_POOL에 EQUIP_TYPE 없음, POOL·MASTERS 둘 다 0건(HNS02 클린징 이후) → 데이터 마이그레이션 불필요. EQUIP_TYPE 공통코드 11종.
+- ① DB: `ALTER TABLE EQUIP_INSPECT_ITEM_POOL ADD (EQUIP_TYPE VARCHAR2(50))` JSHANES 적용 + COMMENT. 마이그레이션 파일 `2026-06-11_equip_inspect_pool_equip_type.sql`(저장소 `/` 구분 컨벤션).
+- ② 백엔드 POOL: entity equipType 컬럼, DTO Create/Query equipType(옵셔널·MaxLength 50), service create/update 저장 + findAll equipType 필터.
+- ③ `/master/equip-inspect-item` page.tsx: 백엔드 소스를 MASTERS(equipCode)→POOL(equip-inspect-item-pool)로 전환, 설비코드 컬럼/입력 제거하고 설비유형(ComCodeSelect/ComCodeBadge EQUIP_TYPE)으로 대체, 통계 '설비 수'→'설비유형 수', 항목코드 PK 입력·비고 추가. (기존 페이지는 per-equip MASTERS 중복 편집 → 마스터(카탈로그)로 정리)
+- ④ `/master/equip-inspect` AddInspectItemModal: 풀 조회 params에 선택 설비의 equipType 추가(있을 때만), 대상설비 박스에 유형 배지, 해당 유형 풀 없을 때 안내 문구. EquipAssignTab에서 equipType 전달. ItemMasterTab(풀 편집기)에도 설비유형 컬럼·입력 추가(여기서 만든 풀 항목도 유형 보유).
+- 검증: 백엔드/프론트 tsc --noEmit 통과, equip-inspect 구조테스트 3건 통과, ko/en/zh/vi 4파일 키 동기화·BOM 없음.
+- 참고(미해결/판단필요): (a) equipType=NULL 풀 항목은 특정 유형 설비 추가 모달에 안 보임(엄격 필터). 공통항목 노출 필요 시 별도 처리. (b) ItemMasterTab과 equip-inspect-item 페이지가 둘 다 풀 편집기 → 중복. 통합은 사용자 결정 영역이라 보존. (c) 백엔드는 nest watch 모드 가정(자동 반영).
+
+## 2026-06-11 21:20 Claude
+
+- 작업: T-PDA-RECEIVE-WORKER-GUARD — PDA 자재입고 사전 게이트 검증·사용자 메시지 + 작업자 스캔 등록·workerId 저장 (프론트 전용).
+- 근본원인(시스템 오류처럼 보임): 입고 훅이 `suppressErrorModal` 미지정 → 백엔드 400이 전역 `useErrorStore` 시스템-에러 상세 모달로 표출. 훅 api 호출 2곳에 `suppressErrorModal:true` 추가.
+- ① 사전검증: 입고확인 전 작업자등록/수량≥1/수량≤잔량/창고선택을 클라이언트에서 검사 → 실패 시 백엔드 호출 없이 친화 메시지. ② PdaErrorDialog(PDA 오버레이) 닫으면 handleReset+수량초기화로 입고창 클리어. ③ WorkerBar 작업자 QR 스캔(by-qr, workerCode 폴백)→currentWorker 등록, 미등록 시 자재 스캔·입고확인 차단, 입고확인 시 workerId=workerCode 전송(이력에 작업자명).
+- 버그 수정: by-qr 응답이 ResponseUtil envelope(`data:{workerCode,workerName,dept}`, id/name 아님)인데 초안이 `res.data.id/name` 읽음 → `(res.data?.data ?? res.data)` 언랩 + workerName 사용으로 수정. (헤더 `WorkerQrPanel`도 동일 버그로 currentWorker.name/workerCode가 undefined — 범위 밖, 별도 수정 필요 보고)
+- 검증(localhost, 실 API+DB): by-qr W003→박민수 200. 잔량초과(99>3)→400 친화메시지 "입고수량(99)이 잔량(3)을 초과합니다". 정상입고(qty2, W003)→201. DB 실측 — MAT_RECEIVINGS.WORKER_ID=W003, STOCK_TRANSACTIONS(RECEIVE).WORKER_ID=W003 저장 확인. FE tsc 통과.
+- 파일: `apps/frontend/src/hooks/pda/useMatReceivingScan.ts`, `apps/frontend/src/app/pda/material/receiving/{page.tsx,components.tsx}`. 미커밋. 백엔드 무수정(DTO/서비스 이미 workerId 저장).
+
 ## 2026-06-11 21:10 Claude
 
 - 작업: T-IQC-MODAL-POOL-ITEMS — IQC 검사결과 등록 모달의 검사항목 일부 누락·검사기준 컬럼 누락 수정 + 전체 변경분 커밋.
@@ -202,6 +236,21 @@ Use local time in 24-hour format.
 - 검증: PPTX 빌드 15장 완료, 레이아웃 검사 오류 0개, PPTX 패키지 미디어 47개/빈 미디어 0개. HTML 슬라이드 15장, 이미지 참조 47개, 누락 이미지 0개. 렌더 contact sheet 육안 확인 완료.
 - 참고: 자재/생산/품질/출하 일부 메뉴는 실시간 캡처 자동화가 시간 제한에 걸려 기존 안정 캡처와 메뉴 화면 갤러리 방식으로 보강했다.
 
+## 2026-06-12 01:35 Codex
+
+- 작업: `T-CUSTOMER-INTRO-HTML-DESIGN` 고객 소개 HTML 디자인 재정리.
+- 변경: 사용자가 지적한 흰 카드+상단 컬러바형 AI 느낌을 줄이기 위해 `metric`, `step`, `panel`, `callout`, `screen` 공통 스타일을 재정리했다. 컬러는 산화동/황동/스틸/세이지 계열로 낮추고, 단계 박스는 번호가 붙은 공정 보드 형태로 변경했다.
+- 산출물: `docs/presentation/hanes-mes-introduction.html`.
+- 검증: 정적 검증 결과 슬라이드 22장, 이미지 56개, 누락 0개. 기존 `border-top` 컬러바/구형 카드 그림자/뷰포트 폰트/`object-fit: cover` 위험 패턴 0개. `npx playwright screenshot`으로 파일 URL 기본 렌더 확인. `git diff --check` 통과.
+
+## 2026-06-12 01:21 Codex
+
+- 작업: `T-CUSTOMER-INTRO-HTML-V2` 고객 소개 HTML 자료 재구성.
+- 변경: `docs/presentation/hanes-mes-introduction-work-instruction.md` 기준으로 기존 HTML을 22장 가로형 슬라이드로 재작성. PPTX는 생성하지 않고 후속 단계로 남김.
+- 구성: 고객 가치, 메뉴 커버리지, 기준정보 2장, 자재 입하/IQC/바코드 매핑/불출/폐기·유수명/LOT 계보, 작업지시/키오스크/공정검사/설비관리/일상점검, 품질 불량 조치, 포장·출하, 역추적, 화면 갤러리, 시연 마무리 순서.
+- 산출물: `docs/presentation/hanes-mes-introduction.html`.
+- 검증: 정적 검증 결과 슬라이드 22장, 이미지 56개, 이미지 누락 0개, `font-size: clamp`/폰트 vw/`object-fit: cover` 위험 패턴 0개. Chrome headless 및 `npx playwright screenshot`으로 파일 URL 기본 렌더 확인.
+
 ## 2026-06-11 13:15 Codex
 
 - 작업: `T-CUSTOMER-INTRO-PRODUCT-DECK` 고객용 HANES MES 제품 소개 자료 전면 재작성.
@@ -225,6 +274,27 @@ Use local time in 24-hour format.
 - 변경: 기존 8장 자료를 12장으로 재구성. 글자 크기 축소, 제목 침범/겹침 보정, `기준정보 → 자재 입하 → IQC/입고 → 생산 준비 → 현장 실행 → 검사/품질 → 제품/출하` 순서의 워크플로우 맵 추가.
 - 메뉴 보강: 품목마스터, BOM 관리, 공정/라인, 라우팅, IQC품목규격, 설비점검항목, 월간생산계획, 작업지시관리, 자재출고요청, 생산진도현황, WIP재고, 실적입력 키오스크, 통전검사 실적, 불량등록관리, 수리/재작업, OQC, SPC, 제품재고조회, 포장, 출하지시, 출하처리, 반품관리 등을 소개 흐름에 노출.
 - 검증: 로컬 Chrome + Playwright로 `docs/presentation/hanes-mes-introduction.html` 로드 확인. 슬라이드 12개, 본문 이미지 9개 참조 모두 로드, 모든 `.canvas` overflow X/Y 없음 확인.
+
+## 2026-06-11 21:50 Codex
+
+- 작업: `T-DATA-CLEAN-HNS02` HNS02 BOM 기준 JSHANES 테스트 데이터 클린징 준비.
+- 확인: `BOM_MASTERS`에서 `BOM_GRP='HNS02'` 47행 확인. HNS02 기준 품목은 parent/child 합산 47개. `ITEM_MASTERS`는 76개 중 HNS02 기준 47개 유지, 29개 삭제 대상. `BOM_MASTERS`는 78개 중 HNS02 47행 유지, 31행 삭제 대상.
+- dry-run: 사용자 요청 범위의 입하/입고/IQC/자재입출고/재고/제품재고/작업지시/생산실적/검사의뢰/품질검사 계열 전체 삭제와 비-HNS02 품목 기준정보 삭제 SQL을 JSHANES 트랜잭션에서 실행 후 `ROLLBACK`. 문법/FK 오류 없음. 예상 삭제 합계 1,375행.
+- 상태: 실제 `DELETE`/`COMMIT`은 실행하지 않음. 사용자 최종 승인 대기.
+
+## 2026-06-12 04:19 Codex
+
+- 작업: `T-QUALITY-INSPECT-USEMEMO` `/quality/inspect` 외관검사 화면 `useMemo is not defined` 런타임 오류 수정.
+- 원인: 통계 카드 제거 과정에서 React import의 `useMemo`가 함께 제거됐지만, 이력 DataGrid `columns` 정의는 계속 `useMemo<ColumnDef<VisualInspectRecord>[]>`를 사용했다.
+- 변경: `apps/frontend/src/app/(authenticated)/quality/inspect/page.tsx`의 React import에 `useMemo`를 복원했다. 기존 통계 카드 제거 변경은 건드리지 않았다.
+- 검증: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과. `useMemo` 사용 TSX 파일 중 React import에 `useMemo`가 없는 파일 추가 검색 결과 없음.
+
+## 2026-06-11 22:03 Codex
+
+- 작업: `T-DATA-CLEAN-HNS02` 사용자 승인 후 JSHANES 데이터 클린징 실행.
+- 실행: dry-run 검증 SQL을 JSHANES에 `COMMIT`. 실행 시점 추가 데이터 포함으로 1차 삭제 1,379행. 후검증에서 `SIMULATION_PLANS` 비-HNS02 24건이 남아 `SIMULATION_SCHEDULES` 38건, `SIMULATION_PLANS` 24건, `SIMULATION_HEADERS` 2건을 추가 삭제/커밋했다.
+- 최종 검증: 비-HNS02 `ITEM_CODE` 잔여 `NONE`. `KEEP_ITEMS=47`, `ITEM_MASTERS=47`, `BOM_MASTERS=47`. 요청 업무 테이블 잔여 `NONE`.
+- 완료: HNS02 BOM 기준 품목/BOM만 유지하고 입하/입고/IQC/자재입출고/재고/제품재고/제품실적/작업지시/창고입고/검사의뢰/품질검사/시뮬레이션 데이터 제거 완료.
 
 ## 2026-06-11 21:37 Codex
 
@@ -268,3 +338,10 @@ Use local time in 24-hour format.
 - 구성: 16:9 가로 슬라이드 8장. 하네스 업종 특성에 맞춰 자재 LOT/시리얼 추적, 키오스크 작업, 통전검사, 불량관리, 박스/개별제품 출하 추적성을 고객 소개 관점으로 요약.
 - 검증: 로컬 Chrome + Playwright로 HTML 로드 확인, 슬라이드 수 8개 확인, 본문 이미지 5개 모두 `naturalWidth=1600`, `naturalHeight=900` 로드 확인.
 - 참고: `/shipping/pack`, `/shipping/order`, `/production/pack-result`는 `domcontentloaded` 대기에서 타임아웃되어 소개자료에는 안정적으로 캡처된 `/shipping/box-stock`을 사용.
+
+## 2026-06-12 02:20 Codex
+
+- 작업: `T-INV-TRANSACTION-CARDS` `/inventory/transaction` 재고수불현황 정보카드 제거.
+- 변경: `apps/frontend/src/app/(authenticated)/inventory/transaction/page.tsx`에서 상단 `StatCard` 3개(전체 거래, 입고 합계, 출고 합계)를 제거하고, 카드 전용 `total`, `totalIn`, `totalOut` 상태/계산 및 관련 아이콘/import를 정리했다. 조회 조건, 새로고침, 그리드, MAT UID 검색, 내보내기는 그대로 유지했다.
+- 검증: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 1차 통과. 최종 재실행 시 다른 변경 파일인 `apps/frontend/src/app/(authenticated)/quality/inspect/page.tsx`의 `useMemo` import 누락 및 implicit any 오류로 전체 typecheck가 실패했다. `inventory/transaction`의 카드 관련 잔여 참조 검색 결과 없음. `git diff --check -- "apps/frontend/src/app/(authenticated)/inventory/transaction/page.tsx" ".ai-coordination/TASKS.md" ".ai-coordination/LOCKS.md" ".ai-coordination/JOURNAL.md" ".ai-coordination/HANDOFF/codex.md" ".ai-coordination/ARCHIVE.md"` 통과. `http://localhost:3002/inventory/transaction` HTTP 200 확인.
+- 참고: `pnpm --filter @harness/frontend lint -- --file "src/app/(authenticated)/inventory/transaction/page.tsx"`는 기존 `next lint` 스크립트가 ESLint 설정 프롬프트를 띄워 실패했다. `browse.exe`는 자체 서버 시작이 15초 내 완료되지 않아 브라우저 DOM 검증은 수행하지 못했다.
