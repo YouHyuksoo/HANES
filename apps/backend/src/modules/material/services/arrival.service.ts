@@ -712,13 +712,12 @@ export class ArrivalService {
   }
 
   /**
-   * IQC006 — 입하(arrivalNo+seq) 단위 취소
-   * 해당 입하 시리얼들의 MAT_IN 트랜잭션을 찾아 기존 역분개 cancel()을 순차 적용.
-   * (입고 완료된 시리얼이 하나라도 있으면 기존 cancel 로직이 차단한다.)
+   * IQC006 — 입하(arrivalNo) 전체 취소
+   * 동일 arrivalNo의 모든 품목·시리얼 MAT_IN 트랜잭션을 일괄 역분개.
+   * 입고 완료 시리얼이 하나라도 있으면 기존 cancel 로직이 차단한다.
    */
   async cancelByArrival(
     arrivalNo: string,
-    itemCode: string,
     reason: string,
     company?: string,
     plant?: string,
@@ -729,14 +728,14 @@ export class ArrivalService {
       ...(plant ? { plant } : {}),
     };
 
-    // 입하 그룹(arrivalNo+품번)의 입하 당시 시리얼 (분할/병합 파생 제외)
+    // arrivalNo 전체의 입하 당시 시리얼 (분할/병합 파생 제외)
     const lots = await this.matLotRepository.find({
-      where: { arrivalNo, itemCode, ...tenantWhere },
+      where: { arrivalNo, ...tenantWhere },
       select: ['matUid', 'origin'],
     });
     const sourceLots = lots.filter((l) => !l.origin || l.origin === l.matUid);
     if (sourceLots.length === 0) {
-      throw new NotFoundException(`입하 시리얼을 찾을 수 없습니다: ${arrivalNo}/${itemCode}`);
+      throw new NotFoundException(`입하 시리얼을 찾을 수 없습니다: ${arrivalNo}`);
     }
     const matUids = sourceLots.map((l) => l.matUid);
 
@@ -753,7 +752,7 @@ export class ArrivalService {
       await this.cancel({ transactionId: tx.transNo, reason, workerId }, company, plant);
       canceled++;
     }
-    return { arrivalNo, itemCode, canceledTransactions: canceled };
+    return { arrivalNo, canceledTransactions: canceled };
   }
 
   /** 입하 취소 (역분개 트랜잭션) */

@@ -170,13 +170,13 @@ export class JobOrderService {
       qb.andWhere(new Brackets((qb2) => {
         qb2.where('jo.planDate IS NULL');
         if (planDateFrom && planDateTo) {
-          qb2.orWhere('(jo.planDate >= :planDateFrom AND jo.planDate <= :planDateTo)', {
-            planDateFrom: new Date(planDateFrom), planDateTo: new Date(planDateTo),
+          qb2.orWhere("(TRUNC(jo.planDate) >= TO_DATE(:planDateFrom, 'YYYY-MM-DD') AND TRUNC(jo.planDate) <= TO_DATE(:planDateTo, 'YYYY-MM-DD'))", {
+            planDateFrom, planDateTo,
           });
         } else if (planDateFrom) {
-          qb2.orWhere('jo.planDate >= :planDateFrom', { planDateFrom: new Date(planDateFrom) });
+          qb2.orWhere("TRUNC(jo.planDate) >= TO_DATE(:planDateFrom, 'YYYY-MM-DD')", { planDateFrom });
         } else {
-          qb2.orWhere('jo.planDate <= :planDateTo', { planDateTo: new Date(planDateTo) });
+          qb2.orWhere("TRUNC(jo.planDate) <= TO_DATE(:planDateTo, 'YYYY-MM-DD')", { planDateTo });
         }
       }));
     }

@@ -73,7 +73,7 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      * @param p_target_date IN DATE  - 조회 대상일 (기본값: 오늘)
      * @param o_summary     OUT SYS_REFCURSOR - TOTAL_CNT, COMPLETED_CNT, PASS_CNT, FAIL_CNT
      * @param o_items       OUT SYS_REFCURSOR - EQUIP_CODE, EQUIP_NAME, RESULT, INSPECTOR_NAME, LINE_CODE
-     * @references EQUIP_INSPECT_ITEM_MASTERS, EQUIP_INSPECT_LOGS, EQUIP_MASTERS
+     * @references EQUIP_INSPECT_ITEM_POOL, EQUIP_INSPECT_LOGS, EQUIP_MASTERS
      */
     PROCEDURE SP_INSPECT_DAILY(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
@@ -89,7 +89,7 @@ CREATE OR REPLACE PACKAGE PKG_DASHBOARD AS
      * @param p_target_date IN DATE  - 조회 대상일 (기본값: 오늘)
      * @param o_summary     OUT SYS_REFCURSOR - TOTAL_CNT, COMPLETED_CNT, PASS_CNT, FAIL_CNT
      * @param o_items       OUT SYS_REFCURSOR - EQUIP_CODE, EQUIP_NAME, RESULT, INSPECTOR_NAME, LINE_CODE
-     * @references EQUIP_INSPECT_ITEM_MASTERS, EQUIP_INSPECT_LOGS, EQUIP_MASTERS
+     * @references EQUIP_INSPECT_ITEM_POOL, EQUIP_INSPECT_LOGS, EQUIP_MASTERS
      */
     PROCEDURE SP_INSPECT_PERIODIC(
         p_target_date IN DATE DEFAULT TRUNC(SYSDATE),
@@ -287,7 +287,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
 
     ----------------------------------------------------------------------------
     -- SP_INSPECT_DAILY: 일상점검 현황
-    -- EQUIP_INSPECT_ITEM_MASTERS에서 DAILY 점검 대상 설비를 추출하고,
+    -- EQUIP_INSPECT_ITEM_POOL에서 DAILY 점검 대상 설비를 추출하고,
     -- EQUIP_INSPECT_LOGS에서 해당일 점검 결과를 LEFT JOIN하여 요약·상세 반환
     ----------------------------------------------------------------------------
     PROCEDURE SP_INSPECT_DAILY(
@@ -309,7 +309,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
             FROM (
                 -- 일상점검 대상 설비 목록 (설비별 1건으로 그룹핑)
                 SELECT DISTINCT EQUIP_CODE, COMPANY, PLANT_CD
-                  FROM EQUIP_INSPECT_ITEM_MASTERS
+                  FROM EQUIP_INSPECT_ITEM_POOL
                  WHERE INSPECT_TYPE = 'DAILY'
                    AND USE_YN = 'Y'
                    AND (p_company IS NULL OR COMPANY = p_company)
@@ -332,7 +332,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                 e.LINE_CODE
             FROM (
                 SELECT DISTINCT EQUIP_CODE, COMPANY, PLANT_CD
-                  FROM EQUIP_INSPECT_ITEM_MASTERS
+                  FROM EQUIP_INSPECT_ITEM_POOL
                  WHERE INSPECT_TYPE = 'DAILY'
                    AND USE_YN = 'Y'
                    AND (p_company IS NULL OR COMPANY = p_company)
@@ -374,7 +374,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
             FROM (
                 -- 정기점검 대상 설비 목록
                 SELECT DISTINCT EQUIP_CODE, COMPANY, PLANT_CD
-                  FROM EQUIP_INSPECT_ITEM_MASTERS
+                  FROM EQUIP_INSPECT_ITEM_POOL
                  WHERE INSPECT_TYPE = 'PERIODIC'
                    AND USE_YN = 'Y'
                    AND (p_company IS NULL OR COMPANY = p_company)
@@ -397,7 +397,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_DASHBOARD AS
                 e.LINE_CODE
             FROM (
                 SELECT DISTINCT EQUIP_CODE, COMPANY, PLANT_CD
-                  FROM EQUIP_INSPECT_ITEM_MASTERS
+                  FROM EQUIP_INSPECT_ITEM_POOL
                  WHERE INSPECT_TYPE = 'PERIODIC'
                    AND USE_YN = 'Y'
                    AND (p_company IS NULL OR COMPANY = p_company)

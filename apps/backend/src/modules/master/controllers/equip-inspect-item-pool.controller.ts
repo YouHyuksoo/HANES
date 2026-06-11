@@ -11,8 +11,8 @@ import { EquipInspectItemPoolService } from '../services/equip-inspect-item-pool
 import { getHeaderString } from '../../../common/utils/header-value.util';
 import { getRequestUser } from '../../../common/utils/request-user.util';
 
-@ApiTags('기준정보 - 설비점검항목 Pool')
-@Controller('master/equip-inspect-item-pool')
+@ApiTags('기준정보 - 설비점검항목 마스터')
+@Controller('master/equip-inspect-item-masters')
 export class EquipInspectItemPoolController {
   constructor(private readonly service: EquipInspectItemPoolService) {}
 

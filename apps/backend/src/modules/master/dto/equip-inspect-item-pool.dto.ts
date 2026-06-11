@@ -19,6 +19,12 @@ export class CreateEquipInspectItemPoolDto {
   @IsIn(['DAILY', 'PERIODIC', 'PM', 'WORKER'])
   inspectType: string;
 
+  @ApiPropertyOptional({ description: '설비유형 (COM_CODES EQUIP_TYPE)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  equipType?: string;
+
   @ApiPropertyOptional({ description: '판정기준' })
   @IsOptional()
   @IsString()
@@ -61,6 +67,12 @@ export class CreateEquipInspectItemPoolDto {
   @IsNumber()
   uslValue?: number;
 
+  @ApiPropertyOptional({ description: '작업자점검 QR 코드값 (INSPECT_TYPE=WORKER 항목에만 사용)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  workerQrCode?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()
@@ -81,6 +93,12 @@ export class EquipInspectItemPoolQueryDto extends PaginationQueryDto {
   @IsString()
   @IsIn(['DAILY', 'PERIODIC', 'PM', 'WORKER'])
   inspectType?: string;
+
+  @ApiPropertyOptional({ description: '설비유형 (COM_CODES EQUIP_TYPE)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  equipType?: string;
 
   @ApiPropertyOptional({ description: '사용여부' })
   @IsOptional()

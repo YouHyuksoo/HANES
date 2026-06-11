@@ -61,6 +61,9 @@ export class PartMaster {
   @Column({ name: 'BOX_QTY', type: 'int', default: 0 })
   boxQty: number;
 
+  @Column({ name: 'MIN_PACK_QTY', type: 'int', default: 0 })
+  minPackQty: number;
+
   @Column({ name: 'IQC_FLAG', length: 1, default: 'Y' })
   iqcYn: string;
 

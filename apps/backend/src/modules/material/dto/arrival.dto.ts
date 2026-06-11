@@ -278,12 +278,8 @@ export class ArrivalResultQueryDto extends PaginationQueryDto {
   status?: string;
 }
 
-/** IQC006 — 입하 그룹(arrivalNo+품번) 단위 취소 DTO */
+/** IQC006 — 입하(arrivalNo) 전체 취소 DTO */
 export class CancelArrivalByNoDto {
-  @ApiProperty({ description: '품번(ITEM_CODE)' })
-  @IsString()
-  itemCode!: string;
-
   @ApiPropertyOptional({ description: '취소 사유' })
   @IsOptional()
   @IsString()

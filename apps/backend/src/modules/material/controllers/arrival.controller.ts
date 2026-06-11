@@ -87,14 +87,14 @@ export class ArrivalController {
 
   @Post('results/:arrivalNo/cancel')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'IQC006 — 입하 그룹(arrivalNo+품번) 단위 취소' })
+  @ApiOperation({ summary: 'IQC006 — 입하(arrivalNo) 전체 취소' })
   async cancelByArrival(
     @Param('arrivalNo') arrivalNo: string,
     @Body() dto: CancelArrivalByNoDto,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const data = await this.arrivalService.cancelByArrival(arrivalNo, dto.itemCode, dto.reason ?? '입하실적조회 취소', company, plant);
+    const data = await this.arrivalService.cancelByArrival(arrivalNo, dto.reason ?? '입하실적조회 취소', company, plant);
     return ResponseUtil.success(data, '입하가 취소되었습니다.');
   }
 

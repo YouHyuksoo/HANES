@@ -102,6 +102,13 @@ export class CreatePartDto {
   @Min(0)
   boxQty?: number;
 
+  @ApiPropertyOptional({ description: '최소포장단위 수량', default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  minPackQty?: number;
+
   @ApiPropertyOptional({ description: 'IQC 대상여부', default: 'Y', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
