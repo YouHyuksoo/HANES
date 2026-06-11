@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-IQC-METHOD-LABELS | 2026-06-11 | codex | IQC FULL/SAMPLE/SKIP 표시를 검사/검사/무검사로 통일하고 IQC 화면 라벨을 검사구분으로 정리, JSHANES 재적용 | evidence: JOURNAL 2026-06-11 21:21 Codex
 - T-MAT-LOT-IQC-UID-SEPARATE | 2026-06-11 | codex | JSHANES에서 MAT_LOTS/MAT_STOCKS/STOCK_TRANSACTIONS 시드성 MAT_UID를 MLT-*로 변경해 IQC_LOGS와 LOT 화면 UID 중복 해소 | evidence: JOURNAL 2026-06-11 21:20 Codex
 - T-IQC-CODE-ALIGN | 2026-06-11 | codex | IQC 검사방법(FULL/SAMPLE/SKIP)과 검사유형(INITIAL/RETEST)을 전용 공통코드로 분리하고 품목/IQC/이력 화면 매핑 통일 | evidence: JOURNAL 2026-06-11 20:48 Codex
 - T-PROCESS-EQUIP-SEED | 2026-06-11 | codex | 공정 21개 기준 설비 36대와 공정-설비 매핑 36건을 JSHANES에 시드, 전 공정 시드 매핑 확인 | evidence: JOURNAL 2026-06-11 20:27 Codex

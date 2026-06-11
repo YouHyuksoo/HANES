@@ -29,28 +29,6 @@ notes:
 
 ## Active Tasks
 
-## T-IQC-METHOD-LABELS IQC 검사방법 라벨 통일
-status: IN_PROGRESS
-owner: codex
-role: implementer
-scope:
-- IQC 검사방법 표시 라벨을 검사/무검사로 통일
-files:
-- apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql
-- apps/frontend/src/locales/{ko,en,zh,vi}.json
-- apps/frontend/src/components/material/IqcModal.tsx
-- apps/frontend/src/components/material/IqcTable.tsx
-- apps/frontend/src/app/(authenticated)/master/part/page.tsx
-- apps/frontend/src/app/(authenticated)/master/part/components/IqcSettingModal.tsx
-- apps/frontend/src/app/(authenticated)/master/iqc-item/components/{IqcGroupTab.tsx,IqcGroupModal.tsx,IqcLinkModal.tsx,IqcLinkTab.tsx,IqcDetailPanel.tsx}
-verification:
-- JSHANES COM_CODES 라벨 확인
-- 구조 테스트 및 frontend typecheck
-review:
-- needs-review
-notes:
-- 코드값은 유지한다. FULL/SAMPLE은 표시만 "검사", SKIP은 "무검사"로 보인다.
-
 ## T-PDA-PALLET-SHIP PDA 팔레트 단위 출하 지원
 status: TODO
 owner: unassigned

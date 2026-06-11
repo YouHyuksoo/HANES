@@ -2,11 +2,12 @@
 
 ## Last Update
 
-2026-06-11 21:20
+2026-06-11 21:21
 
 ## Completed
 
 - `T-MAT-LOT-IQC-UID-SEPARATE`: JSHANES에서 `MAT_LOTS`와 `IQC_LOGS`가 같은 `MAT_UID`를 공유하던 시드성 LOT를 분리했다. IQC 이력은 `VH1-RM...` 그대로 두고 재고/LOT 쪽 `MAT_LOTS`, `MAT_STOCKS`, `STOCK_TRANSACTIONS`만 `MLT-RM...`으로 변경했다. 검증 결과 `MAT_LOT_IQC_OVERLAP=0`, 파일 재실행 성공.
+- `T-IQC-METHOD-LABELS`: IQC 검사/무검사 구분 표시를 통일했다. `IQC_INSPECT_METHOD` 공통코드는 코드값은 유지하고 JSHANES 표시를 `FULL=검사`, `SAMPLE=검사`, `SKIP=무검사`로 적용했다. 품목정보, IQC 검사그룹, 수입검사 목록/입력, 검사이력 범위 라벨은 `검사구분`으로 맞췄고 ko/en/zh/vi locale 및 fallback 문자열을 갱신했다. 구조 테스트 5건, frontend typecheck, JSHANES 조회 통과.
 - `T-IQC-CODE-ALIGN`: IQC 검사방법/검사유형 코드 매핑 통일 완료. 원인은 `FULL/SAMPLE/SKIP`가 필요한 IQC 검사방법이 일반 `INSPECT_METHOD`(VISUAL/MEASUREMENT 등)와 이름만 공유하고, IQC 이력 `INITIAL/RETEST`가 `IQC_TYPE`(IQC/PQC/FQC/OQC)으로 표시된 것. `IQC_INSPECT_METHOD`, `IQC_INSPECT_TYPE` 공통코드를 JSHANES에 추가하고 품목정보/IQC 검사그룹/수입검사/검사입력/IQC 이력 화면을 전용 그룹으로 변경했다. 검사입력 legacy `NONE`은 `SKIP`으로 정규화. 구조 테스트, FE/BE tsc, DB 코드 확인, ERD 문서 재생성 완료.
 - `T-PROCESS-EQUIP-SEED`: 공정별 설비 마스터/공정-설비 매핑 시드를 추가하고 JSHANES에 적용했다. `apps/backend/src/migrations/2026-06-11_process_equipment_seed.sql`은 활성 공정 21개 기준으로 WIRE/TERMINAL/INSPECTION은 2대, ASSEMBLY/HEAT/미분류는 1대씩 `EQ-<PROCESS_CODE>-NN` 설비를 생성한다. 실DB 검증 결과 `EQUIP_MASTERS` 시드 36건, `PROCESS_EQUIPMENTS` 시드 36건, 모든 활성 공정 21개에 시드 매핑 존재. 기존 이상 매핑은 삭제하지 않았다.
 - `T-MENU-SHELF-LIFE-REINSPECT`: `MAT_SHELF_LIFE_REINSPECT`가 미배치 후 메뉴관리에서 사라지고 카테고리 이동이 실패하는 문제 수정. 원인은 `menuConfig.ts` leaf가 백엔드 `menu-code-validator.ts`에 누락된 것. 누락 leaf 7개를 validator에 추가하고 구조 테스트를 추가했다. JSHANES에는 유수명 3개 메뉴를 MATERIAL 카테고리로 복구하고 MANAGER 권한을 보강했다. `/menu-categories/tree`와 `/menu-category-items/move` 실측 성공.

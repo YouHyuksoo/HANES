@@ -10,6 +10,15 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-11 21:10 Claude
+
+- 작업: T-IQC-MODAL-POOL-ITEMS — IQC 검사결과 등록 모달의 검사항목 일부 누락·검사기준 컬럼 누락 수정 + 전체 변경분 커밋.
+- 원인(실측): 모달이 `GET /master/iqc-items`(IQC_ITEM_MASTERS) 조회 — CNTR001은 여기 2행(검사기준/LSL/USL 전무)뿐. 정상 출처인 품목→그룹→그룹항목→풀(IQC_ITEM_POOL) 체인이 끊겨 있었음: IQC_PART_LINKS가 존재하지 않는 GRP-* 그룹 참조, 실재 IGR-* 그룹은 IQC_GROUP_ITEMS 매핑 0건.
+- 수정: ①시드 `2026-06-11_iqc_group_chain_repair_seed.sql` — GRP-*→IGR-* 링크 정정(UPDATE) + IGR-* 그룹별 검사항목 매핑 시드(SET 기반 INSERT, NOT EXISTS 가드). ②백엔드 `GET /master/iqc-part-links/resolve-items/:itemCode`(거래처 전용→기본(*)→첫 링크 해석, 풀의 criteria→spec/lsl/usl/unit/judgeMethod 반환). ③모달이 새 엔드포인트 사용.
+- 검증: JSHANES 시드 적용, CNTR001 체인 4항목(외관/캐비티치수/락기능/조립) + 검사기준 정상. resolve-items API 4행 반환 실측. FE/BE tsc 통과, nest build+재시작.
+- 커밋: 지금까지 미커밋분 전부를 작업 단위로 분리 커밋 — PDA계약통일, 팔레트화면정합, 키오스크단절수정, IQC코드그룹, 메뉴수정, 테마, 공정설비시드, IQC라벨통일, 재검수불분리, UID분리, 본 IQC모달수정, 협업보드. (codex 완료분 포함)
+- 주의: 백엔드 3003 새 빌드본 재시작됨. hswbs 반영은 별도 배포 필요. T-PDA-RECEIVE-WORKER-GUARD 락은 작업파일 미존재라 보존(타 컨텍스트 진행분).
+
 ## 2026-06-11 20:50 Claude
 
 - 작업: T-KIOSK-FLOW-FIX — 키오스크 점검에서 발견한 단절 3건 수정 (우선순위 ①→③→②) + 연쇄 버그 1건.
@@ -223,6 +232,14 @@ Use local time in 24-hour format.
 - 원인: JSHANES에서 `MAT_LOTS.MAT_UID`와 `IQC_LOGS.MAT_UID`가 `VH1-RM260526-00007`, `VH1-RM260603-00003`, `VH1-RM260605-00002`, `VH1-RM260607-00001` 4개 UID로 겹쳤고, IQC 이력은 6건이라 LOT 화면에서 이미 검사된 LOT처럼 혼동될 수 있었다.
 - 조치: `apps/backend/src/migrations/2026-06-11_mat_lot_iqc_uid_separate.sql` 추가. IQC 이력은 유지하고 `MAT_LOTS`, `MAT_STOCKS`, `STOCK_TRANSACTIONS`의 재고/LOT 쪽 UID만 `MLT-RM260526-00007`, `MLT-RM260603-00003`, `MLT-RM260605-00002`, `MLT-RM260607-00001`로 변경했다.
 - 검증: oracle-db connector로 JSHANES 적용 및 재실행 성공. `OLD_INVENTORY_REFS=0`, `NEW_INVENTORY_REFS=15`, `MAT_LOT_IQC_OVERLAP=0`. `git diff --check -- apps/backend/src/migrations/2026-06-11_mat_lot_iqc_uid_separate.sql .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` 통과.
+
+## 2026-06-11 21:21 Codex
+
+- 작업: `T-IQC-METHOD-LABELS` IQC 검사/무검사 표시 라벨 통일.
+- 원인: 같은 IQC `FULL/SAMPLE/SKIP` 구분이 화면별로 `검사방법`, `검사형태`, `검사분류`로 표시되고, 선택값도 `전수검사/샘플검사`처럼 나뉘어 사용자가 검사/무검사 구분으로 읽기 어려웠다.
+- 변경: `IQC_INSPECT_METHOD`의 `FULL`, `SAMPLE` 표시명을 모두 `검사`, `SKIP` 표시명을 `무검사`로 유지. 품목정보, IQC 검사기준, IQC 검사그룹, 수입검사 목록/입력, 검사이력 범위 라벨의 한국어 표준 표시명을 `검사구분`으로 통일하고 ko/en/zh/vi locale 및 fallback 문자열을 갱신했다. 내부 타입/공통코드 주석도 `IQC 검사구분`으로 정리했다.
+- DB: `apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql`을 JSHANES에 재적용. 확인 결과 `FULL=검사`, `SAMPLE=검사`, `SKIP=무검사`, `CODE_DESC=IQC 검사구분:*` 3건.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/material/iqc/iqc-code-groups.structure.test.mjs"` 통과(5건). `pnpm --filter @harness/frontend exec tsc --noEmit` 통과. 구조 테스트는 IQC 라벨이 `검사구분`, 선택값이 `검사/무검사`만 되도록 회귀 방지한다.
 
 ## 2026-06-11 12:27 Claude
 
