@@ -11,8 +11,8 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, BoxIcon, Package, Layers, CheckCircle } from 'lucide-react';
-import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
+import { Search, RefreshCw, BoxIcon } from 'lucide-react';
+import { Card, CardContent, Button, Input } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import api from '@/services/api';
@@ -30,13 +30,21 @@ interface PackResult {
   closeTime: string;
 }
 
+/** 로컬 타임존 기준 오늘 날짜(YYYY-MM-DD) */
+const getTodayStr = () => {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+};
+
 export default function PackResultPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<PackResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(getTodayStr);
+  const [endDate, setEndDate] = useState(getTodayStr);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -55,12 +63,6 @@ export default function PackResultPage() {
   }, [searchText, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => ({
-    totalBox: data.length,
-    totalQty: data.reduce((s, r) => s + (r.packQty ?? 0), 0),
-    closedBox: data.filter(d => d.status === 'CLOSED').length,
-  }), [data]);
 
   const columns = useMemo<ColumnDef<PackResult>[]>(() => [
     { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 120,
@@ -99,12 +101,6 @@ export default function PackResultPage() {
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />{t('common.refresh')}
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4 flex-shrink-0">
-        <StatCard label={t('production.packResult.totalBox')} value={stats.totalBox} icon={Package} color="blue" />
-        <StatCard label={t('production.packResult.totalPackQty')} value={stats.totalQty} icon={Layers} color="green" />
-        <StatCard label={t('production.packResult.closedBox')} value={stats.closedBox} icon={CheckCircle} color="purple" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
