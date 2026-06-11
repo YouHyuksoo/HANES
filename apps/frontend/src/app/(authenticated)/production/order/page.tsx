@@ -370,45 +370,48 @@ export default function JobOrderPage() {
           </div>
         </div>
 
-        {/* 액션바 */}
-        {selectedRow && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg flex-shrink-0 animate-fade-in">
-            <span className="text-xs font-medium text-text mr-2">
-              {selectedRow.orderNo}
-            </span>
-            <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedRow.status} />
-            <div className="flex-1" />
-            <Button size="sm" variant="secondary" onClick={() => setPrintOrderNo(selectedRow.orderNo)}>
-              <Printer className="w-3.5 h-3.5 mr-1" />{t("production.order.printBtn", "작업지시서 출력")}
+        {/* 액션바 — 항상 표시, 선택된 행이 없으면 버튼 비활성 */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg flex-shrink-0">
+          {selectedRow ? (
+            <>
+              <span className="text-xs font-medium text-text mr-2">{selectedRow.orderNo}</span>
+              <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedRow.status} />
+            </>
+          ) : (
+            <span className="text-xs text-text-muted">{t("production.order.selectRowForAction")}</span>
+          )}
+          <div className="flex-1" />
+          <Button size="sm" variant="secondary" disabled={!selectedRow}
+            onClick={() => selectedRow && setPrintOrderNo(selectedRow.orderNo)}>
+            <Printer className="w-3.5 h-3.5 mr-1" />{t("production.order.printBtn", "작업지시서 출력")}
+          </Button>
+          <Button size="sm" variant="secondary" disabled={!canStart}
+            onClick={() => setPendingAction("start")}>
+            <Play className="w-3.5 h-3.5 mr-1" />{t("production.order.actionStart")}
+          </Button>
+          <Button size="sm" variant="secondary" disabled={!canComplete}
+            onClick={() => setPendingAction("complete")}>
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{t("production.order.actionComplete")}
+          </Button>
+          <Button size="sm" variant="secondary" disabled={!canHold}
+            onClick={() => setPendingAction("hold")}>
+            <PauseCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionHold")}
+          </Button>
+          <Button size="sm" variant="secondary" disabled={!canHoldRelease}
+            onClick={() => setPendingAction("holdRelease")}>
+            <PlayCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionHoldRelease")}
+          </Button>
+          <Button size="sm" variant="secondary" disabled={!canCancel}
+            onClick={() => setPendingAction("cancel")}
+            className={canCancel ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30" : ""}>
+            <XCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionCancel")}
+          </Button>
+          {isPreIssue && (
+            <Button size="sm" variant="secondary" disabled={!selectedRow} onClick={handleOpenPreIssue}>
+              <Barcode className="w-3.5 h-3.5 mr-1" />{t("production.order.preIssueBtn")}
             </Button>
-            <Button size="sm" variant="secondary" disabled={!canStart}
-              onClick={() => setPendingAction("start")}>
-              <Play className="w-3.5 h-3.5 mr-1" />{t("production.order.actionStart")}
-            </Button>
-            <Button size="sm" variant="secondary" disabled={!canComplete}
-              onClick={() => setPendingAction("complete")}>
-              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{t("production.order.actionComplete")}
-            </Button>
-            <Button size="sm" variant="secondary" disabled={!canHold}
-              onClick={() => setPendingAction("hold")}>
-              <PauseCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionHold")}
-            </Button>
-            <Button size="sm" variant="secondary" disabled={!canHoldRelease}
-              onClick={() => setPendingAction("holdRelease")}>
-              <PlayCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionHoldRelease")}
-            </Button>
-            <Button size="sm" variant="secondary" disabled={!canCancel}
-              onClick={() => setPendingAction("cancel")}
-              className={canCancel ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30" : ""}>
-              <XCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionCancel")}
-            </Button>
-            {isPreIssue && (
-              <Button size="sm" variant="secondary" onClick={handleOpenPreIssue}>
-                <Barcode className="w-3.5 h-3.5 mr-1" />{t("production.order.preIssueBtn")}
-              </Button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={displayData} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="작업지시"
