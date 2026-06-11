@@ -45,7 +45,7 @@ export default function InputKioskPage() {
   const {
     selectedEquip, selectedJobOrder, interlock, savedResultCount, hasPendingDelegate,
     selectedWorkers, midInspectDone,
-    addWorker, setSelectedJobOrder, setInterlock, incrementResultCount, setHasPendingDelegate,
+    addWorker, setSelectedJobOrder, setInterlock, setSavedResultCount, setHasPendingDelegate,
   } = useKioskStore();
 
   const [equips, setEquips] = useState<EquipOption[]>([]);
@@ -87,6 +87,24 @@ export default function InputKioskPage() {
     setLastInspectDone(false);
   }, [selectedJobOrder?.orderNo]);
 
+  // 진행수량을 서버 실적(PROD_RESULTS 집계) 기준으로 동기화
+  // — 새로고침/재진입/다른 단말 실적이 있어도 진행률·중물 차단이 실제 생산량을 따른다.
+  const refreshProgress = useCallback(async () => {
+    if (!selectedJobOrder?.orderNo) return;
+    try {
+      const res = await api.get(
+        `/production/job-orders/order-no/${encodeURIComponent(selectedJobOrder.orderNo)}`,
+      );
+      const jo = res.data?.data;
+      if (jo) setSavedResultCount((jo.goodQty ?? 0) + (jo.defectQty ?? 0));
+    } catch {
+      // 조회 실패 시 기존(persist) 값 유지
+    }
+  }, [selectedJobOrder?.orderNo, setSavedResultCount]);
+
+  // 작업지시 선택/재진입 시 서버 기준으로 초기 동기화
+  useEffect(() => { refreshProgress(); }, [refreshProgress]);
+
   // 의뢰검사 대기 여부 주기적 체크 (10초 간격)
   useEffect(() => {
     if (!selectedJobOrder?.orderNo || !hasPendingDelegate) return;
@@ -123,14 +141,15 @@ export default function InputKioskPage() {
     setIsWorkerOpen(false);
   }, [addWorker]);
 
-  // 실적 저장 후 처리 — 초물 자주검사 자동 트리거
+  // 실적 저장 후 처리 — 서버 기준 진행수량 재동기화 + 초물 자주검사 자동 트리거
   const handleSaved = useCallback(() => {
-    incrementResultCount();
-    setHistoryKey(k => k + 1);
+    // 이번 저장 전 누적 생산수량이 0이었으면 초물 검사 트리거 (서버 집계 기준)
     if (savedResultCount === 0 && !firstInspectDone) {
       setSelfInspectTiming('FIRST');
     }
-  }, [savedResultCount, firstInspectDone, incrementResultCount]);
+    refreshProgress();
+    setHistoryKey(k => k + 1);
+  }, [savedResultCount, firstInspectDone, refreshProgress]);
 
   // 자주검사 모달 완료 처리
   const handleSelfInspectDone = useCallback(() => {

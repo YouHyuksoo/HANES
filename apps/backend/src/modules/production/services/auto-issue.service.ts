@@ -22,6 +22,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, QueryRunner, In } from 'typeorm';
 
 import { BomMaster } from '../../../entities/bom-master.entity';
+import { JobMaterialLot } from '../../../entities/job-material-lot.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
@@ -163,7 +164,13 @@ export class AutoIssueService {
     const stockCheckPolicy =
       (await this.sysConfigService.getValue('MAT_ISSUE_STOCK_CHECK')) ?? 'BLOCK';
 
-    /* ── 6. 자식 품목별 FIFO 차감 ─────────────────── */
+    /* ── 5-2. 키오스크에서 스캔한 작업지시 자재 LOT (차감 우선순위 1순위) ── */
+    const scannedLots = await qr.manager.find(JobMaterialLot, {
+      where: { jobOrderNo: orderNo, ...this.tenantWhere(tenant) },
+    });
+    const scannedMatUids = new Set(scannedLots.map((l) => l.matUid));
+
+    /* ── 6. 자식 품목별 차감 (스캔 LOT 우선 → FIFO) ── */
     for (const bom of bomList) {
       const requiredQty = Number(bom.qtyPer) * qty;
       if (requiredQty <= 0) continue;
@@ -171,6 +178,7 @@ export class AutoIssueService {
       const childResult = await this.issueFifo(
         qr, bom.childItemCode, requiredQty, orderNo,
         prodResultNo, stockCheckPolicy, result.warnings, tenant,
+        scannedMatUids,
       );
       result.issued.push(...childResult);
     }
@@ -224,7 +232,8 @@ ${tenantSql}
   }
 
   /* ================================================================
-   *  FIFO LOT 차감 (분할 차감 포함)
+   *  LOT 차감 (분할 차감 포함)
+   *  우선순위: ① 키오스크 스캔 LOT(JOB_MATERIAL_LOTS) → ② FIFO(createdAt)
    * ================================================================ */
   private async issueFifo(
     qr: QueryRunner,
@@ -235,6 +244,7 @@ ${tenantSql}
     stockCheckPolicy: string,
     warnings: string[],
     tenant: TenantContext,
+    scannedMatUids: Set<string> = new Set(),
   ): Promise<{ matUid: string; itemCode: string; issueQty: number }[]> {
     const issued: { matUid: string; itemCode: string; issueQty: number }[] = [];
     const tenantWhere = this.tenantWhere(tenant);
@@ -247,7 +257,15 @@ ${tenantSql}
       .andWhere('l.status = :st', { st: 'NORMAL' });
     if (tenant.company) lotQb.andWhere('l.company = :company', { company: tenant.company });
     if (tenant.plant) lotQb.andWhere('l.plant = :plant', { plant: tenant.plant });
-    const candidateLots = await lotQb.orderBy('l.createdAt', 'ASC').getMany();
+    const fifoLots = await lotQb.orderBy('l.createdAt', 'ASC').getMany();
+
+    // 작업지시에 스캔 등록된 LOT을 차감 1순위로 — 스캔 추적(JOB_MATERIAL_LOTS)과 실제 차감 LOT 일치
+    const candidateLots = scannedMatUids.size > 0
+      ? [
+          ...fifoLots.filter((l) => scannedMatUids.has(l.matUid)),
+          ...fifoLots.filter((l) => !scannedMatUids.has(l.matUid)),
+        ]
+      : fifoLots;
     for (const lot of candidateLots) {
       this.assertSameTenant('자동차감 LOT', tenant, lot);
     }
@@ -312,24 +330,28 @@ ${tenantSql}
       });
       await qr.manager.save(MatIssue, issueEntity);
 
-      /* (b) StockTransaction 생성 */
-      const transNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
-      const txEntity = qr.manager.create(StockTransaction, {
-        transNo,
-        transType: 'MAT_OUT',
-        itemCode,
-        matUid: lot.matUid,
-        qty: -issueQty,
-        refType: 'MAT_ISSUE',
-        refId: `${issueNo}-1`,
-        status: 'DONE',
-        company: lot.company,
-        plant: lot.plant,
-      });
-      await qr.manager.save(StockTransaction, txEntity);
+      /* (b) MatStock 차감 (해당 LOT의 모든 창고 재고) — 창고별 차감 내역 확보 */
+      const deductions = await this.deductMatStock(qr, itemCode, lot.matUid, issueQty, tenant);
 
-      /* (c) MatStock 차감 (해당 LOT의 모든 창고 재고) */
-      await this.deductMatStock(qr, itemCode, lot.matUid, issueQty, tenant);
+      /* (c) StockTransaction 생성 — 창고별로 FROM_WAREHOUSE_ID를 기록해야
+       *     실적 취소(reverseAutoIssue) 시 원 창고로 재고 복원이 가능하다. */
+      for (const deduction of deductions) {
+        const transNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
+        const txEntity = qr.manager.create(StockTransaction, {
+          transNo,
+          transType: 'MAT_OUT',
+          fromWarehouseId: deduction.warehouseCode,
+          itemCode,
+          matUid: lot.matUid,
+          qty: -deduction.qty,
+          refType: 'MAT_ISSUE',
+          refId: `${issueNo}-1`,
+          status: 'DONE',
+          company: lot.company,
+          plant: lot.plant,
+        });
+        await qr.manager.save(StockTransaction, txEntity);
+      }
 
       /* (d) MatStock.qty 합산 → 0이면 MatLot DEPLETED 처리 */
       const remainingStocks = await qr.manager.find(MatStock, {
@@ -347,7 +369,7 @@ ${tenantSql}
   }
 
   /* ================================================================
-   *  MatStock 차감 — LOT 기준 모든 창고에서 차감
+   *  MatStock 차감 — LOT 기준 모든 창고에서 차감, 창고별 차감 내역 반환
    * ================================================================ */
   private async deductMatStock(
     qr: QueryRunner,
@@ -355,7 +377,7 @@ ${tenantSql}
     matUid: string,
     totalDeduct: number,
     tenant: TenantContext,
-  ): Promise<void> {
+  ): Promise<{ warehouseCode: string; qty: number }[]> {
     const tenantWhere = this.tenantWhere(tenant);
     const stocks = await qr.manager.find(MatStock, {
       where: { itemCode, matUid, ...tenantWhere },
@@ -365,10 +387,12 @@ ${tenantSql}
       this.assertSameTenant('자동차감 차감 재고', tenant, stock);
     }
 
+    const deductions: { warehouseCode: string; qty: number }[] = [];
     let remaining = totalDeduct;
     for (const stock of stocks) {
       if (remaining <= 0) break;
       const deduct = Math.min(remaining, stock.qty);
+      if (deduct <= 0) continue;
       remaining -= deduct;
 
       await qr.manager.update(
@@ -379,6 +403,8 @@ ${tenantSql}
           availableQty: Math.max(0, stock.availableQty - deduct),
         },
       );
+      deductions.push({ warehouseCode: stock.warehouseCode, qty: deduct });
     }
+    return deductions;
   }
 }

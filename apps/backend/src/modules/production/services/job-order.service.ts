@@ -224,6 +224,21 @@ export class JobOrderService {
       relations: ['part', 'routing'],
     });
     if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
+
+    // 실적 집계 반영 — 키오스크 등 바코드 스캔 진입점이 실제 생산 진행량을 보도록
+    // findAll/findById와 동일하게 PROD_RESULTS 합계로 goodQty/defectQty를 채운다 (CANCELED 제외).
+    const summaryQb = this.prodResultRepository
+      .createQueryBuilder('pr')
+      .select('SUM(pr.goodQty)', 'totalGoodQty')
+      .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
+      .where('pr.orderNo = :orderNo', { orderNo: jobOrder.orderNo })
+      .andWhere('pr.status != :canceled', { canceled: 'CANCELED' });
+    if (company) summaryQb.andWhere('pr.company = :company', { company });
+    if (plant) summaryQb.andWhere('pr.plant = :plant', { plant });
+    const summary = await summaryQb.getRawOne();
+
+    jobOrder.goodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
+    jobOrder.defectQty = summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0;
     return jobOrder;
   }
 

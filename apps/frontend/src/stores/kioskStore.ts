@@ -65,7 +65,7 @@ interface KioskState {
   scannedConsumables: string[];
   /** 실적 저장 전 임시 보관 불량 목록 */
   pendingDefects: PendingDefect[];
-  /** 현재 작업지시에서 저장된 실적 횟수 (초물/중물/종물 트리거 기준) */
+  /** 현재 작업지시의 누적 생산수량(양품+불량, 서버 PROD_RESULTS 집계 기준) — 초물/중물 트리거·진행률·검사 시점 생산량에 사용 */
   savedResultCount: number;
   /** 의뢰검사 대기 여부 (true 이면 실적입력 차단) */
   hasPendingDelegate: boolean;
@@ -87,7 +87,7 @@ interface KioskState {
   addPendingDefect: (defect: PendingDefect) => void;
   removePendingDefect: (defectCode: string) => void;
   clearPendingDefects: () => void;
-  incrementResultCount: () => void;
+  setSavedResultCount: (count: number) => void;
   setHasPendingDelegate: (value: boolean) => void;
   setMidInspectDone: (value: boolean) => void;
   clearAll: () => void;
@@ -200,7 +200,7 @@ export const useKioskStore = create<KioskState>()(
 
       clearPendingDefects: () => set({ pendingDefects: [] }),
 
-      incrementResultCount: () => set((state) => ({ savedResultCount: state.savedResultCount + 1 })),
+      setSavedResultCount: (count) => set({ savedResultCount: count }),
 
       setHasPendingDelegate: (value) => set({ hasPendingDelegate: value }),
 

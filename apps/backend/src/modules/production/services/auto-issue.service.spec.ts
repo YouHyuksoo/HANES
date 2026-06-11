@@ -214,6 +214,7 @@ describe('AutoIssueService', () => {
 
       // MatStock for LOT-001
       mockQueryRunner.manager.find
+        .mockResolvedValueOnce([]) // scanned job material lots (none)
         .mockResolvedValueOnce([{ warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 200, availableQty: 200, createdAt: new Date() }]) // stock for lot
         .mockResolvedValueOnce([{ warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 200, availableQty: 200, createdAt: new Date() }]) // deductMatStock
         .mockResolvedValueOnce([{ matUid: 'LOT-001', qty: 100 }]); // remaining check
@@ -260,6 +261,7 @@ describe('AutoIssueService', () => {
         getMany: jest.fn().mockResolvedValue([]),
       };
       mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+      mockQueryRunner.manager.find.mockResolvedValueOnce([]); // scanned job material lots (none)
 
       // Act & Assert
       await expect(
@@ -295,6 +297,7 @@ describe('AutoIssueService', () => {
       };
       mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
       mockQueryRunner.manager.find
+        .mockResolvedValueOnce([]) // scanned job material lots (none)
         .mockResolvedValueOnce([{ warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 10, availableQty: 10, company: 'C1', plant: 'P1', createdAt: new Date() }])
         .mockResolvedValueOnce([{ warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 10, availableQty: 10, company: 'C1', plant: 'P1', createdAt: new Date() }])
         .mockResolvedValueOnce([{ matUid: 'LOT-001', qty: 0, company: 'C1', plant: 'P1' }]);
@@ -313,10 +316,10 @@ describe('AutoIssueService', () => {
       );
       expect(mockLotQb.andWhere).toHaveBeenCalledWith('l.company = :company', { company: 'C1' });
       expect(mockLotQb.andWhere).toHaveBeenCalledWith('l.plant = :plant', { plant: 'P1' });
-      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(1, MatStock, {
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(2, MatStock, {
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
-      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(2, MatStock, {
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(3, MatStock, {
         where: expect.objectContaining({ itemCode: 'RM-001', matUid: 'LOT-001', company: 'C1', plant: 'P1' }),
         order: { createdAt: 'ASC' },
       });
@@ -330,6 +333,54 @@ describe('AutoIssueService', () => {
         { matUid: 'LOT-001', company: 'C1', plant: 'P1' },
         { status: 'DEPLETED' },
       );
+    });
+
+    it('should deduct scanned job-material lots before FIFO order', async () => {
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE')  // timing
+        .mockResolvedValueOnce('WARN');      // stock check policy
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001', itemCode: 'FG-001',
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
+      ]);
+
+      // FIFO 순서: LOT-OLD(먼저 생성) → LOT-SCANNED
+      const mockLotQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'LOT-OLD', itemCode: 'RM-001' },
+          { matUid: 'LOT-SCANNED', itemCode: 'RM-001' },
+        ]),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([{ jobOrderNo: 'JO-001', itemCode: 'RM-001', seq: 1, matUid: 'LOT-SCANNED' }]) // scanned lots
+        .mockResolvedValueOnce([ // stocks for both candidate lots (IN batch)
+          { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-OLD', qty: 100, availableQty: 100 },
+          { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-SCANNED', qty: 100, availableQty: 100 },
+        ])
+        .mockResolvedValueOnce([{ warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-SCANNED', qty: 100, availableQty: 100 }]) // deductMatStock(LOT-SCANNED)
+        .mockResolvedValueOnce([{ matUid: 'LOT-SCANNED', qty: 90 }]); // remaining check
+
+      mockNumbering.nextInTx
+        .mockResolvedValueOnce('ISS-001')
+        .mockResolvedValueOnce('TX-001');
+      mockQueryRunner.manager.create.mockImplementation((_: any, data: any) => data);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 10, mockQueryRunner);
+
+      // 스캔 LOT이 FIFO상 뒤(LOT-SCANNED)여도 우선 차감된다
+      expect(result.issued).toHaveLength(1);
+      expect(result.issued[0].matUid).toBe('LOT-SCANNED');
+      expect(result.issued[0].issueQty).toBe(10);
     });
 
     it('should reject auto issue when returned LOT tenant differs from job order tenant', async () => {
