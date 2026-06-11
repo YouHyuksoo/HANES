@@ -289,6 +289,13 @@ Use local time in 24-hour format.
 - 변경: `apps/frontend/src/app/(authenticated)/quality/inspect/page.tsx`의 React import에 `useMemo`를 복원했다. 기존 통계 카드 제거 변경은 건드리지 않았다.
 - 검증: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과. `useMemo` 사용 TSX 파일 중 React import에 `useMemo`가 없는 파일 추가 검색 결과 없음.
 
+## 2026-06-12 05:59 Codex
+
+- 작업: `T-KIOSK-AUTOISSUE-BOM-MISMATCH-GUARD` 키오스크 투입스캔 LOT와 BOM 품목 불일치 실적처리 차단.
+- 원인: 스캔 API는 `MAT_LOTS` 품목이 프론트에서 전달한 BOM 항목에 없으면 오장착으로 막지만, 실적처리 단계의 `AutoIssueService`는 기존 `JOB_MATERIAL_LOTS` 행을 다시 검증하지 않고 스캔 `matUid` 우선순위만 적용했다. 오염된 스캔 행이 있으면 잘못된 LOT는 후보에서 빠지고 FIFO로 넘어갈 수 있었다.
+- 변경: `AutoIssueService`에서 작업지시의 유효 BOM child 품목 집합을 만든 뒤, `JOB_MATERIAL_LOTS.itemCode`와 실제 `MAT_LOTS.itemCode`를 모두 대조한다. BOM에 없는 스캔 자재, 존재하지 않는 스캔 LOT, 등록 품목과 실제 LOT 품목 불일치는 `BadRequestException`으로 실적처리/자동차감을 중단한다.
+- 검증: TDD RED 확인 후 수정. `pnpm --filter @harness/backend test -- auto-issue.service.spec.ts --runInBand` 통과(13건). `pnpm --filter @harness/backend test -- job-material-lot.service.spec.ts auto-issue.service.spec.ts --runInBand` 통과(17건). `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과.
+
 ## 2026-06-11 22:03 Codex
 
 - 작업: `T-DATA-CLEAN-HNS02` 사용자 승인 후 JSHANES 데이터 클린징 실행.
@@ -345,3 +352,10 @@ Use local time in 24-hour format.
 - 변경: `apps/frontend/src/app/(authenticated)/inventory/transaction/page.tsx`에서 상단 `StatCard` 3개(전체 거래, 입고 합계, 출고 합계)를 제거하고, 카드 전용 `total`, `totalIn`, `totalOut` 상태/계산 및 관련 아이콘/import를 정리했다. 조회 조건, 새로고침, 그리드, MAT UID 검색, 내보내기는 그대로 유지했다.
 - 검증: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 1차 통과. 최종 재실행 시 다른 변경 파일인 `apps/frontend/src/app/(authenticated)/quality/inspect/page.tsx`의 `useMemo` import 누락 및 implicit any 오류로 전체 typecheck가 실패했다. `inventory/transaction`의 카드 관련 잔여 참조 검색 결과 없음. `git diff --check -- "apps/frontend/src/app/(authenticated)/inventory/transaction/page.tsx" ".ai-coordination/TASKS.md" ".ai-coordination/LOCKS.md" ".ai-coordination/JOURNAL.md" ".ai-coordination/HANDOFF/codex.md" ".ai-coordination/ARCHIVE.md"` 통과. `http://localhost:3002/inventory/transaction` HTTP 200 확인.
 - 참고: `pnpm --filter @harness/frontend lint -- --file "src/app/(authenticated)/inventory/transaction/page.tsx"`는 기존 `next lint` 스크립트가 ESLint 설정 프롬프트를 띄워 실패했다. `browse.exe`는 자체 서버 시작이 15초 내 완료되지 않아 브라우저 DOM 검증은 수행하지 못했다.
+
+## 2026-06-12 05:28 Codex
+
+- 작업: `T-CUSTOMER-INTRO-PPTX-EXPORT` 고객 소개 HTML 23장 기준 편집 가능한 PPTX 재생성.
+- 변경: `docs/presentation/hanes-mes-introduction.html` 내용을 파싱해 `docs/presentation/hanes-mes-introduction.pptx`를 새로 생성했다. 제목, 본문, 절차 박스, 메뉴 표, 캡션, 하단 문구는 PowerPoint 편집 가능한 텍스트/도형 객체로 구성했고, 실제 화면 캡처와 회사 배경 이미지는 이미지 객체로 배치했다.
+- 산출: 최종 PPTX는 `docs/presentation/hanes-mes-introduction.pptx`. 생성용 임시 스크립트와 PowerPoint 렌더 PNG는 검증 후 정리했다.
+- 검증: PPTX 패키지 기준 슬라이드 23장, 미디어 25개, 빈 미디어 0개. 대표 슬라이드 객체 확인 결과 1/2/3/9/10/16/20/21/23페이지 모두 텍스트 객체 포함. PowerPoint COM으로 전체 23장을 PNG 렌더링했고 1, 2, 3, 6, 10, 16, 20, 21, 23페이지를 시각 확인했다. `git diff --check` 통과.

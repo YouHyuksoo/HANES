@@ -2,10 +2,12 @@
 
 ## Last Update
 
-2026-06-12 04:19
+2026-06-12 05:59
 
 ## Completed
 
+- `T-KIOSK-AUTOISSUE-BOM-MISMATCH-GUARD`: 키오스크 투입스캔 LOT가 BOM 품목과 불일치하면 실적처리/자동차감 전 중단하도록 `AutoIssueService`에 방어 추가. `JOB_MATERIAL_LOTS.itemCode`와 실제 `MAT_LOTS.itemCode`를 유효 BOM child 품목과 대조하고, 불일치/누락 시 `BadRequestException`을 던진다. 검증은 auto-issue 단위 테스트 13건, job-material-lot+auto-issue 17건, backend tsc 통과.
+- `T-CUSTOMER-INTRO-PPTX-EXPORT`: 고객 소개 HTML 23장 기준으로 `docs/presentation/hanes-mes-introduction.pptx`를 편집 가능한 PPTX로 재생성 완료. 제목/본문/절차 박스/메뉴 표/캡션/하단 문구는 PowerPoint 텍스트·도형 객체이며, 실제 화면 캡처와 회사 배경 이미지는 이미지 객체다. 검증은 PPTX 패키지 슬라이드 23장, 미디어 25개, 빈 미디어 0개, PowerPoint PNG 렌더 23장 및 대표 슬라이드 시각 확인.
 - `T-QUALITY-INSPECT-USEMEMO`: `/quality/inspect` 외관검사 화면의 `useMemo is not defined` 런타임 오류 수정 완료. 원인은 통계 카드 제거 과정에서 React import의 `useMemo`가 같이 빠졌지만 DataGrid `columns` 정의는 계속 `useMemo`를 사용한 것. `useMemo` import만 복원했고 `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과, 같은 누락 패턴 추가 검색 결과 없음.
 - `T-DATA-CLEAN-HNS02`: JSHANES HNS02 BOM 기준 데이터 클린징 완료. `BOM_MASTERS.BOM_GRP='HNS02'` parent/child 합산 47개 기준으로 `ITEM_MASTERS=47`, `BOM_MASTERS=47`만 유지. 입하/입고/IQC/자재입출고/재고/제품재고/제품실적/작업지시/창고입고/검사의뢰/품질검사/시뮬레이션 데이터 제거 완료. 최종 검증 결과 비-HNS02 `ITEM_CODE` 잔여 없음, 요청 업무 테이블 잔여 없음.
 - `T-INV-TRANSACTION-CARDS`: `/inventory/transaction` 재고수불현황 상단 정보카드 3개 제거 완료. `StatCard` 렌더링과 카드 전용 통계 상태/계산/import만 제거했고 그리드 조회·필터·MAT UID 검색·내보내기는 유지했다. `inventory/transaction` 잔여 참조 검색과 diff check 통과, URL HTTP 200 확인. frontend typecheck는 1차 통과 후 최종 재실행에서 다른 변경 파일 `quality/inspect/page.tsx`의 `useMemo` import 누락/implicit any 오류로 실패했다. 기존 `next lint` 스크립트는 ESLint 설정 프롬프트로 실패하고 `browse.exe`는 자체 서버 시작 타임아웃으로 DOM 검증을 못 했다.

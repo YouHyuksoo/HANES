@@ -10,6 +10,8 @@ Format:
 
 ## Completed
 
+- T-KIOSK-AUTOISSUE-BOM-MISMATCH-GUARD | 2026-06-12 | codex | 키오스크 스캔 LOT가 BOM 품목과 불일치하면 실적처리/자동차감 전에 중단하도록 방어 추가 | evidence: JOURNAL 2026-06-12 05:59 Codex
+- T-CUSTOMER-INTRO-PPTX-EXPORT | 2026-06-12 | codex | 고객 소개 HTML 23장 기준으로 텍스트/도형 편집 가능한 PPTX 재생성, PowerPoint 렌더 23장 확인 | evidence: JOURNAL 2026-06-12 05:28 Codex
 - T-QUALITY-INSPECT-USEMEMO | 2026-06-12 | codex | `/quality/inspect` 외관검사 화면의 누락된 `useMemo` React import를 복원해 런타임 ReferenceError 수정 | evidence: JOURNAL 2026-06-12 04:19 Codex
 - T-INV-TRANSACTION-CARDS | 2026-06-12 | codex | `/inventory/transaction` 재고수불현황 상단 정보카드 3개와 전용 통계 계산 제거 | evidence: JOURNAL 2026-06-12 02:20 Codex
 - T-CUSTOMER-INTRO-HTML-DESIGN | 2026-06-12 | codex | 고객 소개 HTML의 카드형 AI 느낌을 줄이고 산업형 색상/공정 보드 레이아웃으로 재정리 | evidence: JOURNAL 2026-06-12 01:35 Codex

@@ -13,10 +13,15 @@ Before editing, add a lock entry. Mark it released when done.
   started: 2026-06-12 01:32 KST
   last_seen: 2026-06-12 01:32 KST
   expires: 2026-06-12 03:30 KST
-  status: active
+  status: stale
+
 ```
 
 ## History
+
+- T-KIOSK-AUTOISSUE-BOM-MISMATCH-GUARD (codex, 2026-06-12): 키오스크 스캔 LOT가 BOM 품목과 불일치하면 실적처리/자동차감 전 중단하도록 방어 추가 후 lock 해제. 파일: `apps/backend/src/modules/production/services/auto-issue.service.ts`, `apps/backend/src/modules/production/services/auto-issue.service.spec.ts`.
+
+- T-CUSTOMER-INTRO-PPTX-EXPORT (codex, 2026-06-12): 고객 소개 HTML 23장 기준 편집 가능한 PPTX 재생성 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.pptx`.
 
 - T-QUALITY-INSPECT-USEMEMO (codex, 2026-06-12): `/quality/inspect` 화면 `useMemo is not defined` 런타임 오류 수정 완료 후 lock 해제. 파일: `apps/frontend/src/app/(authenticated)/quality/inspect/page.tsx`.
 
