@@ -6388,7 +6388,12 @@
     "pass": "합격 (PASS)",
     "fail": "불합격 (FAIL)",
     "passSuccess": "합격 처리되었습니다",
-    "failSuccess": "불합격 처리되었습니다"
+    "failSuccess": "불합격 처리되었습니다",
+    "spec": "검사 기준",
+    "unit": "단위",
+    "standard": "기준/규격",
+    "noSpec": "설정된 규격(LSL/USL)이 없습니다",
+    "visualItem": "판정형 항목 (규격 없음)"
   },
   "selfInspectHistory": {
     "title": "자주검사 이력",

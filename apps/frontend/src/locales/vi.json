@@ -6354,7 +6354,12 @@
     "pass": "Đạt (PASS)",
     "fail": "Không đạt (FAIL)",
     "passSuccess": "Đã xử lý đạt",
-    "failSuccess": "Đã xử lý không đạt"
+    "failSuccess": "Đã xử lý không đạt",
+    "spec": "Tiêu chuẩn kiểm tra",
+    "unit": "Đơn vị",
+    "standard": "Tiêu chuẩn/quy cách",
+    "noSpec": "Chưa thiết lập quy cách (LSL/USL)",
+    "visualItem": "Mục đánh giá (không có quy cách)"
   },
   "selfInspectHistory": {
     "title": "Lịch sử tự kiểm",

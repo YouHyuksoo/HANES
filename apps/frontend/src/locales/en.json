@@ -6368,7 +6368,12 @@
     "pass": "Pass (PASS)",
     "fail": "Fail (FAIL)",
     "passSuccess": "Marked as passed",
-    "failSuccess": "Marked as failed"
+    "failSuccess": "Marked as failed",
+    "spec": "Inspection Spec",
+    "unit": "Unit",
+    "standard": "Standard",
+    "noSpec": "No spec (LSL/USL) configured",
+    "visualItem": "Visual item (no spec)"
   },
   "selfInspectHistory": {
     "title": "Self-Inspect History",

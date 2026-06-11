@@ -30,6 +30,12 @@ interface DelegateItem {
   measureValue: number | null;
   sampleNo: number;
   createdAt: string;
+  // 검사항목 마스터(SELF_INSPECT_ITEMS) JOIN — 공정생품검사 설정 기준
+  itemType: string | null;
+  unit: string | null;
+  standard: string | null;
+  lslValue: number | null;
+  uslValue: number | null;
 }
 
 export default function RequestInspectPage() {
@@ -184,6 +190,47 @@ export default function RequestInspectPage() {
                           {selected.timing === "FIRST" ? "초물" : selected.timing === "MID" ? "중물" : "종물"}
                         </span>
                       </div>
+                    </div>
+
+                    {/* 검사 기준 — 공정생품검사(SELF_INSPECT_ITEMS) 설정에서 가져옴 */}
+                    <div className="rounded-lg border border-border p-2.5 space-y-1.5">
+                      <p className="text-xs font-semibold text-text-muted">
+                        {t("requestInspect.spec", "검사 기준")}
+                      </p>
+                      {selected.lslValue != null || selected.uslValue != null ? (
+                        <div className="flex items-center gap-4 text-xs">
+                          <div>
+                            <span className="text-text-muted">LSL: </span>
+                            <span className="font-mono font-semibold text-text dark:text-gray-100">
+                              {selected.lslValue != null ? selected.lslValue : "-"}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-text-muted">USL: </span>
+                            <span className="font-mono font-semibold text-text dark:text-gray-100">
+                              {selected.uslValue != null ? selected.uslValue : "-"}
+                            </span>
+                          </div>
+                          {selected.unit && (
+                            <div>
+                              <span className="text-text-muted">{t("requestInspect.unit", "단위")}: </span>
+                              <span className="text-text dark:text-gray-200">{selected.unit}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-text-muted">
+                          {selected.itemType === "MEASURE"
+                            ? t("requestInspect.noSpec", "설정된 규격(LSL/USL)이 없습니다")
+                            : t("requestInspect.visualItem", "판정형 항목 (규격 없음)")}
+                        </p>
+                      )}
+                      {selected.standard && (
+                        <div className="text-xs">
+                          <span className="text-text-muted">{t("requestInspect.standard", "기준/규격")}: </span>
+                          <span className="text-text dark:text-gray-200">{selected.standard}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

@@ -6354,7 +6354,12 @@
     "pass": "合格（PASS）",
     "fail": "不合格（FAIL）",
     "passSuccess": "已处理为合格",
-    "failSuccess": "已处理为不合格"
+    "failSuccess": "已处理为不合格",
+    "spec": "检查标准",
+    "unit": "单位",
+    "standard": "基准/规格",
+    "noSpec": "未设置规格（LSL/USL）",
+    "visualItem": "判定型项目（无规格）"
   },
   "selfInspectHistory": {
     "title": "自检历史",

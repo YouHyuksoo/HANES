@@ -135,12 +135,36 @@ export class SelfInspectService {
     });
   }
 
-  /** 의뢰검사 대기 목록 (관리 화면용) */
+  /** 의뢰검사 대기 목록 (관리 화면용) — 검사항목 마스터(LSL/USL/단위/기준/유형) JOIN */
   async findPendingDelegates(company: string, plant: string) {
-    return this.resultRepo.find({
-      where: { inspectMethod: 'DELEGATE', status: 'PENDING', company, plant },
-      order: { createdAt: 'ASC' },
-    });
+    const rows = await this.resultRepo
+      .createQueryBuilder('r')
+      .leftJoin(SelfInspectItem, 'i', 'i.id = r.inspectItemId')
+      .where('r.inspectMethod = :method', { method: 'DELEGATE' })
+      .andWhere('r.status = :status', { status: 'PENDING' })
+      .andWhere('r.company = :company', { company })
+      .andWhere('r.plant = :plant', { plant })
+      .select([
+        'r.id AS "id"',
+        'r.orderNo AS "orderNo"',
+        'r.processCode AS "processCode"',
+        'r.itemName AS "itemName"',
+        'r.timing AS "timing"',
+        'r.inspectMethod AS "inspectMethod"',
+        'r.status AS "status"',
+        'r.remark AS "remark"',
+        'r.measureValue AS "measureValue"',
+        'r.sampleNo AS "sampleNo"',
+        'r.createdAt AS "createdAt"',
+        'i.itemType AS "itemType"',
+        'i.unit AS "unit"',
+        'i.standard AS "standard"',
+        'i.lslValue AS "lslValue"',
+        'i.uslValue AS "uslValue"',
+      ])
+      .orderBy('r.createdAt', 'ASC')
+      .getRawMany();
+    return rows;
   }
 
   /** 자주검사 항목 전체 조회 (관리 화면용 — timing 필터 없음) */
