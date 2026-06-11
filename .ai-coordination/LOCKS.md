@@ -5,7 +5,7 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
-No active locks.
+- T-IQC-SAMPLE-REMOVE (codex, 2026-06-11): IQC 검사구분에서 SAMPLE 제거, 기존 마스터 SAMPLE은 FULL로 정규화. `IQC_LOGS.INSPECT_CLASS`는 별개/legacy 컬럼으로 보고 검사구분 매핑을 끊되 기존 이력 데이터는 변경하지 않음. 파일: `apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql`, `apps/backend/src/modules/master/dto/iqc-group.dto.ts`, `apps/backend/src/modules/master/services/iqc-group.service.ts`, `apps/backend/src/modules/material/dto/iqc-history.dto.ts`, `apps/backend/src/modules/material/services/iqc-history.service.ts`, `apps/backend/src/entities/{iqc-log.entity.ts,iqc-group.entity.ts,part-master.entity.ts}`, `apps/frontend/src/components/material/{IqcModal.tsx,IqcTable.tsx}`, `apps/frontend/src/app/(authenticated)/master/{part,iqc-item}/**`, `apps/frontend/src/app/(authenticated)/inspection/history/page.tsx`, `apps/frontend/src/locales/{ko,en,zh,vi}.json`, `packages/shared/src/{types/com-code.ts,constants/com-code-values.ts}`.
 ```
 
 ## History
