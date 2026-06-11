@@ -93,6 +93,18 @@ export class CreateJobOrderDto {
   @ApiPropertyOptional({ description: 'BOM 기반 반제품 작업지시 자동생성 여부', default: false })
   @IsOptional()
   autoCreateChildren?: boolean;
+
+  @ApiPropertyOptional({ description: '대표 공정 코드 (미입력 시 라우팅 첫 SEQ에서 자동)', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  processCode?: string;
+
+  @ApiPropertyOptional({ description: '작업 설비 코드 (미입력 시 null, 추후 수동 배정)', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  equipCode?: string;
 }
 
 /**
