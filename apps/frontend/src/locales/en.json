@@ -3,6 +3,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this?",
     "edit": "Edit",
     "change": "Change",
     "add": "Add",
@@ -82,6 +83,8 @@
     "requester": "Requester",
     "reject": "Reject",
     "deleteMessage": "Delete this item?",
+    "deleteConfirmTitle": "Confirm Delete",
+    "deleteConfirmMessage": "Are you sure you want to delete {{name}}?",
     "print": "Print"
   },
   "menu": {
@@ -1385,7 +1388,15 @@
       "itemType": "Judge Type",
       "itemTypeVisual": "Visual",
       "itemTypeMeasure": "Measure",
-      "spec": "Spec"
+      "spec": "Spec",
+      "selectPoolItem": "Select inspection item master",
+      "noPoolForType": "No inspection item master registered for this equipment type / inspection type. Register one in the inspection item master first."
+    },
+    "equipInspectItem": {
+      "title": "Inspection Item Master",
+      "subtitle": "Register and manage inspection items by equipment type. Reference data for equipment inspection mapping.",
+      "statTotal": "Total Items",
+      "statEquipTypes": "Equipment Types"
     },
     "box": {
       "title": "Box Management",

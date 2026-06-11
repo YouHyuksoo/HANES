@@ -3,6 +3,7 @@
     "save": "保存",
     "cancel": "取消",
     "delete": "删除",
+    "confirmDelete": "确定要删除吗？",
     "edit": "编辑",
     "change": "更改",
     "add": "添加",
@@ -82,6 +83,8 @@
     "requester": "申请人",
     "reject": "驳回",
     "deleteMessage": "确定要删除此项目吗？",
+    "deleteConfirmTitle": "确认删除",
+    "deleteConfirmMessage": "确定要删除 {{name}} 吗？",
     "print": "打印"
   },
   "menu": {
@@ -1371,7 +1374,15 @@
       "itemType": "判定类型",
       "itemTypeVisual": "判定型",
       "itemTypeMeasure": "测量型",
-      "spec": "规格"
+      "spec": "规格",
+      "selectPoolItem": "选择点检项目主数据",
+      "noPoolForType": "该设备类型/点检类型下没有已登记的点检项目主数据。请先在点检项目主数据中登记。"
+    },
+    "equipInspectItem": {
+      "title": "点检项目主数据",
+      "subtitle": "按设备类型登记和管理点检项目。设备点检映射的基准信息。",
+      "statTotal": "全部项目",
+      "statEquipTypes": "设备类型数"
     },
     "box": {
       "title": "包装箱管理",

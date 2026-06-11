@@ -3,6 +3,7 @@
     "save": "Lưu",
     "cancel": "Hủy",
     "delete": "Xóa",
+    "confirmDelete": "Bạn có chắc chắn muốn xóa không?",
     "edit": "Sửa",
     "change": "Thay đổi",
     "add": "Thêm",
@@ -82,6 +83,8 @@
     "requester": "Người yêu cầu",
     "reject": "Từ chối",
     "deleteMessage": "Bạn có muốn xóa không?",
+    "deleteConfirmTitle": "Xác nhận xóa",
+    "deleteConfirmMessage": "Bạn có chắc chắn muốn xóa {{name}} không?",
     "print": "In"
   },
   "menu": {
@@ -1371,7 +1374,15 @@
       "itemType": "Phân loại",
       "itemTypeVisual": "Định tính",
       "itemTypeMeasure": "Định lượng",
-      "spec": "Quy cách"
+      "spec": "Quy cách",
+      "selectPoolItem": "Chọn hạng mục kiểm tra chuẩn",
+      "noPoolForType": "Chưa có hạng mục kiểm tra chuẩn nào được đăng ký cho loại thiết bị / loại kiểm tra này. Vui lòng đăng ký trước trong danh mục hạng mục kiểm tra."
+    },
+    "equipInspectItem": {
+      "title": "Danh mục hạng mục kiểm tra",
+      "subtitle": "Đăng ký và quản lý hạng mục kiểm tra theo loại thiết bị. Thông tin chuẩn cho việc ánh xạ kiểm tra thiết bị.",
+      "statTotal": "Tổng hạng mục",
+      "statEquipTypes": "Số loại thiết bị"
     },
     "box": {
       "title": "Quản lý thùng đóng gói",

@@ -3,6 +3,7 @@
     "save": "저장",
     "cancel": "취소",
     "delete": "삭제",
+    "confirmDelete": "정말 삭제하시겠습니까?",
     "edit": "수정",
     "change": "변경",
     "add": "추가",
@@ -82,6 +83,8 @@
     "requester": "요청자",
     "reject": "반려",
     "deleteMessage": "을(를) 삭제하시겠습니까?",
+    "deleteConfirmTitle": "삭제 확인",
+    "deleteConfirmMessage": "{{name}} 을(를) 삭제하시겠습니까?",
     "print": "인쇄"
   },
   "menu": {
@@ -1698,7 +1701,15 @@
       "itemType": "판정구분",
       "itemTypeVisual": "판정형",
       "itemTypeMeasure": "측정형",
-      "spec": "규격"
+      "spec": "규격",
+      "selectPoolItem": "점검항목 마스터 선택",
+      "noPoolForType": "이 설비유형/점검유형에 등록된 점검항목 마스터가 없습니다. 점검항목 마스터에서 먼저 등록하세요."
+    },
+    "equipInspectItem": {
+      "title": "점검항목 마스터",
+      "subtitle": "설비유형별 점검항목을 등록하고 관리합니다. 설비점검 매핑의 기준 정보입니다.",
+      "statTotal": "전체 항목",
+      "statEquipTypes": "설비유형 수"
     },
     "box": {
       "title": "포장박스관리",
