@@ -264,10 +264,13 @@ export function useProcessOptions() {
 /**
  * 설비 목록을 SelectOption[]으로 반환
  */
-export function useEquipOptions() {
+export function useEquipOptions(processCode?: string) {
+  const url = processCode
+    ? `/equipment/equips?limit=200&processCode=${encodeURIComponent(processCode)}`
+    : "/equipment/equips?limit=200";
   const { data, isLoading } = useApiQuery<PaginatedResponse<EquipItem>>(
-    ["equips", "options"],
-    "/equipment/equips?limit=200",
+    ["equips", "options", processCode ?? "all"],
+    url,
     { staleTime: 5 * 60 * 1000 },
   );
 

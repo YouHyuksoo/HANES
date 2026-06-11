@@ -166,16 +166,14 @@ export default function ArrivalResultPage() {
     });
   };
 
-  // 입하취소
+  // 입하취소 — arrivalNo 전체 일괄 취소
   const confirmCancel = async () => {
     if (!cancelTarget) return;
     setCanceling(true);
     try {
-      await api.post(`/material/arrivals/results/${encodeURIComponent(cancelTarget.arrivalNo)}/cancel`, {
-        itemCode: cancelTarget.itemCode,
-      });
+      await api.post(`/material/arrivals/results/${encodeURIComponent(cancelTarget.arrivalNo)}/cancel`, {});
       setCancelTarget(null);
-      if (selected && selected.arrivalNo === cancelTarget.arrivalNo && selected.itemCode === cancelTarget.itemCode) {
+      if (selected && selected.arrivalNo === cancelTarget.arrivalNo) {
         setSelected(null);
         setSerials([]);
       }
@@ -418,10 +416,10 @@ export default function ArrivalResultPage() {
         {cancelTarget && (
           <div className="space-y-4">
             <p className="text-sm text-text">
-              {t("material.arrivalResult.cancelConfirm", "선택한 입하 건을 취소하시겠습니까?")}
+              {t("material.arrivalResult.cancelConfirmAll", "해당 입하 번호의 모든 품목이 일괄 취소됩니다. 계속하시겠습니까?")}
             </p>
-            <div className="rounded-lg border border-border p-3 text-sm text-text-muted">
-              {cancelTarget.arrivalNo} · {cancelTarget.itemCode} {cancelTarget.itemName} · {cancelTarget.qty.toLocaleString()} · {t("material.arrivalResult.col.serialCount", "시리얼")} {cancelTarget.serialCount}
+            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 text-sm text-text-muted">
+              {t("material.arrivalResult.cancelTargetLabel", "입하번호")} : <span className="font-semibold text-text">{cancelTarget.arrivalNo}</span>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setCancelTarget(null)} disabled={canceling}>{t("common.cancel")}</Button>

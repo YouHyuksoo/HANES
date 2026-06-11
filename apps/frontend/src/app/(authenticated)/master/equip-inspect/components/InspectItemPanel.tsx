@@ -49,7 +49,7 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
       accessorKey: "cycle", header: t("master.equipInspect.cycle"), size: 80,
       cell: ({ getValue }) => cycleLabels[getValue() as string] || (getValue() as string) || "-",
     },
-    { accessorKey: "seq", header: t("master.equipInspect.seq"), size: 60 },
+    { accessorKey: "sortSeq", header: t("master.equipInspect.sortSeq", "순서"), size: 60 },
     {
       accessorKey: "useYn", header: t("common.useYn", "사용"), size: 60,
       cell: ({ getValue }) => getValue() === "Y"

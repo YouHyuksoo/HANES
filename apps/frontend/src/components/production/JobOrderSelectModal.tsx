@@ -3,10 +3,14 @@
 /**
  * @file src/components/production/JobOrderSelectModal.tsx
  * @description 작업지시 선택 모달 — 실 API 연동
+ *
+ * - 현재 설비(equipCode)에 배당된 작업지시만 선택 가능
+ * - 다른 설비 배당 건은 그레이 표시, 선택 불가
+ * - "현재 설비만" / "전체" 토글로 표시 범위 전환
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Search, Check } from 'lucide-react';
+import { Search, Check } from 'lucide-react';
 import { Modal, Input, Button } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -21,6 +25,7 @@ interface JobOrderSelectModalProps {
   onClose: () => void;
   onConfirm: (jobOrder: JobOrder) => void;
   filterStatus?: string[];
+  equipCode?: string;
 }
 
 export default function JobOrderSelectModal({
@@ -28,12 +33,14 @@ export default function JobOrderSelectModal({
   onClose,
   onConfirm,
   filterStatus = ['WAITING', 'RUNNING'],
+  equipCode,
 }: JobOrderSelectModalProps) {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null);
   const [rawData, setRawData] = useState<JobOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const fetchJobOrders = useCallback(async () => {
     if (!isOpen) return;
@@ -41,7 +48,7 @@ export default function JobOrderSelectModal({
     try {
       const statuses = filterStatus.join(',');
       const res = await api.get('/production/job-orders', {
-        params: { statuses, limit: 200 },
+        params: { statuses, limit: 500 },
       });
       const items: JobOrder[] = (res.data?.data ?? []).map((jo: Record<string, unknown>) => {
         const part = jo.part as Record<string, unknown> | undefined;
@@ -59,7 +66,15 @@ export default function JobOrderSelectModal({
           planStartDate: jo.planDate ? String(jo.planDate).slice(0, 10) : '',
           planEndDate: jo.planDate ? String(jo.planDate).slice(0, 10) : '',
           workDate: jo.planDate ? String(jo.planDate).slice(0, 10) : undefined,
+          equipCode: jo.equipCode as string | undefined,
+          equipName: jo.equipName as string | undefined,
         };
+      });
+      // 현재 설비 배당 건 먼저 정렬
+      items.sort((a, b) => {
+        const aMatch = equipCode && a.equipCode === equipCode ? 0 : 1;
+        const bMatch = equipCode && b.equipCode === equipCode ? 0 : 1;
+        return aMatch - bMatch;
       });
       setRawData(items);
     } catch {
@@ -67,27 +82,37 @@ export default function JobOrderSelectModal({
     } finally {
       setLoading(false);
     }
-  }, [isOpen, filterStatus]);
+  }, [isOpen, filterStatus, equipCode]);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedJobOrder(null);
       setSearchText('');
+      setShowAll(false);
       fetchJobOrders();
     }
   }, [isOpen, fetchJobOrders]);
 
-  const filteredData = useMemo(() => {
-    if (!searchText) return rawData;
+  const displayData = useMemo(() => {
+    const base = showAll || !equipCode
+      ? rawData
+      : rawData.filter(item => item.equipCode === equipCode);
+
+    if (!searchText) return base;
     const s = searchText.toLowerCase();
-    return rawData.filter(
+    return base.filter(
       (item) =>
         item.orderNo.toLowerCase().includes(s) ||
         item.itemCode.toLowerCase().includes(s) ||
         item.itemName.toLowerCase().includes(s) ||
         (item.processCode?.toLowerCase().includes(s) ?? false),
     );
-  }, [rawData, searchText]);
+  }, [rawData, searchText, showAll, equipCode]);
+
+  const isSelectable = (item: JobOrder) => {
+    if (!equipCode) return true;
+    return item.equipCode === equipCode;
+  };
 
   const handleConfirm = () => {
     if (selectedJobOrder) {
@@ -108,92 +133,146 @@ export default function JobOrderSelectModal({
       {
         id: 'select',
         header: '',
-        size: 50,
-        cell: ({ row }) => (
-          <button
-            onClick={() => setSelectedJobOrder(row.original)}
-            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-              selectedJobOrder?.id === row.original.id
-                ? 'bg-primary border-primary'
-                : 'border-border hover:border-primary/50'
-            }`}
-          >
-            {selectedJobOrder?.id === row.original.id && (
-              <Check className="w-4 h-4 text-white" />
-            )}
-          </button>
-        ),
+        size: 44,
+        cell: ({ row }) => {
+          const selectable = isSelectable(row.original);
+          return (
+            <button
+              onClick={() => selectable && setSelectedJobOrder(row.original)}
+              disabled={!selectable}
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                !selectable
+                  ? 'border-border bg-surface/50 cursor-not-allowed opacity-40'
+                  : selectedJobOrder?.id === row.original.id
+                  ? 'bg-primary border-primary'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              {selectedJobOrder?.id === row.original.id && (
+                <Check className="w-4 h-4 text-white" />
+              )}
+            </button>
+          );
+        },
       },
       {
         accessorKey: 'orderNo',
         header: t('production.order.orderNo'),
-        size: 160,
-        cell: ({ getValue }) => (
-          <span className="font-mono text-sm font-medium">{getValue() as string}</span>
-        ),
+        size: 150,
+        cell: ({ row }) => {
+          const selectable = isSelectable(row.original);
+          return (
+            <span className={`font-mono text-sm font-medium ${!selectable ? 'opacity-40' : ''}`}>
+              {row.original.orderNo}
+            </span>
+          );
+        },
       },
       {
         accessorKey: 'itemName',
         header: t('common.partName'),
-        size: 180,
-        cell: ({ row }) => (
-          <div>
-            <div className="font-medium">{row.original.itemName}</div>
-            <div className="text-xs text-text-muted">{row.original.itemCode}</div>
-          </div>
-        ),
+        size: 200,
+        cell: ({ row }) => {
+          const selectable = isSelectable(row.original);
+          return (
+            <div className={!selectable ? 'opacity-40' : ''}>
+              <div className="font-medium">{row.original.itemName}</div>
+              <div className="text-xs text-black/60 dark:text-white/60">{row.original.itemCode}</div>
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'processType',
         header: t('production.order.process'),
-        size: 100,
-        cell: ({ getValue }) => (
-          <ComCodeBadge groupCode="PROCESS_TYPE" code={getValue() as string} />
-        ),
+        size: 90,
+        cell: ({ row }) => {
+          const selectable = isSelectable(row.original);
+          return (
+            <span className={!selectable ? 'opacity-40' : ''}>
+              <ComCodeBadge groupCode="PROCESS_TYPE" code={row.original.processType ?? ''} />
+            </span>
+          );
+        },
       },
       {
         accessorKey: 'planQty',
         header: t('production.order.planQty'),
-        size: 100,
+        size: 110,
         meta: { filterType: 'number' },
-        cell: ({ row }) => (
-          <div className="text-right">
-            <div className="font-medium">
-              {row.original.completedQty.toLocaleString()} / {row.original.planQty.toLocaleString()}
+        cell: ({ row }) => {
+          const selectable = isSelectable(row.original);
+          return (
+            <div className={`text-right ${!selectable ? 'opacity-40' : ''}`}>
+              <div className="font-medium">
+                {row.original.completedQty.toLocaleString()} / {row.original.planQty.toLocaleString()}
+              </div>
+              <div className="text-xs text-black/60 dark:text-white/60">
+                {row.original.planQty > 0
+                  ? Math.round((row.original.completedQty / row.original.planQty) * 100)
+                  : 0}%
+              </div>
             </div>
-            <div className="text-xs text-text-muted">
-              {row.original.planQty > 0
-                ? Math.round((row.original.completedQty / row.original.planQty) * 100)
-                : 0}%
-            </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         accessorKey: 'status',
         header: t('common.status'),
         size: 90,
-        cell: ({ getValue }) => (
-          <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} />
-        ),
+        cell: ({ row }) => {
+          const selectable = isSelectable(row.original);
+          return (
+            <span className={!selectable ? 'opacity-40' : ''}>
+              <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={row.original.status ?? ''} />
+            </span>
+          );
+        },
       },
       {
         accessorKey: 'planStartDate',
         header: t('production.order.planDate'),
-        size: 110,
+        size: 100,
         meta: { filterType: 'date' },
-        cell: ({ row }) => (
-          <span className="text-sm text-text-muted">{row.original.planStartDate}</span>
-        ),
+        cell: ({ row }) => {
+          const selectable = isSelectable(row.original);
+          return (
+            <span className={`text-sm text-black/60 dark:text-white/60 ${!selectable ? 'opacity-40' : ''}`}>
+              {row.original.planStartDate}
+            </span>
+          );
+        },
       },
+      ...(showAll && equipCode
+        ? [{
+            id: 'equipCode',
+            header: t('production.order.equip', '설비'),
+            size: 120,
+            cell: ({ row }: { row: { original: JobOrder } }) => {
+              const isCurrentEquip = row.original.equipCode === equipCode;
+              return (
+                <span className={`text-xs ${isCurrentEquip ? 'font-semibold text-primary' : 'text-black/60 dark:text-white/60 opacity-60'}`}>
+                  {row.original.equipCode ?? '-'}
+                  {isCurrentEquip && <span className="ml-1 text-[10px]">✓</span>}
+                </span>
+              );
+            },
+          }]
+        : []),
     ],
-    [t, selectedJobOrder],
+    [t, selectedJobOrder, showAll, equipCode],
+  );
+
+  const currentEquipCount = useMemo(
+    () => equipCode ? rawData.filter(item => item.equipCode === equipCode).length : rawData.length,
+    [rawData, equipCode],
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={t('production.inputManual.selectJobOrder')} size="xl">
-      <div className="space-y-4">
-        <div className="flex gap-2">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('production.inputManual.selectJobOrder')} size="2xl">
+      <div className="space-y-3">
+        {/* 검색 + 필터 토글 */}
+        <div className="flex items-center gap-3">
           <div className="flex-1">
             <Input
               placeholder={t('production.inputManual.searchJobOrderPlaceholder')}
@@ -203,56 +282,70 @@ export default function JobOrderSelectModal({
               fullWidth
             />
           </div>
+          {equipCode && (
+            <div className="flex shrink-0 items-center rounded-lg border border-border bg-surface p-0.5 text-xs">
+              <button
+                onClick={() => setShowAll(false)}
+                className={`rounded-md px-3 py-1.5 font-semibold transition-colors ${
+                  !showAll ? 'bg-primary text-white shadow-sm' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                {t('kiosk.jobOrder.thisEquip', '현재 설비')}
+                <span className="ml-1.5 rounded-full bg-white/30 px-1.5 text-[11px]">{currentEquipCount}</span>
+              </button>
+              <button
+                onClick={() => setShowAll(true)}
+                className={`rounded-md px-3 py-1.5 font-semibold transition-colors ${
+                  showAll ? 'bg-primary text-white shadow-sm' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                {t('kiosk.jobOrder.allEquips', '전체')}
+                <span className="ml-1.5 rounded-full bg-white/30 px-1.5 text-[11px]">{rawData.length}</span>
+              </button>
+            </div>
+          )}
         </div>
+
+        {showAll && equipCode && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            {t('kiosk.jobOrder.otherEquipNote', '다른 설비에 배당된 작업지시는 조회만 가능하며 선택할 수 없습니다.')}
+          </p>
+        )}
 
         <div className="border border-border rounded-lg overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center py-10 text-text-muted text-sm">
+            <div className="flex items-center justify-center py-10 text-black/60 dark:text-white/60 text-sm">
               {t('common.loading', '불러오는 중...')}
             </div>
           ) : (
-            <DataGrid data={filteredData} columns={columns} pageSize={5} />
+            <DataGrid
+              data={displayData}
+              columns={columns}
+              pageSize={8}
+              onRowClick={(row) => isSelectable(row) && setSelectedJobOrder(row)}
+            />
           )}
         </div>
 
         {selectedJobOrder && (
-          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Check className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-text">
-                {t('production.inputManual.selectedJobOrder')}
+          <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-sm font-semibold text-black dark:text-white">
+                {selectedJobOrder.orderNo}
               </span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-text-muted">{t('production.order.orderNo')}:</span>
-                <span className="ml-2 font-mono font-medium">{selectedJobOrder.orderNo}</span>
-              </div>
-              <div>
-                <span className="text-text-muted">{t('common.partName')}:</span>
-                <span className="ml-2 font-medium">{selectedJobOrder.itemName}</span>
-              </div>
-              <div>
-                <span className="text-text-muted">{t('production.order.process')}:</span>
-                <span className="ml-2">
-                  <ComCodeBadge groupCode="PROCESS_TYPE" code={selectedJobOrder.processType || ''} />
-                </span>
-              </div>
-              <div>
-                <span className="text-text-muted">{t('production.order.planQty')}:</span>
-                <span className="ml-2">
-                  {selectedJobOrder.completedQty.toLocaleString()} / {selectedJobOrder.planQty.toLocaleString()}
-                </span>
-              </div>
+              <span className="text-sm text-black/60 dark:text-white/60">—</span>
+              <span className="text-sm text-black dark:text-white">{selectedJobOrder.itemName}</span>
+              <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedJobOrder.status ?? ''} />
             </div>
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-border">
-          <Button variant="secondary" onClick={handleClose}>
+        <div className="flex justify-end gap-2 pt-2 border-t border-border">
+          <Button size="sm" variant="secondary" onClick={handleClose}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleConfirm} disabled={!selectedJobOrder}>
+          <Button size="sm" onClick={handleConfirm} disabled={!selectedJobOrder}>
             <Check className="w-4 h-4 mr-1" />
             {t('common.confirm')}
           </Button>

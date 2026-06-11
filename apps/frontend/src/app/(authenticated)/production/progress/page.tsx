@@ -11,8 +11,8 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, BarChart3, Clock, Play, CheckCircle, ListChecks, Calendar } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from '@/components/ui';
+import { Search, RefreshCw, BarChart3, Calendar } from 'lucide-react';
+import { Card, CardContent, Button, Input, Select, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
@@ -86,13 +86,6 @@ export default function ProgressPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = useMemo(() => ({
-    total: data.length,
-    waiting: data.filter(d => d.status === 'WAIT' || d.status === 'WAITING').length,
-    running: data.filter(d => d.status === 'RUNNING').length,
-    done: data.filter(d => d.status === 'DONE').length,
-  }), [data]);
-
   const columns = useMemo<ColumnDef<ProgressItem>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.progress.orderNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorFn: (row) => row.part?.itemCode, id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
@@ -135,12 +128,6 @@ export default function ProgressPage() {
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />{t('common.refresh')}
           </Button>
         </div>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
-        <StatCard label={t('production.progress.totalOrders')} value={stats.total} icon={ListChecks} color="blue" />
-        <StatCard label={t('production.progress.statusWaiting')} value={stats.waiting} icon={Clock} color="yellow" />
-        <StatCard label={t('production.progress.statusRunning')} value={stats.running} icon={Play} color="green" />
-        <StatCard label={t('production.progress.statusDone')} value={stats.done} icon={CheckCircle} color="purple" />
       </div>
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter

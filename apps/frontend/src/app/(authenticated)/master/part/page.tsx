@@ -171,6 +171,7 @@ export default function PartPage() {
       },
     },
     { accessorKey: "boxQty", header: t("master.part.boxQty", "박스입수"), size: 70, meta: { filterType: "number" as const } },
+    { accessorKey: "minPackQty", header: t("master.part.minPackQty", "최소포장단위"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? v.toLocaleString() : "-"; } },
     { accessorKey: "lotUnitQty", header: t("master.part.lotUnitQty", "LOT수량"), size: 75, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() ?? "-" },
     {
       accessorKey: "inspectMethod", header: t("master.part.inspectMethod", "검사구분"), size: 80,

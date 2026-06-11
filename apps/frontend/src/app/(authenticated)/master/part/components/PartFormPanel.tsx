@@ -85,6 +85,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     markingText: editingPart?.markingText || "",
     unit: editingPart?.unit || "EA",
     boxQty: editingPart?.boxQty ?? 0,
+    minPackQty: editingPart?.minPackQty ?? 0,
     lotUnitQty: editingPart?.lotUnitQty ?? 0,
     safetyStock: editingPart?.safetyStock ?? 0,
     tactTime: editingPart?.tactTime ?? 0,
@@ -118,6 +119,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       markingText: editingPart?.markingText || "",
       unit: editingPart?.unit || "EA",
       boxQty: editingPart?.boxQty ?? 0,
+      minPackQty: editingPart?.minPackQty ?? 0,
       lotUnitQty: editingPart?.lotUnitQty ?? 0,
       safetyStock: editingPart?.safetyStock ?? 0,
       tactTime: editingPart?.tactTime ?? 0,
@@ -189,6 +191,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         markingText: form.markingText || undefined,
         unit: form.unit,
         boxQty: form.boxQty,
+        minPackQty: form.minPackQty,
         lotUnitQty: form.lotUnitQty || undefined,
         safetyStock: form.safetyStock,
         tactTime: form.tactTime,
@@ -294,6 +297,8 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("master.part.boxQty", "박스입수량")} type="number"
               value={String(form.boxQty)} onChange={e => setField("boxQty", Number(e.target.value))} fullWidth />
+            <Input label={t("master.part.minPackQty", "최소포장단위")} type="number"
+              value={String(form.minPackQty)} onChange={e => setField("minPackQty", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.lotUnitQty", "LOT단위수량")} type="number"
               value={String(form.lotUnitQty)} onChange={e => setField("lotUnitQty", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.safetyStock")} type="number"

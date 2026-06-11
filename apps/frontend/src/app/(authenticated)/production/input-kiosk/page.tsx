@@ -300,6 +300,7 @@ export default function InputKioskPage() {
         onClose={() => setIsJobOrderOpen(false)}
         onConfirm={handleJobOrderConfirm}
         filterStatus={['WAITING', 'RUNNING']}
+        equipCode={selectedEquip?.equipCode}
       />
       <WorkerSelectModal
         isOpen={isWorkerOpen}

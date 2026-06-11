@@ -21,6 +21,7 @@ interface HeaderCheckItemProps {
   disabled?: boolean;
   disabledReason?: string;
   onInput: () => void;
+  wide?: boolean;
 }
 
 export default function HeaderCheckItem({
@@ -32,6 +33,7 @@ export default function HeaderCheckItem({
   disabled,
   disabledReason,
   onInput,
+  wide = false,
 }: HeaderCheckItemProps) {
   const { t } = useTranslation();
   const isDisabled = Boolean(disabled || notTarget);
@@ -44,56 +46,38 @@ export default function HeaderCheckItem({
   const reasonId = reasonText ? `check-item-reason-${label.replace(/\W+/g, '-')}` : undefined;
 
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5">
-      <div className="min-w-0">
-        <div className="text-xs font-bold text-text">{label}</div>
+    <div
+      className={`flex h-11 shrink-0 items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 ${wide ? 'w-48' : 'w-36'}`}
+      title={isDisabled ? (reasonText ?? '') : ''}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-bold text-black dark:text-white leading-tight">{label}</div>
         {notTarget ? (
-          <div className="truncate text-[11px] italic text-text-muted">
-            {notTargetDetail ?? t('kiosk.header.notTarget', '대상 아님')}
+          <div className="text-[11px] text-black/50 dark:text-white/50 leading-tight">
+            {t('kiosk.header.notTarget', '대상 아님')}
           </div>
         ) : done ? (
-          <div className="flex items-center gap-1 truncate text-[11px] font-medium text-teal-600 dark:text-teal-400">
-            <CheckCircle2 className="h-3 w-3 shrink-0" />
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-black dark:text-white leading-tight">
+            <CheckCircle2 className="h-3 w-3 shrink-0 text-green-600 dark:text-green-400" />
             {doneDetail ?? t('kiosk.header.done', '완료')}
           </div>
         ) : (
-          <>
-            <div className="flex items-center gap-1 text-[11px] font-medium text-orange-500">
-              <XCircle className="h-3 w-3 shrink-0" />
-              {t('kiosk.header.notDone', '미완료')}
-            </div>
-            {disabledReason && (
-              <div
-                id={reasonId}
-                className="truncate text-[11px] text-text-muted"
-                title={disabledReason}
-              >
-                {disabledReason}
-              </div>
-            )}
-          </>
-        )}
-        {!notTarget && isDisabled && reasonText && !disabledReason && (
-          <div
-            id={reasonId}
-            className="truncate text-[11px] text-text-muted"
-            title={reasonText}
-          >
-            {reasonText}
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-black dark:text-white leading-tight">
+            <XCircle className="h-3 w-3 shrink-0 text-red-500" />
+            {t('kiosk.header.notDone', '미완료')}
           </div>
         )}
       </div>
-      <span className="shrink-0" title={buttonTitle}>
-        <button
-          onClick={onInput}
-          disabled={isDisabled}
-          aria-describedby={reasonId}
-          aria-label={buttonTitle}
-          className="rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted"
-        >
-          {t('common.input', '입력')}
-        </button>
-      </span>
+      <button
+        onClick={onInput}
+        disabled={isDisabled}
+        aria-describedby={reasonId}
+        aria-label={buttonTitle}
+        title={buttonTitle}
+        className="shrink-0 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-black/40"
+      >
+        {t('common.input', '입력')}
+      </button>
     </div>
   );
 }

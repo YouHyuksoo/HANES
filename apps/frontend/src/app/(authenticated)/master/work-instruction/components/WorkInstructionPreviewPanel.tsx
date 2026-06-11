@@ -30,15 +30,20 @@ interface Props {
   animate?: boolean;
 }
 
+/** 파일 확장자 판별 */
+const getFilePath = (url: string) => url.split(/[?#]/)[0] ?? url;
+
 /** 이미지 확장자 판별 */
-const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(url);
+const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(getFilePath(url));
 
 /** PDF 확장자 판별 */
-const isPdfUrl = (url: string) => /\.pdf$/i.test(url);
+const isPdfUrl = (url: string) => /\.pdf$/i.test(getFilePath(url));
 
 /** 파일 URL을 절대 URL로 변환 */
 const resolveFileUrl = (url: string) =>
-  url.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "")}${url}` : url;
+  url.startsWith("/")
+    ? `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/api(?:\/v1)?$/, "") || ""}${url}`
+    : url;
 
 export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, onDelete, animate = true }: Props) {
   const { t } = useTranslation();

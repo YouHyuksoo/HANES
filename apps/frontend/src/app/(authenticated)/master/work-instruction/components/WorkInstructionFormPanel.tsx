@@ -40,8 +40,17 @@ interface Props {
 
 export type { WorkInstruction };
 
+/** 파일 확장자 판별 */
+const getFilePath = (url: string) => url.split(/[?#]/)[0] ?? url;
+
 /** 이미지 확장자 판별 */
-const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(url);
+const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(getFilePath(url));
+
+/** 파일 URL을 화면 표시용 URL로 변환 */
+const resolveFileUrl = (url: string) =>
+  url.startsWith("/")
+    ? `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/api(?:\/v1)?$/, "") || ""}${url}`
+    : url;
 
 export default function WorkInstructionFormPanel({ editingItem, onClose, onSave, animate = true }: Props) {
   const { t } = useTranslation();
@@ -171,7 +180,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
               {isImageUrl(form.imageUrl) ? (
                 <div className="relative">
                   <img
-                    src={form.imageUrl.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "")}${form.imageUrl}` : form.imageUrl}
+                    src={resolveFileUrl(form.imageUrl)}
                     alt="preview"
                     className="w-full max-h-48 object-contain bg-gray-50 dark:bg-gray-900"
                   />

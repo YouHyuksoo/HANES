@@ -234,7 +234,7 @@ export const useSerialStore = create<SerialState>()((set, get) => ({
       const res = await api.get("/system/comm-configs", { params: { commType: "SERIAL", useYn: "Y" } });
       const list = res.data?.data ?? res.data ?? [];
       const configs: SerialConfig[] = (Array.isArray(list) ? list : []).map((c: any) => ({
-        id: c.id,
+        id: c.configName,
         configName: c.configName,
         baudRate: c.baudRate || 9600,
         dataBits: c.dataBits || 8,

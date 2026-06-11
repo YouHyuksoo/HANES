@@ -387,7 +387,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
 
   return (
     <div className="grid grid-cols-12 gap-4 h-full min-h-0">
-      <Card padding="none" className="col-span-5 flex flex-col min-h-0 rounded-lg">
+      <Card padding="none" className="col-span-5 flex flex-col min-h-0 min-w-0 rounded-lg">
         <CardContent className="flex flex-col min-h-0 h-full p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.routingGroupList")}</div>
@@ -421,9 +421,9 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
         </CardContent>
       </Card>
 
-      <div className="col-span-7 grid grid-rows-[minmax(0,1fr)_420px] gap-3 min-h-0">
-        <Card padding="none" className="flex flex-col min-h-0 rounded-lg">
-          <CardContent className="flex-1 min-h-0 p-3 overflow-y-auto">
+      <div className="col-span-7 grid grid-rows-[minmax(0,1fr)_420px] gap-3 min-h-0 min-w-0 overflow-hidden">
+        <Card padding="none" className="flex flex-col min-h-0 min-w-0 rounded-lg">
+          <CardContent className="flex-1 min-h-0 p-3 overflow-auto">
             {selectedGroup ? (
               <div className="min-w-[420px]">
                 <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-text dark:text-gray-100">

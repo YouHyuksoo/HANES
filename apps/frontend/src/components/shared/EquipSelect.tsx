@@ -15,10 +15,12 @@ import { useEquipOptions } from "@/hooks/useMasterOptions";
 interface EquipSelectProps extends Omit<SelectProps, "options"> {
   /** 필터용: 모든 옵션 라벨 앞에 접두어 추가 + "전체" 옵션 자동 추가 */
   labelPrefix?: string;
+  /** 공정 코드 — 지정 시 해당 공정 소속 설비만 표시 */
+  processCode?: string;
 }
 
-export default function EquipSelect({ labelPrefix, ...props }: EquipSelectProps) {
-  const { options, isLoading } = useEquipOptions();
+export default function EquipSelect({ labelPrefix, processCode, ...props }: EquipSelectProps) {
+  const { options, isLoading } = useEquipOptions(processCode);
   const finalOptions = useMemo(() => {
     if (!labelPrefix) return options;
     return [

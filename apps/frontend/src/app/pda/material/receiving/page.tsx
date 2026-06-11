@@ -31,11 +31,12 @@ import {
 } from "@/hooks/pda/useMatReceivingScan";
 import { ReceivingHistoryRow, WorkerBar, PdaErrorDialog } from "./components";
 
-/** 작업자 QR 조회 응답 */
+/** 작업자 QR 조회 응답 (ResponseUtil envelope의 data) */
 interface WorkerByQrResponse {
-  id: number;
-  name: string;
+  id?: number;
   workerCode: string;
+  workerName: string;
+  dept?: string;
 }
 
 export default function MaterialReceivingPage() {
@@ -72,17 +73,18 @@ export default function MaterialReceivingPage() {
       setWorkerLoading(true);
       setWorkerError(null);
       try {
-        const res = await api.get<WorkerByQrResponse>(
+        const res = await api.get<{ data?: WorkerByQrResponse } | WorkerByQrResponse>(
           `/master/workers/by-qr/${encodeURIComponent(code)}`,
           { suppressErrorModal: true },
         );
-        const w = res.data;
+        // ResponseUtil envelope({data}) 또는 raw 모두 대응
+        const w = ((res.data as { data?: WorkerByQrResponse })?.data ?? res.data) as WorkerByQrResponse;
         if (!w?.workerCode) {
           setWorkerError(t("pda.receiving.workerNotFound", "작업자를 찾을 수 없습니다"));
           playError();
           return;
         }
-        setCurrentWorker({ id: w.id, name: w.name, workerCode: w.workerCode });
+        setCurrentWorker({ id: w.id ?? 0, name: w.workerName ?? w.workerCode, workerCode: w.workerCode });
         setWorkerScanOpen(false);
         playSuccess();
       } catch {

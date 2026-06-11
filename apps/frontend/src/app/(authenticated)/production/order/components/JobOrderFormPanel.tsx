@@ -15,13 +15,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Loader2 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { PartSearchModal, LineSelect } from "@/components/shared";
+import { PartSearchModal, LineSelect, ProcessSelect, EquipSelect } from "@/components/shared";
 import api from "@/services/api";
 
 export interface JobOrderFormData {
   orderNo: string;
   itemCode: string;
   lineCode?: string;
+  processCode?: string;
+  equipCode?: string;
   custPoNo?: string | null;
   planQty: number;
   planDate?: string;
@@ -48,6 +50,8 @@ const INIT_FORM = {
   planQty: "",
   planDate: "",
   lineCode: "",
+  processCode: "",
+  equipCode: "",
   custPoNo: "",
   priority: "5",
   remark: "",
@@ -93,6 +97,8 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
         planQty: String(editingOrder.planQty ?? ""),
         planDate: editingOrder.planDate ? String(editingOrder.planDate).slice(0, 10) : "",
         lineCode: editingOrder.lineCode || "",
+        processCode: editingOrder.processCode || "",
+        equipCode: editingOrder.equipCode || "",
         custPoNo: editingOrder.custPoNo || "",
         priority: String(editingOrder.priority ?? "5"),
         remark: editingOrder.remark || "",
@@ -106,7 +112,11 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
   }, [editingOrder, generateOrderNo, fetchRouting]);
 
   const setField = (key: string, value: string | boolean) => {
-    setForm(prev => ({ ...prev, [key]: value }));
+    setForm(prev => {
+      const next = { ...prev, [key]: value };
+      if (key === "processCode") next.equipCode = "";
+      return next;
+    });
   };
 
   const handleSubmit = useCallback(async () => {
@@ -119,6 +129,8 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
         planQty: Number(form.planQty),
         planDate: form.planDate,
         lineCode: form.lineCode || undefined,
+        processCode: form.processCode || undefined,
+        equipCode: form.equipCode || undefined,
         custPoNo: form.custPoNo || undefined,
         priority: Number(form.priority),
         remark: form.remark || undefined,
@@ -223,10 +235,14 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
             ) : null}
           </div>
 
-          {/* 라인 */}
-          <div>
+          {/* 라인 / 공정 / 설비 */}
+          <div className="space-y-3">
             <LineSelect label={t("production.order.line")} value={form.lineCode}
               onChange={v => setField("lineCode", v)} fullWidth />
+            <ProcessSelect label={t("production.order.process")} value={form.processCode}
+              onChange={v => setField("processCode", v)} fullWidth />
+            <EquipSelect label={t("production.order.equip")} value={form.equipCode}
+              onChange={v => setField("equipCode", v)} processCode={form.processCode || undefined} fullWidth />
           </div>
 
           {/* 비고 */}

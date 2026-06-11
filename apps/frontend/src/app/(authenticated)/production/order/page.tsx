@@ -53,8 +53,14 @@ export default function JobOrderPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
 
   // 행 선택 상태
@@ -196,6 +202,8 @@ export default function JobOrderPage() {
       orderNo: row.orderNo,
       itemCode: row.itemCode,
       lineCode: row.lineCode ?? undefined,
+      processCode: row.processCode ?? undefined,
+      equipCode: row.equipCode ?? undefined,
       custPoNo: row.custPoNo ?? undefined,
       planQty: row.planQty,
       planDate: row.planDate ? String(row.planDate).slice(0, 10) : undefined,
@@ -245,6 +253,14 @@ export default function JobOrderPage() {
           </button>
         </div>
       ),
+    },
+    {
+      accessorKey: "planDate", header: t("production.order.planDate"), size: 100,
+      meta: { filterType: "date" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v ? String(v).slice(0, 10) : "-";
+      },
     },
     {
       accessorKey: "orderNo", header: t("production.order.orderNo"), size: 180,
@@ -333,14 +349,6 @@ export default function JobOrderPage() {
       accessorKey: "status", header: t("common.status"), size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} />,
-    },
-    {
-      accessorKey: "planDate", header: t("production.order.planDate"), size: 100,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? String(v).slice(0, 10) : "-";
-      },
     },
   ], [t, isPanelOpen]);
 
@@ -487,10 +495,10 @@ export default function JobOrderPage() {
         title={t("production.order.preIssueBtn")} size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setPreIssueOpen(false)} disabled={preIssueLoading}>
+            <Button size="sm" variant="ghost" onClick={() => setPreIssueOpen(false)} disabled={preIssueLoading}>
               {t("common.cancel")}
             </Button>
-            <Button variant="primary" onClick={handlePreIssue}
+            <Button size="sm" variant="primary" onClick={handlePreIssue}
               isLoading={preIssueLoading} disabled={preIssueQty <= 0}>
               {t("common.confirm")}
             </Button>

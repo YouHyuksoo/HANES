@@ -221,7 +221,16 @@ export const useKioskStore = create<KioskState>()(
         midInspectDone: false,
       }),
     }),
-    { name: 'harness-kiosk' }
+    {
+      name: 'harness-kiosk',
+      // selectedEquip(설비)·lotSize(사용자 설정)만 유지.
+      // selectedJobOrder는 저장하지 않아 페이지 재진입 시 반드시 새로 선택.
+      partialize: (state) => ({
+        selectedEquip: state.selectedEquip,
+        lotSize: state.lotSize,
+      }),
+      version: 2,
+    }
   )
 );
 

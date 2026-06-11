@@ -13,9 +13,9 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Eye, RefreshCw, Search, CheckCircle, XCircle, TrendingUp, Activity, ScanLine,
+  Eye, RefreshCw, Search, CheckCircle, XCircle, ScanLine,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -73,15 +73,6 @@ export default function VisualInspectPage() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleScan();
   }, [handleScan]);
-
-  /** 통계 */
-  const stats = useMemo(() => {
-    const total = inspectHistory.length;
-    const passed = inspectHistory.filter((r) => r.passYn === "Y").length;
-    const failed = total - passed;
-    const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : "0.0";
-    return { total, passed, failed, passRate };
-  }, [inspectHistory]);
 
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);
@@ -174,14 +165,6 @@ export default function VisualInspectPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* 통계 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
-          <StatCard label={t("quality.inspect.totalCount")} value={`${stats.total}`} icon={Activity} color="blue" />
-          <StatCard label={t("quality.inspect.pass")} value={`${stats.passed}`} icon={CheckCircle} color="green" />
-          <StatCard label={t("quality.inspect.fail")} value={`${stats.failed}`} icon={XCircle} color="red" />
-          <StatCard label={t("quality.inspect.passRate")} value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
-        </div>
 
         {/* 이력 DataGrid */}
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none">

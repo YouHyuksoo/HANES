@@ -6,8 +6,8 @@
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { History, RefreshCw, Search, ArrowDownToLine, ArrowUpFromLine, Calendar } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import { History, RefreshCw, Search, Calendar } from 'lucide-react';
+import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { api } from '@/services/api';
@@ -62,7 +62,6 @@ const getOneMonthAgo = () => {
 export default function TransactionPage() {
   const { t } = useTranslation();
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [matUidInput, setMatUidInput] = useState('');
 
@@ -108,7 +107,6 @@ export default function TransactionPage() {
       const result = res.data?.data ?? res.data;
       const items = Array.isArray(result) ? result : [];
       setTransactions(items);
-      setTotal(res.data?.total ?? items.length);
     } catch (error) {
       console.error('수불 이력 조회 실패:', error);
     } finally {
@@ -230,18 +228,6 @@ export default function TransactionPage() {
     },
   ], [t]);
 
-  // 통계 계산 (useMemo로 불필요한 재계산 방지)
-  const { totalIn, totalOut } = useMemo(() => {
-    let inSum = 0;
-    let outSum = 0;
-    for (const tr of transactions) {
-      if (tr.status !== 'DONE') continue;
-      if (tr.qty > 0) inSum += tr.qty;
-      else if (tr.qty < 0) outSum += Math.abs(tr.qty);
-    }
-    return { totalIn: inSum, totalOut: outSum };
-  }, [transactions]);
-
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
@@ -256,12 +242,6 @@ export default function TransactionPage() {
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
-        <StatCard label={t('inventory.transaction.totalTrans')} value={total} icon={History} color="blue" />
-        <StatCard label={t('inventory.transaction.totalIn')} value={`+${totalIn.toLocaleString()}`} icon={ArrowDownToLine} color="green" />
-        <StatCard label={t('inventory.transaction.totalOut')} value={`-${totalOut.toLocaleString()}`} icon={ArrowUpFromLine} color="red" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

@@ -40,7 +40,7 @@ export default function RoutingPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-4 min-h-0 flex-1">
-        <div className="col-span-8 flex flex-col min-h-0">
+        <div className="col-span-8 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <RoutingGroupManager
             key={refreshKey}
             selectedProcess={selectedProcess}
@@ -48,7 +48,7 @@ export default function RoutingPage() {
           />
         </div>
 
-        <div className="col-span-4 flex flex-col min-h-0">
+        <div className="col-span-4 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <Card padding="none" className="flex-1 flex flex-col min-h-0 rounded-lg">
             <CardContent className="flex-1 flex flex-col min-h-0 p-4">
               {selectedProcess ? (
