@@ -10,11 +10,11 @@ import { useTranslation } from "react-i18next";
 import { Printer } from "lucide-react";
 import QRCode from "react-qr-code";
 import { Modal, Button } from "@/components/ui";
-import { InspectItemPoolRow, INSPECT_TYPE_COLORS } from "../types";
+import { InspectItemRow, INSPECT_TYPE_COLORS } from "../types";
 
 interface Props {
   isOpen: boolean;
-  item: InspectItemPoolRow | null;
+  item: InspectItemRow | null;
   inspectTypeLabel?: string;
   cycleLabel?: string;
   onClose: () => void;

@@ -1,43 +1,27 @@
 "use client";
 
-/**
- * @file src/app/(authenticated)/master/equip-inspect/components/AddInspectItemModal.tsx
- * @description 설비에 점검항목 추가 모달 - API로 직접 생성
- *
- * 초보자 가이드:
- * 1. 선택된 설비에 새 점검항목을 등록하는 폼 모달
- * 2. API: POST /master/equip-inspect-items
- * 3. seq는 현재 최대값 + 1로 자동 설정
- */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Input, Modal, Select } from "@/components/ui";
+import { Button, Input, Modal, Select, ComCodeBadge } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
-import { InspectItemPoolRow } from "../types";
+import { InspectItemMasterRow } from "../types";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   equipCode: string;
   equipName: string;
-  currentMaxSeq: number;
+  inspectType: InspectItemMasterRow["inspectType"];
   onAdded: () => void;
 }
 
-export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipName, currentMaxSeq, onAdded }: Props) {
+export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipName, inspectType, onAdded }: Props) {
   const { t } = useTranslation();
-  const [poolItems, setPoolItems] = useState<InspectItemPoolRow[]>([]);
+  const [masterItems, setMasterItems] = useState<InspectItemMasterRow[]>([]);
   const [selectedItemCode, setSelectedItemCode] = useState("");
-  const [inspectType, setInspectType] = useState<InspectItemPoolRow["inspectType"]>("DAILY");
-  const [seq, setSeq] = useState(String(currentMaxSeq + 1));
+  const [selectedEquipType, setSelectedEquipType] = useState<string>("");
   const [saving, setSaving] = useState(false);
-
-  const typeOptions = useMemo(() => [
-    { value: "DAILY", label: t("master.equipInspect.typeDaily") },
-    { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
-    { value: "PM", label: t("master.equipInspect.typePM", "예방보전") },
-    { value: "WORKER", label: t("master.equipInspect.typeWorker", "작업자설비점검") },
-  ], [t]);
 
   const itemTypeLabels = useMemo<Record<string, string>>(() => ({
     VISUAL: t("master.equipInspect.itemTypeVisual", "판정형"),
@@ -46,40 +30,38 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
 
   useEffect(() => {
     if (!isOpen) return;
-    setSeq(String(currentMaxSeq + 1));
-    setInspectType("DAILY");
     setSelectedItemCode("");
-  }, [isOpen, currentMaxSeq]);
+    setSelectedEquipType("");
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     setSelectedItemCode("");
     (async () => {
       try {
-        const res = await api.get("/master/equip-inspect-item-pool", {
-          params: { useYn: "Y", inspectType, limit: "1000" },
-        });
-        setPoolItems(res.data?.data ?? []);
+        const params: Record<string, string> = { useYn: "Y", inspectType, limit: "1000" };
+        if (selectedEquipType) params.equipType = selectedEquipType;
+        const res = await api.get("/master/equip-inspect-item-masters", { params });
+        setMasterItems(res.data?.data ?? []);
       } catch {
-        setPoolItems([]);
+        setMasterItems([]);
       }
     })();
-  }, [isOpen, inspectType]);
+  }, [isOpen, inspectType, selectedEquipType]);
 
   const selectedItem = useMemo(
-    () => poolItems.find(item => item.itemCode === selectedItemCode) || null,
-    [poolItems, selectedItemCode],
+    () => masterItems.find(item => item.itemCode === selectedItemCode) || null,
+    [masterItems, selectedItemCode],
   );
 
-  const poolOptions = useMemo(() => poolItems.map(item => ({
+  const masterOptions = useMemo(() => masterItems.map(item => ({
     value: item.itemCode,
     label: `${item.itemCode} - ${item.itemName}`,
-  })), [poolItems]);
+  })), [masterItems]);
 
   const resetForm = () => {
     setSelectedItemCode("");
-    setInspectType("DAILY");
-    setSeq(String(currentMaxSeq + 1));
+    setSelectedEquipType("");
   };
 
   const handleSave = async () => {
@@ -90,7 +72,6 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
         equipCode,
         itemCode: selectedItem.itemCode,
         inspectType,
-        seq: parseInt(seq, 10) || (currentMaxSeq + 1),
         useYn: "Y",
       });
       resetForm();
@@ -106,53 +87,60 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={t("master.equipInspect.linkItem", "점검항목 추가")} size="lg">
-      {/* 대상 설비 표시 */}
-      <div className="mb-4 p-3 rounded-lg bg-surface border border-border">
+      <div className="mb-4 p-3 rounded-lg bg-surface border border-border flex items-center gap-2 flex-wrap">
         <span className="text-sm text-text-muted">{t("master.equipInspect.targetEquip", "대상 설비")}: </span>
         <span className="font-mono font-medium text-text">{equipCode}</span>
-        <span className="text-sm text-text-muted ml-2">{equipName}</span>
+        <span className="text-sm text-text-muted">{equipName}</span>
+        <ComCodeBadge groupCode="INSPECT_TYPE" code={inspectType} />
       </div>
 
       <div className="space-y-4">
-        <Select
-          label={t("master.equipInspect.inspectType")}
-          options={typeOptions}
-          value={inspectType}
-          onChange={value => setInspectType(value as InspectItemPoolRow["inspectType"])}
+        <ComCodeSelect
+          label={t("master.equipInspect.equipType", "설비유형")}
+          groupCode="EQUIP_TYPE"
+          value={selectedEquipType}
+          onChange={setSelectedEquipType}
+          placeholder={t("common.all", "전체")}
           fullWidth
         />
 
-        <Select
-          label={t("master.equipInspect.itemName", "점검항목")}
-          placeholder={t("master.equipInspect.selectPoolItem", "점검항목 마스터 선택")}
-          options={poolOptions}
-          value={selectedItemCode}
-          onChange={setSelectedItemCode}
-          fullWidth
-        />
-
-        <div className="grid grid-cols-2 gap-4">
-          <Input label={t("master.equipInspect.itemCode", "항목코드")} value={selectedItem?.itemCode || ""}
-            disabled fullWidth />
-          <Input label={t("master.equipInspect.seq")} type="number" value={seq}
-            onChange={e => setSeq(e.target.value)} fullWidth />
+        <div>
+          <Select
+            label={t("master.equipInspect.itemName", "점검항목")}
+            placeholder={t("master.equipInspect.selectPoolItem", "점검항목 마스터 선택")}
+            options={masterOptions}
+            value={selectedItemCode}
+            onChange={setSelectedItemCode}
+            fullWidth
+          />
+          {masterOptions.length === 0 && (
+            <p className="mt-1 text-xs text-text-muted">
+              {t("master.equipInspect.noPoolForType", "이 설비유형/점검유형에 등록된 점검항목 마스터가 없습니다. 점검항목 마스터에서 먼저 등록하세요.")}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t("master.equipInspect.cycle")} value={selectedItem?.cycle || ""}
-            disabled fullWidth />
-          <Input label={t("master.equipInspect.itemType", "판정구분")}
-            value={selectedItem ? itemTypeLabels[selectedItem.itemType] || "" : ""}
-            disabled fullWidth />
+          <Input label={t("master.equipInspect.itemCode", "항목코드")} value={selectedItem?.itemCode || ""} disabled fullWidth />
+          <Input
+            label={t("master.equipInspect.itemType", "판정구분")}
+            value={selectedItem ? (itemTypeLabels[selectedItem.itemType] || "") : ""}
+            disabled fullWidth
+          />
         </div>
-        <Input
-          label={selectedItem?.itemType === "MEASURE" ? t("master.equipInspect.spec", "규격") : t("master.equipInspect.criteria")}
-          value={
-            selectedItem?.itemType === "MEASURE"
-              ? `${selectedItem.lslValue ?? ""} ~ ${selectedItem.uslValue ?? ""}${selectedItem.unit ? ` (${selectedItem.unit})` : ""}`
-              : selectedItem?.criteria || ""
-          }
-          disabled fullWidth />
+
+        <div className="grid grid-cols-2 gap-4">
+          <Input label={t("master.equipInspect.cycle")} value={selectedItem?.cycle || ""} disabled fullWidth />
+          <Input
+            label={selectedItem?.itemType === "MEASURE" ? t("master.equipInspect.spec", "규격") : t("master.equipInspect.criteria")}
+            value={
+              selectedItem?.itemType === "MEASURE"
+                ? `${selectedItem.lslValue ?? ""} ~ ${selectedItem.uslValue ?? ""}${selectedItem.unit ? ` (${selectedItem.unit})` : ""}`
+                : selectedItem?.criteria || ""
+            }
+            disabled fullWidth
+          />
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-6">

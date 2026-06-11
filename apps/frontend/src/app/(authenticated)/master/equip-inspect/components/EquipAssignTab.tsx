@@ -9,7 +9,7 @@
  * 2. 우측: 선택 설비의 점검항목 (GET /master/equip-inspect-items?equipCode=XXX)
  * 3. 항목 추가/삭제는 API를 통해 DB에 직접 반영
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Wrench, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardContent, Input } from "@/components/ui";
@@ -26,6 +26,14 @@ export default function EquipAssignTab() {
   const [items, setItems] = useState<InspectItemRow[]>([]);
   const [itemLoading, setItemLoading] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"DAILY" | "PERIODIC" | "PM" | "WORKER">("DAILY");
+
+  const INSPECT_TABS = useMemo(() => [
+    { key: "DAILY" as const,    label: t("master.equipInspect.typeDaily") },
+    { key: "PERIODIC" as const, label: t("master.equipInspect.typePeriodic") },
+    { key: "PM" as const,       label: t("master.equipInspect.typePM", "예방보전") },
+    { key: "WORKER" as const,   label: t("master.equipInspect.typeWorker", "작업자점검") },
+  ], [t]);
 
   /* ── 설비 목록 로드 ── */
   useEffect(() => {
@@ -58,9 +66,9 @@ export default function EquipAssignTab() {
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   /* ── 항목 삭제 ── */
-  const handleDelete = useCallback(async (equipCode: string, inspectType: string, seq: number) => {
+  const handleDelete = useCallback(async (equipCode: string, itemCode: string, inspectType: string) => {
     try {
-      await api.delete(`/master/equip-inspect-items/${equipCode}/${inspectType}/${seq}`);
+      await api.delete(`/master/equip-inspect-items/${equipCode}/${itemCode}/${inspectType}`);
       fetchItems();
     } catch { /* 에러 처리 */ }
   }, [fetchItems]);
@@ -78,6 +86,11 @@ export default function EquipAssignTab() {
     return e.equipCode.toLowerCase().includes(s) || e.equipName.toLowerCase().includes(s);
   });
 
+  const filteredItems = useMemo(
+    () => items.filter(item => item.inspectType === activeTab),
+    [items, activeTab],
+  );
+
   return (
     <div className="grid grid-cols-12 gap-6 h-full min-h-0">
       {/* 좌측: 설비 목록 */}
@@ -85,7 +98,6 @@ export default function EquipAssignTab() {
         <Card padding="none" className="flex-1 flex flex-col min-h-0">
           <CardHeader
             title={t("master.equipInspect.equipList", "설비 목록")}
-            subtitle={t("master.equipInspect.selectEquip", "점검 설비 선택")}
             className="px-4 pt-4"
           />
           <CardContent className="flex-1 flex flex-col min-h-0 px-4 pb-4">
@@ -97,23 +109,21 @@ export default function EquipAssignTab() {
               fullWidth
               className="mb-3 shrink-0"
             />
-            <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
+            <div className="space-y-0.5 flex-1 overflow-y-auto min-h-0">
               {filteredEquips.map(equip => (
                 <button
                   key={equip.equipCode}
                   onClick={() => setSelectedEquip(equip)}
-                  className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-colors ${
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                     selectedEquip?.equipCode === equip.equipCode ? "bg-primary text-white" : "hover:bg-surface text-text"
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Wrench className="w-4 h-4 shrink-0" />
-                    <div className="text-left min-w-0">
-                      <div className="font-medium">{equip.equipCode}</div>
-                      <div className={`text-xs truncate ${selectedEquip?.equipCode === equip.equipCode ? "text-white/70" : "text-text-muted"}`}>
-                        {equip.equipName}
-                      </div>
-                    </div>
+                    <span className="font-medium shrink-0">{equip.equipCode}</span>
+                    <span className={`text-xs truncate ${selectedEquip?.equipCode === equip.equipCode ? "text-white/70" : "text-text-muted"}`}>
+                      {equip.equipName}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {equip.equipType && (
@@ -135,16 +145,46 @@ export default function EquipAssignTab() {
         </Card>
       </div>
 
-      {/* 우측: 선택된 설비의 점검항목 */}
-      <div className="col-span-8">
-        <InspectItemPanel
-          equip={selectedEquip}
-          items={items}
-          loading={itemLoading}
-          onDelete={handleDelete}
-          onOpenAddModal={() => setAddModalOpen(true)}
-          onRefresh={fetchItems}
-        />
+      {/* 우측: 탭 + 점검항목 */}
+      <div className="col-span-8 flex flex-col min-h-0">
+        {/* 탭 헤더 */}
+        <div className="flex border-b border-border flex-shrink-0">
+          {INSPECT_TABS.map(tab => {
+            const count = items.filter(i => i.inspectType === tab.key).length;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+                  activeTab === tab.key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-text-muted hover:text-text"
+                }`}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-surface text-text-muted"
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 점검항목 패널 */}
+        <div className="flex-1 min-h-0 overflow-auto pt-4">
+          <InspectItemPanel
+            equip={selectedEquip}
+            items={filteredItems}
+            loading={itemLoading}
+            onDelete={handleDelete}
+            onOpenAddModal={() => setAddModalOpen(true)}
+            onRefresh={fetchItems}
+          />
+        </div>
       </div>
 
       {/* 점검항목 추가 모달 */}
@@ -154,7 +194,7 @@ export default function EquipAssignTab() {
           onClose={() => setAddModalOpen(false)}
           equipCode={selectedEquip.equipCode}
           equipName={selectedEquip.equipName}
-          currentMaxSeq={items.reduce((max, i) => Math.max(max, i.seq), 0)}
+          inspectType={activeTab}
           onAdded={handleAdded}
         />
       )}

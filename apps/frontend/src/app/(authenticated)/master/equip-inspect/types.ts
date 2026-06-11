@@ -1,13 +1,3 @@
-/**
- * @file src/app/(authenticated)/master/equip-inspect/types.ts
- * @description 설비점검 관리 타입 정의
- *
- * 초보자 가이드:
- * 1. InspectItemRow: DB 엔티티(EQUIP_INSPECT_ITEM_MASTERS) 복합키 매핑
- * 2. EquipSummary: 좌측 설비 목록용 경량 타입
- */
-
-/** 설비 요약 (좌측 목록용) */
 export interface EquipSummary {
   equipCode: string;
   equipName: string;
@@ -15,12 +5,13 @@ export interface EquipSummary {
   lineCode: string | null;
 }
 
-/** 판정구분: 판정형(VISUAL) | 측정형(MEASURE) — IQC 방식과 동일 */
 export type InspectItemType = "VISUAL" | "MEASURE";
 
-export interface InspectItemPoolRow {
+/** EQUIP_INSPECT_ITEM_MASTERS 기준 마스터 행 */
+export interface InspectItemMasterRow {
   itemCode: string;
   inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
+  equipType: string | null;
   itemName: string;
   criteria: string | null;
   cycle: string | null;
@@ -30,33 +21,26 @@ export interface InspectItemPoolRow {
   unit: string | null;
   lslValue: number | null;
   uslValue: number | null;
+  workerQrCode: string | null;
 }
 
-/** 점검항목 (DB 엔티티 매핑 - 복합키) */
+/** EQUIP_INSPECT_ITEM_POOL 연결 풀 행 (MASTERS JOIN 포함) */
 export interface InspectItemRow {
   equipCode: string;
-  itemCode: string | null;
+  itemCode: string;
   inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
-  seq: number;
-  itemName: string;
+  useYn: string;
+  sortSeq: number | null;
+  itemName: string | null;
   criteria: string | null;
   cycle: string | null;
-  useYn: string;
+  itemType: InspectItemType | null;
+  unit: string | null;
+  lslValue: number | null;
+  uslValue: number | null;
+  workerQrCode: string | null;
 }
 
-/** 점검항목 생성/수정 DTO */
-export interface InspectItemFormData {
-  equipCode: string;
-  itemCode?: string;
-  inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
-  seq: number;
-  itemName: string;
-  criteria?: string;
-  cycle?: string;
-  useYn?: string;
-}
-
-/** 판정구분 배지 색상 (IQC JUDGE_METHOD_COLORS 패턴) */
 export const ITEM_TYPE_COLORS: Record<string, string> = {
   VISUAL: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
   MEASURE: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300",
