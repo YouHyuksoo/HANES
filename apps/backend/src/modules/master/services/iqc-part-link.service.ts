@@ -83,6 +83,44 @@ export class IqcPartLinkService {
     return link;
   }
 
+  /**
+   * 품목별 유효 IQC 검사항목 해석 (검사결과 등록 모달용)
+   * 체인: IQC_PART_LINKS → IQC_GROUPS → IQC_GROUP_ITEMS → IQC_ITEM_POOL
+   * - 거래처(partnerId) 지정 시 거래처 전용 링크 우선, 없으면 '*'(기본), 그래도 없으면 품목의 첫 링크
+   * - 사용중(USE_YN='Y') 링크/항목만, 그룹항목 SEQ 순으로 반환
+   * - 반환 형태는 모달이 쓰는 검사항목 계약: { itemCode, seq, inspectItem, spec, lsl, usl, unit, judgeMethod }
+   */
+  async resolveInspectItems(itemCode: string, partnerId?: string, company?: string, plant?: string) {
+    const tenant = this.tenantWhere(company, plant);
+
+    const links = await this.linkRepo.find({
+      where: { itemCode, useYn: 'Y', ...tenant },
+      relations: ['group', 'group.items', 'group.items.inspItem'],
+    });
+    if (links.length === 0) return [];
+
+    // 거래처 전용 → 기본('*') → 그 외 첫 링크 순으로 선택
+    const link =
+      (partnerId && links.find((l) => l.partnerId === partnerId)) ||
+      links.find((l) => l.partnerId === '*') ||
+      links[0];
+
+    const groupItems = link.group?.items ?? [];
+    return groupItems
+      .filter((gi) => gi.inspItem && gi.inspItem.useYn !== 'N')
+      .sort((a, b) => a.seq - b.seq)
+      .map((gi) => ({
+        itemCode,
+        seq: gi.seq,
+        inspectItem: gi.inspItem.inspItemName,
+        spec: gi.inspItem.criteria ?? null,
+        lsl: gi.inspItem.lsl ?? null,
+        usl: gi.inspItem.usl ?? null,
+        unit: gi.inspItem.unit ?? null,
+        judgeMethod: gi.inspItem.judgeMethod,
+      }));
+  }
+
   async create(dto: CreateIqcPartLinkDto, company?: string, plant?: string) {
     const resolvedPartnerId = dto.partnerId || '*';
 

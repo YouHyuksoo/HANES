@@ -143,7 +143,11 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     const fetchItems = async () => {
       setLoadingItems(true);
       try {
-        const res = await api.get("/master/iqc-items", { params: { itemCode: selectedItem.itemCode } });
+        // 품목→IQC 검사그룹→검사항목풀 체인으로 유효 검사항목 전체를 해석한다.
+        // (기존 /master/iqc-items는 IQC_ITEM_MASTERS만 봐서 일부 항목·검사기준 누락)
+        const res = await api.get(
+          `/master/iqc-part-links/resolve-items/${encodeURIComponent(selectedItem.itemCode)}`,
+        );
         setInspectItems(res.data?.data ?? []);
       } catch {
         setInspectItems([]);
@@ -349,7 +353,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
               />
             </label>
             <label className="col-span-2">
-              <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.inspectClassLabel", "검사분류")}</span>
+              <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.inspectClassLabel", "검사구분")}</span>
               <select
                 value={inspectClass}
                 onChange={(e) => setInspectClass(e.target.value)}

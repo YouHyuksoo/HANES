@@ -29,6 +29,18 @@ export class IqcPartLinkController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
+  @Get('resolve-items/:itemCode')
+  @ApiOperation({ summary: '품목별 유효 IQC 검사항목 해석 (그룹→항목풀 체인)' })
+  async resolveInspectItems(
+    @Param('itemCode') itemCode: string,
+    @Query('partnerId') partnerId: string | undefined,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.iqcPartLinkService.resolveInspectItems(itemCode, partnerId, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Get(':itemCode/:partnerId')
   @ApiOperation({ summary: 'IQC 연결 상세 조회' })
   async findByCompositeKey(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string, @Company() company: string, @Plant() plant: string) {
