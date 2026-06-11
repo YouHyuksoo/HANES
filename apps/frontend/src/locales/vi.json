@@ -241,7 +241,7 @@
     "production.packResult": "Kết quả đóng gói",
     "production.wipStock": "Tra cứu tồn kho BTP/TP",
     "production.repair": "Quản lý sửa chữa",
-    "inspection": "Kiểm tra điện",
+    "inspection": "Quản lý kiểm tra",
     "inspection.result": "Quản lý KT thông điện",
     "inspection.terminalResult": "Kiểm tra terminal",
     "inspection.history": "Lịch sử KT thông điện",

@@ -243,7 +243,7 @@
     "production.packResult": "포장실적조회",
     "production.wipStock": "반제품/제품재고조회",
     "production.repair": "수리관리",
-    "inspection": "통전검사",
+    "inspection": "검사관리",
     "inspection.result": "통전검사관리",
     "inspection.terminalResult": "단자검사",
     "inspection.history": "통전검사이력",

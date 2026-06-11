@@ -241,7 +241,7 @@
     "production.packResult": "包装实绩查询",
     "production.wipStock": "半成品/成品库存查询",
     "production.repair": "修理管理",
-    "inspection": "导通检测",
+    "inspection": "检验管理",
     "inspection.result": "通电检查管理",
     "inspection.terminalResult": "端子检查",
     "inspection.history": "通电检查记录",

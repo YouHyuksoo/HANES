@@ -241,7 +241,7 @@
     "production.packResult": "Pack Result",
     "production.wipStock": "WIP/Product Stock Inquiry",
     "production.repair": "Repair Management",
-    "inspection": "Continuity Test",
+    "inspection": "Inspection Management",
     "inspection.result": "Continuity Inspect",
     "inspection.terminalResult": "Terminal Inspect",
     "inspection.history": "Inspect History",
