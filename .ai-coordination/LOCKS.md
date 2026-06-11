@@ -5,10 +5,12 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
-- T-PDA-RECEIVE-WORKER-GUARD (claude, 2026-06-11): PDA 자재입고 사전 게이트 검증·사용자 메시지 모달(닫으면 클리어) + 작업자 스캔 등록·workerId 저장. 파일: `apps/frontend/src/hooks/pda/useMatReceivingScan.ts`, `apps/frontend/src/app/pda/material/receiving/page.tsx`, `apps/frontend/src/app/pda/material/receiving/components.tsx`
+No active locks.
 ```
 
 ## History
+
+- T-PDA-RECEIVE-WORKER-GUARD (claude, 2026-06-11): PDA 자재입고 사전 게이트 검증·사용자 메시지 모달 + 작업자 스캔 등록·workerId 저장 완료 후 lock 해제. 파일: `apps/frontend/src/hooks/pda/useMatReceivingScan.ts`, `apps/frontend/src/app/pda/material/receiving/{page.tsx,components.tsx}`.
 
 - T-IQC-MODAL-POOL-ITEMS (claude, 2026-06-11): IQC 검사결과 모달이 풀 검사항목 전체+검사기준 표시하도록 수정 완료 후 lock 해제. 파일: `apps/backend/src/modules/master/{controllers/iqc-part-link.controller.ts,services/iqc-part-link.service.ts}`, `apps/backend/src/migrations/2026-06-11_iqc_group_chain_repair_seed.sql`, `apps/frontend/src/components/material/IqcModal.tsx`.
 - T-REINSPECT-MOVE-LEDGER (claude, 2026-06-11): 유수명 재검 불합격 수불 양품출고/불용입고 2건 분리 완료 후 lock 해제. 파일: `apps/backend/src/modules/material/services/shelf-life-reinspect.service.{ts,spec.ts}`, `apps/frontend/src/app/(authenticated)/inventory/transaction/page.tsx`.
