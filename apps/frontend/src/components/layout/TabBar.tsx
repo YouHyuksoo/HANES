@@ -14,10 +14,12 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { useTabStore, Tab } from "@/stores/tabStore";
+import { useTabStore, Tab, MAX_TABS } from "@/stores/tabStore";
 import { menuConfig } from "@/config/menuConfig";
 import { useTabSync } from "@/hooks/useTabSync";
 import TabContextMenu from "./TabContextMenu";
+import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
 
 /** 부모 메뉴의 아이콘 컴포넌트를 찾아 반환 */
 function getParentIcon(parentId: string) {
@@ -30,7 +32,7 @@ const SCROLL_AMOUNT = 200;
 export default function TabBar() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { tabs, activeTabId, setActiveTab, removeTab } = useTabStore();
+  const { tabs, activeTabId, setActiveTab, removeTab, limitNoticeOpen, closeLimitNotice } = useTabStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [ctxMenu, setCtxMenu] = useState<{ tab: Tab; x: number; y: number } | null>(null);
@@ -191,6 +193,21 @@ export default function TabBar() {
           onClose={() => setCtxMenu(null)}
         />
       )}
+
+      {/* 최대 탭 수 초과 안내 모달 */}
+      <Modal
+        isOpen={limitNoticeOpen}
+        onClose={closeLimitNotice}
+        title={t("tabs.limitTitle")}
+        size="md"
+        footer={
+          <Button variant="primary" onClick={closeLimitNotice}>
+            {t("common.confirm")}
+          </Button>
+        }
+      >
+        <p className="text-text">{t("tabs.limitMessage", { max: MAX_TABS })}</p>
+      </Modal>
     </>
   );
 }

@@ -35,8 +35,17 @@ export default function SidebarMenu({
   const router = useRouter();
   const addTab = useTabStore((s) => s.addTab);
 
-  const handleMenuClick = (menuItem: { code: string; path: string; labelKey: string }, parentCode: string) => {
-    addTab({ id: menuItem.code, path: menuItem.path, labelKey: menuItem.labelKey, parentId: parentCode });
+  const handleMenuClick = (
+    e: React.MouseEvent,
+    menuItem: { code: string; path: string; labelKey: string },
+    parentCode: string
+  ) => {
+    const opened = addTab({ id: menuItem.code, path: menuItem.path, labelKey: menuItem.labelKey, parentId: parentCode });
+    // 최대 탭 수 초과로 차단되면 페이지 이동도 막는다 (안내 모달은 TabBar에서 표시)
+    if (!opened) {
+      e.preventDefault();
+      return;
+    }
     router.push(menuItem.path);
     onClose?.();
   };
@@ -69,7 +78,7 @@ export default function SidebarMenu({
               ) : (
                 <Link
                   href={item.path}
-                  onClick={() => handleMenuClick(item as { code: string; path: string; labelKey: string }, item.code)}
+                  onClick={(e) => handleMenuClick(e, item as { code: string; path: string; labelKey: string }, item.code)}
                   title={collapsed ? t(item.labelKey) : undefined}
                   className={`
                     flex items-center gap-3 py-1.5 rounded-[var(--radius)]
@@ -123,7 +132,7 @@ export default function SidebarMenu({
                           ) : (
                             <Link
                               href={child.path!}
-                              onClick={() => handleMenuClick(child as { code: string; path: string; labelKey: string }, item.code)}
+                              onClick={(e) => handleMenuClick(e, child as { code: string; path: string; labelKey: string }, item.code)}
                               className={`
                                 block px-3 py-2 rounded-[var(--radius)] text-sm transition-colors duration-200
                                 ${pathname === child.path

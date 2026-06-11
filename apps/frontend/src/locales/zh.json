@@ -5499,7 +5499,9 @@
     "close": "关闭",
     "closeOthers": "关闭其他",
     "closeAll": "关闭所有",
-    "pinnedTooltip": "固定标签 (无法关闭)"
+    "pinnedTooltip": "固定标签 (无法关闭)",
+    "limitTitle": "标签数量限制",
+    "limitMessage": "最多只能打开{{max}}个标签。请关闭不使用的标签后重试。"
   },
   "pda": {
     "title": "HARNESS PDA",

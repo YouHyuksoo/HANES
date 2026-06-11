@@ -28,8 +28,8 @@ import { memo, useRef, type ComponentType, type ReactNode } from "react";
 import { useTabStore } from "@/stores/tabStore";
 import { pageRegistry } from "./pageRegistry.generated";
 
-/** 동시 마운트 유지 상한(활성 포함). tabStore MAX_TABS(10) 이하로 둬 누적 부담을 막는다. */
-const MAX_ALIVE = 8;
+/** 동시 마운트 유지 상한(활성 포함). tabStore MAX_TABS(6) 이하로 둬 누적 부담을 막는다. */
+const MAX_ALIVE = 6;
 
 /**
  * keep-alive 페이지 셀. props(Comp, active)가 바뀔 때만 리렌더된다.

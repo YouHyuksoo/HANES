@@ -5513,7 +5513,9 @@
     "close": "Close",
     "closeOthers": "Close Others",
     "closeAll": "Close All",
-    "pinnedTooltip": "Pinned tab (cannot close)"
+    "pinnedTooltip": "Pinned tab (cannot close)",
+    "limitTitle": "Tab Limit Reached",
+    "limitMessage": "You can open up to {{max}} tabs. Please close unused tabs and try again."
   },
   "pda": {
     "title": "HARNESS PDA",

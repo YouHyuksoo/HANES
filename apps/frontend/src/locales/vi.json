@@ -5499,7 +5499,9 @@
     "close": "Đóng",
     "closeOthers": "Đóng tab khác",
     "closeAll": "Đóng tất cả",
-    "pinnedTooltip": "Tab cố định (không thể đóng)"
+    "pinnedTooltip": "Tab cố định (không thể đóng)",
+    "limitTitle": "Giới hạn số tab",
+    "limitMessage": "Chỉ có thể mở tối đa {{max}} tab. Vui lòng đóng các tab không sử dụng rồi thử lại."
   },
   "pda": {
     "title": "HARNESS PDA",

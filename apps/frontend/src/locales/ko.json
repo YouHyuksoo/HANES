@@ -5533,7 +5533,9 @@
     "close": "닫기",
     "closeOthers": "다른 탭 닫기",
     "closeAll": "모든 탭 닫기",
-    "pinnedTooltip": "고정 탭 (닫기 불가)"
+    "pinnedTooltip": "고정 탭 (닫기 불가)",
+    "limitTitle": "탭 개수 제한",
+    "limitMessage": "탭은 최대 {{max}}개까지 열 수 있습니다. 사용하지 않는 탭을 닫은 후 다시 시도하세요."
   },
   "pda": {
     "title": "HARNESS PDA",

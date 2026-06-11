@@ -363,6 +363,25 @@ export function findMenuCodeByPath(path: string): string | undefined {
 }
 
 /**
+ * path로 메뉴 항목과 부모 코드를 찾기 (탭 자동 생성용)
+ * @param path - 라우트 경로 (예: "/production/order")
+ * @returns 해당 경로의 메뉴 항목과 부모 code 또는 undefined
+ */
+export function findMenuItemByPath(
+  path: string
+): { item: MenuConfigItem; parentCode: string } | undefined {
+  for (const item of menuConfig) {
+    if (item.path === path) return { item, parentCode: item.code };
+    if (item.children) {
+      for (const child of item.children) {
+        if (child.path === path) return { item: child, parentCode: item.code };
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
  * 허용된 하위 메뉴 코드로부터 부모 코드를 자동 추출
  * @param allowedCodes - 사용자에게 허용된 메뉴 코드 배열
  * @returns 부모 메뉴 코드 배열 (중복 제거)
