@@ -37,6 +37,7 @@ export interface ReceivingHistoryItem {
   itemName: string;
   receivedQty: number;
   warehouseCode: string;
+  workerName?: string;
   timestamp: string;
 }
 
@@ -50,7 +51,12 @@ interface UseMatReceivingScanReturn {
   error: string | null;
   history: ReceivingHistoryItem[];
   handleScan: (barcode: string) => Promise<ScanResult>;
-  handleConfirm: (receivedQty: number, warehouseCode: string) => Promise<boolean>;
+  handleConfirm: (
+    receivedQty: number,
+    warehouseCode: string,
+    workerId?: string,
+    workerName?: string,
+  ) => Promise<boolean>;
   handleReset: () => void;
 }
 
@@ -74,6 +80,7 @@ export function useMatReceivingScan(): UseMatReceivingScanReturn {
     try {
       const { data } = await api.get<{ data: MatReceivableLot }>(
         `/material/receiving/receivable/by-barcode/${encodeURIComponent(matUid)}`,
+        { suppressErrorModal: true },
       );
       const lot = data?.data ?? (data as unknown as MatReceivableLot);
       setScannedData(lot);
@@ -88,16 +95,26 @@ export function useMatReceivingScan(): UseMatReceivingScanReturn {
 
   /** 입고 확정 (공통 계약: items[]) */
   const handleConfirm = useCallback(
-    async (receivedQty: number, warehouseCode: string): Promise<boolean> => {
+    async (
+      receivedQty: number,
+      warehouseCode: string,
+      workerId?: string,
+      workerName?: string,
+    ): Promise<boolean> => {
       if (!scannedData) return false;
       setIsConfirming(true);
       setError(null);
       try {
-        await api.post("/material/receiving", {
-          items: [
-            { matUid: scannedData.matUid, qty: receivedQty, warehouseId: warehouseCode },
-          ],
-        });
+        await api.post(
+          "/material/receiving",
+          {
+            items: [
+              { matUid: scannedData.matUid, qty: receivedQty, warehouseId: warehouseCode },
+            ],
+            workerId: workerId || undefined,
+          },
+          { suppressErrorModal: true },
+        );
         setHistory((prev) => [
           {
             matUid: scannedData.matUid,
@@ -105,6 +122,7 @@ export function useMatReceivingScan(): UseMatReceivingScanReturn {
             itemName: scannedData.part?.itemName ?? scannedData.itemCode,
             receivedQty,
             warehouseCode,
+            workerName: workerName || undefined,
             timestamp: new Date().toLocaleTimeString(),
           },
           ...prev,

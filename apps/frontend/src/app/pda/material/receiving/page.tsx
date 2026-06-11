@@ -5,9 +5,11 @@
  * @description 자재입고 PDA 페이지 (웹과 워크플로우 통일)
  *
  * 초보자 가이드:
- * 1. ScanInput: 자재 시리얼(matUid) 바코드 스캔 → 입고가능 LOT 조회
- * 2. WarehouseSelect: 입고창고 선택 (기본창고 자동선택)
- * 3. 수량 입력(기본=잔량) 후 입고확인 → 공통 입고 API(items[])로 확정
+ * 1. 작업자 스캔(WorkerBar): 작업자 QR을 스캔해 등록해야 입고 가능 (누가 작업했는지 기록)
+ * 2. ScanInput: 자재 시리얼(matUid) 바코드 스캔 → 입고가능 LOT 조회
+ * 3. WarehouseSelect: 입고창고 선택 (기본창고 자동선택)
+ * 4. 수량 입력(기본=잔량) 후 입고확인 → 사전 게이트 검증 통과 시 공통 입고 API(items[], workerId)로 확정
+ * 5. 오류는 전역 시스템 모달 대신 사용자용 PdaErrorDialog로 표시하고, 닫으면 입고창을 클리어
  */
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,16 +22,26 @@ import PdaActionButton from "@/components/pda/PdaActionButton";
 import { useSoundFeedback } from "@/components/pda/SoundFeedback";
 import { useBarcodeDetector } from "@/hooks/pda/useBarcodeDetector";
 import WarehouseSelect from "@/components/shared/WarehouseSelect";
+import { useAuthStore } from "@/stores/authStore";
+import { api } from "@/services/api";
 import { PackageCheck } from "lucide-react";
 import {
   useMatReceivingScan,
   type ScanResult,
 } from "@/hooks/pda/useMatReceivingScan";
-import { ReceivingHistoryRow } from "./components";
+import { ReceivingHistoryRow, WorkerBar, PdaErrorDialog } from "./components";
+
+/** 작업자 QR 조회 응답 */
+interface WorkerByQrResponse {
+  id: number;
+  name: string;
+  workerCode: string;
+}
 
 export default function MaterialReceivingPage() {
   const { t } = useTranslation();
   const { playSuccess, playError } = useSoundFeedback();
+  const { currentWorker, setCurrentWorker } = useAuthStore();
   const {
     scannedData,
     isScanning,
@@ -44,17 +56,64 @@ export default function MaterialReceivingPage() {
   const [receivedQty, setReceivedQty] = useState<string>("");
   const [warehouseCode, setWarehouseCode] = useState<string>("");
 
-  /** 바코드 스캔 → 입고가능 LOT 조회 → 사운드 피드백 */
+  // 작업자 스캔 상태
+  const [workerScanOpen, setWorkerScanOpen] = useState(false);
+  const [workerLoading, setWorkerLoading] = useState(false);
+  const [workerError, setWorkerError] = useState<string | null>(null);
+
+  // 사전 게이트 검증 실패 메시지 (백엔드 호출 전 사용자용 안내)
+  const [gateMessage, setGateMessage] = useState<string | null>(null);
+
+  /** 작업자 QR 스캔 → 등록 (게이트형 입력) */
+  const onWorkerScan = useCallback(
+    async (qr: string) => {
+      const code = qr.trim();
+      if (!code) return;
+      setWorkerLoading(true);
+      setWorkerError(null);
+      try {
+        const res = await api.get<WorkerByQrResponse>(
+          `/master/workers/by-qr/${encodeURIComponent(code)}`,
+          { suppressErrorModal: true },
+        );
+        const w = res.data;
+        if (!w?.workerCode) {
+          setWorkerError(t("pda.receiving.workerNotFound", "작업자를 찾을 수 없습니다"));
+          playError();
+          return;
+        }
+        setCurrentWorker({ id: w.id, name: w.name, workerCode: w.workerCode });
+        setWorkerScanOpen(false);
+        playSuccess();
+      } catch {
+        setWorkerError(t("pda.receiving.workerNotFound", "작업자를 찾을 수 없습니다"));
+        playError();
+      } finally {
+        setWorkerLoading(false);
+      }
+    },
+    [t, setCurrentWorker, playSuccess, playError],
+  );
+
+  /** 자재 바코드 스캔 → 입고가능 LOT 조회 (작업자 등록 후에만) */
   const onScan = useCallback(
     async (barcode: string) => {
+      if (!currentWorker) {
+        setGateMessage(t("pda.receiving.workerRequired", "작업자를 먼저 스캔해 주세요"));
+        playError();
+        return;
+      }
       const result: ScanResult = await handleScan(barcode);
       if (result !== "ok") playError();
     },
-    [handleScan, playError],
+    [currentWorker, handleScan, playError, t],
   );
 
-  /** 하드웨어 스캐너 감지 (스캔된 데이터 없을 때만 활성화) */
-  useBarcodeDetector({ onScan, enabled: !scannedData });
+  /** 하드웨어 스캐너 감지 (작업자 등록·미스캔·작업자패널 닫힘 시에만 자재 스캔) */
+  useBarcodeDetector({
+    onScan,
+    enabled: !scannedData && !workerScanOpen && !!currentWorker,
+  });
 
   /** 스캔 결과 필드 구성 */
   const resultFields: ScanResultField[] = useMemo(() => {
@@ -74,20 +133,45 @@ export default function MaterialReceivingPage() {
     ];
   }, [scannedData, receivedQty, t]);
 
-  const errorMessage = useMemo(() => (error ? error : null), [error]);
+  // 다이얼로그 메시지: 사전검증(gateMessage) 우선, 없으면 백엔드 오류(error)
+  const dialogMessage = gateMessage ?? error ?? null;
 
-  /** 입고 확인 */
+  /** 입고 확인 — 백엔드 호출 전 사전 게이트 검증 */
   const onConfirm = useCallback(async () => {
+    if (!currentWorker) {
+      setGateMessage(t("pda.receiving.workerRequired", "작업자를 먼저 스캔해 주세요"));
+      playError();
+      return;
+    }
+    if (!scannedData) return;
     const qty = Number(receivedQty);
-    if (!qty || qty <= 0) return;
-    const success = await handleConfirm(qty, warehouseCode);
+    if (!receivedQty || Number.isNaN(qty) || qty <= 0) {
+      setGateMessage(t("pda.receiving.qtyMin", "입고수량은 1 이상이어야 합니다."));
+      playError();
+      return;
+    }
+    if (qty > scannedData.remainingQty) {
+      setGateMessage(
+        t("pda.receiving.qtyOverRemaining", "입고수량({{qty}})이 잔량({{remaining}})을 초과합니다.")
+          .replace("{{qty}}", String(qty))
+          .replace("{{remaining}}", String(scannedData.remainingQty)),
+      );
+      playError();
+      return;
+    }
+    if (!warehouseCode) {
+      setGateMessage(t("pda.receiving.warehouseRequired", "입고 창고를 선택해 주세요."));
+      playError();
+      return;
+    }
+    const success = await handleConfirm(qty, warehouseCode, currentWorker.workerCode, currentWorker.name);
     if (success) {
       playSuccess();
       setReceivedQty("");
     } else {
       playError();
     }
-  }, [receivedQty, warehouseCode, handleConfirm, playSuccess, playError]);
+  }, [currentWorker, scannedData, receivedQty, warehouseCode, handleConfirm, playSuccess, playError, t]);
 
   /** 다음 스캔 */
   const onNextScan = useCallback(() => {
@@ -95,36 +179,56 @@ export default function MaterialReceivingPage() {
     setReceivedQty("");
   }, [handleReset]);
 
+  /** 에러 다이얼로그 닫기 → 입고창 클리어 (자재/확정 오류 한정) */
+  const onCloseDialog = useCallback(() => {
+    setGateMessage(null);
+    handleReset();
+    setReceivedQty("");
+  }, [handleReset]);
+
   const receiveDisabledReason = useMemo(() => {
+    if (!currentWorker) return t("pda.receiving.workerRequired", "작업자를 먼저 스캔해 주세요");
     const qty = Number(receivedQty);
     if (!receivedQty || Number.isNaN(qty) || qty <= 0) {
-      return "입고수량은 1 이상이어야 합니다.";
+      return t("pda.receiving.qtyMin", "입고수량은 1 이상이어야 합니다.");
     }
     if (!warehouseCode) {
-      return "창고를 선택해 주세요.";
+      return t("pda.receiving.warehouseRequired", "입고 창고를 선택해 주세요.");
     }
     return undefined;
-  }, [receivedQty, warehouseCode]);
+  }, [currentWorker, receivedQty, warehouseCode, t]);
 
   return (
     <>
       <PdaHeader titleKey="pda.receiving.title" backPath="/pda/material/menu" />
 
-      {/* 시리얼 바코드 스캔 */}
+      {/* 작업자 스캔/등록 바 */}
+      <WorkerBar
+        worker={currentWorker}
+        open={workerScanOpen}
+        onToggle={() => {
+          setWorkerScanOpen((v) => !v);
+          setWorkerError(null);
+        }}
+        onScan={onWorkerScan}
+        isLoading={workerLoading}
+        error={workerError}
+      />
+
+      {/* 시리얼 바코드 스캔 (작업자 등록 후 활성화) */}
       <ScanInput
         onScan={onScan}
         placeholderKey="pda.receiving.scanBarcode"
-        disabled={!!scannedData}
+        disabled={!!scannedData || !currentWorker || workerScanOpen}
         isLoading={isScanning}
       />
 
-      {/* 스캔 결과 / 에러 */}
-      {(scannedData || error) && (
+      {/* 스캔 결과 (성공만; 오류는 다이얼로그) */}
+      {scannedData && (
         <ScanResultCard
           fields={resultFields}
-          variant={error ? "error" : "success"}
-          title={error ? undefined : t("pda.scan.success")}
-          errorMessage={errorMessage || undefined}
+          variant="success"
+          title={t("pda.scan.success")}
         />
       )}
 
@@ -136,7 +240,7 @@ export default function MaterialReceivingPage() {
       )}
 
       {/* 스캔 전 안내 */}
-      {!scannedData && !error && !isScanning && (
+      {!scannedData && !isScanning && currentWorker && (
         <div className="mx-4 mt-4 p-8 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900">
           <div className="text-center">
             <PackageCheck className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
@@ -197,7 +301,7 @@ export default function MaterialReceivingPage() {
               onClick: onConfirm,
               variant: "primary",
               isLoading: isConfirming,
-              disabled: !receivedQty || Number(receivedQty) <= 0 || !warehouseCode,
+              disabled: !receivedQty || Number(receivedQty) <= 0 || !warehouseCode || !currentWorker,
               disabledReason: receiveDisabledReason,
             },
             {
@@ -208,6 +312,9 @@ export default function MaterialReceivingPage() {
           ]}
         />
       )}
+
+      {/* 사용자용 오류 다이얼로그 (닫으면 입고창 클리어) */}
+      <PdaErrorDialog open={!!dialogMessage} message={dialogMessage} onClose={onCloseDialog} />
     </>
   );
 }
