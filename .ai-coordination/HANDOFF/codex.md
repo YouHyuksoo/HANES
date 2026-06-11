@@ -2,161 +2,18 @@
 
 ## Last Update
 
-2026-06-11 12:13
-
-## Latest
-
-- `T-TAB-KEEPALIVE-DUPE-PATH-KEY` 완료. 사용자 제보 React 오류 `Encountered two children with the same key, /dashboard` 원인은 `TabKeepAlive` 성능 변경에서 `openPaths`가 배열로 바뀌며 `tabStore.tabs`의 중복 path가 그대로 `key={path}`에 전달된 것. `openPaths`를 `Array.from(new Set(...))`로 dedupe해 탭 순서는 유지하고 중복 key를 제거했다. `T-TAB-KEEPALIVE-PERF`의 memo/LRU 변경은 보존. 검증: 신규 구조 테스트 RED→GREEN, 기존 sidebar nav 구조 테스트, 프론트 tsc, `/dashboard` HTTP 200, diff check 통과. 참고: `TabKeepAlive.tsx`는 claude active lock 파일이라 이 최소 보정 사실을 JOURNAL에 남김.
-- `T-MAT-IQC-MODAL-NO-INITIAL-SCROLL` 완료. `/material/iqc` IQC 모달에 스크롤이 생겨 하단 `시리얼별 등록` 버튼이 초기 화면에서 안 보이던 원인은 공통 `Modal` content가 `max-h-[75vh]`인데 내부 컨테이너가 `90vh`+`min-h-[620px]` 기준이었던 것. 내부 높이를 `h-[calc(75vh-32px)] max-h-[620px]`로 낮추고 `min-h` 제거, 상단/하단 padding을 추가로 줄였다. 검증: compact 구조 테스트, 기존 시리얼 플로우 구조 테스트, 프론트 tsc, diff check, `/material/iqc` HTTP 200 통과.
-- `T-MAT-IQC-MODAL-COMPACT-SCAN` 완료. `/material/iqc` IQC 검사결과 등록 모달을 `full` 크기로 확장하고, 입하정보/바코드 스캔/검사자/비고/검사분류/샘플수량/성적서 선택을 상단 조밀 영역으로 합쳤다. 하단은 flex 기반으로 남은 높이를 채우며 시리얼 목록과 검사항목 표의 폰트/행높이/버튼을 compact 처리했다. 검증: compact 구조 테스트 RED→GREEN, 기존 시리얼 플로우 구조 테스트, 프론트 tsc, diff check 통과. `/material/iqc`는 인증 영역 응답 지연 중 72초 후 HTTP 200 확인.
-- `T-MAT-PO-PANEL-COMPACT-ROWS` 완료. `/material/po` 우측 패널 공간 확보를 위해 품목 행 내부 입력만 compact 렌더링으로 바꿨다. `CompactItemInput`은 라벨 `text-[10px]`, 입력 `h-7 text-xs`를 사용하고, 품목 카드 padding/radius/필드 gap/품목명 글꼴도 줄였다. 상단 PO 헤더 입력은 기존 공통 `Input` 유지. 검증: density 구조 테스트 RED→GREEN, 기존 bulk/layout 테스트, 프론트 tsc, `/material/po` HTTP 200, diff check 통과.
-- `T-MAT-PO-PART-BULK-ADD` 완료. `/material/po` 우측 패널 품목추가 모달을 크게 하고 다중선택 일괄 추가를 지원했다. `PartSearchModal`은 기본 단건 선택 동작을 유지하면서 opt-in `multiSelect`/`onSelectMany` props를 추가했고, 다중선택 모드에서 `2xl` 모달, 560px 그리드, 체크박스 선택/전체선택, footer의 선택 건수와 `선택 품목 추가` 버튼을 제공한다. PO 패널은 선택된 신규 품목들을 한 번에 라인으로 추가하며 이미 추가된 품목코드는 건너뛴다. 검증: 구조 테스트 2건 RED→GREEN, 기존 레이아웃 테스트, 프론트 tsc, `/material/po` HTTP 200, diff check 통과.
-- `T-MAT-PO-ITEMLIST-FLEX-HEIGHT` 완료. `/material/po` 우측 `PoFormPanel` 품목 목록이 `max-h-[320px]`로 고정돼 고해상도에서 하단 공백이 생기던 원인을 수정했다. 사용자 승인으로 기존 `T-MAT-RECV-FIXES` 파일 범위 충돌을 넘겨 진행했고, 본문/품목 섹션을 flex 기반으로 전환해 품목 목록이 남은 높이를 채우고 내부에서만 스크롤되도록 했다. 검증: 구조 테스트 RED→GREEN, 프론트 tsc, `/material/po` HTTP 200, diff check 통과.
-- `T-DATAGRID-FILTER-AUTOCOMPLETE-OFF` 완료. DataGrid 컬럼 필터 입력에서 브라우저가 이전 입력값을 자동완성으로 띄우는 것을 막기 위해 `ColumnFilterInput`, `TextFilterPopup`, `NumberFilterPopup`, `DateFilterPopup`의 필터 input에 `autoComplete="off"`를 적용했다. 텍스트 검색 input은 `autoCorrect="off"`, `spellCheck={false}`도 같이 적용했다. 전역 `Input`은 로그인/스캔/폼 영향 가능성이 있어 변경하지 않았다. 검증: node 구조 테스트 RED→GREEN, 프론트 tsc, diff check 통과.
-- `T-MAT-ARRIVAL-RESULT-MFG-INSTANT` 완료. `/material/arrival-result` 제조사 변경 저장 후 `loadSerials(selected)`만 호출해 우측/좌측 row 제조사 상태가 기존 값으로 남던 문제를 수정했다. PATCH 성공 직후 `selected`와 `rows`의 해당 row를 새 `mfgPartnerCode/mfgPartnerName`으로 갱신한다. 검증: node 구조 테스트 1/1, 프론트 tsc, API 테스트 후 `R26061000003/MAT_CABLE1` 제조사 `M004/대성하이텍` 원복 확인. CDP UI 검증은 로그인 플로우 타임아웃으로 미완료.
-- `T-LAYOUT-MENU-CLICK-NAV` 완료. 사이드바 메뉴 클릭 후 탭만 생기고 페이지가 열리지 않는 조건을 CDP로 재현했고, 원인은 탭 추가는 직접 수행하지만 라우팅은 `Link` 기본 동작에만 의존하던 구조였다. `SidebarMenu.handleMenuClick()`에서 `addTab()` 후 `router.push(menuItem.path)`를 명시 호출하도록 보강했다. 검증: node 구조 테스트 1/1, 프론트 tsc, CDP에서 `/dashboard` → `/material/iqc` 이동 및 화면 표시 확인.
-- `T-MASTER-CODE-I18N-SEARCH` 완료. `/master/code` 좌측 검색이 현재 언어의 공통코드 표시값으로 동작하도록 보정했다. 백엔드 `GET /master/com-codes/groups`는 `detailCodes`와 언어별 검색 텍스트(`CODE_NAME`, `ATTR1`, `ATTR2`, `ATTR3`)를 함께 반환하고, 프론트 `GroupList`는 현재 `i18n.language` 기준으로 `comCode.GROUP.CODE` 번역값과 DB 검색 텍스트를 모두 검색한다. 검증: RED 확인 후 focused Jest 19/19, backend tsc, diff check 통과. frontend 전체 tsc는 기존 `/master/part` dirty 타입 오류(`PRODUCT_TYPE_OPTIONS` 누락)로 실패했고, `/master/code` HTTP 확인은 현재 dev 서버 응답 60초 타임아웃으로 미완료.
-- `T-SHIP-ORDER-ITEM-PAYLOAD` 완료. `/shipping/order` 등록 화면이 `POST /shipping/orders`에 `items` 없이 header form만 보내서 백엔드 DTO가 `items must be an array` 400을 반환하던 문제를 수정했다. 모달에 완제품 품목 검색/수량/비고 입력을 추가했고, 저장 payload는 `items: [{ itemCode, orderQty, remark }]`를 포함한다. 품목이 없거나 수량이 1 미만이면 저장 버튼은 비활성화된다. 검증: node 구조 테스트, 프론트 tsc, diff check, JSHANES/API 가역 생성삭제(`SO-CODEX-260610-173104`, 잔여 0), 브라우저 `/shipping/order` 렌더 및 모달 품목 섹션/저장 비활성 확인.
-- `T-PROD-ISSUE-STOCK-ENDPOINT` 완료. `/product/issue` 출고등록 패널이 제품 재고조회 시 단수 `/inventory/product/stock`을 호출해 404가 발생했다. 백엔드 실제 route는 `@Get('product/stocks')`라 프론트 호출을 `/inventory/product/stocks`로 변경했다. 검증: RED 확인 후 node:test 1/1, 프론트 tsc, 복수 route 401(인증단계 도달)/단수 route 404, `/product/issue` 200, diff check 통과.
-- `T-INSP-TERMINAL-RESULT` 완료. `/inspection/terminal-result` 단자검사 결과등록 페이지와 좌측 메뉴를 추가했다. 기존 `/inspection/result` 2패널 워크플로우는 `InspectionResultWorkflow`로 공통화했고, 기존 통전검사는 `CONTINUITY`, 단자검사는 `TERMINAL`을 `InspectPanel`에 전달한다. 백엔드는 `ContinuityInspectDto.inspectType`을 받아 `INSPECT_RESULTS.INSPECT_TYPE`에 저장하고, 통계/라벨 조회도 `inspectType` query로 분리한다. JSHANES에는 `INSP_TERMINAL_RESULT` 메뉴 배치와 `MANAGER`/`OPERATOR` 권한을 적용했다. 검증: RED 확인 후 focused Jest 13/13, node:test 3/3, 백/프론트 tsc, JSON parse, scoped diff check, `/inspection/terminal-result` 200 및 기존 `/inspection/result` 200 통과.
-- `T-PROD-RESULT-WORKER-AVATAR-FIX` 완료. `/production/result`에서 작업자명 없는 행이 `WorkerAvatar`의 `name.charAt(0)`로 런타임 오류를 내던 문제를 수정했다. 원인은 백엔드가 `worker` relation을 내려도 화면은 평탄화된 `workerName/workerDept`만 가정한 것. 공통 `workerAvatar.ts` fallback 유틸을 추가했고, 화면은 `worker.workerName` 또는 `workerId`를 fallback으로 평탄화한다. 검증: RED 확인 후 node:test 2/2, 프론트 tsc, diff check, 라우트 HTTP 200 통과.
-- `T-PROD-PROGRESS-EQUIP-FILTER` 완료. `/production/progress`에 설비 필터를 추가했다. 프론트는 `EquipSelect` 선택값을 `/production/job-orders?equipCode=`로 전달하고, 백엔드는 `PROD_RESULTS`의 `ORDER_NO/EQUIP_CODE/COMPANY/PLANT_CD` 존재 조건으로 작업지시를 필터링한다. 테스트는 RED를 먼저 확인한 뒤 focused Jest 36/36, 백/프론트 tsc, diff check, 라우트 HTTP 200 통과. gstack browse 실행 파일 부재로 브라우저 스냅샷은 미수행.
-- `T-PROD-ORDER-REMOVE-INFO-CARDS` 완료. `/production/order` 상단 정보카드 4개를 제거했고 `StatCard` import와 stats 계산도 정리했다. 프론트 tsc, diff check, 라우트 HTTP 200 통과. gstack browse 실행 파일 부재로 브라우저 스냅샷은 미수행.
-- `T-ID-PAYLOAD-SCAN` 완료. `/material/hold`와 같은 `.id` payload 누락 유형을 전수 점검했고, 목록 응답이 자연키만 내려 화면의 `selected*.id` 호출이 깨질 수 있는 경로를 백엔드 응답 계약으로 보강했다. 보강 대상: `/inventory/product-hold`(`id=warehouseCode::itemCode::prdUid`), 고객PO(`id=orderNo`), 설비(`id=equipCode`), 구매PO 입하(`id=poNo`), 외주처(`id=vendorCode`), 인터페이스 로그(`id=transDateIso/seq`), OQC(`id=requestNo`), 자재/제품 수불(`id=transNo`), 팔레트(`id=palletNo`). 검증: focused Jest 10 suites/156 tests, backend tsc, frontend tsc, diff check 통과.
-- `T-MAT-HOLD-MATUID-FIX` 완료. `/material/hold`의 보류/해제 POST 본문이 `selectedLot.id`를 사용해 `matUid`가 빠지던 원인을 확인했고, `selectedLot.matUid` 전송으로 수정했다. 검증: 프론트 tsc, diff check 통과.
-- `T-SHIP-WORKFLOW-API-QA` 완료. 박스포장→제품입고재고→출하지시→출하처리 API 흐름을 코드/테스트 기준으로 점검했다. 현재 백엔드 계약은 박스 입고 시 `PRODUCT_STOCKS.PRD_UID='*'` 집계 재고와 `FG_LABELS.BOX_NO` 스탬프를 만들고, 출하 시 집계 재고 차감 + `FG_LABELS.STATUS='SHIPPED'` 전환으로 `/shipping/box-stock`에서 제외하는 흐름이다. `ship-order.service.spec.ts`는 단건 출하의 FG 라벨 상태 전환까지 검증하도록 보강했고, `box.service.spec.ts`의 `NumberingService` mock 누락을 보정했다. 검증: backend tsc, focused Jest 57/57, diff check 통과. 실 HTTP/JSHANES 호출은 `10.1.10.35:1527` 타임아웃과 3003 미기동으로 미수행.
-- `T-MASTER-API-DEEP-QA-FIX` 완료. 기준정보 API 세부 재검증에서 남았던 미통과 3건을 수정했다. 회사 생성은 `COMPANY_MASTERS.COMPANY/PLANT_CD`, 사업장 생성은 `PLANTS.COMPANY/PLANT_CD` tenant 저장 누락이 원인이었다. IQC 검사그룹 수정은 relation 포함 엔티티 `save()`가 `IQC_GROUP_ITEMS.COMPANY`를 NULL로 갱신하는 것이 원인이었고, 삭제는 자식행 명시 삭제를 추가했다. 검증: focused Jest 3 suites/26 tests, 백엔드 tsc, 실제 HTTP 11/11, oracle-db JSHANES `ZFX/ZFY` 잔여 0, `git diff --check` 통과.
-- `T-MASTER-API-QA` 완료. 기준정보 API는 실행 중인 `localhost:3003` 백엔드와 JSHANES `40/1000` 기준으로 검증했다. `oracle-db` 스킬로 활성 계정 `admin@hanes.com`을 확인하고 로그인 토큰을 발급받아 호출했다. Swagger `/api/v1/master/*` 기준 path 파라미터 없는 GET 39건, 실제 샘플 키 기반 상세/보조 GET 34건이 모두 200. 임시코드 CRUD는 `com-codes`, `partners`, `parts`, `processes`, `prod-lines`, `workers`, `boms`, `work-instructions` 생성/수정/삭제 통과. JSHANES 임시 데이터 잔여 0건 확인. 파일 업로드/엑셀 업로드 API는 이번 검증 범위에서 제외.
-- `T-INPUT-KIOSK-WORKER-CODE-BUTTONS` 완료. 작업자설비점검 모달에 점검항목코드(`ITEM_CODE`)와 QR 값을 표시하고, OK/NG 버튼은 QR 스캔 전에도 8개 항목 모두 상시 보이게 했다. 항목 렌더 후 QR 입력창 포커스도 재보정했다. 검증: 프론트 tsc, `git diff --check`, 브라우저에서 `EIP-STD-W001`, `EQ-CRIMP-01:EIP-STD-W001`, OK 8개/NG 8개, QR 입력 포커스 확인.
-- `T-INPUT-KIOSK-WORKER-QR-FOCUS` 완료. `/production/input-kiosk` 작업자설비점검 모달은 QR 입력창에 자동 포커스되고, 항목 로드/스캔/OK-NG 판정 후에도 키보드 타입 스캐너가 바로 입력할 수 있도록 포커스를 유지한다.
-- 작업자설비점검 QR 매칭은 입력값 trim/대문자 정규화 후 설비별 `WORKER_QR_CODE`와 직접 비교한다. 스캔된 행은 스크롤로 가운데 이동하고 활성 표시하며 OK/NG 버튼을 노출한다.
-- 설비일일점검 완료 상태는 완료 메시지만 보이지 않고, 완료 로그의 점검자/종합판정/항목별 판정/비고를 표로 보여준다.
-- 신규 SQL: `apps/backend/src/migrations/2026-06-10_seed_all_equips_daily_inspect_assignments.sql`. 모든 사용 설비에 `DAILY` 표준 점검항목을 할당했고 JSHANES 적용 완료.
-- 검증: `EQ-CUT-01` API에서 WORKER 8건, DAILY 25건 조회. 브라우저에서 QR 입력 포커스 유지와 완료상세(`CODX테스트점검자`, `압착 높이`, `NG`, `CODX-DAILY-DETAIL-TEST`) 표시 확인. 검증용 DAILY 로그는 삭제 후 완료 여부 false 확인. backend focused Jest, 프론트 tsc, `git diff --check` 통과.
-- `T-EQUIP-INSPECT-WORKER-ASSIGN-SEED` 완료. 모든 사용 설비 8대에 WORKER 표준 점검항목 8건씩 총 64건을 `EQUIP_INSPECT_ITEM_MASTERS`에 할당했다.
-- 신규 SQL: `apps/backend/src/migrations/2026-06-09_seed_all_equips_worker_inspect_assignments.sql`. QR 값은 `EQUIP_CODE:ITEM_CODE` 형식이다.
-- 검증: JSHANES 적용, 설비별 8건/총 64건 확인, `EQ-CRIMP-01`/`EQ-CUT-01` API 8건 반환, 입력키오스크 작업자설비점검 모달에서 8건 표시 확인.
-- `T-INPUT-KIOSK-WORKER-QR-SIMPLE` 완료. 작업자설비점검 QR 스캔 처리는 스캐너가 입력창에 문자열을 넣고 Enter를 보내는 방식으로 단순화했다.
-- 매칭 기준은 입력값 trim/대문자 정규화 후 설비별 항목의 `WORKER_QR_CODE`와 직접 비교한다. 이전 `ITEM_CODE`/`SEQ`/복합 후보 매칭은 제거했다.
-- 검증: 프론트 tsc, `git diff --check`, 브라우저 실제 로그인/키오스크 모달/QR 입력/OK/저장/DB 로그 확인 통과. 테스트용 `EQ-CRIMP-01` `SEQ=901` 항목과 QR 로그는 삭제해 잔여 0건.
-- `T-INPUT-KIOSK-WORKER-INSPECT-QR` 완료. `/production/input-kiosk` 작업자설비점검 모달은 설비별 `WORKER` 점검항목을 조회하고, QR 스캔 입력값이 `WORKER_QR_CODE`와 일치하면 해당 행으로 스크롤 및 포커스한다.
-- OK/NG 버튼은 스캔으로 활성화된 행에서만 선택 가능하게 했고, 저장 payload는 `{ details: { items: [...] }, inspectType: 'WORKER' }`로 보낸다.
-- `/equipment/daily-inspect` POST는 기존 DAILY 기본 동작을 유지하되 입력키오스크의 `WORKER` 저장 요청은 실제 WORKER 타입으로 `EQUIP_INSPECT_LOGS`에 남기도록 했다.
-- 설비별 점검항목 생성 시 `workerQrCode`, `itemType`, `unit`, `lslValue`, `uslValue`도 보존한다.
-- 검증: `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts daily-inspect.controller.spec.ts`, 백엔드 tsc, 프론트 tsc, `git diff --check`, `/production/input-kiosk` HTTP 200 통과.
-- `T-EQUIP-INSPECT-WORKER-SEED` 완료. `EQUIP_INSPECT_ITEM_POOL`에 작업자설비점검 표준 seed 8건(`EIP-STD-W001~W008`)을 추가하고 JSHANES에 적용했다.
-- 검증: seed SQL 재실행 성공, JSHANES 유형별 건수 `WORKER=8`, `/master/equip-inspect` HTTP 200 확인.
-- `T-EQUIP-INSPECT-ADD-MODAL-TYPE` 완료. `/master/equip-inspect` 점검항목추가 모달 상단에 점검유형 드롭다운을 선노출하고, 선택 유형으로 점검항목 Pool을 필터링한다.
-- 검증: add-modal 구조 node:test 통과, 프론트 tsc 통과, `/master/equip-inspect` HTTP 200 확인.
-- `T-EQUIP-INSPECT-WORKER-TYPE` 완료. `/master/equip-inspect`에 `설비별 할당` / `점검항목 마스터` 탭을 추가해 `WORKER=작업자설비점검` 유형을 Pool에서 등록/필터할 수 있게 했다.
-- 검증: page 구조 node:test 통과, 프론트 tsc 통과, `/master/equip-inspect` HTTP 200 확인.
-- `T-ITEM-MARKING-TEXT` 완료. `ITEM_MASTERS.MARKING_TEXT VARCHAR2(100)` 추가, JSHANES 적용, 엔티티/DTO/서비스 검색/품목마스터 목록·폼 반영, ERD 재생성 완료.
-- `T-EQUIP-INSPECT-ADD-TYPE` 완료. `/master/equip-inspect` 점검항목 추가 모달의 점검유형을 Select로 바꾸고, 생성 API가 요청 `inspectType`을 Pool 기본값보다 우선 반영하도록 했다.
-- 검증: JSHANES 컬럼 확인, `generate_db_schema_doc.py`, 백엔드 tsc, 프론트 tsc, `/master/part`와 `/master/equip-inspect` HTTP 200 확인.
-- `T-MAT-RECEIVE-SCAN` 완료. `/material/receive`는 입고대기 그리드 선택 입고를 제거하고, `입고처리` 버튼으로 여는 스캔 모달에서만 입고 처리한다.
-- 스캔 모달은 거래처 바코드 → 자체부착 바코드(`matUid`) 순환 Enter 입력을 받아 매핑을 누적하고, 입고대기 대상/성적서 차단/창고 누락/중복을 검사한다. 입고 수량은 잔량 전체다.
-- `MAT_RECEIVINGS.VENDOR_BARCODE` 컬럼을 추가해 거래처 바코드 원본을 입고 행에 저장한다. JSHANES 적용 완료, `docs/reports/db-schema-erd.md` 재생성 완료.
-- 검증: JSHANES 컬럼 확인, receiving 서비스 Jest 11건, 백엔드 tsc, 프론트 tsc, `/material/receive` HTTP 200 통과. gstack browse/Playwright 실행 바이너리 부재로 인증 후 실제 모달 클릭 검증은 미수행.
-- `T-INPUT-KIOSK-EQUIP-LIST` 완료. `/production/input-kiosk` 설비선택 모달에 기본 설비목록이 전달되도록 `/equipment/equips` 응답 정규화 유틸을 추가하고 페이지 로딩에 적용했다.
-- 검증: 정규화 node:test 2건 통과, 프론트 tsc 통과, `localhost:3002/production/input-kiosk` HTTP 200 확인. 인증 없는 브라우저는 `/login` 리다이렉트라 실제 모달 DOM 클릭 검증은 미수행.
-- `T-INPUT-KIOSK-REMOVE-MASTER-SAMPLE` 완료. `/production/input-kiosk` 헤더 Row2에서 마스터샘플 판정 카드를 제거했고, `kiosk.header.masterSample/masterSampleNotTarget` 번역 키도 제거했다.
-- 검증: 프론트 tsc 통과, 입력키오스크/kiosk locale 참조 검색 0건, `localhost:3002/production/input-kiosk` HTTP 200 확인. 인증 없는 브라우저는 `/login` 리다이렉트라 실제 화면 DOM 검증은 미수행.
-- `T-MAT-RECEIVE-REMOVE-INFO-CARDS` 완료. `/material/receive` 상단 정보카드 4개를 제거했고, 더 이상 쓰지 않는 `/material/receiving/stats` 조회와 `StatCard` 관련 import/state도 정리했다.
-- 검증: 프론트 tsc 통과, `localhost:3002/material/receive` HTTP 200, `page.tsx` 내 `StatCard`/`receiving/stats` 잔여 참조 없음.
-- 기존 dirty 변경인 자재입고 payload `warehouseId: warehouseCode`는 보존했다.
-- `T-SHIP-BOX-STOCK-MENU` 완료. `/shipping/box-stock`이 좌측 메뉴에 안 보인 원인은 `MENU_CATEGORY_ITEMS` 배치 누락이다.
-- `SHIP_BOX_STOCK`을 menu validator/seed에 등록했고, JSHANES `MENU_CATEGORY_ITEMS`의 SHIPPING 하위에 `SORT_ORDER=25`로 추가했다.
-- MANAGER 역할에도 `ROLE_MENU_PERMISSIONS` `SHIP_BOX_STOCK=Y`를 추가했다.
-- 검증: DB 조회, 재실행 SQL `scripts/migration/2026-06-09_seed_ship_box_stock_menu.sql`, 백/프론트 tsc 통과. 기존 브라우저 탭은 `hanes-menu-tree` sessionStorage 때문에 새로고침이 필요할 수 있다.
-- `T-SHIP-PACK-REMOVE-INFO-CARDS` 완료. `/shipping/pack` 상단 정보카드 4개를 제거했고 목록 카드가 바로 보인다.
-- 기존 `/shipping/pack` 시리얼 스캔 Enter 자동등록/즉시취소 변경은 보존했다.
-- 검증: 프론트 tsc 통과. 헤드리스 브라우저 CDP mock으로 `/shipping/pack` 정보카드 grid count `0`, 박스 목록 행 표시 확인.
-- `T-SHIP-BOX-STOCK` 완료. 출하관리 하위에 `/shipping/box-stock` 박스입고재고 조회 화면을 추가했다.
-- 화면은 `/shipping/boxes` 박스 목록을 기준으로 하며, 행 선택 시 `/shipping/boxes/:id/items`로 `FG_LABELS` 개별제품 상세를 조회한다.
-- 표시 항목: 박스번호/품목/수량/상태/팔레트/OQC/마감일시, 개별제품 시리얼/작업지시/FG상태/검사/발행일시.
-- 검증: 백엔드 tsc, 프론트 tsc 통과. 기존 dev 서버 `localhost:3002`에서 `/shipping/box-stock` HTTP 200 확인. Playwright CLI 부재로 스크린샷 검증은 미수행.
-- `T-SHIP-ORDER-REMOVE-INFO-CARDS` 완료. `/shipping/order` 상단 정보카드 4개를 제거했고 목록 카드가 바로 보인다.
-- 기존 미커밋 변경인 `/shipping/orders` API 경로 수정은 그대로 보존했다.
-- `T-SHIP-PACK-SCAN-ENTER-CANCEL` 완료. `/shipping/pack` 시리얼 입력은 스캐너 Enter/CR/LF로 즉시 등록되고, 방금 등록한 시리얼은 모달 상단 `취소`로 즉시 삭제할 수 있다.
-- 등록/삭제 뒤 시리얼 입력 포커스는 계속 유지된다.
-- 검증: 프론트 tsc 통과. 헤드리스 브라우저 CDP mock으로 `/shipping/pack` 자동등록/즉시취소와 `/shipping/order` 정보카드 미표시 확인.
-- `T-SHIP-PACK-SERIAL-FOCUS` 완료. `/shipping/pack` 시리얼 추가 모달은 열림 직후 시리얼 입력박스에 자동 포커스되고, Enter로 시리얼 추가 후에도 입력박스 포커스를 유지한다.
-- 시리얼 추가 모달 크기는 `2xl`로 확대했다.
-- 검증: 프론트 tsc 통과. 백엔드 3001 미실행으로 실 API 대신 헤드리스 브라우저 CDP mock으로 `/shipping/pack` 실제 컴포넌트 렌더링 후 `focusedOnOpen=true`, `focusedAfterEnter=true`, `serialAddedVisible=true` 확인.
-- `T-QUALITY-REWORK-DEFECT-RELATION` 완료. `/quality/reworks` 500 원인은 `ReworkOrder`에 없는 `defectLog` TypeORM relation을 join/load한 것이다.
-- `REWORK_ORDERS.DEFECT_LOG_ID`는 `"occurAt|seq"` 문자열이고 `DEFECT_LOGS`는 `OCCUR_TIME + SEQ` 복합 PK라 현재 엔티티 관계로 직접 매핑되어 있지 않다.
-- `ReworkService.findAll()`의 `leftJoinAndSelect('r.defectLog', 'dl')`와 `findById()`의 `relations: ['defectLog']`를 제거했다.
-- 검증: `rework.service.spec.ts` 11건, 백엔드 tsc 통과. 실 API `GET /api/v1/quality/reworks?limit=5000`은 `success: true`, 0건 반환.
-- `T-MAT-REQ-DETAIL` 완료. `/material/request` 출고요청 목록에서 행 클릭 또는 상세보기 아이콘으로 요청 상세 모달을 볼 수 있다.
-- 상세 모달은 요청 헤더, 상태/요청자/승인 정보, 요청·출고·잔여 수량 합계, 품목별 요청·출고·잔여·현재고·BOM소요·기불출·현장재고를 표시한다.
-- 백엔드 목록 응답의 `orderNo`, `totalRequestQty`, `totalIssuedQty` fallback도 반영해 목록/상세 표시가 맞게 나오도록 했다.
-- 검증: 프론트 tsc 통과, API `MR2606080003` 상세 품목 확인, 브라우저 `/material/request` 상세 모달 6개 품목 표시 확인.
-- `T-INPUT-KIOSK-CONSUMABLE-COUNT` 완료. 입력키오스크 소모품 패널에서 `item.maxCount.toLocaleString()`이 `undefined`로 터지던 원인을 수정했다.
-- 원인은 mounted consumable API가 수명 한도를 `expectedLife`로 반환하는데 프론트는 `maxCount`를 기대하던 계약 불일치다.
-- `MaterialListPanel`과 `ConsumableScanModal` 모두 `maxCount ?? expectedLife` 정규화와 숫자 fallback을 적용했다.
-- 검증: JSHANES/API 실응답 확인, `pnpm --filter @harness/frontend build` 통과, 헤드리스 브라우저에서 `EQ-CUT-01` 소모품 패널/모달 카운트 정상 표시 및 해당 TypeError 없음.
-- `T-MAT-REQ-BOM-AUTO` 완료. `/material/request`에서 작업지시 선택 시 BOM 직하위 원자재를 자동 산출해 요청 품목으로 채운다.
-- 산식은 `BOM 소요량 - 기불출량 - 현장재고`이고, 이전 출고량은 `MAT_ISSUES -> MAT_LOTS`, 현장재고는 `MAT_STOCKS -> WAREHOUSES(FLOOR)` 기준이다.
-- 새 API: `GET /material/issue-requests/job-orders/:orderNo/bom-items`.
-- 요청 상세 저장 시 `bomReqQty`, `prevIssueQty`, `floorStockQty`도 저장한다.
-- 생성 직후 404 결함도 수정했다. 원인은 트랜잭션 안에서 외부 repository로 상세 재조회해 Oracle 미커밋 행을 못 보는 구조였고, 커밋 후 재조회로 변경했다.
-- 검증: backend issue-request 스펙 14건, backend build, frontend build 통과. 브라우저에서 `W2026-001 - HNS01` 선택 시 원자재 4건 자동 표시 확인. API/DB로 `MR2606080002` 생성 및 상세 4건 저장 확인.
-- `T-MAT-ARRIVAL-LABEL-FORMAT` 완료. 입하시 발행 라벨을 사용자 첨부 이미지 기준 80mm x 40mm 형식으로 변경했다.
-- 새 공용 컴포넌트 `apps/frontend/src/components/material/MaterialArrivalLabel.tsx`가 입하 직후 라벨 모달과 `/material/receive-label` 브라우저 인쇄에서 공통 사용된다.
-- 라벨은 좌측 QR(data URL image), `품목코드 / 수량 단위`, 제조사, `IN`, `SERIAL`, `LOT`, 우측 `MP/CM`, `검사필 도장날인`, 하단 품명으로 구성된다.
-- 실제 발행 중 발견한 라벨 발행 저장 결함도 수정했다: `MAT_LOTS.currentQty/origin/iqcStatus/status` 누락, `LABEL_PRINT_LOGS.company/plant/printedAt/seq` 누락, 브라우저 로그 payload `matUids`→`uidList`.
-- 검증: 프론트/백엔드 tsc 통과. 헤드리스로 APPCT-A 5장 실제 발행, create/log API 201, 인쇄 HTML 라벨 5개와 QR 이미지 5개 확인. 검증용 사용자 `codex-label-verify@harness.com`은 삭제했다.
-- `T-ROUTING-PROCESS-TYPE-SOURCE` 완료. `/master/routing` 공정추가 모달에서 공정유형 선택/저장을 제거했고, 공정 마스터 `processType`을 표시만 한다.
-- 브라우저 확인: `MTASY` 선택 시 공정명 `자재장착`, 공정유형 `조립` 표시. 저장은 수행하지 않았다.
-- 사용자 요청으로 `RECV-TEST-260608` 3건을 실제 입고 처리했다. 입고번호는 `RCV20260608-0002`, 수불번호는 `TX20260608-00014~00016`.
-- 입고대기 API에서 해당 LOT 3건은 더 이상 반환되지 않고, `MAT_RECEIVINGS`, `MAT_STOCKS`, `STOCK_TRANSACTIONS` 반영을 확인했다.
-- `T-MAT-RECEIVE-TESTDATA` 완료. `/material/receive`에서 `RECV-TEST-260608`로 검색하면 입고 테스트 가능한 3건이 보인다.
-- 생성 LOT: `RECV-TEST-260608-00003`(`CBL-A`, 12, 성적서 첨부), `RECV-TEST-260608-00004`(`CNTR001`, 8, 성적서 첨부), `RECV-TEST-260608-00005`(`APPCT-A`, 5, 성적서 불필요). 입하번호는 `RCVT26060800003`, 창고는 `WH-MAT-A`.
-- `T-MAT-CYCLE-E2E-FIX` 완료.
-- `T-MAT-CYCLE-E2E-QA`에서 찾은 결함을 수정했다: 자재입고 `warehouseCode`/`warehouseId` 계약 불일치, IQC 성적서 업로드 UI 부재, 날짜 표시/필터 문제, 수동출고 체크박스 row id 누락, 자재재고 `matUid` 검색 누락.
-- 추가로 IQC 이력 기본 날짜 필터가 `toDate=2026-06-08`을 00:00:00까지만 포함해 오늘 이력을 숨기던 결함을 발견하고 수정했다.
-- 검증: 관련 백엔드 스펙 53건, 프론트/백엔드 tsc 통과. 헤드리스 브라우저에서 재고 LOT 검색, 수동출고 1행 선택, IQC 이력 오늘 1건/성적서 첨부/재업로드 아이콘 표시 확인.
-- 테스트 데이터 기준: `PO-260608-013`, `R26060800001`, `VH1-RM260608-00004`, `RCV20260608-0001`, `ISS20260608-0001`.
+2026-06-11 12:00
 
 ## Completed
 
-- BOM 화면 컬럼 라벨을 `유형`에서 `품목유형`, `공정`에서 `투입공정`으로 명확화했다.
-- `ko/en/vi/zh` locale에 반영했고 프론트 `tsc --noEmit` 통과했다.
-- `ITEM_MASTERS.ITEM_TYPE` 품목유형 기준을 `ITEM_TYPE` 공통코드로 통일했다.
-- JSHANES 컬럼 주석은 `공통코드:ITEM_TYPE`, `COM_CODES.PART_TYPE` 활성 행은 `N`으로 정리했다.
-- 런타임 화면/Swagger/shared 상수와 schema SQL/생성 스크립트/ERD 문서의 품목유형 `PART_TYPE` 혼용을 정리했다.
-- 검증: focused Jest, backend build, frontend `tsc --noEmit`, JSHANES migration execute-file, Oracle post-query 통과.
-- `PRODUCT_TYPE`을 `2011/2012/2013/2014` 단계 코드에서 `HARNESS/SUB_ASSY/WIRE/TERMINAL/...` 품목군 코드로 재정의했다.
-- 현재 기준: `ITEM_TYPE`은 재고/생산 흐름 분류, `PRODUCT_TYPE`은 품목군/물성 분류다.
-- JSHANES `40/1000` 품목 18건, 재실행 SQL, 공유 상수, 프론트 옵션, 백엔드 DTO 예시를 모두 같은 기준으로 정정했다.
-- `ITEM_TYPE`/`PRODUCT_TYPE` 구분을 검증하고 정정했다. `ITEM_TYPE`은 수불/생산 분류, `PRODUCT_TYPE`은 품목 화면 제품유형 코드로 분리한다.
-- JSHANES `40/1000`의 `PRODUCT_TYPE`은 `2011=하네스`, `2012=반제품`, `2013=원자재`, `2014=부자재`로 정렬됐다.
-- `PRODUCT_TYPE_VALUES` 공용 상수를 추가하고, 품목 DTO에서 `productType`을 해당 값으로 검증하도록 했다.
-- `C:\Users\hsyou\Desktop\bom-from-production-sheet.html` 기준으로 JSHANES `40/1000`의 BOM/품목/공정/라우팅 기준정보를 재생성했다.
-- 실행 SQL은 `tools/generated/bom-from-production-sheet-seed.sql`이다.
-- 최종 건수는 `ITEM_MASTERS=18`, `BOM_MASTERS=16`, `PROCESS_MASTERS=16`, `ROUTING_GROUPS=3`, `ROUTING_PROCESSES=18`, `ROUTING_MATERIALS=17`이다.
-- `TP0001`은 BOM PK 제약 때문에 `BOM_MASTERS`에는 800MM 합산, `ROUTING_MATERIALS`에는 500MM/300MM 분리로 반영했다.
-- 기준정보 전체에서 DB 응답에 없는 임의 `id` 잔여를 정리했다.
-- `bom`, `label`, `iqc-item`, `part` IQC 설정, `vendor-barcode`, `work-instruction`, `company`는 실제 DB PK 또는 복합키 기준으로 수정/삭제/선택키를 맞췄다.
-- 기준정보 DataGrid 표시 SQL 테이블명을 실제 DB 테이블명으로 정정했다.
-- 프론트 타입체크, diff 공백 검사, 핵심 기준정보 API 조회 7건이 통과했다.
-- 기준정보 회사/사업장 화면에서 DB 응답에 없는 임의 `id` 의존을 제거했다.
-- 회사 수정/삭제 호출은 `COMPANY_MASTERS` 복합키인 `companyCode::plant` 기준으로 정리했다.
-- 회사 DataGrid 표시용 SQL 테이블명을 실제 테이블 `COMPANY_MASTERS`로 정정했다.
-- `MYDBPDB` / `HNSMES` 기준 TypeORM-vs-Oracle 비교 도구를 추가했다.
-- PK/type/nullable mismatch를 모두 정리했고 최종 비교 결과는 issues 0이다.
-- 적용한 마이그레이션과 엔티티 수정 내역은 `docs/reports/typeorm-oracle-schema-audit-2026-05-30.md`와 `JOURNAL.md`에 기록했다.
-- `docs/reports/db-schema-erd.md`를 `MYDBPDB/HNSMES` 기준으로 갱신했다.
+- `T-CUSTOMER-INTRO-HTML`: 고객 소개용 HANES MES 가로형 HTML 자료 생성 완료. 산출물은 `docs/presentation/hanes-mes-introduction.html`, 화면 캡처는 `docs/presentation/assets/*.png`.
+- .ai-coordination 작업추적 문서 초기화 완료.
 
-## Next
+## Next AI Should
 
-- `T-MAT-IQC-SERIAL-SCAN-PANEL` 완료. `/material/iqc` IQC 등록 모달은 시리얼 스캔 입력 → 좌측 스캔 시리얼 목록 → 우측 선택 시리얼 검사항목 판정 구조로 변경했다. 저장 payload는 `details.type=SERIAL_INSPECTION` 및 시리얼별 검사항목 판정 JSON이다. node 구조 테스트 2/2, 프론트 tsc, route HTTP 200 통과.
-- `T-PROD-MONTHLY-ERP-LABEL`은 사용자 요청으로 좌측 메뉴 `월간생산계획`을 `ERP생산계획`으로 바꾸려 했으나, `apps/frontend/src/locales/*`와 `apps/frontend/src/config/menuConfig.ts`가 `T-MAT-CONCESSION-RECV` active lock 범위라 수정하지 않고 `BLOCKED` 처리했다. 사용자 허가 또는 lock owner handoff 후 `apps/frontend/src/locales/ko.json`의 `menu.production.monthlyPlan` 값만 변경하면 된다.
-- `T-MAT-HOLD-MATUID-FIX` 완료. `/material/hold`의 보류/해제 POST 본문이 `selectedLot.id`를 사용해 `matUid`가 빠지던 원인을 `selectedLot.matUid` 전송으로 수정했다. 프론트 tsc와 diff check 통과.
-- `T-MASTER-API-DEEP-QA-FIX` 완료. 기준정보 API 세부 재검증 미통과 3건은 수정 및 재검증 완료했다.
-- 통과 근거: focused Jest 26건, 백엔드 tsc, 실제 HTTP 11건, JSHANES 임시 prefix `ZFX/ZFY` 5개 관련 테이블 잔여 0.
-- codex active lock은 없다.
-- `MR2606080002`는 이번 작업에서 실제 생성한 출고요청 테스트 데이터다. 사용자가 정리 요청하면 삭제 또는 취소 정책에 맞춰 처리한다.
-- 이번 기준정보 재생성은 운영성 주문/재고성 테이블 전체 삭제가 아니라 BOM/품목/공정/라우팅 중심 삭제/재생성이다.
-- `routing` self-inspect의 `id`는 DB 실제 PK라 유지했다. `RoutingGroupManager`, `QualityConditionEditor`, `work-calendar`, DataGrid 컬럼 `id`는 화면 로컬 식별자라 유지했다.
-- 커밋은 사용자 요청이 있을 때만 수행한다.
+1. Read `AGENTS.md`.
+2. Read `.ai-coordination/README.md`, `STATE.md`, `TASKS.md`, `DECISIONS.md`, and `LOCKS.md`.
+3. Read `PROTOCOL.md` for conflicts, stale locks, broad changes, DB changes, or review handoff.
+4. Claim files in `LOCKS.md` before editing.
+5. Keep `TASKS.md` active-work-only.
+6. Update `JOURNAL.md` and its own handoff file before stopping.
