@@ -14,8 +14,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { Plus, RefreshCw, AlertTriangle, Wrench, CheckCircle, XCircle, Clock, Search, ScanLine } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, ComCodeBadge, StatCard } from "@/components/ui";
+import { Plus, RefreshCw, AlertTriangle, Search, ScanLine } from "lucide-react";
+import { Card, CardContent, Button, Input, Modal, ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeList } from "@/hooks/useComCode";
@@ -121,16 +121,7 @@ export default function DefectPage() {
     }
   }, [selectedDefect, fetchData, t]);
 
-  const stats = useMemo(() => {
-    const total = data.length;
-    const waiting = data.filter((d) => d.status === "WAIT").length;
-    const processing = data.filter((d) => d.status === "REPAIR" || d.status === "REWORK").length;
-    const done = data.filter((d) => d.status === "DONE").length;
-    const totalQty = data.reduce((sum, d) => sum + (d.qty ?? 0), 0);
-    return { total, waiting, processing, done, totalQty };
-  }, [data]);
-
-  const columns = useMemo<ColumnDef<Defect>[]>(() => [
+const columns = useMemo<ColumnDef<Defect>[]>(() => [
     {
       id: "actions", header: t("common.manage"), size: 100, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
@@ -166,15 +157,7 @@ export default function DefectPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 flex-shrink-0">
-        <StatCard label={t("quality.defect.totalCount")} value={stats.total} icon={AlertTriangle} color="blue" />
-        <StatCard label={t("quality.defect.pending")} value={stats.waiting} icon={Clock} color="yellow" />
-        <StatCard label={t("quality.defect.repairing")} value={stats.processing} icon={Wrench} color="blue" />
-        <StatCard label={t("quality.defect.completedStat")} value={stats.done} icon={CheckCircle} color="green" />
-        <StatCard label={t("quality.defect.totalDefectQty")} value={stats.totalQty} icon={XCircle} color="red" />
-      </div>
-
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+<Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
