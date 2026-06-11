@@ -85,8 +85,8 @@ import { WarehouseTransferRule } from '../../entities/warehouse-transfer-rule.en
 import { WorkInstruction } from '../../entities/work-instruction.entity';
 import { WorkerMaster } from '../../entities/worker-master.entity';
 import { PartnerMaster } from '../../entities/partner-master.entity';
-import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master.entity';
 import { EquipInspectItemPool } from '../../entities/equip-inspect-item-pool.entity';
+import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master.entity';
 import { IqcItemMaster } from '../../entities/iqc-item-master.entity';
 import { IqcGroup } from '../../entities/iqc-group.entity';
 import { IqcGroupItem } from '../../entities/iqc-group-item.entity';

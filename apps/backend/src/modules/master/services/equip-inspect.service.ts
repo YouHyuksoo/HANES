@@ -1,117 +1,87 @@
-/**
- * @file src/modules/master/services/equip-inspect.service.ts
- * @description 설비점검항목마스터 비즈니스 로직 서비스
- *              복합키: company + plant + equipCode + inspectType + seq
- *
- * 초보자 가이드:
- * 1. findAll: 목록 조회 (equipCode, inspectType 필터)
- * 2. create: 항목 생성 (company, plant는 컨트롤러에서 전달)
- * 3. update/delete: 복합키로 식별
- */
-
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
-import { CreateEquipInspectItemDto, UpdateEquipInspectItemDto, EquipInspectItemQueryDto } from '../dto/equip-inspect.dto';
-import { EquipInspectItemPoolService } from './equip-inspect-item-pool.service';
+import { CreateEquipInspectItemDto, EquipInspectItemQueryDto } from '../dto/equip-inspect.dto';
 
 @Injectable()
 export class EquipInspectService {
   constructor(
-    @InjectRepository(EquipInspectItemMaster)
-    private readonly equipInspectRepository: Repository<EquipInspectItemMaster>,
-    private readonly poolService: EquipInspectItemPoolService,
+    @InjectRepository(EquipInspectItemPool)
+    private readonly poolRepository: Repository<EquipInspectItemPool>,
   ) {}
 
   async findAll(query: EquipInspectItemQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, equipCode, inspectType, search, useYn } = query;
+    const { page = 1, limit = 500, equipCode, inspectType, search, useYn } = query;
 
-    const qb = this.equipInspectRepository.createQueryBuilder('item');
+    const qb = this.poolRepository.createQueryBuilder('pool')
+      .leftJoin(
+        EquipInspectItemMaster,
+        'master',
+        'pool.company = master.company AND pool.plant = master.plant AND pool.itemCode = master.itemCode',
+      )
+      .select('pool.equipCode', 'equipCode')
+      .addSelect('pool.itemCode', 'itemCode')
+      .addSelect('pool.inspectType', 'inspectType')
+      .addSelect('pool.useYn', 'useYn')
+      .addSelect('pool.sortSeq', 'sortSeq')
+      .addSelect('master.itemName', 'itemName')
+      .addSelect('master.criteria', 'criteria')
+      .addSelect('master.cycle', 'cycle')
+      .addSelect('master.itemType', 'itemType')
+      .addSelect('master.unit', 'unit')
+      .addSelect('master.lslValue', 'lslValue')
+      .addSelect('master.uslValue', 'uslValue')
+      .addSelect('master.workerQrCode', 'workerQrCode');
 
-    if (company) qb.andWhere('item.company = :company', { company });
-    if (plant) qb.andWhere('item.plant = :plant', { plant });
-    if (equipCode) qb.andWhere('item.equipCode = :equipCode', { equipCode });
-    if (inspectType) qb.andWhere('item.inspectType = :inspectType', { inspectType });
-    if (useYn) qb.andWhere('item.useYn = :useYn', { useYn });
+    if (company) qb.andWhere('pool.company = :company', { company });
+    if (plant) qb.andWhere('pool.plant = :plant', { plant });
+    if (equipCode) qb.andWhere('pool.equipCode = :equipCode', { equipCode });
+    if (inspectType) qb.andWhere('pool.inspectType = :inspectType', { inspectType });
+    if (useYn) qb.andWhere('pool.useYn = :useYn', { useYn });
     if (search) {
-      qb.andWhere(
-        '(item.itemName LIKE :search OR item.equipCode LIKE :search)',
-        { search: `%${search}%` },
-      );
+      qb.andWhere('(master.itemName LIKE :search OR pool.itemCode LIKE :search)', {
+        search: `%${search}%`,
+      });
     }
 
-    const [data, total] = await qb
-      .orderBy('item.equipCode', 'ASC')
-      .addOrderBy('item.inspectType', 'ASC')
-      .addOrderBy('item.seq', 'ASC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
+    qb.orderBy('pool.inspectType', 'ASC').addOrderBy('pool.sortSeq', 'ASC').addOrderBy('pool.itemCode', 'ASC');
+
+    const total = await qb.getCount();
+    const data = await qb.offset((page - 1) * limit).limit(limit).getRawMany();
 
     return { data, total, page, limit };
   }
 
-  async findByKey(company: string, plant: string, equipCode: string, inspectType: string, seq: number) {
-    const item = await this.equipInspectRepository.findOne({
-      where: { company, plant, equipCode, inspectType, seq },
-    });
-    if (!item) {
-      throw new NotFoundException(`점검항목을 찾을 수 없습니다: ${equipCode}/${inspectType}/${seq}`);
-    }
-    return item;
-  }
-
   async create(dto: CreateEquipInspectItemDto, company: string, plant: string) {
-    const source = dto.itemCode
-      ? await this.poolService.findByCode(company, plant, dto.itemCode)
-      : null;
+    const existing = await this.poolRepository.findOne({
+      where: { company, plant, equipCode: dto.equipCode, itemCode: dto.itemCode, inspectType: dto.inspectType },
+    });
+    if (existing) {
+      throw new ConflictException(`이미 등록된 항목입니다: ${dto.equipCode}/${dto.itemCode}/${dto.inspectType}`);
+    }
 
-    const entity = this.equipInspectRepository.create({
+    const entity = this.poolRepository.create({
       company,
       plant,
       equipCode: dto.equipCode,
-      itemCode: source?.itemCode || dto.itemCode || null,
-      inspectType: dto.inspectType || source?.inspectType,
-      seq: dto.seq,
-      itemName: source?.itemName || dto.itemName,
-      criteria: source?.criteria ?? dto.criteria ?? null,
-      cycle: source?.cycle ?? dto.cycle ?? null,
-      useYn: dto.useYn || 'Y',
-      // 판정구분/규격: POOL 항목 선택 시 POOL 값 우선 복사(없으면 dto)
-      itemType: source?.itemType ?? dto.itemType ?? 'VISUAL',
-      unit: source?.unit ?? dto.unit ?? null,
-      lslValue: source?.lslValue ?? dto.lslValue ?? null,
-      uslValue: source?.uslValue ?? dto.uslValue ?? null,
-      workerQrCode: dto.workerQrCode ?? null,
+      itemCode: dto.itemCode,
+      inspectType: dto.inspectType,
+      useYn: dto.useYn ?? 'Y',
+      sortSeq: dto.sortSeq ?? null,
     });
-    return this.equipInspectRepository.save(entity);
+    return this.poolRepository.save(entity);
   }
 
-  async update(
-    company: string, plant: string, equipCode: string, inspectType: string, seq: number,
-    dto: UpdateEquipInspectItemDto,
-  ) {
-    const item = await this.findByKey(company, plant, equipCode, inspectType, seq);
-    const updateData: Partial<EquipInspectItemMaster> = {
-      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
-      ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
-      ...(dto.criteria !== undefined ? { criteria: dto.criteria } : {}),
-      ...(dto.cycle !== undefined ? { cycle: dto.cycle } : {}),
-      ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
-      ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
-      ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
-      ...(dto.lslValue !== undefined ? { lslValue: dto.lslValue } : {}),
-      ...(dto.uslValue !== undefined ? { uslValue: dto.uslValue } : {}),
-      ...(dto.workerQrCode !== undefined ? { workerQrCode: dto.workerQrCode } : {}),
-    };
-    Object.assign(item, updateData);
-    return this.equipInspectRepository.save(item);
-  }
-
-  async delete(company: string, plant: string, equipCode: string, inspectType: string, seq: number) {
-    const item = await this.findByKey(company, plant, equipCode, inspectType, seq);
-    await this.equipInspectRepository.remove(item);
-    return { equipCode, inspectType, seq, deleted: true };
+  async delete(company: string, plant: string, equipCode: string, itemCode: string, inspectType: string) {
+    const item = await this.poolRepository.findOne({
+      where: { company, plant, equipCode, itemCode, inspectType },
+    });
+    if (!item) {
+      throw new NotFoundException(`점검항목을 찾을 수 없습니다: ${equipCode}/${itemCode}/${inspectType}`);
+    }
+    await this.poolRepository.remove(item);
+    return { equipCode, itemCode, inspectType, deleted: true };
   }
 }

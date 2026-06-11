@@ -23,6 +23,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EquipMaster } from '../../entities/equip-master.entity';
+import { EquipInspectItemPool } from '../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master.entity';
 import { EquipInspectLog } from '../../entities/equip-inspect-log.entity';
 import { ConsumableMaster } from '../../entities/consumable-master.entity';
@@ -58,6 +59,7 @@ import { SensorMonitorController } from './controllers/sensor-monitor.controller
   imports: [
     TypeOrmModule.forFeature([
       EquipMaster,
+      EquipInspectItemPool,
       EquipInspectItemMaster,
       EquipInspectLog,
       ConsumableMaster,

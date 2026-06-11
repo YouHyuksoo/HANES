@@ -1,26 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
+import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectService } from './equip-inspect.service';
-import { EquipInspectItemPoolService } from './equip-inspect-item-pool.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
-describe('EquipInspectService', () => {
+describe('EquipInspectService (master)', () => {
   let target: EquipInspectService;
-  let mockRepo: DeepMocked<Repository<EquipInspectItemMaster>>;
-  let mockPoolService: DeepMocked<EquipInspectItemPoolService>;
+  let mockRepo: DeepMocked<Repository<EquipInspectItemPool>>;
 
   beforeEach(async () => {
-    mockRepo = createMock<Repository<EquipInspectItemMaster>>();
-    mockPoolService = createMock<EquipInspectItemPoolService>();
+    mockRepo = createMock<Repository<EquipInspectItemPool>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EquipInspectService,
-        { provide: getRepositoryToken(EquipInspectItemMaster), useValue: mockRepo },
-        { provide: EquipInspectItemPoolService, useValue: mockPoolService },
+        { provide: getRepositoryToken(EquipInspectItemPool), useValue: mockRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -29,146 +26,55 @@ describe('EquipInspectService', () => {
     target = module.get<EquipInspectService>(EquipInspectService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  it('creates equipment assignment from a selected pool item', async () => {
-    mockPoolService.findByCode.mockResolvedValue({
-      itemCode: 'EIP-001',
-      itemName: 'Air pressure check',
-      inspectType: 'DAILY',
-      criteria: '0.5~0.7 MPa',
-      cycle: 'DAILY',
-      useYn: 'Y',
-    } as any);
+  describe('create', () => {
+    it('creates a lean pool assignment', async () => {
+      mockRepo.findOne.mockResolvedValue(null);
+      const entity = {
+        company: '40', plant: '1000', equipCode: 'EQ-CUT-01',
+        itemCode: 'EIP-001', inspectType: 'DAILY', useYn: 'Y', sortSeq: null,
+      } as EquipInspectItemPool;
+      mockRepo.create.mockReturnValue(entity);
+      mockRepo.save.mockResolvedValue(entity);
 
-    const created = {
-      company: 'HANES',
-      plant: '1000',
-      equipCode: 'EQ-CUT-01',
-      itemCode: 'EIP-001',
-      inspectType: 'DAILY',
-      seq: 1,
-      itemName: 'Air pressure check',
-      criteria: '0.5~0.7 MPa',
-      cycle: 'DAILY',
-      useYn: 'Y',
-    } as EquipInspectItemMaster;
+      const result = await target.create(
+        { equipCode: 'EQ-CUT-01', itemCode: 'EIP-001', inspectType: 'DAILY' },
+        '40', '1000',
+      );
 
-    mockRepo.create.mockReturnValue(created);
-    mockRepo.save.mockResolvedValue(created);
+      expect(result.equipCode).toBe('EQ-CUT-01');
+      expect(result.itemCode).toBe('EIP-001');
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        equipCode: 'EQ-CUT-01', itemCode: 'EIP-001', inspectType: 'DAILY', useYn: 'Y',
+      }));
+    });
 
-    await expect(target.create({
-      equipCode: 'EQ-CUT-01',
-      itemCode: 'EIP-001',
-      seq: 1,
-    } as any, 'HANES', '1000')).resolves.toEqual(created);
-
-    expect(mockPoolService.findByCode).toHaveBeenCalledWith('HANES', '1000', 'EIP-001');
-    expect(mockRepo.create).toHaveBeenCalledWith({
-      company: 'HANES',
-      plant: '1000',
-      equipCode: 'EQ-CUT-01',
-      itemCode: 'EIP-001',
-      inspectType: 'DAILY',
-      seq: 1,
-      itemName: 'Air pressure check',
-      criteria: '0.5~0.7 MPa',
-      cycle: 'DAILY',
-      useYn: 'Y',
-      itemType: 'VISUAL',
-      unit: null,
-      lslValue: null,
-      uslValue: null,
-      workerQrCode: null,
+    it('throws ConflictException when assignment already exists', async () => {
+      mockRepo.findOne.mockResolvedValue({ equipCode: 'EQ-CUT-01' } as any);
+      await expect(
+        target.create({ equipCode: 'EQ-CUT-01', itemCode: 'EIP-001', inspectType: 'DAILY' }, '40', '1000'),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
-  it('preserves worker QR fields when creating a worker inspection assignment', async () => {
-    mockPoolService.findByCode.mockResolvedValue({
-      itemCode: 'EIP-STD-W001',
-      itemName: '작업 전 설비 주변 정리',
-      inspectType: 'WORKER',
-      criteria: '작업 공간 이상 없음',
-      cycle: 'DAILY',
-      useYn: 'Y',
-    } as any);
+  describe('delete', () => {
+    it('removes the assignment by composite key', async () => {
+      const item = { equipCode: 'EQ-CUT-01', itemCode: 'EIP-001', inspectType: 'DAILY' } as any;
+      mockRepo.findOne.mockResolvedValue(item);
+      mockRepo.remove.mockResolvedValue(item);
 
-    const created = {
-      company: '40',
-      plant: '1000',
-      equipCode: 'EQ-CUT-01',
-      itemCode: 'EIP-STD-W001',
-      inspectType: 'WORKER',
-      seq: 1,
-      itemName: '작업 전 설비 주변 정리',
-      criteria: '작업 공간 이상 없음',
-      cycle: 'DAILY',
-      useYn: 'Y',
-      itemType: 'VISUAL',
-      unit: null,
-      lslValue: null,
-      uslValue: null,
-      workerQrCode: 'EQ-CUT-01:W001',
-    } as EquipInspectItemMaster;
+      await expect(
+        target.delete('40', '1000', 'EQ-CUT-01', 'EIP-001', 'DAILY'),
+      ).resolves.not.toThrow();
+      expect(mockRepo.remove).toHaveBeenCalledWith(item);
+    });
 
-    mockRepo.create.mockReturnValue(created);
-    mockRepo.save.mockResolvedValue(created);
-
-    await expect(target.create({
-      equipCode: 'EQ-CUT-01',
-      itemCode: 'EIP-STD-W001',
-      inspectType: 'WORKER',
-      seq: 1,
-      workerQrCode: 'EQ-CUT-01:W001',
-    } as any, '40', '1000')).resolves.toEqual(created);
-
-    expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-      inspectType: 'WORKER',
-      itemCode: 'EIP-STD-W001',
-      workerQrCode: 'EQ-CUT-01:W001',
-      itemType: 'VISUAL',
-    }));
-  });
-
-  it('keeps tenant key columns from the matched equipment assignment when update payload contains them', async () => {
-    const existing = {
-      company: 'HANES',
-      plant: '1000',
-      equipCode: 'EQ-CUT-01',
-      itemCode: 'EIP-001',
-      inspectType: 'DAILY',
-      seq: 1,
-      itemName: 'Air pressure check',
-      criteria: '0.5~0.7 MPa',
-      cycle: 'DAILY',
-      useYn: 'Y',
-    } as EquipInspectItemMaster;
-
-    mockRepo.findOne.mockResolvedValue(existing);
-    mockRepo.save.mockImplementation(async (item) => item as EquipInspectItemMaster);
-
-    const result = await target.update(
-      'HANES',
-      '1000',
-      'EQ-CUT-01',
-      'DAILY',
-      1,
-      {
-        company: 'OTHER',
-        plant: '9999',
-        itemName: 'Updated pressure check',
-      } as any,
-    );
-
-    expect(result.company).toBe('HANES');
-    expect(result.plant).toBe('1000');
-    expect(result.itemName).toBe('Updated pressure check');
-    expect(mockRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-      company: 'HANES',
-      plant: '1000',
-      itemName: 'Updated pressure check',
-    }));
+    it('throws NotFoundException when assignment not found', async () => {
+      mockRepo.findOne.mockResolvedValue(null);
+      await expect(
+        target.delete('40', '1000', 'EQ-CUT-01', 'EIP-999', 'DAILY'),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 });

@@ -15,6 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
+import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
 import { CreateEquipInspectDto, UpdateEquipInspectDto, EquipInspectQueryDto } from '../dto/equip-inspect.dto';
 
@@ -25,8 +26,8 @@ export class EquipInspectService {
     private readonly equipInspectLogRepository: Repository<EquipInspectLog>,
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepository: Repository<EquipMaster>,
-    @InjectRepository(EquipInspectItemMaster)
-    private readonly inspectItemRepository: Repository<EquipInspectItemMaster>,
+    @InjectRepository(EquipInspectItemPool)
+    private readonly inspectItemRepository: Repository<EquipInspectItemPool>,
   ) {}
 
   /** 오늘 해당 설비의 점검 완료 여부 확인 */
@@ -341,16 +342,9 @@ export class EquipInspectService {
       }));
     }
 
-    const allItems = await this.inspectItemRepository
-      .createQueryBuilder('item')
-      .where('item.inspectType = :type', { type: inspectType })
-      .andWhere('item.useYn = :yn', { yn: 'Y' })
-      .andWhere('item.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
-    if (company) allItems.andWhere('item.company = :company', { company });
-    if (plant) allItems.andWhere('item.plant = :plant', { plant });
-    const foundItems = await allItems.getMany();
+    const foundItems = await this.fetchItemsWithDetails(equipIds, inspectType, company, plant);
 
-    const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
+    const itemsByEquip = new Map<string, typeof foundItems>();
     for (const item of foundItems) {
       const list = itemsByEquip.get(item.equipCode) || [];
       list.push(item);
@@ -438,17 +432,9 @@ export class EquipInspectService {
 
     const equipIds = equips.map((e) => e.equipCode);
 
-    const allItems = await this.inspectItemRepository
-      .createQueryBuilder('item')
-      .where('item.inspectType = :type', { type: inspectType })
-      .andWhere('item.useYn = :yn', { yn: 'Y' })
-      .andWhere('item.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
-      .orderBy('item.seq', 'ASC');
-    if (company) allItems.andWhere('item.company = :company', { company });
-    if (plant) allItems.andWhere('item.plant = :plant', { plant });
-    const foundItems = await allItems.getMany();
+    const foundItems = await this.fetchItemsWithDetails(equipIds, inspectType, company, plant);
 
-    const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
+    const itemsByEquip = new Map<string, typeof foundItems>();
     for (const item of foundItems) {
       const list = itemsByEquip.get(item.equipCode) || [];
       list.push(item);
@@ -481,23 +467,22 @@ export class EquipInspectService {
       if (dueItems.length === 0) continue;
 
       const log = logByEquip.get(equip.equipCode);
-      let details: { items?: Array<{ itemId: number; seq: number; itemName: string; result: string; remark: string }> } | null = null;
+      let details: { items?: Array<{ itemCode: string; itemName: string; result: string; remark: string }> } | null = null;
       if (log?.details) {
         try { details = JSON.parse(log.details); } catch { details = null; }
       }
 
-      // Map으로 전환하여 O(n*m) → O(n) 조회
-      const detailBySeq = new Map(
-        (details?.items ?? []).map((d) => [d.seq, d] as const),
+      const detailByItemCode = new Map(
+        (details?.items ?? []).map((d) => [d.itemCode, d] as const),
       );
       const detailByName = new Map(
         (details?.items ?? []).map((d) => [d.itemName, d] as const),
       );
       const itemResults = dueItems.map((item) => {
-        const detailItem = detailBySeq.get(item.seq) ?? detailByName.get(item.itemName) ?? null;
+        const detailItem = detailByItemCode.get(item.itemCode) ?? detailByName.get(item.itemName ?? '') ?? null;
         return {
-          itemId: `${item.equipCode}_${item.inspectType}_${item.seq}`,
-          seq: item.seq,
+          itemId: `${item.equipCode}_${item.inspectType}_${item.itemCode}`,
+          itemCode: item.itemCode,
           itemName: item.itemName,
           criteria: item.criteria,
           cycle: item.cycle || 'DAILY',
@@ -519,6 +504,35 @@ export class EquipInspectService {
     }
 
     return result;
+  }
+
+  private async fetchItemsWithDetails(
+    equipIds: string[],
+    inspectType: string,
+    company?: string,
+    plant?: string,
+  ): Promise<Array<{ equipCode: string; itemCode: string; inspectType: string; sortSeq: number | null; itemName: string | null; criteria: string | null; cycle: string | null }>> {
+    const qb = this.inspectItemRepository
+      .createQueryBuilder('pool')
+      .leftJoin(
+        EquipInspectItemMaster,
+        'master',
+        'pool.company = master.company AND pool.plant = master.plant AND pool.itemCode = master.itemCode',
+      )
+      .select('pool.equipCode', 'equipCode')
+      .addSelect('pool.itemCode', 'itemCode')
+      .addSelect('pool.inspectType', 'inspectType')
+      .addSelect('pool.sortSeq', 'sortSeq')
+      .addSelect('master.itemName', 'itemName')
+      .addSelect('master.criteria', 'criteria')
+      .addSelect('master.cycle', 'cycle')
+      .where('pool.inspectType = :type', { type: inspectType })
+      .andWhere('pool.useYn = :yn', { yn: 'Y' })
+      .andWhere('pool.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
+      .orderBy('pool.sortSeq', 'ASC');
+    if (company) qb.andWhere('pool.company = :company', { company });
+    if (plant) qb.andWhere('pool.plant = :plant', { plant });
+    return qb.getRawMany();
   }
 
   /** 점검 통계 요약 */

@@ -3,21 +3,21 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
+import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
 import { EquipInspectItemPoolService } from './equip-inspect-item-pool.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('EquipInspectItemPoolService', () => {
   let target: EquipInspectItemPoolService;
-  let mockRepo: DeepMocked<Repository<EquipInspectItemPool>>;
+  let mockRepo: DeepMocked<Repository<EquipInspectItemMaster>>;
 
   beforeEach(async () => {
-    mockRepo = createMock<Repository<EquipInspectItemPool>>();
+    mockRepo = createMock<Repository<EquipInspectItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EquipInspectItemPoolService,
-        { provide: getRepositoryToken(EquipInspectItemPool), useValue: mockRepo },
+        { provide: getRepositoryToken(EquipInspectItemMaster), useValue: mockRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -39,7 +39,7 @@ describe('EquipInspectItemPoolService', () => {
       cycle: 'DAILY',
       useYn: 'Y',
     };
-    const created = { ...dto, company: 'HANES', plant: '1000' } as EquipInspectItemPool;
+    const created = { ...dto, company: 'HANES', plant: '1000' } as EquipInspectItemMaster;
 
     mockRepo.findOne.mockResolvedValue(null);
     mockRepo.create.mockReturnValue(created);
@@ -55,14 +55,14 @@ describe('EquipInspectItemPoolService', () => {
   });
 
   it('rejects duplicate pool item codes in the same tenant', async () => {
-    mockRepo.findOne.mockResolvedValue({ itemCode: 'EIP-001' } as EquipInspectItemPool);
+    mockRepo.findOne.mockResolvedValue({ itemCode: 'EIP-001' } as EquipInspectItemMaster);
 
     await expect(target.create({ itemCode: 'EIP-001', itemName: 'Air pressure check', inspectType: 'DAILY' } as any, 'HANES', '1000'))
       .rejects.toThrow(ConflictException);
   });
 
   it('finds an active pool item by tenant and code', async () => {
-    const item = { itemCode: 'EIP-001', itemName: 'Air pressure check', useYn: 'Y' } as EquipInspectItemPool;
+    const item = { itemCode: 'EIP-001', itemName: 'Air pressure check', useYn: 'Y' } as EquipInspectItemMaster;
     mockRepo.findOne.mockResolvedValue(item);
 
     await expect(target.findByCode('HANES', '1000', 'EIP-001')).resolves.toEqual(item);
@@ -84,10 +84,10 @@ describe('EquipInspectItemPoolService', () => {
       criteria: '0.5~0.7 MPa',
       cycle: 'DAILY',
       useYn: 'Y',
-    } as EquipInspectItemPool;
+    } as EquipInspectItemMaster;
 
     mockRepo.findOne.mockResolvedValue(existing);
-    mockRepo.save.mockImplementation(async (item) => item as EquipInspectItemPool);
+    mockRepo.save.mockImplementation(async (item) => item as EquipInspectItemMaster);
 
     const result = await target.update('HANES', '1000', 'EIP-001', {
       company: 'OTHER',

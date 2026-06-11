@@ -10,25 +10,25 @@ import { Repository } from 'typeorm';
 import { EquipInspectService } from './equip-inspect.service';
 import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
-import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
+import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('EquipInspectService', () => {
   let target: EquipInspectService;
   let mockLogRepo: DeepMocked<Repository<EquipInspectLog>>;
   let mockEquipRepo: DeepMocked<Repository<EquipMaster>>;
-  let mockItemRepo: DeepMocked<Repository<EquipInspectItemMaster>>;
+  let mockItemRepo: DeepMocked<Repository<EquipInspectItemPool>>;
 
   beforeEach(async () => {
     mockLogRepo = createMock<Repository<EquipInspectLog>>();
     mockEquipRepo = createMock<Repository<EquipMaster>>();
-    mockItemRepo = createMock<Repository<EquipInspectItemMaster>>();
+    mockItemRepo = createMock<Repository<EquipInspectItemPool>>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EquipInspectService,
         { provide: getRepositoryToken(EquipInspectLog), useValue: mockLogRepo },
         { provide: getRepositoryToken(EquipMaster), useValue: mockEquipRepo },
-        { provide: getRepositoryToken(EquipInspectItemMaster), useValue: mockItemRepo },
+        { provide: getRepositoryToken(EquipInspectItemPool), useValue: mockItemRepo },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<EquipInspectService>(EquipInspectService);
