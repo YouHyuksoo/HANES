@@ -35,10 +35,11 @@ export type PalletStatus = typeof PALLET_STATUS_VALUES[number];
  * 팔레트 생성 DTO
  */
 export class CreatePalletDto {
-  @ApiProperty({ description: '팔레트 번호 (QR)', example: 'PLT-20250126-001', maxLength: 50 })
+  @ApiPropertyOptional({ description: '팔레트 번호 (미지정 시 자동 채번: PLT+YYMMDD+4자리, SEQ_PALLET_NO_DAILY)', example: 'PLT2606110001', maxLength: 50 })
+  @IsOptional()
   @IsString()
   @MaxLength(50)
-  palletNo: string;
+  palletNo?: string;
 }
 
 /**

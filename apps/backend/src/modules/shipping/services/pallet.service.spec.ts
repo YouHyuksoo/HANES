@@ -14,6 +14,7 @@ import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('PalletService', () => {
   let target: PalletService;
@@ -50,6 +51,7 @@ describe('PalletService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: NumberingService, useValue: { nextPalletNo: jest.fn().mockResolvedValue('PLT-TEST') } },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<PalletService>(PalletService);

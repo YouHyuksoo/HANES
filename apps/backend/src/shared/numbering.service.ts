@@ -134,6 +134,16 @@ export class NumberingService {
     return `BX${this.yyMMdd(txDate)}${this.pad4(seq)}`;
   }
 
+  /** 팔레트번호 채번: PLT + YYMMDD + 4자리(당일 시퀀스, separator 없음). 박스(BX) 채번과 동일 패턴. */
+  async nextPalletNo(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_PALLET_NO_DAILY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+    return `PLT${this.yyMMdd(txDate)}${this.pad4(seq)}`;
+  }
+
   private yyMMdd(d: Date): string {
     const yy = String(d.getFullYear()).slice(-2);
     const mm = String(d.getMonth() + 1).padStart(2, '0');

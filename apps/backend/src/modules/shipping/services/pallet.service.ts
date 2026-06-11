@@ -37,6 +37,7 @@ import {
   PalletStatus,
 } from '../dto/pallet.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class PalletService {
@@ -52,6 +53,7 @@ export class PalletService {
     @InjectRepository(PartMaster)
     private readonly partRepository: Repository<PartMaster>,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -135,17 +137,20 @@ export class PalletService {
    * 팔레트 생성
    */
   async create(dto: CreatePalletDto, company?: string, plant?: string) {
+    // 팔레트번호 미지정 시 자동 채번 (PLT+YYMMDD+4자리, SEQ_PALLET_NO_DAILY)
+    const palletNo = dto.palletNo ?? await this.numbering.nextPalletNo();
+
     // 중복 체크
     const existing = await this.palletRepository.findOne({
-      where: { palletNo: dto.palletNo, ...this.tenantWhere(company, plant) },
+      where: { palletNo, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) {
-      throw new ConflictException(`이미 존재하는 팔레트번호입니다: ${dto.palletNo}`);
+      throw new ConflictException(`이미 존재하는 팔레트번호입니다: ${palletNo}`);
     }
 
     const pallet = this.palletRepository.create({
-      palletNo: dto.palletNo,
+      palletNo,
       boxCount: 0,
       totalQty: 0,
       status: 'OPEN',
