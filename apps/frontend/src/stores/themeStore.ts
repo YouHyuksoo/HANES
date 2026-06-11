@@ -12,7 +12,7 @@ import { persist } from "zustand/middleware";
 
 export type Theme = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
-export type ColorTheme = "default" | "custom";
+export type ColorTheme = "default" | "custom" | "orchid";
 
 interface ThemeState {
   theme: Theme;

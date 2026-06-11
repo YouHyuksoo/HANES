@@ -17,7 +17,7 @@ import { Sun, Moon, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelL
 // import NotificationBell from "@/components/shared/NotificationBell";
 import api from "@/services/api";
 import { useTheme } from "@/hooks/useTheme";
-import { useThemeStore } from "@/stores/themeStore";
+import { useThemeStore, type ColorTheme } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
@@ -30,6 +30,14 @@ interface HeaderProps {
   onToggleCollapse?: () => void;
 }
 
+const COLOR_THEME_ORDER: ColorTheme[] = ["default", "custom", "orchid"];
+
+const COLOR_THEME_LABELS: Record<ColorTheme, string> = {
+  default: "Default",
+  custom: "Custom",
+  orchid: "Orchid",
+};
+
 function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
   const { t } = useTranslation();
   const { isDark, toggleTheme } = useTheme();
@@ -39,6 +47,13 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const currentColorThemeIndex = COLOR_THEME_ORDER.indexOf(colorTheme);
+  const nextColorTheme =
+    COLOR_THEME_ORDER[
+      (currentColorThemeIndex >= 0 ? currentColorThemeIndex + 1 : 1) %
+        COLOR_THEME_ORDER.length
+    ];
+  const colorThemeLabel = COLOR_THEME_LABELS[colorTheme] ?? COLOR_THEME_LABELS.default;
 
   /* 접속 DB 정보 (네비게이션 바 표시용) */
   const [dbInfo, setDbInfo] = useState<{
@@ -141,11 +156,20 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
 
         {/* 컬러 테마 토글 */}
         <button
-          onClick={() => setColorTheme(colorTheme === "default" ? "custom" : "default")}
-          className="p-2 rounded-md hover:bg-background transition-colors"
-          aria-label={t('header.colorTheme')}
+          onClick={() => setColorTheme(nextColorTheme)}
+          className="relative p-2 rounded-md hover:bg-background transition-colors"
+          aria-label={`${t('header.colorTheme')}: ${colorThemeLabel}`}
+          title={`${t('header.colorTheme')}: ${colorThemeLabel}`}
         >
-          <Palette className={`w-5 h-5 ${colorTheme === "custom" ? "text-primary" : "text-text-muted"}`} />
+          <Palette className={`w-5 h-5 ${colorTheme !== "default" ? "text-primary" : "text-text-muted"}`} />
+          {colorTheme !== "default" && (
+            <span
+              className={`absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-surface ${
+                colorTheme === "orchid" ? "bg-violet-400" : "bg-primary"
+              }`}
+              aria-hidden="true"
+            />
+          )}
         </button>
 
         {/* 테마 토글 */}
