@@ -223,9 +223,14 @@ describe('ShelfLifeReInspectService', () => {
       expect(result.retestRound).toBe(2);
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+      // 양품창고 출고(-) / 불용창고 입고(+) 2건으로 수불 기록
       expect(queryRunner.manager.save).toHaveBeenCalledWith(
         StockTransaction,
-        expect.objectContaining({ transType: 'MAT_MOVE', matUid: 'MAT-001' }),
+        expect.objectContaining({ transType: 'MAT_MOVE_OUT', matUid: 'MAT-001', qty: expect.any(Number) }),
+      );
+      expect(queryRunner.manager.save).toHaveBeenCalledWith(
+        StockTransaction,
+        expect.objectContaining({ transType: 'MAT_MOVE_IN', matUid: 'MAT-001' }),
       );
       expect(queryRunner.manager.update).toHaveBeenCalledWith(
         MatLot,

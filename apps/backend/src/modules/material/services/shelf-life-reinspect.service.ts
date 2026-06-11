@@ -204,7 +204,9 @@ export class ShelfLifeReInspectService {
     }
 
     await this.tx.run(async (queryRunner) => {
-      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
+      // 양품창고 출고(-) / 불용창고 입고(+) 각각 별도 채번 (수불이력에 창고별 +/- 2건으로 표기)
+      const transNoOut = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
+      const transNoIn = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       await queryRunner.manager.update(MatStock,
         { warehouseCode: stock.warehouseCode, itemCode, matUid, ...tenantWhere },
@@ -226,14 +228,27 @@ export class ShelfLifeReInspectService {
         });
       }
 
+      // 양품창고 출고(-): from=양품창고, to=null, 음수 수량
       await queryRunner.manager.save(StockTransaction, {
-        transNo,
-        transType: 'MAT_MOVE',
+        transNo: transNoOut,
+        transType: 'MAT_MOVE_OUT',
         fromWarehouseId: stock.warehouseCode,
+        toWarehouseId: null,
+        itemCode, matUid,
+        qty: -stock.qty,
+        remark: '유수명 재검 불합격 출고 (양품→불용)',
+        refType: 'REINSPECT_FAIL',
+        company, plant,
+      });
+      // 불용창고 입고(+): from=null, to=불용창고, 양수 수량
+      await queryRunner.manager.save(StockTransaction, {
+        transNo: transNoIn,
+        transType: 'MAT_MOVE_IN',
+        fromWarehouseId: null,
         toWarehouseId: defectWh.warehouseCode,
         itemCode, matUid,
         qty: stock.qty,
-        remark: '유수명 재검 불합격 자동이동 (불용창고)',
+        remark: '유수명 재검 불합격 입고 (불용창고)',
         refType: 'REINSPECT_FAIL',
         company, plant,
       });

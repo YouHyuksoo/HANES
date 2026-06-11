@@ -79,6 +79,8 @@ export default function TransactionPage() {
     { value: 'ADJUST_OUT', label: t('inventory.transaction.adjMinus') },
     { value: 'MISC_IN', label: t('inventory.transaction.miscIn', '기타입고') },
     { value: 'TRANSFER', label: t('inventory.transaction.transfer') },
+    { value: 'MAT_MOVE_OUT', label: t('inventory.transaction.matMoveOut', '불용이동(출)') },
+    { value: 'MAT_MOVE_IN', label: t('inventory.transaction.matMoveIn', '불용이동(입)') },
     { value: 'SCRAP', label: t('inventory.transaction.scrap') },
   ], [t]);
 
