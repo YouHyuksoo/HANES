@@ -290,6 +290,16 @@ export default function JobOrderPage() {
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
     {
+      accessorKey: "processCode", header: t("production.order.process"), size: 100,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "equipCode", header: t("production.order.equip"), size: 100,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
       accessorKey: "custPoNo", header: t("production.order.custPoNo"), size: 130,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,

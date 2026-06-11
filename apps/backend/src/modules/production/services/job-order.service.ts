@@ -354,9 +354,11 @@ export class JobOrderService {
       const childRoutingCode = await this.resolveRoutingCodeByItem(bom.childItemCode, parent.company, parent.plant);
       const childProcessCode = await this.resolveFirstProcessCode(childRoutingCode, parent.company, parent.plant);
 
+      const childOrderNo = await this.numbering.nextJobOrderNo(queryRunner);
+
       const child = await queryRunner.manager.save(
         queryRunner.manager.create(JobOrder, {
-          orderNo: `${parent.orderNo}-${String(childSeq).padStart(2, '0')}`,
+          orderNo: childOrderNo,
           itemCode: bom.childItemCode,
           parentOrderNo: parent.orderNo,
           rootOrderNo,
@@ -379,16 +381,32 @@ export class JobOrderService {
     }
   }
 
-  /** 작업지시 트리 조회 (완제품 기준 계층구조) */
+  /** 작업지시 트리 조회 (전 계층 — 메모리 조립 방식으로 임의 깊이 지원) */
   async findTree(parentOrderNo?: string, company?: string, plant?: string) {
-    return this.jobOrderRepository.find({
-      where: parentOrderNo
-        ? { orderNo: parentOrderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) }
-        : { parentOrderNo: IsNull(), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-      relations: ['part', 'routing', 'children', 'children.part', 'children.routing'],
-      order: { planDate: 'DESC', createdAt: 'DESC' },
-      take: 100,
+    const all = await this.jobOrderRepository.find({
+      where: {
+        ...(parentOrderNo ? { parentOrderNo: IsNull() } : {}),
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      relations: ['part', 'routing'],
+      order: { planDate: 'DESC', createdAt: 'ASC' },
+      take: 2000,
     });
+
+    type Node = JobOrder & { children: Node[] };
+    const map = new Map<string, Node>();
+    for (const o of all) map.set(o.orderNo, { ...o, children: [] });
+
+    const roots: Node[] = [];
+    for (const node of map.values()) {
+      if (node.parentOrderNo && map.has(node.parentOrderNo)) {
+        map.get(node.parentOrderNo)!.children.push(node);
+      } else if (!node.parentOrderNo) {
+        roots.push(node);
+      }
+    }
+    return roots;
   }
 
   /** 작업지시 수정 */

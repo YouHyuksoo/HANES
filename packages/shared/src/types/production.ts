@@ -77,11 +77,14 @@ export interface JobOrderRoutingSummary {
 export interface ProductionJobOrderRow {
   orderNo: string;
   parentOrderNo?: string | null;
+  rootOrderNo?: string | null;
   itemCode: string;
   part?: JobOrderPartSummary | null;
   lineCode?: string | null;
   routingCode?: string | null;
   routing?: JobOrderRoutingSummary | null;
+  processCode?: string | null;
+  equipCode?: string | null;
   custPoNo?: string | null;
   planQty: number;
   goodQty: number;
