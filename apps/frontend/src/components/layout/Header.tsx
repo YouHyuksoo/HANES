@@ -13,7 +13,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Sun, Moon, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette, Database } from "lucide-react";
-import NotificationBell from "@/components/shared/NotificationBell";
+// 스케줄러 알림 벨 임시 비활성화 (재활성화 시 주석 해제)
+// import NotificationBell from "@/components/shared/NotificationBell";
 import api from "@/services/api";
 import { useTheme } from "@/hooks/useTheme";
 import { useThemeStore } from "@/stores/themeStore";
@@ -135,8 +136,8 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
         {/* 바코드 스캐너 연결 상태 */}
         <SerialIndicator />
 
-        {/* 알림 (스케줄러 알림 벨) */}
-        <NotificationBell />
+        {/* 알림 (스케줄러 알림 벨) — 폴링 부하/오류 리포트 노이즈로 임시 비활성화. 재활성화 시 아래 주석 해제 */}
+        {/* <NotificationBell /> */}
 
         {/* 컬러 테마 토글 */}
         <button

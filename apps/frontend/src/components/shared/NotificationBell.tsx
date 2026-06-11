@@ -3,13 +3,14 @@
 /**
  * @file src/components/shared/NotificationBell.tsx
  * @description 헤더 벨 아이콘 + 읽지 않은 알림 건수 뱃지 + 드롭다운 목록.
- *   60초 간격 폴링으로 알림 건수를 갱신하고, 클릭 시 최근 알림 목록을 표시한다.
+ *   30분 간격 폴링으로 알림 건수를 갱신하고, 클릭 시 최근 알림 목록을 표시한다.
+ *   탭이 백그라운드일 때는 폴링하지 않고, 포그라운드 복귀 시 즉시 갱신한다.
  *
  * 초보자 가이드:
  * 1. 벨 아이콘을 클릭하면 최근 알림 드롭다운이 열린다.
  * 2. 각 알림을 클릭하면 읽음 처리된다.
  * 3. "모두 읽음" 버튼으로 일괄 처리 가능.
- * 4. 60초마다 읽지 않은 건수를 자동 갱신한다.
+ * 4. 30분마다 읽지 않은 건수를 자동 갱신한다 (백그라운드 탭 제외).
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,8 +28,8 @@ interface Notification {
   createdAt: string;
 }
 
-/** 폴링 간격 (ms) */
-const POLL_INTERVAL = 60_000;
+/** 폴링 간격 (ms) — 30분 */
+const POLL_INTERVAL = 30 * 60_000;
 
 export default function NotificationBell() {
   const { t } = useTranslation();
@@ -57,11 +58,20 @@ export default function NotificationBell() {
     }
   }, []);
 
-  /** 60초 폴링 */
+  /** 30분 폴링 — 탭이 백그라운드면 건너뛰고, 포그라운드 복귀 시 즉시 갱신 */
   useEffect(() => {
     fetchUnreadCount();
-    const timer = setInterval(fetchUnreadCount, POLL_INTERVAL);
-    return () => clearInterval(timer);
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") fetchUnreadCount();
+    }, POLL_INTERVAL);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") fetchUnreadCount();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [fetchUnreadCount]);
 
   /** 드롭다운 열기 시 목록 갱신 */
