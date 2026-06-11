@@ -87,6 +87,23 @@ export class JobOrderService {
     return group?.routingCode ?? null;
   }
 
+  private async resolveFirstProcessCode(
+    routingCode: string | null,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<string | null> {
+    if (!routingCode) return null;
+    const firstStep = await this.routingProcessRepository.findOne({
+      where: {
+        routingCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      order: { seq: 'ASC' },
+    });
+    return firstStep?.processCode ?? null;
+  }
+
   private assertSameTenant(
     context: string,
     requested: { company?: string | null; plant?: string | null },
@@ -264,12 +281,17 @@ export class JobOrderService {
     const routingCode = await this.resolveRoutingCodeByItem(dto.itemCode, company, plant);
 
     return this.tx.run(async (queryRunner) => {
+      const processCode = dto.processCode ?? await this.resolveFirstProcessCode(routingCode, company, plant);
+
       const jobOrder = queryRunner.manager.create(JobOrder, {
         orderNo: dto.orderNo,
         itemCode: dto.itemCode,
         parentOrderNo: dto.parentId || null,
+        rootOrderNo: null,
         lineCode: dto.lineCode,
         routingCode,
+        processCode,
+        equipCode: dto.equipCode ?? null,
         planQty: dto.planQty,
         planDate: dto.planDate ? new Date(dto.planDate) : null,
         priority: dto.priority ?? 5,
@@ -283,7 +305,7 @@ export class JobOrderService {
       const saved = await queryRunner.manager.save(jobOrder);
 
       if (dto.autoCreateChildren) {
-        await this.createChildOrders(queryRunner, saved, dto);
+        await this.createChildOrdersRecursive(queryRunner, saved, dto, saved.orderNo, 0);
       }
 
       return this.jobOrderRepository.findOne({
@@ -293,8 +315,16 @@ export class JobOrderService {
     });
   }
 
-  /** BOM 기반 반제품 작업지시 자동생성 (트랜잭션 내에서 일괄 저장) */
-  private async createChildOrders(queryRunner: QueryRunner, parent: JobOrder, dto: CreateJobOrderDto) {
+  /** BOM 기반 반제품 작업지시 재귀 자동생성 (최대 5단계) */
+  private async createChildOrdersRecursive(
+    queryRunner: QueryRunner,
+    parent: JobOrder,
+    dto: CreateJobOrderDto,
+    rootOrderNo: string,
+    depth: number,
+  ): Promise<void> {
+    if (depth >= 5) return;
+
     const bomItems = await this.bomMasterRepository.find({
       where: {
         parentItemCode: parent.itemCode,
@@ -315,34 +345,37 @@ export class JobOrderService {
       .getMany();
 
     const wipPartIds = new Set(wipParts.map(p => p.itemCode));
-    const childOrders: JobOrder[] = [];
+    let childSeq = 0;
 
-    // 자식 품목들의 라우팅 일괄 조회 (N+1 제거)
-    for (let i = 0; i < bomItems.length; i++) {
-      const bom = bomItems[i];
+    for (const bom of bomItems) {
       if (!wipPartIds.has(bom.childItemCode)) continue;
+      childSeq++;
 
       const childRoutingCode = await this.resolveRoutingCodeByItem(bom.childItemCode, parent.company, parent.plant);
+      const childProcessCode = await this.resolveFirstProcessCode(childRoutingCode, parent.company, parent.plant);
 
-      childOrders.push(queryRunner.manager.create(JobOrder, {
-        orderNo: `${parent.orderNo}-${String(i + 1).padStart(2, '0')}`,
-        itemCode: bom.childItemCode,
-        parentOrderNo: parent.orderNo,
-        lineCode: dto.lineCode,
-        routingCode: childRoutingCode,
-        planQty: Math.ceil(parent.planQty * Number(bom.qtyPer)),
-        planDate: dto.planDate ? new Date(dto.planDate) : null,
-        priority: dto.priority ?? 5,
-        remark: `[자동생성] ${parent.orderNo}의 반제품`,
-        status: 'WAITING',
-        erpSyncYn: 'N',
-        company: parent.company,
-        plant: parent.plant,
-      }));
-    }
+      const child = await queryRunner.manager.save(
+        queryRunner.manager.create(JobOrder, {
+          orderNo: `${parent.orderNo}-${String(childSeq).padStart(2, '0')}`,
+          itemCode: bom.childItemCode,
+          parentOrderNo: parent.orderNo,
+          rootOrderNo,
+          lineCode: dto.lineCode,
+          routingCode: childRoutingCode,
+          processCode: childProcessCode,
+          equipCode: null,
+          planQty: Math.ceil(parent.planQty * Number(bom.qtyPer)),
+          planDate: dto.planDate ? new Date(dto.planDate) : null,
+          priority: dto.priority ?? 5,
+          remark: `[자동생성] ${parent.orderNo}의 반제품`,
+          status: 'WAITING',
+          erpSyncYn: 'N',
+          company: parent.company,
+          plant: parent.plant,
+        }),
+      );
 
-    if (childOrders.length > 0) {
-      await queryRunner.manager.save(childOrders);
+      await this.createChildOrdersRecursive(queryRunner, child, dto, rootOrderNo, depth + 1);
     }
   }
 
