@@ -20,7 +20,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, Between, MoreThanOrEqual, LessThanOrEqual, Not, FindOptionsWhere } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { TraceLog } from '../../../../entities/trace-log.entity';
@@ -76,16 +76,15 @@ export class InspectResultService {
   }
 
   private applyInspectAtRange(
-    where: FindOptionsWhere<InspectResult>,
+    qb: ReturnType<Repository<InspectResult>['createQueryBuilder']>,
     startDate?: string,
     endDate?: string,
   ) {
-    if (startDate && endDate) {
-      where.inspectAt = Between(new Date(startDate), new Date(endDate));
-    } else if (startDate) {
-      where.inspectAt = MoreThanOrEqual(new Date(startDate));
-    } else if (endDate) {
-      where.inspectAt = LessThanOrEqual(new Date(endDate));
+    if (startDate) {
+      qb.andWhere("inspect.inspectAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
+    }
+    if (endDate) {
+      qb.andWhere("inspect.inspectAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { endDate });
     }
   }
 
@@ -130,26 +129,22 @@ export class InspectResultService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<InspectResult> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(prodResultNo && { prodResultNo }),
-      ...(serialNo && { serialNo: ILike(`%${serialNo}%`) }),
-      ...(inspectType && { inspectType }),
-      ...(inspectScope && { inspectScope }),
-      ...(passYn && { passYn }),
-    };
-    this.applyInspectAtRange(where, startDate, endDate);
+    const qb = this.inspectResultRepository.createQueryBuilder('inspect');
 
-    const [data, total] = await Promise.all([
-      this.inspectResultRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { inspectAt: 'DESC' },
-      }),
-      this.inspectResultRepository.count({ where }),
-    ]);
+    if (company) qb.andWhere('inspect.company = :company', { company });
+    if (plant) qb.andWhere('inspect.plant = :plant', { plant });
+    if (prodResultNo) qb.andWhere('inspect.prodResultNo = :prodResultNo', { prodResultNo });
+    if (serialNo) qb.andWhere('inspect.serialNo LIKE :serialNo', { serialNo: `%${serialNo}%` });
+    if (inspectType) qb.andWhere('inspect.inspectType = :inspectType', { inspectType });
+    if (inspectScope) qb.andWhere('inspect.inspectScope = :inspectScope', { inspectScope });
+    if (passYn) qb.andWhere('inspect.passYn = :passYn', { passYn });
+    this.applyInspectAtRange(qb, startDate, endDate);
+
+    const [data, total] = await qb
+      .orderBy('inspect.inspectAt', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
 
     return { data, total, page, limit };
   }
@@ -447,17 +442,18 @@ export class InspectResultService {
     company?: string,
     plant?: string,
   ): Promise<InspectPassRateDto> {
-    const where: FindOptionsWhere<InspectResult> = {
-      ...this.tenantWhere(company, plant),
-      ...(inspectType && { inspectType }),
+    const buildBase = () => {
+      const qb = this.inspectResultRepository.createQueryBuilder('inspect');
+      if (company) qb.andWhere('inspect.company = :company', { company });
+      if (plant) qb.andWhere('inspect.plant = :plant', { plant });
+      if (inspectType) qb.andWhere('inspect.inspectType = :inspectType', { inspectType });
+      this.applyInspectAtRange(qb, startDate, endDate);
+      return qb;
     };
-    this.applyInspectAtRange(where, startDate, endDate);
 
     const [totalCount, passCount] = await Promise.all([
-      this.inspectResultRepository.count({ where }),
-      this.inspectResultRepository.count({
-        where: { ...where, passYn: 'Y' },
-      }),
+      buildBase().getCount(),
+      buildBase().andWhere("inspect.passYn = 'Y'").getCount(),
     ]);
 
     const failCount = totalCount - passCount;
@@ -482,27 +478,27 @@ export class InspectResultService {
     company?: string,
     plant?: string,
   ): Promise<InspectTypeStatsDto[]> {
-    const where: FindOptionsWhere<InspectResult> = {
-      inspectType: Not(IsNull()),
-      ...this.tenantWhere(company, plant),
+    const buildBase = () => {
+      const qb = this.inspectResultRepository.createQueryBuilder('inspect');
+      qb.andWhere('inspect.inspectType IS NOT NULL');
+      if (company) qb.andWhere('inspect.company = :company', { company });
+      if (plant) qb.andWhere('inspect.plant = :plant', { plant });
+      this.applyInspectAtRange(qb, startDate, endDate);
+      return qb;
     };
-    this.applyInspectAtRange(where, startDate, endDate);
 
     // 유형별 그룹 조회
-    const groupedData = await this.inspectResultRepository
-      .createQueryBuilder('inspect')
+    const groupedData = await buildBase()
       .select('inspect.inspectType', 'inspectType')
       .addSelect('COUNT(*)', 'totalCount')
-      .where(where)
       .groupBy('inspect.inspectType')
       .getRawMany();
 
     // 유형별 합격 수 조회
-    const passData = await this.inspectResultRepository
-      .createQueryBuilder('inspect')
+    const passData = await buildBase()
       .select('inspect.inspectType', 'inspectType')
       .addSelect('COUNT(*)', 'passCount')
-      .where({ ...where, passYn: 'Y' })
+      .andWhere("inspect.passYn = 'Y'")
       .groupBy('inspect.inspectType')
       .getRawMany();
 
@@ -529,18 +525,20 @@ export class InspectResultService {
    * @param days 조회 일수 (기본 7일)
    */
   async getDailyPassRateTrend(days: number = 7, company?: string, plant?: string) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days + 1);
-    startDate.setHours(0, 0, 0, 0);
+    const startDateStr = new Date(
+      Date.now() - (days - 1) * 24 * 60 * 60 * 1000,
+    ).toISOString().split('T')[0];
 
-    const results = await this.inspectResultRepository.find({
-      where: {
-        inspectAt: MoreThanOrEqual(startDate),
-        ...this.tenantWhere(company, plant),
-      },
-      select: ['inspectAt', 'passYn'],
-      order: { inspectAt: 'ASC' },
-    });
+    const qb = this.inspectResultRepository
+      .createQueryBuilder('inspect')
+      .select(['inspect.inspectAt', 'inspect.passYn'])
+      .andWhere("inspect.inspectAt >= TO_DATE(:startDateStr, 'YYYY-MM-DD')", { startDateStr })
+      .orderBy('inspect.inspectAt', 'ASC');
+
+    if (company) qb.andWhere('inspect.company = :company', { company });
+    if (plant) qb.andWhere('inspect.plant = :plant', { plant });
+
+    const results = await qb.getMany();
 
     // 일별 집계
     const dailyStats = new Map<string, { total: number; pass: number }>();

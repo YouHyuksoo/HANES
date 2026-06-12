@@ -232,11 +232,11 @@ export class OutsourcingService {
       );
     }
 
-    if (startDate && endDate) {
-      queryBuilder.andWhere('so.orderDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+    if (startDate) {
+      queryBuilder.andWhere("so.orderDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
+    }
+    if (endDate) {
+      queryBuilder.andWhere("so.orderDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate });
     }
 
     const [orders, total] = await Promise.all([

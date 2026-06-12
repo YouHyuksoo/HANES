@@ -10,7 +10,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, FindOptionsWhere } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -39,30 +39,21 @@ export class ShipHistoryService {
     const { page = 1, limit = 10, search, status, shipDateFrom, shipDateTo, customerName } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<ShipmentOrder> = {
-      ...this.tenantWhere(company, plant),
-      ...(status && { status }),
-      ...(customerName && { customerName: ILike(`%${customerName}%`) }),
-      ...(search && {
-        shipOrderNo: ILike(`%${search}%`),
-      }),
+    const buildBaseQb = () => {
+      const qb = this.shipmentOrderRepository.createQueryBuilder('order');
+      if (company) qb.andWhere('order.company = :company', { company });
+      if (plant) qb.andWhere('order.plant = :plant', { plant });
+      if (status) qb.andWhere('order.status = :status', { status });
+      if (customerName) qb.andWhere('order.customerName LIKE :customerName', { customerName: `%${customerName}%` });
+      if (search) qb.andWhere('order.shipOrderNo LIKE :search', { search: `%${search}%` });
+      if (shipDateFrom) qb.andWhere("order.shipDate >= TO_DATE(:shipDateFrom, 'YYYY-MM-DD')", { shipDateFrom });
+      if (shipDateTo) qb.andWhere("order.shipDate < TO_DATE(:shipDateTo, 'YYYY-MM-DD') + 1", { shipDateTo });
+      return qb;
     };
-    if (shipDateFrom && shipDateTo) {
-      where.shipDate = Between(new Date(shipDateFrom), new Date(shipDateTo));
-    } else if (shipDateFrom) {
-      where.shipDate = MoreThanOrEqual(new Date(shipDateFrom));
-    } else if (shipDateTo) {
-      where.shipDate = LessThanOrEqual(new Date(shipDateTo));
-    }
 
     const [data, total] = await Promise.all([
-      this.shipmentOrderRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.shipmentOrderRepository.count({ where }),
+      buildBaseQb().orderBy('order.createdAt', 'DESC').skip(skip).take(limit).getMany(),
+      buildBaseQb().getCount(),
     ]);
 
     // 품목 정보 일괄 조회 (N+1 제거)

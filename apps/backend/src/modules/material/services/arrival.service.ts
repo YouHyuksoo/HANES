@@ -14,7 +14,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Between, DataSource, EntityManager, FindOptionsWhere, QueryRunner } from 'typeorm';
+import { Repository, In, DataSource, EntityManager, FindOptionsWhere, QueryRunner } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -421,15 +421,11 @@ export class ArrivalService {
       queryBuilder.andWhere('tx.status = :status', { status });
     }
 
-    if (fromDate && toDate) {
-      queryBuilder.andWhere('tx.transDate BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(fromDate),
-        toDate: new Date(toDate),
-      });
-    } else if (fromDate) {
-      queryBuilder.andWhere('tx.transDate >= :fromDate', { fromDate: new Date(fromDate) });
-    } else if (toDate) {
-      queryBuilder.andWhere('tx.transDate <= :toDate', { toDate: new Date(toDate) });
+    if (fromDate) {
+      queryBuilder.andWhere("tx.transDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    }
+    if (toDate) {
+      queryBuilder.andWhere("tx.transDate < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
     }
 
     if (search) {
@@ -558,8 +554,8 @@ export class ArrivalService {
     const cond: string[] = [];
     cond.push(`a."COMPANY" = :${binds.push(company ?? null)}`);
     cond.push(`a."PLANT_CD" = :${binds.push(plant ?? null)}`);
-    if (fromDate) cond.push(`a."ARRIVAL_DATE" >= :${binds.push(new Date(fromDate))}`);
-    if (toDate) cond.push(`a."ARRIVAL_DATE" <= :${binds.push(new Date(toDate))}`);
+    if (fromDate) cond.push(`a."ARRIVAL_DATE" >= TO_DATE(:${binds.push(fromDate)}, 'YYYY-MM-DD')`);
+    if (toDate) cond.push(`a."ARRIVAL_DATE" < TO_DATE(:${binds.push(toDate)}, 'YYYY-MM-DD') + 1`);
     if (itemCode) cond.push(`a."ITEM_CODE" LIKE :${binds.push(`%${itemCode.toUpperCase()}%`)}`);
     if (arrivalNo) cond.push(`a."ARRIVAL_NO" LIKE :${binds.push(`%${arrivalNo.toUpperCase()}%`)}`);
 
@@ -943,27 +939,25 @@ export class ArrivalService {
 
   /** 오늘 입하 통계 */
   async getStats(company?: string, plant?: string) {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
 
     const [todayCount, todayQtyResult, unrecevedPoCount, totalCount] = await Promise.all([
-      this.stockTransactionRepository.count({
-        where: {
-          transType: 'MAT_IN',
-          status: 'DONE',
-          transDate: Between(todayStart, todayEnd),
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
-        },
-      }),
+      this.stockTransactionRepository
+        .createQueryBuilder('tx')
+        .where('tx.transType = :transType', { transType: 'MAT_IN' })
+        .andWhere('tx.status = :status', { status: 'DONE' })
+        .andWhere("tx.transDate >= TO_DATE(:today, 'YYYY-MM-DD')", { today })
+        .andWhere("tx.transDate < TO_DATE(:today, 'YYYY-MM-DD') + INTERVAL '1' DAY", { today })
+        .andWhere(company ? 'tx.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
+        .getCount(),
       this.stockTransactionRepository
         .createQueryBuilder('tx')
         .select('SUM(tx.qty)', 'sumQty')
         .where('tx.transType = :transType', { transType: 'MAT_IN' })
         .andWhere('tx.status = :status', { status: 'DONE' })
-        .andWhere('tx.transDate BETWEEN :start AND :end', { start: todayStart, end: todayEnd })
+        .andWhere("tx.transDate >= TO_DATE(:today, 'YYYY-MM-DD')", { today })
+        .andWhere("tx.transDate < TO_DATE(:today, 'YYYY-MM-DD') + INTERVAL '1' DAY", { today })
         .andWhere(company ? 'tx.company = :company' : '1=1', { company })
         .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
         .getRawOne(),
@@ -992,15 +986,11 @@ export class ArrivalService {
     if (company) qb.andWhere('a.company = :company', { company });
     if (plant) qb.andWhere('a.plant = :plant', { plant });
 
-    if (fromDate && toDate) {
-      qb.andWhere('a.arrivalDate BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(fromDate),
-        toDate: new Date(toDate + 'T23:59:59'),
-      });
-    } else if (fromDate) {
-      qb.andWhere('a.arrivalDate >= :fromDate', { fromDate: new Date(fromDate) });
-    } else if (toDate) {
-      qb.andWhere('a.arrivalDate <= :toDate', { toDate: new Date(toDate + 'T23:59:59') });
+    if (fromDate) {
+      qb.andWhere("a.arrivalDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    }
+    if (toDate) {
+      qb.andWhere("a.arrivalDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
 
     const arrivals = await qb.orderBy('a.arrivalDate', 'DESC').getMany();

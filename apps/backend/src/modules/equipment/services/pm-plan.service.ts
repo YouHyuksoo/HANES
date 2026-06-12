@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmPlanItem } from '../../../entities/pm-plan-item.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
@@ -83,12 +83,10 @@ export class PmPlanService {
       );
     }
     if (dueDateFrom) {
-      qb.andWhere('plan.nextDueAt >= :dueDateFrom', { dueDateFrom: new Date(dueDateFrom) });
+      qb.andWhere("plan.nextDueAt >= TO_DATE(:dueDateFrom, 'YYYY-MM-DD')", { dueDateFrom });
     }
     if (dueDateTo) {
-      const toDate = new Date(dueDateTo);
-      toDate.setHours(23, 59, 59, 999);
-      qb.andWhere('plan.nextDueAt <= :dueDateTo', { dueDateTo: toDate });
+      qb.andWhere("plan.nextDueAt < TO_DATE(:dueDateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dueDateTo });
     }
 
     const total = await qb.getCount();
@@ -296,14 +294,17 @@ export class PmPlanService {
   /** WO 일괄 생성 (해당 월에 nextDueAt이 도래하는 계획들) */
   async generateWorkOrders(year: number, month: number) {
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const monthStr = String(month).padStart(2, '0');
+    const lastDay = new Date(year, month, 0).getDate();
+    const fromStr = `${year}-${monthStr}-01`;
+    const toStr = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
 
-    const plans = await this.pmPlanRepo.find({
-      where: {
-        useYn: 'Y',
-        nextDueAt: Between(startDate, endDate),
-      },
-    });
+    const plans = await this.pmPlanRepo
+      .createQueryBuilder('plan')
+      .where('plan.useYn = :yn', { yn: 'Y' })
+      .andWhere("plan.nextDueAt >= TO_DATE(:fromStr, 'YYYY-MM-DD')", { fromStr })
+      .andWhere("plan.nextDueAt < TO_DATE(:toStr, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toStr })
+      .getMany();
 
     // USAGE_BASED 계획: currentUsage >= usageThreshold 도달한 건
     const usagePlans = await this.pmPlanRepo
@@ -322,10 +323,13 @@ export class PmPlanService {
     // 기간 내 기존 WO 일괄 선조회 (N+1 제거)
     const planCodes = allPlans.map((p) => p.planCode);
     const existingWos = planCodes.length > 0
-      ? await this.pmWorkOrderRepo.find({
-          where: { pmPlanCode: In(planCodes), scheduledDate: Between(startDate, endDate) },
-          select: ['pmPlanCode', 'scheduledDate'],
-        })
+      ? await this.pmWorkOrderRepo
+          .createQueryBuilder('wo')
+          .select(['wo.pmPlanCode', 'wo.scheduledDate', 'wo.company', 'wo.plant'])
+          .where('wo.pmPlanCode IN (:...planCodes)', { planCodes })
+          .andWhere("wo.scheduledDate >= TO_DATE(:fromStr, 'YYYY-MM-DD')", { fromStr })
+          .andWhere("wo.scheduledDate < TO_DATE(:toStr, 'YYYY-MM-DD') + 1", { toStr })
+          .getMany()
       : [];
     const existingWoSet = new Set(
       existingWos.map((wo) => `${wo.company ?? ''}::${wo.plant ?? ''}::${wo.pmPlanCode}::${this.formatDate(wo.scheduledDate)}`),
@@ -559,8 +563,9 @@ export class PmPlanService {
     plant?: string,
   ) {
     const daysInMonth = new Date(year, month, 0).getDate();
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
+    const calMonthStr = String(month).padStart(2, '0');
+    const calFromStr = `${year}-${calMonthStr}-01`;
+    const calToStr = `${year}-${calMonthStr}-${String(daysInMonth).padStart(2, '0')}`;
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
       .leftJoin(
@@ -568,7 +573,8 @@ export class PmPlanService {
         'equip',
         'wo.equipCode = equip.equipCode AND wo.company = equip.company AND wo.plant = equip.plant',
       )
-      .where('wo.scheduledDate BETWEEN :startDate AND :endDate', { startDate, endDate });
+      .where("wo.scheduledDate >= TO_DATE(:calFromStr, 'YYYY-MM-DD')", { calFromStr })
+      .andWhere("wo.scheduledDate < TO_DATE(:calToStr, 'YYYY-MM-DD') + 1", { calToStr });
 
     if (company) qb.andWhere('wo.company = :company', { company });
     if (plant) qb.andWhere('wo.plant = :plant', { plant });
@@ -621,14 +627,11 @@ export class PmPlanService {
 
   /** 캘린더 일별 WO 스케줄 */
   async getDaySchedule(date: string, lineCode?: string, equipType?: string, company?: string, plant?: string) {
-    const dateObj = new Date(date);
-    const dayStart = new Date(dateObj);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dateObj);
-    dayEnd.setHours(23, 59, 59, 999);
+    const dayStr = date.substring(0, 10);
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
-      .where('wo.scheduledDate BETWEEN :dayStart AND :dayEnd', { dayStart, dayEnd });
+      .where("wo.scheduledDate >= TO_DATE(:dayStr, 'YYYY-MM-DD')", { dayStr })
+      .andWhere("wo.scheduledDate < TO_DATE(:dayStr, 'YYYY-MM-DD') + 1", { dayStr });
 
     if (company) qb.andWhere('wo.company = :company', { company });
     if (plant) qb.andWhere('wo.plant = :plant', { plant });

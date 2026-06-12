@@ -21,7 +21,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, ILike, Not, In, DataSource, FindOptionsWhere } from 'typeorm';
+import { Repository, ILike, Not, In, DataSource } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -138,52 +138,29 @@ export class ProdResultService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<ProdResult> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(orderNo && { orderNo }),
-      ...(equipCode && { equipCode }),
-      ...(workerId && { workerId }),
-      ...(prdUid && { prdUid: ILike(`%${prdUid}%`) }),
-      ...(processCode && { processCode }),
-      ...(status && { status }),
-      ...(shiftCode && { shiftCode }),
-      ...(startTimeFrom || startTimeTo
-        ? {
-            startAt: Between(
-              startTimeFrom ? new Date(startTimeFrom) : new Date('1900-01-01'),
-              startTimeTo ? new Date(startTimeTo) : new Date('2099-12-31'),
-            ),
-          }
-        : {}),
-    };
+    const qb = this.prodResultRepository
+      .createQueryBuilder('pr')
+      .leftJoinAndSelect('pr.jobOrder', 'jobOrder')
+      .leftJoinAndSelect('pr.equip', 'equip')
+      .leftJoinAndSelect('pr.worker', 'worker');
+
+    if (company) qb.andWhere('pr.company = :company', { company });
+    if (plant) qb.andWhere('pr.plant = :plant', { plant });
+    if (orderNo) qb.andWhere('pr.orderNo = :orderNo', { orderNo });
+    if (equipCode) qb.andWhere('pr.equipCode = :equipCode', { equipCode });
+    if (workerId) qb.andWhere('pr.workerId = :workerId', { workerId });
+    if (prdUid) qb.andWhere('pr.prdUid LIKE :prdUid', { prdUid: `%${prdUid}%` });
+    if (processCode) qb.andWhere('pr.processCode = :processCode', { processCode });
+    if (status) qb.andWhere('pr.status = :status', { status });
+    if (shiftCode) qb.andWhere('pr.shiftCode = :shiftCode', { shiftCode });
+    if (startTimeFrom) qb.andWhere("pr.startAt >= TO_DATE(:startTimeFrom, 'YYYY-MM-DD')", { startTimeFrom });
+    if (startTimeTo) qb.andWhere("pr.startAt < TO_DATE(:startTimeTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { startTimeTo });
+
+    qb.orderBy('pr.createdAt', 'DESC').skip(skip).take(limit);
 
     const [data, total] = await Promise.all([
-      this.prodResultRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-        relations: ['jobOrder', 'equip', 'worker'],
-        select: {
-          resultNo: true,
-          orderNo: true,
-          equipCode: true,
-          workerId: true,
-          prdUid: true,
-          processCode: true,
-          goodQty: true,
-          defectQty: true,
-          startAt: true,
-          endAt: true,
-          cycleTime: true,
-          status: true,
-          remark: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      this.prodResultRepository.count({ where }),
+      qb.getMany(),
+      qb.getCount(),
     ]);
 
     return { data, total, page, limit };
@@ -1385,12 +1362,8 @@ export class ProdResultService {
     if (company) queryBuilder.andWhere('pr.company = :company', { company });
     if (plant) queryBuilder.andWhere('pr.plant = :plant', { plant });
 
-    if (dateFrom || dateTo) {
-      queryBuilder.andWhere('pr.startAt BETWEEN :dateFrom AND :dateTo', {
-        dateFrom: dateFrom ? new Date(dateFrom) : new Date('1900-01-01'),
-        dateTo: dateTo ? new Date(dateTo) : new Date('2099-12-31'),
-      });
-    }
+    if (dateFrom) queryBuilder.andWhere("pr.startAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
+    if (dateTo) queryBuilder.andWhere("pr.startAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo });
 
     const summary = await queryBuilder.getRawOne();
 
@@ -1424,12 +1397,8 @@ export class ProdResultService {
     if (company) queryBuilder.andWhere('pr.company = :company', { company });
     if (plant) queryBuilder.andWhere('pr.plant = :plant', { plant });
 
-    if (dateFrom || dateTo) {
-      queryBuilder.andWhere('pr.startAt BETWEEN :dateFrom AND :dateTo', {
-        dateFrom: dateFrom ? new Date(dateFrom) : new Date('1900-01-01'),
-        dateTo: dateTo ? new Date(dateTo) : new Date('2099-12-31'),
-      });
-    }
+    if (dateFrom) queryBuilder.andWhere("pr.startAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
+    if (dateTo) queryBuilder.andWhere("pr.startAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo });
 
     const summary = await queryBuilder.getRawOne();
 
@@ -1452,19 +1421,15 @@ export class ProdResultService {
    * 일자별 실적 집계 (대시보드용)
    */
   async getDailySummary(dateFrom: string, dateTo: string, company?: string, plant?: string) {
-    const results = await this.prodResultRepository.find({
-      where: {
-        status: Not('CANCELED'),
-        startAt: Between(new Date(dateFrom), new Date(dateTo)),
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-      },
-      select: {
-        startAt: true,
-        goodQty: true,
-        defectQty: true,
-      },
-    });
+    const dailyQb = this.prodResultRepository
+      .createQueryBuilder('pr')
+      .select(['pr.startAt', 'pr.goodQty', 'pr.defectQty'])
+      .where('pr.status != :canceled', { canceled: 'CANCELED' })
+      .andWhere("pr.startAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom })
+      .andWhere("pr.startAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo });
+    if (company) dailyQb.andWhere('pr.company = :company', { company });
+    if (plant) dailyQb.andWhere('pr.plant = :plant', { plant });
+    const results = await dailyQb.getMany();
 
     // 일자별 그룹핑
     const dailyMap = new Map<string, { goodQty: number; defectQty: number; count: number }>();
@@ -1519,8 +1484,8 @@ export class ProdResultService {
         'COUNT(pr.resultNo) AS "resultCount"',
       ])
       .where('pr.status != :status', { status: 'CANCELED' })
-      .andWhere('pr.startAt >= TO_DATE(:dateFrom, \'YYYY-MM-DD\')', { dateFrom: effectiveDateFrom })
-      .andWhere('pr.startAt < TO_DATE(:dateTo, \'YYYY-MM-DD\') + 1', { dateTo: effectiveDateTo })
+      .andWhere("pr.startAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom: effectiveDateFrom })
+      .andWhere("pr.startAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo: effectiveDateTo })
       .groupBy('p.itemCode')
       .addGroupBy('p.itemName')
       .addGroupBy('p.itemType')

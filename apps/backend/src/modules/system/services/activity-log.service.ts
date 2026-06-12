@@ -9,7 +9,7 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, FindOptionsWhere } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ActivityLog } from '../../../entities/activity-log.entity';
 import { SysConfigService } from './sys-config.service';
 import { ActivityLogQueryDto } from '../dto/activity-log.dto';
@@ -76,31 +76,26 @@ export class ActivityLogService {
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<ActivityLog> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(query.userId && { userEmail: query.userId }),
-      ...(query.activityType && { activityType: query.activityType }),
-    };
+    const qb = this.activityLogRepository
+      .createQueryBuilder('al')
+      .orderBy('al.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit);
 
-    // 날짜 필터
-    if (query.startDate && query.endDate) {
-      where.createdAt = Between(
-        new Date(`${query.startDate}T00:00:00`),
-        new Date(`${query.endDate}T23:59:59`),
-      );
-    } else if (query.startDate) {
-      where.createdAt = MoreThanOrEqual(new Date(`${query.startDate}T00:00:00`));
-    } else if (query.endDate) {
-      where.createdAt = LessThanOrEqual(new Date(`${query.endDate}T23:59:59`));
+    if (company) qb.andWhere('al.company = :company', { company });
+    if (plant) qb.andWhere('al.plant = :plant', { plant });
+    if (query.userId) qb.andWhere('al.userEmail = :userId', { userId: query.userId });
+    if (query.activityType) qb.andWhere('al.activityType = :activityType', { activityType: query.activityType });
+
+    // 날짜 필터 (TIMESTAMP 컬럼 — Oracle INTERVAL 패턴)
+    if (query.startDate) {
+      qb.andWhere("al.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate: query.startDate });
+    }
+    if (query.endDate) {
+      qb.andWhere("al.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { endDate: query.endDate });
     }
 
-    const [data, total] = await this.activityLogRepository.findAndCount({
-      where,
-      order: { createdAt: 'DESC' },
-      skip,
-      take: limit,
-    });
+    const [data, total] = await qb.getManyAndCount();
 
     return { data, total, page, limit };
   }

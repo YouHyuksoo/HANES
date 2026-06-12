@@ -75,11 +75,11 @@ export class ProductionViewsService {
       queryBuilder.andWhere('jo.status = :status', { status });
     }
 
-    if (planDateFrom || planDateTo) {
-      queryBuilder.andWhere('jo.planDate BETWEEN :planDateFrom AND :planDateTo', {
-        planDateFrom: planDateFrom ? new Date(planDateFrom) : new Date('1900-01-01'),
-        planDateTo: planDateTo ? new Date(planDateTo) : new Date('2099-12-31'),
-      });
+    if (planDateFrom) {
+      queryBuilder.andWhere("jo.planDate >= TO_DATE(:planDateFrom, 'YYYY-MM-DD')", { planDateFrom });
+    }
+    if (planDateTo) {
+      queryBuilder.andWhere("jo.planDate < TO_DATE(:planDateTo, 'YYYY-MM-DD') + 1", { planDateTo });
     }
 
     if (search) {
@@ -124,11 +124,11 @@ export class ProductionViewsService {
       queryBuilder.andWhere('ir.passYn = :passYn', { passYn });
     }
 
-    if (dateFrom || dateTo) {
-      queryBuilder.andWhere('ir.inspectDate BETWEEN :dateFrom AND :dateTo', {
-        dateFrom: dateFrom ? new Date(dateFrom) : new Date('1900-01-01'),
-        dateTo: dateTo ? new Date(dateTo) : new Date('2099-12-31'),
-      });
+    if (dateFrom) {
+      queryBuilder.andWhere("ir.inspectDate >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
+    }
+    if (dateTo) {
+      queryBuilder.andWhere("ir.inspectDate < TO_DATE(:dateTo, 'YYYY-MM-DD') + 1", { dateTo });
     }
 
     if (search) {
@@ -178,12 +178,10 @@ export class ProductionViewsService {
     }
 
     if (dateFrom) {
-      qb.andWhere('bm.CREATED_AT >= :dateFrom', { dateFrom: new Date(dateFrom) });
+      qb.andWhere("bm.CREATED_AT >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
     }
     if (dateTo) {
-      const to = new Date(dateTo);
-      to.setDate(to.getDate() + 1);
-      qb.andWhere('bm.CREATED_AT < :dateTo', { dateTo: to });
+      qb.andWhere("bm.CREATED_AT < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo });
     }
 
     qb.orderBy('bm.CREATED_AT', 'DESC');

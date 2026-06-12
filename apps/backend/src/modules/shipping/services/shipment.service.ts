@@ -23,7 +23,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, DataSource, FindOptionsWhere } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
@@ -103,31 +103,23 @@ export class ShipmentService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<ShipmentLog> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(shipNo && { shipNo: ILike(`%${shipNo}%`) }),
-      ...(customer && { customer: ILike(`%${customer}%`) }),
-      ...(status && { status }),
-      ...(erpSyncYn && { erpSyncYn }),
-    };
-    if (shipDateFrom && shipDateTo) {
-      where.shipDate = Between(new Date(shipDateFrom), new Date(shipDateTo));
-    } else if (shipDateFrom) {
-      where.shipDate = MoreThanOrEqual(new Date(shipDateFrom));
-    } else if (shipDateTo) {
-      where.shipDate = LessThanOrEqual(new Date(shipDateTo));
-    }
+    const qb = this.shipmentRepository.createQueryBuilder('s');
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant', { plant });
+    if (shipNo) qb.andWhere('s.shipNo LIKE :shipNo', { shipNo: `%${shipNo}%` });
+    if (customer) qb.andWhere('s.customer LIKE :customer', { customer: `%${customer}%` });
+    if (status) qb.andWhere('s.status = :status', { status });
+    if (erpSyncYn) qb.andWhere('s.erpSyncYn = :erpSyncYn', { erpSyncYn });
+    if (shipDateFrom) qb.andWhere("s.shipDate >= TO_DATE(:shipDateFrom, 'YYYY-MM-DD')", { shipDateFrom });
+    if (shipDateTo) qb.andWhere("s.shipDate < TO_DATE(:shipDateTo, 'YYYY-MM-DD') + 1", { shipDateTo });
 
-    const [data, total] = await Promise.all([
-      this.shipmentRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { shipDate: 'DESC', createdAt: 'DESC' },
-      }),
-      this.shipmentRepository.count({ where }),
-    ]);
+    const total = await qb.getCount();
+    const data = await qb
+      .orderBy('s.shipDate', 'DESC')
+      .addOrderBy('s.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getMany();
 
     return { data, total, page, limit };
   }
@@ -880,18 +872,18 @@ export class ShipmentService {
   async getShipmentStats(query: ShipmentStatsQueryDto, company?: string, plant?: string) {
     const { startDate, endDate, customer } = query;
 
-    const where: FindOptionsWhere<ShipmentLog> = {
-      shipDate: Between(new Date(startDate), new Date(endDate)),
-      status: In(['SHIPPED', 'DELIVERED']),
-      ...(customer && { customer: ILike(`%${customer}%`) }),
-      ...this.tenantWhere(company, plant),
-    };
+    const qb = this.shipmentRepository
+      .createQueryBuilder('s')
+      .select(['s.shipNo', 's.shipDate', 's.customer', 's.palletCount', 's.boxCount', 's.totalQty', 's.status'])
+      .where('s.status IN (:...statuses)', { statuses: ['SHIPPED', 'DELIVERED'] })
+      .andWhere("s.shipDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate })
+      .andWhere("s.shipDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate })
+      .orderBy('s.shipDate', 'ASC');
+    if (customer) qb.andWhere('s.customer LIKE :customer', { customer: `%${customer}%` });
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant', { plant });
 
-    const shipments = await this.shipmentRepository.find({
-      where,
-      select: ['shipNo', 'shipDate', 'customer', 'palletCount', 'boxCount', 'totalQty', 'status'],
-      order: { shipDate: 'ASC' },
-    });
+    const shipments = await qb.getMany();
 
     // 일자별 집계
     const dailyStats = new Map<string, {
@@ -944,14 +936,16 @@ export class ShipmentService {
    * 고객사별 출하 통계
    */
   async getCustomerStats(startDate: string, endDate: string, company?: string, plant?: string) {
-    const shipments = await this.shipmentRepository.find({
-      where: {
-        shipDate: Between(new Date(startDate), new Date(endDate)),
-        status: In(['SHIPPED', 'DELIVERED']),
-        ...this.tenantWhere(company, plant),
-      },
-      select: ['customer', 'palletCount', 'boxCount', 'totalQty'],
-    });
+    const qb = this.shipmentRepository
+      .createQueryBuilder('s')
+      .select(['s.customer', 's.palletCount', 's.boxCount', 's.totalQty'])
+      .where('s.status IN (:...statuses)', { statuses: ['SHIPPED', 'DELIVERED'] })
+      .andWhere("s.shipDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate })
+      .andWhere("s.shipDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate });
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant', { plant });
+
+    const shipments = await qb.getMany();
 
     // 고객사별 집계
     const customerStats = new Map<string, {

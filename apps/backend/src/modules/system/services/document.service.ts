@@ -126,12 +126,10 @@ export class DocumentService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('d.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
-      });
-    }
+    if (startDate)
+      qb.andWhere("d.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
+    if (endDate)
+      qb.andWhere("d.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { endDate });
 
     qb.orderBy('d.createdAt', 'DESC');
     const total = await qb.getCount();

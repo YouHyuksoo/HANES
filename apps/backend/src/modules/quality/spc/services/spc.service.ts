@@ -393,12 +393,8 @@ export class SpcService {
 
     if (company) qb.andWhere('d.company = :company', { company });
     if (plant) qb.andWhere('d.plant = :plant', { plant });
-    if (from && to) {
-      qb.andWhere('d.sampleDate BETWEEN :from AND :to', {
-        from,
-        to: `${to}T23:59:59`,
-      });
-    }
+    if (from) qb.andWhere("d.sampleDate >= TO_DATE(:from, 'YYYY-MM-DD')", { from });
+    if (to) qb.andWhere("d.sampleDate < TO_DATE(:to, 'YYYY-MM-DD') + INTERVAL '1' DAY", { to });
 
     qb.orderBy('d.subgroupNo', 'ASC');
     const data = await qb.getMany();
@@ -476,7 +472,7 @@ export class SpcService {
                WHERE COMPANY = :1 AND PLANT_CD = :2
                  AND MEASURED_VALUE IS NOT NULL`;
     if (from) { bind.push(from); sql += ` AND INSPECT_DATE >= TO_DATE(:${bind.length}, 'YYYY-MM-DD')`; }
-    if (to) { bind.push(to); sql += ` AND INSPECT_DATE <= TO_DATE(:${bind.length}, 'YYYY-MM-DD')`; }
+    if (to) { bind.push(to); sql += ` AND INSPECT_DATE < TO_DATE(:${bind.length}, 'YYYY-MM-DD') + 1`; }
     sql += ` ORDER BY INSPECT_DATE ASC`;
 
     const rows: { date: string; value: number }[] = await this.dataSource.query(sql, bind);
@@ -492,8 +488,8 @@ export class SpcService {
                FROM INSPECT_RESULTS
                WHERE COMPANY = :1 AND PLANT_CD = :2
                  AND INSPECT_DATA IS NOT NULL`;
-    if (from) { bind.push(from + ' 00:00:00'); sql += ` AND INSPECT_TIME >= TO_TIMESTAMP(:${bind.length}, 'YYYY-MM-DD HH24:MI:SS')`; }
-    if (to) { bind.push(to + ' 23:59:59'); sql += ` AND INSPECT_TIME <= TO_TIMESTAMP(:${bind.length}, 'YYYY-MM-DD HH24:MI:SS')`; }
+    if (from) { bind.push(from); sql += ` AND INSPECT_TIME >= TO_DATE(:${bind.length}, 'YYYY-MM-DD')`; }
+    if (to) { bind.push(to); sql += ` AND INSPECT_TIME < TO_DATE(:${bind.length}, 'YYYY-MM-DD') + INTERVAL '1' DAY`; }
     sql += ` ORDER BY INSPECT_TIME ASC`;
 
     const rows: { date: string; value: number }[] = await this.dataSource.query(sql, bind);
@@ -510,7 +506,7 @@ export class SpcService {
                WHERE COMPANY = :1 AND PLANT_CD = :2
                  AND ITEM_CODE = :3 AND DETAILS IS NOT NULL`;
     if (from) { bind.push(from); sql += ` AND INSPECT_DATE >= TO_DATE(:${bind.length}, 'YYYY-MM-DD')`; }
-    if (to) { bind.push(to); sql += ` AND INSPECT_DATE <= TO_DATE(:${bind.length}, 'YYYY-MM-DD')`; }
+    if (to) { bind.push(to); sql += ` AND INSPECT_DATE < TO_DATE(:${bind.length}, 'YYYY-MM-DD') + 1`; }
     sql += ` ORDER BY INSPECT_DATE ASC`;
 
     const rows: { date: string; value: number }[] = await this.dataSource.query(sql, bind);

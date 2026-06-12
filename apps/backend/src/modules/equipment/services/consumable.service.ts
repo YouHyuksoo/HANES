@@ -557,10 +557,10 @@ export class ConsumableService {
       queryBuilder.andWhere('log.logType = :logType', { logType });
     }
     if (startDate) {
-      queryBuilder.andWhere('log.createdAt >= :startDate', { startDate: new Date(startDate) });
+      queryBuilder.andWhere("log.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
     }
     if (endDate) {
-      queryBuilder.andWhere('log.createdAt <= :endDate', { endDate: new Date(endDate) });
+      queryBuilder.andWhere("log.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { endDate });
     }
 
     const [logs, total] = await Promise.all([
@@ -877,15 +877,16 @@ export class ConsumableService {
    */
   async getPmCalendarSummary(year: number, month: number, category?: string, company?: string, plant?: string) {
     const daysInMonth = new Date(year, month, 0).getDate();
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
+    const startDateStr = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDateStr = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
 
     // 교체 예정일이 해당 월에 있는 소모품 조회
     const qb = this.consumableMasterRepository
       .createQueryBuilder('c')
       .where('c.useYn = :yn', { yn: 'Y' })
       .andWhere('c.nextReplaceAt IS NOT NULL')
-      .andWhere('c.nextReplaceAt BETWEEN :start AND :end', { start: startDate, end: endDate });
+      .andWhere("c.nextReplaceAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate: startDateStr })
+      .andWhere("c.nextReplaceAt < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate: endDateStr });
 
     if (category) {
       qb.andWhere('c.category = :category', { category });
@@ -948,14 +949,11 @@ export class ConsumableService {
    * - 특정 날짜에 교체 예정인 소모품 목록 반환
    */
   async getPmDaySchedule(date: string, category?: string, company?: string, plant?: string) {
-    const dateObj = new Date(date);
-    const startOfDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
-    const endOfDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 23, 59, 59);
-
     const qb = this.consumableMasterRepository
       .createQueryBuilder('c')
       .where('c.useYn = :yn', { yn: 'Y' })
-      .andWhere('c.nextReplaceAt BETWEEN :start AND :end', { start: startOfDay, end: endOfDay });
+      .andWhere("c.nextReplaceAt >= TO_DATE(:date, 'YYYY-MM-DD')", { date })
+      .andWhere("c.nextReplaceAt < TO_DATE(:date, 'YYYY-MM-DD') + 1", { date });
 
     if (category) {
       qb.andWhere('c.category = :category', { category });

@@ -153,12 +153,10 @@ export class InventoryQueryService {
       );
     }
     if (query.dateFrom) {
-      qb.andWhere('trans.transDate >= :dateFrom', { dateFrom: query.dateFrom });
+      qb.andWhere("trans.transDate >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom: query.dateFrom });
     }
     if (query.dateTo) {
-      const endOfDay = new Date(query.dateTo);
-      endOfDay.setHours(23, 59, 59, 999);
-      qb.andWhere('trans.transDate <= :dateTo', { dateTo: endOfDay });
+      qb.andWhere("trans.transDate < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo: query.dateTo });
     }
 
     const transactions = await qb

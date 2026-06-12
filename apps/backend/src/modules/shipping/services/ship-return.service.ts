@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, FindOptionsWhere } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
@@ -90,31 +90,20 @@ export class ShipReturnService {
     const { page = 1, limit = 10, search, status, returnDateFrom, returnDateTo } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<ShipmentReturn> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(status && { status }),
-      ...(search && {
-        returnNo: ILike(`%${search}%`),
-      }),
-    };
-    if (returnDateFrom && returnDateTo) {
-      where.returnDate = Between(new Date(returnDateFrom), new Date(returnDateTo));
-    } else if (returnDateFrom) {
-      where.returnDate = MoreThanOrEqual(new Date(returnDateFrom));
-    } else if (returnDateTo) {
-      where.returnDate = LessThanOrEqual(new Date(returnDateTo));
-    }
+    const qb = this.shipReturnRepository
+      .createQueryBuilder('sr')
+      .orderBy('sr.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit);
 
-    const [data, total] = await Promise.all([
-      this.shipReturnRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.shipReturnRepository.count({ where }),
-    ]);
+    if (company) qb.andWhere('sr.company = :company', { company });
+    if (plant) qb.andWhere('sr.plant = :plant', { plant });
+    if (status) qb.andWhere('sr.status = :status', { status });
+    if (search) qb.andWhere('sr.returnNo LIKE :search', { search: `%${search}%` });
+    if (returnDateFrom) qb.andWhere("sr.returnDate >= TO_DATE(:returnDateFrom, 'YYYY-MM-DD')", { returnDateFrom });
+    if (returnDateTo) qb.andWhere("sr.returnDate < TO_DATE(:returnDateTo, 'YYYY-MM-DD') + 1", { returnDateTo });
+
+    const [data, total] = await qb.getManyAndCount();
 
     // 품목 및 출하지시 정보 병합
     const resultData = await Promise.all(

@@ -20,7 +20,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, FindOptionsWhere } from 'typeorm';
+import { Repository, In, SelectQueryBuilder } from 'typeorm';
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
@@ -90,17 +90,17 @@ export class DefectLogService {
     };
   }
 
-  private applyOccurAtRange(
-    where: FindOptionsWhere<DefectLog>,
+  private applyOccurAtRangeToQb(
+    qb: ReturnType<Repository<DefectLog>['createQueryBuilder']>,
+    alias: string,
     startDate?: string,
     endDate?: string,
   ) {
-    if (startDate && endDate) {
-      where.occurAt = Between(new Date(startDate), new Date(endDate));
-    } else if (startDate) {
-      where.occurAt = MoreThanOrEqual(new Date(startDate));
-    } else if (endDate) {
-      where.occurAt = LessThanOrEqual(new Date(endDate));
+    if (startDate) {
+      qb.andWhere(`${alias}.occurAt >= TO_DATE(:startDate, 'YYYY-MM-DD')`, { startDate });
+    }
+    if (endDate) {
+      qb.andWhere(`${alias}.occurAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY`, { endDate });
     }
   }
 
@@ -138,26 +138,18 @@ export class DefectLogService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<DefectLog> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(prodResultNo && { prodResultNo }),
-      ...(defectCode && { defectCode }),
-      ...(status && { status }),
-      ...(search && {
-        defectName: ILike(`%${search}%`),
-      }),
-    };
-    this.applyOccurAtRange(where, startDate, endDate);
+    const qb = this.defectLogRepository.createQueryBuilder('defect');
+    if (company) qb.andWhere('defect.company = :company', { company });
+    if (plant) qb.andWhere('defect.plant = :plant', { plant });
+    if (prodResultNo) qb.andWhere('defect.prodResultNo = :prodResultNo', { prodResultNo });
+    if (defectCode) qb.andWhere('defect.defectCode = :defectCode', { defectCode });
+    if (status) qb.andWhere('defect.status = :status', { status });
+    if (search) qb.andWhere('defect.defectName LIKE :search', { search: `%${search}%` });
+    this.applyOccurAtRangeToQb(qb, 'defect', startDate, endDate);
 
     const [data, total] = await Promise.all([
-      this.defectLogRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { occurAt: 'DESC' },
-      }),
-      this.defectLogRepository.count({ where }),
+      qb.clone().orderBy('defect.occurAt', 'DESC').skip(skip).take(limit).getMany(),
+      qb.getCount(),
     ]);
 
     // 생산실적을 배치 로드(N+1 방지)해 작업지시/작업자/설비를 보강하고, 화면용 복합 식별자(id)를 부여한다.
@@ -524,19 +516,18 @@ export class DefectLogService {
     company?: string,
     plant?: string,
   ): Promise<DefectTypeStatsDto[]> {
-    const where: FindOptionsWhere<DefectLog> = {
-      ...this.tenantWhere(company, plant),
-    };
-    this.applyOccurAtRange(where, startDate, endDate);
-
-    // TypeORM의 groupBy 사용
-    const grouped = await this.defectLogRepository
+    const qb = this.defectLogRepository
       .createQueryBuilder('defect')
       .select('defect.defectCode', 'defectCode')
       .addSelect('defect.defectName', 'defectName')
       .addSelect('COUNT(*)', 'count')
-      .addSelect('SUM(defect.qty)', 'totalQty')
-      .where(where)
+      .addSelect('SUM(defect.qty)', 'totalQty');
+    if (company) qb.andWhere('defect.company = :company', { company });
+    if (plant) qb.andWhere('defect.plant = :plant', { plant });
+    this.applyOccurAtRangeToQb(qb as unknown as ReturnType<Repository<DefectLog>['createQueryBuilder']>, 'defect', startDate, endDate);
+
+    // TypeORM의 groupBy 사용
+    const grouped = await qb
       .groupBy('defect.defectCode')
       .addGroupBy('defect.defectName')
       .getRawMany();
@@ -563,17 +554,16 @@ export class DefectLogService {
     company?: string,
     plant?: string,
   ): Promise<DefectStatusStatsDto[]> {
-    const where: FindOptionsWhere<DefectLog> = {
-      ...this.tenantWhere(company, plant),
-    };
-    this.applyOccurAtRange(where, startDate, endDate);
-
-    const grouped = await this.defectLogRepository
+    const qb = this.defectLogRepository
       .createQueryBuilder('defect')
       .select('defect.status', 'status')
       .addSelect('COUNT(*)', 'count')
-      .addSelect('SUM(defect.qty)', 'totalQty')
-      .where(where)
+      .addSelect('SUM(defect.qty)', 'totalQty');
+    if (company) qb.andWhere('defect.company = :company', { company });
+    if (plant) qb.andWhere('defect.plant = :plant', { plant });
+    this.applyOccurAtRangeToQb(qb as unknown as ReturnType<Repository<DefectLog>['createQueryBuilder']>, 'defect', startDate, endDate);
+
+    const grouped = await qb
       .groupBy('defect.status')
       .getRawMany();
 
@@ -588,18 +578,19 @@ export class DefectLogService {
    * 일별 불량 발생 추이
    */
   async getDailyDefectTrend(days: number = 7, company?: string, plant?: string) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days + 1);
-    startDate.setHours(0, 0, 0, 0);
+    const startDateObj = new Date();
+    startDateObj.setDate(startDateObj.getDate() - days + 1);
+    const startDate = startDateObj.toISOString().split('T')[0]; // 'YYYY-MM-DD'
 
-    const defects = await this.defectLogRepository.find({
-      where: {
-        occurAt: MoreThanOrEqual(startDate),
-        ...this.tenantWhere(company, plant),
-      },
-      select: ['occurAt', 'qty', 'defectCode'],
-      order: { occurAt: 'ASC' },
-    });
+    const qb = this.defectLogRepository
+      .createQueryBuilder('defect')
+      .select(['defect.occurAt', 'defect.qty', 'defect.defectCode']);
+    if (company) qb.andWhere('defect.company = :company', { company });
+    if (plant) qb.andWhere('defect.plant = :plant', { plant });
+    qb.andWhere(`defect.occurAt >= TO_DATE(:startDate, 'YYYY-MM-DD')`, { startDate });
+    qb.orderBy('defect.occurAt', 'ASC');
+
+    const defects = await qb.getMany();
 
     // 일별 집계
     const dailyStats = new Map<string, { count: number; totalQty: number }>();

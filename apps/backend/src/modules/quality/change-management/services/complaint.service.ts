@@ -127,12 +127,8 @@ export class ComplaintService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('c.complaintDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
-    }
+    if (startDate) qb.andWhere("c.complaintDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
+    if (endDate) qb.andWhere("c.complaintDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate });
 
     qb.orderBy('c.createdAt', 'DESC');
     const total = await qb.getCount();

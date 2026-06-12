@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, FindOptionsWhere } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -64,30 +64,19 @@ export class CustomerOrderService {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<CustomerOrder> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(status && { status }),
-      ...(search && {
-        orderNo: ILike(`%${search}%`),
-      }),
-    };
-    if (dueDateFrom && dueDateTo) {
-      where.dueDate = Between(new Date(dueDateFrom), new Date(dueDateTo));
-    } else if (dueDateFrom) {
-      where.dueDate = MoreThanOrEqual(new Date(dueDateFrom));
-    } else if (dueDateTo) {
-      where.dueDate = LessThanOrEqual(new Date(dueDateTo));
-    }
+    const qb = this.customerOrderRepository.createQueryBuilder('co');
+    if (company) qb.andWhere('co.company = :company', { company });
+    if (plant) qb.andWhere('co.plant = :plant', { plant });
+    if (status) qb.andWhere('co.status = :status', { status });
+    if (search) qb.andWhere('co.orderNo LIKE :search', { search: `%${search}%` });
+    if (dueDateFrom) qb.andWhere("co.dueDate >= TO_DATE(:dueDateFrom, 'YYYY-MM-DD')", { dueDateFrom });
+    if (dueDateTo) qb.andWhere("co.dueDate < TO_DATE(:dueDateTo, 'YYYY-MM-DD') + 1", { dueDateTo });
+
+    qb.orderBy('co.createdAt', 'DESC').skip(skip).take(limit);
 
     const [data, total] = await Promise.all([
-      this.customerOrderRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.customerOrderRepository.count({ where }),
+      qb.getMany(),
+      qb.clone().skip(0).take(undefined).getCount(),
     ]);
 
     // 품목 정보 병합 — IN 배치 선조회로 N+1 방지
