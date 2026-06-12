@@ -350,14 +350,12 @@ export class TransactionQueryDto {
   refId?: string;
 
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  dateFrom?: Date;
+  @IsString()
+  dateFrom?: string;
 
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  dateTo?: Date;
+  @IsString()
+  dateTo?: string;
 
   @IsOptional()
   @IsNumber()

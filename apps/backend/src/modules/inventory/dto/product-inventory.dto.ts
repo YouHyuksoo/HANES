@@ -7,8 +7,7 @@
  * - 제품 수불은 이 파일의 ProductReceiveStockDto/ProductIssueStockDto 사용
  * - 차이점: orderNo(작업지시), processCode(공정코드), itemType 추가
  */
-import { IsString, IsOptional, IsNumber, IsIn, IsDate, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsNumber, IsIn, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** 제품 입고 DTO */
@@ -168,14 +167,12 @@ export class ProductTransactionQueryDto extends PaginationQueryDto {
   refId?: string;
 
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  dateFrom?: Date;
+  @IsString()
+  dateFrom?: string;
 
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  dateTo?: Date;
+  @IsString()
+  dateTo?: string;
 
 
   @IsOptional()

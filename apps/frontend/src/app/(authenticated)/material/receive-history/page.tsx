@@ -24,9 +24,10 @@ export default function ReceiveHistoryPage() {
   const [history, setHistory] = useState<ReceivingRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
-  /** 필터 상태 */
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  /** 필터 상태 — 날짜 기본값: 당일 */
+  const today = new Date().toISOString().slice(0, 10);
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
   const [itemSearch, setItemSearch] = useState('');
   const [serial, setSerial] = useState('');
   const [vendorFilter, setVendorFilter] = useState('');

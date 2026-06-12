@@ -10,10 +10,10 @@
  * 3. 스캔된 매핑만 입고 확정된다.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PackagePlus, RefreshCw, ScanLine, Search } from 'lucide-react';
-import { Card, CardContent, Button, Input } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 import api from '@/services/api';
 import ReceivableTable from './components/ReceivableTable';
 import ReceiveScanModal from './components/ReceiveScanModal';
@@ -24,8 +24,14 @@ export default function ReceivingPage() {
 
   const [receivable, setReceivable] = useState<ReceivableLot[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
   const [scanOpen, setScanOpen] = useState(false);
+
+  /** 필터 상태 — 날짜 기본값: 당일 */
+  const today = new Date().toISOString().slice(0, 10);
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
+  const [vendorFilter, setVendorFilter] = useState('');
+  const [itemSearch, setItemSearch] = useState('');
 
   /** 입고 가능 LOT 조회 */
   const fetchReceivable = useCallback(async () => {
@@ -45,17 +51,33 @@ export default function ReceivingPage() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  /** 검색 필터링 */
-  const filtered = searchText
-    ? receivable.filter((lot) => {
-        const q = searchText.toLowerCase();
-        return lot.matUid.toLowerCase().includes(q)
-          || lot.part?.itemCode?.toLowerCase().includes(q)
-          || lot.part?.itemName?.toLowerCase().includes(q)
-          || lot.vendor?.toLowerCase().includes(q)
-          || lot.poNo?.toLowerCase().includes(q);
-    })
-    : receivable;
+  /** 공급업체 옵션 (데이터에서 distinct) */
+  const vendorOptions = useMemo(() => {
+    const set = new Set<string>();
+    receivable.forEach((lot) => { if (lot.vendor) set.add(lot.vendor); });
+    return [
+      { value: '', label: `${t('material.arrival.col.vendor', '공급업체')}: ${t('common.all', '전체')}` },
+      ...[...set].sort().map((v) => ({ value: v, label: v })),
+    ];
+  }, [receivable, t]);
+
+  /** 필터링 */
+  const filtered = useMemo(() => {
+    return receivable.filter((lot) => {
+      const recvDay = lot.recvDate ? String(lot.recvDate).slice(0, 10) : '';
+      if (fromDate && recvDay && recvDay < fromDate) return false;
+      if (toDate && recvDay && recvDay > toDate) return false;
+      if (vendorFilter && lot.vendor !== vendorFilter) return false;
+      if (itemSearch) {
+        const q = itemSearch.toLowerCase();
+        if (
+          !lot.part?.itemCode?.toLowerCase().includes(q) &&
+          !lot.part?.itemName?.toLowerCase().includes(q)
+        ) return false;
+      }
+      return true;
+    });
+  }, [receivable, fromDate, toDate, vendorFilter, itemSearch]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -81,12 +103,33 @@ export default function ReceivingPage() {
             data={filtered}
             isLoading={loading}
             toolbarLeft={
-              <div className="flex gap-3 flex-1 min-w-0">
-                <div className="flex-1 min-w-0">
+              <div className="flex gap-2 flex-1 min-w-0 items-center flex-wrap">
+                {/* 날짜 범위 */}
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <Input
-                    placeholder={t('material.receive.searchPlaceholder')}
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="w-36"
+                  />
+                  <span className="text-text-muted text-sm">~</span>
+                  <Input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="w-36"
+                  />
+                </div>
+                {/* 공급업체 */}
+                <div className="w-44 flex-shrink-0">
+                  <Select options={vendorOptions} value={vendorFilter} onChange={setVendorFilter} fullWidth />
+                </div>
+                {/* 품목 */}
+                <div className="w-48 flex-shrink-0">
+                  <Input
+                    placeholder={t('material.receiveHistory.itemPlaceholder', '품번/품명')}
+                    value={itemSearch}
+                    onChange={(e) => setItemSearch(e.target.value)}
                     leftIcon={<Search className="w-4 h-4" />}
                     fullWidth
                   />
