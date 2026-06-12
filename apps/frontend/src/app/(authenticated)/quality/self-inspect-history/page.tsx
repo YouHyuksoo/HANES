@@ -8,11 +8,12 @@
  * 1. 상단 필터로 기간/작업지시/공정 검색
  * 2. 좌측 목록에서 행 선택 → 우측에 작업지시 전체 결과 표시
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { History, RefreshCw, Search } from "lucide-react";
 import toast from "react-hot-toast";
-import { Button, Card, CardContent, Input } from "@/components/ui";
+import { Button, Card, CardContent, Input, Select } from "@/components/ui";
+import type { SelectOption } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -45,14 +46,16 @@ interface DetailRecord {
 
 export default function SelfInspectHistoryPage() {
   const { t } = useTranslation();
+  const today = new Date().toISOString().split("T")[0];
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<HistoryRecord | null>(null);
   const [detail, setDetail] = useState<DetailRecord[]>([]);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
   const [orderNo, setOrderNo] = useState("");
   const [processCode, setProcessCode] = useState("");
+  const [processOptions, setProcessOptions] = useState<SelectOption[]>([]);
 
   const statusBadge = (status: string) => {
     if (status === "PASS")
@@ -83,6 +86,22 @@ export default function SelfInspectHistoryPage() {
       setLoading(false);
     }
   }, [dateFrom, dateTo, orderNo, processCode, t]);
+
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  useEffect(() => {
+    api.get("/master/processes", { params: { limit: 100 } })
+      .then(res => {
+        const list: SelectOption[] = (res.data?.data ?? []).map(
+          (p: { processCode: string; processName: string }) => ({
+            value: p.processCode,
+            label: `${p.processCode} - ${p.processName}`,
+          })
+        );
+        setProcessOptions(list);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSelect = useCallback(async (record: HistoryRecord) => {
     setSelected(record);
@@ -160,10 +179,10 @@ export default function SelfInspectHistoryPage() {
         <div>
           <h1 className="text-xl font-bold text-text dark:text-gray-100 flex items-center gap-2">
             <History className="w-6 h-6 text-primary" />
-            {t("selfInspectHistory.title", "자주검사 이력")}
+            {t("selfInspectHistory.title", "공정샘플검사 이력")}
           </h1>
           <p className="text-sm text-text-muted dark:text-gray-400 mt-0.5">
-            {t("selfInspectHistory.subtitle", "자주검사 결과 이력을 조회합니다")}
+            {t("selfInspectHistory.subtitle", "공정샘플검사 결과 이력을 조회합니다")}
           </p>
         </div>
         <Button variant="secondary" size="sm" onClick={fetchHistory}>
@@ -193,12 +212,12 @@ export default function SelfInspectHistoryPage() {
           className="w-44 text-sm"
           onKeyDown={(e) => { if (e.key === "Enter") fetchHistory(); }}
         />
-        <Input
+        <Select
           value={processCode}
-          onChange={(e) => setProcessCode(e.target.value)}
-          placeholder={t("selfInspectHistory.processCode", "공정코드")}
-          className="w-36 text-sm"
-          onKeyDown={(e) => { if (e.key === "Enter") fetchHistory(); }}
+          onChange={setProcessCode}
+          options={processOptions}
+          placeholder={t("selfInspectHistory.processCode", "전체 공정")}
+          className="w-52 text-sm"
         />
         <Button size="sm" onClick={fetchHistory}>
           <Search className="w-4 h-4 mr-1" />
@@ -224,8 +243,8 @@ export default function SelfInspectHistoryPage() {
                   onRowClick={handleSelect}
                   maxHeight="100%"
                   enableColumnFilter={false}
-                
-                sqlQuery={`SELECT *\nFROM SELF_INSPECT_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+
+                sqlQuery={`SELECT *\nFROM SELF_INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
               </div>
             </CardContent>
           </Card>
@@ -253,8 +272,8 @@ export default function SelfInspectHistoryPage() {
                       getRowId={(row) => row.id}
                       maxHeight="100%"
                       enableColumnFilter={false}
-                    
-                    sqlQuery={`SELECT *\nFROM SELF_INSPECT_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+
+                    sqlQuery={`SELECT *\nFROM SELF_INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND ORDER_NO = '${selected.orderNo}'\nORDER BY TIMING, SAMPLE_NO`}/>
                   </div>
                 </>
               )}

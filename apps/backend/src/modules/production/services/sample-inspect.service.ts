@@ -15,6 +15,7 @@ import { SampleInspectResult } from '../../../entities/sample-inspect-result.ent
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
+import { applyDateFilter } from '../../../shared/date-filter.util';
 import {
   CreateSampleInspectDto,
   SampleInspectHistoryQueryDto,
@@ -120,12 +121,7 @@ export class SampleInspectService {
       qb.andWhere('si.passYn = :passYn', { passYn });
     }
 
-    if (startDate) {
-      qb.andWhere('si.inspectDate >= :startDate', { startDate: new Date(startDate) });
-    }
-    if (endDate) {
-      qb.andWhere('si.inspectDate <= :endDate', { endDate: new Date(endDate) });
-    }
+    applyDateFilter(qb, 'si.inspectDate', startDate, endDate);
 
     if (search) {
       qb.andWhere(
