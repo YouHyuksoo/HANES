@@ -13,7 +13,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ClipboardCheck, Search, RefreshCw, XCircle, Upload, ExternalLink } from "lucide-react";
+import { ClipboardCheck, Search, RefreshCw, XCircle, Upload, ExternalLink, Eye } from "lucide-react";
+import IqcDetailModal, { type IqcDetailRecord } from "./IqcDetailModal";
 import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -24,6 +25,7 @@ import api from "@/services/api";
 interface IqcHistoryItem {
   id: string;
   matUid?: string;
+  arrivalNo?: string | null;
   itemCode?: string;
   itemName?: string;
   unit?: string;
@@ -36,6 +38,8 @@ interface IqcHistoryItem {
   remark?: string;
   received?: boolean;
   certFilePath?: string | null;
+  sampleBarcode?: string | null;
+  details?: string | null;
 }
 
 function getCertFileUrl(certFilePath: string | null | undefined): string | null {
@@ -78,6 +82,9 @@ export default function IqcHistoryPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+
+  /** 상세 모달 상태 */
+  const [detailRecord, setDetailRecord] = useState<IqcDetailRecord | null>(null);
 
   /** 취소 모달 상태 */
   const [cancelTarget, setCancelTarget] = useState<IqcHistoryItem | null>(null);
@@ -155,7 +162,7 @@ export default function IqcHistoryPage() {
     {
       id: "actions",
       header: t("common.actions"),
-      size: 110,
+      size: 140,
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const record = row.original;
@@ -163,6 +170,14 @@ export default function IqcHistoryPage() {
         const certUrl = getCertFileUrl(record.certFilePath);
         return (
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded text-text-muted hover:bg-surface hover:text-primary"
+              title="검사 상세보기"
+              onClick={(e) => { e.stopPropagation(); setDetailRecord(record as IqcDetailRecord); }}
+            >
+              <Eye className="w-4 h-4" />
+            </button>
             {certUrl && (
               <a
                 href={certUrl}
@@ -335,6 +350,9 @@ export default function IqcHistoryPage() {
           } 
           sqlQuery={`SELECT *\nFROM IQC_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
+
+      {/* 검사 상세 모달 */}
+      <IqcDetailModal record={detailRecord} onClose={() => setDetailRecord(null)} />
 
       {/* 판정 취소 모달  */}
       <Modal

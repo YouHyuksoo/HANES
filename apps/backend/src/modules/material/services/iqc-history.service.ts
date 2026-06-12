@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, In, DataSource, IsNull, QueryRunner } from 'typeorm';
+import { Repository, Like, In, DataSource, IsNull, QueryRunner } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -63,22 +63,6 @@ export class IqcHistoryService {
     }
   }
 
-  private buildDateRange(fromDate?: string, toDate?: string) {
-    if (!fromDate || !toDate) return null;
-
-    const from = new Date(fromDate);
-    const to = new Date(toDate);
-
-    if (/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
-      from.setUTCHours(0, 0, 0, 0);
-    }
-    if (/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
-      to.setUTCHours(23, 59, 59, 999);
-    }
-
-    return { from, to };
-  }
-
   private normalizeIqcInspectClass(inspectClass?: string | null) {
     return inspectClass ?? null;
   }
@@ -86,18 +70,26 @@ export class IqcHistoryService {
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, inspectType, result, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
-    const dateRange = this.buildDateRange(fromDate, toDate);
 
-    const where: Record<string, unknown> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(inspectType && { inspectType }),
-      ...(result && { result }),
-      ...(dateRange && { inspectDate: Between(dateRange.from, dateRange.to) }),
-    };
+    const qb = this.iqcLogRepository.createQueryBuilder('iqc');
 
-    let data: IqcLog[];
-    let total: number;
+    if (company) qb.andWhere('iqc.company = :company', { company });
+    if (plant) qb.andWhere('iqc.plant = :plant', { plant });
+    if (inspectType) qb.andWhere('iqc.inspectType = :inspectType', { inspectType });
+    if (result) qb.andWhere('iqc.result = :result', { result });
+
+    // 날짜 필터: 컬럼에 함수 미적용 → 인덱스 유지
+    // TO_DATE(:toDate) + 1 = 다음날 00:00:00 → 당일 23:59:59.999 까지 포함
+    if (fromDate && toDate) {
+      qb.andWhere(
+        "iqc.inspectDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND iqc.inspectDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
+        { fromDate, toDate },
+      );
+    } else if (fromDate) {
+      qb.andWhere("iqc.inspectDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    } else if (toDate) {
+      qb.andWhere("iqc.inspectDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
+    }
 
     if (search) {
       const parts = await this.partMasterRepository.find({
@@ -108,42 +100,19 @@ export class IqcHistoryService {
       });
       const searchItemCodes = parts.map((p) => p.itemCode);
 
-      const queryBuilder = this.iqcLogRepository.createQueryBuilder('iqc');
-
-      if (company) queryBuilder.andWhere('iqc.company = :company', { company });
-      if (plant) queryBuilder.andWhere('iqc.plant = :plant', { plant });
-      if (inspectType) queryBuilder.andWhere('iqc.inspectType = :inspectType', { inspectType });
-      if (result) queryBuilder.andWhere('iqc.result = :result', { result });
-      if (dateRange) {
-        queryBuilder.andWhere('iqc.inspectDate BETWEEN :fromDate AND :toDate', {
-          fromDate: dateRange.from,
-          toDate: dateRange.to,
-        });
-      }
-
       if (searchItemCodes.length > 0) {
-        queryBuilder.andWhere('iqc.itemCode IN (:...searchItemCodes)', { searchItemCodes });
+        qb.andWhere('iqc.itemCode IN (:...searchItemCodes)', { searchItemCodes });
       } else {
-        queryBuilder.andWhere('(iqc.arrivalNo LIKE :search OR iqc.itemCode LIKE :search)', {
+        qb.andWhere('(iqc.arrivalNo LIKE :search OR iqc.itemCode LIKE :search)', {
           search: `%${search}%`,
         });
       }
-
-      [data, total] = await Promise.all([
-        queryBuilder.orderBy('iqc.inspectDate', 'DESC').skip(skip).take(limit).getMany(),
-        queryBuilder.getCount(),
-      ]);
-    } else {
-      [data, total] = await Promise.all([
-        this.iqcLogRepository.find({
-          where,
-          skip,
-          take: limit,
-          order: { inspectDate: 'DESC' },
-        }),
-        this.iqcLogRepository.count({ where }),
-      ]);
     }
+
+    const [data, total] = await Promise.all([
+      qb.orderBy('iqc.inspectDate', 'DESC').skip(skip).take(limit).getMany(),
+      qb.getCount(),
+    ]);
 
     const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
     const partsResult = itemCodes.length > 0
