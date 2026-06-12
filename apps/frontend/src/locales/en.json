@@ -1708,6 +1708,8 @@
       "failed": "Fail",
       "inspectItem": "Inspect Item",
       "spec": "Spec",
+      "lsl": "LSL",
+      "usl": "USL",
       "judgeCriteria": "Judge Criteria",
       "measuredValue": "Measured Value",
       "judgment": "Judgment",

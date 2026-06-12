@@ -13,8 +13,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ClipboardCheck, Search, RefreshCw, CheckCircle, XCircle, FileText, BarChart3, Upload } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
+import { ClipboardCheck, Search, RefreshCw, XCircle, Upload, ExternalLink } from "lucide-react";
+import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -36,6 +36,12 @@ interface IqcHistoryItem {
   remark?: string;
   received?: boolean;
   certFilePath?: string | null;
+}
+
+function getCertFileUrl(certFilePath: string | null | undefined): string | null {
+  if (!certFilePath) return null;
+  const filename = certFilePath.replace(/\\/g, '/').split('/').pop();
+  return filename ? `/uploads/iqc-certs/${filename}` : null;
 }
 
 const resultColors: Record<string, string> = {
@@ -145,25 +151,30 @@ export default function IqcHistoryPage() {
     { value: "FAIL", label: t("material.iqcHistory.fail") },
   ], [t]);
 
-  const stats = useMemo(() => {
-    const active = data.filter(d => d.status !== "CANCELED");
-    const total = active.length;
-    const pass = active.filter(d => d.result === "PASS").length;
-    const fail = active.filter(d => d.result === "FAIL").length;
-    return { total, pass, fail, passRate: total > 0 ? Math.round((pass / total) * 100) : 0 };
-  }, [data]);
-
   const columns = useMemo<ColumnDef<IqcHistoryItem>[]>(() => [
     {
       id: "actions",
       header: t("common.actions"),
-      size: 82,
+      size: 110,
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const record = row.original;
         const uploadKey = `${record.inspectDate}:${record.seq}`;
+        const certUrl = getCertFileUrl(record.certFilePath);
         return (
           <div className="flex items-center gap-1">
+            {certUrl && (
+              <a
+                href={certUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-8 w-8 items-center justify-center rounded text-blue-600 hover:bg-surface hover:text-blue-800"
+                title="검사성적서 열람"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
             {record.status === "DONE" && record.result === "PASS" && (
               <label
                 className={`inline-flex h-8 w-8 items-center justify-center rounded cursor-pointer hover:bg-surface ${
@@ -210,9 +221,17 @@ export default function IqcHistoryPage() {
       header: "성적서",
       size: 80,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => (getValue() as string)
-        ? <span className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">첨부</span>
-        : <span className="text-xs text-text-muted">미첨부</span>,
+      cell: ({ getValue }) => {
+        const url = getCertFileUrl(getValue() as string | null);
+        return url
+          ? (
+            <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+              className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-200 cursor-pointer">
+              첨부
+            </a>
+          )
+          : <span className="text-xs text-text-muted">미첨부</span>;
+      },
     },
     {
       accessorKey: "matUid", header: "LOT No.", size: 160,
@@ -286,13 +305,6 @@ export default function IqcHistoryPage() {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
-
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("material.iqcHistory.stats.total")} value={stats.total} icon={FileText} color="blue" />
-        <StatCard label={t("material.iqcHistory.stats.pass")} value={stats.pass} icon={CheckCircle} color="green" />
-        <StatCard label={t("material.iqcHistory.stats.fail")} value={stats.fail} icon={XCircle} color="red" />
-        <StatCard label={t("material.iqcHistory.stats.passRate")} value={`${stats.passRate}%`} icon={BarChart3} color="purple" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

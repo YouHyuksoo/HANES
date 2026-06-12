@@ -9,10 +9,9 @@
  * 2. **대상**: 입하 후 PENDING, IQC_IN_PROGRESS 상태인 건
  * 3. API: GET /material/lots, POST /material/iqc-history
  */
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Shield, Search, RefreshCw, Clock, ClipboardCheck, CheckCircle, XCircle } from 'lucide-react';
-import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
+import { Shield, Search, RefreshCw } from 'lucide-react';
+import { Card, CardContent, Button, Input } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import IqcTable from '@/components/material/IqcTable';
 import IqcModal from '@/components/material/IqcModal';
@@ -23,7 +22,6 @@ export default function IqcPage() {
 
   const {
     filteredItems,
-    stats,
     loading,
     statusFilter, setStatusFilter,
     methodFilter, setMethodFilter,
@@ -49,13 +47,6 @@ export default function IqcPage() {
         <Button variant="secondary" size="sm" onClick={refresh}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> {t('common.refresh')}
         </Button>
-      </div>
-
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t('material.iqc.stats.pending')} value={stats.pending} icon={Clock} color="yellow" />
-        <StatCard label={t('material.iqc.stats.inProgress')} value={stats.inProgress} icon={ClipboardCheck} color="blue" />
-        <StatCard label={t('material.iqc.stats.passed')} value={stats.passed} icon={CheckCircle} color="green" />
-        <StatCard label={t('material.iqc.stats.failed')} value={stats.failed} icon={XCircle} color="red" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none">

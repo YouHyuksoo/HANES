@@ -1694,6 +1694,8 @@
       "failed": "不合格",
       "inspectItem": "检查项目",
       "spec": "规格",
+      "lsl": "下限",
+      "usl": "上限",
       "judgeCriteria": "判定基准",
       "measuredValue": "测量值",
       "judgment": "判定",

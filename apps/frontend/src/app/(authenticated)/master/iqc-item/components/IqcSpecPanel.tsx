@@ -6,11 +6,11 @@
  * 초보자 가이드:
  * 1. 선택된 품목(itemCode)에 대한 IQC 기준을 표시/편집
  * 2. 헤더: 시료수(number), 파괴검사여부(Y/N 토글)
- * 3. 검사항목 DataGrid: 행 추가/삭제 + 인라인 편집 (검사항목 선택 + LSL/USL)
+ * 3. 검사항목 DataGrid: 행 추가/삭제 + 행별 수정 버튼으로 인라인 편집
  * 4. [저장] 한 번에 POST /master/iqc-part-specs
  */
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Save, ClipboardList } from "lucide-react";
+import { Plus, Trash2, Save, ClipboardList, Pencil, Check, X } from "lucide-react";
 import { Button, Card, CardContent } from "@/components/ui";
 import type { IqcPoolItem, IqcPartSpec, IqcSpecRow } from "../types";
 import IqcTemplatePickerModal from "./IqcTemplatePickerModal";
@@ -36,9 +36,15 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
+  // 수정 중인 행 인덱스 (-1: 없음)
+  const [editingIdx, setEditingIdx] = useState<number>(-1);
+  // 수정 임시 값
+  const [editDraft, setEditDraft] = useState<IqcSpecRow | null>(null);
 
   const loadSpec = useCallback(async (code: string) => {
     setLoading(true);
+    setEditingIdx(-1);
+    setEditDraft(null);
     try {
       const res = await api.get(`/master/iqc-part-specs/${encodeURIComponent(code)}`);
       if (res.data?.data) {
@@ -76,6 +82,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
       loadSpec(itemCode);
     } else {
       setSpec(EMPTY_SPEC);
+      setEditingIdx(-1);
+      setEditDraft(null);
     }
   }, [itemCode, loadSpec]);
 
@@ -88,17 +96,20 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
     const maxSeq = spec.items.length > 0
       ? Math.max(...spec.items.map((i) => i.seq))
       : 0;
-    setSpec((prev) => ({
-      ...prev,
-      items: [
-        ...prev.items,
-        { seq: maxSeq + 1, inspItemCode: '', lsl: null, usl: null, judgeCriteria: null, useYn: 'Y' },
-      ],
-    }));
+    const newRow: IqcSpecRow = { seq: maxSeq + 1, inspItemCode: '', lsl: null, usl: null, judgeCriteria: null, useYn: 'Y' };
+    setSpec((prev) => ({ ...prev, items: [...prev.items, newRow] }));
     setDirty(true);
+    // 새 행은 바로 수정 모드로
+    const newIdx = spec.items.length;
+    setEditingIdx(newIdx);
+    setEditDraft({ ...newRow });
   };
 
   const removeRow = (idx: number) => {
+    if (editingIdx === idx) {
+      setEditingIdx(-1);
+      setEditDraft(null);
+    }
     setSpec((prev) => {
       const newItems = prev.items
         .filter((_, i) => i !== idx)
@@ -108,27 +119,49 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
     setDirty(true);
   };
 
-  const updateRow = (idx: number, field: keyof IqcSpecRow, value: unknown) => {
+  const startEdit = (idx: number) => {
+    setEditingIdx(idx);
+    setEditDraft({ ...spec.items[idx] });
+  };
+
+  const cancelEdit = () => {
+    // 새로 추가했지만 취소 — inspItemCode가 비어 있으면 행 제거
+    if (editDraft && !editDraft.inspItemCode) {
+      removeRow(editingIdx);
+    }
+    setEditingIdx(-1);
+    setEditDraft(null);
+  };
+
+  const confirmEdit = () => {
+    if (editDraft === null) return;
     setSpec((prev) => {
       const items = [...prev.items];
-      if (field === 'inspItemCode') {
-        const pool = poolItems.find((p) => p.inspItemCode === value);
-        items[idx] = {
-          ...items[idx],
-          inspItemCode: value as string,
-          inspItemName: pool?.inspItemName ?? '',
-          judgeMethod: pool?.judgeMethod,
-          unit: pool?.unit ?? null,
-          lsl: null,
-          usl: null,
-          judgeCriteria: null,
-        };
-      } else {
-        items[idx] = { ...items[idx], [field]: value };
-      }
+      items[editingIdx] = { ...editDraft };
       return { ...prev, items };
     });
     setDirty(true);
+    setEditingIdx(-1);
+    setEditDraft(null);
+  };
+
+  const updateDraft = (field: keyof IqcSpecRow, value: unknown) => {
+    if (!editDraft) return;
+    if (field === 'inspItemCode') {
+      const pool = poolItems.find((p) => p.inspItemCode === value);
+      setEditDraft({
+        ...editDraft,
+        inspItemCode: value as string,
+        inspItemName: pool?.inspItemName ?? '',
+        judgeMethod: pool?.judgeMethod,
+        unit: pool?.unit ?? null,
+        lsl: null,
+        usl: null,
+        judgeCriteria: null,
+      });
+    } else {
+      setEditDraft({ ...editDraft, [field]: value });
+    }
   };
 
   const handleSave = async () => {
@@ -160,10 +193,11 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
     }
   };
 
-  // 템플릿 적용 — 현재 품목 항목을 통째로 대체 (로컬 상태, [저장]으로 확정)
   const applyTemplate = (items: IqcSpecRow[], sampleQty: number, isDest: string) => {
     setSpec((prev) => ({ ...prev, sampleQty, isDest, items }));
     setDirty(true);
+    setEditingIdx(-1);
+    setEditDraft(null);
   };
 
   if (!itemCode) {
@@ -247,14 +281,14 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-bg-elevated border-b border-border">
                 <tr>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-12">순서</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-10">순서</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium">검사항목</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-20">종류</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-28">하한(LSL)</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-28">상한(USL)</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">하한(LSL)</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">상한(USL)</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium">판정기준</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-16">단위</th>
-                  <th className="px-3 py-2 w-10"></th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-14">단위</th>
+                  <th className="px-3 py-2 w-20"></th>
                 </tr>
               </thead>
               <tbody>
@@ -266,25 +300,105 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                   </tr>
                 )}
                 {spec.items.map((row, idx) => {
-                  const isMeasure = row.judgeMethod === 'MEASURE';
+                  const isEditing = editingIdx === idx;
+                  const draft = isEditing ? editDraft! : row;
+                  const isMeasure = draft.judgeMethod === 'MEASURE';
+
+                  if (isEditing) {
+                    return (
+                      <tr key={idx} className="border-b border-primary/30 bg-primary/5">
+                        <td className="px-3 py-2 text-text-muted text-center">{row.seq}</td>
+                        <td className="px-3 py-2">
+                          <select
+                            value={draft.inspItemCode}
+                            onChange={(e) => updateDraft('inspItemCode', e.target.value)}
+                            className="w-full border border-border rounded px-2 py-1 bg-surface text-text text-sm focus:border-primary focus:outline-none"
+                          >
+                            <option value="">-- 선택 --</option>
+                            {poolItems.filter((p) => p.useYn === 'Y').map((p) => (
+                              <option key={p.inspItemCode} value={p.inspItemCode}>
+                                {p.inspItemCode} {p.inspItemName}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          {draft.judgeMethod ? (
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              isMeasure
+                                ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+                            }`}>
+                              {isMeasure ? '측정형' : '판정형'}
+                            </span>
+                          ) : <span className="text-text-muted text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          {isMeasure ? (
+                            <input
+                              type="number"
+                              value={draft.lsl ?? ''}
+                              onChange={(e) => updateDraft('lsl', e.target.value === '' ? null : Number(e.target.value))}
+                              className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
+                              placeholder="하한"
+                            />
+                          ) : <span className="text-text-muted text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          {isMeasure ? (
+                            <input
+                              type="number"
+                              value={draft.usl ?? ''}
+                              onChange={(e) => updateDraft('usl', e.target.value === '' ? null : Number(e.target.value))}
+                              className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
+                              placeholder="상한"
+                            />
+                          ) : <span className="text-text-muted text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={draft.judgeCriteria ?? ''}
+                            onChange={(e) => updateDraft('judgeCriteria', e.target.value === '' ? null : e.target.value)}
+                            placeholder="판정기준 입력"
+                            className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-text-muted text-xs">{draft.unit ?? '-'}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={confirmEdit}
+                              className="flex items-center gap-0.5 rounded bg-primary px-2 py-1 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
+                              title="확인"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              확인
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="flex items-center gap-0.5 rounded border border-border px-2 py-1 text-xs text-text-muted hover:text-text transition-colors"
+                              title="취소"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              취소
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
                   return (
                     <tr key={idx} className="border-b border-border hover:bg-bg-elevated transition-colors">
-                      <td className="px-3 py-1.5 text-text-muted text-center">{row.seq}</td>
-                      <td className="px-3 py-1.5">
-                        <select
-                          value={row.inspItemCode}
-                          onChange={(e) => updateRow(idx, 'inspItemCode', e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 bg-bg text-text text-sm"
-                        >
-                          <option value="">-- 선택 --</option>
-                          {poolItems.filter((p) => p.useYn === 'Y').map((p) => (
-                            <option key={p.inspItemCode} value={p.inspItemCode}>
-                              {p.inspItemCode} {p.inspItemName}
-                            </option>
-                          ))}
-                        </select>
+                      <td className="px-3 py-2 text-text-muted text-center">{row.seq}</td>
+                      <td className="px-3 py-2 font-medium text-text">
+                        {row.inspItemName || row.inspItemCode || <span className="text-text-muted italic">미선택</span>}
+                        {row.inspItemCode && (
+                          <span className="ml-1.5 text-xs text-text-muted">({row.inspItemCode})</span>
+                        )}
                       </td>
-                      <td className="px-3 py-1.5">
+                      <td className="px-3 py-2">
                         {row.judgeMethod ? (
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
                             row.judgeMethod === 'MEASURE'
@@ -293,58 +407,40 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                           }`}>
                             {row.judgeMethod === 'MEASURE' ? '측정형' : '판정형'}
                           </span>
-                        ) : (
-                          <span className="text-text-muted text-xs">-</span>
-                        )}
+                        ) : <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-1.5">
-                        {isMeasure ? (
-                          <input
-                            type="number"
-                            value={row.lsl ?? ''}
-                            onChange={(e) => updateRow(idx, 'lsl', e.target.value === '' ? null : Number(e.target.value))}
-                            className="w-full border border-border rounded px-2 py-1 text-sm bg-bg text-text"
-                          />
-                        ) : (
-                          <span className="text-text-muted text-xs">-</span>
-                        )}
+                      <td className="px-3 py-2 text-right tabular-nums text-text">
+                        {row.lsl !== null ? row.lsl : <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-1.5">
-                        {isMeasure ? (
-                          <input
-                            type="number"
-                            value={row.usl ?? ''}
-                            onChange={(e) => updateRow(idx, 'usl', e.target.value === '' ? null : Number(e.target.value))}
-                            className="w-full border border-border rounded px-2 py-1 text-sm bg-bg text-text"
-                          />
-                        ) : (
-                          <span className="text-text-muted text-xs">-</span>
-                        )}
+                      <td className="px-3 py-2 text-right tabular-nums text-text">
+                        {row.usl !== null ? row.usl : <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-1.5">
-                        {!isMeasure ? (
-                          <input
-                            type="text"
-                            value={row.judgeCriteria ?? ''}
-                            onChange={(e) => updateRow(idx, 'judgeCriteria', e.target.value === '' ? null : e.target.value)}
-                            placeholder="판정기준"
-                            className="w-full border border-border rounded px-2 py-1 text-sm bg-bg text-text"
-                          />
-                        ) : (
-                          <span className="text-text-muted text-xs">-</span>
-                        )}
+                      <td className="px-3 py-2 text-text max-w-[200px]">
+                        <span className="block truncate" title={row.judgeCriteria ?? undefined}>
+                          {row.judgeCriteria || <span className="text-text-muted text-xs">-</span>}
+                        </span>
                       </td>
-                      <td className="px-3 py-1.5 text-text-muted text-xs">
-                        {row.unit ?? '-'}
-                      </td>
-                      <td className="px-3 py-1.5">
-                        <button
-                          onClick={() => removeRow(idx)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
-                          aria-label="행 삭제"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="px-3 py-2 text-text-muted text-xs">{row.unit ?? '-'}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEdit(idx)}
+                            disabled={editingIdx !== -1}
+                            className="flex items-center gap-0.5 rounded border border-border px-2 py-1 text-xs text-text-muted hover:border-primary hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            title="수정"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            수정
+                          </button>
+                          <button
+                            onClick={() => removeRow(idx)}
+                            disabled={editingIdx !== -1}
+                            className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-1"
+                            aria-label="행 삭제"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

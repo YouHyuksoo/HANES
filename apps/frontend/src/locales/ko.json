@@ -2024,6 +2024,8 @@
       "failed": "불합격",
       "inspectItem": "검사항목",
       "spec": "규격",
+      "lsl": "하한",
+      "usl": "상한",
       "judgeCriteria": "판정기준",
       "measuredValue": "측정값",
       "judgment": "판정",

@@ -1694,6 +1694,8 @@
       "failed": "Không đạt",
       "inspectItem": "Hạng mục kiểm tra",
       "spec": "Quy cách",
+      "lsl": "Giới hạn dưới",
+      "usl": "Giới hạn trên",
       "judgeCriteria": "Tiêu chuẩn phán định",
       "measuredValue": "Giá trị đo",
       "judgment": "Phán định",

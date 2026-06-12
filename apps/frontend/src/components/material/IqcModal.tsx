@@ -135,11 +135,17 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     const fetchItems = async () => {
       setLoadingItems(true);
       try {
-        // 품목별 IQC 기준(IQC_PART_SPECS/IQC_PART_SPEC_ITEMS)에 등록된 검사항목을 조회한다.
-        const res = await api.get(
-          `/master/iqc-part-specs/${encodeURIComponent(selectedItem.itemCode)}/resolve-items`,
-        );
-        setInspectItems(res.data?.data ?? []);
+        // 검사항목 + 기본 시료수를 병렬로 조회한다.
+        const [itemsRes, specRes] = await Promise.allSettled([
+          api.get(`/master/iqc-part-specs/${encodeURIComponent(selectedItem.itemCode)}/resolve-items`),
+          api.get(`/master/iqc-part-specs/${encodeURIComponent(selectedItem.itemCode)}`),
+        ]);
+
+        setInspectItems(itemsRes.status === 'fulfilled' ? (itemsRes.value.data?.data ?? []) : []);
+
+        if (specRes.status === 'fulfilled' && specRes.value.data?.data?.sampleQty) {
+          setSampleQty(String(specRes.value.data.data.sampleQty));
+        }
       } catch {
         setInspectItems([]);
       } finally {
@@ -445,6 +451,8 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                             <th className="text-left px-2 py-1.5 font-medium text-text-muted">#</th>
                             <th className="text-left px-2 py-1.5 font-medium text-text-muted">{t("material.iqc.inspectItem", "검사항목")}</th>
                             <th className="text-left px-2 py-1.5 font-medium text-text-muted">{t("material.iqc.spec", "규격")}</th>
+                            <th className="text-right px-2 py-1.5 font-medium text-text-muted">{t("material.iqc.lsl", "하한")}</th>
+                            <th className="text-right px-2 py-1.5 font-medium text-text-muted">{t("material.iqc.usl", "상한")}</th>
                             <th className="text-left px-2 py-1.5 font-medium text-text-muted">{t("material.iqc.judgeCriteria", "판정기준")}</th>
                             <th className="text-center px-2 py-1.5 font-medium text-text-muted">{t("material.iqc.measuredValue", "측정값")}</th>
                             <th className="text-center px-2 py-1.5 font-medium text-text-muted">{t("material.iqc.judgment", "판정")}</th>
@@ -456,7 +464,13 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                               <td className="px-2 py-1.5 text-text-muted">{idx + 1}</td>
                               <td className="px-2 py-1.5 font-medium text-text">{row.inspectItem}</td>
                               <td className="px-2 py-1.5 text-text-muted">
-                                {row.spec || [row.lsl !== null ? `LSL ${row.lsl}` : null, row.usl !== null ? `USL ${row.usl}` : null].filter(Boolean).join(" / ") || "-"}
+                                {row.spec || "-"}
+                              </td>
+                              <td className="px-2 py-1.5 text-right tabular-nums text-text-muted">
+                                {row.lsl !== null ? row.lsl : "-"}
+                              </td>
+                              <td className="px-2 py-1.5 text-right tabular-nums text-text-muted">
+                                {row.usl !== null ? row.usl : "-"}
                               </td>
                               <td className="px-2 py-1.5 text-text-muted max-w-[180px]">
                                 <span className="block truncate" title={row.judgeCriteria || undefined}>
