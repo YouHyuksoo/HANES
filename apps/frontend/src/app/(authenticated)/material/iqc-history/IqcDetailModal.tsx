@@ -91,7 +91,7 @@ export default function IqcDetailModal({ record, onClose }: Props) {
   const title = `IQC 검사 상세 — ${record?.itemName ?? record?.itemCode ?? ""} (${formatDate(record?.inspectDate ?? "")})`;
 
   return (
-    <Modal isOpen={!!record} onClose={onClose} title={title} size="xl">
+    <Modal isOpen={!!record} onClose={onClose} title={title} size="full">
       {record && (
         <div className="flex flex-col gap-4">
           {/* 헤더 정보 */}
@@ -108,7 +108,7 @@ export default function IqcDetailModal({ record, onClose }: Props) {
 
           {/* 시리얼 상세 */}
           {serials.length > 0 ? (
-            <div className="flex gap-3 min-h-0" style={{ height: "340px" }}>
+            <div className="flex gap-3 min-h-0" style={{ height: "480px" }}>
               {/* 시리얼 목록 */}
               <div className="w-52 flex-shrink-0 flex flex-col border border-border rounded-lg overflow-hidden">
                 <div className="px-3 py-2 bg-surface border-b border-border text-xs font-semibold text-text-muted">
