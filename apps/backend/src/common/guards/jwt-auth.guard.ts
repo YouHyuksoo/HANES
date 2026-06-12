@@ -27,6 +27,14 @@ import { RequestUser, RequestWithUser, setRequestUser } from '../utils/request-u
 
 const READONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+/** 유저 캐시 엔트리 */
+interface CachedUser {
+  user: RequestUser;
+  expiresAt: number;
+}
+
+const USER_CACHE_TTL_MS = 60_000; // 60초
+
 /**
  * 인증된 사용자 정보 인터페이스
  */
@@ -36,6 +44,8 @@ export type AuthenticatedRequest = RequestWithUser & { user: AuthenticatedUser }
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   private readonly logger = new Logger(JwtAuthGuard.name);
+  // 모든 요청마다 DB를 치지 않도록 인메모리 캐시 (TTL 60초)
+  private readonly cache = new Map<string, CachedUser>();
 
   constructor(
     @InjectRepository(User)
@@ -65,44 +75,72 @@ export class JwtAuthGuard implements CanActivate {
       const companyHeader = request.headers['x-company'] as string | undefined;
       const plantHeader = request.headers['x-plant'] as string | undefined;
 
-      // DB에서 userId로 사용자 조회
-      const user = await this.userRepository.findOne({
-        where: {
-          email: token,
-          ...(companyHeader ? { company: companyHeader } : {}),
-          ...(plantHeader ? { plant: plantHeader } : {}),
-        },
-        select: ['email', 'role', 'status', 'company', 'plant'],
-      });
+      const cacheKey = `${token}|${companyHeader ?? ''}|${plantHeader ?? ''}`;
+      const now = Date.now();
+      const cached = this.cache.get(cacheKey);
 
-      if (!user || user.status !== 'ACTIVE') {
-        throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+      let resolvedUser: RequestUser;
+
+      if (cached && cached.expiresAt > now) {
+        resolvedUser = cached.user;
+      } else {
+        // 만료됐거나 없으면 DB 조회
+        const user = await this.userRepository.findOne({
+          where: {
+            email: token,
+            ...(companyHeader ? { company: companyHeader } : {}),
+            ...(plantHeader ? { plant: plantHeader } : {}),
+          },
+          select: ['email', 'role', 'status', 'company', 'plant'],
+        });
+
+        if (!user || user.status !== 'ACTIVE') {
+          this.cache.delete(cacheKey);
+          throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+        }
+
+        const resolvedCompany = companyHeader || user.company;
+        const resolvedPlant = plantHeader || user.plant;
+
+        if (!resolvedCompany || !resolvedPlant) {
+          throw new UnauthorizedException('회사/사업장 정보가 없습니다. 재로그인 해주세요.');
+        }
+
+        resolvedUser = {
+          id: user.email,
+          email: user.email,
+          role: user.role,
+          company: resolvedCompany,
+          plant: resolvedPlant,
+        };
+        this.cache.set(cacheKey, { user: resolvedUser, expiresAt: now + USER_CACHE_TTL_MS });
+
+        // 오래된 항목 주기적으로 정리 (캐시가 500개 초과 시)
+        if (this.cache.size > 500) {
+          for (const [k, v] of this.cache) {
+            if (v.expiresAt <= now) this.cache.delete(k);
+          }
+        }
       }
 
-      const resolvedCompany = companyHeader || user.company;
-      const resolvedPlant = plantHeader || user.plant;
+      const resolvedCompany = resolvedUser.company;
+      const resolvedPlant = resolvedUser.plant;
 
       if (!resolvedCompany || !resolvedPlant) {
         throw new UnauthorizedException('회사/사업장 정보가 없습니다. 재로그인 해주세요.');
       }
 
       // 요청 객체에 사용자 정보 추가
-      setRequestUser(request, {
-        id: user.email,
-        email: user.email,
-        role: user.role,
-        company: resolvedCompany,
-        plant: resolvedPlant,
-      });
+      setRequestUser(request, resolvedUser);
 
       if (
-        user.role === 'VIEWER' &&
+        resolvedUser.role === 'VIEWER' &&
         !READONLY_HTTP_METHODS.has(request.method.toUpperCase())
       ) {
         throw new ForbiddenException('VIEWER role is read-only.');
       }
 
-      this.logger.debug(`User authenticated: ${user.email}`);
+      this.logger.debug(`User authenticated: ${resolvedUser.email}`);
       return true;
     } catch (error) {
       if (error instanceof UnauthorizedException || error instanceof ForbiddenException) throw error;

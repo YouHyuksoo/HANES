@@ -30,9 +30,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         migrations: [__dirname + '/migrations/oracle/*{.ts,.js}'],
         migrationsRun: false,
         extra: {
-          poolMax: 10,
-          poolMin: 2,
-          poolIncrement: 1,
+          poolMax: 20,
+          poolMin: 4,
+          poolIncrement: 2,
           poolTimeout: 60,
           queueTimeout: 60000,
         },
