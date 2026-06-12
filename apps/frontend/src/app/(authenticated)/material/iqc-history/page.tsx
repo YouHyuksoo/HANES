@@ -324,7 +324,6 @@ export default function IqcHistoryPage() {
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.iqcHistory.title")}
-          onRowClick={(row) => setDetailRecord(row as IqcDetailRecord)}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0 items-center">
               <div className="w-48 min-w-0 flex-shrink-0">
