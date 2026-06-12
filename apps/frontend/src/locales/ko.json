@@ -270,7 +270,7 @@
     "quality.msa": "계측기교정관리",
     "quality.audit": "내부심사",
     "quality.requestInspect": "의뢰검사 입력",
-    "quality.selfInspectHistory": "자주검사 이력",
+    "quality.selfInspectHistory": "공정샘풀검사",
     "equipment": "설비관리",
     "equipment.master": "설비마스터",
     "equipment.inspectItemMaster": "점검항목마스터",
