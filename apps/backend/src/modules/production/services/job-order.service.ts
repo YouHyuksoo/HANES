@@ -304,8 +304,9 @@ export class JobOrderService {
       });
       const saved = await queryRunner.manager.save(jobOrder);
 
-      if (dto.autoCreateChildren) {
-        await this.createChildOrdersRecursive(queryRunner, saved, dto, saved.orderNo, 0);
+      // BOM 자동전개 기본 ON: autoCreateChildren을 명시적으로 false로 보낸 경우에만 단건 생성
+      if (dto.autoCreateChildren !== false) {
+        await this.createChildOrdersRecursive(queryRunner, saved, dto, saved.orderNo, 0, new Set());
       }
 
       return this.jobOrderRepository.findOne({
@@ -315,15 +316,33 @@ export class JobOrderService {
     });
   }
 
-  /** BOM 기반 반제품 작업지시 재귀 자동생성 (최대 5단계) */
+  /**
+   * BOM 기반 반제품 작업지시 재귀 자동생성
+   * - BOM 하위 레벨 깊이에 관계없이 전 계층의 반제품(SEMI_PRODUCT)을 모두 생성한다.
+   * - 깊이 제한은 두지 않되, BOM 순환참조(A→…→A)는 조상 경로 추적으로 차단해 무한루프를 막는다.
+   * - depth는 안전 상한(50) 백스톱 용도로만 사용한다(정상 BOM 깊이를 초과하는 비정상 데이터 방어).
+   */
   private async createChildOrdersRecursive(
     queryRunner: QueryRunner,
     parent: JobOrder,
     dto: CreateJobOrderDto,
     rootOrderNo: string,
     depth: number,
+    ancestorItemCodes: Set<string>,
   ): Promise<void> {
-    if (depth >= 5) return;
+    // BOM 순환참조 방지: 현재 품목이 이미 조상 경로에 있으면 사이클 → 중단
+    if (ancestorItemCodes.has(parent.itemCode)) {
+      this.logger.warn(
+        `BOM 순환참조 감지로 전개 중단: ${parent.itemCode} (root=${rootOrderNo}, 경로=${[...ancestorItemCodes].join('>')})`,
+      );
+      return;
+    }
+    // 비정상 데이터 백스톱(정상 BOM은 이 깊이에 도달하지 않음)
+    if (depth >= 50) {
+      this.logger.warn(`BOM 전개 깊이 50 초과로 중단: ${parent.itemCode} (root=${rootOrderNo})`);
+      return;
+    }
+    const nextAncestors = new Set(ancestorItemCodes).add(parent.itemCode);
 
     const bomItems = await this.bomMasterRepository.find({
       where: {
@@ -377,7 +396,7 @@ export class JobOrderService {
         }),
       );
 
-      await this.createChildOrdersRecursive(queryRunner, child, dto, rootOrderNo, depth + 1);
+      await this.createChildOrdersRecursive(queryRunner, child, dto, rootOrderNo, depth + 1, nextAncestors);
     }
   }
 

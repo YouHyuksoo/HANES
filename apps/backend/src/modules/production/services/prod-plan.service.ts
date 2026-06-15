@@ -371,7 +371,7 @@ export class ProdPlanService {
       const saved = await queryRunner.manager.save(jobOrder);
 
       if (dto.autoCreateChildren) {
-        await this.createChildOrdersFromPlanRecursive(queryRunner, saved, saved.orderNo, company, plant, 0);
+        await this.createChildOrdersFromPlanRecursive(queryRunner, saved, saved.orderNo, company, plant, 0, new Set());
       }
 
       await queryRunner.manager
@@ -392,7 +392,11 @@ export class ProdPlanService {
     });
   }
 
-  /** BOM 기반 반제품 자식 작업지시 재귀 자동생성 (최대 5단계) */
+  /**
+   * BOM 기반 반제품 자식 작업지시 재귀 자동생성
+   * - BOM 하위 레벨 깊이에 관계없이 전 계층 반제품(SEMI_PRODUCT)을 모두 생성한다.
+   * - 깊이 제한 대신 BOM 순환참조(조상 경로 추적) 가드로 무한루프를 막고, 깊이 50은 비정상 데이터 백스톱이다.
+   */
   private async createChildOrdersFromPlanRecursive(
     queryRunner: import('typeorm').QueryRunner,
     parent: JobOrder,
@@ -400,8 +404,19 @@ export class ProdPlanService {
     company?: string,
     plant?: string,
     depth: number = 0,
+    ancestorItemCodes: Set<string> = new Set(),
   ): Promise<void> {
-    if (depth >= 5) return;
+    if (ancestorItemCodes.has(parent.itemCode)) {
+      this.logger.warn(
+        `BOM 순환참조 감지로 전개 중단: ${parent.itemCode} (root=${rootOrderNo}, 경로=${[...ancestorItemCodes].join('>')})`,
+      );
+      return;
+    }
+    if (depth >= 50) {
+      this.logger.warn(`BOM 전개 깊이 50 초과로 중단: ${parent.itemCode} (root=${rootOrderNo})`);
+      return;
+    }
+    const nextAncestors = new Set(ancestorItemCodes).add(parent.itemCode);
 
     const bomItems = await this.bomMasterRepo.find({
       where: {
@@ -454,7 +469,7 @@ export class ProdPlanService {
         }),
       );
 
-      await this.createChildOrdersFromPlanRecursive(queryRunner, child, rootOrderNo, company, plant, depth + 1);
+      await this.createChildOrdersFromPlanRecursive(queryRunner, child, rootOrderNo, company, plant, depth + 1, nextAncestors);
     }
   }
 

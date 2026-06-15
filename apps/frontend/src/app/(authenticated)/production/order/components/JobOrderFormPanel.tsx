@@ -55,7 +55,7 @@ const INIT_FORM = {
   custPoNo: "",
   priority: "5",
   remark: "",
-  autoCreateChildren: false,
+  autoCreateChildren: true,
 };
 
 export default function JobOrderFormPanel({ editingOrder, onClose, onSave, animate = true }: Props) {
