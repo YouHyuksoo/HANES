@@ -40,6 +40,7 @@ import {
 /** 작업지시 조회 시 공통으로 사용하는 select 필드 */
 const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
   orderNo: true, planNo: true, itemCode: true, lineCode: true, routingCode: true,
+  processCode: true, equipCode: true,
   planQty: true, planDate: true, priority: true, status: true,
   erpSyncYn: true, goodQty: true, defectQty: true,
   startAt: true, endAt: true, custPoNo: true, remark: true,
@@ -447,6 +448,8 @@ export class JobOrderService {
       updateData.routingCode = await this.resolveRoutingCodeByItem(dto.itemCode, company, plant);
     }
     if (dto.lineCode !== undefined) updateData.lineCode = dto.lineCode;
+    if (dto.processCode !== undefined) updateData.processCode = dto.processCode || null;
+    if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode || null;
     if (dto.planQty !== undefined) updateData.planQty = dto.planQty;
     if (dto.planDate !== undefined) updateData.planDate = dto.planDate ? new Date(dto.planDate) : null;
     if (dto.priority !== undefined) updateData.priority = dto.priority;
