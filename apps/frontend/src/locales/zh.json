@@ -268,7 +268,7 @@
     "quality.msa": "量具校准管理",
     "quality.audit": "内部审核",
     "quality.requestInspect": "委托检查录入",
-    "quality.selfInspectHistory": "自检历史",
+    "quality.selfInspectHistory": "工序抽样检验历史",
     "equipment": "设备管理",
     "equipment.master": "设备主数据管理",
     "equipment.inspectItemMaster": "检查项目主数据",
@@ -1134,7 +1134,7 @@
       "backflush": "倒冲",
       "preIssue": "预发料",
       "noBomMaterial": "此工艺路线物料没有注册的 BOM 物料。",
-      "selfInspectEditorTitle": "工序产品检验"
+      "selfInspectEditorTitle": "工序抽样检验"
     },
     "workCalendar": {
       "title": "生产月历管理",
@@ -2734,6 +2734,7 @@
       "sectionProcessLineEquip": "工序 / 产线 / 设备",
       "sectionRouting": "工艺路线信息",
       "noRouting": "此品目未注册工艺路线",
+      "noEquipForProcess": "所选工序没有已注册的设备。请先在设备主数据中为该工序注册设备。",
       "partType": "品目类型",
       "planDate": "计划日期",
       "priority": "优先级",
@@ -6156,7 +6157,7 @@
     "history": {
       "qualityCriteria": "良品条件",
       "phase2": "Phase 2 计划中",
-      "criteriaPlaceholder": "与自主检查主数据关联后显示",
+      "criteriaPlaceholder": "与工序抽样检验主数据关联后显示",
       "goodTotal": "良品合计",
       "defectTotal": "不良合计",
       "recentHistory": "作业历史",
@@ -6164,8 +6165,8 @@
       "noHistory": "无作业历史"
     },
     "input": {
-      "selfInspect": "自主检查",
-      "selfInspectComingSoon": "自主检查功能将在Phase 3中提供",
+      "selfInspect": "工序抽样检验",
+      "selfInspectComingSoon": "工序抽样检验功能将在Phase 3中提供",
       "defect": "不良录入",
       "defectComingSoon": "不良录入功能将在Phase 3中提供",
       "lotSize": "批量单位",
@@ -6271,7 +6272,7 @@
       "check5": "是否备有质量标准文件"
     },
     "selfInspect": {
-      "title": "自主检查",
+      "title": "工序抽样检验",
       "inspect": "检查",
       "first": "首件",
       "mid": "中间件",
@@ -6284,7 +6285,7 @@
       "delegateWarning": "委托检查项目将发送给质量团队。结果确认前实绩输入将被锁定。",
       "delegateBlocking": "等待委托检查结果 — 实绩输入已锁定",
       "delegatePending": "{{count}}件委托检查已注册。等待结果...",
-      "allPass": "自主检查完成（全部PASS）",
+      "allPass": "工序抽样检验完成（全部PASS）",
       "savedWithFail": "{{count}}个项目FAIL，请与质量团队确认。",
       "saveError": "检查结果保存失败",
       "save": "完成检查",
@@ -6296,7 +6297,7 @@
       "reInspectTitle": "复检 (第{{n}}次)",
       "overallPass": "综合PASS",
       "overallFail": "综合FAIL — {{count}}项不合格",
-      "midNotify": "到中间自主检查时间",
+      "midNotify": "到中间工序抽样检验时间",
       "midBlock": "完成中间检查后可继续投入",
       "destructiveWarning": "包含破坏性检查项目。取样时将扣减材料。",
       "prevNgSummary": "上次 SEQ {{n}} NG 结果",
@@ -6352,8 +6353,8 @@
     "visualItem": "判定型项目（无规格）"
   },
   "selfInspectHistory": {
-    "title": "自检历史",
-    "subtitle": "查询自检结果历史",
+    "title": "工序抽样检验历史",
+    "subtitle": "查询工序抽样检验结果历史",
     "orderNo": "工单",
     "processCode": "工序",
     "itemName": "项目名",

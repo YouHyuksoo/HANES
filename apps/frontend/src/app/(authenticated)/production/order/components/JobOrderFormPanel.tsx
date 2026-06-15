@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Search, Loader2 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { PartSearchModal, LineSelect, ProcessSelect, EquipSelect } from "@/components/shared";
+import { useEquipOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 export interface JobOrderFormData {
@@ -74,6 +75,10 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
   }, []);
 
   const [form, setForm] = useState({ ...INIT_FORM });
+
+  /** 선택한 공정에 매핑된 설비 유무 — 없으면 설비 드롭다운 아래 안내 표시 */
+  const { options: equipOptions, isLoading: equipLoading } = useEquipOptions(form.processCode || undefined);
+  const noEquipForProcess = !!form.processCode && !equipLoading && equipOptions.length === 0;
 
   /** 품목 기반 라우팅 자동 조회 */
   const fetchRouting = useCallback(async (itemCode: string) => {
@@ -241,8 +246,15 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
               onChange={v => setField("lineCode", v)} fullWidth />
             <ProcessSelect label={t("production.order.process")} value={form.processCode}
               onChange={v => setField("processCode", v)} fullWidth />
-            <EquipSelect label={t("production.order.equip")} value={form.equipCode}
-              onChange={v => setField("equipCode", v)} processCode={form.processCode || undefined} fullWidth />
+            <div>
+              <EquipSelect label={t("production.order.equip")} value={form.equipCode}
+                onChange={v => setField("equipCode", v)} processCode={form.processCode || undefined} fullWidth />
+              {noEquipForProcess && (
+                <p className="mt-1 text-xs text-amber-500 dark:text-amber-400">
+                  {t("production.order.noEquipForProcess")}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* 비고 */}

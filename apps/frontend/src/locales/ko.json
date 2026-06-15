@@ -270,7 +270,7 @@
     "quality.msa": "계측기교정관리",
     "quality.audit": "내부심사",
     "quality.requestInspect": "의뢰검사 입력",
-    "quality.selfInspectHistory": "공정샘풀검사",
+    "quality.selfInspectHistory": "공정샘플검사",
     "equipment": "설비관리",
     "equipment.master": "설비마스터",
     "equipment.inspectItemMaster": "점검항목마스터",
@@ -1461,7 +1461,7 @@
       "backflush": "백플러시",
       "preIssue": "선투입",
       "noBomMaterial": "이 라우팅 품목에 등록된 BOM 자재가 없습니다.",
-      "selfInspectEditorTitle": "공정생품검사"
+      "selfInspectEditorTitle": "공정샘플검사"
     },
     "workCalendar": {
       "title": "생산월력관리",
@@ -3064,6 +3064,7 @@
       "sectionProcessLineEquip": "공정 / 라인 / 설비",
       "sectionRouting": "라우팅 정보",
       "noRouting": "라우팅 미등록 품목입니다",
+      "noEquipForProcess": "선택한 공정에 등록된 설비가 없습니다. 설비 마스터에서 해당 공정 설비를 먼저 등록하세요.",
       "partType": "품목유형",
       "planDate": "계획일",
       "priority": "우선순위",
@@ -6190,7 +6191,7 @@
     "history": {
       "qualityCriteria": "양품조건",
       "phase2": "Phase 2 연동 예정",
-      "criteriaPlaceholder": "자주검사 마스터 연동 후 표시됩니다",
+      "criteriaPlaceholder": "공정샘플검사 마스터 연동 후 표시됩니다",
       "goodTotal": "양품 합계",
       "defectTotal": "불량 합계",
       "recentHistory": "작업이력",
@@ -6386,8 +6387,8 @@
     "visualItem": "판정형 항목 (규격 없음)"
   },
   "selfInspectHistory": {
-    "title": "자주검사 이력",
-    "subtitle": "자주검사 결과 이력을 조회합니다",
+    "title": "공정샘플검사 이력",
+    "subtitle": "공정샘플검사 결과 이력을 조회합니다",
     "orderNo": "작업지시",
     "processCode": "공정",
     "itemName": "항목명",

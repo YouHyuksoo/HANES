@@ -268,7 +268,7 @@
     "quality.msa": "Gauge Calibration (MSA)",
     "quality.audit": "Internal Audit",
     "quality.requestInspect": "Request Inspection",
-    "quality.selfInspectHistory": "Self-Inspect History",
+    "quality.selfInspectHistory": "Process Sample Inspection History",
     "equipment": "Equipment",
     "equipment.master": "Equipment Master Mgmt",
     "equipment.inspectItemMaster": "Inspect Item Master",
@@ -1148,7 +1148,7 @@
       "backflush": "Backflush",
       "preIssue": "Pre-Issue",
       "noBomMaterial": "No BOM materials are registered for this routing item.",
-      "selfInspectEditorTitle": "In-Process Inspection"
+      "selfInspectEditorTitle": "Process Sample Inspection"
     },
     "workCalendar": {
       "title": "Work Calendar",
@@ -2748,6 +2748,7 @@
       "sectionProcessLineEquip": "Process / Line / Equipment",
       "sectionRouting": "Routing Info",
       "noRouting": "No routing registered for this item",
+      "noEquipForProcess": "No equipment is registered for the selected process. Please register equipment for this process in the equipment master first.",
       "partType": "Part Type",
       "planDate": "Plan Date",
       "priority": "Priority",
@@ -6170,7 +6171,7 @@
     "history": {
       "qualityCriteria": "Quality Criteria",
       "phase2": "Phase 2 coming",
-      "criteriaPlaceholder": "Will display after self-inspection master is linked",
+      "criteriaPlaceholder": "Will display after process sample inspection master is linked",
       "goodTotal": "Good Total",
       "defectTotal": "Defect Total",
       "recentHistory": "Work History",
@@ -6178,8 +6179,8 @@
       "noHistory": "No work history"
     },
     "input": {
-      "selfInspect": "Self Inspect",
-      "selfInspectComingSoon": "Self-inspection will be available in Phase 3",
+      "selfInspect": "Process Sample Inspection",
+      "selfInspectComingSoon": "Process sample inspection will be available in Phase 3",
       "defect": "Defect Input",
       "defectComingSoon": "Defect input will be available in Phase 3",
       "lotSize": "Lot Size",
@@ -6285,7 +6286,7 @@
       "check5": "Quality standard document in place"
     },
     "selfInspect": {
-      "title": "Self-Inspection",
+      "title": "Process Sample Inspection",
       "inspect": "Inspection",
       "first": "First-off",
       "mid": "Mid-process",
@@ -6298,7 +6299,7 @@
       "delegateWarning": "Delegated inspection items will be sent to QC. Production input is blocked until results are confirmed.",
       "delegateBlocking": "Awaiting delegated inspection result — Production input is blocked",
       "delegatePending": "{{count}} delegated inspection(s) registered. Awaiting result...",
-      "allPass": "Self-inspection completed (all items PASS)",
+      "allPass": "Process sample inspection completed (all items PASS)",
       "savedWithFail": "{{count}} item(s) FAILED. Please check with QC.",
       "saveError": "Failed to save inspection results",
       "save": "Complete Inspection",
@@ -6366,8 +6367,8 @@
     "visualItem": "Visual item (no spec)"
   },
   "selfInspectHistory": {
-    "title": "Self-Inspect History",
-    "subtitle": "View self-inspection result history",
+    "title": "Process Sample Inspection History",
+    "subtitle": "View process sample inspection result history",
     "orderNo": "Work Order",
     "processCode": "Process",
     "itemName": "Item Name",

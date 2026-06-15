@@ -268,7 +268,7 @@
     "quality.msa": "Quản lý hiệu chuẩn dụng cụ đo",
     "quality.audit": "Đánh giá nội bộ",
     "quality.requestInspect": "Nhập kiểm tra uỷ thác",
-    "quality.selfInspectHistory": "Lịch sử tự kiểm",
+    "quality.selfInspectHistory": "Lịch sử kiểm tra mẫu công đoạn",
     "equipment": "Quản lý thiết bị",
     "equipment.master": "Quản lý dữ liệu chính thiết bị",
     "equipment.inspectItemMaster": "Danh mục hạng mục kiểm tra",
@@ -1134,7 +1134,7 @@
       "backflush": "Backflush",
       "preIssue": "Xuất trước",
       "noBomMaterial": "Không có vật tư BOM được đăng ký cho mặt hàng định tuyến này.",
-      "selfInspectEditorTitle": "Kiểm tra sản phẩm công đoạn"
+      "selfInspectEditorTitle": "Kiểm tra mẫu công đoạn"
     },
     "workCalendar": {
       "title": "Quản lý lịch sản xuất",
@@ -2734,6 +2734,7 @@
       "sectionProcessLineEquip": "Công đoạn / Dây chuyền / Thiết bị",
       "sectionRouting": "Thông tin định tuyến",
       "noRouting": "Chưa đăng ký định tuyến cho mặt hàng này",
+      "noEquipForProcess": "Không có thiết bị nào được đăng ký cho công đoạn đã chọn. Vui lòng đăng ký thiết bị cho công đoạn này trong dữ liệu chuẩn thiết bị trước.",
       "partType": "Loại SP",
       "planDate": "Ngày KH",
       "priority": "Ưu tiên",
@@ -6156,7 +6157,7 @@
     "history": {
       "qualityCriteria": "Tiêu chuẩn sản phẩm tốt",
       "phase2": "Phase 2 dự kiến",
-      "criteriaPlaceholder": "Sẽ hiển thị sau khi liên kết dữ liệu tự kiểm",
+      "criteriaPlaceholder": "Sẽ hiển thị sau khi liên kết dữ liệu kiểm tra mẫu công đoạn",
       "goodTotal": "Tổng sản phẩm tốt",
       "defectTotal": "Tổng sản phẩm lỗi",
       "recentHistory": "Lịch sử sản xuất",
@@ -6164,8 +6165,8 @@
       "noHistory": "Không có lịch sử sản xuất"
     },
     "input": {
-      "selfInspect": "Tự kiểm tra",
-      "selfInspectComingSoon": "Chức năng tự kiểm sẽ có ở Phase 3",
+      "selfInspect": "Kiểm tra mẫu công đoạn",
+      "selfInspectComingSoon": "Chức năng kiểm tra mẫu công đoạn sẽ có ở Phase 3",
       "defect": "Nhập lỗi",
       "defectComingSoon": "Chức năng nhập lỗi sẽ có ở Phase 3",
       "lotSize": "Cỡ lô",
@@ -6271,7 +6272,7 @@
       "check5": "Tài liệu tiêu chuẩn chất lượng được đặt sẵn"
     },
     "selfInspect": {
-      "title": "Tự kiểm tra",
+      "title": "Kiểm tra mẫu công đoạn",
       "inspect": "Kiểm tra",
       "first": "Sản phẩm đầu",
       "mid": "Giữa ca",
@@ -6284,7 +6285,7 @@
       "delegateWarning": "Hạng mục kiểm tra ủy thác sẽ được gửi đến QC. Nhập thực tế sẽ bị khóa cho đến khi có kết quả.",
       "delegateBlocking": "Đang chờ kết quả kiểm tra ủy thác — Nhập thực tế bị khóa",
       "delegatePending": "{{count}} kiểm tra ủy thác đã được đăng ký. Đang chờ kết quả...",
-      "allPass": "Tự kiểm tra hoàn thành (tất cả PASS)",
+      "allPass": "Kiểm tra mẫu công đoạn hoàn thành (tất cả PASS)",
       "savedWithFail": "{{count}} hạng mục FAIL. Vui lòng kiểm tra với QC.",
       "saveError": "Lưu kết quả kiểm tra thất bại",
       "save": "Hoàn thành kiểm tra",
@@ -6352,8 +6353,8 @@
     "visualItem": "Mục đánh giá (không có quy cách)"
   },
   "selfInspectHistory": {
-    "title": "Lịch sử tự kiểm",
-    "subtitle": "Xem lịch sử kết quả tự kiểm",
+    "title": "Lịch sử kiểm tra mẫu công đoạn",
+    "subtitle": "Xem lịch sử kết quả kiểm tra mẫu công đoạn",
     "orderNo": "Lệnh sản xuất",
     "processCode": "Công đoạn",
     "itemName": "Tên mục",
