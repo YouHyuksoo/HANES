@@ -5,6 +5,63 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-EQUIP-INSPECT-ITEM-IMAGE-SEED
+  owner: codex
+  files:
+    - apps/backend/uploads/equip-inspect-items/*.svg
+    - apps/backend/src/migrations/2026-06-16_equip_inspect_item_image_seed.sql
+    - tools/generate-equip-inspect-item-seed-images.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 19:14 KST
+  last_seen: 2026-06-16 19:25 KST
+  expires: 2026-06-16 20:30 KST
+  status: released
+
+- task: T-WIP-MAT-TRANS-SCREEN
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/production/wip-material-stock/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/wip-material-trans/** (신규)
+    - apps/backend/src/modules/inventory/inventory.controller.ts
+    - apps/backend/src/modules/inventory/services/wip-mat-stock.service.ts
+    - apps/frontend/src/config/menuConfig.ts
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - apps/backend/src/migrations/2026-06-16_wip_material_trans_menu.sql
+    - MENU_CATEGORY_ITEMS/ROLE_MENU_PERMISSIONS (JSHANES 40/1000)
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-16 18:50 KST
+  last_seen: 2026-06-16 19:20 KST
+  expires: 2026-06-16 20:30 KST
+  status: released
+
+- task: T-EQUIP-INSPECT-ITEM-IMAGE-PANEL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/equip-inspect-item/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/equip-inspect-item/equip-inspect-item-panel.structure.test.mjs
+    - apps/backend/src/entities/equip-inspect-item-master.entity.ts
+    - apps/backend/src/modules/master/dto/equip-inspect-item-pool.dto.ts
+    - apps/backend/src/modules/master/services/equip-inspect-item-pool.service.ts
+    - apps/backend/src/modules/master/services/equip-inspect-item-pool.service.spec.ts
+    - apps/backend/src/modules/master/controllers/equip-inspect-item-pool.controller.ts
+    - apps/backend/src/modules/master/controllers/equip-inspect-item-pool.controller.spec.ts
+    - apps/backend/src/migrations/2026-06-16_equip_inspect_item_image_url.sql
+    - apps/backend/src/migrations/2026-06-16_equip_inspect_item_missing_fields.sql
+    - packages/shared/src/constants/com-code-values.ts
+    - apps/frontend/src/types/equipment.ts
+    - docs/reports/db-schema-erd.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 18:36 KST
+  last_seen: 2026-06-16 19:00 KST
+  expires: 2026-06-16 20:00 KST
+  status: released
+
 - task: T-KIOSK-CONSUMABLE-SCAN-MAPPING
   owner: claude
   files:
@@ -16,11 +73,11 @@ Before editing, add a lock entry. Mark it released when done.
     - apps/frontend/src/locales/{ko,en,zh,vi}.json
     - MAT_LOTS (JSHANES 40/1000)
     - .ai-coordination/LOCKS.md
-  note: 3단계(실적 누적)에서 prod-result.service.ts 수정 필요 — T-MAT-ISSUE-WIP-STOCK과 충돌 조율 대상
+  note: 1~3단계 완료(스캔매핑+사용량누적). prod-result.service.ts는 T-MAT-ISSUE-WIP-STOCK 해제 후 수정. 백엔드 재시작 후 실동작 검증 필요.
   started: 2026-06-16 17:55 KST
-  last_seen: 2026-06-16 17:55 KST
+  last_seen: 2026-06-16 18:45 KST
   expires: 2026-06-16 19:30 KST
-  status: active
+  status: released
 
 - task: T-KIOSK-EQUIP-INSPECT-MIGRATION-RERUN
   owner: codex

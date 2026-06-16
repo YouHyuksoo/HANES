@@ -6,6 +6,13 @@
 
 ## Latest
 
+- T-WIP-MAT-TRANS-SCREEN 완료(커밋 915b9c8b, 메뉴시드 6c34b8f3): 공정재고 조회/수불 화면 보강.
+  - 공정재고 화면(`/production/wip-material-stock`) 상단 정보카드(StatCard) 제거.
+  - **공정수불 화면 신설**(`/production/wip-material-trans`): `WIP_MAT_TRANSACTIONS` 거래이력 조회. API `GET /inventory/wip-mat-transactions`(`WipMatStockService.findTransactions`, EQUIP_MASTERS/ITEM_MASTERS 조인, 날짜·설비·거래유형·검색 필터, 기본 당일). 컬럼: 일시/거래유형(배지)/설비/품목/LOT/수량(±)/참조/비고.
+  - 메뉴 2개 DB 시드 완료(JSHANES): `PROD_WIP_MAT_STOCK`(공정재고, sort75)·`PROD_WIP_MAT_TRANS`(공정수불, sort76), 생산관리 카테고리. ROLE_MENU_PERMISSIONS MANAGER/OPERATOR 권한 시드. menuConfig.ts + menu-code-validator.ts 반영.
+  - i18n: `inventory.transaction.wipIn`이 기존 "반제품 입고"로 점유돼 충돌 → 공정수불 라벨은 `production.wipMaterialTrans.*` 별도키, `inventory.transaction`엔 `wipMatIn`/`wipMatInCancel` add-only.
+  - 검증: backend/frontend tsc 0, jest 11/11. **실DB E2E 화면 검증 완료** — 공정입고(+500)→생산소비(-500)→생산소비취소(+500)→공정입고취소(-500) 거래이력이 공정수불 화면에 정상 표시. 검증 데이터는 잔량 0 원복(거래원장 이력 보존).
+
 - T-MAT-ISSUE-WIP-STOCK 완료(커밋됨): 자재출고를 "출고=소비"에서 **2단계 WIP**(창고→설비 공정재고 이동 + 생산실적 완료 시 소비)로 전환. 공정재고는 **설비(EQUIP_CODE) 단위 별도 테이블**.
   - 신규: `WIP_MAT_STOCKS`(PK COMPANY/PLANT_CD/EQUIP_CODE/ITEM_CODE/MAT_UID), `WIP_MAT_TRANSACTIONS`(전용 거래원장), `SEQ_WIP_TX` 채번(WTX{YYMMDD}-NNNNN). JSHANES 적용 완료. 엔티티 `wip-mat-stock.entity.ts`/`wip-mat-transaction.entity.ts`, 서비스 `WipMatStockService`(addStockInTx/deductStockInTx/restoreInTx/findByEquip).
   - 흐름: 출고=원자재 MAT_STOCKS 차감+STOCK_TRANSACTIONS `WIP_MOVE` / WIP_MAT_STOCKS 가산+WIP_MAT_TRANSACTIONS `WIP_IN`. 소비(생산실적 완료, auto-issue)=WIP_MAT_STOCKS 차감 `PROD_CONSUME`. 취소 모두 대칭(`WIP_MOVE_CANCEL`/`WIP_IN_CANCEL`/`PROD_CONSUME_CANCEL`). auto-issue 이중차감 방지(원자재 미접근), 설비 미배정 시 MAT_OUT fallback.
