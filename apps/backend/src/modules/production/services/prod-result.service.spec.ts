@@ -20,6 +20,7 @@ import { User } from '../../../entities/user.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
@@ -41,6 +42,7 @@ describe('ProdResultService', () => {
   let dataSource: DeepMocked<DataSource>;
   let autoIssueService: DeepMocked<AutoIssueService>;
   let productInventoryService: DeepMocked<ProductInventoryService>;
+  let wipMatStockService: DeepMocked<WipMatStockService>;
   let numbering: DeepMocked<NumberingService>;
   let sysConfigService: DeepMocked<SysConfigService>;
   let shiftPatternRepo: DeepMocked<Repository<ShiftPattern>>;
@@ -61,6 +63,7 @@ describe('ProdResultService', () => {
     dataSource = createMock<DataSource>();
     autoIssueService = createMock<AutoIssueService>();
     productInventoryService = createMock<ProductInventoryService>();
+    wipMatStockService = createMock<WipMatStockService>();
     numbering = createMock<NumberingService>();
     sysConfigService = createMock<SysConfigService>();
     shiftPatternRepo = createMock<Repository<ShiftPattern>>();
@@ -91,6 +94,7 @@ describe('ProdResultService', () => {
         { provide: DataSource, useValue: dataSource },
         { provide: AutoIssueService, useValue: autoIssueService },
         { provide: ProductInventoryService, useValue: productInventoryService },
+        { provide: WipMatStockService, useValue: wipMatStockService },
         { provide: NumberingService, useValue: numbering },
         { provide: SysConfigService, useValue: sysConfigService },
         { provide: getRepositoryToken(ShiftPattern), useValue: shiftPatternRepo },
@@ -582,73 +586,41 @@ describe('ProdResultService', () => {
     );
   });
 
-  it('reverses PROD_CONSUME by restoring WIP stock and recording PROD_CONSUME_CANCEL', async () => {
-    queryRunner.manager.find
-      .mockResolvedValueOnce([
-        {
-          issueNo: 'MI-1',
-          seq: 1,
-          matUid: 'MAT-1',
-          issueQty: 10,
-          company: 'C1',
-          plant: 'P1',
-        },
-      ] as any)
-      .mockResolvedValueOnce([
-        {
-          transNo: 'TX-1',
-          transType: 'PROD_CONSUME',
-          fromWarehouseId: 'WIP_EQ-1',
-          itemCode: 'ITEM-1',
-          qty: -10,
-          company: 'C1',
-          plant: 'P1',
-        },
-      ] as any);
-    queryRunner.manager.findOne
-      .mockResolvedValueOnce({ matUid: 'MAT-1', itemCode: 'ITEM-1', company: 'C1', plant: 'P1' } as any) // lot
-      .mockResolvedValueOnce({
-        warehouseCode: 'WIP_EQ-1',
-        itemCode: 'ITEM-1',
-        matUid: 'MAT-1',
-        qty: 0,
-        availableQty: 0,
-        company: 'C1',
-        plant: 'P1',
-      } as any); // stock at WIP warehouse
-    numbering.nextInTx.mockResolvedValue('RTX-1');
-    queryRunner.manager.create.mockImplementation((_: any, data: any) => data);
+  it('reverses WIP consumption by delegating to WipMatStockService.restoreInTx (ADD_BACK)', async () => {
+    // equipCode 경로: MatIssue(PROD_AUTO) 없음 → MatIssue find 빈 배열
+    queryRunner.manager.find.mockResolvedValue([] as any);
+    wipMatStockService.restoreInTx.mockResolvedValue([
+      { matUid: 'MAT-1', qty: 10, cancelRefId: 'WTX-1' },
+    ] as any);
 
     await (service as any).reverseAutoIssue(queryRunner, 'PR-1', 'C1', 'P1');
 
-    // 공정창고 재고 복원 (qty/availableQty += 10)
-    expect(queryRunner.manager.update).toHaveBeenCalledWith(
-      MatStock,
-      expect.objectContaining({ warehouseCode: 'WIP_EQ-1', itemCode: 'ITEM-1', matUid: 'MAT-1' }),
-      expect.objectContaining({ qty: 10, availableQty: 10 }),
-    );
-    // 원본 거래 취소
-    expect(queryRunner.manager.update).toHaveBeenCalledWith(
-      StockTransaction,
-      expect.objectContaining({ transNo: 'TX-1' }),
-      { status: 'CANCELED' },
-    );
-    // 역분개 거래 = PROD_CONSUME_CANCEL, to=공정창고
-    expect(queryRunner.manager.create).toHaveBeenCalledWith(
-      StockTransaction,
+    // 공정소비 복원 위임 (ADD_BACK / PROD_RESULT / PROD_CONSUME → PROD_CONSUME_CANCEL)
+    expect(wipMatStockService.restoreInTx).toHaveBeenCalledWith(
+      queryRunner,
       expect.objectContaining({
-        transType: 'PROD_CONSUME_CANCEL',
-        toWarehouseId: 'WIP_EQ-1',
-        qty: 10,
-        refType: 'MAT_ISSUE_CANCEL',
-        cancelRefId: 'TX-1',
+        mode: 'ADD_BACK',
+        refType: 'PROD_RESULT',
+        refId: 'PR-1',
+        cancelTransType: 'PROD_CONSUME_CANCEL',
+        originTransType: 'PROD_CONSUME',
+        company: 'C1',
+        plant: 'P1',
       }),
     );
-    // MAT_IN으로 잘못 기록되지 않아야 함
+    // MatIssue 없으므로 원자재 StockTransaction 생성 없음
     expect(queryRunner.manager.create).not.toHaveBeenCalledWith(
       StockTransaction,
-      expect.objectContaining({ transType: 'MAT_IN' }),
+      expect.anything(),
     );
+  });
+
+  it('skips WIP restore when company/plant are missing', async () => {
+    queryRunner.manager.find.mockResolvedValue([] as any);
+
+    await (service as any).reverseAutoIssue(queryRunner, 'PR-1');
+
+    expect(wipMatStockService.restoreInTx).not.toHaveBeenCalled();
   });
 
   it('reverses legacy MAT_OUT consumption by restoring raw-material stock with MAT_IN', async () => {
@@ -706,6 +678,11 @@ describe('ProdResultService', () => {
     expect(queryRunner.manager.create).not.toHaveBeenCalledWith(
       StockTransaction,
       expect.objectContaining({ transType: 'PROD_CONSUME_CANCEL' }),
+    );
+    // 두 경로 공존: WIP 복원은 호출되나 PROD_CONSUME 원본이 없어 no-op
+    expect(wipMatStockService.restoreInTx).toHaveBeenCalledWith(
+      queryRunner,
+      expect.objectContaining({ refType: 'PROD_RESULT', refId: 'PR-1' }),
     );
   });
 });

@@ -40,6 +40,7 @@ import {
 } from '../dto/prod-result.dto';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
@@ -80,6 +81,7 @@ export class ProdResultService {
     private readonly dataSource: DataSource,
     private readonly autoIssueService: AutoIssueService,
     private readonly productInventoryService: ProductInventoryService,
+    private readonly wipMatStockService: WipMatStockService,
     private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
     @InjectRepository(ShiftPattern)
@@ -631,7 +633,12 @@ export class ProdResultService {
 
       // 수량 변경 시 자재 자동차감 재계산 (역분개 → 재차감)
       if (qtyChanged && prodResult.status !== 'DONE') {
-        await this.reverseAutoIssue(queryRunner, resultNo);
+        await this.reverseAutoIssue(
+          queryRunner,
+          resultNo,
+          company ?? prodResult.company,
+          plant ?? prodResult.plant,
+        );
         if (newTotalQty > 0) {
           await this.autoIssueService.execute(
             'ON_CREATE', resultNo, prodResult.orderNo, newTotalQty, queryRunner,
@@ -1029,6 +1036,31 @@ export class ProdResultService {
     company?: string,
     plant?: string,
   ): Promise<void> {
+    /* ── 경로 ① 공정소비(R5) 역분개 ─────────────────────────────
+     * equipCode 작업지시는 공정재고(WIP_MAT_STOCKS)에서 PROD_CONSUME으로 소비됐고
+     * 그 기록은 WIP_MAT_TRANSACTIONS에만 존재한다(MatIssue 없음).
+     * restoreInTx가 (PROD_RESULT, resultNo, PROD_CONSUME, DONE) 원본을 찾아
+     * WIP_MAT_STOCKS 가산 + PROD_CONSUME_CANCEL 기록. 원본이 없으면 no-op.
+     * WIP 재고는 (company,plant) 스코프가 필수이므로 둘 다 있을 때만 복원한다. */
+    if (company && plant) {
+      await this.wipMatStockService.restoreInTx(qr, {
+        mode: 'ADD_BACK',
+        refType: 'PROD_RESULT',
+        refId: resultNo,
+        cancelTransType: 'PROD_CONSUME_CANCEL',
+        originTransType: 'PROD_CONSUME',
+        company,
+        plant,
+      });
+    } else {
+      this.logger.warn(
+        `공정소비 역분개 생략 — company/plant 미지정: resultNo=${resultNo}`,
+      );
+    }
+
+    /* ── 경로 ② 설비 미배정 fallback 단순소비 역분개 ────────────────
+     * MatIssue(PROD_AUTO) + STOCK_TRANSACTIONS(MAT_OUT)로 소비된 건만 처리.
+     * equipCode 경로는 MatIssue가 없으므로 여기서 발견되지 않아 서로 간섭 없음. */
     const issues = await qr.manager.find(MatIssue, {
       where: {
         prodResultNo: resultNo,
