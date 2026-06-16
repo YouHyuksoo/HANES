@@ -10,6 +10,16 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 04:12 Codex
+
+- 작업: `T-MATERIAL-FLOW-FE-RUNTIME` 자재관리 하위 등록 메뉴 전체를 실제 프론트로 순회하고, 자재요청 -> 자재출고 -> 자재재고 -> 공정재고/키오스크 흐름을 실데이터로 검증.
+- 원인/보정: QA 스크립트가 프론트 proxy 경로(`/api/material/...`)와 백엔드 경로(`/api/v1/material/...`)를 모두 기다리지 못해 출고 승인 응답을 놓쳤고, 통합 후 실제 메뉴 경로는 `/inventory/material-stock`인데 구 경로 `/material/stock`을 확인했다. 공정재고는 `WIP_MAT_STOCKS.ORDER_NO`가 아니라 `WIP_MAT_TRANSACTIONS.ORDER_NO`와 `WIP_MAT_STOCKS` 현재고를 함께 확인해야 했다. `MAT_HOLD`는 실제 `MAT_LOTS` 상태 변경 모델인데 화면 SQL/QA 기준이 존재하지 않는 `MAT_HOLDS`를 가리켜 정합성이 맞지 않았다.
+- 변경: `tools/hanes-material-flow-frontend-runtime-qa.mjs`에 proxy/API 경로 매칭, GET 503 재시도, `/inventory/material-stock` 및 `/production/wip-material-stock` 확인, `WIP_MAT_TRANSACTIONS`/`WIP_MAT_STOCKS` DB 검증을 추가했다. `tools/hanes-material-menu-page-scenario-qa.mjs`는 통합된 MATERIAL 메뉴 24개와 실제 물리 테이블(`PHYSICAL_INV_COUNT_DETAILS`, `MAT_LOTS`) 기준을 반영했다. `/material/hold` 화면 SQL 안내도 `MAT_LOTS` + `MAT_STOCKS` 조인으로 수정했다.
+- 검증: `HANES_FRONTEND_URL=http://localhost:3012 node tools/hanes-material-flow-frontend-runtime-qa.mjs` PASS. 요청번호 `MR2606170035`, 작업지시 `JO-MATFE-26061618422034`; `MAT_ISSUE_REQUESTS`, `MAT_ISSUE_REQUEST_ITEMS`, `MAT_ISSUES`, `WIP_MAT_TRANSACTIONS`, `WIP_MAT_STOCKS` DB 체크 전부 OK. 증적: `docs/reports/hanes-material-flow-frontend-runtime-qa-2026-06-17/index.html`, `material-flow-result.json`, 스크린샷 10장.
+- 검증: `HANES_FRONTEND_URL=http://localhost:3012 HANES_QA_AGGREGATE=1 node tools/hanes-material-menu-page-scenario-qa.mjs` PASS, `/menu-categories/tree` 기준 MATERIAL 등록 메뉴 24개 중 24개 PASS. 증적: `docs/reports/hanes-material-menu-scenario-qa-2026-06-17/index.html`, `material-menu-result.json`, 페이지 JSON 24개.
+- 추가 확인: `node --test apps/frontend/src/components/material/issue-from-request-modal-contract.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS.
+- 상태: 완료, lock released. 3002 기존 프론트가 응답 지연 상태라 임시 프론트 `http://localhost:3012`로 검증했다.
+
 ## 2026-06-17 03:30 Codex
 
 - 작업: `T-SHIPPING-PACK-EMPTY-BOX-DELETE` `/shipping/pack` 박스포장 화면에서 제품을 담지 않은 생성 박스를 삭제할 수 있게 하고, 행 액션 버튼 위치와 현재 담는 박스 표시를 보강.

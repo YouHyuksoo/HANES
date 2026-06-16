@@ -2,7 +2,7 @@
 
 ## Last Update
 
-2026-06-17 02:49
+2026-06-17 04:12
 
 ## In Review
 
@@ -14,6 +14,7 @@
 
 ## Completed
 
+- `T-MATERIAL-FLOW-FE-RUNTIME`: 자재관리 등록 메뉴 전체와 자재요청 -> 자재출고 -> 재고 -> 공정입고 흐름 검증 완료. `http://localhost:3012` 프론트에서 `/menu-categories/tree` 기준 MATERIAL 24개 메뉴를 순회해 24/24 PASS, 보고서 `docs/reports/hanes-material-menu-scenario-qa-2026-06-17/index.html`. 실흐름은 요청 `MR2606170035`, 작업지시 `JO-MATFE-26061618422034`로 `/material/request` 요청 생성, `/material/issue` 승인/LOT 선택/출고, `/inventory/material-stock` 자재재고, `/production/wip-material-stock` 공정재고, `/production/input-kiosk` 작업지시 로딩까지 PASS. JSHANES `MAT_ISSUE_REQUESTS`, `MAT_ISSUE_REQUEST_ITEMS`, `MAT_ISSUES`, `WIP_MAT_TRANSACTIONS`, `WIP_MAT_STOCKS` 체크 OK. 보고서 `docs/reports/hanes-material-flow-frontend-runtime-qa-2026-06-17/index.html`. 보정: QA 스크립트 proxy/API 경로 매칭, GET 503 재시도, 재고 실제 경로/공정재고 테이블 기준, 통합 MATERIAL 메뉴 24개 매핑, `/material/hold` SQL 안내 `MAT_LOTS`/`MAT_STOCKS` 기준 수정.
 - `T-MASTER-LABEL-BARTENDER-DESIGNER`: `/master/label`을 객체 기반 라벨 디자이너로 전환 완료. 상단 탭은 제거했고 좌측 `소스테이블` 선택으로 설비/소모품/작업자/자재 LOT 소스를 고른다. 객체 타입은 글자/1D/2D/박스/선/원/이미지이며, 선택 객체 드래그 이동과 모서리 앵커 리사이즈가 동작한다. `LabelDesignRenderer`/`LabelPrintRenderer`는 저장된 `elements[]`와 `sourceField`를 실제 데이터로 치환한다. `/consumables/label`은 `jig` 템플릿을 조회해 소모품 UID 출력에 사용한다. 실제 3002에서 임시 템플릿 `CODEX_PRINT_1781631331283` 저장 후 `UID 발행`으로 `C26061700011`을 생성했고, 인쇄 HTML에 `conUid`/소모품코드/소모품명/정적문구/바코드 이미지 2개가 들어가는 것을 확인했다. 검증용 템플릿/UID/로그는 모두 삭제 후 잔여 0건 확인. 검증: 구조 테스트 3개, FE tsc, 3002 브라우저 도구/앵커/템플릿 요청, UI 저장/API 조회/삭제, 실제 UID 발행 인쇄 HTML 치환 통과.
 - `T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS`: `/master/label` 좌측 필드 목록을 고정값에서 사용자 정의 저장값으로 전환 완료. `LabelDesign.sourceFields`에 key/표시명/샘플값을 저장하고, 좌측 패널에서 추가/수정/삭제할 수 있다. 텍스트/바코드/이미지 객체의 `소스 필드` 선택지는 이 목록을 기준으로 표시된다. 검증: 구조 테스트 2개, FE tsc, 3002에서 `customTraceNo` 필드 추가/객체 매핑/저장 요청 201, `CODEX_FIELD%` 임시 템플릿 삭제 후 0건 확인.
 - `T-MASTER-LABEL-DESIGN-ONLY`: `/master/label` 라벨다자인관리 화면을 모든 카테고리 디자인 제공 전용으로 전환 완료. 탭은 `설비/소모품/작업자/자재롯트라벨`만 남기고 `품목`을 제거했다. 대상 조회 API/대상 선택 그리드/선택 출력 패널을 제거했으며, 디자인/템플릿 저장과 샘플 미리보기만 제공한다. 검증: 구조 테스트 RED→GREEN, frontend tsc, 3002 Playwright에서 탭/안내문/대상 API 호출 0건 확인.

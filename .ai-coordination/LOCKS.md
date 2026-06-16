@@ -46,17 +46,21 @@ Before editing, add a lock entry. Mark it released when done.
 - task: T-MATERIAL-FLOW-FE-RUNTIME
   owner: codex
   files:
+    - apps/frontend/src/app/(authenticated)/material/hold/page.tsx
     - tools/hanes-material-flow-frontend-runtime-qa.mjs
+    - tools/hanes-material-menu-page-scenario-qa.mjs
     - docs/reports/hanes-material-flow-frontend-runtime-qa-2026-06-17/**
+    - docs/reports/hanes-material-menu-scenario-qa-2026-06-17/**
     - .ai-coordination/TASKS.md
     - .ai-coordination/LOCKS.md
     - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
     - .ai-coordination/HANDOFF/codex.md
   started: 2026-06-17 KST
   last_seen: 2026-06-17 KST
   expires: 2026-06-17 KST
-  status: active
-  note: 자재관리 프론트 실제 흐름 QA. 요청->출고->재고->공정입고 데이터 정합성 검증 및 필요 시 수정.
+  status: released
+  note: 자재관리 24개 등록 메뉴 프론트 QA 24/24 PASS. 요청 MR2606170035 -> 출고 -> 자재재고 -> 공정재고/키오스크 플로우 PASS, JSHANES MAT_ISSUE_REQUESTS/MAT_ISSUES/WIP_MAT_TRANSACTIONS/WIP_MAT_STOCKS 정합성 확인.
 
 - task: T-SHIPPING-PACK-SCAN-LABEL-WORKFLOW
   owner: claude

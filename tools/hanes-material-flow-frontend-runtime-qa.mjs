@@ -77,30 +77,38 @@ function headers() {
 }
 
 async function api(method, urlPath, body) {
-  const res = await fetch(`${apiUrl}${urlPath}`, {
-    method,
-    headers: headers(),
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const text = await res.text();
-  let json;
-  try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    json = { raw: text };
+  const maxAttempts = method === 'GET' ? 3 : 1;
+  let lastError = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const res = await fetch(`${apiUrl}${urlPath}`, {
+      method,
+      headers: headers(),
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await res.text();
+    let json;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = { raw: text };
+    }
+    evidence.apiEvents.push({
+      source: 'direct-api',
+      method,
+      url: urlPath,
+      status: res.status,
+      ok: res.ok && json?.success !== false,
+      attempt,
+      responsePreview: json?.data ?? json,
+    });
+    if (res.ok && json?.success !== false) {
+      return json?.data ?? json;
+    }
+    lastError = new Error(`${method} ${urlPath} failed: ${res.status} ${text}`);
+    if (res.status !== 503 || attempt === maxAttempts) break;
+    await new Promise((resolve) => setTimeout(resolve, 3000 * attempt));
   }
-  evidence.apiEvents.push({
-    source: 'direct-api',
-    method,
-    url: urlPath,
-    status: res.status,
-    ok: res.ok && json?.success !== false,
-    responsePreview: json?.data ?? json,
-  });
-  if (!res.ok || json?.success === false) {
-    throw new Error(`${method} ${urlPath} failed: ${res.status} ${text}`);
-  }
-  return json?.data ?? json;
+  throw lastError;
 }
 
 function dbQuery(sql, label) {
@@ -208,6 +216,14 @@ async function waitForText(page, text, timeout = 15000) {
   await page.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout });
 }
 
+function matchesApiPath(response, pathFragment) {
+  const url = response.url();
+  return (
+    url.includes(`/api/v1${pathFragment}`) ||
+    url.includes(`/api${pathFragment}`)
+  );
+}
+
 async function createRequestThroughUi(page) {
   await page.goto(`${baseUrl}/material/request`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
@@ -253,7 +269,7 @@ async function approveAndIssueThroughUi(page) {
   const approveButton = page.locator(`tr:has-text("${evidence.requestNo}") button[title*="승인"]`).first();
   await approveButton.click();
   const approveResponse = page.waitForResponse((res) =>
-    res.url().includes(`/api/v1/material/issue-requests/${encodeURIComponent(evidence.requestNo)}/approve`) &&
+    matchesApiPath(res, `/material/issue-requests/${encodeURIComponent(evidence.requestNo)}/approve`) &&
     res.request().method() === 'PATCH',
     { timeout: 30000 },
   );
@@ -271,7 +287,7 @@ async function approveAndIssueThroughUi(page) {
   await screenshot(page, 'issue-modal-lot-selected', '출고처리 모달 LOT 자동 선택 확인');
 
   const issueResponse = page.waitForResponse((res) =>
-    res.url().includes(`/api/v1/material/issue-requests/${encodeURIComponent(evidence.requestNo)}/issue`) &&
+    matchesApiPath(res, `/material/issue-requests/${encodeURIComponent(evidence.requestNo)}/issue`) &&
     res.request().method() === 'POST',
     { timeout: 30000 },
   );
@@ -282,14 +298,22 @@ async function approveAndIssueThroughUi(page) {
 }
 
 async function verifyStockPages(page) {
-  await page.goto(`${baseUrl}/material/stock`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.goto(`${baseUrl}/inventory/material-stock`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
-  await waitForText(page, '재고');
+  await waitForText(page, '자재재고');
   const inputs = page.locator('input');
   await inputs.first().fill('HSG0001');
   await page.getByRole('button').filter({ hasText: /조회|검색|Search/i }).first().click().catch(() => inputs.first().press('Enter'));
   await page.waitForTimeout(1200);
   await screenshot(page, 'stock-hsg-after-issue', '자재 재고 화면 HSG0001 출고 후 조회');
+
+  await page.goto(`${baseUrl}/production/wip-material-stock`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+  await waitForText(page, '공정재고');
+  const wipSearch = page.locator('input').first();
+  await wipSearch.fill(evidence.setup.selectedLots?.HSG0001?.matUid ?? 'HSG0001');
+  await page.waitForTimeout(1200);
+  await screenshot(page, 'wip-material-stock-after-issue', '공정재고 화면 출고 LOT 반영 조회');
 
   await page.goto(`${baseUrl}/production/input-kiosk`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.evaluate(({ orderNo }) => {
@@ -319,8 +343,10 @@ async function verifyDb() {
   countWhere('MAT_ISSUE_REQUESTS', `COMPANY='${company}' AND PLANT_CD='${plant}' AND REQUEST_NO='${evidence.requestNo}' AND STATUS='COMPLETED'`, '출고요청 COMPLETED');
   countWhere('MAT_ISSUE_REQUEST_ITEMS', `COMPANY='${company}' AND PLANT_CD='${plant}' AND REQUEST_ID='${evidence.requestNo}' AND ISSUED_QTY > 0`, '출고요청 품목 issuedQty 반영');
   countWhere('MAT_ISSUES', `COMPANY='${company}' AND PLANT_CD='${plant}' AND ORDER_NO='${orderNo}' AND STATUS='DONE'`, 'MAT_ISSUES 출고 이력');
-  countWhere('STOCK_TRANSACTIONS', `COMPANY='${company}' AND PLANT_CD='${plant}' AND REF_TYPE='MAT_ISSUE' AND TRANS_TYPE='WIP_MOVE' AND ITEM_CODE IN ('HSG0001','TP0001')`, 'WIP_MOVE 수불원장');
-  countWhere('WIP_MAT_STOCKS', `COMPANY='${company}' AND PLANT_CD='${plant}' AND ORDER_NO='${orderNo}' AND EQUIP_CODE='EQ-MASSY-01' AND ITEM_CODE IN ('HSG0001','TP0001') AND QTY > 0`, '공정재고 WIP_MAT_STOCKS 반영');
+  countWhere('WIP_MAT_TRANSACTIONS', `COMPANY='${company}' AND PLANT_CD='${plant}' AND ORDER_NO='${orderNo}' AND EQUIP_CODE='EQ-MASSY-01' AND TRANS_TYPE='WIP_IN' AND REF_TYPE='MAT_ISSUE' AND ITEM_CODE IN ('HSG0001','TP0001')`, 'WIP_MAT_TRANSACTIONS 공정입고 이력');
+  const hsgUid = evidence.setup.selectedLots?.HSG0001?.matUid;
+  const tpUid = evidence.setup.selectedLots?.TP0001?.matUid;
+  countWhere('WIP_MAT_STOCKS', `COMPANY='${company}' AND PLANT_CD='${plant}' AND EQUIP_CODE='EQ-MASSY-01' AND ((ITEM_CODE='HSG0001' AND MAT_UID='${hsgUid}' AND QTY >= 1) OR (ITEM_CODE='TP0001' AND MAT_UID='${tpUid}' AND QTY >= 300))`, '공정재고 WIP_MAT_STOCKS 반영');
 }
 
 async function writeReport() {

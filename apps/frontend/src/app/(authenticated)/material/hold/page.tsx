@@ -181,7 +181,7 @@ export default function HoldPage() {
               </div>
             </div>
           } 
-          sqlQuery={`SELECT *\nFROM MAT_HOLDS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={`SELECT l.MAT_UID, l.ITEM_CODE, l.CURRENT_QTY, l.STATUS, l.VENDOR,\n       s.WAREHOUSE_CODE, s.AVAILABLE_QTY\nFROM MAT_LOTS l\nLEFT JOIN MAT_STOCKS s\n  ON s.COMPANY = l.COMPANY\n AND s.PLANT_CD = l.PLANT_CD\n AND s.ITEM_CODE = l.ITEM_CODE\n AND s.MAT_UID = l.MAT_UID\nWHERE l.COMPANY = '40'\n  AND l.PLANT_CD = '1000'\nORDER BY l.CREATED_AT DESC`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
