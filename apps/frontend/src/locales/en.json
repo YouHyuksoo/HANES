@@ -190,6 +190,7 @@
     "inventory.arrivalStock": "Arrival Stock Status",
     "productInventory.hold": "Product Stock Hold",
     "material": "Material Mgmt",
+    "materialMgmt": "Material Management",
     "productMgmt": "Product Mgmt",
     "productMgmt.receive": "Product Receive",
     "productMgmt.receiptCancel": "Product Receipt Cancel",
@@ -4824,8 +4825,7 @@
       "PENDING": "Pending",
       "IQC_IN_PROGRESS": "IQC In Progress",
       "PASSED": "Passed",
-      "FAILED": "Failed",
-      "DONE": "Received"
+      "FAILED": "Failed"
     },
     "ISSUE_STATUS": {
       "PENDING": "Pending",
@@ -5439,12 +5439,6 @@
       "REVIEW": "Review",
       "APPROVED": "Approved",
       "OBSOLETE": "Obsolete"
-    },
-    "ARRIVAL_RESULT_STATUS": {
-      "DONE": "Done"
-    },
-    "ARRIVAL_PO_TYPE": {
-      "PO": "PO"
     }
   },
   "comCodeGroup": {

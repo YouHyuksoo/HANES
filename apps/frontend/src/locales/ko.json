@@ -190,6 +190,7 @@
     "inventory.arrivalStock": "입하재고현황조회",
     "productInventory.hold": "제품재고홀드관리",
     "material": "자재수불관리",
+    "materialMgmt": "자재관리",
     "productMgmt": "제품수불관리",
     "productMgmt.receive": "제품입고관리",
     "productMgmt.receiptCancel": "제품입고취소",
@@ -4844,8 +4845,7 @@
       "PENDING": "입하대기",
       "IQC_IN_PROGRESS": "IQC진행",
       "PASSED": "합격",
-      "FAILED": "불합격",
-      "DONE": "입고완료"
+      "FAILED": "불합격"
     },
     "ISSUE_STATUS": {
       "PENDING": "대기",
@@ -5459,12 +5459,6 @@
       "REVIEW": "검토중",
       "APPROVED": "승인됨",
       "OBSOLETE": "폐기"
-    },
-    "ARRIVAL_RESULT_STATUS": {
-      "DONE": "완료"
-    },
-    "ARRIVAL_PO_TYPE": {
-      "PO": "발주"
     }
   },
   "comCodeGroup": {

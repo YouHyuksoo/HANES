@@ -190,6 +190,7 @@
     "inventory.arrivalStock": "Tình trạng tồn kho nhập hàng",
     "productInventory.hold": "Giữ tồn kho sản phẩm",
     "material": "Quản lý xuất nhập vật tư",
+    "materialMgmt": "Quản lý vật tư",
     "productMgmt": "Quản lý xuất nhập sản phẩm",
     "productMgmt.receive": "Nhập kho sản phẩm",
     "productMgmt.receiptCancel": "Hủy nhập kho sản phẩm",
@@ -4810,8 +4811,7 @@
       "PENDING": "Chờ nhập kho",
       "IQC_IN_PROGRESS": "Đang kiểm tra IQC",
       "PASSED": "Đạt",
-      "FAILED": "Không đạt",
-      "DONE": "Đã nhập kho"
+      "FAILED": "Không đạt"
     },
     "ISSUE_STATUS": {
       "PENDING": "Đang chờ",
@@ -5425,12 +5425,6 @@
       "REVIEW": "Đang xem xét",
       "APPROVED": "Đã duyệt",
       "OBSOLETE": "Hủy bỏ"
-    },
-    "ARRIVAL_RESULT_STATUS": {
-      "DONE": "Hoàn tất"
-    },
-    "ARRIVAL_PO_TYPE": {
-      "PO": "Đơn đặt hàng"
     }
   },
   "comCodeGroup": {

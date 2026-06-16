@@ -190,6 +190,7 @@
     "inventory.arrivalStock": "到货库存现况查询",
     "productInventory.hold": "产品库存冻结管理",
     "material": "物料收发管理",
+    "materialMgmt": "物料管理",
     "productMgmt": "产品收发管理",
     "productMgmt.receive": "产品入库管理",
     "productMgmt.receiptCancel": "产品入库取消",
@@ -4810,8 +4811,7 @@
       "PENDING": "待收货",
       "IQC_IN_PROGRESS": "IQC进行中",
       "PASSED": "合格",
-      "FAILED": "不合格",
-      "DONE": "入库完成"
+      "FAILED": "不合格"
     },
     "ISSUE_STATUS": {
       "PENDING": "等待",
@@ -5425,12 +5425,6 @@
       "REVIEW": "审核中",
       "APPROVED": "已批准",
       "OBSOLETE": "作废"
-    },
-    "ARRIVAL_RESULT_STATUS": {
-      "DONE": "完成"
-    },
-    "ARRIVAL_PO_TYPE": {
-      "PO": "采购订单"
     }
   },
   "comCodeGroup": {
