@@ -21,7 +21,7 @@ import {
   TrendingUp,
   Boxes,
 } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { StatCard } from "@/components/ui";
 import { WarehouseSelect } from "@/components/shared";
@@ -31,6 +31,9 @@ import api from "@/services/api";
 interface StockItem {
   id: string;
   warehouseCode: string;
+  warehouseName?: string | null;
+  /** 정규화된 창고유형 그룹: 'RAW_MATERIAL' | 'WIP' 등 (WAREHOUSE_TYPE 공통코드) */
+  warehouseType?: string | null;
   locationCode?: string | null;
   itemCode: string;
   matUid?: string | null;
@@ -112,6 +115,7 @@ function StockLevelBadge({
 function StockPage() {
   const { t } = useTranslation();
   const [warehouseFilter, setWarehouseFilter] = useState("");
+  const [warehouseTypeFilter, setWarehouseTypeFilter] = useState("");
   const [searchText, setSearchText] = useState("");
   const [stocks, setStocks] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -124,6 +128,7 @@ function StockPage() {
           page: 1,
           limit: 200,
           ...(warehouseFilter && { warehouseCode: warehouseFilter }),
+          ...(warehouseTypeFilter && { warehouseType: warehouseTypeFilter }),
           ...(searchText && { search: searchText }),
         },
       });
@@ -132,7 +137,7 @@ function StockPage() {
       setStocks([]);
     }
     setLoading(false);
-  }, [warehouseFilter, searchText]);
+  }, [warehouseFilter, warehouseTypeFilter, searchText]);
 
   useEffect(() => {
     fetchStocks();
@@ -167,6 +172,22 @@ function StockPage() {
       imminent: t("material.stock.shelfLife.imminent"),
       normal: t("material.stock.shelfLife.normal"),
     }),
+    [t]
+  );
+
+  /** 창고유형 필터 옵션: 전체 / 원자재(RAW_MATERIAL) / 공정(WIP) */
+  const warehouseTypeOptions = useMemo(
+    () => [
+      { value: "", label: `${t("material.stock.warehouseType.label")}: ${t("common.all", "전체")}` },
+      {
+        value: "RAW_MATERIAL",
+        label: `${t("material.stock.warehouseType.label")}: ${t("comCode.WAREHOUSE_TYPE.RAW_MATERIAL", "원자재")}`,
+      },
+      {
+        value: "WIP",
+        label: `${t("material.stock.warehouseType.label")}: ${t("comCode.WAREHOUSE_TYPE.WIP", "재공품")}`,
+      },
+    ],
     [t]
   );
 
@@ -211,6 +232,17 @@ function StockPage() {
         header: t("material.stock.columns.warehouse"),
         size: 100,
         meta: { filterType: "text" as const },
+      },
+      {
+        accessorKey: "warehouseType",
+        header: t("material.stock.columns.warehouseType"),
+        size: 90,
+        meta: { filterType: "none" as const },
+        cell: ({ row }) => {
+          const wt = row.original.warehouseType;
+          if (!wt) return <span className="text-text-muted">-</span>;
+          return <ComCodeBadge groupCode="WAREHOUSE_TYPE" code={wt} />;
+        },
       },
       {
         accessorKey: "qty",
@@ -369,6 +401,14 @@ function StockPage() {
                       value={searchText}
                       onChange={(e) => setSearchText(e.target.value)}
                       leftIcon={<Search className="w-4 h-4" />}
+                      fullWidth
+                    />
+                  </div>
+                  <div className="w-44 flex-shrink-0">
+                    <Select
+                      options={warehouseTypeOptions}
+                      value={warehouseTypeFilter}
+                      onChange={setWarehouseTypeFilter}
                       fullWidth
                     />
                   </div>

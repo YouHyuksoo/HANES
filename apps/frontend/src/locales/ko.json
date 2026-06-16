@@ -2315,7 +2315,8 @@
         "elapsedDays": "경과일수",
         "remainingDays": "남은유효기간",
         "shelfLifeStatus": "유효기간",
-        "dayUnit": "일"
+        "dayUnit": "일",
+        "warehouseType": "창고유형"
       },
       "shelfLife": {
         "expired": "만료",
@@ -2329,7 +2330,10 @@
         "warningLevel": "경고수준",
         "expiryWarning": "유효기간 임박"
       },
-      "searchPlaceholder": "품목코드, 품목명 검색..."
+      "searchPlaceholder": "품목코드, 품목명 검색...",
+      "warehouseType": {
+        "label": "창고유형"
+      }
     },
     "lot": {
       "title": "자재LOT추적관리",
@@ -6292,6 +6296,7 @@
       "noBom": "자재 정보 없음",
       "consumables": "소모성 설비 부품",
       "noConsumables": "장착된 소모품 없음",
+      "mounted": "장착됨",
       "lotNo": "롯트번호",
       "lotQty": "롯트수량",
       "noLot": "롯트 미등록",

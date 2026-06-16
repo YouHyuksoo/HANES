@@ -1999,7 +1999,8 @@
         "elapsedDays": "Elapsed Days",
         "remainingDays": "Remaining Life",
         "shelfLifeStatus": "Shelf Life",
-        "dayUnit": "d"
+        "dayUnit": "d",
+        "warehouseType": "Warehouse Type"
       },
       "shelfLife": {
         "expired": "Expired",
@@ -2013,7 +2014,10 @@
         "warningLevel": "Warning Level",
         "expiryWarning": "Expiry Warning"
       },
-      "searchPlaceholder": "Search part code, name..."
+      "searchPlaceholder": "Search part code, name...",
+      "warehouseType": {
+        "label": "Warehouse Type"
+      }
     },
     "lot": {
       "title": "Material LOT Traceability",
@@ -6272,6 +6276,7 @@
       "noBom": "No material info",
       "consumables": "Consumable Parts",
       "noConsumables": "No mounted consumables",
+      "mounted": "Mounted",
       "lotNo": "Lot No.",
       "lotQty": "Lot Qty",
       "noLot": "No Lot Assigned",

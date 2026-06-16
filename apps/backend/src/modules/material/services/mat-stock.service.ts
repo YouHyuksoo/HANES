@@ -43,6 +43,27 @@ export class MatStockService {
     };
   }
 
+  /**
+   * 논리 창고유형 그룹 → 실제 WAREHOUSES.WAREHOUSE_TYPE 코드 매핑
+   * - 원자재창고는 'RAW'/'RM' 두 코드가 혼재하므로 그룹으로 묶어 처리한다.
+   * - 공정창고(2단계 WIP 모델)는 'WIP'.
+   * 매핑되지 않은 값은 그대로 단일 코드로 취급한다.
+   */
+  private resolveWarehouseTypeCodes(warehouseType: string): string[] {
+    const groupMap: Record<string, string[]> = {
+      RAW_MATERIAL: ['RAW', 'RM'],
+      WIP: ['WIP'],
+    };
+    return groupMap[warehouseType] ?? [warehouseType];
+  }
+
+  /** 실제 창고유형 코드 → 화면 표시용 논리 그룹(WAREHOUSE_TYPE 공통코드 값) */
+  private normalizeWarehouseType(rawType?: string | null): string | null {
+    if (!rawType) return null;
+    if (rawType === 'RAW' || rawType === 'RM') return 'RAW_MATERIAL';
+    return rawType;
+  }
+
   private assertSameTenant(
     context: string,
     requested: { company?: string | null; plant?: string | null },
@@ -61,12 +82,28 @@ export class MatStockService {
   }
 
   async findAll(query: StockQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, itemCode, warehouseCode, locationCode, search, lowStockOnly } = query;
+    const { page = 1, limit = 10, itemCode, warehouseCode, warehouseType, locationCode, search, lowStockOnly } = query;
     const skip = (page - 1) * limit;
+
+    // 창고유형 그룹 필터: 해당 유형의 창고 코드 목록을 먼저 조회한 뒤 IN 조건으로 변환
+    let warehouseCodeIn: string[] | null = null;
+    if (warehouseType) {
+      const typeCodes = this.resolveWarehouseTypeCodes(warehouseType);
+      const typeWarehouses = await this.warehouseRepository.find({
+        where: { warehouseType: In(typeCodes), ...this.tenantWhere(company, plant) },
+        select: ['warehouseCode'],
+      });
+      warehouseCodeIn = typeWarehouses.map((w) => w.warehouseCode);
+      // 해당 유형 창고가 없으면 결과 없음 (빈 IN 조건은 매칭 0건)
+      if (warehouseCodeIn.length === 0) {
+        return { data: [], total: 0, page, limit };
+      }
+    }
 
     const where: FindOptionsWhere<MatStock> = {
       ...(itemCode && { itemCode }),
       ...(warehouseCode && { warehouseCode }),
+      ...(!warehouseCode && warehouseCodeIn && { warehouseCode: In(warehouseCodeIn) }),
       ...(locationCode && { locationCode }),
       ...(company && { company }),
       ...(plant && { plant }),
@@ -100,7 +137,7 @@ export class MatStockService {
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
-    const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w.warehouseName]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
     // 안전재고 미달 필터링 및 중첩 객체 평면화
     const today = new Date();
@@ -123,9 +160,11 @@ export class MatStockService {
         remainingDays = Math.floor((expireDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       }
 
+      const warehouse = warehouseMap.get(stock.warehouseCode);
       return {
         ...stock,
-        warehouseName: warehouseMap.get(stock.warehouseCode) || stock.warehouseCode,
+        warehouseName: warehouse?.warehouseName || stock.warehouseCode,
+        warehouseType: this.normalizeWarehouseType(warehouse?.warehouseType),
         itemCode: stock.itemCode,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
