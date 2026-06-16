@@ -582,6 +582,82 @@ describe('MatIssueService', () => {
       { transNo: 'TX-002', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED' },
     );
+    // 역분개 거래는 MAT_OUT_CANCEL 로 기록한다.
+    expect(manager.save).toHaveBeenCalledWith(
+      expect.objectContaining({ transNo: 'CANCEL-001', transType: 'MAT_OUT_CANCEL', qty: 3 }),
+    );
+  });
+
+  it('reverses a WIP_MOVE issue: deducts WIP warehouse and restores raw warehouse', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-009',
+      seq: 1,
+      status: 'DONE',
+      matUid: 'MAT-001',
+      issueQty: 5,
+      company: 'HANES',
+      plant: 'P01',
+    } as MatIssue);
+
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+      find: jest.fn().mockResolvedValue([
+        {
+          transNo: 'TX-001',
+          transType: 'WIP_MOVE',
+          fromWarehouseId: 'RM_MAIN',
+          toWarehouseId: 'WIP_EQ-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: -5,
+          company: 'HANES',
+          plant: 'P01',
+        } as StockTransaction,
+      ]),
+      findOne: jest
+        .fn()
+        // 1) 공정창고(WIP) 재고 조회 (차감 대상)
+        .mockResolvedValueOnce({ warehouseCode: 'WIP_EQ-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' } as MatStock)
+        // 2) 원자재창고 재고 조회 (복원 대상)
+        .mockResolvedValueOnce({ warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    mockNumbering.nextInTx.mockResolvedValueOnce('CANCEL-001');
+
+    await target.cancel('ISS-009', 1, 'cancel', 'HANES', 'P01');
+
+    // 역분개 거래: 공정창고→원자재창고, WIP_MOVE_CANCEL
+    expect(manager.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transNo: 'CANCEL-001',
+        transType: 'WIP_MOVE_CANCEL',
+        fromWarehouseId: 'WIP_EQ-01',
+        toWarehouseId: 'RM_MAIN',
+        qty: 5,
+        cancelRefId: 'TX-001',
+      }),
+    );
+    // 공정창고 차감
+    expect(manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'WIP_EQ-01', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      { qty: 0, availableQty: 0 },
+    );
+    // 원자재창고 복원
+    expect(manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      { qty: 5, availableQty: 5 },
+    );
+    // 원본 거래 취소 처리
+    expect(manager.update).toHaveBeenCalledWith(
+      StockTransaction,
+      { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+      { status: 'CANCELED' },
+    );
   });
 
   it('blocks cancel when the loaded issue belongs to a different tenant', async () => {
