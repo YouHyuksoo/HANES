@@ -1,0 +1,15 @@
+-- 2026-06-16 VNHNS(폐기 플랜트) 잔재 데이터 제거
+-- 배경: company=40 정본 플랜트는 1000, VNHNS는 폐기(정리 완료 대상)인데
+--       IATF 신규 모듈 테이블 4곳에 VNHNS 시드 잔재가 남아 정본(1000) 화면에 안 보임.
+-- 조사: PLANT='VNHNS' 보유 테이블 4곳/38행 (FK 제약 없음 — 논리적 관계만, 삭제 순서 무관).
+--   CALIBRATION_LOGS 12, GAUGE_MASTERS 10, MOLD_USAGE_LOGS 10, CHANGE_ORDERS 6
+-- 사이트: JSHANES. 모두 PLANT 컬럼 사용.
+
+DELETE FROM CALIBRATION_LOGS WHERE PLANT = 'VNHNS';
+/
+DELETE FROM GAUGE_MASTERS WHERE PLANT = 'VNHNS';
+/
+DELETE FROM MOLD_USAGE_LOGS WHERE PLANT = 'VNHNS';
+/
+DELETE FROM CHANGE_ORDERS WHERE PLANT = 'VNHNS';
+/
