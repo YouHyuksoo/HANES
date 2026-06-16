@@ -581,4 +581,131 @@ describe('ProdResultService', () => {
       expect.objectContaining({ company: 'C2' }),
     );
   });
+
+  it('reverses PROD_CONSUME by restoring WIP stock and recording PROD_CONSUME_CANCEL', async () => {
+    queryRunner.manager.find
+      .mockResolvedValueOnce([
+        {
+          issueNo: 'MI-1',
+          seq: 1,
+          matUid: 'MAT-1',
+          issueQty: 10,
+          company: 'C1',
+          plant: 'P1',
+        },
+      ] as any)
+      .mockResolvedValueOnce([
+        {
+          transNo: 'TX-1',
+          transType: 'PROD_CONSUME',
+          fromWarehouseId: 'WIP_EQ-1',
+          itemCode: 'ITEM-1',
+          qty: -10,
+          company: 'C1',
+          plant: 'P1',
+        },
+      ] as any);
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ matUid: 'MAT-1', itemCode: 'ITEM-1', company: 'C1', plant: 'P1' } as any) // lot
+      .mockResolvedValueOnce({
+        warehouseCode: 'WIP_EQ-1',
+        itemCode: 'ITEM-1',
+        matUid: 'MAT-1',
+        qty: 0,
+        availableQty: 0,
+        company: 'C1',
+        plant: 'P1',
+      } as any); // stock at WIP warehouse
+    numbering.nextInTx.mockResolvedValue('RTX-1');
+    queryRunner.manager.create.mockImplementation((_: any, data: any) => data);
+
+    await (service as any).reverseAutoIssue(queryRunner, 'PR-1', 'C1', 'P1');
+
+    // 공정창고 재고 복원 (qty/availableQty += 10)
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      MatStock,
+      expect.objectContaining({ warehouseCode: 'WIP_EQ-1', itemCode: 'ITEM-1', matUid: 'MAT-1' }),
+      expect.objectContaining({ qty: 10, availableQty: 10 }),
+    );
+    // 원본 거래 취소
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      StockTransaction,
+      expect.objectContaining({ transNo: 'TX-1' }),
+      { status: 'CANCELED' },
+    );
+    // 역분개 거래 = PROD_CONSUME_CANCEL, to=공정창고
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      StockTransaction,
+      expect.objectContaining({
+        transType: 'PROD_CONSUME_CANCEL',
+        toWarehouseId: 'WIP_EQ-1',
+        qty: 10,
+        refType: 'MAT_ISSUE_CANCEL',
+        cancelRefId: 'TX-1',
+      }),
+    );
+    // MAT_IN으로 잘못 기록되지 않아야 함
+    expect(queryRunner.manager.create).not.toHaveBeenCalledWith(
+      StockTransaction,
+      expect.objectContaining({ transType: 'MAT_IN' }),
+    );
+  });
+
+  it('reverses legacy MAT_OUT consumption by restoring raw-material stock with MAT_IN', async () => {
+    queryRunner.manager.find
+      .mockResolvedValueOnce([
+        {
+          issueNo: 'MI-1',
+          seq: 1,
+          matUid: 'MAT-1',
+          issueQty: 5,
+          company: 'C1',
+          plant: 'P1',
+        },
+      ] as any)
+      .mockResolvedValueOnce([
+        {
+          transNo: 'TX-1',
+          transType: 'MAT_OUT',
+          fromWarehouseId: 'RM_MAIN',
+          itemCode: 'ITEM-1',
+          qty: -5,
+          company: 'C1',
+          plant: 'P1',
+        },
+      ] as any);
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ matUid: 'MAT-1', itemCode: 'ITEM-1', company: 'C1', plant: 'P1' } as any) // lot
+      .mockResolvedValueOnce({
+        warehouseCode: 'RM_MAIN',
+        itemCode: 'ITEM-1',
+        matUid: 'MAT-1',
+        qty: 0,
+        availableQty: 0,
+        company: 'C1',
+        plant: 'P1',
+      } as any); // stock at RM warehouse
+    numbering.nextInTx.mockResolvedValue('RTX-1');
+    queryRunner.manager.create.mockImplementation((_: any, data: any) => data);
+
+    await (service as any).reverseAutoIssue(queryRunner, 'PR-1', 'C1', 'P1');
+
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      MatStock,
+      expect.objectContaining({ warehouseCode: 'RM_MAIN' }),
+      expect.objectContaining({ qty: 5, availableQty: 5 }),
+    );
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      StockTransaction,
+      expect.objectContaining({
+        transType: 'MAT_IN',
+        toWarehouseId: 'RM_MAIN',
+        qty: 5,
+      }),
+    );
+    expect(queryRunner.manager.create).not.toHaveBeenCalledWith(
+      StockTransaction,
+      expect.objectContaining({ transType: 'PROD_CONSUME_CANCEL' }),
+    );
+  });
 });

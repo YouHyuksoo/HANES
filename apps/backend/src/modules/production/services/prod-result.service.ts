@@ -126,6 +126,7 @@ export class ProdResultService {
     const {
       page = 1,
       limit = 10,
+      search,
       orderNo,
       equipCode,
       workerId,
@@ -146,6 +147,13 @@ export class ProdResultService {
 
     if (company) qb.andWhere('pr.company = :company', { company });
     if (plant) qb.andWhere('pr.plant = :plant', { plant });
+    if (search) {
+      const upperSearch = `%${search.toUpperCase()}%`;
+      qb.andWhere(
+        '(UPPER(pr.resultNo) LIKE :search OR UPPER(pr.orderNo) LIKE :search OR UPPER(pr.prdUid) LIKE :search)',
+        { search: upperSearch },
+      );
+    }
     if (orderNo) qb.andWhere('pr.orderNo = :orderNo', { orderNo });
     if (equipCode) qb.andWhere('pr.equipCode = :equipCode', { equipCode });
     if (workerId) qb.andWhere('pr.workerId = :workerId', { workerId });
@@ -1104,10 +1112,17 @@ export class ProdResultService {
             { status: 'CANCELED' },
           );
 
+          /* 역분개 거래유형은 원본 소비 거래유형 기준으로 분기한다.
+           * - PROD_CONSUME(공정 소비)  → PROD_CONSUME_CANCEL (공정창고 복원)
+           * - MAT_OUT(설비 미배정 fallback 소비) → MAT_IN (원자재창고 복원)
+           * 복원 대상 창고는 두 경우 모두 원본 fromWarehouseId(소비 창고)이다. */
+          const reverseTransType =
+            originalTx.transType === 'PROD_CONSUME' ? 'PROD_CONSUME_CANCEL' : 'MAT_IN';
+
           const reverseTransNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
           const reverseTx = qr.manager.create(StockTransaction, {
             transNo: reverseTransNo,
-            transType: 'MAT_IN',
+            transType: reverseTransType,
             transDate: new Date(),
             toWarehouseId: originalTx.fromWarehouseId,
             itemCode: originalTx.itemCode || lot?.itemCode || '',
