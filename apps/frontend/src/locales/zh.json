@@ -1985,8 +1985,7 @@
         "elapsedDays": "经过天数",
         "remainingDays": "剩余有效期",
         "shelfLifeStatus": "有效期",
-        "dayUnit": "天",
-        "warehouseType": "仓库类型"
+        "dayUnit": "天"
       },
       "shelfLife": {
         "expired": "过期",
@@ -2000,10 +1999,7 @@
         "warningLevel": "警告级别",
         "expiryWarning": "有效期预警"
       },
-      "searchPlaceholder": "搜索零件代码、名称...",
-      "warehouseType": {
-        "label": "仓库类型"
-      }
+      "searchPlaceholder": "搜索零件代码、名称..."
     },
     "lot": {
       "title": "物料LOT追溯管理",

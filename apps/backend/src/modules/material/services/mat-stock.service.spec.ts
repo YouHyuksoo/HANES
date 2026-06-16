@@ -11,7 +11,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner, In } from 'typeorm';
+import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { MatStockService } from './mat-stock.service';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -165,48 +165,6 @@ describe('MatStockService', () => {
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].matUid).toBe('MAT-SEARCH-001');
-    });
-
-    it('warehouseType=RAW_MATERIAL이면 RAW/RM 창고 코드로 IN 필터하고 유형을 정규화한다', async () => {
-      const stock = createStock({ warehouseCode: 'RAW-01' });
-      // 1차 호출: 유형별 창고 코드 조회, 2차 호출: 응답 보강용 창고 정보
-      mockWarehouseRepo.find
-        .mockResolvedValueOnce([
-          { warehouseCode: 'RAW-01' } as Warehouse,
-          { warehouseCode: 'RM-01' } as Warehouse,
-        ])
-        .mockResolvedValueOnce([
-          { warehouseCode: 'RAW-01', warehouseName: '원자재창고', warehouseType: 'RAW' } as Warehouse,
-        ]);
-      mockMatStockRepo.find.mockResolvedValue([stock]);
-      mockMatStockRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([]);
-      mockMatLotRepo.find.mockResolvedValue([]);
-
-      const result = await target.findAll({ page: 1, limit: 10, warehouseType: 'RAW_MATERIAL' });
-
-      // 유형별 창고 조회가 RAW/RM 두 코드를 조건에 포함
-      expect(mockWarehouseRepo.find).toHaveBeenNthCalledWith(1, {
-        where: expect.objectContaining({ warehouseType: In(['RAW', 'RM']) }),
-        select: ['warehouseCode'],
-      });
-      // 재고 조회 시 해당 창고 코드 IN 조건 적용
-      expect(mockMatStockRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ warehouseCode: In(['RAW-01', 'RM-01']) }),
-        }),
-      );
-      expect(result.data[0].warehouseType).toBe('RAW_MATERIAL');
-    });
-
-    it('해당 유형의 창고가 없으면 빈 결과를 반환한다', async () => {
-      mockWarehouseRepo.find.mockResolvedValueOnce([]);
-
-      const result = await target.findAll({ page: 1, limit: 10, warehouseType: 'WIP' });
-
-      expect(result.data).toHaveLength(0);
-      expect(result.total).toBe(0);
-      expect(mockMatStockRepo.find).not.toHaveBeenCalled();
     });
   });
 

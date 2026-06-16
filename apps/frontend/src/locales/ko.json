@@ -2315,8 +2315,7 @@
         "elapsedDays": "경과일수",
         "remainingDays": "남은유효기간",
         "shelfLifeStatus": "유효기간",
-        "dayUnit": "일",
-        "warehouseType": "창고유형"
+        "dayUnit": "일"
       },
       "shelfLife": {
         "expired": "만료",
@@ -2330,10 +2329,7 @@
         "warningLevel": "경고수준",
         "expiryWarning": "유효기간 임박"
       },
-      "searchPlaceholder": "품목코드, 품목명 검색...",
-      "warehouseType": {
-        "label": "창고유형"
-      }
+      "searchPlaceholder": "품목코드, 품목명 검색..."
     },
     "lot": {
       "title": "자재LOT추적관리",

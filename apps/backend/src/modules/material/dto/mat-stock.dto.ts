@@ -28,14 +28,6 @@ export class StockQueryDto extends BaseListQueryDto {
   @IsString()
   warehouseCode?: string;
 
-  @ApiPropertyOptional({
-    description:
-      "창고유형 그룹 필터 (RAW_MATERIAL: 원자재창고[RAW/RM], WIP: 공정창고). 미지정 시 전체",
-  })
-  @IsOptional()
-  @IsString()
-  warehouseType?: string;
-
   @ApiPropertyOptional({ description: '위치 코드' })
   @IsOptional()
   @IsString()

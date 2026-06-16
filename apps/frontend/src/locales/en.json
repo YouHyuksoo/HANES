@@ -1999,8 +1999,7 @@
         "elapsedDays": "Elapsed Days",
         "remainingDays": "Remaining Life",
         "shelfLifeStatus": "Shelf Life",
-        "dayUnit": "d",
-        "warehouseType": "Warehouse Type"
+        "dayUnit": "d"
       },
       "shelfLife": {
         "expired": "Expired",
@@ -2014,10 +2013,7 @@
         "warningLevel": "Warning Level",
         "expiryWarning": "Expiry Warning"
       },
-      "searchPlaceholder": "Search part code, name...",
-      "warehouseType": {
-        "label": "Warehouse Type"
-      }
+      "searchPlaceholder": "Search part code, name..."
     },
     "lot": {
       "title": "Material LOT Traceability",

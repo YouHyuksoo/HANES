@@ -1985,8 +1985,7 @@
         "elapsedDays": "Số ngày đã qua",
         "remainingDays": "HSD còn lại",
         "shelfLifeStatus": "Hạn SD",
-        "dayUnit": "ngày",
-        "warehouseType": "Loại kho"
+        "dayUnit": "ngày"
       },
       "shelfLife": {
         "expired": "Hết hạn",
@@ -2000,10 +1999,7 @@
         "warningLevel": "Mức cảnh báo",
         "expiryWarning": "Cảnh báo HSD"
       },
-      "searchPlaceholder": "Tìm mã, tên linh kiện...",
-      "warehouseType": {
-        "label": "Loại kho"
-      }
+      "searchPlaceholder": "Tìm mã, tên linh kiện..."
     },
     "lot": {
       "title": "Quản lý Truy xuất LOT",
