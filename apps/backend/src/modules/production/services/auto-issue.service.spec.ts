@@ -22,6 +22,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { WarehouseService } from '../../inventory/services/warehouse.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('AutoIssueService', () => {
@@ -36,6 +37,7 @@ describe('AutoIssueService', () => {
   let mockNumbering: DeepMocked<NumberingService>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
+  let mockWarehouseService: DeepMocked<WarehouseService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -49,6 +51,7 @@ describe('AutoIssueService', () => {
     mockNumbering = createMock<NumberingService>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
+    mockWarehouseService = createMock<WarehouseService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
@@ -72,6 +75,7 @@ describe('AutoIssueService', () => {
         { provide: NumberingService, useValue: mockNumbering },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: WarehouseService, useValue: mockWarehouseService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -520,6 +524,233 @@ describe('AutoIssueService', () => {
 
       expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─────────────────────────────────────────────
+  // execute - 공정창고(WIP) 소비 전환 (PROD_CONSUME)
+  // ─────────────────────────────────────────────
+  describe('execute - WIP warehouse consume', () => {
+    it('should consume from equip WIP warehouse and record PROD_CONSUME from that warehouse', async () => {
+      // Arrange
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE') // timing
+        .mockResolvedValueOnce('BLOCK'); // stock check policy
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+        equipCode: 'EQ-1',
+        lineCode: 'L1',
+        processCode: 'OP10',
+      });
+
+      mockWarehouseService.getOrCreateEquipWipWarehouse.mockResolvedValue({
+        warehouseCode: 'WIP_EQ-1',
+      } as any);
+
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 2, useYn: 'Y' },
+      ]);
+
+      const mockLotQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'LOT-001', itemCode: 'RM-001', company: 'C1', plant: 'P1' },
+        ]),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([]) // scanned job material lots (none)
+        .mockResolvedValueOnce([
+          { warehouseCode: 'WIP_EQ-1', itemCode: 'RM-001', matUid: 'LOT-001', qty: 200, availableQty: 200, company: 'C1', plant: 'P1', createdAt: new Date() },
+        ]) // WIP stock for lot
+        .mockResolvedValueOnce([
+          { warehouseCode: 'WIP_EQ-1', itemCode: 'RM-001', matUid: 'LOT-001', qty: 200, availableQty: 200, company: 'C1', plant: 'P1', createdAt: new Date() },
+        ]) // deductMatStock
+        .mockResolvedValueOnce([{ matUid: 'LOT-001', qty: 100, company: 'C1', plant: 'P1' }]); // remaining check (still has stock)
+
+      mockNumbering.nextInTx
+        .mockResolvedValueOnce('ISS-001')
+        .mockResolvedValueOnce('TX-001');
+
+      const savedTransactions: any[] = [];
+      mockQueryRunner.manager.create.mockImplementation((_: any, data: any) => data);
+      mockQueryRunner.manager.save.mockImplementation(async (entity: any, data: any) => {
+        if (entity === StockTransaction) savedTransactions.push(data);
+        return data;
+      });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      // Act
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner);
+
+      // Assert: 공정창고 헬퍼 호출
+      expect(mockWarehouseService.getOrCreateEquipWipWarehouse).toHaveBeenCalledWith(
+        'EQ-1', 'C1', 'P1', 'L1', 'OP10',
+      );
+
+      // 차감 성공
+      expect(result.skipped).toBe(false);
+      expect(result.issued).toHaveLength(1);
+      expect(result.issued[0].itemCode).toBe('RM-001');
+      expect(result.issued[0].issueQty).toBe(100); // 2 * 50
+
+      // 재고/차감 조회가 공정창고로 한정됨
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(2, MatStock, {
+        where: expect.objectContaining({ warehouseCode: 'WIP_EQ-1' }),
+      });
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(3, MatStock, {
+        where: expect.objectContaining({ warehouseCode: 'WIP_EQ-1', itemCode: 'RM-001', matUid: 'LOT-001' }),
+        order: { createdAt: 'ASC' },
+      });
+
+      // StockTransaction: PROD_CONSUME, from=공정창고, to=null
+      expect(savedTransactions).toHaveLength(1);
+      expect(savedTransactions[0]).toMatchObject({
+        transType: 'PROD_CONSUME',
+        fromWarehouseId: 'WIP_EQ-1',
+        toWarehouseId: null,
+      });
+
+      // 이중차감 방지: 원자재창고를 갱신하는 MatStock update가 없어야 함
+      const matStockUpdateCalls = mockQueryRunner.manager.update.mock.calls.filter(
+        (c) => c[0] === MatStock,
+      );
+      for (const call of matStockUpdateCalls) {
+        expect(call[1]).toMatchObject({ warehouseCode: 'WIP_EQ-1' });
+      }
+    });
+
+    it('should deduct only available WIP stock and push a warning on shortage with WARN policy', async () => {
+      // Arrange
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE') // timing
+        .mockResolvedValueOnce('WARN'); // stock check policy
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+        equipCode: 'EQ-1',
+      });
+
+      mockWarehouseService.getOrCreateEquipWipWarehouse.mockResolvedValue({
+        warehouseCode: 'WIP_EQ-1',
+      } as any);
+
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 2, useYn: 'Y' },
+      ]);
+
+      const mockLotQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'LOT-001', itemCode: 'RM-001', company: 'C1', plant: 'P1' },
+        ]),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+
+      // 필요 100(2*50)인데 공정창고 가용 30만 존재
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([]) // scanned lots
+        .mockResolvedValueOnce([
+          { warehouseCode: 'WIP_EQ-1', itemCode: 'RM-001', matUid: 'LOT-001', qty: 30, availableQty: 30, company: 'C1', plant: 'P1', createdAt: new Date() },
+        ]) // WIP stock
+        .mockResolvedValueOnce([
+          { warehouseCode: 'WIP_EQ-1', itemCode: 'RM-001', matUid: 'LOT-001', qty: 30, availableQty: 30, company: 'C1', plant: 'P1', createdAt: new Date() },
+        ]) // deductMatStock
+        .mockResolvedValueOnce([{ matUid: 'LOT-001', qty: 0, company: 'C1', plant: 'P1' }]); // remaining=0 → DEPLETED
+
+      mockNumbering.nextInTx
+        .mockResolvedValueOnce('ISS-001')
+        .mockResolvedValueOnce('TX-001');
+
+      mockQueryRunner.manager.create.mockImplementation((_: any, data: any) => data);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      // Act
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner);
+
+      // Assert: 가용분(30)만 차감 + 경고 기록
+      expect(result.skipped).toBe(false);
+      expect(result.issued).toHaveLength(1);
+      expect(result.issued[0].issueQty).toBe(30);
+      expect(result.warnings.some((w) => w.includes('재고 부족'))).toBe(true);
+    });
+
+    it('should fall back to legacy raw-material deduction (MAT_OUT) when job order has no equip', async () => {
+      // Arrange
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE')
+        .mockResolvedValueOnce('BLOCK');
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+        equipCode: null, // 설비 미배정
+      });
+
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 2, useYn: 'Y' },
+      ]);
+
+      const mockLotQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'LOT-001', itemCode: 'RM-001', company: 'C1', plant: 'P1' },
+        ]),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([]) // scanned lots
+        .mockResolvedValueOnce([
+          { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 200, availableQty: 200, company: 'C1', plant: 'P1', createdAt: new Date() },
+        ])
+        .mockResolvedValueOnce([
+          { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 200, availableQty: 200, company: 'C1', plant: 'P1', createdAt: new Date() },
+        ])
+        .mockResolvedValueOnce([{ matUid: 'LOT-001', qty: 100, company: 'C1', plant: 'P1' }]);
+
+      mockNumbering.nextInTx
+        .mockResolvedValueOnce('ISS-001')
+        .mockResolvedValueOnce('TX-001');
+
+      const savedTransactions: any[] = [];
+      mockQueryRunner.manager.create.mockImplementation((_: any, data: any) => data);
+      mockQueryRunner.manager.save.mockImplementation(async (entity: any, data: any) => {
+        if (entity === StockTransaction) savedTransactions.push(data);
+        return data;
+      });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      // Act
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner);
+
+      // Assert: 헬퍼 미호출 + 경고 + 기존 MAT_OUT 거래
+      expect(mockWarehouseService.getOrCreateEquipWipWarehouse).not.toHaveBeenCalled();
+      expect(result.warnings.some((w) => w.includes('설비가 배정되지 않아'))).toBe(true);
+      expect(result.issued).toHaveLength(1);
+      expect(savedTransactions[0]).toMatchObject({ transType: 'MAT_OUT', fromWarehouseId: 'WH-RM' });
+
+      // fallback: 재고 조회에 warehouseCode 한정이 없어야 함
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(2, MatStock, {
+        where: expect.not.objectContaining({ warehouseCode: expect.anything() }),
+      });
     });
   });
 });
