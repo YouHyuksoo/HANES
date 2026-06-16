@@ -10,7 +10,7 @@
  */
 import {
   LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
-  Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
+  Database, FileBox, Cog, Building2, ArrowLeftRight, UserCog,
   ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
 } from "lucide-react";
 
@@ -73,10 +73,30 @@ export const menuConfig: MenuConfigItem[] = [
     ],
   },
   {
-    code: "INVENTORY",
-    labelKey: "menu.matInventory",
-    icon: Warehouse,
+    code: "MATERIAL", // 자재관리 — 기존 자재수불관리(MATERIAL) + 자재재고관리(INVENTORY) 통합
+    labelKey: "menu.materialMgmt",
+    icon: Package,
     children: [
+      /* ── 자재 수불 ── */
+      { code: "MAT_ARRIVAL", labelKey: "menu.material.arrival", path: "/material/arrival" },
+      { code: "MAT_ARRIVAL_RESULT", labelKey: "menu.material.arrivalResult", path: "/material/arrival-result" },
+      { code: "MAT_RECEIVE_LABEL", labelKey: "menu.material.receiveLabel", path: "/material/receive-label" },
+      { code: "MAT_RECEIVE", labelKey: "menu.material.receive", path: "/material/receive" },
+      { code: "MAT_RECEIVE_HISTORY", labelKey: "menu.material.receiveHistory", path: "/material/receive-history" },
+      { code: "MAT_REQUEST", labelKey: "menu.material.request", path: "/material/request" },
+      { code: "MAT_ISSUE", labelKey: "menu.material.issue", path: "/material/issue" },
+      { code: "MAT_ISSUE_OTHER", labelKey: "menu.material.issueOther", path: "/material/issue-other" },
+      { code: "MAT_LOT", labelKey: "menu.material.lot", path: "/material/lot" },
+      { code: "MAT_LOT_SPLIT", labelKey: "menu.material.lotSplit", path: "/material/lot-split" },
+      { code: "MAT_LOT_MERGE", labelKey: "menu.material.lotMerge", path: "/material/lot-merge" },
+      { code: "MAT_SHELF_LIFE", labelKey: "menu.material.shelfLife", path: "/material/shelf-life" },
+      { code: "MAT_SHELF_LIFE_REINSPECT", labelKey: "menu.material.shelfLifeReinspect", path: "/material/shelf-life-reinspect" },
+      { code: "MAT_SHELF_LIFE_HISTORY", labelKey: "menu.material.shelfLifeHistory", path: "/material/shelf-life-history" },
+      { code: "MAT_SCRAP", labelKey: "menu.material.scrap", path: "/material/scrap" },
+      { code: "MAT_ADJUSTMENT", labelKey: "menu.material.adjustment", path: "/material/adjustment" },
+      { code: "MAT_MISC_RECEIPT", labelKey: "menu.material.miscReceipt", path: "/material/misc-receipt" },
+      { code: "MAT_RECEIPT_CANCEL", labelKey: "menu.material.receiptCancel", path: "/material/receipt-cancel" },
+      /* ── 자재 재고 ── */
       { code: "INV_MAT_STOCK", labelKey: "menu.inventory.matStock", path: "/inventory/material-stock" },
       { code: "INV_TRANSACTION", labelKey: "menu.inventory.transaction", path: "/inventory/transaction" },
       { code: "INV_MAT_PHYSICAL_INV", labelKey: "menu.inventory.matPhysicalInv", path: "/inventory/material-physical-inv" },
@@ -106,31 +126,6 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_RECEIPT_CANCEL", labelKey: "menu.productMgmt.receiptCancel", path: "/product/receipt-cancel" },
       { code: "PROD_ISSUE", labelKey: "menu.productMgmt.issue", path: "/product/issue" },
       { code: "PROD_ISSUE_CANCEL", labelKey: "menu.productMgmt.issueCancel", path: "/product/issue-cancel" },
-    ],
-  },
-  {
-    code: "MATERIAL",
-    labelKey: "menu.material",
-    icon: Package,
-    children: [
-      { code: "MAT_ARRIVAL", labelKey: "menu.material.arrival", path: "/material/arrival" },
-      { code: "MAT_ARRIVAL_RESULT", labelKey: "menu.material.arrivalResult", path: "/material/arrival-result" },
-      { code: "MAT_RECEIVE_LABEL", labelKey: "menu.material.receiveLabel", path: "/material/receive-label" },
-      { code: "MAT_RECEIVE", labelKey: "menu.material.receive", path: "/material/receive" },
-      { code: "MAT_RECEIVE_HISTORY", labelKey: "menu.material.receiveHistory", path: "/material/receive-history" },
-      { code: "MAT_REQUEST", labelKey: "menu.material.request", path: "/material/request" },
-      { code: "MAT_ISSUE", labelKey: "menu.material.issue", path: "/material/issue" },
-      { code: "MAT_ISSUE_OTHER", labelKey: "menu.material.issueOther", path: "/material/issue-other" },
-      { code: "MAT_LOT", labelKey: "menu.material.lot", path: "/material/lot" },
-      { code: "MAT_LOT_SPLIT", labelKey: "menu.material.lotSplit", path: "/material/lot-split" },
-      { code: "MAT_LOT_MERGE", labelKey: "menu.material.lotMerge", path: "/material/lot-merge" },
-      { code: "MAT_SHELF_LIFE", labelKey: "menu.material.shelfLife", path: "/material/shelf-life" },
-      { code: "MAT_SHELF_LIFE_REINSPECT", labelKey: "menu.material.shelfLifeReinspect", path: "/material/shelf-life-reinspect" },
-      { code: "MAT_SHELF_LIFE_HISTORY", labelKey: "menu.material.shelfLifeHistory", path: "/material/shelf-life-history" },
-      { code: "MAT_SCRAP", labelKey: "menu.material.scrap", path: "/material/scrap" },
-      { code: "MAT_ADJUSTMENT", labelKey: "menu.material.adjustment", path: "/material/adjustment" },
-      { code: "MAT_MISC_RECEIPT", labelKey: "menu.material.miscReceipt", path: "/material/misc-receipt" },
-      { code: "MAT_RECEIPT_CANCEL", labelKey: "menu.material.receiptCancel", path: "/material/receipt-cancel" },
     ],
   },
   {
