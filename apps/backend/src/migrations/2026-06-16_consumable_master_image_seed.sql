@@ -1,0 +1,335 @@
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_jg_ct1.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-JG-CT1';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_jg_ct2.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-JG-CT2';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_jg_hv1.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-JG-HV1';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_jg_sl1.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-JG-SL1';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_jg_tw1.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-JG-TW1';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/jighd_a.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'JIGHD-A';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/jighd_b.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'JIGHD-B';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/jighd_c.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'JIGHD-C';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/jighd_d.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'JIGHD-D';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ap_040.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-AP-040';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ap_060.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-AP-060';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ap_090.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-AP-090';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ap_110.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-AP-110';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ap_187.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-AP-187';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ap_250.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-AP-250';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/appct_a.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'APPCT-A';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/appct_b.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'APPCT-B';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/appct_se.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'APPCT-SE';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_bl_f01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-BL-F01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_bl_mc1.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-BL-MC1';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_bl_s01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-BL-S01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_bl_s02.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-BL-S02';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_bl_v01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-BL-V01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_fl_a01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-FL-A01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_fl_d01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-FL-D01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ij_i01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-IJ-I01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ij_n01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-IJ-N01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ph_b01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-PH-B01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_ph_z01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-PH-Z01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_st_t01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-ST-T01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_uw_a01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-UW-A01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cm_uw_h01.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CM-UW-H01';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cutbl001.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CUTBL001';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cutbl002.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CUTBL002';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cutbl003.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CUTBL003';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cutbl004.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CUTBL004';
+/
+
+UPDATE CONSUMABLE_MASTERS
+   SET IMAGE_URL = '/uploads/consumables/cutbl009.svg',
+       UPDATED_BY = 'codex',
+       UPDATED_AT = SYSTIMESTAMP
+ WHERE COMPANY = '40'
+   AND PLANT_CD = '1000'
+   AND CONSUMABLE_CODE = 'CUTBL009';
+/
+
+COMMIT;
+/
