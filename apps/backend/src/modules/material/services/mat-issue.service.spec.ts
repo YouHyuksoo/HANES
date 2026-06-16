@@ -13,6 +13,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { WarehouseService } from '../../inventory/services/warehouse.service';
 
 describe('MatIssueService', () => {
   let target: MatIssueService;
@@ -26,6 +27,7 @@ describe('MatIssueService', () => {
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockTx: DeepMocked<TransactionService>;
+  let mockWarehouseService: DeepMocked<WarehouseService>;
 
   beforeEach(async () => {
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
@@ -38,6 +40,7 @@ describe('MatIssueService', () => {
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
     mockTx = createMock<TransactionService>();
+    mockWarehouseService = createMock<WarehouseService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
@@ -59,6 +62,7 @@ describe('MatIssueService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },
+        { provide: WarehouseService, useValue: mockWarehouseService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -319,6 +323,153 @@ describe('MatIssueService', () => {
       MatStock,
       { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 2, availableQty: 2 },
+    );
+  });
+
+  it('moves stock to the equip WIP warehouse when orderNo resolves an equipCode', async () => {
+    const manager = {
+      findOne: jest
+        // 1) JobOrder 조회 (createInTx 진입부, 출고루프보다 먼저)
+        .fn()
+        .mockResolvedValueOnce({
+          orderNo: 'JO-001',
+          equipCode: 'EQ-01',
+          lineCode: 'L1',
+          processCode: 'PRC1',
+          company: 'HANES',
+          plant: 'P01',
+        } as JobOrder)
+        // 2) LOT 조회
+        .mockResolvedValueOnce({
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-001',
+          iqcStatus: 'PASS',
+          status: 'NORMAL',
+          company: 'HANES',
+          plant: 'P01',
+        } as MatLot)
+        // 3) upsertWipStock 의 기존 공정창고 재고 조회 (없음)
+        .mockResolvedValueOnce(null),
+      find: jest
+        .fn()
+        // 출고 대상 재고
+        .mockResolvedValueOnce([
+          { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' } as MatStock,
+        ])
+        // 출고 후 잔여 재고 (원자재 0 + 공정창고 5 = DEPLETED 아님)
+        .mockResolvedValueOnce([
+          { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock,
+          { warehouseCode: 'WIP_EQ-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' } as MatStock,
+        ]),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    mockWarehouseService.getOrCreateEquipWipWarehouse.mockResolvedValue({
+      warehouseCode: 'WIP_EQ-01',
+      company: 'HANES',
+      plant: 'P01',
+    } as any);
+
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('ISS-001')
+      .mockResolvedValueOnce('TX-001');
+    mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
+    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+    mockJobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-001' } as JobOrder);
+
+    await target.create({
+      orderNo: 'JO-001',
+      issueType: 'PROD',
+      items: [{ matUid: 'MAT-001', issueQty: 5 }],
+    } as any, 'HANES', 'P01');
+
+    expect(mockWarehouseService.getOrCreateEquipWipWarehouse).toHaveBeenCalledWith(
+      'EQ-01',
+      'HANES',
+      'P01',
+      'L1',
+      'PRC1',
+    );
+    // WIP_MOVE 거래: from=원자재창고, to=공정창고
+    expect(manager.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transNo: 'TX-001',
+        transType: 'WIP_MOVE',
+        fromWarehouseId: 'RM_MAIN',
+        toWarehouseId: 'WIP_EQ-01',
+        qty: -5,
+      }),
+    );
+    // 원자재창고 차감
+    expect(manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      { qty: 0, availableQty: 0 },
+    );
+    // 공정창고 신규 가산
+    expect(manager.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        warehouseCode: 'WIP_EQ-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 5,
+        availableQty: 5,
+        reservedQty: 0,
+      }),
+    );
+  });
+
+  it('keeps the simple MAT_OUT issue when orderNo is absent', async () => {
+    const manager = {
+      findOne: jest.fn().mockResolvedValueOnce({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot),
+      find: jest
+        .fn()
+        .mockResolvedValueOnce([
+          { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' } as MatStock,
+        ])
+        .mockResolvedValueOnce([
+          { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock,
+        ]),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('ISS-001')
+      .mockResolvedValueOnce('TX-001');
+    mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
+    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+
+    await target.create({
+      issueType: 'PROD',
+      items: [{ matUid: 'MAT-001', issueQty: 5 }],
+    } as any, 'HANES', 'P01');
+
+    expect(mockWarehouseService.getOrCreateEquipWipWarehouse).not.toHaveBeenCalled();
+    expect(manager.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transNo: 'TX-001',
+        transType: 'MAT_OUT',
+        fromWarehouseId: 'RM_MAIN',
+        toWarehouseId: null,
+        qty: -5,
+      }),
+    );
+    // 공정창고 가산 save 가 호출되지 않아야 한다 (warehouseCode 가진 MatStock save 없음)
+    expect(manager.save).not.toHaveBeenCalledWith(
+      expect.objectContaining({ warehouseCode: 'WIP_EQ-01' }),
     );
   });
 
