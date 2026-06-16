@@ -3,11 +3,14 @@
  * @description BOM 기반 자재 자동차감(Auto-Issue) 서비스
  *
  * 초보자 가이드:
- * 1. 생산실적 등록/완료 시 호출되어 BOM 자재를 FIFO로 자동 차감합니다.
+ * 1. 생산실적 등록/완료 시 호출되어 BOM 자재를 소비(차감)합니다.
  * 2. SysConfig 설정(MAT_AUTO_ISSUE_TIMING)으로 차감 시점을 제어합니다.
  * 3. BOM의 qtyPer × (goodQty + defectQty)로 소요량을 계산합니다.
- * 4. MatLot → MatIssue → StockTransaction → MatStock 순으로 처리합니다.
- * 5. 외부 트랜잭션(queryRunner)이 전달되면 그것을 공유하고,
+ * 4. 설비(equipCode) 배정 시: 공정재고(WIP_MAT_STOCKS)에서 소비.
+ *    - WipMatStockService.deductStockInTx 위임 → WIP_MAT_TRANSACTIONS(PROD_CONSUME) 기록.
+ *    - 원자재재고(MAT_STOCKS)는 절대 건드리지 않는다(이중차감 방지).
+ * 5. 설비 미배정(fallback): 기존 원자재창고 FIFO 차감(MAT_OUT + MatIssue PROD_AUTO).
+ * 6. 외부 트랜잭션(queryRunner)이 전달되면 그것을 공유하고,
  *    없으면 자체 트랜잭션을 생성합니다.
  *
  * 호출 예시:
@@ -31,7 +34,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { WarehouseService } from '../../inventory/services/warehouse.service';
+import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 
 /** 자동차감 결과 인터페이스 */
 export interface AutoIssueResult {
@@ -77,7 +80,7 @@ export class AutoIssueService {
     private readonly sysConfigService: SysConfigService,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
-    private readonly warehouseService: WarehouseService,
+    private readonly wipMatStockService: WipMatStockService,
   ) {}
 
   private tenantWhere(tenant: TenantContext) {
@@ -166,23 +169,15 @@ export class AutoIssueService {
     const stockCheckPolicy =
       (await this.sysConfigService.getValue('MAT_ISSUE_STOCK_CHECK')) ?? 'BLOCK';
 
-    /* ── 5-1. 소비 대상 창고 결정 ─────────────────────
-     * 2단계 WIP 모델: 출고(Task 4)가 원자재창고→공정창고(WIP_{equipCode})로
-     * 이미 이동했으므로, 소비(차감)는 공정창고에서만 한다(이중차감 방지).
-     * equipCode가 없으면(설비 미배정) 안전책으로 기존 원자재창고 FIFO를 유지하고 경고한다. */
-    let wipWarehouseCode: string | null = null;
-    if (jobOrder.equipCode) {
-      const wipWarehouse = await this.warehouseService.getOrCreateEquipWipWarehouse(
-        jobOrder.equipCode,
-        jobOrder.company,
-        jobOrder.plant,
-        jobOrder.lineCode,
-        jobOrder.processCode,
-      );
-      wipWarehouseCode = wipWarehouse.warehouseCode;
-    } else {
+    /* ── 5-1. 소비 모델 결정 ─────────────────────
+     * 공정재고 모델(R5): 출고이동이 원자재재고(MAT_STOCKS)→공정재고(WIP_MAT_STOCKS)로
+     * 이미 적재했으므로, 소비(차감)는 공정재고에서만 한다(이중차감 방지).
+     * - equipCode 있음: WipMatStockService.deductStockInTx 위임(WIP_MAT_TRANSACTIONS 기록).
+     * - equipCode 없음(설비 미배정): 안전책으로 기존 원자재창고 FIFO(MAT_OUT) fallback + 경고. */
+    const equipCode = jobOrder.equipCode;
+    if (!equipCode) {
       const msg =
-        `작업지시에 설비가 배정되지 않아 공정창고 소비를 적용할 수 없습니다. ` +
+        `작업지시에 설비가 배정되지 않아 공정재고 소비를 적용할 수 없습니다. ` +
         `기존 원자재창고 차감으로 처리합니다. orderNo=${orderNo}`;
       this.logger.warn(msg);
       result.warnings.push(msg);
@@ -229,12 +224,36 @@ export class AutoIssueService {
       const requiredQty = Number(bom.qtyPer) * qty;
       if (requiredQty <= 0) continue;
 
-      const childResult = await this.issueFifo(
-        qr, bom.childItemCode, requiredQty, orderNo,
-        prodResultNo, stockCheckPolicy, result.warnings, tenant,
-        scannedMatUids, wipWarehouseCode,
-      );
-      result.issued.push(...childResult);
+      if (equipCode) {
+        /* 공정재고(WIP_MAT_STOCKS) 소비 — WipMatStockService에 위임.
+         * WIP_MAT_TRANSACTIONS(PROD_CONSUME) 기록 + 스캔 LOT 우선 + 부족정책 처리는 서비스 내부 책임.
+         * 원자재재고(MAT_STOCKS)는 일절 건드리지 않는다(이중차감 방지). */
+        const deducted = await this.wipMatStockService.deductStockInTx(qr, {
+          equipCode,
+          itemCode: bom.childItemCode,
+          qty: requiredQty,
+          transType: 'PROD_CONSUME',
+          refType: 'PROD_RESULT',
+          refId: prodResultNo,
+          orderNo,
+          scannedMatUids: Array.from(scannedMatUids),
+          stockPolicy: stockCheckPolicy === 'WARN' ? 'WARN' : 'BLOCK',
+          company: jobOrder.company,
+          plant: jobOrder.plant,
+          warnings: result.warnings,
+        });
+        result.issued.push(
+          ...deducted.map((d) => ({ matUid: d.matUid, itemCode: bom.childItemCode, issueQty: d.qty })),
+        );
+      } else {
+        /* 설비 미배정 fallback — 기존 원자재창고 FIFO 차감(MAT_OUT + MatIssue PROD_AUTO) */
+        const childResult = await this.issueFifo(
+          qr, bom.childItemCode, requiredQty, orderNo,
+          prodResultNo, stockCheckPolicy, result.warnings, tenant,
+          scannedMatUids,
+        );
+        result.issued.push(...childResult);
+      }
     }
   }
 
@@ -286,7 +305,9 @@ ${tenantSql}
   }
 
   /* ================================================================
-   *  LOT 차감 (분할 차감 포함)
+   *  [Fallback 전용] 설비 미배정 작업지시의 원자재창고 FIFO 차감.
+   *  공정재고(WIP) 소비는 WipMatStockService.deductStockInTx가 담당하며,
+   *  이 메서드는 equipCode가 없는 예외 케이스에서만 호출된다.
    *  우선순위: ① 키오스크 스캔 LOT(JOB_MATERIAL_LOTS) → ② FIFO(createdAt)
    * ================================================================ */
   private async issueFifo(
@@ -299,13 +320,9 @@ ${tenantSql}
     warnings: string[],
     tenant: TenantContext,
     scannedMatUids: Set<string> = new Set(),
-    wipWarehouseCode: string | null = null,
   ): Promise<{ matUid: string; itemCode: string; issueQty: number }[]> {
     const issued: { matUid: string; itemCode: string; issueQty: number }[] = [];
     const tenantWhere = this.tenantWhere(tenant);
-    /* 공정창고 한정 차감(이중차감 방지). wipWarehouseCode가 없으면(설비 미배정)
-     * 기존 동작(원자재창고 전체 FIFO)을 fallback으로 유지한다. */
-    const warehouseWhere = wipWarehouseCode ? { warehouseCode: wipWarehouseCode } : {};
 
     /* FIFO LOT 목록 (PASS & NORMAL & MatStock.qty > 0) — IN 배치로 N+1 방지 */
     const lotQb = qr.manager
@@ -330,7 +347,7 @@ ${tenantSql}
 
     const candidateMatUids = candidateLots.map((l) => l.matUid);
     const allStocks = candidateMatUids.length > 0
-      ? await qr.manager.find(MatStock, { where: { matUid: In(candidateMatUids), ...warehouseWhere, ...tenantWhere } })
+      ? await qr.manager.find(MatStock, { where: { matUid: In(candidateMatUids), ...tenantWhere } })
       : [];
     for (const stock of allStocks) {
       this.assertSameTenant('자동차감 재고', tenant, stock);
@@ -388,19 +405,17 @@ ${tenantSql}
       });
       await qr.manager.save(MatIssue, issueEntity);
 
-      /* (b) MatStock 차감 — 공정창고(wipWarehouseCode) 한정.
-       *     설비 미배정 fallback이면 LOT의 모든 창고에서 차감. 창고별 차감 내역 확보 */
-      const deductions = await this.deductMatStock(qr, itemCode, lot.matUid, issueQty, tenant, wipWarehouseCode);
+      /* (b) MatStock 차감 — LOT의 모든 창고에서 차감(원자재창고). 창고별 차감 내역 확보 */
+      const deductions = await this.deductMatStock(qr, itemCode, lot.matUid, issueQty, tenant);
 
       /* (c) StockTransaction 생성 — 창고별로 FROM_WAREHOUSE_ID를 기록해야
        *     실적 취소(reverseAutoIssue) 시 원 창고로 재고 복원이 가능하다.
-       *     공정창고 소비는 PROD_CONSUME, 설비 미배정 fallback은 기존 MAT_OUT. */
-      const consumeTransType = wipWarehouseCode ? 'PROD_CONSUME' : 'MAT_OUT';
+       *     설비 미배정 fallback 소비이므로 transType은 MAT_OUT. */
       for (const deduction of deductions) {
         const transNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
         const txEntity = qr.manager.create(StockTransaction, {
           transNo,
-          transType: consumeTransType,
+          transType: 'MAT_OUT',
           fromWarehouseId: deduction.warehouseCode,
           toWarehouseId: null,
           itemCode,
@@ -415,9 +430,7 @@ ${tenantSql}
         await qr.manager.save(StockTransaction, txEntity);
       }
 
-      /* (d) MatStock.qty 합산 → 0이면 MatLot DEPLETED 처리.
-       *     공정창고 한정 차감이어도, LOT가 어디에든 재고가 남아있으면
-       *     DEPLETED로 보지 않는다(전체 창고 합산). */
+      /* (d) MatStock.qty 합산 → 0이면 MatLot DEPLETED 처리. */
       const remainingStocks = await qr.manager.find(MatStock, {
         where: { matUid: lot.matUid, ...tenantWhere },
       });
@@ -441,12 +454,10 @@ ${tenantSql}
     matUid: string,
     totalDeduct: number,
     tenant: TenantContext,
-    wipWarehouseCode: string | null = null,
   ): Promise<{ warehouseCode: string; qty: number }[]> {
     const tenantWhere = this.tenantWhere(tenant);
-    const warehouseWhere = wipWarehouseCode ? { warehouseCode: wipWarehouseCode } : {};
     const stocks = await qr.manager.find(MatStock, {
-      where: { itemCode, matUid, ...warehouseWhere, ...tenantWhere },
+      where: { itemCode, matUid, ...tenantWhere },
       order: { createdAt: 'ASC' },
     });
     for (const stock of stocks) {
