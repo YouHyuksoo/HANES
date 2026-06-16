@@ -10,6 +10,23 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 00:09 Codex
+
+- 작업: `T-EQUIPMENT-PERIODIC-DAILY-FLOW` `/equipment/periodic-inspect` 처리 방식을 `/equipment/daily-inspect` 방식으로 통일.
+- 원인: 백엔드는 `DailyInspectController`와 `PeriodicInspectController`가 같은 `EquipInspectService`를 사용하고 `inspectType`만 각각 `DAILY`, `PERIODIC`으로 고정한다. 차이는 프론트였다. 일일점검은 `/master/equip-inspect-items`, 점검로그, 설비마스터를 합쳐 대상 설비 목록 + 항목 입력 패널로 처리했고, 정기점검은 단순 DataGrid/모달 CRUD로 처리했다.
+- 변경: `periodic-inspect/page.tsx`를 일일점검형 분할 패널로 교체했다. 좌측은 `PERIODIC` 점검항목이 배정된 설비 목록과 해당일 처리상태를 표시하고, 우측은 선택 설비의 `PERIODIC` 항목을 입력해 `/equipment/periodic-inspect`에 저장한다. 기존 일일점검 컴포넌트 `EquipListPanel`, `InspectEntryPanel`은 기본 동작을 유지하면서 `PERIODIC`용 문구, 엔드포인트, 기존이력 여부를 주입받도록 확장했다.
+- 보정: 정기점검 미점검 설비 선택 시 존재하지 않는 로그를 단건 조회해 404 모달이 뜨지 않도록 `existingInspected`가 true일 때만 상세 로그를 조회한다. 점검항목 API가 `seq` 대신 `sortSeq/itemCode`를 내려주는 케이스 때문에 화면 key와 입력상태 key를 `itemCode` 우선으로 바꿔 React key 중복 경고를 제거했다.
+- 검증: `node apps/frontend/src/app/(authenticated)/equipment/periodic-inspect/periodic-inspect-daily-flow.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS.
+- 브라우저 검증: 3002 실제 화면에서 `/equipment/periodic-inspect`와 `/equipment/daily-inspect` 모두 좌측 대상 패널 + 우측 입력 패널로 렌더링됨을 확인했다. 정기점검 첫 설비 선택 후 `정기점검 입력`, 점검항목 테이블, 측정값/입력, 판정 컬럼 표시 true, 오류 모달 false, console error/warning 0. 증적: `docs/reports/equipment-periodic-inspect-daily-flow-2026-06-17.png`, `docs/reports/equipment-daily-inspect-daily-flow-2026-06-17.png`, `docs/reports/equipment-periodic-inspect-selected-2026-06-17.png`.
+- 상태: 완료, lock released.
+
+## 2026-06-17 00:08 Codex
+
+- 작업: `T-EQUIPMENT-INSPECT-CARDS-REMOVE` `/equipment/inspect-history`, `/equipment/periodic-inspect` 상단 정보카드 제거.
+- 변경: `inspect-history/page.tsx`와 `periodic-inspect/page.tsx`에서 상단 `StatCard` 영역과 카드 전용 `stats` 계산/import만 제거했다. 이후 정기점검 화면은 사용자 요청에 따라 `T-EQUIPMENT-PERIODIC-DAILY-FLOW`에서 일일점검형 처리 화면으로 전환했다.
+- 검증: 카드 관련 잔여 참조 검색 0건, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS. 3002 브라우저에서 `/equipment/inspect-history`와 `/equipment/periodic-inspect` 상단 정보카드 미표시 확인. 증적: `docs/reports/equipment-inspect-history-no-cards-2026-06-17.png`, `docs/reports/equipment-periodic-inspect-no-cards-2026-06-17.png`.
+- 상태: 완료, lock released.
+
 ## 2026-06-16 22:48 Codex
 
 - 작업: `T-CONSUMABLE-LIFE-STATUS-SHAPE` `/consumables/life` 런타임 `data.filter is not a function` 수정.

@@ -10,6 +10,8 @@ Format:
 
 ## Completed
 
+- T-EQUIPMENT-PERIODIC-DAILY-FLOW | 2026-06-17 | codex | `/equipment/periodic-inspect`를 `/equipment/daily-inspect`와 같은 대상 설비 목록 + 항목별 입력 흐름으로 통일하고 3002 브라우저 선택 검증 완료 | evidence: JOURNAL 2026-06-17 00:09 Codex
+- T-EQUIPMENT-INSPECT-CARDS-REMOVE | 2026-06-17 | codex | `/equipment/inspect-history`, `/equipment/periodic-inspect` 상단 정보카드 제거 및 3002 브라우저 미표시 확인 | evidence: JOURNAL 2026-06-17 00:08 Codex
 - T-CONSUMABLE-LIFE-STATUS-SHAPE | 2026-06-16 | codex | `/consumables/life` 런타임 `data.filter is not a function` 수정, life-status API를 카운트 객체가 아닌 행 배열 계약으로 보정하고 API/브라우저 확인 완료 | evidence: JOURNAL 2026-06-16 22:48 Codex
 - T-CONSUMABLE-LABEL-RESPONSE-FIX | 2026-06-16 | codex | `/consumables/label` 라벨 대상 조회 응답 이중 래핑을 `ResponseUtil.success`로 수정해 API 37건/브라우저 37행 표시 확인 | evidence: JOURNAL 2026-06-16 22:24 Codex
 - T-FRONTEND-DELETE-CONFIRM-GUARD | 2026-06-16 | codex | 삭제 버튼 즉시 실행 지점을 공용 `ConfirmModal` 확인 후 삭제로 전환, 이미지 제거/하위항목 삭제/매핑 삭제 포함, 구조 테스트와 FE tsc 통과 | evidence: JOURNAL 2026-06-16 22:21 Codex

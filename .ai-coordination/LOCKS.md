@@ -16,6 +16,37 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-FIX-SWALLOWED-EXCEPTIONS
+  owner: claude
+  files:
+    - apps/backend/src/modules/interface/services/interface.service.ts
+    - apps/backend/src/modules/master/services/vendor-barcode-mapping.service.ts
+    - apps/backend/src/modules/master/controllers/equip-inspect-item-pool.controller.ts
+    - apps/backend/src/modules/consumables/controllers/consumables.controller.ts
+    - apps/frontend/src/app/(authenticated)/equipment/daily-inspect/components/InspectEntryPanel.tsx
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 예외 삼키기 4건(BOM동기화 status전이/정규식/파일삭제/details파싱) 로깅·정합성 보강. backend tsc 0건.
+
+- task: T-EQUIPMENT-PERIODIC-DAILY-FLOW
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/equipment/periodic-inspect/page.tsx
+    - apps/frontend/src/app/(authenticated)/equipment/daily-inspect/components/EquipListPanel.tsx
+    - apps/frontend/src/app/(authenticated)/equipment/daily-inspect/components/InspectEntryPanel.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 00:12 KST
+  last_seen: 2026-06-17 00:09 KST
+  expires: 2026-06-17 01:00 KST
+  status: released
+  note: `/equipment/periodic-inspect`를 일일점검형 대상 목록 + 항목 입력 흐름으로 통일 완료.
+
 - task: T-EQUIPMENT-INSPECT-CARDS-REMOVE
   owner: codex
   files:
@@ -26,10 +57,10 @@ Before editing, add a lock entry. Mark it released when done.
     - .ai-coordination/JOURNAL.md
     - .ai-coordination/HANDOFF/codex.md
   started: 2026-06-17 00:02 KST
-  last_seen: 2026-06-17 00:05 KST
+  last_seen: 2026-06-17 00:09 KST
   expires: 2026-06-17 00:30 KST
-  status: active
-  note: `/equipment/inspect-history`, `/equipment/periodic-inspect` 상단 정보카드 제거.
+  status: released
+  note: `/equipment/inspect-history`, `/equipment/periodic-inspect` 상단 정보카드 제거 완료.
 
 - task: T-EQUIP-INSPECT-HISTORY-BLANK-ROWS
   owner: codex

@@ -2,7 +2,7 @@
 
 ## Last Update
 
-2026-06-16 22:48
+2026-06-17 00:09
 
 ## In Review
 
@@ -14,6 +14,8 @@
 
 ## Completed
 
+- `T-EQUIPMENT-PERIODIC-DAILY-FLOW`: `/equipment/periodic-inspect`를 `/equipment/daily-inspect`와 같은 대상 설비 목록 + 항목별 입력 흐름으로 통일 완료. 백엔드는 기존 `/equipment/periodic-inspect` `PERIODIC` 엔드포인트를 그대로 쓰고, 프론트는 `PERIODIC` 항목 배정 설비 목록과 선택 설비 입력 패널로 처리한다. 미점검 설비 선택 시 404 상세조회 모달이 뜨지 않도록 기존이력 여부가 있을 때만 단건 조회하고, 항목 상태 key는 `itemCode` 우선으로 보정했다. 검증: 구조 테스트, frontend tsc, diff check, 3002 브라우저에서 정기점검 선택 후 항목 테이블 표시 및 콘솔 오류 0. 증적: `docs/reports/equipment-periodic-inspect-selected-2026-06-17.png`.
+- `T-EQUIPMENT-INSPECT-CARDS-REMOVE`: `/equipment/inspect-history`, `/equipment/periodic-inspect` 상단 정보카드 제거 완료. `inspect-history`는 그리드/필터/내보내기 유지, `periodic-inspect`는 이후 일일점검형 처리 화면으로 전환됐다. 검증: frontend tsc, diff check, 3002 브라우저 카드 미표시 확인. 증적: `docs/reports/equipment-inspect-history-no-cards-2026-06-17.png`, `docs/reports/equipment-periodic-inspect-no-cards-2026-06-17.png`.
 - `T-EQUIP-INSPECT-HISTORY-BLANK-ROWS`: `/equipment/inspect-history` 빈 행 문제 수정 완료. 원인은 `EquipInspectService.findAll()`이 `getRawMany()` 결과를 `log.log`로 잘못 펼쳐 API가 `{ equip: {} }` 15행을 반환한 것. raw alias 명시 매핑과 Oracle 대문자 alias fallback을 추가했고, 화면 점검일은 `YYYY-MM-DD`로 표시한다. 검증: backend focused test 14/14, backend/frontend tsc, API shape 확인, 3002 브라우저에서 `EQ-ATCUT-01/자동절단 설비 #1/오지훈/합격` 표시 및 ISO 원문 미표시 확인. 증적: `docs/reports/equipment-inspect-history-grid-2026-06-16-after.png`.
 - `T-KIOSK-WI-SEED-HNS02C1ABCD`: `/production/input-kiosk` 작업지도서 미표시 원인 확인 및 시드 보완 완료. `WO2606150060`은 `HNS02C1ABCD/ATCUT/EQ-ATCUT-01`이고 키오스크 API 조건도 동일했으나 JSHANES `WORK_INSTRUCTIONS` 0건이었다. `apps/backend/src/migrations/2026-06-16_work_instruction_hns02c1abcd_seed.sql` MERGE 시드를 적용해 Rev.A 작업지도서 1건을 생성했다. 검증: DB 1건, API total 1, 임시 headless Chrome에서 3002 `/production/input-kiosk` DOM에 제목/본문 표시 true 및 `작업지도서 없음` false, 스크린샷 `docs/reports/kiosk-work-instruction-hns02c1abcd-2026-06-16.png`.
 - `T-CONSUMABLE-LIFE-STATUS-SHAPE`: `/consumables/life` 런타임 `data.filter is not a function` 수정 완료. 원인은 백엔드 `getLifeStatus()`가 카운트 객체를 반환하지만 화면은 수명현황 행 배열을 기대한 계약 불일치였다. `getLifeStatus()`를 행 배열 반환으로 바꾸고 테스트를 보강했다. 검증: focused backend test 20/20, backend/frontend tsc, 3003 API `data` 배열 37건, Playwright 3002 `/consumables/life` 런타임 에러 없음 및 37건 렌더링 확인.
