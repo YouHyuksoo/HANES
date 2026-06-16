@@ -25,6 +25,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between, In, QueryRunner, FindOptionsWhere } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
+import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import {
   CreateConsumableDto,
   UpdateConsumableDto,
@@ -33,6 +36,8 @@ import {
   ConsumableLogQueryDto,
   UpdateShotCountDto,
   ResetShotCountDto,
+  CreateConsumableUsageMapDto,
+  UpdateConsumableUsageMapDto,
 } from '../dto/consumables.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -45,6 +50,12 @@ export class ConsumablesService {
     private readonly consumableMasterRepository: Repository<ConsumableMaster>,
     @InjectRepository(ConsumableLog)
     private readonly consumableLogRepository: Repository<ConsumableLog>,
+    @InjectRepository(ConsumableUsageMap)
+    private readonly usageMapRepository: Repository<ConsumableUsageMap>,
+    @InjectRepository(PartMaster)
+    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(EquipMaster)
+    private readonly equipRepository: Repository<EquipMaster>,
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
   ) {}
@@ -206,6 +217,139 @@ export class ConsumablesService {
    */
   async remove(id: string, company?: string, plant?: string) {
     return this.delete(id, company, plant);
+  }
+
+  // =============================================
+  // 소모품 사용 매핑
+  // =============================================
+
+  async findUsageMaps(consumableCode: string, company?: string, plant?: string) {
+    await this.findById(consumableCode, company, plant);
+
+    const params: unknown[] = [consumableCode];
+    const tenantClauses: string[] = [];
+    if (company) {
+      tenantClauses.push(`m.COMPANY = :${params.length + 1}`);
+      params.push(company);
+    }
+    if (plant) {
+      tenantClauses.push(`m.PLANT_CD = :${params.length + 1}`);
+      params.push(plant);
+    }
+    const tenantSql = tenantClauses.length ? ` AND ${tenantClauses.join(' AND ')}` : '';
+
+    return this.dataSource.query(
+      `SELECT m.PRODUCT_ITEM_CODE AS "productItemCode",
+              p.ITEM_NAME         AS "productItemName",
+              m.EQUIP_CODE        AS "equipCode",
+              e.EQUIP_NAME        AS "equipName",
+              m.CONSUMABLE_CODE   AS "consumableCode",
+              c.NAME              AS "consumableName",
+              m.USAGE_PER_UNIT    AS "usagePerUnit",
+              m.USE_YN            AS "useYn",
+              m.REMARK            AS "remark",
+              m.CREATED_AT        AS "createdAt",
+              m.UPDATED_AT        AS "updatedAt"
+         FROM CONSUMABLE_USAGE_MAP m
+         LEFT JOIN ITEM_MASTERS p
+           ON p.COMPANY = m.COMPANY
+          AND p.PLANT_CD = m.PLANT_CD
+          AND p.ITEM_CODE = m.PRODUCT_ITEM_CODE
+         LEFT JOIN EQUIP_MASTERS e
+           ON e.COMPANY = m.COMPANY
+          AND e.PLANT_CD = m.PLANT_CD
+          AND e.EQUIP_CODE = m.EQUIP_CODE
+         LEFT JOIN CONSUMABLE_MASTERS c
+           ON c.COMPANY = m.COMPANY
+          AND c.PLANT_CD = m.PLANT_CD
+          AND c.CONSUMABLE_CODE = m.CONSUMABLE_CODE
+        WHERE m.CONSUMABLE_CODE = :1
+${tenantSql}
+        ORDER BY m.USE_YN DESC, m.PRODUCT_ITEM_CODE ASC, m.EQUIP_CODE ASC`,
+      params,
+    );
+  }
+
+  async createUsageMap(consumableCode: string, dto: CreateConsumableUsageMapDto, company?: string, plant?: string) {
+    await this.findById(consumableCode, company, plant);
+    await this.assertUsageMapRefs(dto.productItemCode, dto.equipCode, company, plant);
+
+    const key = {
+      company,
+      plant,
+      productItemCode: dto.productItemCode,
+      equipCode: dto.equipCode,
+      consumableCode,
+    };
+    const existing = await this.usageMapRepository.findOne({ where: key });
+    const entity = existing ?? this.usageMapRepository.create(key);
+
+    entity.usagePerUnit = dto.usagePerUnit ?? 1;
+    entity.useYn = dto.useYn ?? 'Y';
+    entity.remark = dto.remark ?? null;
+    entity.updatedAt = new Date();
+
+    return this.usageMapRepository.save(entity);
+  }
+
+  async updateUsageMap(
+    consumableCode: string,
+    productItemCode: string,
+    equipCode: string,
+    dto: UpdateConsumableUsageMapDto,
+    company?: string,
+    plant?: string,
+  ) {
+    const map = await this.usageMapRepository.findOne({
+      where: { consumableCode, productItemCode, equipCode, ...this.tenantWhere(company, plant) },
+    });
+    if (!map) {
+      throw new NotFoundException(`소모품 사용 매핑을 찾을 수 없습니다: ${productItemCode}/${equipCode}/${consumableCode}`);
+    }
+
+    if (dto.usagePerUnit !== undefined) map.usagePerUnit = dto.usagePerUnit;
+    if (dto.useYn !== undefined) map.useYn = dto.useYn;
+    if (dto.remark !== undefined) map.remark = dto.remark || null;
+    map.updatedAt = new Date();
+
+    return this.usageMapRepository.save(map);
+  }
+
+  async deleteUsageMap(
+    consumableCode: string,
+    productItemCode: string,
+    equipCode: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const result = await this.usageMapRepository.delete({
+      consumableCode,
+      productItemCode,
+      equipCode,
+      ...this.tenantWhere(company, plant),
+    });
+    if (!result.affected) {
+      throw new NotFoundException(`소모품 사용 매핑을 찾을 수 없습니다: ${productItemCode}/${equipCode}/${consumableCode}`);
+    }
+    return { consumableCode, productItemCode, equipCode };
+  }
+
+  private async assertUsageMapRefs(productItemCode: string, equipCode: string, company?: string, plant?: string) {
+    const [part, equip] = await Promise.all([
+      this.partRepository.findOne({
+        where: { itemCode: productItemCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
+      }),
+      this.equipRepository.findOne({
+        where: { equipCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
+      }),
+    ]);
+
+    if (!part) {
+      throw new NotFoundException(`제품/모델 품목을 찾을 수 없습니다: ${productItemCode}`);
+    }
+    if (!equip) {
+      throw new NotFoundException(`설비를 찾을 수 없습니다: ${equipCode}`);
+    }
   }
 
   // =============================================

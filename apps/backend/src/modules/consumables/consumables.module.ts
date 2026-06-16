@@ -13,7 +13,10 @@ import { ConsumableStockController } from './controllers/consumable-stock.contro
 import { ConsumableMaster } from '../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../entities/consumable-log.entity';
 import { ConsumableStock } from '../../entities/consumable-stock.entity';
+import { ConsumableUsageMap } from '../../entities/consumable-usage-map.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
+import { PartMaster } from '../../entities/part-master.entity';
+import { EquipMaster } from '../../entities/equip-master.entity';
 
 @Module({
   imports: [
@@ -21,7 +24,10 @@ import { LabelPrintLog } from '../../entities/label-print-log.entity';
       ConsumableMaster,
       ConsumableLog,
       ConsumableStock,
+      ConsumableUsageMap,
       LabelPrintLog,
+      PartMaster,
+      EquipMaster,
     ]),
   ],
   controllers: [

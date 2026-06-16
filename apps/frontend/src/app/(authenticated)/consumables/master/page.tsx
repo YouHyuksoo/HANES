@@ -6,16 +6,15 @@
  *
  * 초보자 가이드:
  * 1. **목록 조회**: GET /consumables (페이지네이션, 검색, 카테고리 필터)
- * 2. **통계 카드**: GET /consumables/summary (전체/경고/교체 건수)
- * 3. **등록/수정**: 우측 슬라이드 패널(ConsumableFormPanel)에서 처리
- * 4. **삭제**: DELETE /consumables/:consumableCode (소프트 삭제)
+ * 2. **등록/수정**: 우측 슬라이드 패널(ConsumableFormPanel)에서 처리
+ * 3. **삭제**: DELETE /consumables/:consumableCode (소프트 삭제)
  */
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Plus, Edit2, RefreshCw, Search, Wrench, Package, Trash2,
+  Plus, Edit2, RefreshCw, Search, Wrench, Trash2,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -24,6 +23,7 @@ import ConsumableFormPanel, {
   type ConsumableItem,
   type ConsumableFormValues,
 } from "./components/ConsumableFormPanel";
+import ConsumableUsageMapPanel from "./components/ConsumableUsageMapPanel";
 
 function ConsumableMasterPage() {
   const { t } = useTranslation();
@@ -33,6 +33,7 @@ function ConsumableMasterPage() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editing, setEditing] = useState<ConsumableItem | null>(null);
+  const [selected, setSelected] = useState<ConsumableItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const panelAnimateRef = useRef(true);
@@ -46,21 +47,21 @@ function ConsumableMasterPage() {
       if (searchTerm) params.search = searchTerm;
 
       const res = await api.get("/consumables", { params });
-      if (res.data.success) setData(res.data.data || []);
+      if (res.data.success) {
+        const rows = res.data.data || [];
+        setData(rows);
+        setSelected((current) => {
+          if (!rows.length) return null;
+          if (!current) return rows[0];
+          return rows.find((row: ConsumableItem) => row.consumableCode === current.consumableCode) ?? rows[0];
+        });
+      }
     } catch {
       /* 에러는 api 인터셉터에서 처리 */
     } finally {
       setLoading(false);
     }
   }, [categoryFilter, searchTerm]);
-
-  /* 통계: 데이터에서 카테고리별 집계 */
-  const computedStats = useMemo(() => ({
-    total: data.length,
-    mold: data.filter(d => d.category === "MOLD").length,
-    jig: data.filter(d => d.category === "JIG").length,
-    tool: data.filter(d => d.category === "TOOL").length,
-  }), [data]);
 
   useEffect(() => {
     fetchData();
@@ -120,7 +121,7 @@ function ConsumableMasterPage() {
         cell: ({ row }) => (
           <div className="flex gap-1">
             <button
-              onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditing(row.original); setIsPanelOpen(true); }}
+              onClick={() => { panelAnimateRef.current = !isPanelOpen; setSelected(row.original); setEditing(row.original); setIsPanelOpen(true); }}
               className="p-1 hover:bg-surface rounded"
             >
               <Edit2 className="w-4 h-4 text-primary" />
@@ -206,13 +207,6 @@ function ConsumableMasterPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-          <StatCard label={t("consumables.master.totalConsumables")} value={computedStats.total} icon={Wrench} color="blue" />
-          <StatCard label={t("consumables.master.mold")} value={computedStats.mold} icon={Package} color="purple" />
-          <StatCard label={t("consumables.master.jig")} value={computedStats.jig} icon={Package} color="green" />
-          <StatCard label={t("consumables.master.tool")} value={computedStats.tool} icon={Package} color="yellow" />
-        </div>
-
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
           <CardContent className="h-full p-4">
             <DataGrid
@@ -222,7 +216,13 @@ function ConsumableMasterPage() {
               enableColumnFilter
               enableExport
               exportFileName={t("consumables.master.title")}
-              onRowClick={(row) => { if (isPanelOpen) { panelAnimateRef.current = false; setEditing(row); } }}
+              onRowClick={(row) => {
+                setSelected(row);
+                if (isPanelOpen) {
+                  panelAnimateRef.current = false;
+                  setEditing(row);
+                }
+              }}
               toolbarLeft={
                 <div className="flex gap-2 items-center">
                   <Input placeholder={t("consumables.master.searchPlaceholder")}
@@ -248,6 +248,8 @@ function ConsumableMasterPage() {
           animate={panelAnimateRef.current}
         />
       )}
+
+      <ConsumableUsageMapPanel item={selected} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

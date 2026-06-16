@@ -9,8 +9,8 @@ import {
   IsOptional,
   IsInt,
   IsNumber,
+  IsIn,
   Min,
-  Max,
   MaxLength,
   IsDateString,
 } from 'class-validator';
@@ -244,5 +244,61 @@ export class ResetShotCountDto {
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()
+  remark?: string;
+}
+
+// ============================================================================
+// 소모품 사용 매핑 DTOs
+// ============================================================================
+
+export class CreateConsumableUsageMapDto {
+  @ApiProperty({ description: '제품/모델 품목코드', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  productItemCode: string;
+
+  @ApiProperty({ description: '설비코드', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  equipCode: string;
+
+  @ApiPropertyOptional({ description: '단위 생산당 소모 타수', default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  usagePerUnit?: number = 1;
+
+  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'], default: 'Y' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  useYn?: string = 'Y';
+
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+}
+
+export class UpdateConsumableUsageMapDto {
+  @ApiPropertyOptional({ description: '단위 생산당 소모 타수' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  usagePerUnit?: number;
+
+  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  useYn?: string;
+
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   remark?: string;
 }

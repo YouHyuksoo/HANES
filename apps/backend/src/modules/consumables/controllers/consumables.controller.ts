@@ -54,6 +54,8 @@ import {
   ConsumableLogQueryDto,
   UpdateShotCountDto,
   ResetShotCountDto,
+  CreateConsumableUsageMapDto,
+  UpdateConsumableUsageMapDto,
 } from '../dto/consumables.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -107,6 +109,57 @@ export class ConsumablesController {
   ) {
     const result = await this.consumablesService.getStockStatus(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  @Get(':id/usage-maps')
+  @ApiOperation({ summary: '소모품 사용 매핑 목록 조회' })
+  @ApiParam({ name: 'id', description: '소모품 코드' })
+  async findUsageMaps(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.findUsageMaps(id, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Post(':id/usage-maps')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '소모품 사용 매핑 등록' })
+  @ApiParam({ name: 'id', description: '소모품 코드' })
+  async createUsageMap(
+    @Param('id') id: string,
+    @Body() dto: CreateConsumableUsageMapDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.consumablesService.createUsageMap(id, dto, company, plant);
+    return ResponseUtil.success(data, '소모품 사용 매핑이 저장되었습니다.');
+  }
+
+  @Put(':id/usage-maps/:productItemCode/:equipCode')
+  @ApiOperation({ summary: '소모품 사용 매핑 수정' })
+  @ApiParam({ name: 'id', description: '소모품 코드' })
+  async updateUsageMap(
+    @Param('id') id: string,
+    @Param('productItemCode') productItemCode: string,
+    @Param('equipCode') equipCode: string,
+    @Body() dto: UpdateConsumableUsageMapDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.consumablesService.updateUsageMap(id, productItemCode, equipCode, dto, company, plant);
+    return ResponseUtil.success(data, '소모품 사용 매핑이 수정되었습니다.');
+  }
+
+  @Delete(':id/usage-maps/:productItemCode/:equipCode')
+  @ApiOperation({ summary: '소모품 사용 매핑 삭제' })
+  @ApiParam({ name: 'id', description: '소모품 코드' })
+  async deleteUsageMap(
+    @Param('id') id: string,
+    @Param('productItemCode') productItemCode: string,
+    @Param('equipCode') equipCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.consumablesService.deleteUsageMap(id, productItemCode, equipCode, company, plant);
+    return ResponseUtil.success(null, '소모품 사용 매핑이 삭제되었습니다.');
   }
 
   @Get('logs')

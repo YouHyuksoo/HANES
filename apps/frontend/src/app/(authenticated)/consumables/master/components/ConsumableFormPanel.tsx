@@ -142,7 +142,7 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
 
   return (
     <div
-      className={`w-[420px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}
+      className={`w-[420px] flex-shrink-0 border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}
     >
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
