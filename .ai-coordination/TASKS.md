@@ -29,6 +29,28 @@ notes:
 
 ## Active Tasks
 
+## T-EQUIPMENT-INSPECT-CARDS-REMOVE 설비점검 화면 정보카드 제거
+status: IN_PROGRESS
+owner: codex
+role: implementer
+scope:
+- /equipment/inspect-history 상단 정보카드 제거
+- /equipment/periodic-inspect 상단 정보카드 제거
+files:
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/periodic-inspect/page.tsx
+- .ai-coordination/LOCKS.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- frontend typecheck
+- 3002 화면 카드 미표시 확인
+review:
+- needs-review
+notes:
+- 조회/필터/그리드/내보내기와 정기점검 CRUD는 유지하고 상단 통계 카드만 제거한다.
+
 ## T-PDA-PALLET-SHIP PDA 팔레트 단위 출하 지원
 status: TODO
 owner: unassigned

@@ -10,6 +10,13 @@ Format:
 
 ## Completed
 
+- T-CONSUMABLE-LIFE-STATUS-SHAPE | 2026-06-16 | codex | `/consumables/life` 런타임 `data.filter is not a function` 수정, life-status API를 카운트 객체가 아닌 행 배열 계약으로 보정하고 API/브라우저 확인 완료 | evidence: JOURNAL 2026-06-16 22:48 Codex
+- T-CONSUMABLE-LABEL-RESPONSE-FIX | 2026-06-16 | codex | `/consumables/label` 라벨 대상 조회 응답 이중 래핑을 `ResponseUtil.success`로 수정해 API 37건/브라우저 37행 표시 확인 | evidence: JOURNAL 2026-06-16 22:24 Codex
+- T-FRONTEND-DELETE-CONFIRM-GUARD | 2026-06-16 | codex | 삭제 버튼 즉시 실행 지점을 공용 `ConfirmModal` 확인 후 삭제로 전환, 이미지 제거/하위항목 삭제/매핑 삭제 포함, 구조 테스트와 FE tsc 통과 | evidence: JOURNAL 2026-06-16 22:21 Codex
+- T-CONSUMABLE-MASTER-USAGE-MAP-FIXED | 2026-06-16 | codex | `/consumables/master` 매핑 UI를 편집 패널 내부가 아닌 상시 우측 고정 섹션으로 분리, 선택 소모품 기준 매핑 조회/등록/토글/삭제 유지, FE/BE tsc와 3002 HTTP 확인 | evidence: JOURNAL 2026-06-16 21:52 Codex
+- T-KIOSK-JOBORDER-PERSIST-REFRESH | 2026-06-16 | codex | `/production/input-kiosk` 새로고침 후 선택 작업지시가 사라지던 문제 수정, `harness-kiosk` persist에 `selectedJobOrder` 포함, 구조 테스트/FE tsc 통과 | evidence: JOURNAL 2026-06-16 17:50 Codex
+- T-BOM-ITEM-TYPE-LABEL-FIX | 2026-06-16 | codex | `/master/bom` 품목유형 원 코드 노출 수정. BOM은 `ITEM_MASTERS.ITEM_TYPE`을 사용하며 프론트 표시만 `comCode.ITEM_TYPE` 한글 라벨로 통일, 구조 테스트/FE tsc/API/Oracle/브라우저 실측 통과 | evidence: JOURNAL 2026-06-16 17:30 Codex
+- T-MAT-ARRIVAL-TRANSACTION-MENU | 2026-06-16 | codex | `MAT_ARRIVAL_TRANSACTION`을 `MATERIAL` 카테고리 sort 45로 등록, menuConfig/i18n/validator/seed/JSHANES 메뉴 DB/권한 동기화, 메뉴 API와 3002 URL 확인 완료 | evidence: JOURNAL 2026-06-16 14:35 Codex
 - T-MAT-ARRIVAL-TRANSACTION-PAGE | 2026-06-16 | codex | `/material/arrival-transaction` 입하수불조회 직접 접근 화면 추가, `MAT_ARRIVAL_TRANSACTIONS` 조회 필터(`transType`, `matUid`, `arrivalNo`) 보강, frontend/backend build 및 3002 route 200 확인 | evidence: JOURNAL 2026-06-16 13:55 Codex
 - T-MAT-ARRIVAL-STOCK-SPLIT | 2026-06-16 | codex | 입하재고/입고재고 테이블 분리 A안 적용, `MAT_ARRIVAL_STOCKS`/`MAT_ARRIVAL_TRANSACTIONS` 생성 및 기존 `MAT_IN` 57건 이관, JSHANES/빌드/핵심 테스트 검증 완료 | evidence: JOURNAL 2026-06-16 13:10 Codex
 - T-MENU-MERGE-MATERIAL | 2026-06-16 | claude | 좌측 메뉴 자재수불관리(MATERIAL)+자재재고관리(INVENTORY) → 자재관리 1개로 통합. menuConfig 병합·i18n 4종 menu.materialMgmt·시드 재생성·Live DB(JSHANES 40/1000) INVENTORY→MATERIAL 이관(16→23항목, 카테고리 삭제), RBAC 영향 없음, 프론트 tsc 통과 | evidence: LOCKS History T-MENU-MERGE-MATERIAL
@@ -27,6 +34,8 @@ Format:
 - T-MASTER-FE-QA | 2026-06-12 | codex | 기준정보 `/master/*` 프론트엔드 21개 하위 메뉴 실제 접속/검색/추가폼 비파괴 상호작용/캡처 검증, HTML 보고서 작성, 최종 21/21 성공 | evidence: JOURNAL 2026-06-12 12:49 Codex
 - T-IQC-SERIAL3-RUNTIME | 2026-06-12 | codex | 수입검사 절차대로 실제 API/JSHANES에서 시리얼 3개 생성, IQC PASS, 검사성적서 업로드, 입고, 재고 반영까지 검증하고 기록 유지 | evidence: JOURNAL 2026-06-12 12:32 Codex
 - T-MASTER-CRUD-RUNTIME | 2026-06-12 | codex | 기준정보 화면/API CRUD 101단계 실데이터 점검, payload/cleanup 오류 수정, JSHANES 잔여 0건 확인 및 보고서 작성 | evidence: JOURNAL 2026-06-12 11:49 Codex
+- T-EQUIP-INSPECT-HISTORY-BLANK-ROWS | 2026-06-16 | codex | `/equipment/inspect-history` API `{ equip: {} }` 빈 행 응답을 raw alias 명시 매핑으로 수정하고 날짜 표시를 `YYYY-MM-DD`로 정리, API/3002 화면 확인 | evidence: JOURNAL 2026-06-16 23:58 Codex
+- T-KIOSK-WI-SEED-HNS02C1ABCD | 2026-06-16 | codex | `/production/input-kiosk` WO2606150060/HNS02C1ABCD 작업지도서 미표시 원인이 WORK_INSTRUCTIONS 데이터 0건임을 확인하고 ATCUT Rev.A 시드 추가, DB/API/브라우저 표시 확인 | evidence: JOURNAL 2026-06-16 23:30 Codex
 - T-INTEGRATION-NORMAL-REVERSE | 2026-06-12 | codex | HNS02 정상/역처리 통합 재테스트, 박스 단건 출하 취소 API 추가, 정상 출하/출하 취소/삭제·취소 가능 데이터 검증 및 보고서 작성 | evidence: JOURNAL 2026-06-12 11:25 Codex
 - T-INTEGRATION-FLOW-ISSUES-FIX | 2026-06-12 | codex | 최종보고서 등록 문제점 3건 수정, 제품라벨/박스재고/WIP 이동 정상화, JSHANES 재테스트 완료 | evidence: JOURNAL 2026-06-12 11:02 Codex
 - T-INTEGRATION-FLOW-REPORT | 2026-06-12 | codex | HNS02 기준 PO부터 출하 처리까지 실제 API/JSHANES DB 통합 테스트 완료, shipBox 시리얼별 제품재고 차감 결함 수정, 보고서 작성 | evidence: JOURNAL 2026-06-12 10:41 Codex
@@ -37,6 +46,8 @@ Format:
 - T-MASTER-REPORT-SEARCH-DUPLICATE-FIX | 2026-06-15 | codex | 기준정보 잔여 19개 페이지 `HNS02` 검색어 하드코딩 제거 및 공통 중복방어 단계/증적 추가, CRUD 134/134 PASS | evidence: JOURNAL 2026-06-15 23:22 Codex
 - T-MASTER-EQUIP-REPORT-EVIDENCE-FIX | 2026-06-15 | codex | `/master/equip` QA 보고서의 STEP 05 캡처/캡션 정합성 보정 및 기준정보 잔여 19개 화면 재생성 PASS | evidence: JOURNAL 2026-06-15 22:31 Codex
 - T-INV-TRANSACTION-CARDS | 2026-06-12 | codex | `/inventory/transaction` 재고수불현황 상단 정보카드 3개와 전용 통계 계산 제거 | evidence: JOURNAL 2026-06-12 02:20 Codex
+- T-KIOSK-EQUIP-INSPECT-MIGRATION-RERUN | 2026-06-16 | codex | 점검이력 마이그레이션 파일을 oracle_connector.py --execute-file 재실행 가능한 idempotent PL/SQL 블록으로 보정하고 JSHANES 재실행 성공 확인 | evidence: JOURNAL 2026-06-16 16:15 Codex
+- T-KIOSK-EQUIP-INSPECT-WORKDAY-ORDER | 2026-06-16 | codex | 설비일일점검을 기존 생산월력/교대패턴 조업일 기준으로, 작업자설비점검을 작업지시별 이력 기준으로 전환하고 JSHANES 스키마 적용 | evidence: JOURNAL 2026-06-16 15:45 Codex
 - T-CUSTOMER-INTRO-HTML-DESIGN | 2026-06-12 | codex | 고객 소개 HTML의 카드형 AI 느낌을 줄이고 산업형 색상/공정 보드 레이아웃으로 재정리 | evidence: JOURNAL 2026-06-12 01:35 Codex
 - T-CUSTOMER-INTRO-HTML-V2 | 2026-06-12 | codex | 작업지시서 기준 고객 소개 HTML을 22장 가로형 슬라이드로 재구성, PPTX는 후속 단계로 보류 | evidence: JOURNAL 2026-06-12 01:21 Codex
 - T-EQUIP-INSPECT-POOL-TYPE | 2026-06-11 | claude | 점검항목 풀(EQUIP_INSPECT_ITEM_POOL)에 EQUIP_TYPE 추가, 점검항목 마스터 페이지를 설비유형 기준 POOL 편집기로 전환, 설비점검 추가 모달이 설비유형으로 풀 조회 | evidence: JOURNAL 2026-06-11 22:* Claude
@@ -56,3 +67,12 @@ Format:
 - T-CUSTOMER-INTRO-PPTX | 2026-06-11 | codex | 고객 소개용 HANES MES 가로형 PPTX 문서 생성 및 레이아웃/패키지 검증 완료 | evidence: JOURNAL 2026-06-11 12:56 Codex
 - T-CUSTOMER-INTRO-HTML-REV | 2026-06-11 | codex | 고객 소개 HTML 자료를 12장 워크플로우형으로 보강하고 글자 침범/넘침 수정 | evidence: JOURNAL 2026-06-11 12:39 Codex
 - T-CUSTOMER-INTRO-HTML | 2026-06-11 | codex | 고객 소개용 HANES MES 가로형 HTML 자료와 실제 화면 캡처 5종 생성 | evidence: JOURNAL 2026-06-11 12:00 Codex
+- T-MAT-FLOW-COHERENCE-FIX | 2026-06-16 | codex | 입하/입하재고/입고/출고/공정입고 흐름 점검 후 레거시 입하 API를 입하재고 모델로 보정하고 JSHANES 누락 감사원장 보강, 대사 0건 확인 | evidence: JOURNAL 2026-06-16 13:50 Codex
+- T-EQUIP-INSPECT-ITEM-IMAGE-PANEL | 2026-06-16 | codex | `/master/equip-inspect-item` 등록/수정을 우측 패널로 전환하고 항목별 사진 업로드/삭제 및 `IMAGE_URL` 저장을 추가, JSHANES 누락 유형/판정기준/주기 0건으로 보정 | evidence: JOURNAL 2026-06-16 19:00 Codex
+- T-EQUIP-INSPECT-ITEM-UNIT-DROPDOWN | 2026-06-16 | codex | `/master/equip-inspect-item` 측정 단위를 입력형에서 `UNIT_TYPE` 공통코드 드롭다운으로 전환하고 JSHANES 단위값 `MM/°C/Ω` 정합화 | evidence: JOURNAL 2026-06-16 20:33 Codex
+- T-CONSUMABLE-MASTER-IMAGE-SEED | 2026-06-16 | codex | `/consumables/master` 소모품 37건 전체 SVG 시드 이미지를 생성하고 JSHANES `CONSUMABLE_MASTERS.IMAGE_URL` 37/37 등록 | evidence: JOURNAL 2026-06-16 21:28 Codex
+- T-EQUIP-INSPECT-ITEM-IMAGE-SEED | 2026-06-16 | codex | 설비점검항목 50건에 위치 안내 SVG 시드 이미지를 생성하고 JSHANES `IMAGE_URL` 50/50 적용, 3002 화면 렌더링 확인 | evidence: JOURNAL 2026-06-16 19:25 Codex
+- T-CONSUMABLE-MASTER-CARDS-REMOVE | 2026-06-16 | codex | `/consumables/master` 상단 정보카드와 카드 전용 집계/import만 제거, 목록/검색/CRUD 흐름 유지, FE tsc 및 3002 HTTP 200 확인 | evidence: JOURNAL 2026-06-16 20:29 Codex
+- T-CONSUMABLE-LABEL-CARDS-REMOVE | 2026-06-16 | codex | `/consumables/label` 상단 정보카드와 카드 전용 집계/import만 제거, UID 발행/인쇄 흐름 유지, FE tsc 및 3002 HTTP 200 확인 | evidence: JOURNAL 2026-06-16 20:36 Codex
+- T-ITEM-CONSUMABLE-MOVE | 2026-06-16 | codex | JSHANES 품목마스터 `ITEM_TYPE='CONSUMABLE'` 12건을 소모품마스터로 이동하고 품목마스터 잔여 0건, 이동 12건, 백업 12건 확인 | evidence: JOURNAL 2026-06-16 21:12 Codex
+- T-CONSUMABLE-MASTER-USAGE-MAP | 2026-06-16 | codex | `/consumables/master` 우측 패널에 `CONSUMABLE_USAGE_MAP` 매핑 섹션과 `/consumables/:id/usage-maps` CRUD API 추가, 타입체크/API/DB 잔여/3002 HTTP 확인 | evidence: JOURNAL 2026-06-16 21:39 Codex

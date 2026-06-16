@@ -1,3 +1,14 @@
+# 2026-06-16 codex T-KIOSK-WI-SEED-HNS02C1ABCD
+- 상태: released
+- 범위: `/production/input-kiosk` 작업지도서 표시 원인 확인 및 `WORK_INSTRUCTIONS` 시드 보완
+- 파일:
+  - `apps/backend/src/migrations/2026-06-16_work_instruction_hns02c1abcd_seed.sql`
+  - `.ai-coordination/TASKS.md`
+  - `.ai-coordination/LOCKS.md`
+  - `.ai-coordination/JOURNAL.md`
+  - `.ai-coordination/HANDOFF/codex.md`
+- 비고: `WO2606150060` / `HNS02C1ABCD` / `ATCUT` 기준 실DB·API·브라우저 검증 완료 후 lock 해제.
+
 # LOCKS
 
 Before editing, add a lock entry. Mark it released when done.
@@ -5,6 +16,205 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-EQUIPMENT-INSPECT-CARDS-REMOVE
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/equipment/inspect-history/page.tsx
+    - apps/frontend/src/app/(authenticated)/equipment/periodic-inspect/page.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 00:02 KST
+  last_seen: 2026-06-17 00:05 KST
+  expires: 2026-06-17 00:30 KST
+  status: active
+  note: `/equipment/inspect-history`, `/equipment/periodic-inspect` 상단 정보카드 제거.
+
+- task: T-EQUIP-INSPECT-HISTORY-BLANK-ROWS
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/equipment/inspect-history/page.tsx
+    - apps/backend/src/modules/equipment/services/equip-inspect.service.ts
+    - apps/backend/src/modules/equipment/services/equip-inspect.service.spec.ts
+    - docs/reports/equipment-inspect-history-grid-2026-06-16-after.png
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 23:45 KST
+  last_seen: 2026-06-16 23:58 KST
+  expires: 2026-06-17 00:30 KST
+  status: released
+  note: `/equipment/inspect-history` API가 `{ equip: {} }` 빈 행 shape를 반환하는 문제와 날짜 원문 표시를 수정하고 3002 화면 확인.
+
+- task: T-CONSUMABLE-LIFE-STATUS-SHAPE
+  owner: codex
+  files:
+    - apps/backend/src/modules/consumables/services/consumables.service.ts
+    - apps/backend/src/modules/consumables/services/consumables.service.spec.ts
+    - apps/frontend/src/app/(authenticated)/consumables/life/page.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 22:28 KST
+  last_seen: 2026-06-16 22:48 KST
+  expires: 2026-06-16 23:00 KST
+  status: released
+  note: `/consumables/life` 런타임 오류 원인인 life-status 카운트 객체 응답을 행 배열 응답으로 수정하고 실제 3002 화면 렌더링 확인.
+
+- task: T-CONSUMABLE-LABEL-RESPONSE-FIX
+  owner: codex
+  files:
+    - apps/backend/src/modules/consumables/controllers/consumable-label.controller.ts
+    - apps/backend/src/modules/consumables/controllers/consumable-label.controller.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 22:20 KST
+  last_seen: 2026-06-16 22:24 KST
+  expires: 2026-06-16 23:00 KST
+  status: released
+  note: `/consumables/label` 라벨 대상 조회 응답 이중 래핑 수정 및 37건 화면 표시 확인.
+
+- task: T-FRONTEND-DELETE-CONFIRM-GUARD
+  owner: codex
+  files:
+    - apps/frontend/src/components/master/RoutingTab.tsx
+    - apps/frontend/src/components/master/ProdLineTab.tsx
+    - apps/frontend/src/components/master/ProcessTab.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableUsageMapPanel.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableFormPanel.tsx
+    - apps/frontend/src/app/(authenticated)/system/users/components/UserFormPanel.tsx
+    - apps/frontend/src/app/(authenticated)/system/training/components/TrainingResultList.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/pack/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/equip-inspect/components/InspectItemPanel.tsx
+    - apps/frontend/src/app/(authenticated)/master/equip-inspect-item/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/process/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
+    - apps/frontend/src/app/(authenticated)/master/label/components/TemplateManager.tsx
+    - apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcTemplatePickerModal.tsx
+    - apps/frontend/src/app/(authenticated)/master/routing/components/SelfInspectConfigEditor.tsx
+    - apps/frontend/src/app/(authenticated)/quality/audit/components/AuditFindingList.tsx
+    - apps/frontend/src/app/(authenticated)/quality/control-plan/components/ControlPlanItemList.tsx
+    - apps/frontend/src/delete-confirm-guard.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 22:10 KST
+  last_seen: 2026-06-16 22:21 KST
+  expires: 2026-06-16 23:10 KST
+  status: released
+  note: 삭제 버튼 직접 API 호출 지점을 공용 `ConfirmModal` 확인 후 실행되도록 보강하고 구조 테스트/FE tsc/diff check 통과.
+
+- task: T-CONSUMABLE-MASTER-USAGE-MAP-FIXED
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/master/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableFormPanel.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableUsageMapPanel.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 21:45 KST
+  last_seen: 2026-06-16 21:52 KST
+  expires: 2026-06-16 22:30 KST
+  status: released
+  note: `/consumables/master` 매핑 UI를 등록/수정 패널 내부가 아닌 항상 보이는 우측 고정 섹션으로 분리 완료.
+
+- task: T-CONSUMABLE-MASTER-USAGE-MAP
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/master/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableFormPanel.tsx
+    - apps/backend/src/modules/consumables/**
+    - apps/backend/src/entities/consumable-usage-map.entity.ts
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 21:29 KST
+  last_seen: 2026-06-16 21:39 KST
+  expires: 2026-06-16 22:30 KST
+  status: released
+  note: `/consumables/master` 우측 패널 내 사용매핑 섹션 추가, API/타입체크/3002 HTTP/JSHANES 잔여 검증 완료.
+
+- task: T-ITEM-CONSUMABLE-MOVE
+  owner: codex
+  files:
+    - apps/backend/src/migrations/2026-06-16_move_item_consumables_to_consumable_master.sql
+    - ITEM_MASTERS/CONSUMABLE_MASTERS/BOM_MASTERS/MAT_LOTS/MAT_STOCKS/PROD_PLANS (JSHANES 40/1000)
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 21:04 KST
+  last_seen: 2026-06-16 21:18 KST
+  expires: 2026-06-16 22:00 KST
+  status: released
+  note: 사용자 확인과 JSHANES post-check 기준으로 소모품 이동 완료 확인.
+
+- task: T-CONSUMABLE-MASTER-IMAGE-SEED
+  owner: codex
+  files:
+    - apps/backend/uploads/consumables/*.svg
+    - apps/backend/src/migrations/2026-06-16_consumable_master_image_seed.sql
+    - tools/generate-consumable-master-seed-images.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 21:18 KST
+  last_seen: 2026-06-16 21:28 KST
+  expires: 2026-06-16 22:00 KST
+  status: released
+
+- task: T-CONSUMABLE-LABEL-CARDS-REMOVE
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/page.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 20:33 KST
+  last_seen: 2026-06-16 20:36 KST
+  expires: 2026-06-16 21:10 KST
+  status: released
+
+- task: T-CONSUMABLE-MASTER-CARDS-REMOVE
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/master/page.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 20:26 KST
+  last_seen: 2026-06-16 20:29 KST
+  expires: 2026-06-16 21:00 KST
+  status: released
+
+- task: T-EQUIP-INSPECT-ITEM-UNIT-DROPDOWN
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/equip-inspect-item/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/equip-inspect-item/equip-inspect-item-panel.structure.test.mjs
+    - apps/backend/src/migrations/2026-06-16_equip_inspect_item_unit_type.sql
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 20:23 KST
+  last_seen: 2026-06-16 20:33 KST
+  expires: 2026-06-16 21:00 KST
+  status: released
+
 - task: T-EQUIP-INSPECT-ITEM-IMAGE-SEED
   owner: codex
   files:

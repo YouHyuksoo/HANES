@@ -10,6 +10,89 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-16 22:48 Codex
+
+- 작업: `T-CONSUMABLE-LIFE-STATUS-SHAPE` `/consumables/life` 런타임 `data.filter is not a function` 수정.
+- 원인: 프론트 수명현황 화면은 `DataGrid`와 통계 계산을 위해 `LifeStatus[]` 행 배열을 기대하지만, 백엔드 `ConsumablesService.getLifeStatus()`가 `{ good, warning, replace }` 카운트 객체를 반환했다. 같은 카운트 목적은 이미 `/consumables/summary`가 담당한다.
+- 변경: `getLifeStatus()`가 활성 소모품 행 목록을 반환하도록 수정하고, 서비스 단위 테스트 기대값을 수명현황 그리드용 행 배열 계약으로 변경했다. `ConsumablesService` 테스트 모듈에 최근 추가된 repository 의존성 mock도 보강했다.
+- 검증: RED 확인 후 `pnpm --filter @harness/backend test -- consumables.service.spec.ts --runInBand` 20/20 PASS, `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과. API `http://localhost:3003/api/v1/consumables/life-status`는 `data` 배열 37건 반환 확인. Playwright로 `http://localhost:3002/consumables/life` 진입 시 런타임 에러 없음, 수명현황 37건 렌더링 확인.
+- 상태: 완료, lock released.
+
+## 2026-06-16 22:24 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-RESPONSE-FIX` `/consumables/label` 라벨 발행 대상 미조회 수정.
+- 원인: `ConsumableLabelController`가 `return { data }`를 반환하고 전역 `TransformInterceptor`가 다시 `{ success, data }`로 감싸 실제 응답이 `data.data` 이중 구조가 됐다. 프론트 `page.tsx`는 `res.data?.data`까지만 읽어 배열이 아닌 객체를 받고 `setMasters([])`로 처리했다.
+- 변경: `apps/backend/src/modules/consumables/controllers/consumable-label.controller.ts`의 `masters/create/pending/confirm/confirm-bulk` 응답을 `ResponseUtil.success(data)`로 통일하고 미사용 `UseGuards/JwtAuthGuard` import를 제거했다. 구조 테스트 `apps/backend/src/modules/consumables/controllers/consumable-label.controller.structure.test.mjs`를 추가했다.
+- 검증: 구조 테스트 RED 후 GREEN(`node --test apps/backend/src/modules/consumables/controllers/consumable-label.controller.structure.test.mjs` 1/1 PASS), `pnpm --filter @harness/backend build` PASS, 인증 API `/api/v1/consumables/label/masters` 응답 `data` 배열 37건 확인, 실제 브라우저 `http://localhost:3002/consumables/label`에서 `데이터가 없습니다` 미표시, 37행 및 `APPCT-A` 표시 확인.
+- 상태: 완료, lock released.
+
+## 2026-06-16 22:21 Codex
+
+- 작업: `T-FRONTEND-DELETE-CONFIRM-GUARD` 삭제 버튼 클릭 시 즉시 삭제되는 프론트 지점 보강.
+- 변경: 라우팅/라인/공정 탭, 소모품 사용매핑, 소모품/사용자/품목/점검항목 이미지 제거, 교육 참석자, 팔레트 박스, 포장 시리얼, 공정-설비 매핑, 자주검사 항목, 라벨/IQC 템플릿, 품질 audit/control-plan 하위 항목 삭제가 공용 `ConfirmModal` 확인 후 실행되도록 변경했다. 이미 모달을 쓰던 설비점검 할당 패널은 `danger` variant 기준에 맞췄다.
+- 테스트: `apps/frontend/src/delete-confirm-guard.structure.test.mjs` 추가. 알려진 삭제 버튼 파일들이 `ConfirmModal`과 `variant="danger"`를 쓰는지, 직접 삭제 호출 패턴이 남아 있지 않은지 검사한다.
+- 검증: `node --test apps/frontend/src/delete-confirm-guard.structure.test.mjs`, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`, 대상 파일 `git diff --check`, 직접 삭제 호출 `rg` 검색 통과.
+- 상태: 완료, lock released.
+
+## 2026-06-16 21:52 Codex
+
+- 작업: `T-CONSUMABLE-MASTER-USAGE-MAP-FIXED` `/consumables/master`의 `CONSUMABLE_USAGE_MAP` 매핑 UI를 상시 우측 고정 섹션으로 전환.
+- 변경: `ConsumableUsageMapPanel.tsx`를 별도 우측 섹션으로 추가하고 `page.tsx`에서 선택 소모품 상태를 관리해 목록 선택 시 매핑이 즉시 갱신되도록 했다. `ConsumableFormPanel.tsx`는 기본정보/수명/거래처/이미지만 담당하도록 유지했고, 매핑 영역은 편집 패널 내부에 넣지 않았다.
+- 보정: 우측 매핑 섹션과 등록/수정 패널에 `flex-shrink-0`을 적용해 화면 우측 고정 영역이 축소로 사라지지 않게 했다.
+- 검증: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과, `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과, `http://localhost:3002/consumables/master` HTTP 200 확인. 백엔드 usage-maps API는 기존 `T-CONSUMABLE-MASTER-USAGE-MAP`에서 조회/생성/삭제 및 JSHANES 테스트 잔여 0건 확인 완료.
+- 상태: 완료, lock released.
+
+## 2026-06-16 20:36 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-CARDS-REMOVE` `/consumables/label` 상단 정보카드 제거.
+- 변경: `apps/frontend/src/app/(authenticated)/consumables/label/page.tsx`에서 `StatCard` 4개 grid, 카드 전용 `stats` useMemo, `StatCard`/`Package`/`Clock` import, 주석의 StatCards 설명만 제거했다.
+- 유지: 마스터 조회, 검색, 선택/수량 입력, UID 발행, 브라우저 인쇄, 생성 결과 배너, DataGrid export/SQL 조회는 변경하지 않았다.
+- 검증: 대상 파일 `StatCard|stats|totalMasters|pendingCount|selectedCount|selectedQty|Package|Clock` 잔여 0건, `git diff --check` 통과, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과, `http://localhost:3002/consumables/label` HTTP 200 확인.
+- 상태: 완료, lock released.
+
+## 2026-06-16 17:50 Codex
+
+- 작업: `T-KIOSK-JOBORDER-PERSIST-REFRESH` `/production/input-kiosk` 새로고침 시 선택 작업지시가 사라지는 문제 수정.
+- 원인: `apps/frontend/src/stores/kioskStore.ts`는 Zustand persist를 사용하지만 `partialize`에서 `selectedJobOrder`를 제외하고 있었다. 코드 주석도 "selectedJobOrder는 저장하지 않아 페이지 재진입 시 반드시 새로 선택"이라고 되어 있어 브라우저 refresh 후 작업지시가 null로 복원되는 것이 현재 구현이었다.
+- 변경: `harness-kiosk` persist 대상에 `selectedJobOrder: state.selectedJobOrder`를 추가했다. 기존 설비 선택과 `lotSize` persist는 유지했고, active lock이 걸린 `MaterialListPanel.tsx`는 수정하지 않았다.
+- 검증: RED 후 GREEN 구조 테스트 `node --test apps/frontend/src/stores/kiosk-store-persist.structure.test.mjs` 통과, `pnpm --filter @harness/frontend exec tsc --noEmit` 통과, 관련 파일 `git diff --check` 통과.
+- 상태: 완료, lock released.
+
+## 2026-06-16 17:30 Codex
+
+- 작업: `T-BOM-ITEM-TYPE-LABEL-FIX` `/master/bom` 품목유형 원 코드 노출 원인 확인 및 보정.
+- 원인: BOM 백엔드와 DB는 별도 BOM 유형 컬럼을 쓰지 않고 `ITEM_MASTERS.ITEM_TYPE`을 조인해 `itemType`으로 내려준다. 품목마스터 화면은 이를 한글 라벨로 변환하지만, BOM 화면의 부모 목록/트리 배지/범례/자품목 선택 힌트는 `FINISHED`, `SEMI_PRODUCT`, `RAW_MATERIAL`, `CONSUMABLE` 값을 그대로 출력했다.
+- 변경: `page.tsx` 부모 목록은 `useComCodeOptions("ITEM_TYPE")` 기반 `itemTypeLabelMap`으로 표시하고, `BomTab.tsx` 트리/범례 및 `BomFormModal.tsx` 선택 자품목 힌트는 `t("comCode.ITEM_TYPE...")` 라벨을 사용하도록 수정했다. 저장/API/DB 값은 변경하지 않았다.
+- 검증: 신규 구조 테스트 `node --test apps/frontend/src/app/(authenticated)/master/bom/bom-item-type-label.structure.test.mjs` RED 후 GREEN 3/3 PASS. `pnpm --filter @harness/frontend exec tsc --noEmit`, 관련 파일 `git diff --check` 통과. API `/api/v1/master/boms/parents`는 `itemType` 원 코드 반환 확인. Oracle JSHANES에서 `BOM_MASTERS`에 TYPE 컬럼 없음 및 `ITEM_MASTERS.ITEM_TYPE/PRODUCT_TYPE` 조회 확인. 3002 프론트는 응답 타임아웃이라 건드리지 않고 3012 임시 dev 서버로 `/master/bom` 브라우저 실측, 화면 텍스트에서 `FINISHED/SEMI_PRODUCT/RAW_MATERIAL` 미노출 및 `완제품/반제품/원자재/소모품` 노출 확인 후 3012 서버 종료.
+- 상태: 완료, lock released.
+
+## 2026-06-13 22:24 Codex
+
+- 작업: `T-SQL-ACTUAL-GLOBAL` 모든 `DataGrid.sqlQuery` SQL 조회문 실제 실행 SQL 우선 표시.
+- 변경: TypeORM logger(`SqlDebugTypeormLogger`)와 요청 단위 `AsyncLocalStorage` SQL 수집 컨텍스트를 추가하고, 전역 `SqlDebugInterceptor`가 GET 응답 `meta.debugSql`에 실제 실행 SELECT/parameters/tables/queries를 붙이도록 했다. 프론트 Axios 응답 인터셉터는 모든 API 응답의 `meta.debugSql`을 캐시하고, 공통 `SqlViewerModal`은 하드코딩 preview SQL과 같은 테이블의 최신 실제 SQL을 우선 표시한다.
+- 보정: `getManyAndCount()` 화면은 데이터 SELECT와 COUNT SELECT가 함께 실행되므로 COUNT-only SELECT를 대표 SQL에서 후순위로 내렸다. 그리드 SQL 모달에는 COUNT가 아니라 행 조회 SELECT가 나오도록 백엔드 대표 SQL과 프론트 캐시 매칭 양쪽에 반영했다.
+- 적용 범위: `rg` 확인 결과 SQL 조회문 버튼은 `DataGrid -> SqlViewerModal` 단일 경로를 타며, 100개 이상 `sqlQuery` 사용처가 공통 모달 변경을 받는다. `/material/iqc`의 기존 수동 `meta.debugSql`도 전역 수집 경로와 호환된다.
+- trade-off: 페이지별로 정확한 API endpoint와 그리드를 1:1 매핑하지 않고 테이블명 기반 최신 실행 SQL을 매칭한다. 따라서 동일 테이블을 여러 API가 연달아 조회하는 특수 화면에서는 가장 최근 같은 테이블 쿼리가 표시될 수 있다. 대신 페이지 100개 이상을 개별 배관하지 않고 전역 적용하며, 실제 DB에 실행된 TypeORM SQL과 bind parameters를 확보한다.
+- 런타임 검증: 백엔드 3003을 빌드 후 `dist/main`으로 재시작. `POST /api/v1/auth/login` `admin@hanes.com`/company `40`/plant `1000` 성공. `GET /api/v1/material/iqc-history/pending-arrivals` 응답에 `meta.debugSql`, table `MAT_LOTS`, queryCount 1 확인. `GET /api/v1/master/parts?page=1&limit=5` 응답에 table `ITEM_MASTERS`, queryCount 2, 대표 SQL이 COUNT가 아닌 행 조회 SELECT임을 확인.
+- 검증 명령: `node apps/frontend/src/components/data-grid/sql-viewer-actual-sql.structure.test.mjs`, `node apps/frontend/src/components/data-grid/sql-viewer-modal.structure.test.mjs`, `pnpm --filter @harness/backend test -- sql-debug-context.spec.ts --runInBand`, `pnpm --filter @harness/backend exec tsc --noEmit`, `pnpm --filter @harness/frontend exec tsc --noEmit`, 관련 파일 `git diff --check` 모두 통과. `pnpm --filter @harness/backend build` 통과.
+
+## 2026-06-12 17:14 Codex
+
+- 작업: `T-UI-CRUD-RED-MENU-QA` `ui-test-crud-red` 스킬 기반 좌측 메뉴 전체 성공 캡처 QA 진행 중.
+- 스킬 변경: `C:\Users\hsyou\.codex\skills\ui-test-crud-red\scripts\ui-test-menu-success-runner.mjs` 추가/보강. 실제 좌측 메뉴 트리(`hanes-menu-tree`)에서 route를 읽고, 각 화면을 Playwright로 열어 콘솔/pageerror/API 400+를 실패로 판정하며 성공 화면만 screenshot으로 남긴다. cold compile 대응을 위해 navigation timeout 6분, timeout/`ERR_NETWORK_IO_SUSPENDED`/`ERR_ABORTED` 재시도, route별 새 context, viewport screenshot, partial JSON 저장을 추가했다.
+- 런타임 조치: 3002 프론트 dev server가 전체 500 상태가 되어 포트 3002 Next 프론트 프로세스만 재시작했다. 백엔드 3003은 재기동 직후 연결 거부가 있었으나 이후 `/api/v1/health`, `/api/v1/material/po-status`, 프론트 `/api/health` 모두 정상 확인.
+- 현재 진행: 최종 중단 시 `docs/reports/ui-test-crud-red-menu-qa-2026-06-12/result.partial.json` 기준 좌측 메뉴 96개 중 36개 완료, 36개 PASS, 실패 0. 최종 HTML은 아직 작성하지 않았다(전체 PASS 완료 시에만 작성 예정). 성공 캡처는 `docs/reports/ui-test-crud-red-menu-qa-2026-06-12/screenshots/`에 partial로 존재.
+- 검증: `node --check C:\Users\hsyou\.codex\skills\ui-test-crud-red\scripts\ui-test-menu-success-runner.mjs` 통과, `python C:\Users\hsyou\.codex\skills\.system\skill-creator\scripts\quick_validate.py C:\Users\hsyou\.codex\skills\ui-test-crud-red` 통과. 전체 runner는 Turbopack cold compile이 매우 느려 중간 정지했다.
+- 재개 명령: `node C:\Users\hsyou\.codex\skills\ui-test-crud-red\scripts\ui-test-menu-success-runner.mjs` 또는 백그라운드 로그 방식으로 실행. 현재 3002 프론트 로그는 `docs/reports/ui-test-crud-red-menu-qa-2026-06-12/frontend-3002-restart.out.log`.
+
+## 2026-06-12 09:45 Codex
+
+- 작업: `T-CUSTOMER-INTRO-FLOW-SLIDE` 고객 소개 자료 4페이지 기능흐름도 추가.
+- 변경: 사용자 제공 MES 설명 이미지의 구성을 참고해 `docs/presentation/hanes-mes-introduction.html`에 `04 / 기능흐름도` 슬라이드를 삽입. Enterprise System, Manufacturing Execution System, MES 주요 기능 3영역으로 나누고 기준정보, 생산계획, 자재관리, 생산진행, 검사관리, 품질관리, 설비관리, 출하관리, 추적관리 흐름을 한 장에 표현. 기존 4페이지 이후는 5~24페이지로 순번 이동.
+- PPTX: `docs/presentation/hanes-mes-introduction.pptx`를 최신 HTML 렌더 기준 24장으로 재생성. `docs/presentation/artifact-build-manifest.json`도 24장 기준으로 갱신.
+- 검증: HTML 슬라이드 24장, `04 / 기능흐름도` 포함, 이미지 참조 56개/누락 0개. 4페이지 브라우저 렌더 overflow X/Y 없음 확인 및 시각 확인. PPTX 패키지 슬라이드 24장, media 24개, 빈 media 0개 확인. 작업용 `outputs/manual-20260612-flow-slide` 삭제 완료.
+- 참고: artifact-tool 런타임 번들 경로가 비어 있어 이번 PPTX는 HTML 렌더 이미지를 16:9 슬라이드로 재구성했다. 기존 기준정보/갤러리 일부 HTML 페이지에는 기존 세로 overflow 경고가 남아 있으나 신규 4페이지는 해소했다.
+
 ## 2026-06-11 23:30 Claude
 
 - 작업: T-EQUIP-INSPECT-TABLE-RESTRUCTURE — 두 테이블 역할 뒤바뀜 전면 수정 완료.
@@ -353,9 +436,345 @@ Use local time in 24-hour format.
 - 검증: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 1차 통과. 최종 재실행 시 다른 변경 파일인 `apps/frontend/src/app/(authenticated)/quality/inspect/page.tsx`의 `useMemo` import 누락 및 implicit any 오류로 전체 typecheck가 실패했다. `inventory/transaction`의 카드 관련 잔여 참조 검색 결과 없음. `git diff --check -- "apps/frontend/src/app/(authenticated)/inventory/transaction/page.tsx" ".ai-coordination/TASKS.md" ".ai-coordination/LOCKS.md" ".ai-coordination/JOURNAL.md" ".ai-coordination/HANDOFF/codex.md" ".ai-coordination/ARCHIVE.md"` 통과. `http://localhost:3002/inventory/transaction` HTTP 200 확인.
 - 참고: `pnpm --filter @harness/frontend lint -- --file "src/app/(authenticated)/inventory/transaction/page.tsx"`는 기존 `next lint` 스크립트가 ESLint 설정 프롬프트를 띄워 실패했다. `browse.exe`는 자체 서버 시작이 15초 내 완료되지 않아 브라우저 DOM 검증은 수행하지 못했다.
 
+## 2026-06-12 16:17 Codex
+
+- 작업: `T-QC-SAMPLE-MENU-LABEL` 품질검사 하위 자주검사 이력 메뉴명 변경.
+- 변경: 좌측 메뉴가 참조하는 `menu.quality.selfInspectHistory` 한글 번역을 `자주검사 이력`에서 사용자 요청 문구 `공정샘풀검사`로 변경했다. `menuConfig.ts`의 `QC_SELF_INSPECT_HISTORY`는 동일 labelKey를 사용하므로 메뉴 코드/경로/권한/DB seed는 변경하지 않았다.
+- 검증: `node -e "JSON.parse(require('fs').readFileSync('apps/frontend/src/locales/ko.json','utf8')); console.log('ko.json OK')"` 통과. `rg`로 `menuConfig.ts`가 `menu.quality.selfInspectHistory`를 참조하고 `ko.json` 값이 `공정샘풀검사`임을 확인했다.
+
 ## 2026-06-12 05:28 Codex
 
 - 작업: `T-CUSTOMER-INTRO-PPTX-EXPORT` 고객 소개 HTML 23장 기준 편집 가능한 PPTX 재생성.
 - 변경: `docs/presentation/hanes-mes-introduction.html` 내용을 파싱해 `docs/presentation/hanes-mes-introduction.pptx`를 새로 생성했다. 제목, 본문, 절차 박스, 메뉴 표, 캡션, 하단 문구는 PowerPoint 편집 가능한 텍스트/도형 객체로 구성했고, 실제 화면 캡처와 회사 배경 이미지는 이미지 객체로 배치했다.
 - 산출: 최종 PPTX는 `docs/presentation/hanes-mes-introduction.pptx`. 생성용 임시 스크립트와 PowerPoint 렌더 PNG는 검증 후 정리했다.
 - 검증: PPTX 패키지 기준 슬라이드 23장, 미디어 25개, 빈 미디어 0개. 대표 슬라이드 객체 확인 결과 1/2/3/9/10/16/20/21/23페이지 모두 텍스트 객체 포함. PowerPoint COM으로 전체 23장을 PNG 렌더링했고 1, 2, 3, 6, 10, 16, 20, 21, 23페이지를 시각 확인했다. `git diff --check` 통과.
+## 2026-06-12 10:41 Codex
+
+- 작업: `T-INTEGRATION-FLOW-REPORT` HNS02 기준 MES 전 공정 통합 테스트 및 보고서 작성.
+- 실행: JSHANES company `40`, plant `1000`, 계정 `admin@hanes.com`로 실제 API 런타임을 호출해 PO `PO-IT-0612102556`부터 입하 `R26061200002`, IQC, 검사성적서 업로드, PDA 자재입고 `RCV20260612-0001`, 원자재 재고조회, 작업지시 `JO-IT-0612102813`, 자재요청 `MR2606120004`, 자재출고 `ISS20260612-0001`, 생산실적 `PR26061200015`, 제품입고 `PTX2026061200002`, 제품포장 `BX-IT-0612103010`, OQC `OQC-20260612-001`, 출하지시 `SO-IT-0612103010`, 출하 처리까지 한 흐름을 완료했다.
+- 결함 수정: 출하 처리에서 박스 `serialList`가 있어도 `ShipOrderService.shipBox()`가 제품재고 차감을 `prdUid='*'`로 호출해 실제 재고 `PRD-IT-0612102849`를 찾지 못하는 문제를 수정했다. 시리얼이 있으면 시리얼별 1개씩 출고하고, 박스 수량과 시리얼 수량 불일치 시 거부하도록 변경했다.
+- 검증: TDD RED 후 `pnpm --filter @harness/backend test -- ship-order.service.spec.ts --runInBand` 통과(19건). 동일 실데이터 `SO-IT-0612103010/BX-IT-0612103010` 출하 재호출 성공. API/DB 확인 결과 출하지시 `CLOSED`, 박스 `SHIPPED`, `FG_MAIN/HNS02/PRD-IT-0612102849` 재고 0, `PRODUCT_TRANSACTIONS`에 `FG_OUT` `PTX2026061200003` 생성 확인.
+- 산출물: `docs/reports/hanes-integration-flow-test-2026-06-12.md`.
+- 남은 이슈: `FG_LABELS` 기준 라벨 행 부재로 박스 품목 조회가 `missingLabel=true`이고 박스재고 serial 조회가 비어 있음. 제품라벨 생성 API의 `sourceId` 숫자형 계약과 문자열 생산실적번호 불일치 의심. 제품입고 후 `WIP_MAIN/HNS02/PRD-IT-0612102849` 재고 1이 남아 WIP→FG 이동 처리 확인 필요.
+## 2026-06-12 11:02 Codex
+
+- 작업: `T-INTEGRATION-FLOW-ISSUES-FIX` 최종보고서 등록 문제점 수정 및 재테스트.
+- 원인/수정 1: 제품라벨 생성 API가 문자열 생산실적 번호를 받을 수 없고 `FG_LABELS`를 생성하지 않아 포장/박스재고 화면에서 `missingLabel=true`가 됐다. `CreatePrdLabelsDto.sourceId`를 문자열 변환/검증으로 변경하고, 제품라벨 발행 시 `FG_LABELS`를 생성 또는 누락 보강하도록 수정했다. `LABEL_PRINT_LOGS.PRINTED_AT` NOT NULL 런타임 오류도 `printedAt` 명시로 수정했다.
+- 원인/수정 2: 박스 마감 시 라벨 상태만 `PACKED`로 바꾸고 `FG_LABELS.BOX_NO`를 찍지 않아 `box-stock` 조회 기준에 걸리지 않았다. `BoxService.closeBox()`에서 `STATUS='PACKED'`와 `BOX_NO=<boxNo>`를 함께 갱신하도록 수정했다.
+- 원인/수정 3: 완제품 입고가 WIP 재고를 차감하지 않고 FG 재고를 별도 입고로만 생성해 WIP 잔량이 남았다. `/inventory/fg/receive`가 `ProductInventoryService.receiveFinishedFromWip()`를 통해 `WIP_MAIN -> FG_MAIN` 이동(`WIP_OUT`)으로 처리되도록 변경했다.
+- 재테스트: JSHANES 실데이터로 `JO-FIX-105908`, `PR26061200017`, `P26061200004`, `BX-FIX-105908`, `OQC-20260612-002`, `SO-FIX-105908` 흐름을 실행. 결과: 박스 품목 `missingLabel=0`, 출하 전 박스재고 serial 1건, 출하지시 `CLOSED`, 박스 `SHIPPED`, `FG_MAIN/HNS02/P26061200004=0`, `WIP_MAIN/HNS02/P26061200004=0`.
+- DB 검증: `FG_LABELS`는 `P26061200004`가 `BOX_NO=BX-FIX-105908`, `STATUS=SHIPPED`, `INSPECT_PASS_YN=Y`. `PRODUCT_TRANSACTIONS`는 `WIP_IN PTX2026061200004`, `WIP_OUT PTX2026061200005`, `FG_OUT PTX2026061200006`.
+- 검증 명령: `pnpm --filter @harness/backend test -- product-label.service.spec.ts product-inventory.service.spec.ts box.service.spec.ts ship-order.service.spec.ts --runInBand` 통과(59건). `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` 통과. `git diff --check` 통과.
+- 산출물: `docs/reports/hanes-integration-flow-test-2026-06-12.md` 갱신.
+
+## 2026-06-12 11:25 Codex
+
+- 작업: `T-INTEGRATION-NORMAL-REVERSE` HNS02 정상/역처리 통합 재테스트.
+- 변경: `POST /shipping/orders/:id/cancel-ship-box`를 추가해 출하된 박스를 출하 직전 상태로 되돌리도록 했다. 처리 내용은 `FG_OUT_CANCEL` 제품재고 복원, `BOX_MASTERS.STATUS='CLOSED'`, `FG_LABELS.STATUS='PACKED'`, `SHIPMENT_ORDER_ITEMS.SHIPPED_QTY` 차감, `SHIPMENT_ORDERS.STATUS='CONFIRMED'` 복원이다. 기존 `shipBox()`는 박스 `serialList`가 있으면 시리얼별 `prdUid`로 제품재고를 차감하고, 박스 수량과 시리얼 수량이 다르면 거부한다.
+- 정상 시나리오: `PO-NR-26061202215660` → `R26061200007` → IQC PASS/성적서 업로드 → `RCV20260612-0006` → `JO-OK-26061202215660` → `MR2606120012`/`ISS20260612-0011` → `PR26061200022`/`P26061200009` → `BX-OK-26061202215660`/`OQC-20260612-006` → `SO-OK-26061202215660` 출하 완료.
+- 출하 역처리 시나리오: `JO-RV-26061202215660` → `PR26061200023`/`P26061200010` → `BX-RV-26061202215660`/`OQC-20260612-007` → `SO-RV-26061202215660` 출하 후 `cancel-ship-box` 실행. DB 결과 `SHIPMENT_ORDERS.STATUS=CONFIRMED`, `SHIPPED_QTY=0`, 박스 `CLOSED`, 라벨 `PACKED`, `FG_MAIN/HNS02/P26061200010=1`, `FG_OUT_CANCEL PTX2026061200020` 확인.
+- 취소/삭제 검증: `SO-DEL-26061202215660` DRAFT 출하지시 삭제, `BX-DEL-26061202215660` 빈 박스 삭제, `JO-CXL-26061202215660` 작업지시 취소를 확인했다. 추가로 `PR26061200024` 생산실적을 취소 후 삭제했고, `ISS20260612-0013/1` 자재출고 취소 후 `MAT_STOCKS.W001/HSG0001/M26061200075=1` 복원을 확인했다.
+- 검증: `pnpm --filter @harness/backend test -- ship-order.service.spec.ts --runInBand` 통과(20건). `pnpm --filter @harness/backend build` 통과. `pnpm --filter @harness/backend typecheck`는 패키지 스크립트가 없어 실행 불가. JSHANES `oracle-db` 조회로 정상/역처리 최종 상태 확인.
+- 산출물: `docs/reports/hanes-integration-normal-reverse-test-2026-06-12.md`, `docs/reports/hns02-normal-reverse-runtime-test-26061202215660.json`, `tools/hns02-normal-reverse-runtime-test.mjs`.
+
+## 2026-06-12 11:49 Codex
+
+- 작업: `T-MASTER-CRUD-RUNTIME` 기준정보 화면/API CRUD 실데이터 점검 및 보고서 작성.
+- 실행: `tools/hanes-master-crud-runtime-test.mjs`를 추가하고 `http://localhost:3003/api/v1`, company `40`, plant `1000`, 계정 `admin@hanes.com`으로 기준정보 CRUD를 실행했다. 최종 stamp는 `26061202474131`.
+- 범위: 공통코드, 거래처, 품목 2종, 공정, 생산라인, 작업자, 창고/로케이션/이동규칙, 설비/공정-설비매핑, BOM, 라우팅그룹/공정/조건/자재, 공정CAPA, 제조사바코드, IQC 검사항목풀/품목검사/품목규격, 설비점검항목/매핑, 라벨템플릿, 작업지도서, 교대패턴, 작업달력, 설비BOM, 계측기.
+- 조치: 초기 실패는 백엔드 결함이 아니라 테스트 payload와 DTO 불일치였다. `businessNo -> bizNo`, 생산라인 `oper` 길이 제한 대응, IQC revision 정수화, IQC 품목규격 DTO 구조 수정, 설비점검매핑 `sortSeq`, 작업달력 `holidayApply` 제거, IQC 품목규격 cleanup 선행 삭제를 반영했다.
+- 검증: 최종 실행 결과 API 단계 101/101 성공, cleanup 30/30 성공, 실패 0건. Oracle `JSHANES` 직접 조회로 테스트 stamp `26061202474131`이 32개 관련 기준정보 테이블에 남지 않음을 확인했다(`nonzero=[]`). 이전 실패 실행에서 남은 IQC 품목규격/검사항목풀 테스트행 8건도 API로 정리했다.
+- 산출물: `docs/reports/hanes-master-crud-runtime-test-2026-06-12.md`, `docs/reports/hanes-master-crud-runtime-test-26061202474131.json`, `tools/hanes-master-crud-runtime-test.mjs`.
+
+## 2026-06-12 12:32 Codex
+
+- 작업: `T-IQC-SERIAL3-RUNTIME` 수입검사(IQC) 절차대로 시리얼 3개 실데이터 처리 및 기록 작성.
+- 실행: `tools/hanes-iqc-serial3-runtime-test.mjs`로 `http://localhost:3003/api/v1`, company `40`, plant `1000`, 계정 `admin@hanes.com` 헤더를 사용해 구매발주 `PO-IQC3-26061203191605`, 입하 `R26061200008`, 시리얼 `VH1-RM260612-00017/00018/00019`, 입고 `RCV20260612-0007` 흐름을 처리했다.
+- 판단: JSHANES 기준 IQC 대상 원자재 중 `LOT_UNIT_QTY=1` 품목이 없어 `HSG0001`(`IQC_FLAG=Y`, `INSPECT_METHOD=FULL`, `LOT_UNIT_QTY=20`)을 수량 60으로 입하해 시리얼 3개를 생성했다.
+- 검증: API 단계 17/17 성공, 실패 0건. Oracle `JSHANES` 조회로 `PURCHASE_ORDERS` 확정, `PURCHASE_ORDER_ITEMS.RECEIVED_QTY=60`, `MAT_ARRIVALS` 3건 `PASS/DONE`, `MAT_LOTS` 3건 `PASS/NORMAL`, `IQC_LOGS.RESULT=PASS`, `MAT_RECEIVINGS` 3건 `DONE`, `STOCK_TRANSACTIONS` 6건, 각 시리얼 `RM_MAIN` 재고 20 및 `W001` 재고 0을 확인했다.
+- 산출물: `docs/reports/hanes-iqc-serial3-runtime-test-2026-06-12.md`, `docs/reports/hanes-iqc-serial3-runtime-test-26061203191605.json`, `tools/hanes-iqc-serial3-runtime-test.mjs`.
+
+## 2026-06-12 12:49 Codex
+
+- 작업: `T-MASTER-FE-QA` 기준정보 하위 메뉴 프론트엔드 실테스트 및 HTML 보고서 작성.
+- 실행: `tools/hanes-master-frontend-qa.mjs`를 추가하고 `http://localhost:3002` 프론트엔드, `http://localhost:3003/api/v1` 백엔드, company `40`, plant `1000`, 계정 `admin@hanes.com` 세션으로 Playwright 실제 브라우저 검증을 수행했다.
+- 범위: `pageRegistry.generated.ts` 기준 `/master/*` 21개 화면(BOM, 공통코드, 회사/사업장, 설비, 설비점검, 계측기, IQC 기준정보, 라벨, 품목, 거래처, 공정, CAPA, 생산라인, 라우팅, 제조사바코드, 창고, 작업달력, 작업지도서, 작업자)을 전부 순회했다.
+- 시나리오: 각 화면 진입 후 초기 화면 캡처, 검색/조회 가능한 화면은 검색 실행 후 캡처, 추가/신규 버튼이 있는 화면은 저장 없이 폼을 열어 캡처했다. 콘솔 오류, page error, `/api`/`_next` HTTP 400 이상 응답을 실패 조건으로 수집했다.
+- 검증: 최종 `node tools\hanes-master-frontend-qa.mjs` 실행 결과 21/21 성공, 실패 0건, 캡처 60개. HTML 내 `<img>` 60개 상대경로도 전부 존재 확인(`missing=[]`).
+- 산출물: `docs/reports/hanes-master-frontend-qa-2026-06-12.html`, `docs/reports/hanes-master-frontend-qa-2026-06-12/result.json`, `docs/reports/hanes-master-frontend-qa-2026-06-12/screenshots/*.png`, `tools/hanes-master-frontend-qa.mjs`.
+
+## 2026-06-13 21:26 Codex
+
+- 작업: `T-IQC-SQL-DISPLAY` `/material/iqc` 최초 그리드 SQL 조회문 정확화.
+- 변경: `IqcHistoryService.findPendingArrivals()`를 `MAT_LOTS`와 `ITEM_MASTERS` 단일 QueryBuilder 조인으로 구성하고 `qb.getSql()`/`qb.getParameters()`를 `debugSql`로 반환하게 했다. 컨트롤러는 기존 `data` 배열 응답을 유지하면서 `meta.debugSql`을 추가한다. 프론트는 `meta.debugSql`을 받아 SQL 조회문 모달에 실제 SQL과 parameters 주석을 표시하고, 기존 `MAT_ARRIVALS` 하드코딩 SQL은 제거했다.
+- 검증: TDD RED 후 신규 테스트 `검사 대상 목록과 함께 실제 QueryBuilder SQL과 파라미터를 반환한다` 통과. `pnpm --filter @harness/backend exec tsc --noEmit` 통과. `pnpm --filter @harness/frontend exec tsc --noEmit` 통과. 관련 파일 `git diff --check` 통과.
+- 남은 이슈: `pnpm --filter @harness/backend test -- iqc-history.service.spec.ts` 전체 실행은 기존 `findAll` 테스트 3건 실패가 남아 실패한다. 이번 신규 `findPendingArrivals` 테스트는 통과한다.
+
+## 2026-06-13 21:45 Codex
+
+- 작업: `T-SQL-SCHEMA-TOGGLE` SQL 조회문 모달 컬럼명세 토글 공통 적용.
+- 변경: `SqlViewerModal` 기본 화면을 SQL 단독 보기로 바꾸고, 상단에 `컬럼명세 보기/숨기기` 버튼을 추가했다. 컬럼명세 API(`/system/table-schema`)는 사용자가 버튼을 눌러 펼칠 때만 호출한다. `SqlViewerModal`은 `DataGrid`에서 단일 공통 경로로 사용되므로 모든 `DataGrid.sqlQuery` 페이지에 적용된다.
+- 검증: TDD RED 후 `node apps/frontend/src/components/data-grid/sql-viewer-modal.structure.test.mjs` 통과. `pnpm --filter @harness/frontend exec tsc --noEmit` 통과. 관련 파일 `git diff --check` 통과.
+
+## 2026-06-15 18:56 Codex
+
+- 작업: `T-UI-CRUD-RED-MENU-QA` 좌측 메뉴 전체 최종 PASS QA 및 HTML 보고서 작성.
+- 실행: `ui-test-crud-red` 좌측 메뉴 runner로 실제 프론트 `http://localhost:3002`, 백엔드 `http://localhost:3003/api/v1`, 계정 `admin@hanes.com`, company `40`, plant `1000` 세션에서 현재 좌측메뉴 노출 화면 96개를 순회했다. 범위는 화면 진입, 초기 조회 API, 콘솔/page error, 주요 렌더링 상태, 화면 캡처 검증이다.
+- 수정: `/production/wip-stock`은 `MatStock.part` 없는 관계를 조인해 500이 발생하던 문제를 `ProductStock` 기준 raw join(`PRODUCT_STOCKS`, `ITEM_MASTERS`, `WAREHOUSES`)으로 수정하고 단위 테스트를 보강했다. `/system/config`는 API 응답에 `id`가 없고 `configKey`가 식별자인데 프론트가 `cfg.id`를 key/저장/삭제 식별자로 사용해 React key 경고가 발생하던 문제를 `configKey` fallback 식별자로 수정했다. 테스트 러너는 장시간 Turbopack/DB transient와 `로그인` 단어 오탐을 구분하도록 보강하고, 최종 HTML 양식을 승인된 최종 PASS 보고서 구조로 변경했다.
+- 런타임 조치: Turbopack panic으로 `.next` manifest/chunk 생성물이 손상되어 프론트 dev 서버를 정리하고, workspace 내부 `apps/frontend/.next`만 삭제 후 `pnpm dev`를 재시작했다.
+- 검증: 최종 재실행 `run-resume-final-after-config-key-fix.log` 결과 96/96 PASS, 실패 0. `docs/reports/ui-test-crud-red-menu-qa-2026-06-15/result.json` 무결성 검증 결과 total 96, completed 96, passed 96, failed 0, 누락 스크린샷 0, HTML PASS 문구 확인. `pnpm --filter @harness/backend test -- production-views.service.spec.ts --runInBand` 통과(5건). `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과. `GET /api/v1/health` DB connected 확인.
+- 산출물: `docs/reports/ui-test-crud-red-menu-qa-2026-06-15.html`, `docs/reports/ui-test-crud-red-menu-qa-2026-06-15/result.json`, `docs/reports/ui-test-crud-red-menu-qa-2026-06-15/screenshots/*.png`.
+
+## 2026-06-15 19:08 Codex
+
+- 작업: `T-MENU-QA-DETAIL-REPORT` 좌측 메뉴 QA HTML 보고서 상세화.
+- 변경: 기존 최종 PASS 결과와 스크린샷은 유지하고 `docs/reports/ui-test-crud-red-menu-qa-2026-06-15.html`을 메뉴별 상세 절차형 보고서로 재생성했다. 96개 메뉴마다 메뉴명/코드/경로/그룹, 수행 절차, 확인 기준, 최종 화면 캡처를 별도 섹션으로 분리했다.
+- 추가: `tools/generate-menu-qa-detailed-report.mjs`를 추가해 `result.json`과 `ko.json`, 스크린샷 파일을 읽어 동일 양식의 상세 HTML을 재생성할 수 있게 했다.
+- 검증: 생성 결과 `status=PASS`, total 96, detailSections 96, missingScreenshots 0. HTML 구조 검증 결과 `.menu-detail` 96개, `<img>` 96개, 스크린샷 누락 0개, 재검증 필요 문구 없음, 실패 문구 없음. 관련 파일 `git diff --check` 통과.
+- 산출물: `docs/reports/ui-test-crud-red-menu-qa-2026-06-15.html`, `tools/generate-menu-qa-detailed-report.mjs`.
+
+## 2026-06-15 19:47 Codex
+
+- 작업: `T-MASTER-PART-PAGE-SCENARIO-QA` `/master/part` 품목관리 페이지 단위 상세 시나리오 QA 파일럿.
+- 실행: 실제 브라우저 `http://localhost:3002/master/part`, 백엔드 `http://localhost:3003/api/v1`, 계정 `admin@hanes.com`, company `40`, plant `1000` 세션으로 품목관리 1개 화면을 테스트했다. 시나리오는 초기 조회, 새로고침, 신규 전 검색, 신규 등록/저장 검증, 등록 후 재조회, 중복 등록 방어, 수정/저장 검증, 수정 후 재조회, 삭제/저장 검증, 삭제 후 재조회 10단계다.
+- 검증: 최종 실행 `node tools/hanes-master-part-page-scenario-qa.mjs` 결과 PASS. 테스트 키 `FECRUD-260615104355`, 단계 10개 전부 PASS, UI/API 호출 기록 24건, Oracle `JSHANES` DB 검증 9건, 화면 증적 누락 0개. 최종 DB 조회에서 `ITEM_CODE LIKE 'FECRUD%' OR PART_NO LIKE 'FECRUD%'` 잔여 0건 확인.
+- 산출물: 목차 `docs/reports/hanes-page-scenario-qa-2026-06-15/index.html`, 페이지 상세 `docs/reports/hanes-page-scenario-qa-2026-06-15/pages/master-part.html`, 결과 JSON `docs/reports/hanes-page-scenario-qa-2026-06-15/master-part-result.json`, 스크린샷 `docs/reports/hanes-page-scenario-qa-2026-06-15/screenshots/master-part/*.png`, 실행 스크립트 `tools/hanes-master-part-page-scenario-qa.mjs`.
+
+## 2026-06-15 20:24 Codex
+
+- 작업: `T-MASTER-BOM-PAGE-SCENARIO-QA` `/master/bom` BOM관리 페이지 단위 상세 시나리오 QA.
+- 실행: `hanes-page-scenario-qa` 기준으로 실제 브라우저 `http://localhost:3002/master/bom`, 백엔드 `http://localhost:3003/api/v1`, 계정 `admin@hanes.com`, company `40`, plant `1000`, Oracle `JSHANES`를 사용해 BOM관리 화면을 테스트했다. 기존 부모 BOM `HNS02`를 선택하고 테스트 자품목 `FBOMC-260615112131`을 임시 생성해 화면에서 BOM 추가/수정/삭제를 수행했다.
+- 시나리오: 초기 조회, 부모 검색/선택, 폼 다운로드, 엑셀 업로드 모달 확인, 테스트 자품목 준비, 선택 부모 BOM 내보내기, BOM 신규 등록/저장 검증, 등록 후 화면 재조회, 중복 등록 방어, BOM 수정/저장 검증, 라우팅 패널 확인, BOM 삭제/저장 검증, 삭제 후 화면 재조회 및 정리까지 13단계다.
+- 런타임 조치: 기존 프론트 3002 프로세스가 응답하지 않아 PID 2796을 정리하고 `apps/frontend`에서 `pnpm run dev`를 숨김 프로세스로 재시작했다. 재시작 후 3002는 PID 17636으로 Ready 상태였고, 백엔드 3003은 `GET /api/v1/master/boms/parents` 200으로 확인했다.
+- 검증: 최종 실행 `node tools/hanes-master-bom-page-scenario-qa.mjs` 결과 PASS. 결과 JSON 검증 결과 status `PASS`, page `/master/bom`, parent `HNS02`, steps 13, 기록 API 38, failedApi 0, failedSteps 0, consoleErrors 0, pageErrors 0. 산출물 파일 3개 존재, BOM 스크린샷 13장 존재 확인. Oracle `JSHANES` 최종 조회에서 `BOM_MASTERS` 테스트 BOM 잔여 0건, `ITEM_MASTERS` 테스트 자품목 잔여 0건 확인.
+- 산출물: 목차 `docs/reports/hanes-page-scenario-qa-2026-06-15/index.html`, 페이지 상세 `docs/reports/hanes-page-scenario-qa-2026-06-15/pages/master-bom.html`, 결과 JSON `docs/reports/hanes-page-scenario-qa-2026-06-15/master-bom-result.json`, 스크린샷 `docs/reports/hanes-page-scenario-qa-2026-06-15/screenshots/master-bom/*.png`, 실행 스크립트 `tools/hanes-master-bom-page-scenario-qa.mjs`.
+
+## 2026-06-15 21:03 Codex
+
+- 작업: `T-MASTER-REMAINING-PAGE-SCENARIO-QA` 기준정보 잔여 메뉴 페이지 단위 상세 시나리오 QA.
+- 실행: `hanes-page-scenario-qa`, `ui-test-crud-red`, `oracle-db` 기준으로 `/master/part`, `/master/bom`을 제외한 기준정보 잔여 19개 화면을 실제 브라우저 `http://localhost:3002`, 백엔드 `http://localhost:3003/api/v1`, 계정 `admin@hanes.com`, company `40`, plant `1000`, Oracle `JSHANES`로 순회했다. 대상은 코드관리, 회사관리, 설비관리, 설비별 점검항목, 점검항목마스터, 계측기마스터, 검사항목마스터, 품목별 IQC 항목관리, 라벨관리, 거래처관리, 공정관리, 공정 CAPA, 생산라인관리, 라우팅관리, 제조사 바코드 매핑, 창고관리, 생산월력관리, 작업지도서관리, 작업자관리다.
+- 처리 방식: 각 화면마다 초기 조회, 검색/조회 또는 탭 전환, 노출 버튼/프로세스 목록화, 신규/수정/삭제 가능 여부 확인, 대표 API 직접 조회, 대표 Oracle DB count 확인을 수행했다. 저장 검증은 최신 기준정보 API CRUD 런타임 결과 `docs/reports/hanes-master-crud-runtime-test-26061511325085.json`를 연결했다. 해당 CRUD 결과는 101단계 성공, 실패 0, cleanup 완료다.
+- 런타임 조치: 첫 실행은 300초 제한과 프론트 콜드 컴파일 때문에 중간 종료됐고, 두 번째는 작업자 화면 등록 패널 진입 대기에서 장시간 멈췄다. `worker` 화면은 UI 등록 패널 열기 대신 CRUD API 저장 검증으로 대체하도록 러너를 보강했고, `HANES_QA_REUSE_CRUD=1`로 최신 CRUD 결과를 재사용해 전체 재실행했다.
+- 검증: 최종 실행 `$env:HANES_QA_REUSE_CRUD='1'; node tools/hanes-master-remaining-page-scenario-qa.mjs` 결과 status `PASS`, 잔여 페이지 19/19 PASS, failed 0, CRUD failures 0. 결과 JSON 검증 결과 failedPages 0, failedSteps 0, missingReports 0, missingShots 0, crudResidueSuccess true, crudResidueNonZero 없음. 기준정보 페이지 HTML은 기존 품목/BOM 포함 21개, 스크린샷은 전체 119장이다. `git diff --check` 통과. Oracle `JSHANES` 독립 잔여 쿼리에서 COM_CODES, PARTNER_MASTERS, ITEM_MASTERS, PROCESS_MASTERS, PROD_LINE_MASTERS, WORKER_MASTERS, WAREHOUSES, EQUIP_MASTERS, ROUTING_GROUPS, IQC_ITEM_POOL, LABEL_TEMPLATES, WORK_CALENDARS, GAUGE_MASTERS 모두 테스트 키 잔여 0건 확인.
+- 산출물: 목차 `docs/reports/hanes-page-scenario-qa-2026-06-15/index.html`, 통합 결과 JSON `docs/reports/hanes-page-scenario-qa-2026-06-15/master-remaining-result.json`, 개별 페이지 HTML `docs/reports/hanes-page-scenario-qa-2026-06-15/pages/master-*.html`, 스크린샷 `docs/reports/hanes-page-scenario-qa-2026-06-15/screenshots/master-*/*.png`, 실행 스크립트 `tools/hanes-master-remaining-page-scenario-qa.mjs`.
+
+## 2026-06-15 22:31 Codex
+
+- 작업: `T-MASTER-EQUIP-REPORT-EVIDENCE-FIX` `/master/equip` 설비관리 QA 보고서 증적 정합성 보정.
+- 원인: 잔여 기준정보 보고서 러너가 검색 단계에서 `HNS02`를 입력한 뒤 STEP 05 저장 검증 캡처 전에 검색 조건을 초기화하지 않았다. 그래서 STEP 05의 “API/DB 검증 후 화면” 캡처가 실제 저장/API/DB 검증 상태가 아니라 이전 검색 결과 0건 화면으로 남았다.
+- 변경: `tools/hanes-master-remaining-page-scenario-qa.mjs`에 검색 조건 초기화+재조회 헬퍼를 추가하고, 버튼 목록화 및 API/DB 저장 검증 증적 전에 이를 실행하도록 보정했다. STEP 05 캡션은 `검색 초기화 후 API/DB 검증 기준 화면`으로 변경했고, 수정/삭제 가능 여부의 행 액션 수는 전체 `tr button`이 아니라 본문 데이터 행 버튼만 세도록 바꿨다.
+- 검증: `$env:HANES_QA_REUSE_CRUD='1'; node tools/hanes-master-remaining-page-scenario-qa.mjs` 결과 19개 화면 모두 PASS, failed 0, CRUD failures 0. `master-equip` 결과는 5단계 PASS, 이미지 누락 0, STEP 05 증적 파일 `docs/reports/hanes-page-scenario-qa-2026-06-15/screenshots/master-equip/05-api-db-verification.png` 72,137 bytes. 육안 확인 결과 검색어가 비어 있고 설비 목록 44건 기준 그리드가 표시된다. `git diff --check` 통과.
+- 산출물: `docs/reports/hanes-page-scenario-qa-2026-06-15/pages/master-equip.html`, `docs/reports/hanes-page-scenario-qa-2026-06-15/screenshots/master-equip/05-api-db-verification.png`, `docs/reports/hanes-page-scenario-qa-2026-06-15/master-remaining-result.json`.
+
+## 2026-06-15 23:22 Codex
+
+- 작업: `T-MASTER-REPORT-SEARCH-DUPLICATE-FIX` 기준정보 잔여 페이지 QA 보고서 검색어/중복방어 시나리오 보정.
+- 변경: `tools/hanes-master-remaining-page-scenario-qa.mjs`의 검색 단계에서 `HNS02` 하드코딩을 제거하고 현재 화면 데이터 기반 검색어 또는 빈 조회로 대체했다. 모든 잔여 19개 페이지에 공통 `duplicate-defense` 단계를 추가해 기준정보 CRUD 런타임의 `DUPLICATE_GUARD` 결과를 연결한다.
+- 변경: `tools/hanes-master-crud-runtime-test.mjs`에 회사 포함 30개 `DUPLICATE_GUARD` 검증을 추가했다. 실제 실행 중 중복 허용으로 확인된 `공정-설비매핑`, `IQC품목검사`, `라벨템플릿`, `작업지도서`, `설비BOM품목`, `설비BOM관계` 생성 경로는 409 중복 방어를 추가했고 해당 단위 테스트를 보강했다.
+- 검증: `node tools/hanes-master-crud-runtime-test.mjs` 최종 결과 `docs/reports/hanes-master-crud-runtime-test-26061513195369.json`, total 134, passed 134, failed 0, cleanup 31, duplicateGuards 30, duplicateFailures 0. `$env:HANES_QA_REUSE_CRUD='1'; node tools/hanes-master-remaining-page-scenario-qa.mjs` 결과 잔여 19개 페이지 19/19 PASS. JSON 검증 결과 19개 페이지 모두 `duplicate-defense` 단계 존재, non-PASS 0, 중복방어 증적 누락 0. `pnpm --dir apps/backend exec tsc --noEmit --pretty false` 통과. `git diff --check` 통과.
+- 참고: 잔여 19개 페이지의 `HNS02` 고정 검색은 제거됐다. 별도 BOM 전용 보고서 `master-bom.html`에는 실제 BOM 부모 기준 데이터가 HNS02 계열뿐이라 BOM 부모 검색 증적으로 남아 있다.
+- 산출물: `docs/reports/hanes-page-scenario-qa-2026-06-15/index.html`, `docs/reports/hanes-page-scenario-qa-2026-06-15/master-remaining-result.json`, `docs/reports/hanes-master-crud-runtime-test-26061513195369.json`, `tools/hanes-master-crud-runtime-test.mjs`, `tools/hanes-master-remaining-page-scenario-qa.mjs`.
+
+## 2026-06-16 00:42 Codex
+
+- 작업: `T-MATERIAL-MENU-PAGE-SCENARIO-QA` 좌측 `자재수불관리` 실제 등록 하위 메뉴 상세 시나리오 QA.
+- 범위: `/api/v1/menu-categories/tree`의 `MATERIAL` 카테고리에 실제 등록된 16개 하위 메뉴만 대상으로 했다. 대상은 `PUR_PO`, `PUR_PO_STATUS`, `MAT_ARRIVAL`, `MAT_ARRIVAL_RESULT`, `QC_CONCESSION`, `MAT_RECEIVE`, `MAT_RECEIVE_HISTORY`, `MAT_REQUEST`, `MAT_ISSUE`, `MAT_ISSUE_OTHER`, `MAT_LOT_SPLIT`, `MAT_LOT_MERGE`, `MAT_SCRAP`, `MAT_ADJUSTMENT`, `MAT_MISC_RECEIPT`, `MAT_RECEIPT_CANCEL`이다.
+- 실행: `tools/hanes-material-menu-page-scenario-qa.mjs`를 추가했다. 실제 브라우저 `http://localhost:3002`, 백엔드 `http://localhost:3003/api/v1`, 계정 `admin@hanes.com`, company `40`, plant `1000`, Oracle `JSHANES`로 각 페이지를 테스트했다. 각 화면은 초기 조회, 검색/재조회, 버튼/입력/프로세스 목록화, 신규/수정/삭제 가능 여부, 저장 검증 및 중복 방어 정책, 직접 API+DB 확인, 화면 재조회 6단계로 기록했다.
+- 조치: 전체 실행 중 자정 경계로 보고서 날짜가 갈라지는 문제를 막기 위해 `HANES_REPORT_DATE`를 지원하도록 했고, 장시간 메뉴 스윕을 위해 페이지별 JSON 저장과 집계 모드를 추가했다. `특채처리` 대표 API는 실제 계약에 맞게 `/material/concession/targets`로 보정했다. 빈 화면 문구 `데이터가 없습니다.`가 검색어로 들어가 400을 만드는 테스트 러너 문제도 검색어 추출 필터에서 제외해 해소했다. 운영 재고를 변경하는 저장/삭제 버튼은 임의 실행하지 않고 별도 저장형 상세 시나리오 대상으로 명시했다.
+- 검증: 최종 집계 `$env:HANES_REPORT_DATE='2026-06-15'; $env:HANES_QA_AGGREGATE='1'; node tools/hanes-material-menu-page-scenario-qa.mjs` 결과 status `PASS`, pages 16, passed 16, failed 0. 추가 JSON/HTML 검증 결과 16페이지, 96단계, 96개 스크린샷, 모든 단계 PASS, HTML `API 호출`/`DB 확인` 섹션 존재, 이미지 링크 누락 0개. `git diff --check -- tools/hanes-material-menu-page-scenario-qa.mjs .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` 통과.
+- 산출물: 목차 `docs/reports/hanes-material-menu-scenario-qa-2026-06-15/index.html`, 통합 결과 JSON `docs/reports/hanes-material-menu-scenario-qa-2026-06-15/material-menu-result.json`, 개별 페이지 HTML/JSON `docs/reports/hanes-material-menu-scenario-qa-2026-06-15/pages/*.html|*.json`, 스크린샷 `docs/reports/hanes-material-menu-scenario-qa-2026-06-15/screenshots/*/*.png`, 실행 스크립트 `tools/hanes-material-menu-page-scenario-qa.mjs`.
+
+## 2026-06-16 03:00 Codex
+
+- 작업: `T-MULTI-CATEGORY-MENU-PAGE-SCENARIO-QA` 좌측 등록 메뉴 중 자재재고관리, 생산관리, 품질관리, 검사관리, 제품수불관리, 설비관리, 출하관리 하위 메뉴 상세 시나리오 QA.
+- 범위: `/api/v1/menu-categories/tree`의 활성 카테고리 기준으로 `INVENTORY` 7개, `PRODUCTION` 10개, `QUALITY` 11개, `INSPECTION` 5개, `PRODUCT_MGMT` 4개, `EQUIPMENT` 6개, `SHIPPING` 7개, 총 50개 등록 메뉴만 대상으로 했다. `PRODUCT_INVENTORY`는 비활성이라 제외했고, 사용자 요청의 `제품수불관리`는 활성 `PRODUCT_MGMT`로 처리했다.
+- 실행: `tools/hanes-registered-categories-page-scenario-qa.mjs`를 추가해 `menuConfig.ts`와 `ko.json`에서 등록 메뉴 경로/한글명을 매핑하고, 실제 브라우저 `http://localhost:3002`, 백엔드 `http://localhost:3003/api/v1`, 계정 `admin@hanes.com`, company `40`, plant `1000`, Oracle `JSHANES`로 테스트했다. 각 페이지는 초기 조회, 검색/재조회, 버튼/입력/프로세스 목록화, 신규/수정/삭제 가능 여부, 저장 검증 및 중복 방어 정책, 직접 API+DB 확인, 화면 재조회 6단계로 기록했다.
+- 수정: `/production/result` 화면은 프론트가 `search`를 보내지만 `ProdResultQueryDto`가 이를 허용하지 않아 400이 발생했다. `ProdResultQueryDto.search`와 `ProdResultService.findAll()` 통합 검색(실적번호/작업지시번호/제품 UID)을 추가했다. `/shipping/pack` 화면도 프론트가 `/shipping/boxes?search=...`를 보내지만 `BoxQueryDto`가 이를 허용하지 않아 400이 발생했다. `BoxQueryDto.search`와 `BoxService.findAll()` 박스번호/품목코드 검색을 추가했다.
+- 검증: 최종 집계 `$env:HANES_REPORT_DATE='2026-06-16'; $env:HANES_QA_AGGREGATE='1'; node tools/hanes-registered-categories-page-scenario-qa.mjs` 결과 status `PASS`, pages 50, passed 50, failed 0. 추가 JSON/HTML 검증 결과 카테고리별 건수 `INVENTORY=7`, `PRODUCTION=10`, `QUALITY=11`, `INSPECTION=5`, `PRODUCT_MGMT=4`, `EQUIPMENT=6`, `SHIPPING=7`, 총 300단계, 스크린샷 300개, API 기록 675건, DB count 150건, 모든 단계 PASS, HTML `API 호출`/`DB 확인` 섹션 존재, 이미지 링크 누락 0개. `pnpm --dir apps/backend exec tsc --noEmit --pretty false` 통과. 관련 파일 `git diff --check` 통과.
+- 산출물: 목차 `docs/reports/hanes-registered-categories-scenario-qa-2026-06-16/index.html`, 통합 결과 JSON `docs/reports/hanes-registered-categories-scenario-qa-2026-06-16/registered-categories-result.json`, 개별 페이지 HTML/JSON `docs/reports/hanes-registered-categories-scenario-qa-2026-06-16/pages/*.html|*.json`, 스크린샷 `docs/reports/hanes-registered-categories-scenario-qa-2026-06-16/screenshots/*/*.png`, 실행 스크립트 `tools/hanes-registered-categories-page-scenario-qa.mjs`.
+
+## 2026-06-16 11:16 Codex
+
+- 작업: `T-MAT-ARRIVAL-STOCK-SPLIT` 입하재고 테이블 분리 A안 설계.
+- 결정: 사용자가 테이블까지 분리하고 기존 데이터도 마이그레이션하라고 승인했다. 설계는 `MAT_ARRIVAL_STOCKS`, `MAT_ARRIVAL_TRANSACTIONS` 신규 테이블을 두고, 기존 `STOCK_TRANSACTIONS.MAT_IN`을 입하원장으로 이관하며, 입고 후 미입고 잔량만 `MAT_ARRIVAL_STOCKS`로 산출하는 방식이다.
+- 실측: JSHANES company `40`, plant `1000`에서 `MAT_IN` 57건/322,303, `RECEIVE` 44건/316,303, `MAT_ARRIVALS` 67건/327,303, `MAT_RECEIVINGS DONE` 44건/316,303, `MAT_STOCKS` 93행/227,314 확인. `MAT_IN` 중 `MAT_UID` NULL은 0건이다.
+- 산출물: `docs/superpowers/specs/2026-06-16-mat-arrival-stock-split-design.md`.
+- 검증: 관련 파일 `git diff --check` 통과. 서브에이전트 설계 검토는 현재 도구 정책상 사용자가 명시적으로 요청한 경우에만 가능해 수행하지 않았고, 자체 검토로 `TRANS_NO` 유지와 `MAT_UID` 기준 이관 근거를 문서에 보강했다.
+- 상태: `TASKS.md`에 `REVIEW`로 남김. 사용자 리뷰 승인 후 구현 계획 작성 및 마이그레이션/코드 수정 단계로 전환한다.
+
+## 2026-06-16 11:22 Codex
+
+- 작업: `T-MAT-ARRIVAL-STOCK-SPLIT` 구현 계획 작성.
+- 입력: 사용자가 설계서 A안을 승인했다.
+- 산출물: `docs/superpowers/plans/2026-06-16-mat-arrival-stock-split.md`.
+- 내용: 사전 DB dry-run, Oracle 마이그레이션, 신규 엔티티, `ArrivalStockService`, `arrival.service.ts`, `receiving.service.ts`, `receipt-cancel.service.ts`, `/inventory/transaction` API/UI 정리, 런타임 검증, 최종 handoff까지 10개 작업으로 분해했다.
+- 주의: 현재 도구 정책상 사용자가 명시적으로 서브에이전트를 요청한 경우에만 plan reviewer/subagent 사용이 가능하므로 별도 subagent review는 수행하지 않았다. 실행은 DB 변경이 포함되므로 inline checkpoint 방식이 더 적합하다고 계획서에 명시했다.
+- 상태: 구현은 아직 시작하지 않았다. 사용자에게 실행 방식을 확인해야 한다.
+
+## 2026-06-16 11:33 Codex
+
+- 작업: `T-MAT-ARRIVAL-STOCK-SPLIT` Task 1 사전 DB dry-run.
+- 실행: JSHANES company `40`, plant `1000`에 SELECT만 수행했다.
+- 결과: `MAT_IN` 57건/322,303, `RECEIVE` 44건/316,303, `MAT_IN` 중 `MAT_UID IS NULL` 0건. `MAT_UID`별 pending 산출 결과 `POSITIVE_PENDING` 36건/6,023, `ZERO` 21건/0, `NEGATIVE_PENDING` 23건/-23.
+- 차단: `NEGATIVE_PENDING` 23건은 `RECEIVE`가 있으나 같은 `MAT_UID` 기준 `MAT_IN`이 없는 legacy UID다. 또한 `VH1-RM260612-00011`은 `MAT_IN` 3 이후 `MAT_OUT` 3건으로 이미 `MAT_STOCKS`가 0이라 입하재고 후보 3을 차감할 수 없다.
+- 산출물: `docs/reports/hanes-mat-arrival-stock-split-migration-2026-06-16.md`.
+- 상태: 계획 기준 차단 조건이므로 구현을 중단하고 `TASKS.md`를 `BLOCKED`로 변경했다. 사용자에게 데이터 보정 정책 결정을 받아야 한다.
+
+## 2026-06-16 13:10 Codex
+
+- 작업: `T-MAT-ARRIVAL-STOCK-SPLIT` 입하재고/입고재고 테이블 분리 구현 및 JSHANES 마이그레이션 적용.
+- 반영: `MAT_ARRIVAL_STOCKS`, `MAT_ARRIVAL_TRANSACTIONS` 엔티티/마이그레이션 추가. IQC005 입하는 입하재고/입하원장으로 기록하고, 정상 입고 확정은 `MAT_ARRIVAL_STOCKS` 감소 후 `MAT_STOCKS` 증가로 변경했다. 특채 입고는 기존 창고재고 차감 경로를 유지했다.
+- DB 적용: `apps/backend/src/migrations/2026-06-16_mat_arrival_stock_split.sql`을 JSHANES에 실행했고 12개 블록 모두 성공. 적용 후 `MAT_ARRIVAL_TRANSACTIONS` 57건/322,303, `MAT_ARRIVAL_STOCKS` 35건/6,020, `STOCK_TRANSACTIONS` 잔존 `MAT_IN/MAT_IN_CANCEL` 0건, 백업 57건 확인.
+- 프론트: `/inventory/transaction` 필터에서 `MAT_IN/MAT_IN_CANCEL` 제거. 입하 이력 타입/버튼 조건은 `ARRIVAL_IN/ARRIVAL_CANCEL`로 변경.
+- 문서: `docs/reports/hanes-mat-arrival-stock-split-migration-2026-06-16.md`, `docs/reports/db-schema-erd.md` 갱신.
+- 검증: `pnpm --filter @harness/backend build`, `pnpm --filter @harness/backend test -- arrival.service.spec.ts receiving.service.spec.ts inventory-query.service.spec.ts`, `pnpm --filter @harness/frontend build` 통과. 인증 없는 API 직접 호출은 401로 차단되어 DB 검증으로 대체했다.
+- 상태: `TASKS.md` DONE, lock released.
+
+## 2026-06-16 13:55 Codex
+
+- 작업: `T-MAT-ARRIVAL-TRANSACTION-PAGE` 입하수불조회 화면 추가.
+- 범위: 메뉴 통합 작업과 충돌하지 않도록 좌측 메뉴 파일과 DB 메뉴 등록은 수정하지 않았다. 직접 URL `/material/arrival-transaction`로 접근 가능한 화면을 추가하고, 나중에 `MATERIAL` 카테고리 메뉴에 연결할 수 있게 route를 고정했다.
+- 변경: `apps/frontend/src/app/(authenticated)/material/arrival-transaction/page.tsx` 추가. 화면은 `MAT_ARRIVAL_TRANSACTIONS` 원장 조회 전용이며 기간, 유형(`ARRIVAL_IN/ARRIVAL_CANCEL`), 상태, `MAT_UID`, 통합 검색 필터와 DataGrid 내보내기/SQL 조회를 제공한다. 신규/수정/삭제는 조회 화면 성격상 넣지 않았다.
+- API: `ArrivalQueryDto`에 `transType`, `matUid`, `arrivalNo` 필터를 추가하고 `ArrivalService.findAll()` 검색 조건에 거래번호, 입하번호, 참조번호, `MAT_UID`, 품목코드/품목명을 포함했다.
+- 검증: `pnpm --filter @harness/frontend gen:registry`, `pnpm --filter @harness/backend build`, `pnpm --filter @harness/frontend build` 통과. 빌드 산출 라우트 목록에 `/material/arrival-transaction` 포함 확인. 실행 중인 3002 서버에서 `http://localhost:3002/material/arrival-transaction` HTTP 200 확인. 백엔드 직접 API `http://localhost:3003/api/v1/material/arrivals?limit=1&transType=ARRIVAL_IN`은 인증 없이 401로 차단됨을 확인했다.
+- 상태: 완료, lock released. 좌측 메뉴 노출은 메뉴 통합 산출물 기준으로 별도 후속 작업에서 `MATERIAL` 카테고리에 추가해야 한다.
+
+## 2026-06-16 14:35 Codex
+
+- 작업: `T-MAT-ARRIVAL-TRANSACTION-MENU` 입하수불조회 메뉴 등록.
+- 변경: `MAT_ARRIVAL_TRANSACTION` leaf를 `apps/frontend/src/config/menuConfig.ts`의 `MATERIAL` 카테고리 `MAT_ARRIVAL_RESULT` 바로 뒤에 추가했다. labelKey는 `menu.material.arrivalTransaction`, path는 `/material/arrival-transaction`이다.
+- i18n: `ko/en/zh/vi.json`에 각각 `입하수불조회`, `Arrival Ledger Inquiry`, `到货流水查询`, `Tra cứu giao dịch nhập hàng` 라벨을 추가했다.
+- 백엔드/시드: `menu-code-validator.ts`의 leaf whitelist에 `MAT_ARRIVAL_TRANSACTION`을 추가했고, `scripts/2026-05-18_seed_menu_categories.sql`에도 MATERIAL sort 25로 반영했다.
+- DB 적용: `apps/backend/src/migrations/2026-06-16_add_arrival_transaction_menu.sql`을 작성했다. 첫 실행은 익명 PL/SQL 블록 종료 파싱 문제로 실패했으나 변경은 적용되지 않았고, 기존 repo 패턴에 맞춰 SQL statement + `/` 구분자로 수정 후 JSHANES에 재실행했다. 최종 실행은 3개 블록 모두 성공.
+- DB 검증: `MENU_CATEGORY_ITEMS`에서 `MAT_ARRIVAL_TRANSACTION`이 company `40`, plant `1000`, category `MATERIAL`, sort `45`로 등록됨을 확인했다. `ROLE_MENU_PERMISSIONS`는 `INV_ARRIVAL_STOCK`의 접근권한을 복제해 `MANAGER`/`Y` 1건 등록됐다.
+- 런타임 검증: JSON 파싱 4종 성공, `pnpm --filter @harness/backend build`, `pnpm --filter @harness/frontend build` 통과. 인증 헤더 `Bearer admin@hanes.com`, `X-Company=40`, `X-Plant=1000`로 `/api/v1/menu-categories/tree` 호출 시 `MATERIAL.menus`에 `MAT_ARRIVAL_TRANSACTION` sort 45가 반환됨을 확인했다. `http://localhost:3002/material/arrival-transaction`도 HTTP 200.
+- 운영 메모: `next build` 후 3002 dev 서버가 500을 반환해 3002 프론트만 재시작했다. 이후 3002는 정상 200. 3003 백엔드 watch 프로세스도 listen이 내려가 있어 해당 dev 프로세스만 재시작했고 health 200 및 메뉴 API 확인 완료.
+- 상태: 완료, lock released.
+
+## 2026-06-16 15:25 Codex
+
+- 작업: `T-KIOSK-WORKER-INSPECT-EMPTY-FIX` `/production/input-kiosk` 작업자설비점검 모달 빈 화면 원인 확인 및 보정.
+- 원인: 모달이 `/master/equip-inspect-items?equipCode=...&inspectType=WORKER` 설비별 배정만 조회한다. JSHANES 실측에서 `EQ-CUT-01` 같은 절단/압착 설비는 WORKER 배정 0건이고, WORKER 점검항목 마스터 4건은 `EQUIP_INSPECT_ITEM_MASTERS`에 공통(`EQUIP_TYPE` null)으로만 존재했다. 프론트는 `items.length=0`일 때 빈 상태 문구도 표시하지 않아 헤더 외 내용이 없는 모달처럼 보였다. 또한 배정 API 응답은 `sortSeq`를 주는데 모달은 `seq`를 기대해 순번/결과 키가 불안정했다.
+- 변경: 설비별 배정이 없으면 항목을 띄우지 않는 기존 업무 규칙을 유지했다. `WorkerInspectModal`은 `/master/equip-inspect-items` 설비별 배정만 조회하고, 0건이면 현재 선택 설비 기준으로 `기준정보 > 설비점검항목(/master/equip-inspect)`에서 설비 선택 → 작업자점검(WORKER) 선택 → 점검항목 추가 → 저장 → 모달 재오픈 절차를 상세 안내한다. 배정 API 응답의 `sortSeq -> seq` 정규화도 추가했다.
+- 검증: 인증 헤더 `Bearer admin@hanes.com`, company `40`, plant `1000`으로 `EQ-CUT-01` 배정 API 0건, `EQ-OINSP-01` 배정 API 4건, WORKER 마스터 API 4건 확인. `node --test apps/frontend/src/app/(authenticated)/production/input-kiosk/components/worker-inspect-modal.structure.test.mjs`, `pnpm --filter @harness/frontend exec tsc --noEmit` 통과. 이 워크스페이스에는 `browse`/`playwright` 실행 파일이 없어 실제 브라우저 캡처 검증은 수행하지 못했다.
+- 상태: 완료, lock released.
+
+## 2026-06-16 16:50 Codex
+
+- 작업: `T-KIOSK-DAILY-INSPECT-EMPTY-GUIDE` `/production/input-kiosk` 설비일일점검 모달의 배정 누락 안내 보강.
+- 원인/정책: 설비일일점검도 작업자설비점검과 동일하게 `/master/equip-inspect-items?equipCode=...&inspectType=DAILY` 설비별 배정 항목만 표시해야 한다. 배정이 없으면 항목이 안 뜨는 것이 정상이며, 기존처럼 `항목 없음 - 자동완료`로 인터락을 완료하면 기준정보 배정 누락을 숨긴다.
+- 변경: `DailyInspectModal`에서 무항목 자동완료 `handleSkip` 경로와 `confirmWithoutItems` 버튼을 제거했다. 0건이면 현재 선택 설비 기준으로 `기준정보 > 설비점검항목마스터(/master/equip-inspect-item)`에서 DAILY 항목 등록 → `기준정보 > 설비점검항목(/master/equip-inspect)`에서 설비 선택 → DAILY 선택 → 점검항목 추가 → 저장 → 모달 재오픈 절차를 표시한다. 배정 API 응답의 `sortSeq -> seq` 정규화도 추가했다.
+- 검증: RED 후 GREEN 구조 테스트 `node --test apps/frontend/src/app/(authenticated)/production/input-kiosk/components/daily-inspect-modal.structure.test.mjs` 통과(3/3), `pnpm --filter @harness/frontend exec tsc --noEmit` 통과.
+- 상태: 완료, lock released.
+## 2026-06-16 20:29 Codex
+
+- 작업: `T-CONSUMABLE-MASTER-CARDS-REMOVE` `/consumables/master` 상단 정보카드 제거.
+- 변경: `apps/frontend/src/app/(authenticated)/consumables/master/page.tsx`에서 카드 전용 `StatCard` grid, `computedStats`, `Package`/`StatCard` import, 주석의 통계카드 설명만 제거했다.
+- 유지: `/consumables` 목록 조회, 검색어/분류 필터, DataGrid, 등록/수정 우측 패널, 삭제 확인 흐름은 변경하지 않았다.
+- 검증: 대상 파일 `StatCard|computedStats|totalConsumables|mold|jig|tool|Package` 잔여 0건, `git diff --check` 통과, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과, `http://localhost:3002/consumables/master` HTTP 200 확인. Playwright 브라우저 DOM 확인은 3002 페이지 로드가 60초 타임아웃으로 완료하지 못했다.
+- 상태: 완료, lock released.
+
+## 2026-06-16 19:25 Codex
+
+- 작업: `T-EQUIP-INSPECT-ITEM-IMAGE-SEED` 설비점검항목 위치 안내 이미지 시드 생성 및 JSHANES 적용.
+- 변경: `tools/generate-equip-inspect-item-seed-images.mjs`를 추가해 항목별 고정 SVG 50개를 `apps/backend/uploads/equip-inspect-items`에 생성했다. 각 SVG는 설비유형 도식, 주황색 점검 위치 표시, `점검 위치` 라벨을 포함한다. `uploads`는 git ignore 대상이라 로컬 서버에는 생성 파일이 있고, 재생성은 스크립트로 수행한다.
+- DB 적용: `apps/backend/src/migrations/2026-06-16_equip_inspect_item_image_seed.sql`로 `EQUIP_INSPECT_ITEM_MASTERS.IMAGE_URL`을 `/uploads/equip-inspect-items/*.svg`로 채웠고, JSHANES `--execute-file` 실행 성공(`blocks_executed=51`).
+- 검증: JSHANES `TOTAL=50`, `WITH_IMAGE=50`, `SVG_URLS=50`, `DISTINCT_URLS=50`. 로컬 SVG 파일 50개 존재. `http://localhost:3003/uploads/equip-inspect-items/ei_atc_001.svg`와 `http://localhost:3002/uploads/equip-inspect-items/ei_atc_001.svg` 모두 200, `image/svg+xml`. `/api/v1/master/equip-inspect-item-masters?limit=2`는 `imageUrl` 반환. 실제 브라우저 `http://localhost:3002/master/equip-inspect-item`에서 이미지 50개 렌더링, 첫 이미지 natural size 720x420 확인.
+- 상태: 완료, lock released.
+
+## 2026-06-16 13:50 Codex
+
+- 작업: `T-MAT-FLOW-COHERENCE-FIX` 입하 → 입하재고 → 입고 → 입고후재고 → 출고 → 출고후재고 → 공정입고 → 공정재고 흐름 정합성 점검 및 보정.
+- 코드 보정: `ArrivalService.createPoArrival()`와 `createManualArrival()`의 레거시 `MAT_IN`/`MAT_STOCKS` 직행 경로를 내부 `MAT_LOTS` 발행 후 `MAT_ARRIVAL_STOCKS`/`MAT_ARRIVAL_TRANSACTIONS(ARRIVAL_IN)` 기록으로 변경했다. 원자재 현재고 증가는 기존 입고 확정 경로에서만 수행한다. `/material/arrival`의 수동/PO 모달 payload도 백엔드 계약에 맞춰 `warehouseId`를 보내도록 수정했다.
+- DB 보정: `apps/backend/src/migrations/2026-06-16_repair_mat_flow_audit_gaps.sql`을 JSHANES에 적용했다. 현재고 수량은 변경하지 않고 과거 데이터의 누락 감사원장만 보강했다. `ARRIVAL_REPAIR` 23건/23수량, `RECEIVE_REPAIR` 1건/3수량이 추가됐다.
+- 실측 결과: 적용 후 `MAT_ARRIVAL_TRANSACTIONS` 80건/322,326, `MAT_ARRIVAL_STOCKS` 35건/6,020, `MAT_RECEIVINGS DONE` 45건/316,306, `STOCK_TRANSACTIONS RECEIVE` 45건/316,306, `MAT_OUT` 14건/-100,011, `MAT_STOCKS` 58건/221,294. 입하원장 - 입고원장 - 입하재고 LOT 대사 `BAD_ROWS=0`, `ABS_DIFF=0`, `NET_DIFF=0`.
+- 공정재고 확인: 생산실적 `DONE` 8건은 `PRODUCT_TRANSACTIONS.WIP_IN` 8건/8수량으로 연결되고, `PRODUCT_STOCKS`의 `WIP_MAIN` 현재 잔량은 9행/2수량이다. 제품/원자재/입하재고 음수 수량 0건, `QTY <> AVAILABLE_QTY + RESERVED_QTY` 오류는 원자재/제품 모두 0건.
+- 검증: `pnpm --filter @harness/backend test -- arrival.service.spec.ts --runInBand` 34/34 PASS, `pnpm --filter @harness/backend build` 통과, `pnpm --filter @harness/frontend exec tsc --noEmit` 통과. 런타임 `http://localhost:3003/api/v1/health` 200, `http://localhost:3002/material/arrival` 200.
+- 상태: 완료, lock released. 워크트리에는 이번 작업 외 기존 변경 파일이 다수 있어 커밋 시 범위 선별 필요.
+
+## 2026-06-16 15:45 Codex
+
+- 작업: `T-KIOSK-EQUIP-INSPECT-WORKDAY-ORDER` 설비일일점검/작업자설비점검 이력 유지 기준 전환.
+- 원인: 기존 `EQUIP_INSPECT_LOGS`와 `/equipment/daily-inspect/check`는 `equipCode + inspectType + inspectDate` 달력일 기준이었다. 키오스크 프론트도 `new Date().toISOString().split('T')[0]`를 보내서 설비일일점검은 조업일 08:00 기준을 반영하지 못했고, 작업자설비점검은 `ORDER_NO` 컬럼/API payload가 없어 작업지시별 완료 이력을 판정할 수 없었다.
+- 변경: `EQUIP_INSPECT_LOGS`에 `ORDER_NO`, `WORK_DATE`, `INSPECT_AT`, `OP_WINDOW_START_AT`, `OP_WINDOW_END_AT`를 추가했다. `EquipInspectService.getInspectionStatus()`는 설비의 `processCode` 기준 공정 월력 → 공장 공통 월력 → 08:00 fallback 순서로 기존 `WORK_CALENDARS`/`WORK_CALENDAR_DAYS`/`SHIFT_PATTERNS`를 사용해 조업일을 계산한다. `DAILY` 완료 여부는 `WORK_DATE`, `WORKER` 완료 여부는 `ORDER_NO`로 조회한다. 상세 조회도 `DAILY`는 `WORK_DATE` 우선으로 변경했다.
+- 프론트 변경: `/production/input-kiosk`는 설비 선택 시 `inspectType=DAILY`만 보내 서버 조업일 판정을 사용한다. 작업지시 선택/변경 시 `inspectType=WORKER&orderNo=<작업지시>`로 이력을 확인해 `workerInspectDone`을 갱신한다. `DailyInspectModal` 저장 payload에서 프론트 계산 `inspectDate`를 제거했고, 완료 화면은 서버가 반환한 조업일/유효구간을 표시한다. `WorkerInspectModal` 저장 payload는 `orderNo`를 포함한다.
+- DB 적용: JSHANES에 새 컬럼 5개를 추가하고 기존 14건 `WORK_DATE=TRUNC(INSPECT_DATE)`, `INSPECT_AT=INSPECT_DATE`로 백필했다. 조회 인덱스 `IDX_EQUIP_INSPECT_WORK_DATE`, `IDX_EQUIP_INSPECT_ORDER_NO`와 업무 중복 방어 unique index `UX_EQUIP_INSPECT_DAILY_WORK`, `UX_EQUIP_INSPECT_WORKER_ORDER`를 생성했다. `--execute-file`은 PL/SQL 블록 파싱 문제로 변경 없이 실패해 실제 적용은 `oracle_connector.py --query` 단위로 순차 실행했다.
+- DB 검증: JSHANES `EQUIP_INSPECT_LOGS` 새 컬럼 5개 존재, 관련 인덱스 4개 존재, `WORK_DATE/INSPECT_AT` 누락 0건, `DAILY` 업무키 중복 0건 확인.
+- 문서: `docs/superpowers/plans/2026-06-16-equip-inspect-workday-order.md` 작성, `python tools/generate_db_schema_doc.py`로 `docs/reports/db-schema-erd.md` 재생성.
+- 검증: RED 확인 후 `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts daily-inspect.controller.spec.ts --runInBand` 16/16 PASS, 프론트 구조 테스트 9/9 PASS, `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `pnpm --filter @harness/backend build` PASS, 관련 파일 `git diff --check` PASS.
+- 상태: 완료, lock released. 워크트리에는 이번 작업 외 다른 AI/이전 작업 변경이 다수 있으므로 커밋 시 파일 범위를 선별해야 한다.
+
+## 2026-06-16 23:58 Codex
+
+- 작업: `T-EQUIP-INSPECT-HISTORY-BLANK-ROWS` `/equipment/inspect-history` 그리드 빈 행 수정.
+- 원인: JSHANES `EQUIP_INSPECT_LOGS`에는 company `40`, plant `1000` 기준 실제 이력 15건이 있었다. 문제는 백엔드 `EquipInspectService.findAll()`이 `getRawMany()` 결과를 `log.log` 엔티티 객체처럼 펼쳐서 모든 점검 필드가 `undefined`가 된 것이다. JSON 응답에서는 undefined 필드가 제거되어 `{ equip: {} }` 15행만 내려갔고, 프론트 DataGrid가 이를 빈 행처럼 렌더링했다.
+- 변경: `findAll()`에서 TypeORM raw alias(`log_EQUIP_CODE`, `log_INSPECT_TYPE` 등)를 명시적으로 camelCase 응답 필드로 매핑했다. Oracle custom alias가 대문자로 반환되는 케이스(`EQUIP_NAME`, `EQUIP_LINECODE`)도 fallback 처리했다. 프론트 `inspectDate` 컬럼은 ISO 원문 대신 Asia/Seoul 기준 `YYYY-MM-DD`로 표시하도록 정리했다.
+- 테스트: `equip-inspect.service.spec.ts`에 raw 점검이력 행이 그리드 응답 shape(`equipCode`, `equipName`, `inspectType`, `inspectorName`, `overallResult`, `remark`)로 변환되는 회귀 테스트 추가. 기존 테스트와 함께 `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts --runInBand` 14/14 PASS.
+- 검증: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS. API `http://localhost:3002/api/equipment/inspect-history?limit=3`에서 `EQ-ATCUT-01`, `자동절단 설비 #1`, `DAILY`, `오지훈`, `PASS` 반환 확인.
+- 브라우저 검증: 임시 headless Chrome으로 `http://localhost:3002/equipment/inspect-history` 접속. DOM 기준 `EQ-ATCUT-01`, `자동절단 설비 #1`, `오지훈`, `합격`, `2026-06-16` 표시 true, ISO 원문 `2026-06-15T15:00:00.000Z` 및 `[object Object]` 미표시. 스크린샷 `docs/reports/equipment-inspect-history-grid-2026-06-16-after.png` 저장 후 육안 확인.
+- 상태: 완료, lock released.
+
+## 2026-06-16 23:30 Codex
+
+- 작업: `T-KIOSK-WI-SEED-HNS02C1ABCD` `/production/input-kiosk` 작업지도서 미표시 원인 확인 및 시드 보완.
+- 원인 확인: `WO2606150060`은 JSHANES `JOB_ORDERS` 기준 `ITEM_CODE=HNS02C1ABCD`, `PROCESS_CODE=ATCUT`, `EQUIP_CODE=EQ-ATCUT-01`, `STATUS=RUNNING`, `PLAN_QTY=5`였다. `EQ-ATCUT-01`도 `PROCESS_CODE=ATCUT`이고, 키오스크 `WorkInstructionView`는 `GET /master/work-instructions?itemCode=HNS02C1ABCD&processCode=ATCUT&useYn=Y&limit=20`를 호출한다.
+- 데이터 부재: JSHANES `WORK_INSTRUCTIONS`에서 `COMPANY=40`, `PLANT_CD=1000`, `ITEM_CODE=HNS02C1ABCD`, `PROCESS_CODE=ATCUT`, `USE_YN=Y` 조건 0건, 동일 API도 `total=0`이었다.
+- 변경: `apps/backend/src/migrations/2026-06-16_work_instruction_hns02c1abcd_seed.sql`을 추가했다. 복합키 `ITEM_CODE + PROCESS_CODE + REVISION + COMPANY + PLANT_CD` 기준 `MERGE`로 `HNS02C1ABCD 자동절단 작업지도서` Rev.A를 재실행 가능하게 적재한다.
+- DB/API 검증: `oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-16_work_instruction_hns02c1abcd_seed.sql` 성공. 이후 DB 조회 1건, API `GET http://localhost:3002/api/master/work-instructions?itemCode=HNS02C1ABCD&processCode=ATCUT&useYn=Y&limit=20` total 1 및 제목/본문 반환 확인.
+- 브라우저 검증: 임시 headless Chrome CDP에 `harness-auth`와 `harness-kiosk`를 주입해 `http://localhost:3002/production/input-kiosk`를 열었다. DOM 기준 `HNS02C1ABCD 자동절단 작업지도서`와 `작업지시 WO2606150060과 품목 HNS02C1ABCD를 확인한다` 표시 true, `작업지도서 없음` false. 스크린샷 `docs/reports/kiosk-work-instruction-hns02c1abcd-2026-06-16.png` 저장 및 육안 확인 완료.
+- 상태: 완료, lock released.
+
+## 2026-06-16 16:15 Codex
+
+- 작업: `T-KIOSK-EQUIP-INSPECT-MIGRATION-RERUN` 점검이력 마이그레이션 파일 재실행성 보정.
+- 원인: `oracle_connector.py --execute-file`은 SQL을 세미콜론이 아니라 `/` 단독 라인으로 분리한다. 또한 블록이 주석으로 시작하면 PL/SQL 블록으로 인식하지 못해 `END;`의 세미콜론을 제거한다. 이전 파일은 주석으로 시작한 PL/SQL 또는 세미콜론 구분 SQL이라 재실행 파일로 부적합했다.
+- 변경: `apps/backend/src/migrations/2026-06-16_equip_inspect_workday_order.sql`을 파일 첫 줄이 `DECLARE`인 단일 idempotent PL/SQL 블록으로 변경했다. 컬럼/인덱스 존재 여부를 `USER_TAB_COLUMNS`, `USER_INDEXES`에서 확인하고 없을 때만 DDL을 `EXECUTE IMMEDIATE`로 실행한다. 백필 UPDATE도 동적 SQL로 처리해 신규 DB에서 컬럼 추가 후 같은 블록 안에서 실행 가능하게 했다.
+- 검증: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-16_equip_inspect_workday_order.sql` 재실행 성공(`blocks_executed=1`). Post-check 결과 컬럼 5개, 인덱스 4개, `WORK_DATE/INSPECT_AT` 누락 0건. 관련 파일 `git diff --check` 통과.
+- 상태: 완료, lock released.
+
+## 2026-06-16 19:00 Codex
+
+- 작업: `T-EQUIP-INSPECT-ITEM-IMAGE-PANEL` `/master/equip-inspect-item` 사진 첨부와 모달 제거, 누락 기준정보 보정.
+- 프론트: 등록/수정 UI를 모달에서 480px 우측 패널(`animate-slide-in-right`, `border-l`)로 전환했다. 목록에 사진 컬럼을 추가하고 패널에서 이미지 미리보기, 선택, 저장 후 업로드, 기존 이미지 삭제를 지원한다. 측정형 판정기준은 LSL/USL이 없더라도 `CRITERIA + UNIT`을 표시하도록 fallback을 보강했다.
+- 백엔드/DB: `EQUIP_INSPECT_ITEM_MASTERS.IMAGE_URL` 컬럼과 DTO/entity/service/controller 저장 경로를 추가했다. `POST/DELETE /master/equip-inspect-item-masters/:itemCode/image`로 이미지 업로드/삭제를 처리하며 업로드 파일은 `uploads/equip-inspect-items`에 저장한다. JSHANES에는 `2026-06-16_equip_inspect_item_image_url.sql`을 적용했다.
+- 데이터 보정: `2026-06-16_equip_inspect_item_missing_fields.sql`로 `EQUIP_TYPE COMMON=공통` 공통코드를 추가하고, 기존 공통/작업자 점검항목 10건의 누락 유형을 `COMMON`으로 채웠다. 누락 주기 7건은 `PERIODIC -> MONTHLY`, 그 외 `DAILY`로 보정했고, 측정형 항목의 단위/확정 가능한 기준값을 보강했다.
+- DB/API 검증: JSHANES `EQUIP_INSPECT_ITEM_MASTERS` 50건 기준 `EQUIP_TYPE/ITEM_TYPE/CRITERIA/CYCLE` 누락 0건. API 인증 호출(`Bearer admin@hanes.com`, company `40`, plant `1000`) 결과 total 50, missing 0, `COMMON` 10, `imageUrl` field true. `COM_CODES`도 `EQUIP_TYPE/COMMON/공통` 1건 확인.
+- 런타임 검증: `http://localhost:3002/master/equip-inspect-item` 실제 브라우저에서 `공통`, `작업표준서 규격 이내 (mm)`, `매월` 표시 확인. 등록 클릭 후 파일 입력 상위 컨테이너가 `x=960`, `width=480`, `animate-slide-in-right`, `border-l` 우측 패널이며 `role=dialog` 모달은 표시되지 않음. 이미지 업로드/삭제 API도 실제 PNG 업로드 후 DB URL 저장, 삭제 후 null 복귀 확인.
+- 테스트: RED 후 GREEN으로 구조 테스트 3/3, `pnpm --filter @harness/backend test -- equip-inspect-item-pool.service.spec.ts equip-inspect-item-pool.controller.spec.ts --runInBand` 8/8 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit` PASS, `pnpm --filter @harness/shared exec tsc --noEmit` PASS, `pnpm --filter @harness/backend build` PASS. `python tools/generate_db_schema_doc.py`로 `docs/reports/db-schema-erd.md` 재생성.
+- 상태: 완료, lock released. 워크트리에는 다른 AI/기존 변경이 다수 있어 커밋 시 이번 작업 파일 범위를 선별해야 한다.
+
+## 2026-06-16 20:33 Codex
+
+- 작업: `T-EQUIP-INSPECT-ITEM-UNIT-DROPDOWN` `/master/equip-inspect-item` 등록/수정 패널의 측정 단위 입력형을 공통코드 드롭다운으로 전환.
+- 확인: JSHANES 공통코드에서 단위 그룹은 `UNIT_TYPE`이며 기존 `UNIT` 그룹은 없음. `UNIT_TYPE`에는 `EA/M/KG/SET/ROLL/BOX/L/PCS/G/MM/CM/BAG/PAIR` 13건이 있었다.
+- 변경: 측정형(`MEASURE`)일 때 `Input` 단위 필드를 `ComCodeSelect groupCode="UNIT_TYPE" includeAll={false} showCode`로 교체했다. 기존 데이터의 `mm`는 화면 편집 시 `MM`으로 정규화한다.
+- DB 적용: `apps/backend/src/migrations/2026-06-16_equip_inspect_item_unit_type.sql` 추가 및 JSHANES 적용. 현재 점검항목 데이터에서 쓰는 `°C`, `Ω`를 `UNIT_TYPE`에 추가하고 기존 `mm` 4건은 `MM`으로 정규화했다.
+- 검증: 구조 테스트 RED 확인 후 GREEN 4/4 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit` PASS. JSHANES 단위값은 `MM` 4건, `°C` 2건, `Ω` 1건으로 정리됐고 세 값 모두 `UNIT_TYPE` 공통코드/API에서 확인. 3002 실제 브라우저에서 등록 패널 → 판정구분 `MEASURE` 선택 시 `단위` 컨트롤이 `SELECT`이고 `MM/°C/Ω` 옵션이 노출됨을 확인했다.
+- 상태: 완료, lock released. 3002가 일시적으로 응답 지연되어 3012 임시 dev 서버를 띄웠으나 사용자 재실행 후 3002에서 최종 검증했고 3012 프로세스는 종료했다.
+
+## 2026-06-16 21:28 Codex
+
+- 작업: `T-CONSUMABLE-MASTER-IMAGE-SEED` `/consumables/master` 소모품 마스터 전체 시드 이미지 등록.
+- 전제 확인: 이전 `T-ITEM-CONSUMABLE-MOVE` 이후 JSHANES 기준 `CONSUMABLE_MASTERS` 37건, `ITEM_MASTERS.ITEM_TYPE='CONSUMABLE'` 0건, 이미지 보유 0건을 확인했다.
+- 생성: `tools/generate-consumable-master-seed-images.mjs`를 추가해 `apps/backend/uploads/consumables`에 소모품별 SVG 37개를 생성했다. 카테고리별로 `JIG/MOLD/TOOL` 형태와 색상을 달리하고, 코드/명칭/보관위치를 SVG에 표시한다.
+- DB 적용: `apps/backend/src/migrations/2026-06-16_consumable_master_image_seed.sql` 생성 후 JSHANES에 적용했다. 37개 UPDATE + COMMIT 총 38블록 모두 성공.
+- 검증: 로컬 SVG 37개, SQL UPDATE 37개 확인. JSHANES `CONSUMABLE_MASTERS` total 37, with_image 37, missing_image 0. 인증 API `/api/v1/consumables?limit=100&useYn=Y`도 total 37, missing 0, 첫 이미지 `/uploads/consumables/appct_a.svg` 반환. 정적 파일 `http://localhost:3003/uploads/consumables/cm_jg_ct1.svg` 200 `image/svg+xml`. 3002 실제 브라우저 `/consumables/master`에서 이미지 37개 전부 로드, 첫 이미지 natural size 720x420, console/page error 0.
+- 상태: 완료, lock released.
+
+## 2026-06-16 21:12 Codex
+
+- 작업: `T-ITEM-CONSUMABLE-MOVE` 품목마스터에 남아 있던 소모품 12건을 소모품마스터로 이동.
+- 사전 확인: JSHANES `ITEM_MASTERS` company `40`, plant `1000`, `ITEM_TYPE='CONSUMABLE'` 대상은 `APPCT-A/B/SE`, `CUTBL001/002/003/004/009`, `JIGHD-A/B/C/D` 총 12건. `BOM_MASTERS` parent/child, `MAT_LOTS`, `MAT_STOCKS`, FK 대상 `PROD_PLANS` 참조는 모두 0건이었다. `CONSUMABLE_CATEGORY` 공통코드는 `MOLD/JIG/TOOL` 3개만 활성이다.
+- 변경: `apps/backend/src/migrations/2026-06-16_move_item_consumables_to_consumable_master.sql` 추가 및 JSHANES 적용. `CONSUMABLE_MASTERS`에는 기존 품목코드를 `CONSUMABLE_CODE`로 유지해 MERGE하고, `JIGHD*`는 `JIG`, 그 외 `APPCT*`/`CUTBL*`는 `TOOL`, `STATUS='NORMAL'`, `OPER_STATUS='WAREHOUSE'`, 재고 0으로 적재했다. 이후 `ITEM_MASTERS`의 대상 소모품 12건은 삭제했다.
+- 보정: 첫 적용 때 파일 상단 주석 때문에 `oracle_connector.py --execute-file`의 PL/SQL 세미콜론 보존이 깨져 백업 블록이 실패했으나 실제 이동 블록은 성공했다. 파일을 `DECLARE` 시작 블록으로 고치고, 이미 이동된 DB에서도 `ITEM_MASTERS_CONSUMABLE_BAK_20260616` 백업 테이블을 핵심 컬럼으로 보강하도록 수정했다.
+- 검증: 마이그레이션 재실행 성공(`blocks_executed=2`). 최종 JSHANES post-check는 `ITEM_MASTERS` 소모품 잔여 0건, `CONSUMABLE_MASTERS` 이동 12건, `ITEM_MASTERS_CONSUMABLE_BAK_20260616` 백업 12건. 이동 12건 분류는 `JIG=4`, `TOOL=8`. `git diff --check` 대상 파일 통과.
+- 상태: 완료, lock released.
+
+## 2026-06-16 21:39 Codex
+
+- 작업: `T-CONSUMABLE-MASTER-USAGE-MAP` `/consumables/master` 우측 패널 내 `CONSUMABLE_USAGE_MAP` 매핑 섹션 추가.
+- 확인: `CONSUMABLE_USAGE_MAP`는 JSHANES에 있고 20건 사용 중이며, 키오스크 `/production/job-orders/:orderNo/consumables`와 생산실적 완료 타수 누적 로직에서 쓰지만 관리 CRUD 화면/API가 없었다.
+- 백엔드 변경: `ConsumablesModule`에 `ConsumableUsageMap`, `PartMaster`, `EquipMaster` repository를 등록하고, `/consumables/:id/usage-maps` GET/POST, `/consumables/:id/usage-maps/:productItemCode/:equipCode` PUT/DELETE를 추가했다. 목록은 `ITEM_MASTERS`, `EQUIP_MASTERS`, `CONSUMABLE_MASTERS`를 JOIN해 제품명/설비명/소모품명을 함께 반환한다. 생성은 동일 키가 있으면 업데이트로 동작한다.
+- 프론트 변경: `apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableFormPanel.tsx` 패널 폭을 560px로 넓히고, 기존 기본정보/수명/거래처/이미지 섹션 아래에 `소모품 사용매핑` 고정 섹션을 추가했다. 신규 등록 모드에서는 저장 후 매핑 가능 안내만 표시하고, 수정/선택 모드에서는 제품/모델(`/master/parts`), 설비(`/equipment/equips`), 단위사용량, 사용여부, 비고 입력 후 저장/토글/삭제할 수 있다.
+- 검증: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false`, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과. API `GET /api/v1/consumables/CM-JG-SL1/usage-maps`는 2건 반환. API 생성/삭제 경로는 `APPCT-A/HNS02/EQ-SASSY-01` 테스트 매핑을 생성 후 삭제해 둘 다 success true 확인, JSHANES 잔여 0건 확인. `http://localhost:3002/consumables/master` HTTP 200. 이 워크스페이스에는 Playwright 패키지/설정이 없어 브라우저 DOM 자동 검증은 수행하지 못했다.
+- 상태: 완료, lock released.
