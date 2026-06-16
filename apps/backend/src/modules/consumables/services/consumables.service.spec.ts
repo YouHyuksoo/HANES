@@ -14,6 +14,9 @@ import { Repository, DataSource } from 'typeorm';
 import { ConsumablesService } from './consumables.service';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
+import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -35,6 +38,9 @@ describe('ConsumablesService', () => {
         ConsumablesService,
         { provide: getRepositoryToken(ConsumableMaster), useValue: mockMasterRepo },
         { provide: getRepositoryToken(ConsumableLog), useValue: mockLogRepo },
+        { provide: getRepositoryToken(ConsumableUsageMap), useValue: createMock<Repository<ConsumableUsageMap>>() },
+        { provide: getRepositoryToken(PartMaster), useValue: createMock<Repository<PartMaster>>() },
+        { provide: getRepositoryToken(EquipMaster), useValue: createMock<Repository<EquipMaster>>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],
@@ -206,13 +212,13 @@ describe('ConsumablesService', () => {
 
   // ─── getLifeStatus ───
   describe('getLifeStatus', () => {
-    it('should return life status counts', async () => {
+    it('should return life status rows for the life status grid', async () => {
       // Arrange
       const items = [
-        { status: 'NORMAL' },
-        { status: 'NORMAL' },
-        { status: 'WARNING' },
-        { status: 'REPLACE' },
+        { consumableCode: 'C001', status: 'NORMAL' },
+        { consumableCode: 'C002', status: 'NORMAL' },
+        { consumableCode: 'C003', status: 'WARNING' },
+        { consumableCode: 'C004', status: 'REPLACE' },
       ] as ConsumableMaster[];
       mockMasterRepo.find.mockResolvedValue(items);
 
@@ -220,7 +226,11 @@ describe('ConsumablesService', () => {
       const result = await target.getLifeStatus();
 
       // Assert
-      expect(result).toEqual({ good: 2, warning: 1, replace: 1 });
+      expect(result).toEqual(items);
+      expect(mockMasterRepo.find).toHaveBeenCalledWith({
+        where: { useYn: 'Y' },
+        order: { status: 'DESC', currentCount: 'DESC', consumableCode: 'ASC' },
+      });
     });
   });
 

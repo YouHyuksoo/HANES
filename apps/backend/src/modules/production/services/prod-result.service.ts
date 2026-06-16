@@ -29,6 +29,8 @@ import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
+import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entity';
+import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { User } from '../../../entities/user.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
@@ -790,6 +792,52 @@ export class ProdResultService {
         );
         if (autoResult.warnings.length > 0) {
           this.logger.warn(`자동차감 경고: ${autoResult.warnings.join(', ')}`);
+        }
+      }
+
+      // 4-2. 매핑 소모품 롯트 사용횟수 누적 (재고 차감/수불 없음 — 수명 관리용)
+      //      모델(작업지시 품목)+설비 매핑(CONSUMABLE_USAGE_MAP)으로 대상 소모품을 찾고,
+      //      그 설비에 장착(MOUNTED)된 롯트(conUid)의 CURRENT_COUNT를 USAGE_PER_UNIT × 생산수량만큼 누적.
+      if (prodResult.equipCode && autoTotalQty > 0) {
+        const consumJobOrder = await queryRunner.manager.findOne(JobOrder, {
+          where: {
+            orderNo: prodResult.orderNo,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+        });
+        if (consumJobOrder?.itemCode) {
+          const consumMaps = await queryRunner.manager.find(ConsumableUsageMap, {
+            where: {
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+              productItemCode: consumJobOrder.itemCode,
+              equipCode: prodResult.equipCode,
+              useYn: 'Y',
+            },
+          });
+          for (const cmap of consumMaps) {
+            const lots = await queryRunner.manager.find(ConsumableStock, {
+              where: {
+                consumableCode: cmap.consumableCode,
+                mountedEquipCode: prodResult.equipCode,
+                status: 'MOUNTED',
+                ...(company ? { company } : {}),
+                ...(plant ? { plantCd: plant } : {}),
+              },
+            });
+            for (const lot of lots) {
+              const newCount = lot.currentCount + cmap.usagePerUnit * autoTotalQty;
+              await queryRunner.manager.update(
+                ConsumableStock,
+                { conUid: lot.conUid },
+                { currentCount: newCount },
+              );
+              this.logger.log(
+                `소모품 롯트 사용횟수 누적: ${lot.conUid} (${lot.currentCount} → ${newCount})`,
+              );
+            }
+          }
         }
       }
 

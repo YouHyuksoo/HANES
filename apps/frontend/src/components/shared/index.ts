@@ -19,3 +19,4 @@ export type { ConsumableItem } from "./ConsumableSearchModal";
 export { default as UseYnSelect } from "./UseYnSelect";
 export { default as OrderSearchModal } from "./OrderSearchModal";
 export type { OrderItem } from "./OrderSearchModal";
+export { default as InspectItemImage } from "./InspectItemImage";

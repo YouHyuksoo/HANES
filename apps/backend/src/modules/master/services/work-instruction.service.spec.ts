@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { WorkInstruction } from '../../../entities/work-instruction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -50,6 +50,7 @@ describe('WorkInstructionService', () => {
 
   it('creates a work instruction within tenant', async () => {
     const created = { itemCode: 'ITEM01', processCode: 'P10', revision: 'A', company: 'C1', plant: 'P1' } as WorkInstruction;
+    mockRepo.findOne.mockResolvedValue(null);
     mockRepo.create.mockReturnValue(created);
     mockRepo.save.mockResolvedValue(created);
 
@@ -62,6 +63,18 @@ describe('WorkInstructionService', () => {
       company: 'C1',
       plant: 'P1',
     }));
+  });
+
+  it('rejects duplicate item, process, and revision within tenant', async () => {
+    mockRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', processCode: 'P10', revision: 'A', company: 'C1', plant: 'P1' } as WorkInstruction);
+
+    await expect(target.create({
+      itemCode: 'ITEM01',
+      processCode: 'P10',
+      title: 'Guide',
+      revision: 'A',
+    } as any, 'C1', 'P1')).rejects.toThrow(ConflictException);
+    expect(mockRepo.save).not.toHaveBeenCalled();
   });
 
   it('updates a work instruction within tenant and strips key columns from payload', async () => {

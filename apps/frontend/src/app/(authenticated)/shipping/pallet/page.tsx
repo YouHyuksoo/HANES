@@ -22,7 +22,7 @@ import {
   Layers, Plus, Search, RefreshCw, Lock, LockOpen, Truck,
   Package, CheckCircle, ArrowRight, X,
 } from "lucide-react";
-import { Card, CardHeader, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { Card, CardHeader, CardContent, Button, ConfirmModal, Input, Modal, Select, StatCard } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -74,6 +74,7 @@ export default function PalletPage() {
   const [palletBoxes, setPalletBoxes] = useState<PalletBox[]>([]);
   const [availableBoxes, setAvailableBoxes] = useState<AvailableBox[]>([]);
   const [selectedBoxes, setSelectedBoxes] = useState<string[]>([]);
+  const [removeBoxTarget, setRemoveBoxTarget] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
@@ -164,18 +165,19 @@ export default function PalletPage() {
     }
   }, [selectedPallet, selectedBoxes, syncAfterAction]);
 
-  const handleRemoveBox = useCallback(async (boxNo: string) => {
-    if (!selectedPallet) return;
+  const handleRemoveBox = useCallback(async () => {
+    if (!selectedPallet || !removeBoxTarget) return;
     setSaving(true);
     try {
-      const res = await api.delete(`/shipping/pallets/${selectedPallet.id}/boxes`, { data: { boxIds: [boxNo] } });
+      const res = await api.delete(`/shipping/pallets/${selectedPallet.id}/boxes`, { data: { boxIds: [removeBoxTarget] } });
+      setRemoveBoxTarget(null);
       syncAfterAction(res.data?.data);
     } catch (e) {
       console.error("Remove box failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [selectedPallet, syncAfterAction]);
+  }, [selectedPallet, removeBoxTarget, syncAfterAction]);
 
   const handleClosePallet = useCallback(async (pallet: Pallet) => {
     try {
@@ -289,7 +291,7 @@ export default function PalletPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-text">{box.qty}{t("common.count")}</span>
                         {selectedPallet.status === "OPEN" && (
-                          <button className="p-1 hover:bg-surface rounded" title={t("shipping.pallet.removeBox")} disabled={saving} onClick={() => handleRemoveBox(box.boxNo)}>
+                          <button className="p-1 hover:bg-surface rounded" title={t("shipping.pallet.removeBox")} disabled={saving} onClick={() => setRemoveBoxTarget(box.boxNo)}>
                             <X className="w-4 h-4 text-danger" />
                           </button>
                         )}
@@ -359,6 +361,14 @@ export default function PalletPage() {
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={!!removeBoxTarget}
+        onClose={() => setRemoveBoxTarget(null)}
+        onConfirm={handleRemoveBox}
+        title={t("common.deleteConfirm", "삭제 확인")}
+        message={`${removeBoxTarget ?? ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        variant="danger"
+      />
     </div>
   );
 }

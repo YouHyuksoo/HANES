@@ -4,9 +4,10 @@
  *              복합키: EQUIP_CODE + INSPECT_TYPE + INSPECT_DATE
  *
  * 초보자 가이드:
- * 1. 복합 PK: equipCode + inspectType + inspectDate
+ * 1. 물리 PK: equipCode + inspectType + inspectDate
+ * 2. 업무 키: DAILY는 workDate, WORKER는 orderNo로 완료 여부를 판단
  * 2. details: CLOB JSON으로 항목별 점검 결과 저장
- * 3. 하루에 설비당 동일 점검유형은 1건만 가능
+ * 3. 설비일일점검은 조업일 기준, 작업자설비점검은 작업지시 기준으로 유지
  */
 import {
   Entity,
@@ -26,6 +27,21 @@ export class EquipInspectLog {
 
   @PrimaryColumn({ name: 'INSPECT_DATE', type: 'date' })
   inspectDate: Date;
+
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
+  orderNo: string | null;
+
+  @Column({ name: 'WORK_DATE', type: 'date', nullable: true })
+  workDate: Date | null;
+
+  @Column({ name: 'INSPECT_AT', type: 'timestamp', nullable: true })
+  inspectAt: Date | null;
+
+  @Column({ name: 'OP_WINDOW_START_AT', type: 'timestamp', nullable: true })
+  opWindowStartAt: Date | null;
+
+  @Column({ name: 'OP_WINDOW_END_AT', type: 'timestamp', nullable: true })
+  opWindowEndAt: Date | null;
 
   @Column({ type: 'varchar2', name: 'INSPECTOR_NAME', length: 100, nullable: true })
   inspectorName: string | null;

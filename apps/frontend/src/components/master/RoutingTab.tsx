@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { ColumnDef } from "@tanstack/react-table";
@@ -64,6 +64,7 @@ export default function RoutingTab({ onHeaderActions }: Props) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Routing | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Routing | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -170,14 +171,16 @@ export default function RoutingTab({ onHeaderActions }: Props) {
     }
   }, [form, editingItem, fetchData]);
 
-  const handleDelete = useCallback(async (item: Routing) => {
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/master/routings/${item.itemCode}/${item.seq}`);
+      await api.delete(`/master/routings/${deleteTarget.itemCode}/${deleteTarget.seq}`);
+      setDeleteTarget(null);
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);
     }
-  }, [fetchData]);
+  }, [deleteTarget, fetchData]);
 
   const columns = useMemo<ColumnDef<Routing>[]>(() => [
     { id: "actions", header: t("common.actions"), size: 80,
@@ -187,7 +190,7 @@ export default function RoutingTab({ onHeaderActions }: Props) {
           <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
-          <button onClick={() => handleDelete(row.original)} className="p-1 hover:bg-surface rounded">
+          <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded">
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>
         </div>
@@ -310,6 +313,15 @@ export default function RoutingTab({ onHeaderActions }: Props) {
           </Button>
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t("common.delete")}
+        message={`${deleteTarget?.itemCode ?? ""} / ${deleteTarget?.seq ?? ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        confirmText={t("common.delete")}
+        variant="danger"
+      />
     </>
   );
 }

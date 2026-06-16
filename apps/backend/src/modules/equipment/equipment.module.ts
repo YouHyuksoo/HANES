@@ -36,6 +36,9 @@ import { PmWoResult } from '../../entities/pm-wo-result.entity';
 import { User } from '../../entities/user.entity';
 import { ProdLineMaster } from '../../entities/prod-line-master.entity';
 import { ProcessMaster } from '../../entities/process-master.entity';
+import { WorkCalendar } from '../../entities/work-calendar.entity';
+import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
+import { ShiftPattern } from '../../entities/shift-pattern.entity';
 import { EquipMasterController } from './controllers/equip-master.controller';
 import { ConsumableController, ConsumableLogController } from './controllers/consumable.controller';
 import { DailyInspectController } from './controllers/daily-inspect.controller';
@@ -72,6 +75,9 @@ import { SensorMonitorController } from './controllers/sensor-monitor.controller
       User,
       ProdLineMaster,
       ProcessMaster,
+      WorkCalendar,
+      WorkCalendarDay,
+      ShiftPattern,
       MoldMaster,
       MoldUsageLog,
       SensorDataLog,

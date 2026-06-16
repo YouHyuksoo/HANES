@@ -17,15 +17,18 @@ import { CheckCircle2, XCircle, Save, AlertTriangle } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
+import { InspectItemImage } from '@/components/shared';
 
 interface InspectItem {
   seq: number;
+  sortSeq?: number | null;
   itemName: string;
   criteria?: string;
   itemType: 'MEASURE' | 'VISUAL';
   unit?: string | null;
   lslValue?: number | null;
   uslValue?: number | null;
+  imageUrl?: string | null;
 }
 
 type ItemResult = 'PASS' | 'FAIL' | '';
@@ -33,6 +36,9 @@ type InspectDetails = Record<string, unknown>;
 
 interface CompletedInspectLog {
   inspectDate?: string;
+  workDate?: string;
+  windowStart?: string | null;
+  windowEnd?: string | null;
   inspectorName?: string | null;
   overallResult?: string | null;
   details?: InspectDetails | string | null;
@@ -92,28 +98,39 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
   const [saving, setSaving] = useState(false);
   const [alreadyDone, setAlreadyDone] = useState(false);
   const [completedInspect, setCompletedInspect] = useState<CompletedInspectLog | null>(null);
-  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (!isOpen) return;
     const now = new Date();
-    setInspectTime(`${today} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+    const displayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    setInspectTime(`${displayDate} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
     setCompletedInspect(null);
 
     const controller = new AbortController();
 
     api.get('/equipment/daily-inspect/check', {
-      params: { equipCode: selectedEquip?.equipCode, inspectDate: today },
+      params: { equipCode: selectedEquip?.equipCode, inspectType: 'DAILY' },
       signal: controller.signal,
     }).then(res => {
-      if (res.data?.data?.alreadyInspected) {
+      const status = res.data?.data ?? {};
+      if (status.alreadyInspected) {
         setAlreadyDone(true);
         setInterlock('dailyInspectDone', true);
-        api.get(`/equipment/daily-inspect/${selectedEquip?.equipCode}/${today}`, {
+        const workDate = status.workDate ?? displayDate;
+        api.get(`/equipment/daily-inspect/${selectedEquip?.equipCode}/${workDate}`, {
           signal: controller.signal,
         }).then(detailRes => {
-          setCompletedInspect(detailRes.data?.data ?? null);
-        }).catch(() => setCompletedInspect(null));
+          setCompletedInspect({
+            ...(detailRes.data?.data ?? {}),
+            workDate,
+            windowStart: status.windowStart ?? null,
+            windowEnd: status.windowEnd ?? null,
+          });
+        }).catch(() => setCompletedInspect({
+          workDate,
+          windowStart: status.windowStart ?? null,
+          windowEnd: status.windowEnd ?? null,
+        }));
       } else {
         setAlreadyDone(false);
         setCompletedInspect(null);
@@ -124,8 +141,9 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
       params: { equipCode: selectedEquip?.equipCode, inspectType: 'DAILY', limit: '100' },
       signal: controller.signal,
     }).then(res => {
-      const data: InspectItem[] = (res.data?.data ?? []).map((i: InspectItem) => ({
+      const data: InspectItem[] = (res.data?.data ?? []).map((i: InspectItem, index: number) => ({
         ...i,
+        seq: Number(i.seq ?? i.sortSeq ?? index + 1),
         itemType: i.itemType || 'VISUAL',
       }));
       setItems(data);
@@ -141,7 +159,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
       .catch(() => setInspectors([]));
 
     return () => controller.abort();
-  }, [isOpen, selectedEquip, today, setInterlock]);
+  }, [isOpen, selectedEquip, setInterlock]);
 
   useEffect(() => {
     if (selectedWorkers[0]?.workerName) setInspectorName(selectedWorkers[0].workerName);
@@ -182,7 +200,6 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
       });
       await api.post('/equipment/daily-inspect', {
         equipCode: selectedEquip.equipCode,
-        inspectDate: today,
         inspectorName,
         inspectType: 'DAILY',
         overallResult: anyFail ? 'FAIL' : 'PASS',
@@ -198,31 +215,8 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
     } finally {
       setSaving(false);
     }
-  }, [selectedEquip, items, results, measureValues, remarks, today, inspectorName,
+  }, [selectedEquip, items, results, measureValues, remarks, inspectorName,
     anyFail, setInterlock, onDone, t]);
-
-  const handleSkip = useCallback(async () => {
-    if (!selectedEquip) return;
-    setSaving(true);
-    try {
-      await api.post('/equipment/daily-inspect', {
-        equipCode: selectedEquip.equipCode,
-        inspectDate: today,
-        inspectorName,
-        inspectType: 'DAILY',
-        overallResult: 'PASS',
-        remark: '항목 없음 - 자동완료',
-      }, { skipSuccessToast: true });
-      setInterlock('dailyInspectDone', true);
-      toast.success(t('kiosk.prep.dailyInspectSaved'));
-      onDone();
-    } catch {
-      setInterlock('dailyInspectDone', true);
-      onDone();
-    } finally {
-      setSaving(false);
-    }
-  }, [selectedEquip, today, inspectorName, setInterlock, onDone, t]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.dailyInspectTitle')} size="full">
@@ -237,7 +231,10 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
               </div>
             </div>
             <div className="text-right text-xs space-y-1">
-              <p><span className="opacity-70">점검일</span> <span className="font-mono">{today}</span></p>
+              <p><span className="opacity-70">조업일</span> <span className="font-mono">{completedInspect?.workDate || '-'}</span></p>
+              {completedInspect?.windowStart && completedInspect?.windowEnd && (
+                <p><span className="opacity-70">유효구간</span> <span className="font-mono">{completedInspect.windowStart} ~ {completedInspect.windowEnd}</span></p>
+              )}
               <p><span className="opacity-70">점검자</span> <span className="font-semibold">{completedInspect?.inspectorName || '-'}</span></p>
               <p>
                 <span className="opacity-70">종합판정</span>{' '}
@@ -254,6 +251,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                 <thead className="sticky top-0 bg-surface z-10">
                   <tr className="border-b border-border">
                     <th className="w-12 px-3 py-2 text-center text-xs text-text-muted font-medium">No</th>
+                    <th className="w-16 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.image', '사진')}</th>
                     <th className="w-56 px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
                     <th className="w-80 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
                     <th className="w-32 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.measureOrJudge')}</th>
@@ -271,6 +269,9 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                     return (
                       <tr key={item.seq} className="border-b border-border last:border-0">
                         <td className="px-3 py-2 text-center text-xs text-text-muted">{item.seq}</td>
+                        <td className="px-2 py-2 text-center">
+                          <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} />
+                        </td>
                         <td className="px-3 py-2 font-medium text-text whitespace-nowrap">{item.itemName}</td>
                         <td className="px-3 py-2 text-center text-xs text-text-muted">
                           {item.itemType === 'MEASURE' && (item.lslValue != null || item.uslValue != null) ? (
@@ -331,7 +332,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
               )}
               <div className="flex justify-between items-center">
                 <span className="text-xs text-text-muted">{t('kiosk.prep.inspectDate')}</span>
-                <span className="font-mono">{today}</span>
+                <span className="font-mono">{inspectTime.split(' ')[0] || '-'}</span>
               </div>
             </div>
 
@@ -365,12 +366,38 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
           </div>
 
           {items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-8 text-text-muted">
-              <AlertTriangle className="w-10 h-10 opacity-40" />
-              <p className="text-sm">{t('kiosk.prep.noInspectItems')}</p>
-              <Button onClick={handleSkip} disabled={saving} title={saving ? t('common.saving') : t('kiosk.prep.confirmWithoutItems')}>
-                {t('kiosk.prep.confirmWithoutItems')}
-              </Button>
+            <div className="rounded-lg border border-dashed border-border bg-surface/50 p-4 text-sm text-text">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 w-5 h-5 shrink-0 text-amber-500" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-text">
+                    {t('kiosk.prep.noDailyInspectItemsTitle', '설비별로 배정된 설비일일점검 항목이 없습니다.')}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-text-muted">
+                    {t('kiosk.prep.noDailyInspectItemsCurrent', {
+                      defaultValue: '현재 선택 설비 {{equipName}}({{equipCode}})에 DAILY 점검항목이 연결되어 있지 않습니다. 항목이 배정되기 전에는 설비일일점검을 완료 처리할 수 없습니다.',
+                      equipName: selectedEquip?.equipName ?? '',
+                      equipCode: selectedEquip?.equipCode ?? '',
+                    })}
+                  </p>
+                  <div className="mt-3 rounded border border-border bg-background/60 p-3">
+                    <p className="text-xs font-semibold text-text">
+                      {t('kiosk.prep.dailyInspectAssignGuideTitle', '사전 처리 절차')}
+                    </p>
+                    <ol className="mt-2 list-decimal space-y-1 pl-4 text-left text-xs leading-5 text-text-muted">
+                      <li>{t('kiosk.prep.dailyInspectAssignStep1', '점검항목 자체가 없으면 기준정보 > 설비점검항목마스터(/master/equip-inspect-item)에서 점검유형 DAILY 항목을 먼저 등록합니다.')}</li>
+                      <li>{t('kiosk.prep.dailyInspectAssignStep2', '좌측 메뉴에서 기준정보 > 설비점검항목(/master/equip-inspect) 화면으로 이동합니다.')}</li>
+                      <li>{t('kiosk.prep.dailyInspectAssignStep3', '왼쪽 설비 목록에서 이 키오스크 설비를 선택합니다.')}</li>
+                      <li>{t('kiosk.prep.dailyInspectAssignStep4', '점검유형을 설비일일점검 또는 일상점검(DAILY)으로 선택합니다.')}</li>
+                      <li>{t('kiosk.prep.dailyInspectAssignStep5', '점검항목 추가 버튼을 눌러 필요한 항목을 선택하고 저장합니다.')}</li>
+                      <li>{t('kiosk.prep.dailyInspectAssignStep6', '이 모달을 닫았다가 다시 열면 배정된 항목이 표시됩니다.')}</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <Button variant="secondary" onClick={onClose}>{t('common.close', '닫기')}</Button>
+              </div>
             </div>
           ) : (
             <>
@@ -407,6 +434,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                   <thead className="sticky top-0 bg-surface z-10">
                     <tr className="border-b border-border">
                       <th className="w-12 px-3 py-2 text-center text-xs text-text-muted font-medium">No</th>
+                      <th className="w-16 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.image', '사진')}</th>
                       <th className="w-56 px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
                       <th className="w-24 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.judgeMethod')}</th>
                       <th className="w-80 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
@@ -423,6 +451,9 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                       return (
                         <tr key={item.seq} className="border-b border-border last:border-0 transition-colors">
                           <td className="px-3 py-2 text-center text-xs text-text-muted">{item.seq}</td>
+                          <td className="px-2 py-2 text-center">
+                            <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} />
+                          </td>
                           <td className="px-3 py-2 font-medium text-text whitespace-nowrap">{item.itemName}</td>
                           <td className="px-3 py-2 text-center">
                             <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${

@@ -33,6 +33,8 @@ const CONFIG_GROUPS = [
   { key: 'SYSTEM', label: 'system.config.group.SYSTEM', icon: Cog },
 ];
 
+const getConfigId = (config: SysConfigItem) => config.id ?? config.configKey;
+
 interface ConfigListResponse {
   data: SysConfigItem[];
   grouped: Record<string, SysConfigItem[]>;
@@ -153,12 +155,12 @@ function ConfigPage() {
             <div className="divide-y divide-border">
               {configs.map((cfg) => (
                 <ConfigItemRow
-                  key={cfg.id}
+                  key={getConfigId(cfg)}
                   config={cfg}
-                  currentValue={changes[cfg.id] ?? cfg.configValue}
-                  isChanged={cfg.id in changes}
-                  onValueChange={(val) => handleValueChange(cfg.id, val)}
-                  onDelete={() => setDeleteTarget(cfg.id)}
+                  currentValue={changes[getConfigId(cfg)] ?? cfg.configValue}
+                  isChanged={getConfigId(cfg) in changes}
+                  onValueChange={(val) => handleValueChange(getConfigId(cfg), val)}
+                  onDelete={() => setDeleteTarget(getConfigId(cfg))}
                 />
               ))}
             </div>

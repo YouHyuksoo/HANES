@@ -26,3 +26,8 @@ test("measure criteria falls back to criteria text when numeric limits are not f
   assert.match(source, /if \(r\.criteria\)/);
   assert.match(source, /\$\{r\.criteria\}\$\{r\.unit \? ` \(\$\{r\.unit\}\)` : ""\}/);
 });
+
+test("measure unit is selected from UNIT_TYPE common code dropdown", () => {
+  assert.match(source, /<ComCodeSelect\s+groupCode="UNIT_TYPE"[\s\S]*showCode[\s\S]*value=\{form\.unit\}/);
+  assert.doesNotMatch(source, /<Input\s+label=\{t\("master\.equipInspect\.unit"/);
+});

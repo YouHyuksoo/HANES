@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Users } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal, Input } from "@/components/ui";
 import { WorkerAvatar } from "@/components/worker/WorkerSelector";
 import api from "@/services/api";
 
@@ -43,6 +43,7 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
   const [results, setResults] = useState<TrainingResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [newWorkerCode, setNewWorkerCode] = useState("");
+  const [removeTarget, setRemoveTarget] = useState<TrainingResult | null>(null);
   const isReadonly = status === "COMPLETED";
 
   /** 결과 목록 조회 */
@@ -68,15 +69,22 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
     } catch { /* api 인터셉터 */ }
   }, [planId, newWorkerCode, fetchResults, onRefresh]);
 
-  const handleRemove = useCallback(async (planNo: string, workerCode: string) => {
-    try { await api.delete(`/system/trainings/results/${planNo}/${workerCode}`); fetchResults(); onRefresh(); } catch { /* api 인터셉터 */ }
-  }, [fetchResults, onRefresh]);
+  const handleRemove = useCallback(async () => {
+    if (!removeTarget) return;
+    try {
+      await api.delete(`/system/trainings/results/${removeTarget.planNo}/${removeTarget.workerCode}`);
+      setRemoveTarget(null);
+      fetchResults();
+      onRefresh();
+    } catch { /* api 인터셉터 */ }
+  }, [removeTarget, fetchResults, onRefresh]);
 
   const handleFieldChange = useCallback(async (planNo: string, workerCode: string, field: string, value: string | number | boolean) => {
     try { await api.patch(`/system/trainings/results/${planNo}/${workerCode}`, { [field]: value }); fetchResults(); } catch { /* api 인터셉터 */ }
   }, [fetchResults]);
 
   return (
+    <>
     <Card className="flex-shrink-0">
       <CardContent>
         <div className="flex items-center justify-between mb-3">
@@ -166,7 +174,7 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
                       </td>
                       {!isReadonly && (
                         <td className="px-3 py-2 text-center">
-                          <Button size="sm" variant="ghost" onClick={() => handleRemove(row.planNo, row.workerCode)}
+                          <Button size="sm" variant="ghost" onClick={() => setRemoveTarget(row)}
                             className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 h-6">
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -181,5 +189,14 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
         )}
       </CardContent>
     </Card>
+    <ConfirmModal
+      isOpen={!!removeTarget}
+      onClose={() => setRemoveTarget(null)}
+      onConfirm={handleRemove}
+      title={t("common.deleteConfirm", "삭제 확인")}
+      message={`${removeTarget?.workerName || removeTarget?.workerCode || ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+      variant="danger"
+    />
+    </>
   );
 }

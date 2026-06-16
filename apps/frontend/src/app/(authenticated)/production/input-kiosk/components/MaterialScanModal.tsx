@@ -17,7 +17,7 @@ import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
 import { useScanInputFocus } from '@/hooks/useScanInputFocus';
-import type { BomItem } from './MaterialListPanel';
+import { filterBomMaterials, type BomItem } from './MaterialListPanel';
 
 interface MaterialScanModalProps {
   isOpen: boolean;
@@ -40,7 +40,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
   useEffect(() => {
     if (!isOpen || !selectedJobOrder?.itemCode) return;
     api.get(`/master/boms/parent/${selectedJobOrder.itemCode}`)
-      .then(res => setBomItems(res.data?.data ?? []))
+      .then(res => setBomItems(filterBomMaterials(res.data?.data ?? [])))
       .catch(() => setBomItems([]));
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [isOpen, selectedJobOrder?.itemCode]);

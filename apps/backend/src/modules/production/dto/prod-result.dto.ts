@@ -157,6 +157,10 @@ export class UpdateProdResultDto extends PartialType(CreateProdResultDto) {
  */
 export class ProdResultQueryDto extends PaginationQueryDto {
 
+  @ApiPropertyOptional({ description: '통합 검색어 (실적번호, 작업지시번호, 제품 UID)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @ApiPropertyOptional({ description: '작업지시 ID 필터' })
   @IsOptional()

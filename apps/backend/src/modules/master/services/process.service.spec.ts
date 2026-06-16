@@ -94,6 +94,21 @@ describe('ProcessService equipment assignments', () => {
     });
   });
 
+  it('rejects duplicate active equipment assignment within the same tenant', async () => {
+    processRepo.findOne.mockResolvedValue({ processCode: 'PROC-A', company: 'C1', plant: 'P1' } as ProcessMaster);
+    equipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'C1', plant: 'P1' } as EquipMaster);
+    assignmentRepo.findOne.mockResolvedValue({
+      processCode: 'PROC-A',
+      equipCode: 'EQ-001',
+      company: 'C1',
+      plant: 'P1',
+      useYn: 'Y',
+    } as ProcessEquipment);
+
+    await expect(target.assignEquipment('PROC-A', 'EQ-001', 'C1', 'P1')).rejects.toThrow('이미 배치된 설비입니다');
+    expect(assignmentRepo.save).not.toHaveBeenCalled();
+  });
+
   it('finds assigned equipment within tenant only', async () => {
     processRepo.findOne.mockResolvedValue({ processCode: 'PROC-A', company: 'C1', plant: 'P1' } as ProcessMaster);
     assignmentRepo.find.mockResolvedValue([]);

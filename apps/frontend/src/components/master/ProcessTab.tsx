@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { ColumnDef } from "@tanstack/react-table";
@@ -40,6 +40,7 @@ export default function ProcessTab({ onHeaderActions }: Props) {
   const [typeFilter, setTypeFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Process | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Process | null>(null);
   const [formData, setFormData] = useState<Partial<Process>>({});
   const [saving, setSaving] = useState(false);
 
@@ -118,14 +119,16 @@ export default function ProcessTab({ onHeaderActions }: Props) {
     }
   }, [formData, editingItem, fetchProcesses]);
 
-  const handleDelete = useCallback(async (item: Process) => {
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/master/processes/${item.processCode}`);
+      await api.delete(`/master/processes/${deleteTarget.processCode}`);
+      setDeleteTarget(null);
       fetchProcesses();
     } catch (e: any) {
       console.error("Delete failed:", e);
     }
-  }, [fetchProcesses]);
+  }, [deleteTarget, fetchProcesses]);
 
   const columns = useMemo<ColumnDef<Process>[]>(() => [
     {
@@ -136,7 +139,7 @@ export default function ProcessTab({ onHeaderActions }: Props) {
           <button onClick={(e) => { e.stopPropagation(); openEditModal(row.original); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original); }} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>
         </div>
@@ -225,6 +228,15 @@ export default function ProcessTab({ onHeaderActions }: Props) {
           </Button>
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t("common.delete")}
+        message={`${deleteTarget?.processCode ?? ""} (${deleteTarget?.processName ?? ""}) ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        confirmText={t("common.delete")}
+        variant="danger"
+      />
     </>
   );
 }

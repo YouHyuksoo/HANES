@@ -6,6 +6,7 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { ReceivingService } from './receiving.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
@@ -323,6 +324,7 @@ describe('ReceivingService', () => {
         .fn()
         .mockResolvedValueOnce(lot)
         .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', qty: 10, availableQty: 10, company: 'CO', plant: 'P01' } as MatArrivalStock)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null),
       create: jest.fn((entity, payload) => ({ ...payload })),
@@ -340,8 +342,8 @@ describe('ReceivingService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ receiveNo: 'RCV-001', vendorBarcode: 'VENDOR-001' }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', transType: 'RECEIVE' }));
-    expect(manager.findOne).toHaveBeenCalledWith(MatStock, {
-      where: { warehouseCode: 'ARR-WH', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'CO', plant: 'P01' },
+    expect(manager.findOne).toHaveBeenCalledWith(MatArrivalStock, {
+      where: { matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
     });
   });
 
@@ -373,6 +375,7 @@ describe('ReceivingService', () => {
         .fn()
         .mockResolvedValueOnce(lot)
         .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', qty: 10, availableQty: 10, company: 'CO', plant: 'P01' } as MatArrivalStock)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null),
       create: jest.fn((entity, payload) => ({ ...payload })),
@@ -469,6 +472,7 @@ describe('ReceivingService', () => {
         .fn()
         .mockResolvedValueOnce(lot)
         .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', qty: 10, availableQty: 10, company: 'CO', plant: 'P01' } as MatArrivalStock)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null),
       create: jest.fn((entity, payload) => ({ ...payload })),
@@ -483,8 +487,8 @@ describe('ReceivingService', () => {
     } as any, 'CO', 'P01');
 
     expect(mockTx.run).toHaveBeenCalledTimes(1);
-    expect(manager.findOne).toHaveBeenCalledWith(MatStock, {
-      where: { warehouseCode: 'ARR-WH', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'CO', plant: 'P01' },
+    expect(manager.findOne).toHaveBeenCalledWith(MatArrivalStock, {
+      where: { matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
     });
   });
 
@@ -544,6 +548,7 @@ describe('ReceivingService', () => {
         .fn()
         .mockResolvedValueOnce(lot)
         .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', qty: 10, availableQty: 10, company: 'CO', plant: 'P01' } as MatArrivalStock)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null),
       create: jest.fn((entity, payload) => ({ ...payload })),

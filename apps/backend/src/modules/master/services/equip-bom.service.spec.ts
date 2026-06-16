@@ -9,7 +9,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { EquipBomService } from './equip-bom.service';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
@@ -81,6 +81,7 @@ describe('EquipBomService', () => {
       // Arrange
       const dto = { bomItemCode: 'BI01', bomItemName: 'Bolt' } as any;
       const created = { ...dto } as EquipBomItem;
+      mockBomItemRepo.findOne.mockResolvedValue(null);
       mockBomItemRepo.create.mockReturnValue(created);
       mockBomItemRepo.save.mockResolvedValue(created);
 
@@ -102,6 +103,14 @@ describe('EquipBomService', () => {
           plant: 'PLT',
         }),
       );
+    });
+
+    it('should reject duplicate item code within tenant', async () => {
+      const dto = { bomItemCode: 'BI01', bomItemName: 'Bolt' } as any;
+      mockBomItemRepo.findOne.mockResolvedValue({ bomItemCode: 'BI01', company: 'COMP', plant: 'PLT' } as EquipBomItem);
+
+      await expect(target.createItem(dto, 'COMP', 'PLT')).rejects.toThrow(ConflictException);
+      expect(mockBomItemRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -193,6 +202,7 @@ describe('EquipBomService', () => {
       // Arrange
       const dto = { equipCode: 'EQ01', bomItemId: 'BI01', quantity: 5 } as any;
       const created = { equipCode: 'EQ01', bomItemCode: 'BI01', quantity: 5 } as EquipBomRel;
+      mockBomRelRepo.findOne.mockResolvedValue(null);
       mockBomRelRepo.create.mockReturnValue(created);
       mockBomRelRepo.save.mockResolvedValue(created);
 
@@ -201,6 +211,14 @@ describe('EquipBomService', () => {
 
       // Assert
       expect(result).toEqual(created);
+    });
+
+    it('should reject duplicate equipment and BOM item relation within tenant', async () => {
+      const dto = { equipCode: 'EQ01', bomItemId: 'BI01', quantity: 5 } as any;
+      mockBomRelRepo.findOne.mockResolvedValue({ equipCode: 'EQ01', bomItemCode: 'BI01', company: 'COMP', plant: 'PLT' } as EquipBomRel);
+
+      await expect(target.createRel(dto, 'COMP', 'PLT')).rejects.toThrow(ConflictException);
+      expect(mockBomRelRepo.save).not.toHaveBeenCalled();
     });
   });
 

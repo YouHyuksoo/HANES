@@ -3,7 +3,7 @@
  * @description 작업지도서 비즈니스 로직 서비스 - TypeORM
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkInstruction } from '../../../entities/work-instruction.entity';
@@ -91,13 +91,25 @@ export class WorkInstructionService {
   }
 
   async create(dto: CreateWorkInstructionDto, company?: string, plant?: string) {
-    const workInstruction = this.workInstructionRepository.create({
+    const key = {
       itemCode: dto.itemCode,
       processCode: dto.processCode ?? '',
+      revision: dto.revision ?? 'A',
+    };
+    const existing = await this.workInstructionRepository.findOne({
+      where: { ...key, ...this.tenantWhere(company, plant) },
+    });
+    if (existing) {
+      throw new ConflictException(`이미 등록된 작업지도서입니다: ${key.itemCode}/${key.processCode}/${key.revision}`);
+    }
+
+    const workInstruction = this.workInstructionRepository.create({
+      itemCode: key.itemCode,
+      processCode: key.processCode,
       title: dto.title,
       content: dto.content,
       imageUrl: dto.imageUrl,
-      revision: dto.revision ?? 'A',
+      revision: key.revision,
       useYn: dto.useYn ?? 'Y',
       company: company || null,
       plant: plant || null,

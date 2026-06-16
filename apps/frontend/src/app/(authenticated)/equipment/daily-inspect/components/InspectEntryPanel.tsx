@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { ClipboardEdit, AlertTriangle } from "lucide-react";
 import api from "@/services/api";
+import { InspectItemImage } from "@/components/shared";
 import type { Worker } from "../page";
 
 interface InspectItem {
@@ -26,6 +27,7 @@ interface InspectItem {
   unit: string | null;
   lslValue: number | null;
   uslValue: number | null;
+  imageUrl: string | null;
 }
 
 interface ItemResult {
@@ -330,6 +332,7 @@ export default function InspectEntryPanel({
             <thead className="bg-surface sticky top-0">
               <tr className="border-b border-border text-text-muted">
                 <th className="w-8 px-2 py-2 text-center font-medium">No</th>
+                <th className="w-14 px-2 py-2 text-center font-medium">사진</th>
                 <th className="px-3 py-2 text-left font-medium">점검항목</th>
                 <th className="w-16 px-2 py-2 text-center font-medium">유형</th>
                 <th className="w-32 px-2 py-2 text-center font-medium">기준</th>
@@ -350,6 +353,9 @@ export default function InspectEntryPanel({
                     }`}
                   >
                     <td className="px-2 py-2 text-center text-text-muted">{idx + 1}</td>
+                    <td className="px-2 py-2 text-center">
+                      <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} size={40} />
+                    </td>
                     <td className="px-3 py-2 font-medium">{item.itemName}</td>
                     <td className="px-2 py-2 text-center">
                       <span

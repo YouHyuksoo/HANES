@@ -10,7 +10,7 @@
  */
 import {
   Controller, Get, Post, Delete,
-  Body, Param, HttpCode, HttpStatus, UseGuards, Req,
+  Body, Param, Query, HttpCode, HttpStatus, UseGuards, Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthenticatedRequest, JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -18,6 +18,7 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { IqcTemplateService } from '../services/iqc-template.service';
 import { CreateIqcTemplateDto } from '../dto/iqc-template.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 @ApiTags('기준정보 - IQC 항목 템플릿')
 @Controller('master/iqc-templates')
@@ -26,9 +27,13 @@ export class IqcTemplateController {
 
   @Get()
   @ApiOperation({ summary: 'IQC 템플릿 목록 조회' })
-  async findAll(@Company() company: string, @Plant() plant: string) {
-    const data = await this.service.findAll(company, plant);
-    return ResponseUtil.success(data);
+  async findAll(
+    @Query() query: PaginationQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.service.findAll(company, plant, query.page, query.limit);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get(':templateId')

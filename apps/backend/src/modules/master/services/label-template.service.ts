@@ -110,6 +110,13 @@ export class LabelTemplateService {
   }
 
   async create(dto: CreateLabelTemplateDto, company?: string, plant?: string) {
+    const existing = await this.labelTemplateRepository.findOne({
+      where: { templateName: dto.templateName, category: dto.category, ...this.tenantWhere(company, plant) },
+    });
+    if (existing) {
+      throw new ConflictException(`이미 등록된 라벨 템플릿입니다: ${dto.templateName}/${dto.category}`);
+    }
+
     if (dto.isDefault) {
       await this.clearDefaultByCategory(dto.category, company, plant);
     }

@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * 1. **엔드포인트**: /api/v1/equipment/daily-inspect
  * 2. 기본 inspectType은 DAILY이며, 입력키오스크 작업자설비점검 저장은 WORKER를 허용
- * 3. 복합키: equipCode + inspectType + inspectDate
+ * 3. 업무키: DAILY는 equipCode + workDate, WORKER는 equipCode + orderNo
  *
  * API 경로:
  * - GET    /equipment/daily-inspect                         일상점검 목록 조회
@@ -85,13 +85,21 @@ export class DailyInspectController {
   async checkInspected(
     @Query('equipCode') equipCode: string,
     @Query('inspectDate') inspectDate: string,
+    @Query('inspectType') inspectType: string | undefined,
+    @Query('orderNo') orderNo: string | undefined,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const alreadyInspected = await this.equipInspectService.checkAlreadyInspected(
-      equipCode, inspectDate, 'DAILY', company, plant,
+    const data = await this.equipInspectService.getInspectionStatus(
+      {
+        equipCode,
+        inspectDate,
+        inspectType: inspectType === 'WORKER' ? 'WORKER' : 'DAILY',
+        orderNo,
+      },
+      { company, plant },
     );
-    return ResponseUtil.success({ alreadyInspected });
+    return ResponseUtil.success(data);
   }
 
   @Get()
@@ -135,6 +143,8 @@ export class DailyInspectController {
         equipCode: dto.equipCode,
         inspectType,
         inspectDate: dto.inspectDate,
+        inspectAt: dto.inspectAt,
+        orderNo: dto.orderNo,
         inspectorName: dto.inspectorName,
         overallResult: dto.overallResult,
         details: dto.details,

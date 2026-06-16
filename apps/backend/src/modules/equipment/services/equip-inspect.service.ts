@@ -17,7 +17,32 @@ import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
+import { WorkCalendar } from '../../../entities/work-calendar.entity';
+import { WorkCalendarDay } from '../../../entities/work-calendar-day.entity';
+import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { CreateEquipInspectDto, UpdateEquipInspectDto, EquipInspectQueryDto } from '../dto/equip-inspect.dto';
+
+type InspectType = 'DAILY' | 'PERIODIC' | 'WORKER';
+
+interface InspectionStatusQuery {
+  equipCode: string;
+  inspectType?: string;
+  inspectDate?: string;
+  orderNo?: string;
+  at?: Date;
+}
+
+interface TenantContext {
+  company?: string;
+  plant?: string;
+}
+
+interface OperationalWindow {
+  workDate: string;
+  windowStart: Date;
+  windowEnd: Date;
+  startTime: string;
+}
 
 @Injectable()
 export class EquipInspectService {
@@ -28,6 +53,12 @@ export class EquipInspectService {
     private readonly equipMasterRepository: Repository<EquipMaster>,
     @InjectRepository(EquipInspectItemPool)
     private readonly inspectItemRepository: Repository<EquipInspectItemPool>,
+    @InjectRepository(WorkCalendar)
+    private readonly calendarRepository: Repository<WorkCalendar>,
+    @InjectRepository(WorkCalendarDay)
+    private readonly calendarDayRepository: Repository<WorkCalendarDay>,
+    @InjectRepository(ShiftPattern)
+    private readonly shiftPatternRepository: Repository<ShiftPattern>,
   ) {}
 
   /** 오늘 해당 설비의 점검 완료 여부 확인 */
@@ -38,22 +69,58 @@ export class EquipInspectService {
     company?: string,
     plant?: string,
   ): Promise<boolean> {
+    const status = await this.getInspectionStatus(
+      { equipCode, inspectType, inspectDate },
+      { company, plant },
+    );
+    return status.alreadyInspected;
+  }
+
+  async getInspectionStatus(query: InspectionStatusQuery, context?: TenantContext) {
+    const inspectType = this.normalizeInspectType(query.inspectType);
+    if (inspectType === 'WORKER' && !query.orderNo) {
+      throw new BadRequestException('작업자설비점검 완료 여부 확인에는 작업지시번호가 필요합니다.');
+    }
+
+    const equip = await this.findEquipment(query.equipCode, context);
+    const operationalWindow = inspectType === 'WORKER'
+      ? null
+      : await this.resolveOperationalWindow(equip, query.at ?? this.resolveReferenceTime(query.inspectDate));
+
     const queryBuilder = this.equipInspectLogRepository
       .createQueryBuilder('log')
-      .where('log.equipCode = :equipCode', { equipCode })
-      .andWhere('log.inspectType = :inspectType', { inspectType })
-      .andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
-    if (company) queryBuilder.andWhere('log.company = :company', { company });
-    if (plant) queryBuilder.andWhere('log.plant = :plant', { plant });
+      .where('log.equipCode = :equipCode', { equipCode: query.equipCode })
+      .andWhere('log.inspectType = :inspectType', { inspectType });
+    if (context?.company) queryBuilder.andWhere('log.company = :company', { company: context.company });
+    if (context?.plant) queryBuilder.andWhere('log.plant = :plant', { plant: context.plant });
+
+    if (inspectType === 'WORKER') {
+      queryBuilder.andWhere('log.orderNo = :orderNo', { orderNo: query.orderNo });
+    } else if (operationalWindow) {
+      queryBuilder.andWhere('log.workDate = TO_DATE(:workDate, \'YYYY-MM-DD\')', {
+        workDate: operationalWindow.workDate,
+      });
+    }
+
     const count = await queryBuilder.getCount();
-    return count > 0;
+
+    return {
+      alreadyInspected: count > 0,
+      equipCode: query.equipCode,
+      inspectType,
+      orderNo: query.orderNo ?? null,
+      workDate: operationalWindow?.workDate ?? null,
+      windowStart: operationalWindow ? this.formatDateTime(operationalWindow.windowStart) : null,
+      windowEnd: operationalWindow ? this.formatDateTime(operationalWindow.windowEnd) : null,
+      operationStartTime: operationalWindow?.startTime ?? null,
+    };
   }
 
   /** 점검 목록 조회 */
   async findAll(query: EquipInspectQueryDto, company?: string, plant?: string) {
     const {
       page = 1, limit = 10, equipCode, inspectType,
-      overallResult, search, inspectDateFrom, inspectDateTo,
+      overallResult, search, inspectDateFrom, inspectDateTo, orderNo,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -82,6 +149,9 @@ export class EquipInspectService {
     if (inspectType) {
       queryBuilder.andWhere('log.inspectType = :inspectType', { inspectType });
     }
+    if (orderNo) {
+      queryBuilder.andWhere('log.orderNo = :orderNo', { orderNo });
+    }
     if (overallResult) {
       queryBuilder.andWhere('log.overallResult = :overallResult', { overallResult });
     }
@@ -108,14 +178,49 @@ export class EquipInspectService {
       queryBuilder.getCount(),
     ]);
 
-    const data = logs.map((log) => ({
-      ...log.log,
-      equip: {
-        equipCode: log.equip_code,
-        equipName: log.equip_name,
-        lineCode: log.equip_lineCode,
-      },
-    }));
+    const rawValue = (row: Record<string, unknown>, ...keys: string[]) => {
+      for (const key of keys) {
+        if (row[key] !== undefined) return row[key];
+      }
+      return undefined;
+    };
+
+    const data = logs.map((log) => {
+      const equipCode = log.log_EQUIP_CODE;
+      const inspectType = log.log_INSPECT_TYPE;
+      const inspectDate = log.log_INSPECT_DATE;
+      const equipName = rawValue(log, 'equip_name', 'EQUIP_NAME') ?? null;
+      const lineCode = rawValue(log, 'equip_lineCode', 'EQUIP_LINECODE', 'EQUIP_LINE_CODE') ?? null;
+
+      return {
+        id: `${equipCode}::${inspectType}::${inspectDate instanceof Date ? inspectDate.toISOString() : inspectDate}`,
+        equipCode,
+        inspectType,
+        inspectDate,
+        orderNo: log.log_ORDER_NO ?? null,
+        workDate: log.log_WORK_DATE ?? null,
+        inspectAt: log.log_INSPECT_AT ?? null,
+        opWindowStartAt: log.log_OP_WINDOW_START_AT ?? null,
+        opWindowEndAt: log.log_OP_WINDOW_END_AT ?? null,
+        inspectorName: log.log_INSPECTOR_NAME ?? null,
+        overallResult: log.log_OVERALL_RESULT ?? null,
+        details: log.log_DETAILS ?? null,
+        remark: log.log_REMARK ?? null,
+        company: log.log_COMPANY,
+        plant: log.log_PLANT_CD,
+        createdBy: log.log_CREATED_BY ?? null,
+        updatedBy: log.log_UPDATED_BY ?? null,
+        createdAt: log.log_CREATED_AT,
+        updatedAt: log.log_UPDATED_AT,
+        equipName,
+        lineCode,
+        equip: {
+          equipCode: rawValue(log, 'equip_code', 'EQUIP_CODE') ?? equipCode,
+          equipName,
+          lineCode,
+        },
+      };
+    });
 
     return { data, total, page, limit };
   }
@@ -131,8 +236,15 @@ export class EquipInspectService {
     const log = await this.equipInspectLogRepository
       .createQueryBuilder('log')
       .where('log.equipCode = :equipCode', { equipCode })
-      .andWhere('log.inspectType = :inspectType', { inspectType })
-      .andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
+      .andWhere('log.inspectType = :inspectType', { inspectType });
+    if (inspectType === 'DAILY') {
+      log.andWhere(
+        "(log.workDate = TO_DATE(:inspectDate, 'YYYY-MM-DD') OR (log.workDate IS NULL AND log.inspectDate >= TO_DATE(:inspectDate, 'YYYY-MM-DD') AND log.inspectDate < TO_DATE(:inspectDate, 'YYYY-MM-DD') + 1))",
+        { inspectDate },
+      );
+    } else {
+      log.andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
+    }
     if (company) log.andWhere('log.company = :company', { company });
     if (plant) log.andWhere('log.plant = :plant', { plant });
     const foundLog = await log.getOne();
@@ -163,20 +275,26 @@ export class EquipInspectService {
     dto: CreateEquipInspectDto,
     context?: { company: string; plant: string },
   ) {
-    const equip = await this.equipMasterRepository.findOne({
-      where: {
-        equipCode: dto.equipCode,
-        ...(context?.company ? { company: context.company } : {}),
-        ...(context?.plant ? { plant: context.plant } : {}),
-      },
-    });
-    if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
-    this.assertTenantMatchesEquipment(context, equip);
+    const equip = await this.findEquipment(dto.equipCode, context);
+    const inspectType = this.normalizeInspectType(dto.inspectType);
+    if (inspectType === 'WORKER' && !dto.orderNo) {
+      throw new BadRequestException('작업자설비점검 저장에는 작업지시번호가 필요합니다.');
+    }
+    const inspectAt = dto.inspectAt ? new Date(dto.inspectAt) : new Date();
+    const operationalWindow = await this.resolveOperationalWindow(
+      equip,
+      dto.inspectDate ? this.resolveReferenceTime(dto.inspectDate) : inspectAt,
+    );
 
     const log = this.equipInspectLogRepository.create({
       equipCode: dto.equipCode,
-      inspectType: dto.inspectType,
-      inspectDate: new Date(dto.inspectDate),
+      inspectType,
+      inspectDate: dto.inspectDate ? new Date(dto.inspectDate) : inspectAt,
+      orderNo: dto.orderNo ?? null,
+      workDate: this.parseYmdLocal(operationalWindow.workDate),
+      inspectAt,
+      opWindowStartAt: operationalWindow.windowStart,
+      opWindowEndAt: operationalWindow.windowEnd,
       inspectorName: dto.inspectorName,
       overallResult: dto.overallResult ?? 'PASS',
       details: dto.details ? JSON.stringify(dto.details) : null,
@@ -222,6 +340,142 @@ export class EquipInspectService {
         `요청 사업장과 설비 사업장이 일치하지 않습니다. request=${context.plant}, equipment=${equip.plant}`,
       );
     }
+  }
+
+  private async findEquipment(equipCode: string, context?: TenantContext): Promise<EquipMaster> {
+    const equip = await this.equipMasterRepository.findOne({
+      where: {
+        equipCode,
+        ...(context?.company ? { company: context.company } : {}),
+        ...(context?.plant ? { plant: context.plant } : {}),
+      },
+    });
+    if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${equipCode}`);
+    this.assertTenantMatchesEquipment(
+      context?.company && context?.plant ? { company: context.company, plant: context.plant } : undefined,
+      equip,
+    );
+    return equip;
+  }
+
+  private normalizeInspectType(value?: string): InspectType {
+    if (value === 'WORKER') return 'WORKER';
+    if (value === 'PERIODIC') return 'PERIODIC';
+    return 'DAILY';
+  }
+
+  private resolveReferenceTime(inspectDate?: string): Date {
+    if (!inspectDate) return new Date();
+    const [year, month, day] = inspectDate.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0);
+  }
+
+  private async resolveOperationalWindow(equip: EquipMaster, at: Date): Promise<OperationalWindow> {
+    const currentDate = this.formatYmdLocal(at);
+    const currentStartTime = await this.resolveOperationStartTime(equip, currentDate);
+    const currentStart = this.combineYmdTime(currentDate, currentStartTime);
+    const workDate = at < currentStart ? this.addDaysYmd(currentDate, -1) : currentDate;
+    const startTime = await this.resolveOperationStartTime(equip, workDate);
+    const nextDate = this.addDaysYmd(workDate, 1);
+    const nextStartTime = await this.resolveOperationStartTime(equip, nextDate);
+
+    return {
+      workDate,
+      startTime,
+      windowStart: this.combineYmdTime(workDate, startTime),
+      windowEnd: this.combineYmdTime(nextDate, nextStartTime),
+    };
+  }
+
+  private async resolveOperationStartTime(equip: EquipMaster, workDate: string): Promise<string> {
+    const company = equip.company;
+    const plant = equip.plant;
+    if (!company || !plant) return '08:00';
+
+    const calendar = await this.findCalendarForDate(company, plant, equip.processCode, workDate);
+    if (!calendar) return '08:00';
+
+    const day = await this.calendarDayRepository.findOne({
+      where: {
+        calendarId: calendar.calendarId,
+        workDate: this.parseYmdLocal(workDate) as any,
+        company,
+        plant,
+      },
+    });
+    const shifts = (day?.shifts ?? calendar.defaultShifts ?? '')
+      .split(',')
+      .map((code) => code.trim())
+      .filter(Boolean);
+    const firstShiftCode = shifts[0];
+    if (!firstShiftCode) return '08:00';
+
+    const shift = await this.shiftPatternRepository.findOne({
+      where: { company, plant, shiftCode: firstShiftCode, useYn: 'Y' },
+    });
+    return shift?.startTime ?? '08:00';
+  }
+
+  private async findCalendarForDate(
+    company: string,
+    plant: string,
+    processCode: string | null,
+    workDate: string,
+  ): Promise<WorkCalendar | null> {
+    const year = workDate.slice(0, 4);
+    const byProcess = processCode
+      ? await this.findCalendar(company, plant, year, processCode)
+      : null;
+    return byProcess ?? this.findCalendar(company, plant, year, null);
+  }
+
+  private async findCalendar(
+    company: string,
+    plant: string,
+    year: string,
+    processCode: string | null,
+  ): Promise<WorkCalendar | null> {
+    const qb = this.calendarRepository.createQueryBuilder('calendar')
+      .where('calendar.company = :company', { company })
+      .andWhere('calendar.plant = :plant', { plant })
+      .andWhere('calendar.calendarYear = :year', { year });
+    if (processCode) {
+      qb.andWhere('calendar.processCd = :processCode', { processCode });
+    } else {
+      qb.andWhere('calendar.processCd IS NULL');
+    }
+    return qb
+      .orderBy("CASE WHEN calendar.status IN ('CONFIRMED', 'ACTIVE') THEN 0 ELSE 1 END", 'ASC')
+      .addOrderBy('calendar.calendarId', 'ASC')
+      .getOne();
+  }
+
+  private formatYmdLocal(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  private parseYmdLocal(ymd: string): Date {
+    const [year, month, day] = ymd.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private addDaysYmd(ymd: string, days: number): string {
+    const date = this.parseYmdLocal(ymd);
+    date.setDate(date.getDate() + days);
+    return this.formatYmdLocal(date);
+  }
+
+  private combineYmdTime(ymd: string, hhmm: string): Date {
+    const [year, month, day] = ymd.split('-').map(Number);
+    const [hour, minute] = hhmm.split(':').map(Number);
+    return new Date(year, month - 1, day, hour, minute, 0);
+  }
+
+  private formatDateTime(date: Date): string {
+    return `${this.formatYmdLocal(date)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
   }
 
   /** 점검 결과 수정 (복합키) */

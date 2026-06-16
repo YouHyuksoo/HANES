@@ -11,6 +11,9 @@ import { EquipInspectService } from './equip-inspect.service';
 import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
+import { WorkCalendar } from '../../../entities/work-calendar.entity';
+import { WorkCalendarDay } from '../../../entities/work-calendar-day.entity';
+import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('EquipInspectService', () => {
@@ -18,22 +21,89 @@ describe('EquipInspectService', () => {
   let mockLogRepo: DeepMocked<Repository<EquipInspectLog>>;
   let mockEquipRepo: DeepMocked<Repository<EquipMaster>>;
   let mockItemRepo: DeepMocked<Repository<EquipInspectItemPool>>;
+  let mockCalendarRepo: DeepMocked<Repository<WorkCalendar>>;
+  let mockCalendarDayRepo: DeepMocked<Repository<WorkCalendarDay>>;
+  let mockShiftRepo: DeepMocked<Repository<ShiftPattern>>;
 
   beforeEach(async () => {
     mockLogRepo = createMock<Repository<EquipInspectLog>>();
     mockEquipRepo = createMock<Repository<EquipMaster>>();
     mockItemRepo = createMock<Repository<EquipInspectItemPool>>();
+    mockCalendarRepo = createMock<Repository<WorkCalendar>>();
+    mockCalendarDayRepo = createMock<Repository<WorkCalendarDay>>();
+    mockShiftRepo = createMock<Repository<ShiftPattern>>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EquipInspectService,
         { provide: getRepositoryToken(EquipInspectLog), useValue: mockLogRepo },
         { provide: getRepositoryToken(EquipMaster), useValue: mockEquipRepo },
         { provide: getRepositoryToken(EquipInspectItemPool), useValue: mockItemRepo },
+        { provide: getRepositoryToken(WorkCalendar), useValue: mockCalendarRepo },
+        { provide: getRepositoryToken(WorkCalendarDay), useValue: mockCalendarDayRepo },
+        { provide: getRepositoryToken(ShiftPattern), useValue: mockShiftRepo },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<EquipInspectService>(EquipInspectService);
   });
   afterEach(() => jest.clearAllMocks());
+
+  describe('findAll', () => {
+    it('maps raw inspection rows to the grid response shape', async () => {
+      const qb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          {
+            log_EQUIP_CODE: 'EQ-ATCUT-01',
+            log_INSPECT_TYPE: 'DAILY',
+            log_INSPECT_DATE: new Date('2026-06-16T01:00:00.000Z'),
+            log_ORDER_NO: null,
+            log_WORK_DATE: new Date('2026-06-16T00:00:00.000Z'),
+            log_INSPECT_AT: new Date('2026-06-16T01:00:00.000Z'),
+            log_INSPECTOR_NAME: '홍길동',
+            log_OVERALL_RESULT: 'PASS',
+            log_DETAILS: '{"items":[]}',
+            log_REMARK: '정상',
+            log_COMPANY: '40',
+            log_PLANT_CD: '1000',
+            log_CREATED_BY: 'codex',
+            log_UPDATED_BY: 'codex',
+            log_CREATED_AT: new Date('2026-06-16T01:00:00.000Z'),
+            log_UPDATED_AT: new Date('2026-06-16T01:00:00.000Z'),
+            EQUIP_CODE: 'EQ-ATCUT-01',
+            EQUIP_NAME: '자동절단 설비 #1',
+            EQUIP_LINECODE: 'LINE-01',
+          },
+        ]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      const result = await target.findAll({ page: 1, limit: 20 } as any, '40', '1000');
+
+      expect(result.total).toBe(1);
+      expect(result.data[0]).toEqual(expect.objectContaining({
+        equipCode: 'EQ-ATCUT-01',
+        inspectType: 'DAILY',
+        inspectorName: '홍길동',
+        overallResult: 'PASS',
+        remark: '정상',
+        equipName: '자동절단 설비 #1',
+        lineCode: 'LINE-01',
+        equip: {
+          equipCode: 'EQ-ATCUT-01',
+          equipName: '자동절단 설비 #1',
+          lineCode: 'LINE-01',
+        },
+      }));
+      expect(qb.andWhere).toHaveBeenCalledWith('log.company = :company', { company: '40' });
+      expect(qb.andWhere).toHaveBeenCalledWith('log.plant = :plant', { plant: '1000' });
+    });
+  });
 
   describe('create', () => {
     it('should create inspect log', async () => {
@@ -96,6 +166,95 @@ describe('EquipInspectService', () => {
       mockEquipRepo.update.mockResolvedValue({ affected: 1 } as any);
       await target.create({ equipCode: 'EQ-001', inspectType: 'DAILY', inspectDate: '2026-03-18', overallResult: 'FAIL' } as any);
       expect(mockEquipRepo.update).toHaveBeenCalledWith({ equipCode: 'EQ-001' }, { status: 'INTERLOCK' });
+    });
+  });
+
+  describe('getInspectionStatus', () => {
+    it('resolves daily inspection by operational work date starting at 08:00', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({
+        equipCode: 'EQ-CUT-01',
+        processCode: 'CUT',
+        company: '40',
+        plant: '1000',
+      } as any);
+      mockCalendarRepo.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ calendarId: 'WC-CUT-2026', defaultShifts: 'DAY' }),
+      } as any);
+      mockCalendarDayRepo.findOne.mockResolvedValue({ workDate: '2026-06-15', shifts: 'DAY' } as any);
+      mockShiftRepo.findOne.mockResolvedValue({ shiftCode: 'DAY', startTime: '08:00', endTime: '17:00' } as any);
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      const result = await target.getInspectionStatus({
+        equipCode: 'EQ-CUT-01',
+        inspectType: 'DAILY',
+        at: new Date(2026, 5, 16, 7, 59, 0),
+      }, { company: '40', plant: '1000' });
+
+      expect(result).toEqual(expect.objectContaining({
+        alreadyInspected: true,
+        workDate: '2026-06-15',
+        windowStart: '2026-06-15 08:00:00',
+        windowEnd: '2026-06-16 08:00:00',
+      }));
+      expect(qb.andWhere).toHaveBeenCalledWith('log.workDate = TO_DATE(:workDate, \'YYYY-MM-DD\')', {
+        workDate: '2026-06-15',
+      });
+    });
+
+    it('checks worker inspection by job order number', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({
+        equipCode: 'EQ-CUT-01',
+        processCode: 'CUT',
+        company: '40',
+        plant: '1000',
+      } as any);
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      const result = await target.getInspectionStatus({
+        equipCode: 'EQ-CUT-01',
+        inspectType: 'WORKER',
+        orderNo: 'WO2606150066',
+      }, { company: '40', plant: '1000' });
+
+      expect(result.alreadyInspected).toBe(true);
+      expect(qb.andWhere).toHaveBeenCalledWith('log.orderNo = :orderNo', { orderNo: 'WO2606150066' });
+    });
+  });
+
+  describe('findByKey', () => {
+    it('finds daily inspection details by operational work date', async () => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({
+          equipCode: 'EQ-CUT-01',
+          inspectType: 'DAILY',
+          workDate: new Date(2026, 5, 15),
+        }),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-CUT-01' } as any);
+
+      await target.findByKey('EQ-CUT-01', 'DAILY', '2026-06-15', '40', '1000');
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "(log.workDate = TO_DATE(:inspectDate, 'YYYY-MM-DD') OR (log.workDate IS NULL AND log.inspectDate >= TO_DATE(:inspectDate, 'YYYY-MM-DD') AND log.inspectDate < TO_DATE(:inspectDate, 'YYYY-MM-DD') + 1))",
+        { inspectDate: '2026-06-15' },
+      );
     });
   });
 });

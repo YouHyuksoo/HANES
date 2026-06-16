@@ -14,7 +14,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ImageIcon, RefreshCw, Trash2, Upload } from "lucide-react";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
-import { Button, Input, Select } from "@/components/ui";
+import { Button, ConfirmModal, Input, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import { useLocationOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -101,6 +101,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   const [saving, setSaving] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(editingPart?.imageUrl ?? null);
+  const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
 
   // editingPart 변경 시 폼 리셋
   useEffect(() => {
@@ -165,6 +166,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     }
     setSelectedImageFile(null);
     setPreviewUrl(null);
+    setImageDeleteConfirmOpen(false);
   };
 
   const uploadImage = async (itemCode: string, file: File) => {
@@ -227,9 +229,10 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   };
 
   return (
-    <div
-      className={`w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? 'animate-slide-in-right' : ''}`}
-    >
+    <>
+      <div
+        className={`w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? 'animate-slide-in-right' : ''}`}
+      >
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">
@@ -334,7 +337,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               />
               <button
                 type="button"
-                onClick={handleImageClear}
+                onClick={() => setImageDeleteConfirmOpen(true)}
                 className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -387,6 +390,15 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         </div>
       </div>
 
-    </div>
+      </div>
+      <ConfirmModal
+        isOpen={imageDeleteConfirmOpen}
+        onClose={() => setImageDeleteConfirmOpen(false)}
+        onConfirm={handleImageClear}
+        title={t("common.deleteConfirm", "삭제 확인")}
+        message={t("master.part.imageDeleteConfirm", "품목 사진을 삭제하시겠습니까?")}
+        variant="danger"
+      />
+    </>
   );
 }

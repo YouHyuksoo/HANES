@@ -6,6 +6,7 @@ import { Plus, Trash2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
+import { InspectItemImage } from "@/components/shared";
 import { EquipSummary, InspectItemRow } from "../types";
 
 interface Props {
@@ -35,6 +36,16 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
         <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
           <Trash2 className="w-4 h-4 text-red-500" />
         </button>
+      ),
+    },
+    {
+      accessorKey: "imageUrl", header: t("master.equipInspect.image", "사진"), size: 64,
+      enableColumnFilter: false,
+      meta: { align: "center" as const },
+      cell: ({ row }) => (
+        <div className="flex justify-center">
+          <InspectItemImage imageUrl={row.original.imageUrl} alt={row.original.itemName ?? row.original.itemCode} size={40} />
+        </div>
       ),
     },
     {
@@ -104,6 +115,7 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
         onConfirm={() => { if (deleteTarget) { onDelete(deleteTarget.equipCode, deleteTarget.itemCode, deleteTarget.inspectType); setDeleteTarget(null); } }}
         title={t("common.delete")}
         message={t("common.confirmDelete")}
+        variant="danger"
       />
     </>
   );

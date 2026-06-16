@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
-import { Button, Input, Select } from "@/components/ui";
+import { Button, ConfirmModal, Input, Select } from "@/components/ui";
 import type { SelectOption } from "@/components/ui/Select";
 import api from "@/services/api";
 import type { ConsumableItem } from "./ConsumableFormPanel";
@@ -47,6 +47,7 @@ export default function ConsumableUsageMapPanel({ item }: Props) {
   const [equipOptions, setEquipOptions] = useState<SelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<UsageMapRow | null>(null);
 
   const set = (key: keyof UsageMapFormValues, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -130,11 +131,12 @@ export default function ConsumableUsageMapPanel({ item }: Props) {
     }
   };
 
-  const handleDelete = async (row: UsageMapRow) => {
-    if (!item) return;
+  const handleDelete = async () => {
+    if (!item || !deleteTarget) return;
     setSaving(true);
     try {
-      await api.delete(`/consumables/${item.consumableCode}/usage-maps/${row.productItemCode}/${row.equipCode}`);
+      await api.delete(`/consumables/${item.consumableCode}/usage-maps/${deleteTarget.productItemCode}/${deleteTarget.equipCode}`);
+      setDeleteTarget(null);
       await reloadUsageMaps();
     } catch {
       /* api interceptor */
@@ -281,7 +283,7 @@ export default function ConsumableUsageMapPanel({ item }: Props) {
                       <div className="px-1 py-1.5 flex justify-center">
                         <button
                           type="button"
-                          onClick={() => handleDelete(row)}
+                          onClick={() => setDeleteTarget(row)}
                           disabled={saving}
                           className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
                           title={t("common.delete")}
@@ -297,6 +299,16 @@ export default function ConsumableUsageMapPanel({ item }: Props) {
           </>
         )}
       </div>
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t("common.delete")}
+        message={`${deleteTarget?.productItemCode ?? ""} / ${deleteTarget?.equipCode ?? ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        confirmText={t("common.delete")}
+        variant="danger"
+        isLoading={saving}
+      />
     </aside>
   );
 }

@@ -318,23 +318,41 @@ export class ShipOrderService {
       const warehouse = await qr.manager.findOne(Warehouse, { where: { warehouseType: 'FG', isDefault: 'Y', ...where } });
       if (!warehouse) throw new BadRequestException('FG 기본창고(IS_DEFAULT=Y)가 설정되어 있지 않습니다.');
 
-      await this.productInventory.issueStockInTx(qr, {
+      const serials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
+      if (serials.length > 0 && serials.length !== box.qty) {
+        throw new BadRequestException(`박스 수량(${box.qty})과 시리얼 수량(${serials.length})이 일치하지 않습니다: ${dto.boxNo}`);
+      }
+
+      const issueBase = {
         warehouseId: warehouse.warehouseCode,
         itemCode: box.itemCode,
-        itemType: 'FINISHED',
-        prdUid: '*',
-        qty: box.qty,
-        transType: 'FG_OUT',
+        itemType: 'FINISHED' as const,
+        transType: 'FG_OUT' as const,
         refType: 'SHIP_ORDER',
         refId: shipOrderNo,
         workerId: dto.workerId,
         remark: `출하지시 박스출하:${dto.boxNo}`,
         company,
         plant,
-      });
+      };
+
+      if (serials.length > 0) {
+        for (const serial of serials) {
+          await this.productInventory.issueStockInTx(qr, {
+            ...issueBase,
+            prdUid: serial,
+            qty: 1,
+          });
+        }
+      } else {
+        await this.productInventory.issueStockInTx(qr, {
+          ...issueBase,
+          prdUid: '*',
+          qty: box.qty,
+        });
+      }
 
       await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'SHIPPED' });
-      const serials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
       if (serials.length > 0) {
         await qr.manager.update(FgLabel, { fgBarcode: In(serials), ...where }, { status: 'SHIPPED' });
       }
@@ -359,6 +377,91 @@ export class ShipOrderService {
         lineOrderQty: line.orderQty,
         orderStatus: fullyShipped ? 'CLOSED' : 'CONFIRMED',
         fullyShipped,
+      };
+    });
+  }
+
+  /**
+   * 출하지시 기반 박스 출하 취소.
+   * 출하 직전 상태로 되돌린다: 제품재고 복원 + 박스 CLOSED + FG_LABEL PACKED + 라인 shippedQty 차감 + 지시 CONFIRMED.
+   */
+  async cancelShipBox(shipOrderNo: string, dto: ShipBoxDto, company?: string, plant?: string) {
+    return this.tx.run(async (qr) => {
+      const where = this.tenantWhere(company, plant);
+
+      const order = await qr.manager.findOne(ShipmentOrder, { where: { shipOrderNo, ...where } });
+      if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${shipOrderNo}`);
+      if (!['CONFIRMED', 'CLOSED'].includes(order.status)) {
+        throw new BadRequestException(`출하 취소는 CONFIRMED/CLOSED 지시만 가능합니다. 현재: ${order.status}`);
+      }
+
+      const box = await qr.manager.findOne(BoxMaster, { where: { boxNo: dto.boxNo, ...where } });
+      if (!box) throw new NotFoundException(`박스를 찾을 수 없습니다: ${dto.boxNo}`);
+      if (box.status !== 'SHIPPED') {
+        throw new BadRequestException(`출하된(SHIPPED) 박스만 출하 취소할 수 있습니다: ${dto.boxNo}`);
+      }
+
+      const line = await qr.manager.findOne(ShipmentOrderItem, { where: { shipOrderNo, itemCode: box.itemCode, ...where } });
+      if (!line) throw new BadRequestException(`출하지시에 없는 품목입니다: ${box.itemCode}`);
+      if (line.shippedQty < box.qty) {
+        throw new BadRequestException(`출하 취소 수량이 기출하 수량보다 큽니다: 기출하 ${line.shippedQty}, 요청 ${box.qty}`);
+      }
+
+      const warehouse = await qr.manager.findOne(Warehouse, { where: { warehouseType: 'FG', isDefault: 'Y', ...where } });
+      if (!warehouse) throw new BadRequestException('FG 기본창고(IS_DEFAULT=Y)가 설정되어 있지 않습니다.');
+
+      const serials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
+      if (serials.length > 0 && serials.length !== box.qty) {
+        throw new BadRequestException(`박스 수량(${box.qty})과 시리얼 수량(${serials.length})이 일치하지 않습니다: ${dto.boxNo}`);
+      }
+
+      const receiveBase = {
+        warehouseId: warehouse.warehouseCode,
+        itemCode: box.itemCode,
+        itemType: 'FINISHED' as const,
+        transType: 'FG_OUT_CANCEL' as const,
+        refType: 'SHIP_ORDER_CANCEL',
+        refId: shipOrderNo,
+        workerId: dto.workerId,
+        remark: `출하지시 박스출하 취소:${dto.boxNo}`,
+        company,
+        plant,
+      };
+
+      if (serials.length > 0) {
+        for (const serial of serials) {
+          await this.productInventory.receiveStockInTx(qr, {
+            ...receiveBase,
+            prdUid: serial,
+            qty: 1,
+          });
+        }
+      } else {
+        await this.productInventory.receiveStockInTx(qr, {
+          ...receiveBase,
+          prdUid: '*',
+          qty: box.qty,
+        });
+      }
+
+      await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED' });
+      if (serials.length > 0) {
+        await qr.manager.update(FgLabel, { fgBarcode: In(serials), ...where }, { status: 'PACKED' });
+      }
+
+      const newShipped = line.shippedQty - box.qty;
+      await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });
+      await qr.manager.update(ShipmentOrder, { shipOrderNo, ...where }, { status: 'CONFIRMED' });
+
+      return {
+        shipOrderNo,
+        boxNo: box.boxNo,
+        itemCode: box.itemCode,
+        qty: box.qty,
+        lineShippedQty: newShipped,
+        lineOrderQty: line.orderQty,
+        orderStatus: 'CONFIRMED',
+        canceled: true,
       };
     });
   }

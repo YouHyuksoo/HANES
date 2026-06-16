@@ -9,17 +9,15 @@
  * 4. POST /consumables/label/confirm       단건 입고 확정 (바코드 스캔)
  * 5. POST /consumables/label/confirm-bulk  다건 입고 확정
  */
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { ResponseUtil } from '../../../common/dto/response.dto';
 import { ConsumableLabelService } from '../services/consumable-label.service';
 import {
   CreateConLabelsDto,
   ConfirmConReceivingDto,
   BulkConfirmConReceivingDto,
 } from '../dto/consumable-label.dto';
-
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-
 @Controller('consumables/label')
 export class ConsumableLabelController {
   constructor(private readonly labelService: ConsumableLabelService) {}
@@ -28,34 +26,34 @@ export class ConsumableLabelController {
   @Get('masters')
   async getMasters(@Company() company: string, @Plant() plant: string) {
     const data = await this.labelService.findLabelableConsumables(company, plant);
-    return { data };
+    return ResponseUtil.success(data);
   }
 
   /** conUid 채번 + PENDING 생성 */
   @Post('create')
   async createLabels(@Body() dto: CreateConLabelsDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.labelService.createConLabels(dto, company, plant);
-    return { data };
+    return ResponseUtil.success(data);
   }
 
   /** 미입고 UID 목록 */
   @Get('pending')
   async getPending(@Company() company: string, @Plant() plant: string) {
     const data = await this.labelService.findPendingStocks(company, plant);
-    return { data };
+    return ResponseUtil.success(data);
   }
 
   /** 단건 입고 확정 (바코드 스캔) */
   @Post('confirm')
   async confirmReceiving(@Body() dto: ConfirmConReceivingDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.labelService.confirmReceiving(dto, company, plant);
-    return { data };
+    return ResponseUtil.success(data);
   }
 
   /** 다건 입고 확정 */
   @Post('confirm-bulk')
   async confirmBulk(@Body() dto: BulkConfirmConReceivingDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.labelService.bulkConfirmReceiving(dto, company, plant);
-    return { data };
+    return ResponseUtil.success(data);
   }
 }

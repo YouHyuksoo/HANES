@@ -22,6 +22,7 @@ export interface InspectItemMasterRow {
   lslValue: number | null;
   uslValue: number | null;
   workerQrCode: string | null;
+  imageUrl: string | null;
 }
 
 /** EQUIP_INSPECT_ITEM_POOL 연결 풀 행 (MASTERS JOIN 포함) */
@@ -39,6 +40,7 @@ export interface InspectItemRow {
   lslValue: number | null;
   uslValue: number | null;
   workerQrCode: string | null;
+  imageUrl: string | null;
 }
 
 export const ITEM_TYPE_COLORS: Record<string, string> = {

@@ -6,7 +6,7 @@ import { MockLoggerService } from '@test/mock-logger.service';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { MatStock } from '../../../entities/mat-stock.entity';
+import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductionViewsService } from './production-views.service';
 
 describe('ProductionViewsService', () => {
@@ -14,13 +14,13 @@ describe('ProductionViewsService', () => {
   let jobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let inspectRepo: DeepMocked<Repository<InspectResult>>;
   let boxRepo: DeepMocked<Repository<BoxMaster>>;
-  let stockRepo: DeepMocked<Repository<MatStock>>;
+  let stockRepo: DeepMocked<Repository<ProductStock>>;
 
   beforeEach(async () => {
     jobOrderRepo = createMock<Repository<JobOrder>>();
     inspectRepo = createMock<Repository<InspectResult>>();
     boxRepo = createMock<Repository<BoxMaster>>();
-    stockRepo = createMock<Repository<MatStock>>();
+    stockRepo = createMock<Repository<ProductStock>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -28,7 +28,7 @@ describe('ProductionViewsService', () => {
         { provide: getRepositoryToken(JobOrder), useValue: jobOrderRepo },
         { provide: getRepositoryToken(InspectResult), useValue: inspectRepo },
         { provide: getRepositoryToken(BoxMaster), useValue: boxRepo },
-        { provide: getRepositoryToken(MatStock), useValue: stockRepo },
+        { provide: getRepositoryToken(ProductStock), useValue: stockRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -112,20 +112,61 @@ describe('ProductionViewsService', () => {
 
   it('applies tenant filter in getWipStock', async () => {
     const qb = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      skip: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
+      offset: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
       getCount: jest.fn().mockResolvedValue(0),
+      getRawMany: jest.fn().mockResolvedValue([]),
     };
     stockRepo.createQueryBuilder.mockReturnValue(qb as any);
 
     await service.getWipStock({ page: 1, limit: 10 } as any, 'C1', 'P1');
 
-    expect(qb.andWhere).toHaveBeenCalledWith('s.company = :company', { company: 'C1' });
-    expect(qb.andWhere).toHaveBeenCalledWith('s.plant = :plant', { plant: 'P1' });
+    expect(qb.leftJoin).toHaveBeenCalledWith(
+      'ITEM_MASTERS',
+      'im',
+      'im.ITEM_CODE = s.ITEM_CODE AND im.COMPANY = s.COMPANY AND im.PLANT_CD = s.PLANT_CD',
+    );
+    expect(qb.leftJoin).toHaveBeenCalledWith(
+      'WAREHOUSES',
+      'wh',
+      'wh.WAREHOUSE_CODE = s.WAREHOUSE_CODE AND wh.COMPANY = s.COMPANY AND wh.PLANT_CD = s.PLANT_CD',
+    );
+    expect(qb.where).toHaveBeenCalledWith('s.ITEM_TYPE IN (:...itemTypes)', {
+      itemTypes: ['SEMI_PRODUCT', 'FINISHED'],
+    });
+    expect(qb.andWhere).toHaveBeenCalledWith('s.COMPANY = :company', { company: 'C1' });
+    expect(qb.andWhere).toHaveBeenCalledWith('s.PLANT_CD = :plant', { plant: 'P1' });
+  });
+
+  it('searches WIP stock by product stock and item master columns without entity relations', async () => {
+    const qb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      offset: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(1),
+      getRawMany: jest.fn().mockResolvedValue([{ itemCode: 'HNS02', itemName: 'Harness' }]),
+    };
+    stockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+    const result = await service.getWipStock({ page: 1, limit: 10, itemType: 'FINISHED', search: 'hns' } as any, 'C1', 'P1');
+
+    expect(result.total).toBe(1);
+    expect(qb.where).toHaveBeenCalledWith('s.ITEM_TYPE IN (:...itemTypes)', {
+      itemTypes: ['FINISHED'],
+    });
+    expect(qb.andWhere).toHaveBeenCalledWith(
+      '(UPPER(s.ITEM_CODE) LIKE :searchUpper OR UPPER(im.ITEM_NAME) LIKE :searchUpper)',
+      { searchUpper: '%HNS%' },
+    );
+    expect((qb as any).leftJoinAndSelect).toBeUndefined();
   });
 });

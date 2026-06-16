@@ -127,6 +127,42 @@ describe('BoxService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('closeBox stamps FG_LABELS with boxNo so box stock can find packed serials', async () => {
+    mockBoxRepo.findOne
+      .mockResolvedValueOnce({
+        boxNo: 'BOX-001',
+        itemCode: 'ITEM-001',
+        qty: 1,
+        status: 'OPEN',
+        serialList: JSON.stringify(['FG-001']),
+        company: 'C1',
+        plant: 'P1',
+      } as BoxMaster)
+      .mockResolvedValueOnce({
+        boxNo: 'BOX-001',
+        itemCode: 'ITEM-001',
+        qty: 1,
+        status: 'CLOSED',
+        serialList: JSON.stringify(['FG-001']),
+        company: 'C1',
+        plant: 'P1',
+      } as BoxMaster);
+    mockOqcRequestRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(null),
+    } as any);
+    mockQueryRunner.manager.create.mockImplementation((_entity, payload) => payload as any);
+
+    await target.closeBox('BOX-001', 'C1', 'P1');
+
+    expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+      FgLabel,
+      { fgBarcode: expect.anything(), company: 'C1', plant: 'P1' },
+      { status: 'PACKED', boxNo: 'BOX-001' },
+    );
+  });
+
   it('addSerial validates lots, part and fg labels within tenant only', async () => {
     mockBoxRepo.findOne
       .mockResolvedValueOnce({

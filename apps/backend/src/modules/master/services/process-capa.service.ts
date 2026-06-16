@@ -39,11 +39,14 @@ export class ProcessCapaService {
 
   /** 공정 CAPA 목록 조회 (공정/품목 JOIN) */
   async findAll(query: ProcessCapaQueryDto, company: string, plant: string) {
-    const { processCode, itemCode, search, limit = 5000 } = query;
+    const { processCode, itemCode, search, page = 1, limit = 50 } = query;
+    const skip = (page - 1) * limit;
 
     const qb = this.repo.createQueryBuilder('capa')
-      .leftJoinAndSelect('capa.process', 'proc')
-      .leftJoinAndSelect('capa.part', 'part');
+      .leftJoin('capa.process', 'proc')
+      .leftJoin('capa.part', 'part')
+      .addSelect(['proc.processCode', 'proc.processName'])
+      .addSelect(['part.itemCode', 'part.itemName']);
 
     if (company) qb.andWhere('capa.company = :company', { company });
     if (plant) qb.andWhere('capa.plant = :plant', { plant });
@@ -62,13 +65,16 @@ export class ProcessCapaService {
       );
     }
 
-    const data = await qb
-      .orderBy('capa.processCode', 'ASC')
-      .addOrderBy('capa.itemCode', 'ASC')
-      .take(limit)
-      .getMany();
+    const [data, total] = await Promise.all([
+      qb.orderBy('capa.processCode', 'ASC')
+        .addOrderBy('capa.itemCode', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      qb.getCount(),
+    ]);
 
-    return data;
+    return { data, total, page, limit };
   }
 
   /** 공정 CAPA 생성 (중복 체크 + FK 검증 + 자동계산) */

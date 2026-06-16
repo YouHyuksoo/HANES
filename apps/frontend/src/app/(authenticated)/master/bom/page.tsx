@@ -38,6 +38,12 @@ export default function BomPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [loadingRouting, setLoadingRouting] = useState(false);
 
+  const itemTypeLabelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    itemTypeOptions.forEach((option) => { map[option.value] = option.label; });
+    return map;
+  }, [itemTypeOptions]);
+
   const filteredParents = useMemo(() => {
     if (!typeFilter) return parents;
     return parents.filter((parent) => parent.itemType === typeFilter);
@@ -252,7 +258,7 @@ export default function BomPage() {
                             <div className="font-mono font-semibold truncate">{parent.itemNo || parent.itemCode}</div>
                             <div className="font-medium truncate">{parent.itemName}</div>
                             <div className="text-[11px] opacity-70 truncate">
-                              {parent.itemCode} / {parent.itemType} / BOM {parent.bomCount}
+                              {parent.itemCode} / {itemTypeLabelMap[parent.itemType] || parent.itemType} / BOM {parent.bomCount}
                             </div>
                           </td>
                         </tr>

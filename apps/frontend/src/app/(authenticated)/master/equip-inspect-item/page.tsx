@@ -74,6 +74,12 @@ const ITEM_TYPE_COLORS: Record<string, string> = {
   MEASURE: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300",
 };
 
+const normalizeUnitCode = (unit: string | null | undefined) => {
+  if (!unit) return "";
+  const trimmed = unit.trim();
+  return trimmed.toLowerCase() === "mm" ? "MM" : trimmed;
+};
+
 export default function EquipInspectItemPage() {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,6 +95,7 @@ export default function EquipInspectItemPage() {
   const [form, setForm] = useState<InspectItemForm>(() => emptyForm());
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -191,7 +198,7 @@ export default function EquipInspectItemPage() {
       criteria: item.criteria || "",
       cycle: item.cycle || "DAILY",
       itemType: item.itemType || "VISUAL",
-      unit: item.unit || "",
+      unit: normalizeUnitCode(item.unit),
       lslValue: item.lslValue != null ? String(item.lslValue) : "",
       uslValue: item.uslValue != null ? String(item.uslValue) : "",
       useYn: item.useYn || "Y",
@@ -218,6 +225,7 @@ export default function EquipInspectItemPage() {
     if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
     setSelectedImageFile(null);
     setPreviewUrl(null);
+    setImageDeleteConfirmOpen(false);
   };
 
   const uploadImage = async (itemCode: string, file: File) => {
@@ -458,8 +466,8 @@ export default function EquipInspectItemPage() {
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.sectionCriteria", "판정기준")}</h3>
               {form.itemType === "MEASURE" ? (
                 <div className="grid grid-cols-3 gap-3">
-                  <Input label={t("master.equipInspect.unit", "단위")} value={form.unit}
-                    onChange={e => setField("unit", e.target.value)} fullWidth />
+                  <ComCodeSelect groupCode="UNIT_TYPE" includeAll={false} showCode label={t("master.equipInspect.unit", "단위")}
+                    value={form.unit} onChange={v => setField("unit", v)} fullWidth />
                   <Input label={t("master.equipInspect.lowerLimit", "하한")} type="number" value={form.lslValue}
                     onChange={e => setField("lslValue", e.target.value)} fullWidth />
                   <Input label={t("master.equipInspect.upperLimit", "상한")} type="number" value={form.uslValue}
@@ -477,7 +485,7 @@ export default function EquipInspectItemPage() {
                 <div className="relative group">
                   <img src={previewUrl} alt={form.itemName || form.itemCode}
                     className="w-full h-44 object-contain rounded-lg border border-border bg-surface" />
-                  <button type="button" onClick={handleImageClear}
+                  <button type="button" onClick={() => setImageDeleteConfirmOpen(true)}
                     className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -516,7 +524,15 @@ export default function EquipInspectItemPage() {
       )}
 
       <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDeleteConfirm}
-        title={t("common.delete")} message={t("common.confirmDelete")} />
+        title={t("common.delete")} message={t("common.confirmDelete")} variant="danger" />
+      <ConfirmModal
+        isOpen={imageDeleteConfirmOpen}
+        onClose={() => setImageDeleteConfirmOpen(false)}
+        onConfirm={handleImageClear}
+        title={t("common.deleteConfirm", "삭제 확인")}
+        message={t("master.equipInspectItem.imageDeleteConfirm", "점검항목 사진을 삭제하시겠습니까?")}
+        variant="danger"
+      />
     </div>
   );
 }

@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Link } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal, Input, ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 
@@ -58,6 +58,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFinding, setNewFinding] = useState<NewFinding>(INIT_NEW);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Finding | null>(null);
 
   /** 발견사항 조회 */
   const fetchFindings = useCallback(async () => {
@@ -102,15 +103,17 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
 
   /** 발견사항 삭제 */
   const handleDelete = useCallback(
-    async (findingAuditId: string, findingNo: number) => {
+    async () => {
+      if (!deleteTarget) return;
       try {
-        await api.delete(`/quality/audit-findings/${findingAuditId}/${findingNo}`);
+        await api.delete(`/quality/audit-findings/${deleteTarget.auditId}/${deleteTarget.findingNo}`);
+        setDeleteTarget(null);
         fetchFindings();
       } catch {
         // api 인터셉터에서 처리
       }
     },
-    [fetchFindings],
+    [deleteTarget, fetchFindings],
   );
 
   /** CAPA 연결 */
@@ -131,6 +134,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
   };
 
   return (
+    <>
     <Card className="flex-shrink-0">
       <CardContent>
         {/* 헤더 */}
@@ -255,7 +259,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDelete(f.auditId, f.findingNo)}
+                        onClick={() => setDeleteTarget(f)}
                         className="text-[10px] px-1.5 py-0.5 h-6 text-red-500"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -269,5 +273,14 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
         </div>
       </CardContent>
     </Card>
+    <ConfirmModal
+      isOpen={!!deleteTarget}
+      onClose={() => setDeleteTarget(null)}
+      onConfirm={handleDelete}
+      title={t("common.deleteConfirm", "삭제 확인")}
+      message={`${deleteTarget?.description || ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+      variant="danger"
+    />
+    </>
   );
 }

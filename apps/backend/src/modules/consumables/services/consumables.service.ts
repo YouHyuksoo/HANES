@@ -393,25 +393,10 @@ ${tenantSql}
    * 소모품 수명 현황
    */
   async getLifeStatus(company?: string, plant?: string) {
-    const consumables = await this.consumableMasterRepository.find({
+    return this.consumableMasterRepository.find({
       where: { useYn: 'Y', ...this.tenantWhere(company, plant) },
+      order: { status: 'DESC', currentCount: 'DESC', consumableCode: 'ASC' },
     });
-
-    let good = 0;
-    let warning = 0;
-    let replace = 0;
-
-    for (const item of consumables) {
-      if (item.status === 'REPLACE') {
-        replace++;
-      } else if (item.status === 'WARNING') {
-        warning++;
-      } else {
-        good++;
-      }
-    }
-
-    return { good, warning, replace };
   }
 
   /**

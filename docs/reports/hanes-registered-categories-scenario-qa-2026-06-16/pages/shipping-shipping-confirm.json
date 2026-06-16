@@ -1,0 +1,519 @@
+{
+  "categoryCode": "SHIPPING",
+  "categoryTitle": "출하관리",
+  "categorySortOrder": 120,
+  "menuCode": "SHIP_CONFIRM",
+  "sortOrder": 40,
+  "labelKey": "menu.shipping.confirm",
+  "title": "출하확정처리",
+  "route": "/shipping/confirm",
+  "slug": "shipping-shipping-confirm",
+  "sourceTables": [],
+  "status": "PASS",
+  "steps": [
+    {
+      "id": "initial-load",
+      "title": "초기 조회",
+      "objective": "출하확정처리 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+      "actions": [
+        "브라우저로 /shipping/confirm 경로에 진입한다.",
+        "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+        "화면 또는 API에서 확인된 Oracle 대표 테이블 count를 확인한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true,
+          "tables": [],
+          "responsePreview": "{\"success\":true,\"data\":{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true},\"timestamp\":\"2026-06-15T17:43:57.554Z\"}"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "PDA_ROLE_MENU"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":{\"email\":\"admin@hanes.com\",\"name\":\"시스템관리자\",\"empNo\":null,\"dept\":null,\"role\":\"ADMIN\",\"status\":\"ACTIVE\",\"lastLoginAt\":\"2026-06-15T06:46:27.064Z\",\"company\":\"40\",\"plant\":\"1000\",\"pdaRoleCode\":\"PDA_ADMIN\",\"allowedMenus\":[],\"pdaAllowedMenus\":[]},\"timestamp\":\"2026-06-15T17:43:57.575Z\",\"meta\":{\"debugSql\":{\"sql\":\"SELECT \\\"PdaRoleMenu\\\".\\\"MENU_CODE\\\" AS \\\"PdaRoleMenu_MENU_CODE\\\", \\\"PdaRoleMenu\\\".\\\"COMPANY\\\" AS \\\"PdaRoleMenu_COMPANY\\\", \\\"PdaRoleMenu\\\".\\\"PLANT_CD\\\" AS \\\"PdaRoleMenu_PLAN"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "COMM_CONFIGS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[{\"configName\":\"시리얼테스트\",\"commType\":\"SERIAL\",\"description\":\"바코드스캔\",\"host\":null,\"port\":null,\"portName\":\"COM1\",\"baudRate\":9600,\"dataBits\":8,\"stopBits\":\"1\",\"parity\":\"NONE\",\"flowControl\":\"NONE\",\"lineEnding\":\"NONE\",\"extraConfig\":null,\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-02-22T01:33:00.262Z\",\"updatedAt\":\"2026-02-22T19:38:20.025Z\"}],\"meta\":{\"page\":1,\"limit\":50,\"total\":1,\"totalPages\":1,\"hasNext\":false,\"hasPrev\":false,\"debugSq"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "SYS_CONFIGS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":{\"data\":[{\"configKey\":\"FIFO_ENABLED\",\"configGroup\":\"MATERIAL\",\"configValue\":\"Y\",\"configType\":\"BOOLEAN\",\"label\":\"선입선출 사용\",\"description\":\"자재 출고 시 선입선출 적용 여부\",\"options\":null,\"sortOrder\":1,\"isActive\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-02-20T05:39:28.382Z\",\"updatedAt\":\"2026-02-20T05:39:28.382Z\"},{\"configKey\":\"FIFO_CRITERIA\",\"configGroup\":\"MATERIAL\",\"configValue\":\"MFG_DATE\",\"configType\":\"SELECT\",\"label\":\"선입선출 기준\",\"description\":\""
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "MENU_CATEGORY_ITEMS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[{\"categoryCode\":\"__ROOT__\",\"labelKey\":\"menu.root\",\"iconName\":null,\"sortOrder\":10,\"isActive\":\"Y\",\"menus\":[{\"menuCode\":\"WORKFLOW\",\"sortOrder\":10},{\"menuCode\":\"DASHBOARD\",\"sortOrder\":20}]},{\"categoryCode\":\"MASTER\",\"labelKey\":\"menu.master\",\"iconName\":\"Database\",\"sortOrder\":20,\"isActive\":\"Y\",\"menus\":[{\"menuCode\":\"MST_PART\",\"sortOrder\":10},{\"menuCode\":\"MST_BOM\",\"sortOrder\":20},{\"menuCode\":\"MST_ROUTING\",\"sortOrder\":30},{\"menuCode\":\"MST_PARTNER\",\"sortOrder\":40},{\"menuCode\":\"MST_P"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "COM_CODES"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":{\"ADJUST_ACCOUNT\":[{\"detailCode\":\"STOCK_ADJ\",\"codeName\":\"재고보정\",\"codeDesc\":null,\"sortOrder\":1,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"LOSS\",\"codeName\":\"감모/손실\",\"codeDesc\":null,\"sortOrder\":2,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"GAIN\",\"codeName\":\"과잉/이익\",\"codeDesc\":null,\"sortOrder\":3,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"ETC\",\"codeName\":\"기타\",\"codeDesc\":null,\"sortOrder\":99,\"attr1\":null,\"attr2\":null,\"attr3\":null}],\"ADJ_REASON\":[{\""
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/partners?limit=100&partnerType=CUSTOMER",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "PARTNER_MASTERS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[{\"partnerCode\":\"CUS-001\",\"partnerName\":\"현대자동차\",\"partnerType\":\"CUSTOMER\",\"bizNo\":\"101-81-12345\",\"ceoName\":\"정의선\",\"address\":\"서울시 서초구 헌릉로 12\",\"tel\":\"02-3464-1114\",\"fax\":null,\"email\":\"purchase@hyundai.com\",\"contactPerson\":\"강바이어\",\"remark\":\"주요 납품 고객사\",\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"SYSTEM\",\"updatedBy\":null,\"createdAt\":\"2026-03-04T22:14:25.224Z\",\"updatedAt\":\"2026-03-04T22:14:25.224Z\"},{\"partnerCode\":\"CUS-002\",\"partnerName\":\"기아자동차\",\"partnerType\":\"CUSTOMER\","
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/shipping/shipments?limit=5000",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "SHIPMENT_LOGS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"s\\\".\\\"SHIP_NO\\\" AS \\\"s_SHIP_NO\\\", \\\"s\\\".\\\"SHIP_DATE\\\" AS \\\"s_SHIP_DATE\\\", \\\"s\\\".\\\"SHIP_TIME\\\" AS \\\"s_SHIP_TIME\\\", \\\"s\\\".\\\"VEHICLE_NO\\\" AS \\\"s_VEHICLE_NO\\\", \\\"s\\\".\\\"DRIVER_NAME\\\" AS \\\"s_DRIVER_NAME\\\", \\\"s\\\".\\\"DESTINATION\\\" AS \\\"s_DESTINATION\\\", \\\"s\\\".\\\"CUSTOMER\\\" AS \\\"s_CUSTOMER\\\", \\\"s\\\".\\\"SHIP_ORDER_NO\\\" AS \\\"s_SHIP_ORDER_NO\\\", \\\"s\\\".\\\"PALLET_COUNT\\\" AS \\\"s"
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "초기 조회 화면",
+        "file": "../screenshots/shipping-shipping-confirm/01-initial-load.png"
+      },
+      "notes": [
+        "카테고리: 출하관리 (SHIPPING)",
+        "좌측 메뉴 등록 코드: SHIP_CONFIRM",
+        "등록 순서: 40",
+        "브라우저 진입 전 HTTP 예열 응답: 200",
+        "화면 행 수: 1",
+        "대표 DB 테이블: PDA_ROLE_MENU, COMM_CONFIGS, SYS_CONFIGS"
+      ]
+    },
+    {
+      "id": "search-requery",
+      "title": "검색 및 재조회",
+      "objective": "출하확정처리 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+      "actions": [
+        "탭이 있으면 노출 탭을 순서대로 전환한다.",
+        "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+        "실행 후 화면과 API 호출을 수집한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [],
+      "dbChecks": [],
+      "evidence": {
+        "label": "검색/조회/탭 전환 후 화면",
+        "file": "../screenshots/shipping-shipping-confirm/02-search-requery.png"
+      },
+      "notes": [
+        "탭 없음 또는 전환 대상 없음",
+        "검색어 공백 상태로 조회/Enter 실행",
+        "검색 후 화면 행 수: 1"
+      ]
+    },
+    {
+      "id": "button-process-inventory",
+      "title": "버튼 및 프로세스 목록화",
+      "objective": "출하확정처리 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+      "actions": [
+        "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+        "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+        "입력 컨트롤의 placeholder/aria/type을 수집한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/shipping/shipments?limit=5000",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "SHIPMENT_LOGS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"s\\\".\\\"SHIP_NO\\\" AS \\\"s_SHIP_NO\\\", \\\"s\\\".\\\"SHIP_DATE\\\" AS \\\"s_SHIP_DATE\\\", \\\"s\\\".\\\"SHIP_TIME\\\" AS \\\"s_SHIP_TIME\\\", \\\"s\\\".\\\"VEHICLE_NO\\\" AS \\\"s_VEHICLE_NO\\\", \\\"s\\\".\\\"DRIVER_NAME\\\" AS \\\"s_DRIVER_NAME\\\", \\\"s\\\".\\\"DESTINATION\\\" AS \\\"s_DESTINATION\\\", \\\"s\\\".\\\"CUSTOMER\\\" AS \\\"s_CUSTOMER\\\", \\\"s\\\".\\\"SHIP_ORDER_NO\\\" AS \\\"s_SHIP_ORDER_NO\\\", \\\"s\\\".\\\"PALLET_COUNT\\\" AS \\\"s"
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+        "file": "../screenshots/shipping-shipping-confirm/03-button-process-inventory.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "노출 버튼: 새로고침, 박스 스캔 출하, 출하 등록, 그리드 옵션, 전체화면",
+        "입력 컨트롤: 출하번호, 고객사 검색..., select, select"
+      ]
+    },
+    {
+      "id": "action-availability",
+      "title": "신규/수정/삭제 가능 여부",
+      "objective": "출하확정처리 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+      "actions": [
+        "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+        "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+        "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [],
+      "dbChecks": [],
+      "evidence": {
+        "label": "저장성 프로세스 진입 화면",
+        "file": "../screenshots/shipping-shipping-confirm/04-action-entry.png"
+      },
+      "notes": [
+        "프로세스 진입 실행: /등록/",
+        "본문 행 액션 버튼 수: 0",
+        "저장성 후보 버튼: 박스 스캔 출하, 출하 등록"
+      ]
+    },
+    {
+      "id": "save-validation-policy",
+      "title": "저장 검증 및 중복 방어 정책",
+      "objective": "출하확정처리 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+      "actions": [
+        "운영 재고/생산/품질/출하 상태를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+        "화면에서 확인된 대표 조회 API를 직접 호출한다.",
+        "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT/동일 작업번호 재처리로 검증하도록 분리한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/shipping/shipments?limit=5000",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "SHIPMENT_LOGS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"s\\\".\\\"SHIP_NO\\\" AS \\\"s_SHIP_NO\\\", \\\"s\\\".\\\"SHIP_DATE\\\" AS \\\"s_SHIP_DATE\\\", \\\"s\\\".\\\"SHIP_TIME\\\" AS \\\"s_SHIP_TIME\\\", \\\"s\\\".\\\"VEHICLE_NO\\\" AS \\\"s_VEHICLE_NO\\\", \\\"s\\\".\\\"DRIVER_NAME\\\" AS \\\"s_DRIVER_NAME\\\", \\\"s\\\".\\\"DESTINATION\\\" AS \\\"s_DESTINATION\\\", \\\"s\\\".\\\"CUSTOMER\\\" AS \\\"s_CUSTOMER\\\", \\\"s\\\".\\\"SHIP_ORDER_NO\\\" AS \\\"s_SHIP_ORDER_NO\\\", \\\"s\\\".\\\"PALLET_COUNT\\\" AS \\\"s"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/db-info",
+          "status": 200,
+          "ok": true,
+          "tables": [],
+          "responsePreview": "{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true}"
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "저장 검증 정책 확인 기준 화면",
+        "file": "../screenshots/shipping-shipping-confirm/05-save-validation-policy.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "대표 조회 API 직접 호출: /api/v1/db-info 200",
+        "저장성/중복 방어 공통 정책: 상태 변경 데이터는 페이지별 안전 데이터 생성 시나리오에서 수행",
+        "저장성 후보 버튼: 박스 스캔 출하, 출하 등록"
+      ]
+    },
+    {
+      "id": "api-db-screen-requery",
+      "title": "DB/API 확인 및 화면 재조회",
+      "objective": "출하확정처리 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+      "actions": [
+        "대표 조회 API를 직접 호출하거나 UI network API 결과를 사용한다.",
+        "확인된 Oracle 대표 테이블 count를 재확인한다.",
+        "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/db-info",
+          "status": 200,
+          "ok": true,
+          "tables": [],
+          "responsePreview": "{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true}"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/shipping/shipments?limit=5000",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "SHIPMENT_LOGS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"s\\\".\\\"SHIP_NO\\\" AS \\\"s_SHIP_NO\\\", \\\"s\\\".\\\"SHIP_DATE\\\" AS \\\"s_SHIP_DATE\\\", \\\"s\\\".\\\"SHIP_TIME\\\" AS \\\"s_SHIP_TIME\\\", \\\"s\\\".\\\"VEHICLE_NO\\\" AS \\\"s_VEHICLE_NO\\\", \\\"s\\\".\\\"DRIVER_NAME\\\" AS \\\"s_DRIVER_NAME\\\", \\\"s\\\".\\\"DESTINATION\\\" AS \\\"s_DESTINATION\\\", \\\"s\\\".\\\"CUSTOMER\\\" AS \\\"s_CUSTOMER\\\", \\\"s\\\".\\\"SHIP_ORDER_NO\\\" AS \\\"s_SHIP_ORDER_NO\\\", \\\"s\\\".\\\"PALLET_COUNT\\\" AS \\\"s"
+        }
+      ],
+      "dbChecks": [
+        {
+          "title": "PDA_ROLE_MENU 대표 count",
+          "sql": "SELECT COUNT(*) AS CNT FROM PDA_ROLE_MENU WHERE ROWNUM <= 100000000",
+          "result": {
+            "success": true,
+            "data": [
+              {
+                "CNT": 0
+              }
+            ],
+            "columns": [
+              "CNT"
+            ],
+            "row_count": 1,
+            "site": "JSHANES"
+          },
+          "ok": true
+        },
+        {
+          "title": "COMM_CONFIGS 대표 count",
+          "sql": "SELECT COUNT(*) AS CNT FROM COMM_CONFIGS WHERE ROWNUM <= 100000000",
+          "result": {
+            "success": true,
+            "data": [
+              {
+                "CNT": 1
+              }
+            ],
+            "columns": [
+              "CNT"
+            ],
+            "row_count": 1,
+            "site": "JSHANES"
+          },
+          "ok": true
+        },
+        {
+          "title": "SYS_CONFIGS 대표 count",
+          "sql": "SELECT COUNT(*) AS CNT FROM SYS_CONFIGS WHERE ROWNUM <= 100000000",
+          "result": {
+            "success": true,
+            "data": [
+              {
+                "CNT": 23
+              }
+            ],
+            "columns": [
+              "CNT"
+            ],
+            "row_count": 1,
+            "site": "JSHANES"
+          },
+          "ok": true
+        }
+      ],
+      "evidence": {
+        "label": "DB/API 확인 후 최종 재조회 화면",
+        "file": "../screenshots/shipping-shipping-confirm/06-api-db-screen-requery.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "대표 조회 API 응답: 200",
+        "DB 확인 테이블: PDA_ROLE_MENU, COMM_CONFIGS, SYS_CONFIGS",
+        "최종 화면 행 수: 1"
+      ]
+    }
+  ],
+  "apiEvents": [
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true,
+      "tables": [],
+      "responsePreview": "{\"success\":true,\"data\":{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true},\"timestamp\":\"2026-06-15T17:43:57.554Z\"}"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "PDA_ROLE_MENU"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":{\"email\":\"admin@hanes.com\",\"name\":\"시스템관리자\",\"empNo\":null,\"dept\":null,\"role\":\"ADMIN\",\"status\":\"ACTIVE\",\"lastLoginAt\":\"2026-06-15T06:46:27.064Z\",\"company\":\"40\",\"plant\":\"1000\",\"pdaRoleCode\":\"PDA_ADMIN\",\"allowedMenus\":[],\"pdaAllowedMenus\":[]},\"timestamp\":\"2026-06-15T17:43:57.575Z\",\"meta\":{\"debugSql\":{\"sql\":\"SELECT \\\"PdaRoleMenu\\\".\\\"MENU_CODE\\\" AS \\\"PdaRoleMenu_MENU_CODE\\\", \\\"PdaRoleMenu\\\".\\\"COMPANY\\\" AS \\\"PdaRoleMenu_COMPANY\\\", \\\"PdaRoleMenu\\\".\\\"PLANT_CD\\\" AS \\\"PdaRoleMenu_PLAN"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "COMM_CONFIGS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[{\"configName\":\"시리얼테스트\",\"commType\":\"SERIAL\",\"description\":\"바코드스캔\",\"host\":null,\"port\":null,\"portName\":\"COM1\",\"baudRate\":9600,\"dataBits\":8,\"stopBits\":\"1\",\"parity\":\"NONE\",\"flowControl\":\"NONE\",\"lineEnding\":\"NONE\",\"extraConfig\":null,\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-02-22T01:33:00.262Z\",\"updatedAt\":\"2026-02-22T19:38:20.025Z\"}],\"meta\":{\"page\":1,\"limit\":50,\"total\":1,\"totalPages\":1,\"hasNext\":false,\"hasPrev\":false,\"debugSq"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "SYS_CONFIGS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":{\"data\":[{\"configKey\":\"FIFO_ENABLED\",\"configGroup\":\"MATERIAL\",\"configValue\":\"Y\",\"configType\":\"BOOLEAN\",\"label\":\"선입선출 사용\",\"description\":\"자재 출고 시 선입선출 적용 여부\",\"options\":null,\"sortOrder\":1,\"isActive\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-02-20T05:39:28.382Z\",\"updatedAt\":\"2026-02-20T05:39:28.382Z\"},{\"configKey\":\"FIFO_CRITERIA\",\"configGroup\":\"MATERIAL\",\"configValue\":\"MFG_DATE\",\"configType\":\"SELECT\",\"label\":\"선입선출 기준\",\"description\":\""
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "MENU_CATEGORY_ITEMS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[{\"categoryCode\":\"__ROOT__\",\"labelKey\":\"menu.root\",\"iconName\":null,\"sortOrder\":10,\"isActive\":\"Y\",\"menus\":[{\"menuCode\":\"WORKFLOW\",\"sortOrder\":10},{\"menuCode\":\"DASHBOARD\",\"sortOrder\":20}]},{\"categoryCode\":\"MASTER\",\"labelKey\":\"menu.master\",\"iconName\":\"Database\",\"sortOrder\":20,\"isActive\":\"Y\",\"menus\":[{\"menuCode\":\"MST_PART\",\"sortOrder\":10},{\"menuCode\":\"MST_BOM\",\"sortOrder\":20},{\"menuCode\":\"MST_ROUTING\",\"sortOrder\":30},{\"menuCode\":\"MST_PARTNER\",\"sortOrder\":40},{\"menuCode\":\"MST_P"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "COM_CODES"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":{\"ADJUST_ACCOUNT\":[{\"detailCode\":\"STOCK_ADJ\",\"codeName\":\"재고보정\",\"codeDesc\":null,\"sortOrder\":1,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"LOSS\",\"codeName\":\"감모/손실\",\"codeDesc\":null,\"sortOrder\":2,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"GAIN\",\"codeName\":\"과잉/이익\",\"codeDesc\":null,\"sortOrder\":3,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"ETC\",\"codeName\":\"기타\",\"codeDesc\":null,\"sortOrder\":99,\"attr1\":null,\"attr2\":null,\"attr3\":null}],\"ADJ_REASON\":[{\""
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/master/partners?limit=100&partnerType=CUSTOMER",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "PARTNER_MASTERS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[{\"partnerCode\":\"CUS-001\",\"partnerName\":\"현대자동차\",\"partnerType\":\"CUSTOMER\",\"bizNo\":\"101-81-12345\",\"ceoName\":\"정의선\",\"address\":\"서울시 서초구 헌릉로 12\",\"tel\":\"02-3464-1114\",\"fax\":null,\"email\":\"purchase@hyundai.com\",\"contactPerson\":\"강바이어\",\"remark\":\"주요 납품 고객사\",\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"SYSTEM\",\"updatedBy\":null,\"createdAt\":\"2026-03-04T22:14:25.224Z\",\"updatedAt\":\"2026-03-04T22:14:25.224Z\"},{\"partnerCode\":\"CUS-002\",\"partnerName\":\"기아자동차\",\"partnerType\":\"CUSTOMER\","
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/shipping/shipments?limit=5000",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "SHIPMENT_LOGS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"s\\\".\\\"SHIP_NO\\\" AS \\\"s_SHIP_NO\\\", \\\"s\\\".\\\"SHIP_DATE\\\" AS \\\"s_SHIP_DATE\\\", \\\"s\\\".\\\"SHIP_TIME\\\" AS \\\"s_SHIP_TIME\\\", \\\"s\\\".\\\"VEHICLE_NO\\\" AS \\\"s_VEHICLE_NO\\\", \\\"s\\\".\\\"DRIVER_NAME\\\" AS \\\"s_DRIVER_NAME\\\", \\\"s\\\".\\\"DESTINATION\\\" AS \\\"s_DESTINATION\\\", \\\"s\\\".\\\"CUSTOMER\\\" AS \\\"s_CUSTOMER\\\", \\\"s\\\".\\\"SHIP_ORDER_NO\\\" AS \\\"s_SHIP_ORDER_NO\\\", \\\"s\\\".\\\"PALLET_COUNT\\\" AS \\\"s"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "button-process-inventory",
+      "method": "GET",
+      "url": "/api/shipping/shipments?limit=5000",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "SHIPMENT_LOGS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"s\\\".\\\"SHIP_NO\\\" AS \\\"s_SHIP_NO\\\", \\\"s\\\".\\\"SHIP_DATE\\\" AS \\\"s_SHIP_DATE\\\", \\\"s\\\".\\\"SHIP_TIME\\\" AS \\\"s_SHIP_TIME\\\", \\\"s\\\".\\\"VEHICLE_NO\\\" AS \\\"s_VEHICLE_NO\\\", \\\"s\\\".\\\"DRIVER_NAME\\\" AS \\\"s_DRIVER_NAME\\\", \\\"s\\\".\\\"DESTINATION\\\" AS \\\"s_DESTINATION\\\", \\\"s\\\".\\\"CUSTOMER\\\" AS \\\"s_CUSTOMER\\\", \\\"s\\\".\\\"SHIP_ORDER_NO\\\" AS \\\"s_SHIP_ORDER_NO\\\", \\\"s\\\".\\\"PALLET_COUNT\\\" AS \\\"s"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "save-validation-policy",
+      "method": "GET",
+      "url": "/api/shipping/shipments?limit=5000",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "SHIPMENT_LOGS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"s\\\".\\\"SHIP_NO\\\" AS \\\"s_SHIP_NO\\\", \\\"s\\\".\\\"SHIP_DATE\\\" AS \\\"s_SHIP_DATE\\\", \\\"s\\\".\\\"SHIP_TIME\\\" AS \\\"s_SHIP_TIME\\\", \\\"s\\\".\\\"VEHICLE_NO\\\" AS \\\"s_VEHICLE_NO\\\", \\\"s\\\".\\\"DRIVER_NAME\\\" AS \\\"s_DRIVER_NAME\\\", \\\"s\\\".\\\"DESTINATION\\\" AS \\\"s_DESTINATION\\\", \\\"s\\\".\\\"CUSTOMER\\\" AS \\\"s_CUSTOMER\\\", \\\"s\\\".\\\"SHIP_ORDER_NO\\\" AS \\\"s_SHIP_ORDER_NO\\\", \\\"s\\\".\\\"PALLET_COUNT\\\" AS \\\"s"
+    },
+    {
+      "source": "direct-api",
+      "stepId": "save-validation-policy",
+      "method": "GET",
+      "url": "/api/v1/db-info",
+      "status": 200,
+      "ok": true,
+      "tables": [],
+      "responsePreview": "{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true}"
+    },
+    {
+      "source": "direct-api",
+      "stepId": "api-db-screen-requery",
+      "method": "GET",
+      "url": "/api/v1/db-info",
+      "status": 200,
+      "ok": true,
+      "tables": [],
+      "responsePreview": "{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true}"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "api-db-screen-requery",
+      "method": "GET",
+      "url": "/api/shipping/shipments?limit=5000",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "SHIPMENT_LOGS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"s\\\".\\\"SHIP_NO\\\" AS \\\"s_SHIP_NO\\\", \\\"s\\\".\\\"SHIP_DATE\\\" AS \\\"s_SHIP_DATE\\\", \\\"s\\\".\\\"SHIP_TIME\\\" AS \\\"s_SHIP_TIME\\\", \\\"s\\\".\\\"VEHICLE_NO\\\" AS \\\"s_VEHICLE_NO\\\", \\\"s\\\".\\\"DRIVER_NAME\\\" AS \\\"s_DRIVER_NAME\\\", \\\"s\\\".\\\"DESTINATION\\\" AS \\\"s_DESTINATION\\\", \\\"s\\\".\\\"CUSTOMER\\\" AS \\\"s_CUSTOMER\\\", \\\"s\\\".\\\"SHIP_ORDER_NO\\\" AS \\\"s_SHIP_ORDER_NO\\\", \\\"s\\\".\\\"PALLET_COUNT\\\" AS \\\"s"
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "unexpectedConsole": [],
+  "unexpectedApi": [],
+  "reportFile": "pages/shipping-shipping-confirm.html",
+  "resultFile": "pages/shipping-shipping-confirm.json"
+}

@@ -117,10 +117,10 @@ export class BoxService {
   }
 
   async findAll(query: BoxQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, boxNo, itemCode, palletId: palletNo, status, unassigned } = query;
+    const { page = 1, limit = 10, search, boxNo, itemCode, palletId: palletNo, status, unassigned } = query;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {
+    const baseWhere: Record<string, unknown> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(boxNo && { boxNo: ILike(`%${boxNo}%`) }),
@@ -129,6 +129,12 @@ export class BoxService {
       ...(status && { status }),
       ...(unassigned && { palletNo: IsNull() }),
     };
+    const where = search
+      ? [
+          { ...baseWhere, boxNo: ILike(`%${search}%`) },
+          { ...baseWhere, itemCode: ILike(`%${search}%`) },
+        ]
+      : baseWhere;
 
     const [data, total] = await Promise.all([
       this.boxRepository.find({
@@ -504,7 +510,7 @@ export class BoxService {
               await queryRunner.manager.update(
                 FgLabel,
                 { fgBarcode: In(batch), ...this.tenantWhere(company, plant) },
-                { status: 'PACKED' },
+                { status: 'PACKED', boxNo: id },
               );
             }
           }

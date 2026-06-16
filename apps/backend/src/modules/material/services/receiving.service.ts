@@ -18,6 +18,7 @@ import { Repository, In, Between, DataSource, EntityManager, MoreThan } from 'ty
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
+import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -540,10 +541,12 @@ export class ReceivingService {
 
         const savedTx = await queryRunner.manager.save(stockTx);
 
-        // 3. 출고원천 창고의 LOT(matUid) 재고 차감
-        //    일반: 입하 창고 / 특채: 불용창고(재고 잔존 창고)
-        if (sourceWarehouseCode) {
+        // 3. 출고원천 차감
+        //    일반: 입하재고 / 특채: 불용창고 등 실제 창고재고
+        if (isConcession && sourceWarehouseCode) {
           await this.upsertStock(queryRunner.manager, sourceWarehouseCode, lot.itemCode, item.matUid, -item.qty, lot.company, lot.plant);
+        } else {
+          await this.decreaseArrivalStock(queryRunner.manager, item.matUid, lot.itemCode, item.qty, lot.company, lot.plant);
         }
 
         // 4. 입고 창고에 LOT 단위(matUid) 재고 증가
@@ -847,5 +850,40 @@ export class ReceivingService {
       });
       await manager.save(newStock);
     }
+  }
+
+  private async decreaseArrivalStock(
+    manager: EntityManager,
+    matUid: string,
+    itemCode: string,
+    qty: number,
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    const stock = await manager.findOne(MatArrivalStock, {
+      where: {
+        matUid,
+        itemCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    if (!stock) {
+      throw new BadRequestException(`입하재고를 찾을 수 없습니다. LOT: ${matUid}`);
+    }
+    if (stock.availableQty < qty || stock.qty < qty) {
+      throw new BadRequestException(`입하재고가 부족합니다. LOT: ${matUid}, 요청=${qty}, 입하재고=${stock.availableQty}`);
+    }
+
+    const newQty = stock.qty - qty;
+    await manager.update(MatArrivalStock, {
+      company: stock.company,
+      plant: stock.plant,
+      matUid: stock.matUid,
+    }, {
+      qty: newQty,
+      availableQty: Math.max(0, stock.availableQty - qty),
+      status: newQty > 0 ? 'AVAILABLE' : 'DEPLETED',
+    });
   }
 }

@@ -8,14 +8,13 @@
  * 1. 마스터 목록을 DataGrid에 표시 (체크박스 + 발행수량 입력)
  * 2. "UID 발행" 클릭 → 선택 건마다 POST create → conUid 생성
  * 3. 생성 결과를 배너로 표시 + 브라우저 인쇄
- * 4. StatCards: 전체 마스터 / PENDING 건수 / 선택 건수
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Tag, Search, RefreshCw, CheckCircle, Package, Printer, Clock,
+  Tag, Search, RefreshCw, CheckCircle, Printer,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { api } from "@/services/api";
 import { LabelableMaster, useConLabelColumns } from "./components/ConLabelColumns";
@@ -65,19 +64,6 @@ function ConsumableLabelPage() {
   } = useConLabelIssue({
     filteredMasters, selectedCodes, qtyMap, onRefresh: fetchData,
   });
-
-  /** 통계 */
-  const stats = useMemo(() => {
-    const totalPending = masters.reduce((s, m) => s + m.pendingCount, 0);
-    const sel = filteredMasters.filter((m) => selectedCodes.has(m.consumableCode));
-    const selectedQty = sel.reduce((s, m) => s + (qtyMap.get(m.consumableCode) ?? 1), 0);
-    return {
-      totalCount: masters.length,
-      pendingCount: totalPending,
-      selectedCount: sel.length,
-      selectedQty,
-    };
-  }, [masters, filteredMasters, selectedCodes, qtyMap]);
 
   /** 전체 선택/해제 */
   const toggleAll = useCallback((checked: boolean) => {
@@ -149,18 +135,6 @@ function ConsumableLabelPage() {
             {issuing ? t("consumables.label.issuing") : t("consumables.label.issueBtn")}
           </Button>
         </div>
-      </div>
-
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("consumables.label.totalMasters")} value={stats.totalCount}
-          icon={Package} color="blue" />
-        <StatCard label={t("consumables.label.pendingCount")} value={stats.pendingCount}
-          icon={Clock} color="orange" />
-        <StatCard label={t("consumables.label.selectedCount")} value={stats.selectedCount}
-          icon={CheckCircle} color="green" />
-        <StatCard label={t("consumables.label.selectedQty")} value={stats.selectedQty}
-          icon={Printer} color="purple" />
       </div>
 
       {/* 생성된 conUid 결과 배너 */}

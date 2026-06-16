@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProcessMap } from '../../../entities/process-map.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateRoutingDto, UpdateRoutingDto, RoutingQueryDto } from '../dto/routing.dto';
@@ -31,78 +31,65 @@ export class RoutingService {
     };
   }
 
+  private partJoinCondition = (
+    'part.itemCode = routing.itemCode'
+    + ' AND part.company = routing.company'
+    + ' AND part.plant = routing.plant'
+  );
+
   async findAll(query: RoutingQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.routingRepository.createQueryBuilder('routing')
+      .leftJoin(PartMaster, 'part', this.partJoinCondition)
+      .addSelect(['part.itemName']);
 
-    if (company) {
-      queryBuilder.andWhere('routing.company = :company', { company });
-    }
-    if (plant) {
-      queryBuilder.andWhere('routing.plant = :plant', { plant });
-    }
-
-    if (itemCode) {
-      queryBuilder.andWhere('routing.itemCode = :itemCode', { itemCode });
-    }
-
-    if (useYn) {
-      queryBuilder.andWhere('routing.useYn = :useYn', { useYn });
-    }
-
+    if (company) queryBuilder.andWhere('routing.company = :company', { company });
+    if (plant) queryBuilder.andWhere('routing.plant = :plant', { plant });
+    if (itemCode) queryBuilder.andWhere('routing.itemCode = :itemCode', { itemCode });
+    if (useYn) queryBuilder.andWhere('routing.useYn = :useYn', { useYn });
     if (search) {
       const upper = search.toUpperCase();
       queryBuilder.andWhere(
         '(routing.processCode LIKE :searchCode OR routing.processName LIKE :searchRaw)',
-        { searchCode: `%${upper}%`, searchRaw: `%${search}%` }
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 
-    const [items, total] = await Promise.all([
+    const [{ entities: items, raw }, total] = await Promise.all([
       queryBuilder
         .orderBy('routing.itemCode', 'ASC')
         .addOrderBy('routing.seq', 'ASC')
         .skip(skip)
         .take(limit)
-        .getMany(),
+        .getRawAndEntities(),
       queryBuilder.getCount(),
     ]);
 
-    const itemCodes = [...new Set(items.map(item => item.itemCode).filter(Boolean))];
-    const parts = itemCodes.length > 0
-      ? await this.partRepository.find({
-          where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
-          select: ['itemCode', 'itemName'],
-        })
-      : [];
-
-    const partMap = new Map(parts.map(p => [p.itemCode, p]));
-
-    const data = items.map(item => ({
+    const data = items.map((item, i) => ({
       ...item,
-      itemName: partMap.get(item.itemCode)?.itemName || null,
+      itemName: raw[i]?.part_itemName ?? null,
     }));
 
     return { data, total, page, limit };
   }
 
   async findByKey(itemCode: string, seq: number, company?: string, plant?: string) {
-    const item = await this.routingRepository.findOne({
-      where: { itemCode, seq, ...this.tenantWhere(company, plant) },
-    });
+    const qb = this.routingRepository.createQueryBuilder('routing')
+      .leftJoin(PartMaster, 'part', this.partJoinCondition)
+      .addSelect(['part.itemName'])
+      .where('routing.itemCode = :itemCode', { itemCode })
+      .andWhere('routing.seq = :seq', { seq });
+
+    if (company) qb.andWhere('routing.company = :company', { company });
+    if (plant) qb.andWhere('routing.plant = :plant', { plant });
+
+    const { entities, raw } = await qb.getRawAndEntities();
+    const item = entities[0];
     if (!item) throw new NotFoundException(`라우팅을 찾을 수 없습니다: ${itemCode}/${seq}`);
 
-    const part = await this.partRepository.findOne({
-      where: { itemCode: item.itemCode, ...this.tenantWhere(company, plant) },
-      select: ['itemCode', 'itemName'],
-    });
-
-    return {
-      ...item,
-      itemName: part?.itemName || null,
-    };
+    return { ...item, itemName: raw[0]?.part_itemName ?? null };
   }
 
   async create(dto: CreateRoutingDto, company?: string, plant?: string) {

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { IqcItemMaster } from '../../../entities/iqc-item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -52,6 +52,17 @@ describe('IqcItemService', () => {
     mockRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', seq: 1, company: 'OTHER', plant: 'P1' } as IqcItemMaster);
 
     await expect(target.findByCompositeKey('ITEM01', 1, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects duplicate itemCode and seq on create within the tenant context', async () => {
+    mockRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', seq: 1, company: 'C1', plant: 'P1' } as IqcItemMaster);
+
+    await expect(target.create({
+      itemCode: 'ITEM01',
+      seq: 1,
+      inspectItem: 'Length',
+    } as any, 'C1', 'P1')).rejects.toThrow(ConflictException);
+    expect(mockRepo.save).not.toHaveBeenCalled();
   });
 
   it('updates an item within the tenant context', async () => {

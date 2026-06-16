@@ -19,6 +19,7 @@ import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
 import { useScanInputFocus } from '@/hooks/useScanInputFocus';
+import { InspectItemImage } from '@/components/shared';
 
 interface WorkerInspectItem {
   seq: number;
@@ -26,9 +27,14 @@ interface WorkerInspectItem {
   itemName: string;
   criteria?: string | null;
   workerQrCode?: string | null;
+  imageUrl?: string | null;
 }
 
 type ItemResult = 'OK' | 'NG' | '';
+type WorkerInspectApiItem = Omit<WorkerInspectItem, 'seq'> & {
+  seq?: number | null;
+  sortSeq?: number | null;
+};
 
 interface WorkerInspectModalProps {
   isOpen: boolean;
@@ -64,6 +70,15 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
     return String(value ?? '').trim().toUpperCase();
   }, []);
 
+  const normalizeItems = useCallback((rows: WorkerInspectApiItem[]) => rows.map((item, index) => ({
+    seq: Number(item.seq ?? item.sortSeq ?? index + 1),
+    itemCode: item.itemCode ?? null,
+    itemName: item.itemName,
+    criteria: item.criteria ?? null,
+    workerQrCode: item.workerQrCode ?? null,
+    imageUrl: item.imageUrl ?? null,
+  })), []);
+
   useEffect(() => {
     if (!isOpen || !selectedEquip) return;
     const controller = new AbortController();
@@ -79,7 +94,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
       params: { equipCode: selectedEquip.equipCode, inspectType: 'WORKER', limit: '100' },
       signal: controller.signal,
     }).then(res => {
-      const data: WorkerInspectItem[] = res.data?.data ?? [];
+      const data = normalizeItems(res.data?.data ?? []);
       setItems(data);
       const init: Record<number, ItemResult> = {};
       data.forEach(i => { init[i.seq] = ''; });
@@ -92,7 +107,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
       }
     }).finally(() => setLoading(false));
     return () => controller.abort();
-  }, [isOpen, selectedEquip]);
+  }, [focusQrInput, isOpen, normalizeItems, selectedEquip]);
 
   useEffect(() => {
     if (isOpen) focusQrInput(100);
@@ -138,11 +153,15 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   const total = items.length || 1;
   const saveDisabledReason = saving
     ? t('common.saving')
+    : !selectedJobOrder?.orderNo
+      ? t('kiosk.prep.selectJobOrderFirst', '작업지시를 먼저 선택하세요.')
     : !allAnswered
       ? t('kiosk.prep.workerInspectDesc')
       : '';
   const startDisabledReason = saving
     ? t('common.saving')
+    : !selectedJobOrder?.orderNo
+      ? t('kiosk.prep.selectJobOrderFirst', '작업지시를 먼저 선택하세요.')
     : anyNg
       ? t('kiosk.prep.failWarning')
       : !allAnswered
@@ -150,7 +169,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
         : '';
 
   const doSave = useCallback(async (startWork: boolean) => {
-    if (!selectedEquip || !allAnswered) return;
+    if (!selectedEquip || !selectedJobOrder?.orderNo || !allAnswered) return;
     setSaving(true);
     try {
       const details = items.map(i => ({
@@ -163,7 +182,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
       }));
       await api.post('/equipment/daily-inspect', {
         equipCode: selectedEquip.equipCode,
-        inspectDate: new Date().toISOString().split('T')[0],
+        orderNo: selectedJobOrder.orderNo,
         inspectorName: selectedWorkers.map(w => w.workerName).join(', '),
         inspectType: 'WORKER',
         overallResult: anyNg ? 'FAIL' : 'PASS',
@@ -179,7 +198,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
     } finally {
       setSaving(false);
     }
-  }, [selectedEquip, allAnswered, items, results, ngReasons, selectedWorkers, anyNg, setInterlock, onDone, t]);
+  }, [selectedEquip, selectedJobOrder?.orderNo, allAnswered, items, results, ngReasons, selectedWorkers, anyNg, setInterlock, onDone, t]);
 
   return (
     <Modal isOpen={isOpen} onClose={saving ? () => {} : onClose} title={t('kiosk.prep.workerInspectTitle')} size="full">
@@ -218,7 +237,29 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
               <div className="py-6 text-center text-red-600 dark:text-red-400 text-sm">{t('kiosk.prep.loadItemsError')}</div>
             ) : (
               <div className="max-h-[42vh] overflow-y-auto space-y-1.5">
-                {items.map(item => {
+                {items.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border bg-surface/50 p-4 text-sm text-text">
+                    <p className="font-semibold text-text">
+                      {t('kiosk.prep.noWorkerInspectItemsTitle', '설비별로 배정된 작업자설비점검 항목이 없습니다.')}
+                    </p>
+                    <div className="mt-3 space-y-2 text-xs leading-5 text-text-muted">
+                      <p>
+                        {t('kiosk.prep.noWorkerInspectItemsCurrent', {
+                          defaultValue: '현재 선택 설비 {{equipName}}({{equipCode}})에 WORKER 점검항목이 연결되어 있지 않습니다.',
+                          equipName: selectedEquip?.equipName ?? '',
+                          equipCode: selectedEquip?.equipCode ?? '',
+                        })}
+                      </p>
+                      <ol className="list-decimal space-y-1 pl-4 text-left">
+                        <li>{t('kiosk.prep.workerInspectAssignStep1', '좌측 메뉴에서 기준정보 > 설비점검항목(/master/equip-inspect) 화면으로 이동합니다.')}</li>
+                        <li>{t('kiosk.prep.workerInspectAssignStep2', '왼쪽 설비 목록에서 이 키오스크 설비를 선택합니다.')}</li>
+                        <li>{t('kiosk.prep.workerInspectAssignStep3', '점검유형을 작업자점검 또는 작업자설비점검(WORKER)으로 선택합니다.')}</li>
+                        <li>{t('kiosk.prep.workerInspectAssignStep4', '점검항목 추가 버튼을 눌러 필요한 항목을 선택하고 저장합니다.')}</li>
+                        <li>{t('kiosk.prep.workerInspectAssignStep5', '이 모달을 닫았다가 다시 열면 배정된 항목이 표시됩니다.')}</li>
+                      </ol>
+                    </div>
+                  </div>
+                ) : items.map(item => {
                   const r = results[item.seq];
                   const isActive = activeSeq === item.seq;
                   const isNg = r === 'NG';
@@ -239,6 +280,9 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                         <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
                           {item.seq}
                         </span>
+                        <div className="shrink-0">
+                          <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} size={48} />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium text-text">{item.itemName}</p>

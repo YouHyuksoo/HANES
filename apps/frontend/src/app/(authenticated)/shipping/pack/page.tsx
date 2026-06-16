@@ -19,7 +19,7 @@ import {
   Package, Plus, Search, RefreshCw, XCircle, Lock, LockOpen,
   AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import PartSelect from "@/components/shared/PartSelect";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -79,6 +79,7 @@ export default function PackPage() {
   const [pageError, setPageError] = useState("");
   const [modalError, setModalError] = useState("");
   const [lastAddedSerial, setLastAddedSerial] = useState("");
+  const [removeSerialTarget, setRemoveSerialTarget] = useState("");
   const [isAddingSerial, setIsAddingSerial] = useState(false);
   const serialInputRef = useRef<HTMLInputElement>(null);
 
@@ -161,21 +162,22 @@ export default function PackPage() {
     }
   }, [serialInput, selectedBox, isAddingSerial, refreshSelected, focusSerialInput, t]);
 
-  const handleRemoveSerial = useCallback(async (serial: string) => {
-    if (!selectedBox) return;
+  const handleRemoveSerial = useCallback(async () => {
+    if (!selectedBox || !removeSerialTarget) return;
     setModalError("");
     try {
-      await api.delete(`/shipping/boxes/${selectedBox.boxNo}/serials`, { data: { serials: [serial] } });
-      if (lastAddedSerial === serial) {
+      await api.delete(`/shipping/boxes/${selectedBox.boxNo}/serials`, { data: { serials: [removeSerialTarget] } });
+      if (lastAddedSerial === removeSerialTarget) {
         setLastAddedSerial("");
       }
+      setRemoveSerialTarget("");
       await refreshSelected(selectedBox.boxNo);
       focusSerialInput();
     } catch (e) {
       setModalError(errMsg(e, t("shipping.pack.removeSerialError")));
       focusSerialInput();
     }
-  }, [selectedBox, lastAddedSerial, refreshSelected, focusSerialInput, t]);
+  }, [selectedBox, removeSerialTarget, lastAddedSerial, refreshSelected, focusSerialInput, t]);
 
   const handleCloseBox = useCallback(async (box: Box) => {
     setPageError("");
@@ -345,7 +347,7 @@ export default function PackPage() {
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={() => handleRemoveSerial(lastAddedSerial)}
+                onClick={() => setRemoveSerialTarget(lastAddedSerial)}
                 disabled={selectedBox?.status !== "OPEN"}
               >
                 {t("common.cancel", "취소")}
@@ -383,7 +385,7 @@ export default function PackPage() {
             {modalSerials.map((serial, idx) => (
               <div key={serial} className="flex items-center justify-between py-1 px-2 hover:bg-background rounded">
                 <span className="text-sm font-mono">{idx + 1}. {serial}</span>
-                <button title={t("shipping.pack.removeSerial")} onClick={() => handleRemoveSerial(serial)}>
+                <button title={t("shipping.pack.removeSerial")} onClick={() => setRemoveSerialTarget(serial)}>
                   <XCircle className="w-4 h-4 text-text-muted cursor-pointer hover:text-red-500" />
                 </button>
               </div>
@@ -394,6 +396,14 @@ export default function PackPage() {
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={!!removeSerialTarget}
+        onClose={() => setRemoveSerialTarget("")}
+        onConfirm={handleRemoveSerial}
+        title={t("common.deleteConfirm", "삭제 확인")}
+        message={`${removeSerialTarget} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        variant="danger"
+      />
     </div>
   );
 }

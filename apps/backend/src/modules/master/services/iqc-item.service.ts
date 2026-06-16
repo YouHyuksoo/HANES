@@ -7,7 +7,7 @@
  * 2. findAll: 목록 조회 (itemCode, search 필터)
  */
 
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IqcItemMaster } from '../../../entities/iqc-item-master.entity';
@@ -95,6 +95,13 @@ export class IqcItemService {
   }
 
   async create(dto: CreateIqcItemDto, company?: string, plant?: string) {
+    const existing = await this.iqcItemRepository.findOne({
+      where: { itemCode: dto.itemCode, seq: dto.seq, ...this.tenantWhere(company, plant) },
+    });
+    if (existing) {
+      throw new ConflictException(`이미 등록된 IQC 검사항목입니다: ${dto.itemCode}/${dto.seq}`);
+    }
+
     const entity = this.iqcItemRepository.create({
       itemCode: dto.itemCode,
       seq: dto.seq,

@@ -31,7 +31,9 @@ export class IqcTemplateService {
     };
   }
 
-  async findAll(company?: string, plant?: string): Promise<IqcTemplate[]> {
+  async findAll(company?: string, plant?: string, page = 1, limit = 200) {
+    const skip = (page - 1) * limit;
+
     const qb = this.templateRepo.createQueryBuilder('t')
       .leftJoinAndSelect('t.items', 'i')
       .leftJoinAndSelect('i.inspItem', 'p')
@@ -41,7 +43,16 @@ export class IqcTemplateService {
     if (company) qb.andWhere('t.company = :company', { company });
     if (plant) qb.andWhere('t.plant = :plant', { plant });
 
-    return qb.getMany();
+    const countQb = this.templateRepo.createQueryBuilder('t');
+    if (company) countQb.andWhere('t.company = :company', { company });
+    if (plant) countQb.andWhere('t.plant = :plant', { plant });
+
+    const [data, total] = await Promise.all([
+      qb.skip(skip).take(limit).getMany(),
+      countQb.getCount(),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   async findById(templateId: string, company?: string, plant?: string): Promise<IqcTemplate> {

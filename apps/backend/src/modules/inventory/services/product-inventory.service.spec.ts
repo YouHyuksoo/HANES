@@ -135,6 +135,63 @@ describe('ProductInventoryService', () => {
     });
   });
 
+  describe('receiveFinishedFromWip', () => {
+    it('moves finished goods from WIP_MAIN to the FG warehouse instead of creating standalone FG_IN stock', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTransRepo.create.mockReturnValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          warehouseCode: 'WIP_MAIN',
+          itemCode: 'FG-001',
+          prdUid: 'PRD-001',
+          qty: 1,
+          availableQty: 1,
+          reservedQty: 0,
+          status: 'NORMAL',
+          company: 'C1',
+          plant: 'P1',
+        } as any)
+        .mockResolvedValueOnce(null);
+
+      await target.receiveFinishedFromWip({
+        warehouseId: 'FG_MAIN',
+        itemCode: 'FG-001',
+        itemType: 'FINISHED',
+        prdUid: 'PRD-001',
+        qty: 1,
+        orderNo: 'JO-1',
+        processCode: 'MASSY',
+        refType: 'PROD_RESULT',
+        refId: 'PR-1',
+        workerId: 'worker1',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      expect(mockTransRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        transType: 'WIP_OUT',
+        fromWarehouseId: 'WIP_MAIN',
+        toWarehouseId: 'FG_MAIN',
+        itemCode: 'FG-001',
+        prdUid: 'PRD-001',
+        qty: -1,
+        refType: 'PROD_RESULT',
+        refId: 'PR-1',
+      }));
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ProductStock,
+        { warehouseCode: 'WIP_MAIN', itemCode: 'FG-001', prdUid: 'PRD-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 0, availableQty: 0 }),
+      );
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+        ProductStock,
+        expect.objectContaining({ warehouseCode: 'FG_MAIN', itemCode: 'FG-001', prdUid: 'PRD-001', qty: 1, availableQty: 1 }),
+      );
+    });
+  });
+
   describe('cancelTransaction', () => {
     it('should throw NotFoundException when original not found', async () => {
       mockTransRepo.findOne.mockResolvedValue(null);

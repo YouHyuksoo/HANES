@@ -22,6 +22,28 @@ interface ApiErrorResponse {
   error?: string;
   [key: string]: unknown;
 }
+
+interface SqlDebugQuery {
+  sql?: string;
+  parameters?: unknown[];
+  tables?: string[];
+}
+
+interface SqlDebugPayload {
+  sql?: string;
+  parameters?: unknown[];
+  tables?: string[];
+  queries?: SqlDebugQuery[];
+}
+
+interface CachedSqlDebug {
+  sql: string;
+  parameters?: unknown[];
+  tables: string[];
+  sourceUrl?: string;
+  recordedAt: number;
+}
+
 import toast from "react-hot-toast";
 import { useErrorStore } from "@/stores/errorStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -39,6 +61,84 @@ declare module "axios" {
 
 const READONLY_HTTP_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const VIEWER_READONLY_MESSAGE = "조회 전용 권한은 데이터를 변경할 수 없습니다.";
+const SQL_DEBUG_CACHE_LIMIT = 80;
+const sqlDebugCache: CachedSqlDebug[] = [];
+
+const extractSqlTables = (sql: string): string[] => {
+  const tables = new Set<string>();
+  const tablePattern = /\b(?:FROM|JOIN)\s+(?:"([^"]+)"|([A-Z_][A-Z0-9_$#]*))/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = tablePattern.exec(sql)) !== null) {
+    const table = match[1] ?? match[2];
+    if (table) {
+      tables.add(table.toUpperCase());
+    }
+  }
+
+  return [...tables];
+};
+
+const formatActualSql = (entry: CachedSqlDebug): string => {
+  if (!entry.parameters?.length) {
+    return entry.sql;
+  }
+
+  return `${entry.sql}\n\n-- parameters\n-- ${JSON.stringify(entry.parameters, null, 2).replace(/\n/g, "\n-- ")}`;
+};
+
+const isCountOnlySql = (sql: string): boolean => /^\s*SELECT\s+COUNT\s*\(/i.test(sql);
+
+export const recordSqlDebugResponse = (sourceUrl?: string, debugSql?: SqlDebugPayload): void => {
+  if (!debugSql) {
+    return;
+  }
+
+  const queries = debugSql.queries?.length
+    ? debugSql.queries
+    : [{ sql: debugSql.sql, parameters: debugSql.parameters, tables: debugSql.tables }];
+
+  for (const query of queries) {
+    if (!query.sql) {
+      continue;
+    }
+
+    sqlDebugCache.push({
+      sql: query.sql,
+      parameters: query.parameters,
+      tables: query.tables?.length ? query.tables : extractSqlTables(query.sql),
+      sourceUrl,
+      recordedAt: Date.now(),
+    });
+  }
+
+  if (sqlDebugCache.length > SQL_DEBUG_CACHE_LIMIT) {
+    sqlDebugCache.splice(0, sqlDebugCache.length - SQL_DEBUG_CACHE_LIMIT);
+  }
+};
+
+export const getLatestActualSqlForPreview = (previewSql: string): string | null => {
+  const previewTables = extractSqlTables(previewSql);
+  if (!previewTables.length) {
+    return null;
+  }
+
+  const previewTableSet = new Set(previewTables);
+  let countFallback: CachedSqlDebug | null = null;
+
+  for (let idx = sqlDebugCache.length - 1; idx >= 0; idx -= 1) {
+    const entry = sqlDebugCache[idx];
+    if (entry.tables.some((table) => previewTableSet.has(table))) {
+      if (isCountOnlySql(entry.sql)) {
+        countFallback ??= entry;
+        continue;
+      }
+      return formatActualSql(entry);
+    }
+  }
+
+  return countFallback ? formatActualSql(countFallback) : null;
+};
 
 const getCurrentUserRole = (): string | undefined => {
   const storeRole = useAuthStore.getState().user?.role;
@@ -131,6 +231,7 @@ api.interceptors.request.use(
 // 응답 인터셉터 - 성공 메시지 + 에러 핸들링
 api.interceptors.response.use(
   (response) => {
+    recordSqlDebugResponse(response.config?.url, response.data?.meta?.debugSql);
     const method = response.config.method?.toUpperCase();
     const msg = response.data?.message;
     if (msg && method && ["POST", "PUT", "PATCH", "DELETE"].includes(method) && !response.config.skipSuccessToast) {

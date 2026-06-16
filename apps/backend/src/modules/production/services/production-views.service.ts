@@ -17,7 +17,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
-import { MatStock } from '../../../entities/mat-stock.entity';
+import { ProductStock } from '../../../entities/product-stock.entity';
 import {
   ProgressQueryDto,
   SampleInspectQueryDto,
@@ -34,8 +34,8 @@ export class ProductionViewsService {
     private readonly inspectResultRepository: Repository<InspectResult>,
     @InjectRepository(BoxMaster)
     private readonly boxMasterRepository: Repository<BoxMaster>,
-    @InjectRepository(MatStock)
-    private readonly stockRepository: Repository<MatStock>,
+    @InjectRepository(ProductStock)
+    private readonly stockRepository: Repository<ProductStock>,
   ) {}
 
   /**
@@ -199,33 +199,50 @@ export class ProductionViewsService {
     const { page = 1, limit = 10, itemType, search } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.stockRepository
+    const qb = this.stockRepository
       .createQueryBuilder('s')
-      .leftJoinAndSelect('s.part', 'p')
-      .where('s.itemType IN (:...itemTypes)', {
+      .leftJoin(
+        'ITEM_MASTERS',
+        'im',
+        'im.ITEM_CODE = s.ITEM_CODE AND im.COMPANY = s.COMPANY AND im.PLANT_CD = s.PLANT_CD',
+      )
+      .leftJoin(
+        'WAREHOUSES',
+        'wh',
+        'wh.WAREHOUSE_CODE = s.WAREHOUSE_CODE AND wh.COMPANY = s.COMPANY AND wh.PLANT_CD = s.PLANT_CD',
+      )
+      .select([
+        's.ITEM_CODE AS "itemCode"',
+        'im.ITEM_NAME AS "itemName"',
+        's.ITEM_TYPE AS "itemType"',
+        's.WAREHOUSE_CODE AS "whCode"',
+        'wh.WAREHOUSE_NAME AS "whName"',
+        's.QTY AS "qty"',
+        'im.UNIT AS "unit"',
+        's.PRD_UID AS "prdUid"',
+        's.UPDATED_AT AS "updatedAt"',
+      ])
+      .where('s.ITEM_TYPE IN (:...itemTypes)', {
         itemTypes: itemType ? [itemType] : ['SEMI_PRODUCT', 'FINISHED'],
-      })
-      .orderBy('s.updatedAt', 'DESC')
-      .skip(skip)
-      .take(limit);
+      });
 
     if (company) {
-      queryBuilder.andWhere('s.company = :company', { company });
+      qb.andWhere('s.COMPANY = :company', { company });
     }
     if (plant) {
-      queryBuilder.andWhere('s.plant = :plant', { plant });
+      qb.andWhere('s.PLANT_CD = :plant', { plant });
     }
 
     if (search) {
-      queryBuilder.andWhere('(p.itemCode ILIKE :search OR p.itemName ILIKE :search)', {
-        search: `%${search}%`,
+      qb.andWhere('(UPPER(s.ITEM_CODE) LIKE :searchUpper OR UPPER(im.ITEM_NAME) LIKE :searchUpper)', {
+        searchUpper: `%${search.toUpperCase()}%`,
       });
     }
 
-    const [data, total] = await Promise.all([
-      queryBuilder.getMany(),
-      queryBuilder.getCount(),
-    ]);
+    qb.orderBy('s.UPDATED_AT', 'DESC');
+
+    const total = await qb.getCount();
+    const data = await qb.offset(skip).limit(limit).getRawMany();
 
     return { data, total, page, limit };
   }

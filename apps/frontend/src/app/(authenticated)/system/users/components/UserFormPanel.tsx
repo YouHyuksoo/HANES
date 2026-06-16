@@ -13,7 +13,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Users, Camera, X } from "lucide-react";
-import { Button, Input, Select } from "@/components/ui";
+import { Button, ConfirmModal, Input, Select } from "@/components/ui";
 import { DepartmentSelect } from "@/components/shared";
 import { api } from "@/services/api";
 import ImageCropModal from "./ImageCropModal";
@@ -58,6 +58,7 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
   const [saving, setSaving] = useState(false);
 
   const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [photoDeleteConfirmOpen, setPhotoDeleteConfirmOpen] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState("");
   const [croppedImage, setCroppedImage] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -125,6 +126,7 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
   const handleRemovePhoto = () => {
     setCroppedImage(null);
     setPreviewUrl("");
+    setPhotoDeleteConfirmOpen(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -219,7 +221,7 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
                 )}
               </div>
               {previewUrl && (
-                <button onClick={handleRemovePhoto} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                <button onClick={() => setPhotoDeleteConfirmOpen(true)} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
                   <X className="w-3 h-3" />
                 </button>
               )}
@@ -285,6 +287,14 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
         onClose={() => setCropModalOpen(false)}
         imageSrc={tempImageSrc}
         onCropComplete={handleCropComplete}
+      />
+      <ConfirmModal
+        isOpen={photoDeleteConfirmOpen}
+        onClose={() => setPhotoDeleteConfirmOpen(false)}
+        onConfirm={handleRemovePhoto}
+        title={t("common.deleteConfirm", "삭제 확인")}
+        message={t("system.users.photoDeleteConfirm", "사용자 사진을 삭제하시겠습니까?")}
+        variant="danger"
       />
     </>
   );

@@ -90,11 +90,15 @@ import { SelfInspectResult } from '../../entities/self-inspect-result.entity';
 import { JobMaterialLot } from '../../entities/job-material-lot.entity';
 import { JobMaterialLotController } from './controllers/job-material-lot.controller';
 import { JobMaterialLotService } from './services/job-material-lot.service';
+import { ConsumableUsageMap } from '../../entities/consumable-usage-map.entity';
+import { ConsumableStock } from '../../entities/consumable-stock.entity';
+import { KioskConsumableController } from './controllers/kiosk-consumable.controller';
+import { KioskConsumableService } from './services/kiosk-consumable.service';
 import { WorkerMaster } from '../../entities/worker-master.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, WorkerMaster]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster]),
     InventoryModule,
     SystemModule,
   ],
@@ -109,6 +113,7 @@ import { WorkerMaster } from '../../entities/worker-master.entity';
     RepairController,
     SelfInspectController,
     JobMaterialLotController,
+    KioskConsumableController,
   ],
   providers: [
     JobOrderService,
@@ -124,6 +129,7 @@ import { WorkerMaster } from '../../entities/worker-master.entity';
     SimulationDataService,
     SelfInspectService,
     JobMaterialLotService,
+    KioskConsumableService,
   ],
   exports: [
     JobOrderService,

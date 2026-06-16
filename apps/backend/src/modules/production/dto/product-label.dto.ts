@@ -7,6 +7,7 @@
  * 2. source: 발행 경로 (PROD_RESULT: 생산실적, OQC_PASS: 통전검사 합격)
  * 3. qty: 발행 수량 (= prdUid 채번 수, 각 qty=1)
  */
+import { Transform } from 'class-transformer';
 import { IsInt, Min, Max, IsString, IsEnum } from 'class-validator';
 
 export enum LabelSource {
@@ -15,8 +16,9 @@ export enum LabelSource {
 }
 
 export class CreatePrdLabelsDto {
-  @IsInt()
-  sourceId: number;
+  @Transform(({ value }) => String(value))
+  @IsString()
+  sourceId: string;
 
   @IsEnum(LabelSource)
   source: LabelSource;

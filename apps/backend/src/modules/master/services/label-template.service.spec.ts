@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { LabelTemplate } from '../../../entities/label-template.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -65,6 +65,7 @@ describe('LabelTemplateService', () => {
 
   it('creates a template within tenant and clears default only in tenant', async () => {
     const created = { templateName: 'BOX', category: 'FG', company: 'C1', plant: 'P1' } as LabelTemplate;
+    mockRepo.findOne.mockResolvedValue(null);
     mockRepo.create.mockReturnValue(created);
     mockRepo.save.mockResolvedValue(created);
 
@@ -78,6 +79,17 @@ describe('LabelTemplateService', () => {
     }));
     expect(mockQb.andWhere).toHaveBeenCalledWith('company = :company', { company: 'C1' });
     expect(mockQb.andWhere).toHaveBeenCalledWith('plant = :plant', { plant: 'P1' });
+  });
+
+  it('rejects duplicate template name and category within tenant', async () => {
+    mockRepo.findOne.mockResolvedValue({ templateName: 'BOX', category: 'FG', company: 'C1', plant: 'P1' } as LabelTemplate);
+
+    await expect(target.create({
+      templateName: 'BOX',
+      category: 'FG',
+      designData: {},
+    } as any, 'C1', 'P1')).rejects.toThrow(ConflictException);
+    expect(mockRepo.save).not.toHaveBeenCalled();
   });
 
   it('updates a template within tenant and strips key columns from payload', async () => {

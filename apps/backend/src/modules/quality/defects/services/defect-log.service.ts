@@ -91,7 +91,7 @@ export class DefectLogService {
   }
 
   private applyOccurAtRangeToQb(
-    qb: ReturnType<Repository<DefectLog>['createQueryBuilder']>,
+    qb: SelectQueryBuilder<DefectLog>,
     alias: string,
     startDate?: string,
     endDate?: string,
@@ -524,7 +524,7 @@ export class DefectLogService {
       .addSelect('SUM(defect.qty)', 'totalQty');
     if (company) qb.andWhere('defect.company = :company', { company });
     if (plant) qb.andWhere('defect.plant = :plant', { plant });
-    this.applyOccurAtRangeToQb(qb as unknown as ReturnType<Repository<DefectLog>['createQueryBuilder']>, 'defect', startDate, endDate);
+    this.applyOccurAtRangeToQb(qb, 'defect', startDate, endDate);
 
     // TypeORM의 groupBy 사용
     const grouped = await qb
@@ -561,7 +561,7 @@ export class DefectLogService {
       .addSelect('SUM(defect.qty)', 'totalQty');
     if (company) qb.andWhere('defect.company = :company', { company });
     if (plant) qb.andWhere('defect.plant = :plant', { plant });
-    this.applyOccurAtRangeToQb(qb as unknown as ReturnType<Repository<DefectLog>['createQueryBuilder']>, 'defect', startDate, endDate);
+    this.applyOccurAtRangeToQb(qb, 'defect', startDate, endDate);
 
     const grouped = await qb
       .groupBy('defect.status')

@@ -275,6 +275,159 @@
     .dark .step::before { color: #c00055; }
     .dark .step span { color: var(--sub); }
 
+    .system-map {
+      display: grid;
+      grid-template-columns: 210px 1fr 300px;
+      gap: 18px;
+      align-items: stretch;
+      min-height: 400px;
+      margin-top: 12px;
+    }
+    .system-rail,
+    .mes-core,
+    .system-points {
+      border-top: 3px solid var(--black);
+      background: var(--wash);
+      box-shadow: 8px 8px 0 rgba(17, 23, 34, .12);
+    }
+    .system-rail {
+      display: grid;
+      grid-template-rows: auto repeat(5, 1fr);
+      border-left: 1px solid var(--black);
+      border-right: 1px solid var(--black);
+      border-bottom: 1px solid var(--black);
+    }
+    .system-title {
+      padding: 11px 12px;
+      background: var(--black);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 950;
+      text-align: center;
+    }
+    .system-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.25;
+      text-align: center;
+    }
+    .system-box small {
+      display: block;
+      margin-top: 4px;
+      color: var(--sub);
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .mes-core {
+      position: relative;
+      padding: 38px 24px 18px;
+      border: 2px solid var(--black);
+    }
+    .mes-core::before {
+      content: "Manufacturing Execution System";
+      position: absolute;
+      left: 22px;
+      top: 12px;
+      color: var(--black);
+      font-size: 17px;
+      font-weight: 950;
+    }
+    .core-grid {
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .core-node {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 78px;
+      padding: 11px 13px;
+      border: 2px solid var(--black);
+      background: #fbfaf6;
+    }
+    .core-node.primary {
+      background: var(--black);
+      color: #fff;
+      border-bottom: 5px solid var(--amber);
+    }
+    .core-node b {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 950;
+    }
+    .core-node span {
+      color: var(--sub);
+      font-size: 11px;
+      line-height: 1.35;
+      font-weight: 780;
+      word-break: keep-all;
+    }
+    .core-node.primary span { color: #e8edf2; }
+    .core-node::after {
+      content: "";
+      position: absolute;
+      right: -13px;
+      top: 50%;
+      width: 13px;
+      border-top: 2px solid var(--black);
+    }
+    .core-node:nth-child(3n)::after { display: none; }
+    .core-node:nth-child(3),
+    .core-node:nth-child(6),
+    .core-node:nth-child(9) {
+      border-right-color: var(--coral);
+    }
+    .system-points {
+      padding: 0;
+      border-left: 1px solid var(--black);
+      border-right: 1px solid var(--black);
+      border-bottom: 1px solid var(--black);
+    }
+    .point-block {
+      padding: 14px 17px;
+      border-top: 1px solid var(--line);
+    }
+    .point-block:first-child { border-top: 0; background: #dce4e6; }
+    .point-block:nth-child(2) { background: #efe4d5; }
+    .point-block:nth-child(3) { background: #e1e5d8; }
+    .point-block:nth-child(4) { background: #ead8c9; }
+    .point-block b {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--black);
+      font-size: 14px;
+      font-weight: 950;
+    }
+    .point-block span {
+      display: block;
+      color: var(--sub);
+      font-size: 12px;
+      line-height: 1.42;
+      font-weight: 780;
+      word-break: keep-all;
+    }
+    .system-caption {
+      margin-top: 9px;
+      padding: 10px 15px;
+      background: var(--black);
+      color: #fff;
+      border-bottom: 5px solid var(--amber);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
     .lane {
       display: grid;
       grid-template-columns: 168px 1fr;
@@ -541,7 +694,50 @@
 
     <section class="slide" id="s04">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>04 / 기준정보 1</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>04 / 기능흐름도</span></header>
+        <main>
+          <div class="kicker">FUNCTION FLOW</div>
+          <h2>HANES MES 기능흐름도</h2>
+          <p class="lead">ERP 계획부터 자재 LOT, 생산 실적, 검사 품질, 출하 추적까지 한 흐름으로 연결</p>
+          <div class="system-map">
+            <div class="system-rail">
+              <div class="system-title">Enterprise System</div>
+              <div class="system-box">ERP<small>계획 · 구매 · 영업</small></div>
+              <div class="system-box">APS<small>생산계획 수립</small></div>
+              <div class="system-box">QMS<small>품질 기준 · 클레임</small></div>
+              <div class="system-box">설비/PLC<small>가동 · 점검 정보</small></div>
+              <div class="system-box">PDA/현장<small>스캔 · 실적 입력</small></div>
+            </div>
+            <div class="mes-core">
+              <div class="core-grid">
+                <div class="core-node"><b>기준정보</b><span>품목 · BOM · 공정 · 라우팅 · 라벨</span></div>
+                <div class="core-node"><b>생산계획</b><span>작업지시 · 라인 · 일정 기준</span></div>
+                <div class="core-node"><b>자재관리</b><span>입하 · IQC · 입고 · 불출</span></div>
+                <div class="core-node primary"><b>생산진행</b><span>키오스크 · 작업자 · LOT 소비/생산</span></div>
+                <div class="core-node"><b>검사관리</b><span>초/중/종물 · 의뢰검사 · 판정</span></div>
+                <div class="core-node"><b>품질관리</b><span>불량등록 · 조치 · 재검사</span></div>
+                <div class="core-node"><b>설비관리</b><span>설비마스터 · 일상점검 · 이력</span></div>
+                <div class="core-node"><b>출하관리</b><span>포장 · 박스 · 팔레트 · 출하확정</span></div>
+                <div class="core-node primary"><b>추적관리</b><span>제품 → 공정 → 검사 → 자재 LOT</span></div>
+              </div>
+            </div>
+            <div class="system-points">
+              <div class="system-title">MES 주요 기능</div>
+              <div class="point-block"><b>생산 실행 통제</b><span>작업지시, 라우팅, 현장 스캔을 기준으로 생산 흐름을 제어</span></div>
+              <div class="point-block"><b>LOT 추적성 확보</b><span>자재 입하부터 제품 출하까지 이력 연결과 역추적 지원</span></div>
+              <div class="point-block"><b>검사 품질 내재화</b><span>검사 기준, 결과, 불량 조치, 재검사 이력을 같은 흐름에 기록</span></div>
+              <div class="point-block"><b>현장 데이터 정확도</b><span>PDA/키오스크 입력으로 실적, 재고, 출하 데이터를 즉시 반영</span></div>
+            </div>
+          </div>
+          <div class="system-caption">하네스 제조 특성상 다품번 BOM, 공정별 검사, LOT 혼입 방지가 핵심이며 HANES MES는 이 흐름을 한 시스템에서 연결합니다.</div>
+        </main>
+        <footer><span>기능흐름도</span><span>Enterprise - MES - 현장/품질/출하</span></footer>
+      </div>
+    </section>
+
+    <section class="slide" id="s05">
+      <div class="canvas white">
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>05 / 기준정보 1</span></header>
         <main>
           <div class="kicker">MASTER DATA</div>
           <h2>기준정보 관리<br>생산 기준 정비</h2>
@@ -559,9 +755,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s05">
+    <section class="slide" id="s06">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>05 / 기준정보 2</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>06 / 기준정보 2</span></header>
         <main>
           <div class="kicker">ROUTING AND SHOP FLOOR RULES</div>
           <h2>라우팅 기준<br>작업·라벨 기준 관리</h2>
@@ -578,9 +774,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s06">
+    <section class="slide" id="s07">
       <div class="canvas soft">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>06 / 자재 입하</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>07 / 자재 입하</span></header>
         <main class="split wide-left">
           <div class="stack top">
             <div>
@@ -602,9 +798,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s07">
+    <section class="slide" id="s08">
       <div class="canvas soft">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>07 / IQC 예외 처리</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>08 / IQC 예외 처리</span></header>
         <main class="split wide-left">
           <div class="stack top">
             <div>
@@ -626,9 +822,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s08">
+    <section class="slide" id="s09">
       <div class="canvas soft">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>08 / 자재 LOT 식별</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>09 / 자재 LOT 식별</span></header>
         <main class="split">
           <div class="stack">
             <div>
@@ -649,9 +845,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s09">
+    <section class="slide" id="s10">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>09 / 자재 불출</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>10 / 자재 불출</span></header>
         <main>
           <div class="kicker">MATERIAL ISSUE</div>
           <h2>작업지시 기반<br>자재 불출 처리</h2>
@@ -673,9 +869,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s10">
+    <section class="slide" id="s11">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>10 / 폐기와 유수명</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>11 / 폐기와 유수명</span></header>
         <main>
           <div class="kicker">DISPOSAL AND SHELF LIFE</div>
           <h2>자재 상태 관리<br>폐기·유수명·분할병합</h2>
@@ -697,9 +893,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s11">
+    <section class="slide" id="s12">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>11 / LOT 계보</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>12 / LOT 계보</span></header>
         <main class="split">
           <div class="stack">
             <div>
@@ -723,9 +919,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s12">
+    <section class="slide" id="s13">
       <div class="canvas soft">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>12 / 작업지시</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>13 / 작업지시</span></header>
         <main>
           <div class="kicker">PRODUCTION ORDER</div>
           <h2>작업지시 관리<br>라우팅·설비 지정</h2>
@@ -746,9 +942,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s13">
+    <section class="slide" id="s14">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>13 / 현장 키오스크</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>14 / 현장 키오스크</span></header>
         <main class="split wide-left">
           <figure class="screen"><img src="assets/02-input-kiosk.png" alt="실적입력 키오스크"><figcaption>실적입력 키오스크 <small>작업자 스캔 흐름</small></figcaption></figure>
           <div class="stack">
@@ -770,9 +966,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s14">
+    <section class="slide" id="s15">
       <div class="canvas soft">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>14 / 공정검사</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>15 / 공정검사</span></header>
         <main>
           <div class="kicker">PROCESS INSPECTION INTERLOCK</div>
           <h2>공정검사 관리<br>초물·중물·종물</h2>
@@ -791,9 +987,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s15">
+    <section class="slide" id="s16">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>15 / 설비관리</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>16 / 설비관리</span></header>
         <main class="split">
           <div class="stack">
             <div>
@@ -814,9 +1010,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s16">
+    <section class="slide" id="s17">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>16 / 일상점검</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>17 / 일상점검</span></header>
         <main class="split">
           <div class="stack">
             <div>
@@ -837,9 +1033,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s17">
+    <section class="slide" id="s18">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>17 / 불량 조치</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>18 / 불량 조치</span></header>
         <main class="split wide-left">
           <figure class="screen"><img src="assets/04-quality-defect.png" alt="불량등록관리"><figcaption>불량등록관리 <small>원인/조치/재검증</small></figcaption></figure>
           <div class="stack">
@@ -860,9 +1056,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s18">
+    <section class="slide" id="s19">
       <div class="canvas soft">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>18 / 포장과 출하</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>19 / 포장과 출하</span></header>
         <main class="split">
           <div class="stack">
             <div>
@@ -885,9 +1081,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s19">
+    <section class="slide" id="s20">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>19 / 역추적</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>20 / 역추적</span></header>
         <main>
           <div class="kicker">END-TO-END TRACEABILITY</div>
           <h2>제품 역추적<br>공정·검사·자재 LOT</h2>
@@ -904,9 +1100,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s20">
+    <section class="slide" id="s21">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>20 / 기준정보 갤러리 1</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>21 / 기준정보 갤러리 1</span></header>
         <main>
           <div class="kicker">MASTER SCREEN GALLERY</div>
           <h2>기준정보 화면 갤러리<br>품목·설비·공정 기준</h2>
@@ -923,9 +1119,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s21">
+    <section class="slide" id="s22">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>21 / 기준정보 갤러리 2</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>22 / 기준정보 갤러리 2</span></header>
         <main>
           <div class="kicker">MASTER SCREEN GALLERY</div>
           <h2>기준정보 화면 갤러리<br>라우팅·작업 기준</h2>
@@ -942,9 +1138,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s22">
+    <section class="slide" id="s23">
       <div class="canvas white">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>22 / 자재와 재고 갤러리</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>23 / 자재와 재고 갤러리</span></header>
         <main>
           <div class="kicker">INVENTORY SCREEN GALLERY</div>
           <h2>자재/재고 화면 갤러리<br>LOT 재고·수불·실사</h2>
@@ -960,9 +1156,9 @@
       </div>
     </section>
 
-    <section class="slide" id="s23">
+    <section class="slide" id="s24">
       <div class="canvas dark">
-        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>23 / 시연 마무리</span></header>
+        <header><span class="brand"><span class="mark"></span>HANES MES</span><span>24 / 시연 마무리</span></header>
         <main>
           <div class="kicker">DEMO PATH</div>
           <h2>시연 흐름<br>실제 화면·LOT 이력</h2>
@@ -1036,3 +1232,4 @@
   </script>
 </body>
 </html>
+

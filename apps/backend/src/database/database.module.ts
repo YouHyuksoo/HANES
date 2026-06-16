@@ -12,6 +12,7 @@
 import { Module, Global, Logger } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { SqlDebugTypeormLogger } from '../common/sql-debug/typeorm-sql-debug.logger';
 
 @Global()
 @Module({
@@ -36,8 +37,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             ? { sid: configService.get<string>('ORACLE_SID') }
             : { serviceName: configService.get<string>('ORACLE_SERVICE_NAME', 'JSHNSMES') }),
           synchronize: false,
-          logging: configService.get<string>('NODE_ENV') !== 'production',
-          logger: 'advanced-console',
+          logging: ['query', 'error', 'warn'],
+          logger: new SqlDebugTypeormLogger(),
           maxQueryExecutionTime: 3000,
           entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
           migrations: [__dirname + '/migrations/*{.ts,.js}'],

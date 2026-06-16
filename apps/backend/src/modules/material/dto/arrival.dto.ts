@@ -159,6 +159,21 @@ export class ArrivalQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @ApiPropertyOptional({ description: '입하 수불 유형 (ARRIVAL_IN, ARRIVAL_CANCEL)' })
+  @IsOptional()
+  @IsString()
+  transType?: string;
+
+  @ApiPropertyOptional({ description: '자재 고유 식별자(MAT_UID) 부분 검색' })
+  @IsOptional()
+  @IsString()
+  matUid?: string;
+
+  @ApiPropertyOptional({ description: '입하번호 부분 검색' })
+  @IsOptional()
+  @IsString()
+  arrivalNo?: string;
 }
 
 /** 입하재고현황 조회 DTO */

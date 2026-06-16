@@ -1,0 +1,20 @@
+-- 소모품을 일반 자재로 통합 처리 (자재와 100% 동일: 입하 재고 + 실적 시 auto-issue 차감 + 수불)
+-- 변경 배경: 소모품 전용 스캔/누적(JOB_CONSUMABLE_LOTS/CONSUMABLE_USAGE)을 폐기하고,
+--           소모품도 자재처럼 JOB_MATERIAL_LOTS 스캔 + MAT_STOCKS 재고 + auto-issue 차감으로 통일.
+-- 1) 소모품 전용 테이블 폐기
+DROP TABLE JOB_CONSUMABLE_LOTS
+/
+DROP TABLE CONSUMABLE_USAGE
+/
+-- 2) 소모품 입하 LOT(MC260616*)을 자재 재고(MAT_STOCKS, 원자재창고 W001)로 적재
+--    → 실적 완료 시 auto-issue가 BOM 소요량(qtyPer × 생산수량)만큼 차감 + 수불(STOCK_TRANSACTIONS)
+INSERT INTO MAT_STOCKS (
+  WAREHOUSE_CODE, ITEM_CODE, MAT_UID, QTY, RESERVED_QTY, AVAILABLE_QTY,
+  COMPANY, PLANT_CD, CREATED_AT, UPDATED_AT
+)
+SELECT 'W001', l.ITEM_CODE, l.MAT_UID, l.INIT_QTY, 0, l.INIT_QTY,
+       l.COMPANY, l.PLANT_CD, SYSTIMESTAMP, SYSTIMESTAMP
+FROM MAT_LOTS l
+WHERE l.MAT_UID LIKE 'MC260616%'
+  AND NOT EXISTS (SELECT 1 FROM MAT_STOCKS s WHERE s.MAT_UID = l.MAT_UID)
+/

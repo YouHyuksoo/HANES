@@ -19,6 +19,7 @@ interface IqcTableProps {
   onInspect: (item: IqcItem) => void;
   toolbarLeft?: ReactNode;
   isLoading?: boolean;
+  sqlQuery?: string;
 }
 
 const formatDateOnly = (value?: string | null) => {
@@ -34,7 +35,7 @@ const METHOD_COLORS: Record<string, string> = {
   SKIP: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
 };
 
-export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: IqcTableProps) {
+export default function IqcTable({ data, onInspect, toolbarLeft, isLoading, sqlQuery }: IqcTableProps) {
   const { t } = useTranslation();
   const iqcInspectMethodMap = useComCodeMap('IQC_INSPECT_METHOD');
   const columns = useMemo<ColumnDef<IqcItem>[]>(
@@ -129,5 +130,5 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: Iq
   );
 
   return <DataGrid
-      sqlQuery={`SELECT *\nFROM MAT_ARRIVALS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`} data={data} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName="iqc_inspection" toolbarLeft={toolbarLeft} />;
+      sqlQuery={sqlQuery} data={data} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName="iqc_inspection" toolbarLeft={toolbarLeft} />;
 }

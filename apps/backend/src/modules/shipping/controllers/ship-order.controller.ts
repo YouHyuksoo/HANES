@@ -12,6 +12,7 @@
  * - POST   /shipping/orders       출하지시 생성
  * - PUT    /shipping/orders/:id   출하지시 수정
  * - DELETE /shipping/orders/:id   출하지시 삭제
+ * - POST   /shipping/orders/:id/cancel-ship-box  박스 단건 출하 취소
  */
 
 import {
@@ -96,5 +97,14 @@ export class ShipOrderController {
   async shipBox(@Param('id') id: string, @Body() dto: ShipBoxDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.shipOrderService.shipBox(id, dto, company, plant);
     return ResponseUtil.success(data, '박스가 출하되었습니다.');
+  }
+
+  @Post(':id/cancel-ship-box')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '박스 단건 출하 취소', description: '출하된 박스를 출하 직전 상태(CLOSED/PACKED)로 되돌리고 제품재고를 복원한다.' })
+  @ApiParam({ name: 'id', description: '출하지시 번호' })
+  async cancelShipBox(@Param('id') id: string, @Body() dto: ShipBoxDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.cancelShipBox(id, dto, company, plant);
+    return ResponseUtil.success(data, '박스 출하가 취소되었습니다.');
   }
 }

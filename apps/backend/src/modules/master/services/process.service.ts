@@ -176,7 +176,7 @@ export class ProcessService {
 
     if (existing) {
       if (existing.useYn === 'Y') {
-        return existing;
+        throw new ConflictException(`이미 배치된 설비입니다: ${equipCode}`);
       }
       await this.processEquipmentRepository.update(
         { processCode, equipCode, ...this.tenantWhere(company, plant) },

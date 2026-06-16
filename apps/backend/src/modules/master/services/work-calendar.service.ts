@@ -359,54 +359,44 @@ export class WorkCalendarService {
   async getSummary(calendarId: string, company?: string, plant?: string) {
     await this.findById(calendarId, company, plant);
 
-    const days = await this.dayRepo.find({
-      where: { calendarId, ...this.tenantWhere(company, plant) },
-      order: { workDate: 'ASC' },
-    });
+    const qb = this.dayRepo.createQueryBuilder('d')
+      .select("TO_CHAR(d.workDate, 'YYYY-MM')", 'month')
+      .addSelect("SUM(CASE WHEN d.dayType = 'WORK' THEN 1 ELSE 0 END)", 'workDays')
+      .addSelect("SUM(CASE WHEN d.dayType = 'OFF' THEN 1 ELSE 0 END)", 'offDays')
+      .addSelect("SUM(CASE WHEN d.dayType = 'HALF' THEN 1 ELSE 0 END)", 'halfDays')
+      .addSelect("SUM(CASE WHEN d.dayType = 'SPECIAL' THEN 1 ELSE 0 END)", 'specialDays')
+      .addSelect('SUM(NVL(d.workMinutes, 0))', 'workMinutes')
+      .addSelect('SUM(NVL(d.otMinutes, 0))', 'otMinutes')
+      .where('d.calendarId = :calendarId', { calendarId })
+      .groupBy("TO_CHAR(d.workDate, 'YYYY-MM')")
+      .orderBy("TO_CHAR(d.workDate, 'YYYY-MM')", 'ASC');
 
-    /** 월별 그룹핑 */
-    const monthlyMap = new Map<string, {
-      workDays: number; offDays: number; halfDays: number; specialDays: number;
-      workMinutes: number; otMinutes: number;
-    }>();
+    if (company) qb.andWhere('d.company = :company', { company });
+    if (plant) qb.andWhere('d.plant = :plant', { plant });
 
-    for (const day of days) {
-      const dateStr = typeof day.workDate === 'string' ? day.workDate : String(day.workDate);
-      const month = dateStr.substring(0, 7); // YYYY-MM
-      if (!monthlyMap.has(month)) {
-        monthlyMap.set(month, {
-          workDays: 0, offDays: 0, halfDays: 0, specialDays: 0,
-          workMinutes: 0, otMinutes: 0,
-        });
-      }
-      const m = monthlyMap.get(month)!;
+    const rows = await qb.getRawMany();
 
-      switch (day.dayType) {
-        case 'WORK': m.workDays++; break;
-        case 'OFF': m.offDays++; break;
-        case 'HALF': m.halfDays++; break;
-        case 'SPECIAL': m.specialDays++; break;
-      }
-      m.workMinutes += day.workMinutes ?? 0;
-      m.otMinutes += day.otMinutes ?? 0;
-    }
+    const monthly = rows.map((r) => ({
+      month: r.month as string,
+      workDays: parseInt(r.workDays ?? '0', 10),
+      offDays: parseInt(r.offDays ?? '0', 10),
+      halfDays: parseInt(r.halfDays ?? '0', 10),
+      specialDays: parseInt(r.specialDays ?? '0', 10),
+      workMinutes: parseInt(r.workMinutes ?? '0', 10),
+      otMinutes: parseInt(r.otMinutes ?? '0', 10),
+    }));
 
-    const monthly = Array.from(monthlyMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, stats]) => ({ month, ...stats }));
-
-    const yearly = {
-      workDays: 0, offDays: 0, halfDays: 0, specialDays: 0,
-      workMinutes: 0, otMinutes: 0,
-    };
-    for (const m of monthly) {
-      yearly.workDays += m.workDays;
-      yearly.offDays += m.offDays;
-      yearly.halfDays += m.halfDays;
-      yearly.specialDays += m.specialDays;
-      yearly.workMinutes += m.workMinutes;
-      yearly.otMinutes += m.otMinutes;
-    }
+    const yearly = monthly.reduce(
+      (acc, m) => ({
+        workDays: acc.workDays + m.workDays,
+        offDays: acc.offDays + m.offDays,
+        halfDays: acc.halfDays + m.halfDays,
+        specialDays: acc.specialDays + m.specialDays,
+        workMinutes: acc.workMinutes + m.workMinutes,
+        otMinutes: acc.otMinutes + m.otMinutes,
+      }),
+      { workDays: 0, offDays: 0, halfDays: 0, specialDays: 0, workMinutes: 0, otMinutes: 0 },
+    );
 
     return { monthly, yearly };
   }

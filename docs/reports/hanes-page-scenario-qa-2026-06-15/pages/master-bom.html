@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>BOM관리 페이지 상세 시나리오 QA</title>
+  <style>
+    body { margin: 0; font-family: Arial, "Malgun Gothic", sans-serif; background: #f5f7fb; color: #111827; }
+    header { background: #172033; color: #fff; padding: 28px 34px; }
+    main { padding: 24px 34px 48px; }
+    h1 { margin: 0 0 8px; font-size: 26px; }
+    h2 { margin: 0 0 12px; font-size: 20px; }
+    h3 { margin: 0 0 6px; font-size: 19px; }
+    h4 { margin: 14px 0 8px; font-size: 14px; }
+    p, li { line-height: 1.55; }
+    code { background: #edf2f7; border-radius: 4px; padding: 2px 5px; }
+    pre { margin: 0; white-space: pre-wrap; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #e1e6ef; padding: 8px 10px; vertical-align: top; text-align: left; }
+    th { background: #f8fafc; }
+    img { display: block; width: 100%; }
+    figure { margin: 14px 0 0; border: 1px solid #d6deeb; border-radius: 8px; overflow: hidden; background: #fff; }
+    figcaption { padding: 10px 12px; border-bottom: 1px solid #d6deeb; font-weight: 700; background: #f8fafc; }
+    .card, .step { background: #fff; border: 1px solid #d6deeb; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .metric { background: #f8fafc; border: 1px solid #d6deeb; border-radius: 8px; padding: 12px; }
+    .metric strong { display: block; font-size: 22px; }
+    .pass { color: #047857; font-weight: 700; }
+    .warn { color: #b45309; font-weight: 700; }
+    .step-head { display: flex; justify-content: space-between; gap: 18px; border-bottom: 1px solid #e1e6ef; padding-bottom: 12px; margin-bottom: 12px; }
+    .eyebrow { color: #64748b; font-size: 12px; font-weight: 700; }
+    .cols { display: grid; grid-template-columns: minmax(0, .9fr) minmax(380px, 1.1fr); gap: 14px; }
+    .toc a { color: #1d4ed8; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    @media (max-width: 900px) { main { padding: 16px; } header { padding: 20px 16px; } .cols, .step-head { display: block; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BOM관리 페이지 상세 시나리오 QA</h1>
+    <div>대상: <code>http://localhost:3002/master/bom</code> / 부모: <code>HNS02</code> / 테스트 자품목: <code>FBOMC-260615112131</code> / 최종 결과: <span class="pass">PASS</span></div>
+  </header>
+  <main>
+    <section class="card">
+      <h2>요약</h2>
+      <div class="metrics">
+        <div class="metric"><strong>13</strong>실행 단계</div>
+        <div class="metric"><strong>38</strong>기록 API 호출</div>
+        <div class="metric"><strong>11</strong>DB 검증</div>
+        <div class="metric"><strong>13</strong>화면 증적</div>
+      </div>
+      <p>조회, 검색, 신규/수정/삭제 가능 여부, 저장 검증, DB/API 확인, 화면 재조회 절차를 BOM관리 한 화면 단위 시나리오로 실행했습니다. 테스트 데이터는 삭제 후 잔여 0건까지 확인했습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>화면 기능 목록</h2>
+      <table>
+        <thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead>
+        <tbody><tr><td>초기 조회</td><td>GET /master/boms/parents + GET /master/boms/hierarchy/:parent</td><td class="pass">실행</td><td>부모 목록 및 BOM 트리 로딩 확인</td></tr><tr><td>검색</td><td>제품/반제품 목록 검색 입력</td><td class="pass">실행</td><td>HNS02 기준 검색 후 부모 선택</td></tr><tr><td>기준일자</td><td>date input + refresh</td><td class="pass">실행</td><td>2026-06-15 기준으로 유효 BOM 조회</td></tr><tr><td>폼 다운로드</td><td>GET /master/boms/template</td><td class="pass">실행</td><td>템플릿 다운로드 응답 확인</td></tr><tr><td>내보내기</td><td>GET /master/boms/export?parentItemCode=...</td><td class="pass">실행</td><td>선택 부모 BOM export 다운로드 응답 확인</td></tr><tr><td>엑셀 업로드</td><td>업로드 모달</td><td class="warn">화면 확인</td><td>파일 변형 없이 모달/파일 선택 프로세스 확인</td></tr><tr><td>BOM 추가</td><td>BOM 추가 모달 + POST /master/boms</td><td class="pass">실행</td><td>화면 저장, API 201, DB row 확인</td></tr><tr><td>중복 저장 방어</td><td>동일 모품목/자품목/리비전 추가</td><td class="pass">실행</td><td>409 응답으로 중복 방어 확인</td></tr><tr><td>BOM 수정</td><td>행 수정 아이콘 + PUT /master/boms/:id</td><td class="pass">실행</td><td>소요량/순서/비고 변경 및 DB 확인</td></tr><tr><td>라우팅 패널</td><td>행 라우팅 아이콘</td><td class="pass">실행</td><td>선택 품목 라우팅 패널과 조회 API 확인</td></tr><tr><td>BOM 삭제</td><td>행 삭제 아이콘 + DELETE /master/boms/:id</td><td class="pass">실행</td><td>화면 재조회 및 DB 0건 확인</td></tr></tbody>
+      </table>
+    </section>
+
+    <section class="card toc">
+      <h2>시나리오 목차</h2>
+      <ol><li><a href="#initial-load">STEP 01 초기 조회</a></li><li><a href="#search-parent">STEP 02 검색 및 부모 선택</a></li><li><a href="#download-template">STEP 03 폼 다운로드</a></li><li><a href="#upload-modal">STEP 04 엑셀 업로드 모달</a></li><li><a href="#setup-child-part">STEP 05 테스트 자품목 준비</a></li><li><a href="#export-selected-parent">STEP 06 선택 부모 BOM 내보내기</a></li><li><a href="#create-bom">STEP 07 BOM 신규 등록 및 저장 검증</a></li><li><a href="#created-requery">STEP 08 등록 후 화면 재조회</a></li><li><a href="#duplicate-red">STEP 09 중복 등록 방어</a></li><li><a href="#update-bom">STEP 10 BOM 수정 및 저장 검증</a></li><li><a href="#routing-panel">STEP 11 라우팅 패널 확인</a></li><li><a href="#delete-bom">STEP 12 BOM 삭제 및 저장 검증</a></li><li><a href="#after-delete-requery">STEP 13 삭제 후 화면 재조회 및 정리</a></li></ol>
+    </section>
+
+    
+        <article class="step" id="initial-load">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 01</div>
+              <h3>초기 조회</h3>
+              <p>BOM관리 화면 진입과 부모 목록/트리 API 호출을 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>브라우저 로그인 세션을 구성한다.</li><li>/master/bom 경로로 이동한다.</li><li>BOM관리 제목과 제품/반제품 목록, BOM 자재 구조 영역을 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/health</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/db-info</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/health</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/db-info</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/db-info</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/auth/me</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/system/configs/active</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/parents?effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/menu-categories/tree</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/hierarchy/HNS02?depth=10&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/com-codes/all-active</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          <section><h4>DB 확인</h4><table><thead><tr><th>검증</th><th>SQL</th><th>결과</th></tr></thead><tbody>
+              <tr>
+                <td>선정 부모 BOM 건수 확인</td>
+                <td><code>SELECT COUNT(*) AS CNT FROM BOM_MASTERS WHERE COMPANY=&#39;40&#39; AND PLANT_CD=&#39;1000&#39; AND PARENT_ITEM_CODE=&#39;HNS02&#39; AND USE_YN=&#39;Y&#39;</code></td>
+                <td><pre>[
+  {
+    &quot;CNT&quot;: 7
+  }
+]</pre></td>
+              </tr>
+              <tr>
+                <td>테스트 BOM 사전 잔여 확인</td>
+                <td><code>SELECT COUNT(*) AS CNT FROM BOM_MASTERS WHERE COMPANY = &#39;40&#39; AND PLANT_CD = &#39;1000&#39; AND PARENT_ITEM_CODE = &#39;HNS02&#39; AND CHILD_ITEM_CODE = &#39;FBOMC-260615112131&#39; AND REVISION = &#39;A&#39;</code></td>
+                <td><pre>[
+  {
+    &quot;CNT&quot;: 0
+  }
+]</pre></td>
+              </tr></tbody></table></section>
+          <figure><figcaption>초기 조회 화면</figcaption><a href="../screenshots/master-bom/01-initial-load.png"><img src="../screenshots/master-bom/01-initial-load.png" alt="초기 조회 화면"></a></figure>
+        </article>
+
+        <article class="step" id="search-parent">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 02</div>
+              <h3>검색 및 부모 선택</h3>
+              <p>제품/반제품 목록에서 부모 품목을 검색하고 선택합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>검색창에 HNS02를 입력한다.</li><li>검색 결과에서 부모 품목 행을 클릭한다.</li><li>선택 부모 기준 BOM 트리가 재조회되는지 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/parents?search=HNS02&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/hierarchy/HNS02?depth=10&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          
+          <figure><figcaption>부모 검색 및 선택 결과</figcaption><a href="../screenshots/master-bom/02-search-parent.png"><img src="../screenshots/master-bom/02-search-parent.png" alt="부모 검색 및 선택 결과"></a></figure>
+        </article>
+
+        <article class="step" id="download-template">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 03</div>
+              <h3>폼 다운로드</h3>
+              <p>BOM 템플릿 다운로드 버튼의 API 호출과 파일 응답을 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>상단 폼 다운로드 버튼을 클릭한다.</li><li>브라우저 다운로드 이벤트와 GET /master/boms/template 호출을 확인한다.</li></ol>
+              <h4>결과 메모</h4><ul><li>다운로드 파일명: BOM_template.xlsx</li></ul>
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/template</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          
+          <figure><figcaption>폼 다운로드 실행 후 화면</figcaption><a href="../screenshots/master-bom/03-download-template.png"><img src="../screenshots/master-bom/03-download-template.png" alt="폼 다운로드 실행 후 화면"></a></figure>
+        </article>
+
+        <article class="step" id="upload-modal">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 04</div>
+              <h3>엑셀 업로드 모달</h3>
+              <p>엑셀 업로드 프로세스의 화면 구성과 파일 선택 단계를 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>상단 엑셀 업로드 버튼을 클릭한다.</li><li>BOM 엑셀 업로드 모달의 파일 선택, 미리보기/업로드 영역을 확인한다.</li><li>파일 데이터 변형 없이 모달을 닫는다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody><tr><td colspan="4">이 단계에서 신규 API 호출 없음</td></tr></tbody>
+              </table>
+            </section>
+          </div>
+          
+          <figure><figcaption>엑셀 업로드 모달</figcaption><a href="../screenshots/master-bom/04-upload-modal.png"><img src="../screenshots/master-bom/04-upload-modal.png" alt="엑셀 업로드 모달"></a></figure>
+        </article>
+
+        <article class="step" id="setup-child-part">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 05</div>
+              <h3>테스트 자품목 준비</h3>
+              <p>BOM 화면에서 선택할 임시 자품목을 API로 생성하고 DB에 존재하는지 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>테스트 자품목 잔여를 삭제한다.</li><li>POST /master/parts로 임시 RAW_MATERIAL 자품목을 생성한다.</li><li>ITEM_MASTERS에서 생성 row를 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>direct-api</td>
+                <td><code>DELETE</code></td>
+                <td><code>/api/v1/master/parts/FBOMC-260615112131</code></td>
+                <td class="pass">404</td>
+              </tr>
+              <tr>
+                <td>direct-api</td>
+                <td><code>POST</code></td>
+                <td><code>/api/v1/master/parts</code></td>
+                <td class="pass">201</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          <section><h4>DB 확인</h4><table><thead><tr><th>검증</th><th>SQL</th><th>결과</th></tr></thead><tbody>
+              <tr>
+                <td>자품목 생성 DB 확인</td>
+                <td><code>SELECT COUNT(*) AS CNT FROM ITEM_MASTERS WHERE COMPANY = &#39;40&#39; AND PLANT_CD = &#39;1000&#39; AND ITEM_CODE = &#39;FBOMC-260615112131&#39;</code></td>
+                <td><pre>[
+  {
+    &quot;CNT&quot;: 1
+  }
+]</pre></td>
+              </tr></tbody></table></section>
+          <figure><figcaption>자품목 생성 후 BOM 화면</figcaption><a href="../screenshots/master-bom/05-setup-child-part.png"><img src="../screenshots/master-bom/05-setup-child-part.png" alt="자품목 생성 후 BOM 화면"></a></figure>
+        </article>
+
+        <article class="step" id="export-selected-parent">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 06</div>
+              <h3>선택 부모 BOM 내보내기</h3>
+              <p>선택한 부모의 BOM 내보내기 버튼과 export API를 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>선택 부모 BOM 구조 영역의 내보내기 버튼을 클릭한다.</li><li>GET /master/boms/export?parentItemCode=... 호출과 다운로드 파일명을 확인한다.</li></ol>
+              <h4>결과 메모</h4><ul><li>다운로드 파일명: BOM_HNS02_2026-06-15.xlsx</li></ul>
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/export?parentItemCode=HNS02</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          
+          <figure><figcaption>선택 부모 BOM 내보내기 실행 후 화면</figcaption><a href="../screenshots/master-bom/06-export-selected-parent.png"><img src="../screenshots/master-bom/06-export-selected-parent.png" alt="선택 부모 BOM 내보내기 실행 후 화면"></a></figure>
+        </article>
+
+        <article class="step" id="create-bom">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 07</div>
+              <h3>BOM 신규 등록 및 저장 검증</h3>
+              <p>BOM 추가 모달에서 테스트 자품목을 추가하고 API/DB/화면 반영을 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>BOM 추가 버튼을 클릭한다.</li><li>자품목 검색 드롭다운에서 테스트 자품목을 선택한다.</li><li>소요량, 순서, 리비전, 적용일, 완료일, 비고를 입력한다.</li><li>추가 버튼으로 저장하고 화면 트리에 자품목이 표시되는지 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/equipment/equips/metadata/processes</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/parts?search=FBOMC-260615112131&amp;limit=20</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>POST</code></td>
+                <td><code>/api/master/boms</code></td>
+                <td class="pass">201</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/hierarchy/HNS02?depth=10&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>direct-api</td>
+                <td><code>GET</code></td>
+                <td><code>/api/v1/master/boms/HNS02%3A%3AFBOMC-260615112131%3A%3AA</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          <section><h4>DB 확인</h4><table><thead><tr><th>검증</th><th>SQL</th><th>결과</th></tr></thead><tbody>
+              <tr>
+                <td>신규 BOM API 상세 응답</td>
+                <td><code>GET /api/v1/master/boms/HNS02::FBOMC-260615112131::A</code></td>
+                <td><pre>{
+  &quot;parentItemCode&quot;: &quot;HNS02&quot;,
+  &quot;childItemCode&quot;: &quot;FBOMC-260615112131&quot;,
+  &quot;revision&quot;: &quot;A&quot;,
+  &quot;qtyPer&quot;: 2.5,
+  &quot;seq&quot;: 91,
+  &quot;bomGrp&quot;: null,
+  &quot;processCode&quot;: null,
+  &quot;side&quot;: null,
+  &quot;ecoNo&quot;: null,
+  &quot;validFrom&quot;: &quot;2026-06-15&quot;,
+  &quot;validTo&quot;: &quot;2099-12-31&quot;,
+  &quot;remark&quot;: &quot;BOM page scenario create 260615112131&quot;,
+  &quot;useYn&quot;: &quot;Y&quot;,
+  &quot;company&quot;: &quot;40&quot;,
+  &quot;plant&quot;: &quot;1000&quot;,
+  &quot;createdBy&quot;: null,
+  &quot;updatedBy&quot;: null,
+  &quot;createdAt&quot;: &quot;2026-06-15T11:21:42.156Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-06-15T11:21:42.156Z&quot;,
+  &quot;parentPart&quot;: {
+    &quot;itemCode&quot;: &quot;HNS02&quot;,
+    &quot;itemName&quot;: &quot;완제품 하네스&quot;,
+    &quot;itemNo&quot;: &quot;HNS02&quot;,
+    &quot;itemType&quot;: &quot;FINISHED&quot;,
+    &quot;spec&quot;: null,
+    &quot;unit&quot;: &quot;EA&quot;
+  },
+  &quot;childPart&quot;: {
+    &quot;itemCode&quot;: &quot;FBOMC-260615112131&quot;,
+    &quot;itemName&quot;: &quot;BOM시나리오자품목-260615112131&quot;,
+    &quot;itemNo&quot;: &quot;FBOMC-260615112131&quot;,
+    &quot;itemType&quot;: &quot;RAW_MATERIAL&quot;,
+    &quot;spec&quot;: null,
+    &quot;unit&quot;: &quot;EA&quot;
+  }
+}</pre></td>
+              </tr>
+              <tr>
+                <td>신규 BOM DB row 확인</td>
+                <td><code>SELECT PARENT_ITEM_CODE, CHILD_ITEM_CODE, QTY_PER, SEQ, REVISION, OPER, SIDE, TO_CHAR(VALID_FROM, &#39;YYYY-MM-DD&#39;) AS VALID_FROM, TO_CHAR(VALID_TO, &#39;YYYY-MM-DD&#39;) AS VALID_TO, REMARK, USE_YN FROM BOM_MASTERS WHERE COMPANY = &#39;40&#39; AND PLANT_CD = &#39;1000&#39; AND PARENT_ITEM_CODE = &#39;HNS02&#39; AND CHILD_ITEM_CODE = &#39;FBOMC-260615112131&#39; AND REVISION = &#39;A&#39;</code></td>
+                <td><pre>[
+  {
+    &quot;PARENT_ITEM_CODE&quot;: &quot;HNS02&quot;,
+    &quot;CHILD_ITEM_CODE&quot;: &quot;FBOMC-260615112131&quot;,
+    &quot;QTY_PER&quot;: 2.5,
+    &quot;SEQ&quot;: 91,
+    &quot;REVISION&quot;: &quot;A&quot;,
+    &quot;OPER&quot;: null,
+    &quot;SIDE&quot;: null,
+    &quot;VALID_FROM&quot;: &quot;2026-06-15&quot;,
+    &quot;VALID_TO&quot;: &quot;2099-12-31&quot;,
+    &quot;REMARK&quot;: &quot;BOM page scenario create 260615112131&quot;,
+    &quot;USE_YN&quot;: &quot;Y&quot;
+  }
+]</pre></td>
+              </tr></tbody></table></section>
+          <figure><figcaption>BOM 신규 입력 완료</figcaption><a href="../screenshots/master-bom/07-create-bom-form-filled.png"><img src="../screenshots/master-bom/07-create-bom-form-filled.png" alt="BOM 신규 입력 완료"></a></figure>
+        </article>
+
+        <article class="step" id="created-requery">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 08</div>
+              <h3>등록 후 화면 재조회</h3>
+              <p>새로고침 후 테스트 BOM 행이 계속 표시되는지 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>새로고침 버튼을 클릭한다.</li><li>부모를 다시 선택하고 테스트 자품목 행을 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/parents?search=HNS02&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/hierarchy/HNS02?depth=10&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          
+          <figure><figcaption>등록 후 화면 재조회 결과</figcaption><a href="../screenshots/master-bom/08-created-requery.png"><img src="../screenshots/master-bom/08-created-requery.png" alt="등록 후 화면 재조회 결과"></a></figure>
+        </article>
+
+        <article class="step" id="duplicate-red">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 09</div>
+              <h3>중복 등록 방어</h3>
+              <p>동일 모품목/자품목/리비전 저장 시 API가 중복을 막는지 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>BOM 추가 버튼을 다시 클릭한다.</li><li>동일 자품목과 리비전으로 저장을 시도한다.</li><li>409 중복 방어 응답과 오류 모달을 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/parts?search=FBOMC-260615112131&amp;limit=20</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>POST</code></td>
+                <td><code>/api/master/boms</code></td>
+                <td class="pass">409</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          
+          <figure><figcaption>중복 등록 방어 모달</figcaption><a href="../screenshots/master-bom/09-duplicate-red.png"><img src="../screenshots/master-bom/09-duplicate-red.png" alt="중복 등록 방어 모달"></a></figure>
+        </article>
+
+        <article class="step" id="update-bom">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 10</div>
+              <h3>BOM 수정 및 저장 검증</h3>
+              <p>테스트 BOM 행의 소요량/순서/비고를 수정하고 DB 반영을 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>테스트 자품목 행의 수정 아이콘을 클릭한다.</li><li>소요량, 순서, 비고를 변경한다.</li><li>수정 버튼으로 저장한다.</li><li>API 상세 조회와 DB에서 변경값을 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>direct-api</td>
+                <td><code>GET</code></td>
+                <td><code>/api/v1/master/boms/HNS02%3A%3AFBOMC-260615112131%3A%3AA</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          <section><h4>DB 확인</h4><table><thead><tr><th>검증</th><th>SQL</th><th>결과</th></tr></thead><tbody>
+              <tr>
+                <td>수정 BOM API 상세 응답</td>
+                <td><code>GET /api/v1/master/boms/HNS02::FBOMC-260615112131::A</code></td>
+                <td><pre>{
+  &quot;parentItemCode&quot;: &quot;HNS02&quot;,
+  &quot;childItemCode&quot;: &quot;FBOMC-260615112131&quot;,
+  &quot;revision&quot;: &quot;A&quot;,
+  &quot;qtyPer&quot;: 2.5,
+  &quot;seq&quot;: 91,
+  &quot;bomGrp&quot;: null,
+  &quot;processCode&quot;: null,
+  &quot;side&quot;: null,
+  &quot;ecoNo&quot;: null,
+  &quot;validFrom&quot;: &quot;2026-06-15&quot;,
+  &quot;validTo&quot;: &quot;2099-12-31&quot;,
+  &quot;remark&quot;: &quot;BOM page scenario create 260615112131&quot;,
+  &quot;useYn&quot;: &quot;Y&quot;,
+  &quot;company&quot;: &quot;40&quot;,
+  &quot;plant&quot;: &quot;1000&quot;,
+  &quot;createdBy&quot;: null,
+  &quot;updatedBy&quot;: null,
+  &quot;createdAt&quot;: &quot;2026-06-15T11:21:42.156Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-06-15T11:21:42.156Z&quot;,
+  &quot;parentPart&quot;: {
+    &quot;itemCode&quot;: &quot;HNS02&quot;,
+    &quot;itemName&quot;: &quot;완제품 하네스&quot;,
+    &quot;itemNo&quot;: &quot;HNS02&quot;,
+    &quot;itemType&quot;: &quot;FINISHED&quot;,
+    &quot;spec&quot;: null,
+    &quot;unit&quot;: &quot;EA&quot;
+  },
+  &quot;childPart&quot;: {
+    &quot;itemCode&quot;: &quot;FBOMC-260615112131&quot;,
+    &quot;itemName&quot;: &quot;BOM시나리오자품목-260615112131&quot;,
+    &quot;itemNo&quot;: &quot;FBOMC-260615112131&quot;,
+    &quot;itemType&quot;: &quot;RAW_MATERIAL&quot;,
+    &quot;spec&quot;: null,
+    &quot;unit&quot;: &quot;EA&quot;
+  }
+}</pre></td>
+              </tr>
+              <tr>
+                <td>수정 BOM DB 변경값 확인</td>
+                <td><code>SELECT PARENT_ITEM_CODE, CHILD_ITEM_CODE, QTY_PER, SEQ, REVISION, OPER, SIDE, TO_CHAR(VALID_FROM, &#39;YYYY-MM-DD&#39;) AS VALID_FROM, TO_CHAR(VALID_TO, &#39;YYYY-MM-DD&#39;) AS VALID_TO, REMARK, USE_YN FROM BOM_MASTERS WHERE COMPANY = &#39;40&#39; AND PLANT_CD = &#39;1000&#39; AND PARENT_ITEM_CODE = &#39;HNS02&#39; AND CHILD_ITEM_CODE = &#39;FBOMC-260615112131&#39; AND REVISION = &#39;A&#39;</code></td>
+                <td><pre>[
+  {
+    &quot;PARENT_ITEM_CODE&quot;: &quot;HNS02&quot;,
+    &quot;CHILD_ITEM_CODE&quot;: &quot;FBOMC-260615112131&quot;,
+    &quot;QTY_PER&quot;: 3.75,
+    &quot;SEQ&quot;: 92,
+    &quot;REVISION&quot;: &quot;A&quot;,
+    &quot;OPER&quot;: null,
+    &quot;SIDE&quot;: null,
+    &quot;VALID_FROM&quot;: &quot;2026-06-15&quot;,
+    &quot;VALID_TO&quot;: &quot;2099-12-31&quot;,
+    &quot;REMARK&quot;: &quot;BOM page scenario update 260615112131&quot;,
+    &quot;USE_YN&quot;: &quot;Y&quot;
+  }
+]</pre></td>
+              </tr></tbody></table></section>
+          <figure><figcaption>BOM 수정 입력 완료</figcaption><a href="../screenshots/master-bom/10-update-bom-form-filled.png"><img src="../screenshots/master-bom/10-update-bom-form-filled.png" alt="BOM 수정 입력 완료"></a></figure>
+        </article>
+
+        <article class="step" id="routing-panel">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 11</div>
+              <h3>라우팅 패널 확인</h3>
+              <p>BOM 행의 라우팅 아이콘으로 선택 품목 라우팅 패널과 조회 API를 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>테스트 자품목 행의 라우팅 아이콘을 클릭한다.</li><li>우측 선택 품목 라우팅 패널이 열리는지 확인한다.</li><li>해당 자품목 라우팅 조회 API 호출을 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/hierarchy/HNS02?depth=10&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/routing-groups/by-item/FBOMC-260615112131</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          
+          <figure><figcaption>라우팅 패널 확인</figcaption><a href="../screenshots/master-bom/11-routing-panel.png"><img src="../screenshots/master-bom/11-routing-panel.png" alt="라우팅 패널 확인"></a></figure>
+        </article>
+
+        <article class="step" id="delete-bom">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 12</div>
+              <h3>BOM 삭제 및 저장 검증</h3>
+              <p>테스트 BOM 행을 삭제하고 API/DB에서 잔여가 없는지 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>테스트 자품목 행의 삭제 아이콘을 클릭한다.</li><li>삭제 확인 모달에서 확인을 누른다.</li><li>BOM API 목록과 DB count로 삭제 결과를 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>DELETE</code></td>
+                <td><code>/api/master/boms/HNS02::FBOMC-260615112131::A</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/hierarchy/HNS02?depth=10&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>direct-api</td>
+                <td><code>GET</code></td>
+                <td><code>/api/v1/master/boms?parentItemCode=HNS02&amp;childItemCode=FBOMC-260615112131&amp;revision=A&amp;limit=20</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          <section><h4>DB 확인</h4><table><thead><tr><th>검증</th><th>SQL</th><th>결과</th></tr></thead><tbody>
+              <tr>
+                <td>삭제 후 BOM API 목록 응답</td>
+                <td><code>GET /api/v1/master/boms?parentItemCode=HNS02&amp;childItemCode=FBOMC-260615112131&amp;revision=A</code></td>
+                <td><pre>[]</pre></td>
+              </tr>
+              <tr>
+                <td>삭제 후 BOM DB 0건</td>
+                <td><code>SELECT COUNT(*) AS CNT FROM BOM_MASTERS WHERE COMPANY = &#39;40&#39; AND PLANT_CD = &#39;1000&#39; AND PARENT_ITEM_CODE = &#39;HNS02&#39; AND CHILD_ITEM_CODE = &#39;FBOMC-260615112131&#39; AND REVISION = &#39;A&#39;</code></td>
+                <td><pre>[
+  {
+    &quot;CNT&quot;: 0
+  }
+]</pre></td>
+              </tr></tbody></table></section>
+          <figure><figcaption>BOM 삭제 확인 모달</figcaption><a href="../screenshots/master-bom/12-delete-bom-confirm.png"><img src="../screenshots/master-bom/12-delete-bom-confirm.png" alt="BOM 삭제 확인 모달"></a></figure>
+        </article>
+
+        <article class="step" id="after-delete-requery">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 13</div>
+              <h3>삭제 후 화면 재조회 및 정리</h3>
+              <p>삭제 후 화면과 DB에 테스트 BOM/자품목 잔여가 없는지 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>새로고침 후 같은 부모를 다시 선택한다.</li><li>테스트 BOM 행이 화면에 남지 않았는지 확인한다.</li><li>테스트 자품목을 삭제하고 ITEM_MASTERS 잔여 0건을 확인한다.</li></ol>
+              
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table>
+                <thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead>
+                <tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/parents?search=HNS02&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/boms/hierarchy/HNS02?depth=10&amp;effectiveDate=2026-06-15</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>direct-api</td>
+                <td><code>DELETE</code></td>
+                <td><code>/api/v1/master/parts/FBOMC-260615112131</code></td>
+                <td class="pass">200</td>
+              </tr></tbody>
+              </table>
+            </section>
+          </div>
+          <section><h4>DB 확인</h4><table><thead><tr><th>검증</th><th>SQL</th><th>결과</th></tr></thead><tbody>
+              <tr>
+                <td>최종 BOM DB 잔여 확인</td>
+                <td><code>SELECT COUNT(*) AS CNT FROM BOM_MASTERS WHERE COMPANY = &#39;40&#39; AND PLANT_CD = &#39;1000&#39; AND PARENT_ITEM_CODE = &#39;HNS02&#39; AND CHILD_ITEM_CODE = &#39;FBOMC-260615112131&#39; AND REVISION = &#39;A&#39;</code></td>
+                <td><pre>[
+  {
+    &quot;CNT&quot;: 0
+  }
+]</pre></td>
+              </tr>
+              <tr>
+                <td>최종 자품목 DB 잔여 확인</td>
+                <td><code>SELECT COUNT(*) AS CNT FROM ITEM_MASTERS WHERE COMPANY = &#39;40&#39; AND PLANT_CD = &#39;1000&#39; AND ITEM_CODE = &#39;FBOMC-260615112131&#39;</code></td>
+                <td><pre>[
+  {
+    &quot;CNT&quot;: 0
+  }
+]</pre></td>
+              </tr></tbody></table></section>
+          <figure><figcaption>삭제 후 화면 재조회 결과</figcaption><a href="../screenshots/master-bom/13-after-delete-requery.png"><img src="../screenshots/master-bom/13-after-delete-requery.png" alt="삭제 후 화면 재조회 결과"></a></figure>
+        </article>
+  </main>
+</body>
+</html>

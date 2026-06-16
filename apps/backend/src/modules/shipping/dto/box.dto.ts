@@ -83,6 +83,10 @@ export class UpdateBoxDto extends PartialType(CreateBoxDto) {
  */
 export class BoxQueryDto extends PaginationQueryDto {
 
+  @ApiPropertyOptional({ description: '통합 검색어 (박스번호, 품목코드)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @ApiPropertyOptional({ description: '박스번호 검색' })
   @IsOptional()

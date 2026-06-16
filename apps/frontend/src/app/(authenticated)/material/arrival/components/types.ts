@@ -3,7 +3,7 @@
  * @description 입하관리 타입 정의
  *
  * 초보자 가이드:
- * 1. **ArrivalRecord**: 입하 이력 레코드 (StockTransaction 기반)
+ * 1. **ArrivalRecord**: 입하 이력 레코드 (MatArrivalTransaction 기반)
  * 2. **ReceivablePO**: 입하 가능 PO 목록 항목
  * 3. **PoItemForArrival**: PO 품목별 입하 정보
  */
@@ -30,11 +30,11 @@ export interface WarehouseInfo {
   warehouseName: string;
 }
 
-/** 입하 이력 레코드 (StockTransaction 기반) */
+/** 입하 이력 레코드 (MatArrivalTransaction 기반) */
 export interface ArrivalRecord {
   id: string;
   transNo: string;
-  transType: 'MAT_IN' | 'MAT_IN_CANCEL';
+  transType: 'ARRIVAL_IN' | 'ARRIVAL_CANCEL';
   transDate: string;
   itemCode: string;
   qty: number;

@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Save, X, Trash2 } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal, Input } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { useProcessOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
@@ -42,6 +42,7 @@ export default function ControlPlanItemList({ planNo, planStatus }: Props) {
   const [items, setItems] = useState<PlanItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingSeq, setEditingSeq] = useState<number | null>(null);
+  const [deleteTargetSeq, setDeleteTargetSeq] = useState<number | null>(null);
   const [form, setForm] = useState<FormFields>(INIT_FORM);
   const canEdit = planStatus === "DRAFT";
 
@@ -88,9 +89,11 @@ export default function ControlPlanItemList({ planNo, planStatus }: Props) {
     } catch { /* api 인터셉터 */ }
   };
 
-  const handleDelete = async (itemSeq: number) => {
+  const handleDelete = async () => {
+    if (deleteTargetSeq == null) return;
     try {
-      await api.delete(`/quality/control-plans/${planNo}/items/${itemSeq}`);
+      await api.delete(`/quality/control-plans/${planNo}/items/${deleteTargetSeq}`);
+      setDeleteTargetSeq(null);
       fetchItems();
     } catch { /* api 인터셉터 */ }
   };
@@ -185,6 +188,7 @@ export default function ControlPlanItemList({ planNo, planStatus }: Props) {
   ];
 
   return (
+    <>
     <Card className="flex-shrink-0">
       <CardContent>
         <div className="flex items-center justify-between mb-3">
@@ -221,7 +225,7 @@ export default function ControlPlanItemList({ planNo, planStatus }: Props) {
                       <td className="px-2 py-1 text-center">
                         <div className="flex gap-1 justify-center">
                           <Button size="sm" variant="ghost" onClick={() => startEdit(item)} className="text-[10px] px-1.5 py-0.5 h-6">{t("common.edit")}</Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleDelete(item.seq)} className="text-[10px] px-1.5 py-0.5 h-6 text-red-500"><Trash2 className="w-3 h-3" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => setDeleteTargetSeq(item.seq)} className="text-[10px] px-1.5 py-0.5 h-6 text-red-500"><Trash2 className="w-3 h-3" /></Button>
                         </div>
                       </td>
                     )}
@@ -245,5 +249,14 @@ export default function ControlPlanItemList({ planNo, planStatus }: Props) {
         </div>
       </CardContent>
     </Card>
+    <ConfirmModal
+      isOpen={deleteTargetSeq != null}
+      onClose={() => setDeleteTargetSeq(null)}
+      onConfirm={handleDelete}
+      title={t("common.deleteConfirm", "삭제 확인")}
+      message={`${deleteTargetSeq ?? ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+      variant="danger"
+    />
+    </>
   );
 }

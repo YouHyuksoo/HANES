@@ -161,9 +161,10 @@ export class ComCodeService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(code.detailCode) LIKE UPPER(:search) OR UPPER(code.codeName) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(code.detailCode LIKE :searchUpper OR code.codeName LIKE :searchRaw)',
+        { searchUpper: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 

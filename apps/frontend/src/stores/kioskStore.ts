@@ -59,10 +59,8 @@ interface KioskState {
   serialSeq: number;
   /** 준비단계 인터락 상태 */
   interlock: KioskInterlock;
-  /** 스캔 완료된 자재 롯트 정보 */
+  /** 스캔 완료된 자재 롯트 정보 (소모품도 자재로 통합되어 여기에 저장된다) */
   scannedMaterialLots: ScannedMaterialLot[];
-  /** 스캔 확인된 소모품 코드 목록 */
-  scannedConsumables: string[];
   /** 실적 저장 전 임시 보관 불량 목록 */
   pendingDefects: PendingDefect[];
   /** 현재 작업지시의 누적 생산수량(양품+불량, 서버 PROD_RESULTS 집계 기준) — 초물/중물 트리거·진행률·검사 시점 생산량에 사용 */
@@ -71,6 +69,8 @@ interface KioskState {
   hasPendingDelegate: boolean;
   /** 중물 자주검사 완료 여부 (진행률 차단 해제용) */
   midInspectDone: boolean;
+  /** 소모품 매핑 목록 새로고침 트리거 (롯트 스캔 장착 후 증가) */
+  consumableRefreshSeq: number;
 
   setSelectedEquip: (equip: KioskEquip | null) => void;
   setSelectedJobOrder: (jobOrder: JobOrder | null) => void;
@@ -83,13 +83,13 @@ interface KioskState {
   addScannedMaterialLot: (lot: ScannedMaterialLot) => void;
   removeScannedMaterialLot: (itemCode: string, seq: number) => void;
   clearScannedMaterialLots: () => void;
-  addScannedConsumable: (consumableCode: string) => void;
   addPendingDefect: (defect: PendingDefect) => void;
   removePendingDefect: (defectCode: string) => void;
   clearPendingDefects: () => void;
   setSavedResultCount: (count: number) => void;
   setHasPendingDelegate: (value: boolean) => void;
   setMidInspectDone: (value: boolean) => void;
+  bumpConsumableRefresh: () => void;
   clearAll: () => void;
 }
 
@@ -110,11 +110,11 @@ export const useKioskStore = create<KioskState>()(
       serialSeq: 1,
       interlock: DEFAULT_INTERLOCK,
       scannedMaterialLots: [],
-      scannedConsumables: [],
       pendingDefects: [],
       savedResultCount: 0,
       hasPendingDelegate: false,
       midInspectDone: false,
+      consumableRefreshSeq: 0,
 
       setSelectedEquip: (equip) => set({
         selectedEquip: equip,
@@ -123,7 +123,6 @@ export const useKioskStore = create<KioskState>()(
         serialSeq: 1,
         interlock: DEFAULT_INTERLOCK,
         scannedMaterialLots: [],
-        scannedConsumables: [],
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
@@ -136,7 +135,6 @@ export const useKioskStore = create<KioskState>()(
         // 작업지시 변경 시 작업자점검·자재·소모품 스캔 초기화
         interlock: { ...DEFAULT_INTERLOCK, dailyInspectDone: true },
         scannedMaterialLots: [],
-        scannedConsumables: [],
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
@@ -179,11 +177,6 @@ export const useKioskStore = create<KioskState>()(
 
       clearScannedMaterialLots: () => set({ scannedMaterialLots: [] }),
 
-      addScannedConsumable: (consumableCode) => set((state) => {
-        if (state.scannedConsumables.includes(consumableCode)) return state;
-        return { scannedConsumables: [...state.scannedConsumables, consumableCode] };
-      }),
-
       addPendingDefect: (defect) => set((state) => {
         const existing = state.pendingDefects.findIndex(d => d.defectCode === defect.defectCode);
         if (existing >= 0) {
@@ -206,6 +199,8 @@ export const useKioskStore = create<KioskState>()(
 
       setMidInspectDone: (value) => set({ midInspectDone: value }),
 
+      bumpConsumableRefresh: () => set(s => ({ consumableRefreshSeq: s.consumableRefreshSeq + 1 })),
+
       clearAll: () => set({
         selectedEquip: null,
         selectedJobOrder: null,
@@ -214,7 +209,6 @@ export const useKioskStore = create<KioskState>()(
         serialSeq: 1,
         interlock: DEFAULT_INTERLOCK,
         scannedMaterialLots: [],
-        scannedConsumables: [],
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
@@ -223,11 +217,15 @@ export const useKioskStore = create<KioskState>()(
     }),
     {
       name: 'harness-kiosk',
-      // selectedEquip(설비)·lotSize(사용자 설정)만 유지.
-      // selectedJobOrder는 저장하지 않아 페이지 재진입 시 반드시 새로 선택.
+      // 새로고침 후 현장 작업 컨텍스트가 유지되도록 설비·작업자·작업지시·lotSize·인터락을 저장한다.
+      // 단, 자재리스트·소모성부품·스캔 롯트 등 작업지시 연관 데이터는 저장하지 않고
+      // MaterialListPanel/page 의 조회 useEffect 가 selectedJobOrder 기준으로 서버에서 다시 불러온다.
       partialize: (state) => ({
         selectedEquip: state.selectedEquip,
+        selectedJobOrder: state.selectedJobOrder,
+        selectedWorkers: state.selectedWorkers,
         lotSize: state.lotSize,
+        interlock: state.interlock,
       }),
       version: 2,
     }

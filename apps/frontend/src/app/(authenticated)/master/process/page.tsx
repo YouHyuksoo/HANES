@@ -51,6 +51,7 @@ export default function ProcessPage() {
   const [formData, setFormData] = useState<Partial<Process>>({});
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Process | null>(null);
+  const [removeEquipmentTarget, setRemoveEquipmentTarget] = useState<Equipment | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignEquipCode, setAssignEquipCode] = useState("");
 
@@ -220,16 +221,17 @@ export default function ProcessPage() {
     }
   }, [selectedCode, assignEquipCode, fetchEquipments, fetchEquipCounts]);
 
-  const handleRemoveEquipment = useCallback(async (equipment: Equipment) => {
-    if (!selectedCode) return;
+  const confirmEquipmentRemoval = useCallback(async () => {
+    if (!selectedCode || !removeEquipmentTarget) return;
     try {
-      await api.delete(`/master/processes/${encodeURIComponent(selectedCode)}/equipments/${encodeURIComponent(equipment.equipCode)}`);
+      await api.delete(`/master/processes/${encodeURIComponent(selectedCode)}/equipments/${encodeURIComponent(removeEquipmentTarget.equipCode)}`);
+      setRemoveEquipmentTarget(null);
       fetchEquipments(selectedCode);
       fetchEquipCounts();
     } catch (e: any) {
       console.error("Remove equipment failed:", e);
     }
-  }, [selectedCode, fetchEquipments, fetchEquipCounts]);
+  }, [selectedCode, removeEquipmentTarget, fetchEquipments, fetchEquipCounts]);
 
   const assignOptions = useMemo(
     () => allEquipments
@@ -285,7 +287,7 @@ export default function ProcessPage() {
             equipments={equipments}
             isLoading={equipLoading}
             onAdd={handleOpenAssign}
-            onRemove={handleRemoveEquipment}
+            onRemove={setRemoveEquipmentTarget}
           />
         </div>
       </div>
@@ -407,6 +409,15 @@ export default function ProcessPage() {
         onConfirm={handleDeleteConfirm}
         title={t("common.deleteConfirm", { defaultValue: "삭제 확인" })}
         message={`${deleteTarget?.processCode} (${deleteTarget?.processName}) ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        confirmText={t("common.delete")}
+        variant="danger"
+      />
+      <ConfirmModal
+        isOpen={!!removeEquipmentTarget}
+        onClose={() => setRemoveEquipmentTarget(null)}
+        onConfirm={confirmEquipmentRemoval}
+        title={t("common.deleteConfirm", { defaultValue: "삭제 확인" })}
+        message={`${removeEquipmentTarget?.equipCode ?? ""} (${removeEquipmentTarget?.equipName ?? ""}) ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
         confirmText={t("common.delete")}
         variant="danger"
       />

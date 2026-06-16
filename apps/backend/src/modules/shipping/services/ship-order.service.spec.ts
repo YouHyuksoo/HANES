@@ -17,6 +17,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 describe('ShipOrderService', () => {
   let target: ShipOrderService;
@@ -53,6 +54,7 @@ describe('ShipOrderService', () => {
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ShipOrderService>(ShipOrderService);
@@ -195,6 +197,7 @@ describe('ShipOrderService', () => {
 describe('ShipOrderService.shipBox', () => {
   let service: ShipOrderService;
   let issueStockInTx: jest.Mock;
+  let receiveStockInTx: jest.Mock;
   let managed: Record<string, any>;
 
   const makeManager = (overrides: Partial<Record<string, any>>) => ({
@@ -215,6 +218,7 @@ describe('ShipOrderService.shipBox', () => {
   const buildService = async (overrides: Partial<Record<string, any>>) => {
     managed = makeManager(overrides);
     issueStockInTx = jest.fn().mockResolvedValue({ transNo: 'PTX_TEST' });
+    receiveStockInTx = jest.fn().mockResolvedValue({ transNo: 'PTX_CANCEL' });
     const moduleRef = await Test.createTestingModule({
       providers: [
         ShipOrderService,
@@ -224,29 +228,49 @@ describe('ShipOrderService.shipBox', () => {
         { provide: getRepositoryToken(Warehouse), useValue: {} },
         { provide: getRepositoryToken(BoxMaster), useValue: {} },
         { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed }) } },
-        { provide: ProductInventoryService, useValue: { issueStockInTx } },
+        { provide: ProductInventoryService, useValue: { issueStockInTx, receiveStockInTx } },
+        { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
       ],
     }).compile();
     service = moduleRef.get(ShipOrderService);
   };
 
-  it('정상 출하: 박스 SHIPPED + 재고차감 + shippedQty 증가', async () => {
+  it('정상 출하: 박스 시리얼별 재고차감 + SHIPPED + shippedQty 증가', async () => {
     await buildService({
       order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
-      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 5, status: 'CLOSED', oqcStatus: 'PASS', serialList: JSON.stringify(['FG1', 'FG2']) },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 2, status: 'CLOSED', oqcStatus: 'PASS', serialList: JSON.stringify(['FG1', 'FG2']) },
       line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 },
       warehouse: { warehouseCode: 'FG_MAIN' },
       allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 }],
     });
     const res = await service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000');
-    expect(issueStockInTx).toHaveBeenCalledWith(
+    expect(issueStockInTx).toHaveBeenCalledTimes(2);
+    expect(issueStockInTx).toHaveBeenNthCalledWith(
+      1,
       expect.anything(),
-      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 5, transType: 'FG_OUT', prdUid: '*', refType: 'SHIP_ORDER', refId: 'SO1' }),
+      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 1, transType: 'FG_OUT', prdUid: 'FG1', refType: 'SHIP_ORDER', refId: 'SO1' }),
+    );
+    expect(issueStockInTx).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 1, transType: 'FG_OUT', prdUid: 'FG2', refType: 'SHIP_ORDER', refId: 'SO1' }),
     );
     expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), { status: 'SHIPPED' });
     expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'SHIPPED' });
-    expect(res.lineShippedQty).toBe(5);
+    expect(res.lineShippedQty).toBe(2);
     expect(res.fullyShipped).toBe(false);
+  });
+
+  it('박스 시리얼 수량과 박스 수량이 다르면 출하를 거부한다', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 2, status: 'CLOSED', oqcStatus: 'PASS', serialList: JSON.stringify(['FG1']) },
+      line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 },
+      warehouse: { warehouseCode: 'FG_MAIN' },
+    });
+
+    await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(BadRequestException);
+    expect(issueStockInTx).not.toHaveBeenCalled();
   });
 
   it('CONFIRMED 아니면 거부', async () => {
@@ -307,5 +331,34 @@ describe('ShipOrderService.shipBox', () => {
     const res = await service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000');
     expect(res.fullyShipped).toBe(true);
     expect(managed.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO1' }), { status: 'CLOSED' });
+  });
+
+  it('출하 취소: 제품재고 복원 + 박스/라벨/출하지시 상태를 출하 전으로 되돌린다', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CLOSED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 2, status: 'SHIPPED', oqcStatus: 'PASS', serialList: JSON.stringify(['FG1', 'FG2']) },
+      line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 2, shippedQty: 2 },
+      warehouse: { warehouseCode: 'FG_MAIN' },
+    });
+
+    const res = await service.cancelShipBox('SO1', { boxNo: 'BX1', workerId: 'worker1' }, '40', '1000');
+
+    expect(receiveStockInTx).toHaveBeenCalledTimes(2);
+    expect(receiveStockInTx).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 1, transType: 'FG_OUT_CANCEL', prdUid: 'FG1', refType: 'SHIP_ORDER_CANCEL', refId: 'SO1' }),
+    );
+    expect(receiveStockInTx).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 1, transType: 'FG_OUT_CANCEL', prdUid: 'FG2', refType: 'SHIP_ORDER_CANCEL', refId: 'SO1' }),
+    );
+    expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), { status: 'CLOSED' });
+    expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'PACKED' });
+    expect(managed.update).toHaveBeenCalledWith(ShipmentOrderItem, expect.objectContaining({ shipOrderNo: 'SO1', seq: 1 }), { shippedQty: 0 });
+    expect(managed.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO1' }), { status: 'CONFIRMED' });
+    expect(res.lineShippedQty).toBe(0);
+    expect(res.orderStatus).toBe('CONFIRMED');
   });
 });

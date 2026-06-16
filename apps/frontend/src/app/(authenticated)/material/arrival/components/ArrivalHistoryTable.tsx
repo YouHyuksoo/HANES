@@ -2,7 +2,7 @@
 
 /**
  * @file src/app/(authenticated)/material/arrival/components/ArrivalHistoryTable.tsx
- * @description 입하 이력 테이블 - MAT_IN / MAT_IN_CANCEL 트랜잭션 표시
+ * @description 입하 이력 테이블 - ARRIVAL_IN / ARRIVAL_CANCEL 트랜잭션 표시
  *
  * @deprecated IQC005 Phase A부터 이 화면은 별도 페이지 `/material/receive-history` (Phase B)로 이동 예정.
  * 현재 어디서도 사용하지 않음. Phase B에서 components/ 디렉토리 이동.
@@ -10,7 +10,7 @@
  * 초보자 가이드:
  * 1. **컬럼**: 트랜잭션번호, 날짜, PO번호, 품목, 수량(+/-), 창고, 상태, 액션
  * 2. **수량 표시**: 입하는 녹색(+), 취소는 빨간색(-)
- * 3. **취소 버튼**: DONE 상태의 MAT_IN만 취소 가능
+ * 3. **취소 버튼**: DONE 상태의 ARRIVAL_IN만 취소 가능
  */
 
 import { useMemo, type ReactNode } from 'react';
@@ -124,7 +124,7 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const record = row.original;
-        if (record.transType !== 'MAT_IN' || record.status !== 'DONE') return null;
+        if (record.transType !== 'ARRIVAL_IN' || record.status !== 'DONE') return null;
         return (
           <Button
             variant="ghost"

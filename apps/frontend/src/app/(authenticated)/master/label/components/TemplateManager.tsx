@@ -12,7 +12,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Save, FolderOpen, Trash2, Star } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, ConfirmModal } from "@/components/ui";
 import { LabelDesign, LabelCategory } from "../types";
 import { useLabelTemplates, LabelTemplateItem } from "../hooks/useLabelTemplates";
 
@@ -27,6 +27,7 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
   const { templates, loading, fetchList, save, update, remove } = useLabelTemplates();
   const [saveName, setSaveName] = useState("");
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LabelTemplateItem | null>(null);
   const [showSave, setShowSave] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -56,13 +57,16 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
     onLoad(tpl.designData);
   };
 
-  const handleDelete = async (templateKey: string) => {
-    await remove(templateKey);
-    if (selectedTemplateKey === templateKey) setSelectedTemplateKey(null);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await remove(deleteTarget.templateKey);
+    if (selectedTemplateKey === deleteTarget.templateKey) setSelectedTemplateKey(null);
+    setDeleteTarget(null);
     fetchList(category);
   };
 
   return (
+    <>
     <div className="space-y-3">
       {/* 헤더 + 새 저장 토글 */}
       <div className="flex items-center justify-between">
@@ -122,7 +126,7 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
               <Save className="w-3 h-3" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); handleDelete(tpl.templateKey); }}
+              onClick={(e) => { e.stopPropagation(); setDeleteTarget(tpl); }}
               className="text-text-muted hover:text-red-500 p-0.5"
               title={t("master.label.delete")}
             >
@@ -132,5 +136,14 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
         ))}
       </div>
     </div>
+    <ConfirmModal
+      isOpen={!!deleteTarget}
+      onClose={() => setDeleteTarget(null)}
+      onConfirm={handleDelete}
+      title={t("common.deleteConfirm", "삭제 확인")}
+      message={`${deleteTarget?.templateName ?? ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+      variant="danger"
+    />
+    </>
   );
 }

@@ -15,9 +15,8 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   ScrollText, Search, RefreshCw,
-  ClipboardCheck, CheckCircle, XCircle, AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -32,6 +31,18 @@ interface InspectHistory {
   overallResult: string;
   remark: string;
 }
+
+const formatInspectDate = (value: unknown) => {
+  if (!value) return "-";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date).replace(/\. /g, "-").replace(".", "");
+};
 
 export default function InspectHistoryPage() {
   const { t } = useTranslation();
@@ -76,15 +87,14 @@ export default function InspectHistoryPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = useMemo(() => ({
-    total: data.length,
-    pass: data.filter(d => d.overallResult === "PASS").length,
-    fail: data.filter(d => d.overallResult === "FAIL").length,
-    conditional: data.filter(d => d.overallResult === "CONDITIONAL").length,
-  }), [data]);
-
   const columns = useMemo<ColumnDef<InspectHistory>[]>(() => [
-    { accessorKey: "inspectDate", header: t("equipment.inspectHistory.inspectDate"), size: 110, meta: { filterType: "date" as const } },
+    {
+      accessorKey: "inspectDate",
+      header: t("equipment.inspectHistory.inspectDate"),
+      size: 110,
+      meta: { filterType: "date" as const },
+      cell: ({ getValue }) => formatInspectDate(getValue()),
+    },
     {
       accessorKey: "inspectType", header: t("equipment.inspectHistory.inspectType"), size: 80,
       meta: { filterType: "multi" as const },
@@ -127,13 +137,6 @@ export default function InspectHistoryPage() {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
-
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("equipment.inspectHistory.statTotal")} value={stats.total} icon={ClipboardCheck} color="blue" />
-        <StatCard label={t("equipment.inspectHistory.resultPass")} value={stats.pass} icon={CheckCircle} color="green" />
-        <StatCard label={t("equipment.inspectHistory.resultFail")} value={stats.fail} icon={XCircle} color="red" />
-        <StatCard label={t("equipment.inspectHistory.resultConditional")} value={stats.conditional} icon={AlertTriangle} color="yellow" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

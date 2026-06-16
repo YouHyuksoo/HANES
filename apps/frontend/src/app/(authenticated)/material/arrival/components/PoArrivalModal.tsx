@@ -107,7 +107,10 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
     try {
       await api.post('/material/arrivals/po', {
         poId: selectedPO.id,
-        items: validItems,
+        items: validItems.map((item) => ({
+          ...item,
+          warehouseId: item.warehouseCode,
+        })),
       });
       onSuccess();
       onClose();

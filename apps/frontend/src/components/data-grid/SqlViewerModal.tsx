@@ -2,14 +2,14 @@
 
 /**
  * @file src/components/data-grid/SqlViewerModal.tsx
- * @description DataGrid SQL 뷰어 모달 — SQL 하이라이팅 + 테이블 컬럼 명세 좌우 분할
+ * @description DataGrid SQL 뷰어 모달 — SQL 하이라이팅 + 선택형 테이블 컬럼 명세
  */
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X, Copy, Check, Database, TableProperties, Loader2 } from "lucide-react";
-import api from "@/services/api";
+import api, { getLatestActualSqlForPreview } from "@/services/api";
 
 interface ColumnInfo {
   columnId: number;
@@ -150,12 +150,15 @@ function formatType(col: ColumnInfo): string {
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
 export function SqlViewerModal({ sql, activeFilters = [], onClose }: SqlViewerModalProps) {
-  const effectiveSql = buildEffectiveSql(sql, activeFilters);
+  const actualSql = getLatestActualSqlForPreview(sql) ?? sql;
+  const effectiveSql = buildEffectiveSql(actualSql, activeFilters);
 
   const [copied, setCopied] = useState(false);
+  const [showSchema, setShowSchema] = useState(false);
   const [schema, setSchema] = useState<TableSchemaResult | null>(null);
   const [schemaLoading, setSchemaLoading] = useState(false);
   const [schemaError, setSchemaError] = useState<string | null>(null);
+  const tableName = extractTableName(actualSql);
 
   // ESC 닫기
   useEffect(() => {
@@ -164,10 +167,9 @@ export function SqlViewerModal({ sql, activeFilters = [], onClose }: SqlViewerMo
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  // 테이블 명세 자동 로드
+  // 테이블 명세는 사용자가 요청했을 때만 로드한다.
   useEffect(() => {
-    const tableName = extractTableName(sql);
-    if (!tableName) return;
+    if (!showSchema || !tableName) return;
 
     setSchemaLoading(true);
     setSchemaError(null);
@@ -177,15 +179,13 @@ export function SqlViewerModal({ sql, activeFilters = [], onClose }: SqlViewerMo
       .then((res) => setSchema(res.data.data))
       .catch(() => setSchemaError("테이블 명세를 불러올 수 없습니다"))
       .finally(() => setSchemaLoading(false));
-  }, [sql]);
+  }, [showSchema, tableName]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(effectiveSql);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const tableName = extractTableName(sql);
 
   return createPortal(
     <div
@@ -210,7 +210,7 @@ export function SqlViewerModal({ sql, activeFilters = [], onClose }: SqlViewerMo
               <Database className="w-4 h-4 text-blue-400" />
             </div>
             <span className="text-sm font-semibold text-slate-200 tracking-wide">
-              SQL 조회문 &amp; 테이블 명세
+              SQL 조회문
             </span>
             {tableName && (
               <span className="px-2 py-0.5 rounded-md bg-slate-700/60 text-xs text-slate-400 font-mono">
@@ -225,6 +225,17 @@ export function SqlViewerModal({ sql, activeFilters = [], onClose }: SqlViewerMo
             )}
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSchema((prev) => !prev)}
+              disabled={!tableName}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150
+                border border-slate-600/60 text-slate-300 hover:bg-slate-700/60 hover:border-slate-500 hover:text-white
+                disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-300"
+              title={tableName ? (showSchema ? "컬럼명세 숨기기" : "컬럼명세 보기") : "SQL에서 테이블명을 찾을 수 없습니다"}
+            >
+              <TableProperties className="w-3.5 h-3.5" />
+              {showSchema ? "컬럼명세 숨기기" : "컬럼명세 보기"}
+            </button>
             <button
               onClick={handleCopy}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150
@@ -243,11 +254,11 @@ export function SqlViewerModal({ sql, activeFilters = [], onClose }: SqlViewerMo
           </div>
         </div>
 
-        {/* ── 본문: 좌우 분할 ── */}
+        {/* ── 본문 ── */}
         <div className="flex flex-1 min-h-0">
 
           {/* 왼쪽: SQL */}
-          <div className="flex flex-col w-[45%] border-r border-slate-700/60 min-h-0">
+          <div className={`flex flex-col min-h-0 ${showSchema ? "w-[45%] border-r border-slate-700/60" : "w-full"}`}>
             <div className="px-4 py-2 border-b border-slate-700/40 flex-shrink-0"
               style={{ background: "rgba(255,255,255,0.02)" }}>
               <span className="text-xs text-slate-500 uppercase tracking-widest font-medium">SQL</span>
@@ -260,61 +271,63 @@ export function SqlViewerModal({ sql, activeFilters = [], onClose }: SqlViewerMo
           </div>
 
           {/* 오른쪽: 테이블 명세 */}
-          <div className="flex flex-col flex-1 min-h-0 min-w-0">
-            <div className="px-4 py-2 border-b border-slate-700/40 flex-shrink-0 flex items-center gap-2"
-              style={{ background: "rgba(255,255,255,0.02)" }}>
-              <TableProperties className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-xs text-slate-500 uppercase tracking-widest font-medium">컬럼 명세</span>
-              {schema && (
-                <span className="text-xs text-slate-600">— {schema.columns.length}개 컬럼</span>
-              )}
-            </div>
+          {showSchema && (
+            <div className="flex flex-col flex-1 min-h-0 min-w-0">
+              <div className="px-4 py-2 border-b border-slate-700/40 flex-shrink-0 flex items-center gap-2"
+                style={{ background: "rgba(255,255,255,0.02)" }}>
+                <TableProperties className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-xs text-slate-500 uppercase tracking-widest font-medium">컬럼 명세</span>
+                {schema && (
+                  <span className="text-xs text-slate-600">— {schema.columns.length}개 컬럼</span>
+                )}
+              </div>
 
-            <div className="overflow-auto flex-1">
-              {schemaLoading && (
-                <div className="flex items-center justify-center h-32 gap-2 text-slate-500 text-xs">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  명세 로딩 중...
-                </div>
-              )}
-              {schemaError && (
-                <div className="flex items-center justify-center h-32 text-slate-600 text-xs">
-                  {schemaError}
-                </div>
-              )}
-              {schema && !schemaLoading && (
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0" style={{ background: "#1a1f2e" }}>
-                    <tr className="border-b border-slate-700/60">
-                      <th className="text-left px-3 py-2 text-slate-500 font-medium w-8">#</th>
-                      <th className="text-left px-3 py-2 text-slate-500 font-medium">컬럼명</th>
-                      <th className="text-left px-3 py-2 text-slate-500 font-medium">타입</th>
-                      <th className="text-center px-3 py-2 text-slate-500 font-medium w-12">NULL</th>
-                      <th className="text-left px-3 py-2 text-slate-500 font-medium">설명</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schema.columns.map((col, idx) => (
-                      <tr
-                        key={col.columnName}
-                        className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors"
-                      >
-                        <td className="px-3 py-1.5 text-slate-600">{idx + 1}</td>
-                        <td className="px-3 py-1.5 font-mono text-slate-300">{col.columnName}</td>
-                        <td className="px-3 py-1.5 font-mono text-amber-400/80">{formatType(col)}</td>
-                        <td className="px-3 py-1.5 text-center">
-                          {col.nullable === "Y"
-                            ? <span className="text-slate-600">Y</span>
-                            : <span className="text-rose-400 font-semibold">N</span>}
-                        </td>
-                        <td className="px-3 py-1.5 text-slate-400">{col.comments ?? ""}</td>
+              <div className="overflow-auto flex-1">
+                {schemaLoading && (
+                  <div className="flex items-center justify-center h-32 gap-2 text-slate-500 text-xs">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    명세 로딩 중...
+                  </div>
+                )}
+                {schemaError && (
+                  <div className="flex items-center justify-center h-32 text-slate-600 text-xs">
+                    {schemaError}
+                  </div>
+                )}
+                {schema && !schemaLoading && (
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0" style={{ background: "#1a1f2e" }}>
+                      <tr className="border-b border-slate-700/60">
+                        <th className="text-left px-3 py-2 text-slate-500 font-medium w-8">#</th>
+                        <th className="text-left px-3 py-2 text-slate-500 font-medium">컬럼명</th>
+                        <th className="text-left px-3 py-2 text-slate-500 font-medium">타입</th>
+                        <th className="text-center px-3 py-2 text-slate-500 font-medium w-12">NULL</th>
+                        <th className="text-left px-3 py-2 text-slate-500 font-medium">설명</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                    </thead>
+                    <tbody>
+                      {schema.columns.map((col, idx) => (
+                        <tr
+                          key={col.columnName}
+                          className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors"
+                        >
+                          <td className="px-3 py-1.5 text-slate-600">{idx + 1}</td>
+                          <td className="px-3 py-1.5 font-mono text-slate-300">{col.columnName}</td>
+                          <td className="px-3 py-1.5 font-mono text-amber-400/80">{formatType(col)}</td>
+                          <td className="px-3 py-1.5 text-center">
+                            {col.nullable === "Y"
+                              ? <span className="text-slate-600">Y</span>
+                              : <span className="text-rose-400 font-semibold">N</span>}
+                          </td>
+                          <td className="px-3 py-1.5 text-slate-400">{col.comments ?? ""}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* ── 푸터 ── */}

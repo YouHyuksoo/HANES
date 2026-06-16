@@ -40,17 +40,26 @@ export class IqcPartSpecService {
     });
   }
 
-  async findAll(company?: string, plant?: string): Promise<IqcPartSpec[]> {
+  async findAll(company?: string, plant?: string, page = 1, limit = 500) {
+    const skip = (page - 1) * limit;
     const qb = this.specRepo.createQueryBuilder('s')
       .leftJoinAndSelect('s.items', 'i')
-      .leftJoinAndSelect('i.inspItem', 'p')
       .orderBy('s.itemCode', 'ASC')
       .addOrderBy('i.seq', 'ASC');
 
     if (company) qb.andWhere('s.company = :company', { company });
     if (plant)   qb.andWhere('s.plant = :plant', { plant });
 
-    return qb.getMany();
+    const countQb = this.specRepo.createQueryBuilder('s');
+    if (company) countQb.andWhere('s.company = :company', { company });
+    if (plant)   countQb.andWhere('s.plant = :plant', { plant });
+
+    const [data, total] = await Promise.all([
+      qb.skip(skip).take(limit).getMany(),
+      countQb.getCount(),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   async upsert(

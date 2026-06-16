@@ -40,9 +40,21 @@ export class CreateEquipInspectDto {
   @IsIn([...INSPECT_TYPE])
   inspectType: string;
 
-  @ApiProperty({ description: '점검일 (YYYY-MM-DD)' })
+  @ApiPropertyOptional({ description: '점검일 (YYYY-MM-DD). 미전달 시 서버 현재시각 기준' })
+  @IsOptional()
   @IsDateString()
-  inspectDate: string;
+  inspectDate?: string;
+
+  @ApiPropertyOptional({ description: '작업지시번호 (WORKER 점검 업무 키)', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  orderNo?: string;
+
+  @ApiPropertyOptional({ description: '실제 점검시각 ISO 문자열. 미전달 시 서버 현재시각', maxLength: 50 })
+  @IsOptional()
+  @IsDateString()
+  inspectAt?: string;
 
   @ApiPropertyOptional({ description: '점검자명', maxLength: 50 })
   @IsOptional()
@@ -138,4 +150,9 @@ export class EquipInspectQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsDateString()
   inspectDateTo?: string;
+
+  @ApiPropertyOptional({ description: '작업지시번호' })
+  @IsOptional()
+  @IsString()
+  orderNo?: string;
 }

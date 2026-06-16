@@ -7,7 +7,7 @@
  * 2. **설비-BOM 연결** 관리 (어떤 설비에 어떤 부품이 사용되는지)
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
@@ -90,6 +90,13 @@ export class EquipBomService {
   }
 
   async createItem(dto: CreateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
+    const existing = await this.bomItemRepo.findOne({
+      where: { bomItemCode: dto.bomItemCode, ...this.tenantWhere(company, plant) },
+    });
+    if (existing) {
+      throw new ConflictException(`이미 등록된 설비 BOM 품목입니다: ${dto.bomItemCode}`);
+    }
+
     const item = this.bomItemRepo.create({
       bomItemCode: dto.bomItemCode,
       bomItemName: dto.bomItemName,
@@ -194,6 +201,13 @@ export class EquipBomService {
   }
 
   async createRel(dto: CreateEquipBomRelDto, company?: string, plant?: string): Promise<EquipBomRel> {
+    const existing = await this.bomRelRepo.findOne({
+      where: { equipCode: dto.equipCode, bomItemCode: dto.bomItemId, ...this.tenantWhere(company, plant) },
+    });
+    if (existing) {
+      throw new ConflictException(`이미 등록된 설비 BOM 연결입니다: ${dto.equipCode}/${dto.bomItemId}`);
+    }
+
     const rel = this.bomRelRepo.create({
       equipCode: dto.equipCode,
       bomItemCode: dto.bomItemId,

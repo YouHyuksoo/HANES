@@ -1,0 +1,570 @@
+{
+  "categoryCode": "PRODUCTION",
+  "categoryTitle": "생산관리",
+  "categorySortOrder": 50,
+  "menuCode": "QC_REWORK",
+  "sortOrder": 80,
+  "labelKey": "menu.quality.rework",
+  "title": "재작업 지시",
+  "route": "/quality/rework",
+  "slug": "production-quality-rework",
+  "sourceTables": [
+    "REACT",
+    "LUCIDE"
+  ],
+  "status": "PASS",
+  "steps": [
+    {
+      "id": "initial-load",
+      "title": "초기 조회",
+      "objective": "재작업 지시 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+      "actions": [
+        "브라우저로 /quality/rework 경로에 진입한다.",
+        "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+        "화면 또는 API에서 확인된 Oracle 대표 테이블 count를 확인한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true,
+          "tables": [],
+          "responsePreview": "{\"success\":true,\"data\":{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true},\"timestamp\":\"2026-06-15T16:11:50.969Z\"}"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "PDA_ROLE_MENU"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":{\"email\":\"admin@hanes.com\",\"name\":\"시스템관리자\",\"empNo\":null,\"dept\":null,\"role\":\"ADMIN\",\"status\":\"ACTIVE\",\"lastLoginAt\":\"2026-06-15T06:46:27.064Z\",\"company\":\"40\",\"plant\":\"1000\",\"pdaRoleCode\":\"PDA_ADMIN\",\"allowedMenus\":[],\"pdaAllowedMenus\":[]},\"timestamp\":\"2026-06-15T16:11:51.043Z\",\"meta\":{\"debugSql\":{\"sql\":\"SELECT \\\"PdaRoleMenu\\\".\\\"MENU_CODE\\\" AS \\\"PdaRoleMenu_MENU_CODE\\\", \\\"PdaRoleMenu\\\".\\\"COMPANY\\\" AS \\\"PdaRoleMenu_COMPANY\\\", \\\"PdaRoleMenu\\\".\\\"PLANT_CD\\\" AS \\\"PdaRoleMenu_PLAN"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "COM_CODES"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":{\"ADJUST_ACCOUNT\":[{\"detailCode\":\"STOCK_ADJ\",\"codeName\":\"재고보정\",\"codeDesc\":null,\"sortOrder\":1,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"LOSS\",\"codeName\":\"감모/손실\",\"codeDesc\":null,\"sortOrder\":2,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"GAIN\",\"codeName\":\"과잉/이익\",\"codeDesc\":null,\"sortOrder\":3,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"ETC\",\"codeName\":\"기타\",\"codeDesc\":null,\"sortOrder\":99,\"attr1\":null,\"attr2\":null,\"attr3\":null}],\"ADJ_REASON\":[{\""
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "SYS_CONFIGS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":{\"data\":[{\"configKey\":\"FIFO_ENABLED\",\"configGroup\":\"MATERIAL\",\"configValue\":\"Y\",\"configType\":\"BOOLEAN\",\"label\":\"선입선출 사용\",\"description\":\"자재 출고 시 선입선출 적용 여부\",\"options\":null,\"sortOrder\":1,\"isActive\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-02-20T05:39:28.382Z\",\"updatedAt\":\"2026-02-20T05:39:28.382Z\"},{\"configKey\":\"FIFO_CRITERIA\",\"configGroup\":\"MATERIAL\",\"configValue\":\"MFG_DATE\",\"configType\":\"SELECT\",\"label\":\"선입선출 기준\",\"description\":\""
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/equipment/equips/metadata/lines",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "PROD_LINE_MASTERS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[{\"lineCode\":\"LINE-01\",\"lineName\":\"절단라인\",\"oper\":\"PRC-CUT\",\"lineType\":\"CUTTING\"},{\"lineCode\":\"LINE-02\",\"lineName\":\"압착라인\",\"oper\":\"PRC-CRIMP\",\"lineType\":\"CRIMPING\"},{\"lineCode\":\"LINE-03\",\"lineName\":\"선조립라인A\",\"oper\":\"PRC-PRESUB\",\"lineType\":\"ASSEMBLY\"},{\"lineCode\":\"LINE-04\",\"lineName\":\"조립라인A\",\"oper\":\"PRC-ASSY\",\"lineType\":\"ASSEMBLY\"},{\"lineCode\":\"LINE-05\",\"lineName\":\"검사포장라인\",\"oper\":\"PRC-TEST\",\"lineType\":\"TESTING\"},{\"lineCode\":\"P2001\",\"lineName\":\"자동압착1\",\"oper\":null,\"lineType\":null"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/quality/reworks?limit=5000",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "REWORK_ORDERS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"r\\\".\\\"REWORK_NO\\\" AS \\\"r_REWORK_NO\\\", \\\"r\\\".\\\"DEFECT_LOG_ID\\\" AS \\\"r_DEFECT_LOG_ID\\\", \\\"r\\\".\\\"ITEM_CODE\\\" AS \\\"r_ITEM_CODE\\\", \\\"r\\\".\\\"ITEM_NAME\\\" AS \\\"r_ITEM_NAME\\\", \\\"r\\\".\\\"PRD_UID\\\" AS \\\"r_PRD_UID\\\", \\\"r\\\".\\\"REWORK_QTY\\\" AS \\\"r_REWORK_QTY\\\", \\\"r\\\".\\\"DEFECT_TYPE\\\" AS \\\"r_DEFECT_TYPE\\\", \\\"r\\\".\\\"REWORK_METHOD\\\" AS \\\"r_REWORK_METHOD\\\", \\\"r\\\".\\\"STATUS\\\" AS \\\"r"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "COMM_CONFIGS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[{\"configName\":\"시리얼테스트\",\"commType\":\"SERIAL\",\"description\":\"바코드스캔\",\"host\":null,\"port\":null,\"portName\":\"COM1\",\"baudRate\":9600,\"dataBits\":8,\"stopBits\":\"1\",\"parity\":\"NONE\",\"flowControl\":\"NONE\",\"lineEnding\":\"NONE\",\"extraConfig\":null,\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-02-22T01:33:00.262Z\",\"updatedAt\":\"2026-02-22T19:38:20.025Z\"}],\"meta\":{\"page\":1,\"limit\":50,\"total\":1,\"totalPages\":1,\"hasNext\":false,\"hasPrev\":false,\"debugSq"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "MENU_CATEGORY_ITEMS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[{\"categoryCode\":\"__ROOT__\",\"labelKey\":\"menu.root\",\"iconName\":null,\"sortOrder\":10,\"isActive\":\"Y\",\"menus\":[{\"menuCode\":\"WORKFLOW\",\"sortOrder\":10},{\"menuCode\":\"DASHBOARD\",\"sortOrder\":20}]},{\"categoryCode\":\"MASTER\",\"labelKey\":\"menu.master\",\"iconName\":\"Database\",\"sortOrder\":20,\"isActive\":\"Y\",\"menus\":[{\"menuCode\":\"MST_PART\",\"sortOrder\":10},{\"menuCode\":\"MST_BOM\",\"sortOrder\":20},{\"menuCode\":\"MST_ROUTING\",\"sortOrder\":30},{\"menuCode\":\"MST_PARTNER\",\"sortOrder\":40},{\"menuCode\":\"MST_P"
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "초기 조회 화면",
+        "file": "../screenshots/production-quality-rework/01-initial-load.png"
+      },
+      "notes": [
+        "카테고리: 생산관리 (PRODUCTION)",
+        "좌측 메뉴 등록 코드: QC_REWORK",
+        "등록 순서: 80",
+        "화면 행 수: 1",
+        "대표 DB 테이블: PDA_ROLE_MENU, COM_CODES, SYS_CONFIGS"
+      ]
+    },
+    {
+      "id": "search-requery",
+      "title": "검색 및 재조회",
+      "objective": "재작업 지시 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+      "actions": [
+        "탭이 있으면 노출 탭을 순서대로 전환한다.",
+        "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+        "실행 후 화면과 API 호출을 수집한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [],
+      "dbChecks": [],
+      "evidence": {
+        "label": "검색/조회/탭 전환 후 화면",
+        "file": "../screenshots/production-quality-rework/02-search-requery.png"
+      },
+      "notes": [
+        "탭 없음 또는 전환 대상 없음",
+        "검색어 공백 상태로 조회/Enter 실행",
+        "검색 후 화면 행 수: 1"
+      ]
+    },
+    {
+      "id": "button-process-inventory",
+      "title": "버튼 및 프로세스 목록화",
+      "objective": "재작업 지시 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+      "actions": [
+        "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+        "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+        "입력 컨트롤의 placeholder/aria/type을 수집한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/quality/reworks?limit=5000",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "REWORK_ORDERS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"r\\\".\\\"REWORK_NO\\\" AS \\\"r_REWORK_NO\\\", \\\"r\\\".\\\"DEFECT_LOG_ID\\\" AS \\\"r_DEFECT_LOG_ID\\\", \\\"r\\\".\\\"ITEM_CODE\\\" AS \\\"r_ITEM_CODE\\\", \\\"r\\\".\\\"ITEM_NAME\\\" AS \\\"r_ITEM_NAME\\\", \\\"r\\\".\\\"PRD_UID\\\" AS \\\"r_PRD_UID\\\", \\\"r\\\".\\\"REWORK_QTY\\\" AS \\\"r_REWORK_QTY\\\", \\\"r\\\".\\\"DEFECT_TYPE\\\" AS \\\"r_DEFECT_TYPE\\\", \\\"r\\\".\\\"REWORK_METHOD\\\" AS \\\"r_REWORK_METHOD\\\", \\\"r\\\".\\\"STATUS\\\" AS \\\"r"
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+        "file": "../screenshots/production-quality-rework/03-button-process-inventory.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "노출 버튼: 새로고침, 재작업 등록, 그리드 옵션, 전체화면",
+        "입력 컨트롤: 검색, date, date, select, select"
+      ]
+    },
+    {
+      "id": "action-availability",
+      "title": "신규/수정/삭제 가능 여부",
+      "objective": "재작업 지시 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+      "actions": [
+        "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+        "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+        "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "action-availability",
+          "method": "GET",
+          "url": "/api/master/workers?limit=100",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "WORKER_MASTERS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[{\"workerCode\":\"W010\",\"workerName\":\"오지훈\",\"engName\":\"Oh Jihun\",\"dept\":\"생산2팀\",\"position\":\"사원\",\"phone\":\"010-0123-4567\",\"email\":null,\"hireDate\":\"2024-05-20\",\"quitDate\":null,\"qrCode\":null,\"photoUrl\":\"/uploads/workers/worker-1773631095668-522673336.png\",\"processIds\":[],\"remark\":null,\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-05T00:01:27.560Z\",\"updatedAt\":\"2026-03-16T03:18:17.030Z\"},{\"workerCode\":\"W009\",\"workerName\":\"강태영\",\"eng"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "action-availability",
+          "method": "GET",
+          "url": "/api/equipment/equips?limit=200",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "PROCESS_MASTERS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[{\"equipCode\":\"EQ-AINSP-01\",\"equipName\":\"통합검사 설비 #1\",\"equipType\":\"TESTER\",\"modelName\":\"SEED-AINSP-01\",\"maker\":\"HANES-SIM\",\"lineCode\":\"LINE-05\",\"processCode\":\"AINSP\",\"ipAddress\":null,\"port\":null,\"commType\":null,\"commConfig\":null,\"installDate\":\"2026-06-11\",\"status\":\"NORMAL\",\"currentJobOrderId\":null,\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"codex\",\"updatedBy\":\"codex\",\"createdAt\":\"2026-06-11T11:28:57.265Z\",\"updatedAt\":\"2026-06-11T11:28:57.265Z\",\"id\":\"EQ-AINSP-01\","
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "저장성 프로세스 진입 화면",
+        "file": "../screenshots/production-quality-rework/04-action-entry.png"
+      },
+      "notes": [
+        "프로세스 진입 실행: /등록/",
+        "본문 행 액션 버튼 수: 0",
+        "저장성 후보 버튼: 재작업 등록"
+      ]
+    },
+    {
+      "id": "save-validation-policy",
+      "title": "저장 검증 및 중복 방어 정책",
+      "objective": "재작업 지시 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+      "actions": [
+        "운영 재고/생산/품질/출하 상태를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+        "화면에서 확인된 대표 조회 API를 직접 호출한다.",
+        "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT/동일 작업번호 재처리로 검증하도록 분리한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/quality/reworks?limit=5000",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "REWORK_ORDERS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"r\\\".\\\"REWORK_NO\\\" AS \\\"r_REWORK_NO\\\", \\\"r\\\".\\\"DEFECT_LOG_ID\\\" AS \\\"r_DEFECT_LOG_ID\\\", \\\"r\\\".\\\"ITEM_CODE\\\" AS \\\"r_ITEM_CODE\\\", \\\"r\\\".\\\"ITEM_NAME\\\" AS \\\"r_ITEM_NAME\\\", \\\"r\\\".\\\"PRD_UID\\\" AS \\\"r_PRD_UID\\\", \\\"r\\\".\\\"REWORK_QTY\\\" AS \\\"r_REWORK_QTY\\\", \\\"r\\\".\\\"DEFECT_TYPE\\\" AS \\\"r_DEFECT_TYPE\\\", \\\"r\\\".\\\"REWORK_METHOD\\\" AS \\\"r_REWORK_METHOD\\\", \\\"r\\\".\\\"STATUS\\\" AS \\\"r"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/db-info",
+          "status": 200,
+          "ok": true,
+          "tables": [],
+          "responsePreview": "{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true}"
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "저장 검증 정책 확인 기준 화면",
+        "file": "../screenshots/production-quality-rework/05-save-validation-policy.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "대표 조회 API 직접 호출: /api/v1/db-info 200",
+        "저장성/중복 방어 공통 정책: 상태 변경 데이터는 페이지별 안전 데이터 생성 시나리오에서 수행",
+        "저장성 후보 버튼: 재작업 등록"
+      ]
+    },
+    {
+      "id": "api-db-screen-requery",
+      "title": "DB/API 확인 및 화면 재조회",
+      "objective": "재작업 지시 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+      "actions": [
+        "대표 조회 API를 직접 호출하거나 UI network API 결과를 사용한다.",
+        "확인된 Oracle 대표 테이블 count를 재확인한다.",
+        "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/db-info",
+          "status": 200,
+          "ok": true,
+          "tables": [],
+          "responsePreview": "{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true}"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/quality/reworks?limit=5000",
+          "status": 200,
+          "ok": true,
+          "tables": [
+            "REWORK_ORDERS"
+          ],
+          "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"r\\\".\\\"REWORK_NO\\\" AS \\\"r_REWORK_NO\\\", \\\"r\\\".\\\"DEFECT_LOG_ID\\\" AS \\\"r_DEFECT_LOG_ID\\\", \\\"r\\\".\\\"ITEM_CODE\\\" AS \\\"r_ITEM_CODE\\\", \\\"r\\\".\\\"ITEM_NAME\\\" AS \\\"r_ITEM_NAME\\\", \\\"r\\\".\\\"PRD_UID\\\" AS \\\"r_PRD_UID\\\", \\\"r\\\".\\\"REWORK_QTY\\\" AS \\\"r_REWORK_QTY\\\", \\\"r\\\".\\\"DEFECT_TYPE\\\" AS \\\"r_DEFECT_TYPE\\\", \\\"r\\\".\\\"REWORK_METHOD\\\" AS \\\"r_REWORK_METHOD\\\", \\\"r\\\".\\\"STATUS\\\" AS \\\"r"
+        }
+      ],
+      "dbChecks": [
+        {
+          "title": "PDA_ROLE_MENU 대표 count",
+          "sql": "SELECT COUNT(*) AS CNT FROM PDA_ROLE_MENU WHERE ROWNUM <= 100000000",
+          "result": {
+            "success": true,
+            "data": [
+              {
+                "CNT": 0
+              }
+            ],
+            "columns": [
+              "CNT"
+            ],
+            "row_count": 1,
+            "site": "JSHANES"
+          },
+          "ok": true
+        },
+        {
+          "title": "COM_CODES 대표 count",
+          "sql": "SELECT COUNT(*) AS CNT FROM COM_CODES WHERE ROWNUM <= 100000000",
+          "result": {
+            "success": true,
+            "data": [
+              {
+                "CNT": 577
+              }
+            ],
+            "columns": [
+              "CNT"
+            ],
+            "row_count": 1,
+            "site": "JSHANES"
+          },
+          "ok": true
+        },
+        {
+          "title": "SYS_CONFIGS 대표 count",
+          "sql": "SELECT COUNT(*) AS CNT FROM SYS_CONFIGS WHERE ROWNUM <= 100000000",
+          "result": {
+            "success": true,
+            "data": [
+              {
+                "CNT": 23
+              }
+            ],
+            "columns": [
+              "CNT"
+            ],
+            "row_count": 1,
+            "site": "JSHANES"
+          },
+          "ok": true
+        }
+      ],
+      "evidence": {
+        "label": "DB/API 확인 후 최종 재조회 화면",
+        "file": "../screenshots/production-quality-rework/06-api-db-screen-requery.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "대표 조회 API 응답: 200",
+        "DB 확인 테이블: PDA_ROLE_MENU, COM_CODES, SYS_CONFIGS",
+        "최종 화면 행 수: 1"
+      ]
+    }
+  ],
+  "apiEvents": [
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true,
+      "tables": [],
+      "responsePreview": "{\"success\":true,\"data\":{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true},\"timestamp\":\"2026-06-15T16:11:50.969Z\"}"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "PDA_ROLE_MENU"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":{\"email\":\"admin@hanes.com\",\"name\":\"시스템관리자\",\"empNo\":null,\"dept\":null,\"role\":\"ADMIN\",\"status\":\"ACTIVE\",\"lastLoginAt\":\"2026-06-15T06:46:27.064Z\",\"company\":\"40\",\"plant\":\"1000\",\"pdaRoleCode\":\"PDA_ADMIN\",\"allowedMenus\":[],\"pdaAllowedMenus\":[]},\"timestamp\":\"2026-06-15T16:11:51.043Z\",\"meta\":{\"debugSql\":{\"sql\":\"SELECT \\\"PdaRoleMenu\\\".\\\"MENU_CODE\\\" AS \\\"PdaRoleMenu_MENU_CODE\\\", \\\"PdaRoleMenu\\\".\\\"COMPANY\\\" AS \\\"PdaRoleMenu_COMPANY\\\", \\\"PdaRoleMenu\\\".\\\"PLANT_CD\\\" AS \\\"PdaRoleMenu_PLAN"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "COM_CODES"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":{\"ADJUST_ACCOUNT\":[{\"detailCode\":\"STOCK_ADJ\",\"codeName\":\"재고보정\",\"codeDesc\":null,\"sortOrder\":1,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"LOSS\",\"codeName\":\"감모/손실\",\"codeDesc\":null,\"sortOrder\":2,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"GAIN\",\"codeName\":\"과잉/이익\",\"codeDesc\":null,\"sortOrder\":3,\"attr1\":null,\"attr2\":null,\"attr3\":null},{\"detailCode\":\"ETC\",\"codeName\":\"기타\",\"codeDesc\":null,\"sortOrder\":99,\"attr1\":null,\"attr2\":null,\"attr3\":null}],\"ADJ_REASON\":[{\""
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "SYS_CONFIGS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":{\"data\":[{\"configKey\":\"FIFO_ENABLED\",\"configGroup\":\"MATERIAL\",\"configValue\":\"Y\",\"configType\":\"BOOLEAN\",\"label\":\"선입선출 사용\",\"description\":\"자재 출고 시 선입선출 적용 여부\",\"options\":null,\"sortOrder\":1,\"isActive\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-02-20T05:39:28.382Z\",\"updatedAt\":\"2026-02-20T05:39:28.382Z\"},{\"configKey\":\"FIFO_CRITERIA\",\"configGroup\":\"MATERIAL\",\"configValue\":\"MFG_DATE\",\"configType\":\"SELECT\",\"label\":\"선입선출 기준\",\"description\":\""
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/equipment/equips/metadata/lines",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "PROD_LINE_MASTERS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[{\"lineCode\":\"LINE-01\",\"lineName\":\"절단라인\",\"oper\":\"PRC-CUT\",\"lineType\":\"CUTTING\"},{\"lineCode\":\"LINE-02\",\"lineName\":\"압착라인\",\"oper\":\"PRC-CRIMP\",\"lineType\":\"CRIMPING\"},{\"lineCode\":\"LINE-03\",\"lineName\":\"선조립라인A\",\"oper\":\"PRC-PRESUB\",\"lineType\":\"ASSEMBLY\"},{\"lineCode\":\"LINE-04\",\"lineName\":\"조립라인A\",\"oper\":\"PRC-ASSY\",\"lineType\":\"ASSEMBLY\"},{\"lineCode\":\"LINE-05\",\"lineName\":\"검사포장라인\",\"oper\":\"PRC-TEST\",\"lineType\":\"TESTING\"},{\"lineCode\":\"P2001\",\"lineName\":\"자동압착1\",\"oper\":null,\"lineType\":null"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/quality/reworks?limit=5000",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "REWORK_ORDERS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"r\\\".\\\"REWORK_NO\\\" AS \\\"r_REWORK_NO\\\", \\\"r\\\".\\\"DEFECT_LOG_ID\\\" AS \\\"r_DEFECT_LOG_ID\\\", \\\"r\\\".\\\"ITEM_CODE\\\" AS \\\"r_ITEM_CODE\\\", \\\"r\\\".\\\"ITEM_NAME\\\" AS \\\"r_ITEM_NAME\\\", \\\"r\\\".\\\"PRD_UID\\\" AS \\\"r_PRD_UID\\\", \\\"r\\\".\\\"REWORK_QTY\\\" AS \\\"r_REWORK_QTY\\\", \\\"r\\\".\\\"DEFECT_TYPE\\\" AS \\\"r_DEFECT_TYPE\\\", \\\"r\\\".\\\"REWORK_METHOD\\\" AS \\\"r_REWORK_METHOD\\\", \\\"r\\\".\\\"STATUS\\\" AS \\\"r"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "COMM_CONFIGS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[{\"configName\":\"시리얼테스트\",\"commType\":\"SERIAL\",\"description\":\"바코드스캔\",\"host\":null,\"port\":null,\"portName\":\"COM1\",\"baudRate\":9600,\"dataBits\":8,\"stopBits\":\"1\",\"parity\":\"NONE\",\"flowControl\":\"NONE\",\"lineEnding\":\"NONE\",\"extraConfig\":null,\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-02-22T01:33:00.262Z\",\"updatedAt\":\"2026-02-22T19:38:20.025Z\"}],\"meta\":{\"page\":1,\"limit\":50,\"total\":1,\"totalPages\":1,\"hasNext\":false,\"hasPrev\":false,\"debugSq"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "MENU_CATEGORY_ITEMS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[{\"categoryCode\":\"__ROOT__\",\"labelKey\":\"menu.root\",\"iconName\":null,\"sortOrder\":10,\"isActive\":\"Y\",\"menus\":[{\"menuCode\":\"WORKFLOW\",\"sortOrder\":10},{\"menuCode\":\"DASHBOARD\",\"sortOrder\":20}]},{\"categoryCode\":\"MASTER\",\"labelKey\":\"menu.master\",\"iconName\":\"Database\",\"sortOrder\":20,\"isActive\":\"Y\",\"menus\":[{\"menuCode\":\"MST_PART\",\"sortOrder\":10},{\"menuCode\":\"MST_BOM\",\"sortOrder\":20},{\"menuCode\":\"MST_ROUTING\",\"sortOrder\":30},{\"menuCode\":\"MST_PARTNER\",\"sortOrder\":40},{\"menuCode\":\"MST_P"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "button-process-inventory",
+      "method": "GET",
+      "url": "/api/quality/reworks?limit=5000",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "REWORK_ORDERS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"r\\\".\\\"REWORK_NO\\\" AS \\\"r_REWORK_NO\\\", \\\"r\\\".\\\"DEFECT_LOG_ID\\\" AS \\\"r_DEFECT_LOG_ID\\\", \\\"r\\\".\\\"ITEM_CODE\\\" AS \\\"r_ITEM_CODE\\\", \\\"r\\\".\\\"ITEM_NAME\\\" AS \\\"r_ITEM_NAME\\\", \\\"r\\\".\\\"PRD_UID\\\" AS \\\"r_PRD_UID\\\", \\\"r\\\".\\\"REWORK_QTY\\\" AS \\\"r_REWORK_QTY\\\", \\\"r\\\".\\\"DEFECT_TYPE\\\" AS \\\"r_DEFECT_TYPE\\\", \\\"r\\\".\\\"REWORK_METHOD\\\" AS \\\"r_REWORK_METHOD\\\", \\\"r\\\".\\\"STATUS\\\" AS \\\"r"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "action-availability",
+      "method": "GET",
+      "url": "/api/master/workers?limit=100",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "WORKER_MASTERS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[{\"workerCode\":\"W010\",\"workerName\":\"오지훈\",\"engName\":\"Oh Jihun\",\"dept\":\"생산2팀\",\"position\":\"사원\",\"phone\":\"010-0123-4567\",\"email\":null,\"hireDate\":\"2024-05-20\",\"quitDate\":null,\"qrCode\":null,\"photoUrl\":\"/uploads/workers/worker-1773631095668-522673336.png\",\"processIds\":[],\"remark\":null,\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-05T00:01:27.560Z\",\"updatedAt\":\"2026-03-16T03:18:17.030Z\"},{\"workerCode\":\"W009\",\"workerName\":\"강태영\",\"eng"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "action-availability",
+      "method": "GET",
+      "url": "/api/equipment/equips?limit=200",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "PROCESS_MASTERS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[{\"equipCode\":\"EQ-AINSP-01\",\"equipName\":\"통합검사 설비 #1\",\"equipType\":\"TESTER\",\"modelName\":\"SEED-AINSP-01\",\"maker\":\"HANES-SIM\",\"lineCode\":\"LINE-05\",\"processCode\":\"AINSP\",\"ipAddress\":null,\"port\":null,\"commType\":null,\"commConfig\":null,\"installDate\":\"2026-06-11\",\"status\":\"NORMAL\",\"currentJobOrderId\":null,\"useYn\":\"Y\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"codex\",\"updatedBy\":\"codex\",\"createdAt\":\"2026-06-11T11:28:57.265Z\",\"updatedAt\":\"2026-06-11T11:28:57.265Z\",\"id\":\"EQ-AINSP-01\","
+    },
+    {
+      "source": "ui-network",
+      "stepId": "save-validation-policy",
+      "method": "GET",
+      "url": "/api/quality/reworks?limit=5000",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "REWORK_ORDERS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"r\\\".\\\"REWORK_NO\\\" AS \\\"r_REWORK_NO\\\", \\\"r\\\".\\\"DEFECT_LOG_ID\\\" AS \\\"r_DEFECT_LOG_ID\\\", \\\"r\\\".\\\"ITEM_CODE\\\" AS \\\"r_ITEM_CODE\\\", \\\"r\\\".\\\"ITEM_NAME\\\" AS \\\"r_ITEM_NAME\\\", \\\"r\\\".\\\"PRD_UID\\\" AS \\\"r_PRD_UID\\\", \\\"r\\\".\\\"REWORK_QTY\\\" AS \\\"r_REWORK_QTY\\\", \\\"r\\\".\\\"DEFECT_TYPE\\\" AS \\\"r_DEFECT_TYPE\\\", \\\"r\\\".\\\"REWORK_METHOD\\\" AS \\\"r_REWORK_METHOD\\\", \\\"r\\\".\\\"STATUS\\\" AS \\\"r"
+    },
+    {
+      "source": "direct-api",
+      "stepId": "save-validation-policy",
+      "method": "GET",
+      "url": "/api/v1/db-info",
+      "status": 200,
+      "ok": true,
+      "tables": [],
+      "responsePreview": "{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true}"
+    },
+    {
+      "source": "direct-api",
+      "stepId": "api-db-screen-requery",
+      "method": "GET",
+      "url": "/api/v1/db-info",
+      "status": 200,
+      "ok": true,
+      "tables": [],
+      "responsePreview": "{\"host\":\"10.1.10.35\",\"port\":\"1527\",\"database\":\"JSHNSMES\",\"username\":\"test\",\"connected\":true}"
+    },
+    {
+      "source": "ui-network",
+      "stepId": "api-db-screen-requery",
+      "method": "GET",
+      "url": "/api/quality/reworks?limit=5000",
+      "status": 200,
+      "ok": true,
+      "tables": [
+        "REWORK_ORDERS"
+      ],
+      "responsePreview": "{\"success\":true,\"data\":[],\"meta\":{\"page\":1,\"limit\":5000,\"total\":0,\"totalPages\":0,\"hasNext\":false,\"hasPrev\":false,\"debugSql\":{\"sql\":\"SELECT \\\"r\\\".\\\"REWORK_NO\\\" AS \\\"r_REWORK_NO\\\", \\\"r\\\".\\\"DEFECT_LOG_ID\\\" AS \\\"r_DEFECT_LOG_ID\\\", \\\"r\\\".\\\"ITEM_CODE\\\" AS \\\"r_ITEM_CODE\\\", \\\"r\\\".\\\"ITEM_NAME\\\" AS \\\"r_ITEM_NAME\\\", \\\"r\\\".\\\"PRD_UID\\\" AS \\\"r_PRD_UID\\\", \\\"r\\\".\\\"REWORK_QTY\\\" AS \\\"r_REWORK_QTY\\\", \\\"r\\\".\\\"DEFECT_TYPE\\\" AS \\\"r_DEFECT_TYPE\\\", \\\"r\\\".\\\"REWORK_METHOD\\\" AS \\\"r_REWORK_METHOD\\\", \\\"r\\\".\\\"STATUS\\\" AS \\\"r"
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "unexpectedConsole": [],
+  "unexpectedApi": [],
+  "reportFile": "pages/production-quality-rework.html",
+  "resultFile": "pages/production-quality-rework.json"
+}

@@ -132,7 +132,9 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
             </div>
           )}
           {selectedChild && (
-            <p className="text-xs text-text-muted mt-1">{selectedChild.itemName} ({selectedChild.itemType})</p>
+            <p className="text-xs text-text-muted mt-1">
+              {selectedChild.itemName} ({t(`comCode.ITEM_TYPE.${selectedChild.itemType}`, { defaultValue: selectedChild.itemType })})
+            </p>
           )}
         </div>
         <div className="grid grid-cols-3 gap-4">

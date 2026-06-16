@@ -70,16 +70,32 @@ export default function InputKioskPage() {
       .catch(() => setEquips([]));
   }, []);
 
-  // 설비 선택 시 → 오늘 일일점검 완료 여부 자동 체크
+  // 설비 선택 시 → 서버 조업일 기준 일일점검 완료 여부 자동 체크
   useEffect(() => {
     if (!selectedEquip?.equipCode) return;
-    const today = new Date().toISOString().split('T')[0];
     api.get('/equipment/daily-inspect/check', {
-      params: { equipCode: selectedEquip.equipCode, inspectDate: today },
+      params: { equipCode: selectedEquip.equipCode, inspectType: 'DAILY' },
     }).then(res => {
-      if (res.data?.data?.alreadyInspected) setInterlock('dailyInspectDone', true);
-    }).catch(() => {});
+      setInterlock('dailyInspectDone', Boolean(res.data?.data?.alreadyInspected));
+    }).catch(() => setInterlock('dailyInspectDone', false));
   }, [selectedEquip?.equipCode, setInterlock]);
+
+  // 작업지시 선택/변경 시 → 작업지시별 작업자설비점검 완료 여부 자동 체크
+  useEffect(() => {
+    if (!selectedEquip?.equipCode || !selectedJobOrder?.orderNo) {
+      setInterlock('workerInspectDone', false);
+      return;
+    }
+    api.get('/equipment/daily-inspect/check', {
+      params: {
+        equipCode: selectedEquip.equipCode,
+        inspectType: 'WORKER',
+        orderNo: selectedJobOrder.orderNo,
+      },
+    }).then(res => {
+      setInterlock('workerInspectDone', Boolean(res.data?.data?.alreadyInspected));
+    }).catch(() => setInterlock('workerInspectDone', false));
+  }, [selectedEquip?.equipCode, selectedJobOrder?.orderNo, setInterlock]);
 
   // 작업지시 변경 시 자주검사 완료 상태 초기화
   useEffect(() => {

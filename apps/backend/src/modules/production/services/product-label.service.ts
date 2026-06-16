@@ -4,6 +4,7 @@ import { IsNull, Repository } from 'typeorm';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { CreatePrdLabelsDto, PrdLabelResultDto } from '../dto/product-label.dto';
@@ -95,13 +96,46 @@ export class ProductLabelService {
     return this.tx.run(async (queryRunner) => {
       const results: PrdLabelResultDto[] = [];
 
-      for (let i = 0; i < dto.qty; i++) {
-        const prdUid = await this.numbering.nextPrdUid(queryRunner);
+      if (prodResult.prdUid && dto.qty !== 1) {
+        throw new BadRequestException('이미 제품 UID가 발행된 생산실적은 1장 재발행만 가능합니다.');
+      }
+
+      const uids = prodResult.prdUid
+        ? [prodResult.prdUid]
+        : await Promise.all(Array.from({ length: dto.qty }, () => this.numbering.nextPrdUid(queryRunner)));
+
+      for (const prdUid of uids) {
         results.push({
           prdUid,
           itemCode,
           itemName: part?.itemName ?? '',
         });
+
+        const existingLabel = await queryRunner.manager.findOne(FgLabel, {
+          where: {
+            fgBarcode: prdUid,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+        });
+
+        if (!existingLabel) {
+          await queryRunner.manager.save(
+            FgLabel,
+            queryRunner.manager.create(FgLabel, {
+              fgBarcode: prdUid,
+              itemCode,
+              orderNo: prodResult.orderNo,
+              equipCode: prodResult.equipCode,
+              workerId: prodResult.workerId,
+              lineCode: prodResult.jobOrder?.lineCode,
+              status: 'ISSUED',
+              inspectPassYn: 'Y',
+              company: prodResult.company,
+              plant: prodResult.plant,
+            }),
+          );
+        }
       }
 
       if (dto.qty === 1 && !prodResult.prdUid) {
@@ -117,6 +151,7 @@ export class ProductLabelService {
       }
 
       const log = queryRunner.manager.create(LabelPrintLog, {
+        printedAt: new Date(),
         category: 'prd_uid',
         printMode: 'BROWSER',
         uidList: JSON.stringify(results.map((r) => r.prdUid)),

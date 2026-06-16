@@ -1,0 +1,58 @@
+-- ============================================================================
+-- 2026-06-16 좌측 메뉴: 입하수불조회 등록
+-- ----------------------------------------------------------------------------
+-- - 신규 화면 `/material/arrival-transaction`의 leaf 코드 `MAT_ARRIVAL_TRANSACTION`
+-- - 대상: JSHANES company='40', plant='1000'
+-- - 위치: MATERIAL 카테고리의 입하실적조회(MAT_ARRIVAL_RESULT) 바로 뒤
+-- ============================================================================
+
+MERGE INTO MENU_CATEGORY_ITEMS t
+USING (
+  SELECT
+    'MAT_ARRIVAL_TRANSACTION' AS MENU_CODE,
+    'MATERIAL' AS CATEGORY_CODE,
+    45 AS SORT_ORDER
+  FROM DUAL
+) s
+ON (
+  t.COMPANY = '40'
+  AND t.PLANT_CD = '1000'
+  AND t.MENU_CODE = s.MENU_CODE
+)
+WHEN MATCHED THEN UPDATE SET
+  t.CATEGORY_CODE = s.CATEGORY_CODE,
+  t.SORT_ORDER = s.SORT_ORDER,
+  t.UPDATED_AT = SYSTIMESTAMP,
+  t.UPDATED_BY = 'codex'
+WHEN NOT MATCHED THEN INSERT
+  (MENU_CODE, CATEGORY_CODE, SORT_ORDER, COMPANY, PLANT_CD, CREATED_BY, UPDATED_BY)
+VALUES
+  (s.MENU_CODE, s.CATEGORY_CODE, s.SORT_ORDER, '40', '1000', 'codex', 'codex')
+/
+
+MERGE INTO ROLE_MENU_PERMISSIONS t
+USING (
+  SELECT ROLE_CODE, 'MAT_ARRIVAL_TRANSACTION' AS MENU_CODE
+  FROM ROLE_MENU_PERMISSIONS
+  WHERE COMPANY = '40'
+    AND PLANT_CD = '1000'
+    AND MENU_CODE = 'INV_ARRIVAL_STOCK'
+    AND CAN_ACCESS = 'Y'
+) s
+ON (
+  t.COMPANY = '40'
+  AND t.PLANT_CD = '1000'
+  AND t.ROLE_CODE = s.ROLE_CODE
+  AND t.MENU_CODE = s.MENU_CODE
+)
+WHEN MATCHED THEN UPDATE SET
+  t.CAN_ACCESS = 'Y',
+  t.UPDATED_AT = SYSTIMESTAMP
+WHEN NOT MATCHED THEN INSERT
+  (ROLE_CODE, MENU_CODE, CAN_ACCESS, COMPANY, PLANT_CD)
+VALUES
+  (s.ROLE_CODE, s.MENU_CODE, 'Y', '40', '1000')
+/
+
+COMMIT
+/

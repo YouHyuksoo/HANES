@@ -70,12 +70,12 @@ export class RoutingGroupService {
       );
     }
 
+    const total = await qb.getCount();
+
     const rawAndEntities = await qb
       .orderBy('g.routingCode', 'ASC')
       .skip(skip).take(limit)
       .getRawAndEntities();
-
-    const total = await qb.getCount();
 
     const data = rawAndEntities.entities.map((entity, i) => ({
       ...entity,

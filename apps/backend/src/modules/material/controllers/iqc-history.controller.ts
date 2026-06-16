@@ -34,8 +34,13 @@ export class IqcHistoryController {
   @Get('pending-arrivals')
   @ApiOperation({ summary: 'IQC 검사 대상 목록 (입하번호+품목 단위 그룹)' })
   async findPendingArrivals(@Query() query: PendingArrivalQueryDto, @Company() company: string, @Plant() plant: string) {
-    const data = await this.iqcHistoryService.findPendingArrivals(query, company, plant);
-    return ResponseUtil.success(data);
+    const result = await this.iqcHistoryService.findPendingArrivals(query, company, plant);
+    return {
+      ...ResponseUtil.success(result.data),
+      meta: {
+        debugSql: result.debugSql,
+      },
+    };
   }
 
   @Get('pending-serials')

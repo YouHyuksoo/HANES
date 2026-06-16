@@ -33,7 +33,8 @@ export class EquipInspectService {
       .addSelect('master.unit', 'unit')
       .addSelect('master.lslValue', 'lslValue')
       .addSelect('master.uslValue', 'uslValue')
-      .addSelect('master.workerQrCode', 'workerQrCode');
+      .addSelect('master.workerQrCode', 'workerQrCode')
+      .addSelect('master.imageUrl', 'imageUrl');
 
     if (company) qb.andWhere('pool.company = :company', { company });
     if (plant) qb.andWhere('pool.plant = :plant', { plant });

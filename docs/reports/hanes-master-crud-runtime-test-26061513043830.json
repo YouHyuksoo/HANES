@@ -1,0 +1,1177 @@
+{
+  "executedAt": "2026-06-15T13:04:38.140Z",
+  "base": "http://localhost:3003/api/v1",
+  "company": "40",
+  "plant": "1000",
+  "stamp": "26061513043830",
+  "target": "HANES 기준정보 화면/API CRUD 런타임 점검",
+  "summary": {
+    "total": 49,
+    "passed": 48,
+    "failed": 1
+  },
+  "codes": {
+    "comGroup": "CRUD_26061513043830",
+    "comDetail": "D1",
+    "partner": "V-26061513043830",
+    "rawPart": "RM-26061513043830",
+    "fgPart": "FG-26061513043830",
+    "process": "P13043830",
+    "line": "L-26061513043830",
+    "worker": "WK-26061513043830",
+    "warehouseA": "WHA-26061513043830",
+    "warehouseB": "WHB-26061513043830",
+    "location": "LOC-26061513043830",
+    "transfer": "WHA-26061513043830/WHB-26061513043830",
+    "equip": "EQ-26061513043830",
+    "equipBomItem": "EBI-26061513043830",
+    "routing": "RT-26061513043830",
+    "iqcPool": "IQP-26061513043830",
+    "iqcTemplate": "IQT-26061513043830",
+    "equipInspectItem": "EII-26061513043830",
+    "labelTemplate": "TPL-26061513043830",
+    "gauge": "G-26061513043830",
+    "calendar": "CAL-26061513043830",
+    "shift": "SH-061513043830"
+  },
+  "steps": [
+    {
+      "module": "health",
+      "operation": "DB 연결 확인",
+      "method": "GET",
+      "path": "/health",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "status": "ok"
+      }
+    },
+    {
+      "module": "공통코드",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/com-codes",
+      "request": {
+        "groupCode": "CRUD_26061513043830",
+        "detailCode": "D1",
+        "codeName": "CRUD 테스트 코드",
+        "codeDesc": "기준정보 CRUD 자동점검 생성",
+        "sortOrder": 1,
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "groupCode": "CRUD_26061513043830",
+        "detailCode": "D1",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "공통코드",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/com-codes",
+      "request": {
+        "groupCode": "CRUD_26061513043830",
+        "detailCode": "D1",
+        "codeName": "CRUD 테스트 코드",
+        "codeDesc": "기준정보 CRUD 자동점검 생성",
+        "sortOrder": 1,
+        "useYn": "Y"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 코드입니다: CRUD_26061513043830.D1",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:38.543Z",
+        "path": "/api/v1/master/com-codes"
+      }
+    },
+    {
+      "module": "공통코드",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/master/com-codes/CRUD_26061513043830%3A%3AD1",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "groupCode": "CRUD_26061513043830",
+        "detailCode": "D1",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "공통코드",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/master/com-codes/CRUD_26061513043830%3A%3AD1",
+      "request": {
+        "codeName": "CRUD 테스트 코드 수정",
+        "sortOrder": 2
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "groupCode": "CRUD_26061513043830",
+        "detailCode": "D1",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "거래처",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/partners",
+      "request": {
+        "partnerCode": "V-26061513043830",
+        "partnerName": "CRUD 테스트 거래처",
+        "partnerType": "SUPPLIER",
+        "bizNo": "BIZ-061513043830",
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "partnerCode": "V-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "거래처",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/partners",
+      "request": {
+        "partnerCode": "V-26061513043830",
+        "partnerName": "CRUD 테스트 거래처",
+        "partnerType": "SUPPLIER",
+        "bizNo": "BIZ-061513043830",
+        "useYn": "Y"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 거래처 코드입니다: V-26061513043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:38.870Z",
+        "path": "/api/v1/master/partners"
+      }
+    },
+    {
+      "module": "거래처",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/master/partners/V-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "partnerCode": "V-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "거래처",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/master/partners/V-26061513043830",
+      "request": {
+        "partnerName": "CRUD 테스트 거래처 수정",
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "partnerCode": "V-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "품목-원자재",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/parts",
+      "request": {
+        "itemCode": "RM-26061513043830",
+        "itemNo": "RAW-NO-26061513043830",
+        "itemName": "CRUD 테스트 원자재",
+        "itemType": "RAW_MATERIAL",
+        "unit": "EA",
+        "iqcYn": "Y",
+        "inspectMethod": "FULL",
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "itemCode": "RM-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "품목-원자재",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/parts",
+      "request": {
+        "itemCode": "RM-26061513043830",
+        "itemNo": "RAW-NO-26061513043830",
+        "itemName": "CRUD 테스트 원자재",
+        "itemType": "RAW_MATERIAL",
+        "unit": "EA",
+        "iqcYn": "Y",
+        "inspectMethod": "FULL",
+        "useYn": "Y"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 품목 코드입니다: RM-26061513043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:39.207Z",
+        "path": "/api/v1/master/parts"
+      }
+    },
+    {
+      "module": "품목-원자재",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/master/parts/RM-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "itemCode": "RM-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "품목-원자재",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/master/parts/RM-26061513043830",
+      "request": {
+        "itemName": "CRUD 테스트 원자재 수정",
+        "unit": "EA",
+        "iqcYn": "Y",
+        "inspectMethod": "FULL"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "itemCode": "RM-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "품목-완제품",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/parts",
+      "request": {
+        "itemCode": "FG-26061513043830",
+        "itemNo": "FG-NO-26061513043830",
+        "itemName": "CRUD 테스트 완제품",
+        "itemType": "FINISHED",
+        "productType": "HARNESS",
+        "unit": "EA",
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "itemCode": "FG-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "품목-완제품",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/parts",
+      "request": {
+        "itemCode": "FG-26061513043830",
+        "itemNo": "FG-NO-26061513043830",
+        "itemName": "CRUD 테스트 완제품",
+        "itemType": "FINISHED",
+        "productType": "HARNESS",
+        "unit": "EA",
+        "useYn": "Y"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 품목 코드입니다: FG-26061513043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:39.499Z",
+        "path": "/api/v1/master/parts"
+      }
+    },
+    {
+      "module": "품목-완제품",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/master/parts/FG-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "itemCode": "FG-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "품목-완제품",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/master/parts/FG-26061513043830",
+      "request": {
+        "itemName": "CRUD 테스트 완제품 수정",
+        "unit": "EA"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "itemCode": "FG-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "공정",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/processes",
+      "request": {
+        "processCode": "P13043830",
+        "processName": "CRUD 테스트 공정",
+        "processType": "ASSEMBLY",
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "processCode": "P13043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "공정",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/processes",
+      "request": {
+        "processCode": "P13043830",
+        "processName": "CRUD 테스트 공정",
+        "processType": "ASSEMBLY",
+        "useYn": "Y"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 공정 코드입니다: P13043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:39.891Z",
+        "path": "/api/v1/master/processes"
+      }
+    },
+    {
+      "module": "공정",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/master/processes/P13043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "processCode": "P13043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "공정",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/master/processes/P13043830",
+      "request": {
+        "processName": "CRUD 테스트 공정 수정",
+        "processType": "ASSEMBLY"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "processCode": "P13043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "생산라인",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/prod-lines",
+      "request": {
+        "lineCode": "L-26061513043830",
+        "lineName": "CRUD 테스트 라인",
+        "oper": "P13043830",
+        "lineType": "MAIN",
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "lineCode": "L-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "생산라인",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/prod-lines",
+      "request": {
+        "lineCode": "L-26061513043830",
+        "lineName": "CRUD 테스트 라인",
+        "oper": "P13043830",
+        "lineType": "MAIN",
+        "useYn": "Y"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 라인 코드입니다: L-26061513043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:40.197Z",
+        "path": "/api/v1/master/prod-lines"
+      }
+    },
+    {
+      "module": "생산라인",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/master/prod-lines/L-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "lineCode": "L-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "생산라인",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/master/prod-lines/L-26061513043830",
+      "request": {
+        "lineName": "CRUD 테스트 라인 수정",
+        "oper": "P13043830"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "lineCode": "L-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "작업자",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/workers",
+      "request": {
+        "workerCode": "WK-26061513043830",
+        "workerName": "CRUD 테스트 작업자",
+        "qrCode": "QR-WK-26061513043830",
+        "processIds": [
+          "P13043830"
+        ],
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "workerCode": "WK-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "작업자",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/workers",
+      "request": {
+        "workerCode": "WK-26061513043830",
+        "workerName": "CRUD 테스트 작업자",
+        "qrCode": "QR-WK-26061513043830",
+        "processIds": [
+          "P13043830"
+        ],
+        "useYn": "Y"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 작업자 코드입니다: WK-26061513043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:40.572Z",
+        "path": "/api/v1/master/workers"
+      }
+    },
+    {
+      "module": "작업자",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/master/workers/WK-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "workerCode": "WK-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "작업자",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/master/workers/WK-26061513043830",
+      "request": {
+        "workerName": "CRUD 테스트 작업자 수정",
+        "processIds": [
+          "P13043830"
+        ]
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "workerCode": "WK-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "창고-A",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/inventory/warehouses",
+      "request": {
+        "warehouseCode": "WHA-26061513043830",
+        "warehouseName": "CRUD 테스트 창고 A",
+        "warehouseType": "RAW",
+        "plantCode": "1000",
+        "isDefault": false
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "plantCode": "1000",
+        "processCode": null,
+        "lineCode": null,
+        "warehouseCode": "WHA-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "창고-A",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/inventory/warehouses",
+      "request": {
+        "warehouseCode": "WHA-26061513043830",
+        "warehouseName": "CRUD 테스트 창고 A",
+        "warehouseType": "RAW",
+        "plantCode": "1000",
+        "isDefault": false
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 창고 코드입니다.",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:40.961Z",
+        "path": "/api/v1/inventory/warehouses"
+      }
+    },
+    {
+      "module": "창고-A",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/inventory/warehouses/WHA-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "plantCode": "1000",
+        "processCode": null,
+        "lineCode": null,
+        "warehouseCode": "WHA-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "창고-A",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/inventory/warehouses/WHA-26061513043830",
+      "request": {
+        "warehouseName": "CRUD 테스트 창고 A 수정",
+        "warehouseType": "RAW",
+        "plantCode": "1000"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "plantCode": "1000",
+        "processCode": null,
+        "lineCode": null,
+        "warehouseCode": "WHA-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "창고-B",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/inventory/warehouses",
+      "request": {
+        "warehouseCode": "WHB-26061513043830",
+        "warehouseName": "CRUD 테스트 창고 B",
+        "warehouseType": "WIP",
+        "plantCode": "1000",
+        "isDefault": false
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "plantCode": "1000",
+        "processCode": null,
+        "lineCode": null,
+        "warehouseCode": "WHB-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "창고-B",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/inventory/warehouses",
+      "request": {
+        "warehouseCode": "WHB-26061513043830",
+        "warehouseName": "CRUD 테스트 창고 B",
+        "warehouseType": "WIP",
+        "plantCode": "1000",
+        "isDefault": false
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 창고 코드입니다.",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:41.323Z",
+        "path": "/api/v1/inventory/warehouses"
+      }
+    },
+    {
+      "module": "창고위치",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/inventory/warehouse-locations",
+      "request": {
+        "warehouseCode": "WHA-26061513043830",
+        "locationCode": "LOC-26061513043830",
+        "locationName": "CRUD 테스트 로케이션",
+        "zone": "Z1"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "warehouseCode": "WHA-26061513043830",
+        "locationCode": "LOC-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "창고위치",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/inventory/warehouse-locations",
+      "request": {
+        "warehouseCode": "WHA-26061513043830",
+        "locationCode": "LOC-26061513043830",
+        "locationName": "CRUD 테스트 로케이션",
+        "zone": "Z1"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 로케이션 코드입니다: LOC-26061513043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:41.592Z",
+        "path": "/api/v1/inventory/warehouse-locations"
+      }
+    },
+    {
+      "module": "창고위치",
+      "operation": "READ_LIST",
+      "method": "GET",
+      "path": "/inventory/warehouse-locations?warehouseId=WHA-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "count": 1,
+        "first": {
+          "company": "40",
+          "plant": "1000",
+          "warehouseCode": "WHA-26061513043830",
+          "locationCode": "LOC-26061513043830",
+          "locationName": "CRUD 테스트 로케이션",
+          "zone": "Z1",
+          "rowNo": null,
+          "colNo": null,
+          "levelNo": null,
+          "useYn": "Y",
+          "remark": null,
+          "createdBy": null,
+          "updatedBy": null,
+          "createdAt": "2026-06-15T13:04:40.523Z",
+          "updatedAt": "2026-06-15T13:04:40.523Z",
+          "warehouseName": "CRUD 테스트 창고 A 수정"
+        }
+      }
+    },
+    {
+      "module": "창고위치",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/inventory/warehouse-locations/WHA-26061513043830%3A%3ALOC-26061513043830",
+      "request": {
+        "locationName": "CRUD 테스트 로케이션 수정",
+        "zone": "Z2"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "warehouseCode": "WHA-26061513043830",
+        "locationCode": "LOC-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "창고이동규칙",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/transfer-rules",
+      "request": {
+        "fromWarehouseId": "WHA-26061513043830",
+        "toWarehouseId": "WHB-26061513043830",
+        "allowYn": "Y",
+        "remark": "CRUD 테스트 이동규칙"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "company": "40",
+        "plant": "1000",
+        "fromWarehouseId": "WHA-26061513043830",
+        "toWarehouseId": "WHB-26061513043830",
+        "allowYn": "Y",
+        "remark": "CRUD 테스트 이동규칙",
+        "createdBy": null,
+        "updatedBy": null,
+        "createdAt": "2026-06-15T13:04:41.103Z",
+        "updatedAt": "2026-06-15T13:04:41.103Z"
+      }
+    },
+    {
+      "module": "창고이동규칙",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/transfer-rules",
+      "request": {
+        "fromWarehouseId": "WHA-26061513043830",
+        "toWarehouseId": "WHB-26061513043830",
+        "allowYn": "Y",
+        "remark": "CRUD 테스트 이동규칙"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 창고이동규칙입니다: WHA-26061513043830 -> WHB-26061513043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:42.203Z",
+        "path": "/api/v1/master/transfer-rules"
+      }
+    },
+    {
+      "module": "창고이동규칙",
+      "operation": "READ_LIST",
+      "method": "GET",
+      "path": "/master/transfer-rules?fromWarehouseId=WHA-26061513043830&toWarehouseId=WHB-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "count": 1,
+        "first": {
+          "company": "40",
+          "plant": "1000",
+          "fromWarehouseId": "WHA-26061513043830",
+          "toWarehouseId": "WHB-26061513043830",
+          "allowYn": "Y",
+          "remark": "CRUD 테스트 이동규칙",
+          "createdBy": null,
+          "updatedBy": null,
+          "createdAt": "2026-06-15T13:04:41.103Z",
+          "updatedAt": "2026-06-15T13:04:41.103Z",
+          "fromWarehouseCode": "WHA-26061513043830",
+          "fromWarehouseName": "CRUD 테스트 창고 A 수정",
+          "toWarehouseCode": "WHB-26061513043830",
+          "toWarehouseName": "CRUD 테스트 창고 B"
+        }
+      }
+    },
+    {
+      "module": "창고이동규칙",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/master/transfer-rules/WHA-26061513043830/WHB-26061513043830",
+      "request": {
+        "allowYn": "N",
+        "remark": "CRUD 테스트 이동규칙 수정"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "company": "40",
+        "plant": "1000",
+        "fromWarehouseId": "WHA-26061513043830",
+        "toWarehouseId": "WHB-26061513043830",
+        "allowYn": "N",
+        "remark": "CRUD 테스트 이동규칙 수정",
+        "createdBy": null,
+        "updatedBy": null,
+        "createdAt": "2026-06-15T13:04:41.103Z",
+        "updatedAt": "2026-06-15T13:04:41.415Z"
+      }
+    },
+    {
+      "module": "설비",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/equipment/equips",
+      "request": {
+        "equipCode": "EQ-26061513043830",
+        "equipName": "CRUD 테스트 설비",
+        "equipType": "AUTO_CRIMP",
+        "lineCode": "L-26061513043830",
+        "processCode": "P13043830",
+        "commType": "TCP",
+        "ipAddress": "127.0.0.1",
+        "port": 1502,
+        "status": "NORMAL",
+        "useYn": "Y"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "processCode": "P13043830",
+        "lineCode": "L-26061513043830",
+        "equipCode": "EQ-26061513043830",
+        "useYn": "Y",
+        "status": "NORMAL"
+      }
+    },
+    {
+      "module": "설비",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/equipment/equips",
+      "request": {
+        "equipCode": "EQ-26061513043830",
+        "equipName": "CRUD 테스트 설비",
+        "equipType": "AUTO_CRIMP",
+        "lineCode": "L-26061513043830",
+        "processCode": "P13043830",
+        "commType": "TCP",
+        "ipAddress": "127.0.0.1",
+        "port": 1502,
+        "status": "NORMAL",
+        "useYn": "Y"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": true,
+      "status": 409,
+      "response": {
+        "success": false,
+        "message": "이미 존재하는 설비 코드입니다: EQ-26061513043830",
+        "errorCode": "HTTP_409",
+        "statusCode": 409,
+        "timestamp": "2026-06-15T13:04:42.803Z",
+        "path": "/api/v1/equipment/equips"
+      }
+    },
+    {
+      "module": "설비",
+      "operation": "READ",
+      "method": "GET",
+      "path": "/equipment/equips/EQ-26061513043830",
+      "request": null,
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "id": "EQ-26061513043830",
+        "processCode": "P13043830",
+        "lineCode": "L-26061513043830",
+        "equipCode": "EQ-26061513043830",
+        "useYn": "Y",
+        "status": "NORMAL"
+      }
+    },
+    {
+      "module": "설비",
+      "operation": "UPDATE",
+      "method": "PUT",
+      "path": "/equipment/equips/EQ-26061513043830",
+      "request": {
+        "equipName": "CRUD 테스트 설비 수정",
+        "equipType": "AUTO_CRIMP",
+        "lineCode": "L-26061513043830",
+        "processCode": "P13043830",
+        "status": "NORMAL"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "id": "EQ-26061513043830",
+        "processCode": "P13043830",
+        "lineCode": "L-26061513043830",
+        "equipCode": "EQ-26061513043830",
+        "useYn": "Y",
+        "status": "NORMAL"
+      }
+    },
+    {
+      "module": "공정-설비매핑",
+      "operation": "CREATE",
+      "method": "POST",
+      "path": "/master/processes/P13043830/equipments",
+      "request": {
+        "equipCode": "EQ-26061513043830"
+      },
+      "expected": "2xx success",
+      "ok": true,
+      "status": 201,
+      "response": {
+        "processCode": "P13043830",
+        "equipCode": "EQ-26061513043830",
+        "useYn": "Y"
+      }
+    },
+    {
+      "module": "공정-설비매핑",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/processes/P13043830/equipments",
+      "request": {
+        "equipCode": "EQ-26061513043830"
+      },
+      "expected": "4xx duplicate defense",
+      "ok": false,
+      "status": 201,
+      "response": {
+        "processCode": "P13043830",
+        "equipCode": "EQ-26061513043830",
+        "useYn": "Y"
+      },
+      "error": "{\"success\":true,\"data\":{\"company\":\"40\",\"plant\":\"1000\",\"processCode\":\"P13043830\",\"equipCode\":\"EQ-26061513043830\",\"useYn\":\"Y\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-06-15T13:04:42.118Z\",\"updatedAt\":\"2026-06-15T13:04:42.118Z\"},\"message\":\"설비가 공정에 배치되었습니다.\",\"timestamp\":\"2026-06-15T13:04:43.243Z\"}"
+    }
+  ],
+  "cleanup": [
+    {
+      "label": "설비",
+      "method": "DELETE",
+      "path": "/equipment/equips/EQ-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": null
+    },
+    {
+      "label": "창고이동규칙",
+      "method": "DELETE",
+      "path": "/master/transfer-rules/WHA-26061513043830/WHB-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": null
+    },
+    {
+      "label": "창고위치",
+      "method": "DELETE",
+      "path": "/inventory/warehouse-locations/WHA-26061513043830%3A%3ALOC-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "success": true
+      }
+    },
+    {
+      "label": "창고-B",
+      "method": "DELETE",
+      "path": "/inventory/warehouses/WHB-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "warehouseCode": "WHB-26061513043830",
+        "deleted": true
+      }
+    },
+    {
+      "label": "창고-A",
+      "method": "DELETE",
+      "path": "/inventory/warehouses/WHA-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": {
+        "warehouseCode": "WHA-26061513043830",
+        "deleted": true
+      }
+    },
+    {
+      "label": "작업자",
+      "method": "DELETE",
+      "path": "/master/workers/WK-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": null
+    },
+    {
+      "label": "생산라인",
+      "method": "DELETE",
+      "path": "/master/prod-lines/L-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": null
+    },
+    {
+      "label": "공정",
+      "method": "DELETE",
+      "path": "/master/processes/P13043830",
+      "ok": true,
+      "status": 200,
+      "response": null
+    },
+    {
+      "label": "품목-완제품",
+      "method": "DELETE",
+      "path": "/master/parts/FG-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": null
+    },
+    {
+      "label": "품목-원자재",
+      "method": "DELETE",
+      "path": "/master/parts/RM-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": null
+    },
+    {
+      "label": "거래처",
+      "method": "DELETE",
+      "path": "/master/partners/V-26061513043830",
+      "ok": true,
+      "status": 200,
+      "response": null
+    },
+    {
+      "label": "공통코드",
+      "method": "DELETE",
+      "path": "/master/com-codes/CRUD_26061513043830%3A%3AD1",
+      "ok": true,
+      "status": 200,
+      "response": null
+    }
+  ],
+  "failures": [
+    {
+      "module": "공정-설비매핑",
+      "operation": "DUPLICATE_GUARD",
+      "method": "POST",
+      "path": "/master/processes/P13043830/equipments",
+      "status": 201,
+      "error": "{\"success\":true,\"data\":{\"company\":\"40\",\"plant\":\"1000\",\"processCode\":\"P13043830\",\"equipCode\":\"EQ-26061513043830\",\"useYn\":\"Y\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-06-15T13:04:42.118Z\",\"updatedAt\":\"2026-06-15T13:04:42.118Z\"},\"message\":\"설비가 공정에 배치되었습니다.\",\"timestamp\":\"2026-06-15T13:04:43.243Z\"}"
+    }
+  ],
+  "error": "공정-설비매핑 DUPLICATE_GUARD failed: POST /master/processes/P13043830/equipments 201 {\"success\":true,\"data\":{\"company\":\"40\",\"plant\":\"1000\",\"processCode\":\"P13043830\",\"equipCode\":\"EQ-26061513043830\",\"useYn\":\"Y\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-06-15T13:04:42.118Z\",\"updatedAt\":\"2026-06-15T13:04:42.118Z\"},\"message\":\"설비가 공정에 배치되었습니다.\",\"timestamp\":\"2026-06-15T13:04:43.243Z\"}"
+}

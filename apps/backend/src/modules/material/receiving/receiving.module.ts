@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
+import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
+import { MatArrivalTransaction } from '../../../entities/mat-arrival-transaction.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
@@ -33,6 +35,8 @@ import { ReceivingService } from '../services/receiving.service';
       IqcLog,
       LabelPrintLog,
       MatArrival,
+      MatArrivalStock,
+      MatArrivalTransaction,
       MatIssue,
       MatLot,
       MatReceiving,

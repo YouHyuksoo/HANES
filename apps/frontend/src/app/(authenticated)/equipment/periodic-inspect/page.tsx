@@ -15,9 +15,8 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   CalendarCheck, Plus, Search, RefreshCw, Edit2, Trash2,
-  CheckCircle, XCircle, AlertTriangle, Shield,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
@@ -77,13 +76,6 @@ export default function PeriodicInspectPage() {
     { value: "FAIL", label: t("equipment.periodicInspect.resultFail") },
     { value: "CONDITIONAL", label: t("equipment.periodicInspect.resultConditional") },
   ], [t]);
-
-  const stats = useMemo(() => ({
-    total: data.length,
-    pass: data.filter(d => d.overallResult === "PASS").length,
-    fail: data.filter(d => d.overallResult === "FAIL").length,
-    conditional: data.filter(d => d.overallResult === "CONDITIONAL").length,
-  }), [data]);
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
@@ -198,13 +190,6 @@ export default function PeriodicInspectPage() {
             <Plus className="w-4 h-4 mr-1" />{t("common.register")}
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("equipment.periodicInspect.statTotal")} value={stats.total} icon={Shield} color="blue" />
-        <StatCard label={t("equipment.periodicInspect.resultPass")} value={stats.pass} icon={CheckCircle} color="green" />
-        <StatCard label={t("equipment.periodicInspect.resultFail")} value={stats.fail} icon={XCircle} color="red" />
-        <StatCard label={t("equipment.periodicInspect.resultConditional")} value={stats.conditional} icon={AlertTriangle} color="yellow" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

@@ -13,10 +13,9 @@
 import { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Plus, RefreshCw, Search, ArrowDownCircle,
-  DollarSign, Undo2, PackagePlus,
+  Plus, RefreshCw, Search, Undo2, PackagePlus,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import ReceivingTable from "@/components/consumables/ReceivingTable";
 import ReceivingFormPanel from "@/components/consumables/ReceivingFormPanel";
 import ReceivingReturnPanel from "@/components/consumables/ReceivingReturnPanel";
@@ -32,7 +31,7 @@ export default function ReceivingPage() {
   const [saving, setSaving] = useState(false);
   const panelAnimateRef = useRef(true);
   const {
-    data, searchTerm, setSearchTerm, typeFilter, setTypeFilter, todayStats, refresh,
+    data, searchTerm, setSearchTerm, typeFilter, setTypeFilter, refresh,
   } = useReceivingData();
 
   const openPanel = useCallback((type: PanelType) => {
@@ -99,13 +98,6 @@ export default function ReceivingPage() {
 
         {/* 바코드 스캔 입고 확정 */}
         <BarcodeScanPanel />
-
-        {/* 통계 카드 */}
-        <div className="grid grid-cols-3 gap-3">
-          <StatCard label={t("consumables.receiving.todayInCount")} value={todayStats.inCount} icon={ArrowDownCircle} color="green" />
-          <StatCard label={t("consumables.receiving.todayInAmount")} value={todayStats.inAmount.toLocaleString() + t("common.won")} icon={DollarSign} color="blue" />
-          <StatCard label={t("consumables.receiving.todayReturnCount")} value={todayStats.returnCount} icon={Undo2} color="orange" />
-        </div>
 
         {/* 필터 + 테이블 */}
         <Card>

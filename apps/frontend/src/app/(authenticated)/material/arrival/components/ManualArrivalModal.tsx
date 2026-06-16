@@ -71,7 +71,7 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
     try {
       await api.post("/material/arrivals/manual", {
         itemCode: form.itemCode,
-        warehouseCode: form.warehouseCode,
+        warehouseId: form.warehouseCode,
         qty: Number(form.qty),
         supUid: form.supUid || undefined,
         manufactureDate: form.manufactureDate || undefined,

@@ -1,0 +1,9 @@
+-- 버그 수정: PRODUCT_TRANSACTIONS / PRODUCT_STOCKS의 ITEM_TYPE 길이 부족
+-- 원인: prod-result.complete()가 'SEMI_PRODUCT'(12자)를 VARCHAR2(10) 컬럼에 INSERT → ORA-12899.
+--       반제품(SEMI_PRODUCT) 작업지시의 실적 완료가 전부 실패하던 잠재 버그.
+--       (기존 데이터는 FINISHED(8자)만 있어 노출되지 않았음)
+-- 비파괴 컬럼 확장. 사이트: JSHANES
+ALTER TABLE PRODUCT_TRANSACTIONS MODIFY ITEM_TYPE VARCHAR2(20)
+/
+ALTER TABLE PRODUCT_STOCKS MODIFY ITEM_TYPE VARCHAR2(20)
+/

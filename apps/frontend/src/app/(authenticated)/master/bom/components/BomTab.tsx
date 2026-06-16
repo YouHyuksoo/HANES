@@ -212,8 +212,9 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
       {!compact && <div className="flex gap-4 mt-3 text-xs text-text-muted flex-shrink-0">
         {Object.entries(partTypeConfig).map(([key, cfg]) => (
           <div key={key} className="flex items-center gap-1.5">
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color} text-[10px] font-medium`}>{key}</span>
-            <span>{t(`comCode.ITEM_TYPE.${key}`, { defaultValue: key })}</span>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color} text-[10px] font-medium`}>
+              {t(`comCode.ITEM_TYPE.${key}`, { defaultValue: key })}
+            </span>
           </div>
         ))}
       </div>}
@@ -290,7 +291,9 @@ function BomTreeRows({
                 {hasChildren && <span className={`ml-1 text-[10px] ${isSelected ? "text-white/70" : "text-text-muted"}`}>({item.children!.length})</span>}
               </td>
               <td className="px-2 py-1.5 border-r border-border text-center whitespace-nowrap">
-                <span className={`inline-flex px-1.5 py-0.5 text-[10px] rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.itemType}</span>
+                <span className={`inline-flex px-1.5 py-0.5 text-[10px] rounded-full font-medium ${cfg.bg} ${cfg.color}`}>
+                  {t(`comCode.ITEM_TYPE.${item.itemType}`, { defaultValue: item.itemType })}
+                </span>
               </td>
               <td className={`px-2 py-1.5 border-r border-border text-center font-mono ${isSelected ? "text-white/80" : "text-text-muted"}`}>
                 {item.processCode ? (

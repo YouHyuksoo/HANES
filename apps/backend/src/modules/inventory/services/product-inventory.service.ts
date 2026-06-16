@@ -294,6 +294,27 @@ export class ProductInventoryService {
   }
 
   /** 제품 출고 처리 */
+  async receiveFinishedFromWip(dto: ProductReceiveStockDto) {
+    return this.issueStock({
+      warehouseId: 'WIP_MAIN',
+      toWarehouseId: dto.warehouseId,
+      itemCode: dto.itemCode,
+      itemType: 'FINISHED',
+      prdUid: dto.prdUid,
+      qty: dto.qty,
+      transType: 'WIP_OUT',
+      orderNo: dto.orderNo,
+      processCode: dto.processCode,
+      refType: dto.refType,
+      refId: dto.refId,
+      workerId: dto.workerId,
+      remark: dto.remark ?? '제품입고 WIP->FG 이동',
+      company: dto.company,
+      plant: dto.plant,
+    });
+  }
+
+  /** 제품 출고 처리 */
   async issueStock(dto: ProductIssueStockDto) {
     const transNo = await this.generateTransNo();
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);

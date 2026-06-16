@@ -47,6 +47,14 @@ export interface IqcSubmitExtra {
 
 const INITIAL_RESULT_FORM: IqcResultForm = { result: '', inspector: '', remark: '' };
 
+const formatDebugSql = (debugSql?: { sql?: string; parameters?: Record<string, unknown> }) => {
+  if (!debugSql?.sql) return '';
+  const parameters = debugSql.parameters && Object.keys(debugSql.parameters).length > 0
+    ? `\n\n-- parameters\n-- ${JSON.stringify(debugSql.parameters, null, 2).replace(/\n/g, '\n-- ')}`
+    : '';
+  return `${debugSql.sql}${parameters}`;
+};
+
 /** 백엔드 iqcStatus → 프론트엔드 IqcStatus 매핑 */
 const mapToFrontendStatus = (iqcStatus: string): IqcStatus => {
   if (iqcStatus === 'PASS') return 'PASSED';
@@ -56,6 +64,7 @@ const mapToFrontendStatus = (iqcStatus: string): IqcStatus => {
 
 export function useIqcData() {
   const [items, setItems] = useState<IqcItem[]>([]);
+  const [sqlQuery, setSqlQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [methodFilter, setMethodFilter] = useState('');
@@ -71,6 +80,7 @@ export function useIqcData() {
         params: { iqcStatus: 'PENDING' },
       });
       const groups = res.data?.data ?? [];
+      setSqlQuery(formatDebugSql(res.data?.meta?.debugSql));
       const mapped: IqcItem[] = groups.map((g: any) => ({
         id: `${g.arrivalNo}::${g.itemCode}`,
         arrivalNo: g.arrivalNo || '-',
@@ -88,6 +98,7 @@ export function useIqcData() {
       setItems(mapped);
     } catch {
       setItems([]);
+      setSqlQuery('');
     } finally {
       setLoading(false);
     }
@@ -139,6 +150,7 @@ export function useIqcData() {
         details: details ? JSON.stringify(details) : undefined,
         sampleQty: extra?.sampleQty || undefined,
         sampleBarcode: extra?.sampleBarcode || undefined,
+        inspectClass: selectedItem.inspectMethod || undefined,
       });
 
       // 검사성적서 파일 업로드 (결과 등록 후)
@@ -167,6 +179,7 @@ export function useIqcData() {
 
   return {
     filteredItems,
+    sqlQuery,
     stats,
     loading,
     statusFilter, setStatusFilter,

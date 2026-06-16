@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Search } from "lucide-react";
 import { Button, Input, ComCodeBadge } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, InspectItemImage } from "@/components/shared";
 import api from "@/services/api";
 import { InspectItemMasterRow, ITEM_TYPE_COLORS } from "../types";
 
@@ -218,6 +218,9 @@ export default function InspectItemSelectPanel({
                       onClick={e => e.stopPropagation()}
                       className="mt-0.5 w-4 h-4 accent-primary flex-shrink-0"
                     />
+                    <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} size={40} />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-xs text-text-muted">{item.itemCode}</span>

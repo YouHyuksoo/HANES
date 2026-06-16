@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -38,6 +38,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
   const [searchText, setSearchText] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLine, setEditingLine] = useState<ProdLine | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ProdLine | null>(null);
   const [formData, setFormData] = useState<Partial<ProdLine>>({});
   const [saving, setSaving] = useState(false);
 
@@ -100,14 +101,16 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
     }
   }, [formData, editingLine, fetchLines]);
 
-  const handleDelete = useCallback(async (line: ProdLine) => {
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/master/prod-lines/${line.lineCode}`);
+      await api.delete(`/master/prod-lines/${deleteTarget.lineCode}`);
+      setDeleteTarget(null);
       fetchLines();
     } catch (e: any) {
       console.error("Delete failed:", e);
     }
-  }, [fetchLines]);
+  }, [deleteTarget, fetchLines]);
 
   const columns = useMemo<ColumnDef<ProdLine>[]>(() => [
     { id: "actions", header: t("common.actions"), size: 80,
@@ -117,7 +120,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
           <button onClick={(e) => { e.stopPropagation(); openEditModal(row.original); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original); }} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>
         </div>
@@ -205,6 +208,15 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
           </Button>
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t("common.delete")}
+        message={`${deleteTarget?.lineCode ?? ""} (${deleteTarget?.lineName ?? ""}) ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        confirmText={t("common.delete")}
+        variant="danger"
+      />
     </>
   );
 }

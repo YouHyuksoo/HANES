@@ -2,13 +2,12 @@
 
 /**
  * @file components/MaterialListPanel.tsx
- * @description 좌측 패널 — BOM 자재리스트(롯트 스캔 현황) + 소모성 설비 부품
+ * @description 좌측 패널 — BOM 자재리스트(롯트 스캔 현황) + 소모성 설비 부품(매핑 기반)
  *
  * 초보자 가이드:
- * - 작업지시 선택 시 BOM 항목 자동 로드
- * - 각 카드: 이미지 + 품목코드 + 소요수량 / 롯트번호 + 입고수량
- * - 초록 테두리: 롯트 스캔 완료 / 빨강 테두리: 미스캔
- * - 상단 헤더 바코드 스캔으로 롯트 등록 (EquipHeader에서 처리)
+ * - 상단 자재리스트: 작업지시 제품 BOM의 투입자재. 바코드(matUid) 롯트 스캔.
+ * - 하단 소모성 설비 부품: 소모품-설비-모델 매핑(CONSUMABLE_USAGE_MAP)으로 필요 소모품을 조회,
+ *   바코드(conUid) 스캔으로 실제 롯트를 장착. 재고 차감이 아니라 사용횟수를 관리한다.
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,57 +30,27 @@ export interface BomItem {
   qtyPer: number;
   seq: number;
   processCode?: string;
+  childPart?: { itemType?: string | null; itemName?: string | null } | null;
 }
 
-interface ConsumableItem {
-  id: string;
+/**
+ * BOM 항목 중 투입자재(원자재·반제품)만 남긴다(소모품 제외).
+ * 소모품은 제품 BOM이 아니라 소모품-설비-모델 매핑으로 관리한다.
+ */
+export function filterBomMaterials(items: BomItem[]): BomItem[] {
+  return items.filter((b) => b.childPart?.itemType !== 'CONSUMABLE');
+}
+
+/** 매핑 기반 소모품 행 (백엔드 KioskConsumableRow) */
+export interface ConsumableMapRow {
   consumableCode: string;
-  consumableName: string;
-  currentCount: number;
-  maxCount: number;
-  category: string;
-}
-
-interface ConsumableApiItem {
-  id?: string;
-  consumableCode: string;
-  consumableName: string;
-  currentCount?: number | null;
-  maxCount?: number | null;
-  expectedLife?: number | null;
-  category?: string | null;
-}
-
-function toNumber(value: number | string | null | undefined): number {
-  const parsed = Number(value ?? 0);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function normalizeConsumable(item: ConsumableApiItem): ConsumableItem {
-  return {
-    id: item.id ?? item.consumableCode,
-    consumableCode: item.consumableCode,
-    consumableName: item.consumableName,
-    currentCount: toNumber(item.currentCount),
-    maxCount: toNumber(item.maxCount ?? item.expectedLife),
-    category: item.category ?? '',
-  };
-}
-
-function lifeBarColor(current: number, max: number): string {
-  if (max <= 0) return 'bg-gray-300';
-  const ratio = current / max;
-  if (ratio >= 1) return 'bg-red-500';
-  if (ratio >= 0.8) return 'bg-orange-400';
-  return 'bg-green-500';
-}
-
-function lifeTextColor(current: number, max: number): string {
-  if (max <= 0) return '';
-  const ratio = current / max;
-  if (ratio >= 1) return 'text-red-600 dark:text-red-400';
-  if (ratio >= 0.8) return 'text-orange-500 dark:text-orange-400';
-  return 'text-text-muted';
+  name: string;
+  usagePerUnit: number;
+  expectedLife: number | null;
+  warningCount: number | null;
+  mountedConUid: string | null;
+  currentCount: number | null;
+  lotStatus: string | null;
 }
 
 export default function MaterialListPanel({
@@ -91,28 +60,27 @@ export default function MaterialListPanel({
   consumableScanDisabledReasons = [],
 }: MaterialListPanelProps) {
   const { t } = useTranslation();
-  const { selectedJobOrder, selectedEquip, scannedMaterialLots, interlock, removeScannedMaterialLot, addScannedMaterialLot, setInterlock } = useKioskStore();
+  const { selectedJobOrder, scannedMaterialLots, interlock, removeScannedMaterialLot, addScannedMaterialLot, setInterlock, consumableRefreshSeq, bumpConsumableRefresh } = useKioskStore();
   const [bomItems, setBomItems] = useState<BomItem[]>([]);
-  const [consumables, setConsumables] = useState<ConsumableItem[]>([]);
+  const [consumables, setConsumables] = useState<ConsumableMapRow[]>([]);
 
+  // 작업지시 품목의 제품 BOM(투입자재만) 로드
   useEffect(() => {
     if (!selectedJobOrder?.itemCode) { setBomItems([]); return; }
     api.get(`/master/boms/parent/${selectedJobOrder.itemCode}`)
-      .then(res => setBomItems(res.data?.data ?? []))
+      .then(res => setBomItems(filterBomMaterials(res.data?.data ?? [])))
       .catch(() => setBomItems([]));
   }, [selectedJobOrder?.itemCode]);
 
+  // 소모품 매핑(모델+설비) 로드 — 스캔 장착 후 consumableRefreshSeq 증가로 재조회
   useEffect(() => {
-    if (!selectedEquip?.equipCode) { setConsumables([]); return; }
-    api.get(`/equipment/consumables/mounted/${selectedEquip.equipCode}`)
-      .then(res => {
-        const data: ConsumableApiItem[] = res.data?.data ?? [];
-        setConsumables(data.map(normalizeConsumable));
-      })
+    if (!selectedJobOrder?.orderNo) { setConsumables([]); return; }
+    api.get(`/production/job-orders/${selectedJobOrder.orderNo}/consumables`)
+      .then(res => setConsumables(res.data?.data ?? []))
       .catch(() => setConsumables([]));
-  }, [selectedEquip?.equipCode]);
+  }, [selectedJobOrder?.orderNo, consumableRefreshSeq]);
 
-  // 작업지시 변경 시 기존 스캔 내역 서버에서 로드
+  // 작업지시 변경 시 기존 자재 스캔 내역 서버에서 로드
   useEffect(() => {
     if (!selectedJobOrder?.orderNo) return;
     api.get(`/production/job-orders/${selectedJobOrder.orderNo}/material-lots`)
@@ -125,7 +93,7 @@ export default function MaterialListPanel({
       .catch(() => {});
   }, [selectedJobOrder?.orderNo, addScannedMaterialLot]);
 
-  // BOM이 로드되고 스캔 롯트가 모두 커버하면 인터락 자동 재평가
+  // 자재 롯트가 모두 커버하면 인터락 자동 재평가
   useEffect(() => {
     if (bomItems.length === 0) return;
     const allDone = bomItems.every(b =>
@@ -133,6 +101,12 @@ export default function MaterialListPanel({
     );
     setInterlock('materialScanDone', allDone);
   }, [bomItems, scannedMaterialLots, setInterlock]);
+
+  // 매핑 소모품이 모두 장착(conUid)되면(또는 매핑 소모품이 없으면) 소모품 인터락 재평가
+  useEffect(() => {
+    const allDone = consumables.length === 0 || consumables.every(c => c.mountedConUid != null);
+    setInterlock('consumableScanDone', allDone);
+  }, [consumables, setInterlock]);
 
   const scannedMap = new Map(
     scannedMaterialLots.map(l => [`${l.itemCode}::${l.seq}`, l])
@@ -147,6 +121,18 @@ export default function MaterialListPanel({
       removeScannedMaterialLot(item.childItemCode, item.seq);
     } catch {
       // 삭제 실패 시 무시
+    }
+  };
+
+  const handleRemoveConsumable = async (item: ConsumableMapRow) => {
+    if (!selectedJobOrder?.orderNo || !item.mountedConUid) return;
+    try {
+      await api.delete(
+        `/production/job-orders/${selectedJobOrder.orderNo}/consumables/${item.mountedConUid}`
+      );
+      bumpConsumableRefresh();
+    } catch {
+      // 해제 실패 시 무시
     }
   };
 
@@ -167,6 +153,8 @@ export default function MaterialListPanel({
     }
     setCancelAllOpen(false);
   };
+
+  const mountedConsumCount = consumables.filter(c => c.mountedConUid != null).length;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -235,12 +223,9 @@ export default function MaterialListPanel({
                     isScanned ? 'border-l-green-500 bg-green-50/30 dark:bg-green-950/10' : 'border-l-red-400',
                   ].join(' ')}
                 >
-                  {/* 상태 아이콘 */}
                   {isScanned
                     ? <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
                     : <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />}
-
-                  {/* 정보 영역 */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-1">
                       <span className="text-[11px] font-bold text-text truncate leading-none">{item.childItemCode}</span>
@@ -257,8 +242,6 @@ export default function MaterialListPanel({
                       )}
                     </div>
                   </div>
-
-                  {/* 롯트 취소 버튼 */}
                   {isScanned && (
                     <button
                       onClick={() => handleRemoveLot(item)}
@@ -275,11 +258,14 @@ export default function MaterialListPanel({
         )}
       </div>
 
-      {/* 소모성 설비 부품 */}
+      {/* 소모성 설비 부품 (매핑 기반) */}
       <div className="border-t border-border flex-1 min-h-0 overflow-y-auto">
         <div className="sticky top-0 bg-slate-100 dark:bg-slate-800 px-3 py-2 border-b border-border flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
           <span className="text-xs font-semibold text-text">{t('kiosk.material.consumables')}</span>
+          <span className="ml-auto text-xs text-text-muted">
+            {mountedConsumCount}/{consumables.length}{t('kiosk.material.unit')}
+          </span>
           {onOpenConsumableScan && (
             <button
               onClick={onOpenConsumableScan}
@@ -288,7 +274,7 @@ export default function MaterialListPanel({
                 ? t('kiosk.prep.consumableScan')
                 : consumableScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.consumableScan')}
               className={[
-                'ml-auto inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
+                'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
                 interlock.consumableScanDone
                   ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-900/20 dark:text-teal-300'
                   : 'border-border text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed',
@@ -299,14 +285,6 @@ export default function MaterialListPanel({
               {interlock.consumableScanDone && <CheckCircle2 className="h-3 w-3 text-teal-500" />}
             </button>
           )}
-          {(consumableScanDisabledReasons.length > 0 && onOpenConsumableScan) && (
-            <span
-              className="ml-2 text-[10px] text-text-muted max-w-[140px] truncate"
-              title={consumableScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.consumableScan')}
-            >
-              {consumableScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.consumableScan')}
-            </span>
-          )}
         </div>
         {consumables.length === 0 ? (
           <div className="px-3 py-4 text-center">
@@ -315,31 +293,56 @@ export default function MaterialListPanel({
         ) : (
           <ul className="divide-y divide-border/40">
             {consumables.map((item) => {
-              const ratio = item.maxCount > 0 ? item.currentCount / item.maxCount : 0;
-              const isWarning = ratio >= 0.8;
+              const isMounted = Boolean(item.mountedConUid);
+              const over = item.expectedLife != null && item.currentCount != null && item.currentCount >= item.expectedLife;
+              const warn = !over && item.warningCount != null && item.currentCount != null && item.currentCount >= item.warningCount;
               return (
-                <li key={item.id} className={`flex items-center gap-1.5 px-2 py-1 border-l-2 ${isWarning ? 'border-l-orange-400' : 'border-l-transparent'}`}>
-                  {ratio >= 1
+                <li
+                  key={item.consumableCode}
+                  className={[
+                    'flex items-center gap-1.5 px-2 py-1 border-l-2 transition-colors',
+                    !isMounted ? 'border-l-red-400'
+                      : over ? 'border-l-red-500 bg-red-50/30 dark:bg-red-950/10'
+                      : warn ? 'border-l-orange-400 bg-orange-50/30 dark:bg-orange-950/10'
+                      : 'border-l-green-500 bg-green-50/30 dark:bg-green-950/10',
+                  ].join(' ')}
+                >
+                  {!isMounted
+                    ? <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />
+                    : over
                     ? <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
-                    : ratio >= 0.8
+                    : warn
                     ? <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
-                    : <div className="w-3 h-3 shrink-0" />}
+                    : <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-1">
-                      <span className="text-[11px] font-medium text-text truncate leading-none">{item.consumableName}</span>
-                      <span className={`text-[10px] font-bold tabular-nums shrink-0 leading-none ${lifeTextColor(item.currentCount, item.maxCount)}`}>
-                        {item.currentCount.toLocaleString()}/{item.maxCount.toLocaleString()}
-                      </span>
+                      <span className="text-[11px] font-bold text-text truncate leading-none">{item.consumableCode}</span>
+                      {isMounted && item.expectedLife != null && (
+                        <span className={`text-[10px] font-bold tabular-nums shrink-0 leading-none ${over ? 'text-red-600 dark:text-red-400' : warn ? 'text-orange-600 dark:text-orange-400' : 'text-text-muted'}`}>
+                          {(item.currentCount ?? 0).toLocaleString()}/{item.expectedLife.toLocaleString()}
+                        </span>
+                      )}
                     </div>
-                    {item.maxCount > 0 && (
-                      <div className="w-full bg-surface rounded-full h-0.5 mt-0.5">
-                        <div
-                          className={`h-0.5 rounded-full transition-all ${lifeBarColor(item.currentCount, item.maxCount)}`}
-                          style={{ width: `${Math.min(ratio * 100, 100)}%` }}
-                        />
-                      </div>
-                    )}
+                    <div className="flex items-baseline justify-between gap-1 mt-0.5">
+                      {isMounted ? (
+                        <>
+                          <span className="text-[10px] text-green-700 dark:text-green-300 truncate leading-none">{item.mountedConUid}</span>
+                          <span className="text-[10px] font-medium text-green-700 dark:text-green-300 shrink-0 leading-none">{t('kiosk.material.mounted')}</span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-red-400 italic leading-none truncate">{item.name}</span>
+                      )}
+                    </div>
                   </div>
+                  {isMounted && (
+                    <button
+                      onClick={() => handleRemoveConsumable(item)}
+                      className="shrink-0 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-text-muted hover:text-red-500 transition-colors"
+                      title={t('kiosk.material.removeLot')}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                 </li>
               );
             })}

@@ -216,6 +216,46 @@ describe('IqcHistoryService cancel policy', () => {
     });
   });
 
+  describe('findPendingArrivals', () => {
+    it('검사 대상 목록과 함께 실제 QueryBuilder SQL과 파라미터를 반환한다', async () => {
+      const qb: any = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          {
+            arrivalNo: 'ARR-001',
+            itemCode: 'ITEM-001',
+            itemName: 'Item',
+            unit: 'EA',
+            inspectMethod: 'FULL',
+            vendor: 'VENDOR-A',
+            totalQty: '20',
+            serialCount: '2',
+            recvDate: new Date('2026-06-13'),
+            createdAt: new Date('2026-06-13T01:00:00Z'),
+          },
+        ]),
+        getSql: jest.fn().mockReturnValue('SELECT ... FROM MAT_LOTS lot WHERE lot.IQC_STATUS = ?'),
+        getParameters: jest.fn().mockReturnValue({ iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' }),
+      };
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await target.findPendingArrivals({ iqcStatus: 'PENDING' }, 'HANES', 'P01');
+
+      expect(result.data).toHaveLength(1);
+      expect(result.debugSql).toEqual({
+        sql: 'SELECT ... FROM MAT_LOTS lot WHERE lot.IQC_STATUS = ?',
+        parameters: { iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' },
+      });
+    });
+  });
+
   describe('createArrivalResult', () => {
     it('입하단위 IQC 판정은 LOT과 입하 행 상태를 같은 결과로 갱신한다', async () => {
       mockMatLotRepo.find.mockResolvedValue([

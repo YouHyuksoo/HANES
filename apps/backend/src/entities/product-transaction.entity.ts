@@ -48,7 +48,7 @@ export class ProductTransaction {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ type: 'varchar2', name: 'ITEM_TYPE', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_TYPE', length: 20, nullable: true })
   itemType: string | null;
 
   @Column({ type: 'varchar2', name: 'PRD_UID', length: 50, nullable: true })

@@ -14,6 +14,28 @@ import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
+export interface DebugSql {
+  sql: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface PendingArrivalsResult {
+  data: Array<{
+    arrivalNo: string;
+    itemCode: string;
+    itemName: string | null;
+    unit: string | null;
+    inspectMethod: string | null;
+    vendor: string;
+    totalQty: number;
+    serialCount: number;
+    recvDate: Date | null;
+    createdAt: Date | null;
+    iqcStatus: string;
+  }>;
+  debugSql: DebugSql;
+}
+
 @Injectable()
 export class IqcHistoryService {
   constructor(
@@ -228,13 +250,21 @@ export class IqcHistoryService {
    * - 개별 시리얼이 아니라 ARRIVAL_NO + ITEM_CODE 로 묶어서 1행으로 반환
    * - 집계는 SQL GROUP BY 로 수행 (메모리 집계 금지)
    */
-  async findPendingArrivals(query: PendingArrivalQueryDto, company?: string, plant?: string) {
+  async findPendingArrivals(query: PendingArrivalQueryDto, company?: string, plant?: string): Promise<PendingArrivalsResult> {
     const iqcStatus = query.iqcStatus || 'PENDING';
 
     const qb = this.matLotRepository
       .createQueryBuilder('lot')
+      .leftJoin(
+        PartMaster,
+        'part',
+        'part.itemCode = lot.itemCode AND part.company = lot.company AND part.plant = lot.plant',
+      )
       .select('lot.arrivalNo', 'arrivalNo')
       .addSelect('lot.itemCode', 'itemCode')
+      .addSelect('part.itemName', 'itemName')
+      .addSelect('part.unit', 'unit')
+      .addSelect('part.inspectMethod', 'inspectMethod')
       .addSelect('lot.vendor', 'vendor')
       .addSelect('SUM(lot.initQty)', 'totalQty')
       .addSelect('COUNT(*)', 'serialCount')
@@ -254,11 +284,21 @@ export class IqcHistoryService {
     qb.groupBy('lot.arrivalNo')
       .addGroupBy('lot.itemCode')
       .addGroupBy('lot.vendor')
+      .addGroupBy('part.itemName')
+      .addGroupBy('part.unit')
+      .addGroupBy('part.inspectMethod')
       .orderBy('MIN(lot.createdAt)', 'DESC');
 
+    const debugSql = {
+      sql: qb.getSql(),
+      parameters: qb.getParameters(),
+    };
     const rows = await qb.getRawMany<{
       arrivalNo: string;
       itemCode: string;
+      itemName: string | null;
+      unit: string | null;
+      inspectMethod: string | null;
       vendor: string;
       totalQty: string;
       serialCount: string;
@@ -266,30 +306,22 @@ export class IqcHistoryService {
       createdAt: Date | null;
     }>();
 
-    const itemCodes = [...new Set(rows.map((r) => r.itemCode).filter(Boolean))];
-    const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
-        where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
-      })
-      : [];
-    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
-
-    return rows.map((r) => {
-      const part = partMap.get(r.itemCode);
-      return {
+    return {
+      data: rows.map((r) => ({
         arrivalNo: r.arrivalNo,
         itemCode: r.itemCode,
-        itemName: part?.itemName ?? null,
-        unit: part?.unit ?? null,
-        inspectMethod: part?.inspectMethod ?? null,
+        itemName: r.itemName ?? null,
+        unit: r.unit ?? null,
+        inspectMethod: r.inspectMethod ?? null,
         vendor: r.vendor,
         totalQty: Number(r.totalQty) || 0,
         serialCount: Number(r.serialCount) || 0,
         recvDate: r.recvDate,
         createdAt: r.createdAt,
         iqcStatus,
-      };
-    });
+      })),
+      debugSql,
+    };
   }
 
   /**

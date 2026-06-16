@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Save } from "lucide-react";
 import toast from "react-hot-toast";
+import { ConfirmModal } from "@/components/ui";
 import api from "@/services/api";
 import type { SelectedProcess } from "../types";
 
@@ -46,6 +47,7 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
   const { t } = useTranslation();
   const [rows, setRows] = useState<EditRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [deleteTargetIdx, setDeleteTargetIdx] = useState<number | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -131,15 +133,19 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
     }
   };
 
-  const handleDelete = async (idx: number) => {
+  const handleDelete = async () => {
+    if (deleteTargetIdx == null) return;
+    const idx = deleteTargetIdx;
     const row = rows[idx];
     if (!row.id) {
       setRows((prev) => prev.filter((_, i) => i !== idx));
+      setDeleteTargetIdx(null);
       return;
     }
     try {
       await api.delete(`/production/self-inspect/items/${row.id}`);
       setRows((prev) => prev.filter((_, i) => i !== idx));
+      setDeleteTargetIdx(null);
       toast.success(t("common.deleted", "삭제되었습니다"));
     } catch {
       toast.error(t("common.deleteError", "삭제 중 오류"));
@@ -155,6 +161,7 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
   }
 
   return (
+    <>
     <div className="flex flex-col h-full min-h-0 gap-2">
       <div className="flex justify-between items-center shrink-0">
         <span className="text-xs text-text-muted">
@@ -325,7 +332,7 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                   )}
                   <button
                     type="button"
-                    onClick={() => handleDelete(idx)}
+                    onClick={() => setDeleteTargetIdx(idx)}
                     className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-red-500 text-white hover:bg-red-600"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -338,5 +345,14 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
         )}
       </div>
     </div>
+    <ConfirmModal
+      isOpen={deleteTargetIdx != null}
+      onClose={() => setDeleteTargetIdx(null)}
+      onConfirm={handleDelete}
+      title={t("common.deleteConfirm", "삭제 확인")}
+      message={`${rows[deleteTargetIdx ?? -1]?.itemName || ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+      variant="danger"
+    />
+    </>
   );
 }

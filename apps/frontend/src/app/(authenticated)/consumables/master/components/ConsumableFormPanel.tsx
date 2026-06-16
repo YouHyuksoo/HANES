@@ -14,7 +14,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, Trash2, ImageIcon, RefreshCw } from "lucide-react";
-import { Button, Input, Select } from "@/components/ui";
+import { Button, ConfirmModal, Input, Select } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
@@ -75,6 +75,7 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
   const [form, setForm] = useState<ConsumableFormValues>(EMPTY);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -118,6 +119,7 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
     try {
       await api.delete(`/consumables/${item.consumableCode}/image`);
       setImageUrl(null);
+      setImageDeleteConfirmOpen(false);
     } catch { /* api interceptor */ }
     finally { setUploading(false); }
   };
@@ -141,9 +143,10 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
         : "";
 
   return (
-    <div
-      className={`w-[420px] flex-shrink-0 border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}
-    >
+    <>
+      <div
+        className={`w-[420px] flex-shrink-0 border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}
+      >
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">
@@ -288,7 +291,7 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
                     className="w-full h-48 object-contain rounded-lg border border-border bg-surface"
                   />
                   <button
-                    onClick={handleImageRemove}
+                    onClick={() => setImageDeleteConfirmOpen(true)}
                     disabled={uploading}
                     className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 disabled:opacity-50"
                   >
@@ -339,6 +342,15 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
         </div>
       </div>
 
-    </div>
+      </div>
+      <ConfirmModal
+        isOpen={imageDeleteConfirmOpen}
+        onClose={() => setImageDeleteConfirmOpen(false)}
+        onConfirm={handleImageRemove}
+        title={t("common.deleteConfirm", "삭제 확인")}
+        message={t("consumables.master.imageDeleteConfirm", "소모품 이미지를 삭제하시겠습니까?")}
+        variant="danger"
+      />
+    </>
   );
 }

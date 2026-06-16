@@ -6,9 +6,9 @@
  * 1. **PO 입하**: PurchaseOrder 기반 분할 입하 (receivedQty 누적, PO status 재계산)
  * 2. **수동 입하**: PO 없이 직접 입하 등록
  * 3. **입하 취소**: 역분개 방식 (원본 CANCELED + 반대 트랜잭션 생성)
- * 4. **Stock upsert**: 입하 시 Stock 테이블 현재고 업데이트
+ * 4. **입하재고 분리**: 입하 시 MAT_ARRIVAL_STOCKS에 대기재고를 쌓고, 실제 입고 시 MAT_STOCKS로 이동
  *
- * NOTE: LOT 생성은 라벨 발행 시점에 수행됨 (입하 시에는 LOT 미생성)
+ * NOTE: 입하 시점에 내부 LOT를 생성하고, 입고 시점에 원자재 현재고로 이동한다.
  * NOTE: lotNo 필드는 matUid로 리네이밍됨 (자재 고유 식별자)
  */
 
@@ -20,6 +20,8 @@ import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity'
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
+import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
+import { MatArrivalTransaction } from '../../../entities/mat-arrival-transaction.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
@@ -55,6 +57,10 @@ export class ArrivalService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatArrival)
     private readonly matArrivalRepository: Repository<MatArrival>,
+    @InjectRepository(MatArrivalStock)
+    private readonly matArrivalStockRepository: Repository<MatArrivalStock>,
+    @InjectRepository(MatArrivalTransaction)
+    private readonly matArrivalTransactionRepository: Repository<MatArrivalTransaction>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(PartMaster)
@@ -255,9 +261,9 @@ export class ArrivalService {
       let arrivalSeq = 1;
 
       for (const item of dto.items) {
-        const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
-
         const part = partMap.get(item.itemCode);
+        const txDate = new Date();
+        const matUid = await this.numbering.nextMatSerial(queryRunner, txDate);
 
         // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
         const arrival = queryRunner.manager.create(MatArrival, {
@@ -283,24 +289,36 @@ export class ArrivalService {
         });
         await queryRunner.manager.save(arrival);
 
-        // 2. StockTransaction 생성 (수불원장)
-        const stockTx = queryRunner.manager.create(StockTransaction, {
-          transNo,
-          transType: 'MAT_IN',
-          toWarehouseId: item.warehouseId,
+        // 2. 내부 LOT 생성
+        const lot = queryRunner.manager.create(MatLot, {
+          matUid,
           itemCode: item.itemCode,
-          qty: item.receivedQty,
-          remark: item.remark || dto.remark,
-          workerId: dto.workerId,
-          refType: 'PO',
-          refId: item.poItemId,
+          initQty: item.receivedQty,
+          currentQty: item.receivedQty,
+          recvDate: txDate,
+          manufactureDate: item.manufactureDate ? new Date(item.manufactureDate) : null,
+          expireDate: null,
+          arrivalNo,
+          arrivalSeq: arrival.seq,
+          origin: matUid,
+          vendor: po.partnerId ?? '',
+          invoiceNo: item.invoiceNo || dto.invoiceNo || null,
+          poNo: po.poNo,
+          mfgPartnerCode: null,
+          iqcStatus: 'PENDING',
+          status: 'NORMAL',
           company: po.company,
           plant: po.plant,
+          createdBy: dto.workerId ?? null,
         });
-        const savedTx = await queryRunner.manager.save(stockTx);
+        const savedLot = await queryRunner.manager.save(lot);
 
-        // 3. Stock upsert (현재고 반영)
-        await this.upsertStock(queryRunner.manager, item.warehouseId, item.itemCode, null, item.receivedQty, po.company, po.plant);
+        // 3. 입하재고 + 입하원장 기록. 원자재 현재고(MAT_STOCKS)는 입고 시점에만 증가한다.
+        const savedTx = await this.recordIqc005StockArrival(queryRunner, savedLot, item.warehouseId, {
+          company: po.company,
+          plant: po.plant,
+          username: dto.workerId ?? 'SYSTEM',
+        });
 
         // 4. PurchaseOrderItem.receivedQty 증가
         const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
@@ -320,6 +338,7 @@ export class ArrivalService {
         results.push({
           ...savedTx,
           arrivalNo,
+          matUid,
           itemCode: item.itemCode,
           itemName: part?.itemName ?? null,
           itemType: part?.itemType ?? null,
@@ -344,7 +363,8 @@ export class ArrivalService {
         ...(plant ? { plant } : {}),
       };
       const arrivalNo = await this.numbering.nextInTx(queryRunner, 'ARRIVAL');
-      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
+      const txDate = new Date();
+      const matUid = await this.numbering.nextMatSerial(queryRunner, txDate);
 
       // 품목 정보 조회
       const part = await this.partMasterRepository.findOne({ where: { itemCode: dto.itemCode, ...tenantWhere } });
@@ -370,23 +390,36 @@ export class ArrivalService {
       });
       await queryRunner.manager.save(arrival);
 
-      // 2. StockTransaction 생성 (수불원장)
-      const stockTx = queryRunner.manager.create(StockTransaction, {
-        transNo,
-        transType: 'MAT_IN',
-        toWarehouseId: dto.warehouseId,
+      // 2. 내부 LOT 생성
+      const lot = queryRunner.manager.create(MatLot, {
+        matUid,
         itemCode: dto.itemCode,
-        qty: dto.qty,
-        remark: dto.remark,
-        workerId: dto.workerId,
-        refType: 'MANUAL',
+        initQty: dto.qty,
+        currentQty: dto.qty,
+        recvDate: txDate,
+        manufactureDate: dto.manufactureDate ? new Date(dto.manufactureDate) : null,
+        expireDate: null,
+        arrivalNo,
+        arrivalSeq: 1,
+        origin: matUid,
+        vendor: dto.vendorId ?? dto.vendor ?? '',
+        invoiceNo: dto.invoiceNo ?? null,
+        poNo: null,
+        mfgPartnerCode: null,
+        iqcStatus: 'PENDING',
+        status: 'NORMAL',
         company,
         plant,
+        createdBy: dto.workerId ?? null,
       });
-      const savedTx = await queryRunner.manager.save(stockTx);
+      const savedLot = await queryRunner.manager.save(lot);
 
-      // 3. Stock upsert
-      await this.upsertStock(queryRunner.manager, dto.warehouseId, dto.itemCode, null, dto.qty, company, plant);
+      // 3. 입하재고 + 입하원장 기록. 원자재 현재고(MAT_STOCKS)는 입고 시점에만 증가한다.
+      const savedTx = await this.recordIqc005StockArrival(queryRunner, savedLot, dto.warehouseId, {
+        company: company ?? null,
+        plant: plant ?? null,
+        username: dto.workerId ?? 'SYSTEM',
+      });
 
       // warehouse 정보 조회 (part는 이미 위에서 조회)
       const warehouse = await this.warehouseRepository.findOne({
@@ -396,6 +429,7 @@ export class ArrivalService {
       return {
         ...savedTx,
         arrivalNo,
+        matUid,
         itemCode: dto.itemCode,
         itemName: part?.itemName ?? null,
         itemType: part?.itemType ?? null,
@@ -406,19 +440,31 @@ export class ArrivalService {
     });
   }
 
-  /** 입하 이력 조회 (MAT_IN + MAT_IN_CANCEL) */
+  /** 입하 이력 조회 (ARRIVAL_IN + ARRIVAL_CANCEL) */
   async findAll(query: ArrivalQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, search, fromDate, toDate, status } = query;
+    const { page = 1, limit = 10, search, fromDate, toDate, status, transType, matUid, arrivalNo } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.stockTransactionRepository.createQueryBuilder('tx')
-      .where('tx.transType IN (:...transTypes)', { transTypes: ['MAT_IN', 'MAT_IN_CANCEL'] });
+    const queryBuilder = this.matArrivalTransactionRepository.createQueryBuilder('tx')
+      .where('tx.transType IN (:...transTypes)', { transTypes: ['ARRIVAL_IN', 'ARRIVAL_CANCEL'] });
 
     if (company) queryBuilder.andWhere('tx.company = :company', { company });
     if (plant) queryBuilder.andWhere('tx.plant = :plant', { plant });
 
     if (status) {
       queryBuilder.andWhere('tx.status = :status', { status });
+    }
+
+    if (transType) {
+      queryBuilder.andWhere('tx.transType = :transType', { transType });
+    }
+
+    if (matUid) {
+      queryBuilder.andWhere('UPPER(tx.matUid) LIKE :matUid', { matUid: `%${matUid.toUpperCase()}%` });
+    }
+
+    if (arrivalNo) {
+      queryBuilder.andWhere('UPPER(tx.arrivalNo) LIKE :arrivalNo', { arrivalNo: `%${arrivalNo.toUpperCase()}%` });
     }
 
     if (fromDate) {
@@ -429,9 +475,22 @@ export class ArrivalService {
     }
 
     if (search) {
+      const normalizedSearch = `%${search.toUpperCase()}%`;
       queryBuilder.andWhere(
-        '(tx.transNo LIKE :search OR tx.itemCode IN (SELECT item_code FROM item_masters WHERE item_code LIKE :search OR item_name LIKE :search))',
-        { search: `%${search}%` },
+        `(
+          UPPER(tx.transNo) LIKE :search
+          OR UPPER(tx.arrivalNo) LIKE :search
+          OR UPPER(tx.refId) LIKE :search
+          OR UPPER(tx.matUid) LIKE :search
+          OR UPPER(tx.itemCode) LIKE :search
+          OR tx.itemCode IN (
+            SELECT item_code
+            FROM item_masters
+            WHERE UPPER(item_code) LIKE :search
+              OR UPPER(item_name) LIKE :search
+          )
+        )`,
+        { search: normalizedSearch },
       );
     }
 
@@ -447,7 +506,7 @@ export class ArrivalService {
     // part, lot, warehouse 정보 조회
     const itemCodes = data.map((item) => item.itemCode).filter(Boolean);
     const matUids = data.map((item) => item.matUid).filter(Boolean) as string[];
-    const warehouseIds = data.map((item) => item.toWarehouseId).filter(Boolean) as string[];
+    const warehouseIds = data.map((item) => item.warehouseCode).filter(Boolean) as string[];
     const tenantWhere = {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
@@ -495,7 +554,7 @@ export class ArrivalService {
     const flattenedData = data.map((item) => {
       const part = partMap.get(item.itemCode);
       const lot = item.matUid ? lotMap.get(item.matUid) : null;
-      const warehouse = item.toWarehouseId ? warehouseMap.get(item.toWarehouseId) : null;
+      const warehouse = item.warehouseCode ? warehouseMap.get(item.warehouseCode) : null;
       const arrivalNo = item.refType === 'ARRIVAL' && item.refId ? item.refId : lot?.arrivalNo;
       const arrival = arrivalNo && item.itemCode
         ? arrivalByExactKey.get(`${arrivalNo}::${lot?.arrivalSeq ?? ''}::${item.itemCode}`)
@@ -510,7 +569,7 @@ export class ArrivalService {
         itemName: part?.itemName ?? null,
         itemType: part?.itemType ?? null,
         unit: part?.unit ?? null,
-        warehouseCode: item.toWarehouseId,
+        warehouseCode: item.warehouseCode,
         warehouseName: warehouse?.warehouseName ?? null,
         arrivalNo: arrival?.arrivalNo,
         invoiceNo: arrival?.invoiceNo,
@@ -709,7 +768,7 @@ export class ArrivalService {
 
   /**
    * IQC006 — 입하(arrivalNo) 전체 취소
-   * 동일 arrivalNo의 모든 품목·시리얼 MAT_IN 트랜잭션을 일괄 역분개.
+   * 동일 arrivalNo의 모든 품목·시리얼 ARRIVAL_IN 트랜잭션을 일괄 역분개.
    * 입고 완료 시리얼이 하나라도 있으면 기존 cancel 로직이 차단한다.
    */
   async cancelByArrival(
@@ -735,8 +794,8 @@ export class ArrivalService {
     }
     const matUids = sourceLots.map((l) => l.matUid);
 
-    const txns = await this.stockTransactionRepository.find({
-      where: { matUid: In(matUids), transType: 'MAT_IN', status: 'DONE', ...tenantWhere },
+    const txns = await this.matArrivalTransactionRepository.find({
+      where: { matUid: In(matUids), transType: 'ARRIVAL_IN', status: 'DONE', ...tenantWhere },
       select: ['transNo'],
     });
     if (txns.length === 0) {
@@ -753,13 +812,13 @@ export class ArrivalService {
 
   /** 입하 취소 (역분개 트랜잭션) */
   async cancel(dto: CancelArrivalDto, company?: string, plant?: string) {
-    const original = await this.stockTransactionRepository.findOne({
+    const original = await this.matArrivalTransactionRepository.findOne({
       where: { transNo: dto.transactionId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
 
     if (!original) throw new NotFoundException(`트랜잭션을 찾을 수 없습니다: ${dto.transactionId}`);
     if (original.status === 'CANCELED') throw new BadRequestException('이미 취소된 트랜잭션입니다.');
-    if (original.transType !== 'MAT_IN') throw new BadRequestException('입하 트랜잭션만 취소할 수 있습니다.');
+    if (original.transType !== 'ARRIVAL_IN') throw new BadRequestException('입하 트랜잭션만 취소할 수 있습니다.');
     this.assertSameTenant('입하 원본 트랜잭션', { company, plant }, original);
 
     // G3: 입하 취소 조건 제한 — IQC 판정 이후 취소 불가 (무검사품은 입고 전)
@@ -783,7 +842,7 @@ export class ArrivalService {
 
     return this.tx.run(async (queryRunner) => {
       // 1. 원본 CANCELED 처리
-      await queryRunner.manager.update(StockTransaction, { transNo: original.transNo, ...tenantWhere }, { status: 'CANCELED' });
+      await queryRunner.manager.update(MatArrivalTransaction, { transNo: original.transNo, ...tenantWhere }, { status: 'CANCELED' });
 
       // 1-1. MatArrival도 CANCELED 처리 (matUid → LOT.arrivalNo FK 기준)
       let canceledArrival: MatArrival | null = null;
@@ -809,10 +868,12 @@ export class ArrivalService {
       }
 
       // 2. 역분개 트랜잭션 생성
-      const cancelTx = queryRunner.manager.create(StockTransaction, {
+      const cancelTx = queryRunner.manager.create(MatArrivalTransaction, {
         transNo: cancelTransNo,
-        transType: 'MAT_IN_CANCEL',
-        fromWarehouseId: original.toWarehouseId,
+        transType: 'ARRIVAL_CANCEL',
+        arrivalNo: original.arrivalNo,
+        arrivalSeq: original.arrivalSeq,
+        warehouseCode: original.warehouseCode,
         itemCode: original.itemCode,
         matUid: original.matUid,
         qty: -original.qty,
@@ -825,12 +886,15 @@ export class ArrivalService {
       });
       const savedCancelTx = await queryRunner.manager.save(cancelTx);
 
-      // 3. Stock 감소
-      if (original.toWarehouseId) {
-        await this.upsertStock(
-          queryRunner.manager, original.toWarehouseId, original.itemCode, original.matUid, -original.qty, original.company, original.plant,
-        );
-      }
+      // 3. 입하재고 감소
+      await this.decreaseArrivalStock(
+        queryRunner.manager,
+        original.matUid,
+        original.itemCode,
+        original.qty,
+        original.company,
+        original.plant,
+      );
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
@@ -860,9 +924,9 @@ export class ArrivalService {
               where: { matUid: original.matUid, ...tenantWhere },
             })
           : null,
-        original.toWarehouseId
+        original.warehouseCode
           ? this.warehouseRepository.findOne({
-              where: { warehouseCode: original.toWarehouseId, ...tenantWhere },
+              where: { warehouseCode: original.warehouseCode, ...tenantWhere },
             })
           : null,
       ]);
@@ -874,13 +938,13 @@ export class ArrivalService {
         itemType: part?.itemType ?? null,
         unit: part?.unit ?? null,
         matUid: original.matUid,
-        warehouseCode: original.toWarehouseId,
+        warehouseCode: original.warehouseCode,
         warehouseName: toWarehouse?.warehouseName ?? null,
       };
     });
   }
 
-  private async ensureNoDownstreamProgress(original: StockTransaction, company?: string, plant?: string) {
+  private async ensureNoDownstreamProgress(original: { matUid?: string | null; transNo: string }, company?: string, plant?: string) {
     if (!original.matUid) {
       return;
     }
@@ -942,19 +1006,19 @@ export class ArrivalService {
     const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
 
     const [todayCount, todayQtyResult, unrecevedPoCount, totalCount] = await Promise.all([
-      this.stockTransactionRepository
+      this.matArrivalTransactionRepository
         .createQueryBuilder('tx')
-        .where('tx.transType = :transType', { transType: 'MAT_IN' })
+        .where('tx.transType = :transType', { transType: 'ARRIVAL_IN' })
         .andWhere('tx.status = :status', { status: 'DONE' })
         .andWhere("tx.transDate >= TO_DATE(:today, 'YYYY-MM-DD')", { today })
         .andWhere("tx.transDate < TO_DATE(:today, 'YYYY-MM-DD') + INTERVAL '1' DAY", { today })
         .andWhere(company ? 'tx.company = :company' : '1=1', { company })
         .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
         .getCount(),
-      this.stockTransactionRepository
+      this.matArrivalTransactionRepository
         .createQueryBuilder('tx')
         .select('SUM(tx.qty)', 'sumQty')
-        .where('tx.transType = :transType', { transType: 'MAT_IN' })
+        .where('tx.transType = :transType', { transType: 'ARRIVAL_IN' })
         .andWhere('tx.status = :status', { status: 'DONE' })
         .andWhere("tx.transDate >= TO_DATE(:today, 'YYYY-MM-DD')", { today })
         .andWhere("tx.transDate < TO_DATE(:today, 'YYYY-MM-DD') + INTERVAL '1' DAY", { today })
@@ -964,8 +1028,8 @@ export class ArrivalService {
       this.purchaseOrderRepository.count({
         where: { status: In(['CONFIRMED', 'PARTIAL']), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       }),
-      this.stockTransactionRepository.count({
-        where: { transType: 'MAT_IN', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      this.matArrivalTransactionRepository.count({
+        where: { transType: 'ARRIVAL_IN', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       }),
     ]);
 
@@ -977,7 +1041,7 @@ export class ArrivalService {
     };
   }
 
-  /** 입하재고현황 조회 (MAT_ARRIVALS 기반 + 현재고 조인) */
+  /** 입하재고현황 조회 (MAT_ARRIVALS 기반 + 입하재고 조인) */
   async getArrivalStockStatus(query: ArrivalStockQueryDto, company?: string, plant?: string) {
     const { search, fromDate, toDate } = query;
 
@@ -1014,7 +1078,7 @@ export class ArrivalService {
     const [parts, warehouses, stocks] = await Promise.all([
       this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }),
       this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } }),
-      this.matStockRepository.find({
+      this.matArrivalStockRepository.find({
         where: {
           itemCode: In(itemCodes),
           warehouseCode: In(warehouseCodes),
@@ -1026,7 +1090,7 @@ export class ArrivalService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
-    // Stock 맵: warehouseCode_itemCode → qty
+    // Arrival stock map: warehouseCode_itemCode -> qty
     const stockMap = new Map<string, number>();
     for (const s of stocks) {
       const key = `${s.warehouseCode}_${s.itemCode}`;
@@ -1237,6 +1301,41 @@ export class ArrivalService {
     }
   }
 
+  private async decreaseArrivalStock(
+    manager: EntityManager,
+    matUid: string,
+    itemCode: string,
+    qty: number,
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    const stock = await manager.findOne(MatArrivalStock, {
+      where: {
+        matUid,
+        itemCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    if (!stock) {
+      throw new BadRequestException(`입하재고를 찾을 수 없습니다. LOT: ${matUid}`);
+    }
+    if (stock.availableQty < qty || stock.qty < qty) {
+      throw new BadRequestException(`입하재고가 부족합니다. LOT: ${matUid}, 요청=${qty}, 입하재고=${stock.availableQty}`);
+    }
+
+    const newQty = stock.qty - qty;
+    await manager.update(MatArrivalStock, {
+      company: stock.company,
+      plant: stock.plant,
+      matUid: stock.matUid,
+    }, {
+      qty: newQty,
+      availableQty: Math.max(0, stock.availableQty - qty),
+      status: newQty > 0 ? 'AVAILABLE' : 'DEPLETED',
+    });
+  }
+
   // ─────────────────────────────────────────────────────────────────────
   // IQC005 Phase A — PO 라인 단위 입하 (시리얼 N건 발급)
   // ─────────────────────────────────────────────────────────────────────
@@ -1306,7 +1405,7 @@ export class ArrivalService {
    * 5. 채번: ARRIVAL_NO 1건, MAT_UID N건 (NumberingService.nextArrivalNoV2 / nextMatSerial)
    * 6. MAT_LOTS N건 insert (동일 ARRIVAL_NO, 시리얼별 INIT_QTY)
    * 7. PO 라인 누적 입하 수량 + 상태 갱신
-   * 8. MAT_STOCK upsert + STOCK_TRANSACTION(MAT_IN) N건 기록
+   * 8. MAT_ARRIVAL_STOCKS + MAT_ARRIVAL_TRANSACTIONS N건 기록
    * 9. MAT_ARRIVALS 헤더 N건 기록
    *
    * @returns 발급된 시리얼 목록 (UI 라벨 모달용)
@@ -1412,7 +1511,7 @@ export class ArrivalService {
       poItem.lineStatus = poItem.receivedQty >= poItem.orderQty ? 'CLOSE' : 'PARTIAL';
       await qr.manager.save(PurchaseOrderItem, poItem);
 
-      // 8. MAT_STOCK upsert + STOCK_TRANSACTION 기록 (시리얼당 1건)
+      // 8. 입하재고 + 입하원장 기록 (시리얼당 1건)
       for (const lot of savedLots) {
         await this.recordIqc005StockArrival(qr, lot, dto.warehouseCode, {
           company: user?.company ?? null,
@@ -1454,37 +1553,36 @@ export class ArrivalService {
     });
   }
 
-  /**
-   * IQC005 — 단일 시리얼 단위 MAT_STOCK upsert + STOCK_TRANSACTION(MAT_IN) 1건.
-   * 기존 createPoArrival/upsertStock과 동일 패턴이나 새 채번(transNo) + refType='ARRIVAL'.
-   */
+  /** IQC005 — 단일 시리얼 단위 입하재고 + 입하원장 1건. */
   private async recordIqc005StockArrival(
     qr: QueryRunner,
     lot: MatLot,
     warehouseCode: string,
     ctx: { company: string | null; plant: string | null; username: string },
-  ): Promise<void> {
-    // MAT_STOCK 신규 (시리얼 단위 1행)
-    const stock = qr.manager.create(MatStock, {
+  ): Promise<MatArrivalTransaction> {
+    const stock = qr.manager.create(MatArrivalStock, {
       warehouseCode,
       itemCode: lot.itemCode,
       matUid: lot.matUid,
+      arrivalNo: lot.arrivalNo,
+      arrivalSeq: lot.arrivalSeq,
       qty: lot.initQty,
-      reservedQty: 0,
       availableQty: lot.initQty,
-      company: ctx.company ?? '',
-      plant: ctx.plant ?? '',
+      status: 'AVAILABLE',
+      company: ctx.company ?? lot.company,
+      plant: ctx.plant ?? lot.plant,
       createdBy: ctx.username,
     });
-    await qr.manager.save(MatStock, stock);
+    await qr.manager.save(MatArrivalStock, stock);
 
-    // STOCK_TRANSACTION (MAT_IN)
     const transNo = await this.numbering.next('STOCK_TX', qr, ctx.username);
-    const tx = qr.manager.create(StockTransaction, {
+    const tx = qr.manager.create(MatArrivalTransaction, {
       transNo,
-      transType: 'MAT_IN',
+      transType: 'ARRIVAL_IN',
       transDate: new Date(),
-      toWarehouseId: warehouseCode,
+      arrivalNo: lot.arrivalNo,
+      arrivalSeq: lot.arrivalSeq,
+      warehouseCode,
       itemCode: lot.itemCode,
       matUid: lot.matUid,
       qty: lot.initQty,
@@ -1492,10 +1590,10 @@ export class ArrivalService {
       refId: lot.arrivalNo,
       workerId: ctx.username,
       status: 'DONE',
-      company: ctx.company,
-      plant: ctx.plant,
+      company: ctx.company ?? lot.company,
+      plant: ctx.plant ?? lot.plant,
       createdBy: ctx.username,
     });
-    await qr.manager.save(StockTransaction, tx);
+    return qr.manager.save(MatArrivalTransaction, tx);
   }
 }

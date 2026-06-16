@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>자재수불관리 등록 메뉴 상세 시나리오 QA 목차</title>
+  <style>
+    body { margin: 0; font-family: Arial, "Malgun Gothic", sans-serif; background: #f5f7fb; color: #111827; }
+    header { background: #172033; color: #fff; padding: 28px 34px; }
+    main { padding: 24px 34px 48px; }
+    .card { background: #fff; border: 1px solid #d6deeb; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    a { color: #1d4ed8; text-decoration: none; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #e1e6ef; padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #f8fafc; }
+    .pass { color: #047857; font-weight: 700; }
+    .warn { color: #b45309; font-weight: 700; }
+    code { background: #edf2f7; border-radius: 4px; padding: 2px 5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>자재수불관리 등록 메뉴 상세 시나리오 QA 목차</h1>
+    <div>실행일: <code>2026-06-15</code> / 카테고리: <code>MATERIAL</code> / 실제 등록 하위 메뉴: <code>16</code>개</div>
+  </header>
+  <main>
+    <section class="card">
+      <p>이 보고서는 <code>/api/v1/menu-categories/tree</code>에서 <code>MATERIAL</code> 카테고리에 등록된 하위 메뉴만 대상으로 생성했습니다. 정적 메뉴에는 있으나 실제 좌측 메뉴에 등록되지 않은 화면은 제외했습니다.</p>
+    </section>
+    <section class="card">
+      <table>
+        <thead><tr><th>순서</th><th>메뉴코드</th><th>페이지</th><th>경로</th><th>시나리오</th><th>결과</th><th>보고서</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>10</td>
+            <td><code>PUR_PO</code></td>
+            <td>PO관리</td>
+            <td><code>/material/po</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-po.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>20</td>
+            <td><code>PUR_PO_STATUS</code></td>
+            <td>PO현황조회</td>
+            <td><code>/material/po-status</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-po-status.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>30</td>
+            <td><code>MAT_ARRIVAL</code></td>
+            <td>입하관리</td>
+            <td><code>/material/arrival</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-arrival.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>40</td>
+            <td><code>MAT_ARRIVAL_RESULT</code></td>
+            <td>입하실적조회</td>
+            <td><code>/material/arrival-result</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-arrival-result.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>50</td>
+            <td><code>QC_CONCESSION</code></td>
+            <td>특채처리</td>
+            <td><code>/material/concession</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-concession.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>60</td>
+            <td><code>MAT_RECEIVE</code></td>
+            <td>자재입고관리</td>
+            <td><code>/material/receive</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-receive.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>70</td>
+            <td><code>MAT_RECEIVE_HISTORY</code></td>
+            <td>입고이력조회</td>
+            <td><code>/material/receive-history</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-receive-history.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>80</td>
+            <td><code>MAT_REQUEST</code></td>
+            <td>출고요청관리</td>
+            <td><code>/material/request</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-request.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>90</td>
+            <td><code>MAT_ISSUE</code></td>
+            <td>자재출고관리</td>
+            <td><code>/material/issue</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-issue.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>100</td>
+            <td><code>MAT_ISSUE_OTHER</code></td>
+            <td>기타출고관리</td>
+            <td><code>/material/issue-other</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-issue-other.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>110</td>
+            <td><code>MAT_LOT_SPLIT</code></td>
+            <td>자재분할관리</td>
+            <td><code>/material/lot-split</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-lot-split.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>120</td>
+            <td><code>MAT_LOT_MERGE</code></td>
+            <td>자재병합관리</td>
+            <td><code>/material/lot-merge</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-lot-merge.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>130</td>
+            <td><code>MAT_SCRAP</code></td>
+            <td>자재폐기처리</td>
+            <td><code>/material/scrap</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-scrap.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>140</td>
+            <td><code>MAT_ADJUSTMENT</code></td>
+            <td>재고보정처리</td>
+            <td><code>/material/adjustment</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-adjustment.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>150</td>
+            <td><code>MAT_MISC_RECEIPT</code></td>
+            <td>기타입고관리</td>
+            <td><code>/material/misc-receipt</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-misc-receipt.html">상세 보고서 열기</a></td>
+          </tr>
+          <tr>
+            <td>160</td>
+            <td><code>MAT_RECEIPT_CANCEL</code></td>
+            <td>자재입고취소</td>
+            <td><code>/material/receipt-cancel</code></td>
+            <td>조회 → 검색/재조회 → 버튼/프로세스 목록화 → 신규/수정/삭제 가능 여부 → 저장/중복 방어 정책 → DB/API 확인 → 화면 재조회</td>
+            <td class="pass">PASS</td>
+            <td><a href="pages/material-receipt-cancel.html">상세 보고서 열기</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

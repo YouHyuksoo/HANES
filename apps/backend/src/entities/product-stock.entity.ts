@@ -45,7 +45,7 @@ export class ProductStock {
   @Column({ type: 'varchar2', name: 'LOCATION_CODE', length: 50, nullable: true })
   locationCode: string | null;
 
-  @Column({ name: 'ITEM_TYPE', length: 10 })
+  @Column({ name: 'ITEM_TYPE', length: 20 })
   itemType: string;
 
   @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })

@@ -22,6 +22,7 @@ export default function IqcPage() {
 
   const {
     filteredItems,
+    sqlQuery,
     loading,
     statusFilter, setStatusFilter,
     methodFilter, setMethodFilter,
@@ -55,6 +56,7 @@ export default function IqcPage() {
             data={filteredItems}
             onInspect={openIqcModal}
             isLoading={loading}
+            sqlQuery={sqlQuery}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">

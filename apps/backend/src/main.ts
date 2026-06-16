@@ -21,6 +21,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { SqlDebugInterceptor } from './common/interceptors/sql-debug.interceptor';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -62,6 +63,7 @@ async function bootstrap() {
   if (!isProduction) {
     app.useGlobalInterceptors(new LoggingInterceptor());
   }
+  app.useGlobalInterceptors(new SqlDebugInterceptor());
   app.useGlobalInterceptors(new TransformInterceptor());
 
   // Swagger 설정

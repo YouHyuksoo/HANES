@@ -34,8 +34,8 @@ export class ProcessCapaController {
     @Company() co: string,
     @Plant() pl: string,
   ) {
-    const data = await this.svc.findAll(query, co, pl);
-    return ResponseUtil.success(data);
+    const result = await this.svc.findAll(query, co, pl);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Post()

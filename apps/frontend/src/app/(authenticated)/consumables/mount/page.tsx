@@ -15,10 +15,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   RefreshCw, Link2, Unlink, Wrench, History, Search,
-  ArrowRightLeft, Settings2, CheckCircle,
+  Settings2, CheckCircle,
 } from "lucide-react";
 import {
-  Card, CardContent, Button, Input, StatCard, ComCodeBadge,
+  Card, CardContent, Button, Input, ComCodeBadge,
 } from "@/components/ui";
 import { ComCodeSelect, EquipSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -88,13 +88,6 @@ export default function ConsumableMountPage() {
   }, [searchTerm, categoryFilter, operStatusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => ({
-    total: data.length,
-    mounted: data.filter((d) => d.operStatus === "MOUNTED").length,
-    warehouse: data.filter((d) => d.operStatus === "WAREHOUSE").length,
-    repair: data.filter((d) => d.operStatus === "REPAIR").length,
-  }), [data]);
 
   /* action handlers */
   const openAction = (type: ActionType, item: ConsumableItem) => {
@@ -231,14 +224,6 @@ export default function ConsumableMountPage() {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("common.total")} value={stats.total} icon={ArrowRightLeft} color="blue" />
-        <StatCard label={t("consumables.mount.statusMounted")} value={stats.mounted} icon={Link2} color="green" />
-        <StatCard label={t("consumables.mount.statusWarehouse")} value={stats.warehouse} icon={Unlink} color="gray" />
-        <StatCard label={t("consumables.mount.statusRepair")} value={stats.repair} icon={Wrench} color="orange" />
       </div>
 
       {/* Grid */}
