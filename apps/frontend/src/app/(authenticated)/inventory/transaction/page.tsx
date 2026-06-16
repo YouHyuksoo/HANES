@@ -44,8 +44,8 @@ const getTransTypeColor = (type: string) => {
 
   if (isCancel) return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
   if (isIn) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
-  if (isOut) return 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300';
-  if (type === 'TRANSFER') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
+  if (type === 'PROD_CONSUME' || isOut) return 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300';
+  if (type === 'TRANSFER' || type === 'WIP_MOVE') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
   return 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300';
 };
 
@@ -68,8 +68,6 @@ export default function TransactionPage() {
   const TRANS_TYPES = useMemo(() => [
     { value: '', label: t('common.all') },
     { value: 'RECEIVE', label: t('inventory.transaction.receive', '입고') },
-    { value: 'MAT_IN', label: t('inventory.transaction.matIn') },
-    { value: 'MAT_IN_CANCEL', label: t('inventory.transaction.matInCancel') },
     { value: 'MAT_OUT', label: t('inventory.transaction.matOut') },
     { value: 'MAT_OUT_CANCEL', label: t('inventory.transaction.matOutCancel') },
     { value: 'LOT_SPLIT_IN', label: t('inventory.transaction.lotSplitIn', 'LOT분할(입)') },
@@ -80,6 +78,10 @@ export default function TransactionPage() {
     { value: 'TRANSFER', label: t('inventory.transaction.transfer') },
     { value: 'MAT_MOVE_OUT', label: t('inventory.transaction.matMoveOut', '불용이동(출)') },
     { value: 'MAT_MOVE_IN', label: t('inventory.transaction.matMoveIn', '불용이동(입)') },
+    { value: 'WIP_MOVE', label: t('inventory.transaction.wipMove') },
+    { value: 'WIP_MOVE_CANCEL', label: t('inventory.transaction.wipMoveCancel') },
+    { value: 'PROD_CONSUME', label: t('inventory.transaction.prodConsume') },
+    { value: 'PROD_CONSUME_CANCEL', label: t('inventory.transaction.prodConsumeCancel') },
     { value: 'SCRAP', label: t('inventory.transaction.scrap') },
   ], [t]);
 
