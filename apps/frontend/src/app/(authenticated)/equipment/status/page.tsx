@@ -2,253 +2,147 @@
 
 /**
  * @file src/app/(authenticated)/equipment/status/page.tsx
- * @description 설비 가동현황 페이지 — 컨트롤룸 스타일 카드 그리드 (라이트/다크 대응)
+ * @description 설비 가동현황 모니터링 — 스크롤 없이 한 화면, 설정한 설비를 인터벌로 자동 조회·롤링
  *
  * 초보자 가이드:
- * 1. **카드 그리드**: 설비별 상태(정상/점검/정지)를 카드로 표시
- * 2. **필터**: 라인, 설비유형, 상태, 검색어
- * 3. **StatCards**: 전체/정상/점검/정지 건수 표시
- * 4. API: GET /equipment/equips
+ * 1. 설정 모달에서 모니터링 설비·재조회 주기·롤링 주기·그리드(열·행)를 지정(localStorage 저장)
+ * 2. 선택 설비만 refetchInterval 로 자동 조회(미선택 시 전체)
+ * 3. MonitoringFrame 이 스크롤 없이 한 화면에 표시하고 페이지를 자동 롤링
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Monitor, RefreshCw, Search,
-  Wifi, Activity,
-} from "lucide-react";
-import { Button, Input } from "@/components/ui";
-import { ComCodeSelect, LineSelect } from "@/components/shared";
+import { Monitor, RefreshCw, Settings, Pause, Play } from "lucide-react";
+import { Button } from "@/components/ui";
 import { useApiQuery } from "@/hooks/useApi";
+import { MonitoringFrame, MonitoringSettingsModal, useMonitoringConfig } from "@/components/monitoring";
+import EquipStatusCard, { type EquipCard, type RunningJob } from "./components/EquipStatusCard";
 
-interface EquipCard {
-  id: string;
-  equipCode: string;
-  equipName: string;
-  equipType: string | null;
-  lineCode: string | null;
-  status: string;
-  ipAddress: string | null;
-  modelName: string | null;
-  maker: string | null;
-  currentJobOrderId: string | null;
+/** /production/progress?status=RUNNING 응답(JobOrder + part 조인) */
+interface ProgressJob {
+  orderNo: string;
+  equipCode: string | null;
+  planQty: number | null;
+  goodQty: number | null;
+  defectQty: number | null;
+  part?: { itemName?: string | null } | null;
 }
-
-/** 상태별 스타일 — 라이트/다크 모드 각각 대응 */
-const statusStyle: Record<string, {
-  pill: string; dot: string; pulse: boolean; glow: string;
-}> = {
-  NORMAL: {
-    pill: "bg-sky-600 text-white border-sky-700 dark:bg-sky-500 dark:border-sky-600",
-    dot: "bg-white dark:bg-white",
-    pulse: true,
-    glow: "hover:shadow-sky-200/60 dark:hover:shadow-sky-500/10",
-  },
-  MAINT: {
-    pill: "bg-amber-500 text-white border-amber-600 dark:bg-amber-500 dark:border-amber-600",
-    dot: "bg-white dark:bg-white",
-    pulse: false,
-    glow: "hover:shadow-amber-200/60 dark:hover:shadow-amber-500/10",
-  },
-  STOP: {
-    pill: "bg-rose-600 text-white border-rose-700 dark:bg-rose-500 dark:border-rose-600",
-    dot: "bg-white dark:bg-white",
-    pulse: false,
-    glow: "hover:shadow-rose-200/60 dark:hover:shadow-rose-500/10",
-  },
-  INTERLOCK: {
-    pill: "bg-gray-800 text-white border-gray-900 dark:bg-gray-600 dark:border-gray-500",
-    dot: "bg-red-400 dark:bg-red-400",
-    pulse: true,
-    glow: "hover:shadow-gray-400/60 dark:hover:shadow-gray-500/10",
-  },
-};
-
-const defaultStyle = statusStyle.NORMAL;
 
 export default function EquipStatusPage() {
   const { t } = useTranslation();
+  const { config, setConfig, loaded } = useMonitoringConfig("monitoring:equip-status");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paused, setPaused] = useState(false);
 
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [lineFilter, setLineFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
-  const { data: response, isLoading, refetch } = useApiQuery<any>(
+  const { data: response, isLoading, refetch, dataUpdatedAt } = useApiQuery<EquipCard[]>(
     ["equipment", "list"],
     "/equipment/equips?limit=500",
-    { refetchInterval: 30000 },
+    { refetchInterval: Math.max(5, config.refetchSec) * 1000, enabled: loaded },
   );
   const equipments: EquipCard[] = response?.data ?? [];
 
-  const filtered = useMemo(() => {
-    let list = equipments;
-    if (search) {
-      const s = search.toLowerCase();
-      list = list.filter((e) =>
-        e.equipCode.toLowerCase().includes(s) ||
-        e.equipName.toLowerCase().includes(s),
-      );
+  // 현재 작업(RUNNING) 작업지시 — 설비별 모델/계획/실적 매핑용
+  const { data: progressRes } = useApiQuery<ProgressJob[]>(
+    ["production", "running"],
+    "/production/progress?status=RUNNING&limit=500",
+    { refetchInterval: Math.max(5, config.refetchSec) * 1000, enabled: loaded },
+  );
+  const jobMap = useMemo(() => {
+    const m = new Map<string, RunningJob>();
+    for (const j of progressRes?.data ?? []) {
+      if (!j.equipCode) continue;
+      m.set(j.equipCode, {
+        orderNo: j.orderNo,
+        itemName: j.part?.itemName ?? null,
+        planQty: Number(j.planQty ?? 0),
+        goodQty: Number(j.goodQty ?? 0),
+        defectQty: Number(j.defectQty ?? 0),
+      });
     }
-    if (typeFilter) list = list.filter((e) => e.equipType === typeFilter);
-    if (lineFilter) list = list.filter((e) => e.lineCode === lineFilter);
-    if (statusFilter) list = list.filter((e) => e.status === statusFilter);
-    return list;
-  }, [equipments, search, typeFilter, lineFilter, statusFilter]);
+    return m;
+  }, [progressRes]);
 
-  const resetFilters = useCallback(() => {
-    setSearch("");
-    setTypeFilter("");
-    setLineFilter("");
-    setStatusFilter("");
-  }, []);
+  const filtered = useMemo(() => {
+    if (config.selectedCodes.length === 0) return equipments;
+    const set = new Set(config.selectedCodes);
+    return equipments.filter((e) => set.has(e.equipCode));
+  }, [equipments, config.selectedCodes]);
+
+  const workingCount = useMemo(
+    () => filtered.filter((e) => jobMap.has(e.equipCode)).length,
+    [filtered, jobMap],
+  );
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { NORMAL: 0, MAINT: 0, STOP: 0, INTERLOCK: 0 };
+    filtered.forEach((e) => { c[e.status] = (c[e.status] ?? 0) + 1; });
+    return c;
+  }, [filtered]);
+
+  const options = useMemo(
+    () => equipments.map((e) => ({ code: e.equipCode, label: e.equipName, sub: e.lineCode ?? undefined })),
+    [equipments],
+  );
+
+  const updatedAt = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString("ko-KR") : "—";
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex justify-between items-center flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Monitor className="w-7 h-7 text-primary" />
-            {t("equipment.status.title")}
-          </h1>
-          <p className="text-text-muted mt-1">
-            {t("equipment.status.subtitle", "전체 설비의 실시간 가동 현황을 확인합니다.")}
-          </p>
-        </div>
-        <Button variant="secondary" size="sm" onClick={() => { resetFilters(); refetch(); }}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? "animate-spin" : ""}`} />
-          {t("common.refresh")}
-        </Button>
-      </div>
+    <>
+      <MonitoringFrame<EquipCard>
+        title={t("equipment.status.title")}
+        icon={<Monitor className="w-6 h-6 text-primary" />}
+        columns={config.columns}
+        rows={config.rows}
+        rollingIntervalMs={config.rollingSec * 1000}
+        paused={paused}
+        loading={isLoading && equipments.length === 0}
+        items={filtered}
+        itemKey={(e) => e.equipCode}
+        renderItem={(e) => <EquipStatusCard equip={e} job={jobMap.get(e.equipCode) ?? null} />}
+        emptyMessage={t("equipment.status.noEquip", "표시할 설비가 없습니다.")}
+        optionBar={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setPaused((p) => !p)}
+              title={paused ? t("common.play", "재생") : t("common.pause", "일시정지")}>
+              {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => refetch()} title={t("common.refresh")}>
+              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            </Button>
+            <Button size="sm" onClick={() => setSettingsOpen(true)}>
+              <Settings className="w-4 h-4 mr-1" />
+              {t("common.settings", "설정")}
+            </Button>
+          </>
+        }
+        statusLeft={
+          <>
+            <span>{t("equipment.status.monitoring", "모니터링")} <strong className="text-text tabular-nums">{filtered.length}</strong>{t("equipment.status.unit", "대")}</span>
+            <span className="text-blue-600 dark:text-blue-400">{t("equipment.status.working", "작업중")} {workingCount}</span>
+            <span className="text-sky-600 dark:text-sky-400">{t("comCode.EQUIP_STATUS.NORMAL", { defaultValue: "정상" })} {counts.NORMAL}</span>
+            <span className="text-amber-600 dark:text-amber-400">{t("comCode.EQUIP_STATUS.MAINT", { defaultValue: "점검" })} {counts.MAINT}</span>
+            <span className="text-rose-600 dark:text-rose-400">{t("comCode.EQUIP_STATUS.STOP", { defaultValue: "정지" })} {counts.STOP}</span>
+            {counts.INTERLOCK > 0 && (
+              <span className="text-gray-500 dark:text-gray-400">{t("comCode.EQUIP_STATUS.INTERLOCK", { defaultValue: "인터록" })} {counts.INTERLOCK}</span>
+            )}
+          </>
+        }
+        statusRight={
+          <span className="flex items-center gap-2">
+            {paused && <span className="text-amber-500 font-medium">{t("common.pause", "일시정지")}</span>}
+            <span>{t("equipment.status.updatedAt", "갱신")} {updatedAt}</span>
+          </span>
+        }
+      />
 
-      {/* Filters */}
-      <div className="flex gap-3 items-center flex-wrap flex-shrink-0">
-        <div className="flex-1 min-w-[200px] max-w-xs">
-          <Input
-            placeholder={t("common.search")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            leftIcon={<Search className="w-4 h-4" />}
-          />
-        </div>
-        <div className="w-36">
-          <LineSelect value={lineFilter} onChange={setLineFilter} labelPrefix={t("master.equip.line", "라인")} fullWidth />
-        </div>
-        <div className="w-36">
-          <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} labelPrefix="유형" fullWidth />
-        </div>
-        <div className="w-36">
-          <ComCodeSelect groupCode="EQUIP_STATUS" value={statusFilter} onChange={setStatusFilter} labelPrefix="상태" fullWidth />
-        </div>
-      </div>
-
-      {/* Equipment Card Grid — Control-Room Panel (라이트/다크 대응) */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-100 dark:bg-slate-950 rounded-2xl p-5">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <Monitor className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-700" />
-            <p className="text-sm text-slate-400 dark:text-slate-500">
-              {t("equipment.status.noEquip", "표시할 설비가 없습니다.")}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {filtered.map((equip) => {
-              const s = statusStyle[equip.status] || defaultStyle;
-              const hasJob = !!equip.currentJobOrderId;
-              const statusLabel = t(`comCode.EQUIP_STATUS.${equip.status}`, { defaultValue: equip.status });
-              const typeLabel = equip.equipType
-                ? t(`comCode.EQUIP_TYPE.${equip.equipType}`, { defaultValue: equip.equipType })
-                : null;
-
-              return (
-                <div
-                  key={equip.equipCode}
-                  className={`group rounded-lg border transition-all duration-200
-                    bg-white border-slate-200/80 hover:shadow-md
-                    dark:bg-slate-900 dark:border-slate-700/40 dark:hover:border-slate-600/60
-                    ${s.glow}`}
-                >
-                  <div className="px-3 pt-3 pb-2">
-                    {/* Header: Code + Status pill */}
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-sm font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate mr-2">
-                        {equip.equipCode}
-                      </h3>
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-px shrink-0
-                        rounded text-[10px] font-semibold border ${s.pill}`}
-                      >
-                        <span className="relative flex h-1.5 w-1.5">
-                          {s.pulse && (
-                            <span className={`animate-ping absolute h-full w-full rounded-full ${s.dot} opacity-60`} />
-                          )}
-                          <span className={`relative rounded-full h-1.5 w-1.5 ${s.dot}`} />
-                        </span>
-                        {statusLabel}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-2" title={equip.equipName}>
-                      {equip.equipName}
-                    </p>
-
-                    {/* Metric Tiles */}
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <div className="rounded px-2 py-1.5 bg-slate-50 dark:bg-slate-800/60">
-                        <span className="text-[9px] uppercase tracking-wider block text-slate-400 dark:text-slate-500">
-                          TYPE
-                        </span>
-                        <p className="text-xs font-medium mt-px truncate text-slate-700 dark:text-slate-200">
-                          {typeLabel || "—"}
-                        </p>
-                      </div>
-                      <div className="rounded px-2 py-1.5 bg-slate-50 dark:bg-slate-800/60">
-                        <span className="text-[9px] uppercase tracking-wider block text-slate-400 dark:text-slate-500">
-                          LINE
-                        </span>
-                        <p className="text-xs font-medium mt-px truncate text-slate-700 dark:text-slate-200">
-                          {equip.lineCode || "—"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="px-3 py-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
-                    {equip.ipAddress ? (
-                      <span className="text-[10px] flex items-center gap-1 font-mono text-slate-400 dark:text-slate-500">
-                        <Wifi className="w-3 h-3 text-emerald-500/70 dark:text-emerald-500/60" />
-                        {equip.ipAddress}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-slate-300 dark:text-slate-600">—</span>
-                    )}
-                    {hasJob ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-px rounded text-[10px] font-semibold
-                        bg-blue-100 text-blue-600 border border-blue-200
-                        dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/20"
-                      >
-                        <Activity className="w-3 h-3 animate-pulse" />
-                        {t("equipment.status.working", "작업중")}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] flex items-center gap-1 text-slate-400 dark:text-slate-600">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
-                        Idle
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+      <MonitoringSettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        targetLabel={t("master.equip.title", "설비")}
+        options={options}
+        value={config}
+        onSave={setConfig}
+      />
+    </>
   );
 }

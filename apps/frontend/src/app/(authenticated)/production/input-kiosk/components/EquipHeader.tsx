@@ -26,10 +26,15 @@ interface EquipHeaderProps {
   onOpenWorker: () => void;
   onOpenDailyInspect: () => void;
   onOpenWorkerInspect: () => void;
+  /** 설비일일점검 완료 시각 "YYYY-MM-DD HH:mm:ss" (없으면 미완료/시각없음) */
+  dailyInspectAt?: string | null;
+  /** 작업자설비점검 완료 시각 "YYYY-MM-DD HH:mm:ss" */
+  workerInspectAt?: string | null;
 }
 
 export default function EquipHeader({
   equips, onOpenJobOrder, onOpenWorker, onOpenDailyInspect, onOpenWorkerInspect,
+  dailyInspectAt, workerInspectAt,
 }: EquipHeaderProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -80,6 +85,14 @@ export default function EquipHeader({
     !selectedJobOrder ? t('kiosk.header.selectJobOrderFirst', '작업지시를 먼저 선택하세요.') : '',
     selectedWorkers.length === 0 ? t('kiosk.header.workerRequiredForInspect', '작업자를 1명 이상 추가하세요.') : '',
   ].filter(Boolean).join(' ') || undefined;
+
+  // 완료 시각을 "완료 HH:mm" 형태로 — 시각이 없으면 undefined(→ HeaderCheckItem이 "완료"로 폴백)
+  const doneLabel = t('kiosk.header.done', '완료');
+  const inspectDoneDetail = (at?: string | null) => {
+    if (!at) return undefined;
+    const hhmm = (at.split(' ')[1] ?? at).slice(0, 5);
+    return `${doneLabel} ${hhmm}`;
+  };
 
   return (
     <>
@@ -177,6 +190,7 @@ export default function EquipHeader({
             <HeaderCheckItem
               label={t('kiosk.header.dailyInspect')}
               done={interlock.dailyInspectDone}
+              doneDetail={inspectDoneDetail(dailyInspectAt)}
               disabled={!selectedEquip}
               disabledReason={dailyInspectDisabledReason}
               onInput={onOpenDailyInspect}
@@ -184,6 +198,7 @@ export default function EquipHeader({
             <HeaderCheckItem
               label={t('kiosk.header.workerInspect')}
               done={interlock.workerInspectDone}
+              doneDetail={inspectDoneDetail(workerInspectAt)}
               disabled={!interlock.dailyInspectDone || !selectedJobOrder || selectedWorkers.length === 0}
               disabledReason={workerInspectDisabledReason}
               onInput={onOpenWorkerInspect}

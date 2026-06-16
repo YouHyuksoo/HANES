@@ -171,7 +171,7 @@
     "master.modelSuffix": "모델접미사관리",
     "master.warehouse": "창고관리",
     "master.company": "회사관리",
-    "master.label": "라벨관리",
+    "master.label": "라벨다자인관리",
     "master.vendorBarcode": "제조사 바코드 매핑",
     "master.processCapa": "공정 CAPA",
     "matInventory": "자재재고관리",
@@ -345,6 +345,8 @@
     "logout": "로그아웃",
     "notifications": "알림",
     "settings": "설정",
+    "pause": "일시정지",
+    "play": "재생",
     "openMenu": "메뉴 열기",
     "searchPlaceholder": "검색 (Ctrl+K)",
     "switchToLight": "라이트 모드로 전환",
@@ -1754,12 +1756,13 @@
     },
     "label": {
       "title": "라벨관리",
-      "subtitle": "바코드 라벨을 생성하고 출력합니다",
+      "subtitle": "바코드 라벨 디자인을 설정하고 템플릿으로 저장합니다",
       "catEquip": "설비",
-      "catJig": "지그/금형",
+      "catJig": "소모품",
       "catWorker": "작업자",
-      "catPart": "품목",
       "catMatLot": "자재롯트라벨",
+      "designOnly": "라벨 디자인 제공 전용",
+      "designOnlyHint": "이 화면에서는 디자인과 템플릿만 관리합니다. 실제 발행은 각 업무 화면에서 진행합니다.",
       "matLotDesignOnly": "자재롯트 라벨 디자인 전용",
       "matLotDesignHint": "디자인을 설정하고 템플릿으로 저장하세요. 발행은 자재관리 > 입고라벨발행에서 진행합니다.",
       "barcodeFormat": "바코드 형식",
@@ -4274,7 +4277,13 @@
       "addSerialError": "시리얼 추가에 실패했습니다.",
       "removeSerialError": "시리얼 제거에 실패했습니다.",
       "closeError": "박스 마감에 실패했습니다.",
-      "reopenError": "박스 재오픈에 실패했습니다."
+      "reopenError": "박스 재오픈에 실패했습니다.",
+      "boxLabel": "박스 라벨",
+      "packProducts": "제품 담기",
+      "reprintLabel": "라벨 재발행",
+      "completeAndPrint": "포장 완료 · 라벨 출력",
+      "packedDate": "포장일시",
+      "serialList": "구성 시리얼"
     },
     "boxStock": {
       "title": "제품재고조회",
@@ -6300,7 +6309,7 @@
       "dailyInspect": "설비일일점검",
       "workerInspect": "작업자설비점검",
       "selectJobOrder": "작업지시를 선택하세요",
-      "addWorker": "작업자 추가",
+      "addWorker": "작업자 선택",
       "thisEquip": "현재 설비",
       "allEquips": "전체",
       "otherEquipNote": "다른 설비에 배당된 작업지시는 조회만 가능하며 선택할 수 없습니다.",
@@ -6353,6 +6362,10 @@
       "selectJobOrder": "작업지시를 선택하면 작업지도서가 표시됩니다",
       "noInstruction": "작업지도서 없음",
       "noInstructionHint": "해당 품목/공정의 작업지도서를 등록해주세요"
+    },
+    "routing": {
+      "title": "라우팅",
+      "none": "라우팅 미지정"
     },
     "history": {
       "qualityCriteria": "양품조건",

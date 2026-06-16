@@ -151,6 +151,11 @@ export class EquipInspectQueryDto extends PaginationQueryDto {
   @IsDateString()
   inspectDateTo?: string;
 
+  @ApiPropertyOptional({ description: '설비유형' })
+  @IsOptional()
+  @IsString()
+  equipType?: string;
+
   @ApiPropertyOptional({ description: '작업지시번호' })
   @IsOptional()
   @IsString()

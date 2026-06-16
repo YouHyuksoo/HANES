@@ -1,0 +1,418 @@
+{
+  "slug": "consumables-receiving",
+  "route": "/consumables/receiving",
+  "title": "입고관리",
+  "api": "/consumables/logs?limit=20",
+  "tables": [
+    "CONSUMABLE_LOGS"
+  ],
+  "processPattern": [
+    {},
+    {},
+    {}
+  ],
+  "menuCode": "CONS_RECEIVING",
+  "sortOrder": 30,
+  "registeredAt": {
+    "categoryCode": "CONSUMABLES",
+    "categoryLabelKey": "menu.consumables",
+    "sortOrder": 30
+  },
+  "status": "PASS",
+  "steps": [
+    {
+      "id": "initial-load",
+      "title": "초기 조회",
+      "objective": "입고관리 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+      "actions": [
+        "브라우저로 /consumables/receiving 경로에 진입한다.",
+        "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+        "대표 Oracle 테이블 count를 확인한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/consumables/logs?logTypeGroup=RECEIVING&limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/consumables/label/pending",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "dbChecks": [
+        {
+          "title": "CONSUMABLE_LOGS 대표 count",
+          "sql": "SELECT COUNT(*) AS CNT FROM CONSUMABLE_LOGS WHERE ROWNUM <= 100000000",
+          "result": {
+            "success": true,
+            "data": [
+              {
+                "CNT": 5
+              }
+            ],
+            "columns": [
+              "CNT"
+            ],
+            "row_count": 1,
+            "site": "JSHANES"
+          },
+          "ok": true
+        }
+      ],
+      "evidence": {
+        "label": "초기 조회 화면",
+        "file": "../screenshots/consumables-receiving/01-initial-load.png"
+      },
+      "notes": [
+        "좌측 메뉴 등록 코드: CONS_RECEIVING",
+        "등록 순서: 30",
+        "화면 행 수: 3"
+      ]
+    },
+    {
+      "id": "search-requery",
+      "title": "검색 및 재조회",
+      "objective": "입고관리 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+      "actions": [
+        "탭이 있으면 노출 탭을 순서대로 전환한다.",
+        "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+        "실행 후 화면과 API 호출을 수집한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [],
+      "dbChecks": [],
+      "evidence": {
+        "label": "검색/조회/탭 전환 후 화면",
+        "file": "../screenshots/consumables-receiving/02-search-requery.png"
+      },
+      "notes": [
+        "탭 없음 또는 전환 대상 없음",
+        "검색어 '2026-03-19T00:05:37.565Z' 입력 후 조회/Enter 실행",
+        "검색 후 화면 행 수: 1"
+      ]
+    },
+    {
+      "id": "button-process-inventory",
+      "title": "버튼 및 프로세스 목록화",
+      "objective": "입고관리 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+      "actions": [
+        "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+        "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+        "입력 컨트롤의 placeholder/aria/type을 수집한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/consumables/logs?logTypeGroup=RECEIVING&limit=5000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+        "file": "../screenshots/consumables-receiving/03-button-process-inventory.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "노출 버튼: 새로고침, 반납입고, 입고등록, 그리드 옵션, 전체화면",
+        "입력 컨트롤: 소모품 UID 바코드를 스캔하세요..., 보관위치 (선택), 소모품코드, 소모품명 검색..., select, select"
+      ]
+    },
+    {
+      "id": "action-availability",
+      "title": "신규/수정/삭제 가능 여부",
+      "objective": "입고관리 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+      "actions": [
+        "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+        "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+        "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [],
+      "dbChecks": [],
+      "evidence": {
+        "label": "저장성 프로세스 진입 화면",
+        "file": "../screenshots/consumables-receiving/04-action-entry.png"
+      },
+      "notes": [
+        "프로세스 진입 실행: /입고등록/",
+        "본문 행 액션 버튼 수: 0",
+        "저장성 후보 버튼: 반납입고, 입고등록"
+      ]
+    },
+    {
+      "id": "save-validation-policy",
+      "title": "저장 검증 및 중복 방어 정책",
+      "objective": "입고관리 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+      "actions": [
+        "운영 재고를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+        "저장성 후보 버튼과 API 경계를 목록화한다.",
+        "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/consumables/logs?logTypeGroup=RECEIVING&limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/consumables/logs?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"transDate\":\"2026-03-19\",\"seq\":5,\"consumableCode\":\"CM-AP-040\",\"logType\":\"OUT_RETURN\",\"qty\":1,\"workerId\":null,\"remark\":\"E2E-OUT_RETURN\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-19T00:05:38.862Z\",\"updatedAt\":\"2026-03-19T00:05:38.862Z\",\"vendorCode\":null,\"vendorName\":null,\"unitPrice\":null,\"incomingType\":null,\"department\":null,\"lineCode\":null,\"equipCode\":null,\"issueReason\":null,\"returnReason\":null,\"conUid\":null},{\"transDate\":\"2026-03-19\",\"seq\":4,\"consumableCode\":\"CM-AP-040\",\"logType\":\"IN_RETURN\",\"qty\":1,\"workerId\":null,\"remark\":\"E2E-IN_RETURN\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-19T00:05:37.565Z\",\"updatedAt\":\"2026-03-19T00:05:37.565Z\",\"vendorCode\":null,\"vendorName\":null,\"unitPrice\":null,\"incomingType\""
+        }
+      ],
+      "dbChecks": [],
+      "evidence": {
+        "label": "저장 검증 정책 확인 기준 화면",
+        "file": "../screenshots/consumables-receiving/05-save-validation-policy.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "대표 조회 API 직접 호출 성공: /api/v1/consumables/logs?limit=20 200",
+        "중복 방어 공통 시나리오: 동일 소모품코드/동일 conUid 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+        "저장성 후보 버튼: 반납입고, 입고등록"
+      ]
+    },
+    {
+      "id": "api-db-screen-requery",
+      "title": "DB/API 확인 및 화면 재조회",
+      "objective": "입고관리 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+      "actions": [
+        "대표 API /consumables/logs?limit=20를 직접 호출한다.",
+        "관련 Oracle 대표 테이블 count를 재확인한다.",
+        "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+      ],
+      "result": "PASS",
+      "apiCalls": [
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/consumables/logs?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"transDate\":\"2026-03-19\",\"seq\":5,\"consumableCode\":\"CM-AP-040\",\"logType\":\"OUT_RETURN\",\"qty\":1,\"workerId\":null,\"remark\":\"E2E-OUT_RETURN\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-19T00:05:38.862Z\",\"updatedAt\":\"2026-03-19T00:05:38.862Z\",\"vendorCode\":null,\"vendorName\":null,\"unitPrice\":null,\"incomingType\":null,\"department\":null,\"lineCode\":null,\"equipCode\":null,\"issueReason\":null,\"returnReason\":null,\"conUid\":null},{\"transDate\":\"2026-03-19\",\"seq\":4,\"consumableCode\":\"CM-AP-040\",\"logType\":\"IN_RETURN\",\"qty\":1,\"workerId\":null,\"remark\":\"E2E-IN_RETURN\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-19T00:05:37.565Z\",\"updatedAt\":\"2026-03-19T00:05:37.565Z\",\"vendorCode\":null,\"vendorName\":null,\"unitPrice\":null,\"incomingType\""
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/consumables/logs?logTypeGroup=RECEIVING&limit=5000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "dbChecks": [
+        {
+          "title": "CONSUMABLE_LOGS 대표 count",
+          "sql": "SELECT COUNT(*) AS CNT FROM CONSUMABLE_LOGS WHERE ROWNUM <= 100000000",
+          "result": {
+            "success": true,
+            "data": [
+              {
+                "CNT": 5
+              }
+            ],
+            "columns": [
+              "CNT"
+            ],
+            "row_count": 1,
+            "site": "JSHANES"
+          },
+          "ok": true
+        }
+      ],
+      "evidence": {
+        "label": "DB/API 확인 후 최종 재조회 화면",
+        "file": "../screenshots/consumables-receiving/06-api-db-screen-requery.png"
+      },
+      "notes": [
+        "검색 조건 초기화 후 /새로고침/ 실행",
+        "대표 조회 API 응답: 200",
+        "최종 화면 행 수: 3"
+      ]
+    }
+  ],
+  "apiEvents": [
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/consumables/logs?logTypeGroup=RECEIVING&limit=5000",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
+      "url": "/api/consumables/label/pending",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "button-process-inventory",
+      "method": "GET",
+      "url": "/api/consumables/logs?logTypeGroup=RECEIVING&limit=5000",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "save-validation-policy",
+      "method": "GET",
+      "url": "/api/consumables/logs?logTypeGroup=RECEIVING&limit=5000",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "direct-api",
+      "stepId": "save-validation-policy",
+      "method": "GET",
+      "url": "/api/v1/consumables/logs?limit=20",
+      "status": 200,
+      "ok": true,
+      "responsePreview": "[{\"transDate\":\"2026-03-19\",\"seq\":5,\"consumableCode\":\"CM-AP-040\",\"logType\":\"OUT_RETURN\",\"qty\":1,\"workerId\":null,\"remark\":\"E2E-OUT_RETURN\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-19T00:05:38.862Z\",\"updatedAt\":\"2026-03-19T00:05:38.862Z\",\"vendorCode\":null,\"vendorName\":null,\"unitPrice\":null,\"incomingType\":null,\"department\":null,\"lineCode\":null,\"equipCode\":null,\"issueReason\":null,\"returnReason\":null,\"conUid\":null},{\"transDate\":\"2026-03-19\",\"seq\":4,\"consumableCode\":\"CM-AP-040\",\"logType\":\"IN_RETURN\",\"qty\":1,\"workerId\":null,\"remark\":\"E2E-IN_RETURN\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-19T00:05:37.565Z\",\"updatedAt\":\"2026-03-19T00:05:37.565Z\",\"vendorCode\":null,\"vendorName\":null,\"unitPrice\":null,\"incomingType\""
+    },
+    {
+      "source": "direct-api",
+      "stepId": "api-db-screen-requery",
+      "method": "GET",
+      "url": "/api/v1/consumables/logs?limit=20",
+      "status": 200,
+      "ok": true,
+      "responsePreview": "[{\"transDate\":\"2026-03-19\",\"seq\":5,\"consumableCode\":\"CM-AP-040\",\"logType\":\"OUT_RETURN\",\"qty\":1,\"workerId\":null,\"remark\":\"E2E-OUT_RETURN\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-19T00:05:38.862Z\",\"updatedAt\":\"2026-03-19T00:05:38.862Z\",\"vendorCode\":null,\"vendorName\":null,\"unitPrice\":null,\"incomingType\":null,\"department\":null,\"lineCode\":null,\"equipCode\":null,\"issueReason\":null,\"returnReason\":null,\"conUid\":null},{\"transDate\":\"2026-03-19\",\"seq\":4,\"consumableCode\":\"CM-AP-040\",\"logType\":\"IN_RETURN\",\"qty\":1,\"workerId\":null,\"remark\":\"E2E-IN_RETURN\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-03-19T00:05:37.565Z\",\"updatedAt\":\"2026-03-19T00:05:37.565Z\",\"vendorCode\":null,\"vendorName\":null,\"unitPrice\":null,\"incomingType\""
+    },
+    {
+      "source": "ui-network",
+      "stepId": "api-db-screen-requery",
+      "method": "GET",
+      "url": "/api/consumables/logs?logTypeGroup=RECEIVING&limit=5000",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "unexpectedConsole": [],
+  "unexpectedApi": [],
+  "reportFile": "pages/consumables-receiving.html"
+}

@@ -84,6 +84,7 @@ export class ConsumableLabelService {
         consumableCode: m.consumableCode,
         consumableName: m.consumableName,
         category: m.category,
+        imageUrl: m.imageUrl,
         stockQty: m.stockQty,
         expectedLife: m.expectedLife,
         location: m.location,
@@ -126,6 +127,8 @@ export class ConsumableLabelService {
       }
 
       const log = queryRunner.manager.create(LabelPrintLog, {
+        printedAt: new Date(),
+        seq: 1,
         category: 'con_uid',
         printMode: 'BROWSER',
         uidList: JSON.stringify(results.map((r) => r.conUid)),

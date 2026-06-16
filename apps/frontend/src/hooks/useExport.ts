@@ -103,7 +103,15 @@ function exportExcel(
   XLSX.writeFile(wb, `${fileName}_${getTimestamp()}.xlsx`);
 }
 
-/** PDF 내보내기 (jsPDF + autotable standalone) */
+/** ArrayBuffer → base64 */
+function ab2b64(buf: ArrayBuffer): string {
+  let b = "";
+  const u = new Uint8Array(buf);
+  for (let i = 0; i < u.byteLength; i++) b += String.fromCharCode(u[i]);
+  return btoa(b);
+}
+
+/** PDF 내보내기 (jsPDF + autotable + Noto Sans KR, CID Identity-H) */
 async function exportPdf(
   headers: string[],
   rows: string[][],
@@ -113,13 +121,30 @@ async function exportPdf(
   const autoTable = (await import("jspdf-autotable")).default;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
+  const title = fileName.replace(/_/g, " ");
+
+  try {
+    const raw = await fetch("/fonts/NotoSansKR-Regular.ttf").then(r => r.arrayBuffer());
+    doc.addFileToVFS("NotoSansKR.ttf", ab2b64(raw));
+    doc.addFont("NotoSansKR.ttf", "NotoSansKR", "normal", "Identity-H");
+  } catch (e) {
+    console.warn("PDF font load failed, using default", e);
+  }
+
+  doc.setFont("NotoSansKR", "normal");
+  doc.setFontSize(14);
+  doc.text(title, 10, 10);
+
   autoTable(doc, {
     head: [headers],
     body: rows,
-    styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [245, 245, 245] },
+    startY: 16,
+    styles: { font: "NotoSansKR", fontSize: 8, cellPadding: 2 },
+    headStyles: { font: "NotoSansKR", fontStyle: "normal", fillColor: [41, 128, 185], textColor: 255 },
+    bodyStyles: { font: "NotoSansKR" },
+    alternateRowStyles: { font: "NotoSansKR", fillColor: [245, 245, 245] },
     margin: { top: 10, left: 10, right: 10 },
+    didParseCell(data) { data.cell.styles.font = "NotoSansKR"; },
   });
 
   doc.save(`${fileName}_${getTimestamp()}.pdf`);

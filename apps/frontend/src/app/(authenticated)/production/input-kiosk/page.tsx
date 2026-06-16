@@ -28,6 +28,7 @@ import type { Worker } from '@/components/worker/WorkerSelector';
 import EquipHeader from './components/EquipHeader';
 import MaterialListPanel from './components/MaterialListPanel';
 import WorkInstructionView from './components/WorkInstructionView';
+import RoutingFlowBar from './components/RoutingFlowBar';
 import WorkHistoryPanel from './components/WorkHistoryPanel';
 import ProductionInputBar from './components/ProductionInputBar';
 import SelfInspectPanel from './components/SelfInspectPanel';
@@ -70,32 +71,51 @@ export default function InputKioskPage() {
       .catch(() => setEquips([]));
   }, []);
 
-  // 설비 선택 시 → 서버 조업일 기준 일일점검 완료 여부 자동 체크
-  useEffect(() => {
-    if (!selectedEquip?.equipCode) return;
-    api.get('/equipment/daily-inspect/check', {
-      params: { equipCode: selectedEquip.equipCode, inspectType: 'DAILY' },
-    }).then(res => {
-      setInterlock('dailyInspectDone', Boolean(res.data?.data?.alreadyInspected));
-    }).catch(() => setInterlock('dailyInspectDone', false));
-  }, [selectedEquip?.equipCode, setInterlock]);
+  // 설비일일점검 / 작업자설비점검 완료 시각(헤더 "완료 HH:mm" 표시용)
+  const [dailyInspectAt, setDailyInspectAt] = useState<string | null>(null);
+  const [workerInspectAt, setWorkerInspectAt] = useState<string | null>(null);
 
-  // 작업지시 선택/변경 시 → 작업지시별 작업자설비점검 완료 여부 자동 체크
-  useEffect(() => {
+  // 설비 선택 시 → 서버 조업일 기준 일일점검 완료 여부+시각 자동 체크
+  const refreshDailyInspect = useCallback(async () => {
+    if (!selectedEquip?.equipCode) { setDailyInspectAt(null); return; }
+    try {
+      const res = await api.get('/equipment/daily-inspect/check', {
+        params: { equipCode: selectedEquip.equipCode, inspectType: 'DAILY' },
+      });
+      const d = res.data?.data;
+      setInterlock('dailyInspectDone', Boolean(d?.alreadyInspected));
+      setDailyInspectAt(d?.inspectedAt ?? null);
+    } catch {
+      setInterlock('dailyInspectDone', false);
+      setDailyInspectAt(null);
+    }
+  }, [selectedEquip?.equipCode, setInterlock]);
+  useEffect(() => { void refreshDailyInspect(); }, [refreshDailyInspect]);
+
+  // 작업지시 선택/변경 시 → 작업지시별 작업자설비점검 완료 여부+시각 자동 체크
+  const refreshWorkerInspect = useCallback(async () => {
     if (!selectedEquip?.equipCode || !selectedJobOrder?.orderNo) {
       setInterlock('workerInspectDone', false);
+      setWorkerInspectAt(null);
       return;
     }
-    api.get('/equipment/daily-inspect/check', {
-      params: {
-        equipCode: selectedEquip.equipCode,
-        inspectType: 'WORKER',
-        orderNo: selectedJobOrder.orderNo,
-      },
-    }).then(res => {
-      setInterlock('workerInspectDone', Boolean(res.data?.data?.alreadyInspected));
-    }).catch(() => setInterlock('workerInspectDone', false));
+    try {
+      const res = await api.get('/equipment/daily-inspect/check', {
+        params: {
+          equipCode: selectedEquip.equipCode,
+          inspectType: 'WORKER',
+          orderNo: selectedJobOrder.orderNo,
+        },
+      });
+      const d = res.data?.data;
+      setInterlock('workerInspectDone', Boolean(d?.alreadyInspected));
+      setWorkerInspectAt(d?.inspectedAt ?? null);
+    } catch {
+      setInterlock('workerInspectDone', false);
+      setWorkerInspectAt(null);
+    }
   }, [selectedEquip?.equipCode, selectedJobOrder?.orderNo, setInterlock]);
+  useEffect(() => { void refreshWorkerInspect(); }, [refreshWorkerInspect]);
 
   // 작업지시 변경 시 자주검사 완료 상태 초기화
   useEffect(() => {
@@ -212,13 +232,12 @@ export default function InputKioskPage() {
     t,
   ]);
 
+  // 자재 스캔은 선행 점검(설비점검/작업자점검)과 무관 — 자재목록이 로딩(작업지시 선택)되면 스캔 가능.
   const materialScanDisabledReasons = useMemo(() => {
     const reasons: string[] = [];
-    if (!interlock.dailyInspectDone) reasons.push(t('kiosk.input.disabledReasons.dailyInspect'));
-    if (!interlock.workerInspectDone) reasons.push(t('kiosk.input.disabledReasons.workerInspect'));
     if (!selectedJobOrder) reasons.push(t('kiosk.input.disabledReasons.noJobOrder'));
     return reasons;
-  }, [interlock.dailyInspectDone, interlock.workerInspectDone, selectedJobOrder, t]);
+  }, [selectedJobOrder, t]);
 
   // 소모품 스캔은 자재 스캔과 독립(순서 무관). 설비가 선택돼 있어야 한다는 전제만 둔다.
   const consumableScanDisabledReasons = useMemo(() => {
@@ -237,6 +256,8 @@ export default function InputKioskPage() {
         onOpenWorker={() => setIsWorkerOpen(true)}
         onOpenDailyInspect={() => setIsDailyInspectOpen(true)}
         onOpenWorkerInspect={() => setIsWorkerInspectOpen(true)}
+        dailyInspectAt={dailyInspectAt}
+        workerInspectAt={workerInspectAt}
       />
 
       {/* ② ③ ④ 메인 3패널 */}
@@ -251,8 +272,9 @@ export default function InputKioskPage() {
           />
         </div>
 
-        {/* 중앙: 작업지도서 + 하단 3칸(자주검사 | 불량 | 실적입력) */}
+        {/* 중앙: 라우팅(공정순서) + 작업지도서 + 하단 3칸(자주검사 | 불량 | 실적입력) */}
         <div className="min-w-0 overflow-hidden flex flex-col bg-background border-x border-border">
+          <RoutingFlowBar />
           <div className="flex-1 min-h-0 overflow-hidden border-b-2 border-border bg-card">
             <WorkInstructionView />
           </div>
@@ -326,12 +348,12 @@ export default function InputKioskPage() {
       <DailyInspectModal
         isOpen={isDailyInspectOpen}
         onClose={() => setIsDailyInspectOpen(false)}
-        onDone={() => setIsDailyInspectOpen(false)}
+        onDone={() => { setIsDailyInspectOpen(false); void refreshDailyInspect(); }}
       />
       <WorkerInspectModal
         isOpen={isWorkerInspectOpen}
         onClose={() => setIsWorkerInspectOpen(false)}
-        onDone={() => setIsWorkerInspectOpen(false)}
+        onDone={() => { setIsWorkerInspectOpen(false); void refreshWorkerInspect(); }}
       />
       <MaterialScanModal
         isOpen={isMaterialScanOpen}

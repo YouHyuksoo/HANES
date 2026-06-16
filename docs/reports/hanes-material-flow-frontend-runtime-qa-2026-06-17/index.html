@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>HANES 자재관리 프론트 흐름 QA</title>
+<style>
+body{font-family:Arial,"Noto Sans KR",sans-serif;margin:0;background:#f5f6f8;color:#17202a}header{padding:24px 32px;background:#1f2937;color:#fff}main{padding:24px 32px}table{width:100%;border-collapse:collapse;background:#fff;margin:16px 0}th,td{border:1px solid #d7dce2;padding:8px;text-align:left;vertical-align:top}.PASS{color:#047857;font-weight:700}.FAIL{color:#b91c1c;font-weight:700}pre{white-space:pre-wrap;margin:0;font-size:12px}figure{background:#fff;border:1px solid #d7dce2;margin:16px 0;padding:12px}img{max-width:100%;border:1px solid #ccd2da}figcaption{margin-top:8px;font-weight:700}
+</style></head><body><header><h1>HANES 자재관리 프론트 흐름 QA</h1><p>status=FAIL / orderNo=JO-MATFE-26061618081118 / requestNo=MR2606170031</p></header>
+<main><h2>Scenario</h2><table><thead><tr><th>ID</th><th>단계</th><th>결과</th><th>오류</th></tr></thead><tbody><tr><td>setup</td><td>테스트 작업지시와 가용 LOT 확인</td><td class="PASS">PASS</td><td></td></tr>
+<tr><td>ui-request</td><td>프론트 자재요청 생성</td><td class="PASS">PASS</td><td></td></tr>
+<tr><td>ui-issue</td><td>프론트 승인 및 출고처리</td><td class="FAIL">FAIL</td><td>page.waitForResponse: Timeout 30000ms exceeded while waiting for event "response"</td></tr></tbody></table>
+<h2>DB 확인</h2><table><thead><tr><th>항목</th><th>결과</th><th>SQL</th><th>Rows</th></tr></thead><tbody></tbody></table>
+<h2>스크린샷</h2><figure><img src="screenshots/01-request-page.png" alt="자재요청 화면 진입"><figcaption>자재요청 화면 진입</figcaption></figure>
+<figure><img src="screenshots/02-request-create-bom.png" alt="작업지시 선택 후 BOM 요청 품목 자동 산출"><figcaption>작업지시 선택 후 BOM 요청 품목 자동 산출</figcaption></figure>
+<figure><img src="screenshots/03-request-created.png" alt="출고요청 생성 완료 MR2606170031"><figcaption>출고요청 생성 완료 MR2606170031</figcaption></figure>
+<figure><img src="screenshots/04-issue-request-filtered.png" alt="자재출고 화면에서 생성 요청 검색"><figcaption>자재출고 화면에서 생성 요청 검색</figcaption></figure></main></body></html>

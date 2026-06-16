@@ -49,21 +49,14 @@ function FlowContent({
         <Fragment key={node.id}>
           {idx > 0 && !branchMap.has(workflow.nodes[idx - 1].id) && (
             <div className="flex items-center shrink-0">
+              {/*
+                정적 화살표. 과거 노드 사이마다 무한 반복 SMIL <animate>(linearGradient
+                stop-opacity 펄스)를 3개씩 렌더했으나, 워크플로우 1페이지에 90개가 동시
+                구동되어 Chrome 렌더러가 매 프레임 repaint → CPU를 지속 폭주(측정상 ~76%).
+                펄스는 장식이므로 제거하고 정적 핑크 화살표로 대체한다.
+              */}
               <svg width="16" height="16" viewBox="0 0 16 16" className="overflow-visible">
-                <defs>
-                  <linearGradient id={`wf-grad-${workflow.id}-${idx}`} x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="rgb(244,114,182)" stopOpacity="0.2">
-                      <animate attributeName="stop-opacity" values="0.2;0.8;0.2" dur="2s" repeatCount="indefinite" />
-                    </stop>
-                    <stop offset="50%" stopColor="rgb(244,114,182)" stopOpacity="0.8">
-                      <animate attributeName="stop-opacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite" />
-                    </stop>
-                    <stop offset="100%" stopColor="rgb(244,114,182)" stopOpacity="0.2">
-                      <animate attributeName="stop-opacity" values="0.2;0.8;0.2" dur="2s" repeatCount="indefinite" />
-                    </stop>
-                  </linearGradient>
-                </defs>
-                <line x1="0" y1="8" x2="12" y2="8" stroke={`url(#wf-grad-${workflow.id}-${idx})`} strokeWidth="2" strokeLinecap="round" />
+                <line x1="0" y1="8" x2="12" y2="8" stroke="rgb(244,114,182)" strokeOpacity="0.55" strokeWidth="2" strokeLinecap="round" />
                 <path d="M10 5l3 3-3 3" stroke="rgb(244,114,182)" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
               </svg>
             </div>

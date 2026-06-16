@@ -344,6 +344,8 @@
     "logout": "退出登录",
     "notifications": "通知",
     "settings": "设置",
+    "pause": "暂停",
+    "play": "播放",
     "openMenu": "打开菜单",
     "searchPlaceholder": "搜索 (Ctrl+K)",
     "switchToLight": "切换到亮色模式",
@@ -4240,7 +4242,13 @@
       "addSerialError": "添加序列号失败。",
       "removeSerialError": "移除序列号失败。",
       "closeError": "关箱失败。",
-      "reopenError": "重新打开箱失败。"
+      "reopenError": "重新打开箱失败。",
+      "boxLabel": "箱标签",
+      "packProducts": "装入产品",
+      "reprintLabel": "重新打印标签",
+      "completeAndPrint": "完成包装并打印标签",
+      "packedDate": "包装时间",
+      "serialList": "组成序列号"
     },
     "boxStock": {
       "title": "产品库存查询",
@@ -6266,7 +6274,7 @@
       "dailyInspect": "设备日常点检",
       "workerInspect": "作业者设备点检",
       "selectJobOrder": "请选择作业指示",
-      "addWorker": "添加作业者",
+      "addWorker": "选择作业者",
       "thisEquip": "当前设备",
       "allEquips": "全部",
       "otherEquipNote": "分配给其他设备的作业指示仅供查看，不可选择。",
@@ -6319,6 +6327,10 @@
       "selectJobOrder": "选择作业指示后显示作业指导书",
       "noInstruction": "无作业指导书",
       "noInstructionHint": "请为该品目/工序登记作业指导书"
+    },
+    "routing": {
+      "title": "工艺路线",
+      "none": "未指定工艺路线"
     },
     "history": {
       "qualityCriteria": "良品条件",

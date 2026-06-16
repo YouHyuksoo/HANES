@@ -29,6 +29,7 @@ interface IssueFromRequestModalProps {
 /** 요청 상세의 품목 */
 interface RequestDetailItem {
   id: string;
+  seq?: number;
   itemCode: string;
   itemName: string;
   unit: string;
@@ -49,8 +50,21 @@ interface RequestDetail {
 
 /** 출고 입력 행 */
 interface IssueRow extends RequestDetailItem {
+  rowKey: string;
+  seq: number;
   remainQty: number;
   issueQty: number;
+}
+
+interface AvailableStock {
+  id?: string;
+  matUid: string;
+  itemCode: string;
+  warehouseCode: string;
+  warehouseName?: string;
+  availableQty?: number;
+  qty?: number;
+  unit?: string;
 }
 
 export default function IssueFromRequestModal({
@@ -61,6 +75,9 @@ export default function IssueFromRequestModal({
   const issueTypeOptions = useComCodeOptions('ISSUE_TYPE');
   const [issueType, setIssueType] = useState<string>('PRODUCTION');
   const [issueRows, setIssueRows] = useState<IssueRow[]>([]);
+  const [availableStocksByItem, setAvailableStocksByItem] = useState<Record<string, AvailableStock[]>>({});
+  const [selectedMatUids, setSelectedMatUids] = useState<Record<string, string>>({});
+  const [isLoadingLots, setIsLoadingLots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -80,11 +97,16 @@ export default function IssueFromRequestModal({
   useEffect(() => {
     if (!detail?.items) return;
     setIssueRows(
-      detail.items.map((item) => ({
-        ...item,
-        remainQty: item.requestQty - (item.issuedQty ?? 0),
-        issueQty: item.requestQty - (item.issuedQty ?? 0), // 기본값: 잔여량
-      })),
+      detail.items.map((item) => {
+        const seq = Number(item.seq ?? item.id);
+        return {
+          ...item,
+          rowKey: String(seq || item.itemCode),
+          seq,
+          remainQty: item.requestQty - (item.issuedQty ?? 0),
+          issueQty: item.requestQty - (item.issuedQty ?? 0), // 기본값: 잔여량
+        };
+      }),
     );
     // 요청에 issueType이 있으면 기본값 설정
     if (detail.issueType) {
@@ -92,13 +114,63 @@ export default function IssueFromRequestModal({
     }
   }, [detail]);
 
+  useEffect(() => {
+    if (!isOpen || issueRows.length === 0) return;
+    let isMounted = true;
+    const itemCodes = [...new Set(issueRows.map((row) => row.itemCode).filter(Boolean))];
+
+    const loadAvailableLots = async () => {
+      setIsLoadingLots(true);
+      setErrorMsg(null);
+      try {
+        const entries = await Promise.all(itemCodes.map(async (itemCode) => {
+          const res = await api.get('/material/stocks/available', {
+            params: { itemCode, limit: 100 },
+          });
+          const raw = res.data?.data;
+          const rows = (Array.isArray(raw) ? raw : raw?.data ?? []) as AvailableStock[];
+          return [itemCode, rows.filter((row) => row.matUid && (row.availableQty ?? row.qty ?? 0) > 0)] as const;
+        }));
+        if (!isMounted) return;
+        const nextByItem = Object.fromEntries(entries);
+        setAvailableStocksByItem(nextByItem);
+        setSelectedMatUids((prev) => {
+          const next = { ...prev };
+          for (const row of issueRows) {
+            if (next[row.rowKey]) continue;
+            const candidates = nextByItem[row.itemCode] ?? [];
+            const preferred = candidates.find((stock) => (stock.availableQty ?? stock.qty ?? 0) >= row.issueQty)
+              ?? candidates[0];
+            if (preferred?.matUid) next[row.rowKey] = preferred.matUid;
+          }
+          return next;
+        });
+      } catch (err: unknown) {
+        if (!isMounted) return;
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        setErrorMsg(axiosErr.response?.data?.message || '출고 가능 LOT 조회에 실패했습니다.');
+      } finally {
+        if (isMounted) setIsLoadingLots(false);
+      }
+    };
+
+    void loadAvailableLots();
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, issueRows]);
+
   // 출고수량 변경
-  const handleQtyChange = useCallback((itemId: string, qty: number) => {
+  const handleQtyChange = useCallback((rowKey: string, qty: number) => {
     setIssueRows((prev) =>
       prev.map((row) =>
-        row.id === itemId ? { ...row, issueQty: Math.max(0, Math.min(qty, row.remainQty)) } : row,
+        row.rowKey === rowKey ? { ...row, issueQty: Math.max(0, Math.min(qty, row.remainQty)) } : row,
       ),
     );
+  }, []);
+
+  const handleLotChange = useCallback((rowKey: string, matUid: string) => {
+    setSelectedMatUids((prev) => ({ ...prev, [rowKey]: matUid }));
   }, []);
 
   // 총 출고수량
@@ -111,12 +183,21 @@ export default function IssueFromRequestModal({
   const handleSubmit = useCallback(async () => {
     const validRows = issueRows.filter((r) => r.issueQty > 0);
     if (validRows.length === 0) return;
+    const missingLot = validRows.find((r) => !selectedMatUids[r.rowKey]);
+    if (missingLot) {
+      setErrorMsg(`${missingLot.itemCode} 출고 LOT를 선택해주세요.`);
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
       await api.post(`/material/issue-requests/${requestId}/issue`, {
-        items: validRows.map((r) => ({ itemId: r.id, issueQty: r.issueQty })),
+        items: validRows.map((r) => ({
+          requestItemId: String(r.seq),
+          matUid: selectedMatUids[r.rowKey],
+          issueQty: r.issueQty,
+        })),
         issueType,
       });
       invalidate(['issue-requests']);
@@ -128,7 +209,7 @@ export default function IssueFromRequestModal({
     } finally {
       setIsSubmitting(false);
     }
-  }, [issueRows, requestId, issueType, invalidate, onClose]);
+  }, [issueRows, requestId, issueType, selectedMatUids, invalidate, onClose]);
 
   // 컬럼 정의
   const columns = useMemo<ColumnDef<IssueRow>[]>(() => [
@@ -158,6 +239,29 @@ export default function IssueFromRequestModal({
       ),
     },
     {
+      id: 'matUidSelect',
+      header: '출고 LOT',
+      size: 220,
+      meta: { filterType: 'none' as const },
+      cell: ({ row }) => {
+        const item = row.original;
+        const options = (availableStocksByItem[item.itemCode] ?? []).map((stock) => ({
+          value: stock.matUid,
+          label: `${stock.matUid} / ${stock.warehouseName ?? stock.warehouseCode} / ${(stock.availableQty ?? stock.qty ?? 0).toLocaleString()}${stock.unit ? ` ${stock.unit}` : ''}`,
+        }));
+        return (
+          <Select
+            options={options}
+            value={selectedMatUids[item.rowKey] ?? ''}
+            onChange={(value) => handleLotChange(item.rowKey, value)}
+            placeholder={isLoadingLots ? 'LOT 조회 중' : 'LOT 선택'}
+            fullWidth
+            disabled={isLoadingLots || options.length === 0}
+          />
+        );
+      },
+    },
+    {
       id: 'issueQtyInput',
       header: t('material.issue.issueQtyLabel'),
       size: 120,
@@ -168,7 +272,7 @@ export default function IssueFromRequestModal({
           <Input
             type="number"
             value={String(item.issueQty)}
-            onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
+            onChange={(e) => handleQtyChange(item.rowKey, Number(e.target.value))}
             className="w-24 text-right"
             min={0}
             max={item.remainQty}
@@ -177,7 +281,7 @@ export default function IssueFromRequestModal({
       },
     },
     { accessorKey: 'unit', header: t('common.unit'), size: 60, meta: { filterType: 'text' as const } },
-  ], [t, handleQtyChange]);
+  ], [t, availableStocksByItem, selectedMatUids, isLoadingLots, handleLotChange, handleQtyChange]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('material.issue.processAction')} size="xl">
@@ -240,7 +344,7 @@ export default function IssueFromRequestModal({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={totalIssueQty <= 0}
+              disabled={totalIssueQty <= 0 || isLoadingLots}
               isLoading={isSubmitting}
             >
               <Package className="w-4 h-4 mr-1" />

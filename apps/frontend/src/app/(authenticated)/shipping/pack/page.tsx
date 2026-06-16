@@ -16,8 +16,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Package, Plus, Search, RefreshCw, XCircle, Lock, LockOpen,
-  AlertTriangle,
+  Package, Plus, Search, RefreshCw, XCircle,
+  AlertTriangle, Printer, Lock, LockOpen, Trash2,
 } from "lucide-react";
 import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import PartSelect from "@/components/shared/PartSelect";
@@ -27,6 +27,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { BoxStatusBadge } from "@/components/shipping";
 import type { BoxStatus } from "@/components/shipping";
 import api from "@/services/api";
+import BoxLabelModal from "./components/BoxLabelModal";
 
 /** 박스 (백엔드 BOX_MASTERS 자연키 boxNo, 시리얼은 serialList JSON) */
 interface Box {
@@ -55,6 +56,14 @@ function parseSerials(box: Box | null): string[] {
   }
 }
 
+function isEmptyBox(box: Box): boolean {
+  return (box.qty ?? 0) <= 0 && parseSerials(box).length === 0;
+}
+
+function canDeleteEmptyBox(box: Box): boolean {
+  return box.status === "OPEN" && !box.palletNo && !box.oqcStatus && isEmptyBox(box);
+}
+
 function errMsg(e: unknown, fallback: string): string {
   return (e as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
 }
@@ -80,8 +89,18 @@ export default function PackPage() {
   const [modalError, setModalError] = useState("");
   const [lastAddedSerial, setLastAddedSerial] = useState("");
   const [removeSerialTarget, setRemoveSerialTarget] = useState("");
+  const [deleteBoxTarget, setDeleteBoxTarget] = useState<Box | null>(null);
   const [isAddingSerial, setIsAddingSerial] = useState(false);
+  // 박스 라벨 출력/재발행 모달
+  const [labelBox, setLabelBox] = useState<Box | null>(null);
+  const [labelAutoPrint, setLabelAutoPrint] = useState(false);
   const serialInputRef = useRef<HTMLInputElement>(null);
+
+  /** 라벨 재발행(수동) — 자동출력 없이 라벨 모달만 연다 */
+  const openLabel = useCallback((box: Box) => {
+    setLabelAutoPrint(false);
+    setLabelBox(box);
+  }, []);
 
   const focusSerialInput = useCallback(() => {
     window.setTimeout(() => {
@@ -121,6 +140,8 @@ export default function PackPage() {
     setIsSerialModalOpen(true);
   }, []);
 
+  const activePackingBoxNo = isSerialModalOpen ? selectedBox?.boxNo ?? "" : "";
+
   const handleCreate = useCallback(async () => {
     if (!createItemCode) { setModalError(t("shipping.pack.selectItemFirst")); return; }
     setSaving(true);
@@ -138,10 +159,30 @@ export default function PackPage() {
     }
   }, [createItemCode, fetchData, t]);
 
-  const refreshSelected = useCallback(async (boxNo: string) => {
+  const refreshSelected = useCallback(async (boxNo: string): Promise<Box | null> => {
     const list = await fetchData();
-    setSelectedBox(list.find((b) => b.boxNo === boxNo) ?? null);
+    const found = list.find((b) => b.boxNo === boxNo) ?? null;
+    setSelectedBox(found);
+    return found;
   }, [fetchData]);
+
+  /** 포장 완료 — 박스 마감(OPEN인 경우) 후 라벨 자동 출력 */
+  const triggerPackComplete = useCallback(async (box: Box) => {
+    setPageError("");
+    try {
+      if (box.status === "OPEN") {
+        await api.post(`/shipping/boxes/${box.boxNo}/close`);
+      }
+    } catch (e) {
+      // 마감 실패해도 라벨은 출력하되 원인은 표시한다.
+      setPageError(errMsg(e, t("shipping.pack.closeError")));
+    }
+    setIsSerialModalOpen(false);
+    const list = await fetchData();
+    const finalBox = list.find((b) => b.boxNo === box.boxNo) ?? box;
+    setLabelAutoPrint(true);
+    setLabelBox(finalBox);
+  }, [fetchData, t]);
 
   const handleAddSerial = useCallback(async (rawSerial?: string) => {
     const nextSerial = (rawSerial ?? serialInput).replace(/[\r\n]+/g, "").trim();
@@ -152,7 +193,12 @@ export default function PackPage() {
       await api.post(`/shipping/boxes/${selectedBox.boxNo}/serials`, { serials: [nextSerial] });
       setSerialInput("");
       setLastAddedSerial(nextSerial);
-      await refreshSelected(selectedBox.boxNo);
+      const updated = await refreshSelected(selectedBox.boxNo);
+      // 포장단위 도달 → 자동 마감 + 박스라벨 자동 출력
+      if (updated && updated.packUnit != null && parseSerials(updated).length >= updated.packUnit) {
+        await triggerPackComplete(updated);
+        return;
+      }
       focusSerialInput();
     } catch (e) {
       setModalError(errMsg(e, t("shipping.pack.addSerialError")));
@@ -160,7 +206,7 @@ export default function PackPage() {
     } finally {
       setIsAddingSerial(false);
     }
-  }, [serialInput, selectedBox, isAddingSerial, refreshSelected, focusSerialInput, t]);
+  }, [serialInput, selectedBox, isAddingSerial, refreshSelected, triggerPackComplete, focusSerialInput, t]);
 
   const handleRemoveSerial = useCallback(async () => {
     if (!selectedBox || !removeSerialTarget) return;
@@ -199,25 +245,87 @@ export default function PackPage() {
     }
   }, [fetchData, t]);
 
+  const handleDeleteEmptyBox = useCallback(async () => {
+    if (!deleteBoxTarget) return;
+    setPageError("");
+    try {
+      await api.delete(`/shipping/boxes/${deleteBoxTarget.boxNo}`);
+      if (selectedBox?.boxNo === deleteBoxTarget.boxNo) {
+        setSelectedBox(null);
+        setIsSerialModalOpen(false);
+      }
+      setDeleteBoxTarget(null);
+      fetchData();
+    } catch (e) {
+      setPageError(errMsg(e, t("shipping.pack.deleteBoxError", "빈 박스 삭제에 실패했습니다.")));
+    }
+  }, [deleteBoxTarget, fetchData, selectedBox?.boxNo, t]);
+
   const columns = useMemo<ColumnDef<Box>[]>(() => [
     {
-      id: "actions", header: t("common.actions"), size: 130, meta: { align: "center" as const, filterType: "none" as const },
+      id: "actions", header: t("common.actions"), size: 150, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => {
         const box = row.original;
+        const iconBtn = "h-8 w-8 inline-flex items-center justify-center rounded border transition-colors disabled:opacity-30 disabled:cursor-not-allowed";
+        const isOpen = box.status === "OPEN";
+        const canReopen = box.status === "CLOSED" && !box.palletNo;
+        const canPrintLabel = (box.qty ?? 0) > 0;
+        const canDelete = canDeleteEmptyBox(box);
         return (
-          <div className="flex gap-1 justify-center">
-            <button className="p-1 hover:bg-surface rounded disabled:opacity-40" title={t("shipping.pack.addSerial")} disabled={box.status !== "OPEN"} onClick={() => openSerialModal(box)}>
-              <Plus className={`w-4 h-4 ${box.status === "OPEN" ? "text-primary" : "text-text-muted"}`} />
+          <div className="grid grid-cols-4 gap-1 justify-items-center w-[148px] mx-auto">
+            <button
+              type="button"
+              className={`${iconBtn} border-primary/50 text-primary hover:bg-primary/10`}
+              title={t("shipping.pack.packProducts", "제품 담기")}
+              aria-label={t("shipping.pack.packProducts", "제품 담기")}
+              disabled={!isOpen}
+              onClick={() => openSerialModal(box)}
+            >
+              <Plus className="w-4 h-4" />
             </button>
             {box.status === "CLOSED" ? (
-              <button className="p-1 hover:bg-surface rounded" title={t("shipping.pack.reopenBox")} disabled={!!box.palletNo} onClick={() => handleReopenBox(box)}>
-                <LockOpen className={`w-4 h-4 ${box.palletNo ? "text-text-muted" : "text-amber-500"}`} />
+              <button
+                type="button"
+                className={`${iconBtn} border-amber-400/60 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10`}
+                title={t("shipping.pack.reopenBox")}
+                aria-label={t("shipping.pack.reopenBox")}
+                disabled={!canReopen}
+                onClick={() => handleReopenBox(box)}
+              >
+                <LockOpen className="w-4 h-4" />
               </button>
             ) : (
-              <button className="p-1 hover:bg-surface rounded disabled:opacity-40" title={t("shipping.pack.closeBox")} disabled={box.status !== "OPEN"} onClick={() => handleCloseBox(box)}>
-                <Lock className={`w-4 h-4 ${box.status === "OPEN" ? "text-primary" : "text-text-muted"}`} />
+              <button
+                type="button"
+                className={`${iconBtn} border-border text-text hover:bg-surface`}
+                title={t("shipping.pack.closeBox")}
+                aria-label={t("shipping.pack.closeBox")}
+                disabled={!isOpen}
+                onClick={() => handleCloseBox(box)}
+              >
+                <Lock className="w-4 h-4" />
               </button>
             )}
+            <button
+              type="button"
+              className={`${iconBtn} border-primary/50 text-primary hover:bg-primary/10`}
+              title={t("shipping.pack.reprintLabel", "라벨 재발행")}
+              aria-label={t("shipping.pack.reprintLabel", "라벨 재발행")}
+              disabled={!canPrintLabel}
+              onClick={() => openLabel(box)}
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              className={`${iconBtn} border-red-400/60 text-red-600 dark:text-red-400 hover:bg-red-500/10`}
+              title={t("shipping.pack.deleteEmptyBox", "빈 박스 삭제")}
+              aria-label={t("shipping.pack.deleteEmptyBox", "빈 박스 삭제")}
+              disabled={!canDelete}
+              onClick={() => setDeleteBoxTarget(box)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         );
       },
@@ -234,7 +342,7 @@ export default function PackPage() {
     },
     { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
     { accessorKey: "closeAt", header: t("shipping.pack.closedAt"), size: 150, meta: { filterType: "date" as const }, cell: ({ getValue }) => (getValue() ? String(getValue()).replace("T", " ").slice(0, 16) : "-") },
-  ], [t, openSerialModal, handleCloseBox, handleReopenBox]);
+  ], [t, openSerialModal, handleCloseBox, handleReopenBox, openLabel]);
 
   // 시리얼 모달 용량 계산
   const modalSerials = parseSerials(selectedBox);
@@ -277,6 +385,7 @@ export default function PackPage() {
           enableColumnFilter
           enableExport
           exportFileName={t("shipping.pack.title")}
+          rowClassName={(row) => row.boxNo === activePackingBoxNo ? "ring-2 ring-primary bg-primary/5" : ""}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-0">
@@ -316,9 +425,10 @@ export default function PackPage() {
       <Modal isOpen={isSerialModalOpen} onClose={() => setIsSerialModalOpen(false)} title={t("shipping.pack.addSerial")} size="2xl">
         <div className="space-y-4">
           {selectedBox && (
-            <div className="p-3 bg-background rounded-lg flex items-center justify-between">
+            <div className="p-4 bg-primary/10 border-2 border-primary rounded-lg flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm text-text-muted">{t("shipping.pack.box")}: <span className="font-medium text-text">{selectedBox.boxNo}</span></p>
+                <p className="text-xs font-semibold text-primary tracking-wide">{t("shipping.pack.currentBox", "현재 담는 박스")}</p>
+                <p className="text-2xl font-bold text-text font-mono">{selectedBox.boxNo}</p>
                 <p className="text-sm text-text-muted">{selectedBox.itemName ?? selectedBox.itemCode}</p>
               </div>
               <div className="text-right">
@@ -391,17 +501,42 @@ export default function PackPage() {
               </div>
             ))}
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-between gap-2">
+            <Button
+              variant="primary"
+              onClick={() => selectedBox && triggerPackComplete(selectedBox)}
+              disabled={!selectedBox || selectedBox.status !== "OPEN" || modalSerials.length === 0}
+            >
+              <Printer className="w-4 h-4 mr-1" />{t("shipping.pack.completeAndPrint", "포장 완료 · 라벨 출력")}
+            </Button>
             <Button variant="secondary" onClick={() => setIsSerialModalOpen(false)}>{t("common.close")}</Button>
           </div>
         </div>
       </Modal>
+
+      {/* 박스 라벨 출력/재발행 */}
+      <BoxLabelModal
+        isOpen={!!labelBox}
+        box={labelBox}
+        autoPrint={labelAutoPrint}
+        onClose={() => { setLabelBox(null); setLabelAutoPrint(false); }}
+      />
+
       <ConfirmModal
         isOpen={!!removeSerialTarget}
         onClose={() => setRemoveSerialTarget("")}
         onConfirm={handleRemoveSerial}
         title={t("common.deleteConfirm", "삭제 확인")}
         message={`${removeSerialTarget} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteBoxTarget}
+        onClose={() => setDeleteBoxTarget(null)}
+        onConfirm={handleDeleteEmptyBox}
+        title={t("shipping.pack.deleteEmptyBox", "빈 박스 삭제")}
+        message={`${deleteBoxTarget?.boxNo ?? ""} ${t("shipping.pack.deleteEmptyBoxConfirm", { defaultValue: "박스를 삭제하시겠습니까? 제품이 담기지 않은 OPEN 박스만 삭제됩니다." })}`}
         variant="danger"
       />
     </div>

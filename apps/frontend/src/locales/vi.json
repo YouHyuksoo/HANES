@@ -344,6 +344,8 @@
     "logout": "Đăng xuất",
     "notifications": "Thông báo",
     "settings": "Cài đặt",
+    "pause": "Tạm dừng",
+    "play": "Phát",
     "openMenu": "Mở menu",
     "searchPlaceholder": "Tìm kiếm (Ctrl+K)",
     "switchToLight": "Chuyển sang chế độ sáng",
@@ -4240,7 +4242,13 @@
       "addSerialError": "Thêm serial thất bại.",
       "removeSerialError": "Xóa serial thất bại.",
       "closeError": "Đóng hộp thất bại.",
-      "reopenError": "Mở lại hộp thất bại."
+      "reopenError": "Mở lại hộp thất bại.",
+      "boxLabel": "Nhãn thùng",
+      "packProducts": "Đóng sản phẩm",
+      "reprintLabel": "In lại nhãn",
+      "completeAndPrint": "Hoàn tất & In nhãn",
+      "packedDate": "Thời gian đóng gói",
+      "serialList": "Serial thành phần"
     },
     "boxStock": {
       "title": "Tra cứu tồn kho sản phẩm",
@@ -6266,7 +6274,7 @@
       "dailyInspect": "Kiểm tra hàng ngày",
       "workerInspect": "Kiểm tra thiết bị người dùng",
       "selectJobOrder": "Chọn lệnh sản xuất",
-      "addWorker": "Thêm người vận hành",
+      "addWorker": "Chọn người vận hành",
       "thisEquip": "Thiết bị này",
       "allEquips": "Tất cả",
       "otherEquipNote": "Lệnh sản xuất của thiết bị khác chỉ được xem, không thể chọn.",
@@ -6319,6 +6327,10 @@
       "selectJobOrder": "Chọn lệnh SX để xem hướng dẫn",
       "noInstruction": "Không có hướng dẫn sản xuất",
       "noInstructionHint": "Vui lòng đăng ký hướng dẫn cho mặt hàng/công đoạn này"
+    },
+    "routing": {
+      "title": "Định tuyến",
+      "none": "Chưa có định tuyến"
     },
     "history": {
       "qualityCriteria": "Tiêu chuẩn sản phẩm tốt",

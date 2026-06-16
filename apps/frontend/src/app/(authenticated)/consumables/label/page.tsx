@@ -19,6 +19,18 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { api } from "@/services/api";
 import { LabelableMaster, useConLabelColumns } from "./components/ConLabelColumns";
 import { useConLabelIssue } from "./components/useConLabelIssue";
+import {
+  LabelDesign,
+  createDefaultLabelDesign,
+  ensureObjectLabelDesign,
+} from "../../master/label/types";
+import { LabelPrintRenderer } from "../../master/label/components/LabelDesignRenderer";
+
+interface TemplateInfo {
+  templateName: string;
+  category: string;
+  printMode: string;
+}
 
 function ConsumableLabelPage() {
   const { t } = useTranslation();
@@ -27,6 +39,8 @@ function ConsumableLabelPage() {
   const [searchText, setSearchText] = useState("");
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
   const [qtyMap, setQtyMap] = useState<Map<string, number>>(new Map());
+  const [labelDesign, setLabelDesign] = useState<LabelDesign>(() => createDefaultLabelDesign("jig"));
+  const [template, setTemplate] = useState<TemplateInfo | null>(null);
   const [printing, setPrinting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +56,27 @@ function ConsumableLabelPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const fetchTemplate = useCallback(async () => {
+    try {
+      const res = await api.get("/master/label-templates", { params: { category: "jig" } });
+      const templates = res.data?.data ?? [];
+      const tpl = templates.find((item: { isDefault: boolean }) => item.isDefault) || templates[0];
+      if (!tpl) return;
+      const rawDesign = typeof tpl.designData === "string" ? JSON.parse(tpl.designData) : tpl.designData;
+      setTemplate({
+        templateName: tpl.templateName,
+        category: tpl.category,
+        printMode: tpl.printMode ?? "BROWSER",
+      });
+      setLabelDesign(ensureObjectLabelDesign(rawDesign, "jig"));
+    } catch {
+      setTemplate(null);
+      setLabelDesign(createDefaultLabelDesign("jig"));
+    }
+  }, []);
+
+  useEffect(() => { fetchTemplate(); }, [fetchTemplate]);
 
   /** 필터링된 마스터 목록 */
   const filteredMasters = useMemo(() => {
@@ -98,12 +133,8 @@ function ConsumableLabelPage() {
       const win = window.open("", "_blank");
       if (!win) { setPrinting(false); return; }
       win.document.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
-        <style>body{margin:0;font-family:sans-serif}.label-grid{display:flex;flex-wrap:wrap;gap:4px;padding:8px}
-        .label-card{border:1px dashed #ccc;padding:8px;width:60mm;height:30mm;page-break-inside:avoid;box-sizing:border-box;
-        display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:11px}
-        .uid{font-family:monospace;font-size:14px;font-weight:bold;margin-bottom:4px}
-        .info{font-size:10px;color:#555}
-        @media print{.label-card{border:1px dashed #ddd}}</style>
+        <style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#fff}.label-grid{display:flex;flex-wrap:wrap;gap:0;padding:0}
+        img{max-width:100%;max-height:100%}@page{size:${labelDesign.labelWidth}mm ${labelDesign.labelHeight}mm;margin:0}</style>
         </head><body><div class="label-grid">${printRef.current.innerHTML}</div>
         <script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
       win.document.close();
@@ -113,7 +144,21 @@ function ConsumableLabelPage() {
       clearCreatedUids();
       fetchData();
     }, 500);
-  }, [selectedCodes, createConUids, t, logBrowserPrint, fetchData, clearCreatedUids]);
+  }, [selectedCodes, createConUids, t, labelDesign.labelHeight, labelDesign.labelWidth, logBrowserPrint, fetchData, clearCreatedUids]);
+
+  const printItems = useMemo(() => createdUids.map((item) => ({
+    key: item.conUid,
+    data: {
+      conUid: item.conUid,
+      consumableCode: item.consumableCode,
+      consumableName: item.consumableName,
+      category: item.category ?? "",
+      imageUrl: item.imageUrl ?? "",
+      stockQty: item.stockQty ?? "",
+      expectedLife: item.expectedLife ?? "",
+      location: item.location ?? "",
+    },
+  })), [createdUids]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -129,6 +174,9 @@ function ConsumableLabelPage() {
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
+          <span className="hidden xl:inline-flex items-center h-8 px-2.5 rounded border border-border bg-surface text-xs text-text-muted">
+            {template ? `${template.templateName} / ${template.printMode}` : "기본 디자인"}
+          </span>
           <Button size="sm" onClick={handleBrowserPrint}
             disabled={selectedCodes.size === 0 || issuing || printing}>
             <Printer className="w-4 h-4 mr-1" />
@@ -178,16 +226,7 @@ function ConsumableLabelPage() {
           sqlQuery={`SELECT *\nFROM CON_LABELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
 
-      {/* 숨김 인쇄 영역 */}
-      <div ref={printRef} style={{ position: "absolute", left: "-9999px", top: 0 }}>
-        {createdUids.map((c) => (
-          <div key={c.conUid} className="label-card">
-            <div className="uid">{c.conUid}</div>
-            <div className="info">{c.consumableCode}</div>
-            <div className="info">{c.consumableName}</div>
-          </div>
-        ))}
-      </div>
+      <LabelPrintRenderer ref={printRef} items={printItems} design={labelDesign} visible={printing} />
     </div>
   );
 }

@@ -189,7 +189,12 @@ describe('EquipInspectService', () => {
       const qb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
-        getCount: jest.fn().mockResolvedValue(1),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({
+          inspectAt: new Date(2026, 5, 15, 8, 30, 0),
+          inspectorName: '홍길동',
+        }),
       };
       mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
 
@@ -201,6 +206,8 @@ describe('EquipInspectService', () => {
 
       expect(result).toEqual(expect.objectContaining({
         alreadyInspected: true,
+        inspectedAt: '2026-06-15 08:30:00',
+        inspectorName: '홍길동',
         workDate: '2026-06-15',
         windowStart: '2026-06-15 08:00:00',
         windowEnd: '2026-06-16 08:00:00',
@@ -220,7 +227,12 @@ describe('EquipInspectService', () => {
       const qb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
-        getCount: jest.fn().mockResolvedValue(1),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({
+          inspectAt: new Date(2026, 5, 16, 9, 15, 0),
+          inspectorName: '김작업',
+        }),
       };
       mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
 
@@ -231,6 +243,7 @@ describe('EquipInspectService', () => {
       }, { company: '40', plant: '1000' });
 
       expect(result.alreadyInspected).toBe(true);
+      expect(result.inspectedAt).toBe('2026-06-16 09:15:00');
       expect(qb.andWhere).toHaveBeenCalledWith('log.orderNo = :orderNo', { orderNo: 'WO2606150066' });
     });
   });

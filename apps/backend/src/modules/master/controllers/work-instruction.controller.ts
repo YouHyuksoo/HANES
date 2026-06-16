@@ -43,7 +43,10 @@ export class WorkInstructionController {
         },
       }),
       fileFilter: (_req, file, callback) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|pdf|msword|vnd\.openxmlformats|vnd\.ms-excel|plain)$/)) {
+        // 확장자 우선 판별(ppsx/pptx는 mimetype이 비거나 제각각이라 mimetype만으론 거부됨).
+        const okByExt = /\.(jpe?g|png|gif|bmp|webp|pdf|pptx?|ppsx?|docx?|xlsx?|txt)$/i.test(file.originalname);
+        const okByMime = /(^image\/|\/pdf$|officedocument|ms-?powerpoint|msword|ms-excel|\/plain$)/i.test(file.mimetype);
+        if (!okByExt && !okByMime) {
           return callback(new Error('지원하지 않는 파일 형식입니다.'), false);
         }
         callback(null, true);

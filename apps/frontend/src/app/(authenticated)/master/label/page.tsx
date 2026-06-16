@@ -2,238 +2,79 @@
 
 /**
  * @file src/app/(authenticated)/master/label/page.tsx
- * @description 라벨관리 페이지 - 카테고리별 바코드 라벨 디자인/저장/출력
- *
- * 초보자 가이드:
- * 1. **카테고리 탭**: 설비/지그/작업자/품목 중 선택
- * 2. **좌측**: 체크박스로 출력 대상 선택
- * 3. **중앙**: 라벨 디자인 설정 + 템플릿 저장/불러오기
- * 4. **우측**: 실시간 미리보기 + 인쇄
+ * @description 객체 기반 라벨 디자인 관리 페이지
  */
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Tag, Palette } from "lucide-react";
+import { FileJson2, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui";
-import LabelDesigner from "./components/LabelDesigner";
-import LabelCanvas from "./components/LabelCanvas";
-import LabelPreview from "./components/LabelPreview";
 import TemplateManager from "./components/TemplateManager";
-import LabelGrid from "./components/LabelGrid";
-import ZplEditor from "./components/ZplEditor";
-import { LabelCategory, LabelItem, LabelDesign, DEFAULT_DESIGN, MAT_LOT_DEFAULT_DESIGN } from "./types";
-import { api } from "@/services/api";
+import LabelObjectDesigner from "./components/LabelObjectDesigner";
+import LabelDesignRenderer from "./components/LabelDesignRenderer";
+import {
+  LabelCategory,
+  LabelDesign,
+  LabelSourceTable,
+  createDefaultLabelDesign,
+  ensureObjectLabelDesign,
+} from "./types";
+import { getSampleData } from "./labelSources";
 
-const categories: { key: LabelCategory; labelKey: string }[] = [
-  { key: "equip", labelKey: "master.label.catEquip" },
-  { key: "jig", labelKey: "master.label.catJig" },
-  { key: "worker", labelKey: "master.label.catWorker" },
-  { key: "part", labelKey: "master.label.catPart" },
-  { key: "mat_lot", labelKey: "master.label.catMatLot" },
-];
-
-/** 카테고리별 API 경로 및 필드 매핑 */
-const categoryApiMap: Record<LabelCategory, {
-  url: string;
-  mapFn: (item: Record<string, unknown>) => LabelItem;
-}> = {
-  equip: {
-    url: "/equipment/equips",
-    mapFn: (item) => ({
-      itemKey: item.equipCode as string,
-      code: item.equipCode as string,
-      name: item.equipName as string,
-      sub: (item.lineCode as string) || (item.equipType as string) || "",
-    }),
-  },
-  jig: {
-    url: "/consumables",
-    mapFn: (item) => ({
-      itemKey: item.consumableCode as string,
-      code: item.consumableCode as string,
-      name: item.consumableName as string,
-      sub: (item.category as string) || "",
-    }),
-  },
-  worker: {
-    url: "/master/workers",
-    mapFn: (item) => ({
-      itemKey: item.workerCode as string,
-      code: item.workerCode as string,
-      name: item.workerName as string,
-      sub: (item.dept as string) || "",
-    }),
-  },
-  part: {
-    url: "/master/parts",
-    mapFn: (item) => ({
-      itemKey: item.itemCode as string,
-      code: item.itemCode as string,
-      name: item.itemName as string,
-      sub: (item.itemType as string) || "",
-    }),
-  },
-  mat_lot: {
-    url: "",
-    mapFn: () => ({ itemKey: "", code: "", name: "" }),
-  },
+const sourceCategoryMap: Record<LabelSourceTable, LabelCategory> = {
+  equipment: "equip",
+  consumable: "jig",
+  worker: "worker",
+  mat_lot: "mat_lot",
+  box: "box",
 };
 
 function LabelPage() {
   const { t } = useTranslation();
-  const [category, setCategory] = useState<LabelCategory>("equip");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [design, setDesign] = useState<LabelDesign>(DEFAULT_DESIGN);
-  const [items, setItems] = useState<LabelItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [designMode, setDesignMode] = useState<'designer' | 'zpl'>('designer');
-  const [zplCode, setZplCode] = useState('');
-  const [printMode, setPrintMode] = useState('BROWSER');
+  const [design, setDesign] = useState<LabelDesign>(() => createDefaultLabelDesign("jig"));
+  const category = sourceCategoryMap[design.sourceTable ?? "consumable"];
 
-  /** 카테고리 변경 시 API 데이터 로드 */
-  const fetchItems = useCallback(async (cat: LabelCategory) => {
-    if (cat === "mat_lot") {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const { url, mapFn } = categoryApiMap[cat];
-      const res = await api.get(url, { params: { limit: 100, useYn: "Y" } });
-      const raw = res.data?.data ?? res.data;
-      const list = Array.isArray(raw) ? raw : raw?.data ?? [];
-      setItems(list.map(mapFn));
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const handleLoad = useCallback((loaded: LabelDesign) => {
+    setDesign(ensureObjectLabelDesign(loaded, category));
+  }, [category]);
 
-  useEffect(() => {
-    fetchItems(category);
-  }, [category, fetchItems]);
-
-  const selectedItems = useMemo(() => items.filter((i) => selectedIds.has(i.itemKey)), [items, selectedIds]);
-  const firstSelected = selectedItems[0];
-
-  const handleCategoryChange = useCallback((cat: LabelCategory) => {
-    setCategory(cat);
-    setSelectedIds(new Set());
-    setDesign(cat === "mat_lot" ? MAT_LOT_DEFAULT_DESIGN : DEFAULT_DESIGN);
-  }, []);
+  const sampleData = getSampleData(category, design.sourceTable, design.sourceFields);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      <div className="flex-shrink-0">
-        <h1 className="text-xl font-bold text-text flex items-center gap-2">
-          <Tag className="w-7 h-7 text-primary" />{t("master.label.title")}
-        </h1>
-        <p className="text-text-muted mt-1">{t("master.label.subtitle")}</p>
+    <div className="h-full flex flex-col overflow-hidden p-5 gap-4 animate-fade-in">
+      <div className="flex items-start justify-between gap-4 flex-shrink-0">
+        <div>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <Tag className="w-7 h-7 text-primary" />
+            {t("master.label.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("master.label.subtitle")}</p>
+        </div>
+        <div className="flex items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-xs text-text-muted">
+          <FileJson2 className="w-4 h-4 text-primary" />
+          DESIGN_DATA JSON
+        </div>
       </div>
 
-      {/* 카테고리 탭 */}
-      <div className="flex border-b border-border flex-shrink-0">
-        {categories.map((cat) => (
-          <button
-            key={cat.key}
-            onClick={() => handleCategoryChange(cat.key)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              category === cat.key
-                ? "border-primary text-primary"
-                : "border-transparent text-text-muted hover:text-text hover:border-border"
-            }`}
-          >
-            {t(cat.labelKey)}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-12 gap-6 min-h-0 flex-1">
-        {/* 좌측: 항목 선택 */}
-        <div className="col-span-4 flex flex-col min-h-0">
-          {category === "mat_lot" ? (
-            <Card><CardContent>
-              <div className="flex flex-col items-center justify-center h-48 text-text-muted">
-                <Tag className="w-10 h-10 mb-3 text-primary/40" />
-                <p className="text-sm font-medium">{t("master.label.matLotDesignOnly")}</p>
-                <p className="text-xs mt-1">{t("master.label.matLotDesignHint")}</p>
-              </div>
-            </CardContent></Card>
-          ) : (
-            <LabelGrid items={items} selectedIds={selectedIds} onSelectionChange={setSelectedIds} loading={loading} />
-          )}
+      <div className="grid grid-cols-[minmax(0,1fr)_300px] gap-4 min-h-0 flex-1">
+        <div className="min-h-0">
+          <LabelObjectDesigner category={category} design={design} onChange={setDesign} />
         </div>
 
-        {/* 중앙: 디자인 설정 + 템플릿 관리 */}
-        <div className="col-span-4 space-y-4 overflow-y-auto min-h-0">
-          {/* 디자인 모드 토글 */}
-          <div className="flex border border-border rounded-lg overflow-hidden">
-            <button
-              onClick={() => setDesignMode('designer')}
-              className={`flex-1 px-3 py-1.5 text-sm font-medium transition-colors ${
-                designMode === 'designer'
-                  ? 'bg-primary text-white'
-                  : 'bg-surface text-text-muted hover:text-text'
-              }`}
-            >
-              {t("master.label.designer")}
-            </button>
-            <button
-              onClick={() => setDesignMode('zpl')}
-              className={`flex-1 px-3 py-1.5 text-sm font-medium transition-colors ${
-                designMode === 'zpl'
-                  ? 'bg-primary text-white'
-                  : 'bg-surface text-text-muted hover:text-text'
-              }`}
-            >
-              {t("master.label.zplCode", { defaultValue: "ZPL 코드" })}
-            </button>
-          </div>
+        <aside className="min-h-0 space-y-4 overflow-y-auto">
+          <Card><CardContent>
+            <TemplateManager category={category} design={design} onLoad={handleLoad} />
+          </CardContent></Card>
 
-          {designMode === 'designer' ? (
-            <>
-              <Card><CardContent>
-                <h3 className="text-sm font-semibold text-text flex items-center gap-2 mb-3">
-                  <Palette className="w-4 h-4 text-primary" />{t("master.label.designer")}
-                </h3>
-                <LabelDesigner design={design} onChange={setDesign} />
-              </CardContent></Card>
-
-              <Card><CardContent>
-                <TemplateManager category={category} design={design} onLoad={setDesign} />
-              </CardContent></Card>
-            </>
-          ) : (
-            <Card><CardContent>
-              <ZplEditor
-                zplCode={zplCode}
-                onZplCodeChange={setZplCode}
-                printMode={printMode}
-                onPrintModeChange={setPrintMode}
-              />
-            </CardContent></Card>
-          )}
-        </div>
-
-        {/* 우측: 미리보기 + 인쇄 */}
-        <div className="col-span-4 space-y-4 overflow-y-auto min-h-0">
           <Card><CardContent>
             <h3 className="text-sm font-semibold text-text mb-3">{t("master.label.preview")}</h3>
-            <div className="flex justify-center py-4">
-              <LabelCanvas
-                design={design}
-                sampleCode={firstSelected?.code ?? "SAMPLE-001"}
-                sampleName={firstSelected?.name ?? "Sample"}
-                sampleSub={firstSelected?.sub ?? "Info"}
-              />
+            <div className="overflow-auto flex justify-center py-2">
+              <LabelDesignRenderer design={design} data={sampleData} scale={3} />
+            </div>
+            <div className="mt-3 text-xs text-text-muted">
+              {design.labelWidth} x {design.labelHeight} mm / {design.elements?.length ?? 0} objects
             </div>
           </CardContent></Card>
-
-          <Card><CardContent>
-            <LabelPreview items={selectedItems} design={design} />
-          </CardContent></Card>
-        </div>
+        </aside>
       </div>
     </div>
   );

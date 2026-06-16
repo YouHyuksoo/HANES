@@ -18,6 +18,11 @@ export interface CreatedConUid {
   conUid: string;
   consumableCode: string;
   consumableName: string;
+  category?: string | null;
+  imageUrl?: string | null;
+  stockQty?: number;
+  expectedLife?: number | null;
+  location?: string | null;
 }
 
 interface UseConLabelIssueParams {
@@ -49,7 +54,14 @@ export function useConLabelIssue({
           qty,
         });
         const items: CreatedConUid[] = res.data?.data ?? res.data ?? [];
-        allCreated.push(...items);
+        allCreated.push(...items.map((item) => ({
+          ...item,
+          category: master.category,
+          imageUrl: master.imageUrl,
+          stockQty: master.stockQty,
+          expectedLife: master.expectedLife,
+          location: master.location,
+        })));
       }
       setCreatedUids(allCreated);
       onRefresh();
@@ -67,7 +79,7 @@ export function useConLabelIssue({
     try {
       await api.post("/material/label-print/log", {
         category: "con_uid", printMode: "BROWSER",
-        matUids: conUids, labelCount: conUids.length, status: "SUCCESS",
+        uidList: conUids, labelCount: conUids.length, status: "SUCCESS",
       });
     } catch { /* ignore logging errors */ }
   }, []);

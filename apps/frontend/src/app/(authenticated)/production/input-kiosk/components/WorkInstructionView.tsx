@@ -25,6 +25,24 @@ interface WorkInstruction {
   revision?: string;
 }
 
+/** 파일 확장자(쿼리/해시 제거) 판별 유틸 */
+const filePath = (url: string) => url.split(/[?#]/)[0] ?? url;
+const isImageUrl = (url?: string | null) => !!url && /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(filePath(url));
+const isPdfUrl = (url?: string | null) => !!url && /\.pdf$/i.test(filePath(url));
+/** PowerPoint(ppt/pptx/pps/ppsx)·Word(doc/docx) — Office Online 임베드 대상 */
+const isOfficeUrl = (url?: string | null) => !!url && /\.(pptx?|ppsx?|docx?)$/i.test(filePath(url));
+
+/** 상대경로(/uploads/...)를 정적파일 절대 URL로 변환 (API 접미사 /api 제거) */
+const resolveFileUrl = (url: string) =>
+  url.startsWith('http')
+    ? url
+    : `${(process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/api(?:\/v1)?$/, '')}${url}`;
+
+/** Microsoft Office Online 뷰어 임베드 URL (변환 없이 PPTX/PPSX 슬라이드쇼 재생).
+ *  주의: src 파일이 인터넷에서 접근 가능한 공개 URL이어야 한다(사내망 전용이면 동작 불가). */
+const officeEmbedUrl = (absUrl: string) =>
+  `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(absUrl)}`;
+
 export default function WorkInstructionView() {
   const { t } = useTranslation();
   const { selectedJobOrder, selectedEquip } = useKioskStore();
@@ -52,7 +70,7 @@ export default function WorkInstructionView() {
   }, [selectedJobOrder?.itemCode, processCode]);
 
   const current = instructions[activeIdx];
-  const backendBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const fileUrl = current?.imageUrl ? resolveFileUrl(current.imageUrl) : null;
   const canGoPrev = activeIdx > 0;
   const canGoNext = activeIdx < instructions.length - 1;
   const prevDisabledReason = canGoPrev
@@ -88,7 +106,7 @@ export default function WorkInstructionView() {
             </button>
           </div>
         )}
-        {current?.imageUrl && (
+        {isImageUrl(current?.imageUrl) && (
           <button onClick={() => setZoomed(true)}
             className="p-1 text-text-muted hover:text-primary transition-colors ml-1">
             <ZoomIn className="w-3.5 h-3.5" />
@@ -119,13 +137,36 @@ export default function WorkInstructionView() {
             <span className="text-sm">{t('kiosk.instruction.noInstruction')}</span>
             <span className="text-xs opacity-60">{t('kiosk.instruction.noInstructionHint')}</span>
           </div>
-        ) : current?.imageUrl ? (
+        ) : fileUrl && isImageUrl(current?.imageUrl) ? (
           <img
-            src={`${backendBase}${current.imageUrl}`}
+            src={fileUrl}
             alt={current.title}
             className="w-full h-auto object-contain cursor-zoom-in"
             onClick={() => setZoomed(true)}
           />
+        ) : fileUrl && isPdfUrl(current?.imageUrl) ? (
+          <iframe
+            src={fileUrl}
+            className="w-full h-full min-h-[60vh]"
+            title={current?.title}
+          />
+        ) : fileUrl && isOfficeUrl(current?.imageUrl) ? (
+          <div className="flex h-full min-h-[60vh] flex-col">
+            <iframe
+              src={officeEmbedUrl(fileUrl)}
+              className="w-full flex-1"
+              title={current?.title}
+              allowFullScreen
+            />
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 border-t border-border bg-card px-3 py-2 text-xs text-primary hover:underline"
+            >
+              {t('kiosk.instruction.openExternal', '재생이 안 되면 새 탭에서 열기')}
+            </a>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-2 text-text-muted p-4 text-center h-full">
             <BookOpen className="w-10 h-10 opacity-20" />
@@ -138,13 +179,13 @@ export default function WorkInstructionView() {
       </div>
 
       {/* 줌 오버레이 */}
-      {zoomed && current?.imageUrl && (
+      {zoomed && fileUrl && isImageUrl(current?.imageUrl) && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-zoom-out"
           onClick={() => setZoomed(false)}
         >
           <img
-            src={`${backendBase}${current.imageUrl}`}
+            src={fileUrl}
             alt={current.title}
             className="max-w-[90vw] max-h-[90vh] object-contain"
           />

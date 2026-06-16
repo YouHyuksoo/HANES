@@ -45,6 +45,25 @@ const formatInspectDate = (value: unknown) => {
   }).format(date).replace(/\. /g, "-").replace(".", "");
 };
 
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const inspectHistorySqlPreview = `SELECT
+  log.*,
+  equip.EQUIP_NAME,
+  equip.EQUIP_TYPE,
+  equip.LINE_CODE
+FROM EQUIP_INSPECT_LOGS log
+LEFT JOIN EQUIP_MASTERS equip
+  ON log.EQUIP_CODE = equip.EQUIP_CODE
+ AND log.COMPANY = equip.COMPANY
+ AND log.PLANT_CD = equip.PLANT_CD
+WHERE log.COMPANY = '40'
+  AND log.PLANT_CD = '1000'
+ORDER BY log.INSPECT_DATE DESC`;
+
 export default function InspectHistoryPage() {
   const { t } = useTranslation();
 
@@ -52,9 +71,10 @@ export default function InspectHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [equipTypeFilter, setEquipTypeFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(todayStr);
+  const [dateTo, setDateTo] = useState(todayStr);
 
   const comCodeTypeOptions = useComCodeOptions("INSPECT_CHECK_TYPE");
   const typeOptions = useMemo(() => [
@@ -68,12 +88,19 @@ export default function InspectHistoryPage() {
     ...comCodeResultOptions.map(opt => ({ ...opt, label: `${t("equipment.inspectHistory.result", "점검결과")}: ${opt.label}` })),
   ], [t, comCodeResultOptions]);
 
+  const comCodeEquipTypeOptions = useComCodeOptions("EQUIP_TYPE");
+  const equipTypeOptions = useMemo(() => [
+    { value: "", label: `${t("equipment.inspectHistory.equipType", "설비유형")}: ${t("common.all", "전체")}` },
+    ...comCodeEquipTypeOptions.map(opt => ({ ...opt, label: `${t("equipment.inspectHistory.equipType", "설비유형")}: ${opt.label}` })),
+  ], [t, comCodeEquipTypeOptions]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (typeFilter) params.inspectType = typeFilter;
+      if (equipTypeFilter) params.equipType = equipTypeFilter;
       if (resultFilter) params.overallResult = resultFilter;
       if (dateFrom) params.inspectDateFrom = dateFrom;
       if (dateTo) params.inspectDateTo = dateTo;
@@ -84,7 +111,7 @@ export default function InspectHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, typeFilter, resultFilter, dateFrom, dateTo]);
+  }, [searchText, typeFilter, equipTypeFilter, resultFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -102,8 +129,8 @@ export default function InspectHistoryPage() {
       cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_CHECK_TYPE" code={getValue() as string} />,
     },
     {
-      accessorKey: "equipCode", header: t("equipment.inspectHistory.equipCode"), size: 110,
-      meta: { filterType: "text" as const },
+      accessorKey: "equipCode", header: t("equipment.inspectHistory.equipCode"), size: 130,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
@@ -161,6 +188,9 @@ export default function InspectHistoryPage() {
               <div className="w-32 flex-shrink-0">
                 <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
+              <div className="w-32 flex-shrink-0">
+                <Select options={equipTypeOptions} value={equipTypeFilter} onChange={setEquipTypeFilter} fullWidth />
+              </div>
               <div className="w-36 flex-shrink-0">
                 <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} fullWidth />
               </div>
@@ -169,7 +199,7 @@ export default function InspectHistoryPage() {
               </div>
             </div>
           } 
-          sqlQuery={`SELECT *\nFROM EQUIP_INSPECTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={inspectHistorySqlPreview}/>
       </CardContent></Card>
     </div>
   );

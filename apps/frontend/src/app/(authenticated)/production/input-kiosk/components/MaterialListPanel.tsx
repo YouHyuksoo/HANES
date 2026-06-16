@@ -169,8 +169,8 @@ export default function MaterialListPanel({
           {onOpenMaterialScan && (
             <button
               onClick={onOpenMaterialScan}
-              disabled={!interlock.workerInspectDone || !selectedJobOrder}
-              title={interlock.workerInspectDone && selectedJobOrder
+              disabled={!selectedJobOrder}
+              title={selectedJobOrder
                 ? t('kiosk.prep.materialScan')
                 : materialScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.materialScan')}
               className={[
@@ -195,7 +195,7 @@ export default function MaterialListPanel({
               {t('kiosk.material.cancelAll', '투입취소')}
             </button>
           )}
-          {(!interlock.workerInspectDone || !selectedJobOrder) && (
+          {!selectedJobOrder && (
             <span
               className="text-[10px] text-text-muted max-w-[140px] truncate"
               title={materialScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.materialScan')}

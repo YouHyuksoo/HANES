@@ -66,7 +66,7 @@ describe('ConsumableLabelService', () => {
     it('should return masters with instance counts', async () => {
       // Arrange
       mockMasterRepo.find.mockResolvedValue([
-        { consumableCode: 'C001', consumableName: 'Test', stockQty: 5, useYn: 'Y' },
+        { consumableCode: 'C001', consumableName: 'Test', imageUrl: '/uploads/consumables/c001.svg', stockQty: 5, useYn: 'Y' },
       ] as ConsumableMaster[]);
 
       const qb = createMock<any>();
@@ -85,6 +85,7 @@ describe('ConsumableLabelService', () => {
 
       // Assert
       expect(result).toHaveLength(1);
+      expect(result[0].imageUrl).toBe('/uploads/consumables/c001.svg');
       expect(result[0].instanceCount).toBe(3);
       expect(result[0].pendingCount).toBe(1);
     });
@@ -128,6 +129,15 @@ describe('ConsumableLabelService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.manager.create).toHaveBeenCalledWith(
+        LabelPrintLog,
+        expect.objectContaining({
+          printedAt: expect.any(Date),
+          seq: 1,
+          category: 'con_uid',
+          printMode: 'BROWSER',
+        }),
+      );
     });
 
     it('should throw NotFoundException when master not found', async () => {

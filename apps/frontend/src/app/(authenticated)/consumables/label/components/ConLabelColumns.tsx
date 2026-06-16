@@ -19,6 +19,7 @@ export interface LabelableMaster {
   consumableCode: string;
   consumableName: string;
   category: string | null;
+  imageUrl: string | null;
   stockQty: number;
   expectedLife: number | null;
   location: string | null;
@@ -57,6 +58,21 @@ export function useConLabelColumns({
             checked={selectedCodes.has(row.original.consumableCode)}
             onChange={() => toggleItem(row.original.consumableCode)}
             className="w-4 h-4 accent-primary" />
+        ),
+      },
+      {
+        id: "image",
+        header: t("consumables.master.sectionImage", "이미지"),
+        size: 64,
+        meta: { filterType: "none" as const, align: "center" as const },
+        cell: ({ row }) => row.original.imageUrl ? (
+          <img
+            src={row.original.imageUrl}
+            alt=""
+            className="w-9 h-9 object-cover rounded border border-border bg-surface"
+          />
+        ) : (
+          <span className="text-text-muted text-xs">-</span>
         ),
       },
       {

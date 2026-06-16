@@ -102,10 +102,17 @@ export class EquipInspectService {
       });
     }
 
-    const count = await queryBuilder.getCount();
+    // 최신 점검 로그 1건을 조회해 완료 여부와 점검 시각(INSPECT_AT)을 함께 반환한다.
+    const latestLog = await queryBuilder
+      .orderBy('log.inspectAt', 'DESC')
+      .addOrderBy('log.createdAt', 'DESC')
+      .getOne();
+    const inspectedAtSource = latestLog?.inspectAt ?? latestLog?.createdAt ?? null;
 
     return {
-      alreadyInspected: count > 0,
+      alreadyInspected: !!latestLog,
+      inspectedAt: inspectedAtSource ? this.formatDateTime(inspectedAtSource) : null,
+      inspectorName: latestLog?.inspectorName ?? null,
       equipCode: query.equipCode,
       inspectType,
       orderNo: query.orderNo ?? null,
@@ -119,7 +126,7 @@ export class EquipInspectService {
   /** 점검 목록 조회 */
   async findAll(query: EquipInspectQueryDto, company?: string, plant?: string) {
     const {
-      page = 1, limit = 10, equipCode, inspectType,
+      page = 1, limit = 10, equipCode, inspectType, equipType,
       overallResult, search, inspectDateFrom, inspectDateTo, orderNo,
     } = query;
     const skip = (page - 1) * limit;
@@ -146,6 +153,9 @@ export class EquipInspectService {
     }
     if (equipCode) {
       queryBuilder.andWhere('log.equipCode = :equipCode', { equipCode });
+    }
+    if (equipType) {
+      queryBuilder.andWhere('equip.equipType = :equipType', { equipType });
     }
     if (inspectType) {
       queryBuilder.andWhere('log.inspectType = :inspectType', { inspectType });

@@ -1,0 +1,327 @@
+{
+  "status": "FAIL",
+  "executedAt": "2026-06-16T18:08:11.006Z",
+  "baseUrl": "http://localhost:3002",
+  "apiUrl": "http://localhost:3003/api/v1",
+  "company": "40",
+  "plant": "1000",
+  "stamp": "26061618081118",
+  "orderNo": "JO-MATFE-26061618081118",
+  "requestNo": "MR2606170031",
+  "setup": {
+    "selectedLots": {
+      "HSG0001": {
+        "matUid": "VH1-RM260615-00007",
+        "availableQty": 20,
+        "warehouseCode": "W001"
+      },
+      "TP0001": {
+        "matUid": "VH1-RM260615-00017",
+        "availableQty": 10000,
+        "warehouseCode": "W001"
+      }
+    },
+    "jobOrder": [
+      {
+        "orderNo": "JO-MATFE-26061618081118",
+        "parentOrderNo": null,
+        "planNo": null,
+        "itemCode": "HNS02",
+        "part": {
+          "itemCode": "HNS02",
+          "itemName": "완제품 하네스",
+          "itemNo": "HNS02",
+          "custPartNo": null,
+          "itemType": "FINISHED",
+          "productType": "HARNESS",
+          "spec": null,
+          "rev": "A",
+          "markingText": null,
+          "unit": "EA",
+          "drawNo": null,
+          "leadTime": 0,
+          "safetyStock": 0,
+          "lotUnitQty": 1,
+          "boxQty": 0,
+          "minPackQty": 0,
+          "iqcYn": "N",
+          "inspectMethod": null,
+          "tactTime": 0,
+          "expiryDate": 0,
+          "expiryExtDays": 0,
+          "toleranceRate": 5,
+          "isSplittable": "Y",
+          "sampleQty": null,
+          "packUnit": null,
+          "storageLocation": null,
+          "imageUrl": null,
+          "remark": "Lv0 완제품, 제품코드 HNS001 매핑",
+          "useYn": "Y",
+          "company": "40",
+          "plant": "1000",
+          "createdBy": null,
+          "updatedBy": null,
+          "createdAt": "2026-06-04T04:26:30.675Z",
+          "updatedAt": "2026-06-04T07:12:04.804Z"
+        },
+        "lineCode": "LINE-01",
+        "routingCode": "RT-HNS02",
+        "routing": null,
+        "rootOrderNo": null,
+        "processCode": "MASSY",
+        "equipCode": "EQ-MASSY-01",
+        "planQty": 1,
+        "goodQty": 0,
+        "defectQty": 0,
+        "planDate": "2026-06-16",
+        "startAt": null,
+        "endAt": null,
+        "priority": 5,
+        "status": "WAITING",
+        "custPoNo": null,
+        "remark": "자재관리 프론트 실제 흐름 QA",
+        "erpSyncYn": "N",
+        "company": "40",
+        "plant": "1000",
+        "createdBy": null,
+        "updatedBy": null,
+        "createdAt": "2026-06-16T18:08:10.423Z",
+        "updatedAt": "2026-06-16T18:08:10.423Z"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "title": "테스트 작업지시와 가용 LOT 확인",
+      "result": "PASS",
+      "startedAt": "2026-06-16T18:08:11.007Z",
+      "notes": [],
+      "finishedAt": "2026-06-16T18:08:11.467Z"
+    },
+    {
+      "id": "ui-request",
+      "title": "프론트 자재요청 생성",
+      "result": "PASS",
+      "startedAt": "2026-06-16T18:08:12.357Z",
+      "notes": [],
+      "finishedAt": "2026-06-16T18:08:18.697Z"
+    },
+    {
+      "id": "ui-issue",
+      "title": "프론트 승인 및 출고처리",
+      "result": "FAIL",
+      "startedAt": "2026-06-16T18:08:18.697Z",
+      "notes": [],
+      "error": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"",
+      "finishedAt": "2026-06-16T18:09:55.438Z"
+    }
+  ],
+  "apiEvents": [
+    {
+      "source": "direct-api",
+      "method": "GET",
+      "url": "/health",
+      "status": 200,
+      "ok": true,
+      "responsePreview": {
+        "status": "ok",
+        "timestamp": "2026-06-16T18:08:11.043Z",
+        "uptime": 1662,
+        "database": {
+          "status": "connected",
+          "latencyMs": 19,
+          "error": null
+        },
+        "memory": {
+          "rss": 131,
+          "heapUsed": 106,
+          "heapTotal": 114
+        }
+      }
+    },
+    {
+      "source": "direct-api",
+      "method": "GET",
+      "url": "/material/stocks/available?itemCode=HSG0001&limit=1",
+      "status": 200,
+      "ok": true,
+      "responsePreview": [
+        {
+          "company": "40",
+          "plant": "1000",
+          "warehouseCode": "W001",
+          "itemCode": "HSG0001",
+          "matUid": "VH1-RM260615-00007",
+          "locationCode": null,
+          "qty": 20,
+          "reservedQty": 0,
+          "availableQty": 20,
+          "lastCountAt": null,
+          "createdBy": "SYSTEM",
+          "updatedBy": null,
+          "createdAt": "2026-06-15T07:31:18.191Z",
+          "updatedAt": "2026-06-15T08:10:40.522Z",
+          "itemName": "하우징",
+          "unit": "EA",
+          "iqcStatus": "PASS",
+          "lotStatus": "NORMAL"
+        }
+      ]
+    },
+    {
+      "source": "direct-api",
+      "method": "GET",
+      "url": "/material/stocks/available?itemCode=TP0001&limit=1",
+      "status": 200,
+      "ok": true,
+      "responsePreview": [
+        {
+          "company": "40",
+          "plant": "1000",
+          "warehouseCode": "W001",
+          "itemCode": "TP0001",
+          "matUid": "VH1-RM260615-00017",
+          "locationCode": null,
+          "qty": 10000,
+          "reservedQty": 0,
+          "availableQty": 10000,
+          "lastCountAt": null,
+          "createdBy": "SYSTEM",
+          "updatedBy": null,
+          "createdAt": "2026-06-15T07:37:58.071Z",
+          "updatedAt": "2026-06-15T08:10:40.615Z",
+          "itemName": "절연테잎",
+          "unit": "MM",
+          "iqcStatus": "PASS",
+          "lotStatus": "NORMAL"
+        }
+      ]
+    },
+    {
+      "source": "direct-api",
+      "method": "GET",
+      "url": "/production/job-orders?orderNo=JO-MATFE-26061618081118&limit=1",
+      "status": 200,
+      "ok": true,
+      "responsePreview": []
+    },
+    {
+      "source": "direct-api",
+      "method": "POST",
+      "url": "/production/job-orders",
+      "status": 201,
+      "ok": true,
+      "responsePreview": {
+        "success": true,
+        "data": null,
+        "message": "작업지시가 생성되었습니다.",
+        "timestamp": "2026-06-16T18:08:11.383Z"
+      }
+    },
+    {
+      "source": "direct-api",
+      "method": "GET",
+      "url": "/production/job-orders?orderNo=JO-MATFE-26061618081118&limit=1",
+      "status": 200,
+      "ok": true,
+      "responsePreview": [
+        {
+          "orderNo": "JO-MATFE-26061618081118",
+          "parentOrderNo": null,
+          "planNo": null,
+          "itemCode": "HNS02",
+          "part": {
+            "itemCode": "HNS02",
+            "itemName": "완제품 하네스",
+            "itemNo": "HNS02",
+            "custPartNo": null,
+            "itemType": "FINISHED",
+            "productType": "HARNESS",
+            "spec": null,
+            "rev": "A",
+            "markingText": null,
+            "unit": "EA",
+            "drawNo": null,
+            "leadTime": 0,
+            "safetyStock": 0,
+            "lotUnitQty": 1,
+            "boxQty": 0,
+            "minPackQty": 0,
+            "iqcYn": "N",
+            "inspectMethod": null,
+            "tactTime": 0,
+            "expiryDate": 0,
+            "expiryExtDays": 0,
+            "toleranceRate": 5,
+            "isSplittable": "Y",
+            "sampleQty": null,
+            "packUnit": null,
+            "storageLocation": null,
+            "imageUrl": null,
+            "remark": "Lv0 완제품, 제품코드 HNS001 매핑",
+            "useYn": "Y",
+            "company": "40",
+            "plant": "1000",
+            "createdBy": null,
+            "updatedBy": null,
+            "createdAt": "2026-06-04T04:26:30.675Z",
+            "updatedAt": "2026-06-04T07:12:04.804Z"
+          },
+          "lineCode": "LINE-01",
+          "routingCode": "RT-HNS02",
+          "routing": null,
+          "rootOrderNo": null,
+          "processCode": "MASSY",
+          "equipCode": "EQ-MASSY-01",
+          "planQty": 1,
+          "goodQty": 0,
+          "defectQty": 0,
+          "planDate": "2026-06-16",
+          "startAt": null,
+          "endAt": null,
+          "priority": 5,
+          "status": "WAITING",
+          "custPoNo": null,
+          "remark": "자재관리 프론트 실제 흐름 QA",
+          "erpSyncYn": "N",
+          "company": "40",
+          "plant": "1000",
+          "createdBy": null,
+          "updatedBy": null,
+          "createdAt": "2026-06-16T18:08:10.423Z",
+          "updatedAt": "2026-06-16T18:08:10.423Z"
+        }
+      ]
+    }
+  ],
+  "dbChecks": [],
+  "screenshots": [
+    {
+      "label": "자재요청 화면 진입",
+      "file": "screenshots/01-request-page.png"
+    },
+    {
+      "label": "작업지시 선택 후 BOM 요청 품목 자동 산출",
+      "file": "screenshots/02-request-create-bom.png"
+    },
+    {
+      "label": "출고요청 생성 완료 MR2606170031",
+      "file": "screenshots/03-request-created.png"
+    },
+    {
+      "label": "자재출고 화면에서 생성 요청 검색",
+      "file": "screenshots/04-issue-request-filtered.png"
+    }
+  ],
+  "failures": [
+    {
+      "id": "ui-issue",
+      "error": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\""
+    },
+    {
+      "id": "fatal",
+      "error": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\""
+    }
+  ]
+}

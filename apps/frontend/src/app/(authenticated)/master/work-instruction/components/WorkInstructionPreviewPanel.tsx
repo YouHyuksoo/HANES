@@ -34,7 +34,7 @@ interface Props {
 const getFilePath = (url: string) => url.split(/[?#]/)[0] ?? url;
 
 /** 이미지 확장자 판별 */
-const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(getFilePath(url));
+const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(getFilePath(url));
 
 /** PDF 확장자 판별 */
 const isPdfUrl = (url: string) => /\.pdf$/i.test(getFilePath(url));

@@ -23,9 +23,9 @@ export class CreateLabelTemplateDto {
   @MaxLength(100)
   templateName: string;
 
-  @ApiProperty({ description: '카테고리', enum: ['equip', 'jig', 'worker', 'part', 'mat_lot'] })
+  @ApiProperty({ description: '카테고리', enum: ['equip', 'jig', 'worker', 'part', 'mat_lot', 'box'] })
   @IsString()
-  @IsIn(['equip', 'jig', 'worker', 'part', 'mat_lot'])
+  @IsIn(['equip', 'jig', 'worker', 'part', 'mat_lot', 'box'])
   category: string;
 
   @ApiProperty({ description: '라벨 디자인 설정 (JSON)' })
@@ -62,10 +62,10 @@ export class CreateLabelTemplateDto {
 export class UpdateLabelTemplateDto extends PartialType(CreateLabelTemplateDto) {}
 
 export class LabelTemplateQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ description: '카테고리 필터', enum: ['equip', 'jig', 'worker', 'part', 'mat_lot'] })
+  @ApiPropertyOptional({ description: '카테고리 필터', enum: ['equip', 'jig', 'worker', 'part', 'mat_lot', 'box'] })
   @IsOptional()
   @IsString()
-  @IsIn(['equip', 'jig', 'worker', 'part', 'mat_lot'])
+  @IsIn(['equip', 'jig', 'worker', 'part', 'mat_lot', 'box'])
   category?: string;
 
   @ApiPropertyOptional({ description: '검색어 (템플릿명)' })
