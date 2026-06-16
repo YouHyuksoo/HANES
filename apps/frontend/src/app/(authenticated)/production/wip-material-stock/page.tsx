@@ -11,8 +11,8 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Warehouse, Package, Cpu, Layers } from 'lucide-react';
-import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
+import { Search, RefreshCw, Cpu } from 'lucide-react';
+import { Card, CardContent, Button, Input } from '@/components/ui';
 import EquipSelect from '@/components/shared/EquipSelect';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -51,12 +51,6 @@ export default function WipMaterialStockPage() {
   }, [searchText, equipCode]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => ({
-    equipCount: new Set(data.map(d => d.equipCode)).size,
-    itemCount: new Set(data.map(d => d.itemCode)).size,
-    totalQty: data.reduce((s, r) => s + (r.qty ?? 0), 0),
-  }), [data]);
 
   const columns = useMemo<ColumnDef<WipMatStockRow>[]>(() => [
     {
@@ -110,12 +104,6 @@ export default function WipMaterialStockPage() {
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />{t('common.refresh')}
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
-        <StatCard label={t('production.wipMaterialStock.equipCount')} value={stats.equipCount} icon={Cpu} color="blue" />
-        <StatCard label={t('production.wipMaterialStock.itemCount')} value={stats.itemCount} icon={Package} color="orange" />
-        <StatCard label={t('production.wipMaterialStock.totalQty')} value={stats.totalQty} icon={Layers} color="green" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

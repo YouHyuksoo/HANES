@@ -101,6 +101,37 @@ export interface WipStockRow {
   reservedQty: number;
 }
 
+/** findTransactions 조회 파라미터 */
+export interface WipTransactionQuery {
+  equipCode?: string;
+  itemCode?: string;
+  search?: string;
+  transType?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+/** findTransactions 조회 결과 행 */
+export interface WipTransactionRow {
+  transNo: string;
+  transType: string;
+  equipCode: string;
+  equipName: string | null;
+  itemCode: string;
+  itemName: string | null;
+  matUid: string;
+  qty: number;
+  fromWarehouseId: string | null;
+  orderNo: string | null;
+  refType: string | null;
+  refId: string | null;
+  cancelRefId: string | null;
+  status: string;
+  remark: string | null;
+  workerId: string | null;
+  createdAt: Date | null;
+}
+
 @Injectable()
 export class WipMatStockService {
   private readonly logger = new Logger(WipMatStockService.name);
@@ -359,6 +390,101 @@ export class WipMatStockService {
       qty: Number(r.qty ?? 0),
       availableQty: Number(r.availableQty ?? 0),
       reservedQty: Number(r.reservedQty ?? 0),
+    }));
+  }
+
+  /**
+   * 공정 수불(거래원장) 조회 — WIP_MAT_TRANSACTIONS.
+   * - 설비명(EQUIP_MASTERS)·품목명(ITEM_MASTERS) 조인 포함. 최신순(CREATED_AT DESC) 정렬.
+   * - 필터: equipCode, itemCode, transType, search(품목코드/품목명/LOT/설비명 부분일치),
+   *   dateFrom/dateTo(CREATED_AT 기준, dateTo는 해당일 종료까지 포함).
+   * - 멀티테넌시(company/plant) 필수.
+   */
+  async findTransactions(
+    params: WipTransactionQuery,
+    company: string,
+    plant: string,
+  ): Promise<WipTransactionRow[]> {
+    const qb = this.wipTxRepo
+      .createQueryBuilder('tx')
+      .leftJoin('EQUIP_MASTERS', 'e', 'e.EQUIP_CODE = tx.EQUIP_CODE')
+      .leftJoin('ITEM_MASTERS', 'i', 'i.ITEM_CODE = tx.ITEM_CODE')
+      .where('tx.COMPANY = :company', { company })
+      .andWhere('tx.PLANT_CD = :plant', { plant })
+      .select('tx.TRANS_NO', 'transNo')
+      .addSelect('tx.TRANS_TYPE', 'transType')
+      .addSelect('tx.EQUIP_CODE', 'equipCode')
+      .addSelect('e.EQUIP_NAME', 'equipName')
+      .addSelect('tx.ITEM_CODE', 'itemCode')
+      .addSelect('i.ITEM_NAME', 'itemName')
+      .addSelect('tx.MAT_UID', 'matUid')
+      .addSelect('tx.QTY', 'qty')
+      .addSelect('tx.FROM_WAREHOUSE_ID', 'fromWarehouseId')
+      .addSelect('tx.ORDER_NO', 'orderNo')
+      .addSelect('tx.REF_TYPE', 'refType')
+      .addSelect('tx.REF_ID', 'refId')
+      .addSelect('tx.CANCEL_REF_ID', 'cancelRefId')
+      .addSelect('tx.STATUS', 'status')
+      .addSelect('tx.REMARK', 'remark')
+      .addSelect('tx.WORKER_ID', 'workerId')
+      .addSelect('tx.CREATED_AT', 'createdAt')
+      .orderBy('tx.CREATED_AT', 'DESC')
+      .addOrderBy('tx.TRANS_NO', 'DESC');
+
+    if (params.equipCode) {
+      qb.andWhere('tx.EQUIP_CODE = :equipCode', { equipCode: params.equipCode });
+    }
+    if (params.itemCode) {
+      qb.andWhere('tx.ITEM_CODE = :itemCode', { itemCode: params.itemCode });
+    }
+    if (params.transType) {
+      qb.andWhere('tx.TRANS_TYPE = :transType', { transType: params.transType });
+    }
+    if (params.search) {
+      qb.andWhere(
+        '(tx.ITEM_CODE LIKE :kw OR i.ITEM_NAME LIKE :kw OR tx.MAT_UID LIKE :kw OR e.EQUIP_NAME LIKE :kw)',
+        { kw: `%${params.search}%` },
+      );
+    }
+    if (params.dateFrom) {
+      qb.andWhere('tx.CREATED_AT >= TO_TIMESTAMP(:dateFrom, :dateFmt)', {
+        dateFrom: `${params.dateFrom} 00:00:00`,
+        dateFmt: 'YYYY-MM-DD HH24:MI:SS',
+      });
+    }
+    if (params.dateTo) {
+      qb.andWhere('tx.CREATED_AT <= TO_TIMESTAMP(:dateTo, :dateFmt)', {
+        dateTo: `${params.dateTo} 23:59:59`,
+        dateFmt: 'YYYY-MM-DD HH24:MI:SS',
+      });
+    }
+
+    const raw = await qb.getRawMany<{
+      transNo: string; transType: string; equipCode: string; equipName: string | null;
+      itemCode: string; itemName: string | null; matUid: string; qty: number;
+      fromWarehouseId: string | null; orderNo: string | null; refType: string | null;
+      refId: string | null; cancelRefId: string | null; status: string;
+      remark: string | null; workerId: string | null; createdAt: Date | null;
+    }>();
+
+    return raw.map((r) => ({
+      transNo: r.transNo,
+      transType: r.transType,
+      equipCode: r.equipCode,
+      equipName: r.equipName ?? null,
+      itemCode: r.itemCode,
+      itemName: r.itemName ?? null,
+      matUid: r.matUid,
+      qty: Number(r.qty ?? 0),
+      fromWarehouseId: r.fromWarehouseId ?? null,
+      orderNo: r.orderNo ?? null,
+      refType: r.refType ?? null,
+      refId: r.refId ?? null,
+      cancelRefId: r.cancelRefId ?? null,
+      status: r.status,
+      remark: r.remark ?? null,
+      workerId: r.workerId ?? null,
+      createdAt: r.createdAt ?? null,
     }));
   }
 

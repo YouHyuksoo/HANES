@@ -291,6 +291,29 @@ export class InventoryController {
     return ResponseUtil.success(rows);
   }
 
+  /**
+   * 공정 수불(거래원장) 조회 (WIP_MAT_TRANSACTIONS)
+   * - 필터: equipCode, itemCode/search, transType, dateFrom~dateTo. 설비명/품목명 조인, 최신순.
+   */
+  @Get('wip-mat-transactions')
+  async getWipMatTransactions(
+    @Query('equipCode') equipCode?: string,
+    @Query('itemCode') itemCode?: string,
+    @Query('search') search?: string,
+    @Query('transType') transType?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const rows = await this.wipMatStockService.findTransactions(
+      { equipCode, itemCode, search, transType, dateFrom, dateTo },
+      company,
+      plant,
+    );
+    return ResponseUtil.success(rows);
+  }
+
   // ============================================================================
   // 수불 트랜잭션 API
   // ============================================================================

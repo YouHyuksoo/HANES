@@ -266,4 +266,71 @@ describe('WipMatStockService', () => {
       expect(qb.andWhere).toHaveBeenCalled();
     });
   });
+
+  describe('findTransactions', () => {
+    const makeQb = () => ({
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn(),
+    });
+
+    it('설비명/품목명 조인 결과를 최신순으로 반환한다', async () => {
+      const qb: any = makeQb();
+      qb.getRawMany.mockResolvedValue([
+        {
+          transNo: 'WTX260616-00002', transType: 'PROD_CONSUME', equipCode,
+          equipName: '자동결선기1', itemCode: 'ITEM-A', itemName: '단자A',
+          matUid: 'RM-001', qty: -3, fromWarehouseId: null, orderNo: 'W-001',
+          refType: 'PROD_RESULT', refId: 'PR-001', cancelRefId: null,
+          status: 'DONE', remark: null, workerId: 'U1', createdAt: new Date('2026-06-16T10:00:00'),
+        },
+      ]);
+      mockTxRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const rows = await target.findTransactions({}, company, plant);
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toEqual(
+        expect.objectContaining({
+          transNo: 'WTX260616-00002', transType: 'PROD_CONSUME',
+          equipName: '자동결선기1', itemName: '단자A', qty: -3,
+        }),
+      );
+      // 멀티테넌시 + 최신순 정렬 확인
+      expect(qb.where).toHaveBeenCalledWith('tx.COMPANY = :company', { company });
+      expect(qb.orderBy).toHaveBeenCalledWith('tx.CREATED_AT', 'DESC');
+    });
+
+    it('필터(equipCode/transType/search/dateFrom/dateTo)를 적용한다', async () => {
+      const qb: any = makeQb();
+      qb.getRawMany.mockResolvedValue([]);
+      mockTxRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findTransactions(
+        { equipCode, transType: 'WIP_IN', search: 'RM', dateFrom: '2026-06-16', dateTo: '2026-06-16' },
+        company,
+        plant,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith('tx.EQUIP_CODE = :equipCode', { equipCode });
+      expect(qb.andWhere).toHaveBeenCalledWith('tx.TRANS_TYPE = :transType', { transType: 'WIP_IN' });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('LIKE :kw'),
+        { kw: '%RM%' },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'tx.CREATED_AT >= TO_TIMESTAMP(:dateFrom, :dateFmt)',
+        expect.objectContaining({ dateFrom: '2026-06-16 00:00:00' }),
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'tx.CREATED_AT <= TO_TIMESTAMP(:dateTo, :dateFmt)',
+        expect.objectContaining({ dateTo: '2026-06-16 23:59:59' }),
+      );
+    });
+  });
 });

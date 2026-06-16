@@ -156,6 +156,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_RESULT_SUMMARY", labelKey: "menu.production.resultSummary", path: "/production/result-summary" },
       { code: "PROD_WIP_STOCK", labelKey: "menu.production.wipStock", path: "/production/wip-stock" },
       { code: "PROD_WIP_MAT_STOCK", labelKey: "menu.production.wipMaterialStock", path: "/production/wip-material-stock" },
+      { code: "PROD_WIP_MAT_TRANS", labelKey: "menu.production.wipMaterialTrans", path: "/production/wip-material-trans" },
       { code: "QC_REWORK", labelKey: "menu.quality.rework", path: "/quality/rework" },
       { code: "QC_REWORK_HISTORY", labelKey: "menu.quality.reworkHistory", path: "/quality/rework-history" },
       { code: "PROD_REPAIR", labelKey: "menu.production.repair", path: "/production/repair" },
