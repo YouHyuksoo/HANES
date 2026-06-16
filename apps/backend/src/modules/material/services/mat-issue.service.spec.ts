@@ -575,14 +575,17 @@ describe('MatIssueService', () => {
     expect(manager.save).toHaveBeenCalledWith(
       expect.objectContaining({ transNo: 'CANCEL-001', transType: 'MAT_OUT_CANCEL', qty: 3 }),
     );
+    // 설비 미배정 단순출고 취소는 공정재고를 건드리지 않는다.
+    expect(mockWipMatStockService.restoreInTx).not.toHaveBeenCalled();
   });
 
-  it('reverses a WIP_MOVE issue: deducts WIP warehouse and restores raw warehouse', async () => {
+  it('reverses a WIP_MOVE issue: restores raw warehouse and delegates WIP deduction to restoreInTx', async () => {
     mockMatIssueRepo.findOne.mockResolvedValue({
       issueNo: 'ISS-009',
       seq: 1,
       status: 'DONE',
       matUid: 'MAT-001',
+      orderNo: 'JO-001',
       issueQty: 5,
       company: 'HANES',
       plant: 'P01',
@@ -595,7 +598,7 @@ describe('MatIssueService', () => {
           transNo: 'TX-001',
           transType: 'WIP_MOVE',
           fromWarehouseId: 'RM_MAIN',
-          toWarehouseId: 'WIP_EQ-01',
+          toWarehouseId: null,
           itemCode: 'ITEM-001',
           matUid: 'MAT-001',
           qty: -5,
@@ -605,35 +608,28 @@ describe('MatIssueService', () => {
       ]),
       findOne: jest
         .fn()
-        // 1) 공정창고(WIP) 재고 조회 (차감 대상)
-        .mockResolvedValueOnce({ warehouseCode: 'WIP_EQ-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' } as MatStock)
-        // 2) 원자재창고 재고 조회 (복원 대상)
+        // 원자재창고 재고 조회 (복원 대상)
         .mockResolvedValueOnce({ warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
     };
     (mockQueryRunner as any).manager = manager;
 
+    mockWipMatStockService.restoreInTx.mockResolvedValue([]);
     mockNumbering.nextInTx.mockResolvedValueOnce('CANCEL-001');
 
     await target.cancel('ISS-009', 1, 'cancel', 'HANES', 'P01');
 
-    // 역분개 거래: 공정창고→원자재창고, WIP_MOVE_CANCEL
+    // 원자재측 역분개 거래: WIP_MOVE_CANCEL, 원자재창고 복원
     expect(manager.save).toHaveBeenCalledWith(
       expect.objectContaining({
         transNo: 'CANCEL-001',
         transType: 'WIP_MOVE_CANCEL',
-        fromWarehouseId: 'WIP_EQ-01',
+        fromWarehouseId: 'RM_MAIN',
         toWarehouseId: 'RM_MAIN',
         qty: 5,
         cancelRefId: 'TX-001',
       }),
-    );
-    // 공정창고 차감
-    expect(manager.update).toHaveBeenCalledWith(
-      MatStock,
-      { warehouseCode: 'WIP_EQ-01', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-      { qty: 0, availableQty: 0 },
     );
     // 원자재창고 복원
     expect(manager.update).toHaveBeenCalledWith(
@@ -646,6 +642,20 @@ describe('MatIssueService', () => {
       StockTransaction,
       { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED' },
+    );
+    // 공정재고 차감은 WipMatStockService.restoreInTx(DEDUCT_BACK)로 위임
+    expect(mockWipMatStockService.restoreInTx).toHaveBeenCalledWith(
+      mockQueryRunner,
+      expect.objectContaining({
+        mode: 'DEDUCT_BACK',
+        refType: 'MAT_ISSUE',
+        refId: 'ISS-009-1',
+        cancelTransType: 'WIP_IN_CANCEL',
+        originTransType: 'WIP_IN',
+        orderNo: 'JO-001',
+        company: 'HANES',
+        plant: 'P01',
+      }),
     );
   });
 

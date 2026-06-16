@@ -391,19 +391,23 @@ export class MatIssueService {
         where: { refType: 'MAT_ISSUE', refId, status: 'DONE', ...tenantWhere },
       });
 
+      // 원본에 WIP_MOVE(공정이동)가 하나라도 있으면 공정재고(WIP_MAT_STOCKS)도 대칭 복원한다.
+      let hasMove = false;
+
       for (const originalTx of originalTxs) {
         this.assertSameTenant('원본 재고거래', originalTx, company, plant);
 
         const restoreQty = Math.abs(originalTx.qty);
         const isMove = originalTx.transType === 'WIP_MOVE';
+        if (isMove) hasMove = true;
         const cancelTransNo = await this.numbering.nextInTx(queryRunner, 'CANCEL_TX');
 
-        // 역분개 거래: 이동(WIP_MOVE)은 공정창고→원자재창고로 되돌리고,
-        // 단순출고(MAT_OUT)는 원자재창고로 복원한다.
+        // 원자재측 역분개 거래(STOCK_TRANSACTIONS): 원자재창고로 복원한다.
+        // 공정재고(WIP_MAT_STOCKS) 차감은 아래 restoreInTx 가 전담한다.
         const cancelTx = queryRunner.manager.create(StockTransaction, {
           transNo: cancelTransNo,
           transType: isMove ? 'WIP_MOVE_CANCEL' : 'MAT_OUT_CANCEL',
-          fromWarehouseId: isMove ? originalTx.toWarehouseId : originalTx.fromWarehouseId,
+          fromWarehouseId: originalTx.fromWarehouseId,
           toWarehouseId: originalTx.fromWarehouseId,
           itemCode: originalTx.itemCode,
           matUid: originalTx.matUid,
@@ -426,29 +430,6 @@ export class MatIssueService {
           },
           { status: 'CANCELED' },
         );
-
-        // 이동 취소면 공정창고(원본 toWarehouseId)에서 가산분을 차감(음수 방지)한다.
-        if (isMove && originalTx.matUid && originalTx.toWarehouseId) {
-          const wipStock = await queryRunner.manager.findOne(MatStock, {
-            where: {
-              warehouseCode: originalTx.toWarehouseId,
-              itemCode: originalTx.itemCode,
-              matUid: originalTx.matUid,
-              ...tenantWhere,
-            },
-          });
-          if (wipStock) {
-            this.assertSameTenant('이동취소 공정창고 재고', wipStock, originalTx.company, originalTx.plant);
-            await queryRunner.manager.update(
-              MatStock,
-              { warehouseCode: wipStock.warehouseCode, itemCode: wipStock.itemCode, matUid: wipStock.matUid, ...tenantWhere },
-              {
-                qty: Math.max(0, (wipStock.qty ?? 0) - restoreQty),
-                availableQty: Math.max(0, (wipStock.availableQty ?? 0) - restoreQty),
-              },
-            );
-          }
-        }
 
         // 원자재창고(원본 fromWarehouseId)에 복원(가산)한다 - 이동/단순출고 공통.
         const stock = originalTx.matUid && originalTx.fromWarehouseId
@@ -487,6 +468,22 @@ export class MatIssueService {
             }),
           );
         }
+      }
+
+      // 공정이동(WIP_MOVE) 출고였다면 공정재고(WIP_MAT_STOCKS)도 대칭 차감 복원한다.
+      // 원본 WIP_IN 거래(WIP_MAT_TRANSACTIONS)를 찾아 DEDUCT_BACK + WIP_IN_CANCEL 기록.
+      if (hasMove) {
+        await this.wipMatStockService.restoreInTx(queryRunner, {
+          mode: 'DEDUCT_BACK',
+          refType: 'MAT_ISSUE',
+          refId,
+          cancelTransType: 'WIP_IN_CANCEL',
+          originTransType: 'WIP_IN',
+          orderNo: rawIssue.orderNo ?? null,
+          remark: reason ?? null,
+          company: rawIssue.company,
+          plant: rawIssue.plant,
+        });
       }
 
       if (rawIssue.matUid) {
