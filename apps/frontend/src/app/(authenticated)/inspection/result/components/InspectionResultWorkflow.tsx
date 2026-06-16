@@ -107,7 +107,7 @@ export default function InspectionResultWorkflow({
                 >
                   <div className="flex justify-between items-center">
                     <span className="font-mono font-semibold text-text">{o.orderNo}</span>
-                    <ComCodeBadge groupCode="JOB_STATUS" code={o.status} />
+                    <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={o.status} />
                   </div>
                   <p className="text-text-muted truncate mt-0.5">{o.itemName ?? o.itemCode}</p>
                   <div className="flex gap-3 mt-1 text-xs text-text-muted">

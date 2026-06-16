@@ -126,7 +126,7 @@ export default function BarcodeScanPanel() {
         header: t("consumables.comp.category"),
         size: 90,
         cell: ({ getValue }) => (
-          <ComCodeBadge groupCode="CON_CATEGORY" code={getValue() as string} />
+          <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} />
         ),
       },
       { accessorKey: "labelPrintedAt", header: t("consumables.receiving.labelPrintedAt"), size: 140 },
