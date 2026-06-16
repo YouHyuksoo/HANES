@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, DataSource, In, QueryRunner } from 'typeorm';
+import { Repository, Between, DataSource, In } from 'typeorm';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -18,7 +18,7 @@ import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
 import { ScanIssueDto } from '../dto/scan-issue.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { WarehouseService } from '../../inventory/services/warehouse.service';
+import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 
 @Injectable()
 export class MatIssueService {
@@ -38,7 +38,7 @@ export class MatIssueService {
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
-    private readonly warehouseService: WarehouseService,
+    private readonly wipMatStockService: WipMatStockService,
   ) {}
 
   private sortStocksForIssue(stocks: MatStock[], warehouseCode?: string) {
@@ -185,23 +185,16 @@ export class MatIssueService {
     let seqCounter = 1;
     const tenantWhere = this.tenantWhere(company, plant);
 
-    // 작업지시에 설비가 배정돼 있으면 설비별 공정창고(WIP_{equipCode})로 이동(WIP_MOVE) 처리한다.
-    // orderNo/equipCode 가 없으면 wipWarehouse 는 null 로 두고 기존 단순 출고(MAT_OUT)를 유지한다.
-    let wipWarehouse: { warehouseCode: string } | null = null;
+    // 작업지시에 설비가 배정돼 있으면 설비(equipCode) 단위 공정재고(WIP_MAT_STOCKS)로 이동한다.
+    // orderNo/equipCode 가 없으면 기존 단순 출고(MAT_OUT)를 유지한다.
+    let equipCode: string | null = null;
     if (orderNo) {
       const jobOrder = await queryRunner.manager.findOne(JobOrder, {
         where: { orderNo, ...tenantWhere },
       });
-      if (jobOrder?.equipCode) {
-        wipWarehouse = await this.warehouseService.getOrCreateEquipWipWarehouse(
-          jobOrder.equipCode,
-          company ?? jobOrder.company,
-          plant ?? jobOrder.plant,
-          jobOrder.lineCode,
-          jobOrder.processCode,
-        );
-      }
+      equipCode = jobOrder?.equipCode ?? null;
     }
+    const isMove = !!(orderNo && equipCode);
 
     for (const item of items) {
       const lot = await queryRunner.manager.findOne(MatLot, {
@@ -259,12 +252,11 @@ export class MatIssueService {
 
         const issueQty = Math.min(remainingQty, availableQty);
         const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
-        const isMove = !!wipWarehouse;
         const stockTx = queryRunner.manager.create(StockTransaction, {
           transNo,
           transType: isMove ? 'WIP_MOVE' : 'MAT_OUT',
           fromWarehouseId: stock.warehouseCode,
-          toWarehouseId: isMove ? wipWarehouse!.warehouseCode : null,
+          toWarehouseId: null,
           itemCode: lot.itemCode,
           matUid: item.matUid,
           qty: -issueQty,
@@ -288,18 +280,22 @@ export class MatIssueService {
           },
         );
 
-        // 이동이면 설비 공정창고에 동량 가산
-        if (isMove) {
-          await this.upsertWipStock(
-            queryRunner,
-            wipWarehouse!.warehouseCode,
-            stock.itemCode,
-            stock.matUid,
-            issueQty,
-            lot.company,
-            lot.plant,
-            tenantWhere,
-          );
+        // 이동이면 설비 단위 공정재고(WIP_MAT_STOCKS)에 동량 가산
+        if (isMove && equipCode) {
+          await this.wipMatStockService.addStockInTx(queryRunner, {
+            equipCode,
+            itemCode: stock.itemCode,
+            matUid: item.matUid,
+            qty: issueQty,
+            transType: 'WIP_IN',
+            fromWarehouseId: stock.warehouseCode,
+            orderNo,
+            refType: 'MAT_ISSUE',
+            refId: `${savedIssue.issueNo}-${savedIssue.seq}`,
+            workerId,
+            company: lot.company,
+            plant: lot.plant,
+          });
         }
 
         remainingQty -= issueQty;
@@ -319,47 +315,6 @@ export class MatIssueService {
     }
 
     return results;
-  }
-
-  /**
-   * 설비 공정창고(WIP) 재고를 가산한다. 동일 키 재고가 있으면 누적, 없으면 신규 생성.
-   */
-  private async upsertWipStock(
-    qr: QueryRunner,
-    warehouseCode: string,
-    itemCode: string,
-    matUid: string,
-    addQty: number,
-    company: string | null,
-    plant: string | null,
-    tenantWhere: Record<string, unknown>,
-  ) {
-    const existing = await qr.manager.findOne(MatStock, {
-      where: { warehouseCode, itemCode, matUid, ...tenantWhere },
-    });
-    if (existing) {
-      await qr.manager.update(
-        MatStock,
-        { warehouseCode, itemCode, matUid, ...tenantWhere },
-        {
-          qty: (existing.qty ?? 0) + addQty,
-          availableQty: (existing.availableQty ?? 0) + addQty,
-        },
-      );
-    } else {
-      await qr.manager.save(
-        qr.manager.create(MatStock, {
-          warehouseCode,
-          itemCode,
-          matUid,
-          qty: addQty,
-          availableQty: addQty,
-          reservedQty: 0,
-          company: company ?? null,
-          plant: plant ?? null,
-        }),
-      );
-    }
   }
 
   async scanIssue(dto: ScanIssueDto, company?: string, plant?: string) {

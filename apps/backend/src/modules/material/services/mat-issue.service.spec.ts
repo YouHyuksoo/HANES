@@ -13,7 +13,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { WarehouseService } from '../../inventory/services/warehouse.service';
+import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 
 describe('MatIssueService', () => {
   let target: MatIssueService;
@@ -27,7 +27,7 @@ describe('MatIssueService', () => {
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockTx: DeepMocked<TransactionService>;
-  let mockWarehouseService: DeepMocked<WarehouseService>;
+  let mockWipMatStockService: DeepMocked<WipMatStockService>;
 
   beforeEach(async () => {
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
@@ -40,7 +40,7 @@ describe('MatIssueService', () => {
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
     mockTx = createMock<TransactionService>();
-    mockWarehouseService = createMock<WarehouseService>();
+    mockWipMatStockService = createMock<WipMatStockService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
@@ -62,7 +62,7 @@ describe('MatIssueService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },
-        { provide: WarehouseService, useValue: mockWarehouseService },
+        { provide: WipMatStockService, useValue: mockWipMatStockService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -326,7 +326,7 @@ describe('MatIssueService', () => {
     );
   });
 
-  it('moves stock to the equip WIP warehouse when orderNo resolves an equipCode', async () => {
+  it('moves stock to the equip WIP_MAT_STOCKS when orderNo resolves an equipCode', async () => {
     const manager = {
       findOne: jest
         // 1) JobOrder 조회 (createInTx 진입부, 출고루프보다 먼저)
@@ -347,19 +347,16 @@ describe('MatIssueService', () => {
           status: 'NORMAL',
           company: 'HANES',
           plant: 'P01',
-        } as MatLot)
-        // 3) upsertWipStock 의 기존 공정창고 재고 조회 (없음)
-        .mockResolvedValueOnce(null),
+        } as MatLot),
       find: jest
         .fn()
         // 출고 대상 재고
         .mockResolvedValueOnce([
           { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' } as MatStock,
         ])
-        // 출고 후 잔여 재고 (원자재 0 + 공정창고 5 = DEPLETED 아님)
+        // 출고 후 원자재 잔여 재고 (공정재고는 별도 테이블이라 여기엔 안 잡힘 → DEPLETED 처리됨)
         .mockResolvedValueOnce([
           { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock,
-          { warehouseCode: 'WIP_EQ-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' } as MatStock,
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
@@ -367,11 +364,7 @@ describe('MatIssueService', () => {
     };
     (mockQueryRunner as any).manager = manager;
 
-    mockWarehouseService.getOrCreateEquipWipWarehouse.mockResolvedValue({
-      warehouseCode: 'WIP_EQ-01',
-      company: 'HANES',
-      plant: 'P01',
-    } as any);
+    mockWipMatStockService.addStockInTx.mockResolvedValue(undefined);
 
     mockNumbering.nextInTx
       .mockResolvedValueOnce('ISS-001')
@@ -386,20 +379,13 @@ describe('MatIssueService', () => {
       items: [{ matUid: 'MAT-001', issueQty: 5 }],
     } as any, 'HANES', 'P01');
 
-    expect(mockWarehouseService.getOrCreateEquipWipWarehouse).toHaveBeenCalledWith(
-      'EQ-01',
-      'HANES',
-      'P01',
-      'L1',
-      'PRC1',
-    );
-    // WIP_MOVE 거래: from=원자재창고, to=공정창고
+    // 원자재 STOCK_TRANSACTIONS 는 WIP_MOVE(from=원자재창고, qty-)
     expect(manager.save).toHaveBeenCalledWith(
       expect.objectContaining({
         transNo: 'TX-001',
         transType: 'WIP_MOVE',
         fromWarehouseId: 'RM_MAIN',
-        toWarehouseId: 'WIP_EQ-01',
+        toWarehouseId: null,
         qty: -5,
       }),
     );
@@ -409,15 +395,21 @@ describe('MatIssueService', () => {
       { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 0, availableQty: 0 },
     );
-    // 공정창고 신규 가산
-    expect(manager.save).toHaveBeenCalledWith(
+    // 공정재고 가산은 WipMatStockService.addStockInTx 로 위임(WIP_MAT_STOCKS)
+    expect(mockWipMatStockService.addStockInTx).toHaveBeenCalledWith(
+      mockQueryRunner,
       expect.objectContaining({
-        warehouseCode: 'WIP_EQ-01',
+        equipCode: 'EQ-01',
         itemCode: 'ITEM-001',
         matUid: 'MAT-001',
         qty: 5,
-        availableQty: 5,
-        reservedQty: 0,
+        transType: 'WIP_IN',
+        fromWarehouseId: 'RM_MAIN',
+        orderNo: 'JO-001',
+        refType: 'MAT_ISSUE',
+        refId: 'ISS-001-1',
+        company: 'HANES',
+        plant: 'P01',
       }),
     );
   });
@@ -457,7 +449,6 @@ describe('MatIssueService', () => {
       items: [{ matUid: 'MAT-001', issueQty: 5 }],
     } as any, 'HANES', 'P01');
 
-    expect(mockWarehouseService.getOrCreateEquipWipWarehouse).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(
       expect.objectContaining({
         transNo: 'TX-001',
@@ -467,10 +458,8 @@ describe('MatIssueService', () => {
         qty: -5,
       }),
     );
-    // 공정창고 가산 save 가 호출되지 않아야 한다 (warehouseCode 가진 MatStock save 없음)
-    expect(manager.save).not.toHaveBeenCalledWith(
-      expect.objectContaining({ warehouseCode: 'WIP_EQ-01' }),
-    );
+    // 공정재고 가산(addStockInTx)이 호출되지 않아야 한다
+    expect(mockWipMatStockService.addStockInTx).not.toHaveBeenCalled();
   });
 
   it('blocks create when an issue stock row belongs to a different tenant', async () => {
