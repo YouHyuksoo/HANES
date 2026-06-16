@@ -20,7 +20,7 @@ import {
   Barcode, Printer,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, EquipSelect, ProcessSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -53,6 +53,8 @@ export default function JobOrderPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [equipFilter, setEquipFilter] = useState("");
+  const [processFilter, setProcessFilter] = useState("");
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -121,9 +123,11 @@ export default function JobOrderPage() {
   }, []);
 
   const displayData = useMemo(() => {
-    if (viewMode === "tree") return flattenTree(data);
-    return data.map(d => ({ ...d, _depth: 0 }));
-  }, [viewMode, data]);
+    let rows = viewMode === "tree" ? flattenTree(data) : data.map(d => ({ ...d, _depth: 0 }));
+    if (equipFilter) rows = rows.filter(r => (r.equipCode ?? "") === equipFilter);
+    if (processFilter) rows = rows.filter(r => (r.processCode ?? "") === processFilter);
+    return rows;
+  }, [viewMode, data, equipFilter, processFilter]);
 
   const getProgress = (row: JobOrderItem) => {
     if (row.planQty === 0) return 0;
@@ -260,6 +264,24 @@ export default function JobOrderPage() {
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? String(v).slice(0, 10) : "-";
+      },
+    },
+    {
+      accessorKey: "priority", header: t("production.order.priority"), size: 80,
+      meta: { filterType: "number" as const, align: "center" as const },
+      cell: ({ getValue }) => {
+        const p = (getValue() as number) ?? 5;
+        // 1~3 높음(강조), 4~6 보통, 7~10 낮음 — 파스텔 배경 대신 테두리/텍스트색으로 구분
+        const cls = p <= 3
+          ? "border-red-400 text-red-600 dark:text-red-400 font-bold"
+          : p <= 6
+            ? "border-border text-text"
+            : "border-border text-text-muted";
+        return (
+          <span className={`inline-flex items-center justify-center min-w-[1.75rem] px-1.5 py-0.5 text-xs rounded border ${cls}`}>
+            {p}
+          </span>
+        );
       },
     },
     {
@@ -436,6 +458,14 @@ export default function JobOrderPage() {
                   <ComCodeSelect groupCode="JOB_ORDER_STATUS" value={statusFilter}
                     onChange={setStatusFilter} labelPrefix="상태" fullWidth />
                 </div>
+                <div className="w-40 flex-shrink-0">
+                  <EquipSelect value={equipFilter} onChange={setEquipFilter}
+                    labelPrefix={t("production.order.equip")} fullWidth />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <ProcessSelect value={processFilter} onChange={setProcessFilter}
+                    labelPrefix={t("production.order.process")} fullWidth />
+                </div>
                 <div className="w-36 flex-shrink-0">
                   <Input type="date" value={startDate}
                     onChange={e => setStartDate(e.target.value)} fullWidth />
@@ -446,7 +476,7 @@ export default function JobOrderPage() {
                 </div>
               </div>
             } 
-            sqlQuery={`SELECT *\nFROM PROD_ORDERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+            sqlQuery={`SELECT *\nFROM PROD_ORDERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY PRIORITY ASC, PLAN_DATE ASC, CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
 
