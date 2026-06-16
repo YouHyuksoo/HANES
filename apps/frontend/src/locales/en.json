@@ -244,6 +244,7 @@
     "production.resultSummary": "Production Result Summary",
     "production.packResult": "Pack Result",
     "production.wipStock": "WIP/Product Stock Inquiry",
+    "production.wipMaterialStock": "WIP Material Stock",
     "production.repair": "Repair Management",
     "inspection": "Inspection Management",
     "inspection.result": "Continuity Inspect",
@@ -3139,6 +3140,21 @@
       "prdUid": "Product Serial",
       "updatedAt": "Last Updated",
       "searchPlaceholder": "Search part code, part name..."
+    },
+    "wipMaterialStock": {
+      "title": "WIP Material Stock",
+      "description": "View WIP material stock (WIP_MAT_STOCKS) by equipment",
+      "equipCount": "Equipment",
+      "itemCount": "Items",
+      "totalQty": "Total Qty",
+      "equipCode": "Equip Code",
+      "equipName": "Equip Name",
+      "partCode": "Item Code",
+      "lot": "LOT",
+      "qty": "Qty",
+      "availableQty": "Available Qty",
+      "reservedQty": "Reserved Qty",
+      "searchPlaceholder": "Search item code, LOT, equip name..."
     },
     "repair": {
       "title": "Repair Management",

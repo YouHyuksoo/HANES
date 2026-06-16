@@ -246,6 +246,7 @@
     "production.resultSummary": "작업실적통합조회",
     "production.packResult": "포장실적조회",
     "production.wipStock": "반제품/제품재고조회",
+    "production.wipMaterialStock": "공정재고",
     "production.repair": "수리관리",
     "inspection": "검사관리",
     "inspection.result": "통전검사관리",
@@ -3459,6 +3460,21 @@
       "prdUid": "제품시리얼",
       "updatedAt": "최종 갱신일",
       "searchPlaceholder": "품목코드, 품목명 검색..."
+    },
+    "wipMaterialStock": {
+      "title": "공정재고",
+      "description": "설비 단위 공정재고(WIP_MAT_STOCKS) 현황을 조회합니다",
+      "equipCount": "설비 수",
+      "itemCount": "품목 수",
+      "totalQty": "총 수량",
+      "equipCode": "설비코드",
+      "equipName": "설비명",
+      "partCode": "품목코드",
+      "lot": "LOT",
+      "qty": "수량",
+      "availableQty": "가용수량",
+      "reservedQty": "예약수량",
+      "searchPlaceholder": "품목코드, LOT, 설비명 검색..."
     },
     "repair": {
       "title": "수리관리",

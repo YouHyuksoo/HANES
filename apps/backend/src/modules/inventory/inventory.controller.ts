@@ -22,6 +22,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { InventoryService } from './services/inventory.service';
 import { WarehouseService } from './services/warehouse.service';
 import { ProductInventoryService } from './services/product-inventory.service';
+import { WipMatStockService } from './services/wip-mat-stock.service';
+import { ResponseUtil } from '../../common/dto/response.dto';
 import {
   CreateWarehouseDto,
   UpdateWarehouseDto,
@@ -46,6 +48,7 @@ export class InventoryController {
     private readonly inventoryService: InventoryService,
     private readonly warehouseService: WarehouseService,
     private readonly productInventoryService: ProductInventoryService,
+    private readonly wipMatStockService: WipMatStockService,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
   ) {}
@@ -273,6 +276,21 @@ export class InventoryController {
     }, company, plant);
   }
 
+  /**
+   * 설비별 공정재고 조회 (WIP_MAT_STOCKS)
+   * - equipCode 미지정 시 전체(설비별), search는 품목/LOT/설비명 부분일치
+   */
+  @Get('wip-mat-stocks')
+  async getWipMatStocks(
+    @Query('equipCode') equipCode?: string,
+    @Query('search') search?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const rows = await this.wipMatStockService.findByEquip(equipCode, company, plant, search);
+    return ResponseUtil.success(rows);
+  }
+
   // ============================================================================
   // 수불 트랜잭션 API
   // ============================================================================
@@ -384,7 +402,7 @@ export class InventoryController {
     if (!fg) {
       throw new BadRequestException('FG 기본창고(IS_DEFAULT=Y)가 설정되어 있지 않습니다.');
     }
-    return this.productInventoryService.receiveStock(
+    return this.productInventoryService.receiveFinishedFromWip(
       this.productReceivePayload({ ...dto, warehouseId: fg.warehouseCode }, 'FINISHED', 'FG_IN', company, plant),
     );
   }

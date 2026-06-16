@@ -244,6 +244,7 @@
     "production.resultSummary": "生产实绩综合查询",
     "production.packResult": "包装实绩查询",
     "production.wipStock": "半成品/成品库存查询",
+    "production.wipMaterialStock": "工序物料库存",
     "production.repair": "修理管理",
     "inspection": "检验管理",
     "inspection.result": "通电检查管理",
@@ -3125,6 +3126,21 @@
       "unit": "单位",
       "prdUid": "产品序列号",
       "updatedAt": "更新日期"
+    },
+    "wipMaterialStock": {
+      "title": "工序物料库存",
+      "description": "按设备查询工序物料库存(WIP_MAT_STOCKS)",
+      "equipCount": "设备数",
+      "itemCount": "品目数",
+      "totalQty": "总数量",
+      "equipCode": "设备代码",
+      "equipName": "设备名称",
+      "partCode": "品目代码",
+      "lot": "LOT",
+      "qty": "数量",
+      "availableQty": "可用数量",
+      "reservedQty": "预留数量",
+      "searchPlaceholder": "搜索品目代码、LOT、设备名称..."
     },
     "repair": {
       "title": "修理管理",

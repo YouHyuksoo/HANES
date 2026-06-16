@@ -244,6 +244,7 @@
     "production.resultSummary": "Tổng hợp thực tế sản xuất",
     "production.packResult": "Kết quả đóng gói",
     "production.wipStock": "Tra cứu tồn kho BTP/TP",
+    "production.wipMaterialStock": "Tồn kho vật tư công đoạn",
     "production.repair": "Quản lý sửa chữa",
     "inspection": "Quản lý kiểm tra",
     "inspection.result": "Quản lý KT thông điện",
@@ -3125,6 +3126,21 @@
       "unit": "Đơn vị",
       "prdUid": "Số Serial Sản Phẩm",
       "updatedAt": "Ngày cập nhật"
+    },
+    "wipMaterialStock": {
+      "title": "Tồn kho vật tư công đoạn",
+      "description": "Tra cứu tồn kho vật tư công đoạn (WIP_MAT_STOCKS) theo thiết bị",
+      "equipCount": "Số thiết bị",
+      "itemCount": "Số mặt hàng",
+      "totalQty": "Tổng số lượng",
+      "equipCode": "Mã thiết bị",
+      "equipName": "Tên thiết bị",
+      "partCode": "Mã mặt hàng",
+      "lot": "LOT",
+      "qty": "Số lượng",
+      "availableQty": "SL khả dụng",
+      "reservedQty": "SL đặt trước",
+      "searchPlaceholder": "Tìm mã mặt hàng, LOT, tên thiết bị..."
     },
     "repair": {
       "title": "Quản lý sửa chữa",

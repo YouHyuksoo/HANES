@@ -80,6 +80,7 @@ export const menuConfig: MenuConfigItem[] = [
       /* ── 자재 수불 ── */
       { code: "MAT_ARRIVAL", labelKey: "menu.material.arrival", path: "/material/arrival" },
       { code: "MAT_ARRIVAL_RESULT", labelKey: "menu.material.arrivalResult", path: "/material/arrival-result" },
+      { code: "MAT_ARRIVAL_TRANSACTION", labelKey: "menu.material.arrivalTransaction", path: "/material/arrival-transaction" },
       { code: "MAT_RECEIVE_LABEL", labelKey: "menu.material.receiveLabel", path: "/material/receive-label" },
       { code: "MAT_RECEIVE", labelKey: "menu.material.receive", path: "/material/receive" },
       { code: "MAT_RECEIVE_HISTORY", labelKey: "menu.material.receiveHistory", path: "/material/receive-history" },
@@ -154,6 +155,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_INPUT_EQUIP", labelKey: "menu.production.inputEquip", path: "/production/input-equip" },
       { code: "PROD_RESULT_SUMMARY", labelKey: "menu.production.resultSummary", path: "/production/result-summary" },
       { code: "PROD_WIP_STOCK", labelKey: "menu.production.wipStock", path: "/production/wip-stock" },
+      { code: "PROD_WIP_MAT_STOCK", labelKey: "menu.production.wipMaterialStock", path: "/production/wip-material-stock" },
       { code: "QC_REWORK", labelKey: "menu.quality.rework", path: "/quality/rework" },
       { code: "QC_REWORK_HISTORY", labelKey: "menu.quality.reworkHistory", path: "/quality/rework-history" },
       { code: "PROD_REPAIR", labelKey: "menu.production.repair", path: "/production/repair" },
