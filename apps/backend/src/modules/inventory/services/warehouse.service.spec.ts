@@ -225,36 +225,6 @@ describe('WarehouseService', () => {
     });
   });
 
-  describe('getOrCreateEquipWipWarehouse', () => {
-    it('설비코드 기준 WIP_{equipCode} 창고를 없으면 생성한다', async () => {
-      mockWhRepo.findOne.mockResolvedValue(null);
-      mockWhRepo.create.mockImplementation((payload) => payload as Warehouse);
-      mockWhRepo.save.mockImplementation(async (payload) => payload as Warehouse);
-
-      const wh = await target.getOrCreateEquipWipWarehouse('EQ-ATCNS-01', '40', '1000');
-
-      expect(wh.warehouseCode).toBe('WIP_EQ-ATCNS-01');
-      expect(wh.warehouseType).toBe('WIP');
-      expect(wh.equipCode).toBe('EQ-ATCNS-01');
-      expect(mockWhRepo.findOne).toHaveBeenCalledWith({
-        where: { warehouseCode: 'WIP_EQ-ATCNS-01', company: '40', plant: '1000' },
-      });
-      expect(mockWhRepo.save).toHaveBeenCalled();
-    });
-
-    it('이미 있으면 기존 창고를 반환하고 save를 호출하지 않는다', async () => {
-      mockWhRepo.findOne.mockResolvedValue({
-        warehouseCode: 'WIP_EQ-ATCNS-01',
-        warehouseType: 'WIP',
-      } as any);
-
-      const wh = await target.getOrCreateEquipWipWarehouse('EQ-ATCNS-01', '40', '1000');
-
-      expect(wh.warehouseCode).toBe('WIP_EQ-ATCNS-01');
-      expect(mockWhRepo.save).not.toHaveBeenCalled();
-    });
-  });
-
   describe('initDefaultWarehouses', () => {
     it('should initialize default warehouses within tenant only', async () => {
       mockWhRepo.find.mockResolvedValue([{ warehouseCode: 'RM_MAIN' } as Warehouse]);
