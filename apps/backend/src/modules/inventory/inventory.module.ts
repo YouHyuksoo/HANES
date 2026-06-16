@@ -10,6 +10,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MatStock } from '../../entities/mat-stock.entity';
+import { MatArrivalTransaction } from '../../entities/mat-arrival-transaction.entity';
 import { StockTransaction } from '../../entities/stock-transaction.entity';
 import { ProductStock } from '../../entities/product-stock.entity';
 import { ProductTransaction } from '../../entities/product-transaction.entity';
@@ -20,6 +21,8 @@ import { InvAdjLog } from '../../entities/inv-adj-log.entity';
 import { WarehouseLocation } from '../../entities/warehouse-location.entity';
 import { FgLabel } from '../../entities/fg-label.entity';
 import { BoxMaster } from '../../entities/box-master.entity';
+import { WipMatStock } from '../../entities/wip-mat-stock.entity';
+import { WipMatTransaction } from '../../entities/wip-mat-transaction.entity';
 import { InventoryController } from './inventory.controller';
 import { ProductPhysicalInvController } from './controllers/product-physical-inv.controller';
 import { WarehouseLocationController } from './controllers/warehouse-location.controller';
@@ -34,7 +37,7 @@ import { ProductHoldService } from './services/product-hold.service';
 import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MatStock, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation, FgLabel, BoxMaster])],
+  imports: [TypeOrmModule.forFeature([MatStock, MatArrivalTransaction, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation, FgLabel, BoxMaster, WipMatStock, WipMatTransaction])],
   controllers: [InventoryController, ProductPhysicalInvController, WarehouseLocationController, ProductHoldController],
   providers: [
     InventoryService,
@@ -46,6 +49,6 @@ import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
     ProductHoldService,
     { provide: STOCK_MANAGER, useExisting: ProductInventoryService },
   ],
-  exports: [InventoryService, InventoryQueryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, STOCK_MANAGER],
+  exports: [TypeOrmModule, InventoryService, InventoryQueryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, STOCK_MANAGER],
 })
 export class InventoryModule {}

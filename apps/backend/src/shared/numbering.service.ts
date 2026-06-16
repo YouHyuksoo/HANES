@@ -48,6 +48,11 @@ export class NumberingService {
    * @param userId 사용자ID (NUM_RULE 방식에서 사용, 기본 SYSTEM)
    */
   async next(type: string, qr?: QueryRunner, userId?: string): Promise<string> {
+    // 공정 거래번호(WIP_TX): 전용 Oracle SEQUENCE(SEQ_WIP_TX) 기반 애플리케이션 포맷 채널
+    if (type === 'WIP_TX') {
+      return this.nextWipTx(qr);
+    }
+
     if (SEQ_TYPES.has(type)) {
       return this.seqGenerator.getNo(type, qr);
     }
@@ -132,6 +137,21 @@ export class NumberingService {
     );
     const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
     return `BX${this.yyMMdd(txDate)}${this.pad4(seq)}`;
+  }
+
+  /**
+   * 공정 거래번호 채번: WTX + YYMMDD + '-' + 5자리(전역 시퀀스).
+   * - STOCK_TX(`TX{YYYYMMDD}-{SEQ5}`)와 시각적으로 일관된 포맷.
+   * - SEQ_WIP_TX는 일별 리셋 없는 전역 시퀀스(NOCACHE)이므로 날짜는 가독성용,
+   *   유일성은 시퀀스가 보장. 결번 없는 거래원장 채번에 사용.
+   */
+  async nextWipTx(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_WIP_TX.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+    return `WTX${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
   }
 
   /** 팔레트번호 채번: PLT + YYMMDD + 4자리(당일 시퀀스, separator 없음). 박스(BX) 채번과 동일 패턴. */
