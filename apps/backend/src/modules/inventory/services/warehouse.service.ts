@@ -204,6 +204,45 @@ export class WarehouseService {
   }
 
   /**
+   * 설비단위 공정창고(WIP) 조회/생성. 코드규칙 WIP_{equipCode}.
+   * 라인/공정은 참조정보로만 저장한다.
+   */
+  async getOrCreateEquipWipWarehouse(
+    equipCode: string,
+    company?: string,
+    plant?: string,
+    lineCode?: string | null,
+    processCode?: string | null,
+  ) {
+    const warehouseCode = `WIP_${equipCode}`;
+    const tenantWhere = this.tenantWhere(company, plant);
+
+    let warehouse = await this.warehouseRepository.findOne({
+      where: { warehouseCode, ...tenantWhere },
+    });
+
+    if (!warehouse) {
+      warehouse = this.warehouseRepository.create({
+        warehouseCode,
+        warehouseName: `${equipCode} 공정재공`,
+        warehouseType: 'WIP',
+        plantCode: plant || null,
+        equipCode,
+        lineCode: lineCode ?? null,
+        processCode: processCode ?? null,
+        useYn: 'Y',
+        isDefault: 'N',
+        company: company || null,
+        plant: plant || null,
+      });
+
+      warehouse = await this.warehouseRepository.save(warehouse);
+    }
+
+    return warehouse;
+  }
+
+  /**
    * 외주 창고 조회 또는 생성
    */
   async getOrCreateSubconWarehouse(vendorId: string, vendorName: string, company?: string, plant?: string) {
