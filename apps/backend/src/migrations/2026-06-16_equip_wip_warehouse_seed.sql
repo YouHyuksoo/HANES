@@ -1,0 +1,27 @@
+-- 2026-06-16 설비별 공정창고(WIP_{equipCode}) 시드
+-- 2단계 WIP 모델: 자재출고 → 설비별 공정창고(WIP_{equipCode}) → 생산실적 완료 시 소비.
+-- 런타임 헬퍼 getOrCreateEquipWipWarehouse가 누락분을 자동 생성하지만,
+-- 운영 가시성을 위해 사용중(USE_YN='Y') 설비별 공정창고를 미리 시드한다.
+--
+-- 멱등 MERGE: 재실행 안전. 정본 스코프 company=40, PLANT_CD='1000' 데이터 대상.
+-- WAREHOUSES 실 컬럼 기준(2026-06-16 describe 확인):
+--   NOT NULL/no-default: WAREHOUSE_CODE, WAREHOUSE_NAME, WAREHOUSE_TYPE, COMPANY, PLANT_CD
+--   default 보유: USE_YN('Y'), IS_DEFAULT('N'), CREATED_AT(SYSTIMESTAMP), UPDATED_AT(SYSTIMESTAMP)
+
+MERGE INTO WAREHOUSES w
+USING (
+  SELECT 'WIP_' || e.EQUIP_CODE   AS WAREHOUSE_CODE,
+         e.EQUIP_CODE             AS EQUIP_CODE,
+         e.EQUIP_NAME || ' 공정재공' AS WAREHOUSE_NAME,
+         e.COMPANY                AS COMPANY,
+         e.PLANT_CD               AS PLANT_CD
+  FROM EQUIP_MASTERS e
+  WHERE e.USE_YN = 'Y'
+    AND e.COMPANY = '40'
+    AND e.PLANT_CD = '1000'
+) s
+ON (w.WAREHOUSE_CODE = s.WAREHOUSE_CODE AND w.COMPANY = s.COMPANY AND w.PLANT_CD = s.PLANT_CD)
+WHEN NOT MATCHED THEN INSERT
+  (WAREHOUSE_CODE, WAREHOUSE_NAME, WAREHOUSE_TYPE, EQUIP_CODE, PLANT_CODE, USE_YN, IS_DEFAULT, COMPANY, PLANT_CD, CREATED_AT, UPDATED_AT)
+  VALUES
+  (s.WAREHOUSE_CODE, s.WAREHOUSE_NAME, 'WIP', s.EQUIP_CODE, s.PLANT_CD, 'Y', 'N', s.COMPANY, s.PLANT_CD, SYSTIMESTAMP, SYSTIMESTAMP)
