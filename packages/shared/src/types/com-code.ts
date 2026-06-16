@@ -71,6 +71,8 @@ export const COM_CODE_GROUPS = {
   CONNECTION_STATUS: 'CONNECTION_STATUS',
   /** 공정 유형 */
   PROCESS_TYPE: 'PROCESS_TYPE',
+  /** 공정 대분류 */
+  PROCESS_CATEGORY: 'PROCESS_CATEGORY',
   /** 품목 유형 */
   ITEM_TYPE: 'ITEM_TYPE',
   /** BOM 유형 */

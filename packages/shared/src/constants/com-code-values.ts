@@ -116,6 +116,10 @@ export type ConnectionStatusValue = typeof CONNECTION_STATUS_VALUES[number];
 export const PROCESS_TYPE_VALUES = ['CUTTING', 'STRIPPING', 'CRIMPING', 'WELDING', 'SHIELD', 'HEAT', 'ASSEMBLY', 'INSPECTION', 'PACKING'] as const;
 export type ProcessTypeValue = typeof PROCESS_TYPE_VALUES[number];
 
+// ===== 공정 대분류 =====
+export const PROCESS_CATEGORY_VALUES = ['WIRE', 'TERMINAL', 'ASSEMBLY', 'INSPECTION', 'HEAT'] as const;
+export type ProcessCategoryValue = typeof PROCESS_CATEGORY_VALUES[number];
+
 // ===== 품목 유형 =====
 export const ITEM_TYPE_VALUES = ['RAW_MATERIAL', 'SEMI_PRODUCT', 'FINISHED', 'CONSUMABLE'] as const;
 export type ItemTypeValue = typeof ITEM_TYPE_VALUES[number];

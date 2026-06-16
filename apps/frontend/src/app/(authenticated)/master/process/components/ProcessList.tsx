@@ -50,16 +50,7 @@ export default function ProcessList({
 }: ProcessListProps) {
   const { t } = useTranslation();
 
-  const processCategoryOptions = useMemo(
-    () => [
-      { value: "ASSY", label: t("master.process.catAssy") },
-      { value: "INSP", label: t("master.process.catInsp") },
-      { value: "CUTTING", label: t("master.process.catCutting") },
-      { value: "WELDING", label: t("master.process.catWelding") },
-      { value: "PACKING", label: t("master.process.catPacking") },
-    ],
-    [t],
-  );
+  const processCategoryOptions = useComCodeOptions("PROCESS_CATEGORY");
 
   const columns = useMemo<ColumnDef<Process>[]>(
     () => [
@@ -119,13 +110,7 @@ export default function ProcessList({
         },
         cell: ({ getValue }) => {
           const v = getValue() as string;
-          return v ? (
-            <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-              {v}
-            </span>
-          ) : (
-            "-"
-          );
+          return v ? <ComCodeBadge groupCode="PROCESS_CATEGORY" code={v} /> : "-";
         },
       },
       {

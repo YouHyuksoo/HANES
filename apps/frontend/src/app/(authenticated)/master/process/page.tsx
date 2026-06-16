@@ -55,16 +55,7 @@ export default function ProcessPage() {
   const [assignEquipCode, setAssignEquipCode] = useState("");
 
   const processTypeOptions = useComCodeOptions("PROCESS_TYPE");
-  const processCategoryOptions = useMemo(
-    () => [
-      { value: "ASSY", label: t("master.process.catAssy") },
-      { value: "INSP", label: t("master.process.catInsp") },
-      { value: "CUTTING", label: t("master.process.catCutting") },
-      { value: "WELDING", label: t("master.process.catWelding") },
-      { value: "PACKING", label: t("master.process.catPacking") },
-    ],
-    [t],
-  );
+  const processCategoryOptions = useComCodeOptions("PROCESS_CATEGORY");
 
   /* ── 공정 목록 조회 ── */
   const fetchProcesses = useCallback(async () => {
