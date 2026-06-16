@@ -2,7 +2,7 @@
 
 ## Last Update
 
-2026-06-17 00:09
+2026-06-17 02:49
 
 ## In Review
 
@@ -14,6 +14,9 @@
 
 ## Completed
 
+- `T-MASTER-LABEL-BARTENDER-DESIGNER`: `/master/label`을 객체 기반 라벨 디자이너로 전환 완료. 상단 탭은 제거했고 좌측 `소스테이블` 선택으로 설비/소모품/작업자/자재 LOT 소스를 고른다. 객체 타입은 글자/1D/2D/박스/선/원/이미지이며, 선택 객체 드래그 이동과 모서리 앵커 리사이즈가 동작한다. `LabelDesignRenderer`/`LabelPrintRenderer`는 저장된 `elements[]`와 `sourceField`를 실제 데이터로 치환한다. `/consumables/label`은 `jig` 템플릿을 조회해 소모품 UID 출력에 사용한다. 실제 3002에서 임시 템플릿 `CODEX_PRINT_1781631331283` 저장 후 `UID 발행`으로 `C26061700011`을 생성했고, 인쇄 HTML에 `conUid`/소모품코드/소모품명/정적문구/바코드 이미지 2개가 들어가는 것을 확인했다. 검증용 템플릿/UID/로그는 모두 삭제 후 잔여 0건 확인. 검증: 구조 테스트 3개, FE tsc, 3002 브라우저 도구/앵커/템플릿 요청, UI 저장/API 조회/삭제, 실제 UID 발행 인쇄 HTML 치환 통과.
+- `T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS`: `/master/label` 좌측 필드 목록을 고정값에서 사용자 정의 저장값으로 전환 완료. `LabelDesign.sourceFields`에 key/표시명/샘플값을 저장하고, 좌측 패널에서 추가/수정/삭제할 수 있다. 텍스트/바코드/이미지 객체의 `소스 필드` 선택지는 이 목록을 기준으로 표시된다. 검증: 구조 테스트 2개, FE tsc, 3002에서 `customTraceNo` 필드 추가/객체 매핑/저장 요청 201, `CODEX_FIELD%` 임시 템플릿 삭제 후 0건 확인.
+- `T-MASTER-LABEL-DESIGN-ONLY`: `/master/label` 라벨다자인관리 화면을 모든 카테고리 디자인 제공 전용으로 전환 완료. 탭은 `설비/소모품/작업자/자재롯트라벨`만 남기고 `품목`을 제거했다. 대상 조회 API/대상 선택 그리드/선택 출력 패널을 제거했으며, 디자인/템플릿 저장과 샘플 미리보기만 제공한다. 검증: 구조 테스트 RED→GREEN, frontend tsc, 3002 Playwright에서 탭/안내문/대상 API 호출 0건 확인.
 - `T-EQUIPMENT-PERIODIC-DAILY-FLOW`: `/equipment/periodic-inspect`를 `/equipment/daily-inspect`와 같은 대상 설비 목록 + 항목별 입력 흐름으로 통일 완료. 백엔드는 기존 `/equipment/periodic-inspect` `PERIODIC` 엔드포인트를 그대로 쓰고, 프론트는 `PERIODIC` 항목 배정 설비 목록과 선택 설비 입력 패널로 처리한다. 미점검 설비 선택 시 404 상세조회 모달이 뜨지 않도록 기존이력 여부가 있을 때만 단건 조회하고, 항목 상태 key는 `itemCode` 우선으로 보정했다. 검증: 구조 테스트, frontend tsc, diff check, 3002 브라우저에서 정기점검 선택 후 항목 테이블 표시 및 콘솔 오류 0. 증적: `docs/reports/equipment-periodic-inspect-selected-2026-06-17.png`.
 - `T-EQUIPMENT-INSPECT-CARDS-REMOVE`: `/equipment/inspect-history`, `/equipment/periodic-inspect` 상단 정보카드 제거 완료. `inspect-history`는 그리드/필터/내보내기 유지, `periodic-inspect`는 이후 일일점검형 처리 화면으로 전환됐다. 검증: frontend tsc, diff check, 3002 브라우저 카드 미표시 확인. 증적: `docs/reports/equipment-inspect-history-no-cards-2026-06-17.png`, `docs/reports/equipment-periodic-inspect-no-cards-2026-06-17.png`.
 - `T-EQUIP-INSPECT-HISTORY-BLANK-ROWS`: `/equipment/inspect-history` 빈 행 문제 수정 완료. 원인은 `EquipInspectService.findAll()`이 `getRawMany()` 결과를 `log.log`로 잘못 펼쳐 API가 `{ equip: {} }` 15행을 반환한 것. raw alias 명시 매핑과 Oracle 대문자 alias fallback을 추가했고, 화면 점검일은 `YYYY-MM-DD`로 표시한다. 검증: backend focused test 14/14, backend/frontend tsc, API shape 확인, 3002 브라우저에서 `EQ-ATCUT-01/자동절단 설비 #1/오지훈/합격` 표시 및 ISO 원문 미표시 확인. 증적: `docs/reports/equipment-inspect-history-grid-2026-06-16-after.png`.
@@ -94,4 +97,9 @@
 
 ## Current Known Issues
 
+- 없음.
+- `T-SYSTEM-LABEL-MENU-RENAME` 완료. `MST_LABEL` 메뉴 labelKey `menu.master.label` 한글 값을 요청 표기 그대로 `라벨다자인관리`로 변경했다. 페이지 제목 `label.title`은 유지.
+- `T-CONSUMABLE-LABEL-PRINTLOG-PAYLOAD` 완료. `/consumables/label` 브라우저 인쇄 후 공용 `/material/label-print/log` 호출 payload를 `uidList`로 수정했다. 실제 3002에서 첫 행 선택 후 `UID 발행` 시 create 201, print-log 201 확인. 검증 UID `C26061700007` 관련 stock/log는 삭제 후 잔여 0.
+- `T-CONSUMABLE-LABEL-IMAGE-PRINTLOG` 완료. `/consumables/label` 그리드에 소모품 이미지 37개 표시 확인. `POST /consumables/label/create`의 `LABEL_PRINT_LOGS.PRINTED_AT` null 오류는 `printedAt`/`seq` 명시로 수정했고 실제 API 성공 확인. 검증용 UID `C26061700004`와 로그는 삭제해 잔여 0.
+- `T-EQUIPMENT-INSPECT-HISTORY-ACTUAL-SQL` 완료. `/equipment/inspect-history`의 SQL 보기 preview가 실제 조회 테이블 `EQUIP_INSPECT_LOGS`/`EQUIP_MASTERS`를 포함하므로 전역 SQL 디버그 캐시와 매칭된다. 3002 브라우저 모달에서 실제 SELECT와 bind 변수 표시 확인. 이번 작업 외 기존 dirty file: `apps/backend/src/modules/equipment/dto/equip-inspect.dto.ts`, `apps/backend/src/modules/equipment/services/equip-inspect.service.ts`, `.claude/worktrees/`.
 - `T-UI-CRUD-RED-MENU-QA`, `T-MENU-QA-DETAIL-REPORT`, `T-MASTER-PART-PAGE-SCENARIO-QA`, `T-MASTER-BOM-PAGE-SCENARIO-QA`, `T-MASTER-REMAINING-PAGE-SCENARIO-QA`는 완료되어 active task와 lock에서 제거했다. 프론트 3002는 이번 작업 중 응답 불가 상태의 PID 2796을 정리하고 `apps/frontend`에서 `pnpm run dev`로 재시작했다. 현재 확인된 프론트 3002 PID는 17636이고 백엔드 3003은 API 200으로 확인됐다.

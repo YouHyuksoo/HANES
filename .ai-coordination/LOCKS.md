@@ -16,6 +16,262 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-SHIPPING-PACK-EMPTY-BOX-DELETE
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/pack/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/pack/shipping-pack-empty-box-delete.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: active
+  note: `/shipping/pack` 빈 박스 삭제 노출, 액션 버튼 고정 정렬, 현재 담는 박스 표시 강화.
+
+- task: T-SHIPPING-PACK-TEXT-ACTIONS
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/pack/page.tsx
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: pack 그리드 액션을 아이콘→텍스트 버튼(제품담기/박스마감/박스재오픈/라벨재발행)으로 변경. tsc 0/JSON OK/브라우저 확인 완료.
+
+- task: T-MATERIAL-FLOW-FE-RUNTIME
+  owner: codex
+  files:
+    - tools/hanes-material-flow-frontend-runtime-qa.mjs
+    - docs/reports/hanes-material-flow-frontend-runtime-qa-2026-06-17/**
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: active
+  note: 자재관리 프론트 실제 흐름 QA. 요청->출고->재고->공정입고 데이터 정합성 검증 및 필요 시 수정.
+
+- task: T-SHIPPING-PACK-SCAN-LABEL-WORKFLOW
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/pack/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/pack/components/BoxLabelModal.tsx
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 박스생성→제품스캔→포장단위 도달시 자동 마감+박스라벨 자동출력+재발행 워크플로우 UI. 백엔드 변경 없음(기존 box API). frontend tsc 0건, JSON 4파일 검증.
+
+- task: T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/label/**
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 라벨 디자이너 좌측 필드 목록을 디자인별 사용자 정의 `sourceFields`로 저장/추가/수정/삭제 가능하게 전환 완료.
+
+- task: T-KIOSK-WI-IMAGE-SEED
+  owner: claude
+  files:
+    - tools/generate-work-instruction-seed-images.mjs
+    - apps/backend/uploads/work-instructions/wi-seed-*.svg
+    - apps/backend/src/migrations/2026-06-17_work_instruction_image_seed.sql
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkInstructionView.tsx
+    - apps/frontend/src/app/(authenticated)/master/work-instruction/components/WorkInstructionPreviewPanel.tsx
+    - WORK_INSTRUCTIONS (JSHANES 40/1000)
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 작업지도서 18개 (품목,공정) 실제 SVG 슬라이드 생성+IMAGE_URL 연결(JSHANES 18건 확인). 뷰어/미리보기 isImageUrl에 svg 추가. 내 FE파일 tsc 에러 0.
+
+- task: T-KIOSK-WI-PDF-PPSX-VIEWER
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkInstructionView.tsx
+    - apps/backend/src/modules/master/controllers/work-instruction.controller.ts
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 키오스크 작업지도서 뷰어 이미지+PDF 인라인 + PPTX/PPSX Office Online 임베드(폴백 새탭). 업로드 필터 ppsx/pptx 허용(확장자 기반)으로 수정. 변환 없음. BE tsc 0건, 내 FE파일 에러 없음(master/label 에러는 codex WIP).
+
+- task: T-MASTER-LABEL-BARTENDER-DESIGNER
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/label/**
+    - apps/frontend/src/app/(authenticated)/consumables/label/**
+    - apps/frontend/src/locales/ko.json
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/master/label` 객체 디자이너와 `/consumables/label` 저장 디자인 출력 연결 완료. 실제 UID 발행 인쇄 HTML 치환 확인 및 테스트 UID/로그/템플릿 정리 완료.
+
+- task: T-MASTER-LABEL-DESIGN-ONLY
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/label/types.ts
+    - apps/frontend/src/app/(authenticated)/master/label/master-label-design-only.structure.test.mjs
+    - apps/frontend/src/locales/ko.json
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 01:55 KST
+  last_seen: 2026-06-17 01:59 KST
+  expires: 2026-06-17 02:35 KST
+  status: released
+  note: `/master/label` 모든 카테고리를 대상 조회/선택/인쇄 없이 디자인 제공 전용으로 변경 완료.
+
+- task: T-KIOSK-INSPECT-TIME-DISPLAY
+  owner: claude
+  files:
+    - apps/backend/src/modules/equipment/services/equip-inspect.service.ts
+    - apps/backend/src/modules/equipment/services/equip-inspect.service.spec.ts
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/EquipHeader.tsx
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 설비일일점검/작업자설비점검 완료 표시 옆에 점검시각(INSPECT_AT) 표시. getInspectionStatus에 inspectedAt 추가. FE/BE tsc 0건 + spec 2건 PASS. (equip-inspect.service.ts에 codex 미커밋 변경 공존 — getInspectionStatus 블록만 수정)
+
+- task: T-KIOSK-WORK-INSTRUCTION-SEED
+  owner: claude
+  files:
+    - apps/backend/src/migrations/2026-06-17_work_instruction_kiosk_seed.sql
+    - WORK_INSTRUCTIONS (JSHANES 40/1000)
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 활성 작업지시 17개 (품목,공정) 조합 작업지도서 시드(codex의 HNS02C1ABCD/ATCUT 보존). JSHANES 실행 완료, WORK_INSTRUCTIONS 활성 20건 확인.
+
+- task: T-SYSTEM-LABEL-MENU-RENAME
+  owner: codex
+  files:
+    - apps/frontend/src/locales/ko.json
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 01:50 KST
+  last_seen: 2026-06-17 01:52 KST
+  expires: 2026-06-17 02:10 KST
+  status: released
+  note: `MST_LABEL` 메뉴 labelKey `menu.master.label` 한글명을 `라벨다자인관리`로 변경 완료.
+
+- task: T-CONSUMABLE-LABEL-PRINTLOG-PAYLOAD
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.ts
+    - apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 01:41 KST
+  last_seen: 2026-06-17 01:45 KST
+  expires: 2026-06-17 02:10 KST
+  status: released
+  note: `/consumables/label` 인쇄이력 기록 payload의 `matUids`를 DTO 계약 `uidList`로 수정 완료.
+
+- task: T-KIOSK-ROUTING-FLOW-DISPLAY
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/RoutingFlowBar.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/page.tsx
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 작업지시 선택 시 제품 라우팅(공정순서) 중앙 상단 스텝퍼 표시. by-item API 사용. frontend tsc 0건.
+
+- task: T-KIOSK-MATERIAL-SCAN-DECOUPLE
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/MaterialListPanel.tsx
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 자재스캔을 선행 점검(설비/작업자점검)과 분리(자재목록 로딩 시 스캔 가능). 작업자추가 버튼→작업자선택 라벨 변경. frontend tsc 0건.
+
+- task: T-CONSUMABLE-LABEL-IMAGE-PRINTLOG
+  owner: codex
+  files:
+    - apps/backend/src/modules/consumables/services/consumable-label.service.ts
+    - apps/backend/src/modules/consumables/services/consumable-label.service.spec.ts
+    - apps/frontend/src/app/(authenticated)/consumables/label/components/ConLabelColumns.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 01:00 KST
+  last_seen: 2026-06-17 01:04 KST
+  expires: 2026-06-17 01:40 KST
+  status: released
+  note: `/consumables/label` 사진 컬럼 추가 및 라벨 발행 로그 `PRINTED_AT` null 오류 수정 완료.
+
+- task: T-JOBORDER-PRIORITY-COLUMN-FILTER
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/production/order/page.tsx
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 작업지시 목록에 우선순위 컬럼 표시 + 설비/공정 토글 필터(클라이언트) 추가. frontend tsc 0건.
+
+- task: T-EQUIPMENT-INSPECT-HISTORY-ACTUAL-SQL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/equipment/inspect-history/page.tsx
+    - apps/frontend/src/app/(authenticated)/equipment/inspect-history/inspect-history-actual-sql.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 00:35 KST
+  last_seen: 2026-06-17 00:47 KST
+  expires: 2026-06-17 01:20 KST
+  status: released
+  note: `/equipment/inspect-history` SQL 보기의 표시용 SQL을 실제 `EquipInspectService.findAll()` 조회 테이블과 맞춰 전역 실제 SQL 캐시가 매칭되도록 수정 완료.
+
 - task: T-FIX-SWALLOWED-EXCEPTIONS
   owner: claude
   files:

@@ -29,6 +29,49 @@ notes:
 
 ## Active Tasks
 
+## T-SHIPPING-PACK-EMPTY-BOX-DELETE 박스포장 빈 박스 삭제 및 선택 표시
+status: IN_PROGRESS
+owner: codex
+role: implementer
+scope:
+- `/shipping/pack` 박스 생성 후 제품 미포장 박스 삭제 액션 추가
+- 행 액션 버튼/아이콘 위치 고정 정렬
+- 현재 제품을 담는 선택 박스 표시 강화
+files:
+- apps/frontend/src/app/(authenticated)/shipping/pack/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/pack/shipping-pack-empty-box-delete.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+verification:
+- node --test apps/frontend/src/app/(authenticated)/shipping/pack/shipping-pack-empty-box-delete.structure.test.mjs
+- pnpm --filter @hanes/frontend exec tsc --noEmit --pretty false
+review:
+- needs-review
+notes:
+- 백엔드 `DELETE /shipping/boxes/:id`는 이미 OPEN/빈 박스만 삭제 허용하므로 프론트 노출 및 선택 표시를 보강한다.
+
+## T-MATERIAL-FLOW-FE-RUNTIME 자재관리 프론트 실제 흐름 검증
+status: IN_PROGRESS
+owner: codex
+role: implementer
+scope:
+- 자재관리 하위 메뉴 프론트 런타임 QA
+- 자재요청 -> 자재출고 -> 재고 -> 공정입고 데이터 정합성
+files:
+- tools/hanes-material-flow-frontend-runtime-qa.mjs
+- docs/reports/hanes-material-flow-frontend-runtime-qa-2026-06-17/**
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- 프론트 브라우저 조작으로 /material/request, /material/issue, 재고 조회, /production/input-kiosk 흐름 확인
+- JSHANES Oracle에서 MAT_ISSUE_REQUESTS, MAT_ISSUES, MAT_STOCKS, WIP_MAT_STOCKS, STOCK_TRANSACTIONS 정합성 확인
+review:
+- needs-review
+notes:
+- 기존 2026-06-15 자재 메뉴 스윕은 저장 버튼을 실행하지 않는 표면 QA라서 업무 흐름 검증을 별도 수행한다.
+
 ## T-PDA-PALLET-SHIP PDA 팔레트 단위 출하 지원
 status: TODO
 owner: unassigned

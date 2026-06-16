@@ -10,6 +10,48 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 03:13 Claude
+
+- 작업: 사용자 요청으로 (1) 라벨 디자이너 `/master/label` 소스테이블에 `box`(제품포장) 추가, (2) 좌측 필드 패널을 읽기전용 컬럼 목록(클릭→글자 객체 추가)으로 단순화. 별개로 `/equipment/status`를 모니터링(사이니지) 화면으로 재구성, `/workflow` CPU 폭주 수정.
+- 원인: 좌측 필드 key/표시명/샘플 수동 편집이 과도하게 저수준이라는 사용자 피드백 → A안(컬럼 목록+선택만) 승인. 설비현황은 스크롤 없이 한 화면+자동 롤링 요구.
+- 변경(라벨): `labelSources.ts`/`types.ts`/`page.tsx`/`label-template.dto.ts`에 box 소스(boxNo/itemCode/itemName/qty/packUnit/palletNo, category=box) 추가. `LabelObjectDesigner.tsx` 좌측 편집 UI(updateSourceField/addSourceField/deleteSourceField/newField) 제거 → 읽기전용 목록, 클릭 시 해당 컬럼 글자 객체 추가. `addElement(type, fmt, fieldKey?)`. **design.sourceFields 데이터 구조는 보존**(편집 UI만 제거)하여 기존 템플릿 호환.
+- 변경(모니터링): `components/monitoring/` 공통 컴포넌트 신규(MonitoringFrame=옵션바/롤링본문/상태바 + 페이지 자동 롤링, MonitoringSettingsModal=설비 다중선택+재조회/롤링 인터벌+그리드, useMonitoringConfig=localStorage). `equipment/status` 재구성 + `EquipStatusCard` 신규(LINE→공정, 작업중 모델+계획/실적 진행바, /production/progress 매핑). `WorkflowCard.tsx` 무한 SMIL 90개 → 정적 화살표(Chrome 렌더러 CPU 9.52→2.78s/8s 측정으로 폭주 수정).
+- 참고: `T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS`(Codex, 완료/released)가 만든 sourceFields 편집 기능을 사용자 승인 하에 단순화. 데이터 모델은 보존하여 충돌 최소화.
+- 검증: frontend/backend `tsc --noEmit` PASS. locale JSON 4파일 BOM 없음. 브라우저: 모니터링 카드/자동롤링/공정표시, SMIL CPU 측정 확인. 라벨 좌측 단순화는 브라우저 점유로 코드(tsc)로만 검증.
+- 상태: 완료.
+
+## 2026-06-17 02:49 Codex
+
+- 작업: `T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS` `/master/label` 좌측 필드 목록을 고정 정의가 아닌 디자인별 사용자 정의 필드로 전환.
+- 원인: 기존 `labelSources.ts`의 필드 목록이 실제 DB/API 메타가 아니라 정적 하드코딩이라, 사용자가 라벨 디자인별로 필요한 필드를 자유롭게 정해야 하는 요구와 맞지 않았다.
+- 변경: `LabelDesign.sourceFields`를 추가해 템플릿 JSON에 사용자 정의 필드 목록을 저장한다. `labelSources`는 소스테이블별 초기 제안값으로만 쓰고, 디자이너 좌측 필드 패널에서 key/표시명/샘플값을 추가·수정·삭제할 수 있게 했다. 텍스트/바코드/이미지 객체의 `소스 필드` 선택지는 `design.sourceFields`를 기준으로 표시되고, 필드 key 변경 시 기존 객체 매핑도 같이 갱신된다.
+- 검증: 구조 테스트 `master-label-bartender-designer.structure.test.mjs`, `master-label-design-only.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 3002 브라우저에서 `customTraceNo/사용자추적번호/TRACE-001` 필드 추가 → 글자 객체 매핑 → 저장 요청 201 확인, 요청 `designData.sourceFields`와 객체 `sourceField=customTraceNo` 보존 확인. 검증용 `CODEX_FIELD%` 템플릿 삭제 후 조회 0건 확인. 관련 diff check PASS.
+- 상태: 완료, lock released.
+
+## 2026-06-17 02:36 Codex
+
+- 작업: `T-MASTER-LABEL-BARTENDER-DESIGNER` `/master/label` 객체 기반 라벨 디자이너와 `/consumables/label` 저장 디자인 출력 연결 최종 검증.
+- 실측: 3002 실제 브라우저 세션(`admin@hanes.com`, company `40`, plant `1000`)에서 임시 기본 소모품 템플릿 `CODEX_PRINT_1781631331283`을 `LABEL_TEMPLATES`에 저장한 뒤 `/consumables/label` 첫 행을 선택해 `UID 발행`을 클릭했다. `POST /api/consumables/label/create`가 `C26061700011`을 생성했고, `POST /api/material/label-print/log`는 201로 성공했다. `window.open().document.write()`에 전달된 인쇄 HTML 캡처 결과 실제 `conUid`, `APPCT-A`, `어플리케이터A`, 정적 마커 `CODEX_TEMPLATE_MARK`가 포함됐고 `<img>` 바코드/QR 이미지 2개가 포함됐다.
+- 정리: 검증용 템플릿은 API 삭제 후 `CODEX_PRINT%` 조회 0건을 확인했다. 검증용 UID `C26061700011`은 JSHANES에서 `LABEL_PRINT_LOGS` 2건, `CONSUMABLE_STOCKS` 1건 삭제 후 두 테이블 잔여 0건을 확인했다. 중간 실패 검증에서 생성된 `C26061700009`, `C26061700010`도 같은 방식으로 정리해 잔여 0건이다.
+- 검증: `node "apps/frontend/src/app/(authenticated)/master/label/master-label-bartender-designer.structure.test.mjs"` PASS, `node "apps/frontend/src/app/(authenticated)/master/label/master-label-design-only.structure.test.mjs"` PASS, `node "apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.structure.test.mjs"` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 이전 1차 검증의 `/master/label` 도구/앵커/상단 탭 제거/UI 저장/API 조회/삭제도 유지된다.
+- 상태: 완료, lock released.
+
+## 2026-06-17 02:20 Codex
+
+- 작업: `T-MASTER-LABEL-BARTENDER-DESIGNER` `/master/label` 라벨다자인관리 바텐더형 객체 디자이너 전환 1차 구현.
+- 변경: `LabelDesign`을 기존 좌표 입력형과 호환되게 유지하면서 `sourceTable`, `elements[]`, 객체 타입(`text/barcode/box/line/circle/image`), 객체별 `sourceField` 매핑을 저장하는 포맷으로 확장했다. `/master/label`은 상단 탭을 제거하고 좌측 소스테이블 선택 + 도구 팔레트, 중앙 캔버스, 우측 속성/템플릿 패널 구조로 변경했다. 객체는 마우스 포인터로 이동하고 선택 객체에는 모서리 리사이즈 앵커가 표시된다.
+- 출력 연결: `LabelDesignRenderer`/`LabelPrintRenderer`를 추가해 저장된 객체 포맷을 화면/인쇄용 HTML로 렌더링한다. 바코드는 인쇄 창 복사 시 비지 않도록 `bwip-js` 캔버스를 data URL 이미지로 변환한다. `/consumables/label`은 `category=jig` 라벨 템플릿을 조회하고, 생성된 `conUid`와 소모품 마스터 데이터를 저장 디자인의 `sourceField`에 치환해 출력하도록 연결했다.
+- 검증: RED 후 GREEN 구조 테스트 `master-label-bartender-designer.structure.test.mjs`, 갱신한 `master-label-design-only.structure.test.mjs`, 기존 `useConLabelIssue.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 3002 Playwright에서 `/master/label` 도구(`글자/1D/2D/박스/선/원/이미지`), 상단 탭 제거, 박스 추가 후 리사이즈 앵커 4개 확인. `/consumables/label`에서 `/api/master/label-templates?category=jig` 요청 확인. UI `새로 저장`으로 객체 템플릿 저장 후 API 조회에서 `elements` 보존 확인, 테스트 템플릿 삭제 완료. 직접 API 저장/조회/삭제도 객체 JSON `sourceField=conUid` 보존 확인.
+- 남음: 실제 소모품 UID 발행 버튼을 눌러 인쇄 HTML에 저장 템플릿 데이터가 치환되는지 실측하고, 생성 테스트 UID/로그 정리 방법까지 확인해야 전체 목표 완료로 볼 수 있다.
+- 상태: 진행 중, lock released.
+
+## 2026-06-17 01:59 Codex
+
+- 작업: `T-MASTER-LABEL-DESIGN-ONLY` `/master/label` 라벨다자인관리의 모든 카테고리를 디자인 제공 전용으로 전환.
+- 변경: `품목` 탭과 `LabelCategory`의 `part`를 제거했다. `지그/금형` 탭명은 `소모품`으로 변경했다. 설비/소모품/작업자/자재롯트라벨 모든 탭에서 대상 조회 API, 대상 선택 그리드, 선택 항목 인쇄 패널을 제거하고 샘플 미리보기 + 디자인/템플릿 관리만 남겼다.
+- 검증: 구조 테스트 RED 확인 후 GREEN. `node "apps/frontend/src/app/(authenticated)/master/label/master-label-design-only.structure.test.mjs"` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. Playwright로 `http://localhost:3002/master/label` 접속해 탭 `설비/소모품/작업자/자재롯트라벨` 노출, `품목`/`선택 출력` 미노출, 각 탭 디자인 제공 안내 표시, 대상 조회 API(`/equipment/equips`, `/consumables`, `/master/workers`, `/master/parts`) 호출 0건 확인.
+- 상태: 완료, lock released. 이번 작업 외 워크트리의 기존 dirty 변경은 되돌리지 않았다.
+
 ## 2026-06-17 00:09 Codex
 
 - 작업: `T-EQUIPMENT-PERIODIC-DAILY-FLOW` `/equipment/periodic-inspect` 처리 방식을 `/equipment/daily-inspect` 방식으로 통일.
@@ -720,6 +762,38 @@ Use local time in 24-hour format.
 - 문서: `docs/superpowers/plans/2026-06-16-equip-inspect-workday-order.md` 작성, `python tools/generate_db_schema_doc.py`로 `docs/reports/db-schema-erd.md` 재생성.
 - 검증: RED 확인 후 `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts daily-inspect.controller.spec.ts --runInBand` 16/16 PASS, 프론트 구조 테스트 9/9 PASS, `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `pnpm --filter @harness/backend build` PASS, 관련 파일 `git diff --check` PASS.
 - 상태: 완료, lock released. 워크트리에는 이번 작업 외 다른 AI/이전 작업 변경이 다수 있으므로 커밋 시 파일 범위를 선별해야 한다.
+
+## 2026-06-17 01:52 Codex
+
+- 작업: `T-SYSTEM-LABEL-MENU-RENAME` 시스템관리 하위 라벨관리 메뉴명 변경.
+- 확인: 메뉴 항목 `MST_LABEL`은 `apps/frontend/src/config/menuConfig.ts`에서 `labelKey="menu.master.label"`을 사용한다. 한글 표시명은 `apps/frontend/src/locales/ko.json`의 `menu["master.label"]` 값이다.
+- 변경: `menu["master.label"]`을 요청 표기 그대로 `라벨다자인관리`로 변경했다. `/master/label` 페이지 내부 제목 `label.title = 라벨관리`는 메뉴명 변경 범위가 아니므로 유지했다.
+- 검증: `ko.json` JSON 파싱 성공, `menu.master.label` 출력값 `라벨다자인관리` 확인, `MST_LABEL` labelKey 검색 확인, 관련 파일 `git diff --check` PASS.
+- 상태: 완료, lock released.
+
+## 2026-06-17 01:45 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-PRINTLOG-PAYLOAD` `/consumables/label` 브라우저 인쇄 후 `/material/label-print/log` 400 오류 수정.
+- 원인: 소모품 라벨 훅 `useConLabelIssue.logBrowserPrint()`가 공용 라벨 이력 API에 `matUids`를 보냈다. 백엔드 `CreatePrintLogDto`는 `uidList: string[]`만 허용하고, `matUids`는 `/material/label-print/generate`용 `GenerateZplDto` 전용 필드라 class-validator에서 `property matUids should not exist`, `uidList must be an array` 400이 발생했다.
+- 변경: `apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.ts`의 payload를 `uidList: conUids`로 수정했다. 구조 테스트 `useConLabelIssue.structure.test.mjs`를 추가해 `con_uid` 인쇄이력 호출이 `uidList`를 사용하고 `matUids`를 재사용하지 않도록 검증한다.
+- 검증: 구조 테스트 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS. 실제 API에 `uidList=['CODEX-CON-PRINTLOG-2606170141']` payload로 `POST /api/v1/material/label-print/log` 성공, 기존 `matUids` payload는 동일 400 재현 확인. 검증 로그는 삭제 후 잔여 0 확인. 3002 브라우저 `/consumables/label`에서 첫 행 선택 후 `UID 발행` 클릭 시 `/consumables/label/create` 201, `/material/label-print/log` 201 확인. 생성된 검증 UID `C26061700007` 관련 `CONSUMABLE_STOCKS` 1건, `LABEL_PRINT_LOGS` 2건 삭제 후 잔여 0 확인.
+- 상태: 완료, lock released.
+
+## 2026-06-17 01:04 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-IMAGE-PRINTLOG` `/consumables/label` 소모품 사진 표시 및 라벨 발행 500 오류 수정.
+- 원인: `ConsumableLabelService.createConLabels()`가 `LabelPrintLog`를 생성하면서 복합 PK 필드 `PRINTED_AT`를 명시하지 않았다. TypeORM은 PK 컬럼 default를 맡기지 않고 null insert를 시도해 JSHANES `LABEL_PRINT_LOGS.PRINTED_AT` NOT NULL 제약에서 ORA-01400이 발생했다.
+- 변경: 라벨 발행 가능 마스터 응답에 `imageUrl`을 포함했다. 소모품 라벨 발행 로그 생성 시 자재 라벨 서비스와 동일하게 `printedAt: new Date()`, `seq: 1`을 명시했다. 프론트 라벨 발행 그리드에 이미지 컬럼을 추가해 `/uploads/consumables/*.svg`를 표시한다.
+- 검증: `pnpm --filter @harness/backend test -- consumable-label.service.spec.ts --runInBand` 8/8 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS. 실제 3003 `POST /api/v1/consumables/label/create` with `APPCT-A/qty=1` 성공, 생성 UID `C26061700004`는 검증 후 `CONSUMABLE_STOCKS`와 `LABEL_PRINT_LOGS`에서 각 1건 삭제해 잔여 0 확인. API `/consumables/label/masters`에서 `APPCT-A imageUrl=/uploads/consumables/appct_a.svg` 확인. 3002 브라우저 `/consumables/label`에서 소모품 이미지 37개 렌더링, 첫 이미지 natural size 720x420 확인.
+- 상태: 완료, lock released.
+
+## 2026-06-17 00:47 Codex
+
+- 작업: `T-EQUIPMENT-INSPECT-HISTORY-ACTUAL-SQL` `/equipment/inspect-history` DataGrid SQL 보기 실제 SQL 표시 보정.
+- 원인: 화면의 `DataGrid.sqlQuery`가 실제 조회 테이블이 아닌 `EQUIP_INSPECTIONS`를 참조했다. 전역 SQL 모달은 preview SQL의 `FROM/JOIN` 테이블명과 API 응답 `meta.debugSql.tables`를 매칭하는데, 실제 백엔드 `EquipInspectService.findAll()`은 `EQUIP_INSPECT_LOGS`와 `EQUIP_MASTERS`를 조회하므로 테이블 매칭이 실패해 하드코딩 SQL이 그대로 보였다.
+- 변경: `apps/frontend/src/app/(authenticated)/equipment/inspect-history/page.tsx`의 SQL preview를 `EQUIP_INSPECT_LOGS log LEFT JOIN EQUIP_MASTERS equip` 기준으로 교체했다. 구조 테스트 `inspect-history-actual-sql.structure.test.mjs`를 추가해 잘못된 `EQUIP_INSPECTIONS` 재유입을 막았다.
+- 검증: 구조 테스트 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS. JSHANES 활성 계정으로 3003 API 호출 시 `meta.debugSql.tables = EQUIP_INSPECT_LOGS, EQUIP_MASTERS` 및 실제 SELECT/parameters 확인. 3002 브라우저에서 `/equipment/inspect-history` → 그리드 옵션 → `SQL 조회문` 클릭 후 모달에 `"EQUIP_INSPECT_LOGS"`, `"EQUIP_MASTERS"`, bind 변수 `:1`, `:2`가 표시되고 구 preview `EQUIP_INSPECTIONS`는 미표시임을 확인했다.
+- 상태: 완료, lock released. worktree에는 이전 작업의 backend/equipment 변경과 `.claude/worktrees` 미추적 폴더가 남아 있어 커밋 시 파일 범위 선별 필요.
 
 ## 2026-06-16 23:58 Codex
 

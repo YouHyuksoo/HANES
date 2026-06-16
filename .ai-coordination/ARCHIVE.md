@@ -10,6 +10,9 @@ Format:
 
 ## Completed
 
+- T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS | 2026-06-17 | codex | `/master/label` 좌측 필드 목록을 고정값이 아닌 디자인별 사용자 정의 `sourceFields`로 저장/추가/수정/삭제 가능하게 전환하고 3002 저장 요청 201 및 임시 템플릿 정리 확인 | evidence: JOURNAL 2026-06-17 02:49 Codex
+- T-MASTER-LABEL-BARTENDER-DESIGNER | 2026-06-17 | codex | `/master/label` 상단 탭 제거 후 객체 기반 라벨 디자이너(글자/1D/2D/박스/선/원/이미지, 드래그/앵커 리사이즈, 소스필드 매핑 저장)로 전환하고 `/consumables/label` 실제 UID 발행 인쇄 HTML 치환까지 검증 | evidence: JOURNAL 2026-06-17 02:36 Codex
+- T-MASTER-LABEL-DESIGN-ONLY | 2026-06-17 | codex | `/master/label` 모든 카테고리를 디자인 제공 전용으로 전환하고 품목 탭/대상조회/선택출력 제거, 소모품 탭명 적용 | evidence: JOURNAL 2026-06-17 01:59 Codex
 - T-EQUIPMENT-PERIODIC-DAILY-FLOW | 2026-06-17 | codex | `/equipment/periodic-inspect`를 `/equipment/daily-inspect`와 같은 대상 설비 목록 + 항목별 입력 흐름으로 통일하고 3002 브라우저 선택 검증 완료 | evidence: JOURNAL 2026-06-17 00:09 Codex
 - T-EQUIPMENT-INSPECT-CARDS-REMOVE | 2026-06-17 | codex | `/equipment/inspect-history`, `/equipment/periodic-inspect` 상단 정보카드 제거 및 3002 브라우저 미표시 확인 | evidence: JOURNAL 2026-06-17 00:08 Codex
 - T-CONSUMABLE-LIFE-STATUS-SHAPE | 2026-06-16 | codex | `/consumables/life` 런타임 `data.filter is not a function` 수정, life-status API를 카운트 객체가 아닌 행 배열 계약으로 보정하고 API/브라우저 확인 완료 | evidence: JOURNAL 2026-06-16 22:48 Codex
@@ -38,6 +41,10 @@ Format:
 - T-MASTER-CRUD-RUNTIME | 2026-06-12 | codex | 기준정보 화면/API CRUD 101단계 실데이터 점검, payload/cleanup 오류 수정, JSHANES 잔여 0건 확인 및 보고서 작성 | evidence: JOURNAL 2026-06-12 11:49 Codex
 - T-EQUIP-INSPECT-HISTORY-BLANK-ROWS | 2026-06-16 | codex | `/equipment/inspect-history` API `{ equip: {} }` 빈 행 응답을 raw alias 명시 매핑으로 수정하고 날짜 표시를 `YYYY-MM-DD`로 정리, API/3002 화면 확인 | evidence: JOURNAL 2026-06-16 23:58 Codex
 - T-KIOSK-WI-SEED-HNS02C1ABCD | 2026-06-16 | codex | `/production/input-kiosk` WO2606150060/HNS02C1ABCD 작업지도서 미표시 원인이 WORK_INSTRUCTIONS 데이터 0건임을 확인하고 ATCUT Rev.A 시드 추가, DB/API/브라우저 표시 확인 | evidence: JOURNAL 2026-06-16 23:30 Codex
+- T-SYSTEM-LABEL-MENU-RENAME | 2026-06-17 | codex | 시스템관리 하위 `MST_LABEL` 메뉴의 한글 labelKey `menu.master.label`을 `라벨다자인관리`로 변경, JSON 파싱/검색 확인 | evidence: JOURNAL 2026-06-17 01:52 Codex
+- T-CONSUMABLE-LABEL-PRINTLOG-PAYLOAD | 2026-06-17 | codex | `/consumables/label` 브라우저 인쇄이력 payload를 `matUids`에서 `uidList`로 수정해 `/material/label-print/log` 400 오류 해소, 실제 브라우저 발행 201 확인 | evidence: JOURNAL 2026-06-17 01:45 Codex
+- T-CONSUMABLE-LABEL-IMAGE-PRINTLOG | 2026-06-17 | codex | `/consumables/label` 라벨 발행 그리드에 소모품 사진 컬럼 추가, `LABEL_PRINT_LOGS.PRINTED_AT` null ORA-01400 수정, 실제 API/브라우저 확인 | evidence: JOURNAL 2026-06-17 01:04 Codex
+- T-EQUIPMENT-INSPECT-HISTORY-ACTUAL-SQL | 2026-06-17 | codex | `/equipment/inspect-history` SQL 조회문 preview를 실제 `EQUIP_INSPECT_LOGS`/`EQUIP_MASTERS` 기준으로 맞춰 전역 `meta.debugSql` 실제 SQL이 표시되도록 수정, 3002 모달 확인 | evidence: JOURNAL 2026-06-17 00:47 Codex
 - T-INTEGRATION-NORMAL-REVERSE | 2026-06-12 | codex | HNS02 정상/역처리 통합 재테스트, 박스 단건 출하 취소 API 추가, 정상 출하/출하 취소/삭제·취소 가능 데이터 검증 및 보고서 작성 | evidence: JOURNAL 2026-06-12 11:25 Codex
 - T-INTEGRATION-FLOW-ISSUES-FIX | 2026-06-12 | codex | 최종보고서 등록 문제점 3건 수정, 제품라벨/박스재고/WIP 이동 정상화, JSHANES 재테스트 완료 | evidence: JOURNAL 2026-06-12 11:02 Codex
 - T-INTEGRATION-FLOW-REPORT | 2026-06-12 | codex | HNS02 기준 PO부터 출하 처리까지 실제 API/JSHANES DB 통합 테스트 완료, shipBox 시리얼별 제품재고 차감 결함 수정, 보고서 작성 | evidence: JOURNAL 2026-06-12 10:41 Codex

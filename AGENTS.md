@@ -17,6 +17,19 @@
   - **Kimi Code CLI**: `~/.agents/skills/`
 - **교훈**: 두 시스템은 완전히 분리되어 있음. 교차 참조하지 않도록 주의
 
+### 2025-06-17
+
+#### 3. jsPDF + autotable 한글 폰트 (CID/CJK)
+- **문제**: html2canvas는 Tailwind CSS `lab()` 색상 함수 파싱 실패 → 사용 불가. jsPDF + autotable에서 한글 깨짐.
+- **해결** (정석):
+  1. 폰트 TTF를 `fetch` → `arrayBuffer()` → `btoa()` → `addFileToVFS("name.ttf", base64)`
+  2. `doc.addFont("name.ttf", "FontName", "normal", "Identity-H")` — **CID 인코딩 `Identity-H` 필수**
+  3. autotable `styles.font` + `headStyles.font` + `bodyStyles.font` + `alternateRowStyles.font` + `didParseCell` 전부 `"FontName"` 지정
+  4. **`headStyles.fontStyle`를 반드시 `"normal"`로 명시** (autotable 기본값 `"bold"`인데 Regular 폰트만 등록하면 `setFont("FontName", "bold")`가 fallback돼서 헤더만 깨짐)
+  5. Bold 폰트가 꼭 필요하지 않으면 Regular만 등록 (복잡도 감소)
+- **관련 파일**: `apps/frontend/src/hooks/useExport.ts`, `public/fonts/NotoSansKR-*.ttf`
+- **금지**: `html2canvas` 접근법 (Tailwind `lab()` 충돌로 재현 불가)
+
 ---
 
 ## 📝 프로젝트 컨텍스트
