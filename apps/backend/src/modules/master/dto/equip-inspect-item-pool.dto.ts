@@ -73,6 +73,12 @@ export class CreateEquipInspectItemPoolDto {
   @MaxLength(50)
   workerQrCode?: string;
 
+  @ApiPropertyOptional({ description: '점검항목 사진 URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()

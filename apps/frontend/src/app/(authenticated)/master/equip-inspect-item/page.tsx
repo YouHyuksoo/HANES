@@ -3,16 +3,11 @@
 /**
  * @file src/app/(authenticated)/master/equip-inspect-item/page.tsx
  * @description 점검항목 마스터 페이지 - 설비유형별 점검항목 풀(EQUIP_INSPECT_ITEM_POOL) 통합 CRUD
- *
- * 초보자 가이드:
- * 1. 점검항목을 설비유형(EQUIP_TYPE) 기준으로 등록/관리하는 "구성용 기준 정보"(마스터)
- * 2. 설비별 실제 매핑은 /master/equip-inspect 에서 수행하며, 항목 추가 시 설비유형으로 이 마스터를 조회
- * 3. API: GET/POST/PUT/DELETE /master/equip-inspect-item-masters
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ClipboardList, Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal, ComCodeBadge } from "@/components/ui";
+import { ClipboardList, Plus, Edit2, Trash2, Search, RefreshCw, ImageIcon, Upload } from "lucide-react";
+import { Card, CardContent, Button, Input, Select, ConfirmModal, ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -33,8 +28,39 @@ interface InspectItemPoolRow {
   unit: string | null;
   lslValue: number | null;
   uslValue: number | null;
+  imageUrl: string | null;
   remark: string | null;
 }
+
+interface InspectItemForm {
+  itemCode: string;
+  equipType: string;
+  itemName: string;
+  inspectType: InspectType;
+  criteria: string;
+  cycle: string;
+  itemType: ItemType;
+  unit: string;
+  lslValue: string;
+  uslValue: string;
+  useYn: string;
+  remark: string;
+}
+
+const emptyForm = (): InspectItemForm => ({
+  itemCode: "",
+  equipType: "",
+  itemName: "",
+  inspectType: "DAILY",
+  criteria: "",
+  cycle: "DAILY",
+  itemType: "VISUAL",
+  unit: "",
+  lslValue: "",
+  uslValue: "",
+  useYn: "Y",
+  remark: "",
+});
 
 const INSPECT_TYPE_COLORS: Record<string, string> = {
   DAILY: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
@@ -50,28 +76,19 @@ const ITEM_TYPE_COLORS: Record<string, string> = {
 
 export default function EquipInspectItemPage() {
   const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<InspectItemPoolRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [equipTypeFilter, setEquipTypeFilter] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [editing, setEditing] = useState<InspectItemPoolRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InspectItemPoolRow | null>(null);
-
-  /* ── 폼 상태 ── */
-  const [formItemCode, setFormItemCode] = useState("");
-  const [formEquipType, setFormEquipType] = useState("");
-  const [formItemName, setFormItemName] = useState("");
-  const [formInspectType, setFormInspectType] = useState<InspectType>("DAILY");
-  const [formCriteria, setFormCriteria] = useState("");
-  const [formCycle, setFormCycle] = useState("DAILY");
-  const [formItemType, setFormItemType] = useState<ItemType>("VISUAL");
-  const [formUnit, setFormUnit] = useState("");
-  const [formLsl, setFormLsl] = useState("");
-  const [formUsl, setFormUsl] = useState("");
-  const [formUseYn, setFormUseYn] = useState("Y");
-  const [formRemark, setFormRemark] = useState("");
+  const [form, setForm] = useState<InspectItemForm>(() => emptyForm());
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -82,13 +99,21 @@ export default function EquipInspectItemPage() {
       if (equipTypeFilter) params.equipType = equipTypeFilter;
       const res = await api.get("/master/equip-inspect-item-masters", { params });
       setItems(res.data?.data ?? []);
-    } catch { setItems([]); }
-    finally { setLoading(false); }
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
   }, [searchText, typeFilter, equipTypeFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  /* ── 옵션 ── */
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   const typeFilterOptions = useMemo(() => [
     { value: "", label: `${t("master.equipInspect.inspectType")}: ${t("common.all")}` },
     { value: "DAILY", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typeDaily")}` },
@@ -139,69 +164,121 @@ export default function EquipInspectItemPage() {
     ANNUAL: t("master.equipInspect.cycleAnnual", "연간"),
   }), [t]);
 
-  /* ── CRUD ── */
-  const resetForm = () => {
-    setFormItemCode(""); setFormEquipType(""); setFormItemName(""); setFormInspectType("DAILY");
-    setFormCriteria(""); setFormCycle("DAILY"); setFormItemType("VISUAL");
-    setFormUnit(""); setFormLsl(""); setFormUsl(""); setFormUseYn("Y"); setFormRemark("");
+  const setField = (key: keyof InspectItemForm, value: string) => {
+    setForm(prev => ({ ...prev, [key]: value }));
   };
 
-  const openCreate = () => { setEditing(null); resetForm(); setModalOpen(true); };
+  const resetImageState = (nextPreviewUrl: string | null) => {
+    if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    setSelectedImageFile(null);
+    setPreviewUrl(nextPreviewUrl);
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyForm());
+    resetImageState(null);
+    setPanelOpen(true);
+  };
 
   const openEdit = (item: InspectItemPoolRow) => {
     setEditing(item);
-    setFormItemCode(item.itemCode);
-    setFormEquipType(item.equipType || "");
-    setFormItemName(item.itemName);
-    setFormInspectType(item.inspectType);
-    setFormCriteria(item.criteria || "");
-    setFormCycle(item.cycle || "DAILY");
-    setFormItemType(item.itemType || "VISUAL");
-    setFormUnit(item.unit || "");
-    setFormLsl(item.lslValue != null ? String(item.lslValue) : "");
-    setFormUsl(item.uslValue != null ? String(item.uslValue) : "");
-    setFormUseYn(item.useYn || "Y");
-    setFormRemark(item.remark || "");
-    setModalOpen(true);
+    setForm({
+      itemCode: item.itemCode,
+      equipType: item.equipType || "",
+      itemName: item.itemName,
+      inspectType: item.inspectType,
+      criteria: item.criteria || "",
+      cycle: item.cycle || "DAILY",
+      itemType: item.itemType || "VISUAL",
+      unit: item.unit || "",
+      lslValue: item.lslValue != null ? String(item.lslValue) : "",
+      uslValue: item.uslValue != null ? String(item.uslValue) : "",
+      useYn: item.useYn || "Y",
+      remark: item.remark || "",
+    });
+    resetImageState(item.imageUrl || null);
+    setPanelOpen(true);
+  };
+
+  const closePanel = () => {
+    setPanelOpen(false);
+    setEditing(null);
+    setForm(emptyForm());
+    resetImageState(null);
+  };
+
+  const handleImageSelect = (file: File) => {
+    if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    setSelectedImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleImageClear = () => {
+    if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    setSelectedImageFile(null);
+    setPreviewUrl(null);
+  };
+
+  const uploadImage = async (itemCode: string, file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    await api.post(`/master/equip-inspect-item-masters/${encodeURIComponent(itemCode)}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   };
 
   const handleSave = async () => {
-    if (!formItemCode.trim() || !formItemName.trim()) return;
-    const isMeasure = formItemType === "MEASURE";
+    if (!form.itemCode.trim() || !form.itemName.trim()) return;
+    setSaving(true);
+    const isMeasure = form.itemType === "MEASURE";
     const payload = {
-      itemCode: formItemCode.trim(),
-      itemName: formItemName.trim(),
-      inspectType: formInspectType,
-      equipType: formEquipType || null,
-      criteria: !isMeasure ? (formCriteria.trim() || null) : null,
-      cycle: formCycle || null,
-      useYn: formUseYn,
-      remark: formRemark.trim() || null,
-      itemType: formItemType,
-      unit: isMeasure ? (formUnit.trim() || null) : null,
-      lslValue: isMeasure && formLsl !== "" ? Number(formLsl) : null,
-      uslValue: isMeasure && formUsl !== "" ? Number(formUsl) : null,
+      itemCode: form.itemCode.trim(),
+      itemName: form.itemName.trim(),
+      inspectType: form.inspectType,
+      equipType: form.equipType || null,
+      criteria: !isMeasure ? (form.criteria.trim() || null) : null,
+      cycle: form.cycle || null,
+      useYn: form.useYn,
+      remark: form.remark.trim() || null,
+      itemType: form.itemType,
+      unit: isMeasure ? (form.unit.trim() || null) : null,
+      lslValue: isMeasure && form.lslValue !== "" ? Number(form.lslValue) : null,
+      uslValue: isMeasure && form.uslValue !== "" ? Number(form.uslValue) : null,
     };
     try {
+      const itemCode = editing?.itemCode || form.itemCode.trim();
       if (editing) {
-        await api.put(`/master/equip-inspect-item-masters/${editing.itemCode}`, payload);
+        await api.put(`/master/equip-inspect-item-masters/${encodeURIComponent(editing.itemCode)}`, payload);
+        if (selectedImageFile) {
+          await uploadImage(editing.itemCode, selectedImageFile);
+        } else if (!previewUrl && editing.imageUrl) {
+          await api.delete(`/master/equip-inspect-item-masters/${encodeURIComponent(editing.itemCode)}/image`);
+        }
       } else {
         await api.post("/master/equip-inspect-item-masters", payload);
+        if (selectedImageFile) await uploadImage(itemCode, selectedImageFile);
       }
-      setModalOpen(false);
-      fetchData();
-    } catch { /* 에러 처리: 공통 API 레이어 */ }
+      await fetchData();
+      closePanel();
+    } catch {
+      // 공통 API 레이어에서 오류 토스트 처리
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/equip-inspect-item-masters/${deleteTarget.itemCode}`);
-      setDeleteTarget(null); fetchData();
-    } catch { /* 에러 처리 */ }
+      await api.delete(`/master/equip-inspect-item-masters/${encodeURIComponent(deleteTarget.itemCode)}`);
+      setDeleteTarget(null);
+      fetchData();
+    } catch {
+      // 공통 API 레이어에서 오류 토스트 처리
+    }
   };
 
-  /* ── 컬럼 ── */
   const columns: ColumnDef<InspectItemPoolRow>[] = useMemo(() => [
     {
       id: "actions", header: "", size: 80,
@@ -216,6 +293,20 @@ export default function EquipInspectItemPage() {
           </button>
         </div>
       ),
+    },
+    {
+      accessorKey: "imageUrl", header: t("master.equipInspectItem.image", "사진"), size: 64,
+      meta: { align: "center" as const },
+      cell: ({ getValue, row }) => {
+        const imageUrl = getValue() as string | null;
+        return imageUrl ? (
+          <img src={imageUrl} alt={row.original.itemName} className="w-9 h-9 object-cover rounded border border-border bg-surface" />
+        ) : (
+          <div className="w-9 h-9 mx-auto rounded border border-dashed border-border flex items-center justify-center bg-surface">
+            <ImageIcon className="w-4 h-4 text-text-muted" />
+          </div>
+        );
+      },
     },
     {
       accessorKey: "itemCode", header: t("master.equipInspect.itemCode", "항목코드"), size: 120,
@@ -252,9 +343,19 @@ export default function EquipInspectItemPage() {
       cell: ({ row }) => {
         const r = row.original;
         if (r.itemType === "MEASURE") {
-          const lsl = r.lslValue != null ? r.lslValue : "";
-          const usl = r.uslValue != null ? r.uslValue : "";
-          return <span className="text-xs">{`${lsl} ~ ${usl}${r.unit ? ` (${r.unit})` : ""}`}</span>;
+          if (r.lslValue != null && r.uslValue != null) {
+            return <span className="text-xs">{`${r.lslValue} ~ ${r.uslValue}${r.unit ? ` (${r.unit})` : ""}`}</span>;
+          }
+          if (r.lslValue != null) {
+            return <span className="text-xs">{`>= ${r.lslValue}${r.unit ? ` ${r.unit}` : ""}`}</span>;
+          }
+          if (r.uslValue != null) {
+            return <span className="text-xs">{`<= ${r.uslValue}${r.unit ? ` ${r.unit}` : ""}`}</span>;
+          }
+          if (r.criteria) {
+            return <span className="text-xs">{`${r.criteria}${r.unit ? ` (${r.unit})` : ""}`}</span>;
+          }
+          return r.unit || "-";
         }
         return r.criteria || "-";
       },
@@ -272,93 +373,147 @@ export default function EquipInspectItemPage() {
   ], [t, inspectTypeLabels, cycleLabels, itemTypeLabels]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      {/* 헤더 */}
-      <div className="flex justify-between items-center flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <ClipboardList className="w-7 h-7 text-primary" />
-            {t("master.equipInspectItem.title", "점검항목 마스터")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("master.equipInspectItem.subtitle", "설비유형별 점검항목을 등록하고 관리합니다. 설비점검 매핑의 기준 정보입니다.")}</p>
+    <div className="h-full flex overflow-hidden animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <ClipboardList className="w-7 h-7 text-primary" />
+              {t("master.equipInspectItem.title", "점검항목 마스터")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("master.equipInspectItem.subtitle", "설비유형별 점검항목을 등록하고 관리합니다. 설비점검 매핑의 기준 정보입니다.")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1" />{t("common.register", "등록")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" />{t("common.register", "등록")}
-          </Button>
-        </div>
+
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-4">
+            <DataGrid data={items} columns={columns} isLoading={loading} enableColumnFilter enableExport
+              exportFileName={t("master.equipInspectItem.title", "점검항목마스터")}
+              emptyMessage={t("master.equipInspect.noItems")}
+              toolbarLeft={
+                <div className="flex gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <Input placeholder={t("master.equipInspect.searchPlaceholder")} value={searchText}
+                      onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                  </div>
+                  <div className="w-44 flex-shrink-0">
+                    <ComCodeSelect groupCode="EQUIP_TYPE" value={equipTypeFilter} onChange={setEquipTypeFilter} labelPrefix={t("master.equip.type", "설비유형")} />
+                  </div>
+                  <div className="w-44 flex-shrink-0">
+                    <Select options={typeFilterOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
+                  </div>
+                </div>
+              }
+              sqlQuery={`SELECT *\nFROM EQUIP_INSPECT_ITEM_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY EQUIP_TYPE, INSPECT_TYPE, ITEM_CODE`} />
+          </CardContent>
+        </Card>
       </div>
 
-      {/* 데이터 그리드 */}
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={items} columns={columns} isLoading={loading} enableColumnFilter enableExport
-          exportFileName={t("master.equipInspectItem.title", "점검항목마스터")}
-          emptyMessage={t("master.equipInspect.noItems")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("master.equipInspect.searchPlaceholder")} value={searchText}
-                  onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="w-44 flex-shrink-0">
-                <ComCodeSelect groupCode="EQUIP_TYPE" value={equipTypeFilter} onChange={setEquipTypeFilter} labelPrefix={t("master.equip.type", "설비유형")} />
-              </div>
-              <div className="w-44 flex-shrink-0">
-                <Select options={typeFilterOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
-              </div>
+      {panelOpen && (
+        <div className="w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+            <h2 className="text-sm font-bold text-text">
+              {editing ? t("master.equipInspect.editItem") : t("common.register", "등록")}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={closePanel}>{t("common.cancel")}</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode.trim() || !form.itemName.trim()}>
+                {saving ? t("common.saving", "저장 중") : (editing ? t("common.save") : t("common.register", "등록"))}
+              </Button>
             </div>
-          }
-          sqlQuery={`SELECT *\nFROM EQUIP_INSPECT_ITEM_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY EQUIP_TYPE, INSPECT_TYPE, ITEM_CODE`}/>
-      </CardContent></Card>
+          </div>
 
-      {/* 등록/수정 모달 */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}
-        title={editing ? t("master.equipInspect.editItem") : t("common.register", "등록")} size="lg">
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <Input label={t("master.equipInspect.itemCode", "항목코드")} value={formItemCode}
-              onChange={e => setFormItemCode(e.target.value)} disabled={!!editing} fullWidth />
-            <ComCodeSelect groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "설비유형")}
-              value={formEquipType} onChange={setFormEquipType} fullWidth />
-            <Select label={t("master.equipInspect.inspectType")} options={typeOptions}
-              value={formInspectType} onChange={v => setFormInspectType(v as InspectType)} fullWidth />
-          </div>
-          <Input label={t("master.equipInspect.itemName")} value={formItemName}
-            onChange={e => setFormItemName(e.target.value)} fullWidth />
-          <div className="grid grid-cols-3 gap-4">
-            <Select label={t("master.equipInspect.itemType", "판정구분")} options={itemTypeOptions}
-              value={formItemType} onChange={v => setFormItemType(v as ItemType)} fullWidth />
-            <Select label={t("master.equipInspect.cycle")} options={cycleOptions}
-              value={formCycle} onChange={setFormCycle} fullWidth />
-            <Select label={t("common.useYn", "사용")} options={[{ value: "Y", label: "Y" }, { value: "N", label: "N" }]}
-              value={formUseYn} onChange={setFormUseYn} fullWidth />
-          </div>
-          {formItemType === "MEASURE" ? (
-            <div className="grid grid-cols-3 gap-4">
-              <Input label={t("master.equipInspect.unit", "단위")} value={formUnit}
-                onChange={e => setFormUnit(e.target.value)} fullWidth />
-              <Input label={t("master.equipInspect.lowerLimit", "하한")} type="number" value={formLsl}
-                onChange={e => setFormLsl(e.target.value)} fullWidth />
-              <Input label={t("master.equipInspect.upperLimit", "상한")} type="number" value={formUsl}
-                onChange={e => setFormUsl(e.target.value)} fullWidth />
+          <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+            <div>
+              <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.sectionBasic", "기본정보")}</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <Input label={t("master.equipInspect.itemCode", "항목코드")} value={form.itemCode}
+                  onChange={e => setField("itemCode", e.target.value)} disabled={!!editing} fullWidth required />
+                <ComCodeSelect groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "설비유형")}
+                  value={form.equipType} onChange={v => setField("equipType", v)} fullWidth />
+                <div className="col-span-2">
+                  <Input label={t("master.equipInspect.itemName")} value={form.itemName}
+                    onChange={e => setField("itemName", e.target.value)} fullWidth required />
+                </div>
+                <Select label={t("master.equipInspect.inspectType")} options={typeOptions}
+                  value={form.inspectType} onChange={v => setField("inspectType", v as InspectType)} fullWidth />
+                <Select label={t("master.equipInspect.itemType", "판정구분")} options={itemTypeOptions}
+                  value={form.itemType} onChange={v => setField("itemType", v as ItemType)} fullWidth />
+                <Select label={t("master.equipInspect.cycle")} options={cycleOptions}
+                  value={form.cycle} onChange={v => setField("cycle", v)} fullWidth />
+                <Select label={t("common.useYn", "사용")} options={[{ value: "Y", label: "Y" }, { value: "N", label: "N" }]}
+                  value={form.useYn} onChange={v => setField("useYn", v)} fullWidth />
+              </div>
             </div>
-          ) : (
-            <Input label={t("master.equipInspect.criteria")} value={formCriteria}
-              onChange={e => setFormCriteria(e.target.value)} fullWidth />
-          )}
-          <Input label={t("common.remark", "비고")} value={formRemark}
-            onChange={e => setFormRemark(e.target.value)} fullWidth />
+
+            <div>
+              <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.sectionCriteria", "판정기준")}</h3>
+              {form.itemType === "MEASURE" ? (
+                <div className="grid grid-cols-3 gap-3">
+                  <Input label={t("master.equipInspect.unit", "단위")} value={form.unit}
+                    onChange={e => setField("unit", e.target.value)} fullWidth />
+                  <Input label={t("master.equipInspect.lowerLimit", "하한")} type="number" value={form.lslValue}
+                    onChange={e => setField("lslValue", e.target.value)} fullWidth />
+                  <Input label={t("master.equipInspect.upperLimit", "상한")} type="number" value={form.uslValue}
+                    onChange={e => setField("uslValue", e.target.value)} fullWidth />
+                </div>
+              ) : (
+                <Input label={t("master.equipInspect.criteria")} value={form.criteria}
+                  onChange={e => setField("criteria", e.target.value)} fullWidth />
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.image", "사진")}</h3>
+              {previewUrl ? (
+                <div className="relative group">
+                  <img src={previewUrl} alt={form.itemName || form.itemCode}
+                    className="w-full h-44 object-contain rounded-lg border border-border bg-surface" />
+                  <button type="button" onClick={handleImageClear}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={saving}
+                  className="w-full h-28 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50">
+                  {saving ? <RefreshCw className="w-6 h-6 text-text-muted animate-spin" /> : <ImageIcon className="w-8 h-8 text-text-muted" />}
+                  <span className="text-xs text-text-muted">{t("master.equipInspectItem.imageUploadHint", "클릭하여 점검항목 사진 선택")}</span>
+                </button>
+              )}
+              {previewUrl && (
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={saving}
+                  className="mt-2 w-full text-xs text-primary hover:text-primary/80 flex items-center justify-center gap-1">
+                  <Upload className="w-3.5 h-3.5" />
+                  {t("master.equipInspectItem.imageChange", "사진 변경")}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageSelect(file);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+
+            <Input label={t("common.remark", "비고")} value={form.remark}
+              onChange={e => setField("remark", e.target.value)} fullWidth />
+          </div>
         </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSave} disabled={!formItemCode.trim() || !formItemName.trim()}>
-            {editing ? t("common.save") : t("common.register", "등록")}
-          </Button>
-        </div>
-      </Modal>
+      )}
 
       <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDeleteConfirm}
         title={t("common.delete")} message={t("common.confirmDelete")} />

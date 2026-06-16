@@ -50,6 +50,9 @@ export class EquipInspectItemMaster {
   @Column({ type: 'varchar2', name: 'WORKER_QR_CODE', length: 50, nullable: true })
   workerQrCode: string | null;
 
+  @Column({ type: 'varchar2', name: 'IMAGE_URL', length: 500, nullable: true })
+  imageUrl: string | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

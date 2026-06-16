@@ -15,4 +15,31 @@ describe('EquipInspectItemPoolController', () => {
 
     expect(service.findAll).toHaveBeenCalledWith(expect.anything(), 'C1', 'P1');
   });
+
+  it('uploadImage stores the uploaded image URL on the item master', async () => {
+    const service = {
+      updateImage: jest.fn().mockResolvedValue({
+        itemCode: 'EIP-001',
+        imageUrl: '/uploads/equip-inspect-items/equip-inspect-item-1.png',
+      }),
+    } as unknown as EquipInspectItemPoolService;
+    const controller = new EquipInspectItemPoolController(service);
+
+    const result = await (controller as any).uploadImage(
+      'EIP-001',
+      { filename: 'equip-inspect-item-1.png' },
+      {
+        headers: {},
+        user: { company: 'C1', plant: 'P1' },
+      },
+    );
+
+    expect(service.updateImage).toHaveBeenCalledWith(
+      'EIP-001',
+      '/uploads/equip-inspect-items/equip-inspect-item-1.png',
+      'C1',
+      'P1',
+    );
+    expect(result.data.imageUrl).toBe('/uploads/equip-inspect-items/equip-inspect-item-1.png');
+  });
 });

@@ -192,7 +192,7 @@ export type ProdResultStatusValue = typeof PROD_RESULT_STATUS_VALUES[number];
 
 // ===== 설비 유형 =====
 export const EQUIP_TYPE_VALUES = [
-  'AUTO_CRIMP', 'SINGLE_CUT', 'MULTI_CUT', 'TWIST', 'SOLDER',
+  'COMMON', 'AUTO_CRIMP', 'SINGLE_CUT', 'MULTI_CUT', 'TWIST', 'SOLDER',
   'HOUSING', 'TESTER', 'LABEL_PRINTER', 'INSPECTION', 'PACKING', 'OTHER',
 ] as const;
 export type EquipTypeValue = typeof EQUIP_TYPE_VALUES[number];

@@ -72,6 +72,7 @@ export class EquipInspectItemPoolService {
       lslValue: dto.lslValue ?? null,
       uslValue: dto.uslValue ?? null,
       workerQrCode: dto.workerQrCode ?? null,
+      imageUrl: dto.imageUrl ?? null,
       remark: dto.remark ?? null,
     });
     return this.repo.save(entity);
@@ -95,10 +96,17 @@ export class EquipInspectItemPoolService {
       ...(dto.lslValue !== undefined ? { lslValue: dto.lslValue } : {}),
       ...(dto.uslValue !== undefined ? { uslValue: dto.uslValue } : {}),
       ...(dto.workerQrCode !== undefined ? { workerQrCode: dto.workerQrCode } : {}),
+      ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
     };
     Object.assign(item, updateData);
     return this.repo.save(item);
+  }
+
+  async updateImage(itemCode: string, imageUrl: string | null, company: string, plant: string) {
+    await this.findByCode(company, plant, itemCode);
+    await this.repo.update({ company, plant, itemCode }, { imageUrl });
+    return this.findByCode(company, plant, itemCode);
   }
 
   async delete(company: string, plant: string, itemCode: string) {

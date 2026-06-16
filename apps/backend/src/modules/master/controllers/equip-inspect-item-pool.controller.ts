@@ -1,6 +1,24 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, Req } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { diskStorage } from 'multer';
 import { Request } from 'express';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
+import { extname, join } from 'path';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import {
   CreateEquipInspectItemPoolDto,
@@ -31,6 +49,61 @@ export class EquipInspectItemPoolController {
     const { company, plant } = this.tenant(req);
     const data = await this.service.create(dto, company, plant);
     return ResponseUtil.success(data, '설비점검항목 마스터가 생성되었습니다.');
+  }
+
+  @Post(':itemCode/image')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: (_req: Request, _file: Express.Multer.File, callback: (error: Error | null, destination: string) => void) => {
+          const uploadPath = './uploads/equip-inspect-items';
+          if (!existsSync(uploadPath)) {
+            mkdirSync(uploadPath, { recursive: true });
+          }
+          callback(null, uploadPath);
+        },
+        filename: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, `equip-inspect-item-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
+        if (!/^image\/(jpeg|png|gif|webp)$/.test(file.mimetype)) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @ApiOperation({ summary: '설비점검항목 사진 업로드' })
+  @ApiConsumes('multipart/form-data')
+  async uploadImage(
+    @Param('itemCode') itemCode: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: Request,
+  ) {
+    const { company, plant } = this.tenant(req);
+    const imageUrl = `/uploads/equip-inspect-items/${file.filename}`;
+    const data = await this.service.updateImage(itemCode, imageUrl, company, plant);
+    return ResponseUtil.success(data, '설비점검항목 사진이 업로드되었습니다.');
+  }
+
+  @Delete(':itemCode/image')
+  @ApiOperation({ summary: '설비점검항목 사진 삭제' })
+  async removeImage(@Param('itemCode') itemCode: string, @Req() req: Request) {
+    const { company, plant } = this.tenant(req);
+    const existing = await this.service.findByCode(company, plant, itemCode);
+    if (existing.imageUrl) {
+      const filePath = join('.', existing.imageUrl);
+      try {
+        if (existsSync(filePath)) unlinkSync(filePath);
+      } catch {
+        // 파일 삭제 실패는 DB 경로 해제를 막지 않는다.
+      }
+    }
+    const data = await this.service.updateImage(itemCode, null, company, plant);
+    return ResponseUtil.success(data, '설비점검항목 사진이 삭제되었습니다.');
   }
 
   @Put(':itemCode')

@@ -47,11 +47,39 @@ describe('EquipInspectItemPoolService', () => {
 
     await expect(target.create(dto, 'HANES', '1000')).resolves.toEqual(created);
     expect(mockRepo.create).toHaveBeenCalledWith({
-      ...dto,
       company: 'HANES',
       plant: '1000',
+      itemCode: 'EIP-001',
+      itemName: 'Air pressure check',
+      inspectType: 'DAILY',
+      equipType: null,
+      criteria: '0.5~0.7 MPa',
+      cycle: 'DAILY',
+      useYn: 'Y',
+      itemType: 'VISUAL',
+      unit: null,
+      lslValue: null,
+      uslValue: null,
+      workerQrCode: null,
+      imageUrl: null,
       remark: null,
     });
+  });
+
+  it('updates an inspection item image URL in the matched tenant', async () => {
+    const existing = { itemCode: 'EIP-001', imageUrl: null } as EquipInspectItemMaster;
+    const updated = { itemCode: 'EIP-001', imageUrl: '/uploads/equip-inspect-items/item.png' } as EquipInspectItemMaster;
+
+    mockRepo.findOne.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
+    mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+    const result = await target.updateImage('EIP-001', '/uploads/equip-inspect-items/item.png', 'HANES', '1000');
+
+    expect(mockRepo.update).toHaveBeenCalledWith(
+      { company: 'HANES', plant: '1000', itemCode: 'EIP-001' },
+      { imageUrl: '/uploads/equip-inspect-items/item.png' },
+    );
+    expect(result).toEqual(updated);
   });
 
   it('rejects duplicate pool item codes in the same tenant', async () => {

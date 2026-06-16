@@ -38,6 +38,7 @@ export interface ConsumablePart {
 
 /** 설비 유형 라벨 */
 export const equipTypeLabels: Record<EquipType, string> = {
+  COMMON: "공통",
   AUTO_CRIMP: "자동압착",
   SINGLE_CUT: "단선절단",
   MULTI_CUT: "다발절단",
