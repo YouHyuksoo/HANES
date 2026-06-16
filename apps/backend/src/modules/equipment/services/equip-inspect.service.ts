@@ -134,6 +134,7 @@ export class EquipInspectService {
         'log',
         'equip.equipCode AS equip_code',
         'equip.equipName AS equip_name',
+        'equip.equipType AS equip_type',
         'equip.lineCode AS equip_lineCode',
       ]);
 
@@ -190,6 +191,7 @@ export class EquipInspectService {
       const inspectType = log.log_INSPECT_TYPE;
       const inspectDate = log.log_INSPECT_DATE;
       const equipName = rawValue(log, 'equip_name', 'EQUIP_NAME') ?? null;
+      const equipType = rawValue(log, 'equip_type', 'EQUIP_TYPE') ?? null;
       const lineCode = rawValue(log, 'equip_lineCode', 'EQUIP_LINECODE', 'EQUIP_LINE_CODE') ?? null;
 
       return {
@@ -213,10 +215,12 @@ export class EquipInspectService {
         createdAt: log.log_CREATED_AT,
         updatedAt: log.log_UPDATED_AT,
         equipName,
+        equipType,
         lineCode,
         equip: {
           equipCode: rawValue(log, 'equip_code', 'EQUIP_CODE') ?? equipCode,
           equipName,
+          equipType,
           lineCode,
         },
       };

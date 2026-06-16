@@ -9,9 +9,9 @@
  * - 행 클릭 → 우측 InspectEntryPanel에 해당 설비 로드
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Info, Search } from "lucide-react";
+import { Info, Search, ChevronRight } from "lucide-react";
 
 export interface EquipTarget {
   equipCode: string;
@@ -28,6 +28,10 @@ interface EquipListPanelProps {
   selectedEquipCode: string | null;
   loading: boolean;
   onSelect: (code: string) => void;
+  title?: string;
+  searchPlaceholder?: string;
+  emptyText?: string;
+  sharedNotice?: string;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -47,10 +51,15 @@ export default function EquipListPanel({
   selectedEquipCode,
   loading,
   onSelect,
+  title,
+  searchPlaceholder,
+  emptyText,
+  sharedNotice,
 }: EquipListPanelProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -62,6 +71,37 @@ export default function EquipListPanel({
         (!statusFilter || e.status === statusFilter)
     );
   }, [equipTargets, search, statusFilter]);
+
+  const grouped = useMemo(() => {
+    const groups: Record<string, EquipTarget[]> = {};
+    for (const equip of filtered) {
+      const key = equip.equipType || "기타";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(equip);
+    }
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [filtered]);
+
+  useEffect(() => {
+    if (search) {
+      setExpandedGroups(new Set(grouped.map(([key]) => key)));
+    }
+  }, [search, grouped]);
+
+  useEffect(() => {
+    if (grouped.length > 0 && expandedGroups.size === 0 && !search) {
+      setExpandedGroups(new Set(grouped.map(([key]) => key)));
+    }
+  }, [grouped]);
+
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  };
 
   const stats = useMemo(
     () => ({
@@ -77,7 +117,7 @@ export default function EquipListPanel({
       {/* 헤더 */}
       <div className="p-3 border-b border-border">
         <div className="text-sm font-semibold">
-          {t("equipment.dailyInspect.todayTargets")}
+          {title ?? t("equipment.dailyInspect.todayTargets")}
         </div>
         <div className="text-xs text-text-muted mt-0.5">
           완료 {stats.done}/{stats.total}
@@ -94,7 +134,7 @@ export default function EquipListPanel({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("equipment.dailyInspect.searchPlaceholder")}
+            placeholder={searchPlaceholder ?? t("equipment.dailyInspect.searchPlaceholder")}
             className="w-full pl-7 pr-2 py-1.5 text-xs border border-border rounded-lg bg-background focus:outline-none focus:border-primary"
           />
         </div>
@@ -116,53 +156,60 @@ export default function EquipListPanel({
           <div className="py-8 text-center text-text-muted text-xs">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
           <div className="py-8 text-center text-text-muted text-xs">
-            {t("equipment.dailyInspect.noEquipFound")}
+            {emptyText ?? t("equipment.dailyInspect.noEquipFound")}
           </div>
         ) : (
-          <table className="w-full text-xs">
-            <thead className="sticky top-0 bg-surface border-b border-border">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium text-text-muted">설비</th>
-                <th className="px-2 py-2 text-center font-medium text-text-muted w-20">점검자</th>
-                <th className="px-2 py-2 text-center font-medium text-text-muted w-24">상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((e) => (
-                <tr
-                  key={e.equipCode}
-                  onClick={() => onSelect(e.equipCode)}
-                  className={`border-b border-border cursor-pointer transition-colors hover:bg-surface ${
-                    selectedEquipCode === e.equipCode
-                      ? "bg-primary/10 dark:bg-primary/20"
-                      : ""
-                  }`}
+          <div className="py-1 space-y-0.5">
+            {grouped.map(([groupKey, equipList]) => (
+              <div key={groupKey}>
+                <button
+                  onClick={() => toggleGroup(groupKey)}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-1 text-xs font-semibold text-text hover:bg-surface transition-colors"
                 >
-                  <td className="px-3 py-2">
-                    <div className="font-semibold">{e.equipCode}</div>
-                    <div className="text-text-muted mt-0.5">{e.equipName}</div>
-                  </td>
-                  <td className="px-2 py-2 text-center text-text-muted">
-                    {e.inspectorName || "-"}
-                  </td>
-                  <td className="px-2 py-2 text-center">
-                    <span
-                      className={`inline-block px-1.5 py-0.5 rounded font-medium ${STATUS_BADGE[e.status]}`}
-                    >
-                      {STATUS_LABEL[e.status]}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  <div className="flex items-center gap-1.5">
+                    <ChevronRight className={`w-3.5 h-3.5 transition-transform ${expandedGroups.has(groupKey) ? "rotate-90" : ""}`} />
+                    <span>{groupKey}</span>
+                  </div>
+                  <span className="text-text-muted bg-background px-1.5 py-0.5 rounded-full">{equipList.length}</span>
+                </button>
+                {expandedGroups.has(groupKey) && (
+                  <div>
+                    {equipList.map((e) => (
+                      <div
+                        key={e.equipCode}
+                        onClick={() => onSelect(e.equipCode)}
+                        className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors hover:bg-surface ${
+                          selectedEquipCode === e.equipCode
+                            ? "bg-primary/10 dark:bg-primary/20"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold">{e.equipCode}</div>
+                          <div className="text-[11px] text-text-muted truncate">{e.equipName}</div>
+                        </div>
+                        <div className="text-[11px] text-text-muted w-16 text-center shrink-0">
+                          {e.inspectorName || "-"}
+                        </div>
+                        <span
+                          className={`inline-block px-1.5 py-0.5 rounded font-medium text-[11px] w-16 text-center shrink-0 ${STATUS_BADGE[e.status]}`}
+                        >
+                          {STATUS_LABEL[e.status]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
       {/* 하단 안내 */}
       <div className="border-t border-border bg-violet-50 dark:bg-violet-950/30 px-3 py-2 text-xs text-violet-800 dark:text-violet-300 flex items-start gap-1.5">
         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-        <span>{t("equipment.dailyInspect.sharedNotice")}</span>
+        <span>{sharedNotice ?? t("equipment.dailyInspect.sharedNotice")}</span>
       </div>
     </div>
   );

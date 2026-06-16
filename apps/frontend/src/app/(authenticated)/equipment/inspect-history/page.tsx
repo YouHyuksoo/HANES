@@ -25,6 +25,7 @@ interface InspectHistory {
   id: string;
   equipCode: string;
   equipName: string;
+  equipType: string;
   inspectType: string;
   inspectDate: string;
   inspectorName: string;
@@ -108,6 +109,11 @@ export default function InspectHistoryPage() {
     {
       accessorKey: "equipName", header: t("equipment.inspectHistory.equipName"), size: 140,
       meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "equipType", header: t("equipment.inspectHistory.equipType", "설비유형"), size: 80,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <ComCodeBadge groupCode="EQUIP_TYPE" code={getValue() as string} />,
     },
     {
       accessorKey: "inspectorName", header: t("equipment.inspectHistory.inspector"), size: 90,

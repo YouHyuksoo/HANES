@@ -21,3 +21,8 @@ test('worker inspection save is keyed by selected job order', () => {
   assert.match(source, /orderNo:\s*selectedJobOrder\.orderNo/);
   assert.doesNotMatch(source, /inspectDate:\s*new Date\(\)\.toISOString\(\)\.split/);
 });
+
+test('worker inspection save buttons require selected job order', () => {
+  assert.match(source, /!selectedJobOrder\?\.orderNo/);
+  assert.match(source, /toast\.error\(t\('kiosk\.prep\.selectJobOrderFirst'/);
+});

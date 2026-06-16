@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Param,
   Post,
   Put,
@@ -32,6 +33,8 @@ import { getRequestUser } from '../../../common/utils/request-user.util';
 @ApiTags('기준정보 - 설비점검항목 마스터')
 @Controller('master/equip-inspect-item-masters')
 export class EquipInspectItemPoolController {
+  private readonly logger = new Logger(EquipInspectItemPoolController.name);
+
   constructor(private readonly service: EquipInspectItemPoolService) {}
 
   @Get()
@@ -98,8 +101,11 @@ export class EquipInspectItemPoolController {
       const filePath = join('.', existing.imageUrl);
       try {
         if (existsSync(filePath)) unlinkSync(filePath);
-      } catch {
-        // 파일 삭제 실패는 DB 경로 해제를 막지 않는다.
+      } catch (error: unknown) {
+        // 파일 삭제 실패는 DB 경로 해제를 막지 않는다 — 단, 고아 파일 추적을 위해 경고 로깅.
+        this.logger.warn(
+          `설비점검항목 이미지 파일 삭제 실패 (itemCode=${itemCode}, path=${filePath}): ${error instanceof Error ? error.message : '오류'}`,
+        );
       }
     }
     const data = await this.service.updateImage(itemCode, null, company, plant);

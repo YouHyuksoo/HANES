@@ -169,7 +169,11 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
         : '';
 
   const doSave = useCallback(async (startWork: boolean) => {
-    if (!selectedEquip || !selectedJobOrder?.orderNo || !allAnswered) return;
+    if (!selectedEquip || !allAnswered) return;
+    if (!selectedJobOrder?.orderNo) {
+      toast.error(t('kiosk.prep.selectJobOrderFirst', '작업지시를 먼저 선택하세요.'));
+      return;
+    }
     setSaving(true);
     try {
       const details = items.map(i => ({
@@ -201,65 +205,105 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   }, [selectedEquip, selectedJobOrder?.orderNo, allAnswered, items, results, ngReasons, selectedWorkers, anyNg, setInterlock, onDone, t]);
 
   return (
-    <Modal isOpen={isOpen} onClose={saving ? () => {} : onClose} title={t('kiosk.prep.workerInspectTitle')} size="full">
+    <Modal isOpen={isOpen} onClose={saving ? () => {} : onClose} title={t('kiosk.prep.workerInspectTitle')} size="2xl">
       <div className="space-y-3">
-        {/* 다크 헤더 카드 */}
-        <div className="p-3 bg-slate-800 dark:bg-slate-900 text-white rounded-lg text-sm space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-slate-300 shrink-0" />
-            <span className="font-semibold">{selectedEquip?.equipName}</span>
-            <span className="text-slate-400 text-xs font-mono">({selectedEquip?.equipCode})</span>
+        {/* 상단 정보 행: 설비/작업자 · QR 스캔 · 진행 현황 (한 행) */}
+        <div className="flex items-stretch gap-3">
+          {/* 설비 + 작업지시 + 작업자 (다크) */}
+          <div className="flex-1 min-w-0 p-3 bg-slate-800 dark:bg-slate-900 text-white rounded-lg text-sm flex flex-col justify-center gap-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <Wrench className="w-4 h-4 text-slate-300 shrink-0" />
+              <span className="font-semibold truncate">{selectedEquip?.equipName}</span>
+              <span className="text-slate-400 text-xs font-mono shrink-0">({selectedEquip?.equipCode})</span>
+            </div>
+            {selectedJobOrder && (
+              <div className="flex items-center gap-2 pl-6 text-xs text-slate-300 min-w-0">
+                <span className="font-mono text-blue-300 shrink-0">{selectedJobOrder.orderNo}</span>
+                <span className="text-slate-500 shrink-0">·</span>
+                <span className="truncate">{selectedJobOrder.itemName ?? ''}</span>
+              </div>
+            )}
+            {selectedWorkers.length > 0 && (
+              <div className="flex items-center gap-1.5 pl-6 flex-wrap">
+                {selectedWorkers.map(w => (
+                  <span key={w.id} className="inline-flex items-center gap-1 bg-blue-700/40 text-blue-200 text-xs px-2 py-0.5 rounded-full">
+                    <User className="w-3 h-3" />{w.workerName}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-          {selectedJobOrder && (
-            <div className="flex items-center gap-2 pl-6 text-xs text-slate-300">
-              <span className="font-mono text-blue-300">{selectedJobOrder.orderNo}</span>
-              <span className="text-slate-500">·</span>
-              <span>{selectedJobOrder.itemName ?? ''}</span>
+
+          {/* QR 스캐너 */}
+          {items.length > 0 && (
+            <div className="w-56 shrink-0 p-2.5 border border-blue-400 dark:border-blue-700 rounded-lg flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-1">
+                <QrCode className="w-4 h-4 text-blue-500 shrink-0" />
+                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{t('kiosk.prep.workerQrScanner')}</span>
+              </div>
+              <input
+                ref={qrRef}
+                type="text"
+                value={qrInput}
+                onChange={e => setQrInput(e.target.value)}
+                onKeyDown={handleQrKeyDown}
+                placeholder={t('kiosk.prep.workerQrPlaceholder')}
+                className="w-full text-sm bg-transparent focus:outline-none border-b border-blue-200 dark:border-blue-700 pb-0.5"
+              />
             </div>
           )}
-          {selectedWorkers.length > 0 && (
-            <div className="flex items-center gap-1.5 pl-6">
-              {selectedWorkers.map(w => (
-                <span key={w.id} className="inline-flex items-center gap-1 bg-blue-700/40 text-blue-200 text-xs px-2 py-0.5 rounded-full">
-                  <User className="w-3 h-3" />{w.workerName}
-                </span>
-              ))}
+
+          {/* 진행 현황 */}
+          {items.length > 0 && (
+            <div className="w-48 shrink-0 p-2.5 border border-border rounded-lg flex flex-col justify-center gap-1.5">
+              <p className="text-[11px] font-medium text-text-muted">{t('kiosk.prep.workerInspectProgress', { ok: okCount, ng: ngCount, pending: pendingCount })}</p>
+              <div className="flex h-2 rounded-full overflow-hidden bg-border">
+                {okCount > 0 && (
+                  <div className="bg-green-500 transition-all" style={{ width: `${(okCount / total) * 100}%` }} />
+                )}
+                {ngCount > 0 && (
+                  <div className="bg-red-500 transition-all" style={{ width: `${(ngCount / total) * 100}%` }} />
+                )}
+              </div>
+              <div className="flex justify-between text-[11px]">
+                <span className="text-green-600 dark:text-green-400 font-medium">OK {okCount}</span>
+                <span className="text-red-600 dark:text-red-400 font-medium">NG {ngCount}</span>
+                <span className="text-text-muted">미완료 {pendingCount}</span>
+              </div>
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-[1fr_220px] gap-3">
-          {/* 좌측: 항목 목록 */}
-          <div className="space-y-1.5">
-            {loading ? (
-              <div className="py-6 text-center text-text-muted text-sm">{t('common.loading')}</div>
-            ) : loadError ? (
-              <div className="py-6 text-center text-red-600 dark:text-red-400 text-sm">{t('kiosk.prep.loadItemsError')}</div>
-            ) : (
-              <div className="max-h-[42vh] overflow-y-auto space-y-1.5">
-                {items.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-border bg-surface/50 p-4 text-sm text-text">
-                    <p className="font-semibold text-text">
-                      {t('kiosk.prep.noWorkerInspectItemsTitle', '설비별로 배정된 작업자설비점검 항목이 없습니다.')}
-                    </p>
-                    <div className="mt-3 space-y-2 text-xs leading-5 text-text-muted">
-                      <p>
-                        {t('kiosk.prep.noWorkerInspectItemsCurrent', {
-                          defaultValue: '현재 선택 설비 {{equipName}}({{equipCode}})에 WORKER 점검항목이 연결되어 있지 않습니다.',
-                          equipName: selectedEquip?.equipName ?? '',
-                          equipCode: selectedEquip?.equipCode ?? '',
-                        })}
-                      </p>
-                      <ol className="list-decimal space-y-1 pl-4 text-left">
-                        <li>{t('kiosk.prep.workerInspectAssignStep1', '좌측 메뉴에서 기준정보 > 설비점검항목(/master/equip-inspect) 화면으로 이동합니다.')}</li>
-                        <li>{t('kiosk.prep.workerInspectAssignStep2', '왼쪽 설비 목록에서 이 키오스크 설비를 선택합니다.')}</li>
-                        <li>{t('kiosk.prep.workerInspectAssignStep3', '점검유형을 작업자점검 또는 작업자설비점검(WORKER)으로 선택합니다.')}</li>
-                        <li>{t('kiosk.prep.workerInspectAssignStep4', '점검항목 추가 버튼을 눌러 필요한 항목을 선택하고 저장합니다.')}</li>
-                        <li>{t('kiosk.prep.workerInspectAssignStep5', '이 모달을 닫았다가 다시 열면 배정된 항목이 표시됩니다.')}</li>
-                      </ol>
-                    </div>
-                  </div>
-                ) : items.map(item => {
+        {/* 항목 목록 (전체 폭) */}
+        {loading ? (
+          <div className="py-6 text-center text-text-muted text-sm">{t('common.loading')}</div>
+        ) : loadError ? (
+          <div className="py-6 text-center text-red-600 dark:text-red-400 text-sm">{t('kiosk.prep.loadItemsError')}</div>
+        ) : (
+          <div className="max-h-[48vh] overflow-y-auto space-y-1.5">
+            {items.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border bg-surface/50 p-4 text-sm text-text">
+                <p className="font-semibold text-text">
+                  {t('kiosk.prep.noWorkerInspectItemsTitle', '설비별로 배정된 작업자설비점검 항목이 없습니다.')}
+                </p>
+                <div className="mt-3 space-y-2 text-xs leading-5 text-text-muted">
+                  <p>
+                    {t('kiosk.prep.noWorkerInspectItemsCurrent', {
+                      defaultValue: '현재 선택 설비 {{equipName}}({{equipCode}})에 WORKER 점검항목이 연결되어 있지 않습니다.',
+                      equipName: selectedEquip?.equipName ?? '',
+                      equipCode: selectedEquip?.equipCode ?? '',
+                    })}
+                  </p>
+                  <ol className="list-decimal space-y-1 pl-4 text-left">
+                    <li>{t('kiosk.prep.workerInspectAssignStep1', '좌측 메뉴에서 기준정보 > 설비점검항목(/master/equip-inspect) 화면으로 이동합니다.')}</li>
+                    <li>{t('kiosk.prep.workerInspectAssignStep2', '왼쪽 설비 목록에서 이 키오스크 설비를 선택합니다.')}</li>
+                    <li>{t('kiosk.prep.workerInspectAssignStep3', '점검유형을 작업자점검 또는 작업자설비점검(WORKER)으로 선택합니다.')}</li>
+                    <li>{t('kiosk.prep.workerInspectAssignStep4', '점검항목 추가 버튼을 눌러 필요한 항목을 선택하고 저장합니다.')}</li>
+                    <li>{t('kiosk.prep.workerInspectAssignStep5', '이 모달을 닫았다가 다시 열면 배정된 항목이 표시됩니다.')}</li>
+                  </ol>
+                </div>
+              </div>
+            ) : items.map(item => {
                   const r = results[item.seq];
                   const isActive = activeSeq === item.seq;
                   const isNg = r === 'NG';
@@ -335,79 +379,34 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                     </div>
                   );
                 })}
-              </div>
-            )}
           </div>
+        )}
 
-          {/* 우측 패널 */}
-          <div className="flex flex-col gap-3">
-            {/* QR 스캐너 */}
-            {items.length > 0 && (
-              <div className="p-2.5 border border-blue-400 dark:border-blue-700 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <QrCode className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{t('kiosk.prep.workerQrScanner')}</span>
-                </div>
-                <input
-                  ref={qrRef}
-                  type="text"
-                  value={qrInput}
-                  onChange={e => setQrInput(e.target.value)}
-                  onKeyDown={handleQrKeyDown}
-                  placeholder={t('kiosk.prep.workerQrPlaceholder')}
-                  className="w-full text-sm bg-transparent focus:outline-none border-b border-blue-200 dark:border-blue-700 pb-0.5"
-                />
-              </div>
-            )}
-
-            {/* 진행 현황 */}
-            {items.length > 0 && (
-              <div className="p-2.5 border border-border rounded-lg space-y-2">
-                <p className="text-xs font-medium text-text-muted">{t('kiosk.prep.workerInspectProgress', { ok: okCount, ng: ngCount, pending: pendingCount })}</p>
-                {/* 색상 분할 진행바 */}
-                <div className="flex h-2 rounded-full overflow-hidden bg-border">
-                  {okCount > 0 && (
-                    <div className="bg-green-500 transition-all" style={{ width: `${(okCount / total) * 100}%` }} />
-                  )}
-                  {ngCount > 0 && (
-                    <div className="bg-red-500 transition-all" style={{ width: `${(ngCount / total) * 100}%` }} />
-                  )}
-                </div>
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-green-600 dark:text-green-400 font-medium">OK {okCount}</span>
-                  <span className="text-red-600 dark:text-red-400 font-medium">NG {ngCount}</span>
-                  <span className="text-text-muted">미완료 {pendingCount}</span>
-                </div>
-              </div>
-            )}
-
-            {/* 종합 판정 */}
-            {allAnswered && (
-              <div className={`p-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 ${
-                anyNg
-                  ? 'animate-pulse border-red-500 text-red-700 dark:text-red-300'
-                  : 'border-green-500 text-green-700 dark:text-green-300'
-              }`}>
-                {anyNg ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                {anyNg ? t('kiosk.prep.failWarning') : t('kiosk.selfInspect.overallPass')}
-              </div>
-            )}
+        {/* 종합 판정 (전체 폭) */}
+        {allAnswered && (
+          <div className={`p-2.5 rounded-lg border text-sm font-medium flex items-center justify-center gap-1.5 ${
+            anyNg
+              ? 'animate-pulse border-red-500 text-red-700 dark:text-red-300'
+              : 'border-green-500 text-green-700 dark:text-green-300'
+          }`}>
+            {anyNg ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+            {anyNg ? t('kiosk.prep.failWarning') : t('kiosk.selfInspect.overallPass')}
           </div>
-        </div>
+        )}
 
         <div className="flex justify-end gap-2 pt-2 border-t border-border">
           <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
           <Button
             variant="secondary"
             onClick={() => doSave(false)}
-            disabled={!allAnswered || saving}
+            disabled={!allAnswered || !selectedJobOrder?.orderNo || saving}
             title={saveDisabledReason || t('kiosk.prep.saveInspect')}
           >
             {saving ? t('common.saving') : t('kiosk.prep.saveInspect')}
           </Button>
           <Button
             onClick={() => doSave(true)}
-            disabled={!allAnswered || anyNg || saving}
+            disabled={!allAnswered || !selectedJobOrder?.orderNo || anyNg || saving}
             title={startDisabledReason || t('kiosk.prep.startWork')}
           >
             <Play className="w-4 h-4 mr-1" />

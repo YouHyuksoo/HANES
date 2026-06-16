@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { CheckCircle2, XCircle, Save, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, Save, AlertTriangle, Wrench } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
@@ -219,7 +219,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
     anyFail, setInterlock, onDone, t]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.dailyInspectTitle')} size="full">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.dailyInspectTitle')} size="2xl">
       {alreadyDone ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 border border-green-500 rounded-lg text-green-700 dark:text-green-300">
@@ -312,57 +312,67 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
         </div>
       ) : (
         <div className="space-y-3">
-          {/* 상단: 설비정보 / 점검자 */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            {/* 왼쪽: 설비 정보 */}
-            <div className="border border-border rounded-lg p-3 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-text-muted">{t('kiosk.prep.equipCode')}</span>
-                <span className="font-mono font-semibold">{selectedEquip?.equipCode}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-text-muted">{t('kiosk.prep.equipName')}</span>
-                <span className="font-semibold truncate max-w-[140px]">{selectedEquip?.equipName}</span>
+          {/* 상단 정보 행: 설비(다크) · 점검자 · 진행 현황 (한 행) */}
+          <div className="flex items-stretch gap-3">
+            {/* 설비 정보 (다크) */}
+            <div className="flex-1 min-w-0 p-3 bg-slate-800 dark:bg-slate-900 text-white rounded-lg text-sm flex flex-col justify-center gap-1.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <Wrench className="w-4 h-4 text-slate-300 shrink-0" />
+                <span className="font-semibold truncate">{selectedEquip?.equipName}</span>
+                <span className="text-slate-400 text-xs font-mono shrink-0">({selectedEquip?.equipCode})</span>
               </div>
               {selectedEquip?.processName && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-text-muted">{t('kiosk.prep.process')}</span>
+                <div className="flex items-center gap-2 pl-6 text-xs text-slate-300">
                   <span>{selectedEquip.processName}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-text-muted">{t('kiosk.prep.inspectDate')}</span>
-                <span className="font-mono">{inspectTime.split(' ')[0] || '-'}</span>
+              <div className="flex items-center gap-2 pl-6 text-xs text-slate-400">
+                <span>{t('kiosk.prep.inspectDate')}</span>
+                <span className="font-mono text-slate-200">{inspectTime.split(' ')[0] || '-'}</span>
               </div>
             </div>
 
-            {/* 오른쪽: 점검자 (필수 — 핑크 강조) */}
-            <div className="border border-rose-400 rounded-lg p-3 space-y-2">
+            {/* 점검자 (필수 — 핑크 강조) */}
+            <div className="w-60 shrink-0 p-2.5 border border-rose-400 rounded-lg flex flex-col justify-center gap-1.5">
               <div className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 {t('kiosk.prep.inspectorRequired')}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-text-muted shrink-0">{t('kiosk.prep.inspector')}</span>
-                <select
-                  value={inspectorName}
-                  onChange={e => setInspectorName(e.target.value)}
-                  className="flex-1 text-sm border border-border rounded px-2 py-1 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-rose-400"
-                >
-                  <option value="">{t('kiosk.prep.inspectorPlaceholder')}</option>
-                  {inspectors.map(w => (
-                    <option key={w.workerCode} value={w.workerName}>{w.workerName}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-between items-center text-xs text-text-muted">
+              <select
+                value={inspectorName}
+                onChange={e => setInspectorName(e.target.value)}
+                className="w-full text-sm border border-border rounded px-2 py-1 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              >
+                <option value="">{t('kiosk.prep.inspectorPlaceholder')}</option>
+                {inspectors.map(w => (
+                  <option key={w.workerCode} value={w.workerName}>{w.workerName}</option>
+                ))}
+              </select>
+              <div className="flex justify-between items-center text-[11px] text-text-muted">
                 <span>{t('kiosk.prep.inspectTime')}</span>
                 <span className="font-mono">{inspectTime}</span>
               </div>
-              <p className="text-[10px] text-text-muted">
-                ※ {t('kiosk.prep.inspectorHint')}
-              </p>
             </div>
+
+            {/* 진행 현황 */}
+            {items.length > 0 && (
+              <div className="w-48 shrink-0 p-2.5 border border-border rounded-lg flex flex-col justify-center gap-1.5">
+                <p className="text-[11px] font-medium text-text-muted">{answeredCount} / {items.length} 항목</p>
+                <div className="flex h-2 rounded-full overflow-hidden bg-border">
+                  {okCount > 0 && (
+                    <div className="bg-green-500 transition-all" style={{ width: `${(okCount / items.length) * 100}%` }} />
+                  )}
+                  {ngCount > 0 && (
+                    <div className="bg-red-500 transition-all" style={{ width: `${(ngCount / items.length) * 100}%` }} />
+                  )}
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-green-600 dark:text-green-400 font-medium">OK {okCount}</span>
+                  <span className="text-red-600 dark:text-red-400 font-medium">NG {ngCount}</span>
+                  <span className="text-text-muted">미완료 {items.length - answeredCount}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {items.length === 0 ? (
@@ -401,45 +411,18 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
             </div>
           ) : (
             <>
-              {/* 종합 판정 배너 — 항상 표시 */}
-              <div className={`flex items-center justify-between p-3 rounded-lg border text-sm font-medium transition-colors ${
-                allAnswered && anyFail
-                  ? 'animate-pulse border-red-500 text-red-700 dark:text-red-300'
-                  : allAnswered
-                  ? 'border-green-500 text-green-700 dark:text-green-300'
-                  : 'bg-surface border-border text-text-muted'
-              }`}>
-                <div>
-                  <div className="text-xs font-bold opacity-70">{t('kiosk.prep.overallResult')}</div>
-                  <div className="text-xs mt-0.5">
-                    {allAnswered
-                      ? anyFail
-                        ? `${items.length}개 항목 중 ${ngCount}건 NG 발생`
-                        : `전 ${items.length}개 항목 합격`
-                      : `${answeredCount} / ${items.length} 항목 점검 중`}
-                  </div>
-                </div>
-                <div className="text-base font-bold flex items-center gap-1">
-                  {allAnswered
-                    ? anyFail
-                      ? <><XCircle className="w-5 h-5" /> 불합격 (NG)</>
-                      : <><CheckCircle2 className="w-5 h-5" /> 합격 (OK)</>
-                    : '—'}
-                </div>
-              </div>
-
-              {/* 점검 테이블 */}
-              <div className="overflow-x-auto max-h-[44vh] overflow-y-auto rounded-lg border border-border">
+              {/* 점검 테이블 (전체 폭) */}
+              <div className="overflow-x-auto max-h-[48vh] overflow-y-auto rounded-lg border border-border">
                 <table className="w-full text-sm border-collapse">
                   <thead className="sticky top-0 bg-surface z-10">
                     <tr className="border-b border-border">
-                      <th className="w-12 px-3 py-2 text-center text-xs text-text-muted font-medium">No</th>
-                      <th className="w-16 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.image', '사진')}</th>
-                      <th className="w-56 px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
-                      <th className="w-24 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.judgeMethod')}</th>
-                      <th className="w-80 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
-                      <th className="w-44 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.measureOrJudge')}</th>
-                      <th className="w-20 px-3 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.result')}</th>
+                      <th className="w-10 px-2 py-2 text-center text-xs text-text-muted font-medium">No</th>
+                      <th className="w-14 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.image', '사진')}</th>
+                      <th className="w-44 px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.itemName')}</th>
+                      <th className="w-20 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.judgeMethod')}</th>
+                      <th className="w-40 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.standard')}</th>
+                      <th className="w-32 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.measureOrJudge')}</th>
+                      <th className="w-16 px-2 py-2 text-center text-xs text-text-muted font-medium">{t('kiosk.prep.result')}</th>
                       <th className="px-3 py-2 text-left text-xs text-text-muted font-medium">{t('kiosk.prep.remark')}</th>
                     </tr>
                   </thead>
@@ -523,47 +506,42 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                 </table>
               </div>
 
-              {/* 푸터 */}
-              <div className="space-y-1 pt-2 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="px-2 py-0.5 rounded font-semibold border border-green-500 text-green-700 dark:text-green-400">
-                      OK {okCount}
-                    </span>
-                    <span className="px-2 py-0.5 rounded font-semibold border border-red-500 text-red-700 dark:text-red-400">
-                      NG {ngCount}
-                    </span>
-                    {allAnswered && (
-                      <span className="text-text-muted">
-                        → 종합판정 <strong className={anyFail ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
-                          {anyFail ? 'NG' : 'OK'}
-                        </strong>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-                    <Button
-                      onClick={handleSave}
-                      disabled={!allAnswered || !inspectorName || saving}
-                      title={saveDisabledReason || t('kiosk.prep.saveInspect')}
-                      className={allAnswered && anyFail ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : ''}
-                    >
-                      <Save className="w-4 h-4 mr-1" />
-                      {saving
-                        ? t('common.saving')
-                        : allAnswered && anyFail
-                        ? t('kiosk.prep.saveInspectNg')
-                        : t('kiosk.prep.saveInspectOk')}
-                    </Button>
-                  </div>
+              {/* 종합 판정 (전체 폭) */}
+              {allAnswered && (
+                <div className={`p-2.5 rounded-lg border text-sm font-medium flex items-center justify-center gap-1.5 ${
+                  anyFail
+                    ? 'animate-pulse border-red-500 text-red-700 dark:text-red-300'
+                    : 'border-green-500 text-green-700 dark:text-green-300'
+                }`}>
+                  {anyFail ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                  {anyFail
+                    ? `${items.length}개 항목 중 ${ngCount}건 NG`
+                    : `전 ${items.length}개 항목 합격`}
                 </div>
-                {saveDisabledReason && (
-                  <p className="text-[11px] text-text-muted" title={saveDisabledReason}>
-                    {saveDisabledReason}
-                  </p>
-                )}
+              )}
+
+              {/* 푸터 */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={!allAnswered || !inspectorName || saving}
+                  title={saveDisabledReason || t('kiosk.prep.saveInspect')}
+                  className={allAnswered && anyFail ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : ''}
+                >
+                  <Save className="w-4 h-4 mr-1" />
+                  {saving
+                    ? t('common.saving')
+                    : allAnswered && anyFail
+                    ? t('kiosk.prep.saveInspectNg')
+                    : t('kiosk.prep.saveInspectOk')}
+                </Button>
               </div>
+              {saveDisabledReason && (
+                <p className="text-[11px] text-text-muted mt-1" title={saveDisabledReason}>
+                  {saveDisabledReason}
+                </p>
+              )}
             </>
           )}
         </div>

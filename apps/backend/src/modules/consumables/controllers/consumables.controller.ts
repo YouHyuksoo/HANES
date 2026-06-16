@@ -28,6 +28,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Logger,
   UploadedFile,
   UseInterceptors,
   UseGuards,
@@ -63,6 +64,8 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 @ApiTags('소모품관리')
 @Controller('consumables')
 export class ConsumablesController {
+  private readonly logger = new Logger(ConsumablesController.name);
+
   constructor(private readonly consumablesService: ConsumablesService) {}
 
   // ===== 소모품 마스터 =====
@@ -222,7 +225,14 @@ export class ConsumablesController {
     const existing = await this.consumablesService.findById(id, company, plant);
     if (existing.imageUrl) {
       const filePath = join('.', existing.imageUrl);
-      try { if (existsSync(filePath)) unlinkSync(filePath); } catch { /* ignore */ }
+      try {
+        if (existsSync(filePath)) unlinkSync(filePath);
+      } catch (error: unknown) {
+        // 파일 삭제 실패는 DB 경로 해제를 막지 않는다 — 단, 고아 파일 추적을 위해 경고 로깅.
+        this.logger.warn(
+          `소모품 이미지 파일 삭제 실패 (id=${id}, path=${filePath}): ${error instanceof Error ? error.message : '오류'}`,
+        );
+      }
     }
     const data = await this.consumablesService.updateImage(id, null, company, plant);
     return ResponseUtil.success(data, '이미지가 삭제되었습니다.');

@@ -581,7 +581,13 @@ export class InterfaceService {
       }
 
       let processed = 0;
+      let failed = 0;
       for (const log of pendingLogs) {
+        const logPk = {
+          transDate: log.transDate,
+          seq: log.seq,
+          ...this.tenantWhere(log.company, log.plant),
+        };
         try {
           if (log.payload) {
             const payload = JSON.parse(log.payload);
@@ -589,12 +595,25 @@ export class InterfaceService {
               await this.syncBom(payload.items, log.company ?? company, log.plant ?? plant);
             }
           }
+          // 처리 완료 로그는 SUCCESS 로 전이한다.
+          // (전이하지 않으면 PENDING 으로 남아 다음 스케줄마다 동일 BOM 을 중복 재처리한다.)
+          await this.interLogRepository.update(logPk, { status: 'SUCCESS', recvAt: new Date() });
           processed++;
         } catch (error: unknown) {
-          this.logger.warn(
-            `BOM 동기화 재처리 실패 (seq=${log.seq}): ${error instanceof Error ? error.message : '오류'}`,
-          );
+          // 실패 로그는 FAIL 로 전이한다.
+          // (PENDING 으로 두면 무한 재시도(poison-pill)되어 큐를 막고, 실패가 성공으로 오인된다.)
+          // errorMsg 를 보존해 운영자가 retryLog 로 재시도/원인 추적할 수 있게 한다.
+          failed++;
+          const errorMsg = error instanceof Error ? error.message : '알 수 없는 오류';
+          await this.interLogRepository.update(logPk, { status: 'FAIL', errorMsg });
+          this.logger.warn(`BOM 동기화 재처리 실패 (seq=${log.seq}): ${errorMsg}`);
         }
+      }
+
+      if (failed > 0) {
+        this.logger.error(
+          `BOM 동기화 스케줄 완료 — 성공 ${processed}건, 실패 ${failed}건 (FAIL 전이됨, 재시도 필요)`,
+        );
       }
 
       return { affectedRows: processed };

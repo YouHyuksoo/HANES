@@ -27,6 +27,7 @@ export default function EquipAssignTab() {
   const [itemLoading, setItemLoading] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"DAILY" | "PERIODIC" | "PM" | "WORKER">("DAILY");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const INSPECT_TABS = useMemo(() => [
     { key: "DAILY" as const,    label: t("master.equipInspect.typeDaily") },
@@ -79,12 +80,48 @@ export default function EquipAssignTab() {
     fetchItems();
   }, [fetchItems]);
 
-  /* ── 설비별 항목 수 (간단 카운트) ── */
-  const filteredEquips = equips.filter(e => {
-    if (!searchText) return true;
-    const s = searchText.toLowerCase();
-    return e.equipCode.toLowerCase().includes(s) || e.equipName.toLowerCase().includes(s);
-  });
+  /* ── 설비유형별 그룹화 ── */
+  const groupedEquips = useMemo(() => {
+    const filtered = searchText
+      ? equips.filter(e => {
+          const s = searchText.toLowerCase();
+          return e.equipCode.toLowerCase().includes(s) || e.equipName.toLowerCase().includes(s);
+        })
+      : equips;
+
+    const groups: Record<string, EquipSummary[]> = {};
+    for (const equip of filtered) {
+      const key = equip.equipType || "기타";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(equip);
+    }
+
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [equips, searchText]);
+
+  /* ── 검색 시 모든 그룹 확장 ── */
+  useEffect(() => {
+    if (searchText) {
+      setExpandedGroups(new Set(groupedEquips.map(([key]) => key)));
+    }
+  }, [searchText, groupedEquips]);
+
+  /* ── 그룹 토글 ── */
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  };
+
+  /* ── 초기 전체 확장 ── */
+  useEffect(() => {
+    if (groupedEquips.length > 0 && expandedGroups.size === 0 && !searchText) {
+      setExpandedGroups(new Set(groupedEquips.map(([key]) => key)));
+    }
+  }, [groupedEquips]);
 
   const filteredItems = useMemo(
     () => items.filter(item => item.inspectType === activeTab),
@@ -114,35 +151,53 @@ export default function EquipAssignTab() {
               fullWidth
               className="mb-3 shrink-0"
             />
-            <div className="space-y-0.5 flex-1 overflow-y-auto min-h-0">
-              {filteredEquips.map(equip => (
-                <button
-                  key={equip.equipCode}
-                  onClick={() => setSelectedEquip(equip)}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    selectedEquip?.equipCode === equip.equipCode ? "bg-primary text-white" : "hover:bg-surface text-text"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Wrench className="w-4 h-4 shrink-0" />
-                    <span className="font-medium shrink-0">{equip.equipCode}</span>
-                    <span className={`text-xs truncate ${selectedEquip?.equipCode === equip.equipCode ? "text-white/70" : "text-text-muted"}`}>
-                      {equip.equipName}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {equip.equipType && (
-                      <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] rounded ${
-                        selectedEquip?.equipCode === equip.equipCode ? "bg-white/20 text-white" : EQUIP_TYPE_COLORS[equip.equipType] || "bg-surface text-text-muted"
-                      }`}>
-                        {equip.equipType}
-                      </span>
-                    )}
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </button>
+            <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
+              {groupedEquips.map(([groupKey, equipList]) => (
+                <div key={groupKey}>
+                  <button
+                    onClick={() => toggleGroup(groupKey)}
+                    className="w-full flex items-center justify-between gap-2 px-2 py-1 rounded-lg text-sm font-semibold text-text hover:bg-surface transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className={`w-4 h-4 transition-transform ${expandedGroups.has(groupKey) ? "rotate-90" : ""}`} />
+                      <span>{groupKey}</span>
+                    </div>
+                    <span className="text-xs text-text-muted bg-surface px-1.5 py-0.5 rounded-full">{equipList.length}</span>
+                  </button>
+                  {expandedGroups.has(groupKey) && (
+                    <div className="ml-3 space-y-0.5 border-l border-border pl-3 mt-0.5">
+                      {equipList.map(equip => (
+                        <button
+                          key={equip.equipCode}
+                          onClick={() => setSelectedEquip(equip)}
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                            selectedEquip?.equipCode === equip.equipCode ? "bg-primary text-white" : "hover:bg-surface text-text"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Wrench className="w-4 h-4 shrink-0" />
+                            <span className="font-medium shrink-0">{equip.equipCode}</span>
+                            <span className={`text-xs truncate ${selectedEquip?.equipCode === equip.equipCode ? "text-white/70" : "text-text-muted"}`}>
+                              {equip.equipName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {equip.equipType && (
+                              <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] rounded ${
+                                selectedEquip?.equipCode === equip.equipCode ? "bg-white/20 text-white" : EQUIP_TYPE_COLORS[equip.equipType] || "bg-surface text-text-muted"
+                              }`}>
+                                {equip.equipType}
+                              </span>
+                            )}
+                            <ChevronRight className="w-4 h-4" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
-              {filteredEquips.length === 0 && (
+              {groupedEquips.length === 0 && (
                 <div className="py-8 text-center text-sm text-text-muted">{t("common.noData", "데이터 없음")}</div>
               )}
             </div>

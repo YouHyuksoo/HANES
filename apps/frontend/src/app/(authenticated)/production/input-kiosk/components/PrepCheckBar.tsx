@@ -86,6 +86,8 @@ export default function PrepCheckBar({
     : '';
   const workerReason = !interlock.dailyInspectDone
     ? t('kiosk.header.dailyInspectRequired', '설비일일점검을 먼저 완료하세요.')
+    : !hasJobOrder
+      ? t('kiosk.header.selectJobOrderFirst', '작업지시를 먼저 선택하세요.')
     : selectedWorkers.length === 0
       ? t('kiosk.header.workerRequiredForInspect', '작업자를 1명 이상 추가하세요.')
       : '';
@@ -139,7 +141,7 @@ export default function PrepCheckBar({
         step={2}
         label={t('kiosk.prep.workerInspect')}
         done={interlock.workerInspectDone}
-        disabled={!interlock.dailyInspectDone || selectedWorkers.length === 0}
+        disabled={!interlock.dailyInspectDone || !hasJobOrder || selectedWorkers.length === 0}
         disabledReason={workerReason}
         onClick={onOpenWorkerInspect}
       />

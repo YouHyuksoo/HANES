@@ -17,10 +17,19 @@ import toast from "react-hot-toast";
 import { ClipboardEdit, AlertTriangle } from "lucide-react";
 import api from "@/services/api";
 import { InspectItemImage } from "@/components/shared";
-import type { Worker } from "../page";
+
+type InspectType = "DAILY" | "PERIODIC";
+
+export interface Worker {
+  workerCode: string;
+  workerName: string;
+  dept: string;
+}
 
 interface InspectItem {
-  seq: number;
+  itemCode?: string;
+  seq?: number;
+  sortSeq?: number;
   itemName: string;
   itemType: string;
   criteria: string | null;
@@ -43,6 +52,32 @@ interface InspectEntryPanelProps {
   inspectDate: string;
   workers: Worker[];
   onSaved: () => void;
+  inspectType?: InspectType;
+  apiBasePath?: string;
+  labels?: Partial<InspectEntryLabels>;
+  existingInspected?: boolean;
+}
+
+interface InspectEntryLabels {
+  selectEquip: string;
+  inspectEntry: string;
+  inspectDate: string;
+  inspectorRequired: string;
+  startTime: string;
+  noItems: string;
+  savedOk: string;
+  savedNg: string;
+  saveError: string;
+  fillAllItems: string;
+  saveButtonPass: string;
+  saveButtonNg: string;
+  overallTitle: string;
+  overallFailDescription: (total: number, ngCount: number) => string;
+  overallPassDescription: (total: number) => string;
+  failLabel: string;
+  passLabel: string;
+  badRemarkPlaceholder: string;
+  pendingLabel: string;
 }
 
 function judgeItem(item: InspectItem, raw: string): "OK" | "NG" | null {
@@ -63,6 +98,14 @@ function criteriaText(item: InspectItem): string {
   return item.criteria ?? "정상";
 }
 
+function itemKey(item: InspectItem, index: number): string {
+  return item.itemCode ?? `${item.sortSeq ?? item.seq ?? index}-${item.itemName}`;
+}
+
+function itemSeq(item: InspectItem, index: number): number {
+  return item.seq ?? item.sortSeq ?? index + 1;
+}
+
 export default function InspectEntryPanel({
   equipCode,
   equipName,
@@ -70,10 +113,36 @@ export default function InspectEntryPanel({
   inspectDate,
   workers,
   onSaved,
+  inspectType = "DAILY",
+  apiBasePath = "/equipment/daily-inspect",
+  labels: labelsProp,
+  existingInspected,
 }: InspectEntryPanelProps) {
   const { t } = useTranslation();
+  const labels = useMemo<InspectEntryLabels>(() => ({
+    selectEquip: t("equipment.dailyInspect.selectEquip"),
+    inspectEntry: t("equipment.dailyInspect.inspectEntry"),
+    inspectDate: t("equipment.dailyInspect.inspectDate"),
+    inspectorRequired: t("equipment.dailyInspect.inspectorRequired"),
+    startTime: t("equipment.dailyInspect.startTime"),
+    noItems: t("equipment.dailyInspect.noItems"),
+    savedOk: t("equipment.dailyInspect.savedOk"),
+    savedNg: t("equipment.dailyInspect.savedNg"),
+    saveError: t("equipment.dailyInspect.saveError"),
+    fillAllItems: "점검 항목을 모두 입력하세요.",
+    saveButtonPass: "저장 (PASS)",
+    saveButtonNg: "저장 (NG)",
+    overallTitle: "종합 판정",
+    overallFailDescription: (total, ngCount) => `${total}항목 중 ${ngCount}건 NG`,
+    overallPassDescription: (total) => `전 ${total}항목 OK`,
+    failLabel: "불합격 (NG)",
+    passLabel: "합격 (PASS)",
+    badRemarkPlaceholder: "불량 내용 입력...",
+    pendingLabel: "대기",
+    ...labelsProp,
+  }), [labelsProp, t]);
   const [items, setItems] = useState<InspectItem[]>([]);
-  const [results, setResults] = useState<Record<number, ItemResult>>({});
+  const [results, setResults] = useState<Record<string, ItemResult>>({});
   const [inspectorName, setInspectorName] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -98,28 +167,36 @@ export default function InspectEntryPanel({
 
     Promise.all([
       api.get("/master/equip-inspect-items", {
-        params: { equipCode, inspectType: "DAILY", useYn: "Y", limit: 100 },
+        params: { equipCode, inspectType, useYn: "Y", limit: 100 },
         signal: ctrl.signal,
       }),
-      api
-        .get("/equipment/daily-inspect/check", {
-          params: { equipCode, inspectDate },
-          signal: ctrl.signal,
-        })
-        .then((r) =>
-          r.data?.data?.alreadyInspected
-            ? api.get(`/equipment/daily-inspect/${equipCode}/${inspectDate}`, {
-                signal: ctrl.signal,
-              })
-            : null
-        )
-        .catch(() => null),
+      inspectType === "DAILY"
+        ? api
+            .get(`${apiBasePath}/check`, {
+              params: { equipCode, inspectDate },
+              signal: ctrl.signal,
+            })
+            .then((r) =>
+              r.data?.data?.alreadyInspected
+                ? api.get(`${apiBasePath}/${equipCode}/${inspectDate}`, {
+                    signal: ctrl.signal,
+                  })
+                : null
+            )
+            .catch(() => null)
+        : existingInspected
+          ? api
+              .get(`${apiBasePath}/${equipCode}/${inspectDate}`, { signal: ctrl.signal })
+              .catch(() => null)
+          : Promise.resolve(null),
     ])
       .then(([itemsRes, logRes]) => {
         const data: InspectItem[] = itemsRes.data?.data ?? [];
         setItems(data);
-        const init: Record<number, ItemResult> = {};
-        for (const item of data) init[item.seq] = { value: "", result: null, remark: "" };
+        const init: Record<string, ItemResult> = {};
+        data.forEach((item, index) => {
+          init[itemKey(item, index)] = { value: "", result: null, remark: "" };
+        });
 
         const logData = logRes?.data?.data;
         if (logData) {
@@ -129,10 +206,26 @@ export default function InspectEntryPanel({
                 ? JSON.parse(logData.details)
                 : logData.details;
             for (const d of parsed?.items ?? []) {
-              if (init[d.seq]) init[d.seq] = { value: d.value ?? "", result: d.result ?? null, remark: d.remark ?? "" };
+              const matchedIndex = data.findIndex((item, index) =>
+                (d.itemCode && item.itemCode === d.itemCode) ||
+                itemSeq(item, index) === d.seq ||
+                item.itemName === d.itemName
+              );
+              if (matchedIndex >= 0) {
+                const key = itemKey(data[matchedIndex], matchedIndex);
+                init[key] = {
+                  value: d.value ?? "",
+                  result: d.result ?? null,
+                  remark: d.remark ?? "",
+                };
+              }
             }
             if (logData.inspectorName) setInspectorName(logData.inspectorName);
-          } catch { /* ignore parse error */ }
+          } catch (error: unknown) {
+            // 저장된 점검 details 파싱 실패 — 폼은 빈 값으로 진행하되,
+            // 양식 갱신 등으로 포맷이 깨졌을 때 원인을 추적할 수 있도록 로깅한다.
+            console.warn("[InspectEntryPanel] 저장된 점검 details 파싱 실패", error);
+          }
         }
         setResults(init);
       })
@@ -142,10 +235,10 @@ export default function InspectEntryPanel({
       .finally(() => setLoading(false));
 
     return () => ctrl.abort();
-  }, [equipCode, inspectDate]);
+  }, [apiBasePath, equipCode, existingInspected, inspectDate, inspectType]);
 
-  const updateResult = useCallback((seq: number, patch: Partial<ItemResult>) => {
-    setResults((prev) => ({ ...prev, [seq]: { ...prev[seq], ...patch } }));
+  const updateResult = useCallback((key: string, patch: Partial<ItemResult>) => {
+    setResults((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   }, []);
 
   const okCount = useMemo(
@@ -157,14 +250,14 @@ export default function InspectEntryPanel({
     [results]
   );
   const allFilled =
-    items.length > 0 && items.every((item) => results[item.seq]?.result !== null);
+    items.length > 0 && items.every((item, index) => results[itemKey(item, index)]?.result !== null);
   const isNgOverall = ngCount > 0;
   const saveDisabledReason = loading
     ? t("common.loading")
     : allFilled && !inspectorName
-      ? t("equipment.dailyInspect.inspectorRequired")
+      ? labels.inspectorRequired
       : !allFilled
-        ? "점검 항목을 모두 입력하세요."
+        ? labels.fillAllItems
         : "";
 
   const handleSave = useCallback(async () => {
@@ -172,13 +265,14 @@ export default function InspectEntryPanel({
     setSaving(true);
     try {
       const details = {
-        items: items.map((item) => ({
-          seq: item.seq,
+        items: items.map((item, index) => ({
+          itemCode: item.itemCode ?? null,
+          seq: itemSeq(item, index),
           itemName: item.itemName,
           itemType: item.itemType,
-          value: results[item.seq]?.value || null,
-          result: results[item.seq]?.result,
-          remark: results[item.seq]?.remark || null,
+          value: results[itemKey(item, index)]?.value || null,
+          result: results[itemKey(item, index)]?.result,
+          remark: results[itemKey(item, index)]?.remark || null,
         })),
       };
       const payload = {
@@ -187,36 +281,40 @@ export default function InspectEntryPanel({
         inspectorName,
         overallResult: isNgOverall ? "FAIL" : "PASS",
         details,
-        inspectType: "DAILY",
+        inspectType,
       };
-      const alreadyExists = await api
-        .get("/equipment/daily-inspect/check", { params: { equipCode, inspectDate } })
-        .then((r) => r.data?.data?.alreadyInspected)
-        .catch(() => false);
+      const alreadyExists =
+        inspectType === "DAILY"
+          ? await api
+              .get(`${apiBasePath}/check`, { params: { equipCode, inspectDate } })
+              .then((r) => r.data?.data?.alreadyInspected)
+              .catch(() => false)
+          : existingInspected
+            ? await api
+                .get(`${apiBasePath}/${equipCode}/${inspectDate}`)
+                .then(() => true)
+                .catch(() => false)
+            : false;
 
       if (alreadyExists) {
-        await api.put(`/equipment/daily-inspect/${equipCode}/${inspectDate}`, payload);
+        await api.put(`${apiBasePath}/${equipCode}/${inspectDate}`, payload);
       } else {
-        await api.post("/equipment/daily-inspect", payload);
+        await api.post(apiBasePath, payload);
       }
-      toast.success(
-        isNgOverall
-          ? t("equipment.dailyInspect.savedNg")
-          : t("equipment.dailyInspect.savedOk")
-      );
+      toast.success(isNgOverall ? labels.savedNg : labels.savedOk);
       onSaved();
     } catch {
-      toast.error(t("equipment.dailyInspect.saveError"));
+      toast.error(labels.saveError);
     } finally {
       setSaving(false);
     }
-  }, [equipCode, inspectorName, allFilled, items, results, isNgOverall, inspectDate, onSaved, t]);
+  }, [apiBasePath, equipCode, existingInspected, inspectorName, allFilled, inspectType, items, results, isNgOverall, inspectDate, labels, onSaved]);
 
   if (!equipCode) {
     return (
       <div className="bg-surface border border-border rounded-xl flex flex-col items-center justify-center gap-3 text-text-muted shadow-sm">
         <ClipboardEdit className="w-12 h-12 opacity-20" />
-        <p className="text-sm">{t("equipment.dailyInspect.selectEquip")}</p>
+        <p className="text-sm">{labels.selectEquip}</p>
       </div>
     );
   }
@@ -228,7 +326,7 @@ export default function InspectEntryPanel({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm font-semibold">
-              📝 {t("equipment.dailyInspect.inspectEntry")} — {equipCode} {equipName}
+              {labels.inspectEntry} - {equipCode} {equipName}
             </div>
             <div className="text-xs text-text-muted mt-0.5">{itemCount}항목</div>
           </div>
@@ -242,11 +340,7 @@ export default function InspectEntryPanel({
                 : "bg-primary hover:bg-primary/90 text-white"
             }`}
           >
-            {saving
-              ? t("common.saving")
-              : isNgOverall
-              ? "💾 저장 (NG · 정비요청 등록)"
-              : "💾 저장 (PASS)"}
+            {saving ? t("common.saving") : isNgOverall ? labels.saveButtonNg : labels.saveButtonPass}
           </button>
           {saveDisabledReason ? (
             <p className="text-[11px] text-text-muted mt-2" title={saveDisabledReason}>
@@ -259,13 +353,13 @@ export default function InspectEntryPanel({
         <div className="mt-2.5 grid grid-cols-3 gap-3 text-xs">
           <div>
             <div className="text-text-muted mb-1">
-              {t("equipment.dailyInspect.inspectDate")}
+              {labels.inspectDate}
             </div>
             <div className="font-mono font-medium">{inspectDate}</div>
           </div>
           <div>
             <div className="font-bold mb-1 text-primary">
-              {t("equipment.dailyInspect.inspectorRequired")}
+              {labels.inspectorRequired}
             </div>
             <select
               value={inspectorName}
@@ -282,7 +376,7 @@ export default function InspectEntryPanel({
           </div>
           <div>
             <div className="text-text-muted mb-1">
-              {t("equipment.dailyInspect.startTime")}
+              {labels.startTime}
             </div>
             <div className="font-mono font-medium">{startTime}</div>
           </div>
@@ -300,11 +394,11 @@ export default function InspectEntryPanel({
             }`}
           >
             <div>
-              <div className="text-xs font-bold opacity-80">종합 판정</div>
+              <div className="text-xs font-bold opacity-80">{labels.overallTitle}</div>
               <div className="text-xs mt-0.5">
                 {isNgOverall
-                  ? `${items.length}항목 중 ${ngCount}건 NG — 저장 시 정비요청(WO) 자동 등록`
-                  : `전 ${items.length}항목 OK`}
+                  ? labels.overallFailDescription(items.length, ngCount)
+                  : labels.overallPassDescription(items.length)}
               </div>
             </div>
             <div
@@ -312,7 +406,7 @@ export default function InspectEntryPanel({
                 isNgOverall ? "bg-red-600 text-white" : "bg-teal-500 text-white"
               }`}
             >
-              {isNgOverall ? "✕ 불합격 (NG)" : "✓ 합격 (PASS)"}
+              {isNgOverall ? labels.failLabel : labels.passLabel}
             </div>
           </div>
         </div>
@@ -325,7 +419,7 @@ export default function InspectEntryPanel({
         ) : items.length === 0 ? (
           <div className="py-8 flex flex-col items-center gap-2 text-text-muted">
             <AlertTriangle className="w-10 h-10 opacity-30" />
-            <p className="text-sm">{t("equipment.dailyInspect.noItems")}</p>
+            <p className="text-sm">{labels.noItems}</p>
           </div>
         ) : (
           <table className="w-full text-xs border border-border rounded-lg overflow-hidden border-collapse">
@@ -343,11 +437,12 @@ export default function InspectEntryPanel({
             </thead>
             <tbody>
               {items.map((item, idx) => {
-                const r = results[item.seq];
+                const key = itemKey(item, idx);
+                const r = results[key];
                 const isRowNg = r?.result === "NG";
                 return (
                   <tr
-                    key={item.seq}
+                    key={key}
                     className={`border-b border-border ${
                       isRowNg ? "bg-red-50 dark:bg-red-950/20" : ""
                     }`}
@@ -379,7 +474,7 @@ export default function InspectEntryPanel({
                           value={r?.value ?? ""}
                           onChange={(e) => {
                             const v = e.target.value;
-                            updateResult(item.seq, {
+                            updateResult(key, {
                               value: v,
                               result: v ? judgeItem(item, v) : null,
                             });
@@ -395,7 +490,7 @@ export default function InspectEntryPanel({
                           value={r?.result ?? ""}
                           onChange={(e) => {
                             const v = e.target.value;
-                            updateResult(item.seq, {
+                            updateResult(key, {
                               result: v === "OK" || v === "NG" ? v : null,
                             });
                           }}
@@ -430,8 +525,8 @@ export default function InspectEntryPanel({
                       <input
                         type="text"
                         value={r?.remark ?? ""}
-                        onChange={(e) => updateResult(item.seq, { remark: e.target.value })}
-                        placeholder={isRowNg ? "불량 내용 입력..." : ""}
+                        onChange={(e) => updateResult(key, { remark: e.target.value })}
+                        placeholder={isRowNg ? labels.badRemarkPlaceholder : ""}
                         className="w-full px-2 py-1 border border-border rounded bg-white dark:bg-slate-800 focus:outline-none"
                       />
                     </td>
@@ -463,7 +558,7 @@ export default function InspectEntryPanel({
                   : ""
               }
             >
-              {isNgOverall ? "NG" : allFilled ? "PASS" : "대기"}
+              {isNgOverall ? "NG" : allFilled ? "PASS" : labels.pendingLabel}
             </strong>
           </span>
         </div>

@@ -11,6 +11,7 @@
  */
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
@@ -25,6 +26,8 @@ import {
 
 @Injectable()
 export class VendorBarcodeMappingService {
+  private readonly logger = new Logger(VendorBarcodeMappingService.name);
+
   constructor(
     @InjectRepository(VendorBarcodeMapping)
     private readonly repo: Repository<VendorBarcodeMapping>,
@@ -189,8 +192,12 @@ export class VendorBarcodeMappingService {
         if (re.test(barcode)) {
           return { matched: true, mapping: m, matchMethod: 'REGEX' };
         }
-      } catch {
-        // 잘못된 정규식 무시
+      } catch (error: unknown) {
+        // 잘못된 정규식 패턴은 무시하고 다음 매핑으로 진행하되,
+        // 어떤 패턴이 잘못 등록됐는지 추적 가능하도록 경고 로깅한다.
+        this.logger.warn(
+          `잘못된 REGEX 매핑 패턴을 무시했습니다 (pattern=${m.vendorBarcode}): ${error instanceof Error ? error.message : '오류'}`,
+        );
       }
     }
 

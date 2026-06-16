@@ -2,257 +2,229 @@
 
 /**
  * @file src/app/(authenticated)/equipment/periodic-inspect/page.tsx
- * @description 설비 정기점검 페이지 - 주기적으로 수행하는 설비 점검 결과 CRUD
+ * @description 설비 정기점검 실행 화면 - 일일점검과 동일한 대상 설비 목록 + 항목별 입력 흐름
  *
  * 초보자 가이드:
- * 1. **정기점검**: 주간/월간/분기 등 주기적으로 수행하는 심층 점검
- * 2. **결과**: PASS(합격), FAIL(불합격), CONDITIONAL(조건부)
- * 3. API: GET/POST/PUT/DELETE /equipment/periodic-inspect (inspectType=PERIODIC)
+ * - 좌측: PERIODIC 점검항목이 배정된 설비 목록과 해당일 처리 상태
+ * - 우측: 선택 설비의 PERIODIC 점검항목별 측정값/판정 입력
+ * - API: /equipment/periodic-inspect, 항목: /master/equip-inspect-items?inspectType=PERIODIC
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
-import {
-  CalendarCheck, Plus, Search, RefreshCw, Edit2, Trash2,
-} from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
-import ComCodeSelect from "@/components/shared/ComCodeSelect";
-import DataGrid from "@/components/data-grid/DataGrid";
+import { CalendarCheck, RefreshCw } from "lucide-react";
 import api from "@/services/api";
+import EquipListPanel, { type EquipTarget } from "../daily-inspect/components/EquipListPanel";
+import InspectEntryPanel, { type Worker } from "../daily-inspect/components/InspectEntryPanel";
 
-interface PeriodicInspect {
-  id: string;
+interface EquipInspectItemAssignment {
   equipCode: string;
-  equipName: string;
-  inspectDate: string;
-  inspectorName: string;
-  overallResult: string;
-  remark: string;
 }
 
-const resultColors: Record<string, string> = {
-  PASS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  FAIL: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-  CONDITIONAL: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-};
+interface InspectLog {
+  equipCode: string;
+  overallResult: string;
+  inspectorName: string;
+}
+
+interface EquipMaster {
+  equipCode: string;
+  equipName: string;
+  equipType?: string;
+}
 
 export default function PeriodicInspectPage() {
   const { t } = useTranslation();
+  const today = new Date().toISOString().split("T")[0];
 
-  const [data, setData] = useState<PeriodicInspect[]>([]);
+  const [inspectDate, setInspectDate] = useState(today);
+  const [equipTargets, setEquipTargets] = useState<EquipTarget[]>([]);
+  const [selectedEquipCode, setSelectedEquipCode] = useState<string | null>(null);
+  const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [resultFilter, setResultFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<PeriodicInspect | null>(null);
-  const [form, setForm] = useState({
-    equipCode: "", inspectDate: "", inspectorName: "", overallResult: "PASS", remark: "",
-  });
-  const [deleteTarget, setDeleteTarget] = useState<PeriodicInspect | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const labels = useMemo(() => ({
+    selectEquip: t("equipment.periodicInspect.selectEquip", {
+      defaultValue: "왼쪽 목록에서 정기점검할 설비를 선택하세요",
+    }),
+    inspectEntry: t("equipment.periodicInspect.inspectEntry", {
+      defaultValue: "정기점검 입력",
+    }),
+    inspectDate: t("equipment.periodicInspect.inspectDate"),
+    inspectorRequired: t("equipment.periodicInspect.inspectorRequired", {
+      defaultValue: "점검자 (필수)",
+    }),
+    startTime: t("equipment.periodicInspect.startTime", { defaultValue: "시작 시각" }),
+    noItems: t("equipment.periodicInspect.noItems", {
+      defaultValue: "등록된 정기점검 항목이 없습니다",
+    }),
+    savedOk: t("equipment.periodicInspect.savedOk", {
+      defaultValue: "정기점검이 저장되었습니다 (PASS)",
+    }),
+    savedNg: t("equipment.periodicInspect.savedNg", {
+      defaultValue: "정기점검이 저장되었습니다 (NG)",
+    }),
+    saveError: t("equipment.periodicInspect.saveError", {
+      defaultValue: "정기점검 저장에 실패했습니다",
+    }),
+    fillAllItems: t("equipment.periodicInspect.fillAllItems", {
+      defaultValue: "정기점검 항목을 모두 입력하세요.",
+    }),
+    saveButtonPass: t("equipment.periodicInspect.saveButtonPass", {
+      defaultValue: "저장 (PASS)",
+    }),
+    saveButtonNg: t("equipment.periodicInspect.saveButtonNg", {
+      defaultValue: "저장 (NG)",
+    }),
+    overallTitle: t("equipment.periodicInspect.overallTitle", { defaultValue: "종합 판정" }),
+    overallFailDescription: (total: number, ngCount: number) =>
+      t("equipment.periodicInspect.overallFailDescription", {
+        defaultValue: `${total}항목 중 ${ngCount}건 NG`,
+        total,
+        ngCount,
+      }),
+    overallPassDescription: (total: number) =>
+      t("equipment.periodicInspect.overallPassDescription", {
+        defaultValue: `전 ${total}항목 OK`,
+        total,
+      }),
+    failLabel: t("equipment.periodicInspect.failLabel", { defaultValue: "불합격 (NG)" }),
+    passLabel: t("equipment.periodicInspect.passLabel", { defaultValue: "합격 (PASS)" }),
+    badRemarkPlaceholder: t("equipment.periodicInspect.badRemarkPlaceholder", {
+      defaultValue: "불량 내용 입력...",
+    }),
+    pendingLabel: t("equipment.periodicInspect.pendingLabel", { defaultValue: "대기" }),
+  }), [t]);
+
+  const fetchTargets = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
-      if (searchText) params.search = searchText;
-      if (resultFilter) params.overallResult = resultFilter;
-      if (dateFilter) params.inspectDateFrom = dateFilter;
-      const res = await api.get("/equipment/periodic-inspect", { params });
-      setData(res.data?.data ?? []);
+      const [itemsRes, logsRes, equipsRes] = await Promise.all([
+        api.get("/master/equip-inspect-items", {
+          params: { inspectType: "PERIODIC", useYn: "Y", limit: 500 },
+        }),
+        api.get("/equipment/periodic-inspect", {
+          params: { inspectDateFrom: inspectDate, inspectDateTo: inspectDate, limit: 500 },
+        }),
+        api.get("/equipment/equips", { params: { limit: 500 } }),
+      ]);
+
+      const items: EquipInspectItemAssignment[] = itemsRes.data?.data ?? [];
+      const logs: InspectLog[] = logsRes.data?.data ?? [];
+      const equips: EquipMaster[] = equipsRes.data?.data ?? [];
+
+      const equipCodesSet = new Set(items.map((item) => item.equipCode).filter(Boolean));
+      const equipMap = new Map(equips.map((equip) => [equip.equipCode, equip]));
+      const logsMap = new Map(logs.map((log) => [log.equipCode, log]));
+      const countMap = new Map<string, number>();
+      for (const item of items) {
+        if (!item.equipCode) continue;
+        countMap.set(item.equipCode, (countMap.get(item.equipCode) ?? 0) + 1);
+      }
+
+      const targets: EquipTarget[] = Array.from(equipCodesSet).map((code) => {
+        const log = logsMap.get(code);
+        const equip = equipMap.get(code);
+        return {
+          equipCode: code,
+          equipName: equip?.equipName ?? code,
+          equipType: equip?.equipType ?? "",
+          itemCount: countMap.get(code) ?? 0,
+          inspectorName: log?.inspectorName ?? "",
+          overallResult: log?.overallResult ?? null,
+          status: log
+            ? log.overallResult === "FAIL"
+              ? "done-ng"
+              : "done-ok"
+            : "none",
+        };
+      });
+
+      setEquipTargets(targets.sort((a, b) => a.equipCode.localeCompare(b.equipCode)));
     } catch {
-      setData([]);
+      setEquipTargets([]);
     } finally {
       setLoading(false);
     }
-  }, [searchText, resultFilter, dateFilter]);
+  }, [inspectDate]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchTargets();
+  }, [fetchTargets]);
 
-  const resultOptions = useMemo(() => [
-    { value: "PASS", label: t("equipment.periodicInspect.resultPass") },
-    { value: "FAIL", label: t("equipment.periodicInspect.resultFail") },
-    { value: "CONDITIONAL", label: t("equipment.periodicInspect.resultConditional") },
-  ], [t]);
-
-  const openCreate = useCallback(() => {
-    setEditingItem(null);
-    setForm({ equipCode: "", inspectDate: new Date().toISOString().split("T")[0], inspectorName: "", overallResult: "PASS", remark: "" });
-    setIsModalOpen(true);
+  useEffect(() => {
+    const ctrl = new AbortController();
+    api
+      .get("/master/workers", { params: { limit: 200, useYn: "Y" }, signal: ctrl.signal })
+      .then((res) => setWorkers(res.data?.data ?? []))
+      .catch(() => {});
+    return () => ctrl.abort();
   }, []);
 
-  const openEdit = useCallback((item: PeriodicInspect) => {
-    setEditingItem(item);
-    setForm({ equipCode: item.equipCode, inspectDate: item.inspectDate, inspectorName: item.inspectorName, overallResult: item.overallResult, remark: item.remark });
-    setIsModalOpen(true);
-  }, []);
+  const handleDateChange = (date: string) => {
+    setInspectDate(date);
+    setSelectedEquipCode(null);
+  };
 
-  const handleSave = useCallback(async () => {
-    if (!form.equipCode || !form.inspectDate) return;
-    setSaving(true);
-    try {
-      if (editingItem) {
-        await api.put(`/equipment/periodic-inspect/${editingItem.equipCode}/${editingItem.inspectDate}`, form);
-      } else {
-        await api.post("/equipment/periodic-inspect", { ...form, inspectType: "PERIODIC" });
-      }
-      setIsModalOpen(false);
-      fetchData();
-    } catch (e) {
-      console.error("Save failed:", e);
-    } finally {
-      setSaving(false);
-    }
-  }, [editingItem, form, fetchData]);
-  const saveDisabledReason = saving
-    ? t("common.saving")
-    : !form.equipCode
-      ? t("equipment.periodicInspect.equipCode")
-      : !form.inspectDate
-        ? t("equipment.periodicInspect.inspectDate")
-        : "";
-
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!deleteTarget) return;
-    try {
-      await api.delete(`/equipment/periodic-inspect/${deleteTarget.equipCode}/${deleteTarget.inspectDate}`);
-      fetchData();
-    } catch (e) {
-      console.error("Delete failed:", e);
-    } finally {
-      setDeleteTarget(null);
-    }
-  }, [deleteTarget, fetchData]);
-
-  const columns = useMemo<ColumnDef<PeriodicInspect>[]>(() => [
-    {
-      id: "actions", header: "", size: 80,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
-    },
-    { accessorKey: "inspectDate", header: t("equipment.periodicInspect.inspectDate"), size: 110, meta: { filterType: "date" as const } },
-    {
-      accessorKey: "equipCode", header: t("equipment.periodicInspect.equipCode"), size: 110,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "equipName", header: t("equipment.periodicInspect.equipName"), size: 140,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "inspectorName", header: t("equipment.periodicInspect.inspector"), size: 90,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "overallResult", header: t("equipment.periodicInspect.result"), size: 90,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const r = getValue() as string;
-        const label = r === "PASS" ? t("equipment.periodicInspect.resultPass")
-          : r === "FAIL" ? t("equipment.periodicInspect.resultFail")
-          : t("equipment.periodicInspect.resultConditional");
-        return <span className={`px-2 py-0.5 text-xs rounded font-medium ${resultColors[r] || ""}`}>{label}</span>;
-      },
-    },
-    {
-      accessorKey: "remark", header: t("common.remark"), size: 180,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string) || "-",
-    },
-  ], [t, openEdit]);
+  const selectedTarget = equipTargets.find((equip) => equip.equipCode === selectedEquipCode);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      <div className="flex justify-between items-center flex-shrink-0">
+    <div className="h-full flex flex-col overflow-hidden p-4 gap-3 animate-fade-in">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <CalendarCheck className="w-7 h-7 text-primary" />{t("equipment.periodicInspect.title")}
+            <CalendarCheck className="w-6 h-6 text-primary" />
+            {t("equipment.periodicInspect.title")}
           </h1>
-          <p className="text-text-muted mt-1">{t("equipment.periodicInspect.subtitle")}</p>
+          <p className="text-text-muted text-sm mt-0.5">
+            {t("equipment.periodicInspect.subtitle")}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" />{t("common.register")}
-          </Button>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={inspectDate}
+            onChange={(event) => handleDateChange(event.target.value)}
+            className="px-3 py-1.5 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:border-primary"
+          />
+          <button
+            onClick={fetchTargets}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg bg-surface hover:bg-surface/80 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            {t("common.refresh")}
+          </button>
         </div>
       </div>
 
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
-          enableExport exportFileName={t("equipment.periodicInspect.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("equipment.periodicInspect.searchPlaceholder")}
-                  value={searchText} onChange={e => setSearchText(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <ComCodeSelect groupCode="QUALITY_JUDGMENT" labelPrefix={t("common.result", "결과")}
-                  value={resultFilter} onChange={setResultFilter} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} fullWidth />
-              </div>
-            </div>
-          } 
-          sqlQuery={`SELECT *\nFROM PERIODIC_INSPECTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
-
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
-        title={editingItem ? t("equipment.periodicInspect.editTitle") : t("equipment.periodicInspect.addTitle")} size="lg">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t("equipment.periodicInspect.equipCode")} placeholder="CUT-001"
-              value={form.equipCode} onChange={e => setForm(p => ({ ...p, equipCode: e.target.value }))} fullWidth />
-            <Input label={t("equipment.periodicInspect.inspectDate")} type="date"
-              value={form.inspectDate} onChange={e => setForm(p => ({ ...p, inspectDate: e.target.value }))} fullWidth />
-            <Input label={t("equipment.periodicInspect.inspector")} placeholder={t("equipment.periodicInspect.inspectorPlaceholder")}
-              value={form.inspectorName} onChange={e => setForm(p => ({ ...p, inspectorName: e.target.value }))} fullWidth />
-            <Select label={t("equipment.periodicInspect.overallResult")} options={resultOptions.slice(1)}
-              value={form.overallResult} onChange={v => setForm(p => ({ ...p, overallResult: v }))} fullWidth />
-          </div>
-          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
-            value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving || !form.equipCode || !form.inspectDate}
-              title={saveDisabledReason || (editingItem ? t("common.edit") : t("common.register"))}
-            >
-              {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
-            </Button>
-          </div>
-          {saveDisabledReason && (
-            <p className="text-xs text-text-muted mt-1" title={saveDisabledReason}>
-              {saveDisabledReason}
-            </p>
-          )}
-        </div>
-      </Modal>
-      <ConfirmModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
-        variant="danger"
-        message={`'${deleteTarget?.equipName || ""}'을(를) 삭제하시겠습니까?`}
-      />
+      <div className="flex-1 grid gap-3 min-h-0" style={{ gridTemplateColumns: "5fr 7fr" }}>
+        <EquipListPanel
+          equipTargets={equipTargets}
+          selectedEquipCode={selectedEquipCode}
+          loading={loading}
+          onSelect={setSelectedEquipCode}
+          title={t("equipment.periodicInspect.targets", { defaultValue: "정기점검 대상" })}
+          searchPlaceholder={t("equipment.periodicInspect.searchPlaceholder")}
+          emptyText={t("equipment.periodicInspect.noEquipFound", {
+            defaultValue: "해당하는 정기점검 대상 설비가 없습니다",
+          })}
+          sharedNotice={t("equipment.periodicInspect.sharedNotice", {
+            defaultValue: "설비별 PERIODIC 점검항목 기준으로 해당일 정기점검 결과를 입력합니다.",
+          })}
+        />
+        <InspectEntryPanel
+          equipCode={selectedEquipCode}
+          equipName={selectedTarget?.equipName ?? ""}
+          itemCount={selectedTarget?.itemCount ?? 0}
+          inspectDate={inspectDate}
+          workers={workers}
+          inspectType="PERIODIC"
+          apiBasePath="/equipment/periodic-inspect"
+          labels={labels}
+          existingInspected={selectedTarget ? selectedTarget.status !== "none" : false}
+          onSaved={fetchTargets}
+        />
+      </div>
     </div>
   );
 }
