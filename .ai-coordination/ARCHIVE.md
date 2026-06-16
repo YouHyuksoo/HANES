@@ -10,9 +10,32 @@ Format:
 
 ## Completed
 
+- T-MAT-ARRIVAL-TRANSACTION-PAGE | 2026-06-16 | codex | `/material/arrival-transaction` 입하수불조회 직접 접근 화면 추가, `MAT_ARRIVAL_TRANSACTIONS` 조회 필터(`transType`, `matUid`, `arrivalNo`) 보강, frontend/backend build 및 3002 route 200 확인 | evidence: JOURNAL 2026-06-16 13:55 Codex
+- T-MAT-ARRIVAL-STOCK-SPLIT | 2026-06-16 | codex | 입하재고/입고재고 테이블 분리 A안 적용, `MAT_ARRIVAL_STOCKS`/`MAT_ARRIVAL_TRANSACTIONS` 생성 및 기존 `MAT_IN` 57건 이관, JSHANES/빌드/핵심 테스트 검증 완료 | evidence: JOURNAL 2026-06-16 13:10 Codex
+- T-MENU-MERGE-MATERIAL | 2026-06-16 | claude | 좌측 메뉴 자재수불관리(MATERIAL)+자재재고관리(INVENTORY) → 자재관리 1개로 통합. menuConfig 병합·i18n 4종 menu.materialMgmt·시드 재생성·Live DB(JSHANES 40/1000) INVENTORY→MATERIAL 이관(16→23항목, 카테고리 삭제), RBAC 영향 없음, 프론트 tsc 통과 | evidence: LOCKS History T-MENU-MERGE-MATERIAL
+- T-MULTI-CATEGORY-MENU-PAGE-SCENARIO-QA | 2026-06-16 | codex | 자재재고관리/생산관리/품질관리/검사관리/제품수불관리/설비관리/출하관리 실제 등록 하위 메뉴 50개 상세 QA 완료, 검색 API 계약 2건 보정 후 50/50 PASS | evidence: JOURNAL 2026-06-16 03:00 Codex
+- T-MATERIAL-MENU-PAGE-SCENARIO-QA | 2026-06-15 | codex | 좌측 자재수불관리 실제 등록 하위 메뉴 16개 상세 시나리오 QA 완료, 16/16 PASS, 96단계/96스크린샷 목차+페이지별 HTML/JSON 생성 | evidence: JOURNAL 2026-06-16 00:42 Codex
+- T-MASTER-REMAINING-PAGE-SCENARIO-QA | 2026-06-15 | codex | 기준정보 잔여 19개 화면 페이지 단위 상세 시나리오 QA 완료, 기존 품목/BOM 포함 기준정보 21개 HTML 보고서와 목차 생성, CRUD 저장 검증 101단계 및 Oracle 잔여 0건 확인 | evidence: JOURNAL 2026-06-15 21:03 Codex
+- T-MASTER-BOM-PAGE-SCENARIO-QA | 2026-06-15 | codex | `/master/bom` BOM관리 화면을 페이지 단위 상세 시나리오로 테스트, 조회/검색/폼다운로드/내보내기/신규/중복방어/수정/라우팅패널/삭제/API/DB/재조회 13단계 PASS 및 목차+페이지 HTML 보고서 생성 | evidence: JOURNAL 2026-06-15 20:24 Codex
+- T-UI-CRUD-RED-MENU-QA | 2026-06-15 | codex | 좌측 메뉴 노출 화면 96개 실제 브라우저 순회 QA 완료, 최종 96/96 PASS HTML 보고서와 스크린샷 증적 작성 | evidence: JOURNAL 2026-06-15 18:56 Codex
+- T-SQL-ACTUAL-GLOBAL | 2026-06-13 | codex | TypeORM 실제 실행 SELECT를 요청 단위로 수집해 모든 `DataGrid.sqlQuery` SQL 모달이 실제 SQL을 우선 표시하도록 전역 적용, COUNT-only 대표 SQL 후순위 처리 및 런타임 API 확인 완료 | evidence: JOURNAL 2026-06-13 22:24 Codex
+- T-SQL-SCHEMA-TOGGLE | 2026-06-13 | codex | 공통 SQL 조회문 모달에 `컬럼명세 보기/숨기기` 토글을 추가해 사용자가 요청할 때만 컬럼명세 API 호출 | evidence: JOURNAL 2026-06-13 21:45 Codex
+- T-IQC-SQL-DISPLAY | 2026-06-13 | codex | `/material/iqc` SQL 조회문을 백엔드 실제 QueryBuilder SQL/parameters 기반으로 표시 | evidence: JOURNAL 2026-06-13 21:26 Codex
+- T-QC-SAMPLE-MENU-LABEL | 2026-06-12 | codex | 품질검사 하위 `QC_SELF_INSPECT_HISTORY` 좌측 메뉴 한글 라벨을 `공정샘풀검사`로 변경, `ko.json` 파싱 검증 통과 | evidence: JOURNAL 2026-06-12 16:17 Codex
+- T-MASTER-PART-PAGE-SCENARIO-QA | 2026-06-15 | codex | `/master/part` 품목관리 화면을 페이지 단위 상세 시나리오로 테스트, 조회/검색/신규/수정/삭제/API/DB/재조회 10단계 PASS 및 목차+페이지 HTML 보고서 생성 | evidence: JOURNAL 2026-06-15 19:47 Codex
+- T-MENU-QA-DETAIL-REPORT | 2026-06-15 | codex | 좌측 메뉴 QA 최종 PASS HTML을 96개 메뉴별 상세 절차/확인 기준/화면 증적 섹션으로 재생성 | evidence: JOURNAL 2026-06-15 19:08 Codex
+- T-MASTER-FE-QA | 2026-06-12 | codex | 기준정보 `/master/*` 프론트엔드 21개 하위 메뉴 실제 접속/검색/추가폼 비파괴 상호작용/캡처 검증, HTML 보고서 작성, 최종 21/21 성공 | evidence: JOURNAL 2026-06-12 12:49 Codex
+- T-IQC-SERIAL3-RUNTIME | 2026-06-12 | codex | 수입검사 절차대로 실제 API/JSHANES에서 시리얼 3개 생성, IQC PASS, 검사성적서 업로드, 입고, 재고 반영까지 검증하고 기록 유지 | evidence: JOURNAL 2026-06-12 12:32 Codex
+- T-MASTER-CRUD-RUNTIME | 2026-06-12 | codex | 기준정보 화면/API CRUD 101단계 실데이터 점검, payload/cleanup 오류 수정, JSHANES 잔여 0건 확인 및 보고서 작성 | evidence: JOURNAL 2026-06-12 11:49 Codex
+- T-INTEGRATION-NORMAL-REVERSE | 2026-06-12 | codex | HNS02 정상/역처리 통합 재테스트, 박스 단건 출하 취소 API 추가, 정상 출하/출하 취소/삭제·취소 가능 데이터 검증 및 보고서 작성 | evidence: JOURNAL 2026-06-12 11:25 Codex
+- T-INTEGRATION-FLOW-ISSUES-FIX | 2026-06-12 | codex | 최종보고서 등록 문제점 3건 수정, 제품라벨/박스재고/WIP 이동 정상화, JSHANES 재테스트 완료 | evidence: JOURNAL 2026-06-12 11:02 Codex
+- T-INTEGRATION-FLOW-REPORT | 2026-06-12 | codex | HNS02 기준 PO부터 출하 처리까지 실제 API/JSHANES DB 통합 테스트 완료, shipBox 시리얼별 제품재고 차감 결함 수정, 보고서 작성 | evidence: JOURNAL 2026-06-12 10:41 Codex
+- T-CUSTOMER-INTRO-FLOW-SLIDE | 2026-06-12 | codex | 고객 소개 자료 4페이지에 HANES MES 기능흐름도 추가, PPTX/HTML 24장 검증 완료 | evidence: JOURNAL 2026-06-12 09:45 Codex
 - T-KIOSK-AUTOISSUE-BOM-MISMATCH-GUARD | 2026-06-12 | codex | 키오스크 스캔 LOT가 BOM 품목과 불일치하면 실적처리/자동차감 전에 중단하도록 방어 추가 | evidence: JOURNAL 2026-06-12 05:59 Codex
 - T-CUSTOMER-INTRO-PPTX-EXPORT | 2026-06-12 | codex | 고객 소개 HTML 23장 기준으로 텍스트/도형 편집 가능한 PPTX 재생성, PowerPoint 렌더 23장 확인 | evidence: JOURNAL 2026-06-12 05:28 Codex
 - T-QUALITY-INSPECT-USEMEMO | 2026-06-12 | codex | `/quality/inspect` 외관검사 화면의 누락된 `useMemo` React import를 복원해 런타임 ReferenceError 수정 | evidence: JOURNAL 2026-06-12 04:19 Codex
+- T-MASTER-REPORT-SEARCH-DUPLICATE-FIX | 2026-06-15 | codex | 기준정보 잔여 19개 페이지 `HNS02` 검색어 하드코딩 제거 및 공통 중복방어 단계/증적 추가, CRUD 134/134 PASS | evidence: JOURNAL 2026-06-15 23:22 Codex
+- T-MASTER-EQUIP-REPORT-EVIDENCE-FIX | 2026-06-15 | codex | `/master/equip` QA 보고서의 STEP 05 캡처/캡션 정합성 보정 및 기준정보 잔여 19개 화면 재생성 PASS | evidence: JOURNAL 2026-06-15 22:31 Codex
 - T-INV-TRANSACTION-CARDS | 2026-06-12 | codex | `/inventory/transaction` 재고수불현황 상단 정보카드 3개와 전용 통계 계산 제거 | evidence: JOURNAL 2026-06-12 02:20 Codex
 - T-CUSTOMER-INTRO-HTML-DESIGN | 2026-06-12 | codex | 고객 소개 HTML의 카드형 AI 느낌을 줄이고 산업형 색상/공정 보드 레이아웃으로 재정리 | evidence: JOURNAL 2026-06-12 01:35 Codex
 - T-CUSTOMER-INTRO-HTML-V2 | 2026-06-12 | codex | 작업지시서 기준 고객 소개 HTML을 22장 가로형 슬라이드로 재구성, PPTX는 후속 단계로 보류 | evidence: JOURNAL 2026-06-12 01:21 Codex

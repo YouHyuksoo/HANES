@@ -5,6 +5,36 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-MAT-ARRIVAL-TRANSACTION-PAGE
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/material/arrival-transaction/page.tsx
+    - apps/backend/src/modules/material/dto/arrival.dto.ts
+    - apps/backend/src/modules/material/services/arrival.service.ts
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 13:40 KST
+  last_seen: 2026-06-16 13:55 KST
+  expires: 2026-06-16 15:00 KST
+  status: released
+
+- task: T-MAT-ARRIVAL-STOCK-SPLIT
+  owner: codex
+  files:
+    - docs/reports/hanes-mat-arrival-stock-split-migration-2026-06-16.md
+    - apps/backend/src/migrations/2026-06-16_mat_arrival_stock_split.sql
+    - docs/superpowers/plans/2026-06-16-mat-arrival-stock-split.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 11:45 KST
+  last_seen: 2026-06-16 13:10 KST
+  expires: 2026-06-16 13:30 KST
+  status: released
+
 - task: T-DOCS-KNOWLEDGE-WIKI
   owner: claude
   files:
@@ -19,6 +49,48 @@ Before editing, add a lock entry. Mark it released when done.
 
 ## History
 
+- T-COMCODE-I18N-DEADKEY-CLEANUP (claude, 2026-06-16): T-COMCODE-SEMANTIC-FIX DB 정정의 후속으로, 표시 미사용 i18n dead 키 3종을 4개 locale에서 제거. `comCode.ARRIVAL_PO_TYPE`(PO만)·`comCode.ARRIVAL_RESULT_STATUS`(DONE만)는 그룹째 삭제, `comCode.RECEIVE_STATUS.DONE`만 제거(나머지 4코드 보존). 각 locale -3키, JSON 유효성 검증. 파일: `apps/frontend/src/locales/{ko,en,zh,vi}.json`, `tools/cleanup-comcode-i18n-deadkeys.mjs`.
+- T-MENU-MERGE-MATERIAL (claude, 2026-06-16): 좌측 메뉴 `자재수불관리(MATERIAL)` + `자재재고관리(INVENTORY)` 2개 카테고리를 `자재관리`(MATERIAL, 라벨 `menu.materialMgmt`) 하나로 통합. menuConfig.ts 두 블록 병합(INVENTORY 7개 leaf를 MATERIAL 뒤로, Warehouse import 제거), i18n 4종에 `menu.materialMgmt` add-only(자재관리/Material Management/物料管理/Quản lý vật tư), 시드 재생성(gen-menu-category-seed.js, 카테고리 20→19). RBAC(ROLE_MENU_PERMISSIONS)는 leaf 코드만 저장 → 권한 영향 없음. Live DB(JSHANES 40/1000)는 운영 커스터마이징 보존 위해 menuConfig 덮어쓰기 대신 INVENTORY→MATERIAL 이관 마이그레이션만 적용(MATERIAL 16→23개 항목, INVENTORY 카테고리 삭제, 고아 0). 프론트 tsc 통과. 파일: `apps/frontend/src/config/menuConfig.ts`, `apps/frontend/src/locales/{ko,en,zh,vi}.json`, `scripts/2026-05-18_seed_menu_categories.sql`, `apps/backend/src/migrations/2026-06-16_merge_material_inventory_menu.sql`.
+- T-COMCODE-SEMANTIC-FIX (claude, 2026-06-16): 의미 확인 2건 정리. 코드 실측 결과 직전 추가한 3개 코드가 전부 잘못된 컬럼 매핑(false positive)으로 확인되어 DB COM_CODES에서 제거: `ARRIVAL_PO_TYPE.PO`(배지는 poType=RM/CM, ARRIVAL_TYPE와 혼동), `ARRIVAL_RESULT_STATUS.DONE`·`RECEIVE_STATUS.DONE`(배지는 파생/IQC흐름 상태만 표시, 영속 DONE 미노출). 그룹이 원래 정확한 집합으로 복원(RM,CM / ARRIVED,IQC_PROGRESS,IQC_DONE,RECEIVED,CANCELED / PENDING,IQC_IN_PROGRESS,PASSED,FAILED), 배지값 100% 커버 확인. 잔여: 동일 3개 i18n dead 키(무해, 표시 미사용)는 locales 파일 타 lock(T-MENU-MERGE-MATERIAL) 해제 후 제거 예정. 변경: JSHANES COM_CODES 3행 DELETE.
+- T-COMCODE-I18N-LABELS (claude, 2026-06-16): T-COMCODE-ALIGNMENT-FULL 신규/추가 공통코드의 ko/en/zh/vi 라벨을 4개 locale `comCode` 블록에 add-only 딥머지(기존 키 보존). 25개 신규 그룹 전체 코드 + 유형A 6개 신규 코드, 각 locale +84키(총 336). 머지 도구 `tools/merge-comcode-i18n.mjs` 추가, JSON 유효성·라벨 4종 검증. 파일: `apps/frontend/src/locales/{ko,en,zh,vi}.json`, `tools/merge-comcode-i18n.mjs`.
+- T-COMCODE-ALIGNMENT-FULL (claude, 2026-06-16): 공통코드↔실데이터 전수 점검(병렬 에이전트 2개) 후 전면 정합화. 유형A(기존 그룹 값 누락) 6건 값추가(EQUIP_STATUS+INTERLOCK, ISSUE_STATUS+APPROVED, PARTNER_TYPE+MFG, RECEIVE_STATUS+DONE, ARRIVAL_RESULT_STATUS+DONE, ARRIVAL_PO_TYPE+PO), 유형B/D(그룹 부재) 25개 그룹 신설(CHANGE/CAL/PROD_PLAN/MOLD_TYPE/CONSUMABLE_OPER·LIFE/PRODUCT_HOLD/CAPA/COMPLAINT/DOC/CP/OQC/SHIP_ORDER/INSPECT_CHECK/INSPECT_JUDGE 등), 유형C(프론트 groupCode 오타) 2건 수정(CON_CATEGORY→CONSUMABLE_CATEGORY, JOB_STATUS→JOB_ORDER_STATUS). MERGE 시드(40/1000), 12개 컬럼 그룹밖값 0 + 프론트 tsc 검증. 잔여: 신규 그룹 en/zh/vi i18n 라벨(현재 한글 fallback). 파일: `apps/backend/src/migrations/2026-06-16_comcode_alignment_full.sql`, `apps/frontend/src/components/consumables/BarcodeScanPanel.tsx`, `apps/frontend/src/app/(authenticated)/inspection/result/components/InspectionResultWorkflow.tsx`.
+- T-MAT-ARRIVAL-STOCK-SPLIT (codex, 2026-06-16): Task 1 dry-run에서 `NEGATIVE_PENDING` 23건 및 `MAT_STOCKS` 차감 불가 1건 발견으로 BLOCKED 전환, lock 해제. 파일: `docs/reports/hanes-mat-arrival-stock-split-migration-2026-06-16.md`.
+- T-MAT-ARRIVAL-STOCK-SPLIT (codex, 2026-06-16): 사용자 보정 승인 후 A안 적용 완료. `MAT_ARRIVAL_STOCKS`, `MAT_ARRIVAL_TRANSACTIONS` 생성 및 `STOCK_TRANSACTIONS.MAT_IN/MAT_IN_CANCEL` 57건 백업/이관/삭제, 현재 입하재고 35건/6,020 생성. 백엔드/프론트 빌드와 핵심 단위 테스트 통과 후 lock 해제.
+- T-PROCESS-CATEGORY-COMCODE (claude, 2026-06-16): 공정대분류 드롭다운 하드코딩(ASSY/INSP/CUTTING/WELDING/PACKING)↔실데이터(WIRE/TERMINAL/ASSEMBLY/INSPECTION/HEAT) 불일치 해소. PROCESS_CATEGORY 공통코드 그룹 신설(전선/단자/조립/검사/열처리), process page.tsx·ProcessList.tsx를 `useComCodeOptions("PROCESS_CATEGORY")`로 전환하고 목록 배지를 ComCodeBadge로 통일, shared 코드그룹 enum/values 추가. JSHANES 시드+드롭다운 API 5종 확인, 수정모달 공정유형(압착)·공정대분류(단자) 정상 선택 브라우저 검증, shared/frontend tsc 통과. 파일: `apps/backend/src/migrations/2026-06-16_process_category_comcode.sql`, `apps/frontend/src/app/(authenticated)/master/process/{page.tsx,components/ProcessList.tsx}`, `packages/shared/src/{types/com-code.ts,constants/com-code-values.ts}`.
+- T-PROCESS-CATEGORY-FILL (claude, 2026-06-16): `/master/process` 공정대분류(PROCESS_CATEGORY) NULL 2건(CRMPB→TERMINAL, MTASY→ASSEMBLY) 형제 공정 관례대로 보완. 수정 모달 공정유형 드롭다운 정상 표시(압착) 브라우저 확인. 별도 보고: 공정대분류 모달 드롭다운이 하드코딩(ASSY/INSP/CUTTING/WELDING/PACKING)이라 실데이터(WIRE/TERMINAL/ASSEMBLY/INSPECTION/HEAT)와 불일치 — 추후 정렬 필요. 파일: `apps/backend/src/migrations/2026-06-16_process_category_fill.sql`.
+- T-PROCESS-TYPE-CODE-REMAP (claude, 2026-06-16): `/master/process` 공정유형이 공통코드 그룹에 없는 `PRODUCTION`(20건)으로 저장돼 배지 raw 표시·수정 드롭다운 선택 불가하던 문제 해결. PROCESS_TYPE 공통코드에 누락 4종(STRIPPING 탈피/WELDING 융착/HEAT 열처리/SHIELD 편조제거) 추가, PROCESS_MASTERS 22개 공정을 실제 유형으로 재분류(절단3·탈피2·압착5·융착1·편조제거1·열처리1·조립5·검사4). JSHANES 적용·드롭다운 API 9종/매핑 0누락 검증, 공유상수 `PROCESS_TYPE_VALUES` 동기화, shared tsc 통과. 파일: `apps/backend/src/migrations/2026-06-16_process_type_codes_remap.sql`, `packages/shared/src/constants/com-code-values.ts`.
+- T-MULTI-CATEGORY-MENU-PAGE-SCENARIO-QA (codex, 2026-06-16): 좌측 등록 메뉴 중 자재재고관리/생산관리/품질관리/검사관리/제품수불관리/설비관리/출하관리 50개 하위 메뉴 상세 QA 완료, 생산실적/박스 검색 API 계약 보정 후 50/50 PASS로 lock 해제. 파일: `tools/hanes-registered-categories-page-scenario-qa.mjs`, `apps/backend/src/modules/production/{dto/prod-result.dto.ts,services/prod-result.service.ts}`, `apps/backend/src/modules/shipping/{dto/box.dto.ts,services/box.service.ts}`, `docs/reports/hanes-registered-categories-scenario-qa-2026-06-16/**`.
+
+- T-MATERIAL-MENU-PAGE-SCENARIO-QA (codex, 2026-06-15): 좌측 `자재수불관리` 실제 등록 하위 메뉴 16개를 `/api/v1/menu-categories/tree` 기준으로 상세 시나리오 QA, 페이지별 HTML/JSON/스크린샷 및 목차 생성 후 16/16 PASS로 lock 해제. 파일: `tools/hanes-material-menu-page-scenario-qa.mjs`, `docs/reports/hanes-material-menu-scenario-qa-2026-06-15/**`.
+
+- T-JOBORDER-EQUIP-EMPTY-HINT (claude, 2026-06-15): 작업지시 생성/수정 폼에서 선택한 공정에 매핑된 설비가 없을 때(예: CRMPB 양단압착) 설비 드롭다운 아래 안내 문구 표시. `JobOrderFormPanel`에 `useEquipOptions(processCode)`로 빈 설비 감지 + i18n `production.order.noEquipForProcess`(ko/en/zh/vi) 추가. 프론트 tsc·JSON 파싱 통과 후 lock 해제. 파일: `apps/frontend/src/app/(authenticated)/production/order/components/JobOrderFormPanel.tsx`, `apps/frontend/src/locales/{ko,en,zh,vi}.json`.
+
+- T-MASTER-REPORT-SEARCH-DUPLICATE-FIX (codex, 2026-06-15): 기준정보 잔여 19개 페이지 `HNS02` 검색어 하드코딩 제거 및 공통 중복방어 단계/증적 추가, CRUD 134/134 PASS 후 lock 해제. 파일: `tools/hanes-master-crud-runtime-test.mjs`, `tools/hanes-master-remaining-page-scenario-qa.mjs`, `apps/backend/src/modules/master/services/{process,iqc-item,label-template,work-instruction,equip-bom}.service.ts`, 해당 spec, `docs/reports/hanes-page-scenario-qa-2026-06-15/**`.
+
+- T-MASTER-EQUIP-REPORT-EVIDENCE-FIX (codex, 2026-06-15): `/master/equip` QA 보고서 STEP 05 증적이 이전 검색 필터 화면으로 남는 문제를 보정하고 기준정보 잔여 19개 화면 보고서를 재생성 후 lock 해제. 파일: `tools/hanes-master-remaining-page-scenario-qa.mjs`, `docs/reports/hanes-page-scenario-qa-2026-06-15/**`.
+
+- T-MASTER-REMAINING-PAGE-SCENARIO-QA (codex, 2026-06-15): 기준정보 잔여 19개 화면을 페이지 단위 상세 시나리오로 테스트해 모두 PASS 처리, 기존 품목/BOM 포함 기준정보 21개 페이지 목차+개별 HTML 보고서 생성 후 lock 해제. 파일: `tools/hanes-master-remaining-page-scenario-qa.mjs`, `docs/reports/hanes-page-scenario-qa-2026-06-15/**`.
+
+- T-MASTER-BOM-PAGE-SCENARIO-QA (codex, 2026-06-15): `/master/bom` BOM관리 화면을 페이지 단위 상세 시나리오로 테스트해 조회/검색/폼다운로드/엑셀업로드모달/내보내기/신규/중복방어/수정/라우팅패널/삭제/API/DB/재조회 13단계 PASS 및 목차+페이지 HTML 보고서 생성 후 lock 해제. 파일: `tools/hanes-master-bom-page-scenario-qa.mjs`, `docs/reports/hanes-page-scenario-qa-2026-06-15/**`.
+
+- T-JOBORDER-EQUIP-UPDATE-FIX (claude, 2026-06-15): 작업지시 수정 시 설비(equipCode)·공정(processCode)이 저장되지 않던 버그 수정. `JobOrderService.update()`가 두 필드를 updateData에 반영하도록 추가하고 `JOB_ORDER_SELECT` 응답에도 포함. 생성 경로는 정상(API 실측 확인), 누락은 update 경로 한정이었음. JSHANES 실데이터로 create+update 검증 후 테스트 데이터 정리, 백엔드 tsc 통과, lock 해제. 파일: `apps/backend/src/modules/production/services/job-order.service.ts`.
+
+- T-MASTER-PART-PAGE-SCENARIO-QA (codex, 2026-06-15): `/master/part` 품목관리 화면을 페이지 단위 상세 시나리오로 테스트해 조회/검색/신규/수정/삭제/API/DB/재조회 10단계 PASS 및 목차+페이지 HTML 보고서 생성 후 lock 해제. 파일: `tools/hanes-master-part-page-scenario-qa.mjs`, `docs/reports/hanes-page-scenario-qa-2026-06-15/**`.
+- T-MENU-QA-DETAIL-REPORT (codex, 2026-06-15): 좌측 메뉴 QA 최종 PASS HTML을 96개 메뉴별 상세 절차/확인 기준/화면 증적 섹션으로 재생성하고 생성 스크립트 추가 후 lock 해제. 파일: `docs/reports/ui-test-crud-red-menu-qa-2026-06-15.html`, `tools/generate-menu-qa-detailed-report.mjs`.
+- T-JOBORDER-AUTOEXPLODE-DEFAULT (claude, 2026-06-15): `/production/order` 작업지시 BOM 자동전개를 기본 ON으로 변경(백엔드 `autoCreateChildren !== false`, 프론트 체크박스 기본 checked). 더불어 생산계획 발행(`prod-plan.service.createChildOrdersFromPlanRecursive`)의 동일한 `depth>=5` 깊이 버그도 순환참조 가드+깊이 백스톱 50으로 동일 수정. 백엔드/프론트 tsc 통과 후 lock 해제. 파일: `apps/backend/src/modules/production/services/{job-order.service.ts,prod-plan.service.ts}`, `apps/frontend/src/app/(authenticated)/production/order/components/JobOrderFormPanel.tsx`.
+- T-UI-CRUD-RED-MENU-QA (codex, 2026-06-15): 좌측 메뉴 노출 화면 96개 실제 브라우저 순회 QA 및 최종 PASS HTML 보고서 작성 후 lock 해제. 파일: `C:\Users\hsyou\.codex\skills\ui-test-crud-red\scripts\ui-test-menu-success-runner.mjs`, `docs/reports/ui-test-crud-red-menu-qa-2026-06-15*`, `apps/backend/src/modules/production/services/production-views.service.ts`, `apps/backend/src/modules/production/services/production-views.service.spec.ts`, `apps/frontend/src/app/(authenticated)/system/config/page.tsx`.
+- T-JOBORDER-BOM-FULL-EXPLODE (claude, 2026-06-15): 작업지시 BOM 자동전개의 `depth>=5` 깊이 제한을 제거해 하위 레벨 관계없이 전 계층 반제품 작업지시를 생성하도록 변경. 무한루프는 BOM 순환참조 가드(조상 경로 추적)+깊이 백스톱 50으로 차단. HNS02(8단계) 기준 기존 누락분(`HNS02-SCA_1/_2`, `HNS02C1ABC/ABCD`, `HNS02C2ABC/ABCD/ABCDE` 등) 해소. 백엔드 tsc 통과 후 lock 해제. 파일: `apps/backend/src/modules/production/services/job-order.service.ts`.
+- T-SQL-ACTUAL-GLOBAL (codex, 2026-06-13): TypeORM logger/request SQL context/global interceptor와 프론트 Axios SQL cache를 추가해 모든 `DataGrid.sqlQuery` 모달이 실제 실행 SQL을 우선 표시하도록 변경 후 lock 해제. 파일: `apps/backend/src/common/sql-debug/**`, `apps/backend/src/common/interceptors/sql-debug.interceptor.ts`, `apps/backend/src/database/database.module.ts`, `apps/backend/src/main.ts`, `apps/frontend/src/services/api.ts`, `apps/frontend/src/components/data-grid/SqlViewerModal.tsx`, `apps/frontend/src/components/data-grid/sql-viewer-actual-sql.structure.test.mjs`.
+- T-SQL-SCHEMA-TOGGLE (codex, 2026-06-13): 공통 SQL 조회문 모달에 `컬럼명세 보기/숨기기` 토글을 추가해 모든 `DataGrid.sqlQuery` 사용 페이지에 적용 후 lock 해제. 파일: `apps/frontend/src/components/data-grid/SqlViewerModal.tsx`, `apps/frontend/src/components/data-grid/sql-viewer-modal.structure.test.mjs`.
+- T-IQC-SQL-DISPLAY (codex, 2026-06-13): `/material/iqc` SQL 조회문을 백엔드 실제 QueryBuilder SQL/parameters 기반으로 표시하도록 변경 후 lock 해제. 파일: `apps/backend/src/modules/material/{controllers/iqc-history.controller.ts,services/iqc-history.service.ts,services/iqc-history.service.spec.ts}`, `apps/frontend/src/app/(authenticated)/material/iqc/page.tsx`, `apps/frontend/src/hooks/material/useIqcData.ts`, `apps/frontend/src/components/material/IqcTable.tsx`.
+- T-QC-SAMPLE-MENU-LABEL (codex, 2026-06-12): 품질검사 하위 `QC_SELF_INSPECT_HISTORY` 좌측 메뉴 한글 라벨을 `공정샘풀검사`로 변경하고 `ko.json` 파싱 검증 후 lock 해제. 파일: `apps/frontend/src/locales/ko.json`.
+- T-MASTER-FE-QA (codex, 2026-06-12): 기준정보 `/master/*` 프론트엔드 21개 하위 메뉴를 Playwright로 실제 접속/검색/추가폼 비파괴 상호작용/캡처 검증 완료. 최종 실행 21/21 성공, 캡처 60개, HTML 보고서 작성 후 lock 해제. 파일: `tools/hanes-master-frontend-qa.mjs`, `docs/reports/hanes-master-frontend-qa-2026-06-12.html`, `docs/reports/hanes-master-frontend-qa-2026-06-12/result.json`.
+- T-IQC-SERIAL3-RUNTIME (codex, 2026-06-12): 수입검사 절차대로 실제 API/JSHANES에서 시리얼 3개 생성, IQC PASS, 검사성적서 업로드, 입고, 재고 반영까지 검증하고 기록을 남긴 뒤 lock 해제. 파일: `tools/hanes-iqc-serial3-runtime-test.mjs`, `docs/reports/hanes-iqc-serial3-runtime-test-2026-06-12.md`, `docs/reports/hanes-iqc-serial3-runtime-test-26061203191605.json`.
+- T-MASTER-CRUD-RUNTIME (codex, 2026-06-12): 기준정보 화면/API CRUD 101단계 실데이터 점검 완료. `tools/hanes-master-crud-runtime-test.mjs` 추가, 최종 실행 `26061202474131` 기준 API 101/101 성공, cleanup 30/30 성공, JSHANES 32개 관련 테이블 잔여 0건 확인 후 lock 해제. 파일: `docs/reports/hanes-master-crud-runtime-test-2026-06-12.md`, `docs/reports/hanes-master-crud-runtime-test-26061202474131.json`, `tools/hanes-master-crud-runtime-test.mjs`.
+- T-INTEGRATION-NORMAL-REVERSE (codex, 2026-06-12): HNS02 정상/역처리 통합 재테스트 완료. 박스 단건 출하 취소 API 추가, 정상 출하/출하 취소/삭제 가능 데이터 삭제/작업지시·생산실적·자재출고 취소를 JSHANES 실데이터로 검증하고 보고서 작성 후 lock 해제. 파일: `docs/reports/hanes-integration-normal-reverse-test-2026-06-12.md`, `tools/hns02-normal-reverse-runtime-test.mjs`, `apps/backend/src/modules/shipping/{controllers/ship-order.controller.ts,services/ship-order.service.ts,services/ship-order.service.spec.ts}`.
+- T-INTEGRATION-FLOW-ISSUES-FIX (codex, 2026-06-12): 최종보고서 등록 문제점 3건(제품라벨/FG_LABELS, 제품라벨 sourceId 계약, WIP 잔량)을 수정하고 `JO-FIX-105908` 재테스트로 정상 처리 확인 후 lock 해제. 파일: `docs/reports/hanes-integration-flow-test-2026-06-12.md`, `apps/backend/src/modules/production/{dto/product-label.dto.ts,services/product-label.service.ts,services/product-label.service.spec.ts}`, `apps/backend/src/modules/inventory/{inventory.controller.ts,services/product-inventory.service.ts,services/product-inventory.service.spec.ts}`, `apps/backend/src/modules/shipping/services/{box.service.ts,box.service.spec.ts}`.
+- T-INTEGRATION-FLOW-REPORT (codex, 2026-06-12): HNS02 기준 PO→입하→IQC→PDA 입고→재고→작업지시→자재요청/출고→생산실적→제품입고→제품포장→OQC→출하지시→출하 처리 통합 테스트 보고서 작성 및 shipBox 시리얼별 제품재고 차감 결함 수정 후 lock 해제. 파일: `docs/reports/hanes-integration-flow-test-2026-06-12.md`, `apps/backend/src/modules/shipping/services/ship-order.service.ts`, `apps/backend/src/modules/shipping/services/ship-order.service.spec.ts`.
+- T-CUSTOMER-INTRO-FLOW-SLIDE (codex, 2026-06-12): 고객 소개 자료 4페이지에 HANES MES 기능흐름도 추가 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.html`, `docs/presentation/hanes-mes-introduction.pptx`, `docs/presentation/artifact-build-manifest.json`.
 - T-KIOSK-AUTOISSUE-BOM-MISMATCH-GUARD (codex, 2026-06-12): 키오스크 스캔 LOT가 BOM 품목과 불일치하면 실적처리/자동차감 전 중단하도록 방어 추가 후 lock 해제. 파일: `apps/backend/src/modules/production/services/auto-issue.service.ts`, `apps/backend/src/modules/production/services/auto-issue.service.spec.ts`.
 
 - T-CUSTOMER-INTRO-PPTX-EXPORT (codex, 2026-06-12): 고객 소개 HTML 23장 기준 편집 가능한 PPTX 재생성 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.pptx`.
