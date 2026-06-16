@@ -4810,17 +4810,20 @@
       "PENDING": "待收货",
       "IQC_IN_PROGRESS": "IQC进行中",
       "PASSED": "合格",
-      "FAILED": "不合格"
+      "FAILED": "不合格",
+      "DONE": "入库完成"
     },
     "ISSUE_STATUS": {
       "PENDING": "等待",
       "IN_PROGRESS": "进行中",
-      "COMPLETED": "完成"
+      "COMPLETED": "完成",
+      "APPROVED": "已批准"
     },
     "EQUIP_STATUS": {
       "NORMAL": "正常",
       "MAINT": "检查",
-      "STOP": "停止"
+      "STOP": "停止",
+      "INTERLOCK": "联锁"
     },
     "PM_STATUS": {
       "SCHEDULED": "预定",
@@ -4991,7 +4994,8 @@
     },
     "PARTNER_TYPE": {
       "SUPPLIER": "供应商",
-      "CUSTOMER": "客户"
+      "CUSTOMER": "客户",
+      "MFG": "制造商"
     },
     "VENDOR_TYPE": {
       "SUBCON": "外包商",
@@ -5214,11 +5218,13 @@
       "DRAFT": "草稿",
       "CONFIRMED": "已确认",
       "SHIPPING": "出货中",
-      "SHIPPED": "已出货"
+      "SHIPPED": "已出货",
+      "CLOSED": "关闭"
     },
     "INSPECT_CHECK_TYPE": {
       "DAILY": "日常点检",
-      "PERIODIC": "定期点检"
+      "PERIODIC": "定期点检",
+      "WORKER": "作业者点检"
     },
     "INSPECT_JUDGE": {
       "PASS": "合格",
@@ -5303,6 +5309,128 @@
       "RETRYING": "重试中",
       "TIMEOUT": "超时",
       "SKIPPED": "跳过"
+    },
+    "CHANGE_TYPE": {
+      "MAN": "人员变更",
+      "MACHINE": "设备变更",
+      "MATERIAL": "物料变更",
+      "METHOD": "方法变更"
+    },
+    "CHANGE_PRIORITY": {
+      "HIGH": "紧急",
+      "MEDIUM": "普通",
+      "LOW": "低"
+    },
+    "CHANGE_STATUS": {
+      "DRAFT": "草稿",
+      "SUBMITTED": "已提交",
+      "REVIEWING": "审核中",
+      "APPROVED": "已批准",
+      "REJECTED": "已驳回",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "已完成",
+      "CLOSED": "已关闭"
+    },
+    "CAL_TYPE": {
+      "INTERNAL": "内部校准",
+      "EXTERNAL": "外部校准"
+    },
+    "CAL_RESULT": {
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "CONDITIONAL": "有条件合格"
+    },
+    "PROD_PLAN_STATUS": {
+      "DRAFT": "草稿",
+      "CONFIRMED": "已确认",
+      "CLOSED": "已关闭"
+    },
+    "MOLD_TYPE": {
+      "INJECTION": "注塑模",
+      "PRESS": "冲压模",
+      "CRIMPING": "压接模",
+      "OTHER": "其他"
+    },
+    "CONSUMABLE_OPER_STATUS": {
+      "WAREHOUSE": "库存待用",
+      "MOUNTED": "已装机",
+      "REPAIR": "维修中"
+    },
+    "PRODUCT_HOLD_STATUS": {
+      "NORMAL": "正常",
+      "HOLD": "保留"
+    },
+    "CAPA_TYPE": {
+      "CORRECTIVE": "纠正措施",
+      "PREVENTIVE": "预防措施"
+    },
+    "CAPA_SOURCE_TYPE": {
+      "DEFECT": "不良",
+      "COMPLAINT": "客诉",
+      "AUDIT": "审核",
+      "REWORK": "返工"
+    },
+    "CAPA_STATUS": {
+      "OPEN": "受理",
+      "ANALYZING": "原因分析中",
+      "ACTION_PLANNED": "措施计划",
+      "IN_PROGRESS": "措施进行",
+      "VERIFYING": "验证中",
+      "CLOSED": "关闭"
+    },
+    "CAPA_ACTION_STATUS": {
+      "PENDING": "待处理",
+      "IN_PROGRESS": "进行中",
+      "DONE": "完成"
+    },
+    "COMPLAINT_TYPE": {
+      "QUALITY": "质量",
+      "DELIVERY": "交期",
+      "DAMAGE": "破损"
+    },
+    "COMPLAINT_URGENCY": {
+      "CRITICAL": "紧急",
+      "HIGH": "高",
+      "MEDIUM": "普通",
+      "LOW": "低"
+    },
+    "COMPLAINT_STATUS": {
+      "RECEIVED": "受理",
+      "INVESTIGATING": "调查中",
+      "RESPONDING": "应对中",
+      "RESOLVED": "已解决",
+      "CLOSED": "关闭"
+    },
+    "DOC_TYPE": {
+      "PROCEDURE": "程序书",
+      "WI": "作业标准书",
+      "FORM": "表单",
+      "SPEC": "规格书",
+      "DRAWING": "图纸",
+      "MANUAL": "手册"
+    },
+    "DOC_STATUS": {
+      "DRAFT": "编制中",
+      "REVIEW": "审核中",
+      "APPROVED": "已批准",
+      "OBSOLETE": "作废"
+    },
+    "CP_PHASE": {
+      "PROTOTYPE": "样件",
+      "PRE_LAUNCH": "试产",
+      "PRODUCTION": "量产"
+    },
+    "CP_STATUS": {
+      "DRAFT": "编制中",
+      "REVIEW": "审核中",
+      "APPROVED": "已批准",
+      "OBSOLETE": "作废"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "DONE": "完成"
+    },
+    "ARRIVAL_PO_TYPE": {
+      "PO": "采购订单"
     }
   },
   "comCodeGroup": {

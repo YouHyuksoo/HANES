@@ -4844,17 +4844,20 @@
       "PENDING": "입하대기",
       "IQC_IN_PROGRESS": "IQC진행",
       "PASSED": "합격",
-      "FAILED": "불합격"
+      "FAILED": "불합격",
+      "DONE": "입고완료"
     },
     "ISSUE_STATUS": {
       "PENDING": "대기",
       "IN_PROGRESS": "진행중",
-      "COMPLETED": "완료"
+      "COMPLETED": "완료",
+      "APPROVED": "승인"
     },
     "EQUIP_STATUS": {
       "NORMAL": "정상",
       "MAINT": "점검",
-      "STOP": "정지"
+      "STOP": "정지",
+      "INTERLOCK": "인터록"
     },
     "PM_STATUS": {
       "SCHEDULED": "예정",
@@ -5025,7 +5028,8 @@
     },
     "PARTNER_TYPE": {
       "SUPPLIER": "공급사",
-      "CUSTOMER": "고객사"
+      "CUSTOMER": "고객사",
+      "MFG": "제조사"
     },
     "VENDOR_TYPE": {
       "SUBCON": "외주사",
@@ -5248,11 +5252,13 @@
       "DRAFT": "임시저장",
       "CONFIRMED": "확정",
       "SHIPPING": "출하중",
-      "SHIPPED": "출하완료"
+      "SHIPPED": "출하완료",
+      "CLOSED": "마감"
     },
     "INSPECT_CHECK_TYPE": {
       "DAILY": "일상점검",
-      "PERIODIC": "정기점검"
+      "PERIODIC": "정기점검",
+      "WORKER": "작업자점검"
     },
     "INSPECT_JUDGE": {
       "PASS": "합격",
@@ -5337,6 +5343,128 @@
       "RETRYING": "재시도중",
       "TIMEOUT": "타임아웃",
       "SKIPPED": "스킵"
+    },
+    "CHANGE_TYPE": {
+      "MAN": "인력변경",
+      "MACHINE": "설비변경",
+      "MATERIAL": "자재변경",
+      "METHOD": "방법변경"
+    },
+    "CHANGE_PRIORITY": {
+      "HIGH": "긴급",
+      "MEDIUM": "보통",
+      "LOW": "낮음"
+    },
+    "CHANGE_STATUS": {
+      "DRAFT": "초안",
+      "SUBMITTED": "제출",
+      "REVIEWING": "검토중",
+      "APPROVED": "승인",
+      "REJECTED": "반려",
+      "IN_PROGRESS": "진행중",
+      "COMPLETED": "완료",
+      "CLOSED": "종결"
+    },
+    "CAL_TYPE": {
+      "INTERNAL": "자체교정",
+      "EXTERNAL": "외부교정"
+    },
+    "CAL_RESULT": {
+      "PASS": "합격",
+      "FAIL": "불합격",
+      "CONDITIONAL": "조건부합격"
+    },
+    "PROD_PLAN_STATUS": {
+      "DRAFT": "초안",
+      "CONFIRMED": "확정",
+      "CLOSED": "마감"
+    },
+    "MOLD_TYPE": {
+      "INJECTION": "사출금형",
+      "PRESS": "프레스금형",
+      "CRIMPING": "크림핑금형",
+      "OTHER": "기타"
+    },
+    "CONSUMABLE_OPER_STATUS": {
+      "WAREHOUSE": "창고대기",
+      "MOUNTED": "장착중",
+      "REPAIR": "수리중"
+    },
+    "PRODUCT_HOLD_STATUS": {
+      "NORMAL": "정상",
+      "HOLD": "홀드"
+    },
+    "CAPA_TYPE": {
+      "CORRECTIVE": "시정조치",
+      "PREVENTIVE": "예방조치"
+    },
+    "CAPA_SOURCE_TYPE": {
+      "DEFECT": "불량",
+      "COMPLAINT": "고객클레임",
+      "AUDIT": "감사",
+      "REWORK": "재작업"
+    },
+    "CAPA_STATUS": {
+      "OPEN": "접수",
+      "ANALYZING": "원인분석중",
+      "ACTION_PLANNED": "조치계획",
+      "IN_PROGRESS": "조치진행",
+      "VERIFYING": "검증중",
+      "CLOSED": "종결"
+    },
+    "CAPA_ACTION_STATUS": {
+      "PENDING": "대기",
+      "IN_PROGRESS": "진행중",
+      "DONE": "완료"
+    },
+    "COMPLAINT_TYPE": {
+      "QUALITY": "품질불량",
+      "DELIVERY": "납기지연",
+      "DAMAGE": "파손"
+    },
+    "COMPLAINT_URGENCY": {
+      "CRITICAL": "긴급",
+      "HIGH": "높음",
+      "MEDIUM": "보통",
+      "LOW": "낮음"
+    },
+    "COMPLAINT_STATUS": {
+      "RECEIVED": "접수",
+      "INVESTIGATING": "조사중",
+      "RESPONDING": "대응중",
+      "RESOLVED": "해결",
+      "CLOSED": "종결"
+    },
+    "DOC_TYPE": {
+      "PROCEDURE": "절차서",
+      "WI": "작업표준서",
+      "FORM": "양식",
+      "SPEC": "규격서",
+      "DRAWING": "도면",
+      "MANUAL": "매뉴얼"
+    },
+    "DOC_STATUS": {
+      "DRAFT": "작성중",
+      "REVIEW": "검토중",
+      "APPROVED": "승인됨",
+      "OBSOLETE": "폐기"
+    },
+    "CP_PHASE": {
+      "PROTOTYPE": "시작품",
+      "PRE_LAUNCH": "양산준비",
+      "PRODUCTION": "양산"
+    },
+    "CP_STATUS": {
+      "DRAFT": "작성중",
+      "REVIEW": "검토중",
+      "APPROVED": "승인됨",
+      "OBSOLETE": "폐기"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "DONE": "완료"
+    },
+    "ARRIVAL_PO_TYPE": {
+      "PO": "발주"
     }
   },
   "comCodeGroup": {

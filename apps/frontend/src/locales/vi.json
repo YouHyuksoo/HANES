@@ -4810,17 +4810,20 @@
       "PENDING": "Chờ nhập kho",
       "IQC_IN_PROGRESS": "Đang kiểm tra IQC",
       "PASSED": "Đạt",
-      "FAILED": "Không đạt"
+      "FAILED": "Không đạt",
+      "DONE": "Đã nhập kho"
     },
     "ISSUE_STATUS": {
       "PENDING": "Đang chờ",
       "IN_PROGRESS": "Đang tiến hành",
-      "COMPLETED": "Hoàn thành"
+      "COMPLETED": "Hoàn thành",
+      "APPROVED": "Đã duyệt"
     },
     "EQUIP_STATUS": {
       "NORMAL": "Bình thường",
       "MAINT": "Bảo trì",
-      "STOP": "Dừng"
+      "STOP": "Dừng",
+      "INTERLOCK": "Khóa liên động"
     },
     "PM_STATUS": {
       "SCHEDULED": "Đã lên lịch",
@@ -4991,7 +4994,8 @@
     },
     "PARTNER_TYPE": {
       "SUPPLIER": "Nhà cung cấp",
-      "CUSTOMER": "Khách hàng"
+      "CUSTOMER": "Khách hàng",
+      "MFG": "Nhà sản xuất"
     },
     "VENDOR_TYPE": {
       "SUBCON": "Nhà thầu phụ",
@@ -5214,11 +5218,13 @@
       "DRAFT": "Bản nháp",
       "CONFIRMED": "Đã xác nhận",
       "SHIPPING": "Đang xuất hàng",
-      "SHIPPED": "Đã xuất hàng"
+      "SHIPPED": "Đã xuất hàng",
+      "CLOSED": "Đã đóng"
     },
     "INSPECT_CHECK_TYPE": {
       "DAILY": "Kiểm tra hàng ngày",
-      "PERIODIC": "Kiểm tra định kỳ"
+      "PERIODIC": "Kiểm tra định kỳ",
+      "WORKER": "Người vận hành"
     },
     "INSPECT_JUDGE": {
       "PASS": "Đạt",
@@ -5303,6 +5309,128 @@
       "RETRYING": "Đang thử lại",
       "TIMEOUT": "Hết giờ",
       "SKIPPED": "Bỏ qua"
+    },
+    "CHANGE_TYPE": {
+      "MAN": "Thay đổi nhân lực",
+      "MACHINE": "Thay đổi thiết bị",
+      "MATERIAL": "Thay đổi vật tư",
+      "METHOD": "Thay đổi phương pháp"
+    },
+    "CHANGE_PRIORITY": {
+      "HIGH": "Cao",
+      "MEDIUM": "Trung bình",
+      "LOW": "Thấp"
+    },
+    "CHANGE_STATUS": {
+      "DRAFT": "Bản nháp",
+      "SUBMITTED": "Đã nộp",
+      "REVIEWING": "Đang xem xét",
+      "APPROVED": "Đã duyệt",
+      "REJECTED": "Bị từ chối",
+      "IN_PROGRESS": "Đang tiến hành",
+      "COMPLETED": "Hoàn thành",
+      "CLOSED": "Đã đóng"
+    },
+    "CAL_TYPE": {
+      "INTERNAL": "Hiệu chuẩn nội bộ",
+      "EXTERNAL": "Hiệu chuẩn bên ngoài"
+    },
+    "CAL_RESULT": {
+      "PASS": "Đạt",
+      "FAIL": "Không đạt",
+      "CONDITIONAL": "Đạt có điều kiện"
+    },
+    "PROD_PLAN_STATUS": {
+      "DRAFT": "Bản nháp",
+      "CONFIRMED": "Đã xác nhận",
+      "CLOSED": "Đã đóng"
+    },
+    "MOLD_TYPE": {
+      "INJECTION": "Khuôn ép phun",
+      "PRESS": "Khuôn dập",
+      "CRIMPING": "Khuôn bấm",
+      "OTHER": "Khác"
+    },
+    "CONSUMABLE_OPER_STATUS": {
+      "WAREHOUSE": "Trong kho",
+      "MOUNTED": "Đã lắp",
+      "REPAIR": "Đang sửa"
+    },
+    "PRODUCT_HOLD_STATUS": {
+      "NORMAL": "Bình thường",
+      "HOLD": "Tạm giữ"
+    },
+    "CAPA_TYPE": {
+      "CORRECTIVE": "Khắc phục",
+      "PREVENTIVE": "Phòng ngừa"
+    },
+    "CAPA_SOURCE_TYPE": {
+      "DEFECT": "Lỗi",
+      "COMPLAINT": "Khiếu nại",
+      "AUDIT": "Đánh giá",
+      "REWORK": "Làm lại"
+    },
+    "CAPA_STATUS": {
+      "OPEN": "Tiếp nhận",
+      "ANALYZING": "Đang phân tích",
+      "ACTION_PLANNED": "Lên kế hoạch",
+      "IN_PROGRESS": "Đang thực hiện",
+      "VERIFYING": "Đang xác minh",
+      "CLOSED": "Đã đóng"
+    },
+    "CAPA_ACTION_STATUS": {
+      "PENDING": "Chờ",
+      "IN_PROGRESS": "Đang tiến hành",
+      "DONE": "Hoàn thành"
+    },
+    "COMPLAINT_TYPE": {
+      "QUALITY": "Chất lượng",
+      "DELIVERY": "Giao hàng",
+      "DAMAGE": "Hư hỏng"
+    },
+    "COMPLAINT_URGENCY": {
+      "CRITICAL": "Khẩn cấp",
+      "HIGH": "Cao",
+      "MEDIUM": "Trung bình",
+      "LOW": "Thấp"
+    },
+    "COMPLAINT_STATUS": {
+      "RECEIVED": "Tiếp nhận",
+      "INVESTIGATING": "Đang điều tra",
+      "RESPONDING": "Đang xử lý",
+      "RESOLVED": "Đã giải quyết",
+      "CLOSED": "Đã đóng"
+    },
+    "DOC_TYPE": {
+      "PROCEDURE": "Quy trình",
+      "WI": "Hướng dẫn công việc",
+      "FORM": "Biểu mẫu",
+      "SPEC": "Quy cách",
+      "DRAWING": "Bản vẽ",
+      "MANUAL": "Sổ tay"
+    },
+    "DOC_STATUS": {
+      "DRAFT": "Đang soạn",
+      "REVIEW": "Đang xem xét",
+      "APPROVED": "Đã duyệt",
+      "OBSOLETE": "Hủy bỏ"
+    },
+    "CP_PHASE": {
+      "PROTOTYPE": "Mẫu thử",
+      "PRE_LAUNCH": "Tiền sản xuất",
+      "PRODUCTION": "Sản xuất"
+    },
+    "CP_STATUS": {
+      "DRAFT": "Đang soạn",
+      "REVIEW": "Đang xem xét",
+      "APPROVED": "Đã duyệt",
+      "OBSOLETE": "Hủy bỏ"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "DONE": "Hoàn tất"
+    },
+    "ARRIVAL_PO_TYPE": {
+      "PO": "Đơn đặt hàng"
     }
   },
   "comCodeGroup": {

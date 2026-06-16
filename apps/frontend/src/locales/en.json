@@ -4824,17 +4824,20 @@
       "PENDING": "Pending",
       "IQC_IN_PROGRESS": "IQC In Progress",
       "PASSED": "Passed",
-      "FAILED": "Failed"
+      "FAILED": "Failed",
+      "DONE": "Received"
     },
     "ISSUE_STATUS": {
       "PENDING": "Pending",
       "IN_PROGRESS": "In Progress",
-      "COMPLETED": "Completed"
+      "COMPLETED": "Completed",
+      "APPROVED": "Approved"
     },
     "EQUIP_STATUS": {
       "NORMAL": "Normal",
       "MAINT": "Maintenance",
-      "STOP": "Stopped"
+      "STOP": "Stopped",
+      "INTERLOCK": "Interlock"
     },
     "PM_STATUS": {
       "SCHEDULED": "Scheduled",
@@ -5005,7 +5008,8 @@
     },
     "PARTNER_TYPE": {
       "SUPPLIER": "Supplier",
-      "CUSTOMER": "Customer"
+      "CUSTOMER": "Customer",
+      "MFG": "Manufacturer"
     },
     "VENDOR_TYPE": {
       "SUBCON": "Subcontractor",
@@ -5228,11 +5232,13 @@
       "DRAFT": "Draft",
       "CONFIRMED": "Confirmed",
       "SHIPPING": "Shipping",
-      "SHIPPED": "Shipped"
+      "SHIPPED": "Shipped",
+      "CLOSED": "Closed"
     },
     "INSPECT_CHECK_TYPE": {
       "DAILY": "Daily Inspection",
-      "PERIODIC": "Periodic Inspection"
+      "PERIODIC": "Periodic Inspection",
+      "WORKER": "Worker"
     },
     "INSPECT_JUDGE": {
       "PASS": "Pass",
@@ -5317,6 +5323,128 @@
       "RETRYING": "Retrying",
       "TIMEOUT": "Timeout",
       "SKIPPED": "Skipped"
+    },
+    "CHANGE_TYPE": {
+      "MAN": "Personnel",
+      "MACHINE": "Equipment",
+      "MATERIAL": "Material",
+      "METHOD": "Method"
+    },
+    "CHANGE_PRIORITY": {
+      "HIGH": "High",
+      "MEDIUM": "Medium",
+      "LOW": "Low"
+    },
+    "CHANGE_STATUS": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "REVIEWING": "Reviewing",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "CLOSED": "Closed"
+    },
+    "CAL_TYPE": {
+      "INTERNAL": "Internal",
+      "EXTERNAL": "External"
+    },
+    "CAL_RESULT": {
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "CONDITIONAL": "Conditional"
+    },
+    "PROD_PLAN_STATUS": {
+      "DRAFT": "Draft",
+      "CONFIRMED": "Confirmed",
+      "CLOSED": "Closed"
+    },
+    "MOLD_TYPE": {
+      "INJECTION": "Injection",
+      "PRESS": "Press",
+      "CRIMPING": "Crimping",
+      "OTHER": "Other"
+    },
+    "CONSUMABLE_OPER_STATUS": {
+      "WAREHOUSE": "In Warehouse",
+      "MOUNTED": "Mounted",
+      "REPAIR": "Under Repair"
+    },
+    "PRODUCT_HOLD_STATUS": {
+      "NORMAL": "Normal",
+      "HOLD": "Hold"
+    },
+    "CAPA_TYPE": {
+      "CORRECTIVE": "Corrective",
+      "PREVENTIVE": "Preventive"
+    },
+    "CAPA_SOURCE_TYPE": {
+      "DEFECT": "Defect",
+      "COMPLAINT": "Complaint",
+      "AUDIT": "Audit",
+      "REWORK": "Rework"
+    },
+    "CAPA_STATUS": {
+      "OPEN": "Open",
+      "ANALYZING": "Analyzing",
+      "ACTION_PLANNED": "Action Planned",
+      "IN_PROGRESS": "In Progress",
+      "VERIFYING": "Verifying",
+      "CLOSED": "Closed"
+    },
+    "CAPA_ACTION_STATUS": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In Progress",
+      "DONE": "Done"
+    },
+    "COMPLAINT_TYPE": {
+      "QUALITY": "Quality",
+      "DELIVERY": "Delivery",
+      "DAMAGE": "Damage"
+    },
+    "COMPLAINT_URGENCY": {
+      "CRITICAL": "Critical",
+      "HIGH": "High",
+      "MEDIUM": "Medium",
+      "LOW": "Low"
+    },
+    "COMPLAINT_STATUS": {
+      "RECEIVED": "Received",
+      "INVESTIGATING": "Investigating",
+      "RESPONDING": "Responding",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "DOC_TYPE": {
+      "PROCEDURE": "Procedure",
+      "WI": "Work Instruction",
+      "FORM": "Form",
+      "SPEC": "Specification",
+      "DRAWING": "Drawing",
+      "MANUAL": "Manual"
+    },
+    "DOC_STATUS": {
+      "DRAFT": "Draft",
+      "REVIEW": "Review",
+      "APPROVED": "Approved",
+      "OBSOLETE": "Obsolete"
+    },
+    "CP_PHASE": {
+      "PROTOTYPE": "Prototype",
+      "PRE_LAUNCH": "Pre-Launch",
+      "PRODUCTION": "Production"
+    },
+    "CP_STATUS": {
+      "DRAFT": "Draft",
+      "REVIEW": "Review",
+      "APPROVED": "Approved",
+      "OBSOLETE": "Obsolete"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "DONE": "Done"
+    },
+    "ARRIVAL_PO_TYPE": {
+      "PO": "PO"
     }
   },
   "comCodeGroup": {
