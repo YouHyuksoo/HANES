@@ -5,6 +5,172 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-KIOSK-CONSUMABLE-SCAN-MAPPING
+  owner: claude
+  files:
+    - apps/backend/src/migrations/2026-06-16_consumable_lot_seed.sql
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ConsumableScanModal.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/MaterialListPanel.tsx
+    - apps/frontend/src/stores/kioskStore.ts
+    - apps/backend/src/modules/production/** (job-consumable-lot 신규, 예정)
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - MAT_LOTS (JSHANES 40/1000)
+    - .ai-coordination/LOCKS.md
+  note: 3단계(실적 누적)에서 prod-result.service.ts 수정 필요 — T-MAT-ISSUE-WIP-STOCK과 충돌 조율 대상
+  started: 2026-06-16 17:55 KST
+  last_seen: 2026-06-16 17:55 KST
+  expires: 2026-06-16 19:30 KST
+  status: active
+
+- task: T-KIOSK-EQUIP-INSPECT-MIGRATION-RERUN
+  owner: codex
+  files:
+    - apps/backend/src/migrations/2026-06-16_equip_inspect_workday_order.sql
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 16:13 KST
+  last_seen: 2026-06-16 16:15 KST
+  expires: 2026-06-16 16:45 KST
+  status: released
+
+- task: T-KIOSK-EQUIP-INSPECT-WORKDAY-ORDER
+  owner: codex
+  files:
+    - apps/backend/src/entities/equip-inspect-log.entity.ts
+    - apps/backend/src/modules/equipment/controllers/daily-inspect.controller.ts
+    - apps/backend/src/modules/equipment/controllers/daily-inspect.controller.spec.ts
+    - apps/backend/src/modules/equipment/dto/equip-inspect.dto.ts
+    - apps/backend/src/modules/equipment/services/equip-inspect.service.ts
+    - apps/backend/src/modules/equipment/services/equip-inspect.service.spec.ts
+    - apps/backend/src/modules/equipment/equipment.module.ts
+    - apps/backend/src/migrations/2026-06-16_equip_inspect_workday_order.sql
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/DailyInspectModal.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkerInspectModal.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/*inspect*.structure.test.mjs
+    - docs/superpowers/plans/2026-06-16-equip-inspect-workday-order.md
+    - docs/reports/db-schema-erd.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 15:31 KST
+  last_seen: 2026-06-16 15:45 KST
+  expires: 2026-06-16 17:30 KST
+  status: released
+
+- task: T-KIOSK-JOBORDER-PERSIST-REFRESH
+  owner: codex
+  files:
+    - apps/frontend/src/stores/kioskStore.ts
+    - apps/frontend/src/stores/kiosk-store-persist.structure.test.mjs
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-16 17:40 KST
+  last_seen: 2026-06-16 17:50 KST
+  expires: 2026-06-16 18:10 KST
+  status: released
+
+- task: T-BOM-ITEM-TYPE-LABEL-FIX
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/bom/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/bom/components/BomTab.tsx
+    - apps/frontend/src/app/(authenticated)/master/bom/components/BomFormModal.tsx
+    - apps/frontend/src/app/(authenticated)/master/bom/bom-item-type-label.structure.test.mjs
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 17:05 KST
+  last_seen: 2026-06-16 17:30 KST
+  expires: 2026-06-16 17:45 KST
+  status: released
+
+- task: T-KIOSK-DAILY-INSPECT-EMPTY-GUIDE
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/DailyInspectModal.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/daily-inspect-modal.structure.test.mjs
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 16:40 KST
+  last_seen: 2026-06-16 16:50 KST
+  expires: 2026-06-16 17:20 KST
+  status: released
+
+- task: T-MAT-ISSUE-WIP-STOCK
+  owner: claude
+  files:
+    - apps/backend/src/entities/warehouse.entity.ts
+    - apps/backend/src/modules/inventory/services/warehouse.service.ts
+    - apps/backend/src/modules/material/services/mat-issue.service.ts
+    - apps/backend/src/modules/production/services/auto-issue.service.ts
+    - apps/backend/src/modules/production/services/prod-result.service.ts
+    - apps/backend/src/modules/material/services/issue-request.service.ts
+    - apps/backend/src/migrations/2026-06-16_warehouse_equip_code.sql
+    - apps/backend/src/migrations/2026-06-16_equip_wip_warehouse_seed.sql
+    - apps/frontend/src/app/(authenticated)/material/stock/page.tsx
+    - apps/frontend/src/app/(authenticated)/inventory/transaction/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/wip-material-stock/** (신규)
+    - apps/frontend/src/config/menuConfig.ts
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - WAREHOUSES/MAT_STOCKS/STOCK_TRANSACTIONS (JSHANES 40/1000)
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-16 16:30 KST
+  last_seen: 2026-06-16 18:30 KST
+  expires: 2026-06-16 19:00 KST
+  status: released
+
+- task: T-KIOSK-WORKER-INSPECT-EMPTY-FIX
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkerInspectModal.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/EquipHeader.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/utils/equipOptions.ts
+    - apps/frontend/src/stores/kioskStore.ts
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 15:20 KST
+  last_seen: 2026-06-16 15:45 KST
+  expires: 2026-06-16 16:20 KST
+  status: released
+- task: T-MAT-FLOW-COHERENCE-FIX
+  owner: codex
+  files:
+    - apps/backend/src/modules/material/services/arrival.service.ts
+    - apps/backend/src/modules/material/services/arrival.service.spec.ts
+    - apps/backend/src/migrations/2026-06-16_repair_mat_flow_audit_gaps.sql
+    - apps/frontend/src/app/(authenticated)/material/arrival/components/ManualArrivalModal.tsx
+    - apps/frontend/src/app/(authenticated)/material/arrival/components/PoArrivalModal.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 13:39 KST
+  last_seen: 2026-06-16 13:50 KST
+  expires: 2026-06-16 15:00 KST
+  status: released
+
+- task: T-MAT-ARRIVAL-TRANSACTION-MENU
+  owner: codex
+  files:
+    - apps/frontend/src/config/menuConfig.ts
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
+    - apps/backend/src/migrations/2026-06-16_add_arrival_transaction_menu.sql
+    - MENU_CATEGORY_ITEMS (JSHANES 40/1000)
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-16 14:05 KST
+  last_seen: 2026-06-16 14:35 KST
+  expires: 2026-06-16 15:30 KST
+  status: released
+
 - task: T-MAT-ARRIVAL-TRANSACTION-PAGE
   owner: codex
   files:
@@ -49,6 +215,12 @@ Before editing, add a lock entry. Mark it released when done.
 
 ## History
 
+- T-KIOSK-JOBORDER-PERSIST-REFRESH (codex, 2026-06-16): `/production/input-kiosk` 브라우저 새로고침 시 선택된 작업지시가 사라지는 문제 수정. 원인은 `harness-kiosk` Zustand persist `partialize`가 `selectedJobOrder`를 제외한 것. `selectedJobOrder`를 persist 대상에 포함하고 구조 테스트/FE tsc 통과. 파일: `apps/frontend/src/stores/{kioskStore.ts,kiosk-store-persist.structure.test.mjs}`.
+
+- T-KIOSK-BOM-CONSUMABLE-IN-EQUIP-SECTION (claude, 2026-06-16): 생산실적 키오스크 좌측 하단 `소모성 설비 부품` 섹션이 설비 장착 소모품(CONSUMABLE_MASTERS, `/equipment/consumables/mounted`)을 보여주던 것을, 작업지시 제품 BOM의 소모품(`ITEM_TYPE='CONSUMABLE'`, 예 HNS02C2ABCDE→CUTBL003 커터날3)을 장착 상태로 표시하도록 전환. 사용자 의도: 설비 구성 소모품과 제품생산 투입 소모품은 별개이며, 키오스크에는 BOM을 원자재(자재리스트)/소모품(소모성 설비부품)으로 분리 표현. MaterialListPanel이 BOM(`/master/boms/parent/{itemCode}`) 응답을 `filterBomMaterials`(원자재)·`filterBomConsumables`(소모품)로 분리하고, 설비 기준 useEffect·설비소모품 수명UI(lifeBar 등) 제거. 하단 섹션은 품목코드/소요수량/품목명 + `장착됨` 표시. i18n 4종 `kiosk.material.mounted` add-only. frontend tsc 통과. 파일: `apps/frontend/src/app/(authenticated)/production/input-kiosk/components/MaterialListPanel.tsx`, `apps/frontend/src/locales/{ko,en,zh,vi}.json`.
+- T-BOM-ITEM-TYPE-LABEL-FIX (codex, 2026-06-16): `/master/bom` 품목유형 표시가 `FINISHED/SEMI_PRODUCT/RAW_MATERIAL/CONSUMABLE` 원 코드로 보이던 문제 수정. BOM API/DB는 `ITEM_MASTERS.ITEM_TYPE` 같은 컬럼을 쓰며, 프론트 부모 목록/트리/범례/자품목 선택 힌트에서 `comCode.ITEM_TYPE` 한글 라벨로 변환. 구조 테스트, frontend tsc, API/Oracle/브라우저 3012 실측 통과. 파일: `apps/frontend/src/app/(authenticated)/master/bom/{page.tsx,bom-item-type-label.structure.test.mjs,components/BomTab.tsx,components/BomFormModal.tsx}`.
+- T-CLEANUP-VNHNS-STRAGGLERS (claude, 2026-06-16): 폐기 플랜트 VNHNS 잔재 데이터 제거. /quality/change-control가 정본 1000 스코프라 CHANGE_ORDERS 6건(전부 PLANT=VNHNS)이 안 보이던 것이 발단. 전수 조사 결과 IATF 신규 모듈 4개 테이블에만 VNHNS 잔재 존재(CALIBRATION_LOGS 12, GAUGE_MASTERS 10, MOLD_USAGE_LOGS 10, CHANGE_ORDERS 6 = 38행), FK 제약 없음 확인 후 DELETE. 해당 4테이블은 1000 데이터가 원래 0이라 삭제 후 빈 테이블(보존 대상 없음). VNHNS 0 확정. 파일: `apps/backend/src/migrations/2026-06-16_cleanup_vnhns_stragglers.sql`.
+- T-KIOSK-BOM-CONSUMABLE-FILTER (claude, 2026-06-16): 생산실적 키오스크 자재리스트에 소모품(ITEM_TYPE='CONSUMABLE')이 투입자재처럼 노출되던 버그 수정. 원인은 BOM 자재리스트/자재 스캔이 `/master/boms/parent/{code}` 응답을 품목유형 구분 없이 그대로 사용한 것(예: HNS02C2ABCDE BOM에 CUTBL003=CONSUMABLE이 SEQ2로 등재). BOM API 응답의 `childPart.itemType` 기준으로 CONSUMABLE을 거르는 공통 함수 `filterBomMaterials()`를 MaterialListPanel에 추가하고, BOM을 로드하는 두 지점(MaterialListPanel, MaterialScanModal)에 적용. 서버 scanAndRegister는 클라가 보낸 bomItems로만 매칭하므로 클라 필터로 표시·롯트스캔·인터락 모두 일관 정리됨. frontend tsc 통과. 파일: `apps/frontend/src/app/(authenticated)/production/input-kiosk/components/{MaterialListPanel,MaterialScanModal}.tsx`.
 - T-COMCODE-I18N-DEADKEY-CLEANUP (claude, 2026-06-16): T-COMCODE-SEMANTIC-FIX DB 정정의 후속으로, 표시 미사용 i18n dead 키 3종을 4개 locale에서 제거. `comCode.ARRIVAL_PO_TYPE`(PO만)·`comCode.ARRIVAL_RESULT_STATUS`(DONE만)는 그룹째 삭제, `comCode.RECEIVE_STATUS.DONE`만 제거(나머지 4코드 보존). 각 locale -3키, JSON 유효성 검증. 파일: `apps/frontend/src/locales/{ko,en,zh,vi}.json`, `tools/cleanup-comcode-i18n-deadkeys.mjs`.
 - T-MENU-MERGE-MATERIAL (claude, 2026-06-16): 좌측 메뉴 `자재수불관리(MATERIAL)` + `자재재고관리(INVENTORY)` 2개 카테고리를 `자재관리`(MATERIAL, 라벨 `menu.materialMgmt`) 하나로 통합. menuConfig.ts 두 블록 병합(INVENTORY 7개 leaf를 MATERIAL 뒤로, Warehouse import 제거), i18n 4종에 `menu.materialMgmt` add-only(자재관리/Material Management/物料管理/Quản lý vật tư), 시드 재생성(gen-menu-category-seed.js, 카테고리 20→19). RBAC(ROLE_MENU_PERMISSIONS)는 leaf 코드만 저장 → 권한 영향 없음. Live DB(JSHANES 40/1000)는 운영 커스터마이징 보존 위해 menuConfig 덮어쓰기 대신 INVENTORY→MATERIAL 이관 마이그레이션만 적용(MATERIAL 16→23개 항목, INVENTORY 카테고리 삭제, 고아 0). 프론트 tsc 통과. 파일: `apps/frontend/src/config/menuConfig.ts`, `apps/frontend/src/locales/{ko,en,zh,vi}.json`, `scripts/2026-05-18_seed_menu_categories.sql`, `apps/backend/src/migrations/2026-06-16_merge_material_inventory_menu.sql`.
 - T-COMCODE-SEMANTIC-FIX (claude, 2026-06-16): 의미 확인 2건 정리. 코드 실측 결과 직전 추가한 3개 코드가 전부 잘못된 컬럼 매핑(false positive)으로 확인되어 DB COM_CODES에서 제거: `ARRIVAL_PO_TYPE.PO`(배지는 poType=RM/CM, ARRIVAL_TYPE와 혼동), `ARRIVAL_RESULT_STATUS.DONE`·`RECEIVE_STATUS.DONE`(배지는 파생/IQC흐름 상태만 표시, 영속 DONE 미노출). 그룹이 원래 정확한 집합으로 복원(RM,CM / ARRIVED,IQC_PROGRESS,IQC_DONE,RECEIVED,CANCELED / PENDING,IQC_IN_PROGRESS,PASSED,FAILED), 배지값 100% 커버 확인. 잔여: 동일 3개 i18n dead 키(무해, 표시 미사용)는 locales 파일 타 lock(T-MENU-MERGE-MATERIAL) 해제 후 제거 예정. 변경: JSHANES COM_CODES 3행 DELETE.

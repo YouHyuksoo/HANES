@@ -6,6 +6,15 @@
 
 ## Latest
 
+- T-MAT-ISSUE-WIP-STOCK 완료(커밋됨): 자재출고를 "출고=소비"에서 **2단계 WIP**(창고→설비 공정재고 이동 + 생산실적 완료 시 소비)로 전환. 공정재고는 **설비(EQUIP_CODE) 단위 별도 테이블**.
+  - 신규: `WIP_MAT_STOCKS`(PK COMPANY/PLANT_CD/EQUIP_CODE/ITEM_CODE/MAT_UID), `WIP_MAT_TRANSACTIONS`(전용 거래원장), `SEQ_WIP_TX` 채번(WTX{YYMMDD}-NNNNN). JSHANES 적용 완료. 엔티티 `wip-mat-stock.entity.ts`/`wip-mat-transaction.entity.ts`, 서비스 `WipMatStockService`(addStockInTx/deductStockInTx/restoreInTx/findByEquip).
+  - 흐름: 출고=원자재 MAT_STOCKS 차감+STOCK_TRANSACTIONS `WIP_MOVE` / WIP_MAT_STOCKS 가산+WIP_MAT_TRANSACTIONS `WIP_IN`. 소비(생산실적 완료, auto-issue)=WIP_MAT_STOCKS 차감 `PROD_CONSUME`. 취소 모두 대칭(`WIP_MOVE_CANCEL`/`WIP_IN_CANCEL`/`PROD_CONSUME_CANCEL`). auto-issue 이중차감 방지(원자재 미접근), 설비 미배정 시 MAT_OUT fallback.
+  - 거래유형 공통코드 `WIP_MOVE`/`WIP_MOVE_CANCEL` 신규(기존 TRANSFER=창고이동과 구분). i18n 4종 라벨.
+  - 화면: `production/wip-material-stock`(설비별 공정재고 조회) + API `GET /inventory/wip-mat-stocks`. 자재재고 화면은 원자재 전용 복귀. **메뉴 DB 시드는 보류(codex 메뉴 작업 충돌 회피) — 추후 MENU_CATEGORY_ITEMS 반영 필요.**
+  - 롤백: 창고경유(WAREHOUSES.EQUIP_CODE는 잔류 허용, getOrCreateEquipWipWarehouse 헬퍼·WIP창고46행 시드 제거).
+  - 검증: backend/frontend tsc 0, 핵심 jest 63 passed, **JSHANES 실DB E2E(출고이동→이동취소) 4테이블 정합 확인**(WO2606150066/EQ-ATCNS-01/CBL-A). 생산실적 소비는 단위테스트 커버+화면 검증 권장(키오스크 흐름).
+  - 설계/계획: `docs/superpowers/specs/2026-06-16-wip-mat-stock-separate-table-design.md`, `docs/superpowers/plans/2026-06-16-wip-mat-stock-separate-table-plan.md`. 잔재: WIP_MAT_STOCKS에 EQ-ATCNS-01/CBL-A qty=0 1행(취소 이력, 무해). 폐기 시드파일 `2026-06-16_equip_wip_warehouse_seed.sql` 잔류(적용분 롤백됨).
+
 - T-MENU-MERGE-MATERIAL 완료(미커밋): 좌측 메뉴 `자재수불관리(MATERIAL)`+`자재재고관리(INVENTORY)` 2개를 `자재관리`(MATERIAL, 라벨 `menu.materialMgmt`) 하나로 통합.
   - menuConfig.ts: INVENTORY 블록 제거, MATERIAL 블록에 INVENTORY 7개 leaf 병합 + labelKey→menu.materialMgmt, Warehouse import 제거.
   - i18n 4종 `menu.materialMgmt` add-only(자재관리/Material Management/物料管理/Quản lý vật tư). 시드 재생성(카테고리 20→19).
