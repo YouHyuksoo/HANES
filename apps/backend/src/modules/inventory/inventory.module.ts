@@ -34,6 +34,7 @@ import { ProductInventoryService } from './services/product-inventory.service';
 import { ProductPhysicalInvService } from './services/product-physical-inv.service';
 import { WarehouseLocationService } from './services/warehouse-location.service';
 import { ProductHoldService } from './services/product-hold.service';
+import { WipMatStockService } from './services/wip-mat-stock.service';
 import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
 
 @Module({
@@ -47,8 +48,9 @@ import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
     ProductPhysicalInvService,
     WarehouseLocationService,
     ProductHoldService,
+    WipMatStockService,
     { provide: STOCK_MANAGER, useExisting: ProductInventoryService },
   ],
-  exports: [TypeOrmModule, InventoryService, InventoryQueryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, STOCK_MANAGER],
+  exports: [TypeOrmModule, InventoryService, InventoryQueryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, WipMatStockService, STOCK_MANAGER],
 })
 export class InventoryModule {}
