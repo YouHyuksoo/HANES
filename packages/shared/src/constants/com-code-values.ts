@@ -113,7 +113,7 @@ export const CONNECTION_STATUS_VALUES = ['CONNECTED', 'DISCONNECTED', 'ERROR'] a
 export type ConnectionStatusValue = typeof CONNECTION_STATUS_VALUES[number];
 
 // ===== 공정 유형 =====
-export const PROCESS_TYPE_VALUES = ['CUTTING', 'CRIMPING', 'ASSEMBLY', 'INSPECTION', 'PACKING'] as const;
+export const PROCESS_TYPE_VALUES = ['CUTTING', 'STRIPPING', 'CRIMPING', 'WELDING', 'SHIELD', 'HEAT', 'ASSEMBLY', 'INSPECTION', 'PACKING'] as const;
 export type ProcessTypeValue = typeof PROCESS_TYPE_VALUES[number];
 
 // ===== 품목 유형 =====
