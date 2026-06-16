@@ -29,27 +29,6 @@ notes:
 
 ## Active Tasks
 
-## T-SHIPPING-PACK-EMPTY-BOX-DELETE 박스포장 빈 박스 삭제 및 선택 표시
-status: IN_PROGRESS
-owner: codex
-role: implementer
-scope:
-- `/shipping/pack` 박스 생성 후 제품 미포장 박스 삭제 액션 추가
-- 행 액션 버튼/아이콘 위치 고정 정렬
-- 현재 제품을 담는 선택 박스 표시 강화
-files:
-- apps/frontend/src/app/(authenticated)/shipping/pack/page.tsx
-- apps/frontend/src/app/(authenticated)/shipping/pack/shipping-pack-empty-box-delete.structure.test.mjs
-- .ai-coordination/TASKS.md
-- .ai-coordination/LOCKS.md
-verification:
-- node --test apps/frontend/src/app/(authenticated)/shipping/pack/shipping-pack-empty-box-delete.structure.test.mjs
-- pnpm --filter @hanes/frontend exec tsc --noEmit --pretty false
-review:
-- needs-review
-notes:
-- 백엔드 `DELETE /shipping/boxes/:id`는 이미 OPEN/빈 박스만 삭제 허용하므로 프론트 노출 및 선택 표시를 보강한다.
-
 ## T-MATERIAL-FLOW-FE-RUNTIME 자재관리 프론트 실제 흐름 검증
 status: IN_PROGRESS
 owner: codex

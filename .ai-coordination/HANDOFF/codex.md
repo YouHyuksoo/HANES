@@ -98,6 +98,7 @@
 ## Current Known Issues
 
 - 없음.
+- `T-SHIPPING-PACK-EMPTY-BOX-DELETE` 완료. `/shipping/pack` 행 액션은 4개 고정 아이콘 슬롯(제품 담기/마감·재오픈/라벨/빈 박스 삭제)으로 정렬했고, 빈 OPEN 박스만 삭제 확인 모달을 통해 `DELETE /shipping/boxes/:boxNo`를 호출한다. 제품 담기 모달에는 `현재 담는 박스`와 박스번호를 크게 표시하고 해당 행을 하이라이트한다. 구조 테스트, frontend tsc, 3002 브라우저 DOM, API 빈 박스 생성/삭제 검증 완료.
 - `T-SYSTEM-LABEL-MENU-RENAME` 완료. `MST_LABEL` 메뉴 labelKey `menu.master.label` 한글 값을 요청 표기 그대로 `라벨다자인관리`로 변경했다. 페이지 제목 `label.title`은 유지.
 - `T-CONSUMABLE-LABEL-PRINTLOG-PAYLOAD` 완료. `/consumables/label` 브라우저 인쇄 후 공용 `/material/label-print/log` 호출 payload를 `uidList`로 수정했다. 실제 3002에서 첫 행 선택 후 `UID 발행` 시 create 201, print-log 201 확인. 검증 UID `C26061700007` 관련 stock/log는 삭제 후 잔여 0.
 - `T-CONSUMABLE-LABEL-IMAGE-PRINTLOG` 완료. `/consumables/label` 그리드에 소모품 이미지 37개 표시 확인. `POST /consumables/label/create`의 `LABEL_PRINT_LOGS.PRINTED_AT` null 오류는 `printedAt`/`seq` 명시로 수정했고 실제 API 성공 확인. 검증용 UID `C26061700004`와 로그는 삭제해 잔여 0.

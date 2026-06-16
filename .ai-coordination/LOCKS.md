@@ -28,8 +28,8 @@ Before editing, add a lock entry. Mark it released when done.
   started: 2026-06-17 KST
   last_seen: 2026-06-17 KST
   expires: 2026-06-17 KST
-  status: active
-  note: `/shipping/pack` 빈 박스 삭제 노출, 액션 버튼 고정 정렬, 현재 담는 박스 표시 강화.
+  status: released
+  note: `/shipping/pack` 빈 박스 삭제 노출, 액션 버튼 4슬롯 고정 정렬, 현재 담는 박스 모달/행 표시 강화. 구조 테스트, frontend tsc, 3002 브라우저, 빈 박스 생성/삭제 API 검증 완료.
 
 - task: T-SHIPPING-PACK-TEXT-ACTIONS
   owner: claude

@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-SHIPPING-PACK-EMPTY-BOX-DELETE | 2026-06-17 | codex | `/shipping/pack` 빈 OPEN 박스 삭제 버튼 노출, 행 액션 4개 아이콘 슬롯 고정 정렬, 현재 담는 박스 모달/행 강조 추가 및 실제 생성/삭제 검증 | evidence: JOURNAL 2026-06-17 03:30 Codex
 - T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS | 2026-06-17 | codex | `/master/label` 좌측 필드 목록을 고정값이 아닌 디자인별 사용자 정의 `sourceFields`로 저장/추가/수정/삭제 가능하게 전환하고 3002 저장 요청 201 및 임시 템플릿 정리 확인 | evidence: JOURNAL 2026-06-17 02:49 Codex
 - T-MASTER-LABEL-BARTENDER-DESIGNER | 2026-06-17 | codex | `/master/label` 상단 탭 제거 후 객체 기반 라벨 디자이너(글자/1D/2D/박스/선/원/이미지, 드래그/앵커 리사이즈, 소스필드 매핑 저장)로 전환하고 `/consumables/label` 실제 UID 발행 인쇄 HTML 치환까지 검증 | evidence: JOURNAL 2026-06-17 02:36 Codex
 - T-MASTER-LABEL-DESIGN-ONLY | 2026-06-17 | codex | `/master/label` 모든 카테고리를 디자인 제공 전용으로 전환하고 품목 탭/대상조회/선택출력 제거, 소모품 탭명 적용 | evidence: JOURNAL 2026-06-17 01:59 Codex

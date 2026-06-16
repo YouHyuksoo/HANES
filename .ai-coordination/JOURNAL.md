@@ -10,6 +10,14 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 03:30 Codex
+
+- 작업: `T-SHIPPING-PACK-EMPTY-BOX-DELETE` `/shipping/pack` 박스포장 화면에서 제품을 담지 않은 생성 박스를 삭제할 수 있게 하고, 행 액션 버튼 위치와 현재 담는 박스 표시를 보강.
+- 확인: 백엔드 `DELETE /shipping/boxes/:id`는 이미 `OPEN`, 팔레트 미할당, `qty=0`, `serialList` 없음, OQC 이력 없음 조건에서만 삭제를 허용한다. 프론트에 이 조건을 `canDeleteEmptyBox()`로 노출하고 삭제 확인 모달을 연결했다.
+- 변경: 그리드 행 액션을 `제품 담기 / 박스 마감·재오픈 / 라벨 재발행 / 빈 박스 삭제` 4개 고정 아이콘 슬롯(`grid grid-cols-4`, 32x32 버튼)으로 통일했다. 상태별로 버튼을 숨기지 않고 disabled 처리해 위치가 들쭉날쭉 바뀌지 않게 했다. 제품 담기 모달 상단에는 `현재 담는 박스`와 박스번호를 크게 표시하고, 해당 행은 `ring-2 ring-primary bg-primary/5`로 강조한다.
+- 검증: 구조 테스트 `node --test apps/frontend/src/app/(authenticated)/shipping/pack/shipping-pack-empty-box-delete.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 3002 브라우저에서 첫 행 액션 버튼 4개, 32x32 고정, title `제품 담기/박스 마감/라벨 재발행/빈 박스 삭제`, 현재 박스 `BX2606170001` 표시, 하이라이트 행 1건, console/page error 0 확인. API로 HNS02 빈 박스 `BX2606170003` 생성 후 삭제, 재조회 404 확인.
+- 상태: 완료, lock released. 기존 진행 중인 `T-MATERIAL-FLOW-FE-RUNTIME` 작업은 별도 active로 유지.
+
 ## 2026-06-17 03:13 Claude
 
 - 작업: 사용자 요청으로 (1) 라벨 디자이너 `/master/label` 소스테이블에 `box`(제품포장) 추가, (2) 좌측 필드 패널을 읽기전용 컬럼 목록(클릭→글자 객체 추가)으로 단순화. 별개로 `/equipment/status`를 모니터링(사이니지) 화면으로 재구성, `/workflow` CPU 폭주 수정.
