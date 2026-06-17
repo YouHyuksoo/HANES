@@ -4567,6 +4567,10 @@
       "location": "Vị trí",
       "lifeLabel": "Tuổi thọ",
       "currentExpected": "Đã dùng / Dự kiến",
+      "managedTarget": "Đối tượng quản lý tuổi thọ",
+      "normalUse": "Sử dụng bình thường",
+      "impendingReplace": "Sắp thay thế",
+      "immediateAction": "Hành động ngay",
       "replaceAction": "Thay thế",
       "searchPlaceholder": "Tìm mã, tên..."
     },

@@ -4602,6 +4602,10 @@
       "location": "위치",
       "lifeLabel": "수명",
       "currentExpected": "사용량/기대수명",
+      "managedTarget": "수명관리 대상",
+      "normalUse": "정상 사용",
+      "impendingReplace": "교체 임박",
+      "immediateAction": "즉시 조치",
       "replaceAction": "교체",
       "searchPlaceholder": "코드, 소모품명 검색..."
     },

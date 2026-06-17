@@ -37,6 +37,13 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
         ),
       },
       {
+        id: 'qty',
+        header: t('common.quantity'),
+        size: 50,
+        meta: { align: 'center' as const, filterType: 'none' as const },
+        cell: () => <span className="text-xs text-text-muted">1</span>,
+      },
+      {
         accessorKey: 'consumableCode',
         header: t('consumables.comp.consumableCode'),
         size: 120,

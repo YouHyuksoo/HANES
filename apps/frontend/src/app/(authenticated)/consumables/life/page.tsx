@@ -2,37 +2,59 @@
 
 /**
  * @file src/app/(authenticated)/consumables/life/page.tsx
- * @description 소모품 수명 현황 페이지 - 컴팩트 테이블 디자인
+ * @description 소모품 수명 현황 페이지 — conUid별 개별 인스턴스 수명 모니터링
  *
  * 초보자 가이드:
  * 1. **수명 관리**: 소모품(금형, 지그, 공구)의 사용횟수 기반 수명 모니터링
  * 2. **상태**: NORMAL(정상), WARNING(주의), REPLACE(교체필요)
- * 3. API: GET /consumables/life-status
+ * 3. API: GET /consumables/stocks (expectedLife>0 인스턴스만 표시)
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity, Search } from "lucide-react";
+import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity, Search, Layers } from "lucide-react";
 import { Card, CardContent, Button, ComCodeBadge, Input } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
-interface LifeStatus {
+interface LifeInstance {
+  conUid: string;
   consumableCode: string;
   consumableName: string;
   category: string;
   currentCount: number;
   expectedLife: number;
-  warningCount: number;
   status: string;
-  lastReplaceAt: string | null;
   location: string;
+  mountedEquipCode: string | null;
+  lastReplaceAt: string | null;
+}
+
+function computeStatus(currentCount: number, expectedLife: number): string {
+  if (!expectedLife) return "NORMAL";
+  const pct = currentCount / expectedLife;
+  if (pct >= 1) return "REPLACE";
+  if (pct >= 0.8) return "WARNING";
+  return "NORMAL";
+}
+
+interface StockItem {
+  conUid: string;
+  consumableCode: string;
+  consumableName: string;
+  category: string | null;
+  currentCount: number;
+  expectedLife: number | null;
+  status: string;
+  location: string | null;
+  mountedEquipCode: string | null;
+  recvDate: string | null;
 }
 
 export default function ConsumableLifePage() {
   const { t } = useTranslation();
-  const [data, setData] = useState<LifeStatus[]>([]);
+  const [rawData, setRawData] = useState<LifeInstance[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -41,20 +63,44 @@ export default function ConsumableLifePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
-      if (searchTerm) params.search = searchTerm;
-      if (statusFilter) params.status = statusFilter;
-      if (categoryFilter) params.category = categoryFilter;
-      const res = await api.get("/consumables/life-status", { params });
-      setData(res.data?.data ?? []);
+      const res = await api.get("/consumables/stocks", { params: { limit: "5000" } });
+      const raw = res.data?.data ?? res.data ?? [];
+      const items: StockItem[] = Array.isArray(raw) ? raw : raw?.data ?? [];
+      const lifeItems: LifeInstance[] = items
+        .filter((d: StockItem) => d.expectedLife != null && d.expectedLife > 0)
+        .map((d: StockItem) => ({
+          conUid: d.conUid,
+          consumableCode: d.consumableCode,
+          consumableName: d.consumableName,
+          category: d.category ?? "",
+          currentCount: d.currentCount,
+          expectedLife: d.expectedLife ?? 0,
+          status: computeStatus(d.currentCount, d.expectedLife ?? 0),
+          location: d.location ?? "",
+          mountedEquipCode: d.mountedEquipCode,
+          lastReplaceAt: d.recvDate,
+        }));
+      setRawData(lifeItems);
     } catch {
-      setData([]);
+      setRawData([]);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter, categoryFilter]);
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const data = useMemo(() => {
+    return rawData.filter((d) => {
+      const matchSearch = !searchTerm ||
+        d.conUid.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.consumableCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.consumableName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchStatus = !statusFilter || d.status === statusFilter;
+      const matchCategory = !categoryFilter || d.category === categoryFilter;
+      return matchSearch && matchStatus && matchCategory;
+    });
+  }, [rawData, searchTerm, statusFilter, categoryFilter]);
 
   const stats = useMemo(() => ({
     total: data.length,
@@ -63,40 +109,45 @@ export default function ConsumableLifePage() {
     replace: data.filter((d) => d.status === "REPLACE").length,
   }), [data]);
 
+  const categoryStats = useMemo(() => {
+    const map = new Map<string, number>();
+    const statusMap = new Map<string, { normal: number; warning: number; replace: number }>();
+    data.forEach((d) => {
+      map.set(d.category, (map.get(d.category) || 0) + 1);
+      if (!statusMap.has(d.category)) statusMap.set(d.category, { normal: 0, warning: 0, replace: 0 });
+      const s = statusMap.get(d.category)!;
+      if (d.status === "NORMAL") s.normal++;
+      else if (d.status === "WARNING") s.warning++;
+      else if (d.status === "REPLACE") s.replace++;
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([cat, cnt]) => ({ cat, cnt, ...statusMap.get(cat)! }));
+  }, [data]);
+
   const infoCards = useMemo(() => [
     {
-      key: "total",
-      label: t("common.total"),
-      value: stats.total,
-      subLabel: "수명관리 대상",
-      icon: Activity,
+      key: "total", label: t("common.total"), value: stats.total,
+      subLabel: t("consumables.life.managedTarget"), icon: Activity,
       tone: "border-sky-200 bg-sky-50/80 text-sky-700 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-300",
       iconTone: "bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300",
     },
     {
-      key: "normal",
-      label: t("consumables.life.normal"),
-      value: stats.normal,
-      subLabel: "정상 사용",
-      icon: CheckCircle,
+      key: "normal", label: t("consumables.life.normal"), value: stats.normal,
+      subLabel: t("consumables.life.normalUse"), icon: CheckCircle,
       tone: "border-emerald-200 bg-emerald-50/80 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300",
       iconTone: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300",
     },
     {
-      key: "warning",
-      label: t("consumables.life.warning"),
-      value: stats.warning,
-      subLabel: "교체 임박",
-      icon: AlertTriangle,
+      key: "warning", label: t("consumables.life.warning"), value: stats.warning,
+      subLabel: t("consumables.life.impendingReplace"), icon: AlertTriangle,
       tone: "border-amber-200 bg-amber-50/80 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300",
       iconTone: "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300",
     },
     {
-      key: "replace",
-      label: t("consumables.life.replace"),
-      value: stats.replace,
-      subLabel: "즉시 조치",
-      icon: XCircle,
+      key: "replace", label: t("consumables.life.replace"), value: stats.replace,
+      subLabel: t("consumables.life.immediateAction"), icon: XCircle,
       tone: "border-red-200 bg-red-50/80 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300",
       iconTone: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300",
     },
@@ -119,18 +170,24 @@ export default function ConsumableLifePage() {
     }
   };
 
-  const columns = useMemo<ColumnDef<LifeStatus>[]>(() => [
+  const columns = useMemo<ColumnDef<LifeInstance>[]>(() => [
     {
       id: "actions", header: t("common.manage"), size: 70, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => row.original.status === "REPLACE" ? (
         <Button size="sm" variant="secondary"><RotateCcw className="w-3 h-3 mr-1" /> {t("consumables.life.replaceAction")}</Button>
       ) : null,
     },
+    { accessorKey: "conUid", header: t("consumables.stock.conUid"), size: 150, meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
+    },
     { accessorKey: "status", header: t("common.status"), size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => getStatusBadge(getValue() as string) },
     { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 110, meta: { filterType: "text" as const } },
     { accessorKey: "consumableName", header: t("consumables.master.name"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "category", header: t("consumables.life.categoryLabel"), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
     { accessorKey: "location", header: t("consumables.life.location"), size: 110, meta: { filterType: "text" as const } },
+    { accessorKey: "mountedEquipCode", header: t("consumables.stock.mountedEquip"), size: 110, meta: { filterType: "text" as const },
+      cell: ({ getValue }) => (getValue() as string | null) ?? "-",
+    },
     {
       id: "lifePercentage", header: t("consumables.life.lifeLabel"), size: 100, meta: { filterType: "none" as const },
       cell: ({ row }) => {
@@ -178,28 +235,41 @@ export default function ConsumableLifePage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 flex-shrink-0">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 flex-shrink-0">
         {infoCards.map((card) => {
           const Icon = card.icon;
           return (
-            <div
-              key={card.key}
-              data-testid={`consumable-life-card-${card.key}`}
-              className={`min-h-[118px] rounded-lg border px-5 py-4 flex items-center justify-between ${card.tone}`}
-            >
+            <div key={card.key} data-testid={`consumable-life-card-${card.key}`}
+              className={`rounded-lg border px-4 py-3 flex items-center justify-between gap-2 ${card.tone}`}>
               <div className="min-w-0">
-                <div className="text-sm font-semibold truncate">{card.label}</div>
-                <div className="mt-2 text-3xl font-bold leading-none text-text">
-                  {card.value.toLocaleString()}
-                </div>
-                <div className="mt-2 text-xs opacity-80 truncate">{card.subLabel}</div>
+                <div className="text-xs font-semibold truncate">{card.label}</div>
+                <div className="text-2xl font-bold leading-none text-text">{card.value.toLocaleString()}</div>
+                <div className="text-[10px] opacity-70 truncate">{card.subLabel}</div>
               </div>
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${card.iconTone}`}>
-                <Icon className="w-6 h-6" />
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${card.iconTone}`}>
+                <Icon className="w-4 h-4" />
               </div>
             </div>
           );
         })}
+        {categoryStats.length > 0 && (
+          <div className="rounded-lg border border-surface-alt bg-surface px-3 py-3 flex flex-col justify-center gap-1">
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-text-muted" />
+              <span className="text-xs font-semibold text-text-muted">{t("consumables.life.categoryLabel")}</span>
+            </div>
+            <div className="text-2xl font-bold leading-none text-text">{categoryStats.length}</div>
+            <div className="flex gap-1 flex-wrap">
+              {categoryStats.map((cs) => (
+                <span key={cs.cat} className="inline-flex items-center gap-0.5 text-[10px] font-medium text-text-muted">
+                  <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={cs.cat} className="text-[10px]" />
+                  <span>{cs.cnt}</span>
+                  {cs.replace > 0 && <span className="text-red-500 font-bold">({cs.replace})</span>}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
@@ -223,8 +293,7 @@ export default function ConsumableLifePage() {
               </div>
             </div>
           }
-
-        sqlQuery={`SELECT *\nFROM CON_LIFE_MGMT\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={`SELECT *\nFROM CONSUMABLE_STOCKS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND EXPECTED_LIFE > 0\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
   );

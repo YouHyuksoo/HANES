@@ -4567,6 +4567,10 @@
       "location": "位置",
       "lifeLabel": "寿命",
       "currentExpected": "使用量/预期寿命",
+      "managedTarget": "寿命管理对象",
+      "normalUse": "正常使用",
+      "impendingReplace": "即将更换",
+      "immediateAction": "立即处理",
       "replaceAction": "更换",
       "searchPlaceholder": "搜索代码、名称..."
     },

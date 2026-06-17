@@ -4581,6 +4581,10 @@
       "location": "Location",
       "lifeLabel": "Life",
       "currentExpected": "Used / Expected",
+      "managedTarget": "Life Management Targets",
+      "normalUse": "Normal Use",
+      "impendingReplace": "Impending Replacement",
+      "immediateAction": "Immediate Action",
       "replaceAction": "Replace",
       "searchPlaceholder": "Search code, name..."
     },
