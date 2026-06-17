@@ -2,7 +2,7 @@
 
 ## Last Update
 
-2026-06-17 14:31
+2026-06-17 15:28
 
 ## In Review
 
@@ -14,6 +14,7 @@
 
 ## Completed
 
+- `T-CONSUMABLE-STOCK-DEPLOY-QUERY`: `/consumables/stock` 배포 조회 빈 화면은 `GET /consumables/stocks` 응답이 `{ success, data: { data: rows } }`로 이중 감싸질 수 있는데 `useStockData`가 첫 번째 `data`까지만 읽어 배열이 아니면 빈 배열 처리한 것이 원인이다. `limit=5000`을 포함해 조회하고, 중첩 `data`까지 풀어 배열만 반영하도록 보정했다. 검증: focused 구조 테스트, frontend tsc PASS. commit/push 예정.
 - `T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT`: `/consumables/label` UID 발행 출력창을 버튼 클릭 즉시 `window.open("", "_blank")`으로 먼저 열고 대기 HTML을 표시한 뒤, UID 발행 API 완료 후 같은 창에 `LabelPrintRenderer` HTML과 `window.print()` 스크립트를 주입하도록 보정했다. 실패/0건/출력 준비 실패 시 선점한 창을 닫고 기존 toast/한 줄 상태 피드백을 유지한다. 구조 테스트는 숨김 iframe 금지와 API 전 출력창 선점을 검증하도록 갱신했다. 검증: RED 확인 후 구조 테스트 GREEN, 템플릿/print-log 구조 테스트, frontend tsc, 3002 Playwright mock popup 검증, diff check PASS. commit/push 안 함.
 - `T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT`: `/consumables/label` UID 발행 화면에 라벨디자인마스터 저장 템플릿 선택 Select를 추가했다. `/master/label-templates?category=jig` 목록을 `templateKey/designData`와 함께 보관하고, 사용자가 선택한 템플릿의 `designData`를 `ensureObjectLabelDesign(..., "jig")`로 정규화해 `LabelPrintRenderer`에 전달한다. 검증용 템플릿 `CODEX_CON_TPL_60546393`을 3013 브라우저에서 선택해 UID 발행했고, 인쇄 HTML에 marker `CODEX_TEMPLATE_MARK_60546393`, 생성 UID `C26061700014`, `@page{size:50mm 25mm`가 포함됨을 확인했다. 검증 템플릿/UID/로그는 JSHANES에서 잔여 0건으로 정리했다. 검증: 신규 구조 테스트, 기존 소모품 이미지 URL 테스트, `useConLabelIssue` 구조 테스트, frontend tsc, diff check PASS.
 - `T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL`: 서버 배포 후 `/master/equip-inspect-item` 이미지 깨짐 원인을 `/uploads/equip-inspect-items/...` 상대 URL 직접 사용 + `apps/backend/uploads` gitignore로 인한 점검항목 시드 SVG 미배포로 확인하고 보정 완료. `/master/equip-inspect-item` 목록/편집 패널과 공용 `InspectItemImage`가 `resolveBackendFileUrl()`로 `/uploads/...`를 `NEXT_PUBLIC_API_URL` backend base 기준으로 변환한다. `.github/workflows/deploy.yml`은 배포 때 `node tools\generate-equip-inspect-item-seed-images.mjs`를 실행해 `apps/backend/uploads/equip-inspect-items/*.svg` 50개를 서버에서 재생성한다. 검증: 생성 스크립트, 신규 구조 테스트, 기존 패널 구조 테스트, frontend tsc, diff check PASS.

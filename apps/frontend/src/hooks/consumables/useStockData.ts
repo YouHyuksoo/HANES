@@ -39,8 +39,9 @@ export function useStockData() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/consumables/stocks');
-      const items = res.data?.data ?? res.data ?? [];
+      const res = await api.get('/consumables/stocks', { params: { limit: '5000' } });
+      const raw = res.data?.data ?? res.data ?? [];
+      const items = Array.isArray(raw) ? raw : (raw?.data ?? []);
       setRawData(Array.isArray(items) ? items : []);
     } catch {
       setRawData([]);

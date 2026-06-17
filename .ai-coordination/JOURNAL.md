@@ -10,6 +10,14 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 15:28 Codex
+
+- 작업: `T-CONSUMABLE-STOCK-DEPLOY-QUERY` `/consumables/stock` 배포 서버 재고현황 조회 빈 화면 복구.
+- 원인: `ConsumableStockController.list()`가 `{ data: rows }`를 반환하고 전역 `TransformInterceptor`/`SqlDebugInterceptor`가 이를 다시 표준 응답으로 감싸면 배포 응답이 `{ success: true, data: { data: rows } }` 형태가 된다. 기존 프론트 `useStockData`는 `res.data.data`까지만 읽고 배열이 아니면 `[]`로 처리해 테이블이 비었다.
+- 변경: `useStockData`가 `/consumables/stocks?limit=5000`을 호출하고, 1단계 배열 응답과 `{ data: rows }` 중첩 응답을 모두 풀어 최종 배열만 `rawData`로 반영하도록 보정했다. `useStockData.structure.test.mjs`를 추가해 `limit=5000`, 1차/2차 `data` 파싱, 배열 가드를 고정했다.
+- 검증: `node --test apps/frontend/src/hooks/consumables/useStockData.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. `git diff --cached --check`는 커밋 직전 실행 예정.
+- 상태: 완료, lock released.
+
 ## 2026-06-17 14:31 Codex
 
 - 작업: `T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT` `/consumables/label` UID 발행 출력창 선점 보정.

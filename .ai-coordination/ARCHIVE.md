@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-CONSUMABLE-STOCK-DEPLOY-QUERY | 2026-06-17 | codex | `/consumables/stock` 배포 조회 빈 화면 원인인 이중 응답 envelope 파싱 누락을 보정하고 `limit=5000` 조회와 구조 테스트 추가 | evidence: JOURNAL 2026-06-17 15:28 Codex
 - T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 출력창을 버튼 클릭 즉시 `window.open`으로 선점하고 API 완료 후 같은 창에 라벨 HTML과 `window.print()`를 주입하도록 보정, 3002 브라우저 popup mock 검증 통과 | evidence: JOURNAL 2026-06-17 14:31 Codex
 - T-CONSUMABLE-LIFE-LARGE-INFO-CARDS | 2026-06-17 | codex | `/consumables/life` 상단 작은 상태 배지를 4개 큰 요약 정보카드로 변경, 구조 테스트/FE tsc/3002 HTTP 확인 | evidence: JOURNAL 2026-06-17 13:55 Codex
 - T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 화면에 라벨디자인마스터 `jig` 템플릿 선택 Select를 추가하고 선택 템플릿 `designData`를 `LabelPrintRenderer` 출력에 적용, 실제 브라우저 UID 발행 인쇄 HTML 치환 검증 및 검증 데이터 정리 완료 | evidence: JOURNAL 2026-06-17 10:43 Codex

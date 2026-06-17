@@ -16,6 +16,22 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-CONSUMABLE-STOCK-DEPLOY-QUERY
+  owner: codex
+  files:
+    - apps/frontend/src/hooks/consumables/useStockData.ts
+    - apps/frontend/src/hooks/consumables/useStockData.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 15:21 KST
+  last_seen: 2026-06-17 15:28 KST
+  expires: 2026-06-17 16:21 KST
+  status: released
+  note: `/consumables/stock` 배포 조회 빈 화면 원인은 `{ success, data: { data: [...] } }` 이중 응답 envelope를 프론트가 배열로 풀지 못한 것이다. `useStockData` 파싱을 보정하고 구조 테스트/FE tsc 통과.
+
 - task: T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT
   owner: codex
   files:
