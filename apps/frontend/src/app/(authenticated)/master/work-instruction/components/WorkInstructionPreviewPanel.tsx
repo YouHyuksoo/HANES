@@ -39,11 +39,9 @@ const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(g
 /** PDF 확장자 판별 */
 const isPdfUrl = (url: string) => /\.pdf$/i.test(getFilePath(url));
 
-/** 파일 URL을 절대 URL로 변환 */
-const resolveFileUrl = (url: string) =>
-  url.startsWith("/")
-    ? `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/api(?:\/v1)?$/, "") || ""}${url}`
-    : url;
+/** 정적 파일은 상대경로(/uploads/...)를 그대로 사용 — next.config rewrites가 백엔드로 프록시.
+ *  (NEXT_PUBLIC_API_URL로 절대 URL을 만들면 배포 환경에서 브라우저가 못 닿는 내부 주소가 되어 링크가 깨진다.) */
+const resolveFileUrl = (url: string) => url;
 
 export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, onDelete, animate = true }: Props) {
   const { t } = useTranslation();

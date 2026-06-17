@@ -32,16 +32,21 @@ const isPdfUrl = (url?: string | null) => !!url && /\.pdf$/i.test(filePath(url))
 /** PowerPoint(ppt/pptx/pps/ppsx)·Word(doc/docx) — Office Online 임베드 대상 */
 const isOfficeUrl = (url?: string | null) => !!url && /\.(pptx?|ppsx?|docx?)$/i.test(filePath(url));
 
-/** 상대경로(/uploads/...)를 정적파일 절대 URL로 변환 (API 접미사 /api 제거) */
-const resolveFileUrl = (url: string) =>
+/** 정적 파일은 상대경로(/uploads/...)를 그대로 사용한다.
+ *  브라우저가 프론트 origin에서 요청 → next.config rewrites가 백엔드 /uploads로 프록시.
+ *  (NEXT_PUBLIC_API_URL로 절대 URL을 만들면 배포 환경에서 브라우저가 못 닿는 내부 주소가 되어 링크가 깨진다.) */
+const resolveFileUrl = (url: string) => url;
+
+/** Office Online 임베드는 MS 서버가 파일을 직접 가져가므로 공개 절대 URL이 필요 — 현재 보고 있는 origin 기준. */
+const toAbsoluteUrl = (url: string) =>
   url.startsWith('http')
     ? url
-    : `${(process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/api(?:\/v1)?$/, '')}${url}`;
+    : (typeof window !== 'undefined' ? `${window.location.origin}${url}` : url);
 
 /** Microsoft Office Online 뷰어 임베드 URL (변환 없이 PPTX/PPSX 슬라이드쇼 재생).
  *  주의: src 파일이 인터넷에서 접근 가능한 공개 URL이어야 한다(사내망 전용이면 동작 불가). */
-const officeEmbedUrl = (absUrl: string) =>
-  `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(absUrl)}`;
+const officeEmbedUrl = (url: string) =>
+  `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(toAbsoluteUrl(url))}`;
 
 export default function WorkInstructionView() {
   const { t } = useTranslation();
