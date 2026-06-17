@@ -22,6 +22,7 @@ import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateShipReturnDto, UpdateShipReturnDto, ShipReturnQueryDto } from '../dto/ship-return.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class ShipReturnService {
@@ -49,7 +50,7 @@ export class ShipReturnService {
   ): Partial<Pick<ShipmentReturn, 'shipmentId' | 'returnDate' | 'returnReason' | 'remark'>> {
     return {
       ...(dto.shipmentId !== undefined ? { shipmentId: dto.shipmentId } : {}),
-      ...(dto.returnDate !== undefined ? { returnDate: dto.returnDate ? new Date(dto.returnDate) : null } : {}),
+      ...(dto.returnDate !== undefined ? { returnDate: parseDateStart(dto.returnDate) } : {}),
       ...(dto.returnReason !== undefined ? { returnReason: dto.returnReason } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
     };
@@ -160,7 +161,7 @@ export class ShipReturnService {
       const shipReturn = this.shipReturnRepository.create({
         returnNo: dto.returnNo,
         shipmentId: dto.shipmentId,
-        returnDate: dto.returnDate ? new Date(dto.returnDate) : null,
+        returnDate: parseDateStart(dto.returnDate),
         returnReason: dto.returnReason,
         remark: dto.remark,
         status: 'DRAFT',

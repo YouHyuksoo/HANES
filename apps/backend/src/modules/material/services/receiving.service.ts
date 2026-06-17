@@ -31,6 +31,7 @@ import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { CreateBulkReceiveDto, ReceivingQueryDto } from '../dto/receiving.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
@@ -489,7 +490,7 @@ export class ReceivingService {
         if (item.manufactureDate) {
           const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
           const part = await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...lotTenantWhere } });
-          const mfgDate = new Date(item.manufactureDate);
+          const mfgDate = parseDateStart(item.manufactureDate)!;
           let expDate: Date | null = null;
           if (part?.expiryDate && part.expiryDate > 0) {
             expDate = new Date(mfgDate);
@@ -570,15 +571,11 @@ export class ReceivingService {
     if (company) queryBuilder.andWhere('r.company = :company', { company });
     if (plant) queryBuilder.andWhere('r.plant = :plant', { plant });
 
-    if (fromDate && toDate) {
-      queryBuilder.andWhere('r.receiveDate BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(fromDate),
-        toDate: new Date(toDate),
-      });
-    } else if (fromDate) {
-      queryBuilder.andWhere('r.receiveDate >= :fromDate', { fromDate: new Date(fromDate) });
-    } else if (toDate) {
-      queryBuilder.andWhere('r.receiveDate <= :toDate', { toDate: new Date(toDate) });
+    if (fromDate) {
+      queryBuilder.andWhere("r.receiveDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    }
+    if (toDate) {
+      queryBuilder.andWhere("r.receiveDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
 
     if (matUid) {

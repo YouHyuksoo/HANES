@@ -17,6 +17,7 @@ import {
   UpdateOqcResultDto,
 } from '../dto/oqc.dto';
 import { TransactionService } from '../../../../shared/transaction.service';
+import { parseDateStart } from '../../../../shared/date.util';
 
 @Injectable()
 export class OqcService {
@@ -57,8 +58,8 @@ export class OqcService {
     if (plant) qb.andWhere('oqc.plant = :plant', { plant });
     if (status) qb.andWhere('oqc.status = :status', { status });
     if (customer) qb.andWhere('oqc.customer LIKE :customer', { customer: `%${customer}%` });
-    if (fromDate) qb.andWhere('oqc.requestDate >= :fromDate', { fromDate });
-    if (toDate) qb.andWhere('oqc.requestDate <= :toDate', { toDate });
+    if (fromDate) qb.andWhere(`oqc.requestDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')`, { fromDate });
+    if (toDate) qb.andWhere(`oqc.requestDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1`, { toDate });
     if (search) {
       qb.andWhere(
         '(oqc.requestNo LIKE :search OR part.itemCode LIKE :search OR part.itemName LIKE :search)',
@@ -144,7 +145,7 @@ export class OqcService {
         requestNo,
         itemCode,
         customer: customer || null,
-        requestDate: requestDate ? new Date(requestDate) : today,
+        requestDate: requestDate ? parseDateStart(requestDate)! : today,
         totalBoxCount: boxes.length,
         totalQty,
         sampleSize: sampleSize || null,

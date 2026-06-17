@@ -17,6 +17,7 @@ import {
 } from '../dto/mold.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { getErrorMessage } from '../../../common/utils/error-message.util';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class MoldService {
@@ -101,7 +102,7 @@ export class MoldService {
       maintenanceCycle: dto.maintenanceCycle ?? null,
       location: dto.location ?? null,
       maker: dto.maker ?? null,
-      purchaseDate: dto.purchaseDate ? new Date(dto.purchaseDate) : null,
+      purchaseDate: parseDateStart(dto.purchaseDate),
       remark: dto.remark ?? null,
       currentShots: 0,
       status: 'ACTIVE',
@@ -144,7 +145,7 @@ export class MoldService {
       ...(dto.maintenanceCycle !== undefined ? { maintenanceCycle: dto.maintenanceCycle } : {}),
       ...(dto.location !== undefined ? { location: dto.location } : {}),
       ...(dto.maker !== undefined ? { maker: dto.maker } : {}),
-      ...(dto.purchaseDate !== undefined ? { purchaseDate: new Date(dto.purchaseDate) } : {}),
+      ...(dto.purchaseDate !== undefined ? { purchaseDate: parseDateStart(dto.purchaseDate) } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
     };
     Object.assign(item, updateData, { updatedBy: userId });
@@ -186,7 +187,7 @@ export class MoldService {
         throw new BadRequestException('Usage can be recorded only for ACTIVE mold.');
       }
 
-      const usageDate = dto.usageDate ? new Date(dto.usageDate) : new Date();
+      const usageDate = dto.usageDate ? parseDateStart(dto.usageDate)! : new Date();
       const seq = await this.getNextUsageSeq(queryRunner);
 
       const usage = queryRunner.manager.create(MoldUsageLog, {

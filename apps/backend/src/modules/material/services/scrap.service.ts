@@ -15,6 +15,7 @@ import { CreateScrapDto, ScrapQueryDto } from '../dto/scrap.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class ScrapService {
@@ -66,7 +67,7 @@ export class ScrapService {
     };
 
     if (fromDate && toDate) {
-      where.transDate = Between(new Date(fromDate), new Date(toDate));
+      where.transDate = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
     }
 
     const [data, total] = await Promise.all([

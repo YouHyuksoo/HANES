@@ -28,6 +28,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditPlan } from '../../../../entities/audit-plan.entity';
 import { AuditFinding } from '../../../../entities/audit-finding.entity';
+import { parseDateStart } from '../../../../shared/date.util';
 import {
   CreateAuditPlanDto,
   UpdateAuditPlanDto,
@@ -171,7 +172,7 @@ export class AuditService {
       targetDept: dto.targetDept,
       auditor: dto.auditor,
       coAuditor: dto.coAuditor,
-      scheduledDate: new Date(dto.scheduledDate),
+      scheduledDate: parseDateStart(dto.scheduledDate)!,
       summary: dto.summary,
       status: 'PLANNED',
       company,
@@ -198,7 +199,7 @@ export class AuditService {
       ...(dto.targetDept !== undefined ? { targetDept: dto.targetDept } : {}),
       ...(dto.auditor !== undefined ? { auditor: dto.auditor } : {}),
       ...(dto.coAuditor !== undefined ? { coAuditor: dto.coAuditor } : {}),
-      ...(dto.scheduledDate !== undefined ? { scheduledDate: new Date(dto.scheduledDate) } : {}),
+      ...(dto.scheduledDate !== undefined ? { scheduledDate: parseDateStart(dto.scheduledDate)! } : {}),
       ...(dto.summary !== undefined ? { summary: dto.summary } : {}),
     };
     Object.assign(item, updateData, { updatedBy: userId });
@@ -291,7 +292,7 @@ export class AuditService {
       category: dto.category,
       description: dto.description,
       evidence: dto.evidence,
-      dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+      dueDate: dto.dueDate ? parseDateStart(dto.dueDate)! : undefined,
       remark: dto.remark,
       status: 'OPEN',
       company,

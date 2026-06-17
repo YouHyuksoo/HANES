@@ -16,6 +16,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { CreateReceiptCancelDto, ReceiptCancelQueryDto } from '../dto/receipt-cancel.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class ReceiptCancelService {
@@ -66,7 +67,7 @@ export class ReceiptCancelService {
     };
 
     if (fromDate && toDate) {
-      where.transDate = Between(new Date(fromDate), new Date(toDate));
+      where.transDate = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
     }
 
     const [data, total] = await Promise.all([

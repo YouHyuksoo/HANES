@@ -21,6 +21,7 @@ import { WorkCalendar } from '../../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../../entities/work-calendar-day.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { CreateEquipInspectDto, UpdateEquipInspectDto, EquipInspectQueryDto } from '../dto/equip-inspect.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 type InspectType = 'DAILY' | 'PERIODIC' | 'WORKER';
 
@@ -167,10 +168,10 @@ export class EquipInspectService {
       queryBuilder.andWhere('log.overallResult = :overallResult', { overallResult });
     }
     if (inspectDateFrom) {
-      queryBuilder.andWhere('log.inspectDate >= :inspectDateFrom', { inspectDateFrom: new Date(inspectDateFrom) });
+      queryBuilder.andWhere("log.inspectDate >= TO_DATE(:inspectDateFrom, 'YYYY-MM-DD')", { inspectDateFrom });
     }
     if (inspectDateTo) {
-      queryBuilder.andWhere('log.inspectDate <= :inspectDateTo', { inspectDateTo: new Date(inspectDateTo) });
+      queryBuilder.andWhere("log.inspectDate < TO_DATE(:inspectDateTo, 'YYYY-MM-DD') + 1", { inspectDateTo });
     }
     if (search) {
       const upper = search.toUpperCase();
@@ -303,7 +304,7 @@ export class EquipInspectService {
     const log = this.equipInspectLogRepository.create({
       equipCode: dto.equipCode,
       inspectType,
-      inspectDate: dto.inspectDate ? new Date(dto.inspectDate) : inspectAt,
+      inspectDate: dto.inspectDate ? parseDateStart(dto.inspectDate) : inspectAt,
       orderNo: dto.orderNo ?? null,
       workDate: this.parseYmdLocal(operationalWindow.workDate),
       inspectAt,

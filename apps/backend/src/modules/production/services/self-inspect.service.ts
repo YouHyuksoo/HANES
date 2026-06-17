@@ -275,12 +275,8 @@ export class SelfInspectService {
 
     if (orderNo) qb.andWhere('r.orderNo LIKE :ono', { ono: `%${orderNo}%` });
     if (processCode) qb.andWhere('r.processCode = :pc', { pc: processCode });
-    if (dateFrom) qb.andWhere('r.createdAt >= :df', { df: new Date(dateFrom) });
-    if (dateTo) {
-      const dt = new Date(dateTo);
-      dt.setDate(dt.getDate() + 1);
-      qb.andWhere('r.createdAt < :dt', { dt });
-    }
+    if (dateFrom) qb.andWhere("r.createdAt >= TO_DATE(:df, 'YYYY-MM-DD')", { df: dateFrom });
+    if (dateTo) qb.andWhere("r.createdAt < TO_DATE(:dt, 'YYYY-MM-DD') + 1", { dt: dateTo });
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return { data, total, page, limit };

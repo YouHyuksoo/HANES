@@ -25,6 +25,7 @@ import {
   CreateRepairDto,
   UpdateRepairDto,
 } from '../dto/repair.dto';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class RepairService {
@@ -95,8 +96,8 @@ export class RepairService {
     if (workerId) where.workerId = workerId;
     if (repairDateFrom && repairDateTo) {
       where.repairDate = Between(
-        new Date(repairDateFrom),
-        new Date(repairDateTo),
+        parseDateStart(repairDateFrom)!,
+        parseDateEnd(repairDateTo)!,
       );
     }
 
@@ -127,7 +128,7 @@ export class RepairService {
     plant: string,
   ) {
     const order = await this.repairOrderRepo.findOne({
-      where: { repairDate: new Date(repairDate), seq, company, plant },
+      where: { repairDate: parseDateStart(repairDate)!, seq, company, plant },
     });
     if (!order) {
       throw new NotFoundException(
@@ -135,7 +136,7 @@ export class RepairService {
       );
     }
     const usedParts = await this.repairUsedPartRepo.find({
-      where: { repairDate: new Date(repairDate), seq, company, plant },
+      where: { repairDate: parseDateStart(repairDate)!, seq, company, plant },
     });
     return { ...order, usedParts };
   }
@@ -144,7 +145,7 @@ export class RepairService {
   async create(dto: CreateRepairDto, company: string, plant: string) {
     return this.tx.run(async (queryRunner) => {
       const repairDate = dto.repairDate
-        ? new Date(dto.repairDate)
+        ? parseDateStart(dto.repairDate)!
         : new Date();
 
       const seqResult = await queryRunner.manager.query(
@@ -210,7 +211,7 @@ export class RepairService {
   ) {
     return this.tx.run(async (queryRunner) => {
       const existing = await queryRunner.manager.findOne(RepairOrder, {
-        where: { repairDate: new Date(repairDate), seq, company, plant },
+        where: { repairDate: parseDateStart(repairDate)!, seq, company, plant },
       });
       if (!existing) {
         throw new NotFoundException(
@@ -234,14 +235,14 @@ export class RepairService {
 
       await queryRunner.manager.update(
         RepairOrder,
-        { repairDate: new Date(repairDate), seq, company, plant },
+        { repairDate: parseDateStart(repairDate)!, seq, company, plant },
         updateData,
       );
 
       // 사용부품 전체 교체
       if (usedParts !== undefined) {
         await queryRunner.manager.delete(RepairUsedPart, {
-          repairDate: new Date(repairDate),
+          repairDate: parseDateStart(repairDate)!,
           seq,
           company,
           plant,
@@ -249,7 +250,7 @@ export class RepairService {
         if (usedParts?.length) {
           const parts = usedParts.map((p) =>
             queryRunner.manager.create(RepairUsedPart, {
-              repairDate: new Date(repairDate),
+              repairDate: parseDateStart(repairDate)!,
               seq,
               itemCode: p.itemCode,
               itemName: p.itemName || null,
@@ -277,7 +278,7 @@ export class RepairService {
   ) {
     await this.tx.run(async (queryRunner) => {
       const existing = await queryRunner.manager.findOne(RepairOrder, {
-        where: { repairDate: new Date(repairDate), seq, company, plant },
+        where: { repairDate: parseDateStart(repairDate)!, seq, company, plant },
       });
       if (!existing) {
         throw new NotFoundException(
@@ -291,13 +292,13 @@ export class RepairService {
       }
 
       await queryRunner.manager.delete(RepairUsedPart, {
-        repairDate: new Date(repairDate),
+        repairDate: parseDateStart(repairDate)!,
         seq,
         company,
         plant,
       });
       await queryRunner.manager.delete(RepairOrder, {
-        repairDate: new Date(repairDate),
+        repairDate: parseDateStart(repairDate)!,
         seq,
         company,
         plant,

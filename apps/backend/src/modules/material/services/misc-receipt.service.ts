@@ -8,6 +8,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { CreateMiscReceiptDto, MiscReceiptQueryDto } from '../dto/misc-receipt.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class MiscReceiptService {
@@ -57,7 +58,7 @@ export class MiscReceiptService {
     };
 
     if (fromDate && toDate) {
-      where.transDate = Between(new Date(fromDate), new Date(toDate));
+      where.transDate = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
     }
 
     let data: StockTransaction[];
@@ -80,10 +81,10 @@ export class MiscReceiptService {
       if (plant) queryBuilder.andWhere('trans.plant = :plant', { plant });
 
       if (fromDate && toDate) {
-        queryBuilder.andWhere('trans.transDate BETWEEN :fromDate AND :toDate', {
-          fromDate: new Date(fromDate),
-          toDate: new Date(toDate),
-        });
+        queryBuilder.andWhere(
+          "trans.transDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND trans.transDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
+          { fromDate, toDate },
+        );
       }
 
       if (itemCodes.length > 0) {

@@ -25,6 +25,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
 import { GaugeMaster } from '../../../../entities/gauge-master.entity';
 import { CalibrationLog } from '../../../../entities/calibration-log.entity';
+import { parseDateStart } from '../../../../shared/date.util';
 import {
   CreateGaugeDto,
   UpdateGaugeDto,
@@ -156,8 +157,8 @@ export class MsaService {
       resolution: dto.resolution,
       measureRange: dto.measureRange,
       calibrationCycle: dto.calibrationCycle,
-      lastCalibrationDate: dto.lastCalibrationDate ? new Date(dto.lastCalibrationDate) : undefined,
-      nextCalibrationDate: dto.nextCalibrationDate ? new Date(dto.nextCalibrationDate) : undefined,
+      lastCalibrationDate: dto.lastCalibrationDate ? parseDateStart(dto.lastCalibrationDate)! : undefined,
+      nextCalibrationDate: dto.nextCalibrationDate ? parseDateStart(dto.nextCalibrationDate)! : undefined,
       status: dto.status,
       location: dto.location,
       responsiblePerson: dto.responsiblePerson,
@@ -191,8 +192,8 @@ export class MsaService {
       ...(dto.resolution !== undefined ? { resolution: dto.resolution } : {}),
       ...(dto.measureRange !== undefined ? { measureRange: dto.measureRange } : {}),
       ...(dto.calibrationCycle !== undefined ? { calibrationCycle: dto.calibrationCycle } : {}),
-      ...(dto.lastCalibrationDate !== undefined ? { lastCalibrationDate: new Date(dto.lastCalibrationDate) } : {}),
-      ...(dto.nextCalibrationDate !== undefined ? { nextCalibrationDate: new Date(dto.nextCalibrationDate) } : {}),
+      ...(dto.lastCalibrationDate !== undefined ? { lastCalibrationDate: parseDateStart(dto.lastCalibrationDate)! } : {}),
+      ...(dto.nextCalibrationDate !== undefined ? { nextCalibrationDate: parseDateStart(dto.nextCalibrationDate)! } : {}),
       ...(dto.status !== undefined ? { status: dto.status } : {}),
       ...(dto.location !== undefined ? { location: dto.location } : {}),
       ...(dto.responsiblePerson !== undefined ? { responsiblePerson: dto.responsiblePerson } : {}),
@@ -290,7 +291,7 @@ export class MsaService {
     const entity = this.calRepo.create({
       gaugeCode: dto.gaugeId,
       calibrationNo,
-      calibrationDate: new Date(dto.calibrationDate),
+      calibrationDate: parseDateStart(dto.calibrationDate)!,
       calibrationType: dto.calibrationType,
       calibrator: dto.calibrator ?? null,
       calibrationOrg: dto.calibrationOrg ?? null,
@@ -300,7 +301,7 @@ export class MsaService {
       referenceValue: dto.referenceValue ?? null,
       deviation: dto.deviation ?? null,
       uncertainty: dto.uncertainty ?? null,
-      nextDueDate: dto.nextDueDate ? new Date(dto.nextDueDate) : null,
+      nextDueDate: parseDateStart(dto.nextDueDate),
       certificateNo: dto.certificateNo ?? null,
       remark: dto.remark ?? null,
       company,
@@ -310,9 +311,9 @@ export class MsaService {
     const saved = await this.calRepo.save(entity);
 
     // 계측기 교정 정보 갱신
-    gauge.lastCalibrationDate = new Date(dto.calibrationDate);
+    gauge.lastCalibrationDate = parseDateStart(dto.calibrationDate)!;
     if (dto.nextDueDate) {
-      gauge.nextCalibrationDate = new Date(dto.nextDueDate);
+      gauge.nextCalibrationDate = parseDateStart(dto.nextDueDate)!;
     }
     if (dto.result === 'PASS' || dto.result === 'CONDITIONAL') {
       gauge.status = 'ACTIVE';

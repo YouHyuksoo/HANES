@@ -17,6 +17,7 @@ import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 
 /** ERP PO 수신 데이터 구조 */
 interface ErpPoData {
@@ -91,14 +92,14 @@ export class ErpMaterialService {
         let po = await queryRunner.manager.findOne(PurchaseOrder, { where: { poNo: data.poNo, ...tenantWhere } });
         if (po) {
           await queryRunner.manager.update(PurchaseOrder, { poNo: data.poNo, ...tenantWhere }, {
-            orderDate: new Date(data.orderDate),
+            orderDate: parseDateStart(data.orderDate),
             partnerId: data.partnerId,
             partnerName: data.partnerName,
           });
         } else {
           po = queryRunner.manager.create(PurchaseOrder, {
             poNo: data.poNo,
-            orderDate: new Date(data.orderDate),
+            orderDate: parseDateStart(data.orderDate),
             partnerId: data.partnerId,
             partnerName: data.partnerName,
             status: 'CONFIRMED',

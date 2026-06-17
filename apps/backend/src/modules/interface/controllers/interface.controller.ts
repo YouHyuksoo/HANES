@@ -43,6 +43,7 @@ import {
   ProdResultOutboundDto,
 } from '../dto/interface.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 @ApiTags('인터페이스관리')
 @Controller('interface')
@@ -65,7 +66,7 @@ export class InterfaceController {
   @ApiParam({ name: 'seq', description: '일련번호' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findLogById(@Param('transDate') transDate: string, @Param('seq') seq: string, @Company() company: string, @Plant() plant: string) {
-    const data = await this.interfaceService.findLogById(new Date(transDate), +seq, company, plant);
+    const data = await this.interfaceService.findLogById(parseDateStart(transDate)!, +seq, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -76,7 +77,7 @@ export class InterfaceController {
   @ApiParam({ name: 'seq', description: '일련번호' })
   @ApiResponse({ status: 200, description: '재시도 성공' })
   async retryLog(@Param('transDate') transDate: string, @Param('seq') seq: string, @Company() company: string, @Plant() plant: string) {
-    const data = await this.interfaceService.retryLog(new Date(transDate), +seq, company, plant);
+    const data = await this.interfaceService.retryLog(parseDateStart(transDate)!, +seq, company, plant);
     return ResponseUtil.success(data, '재시도가 완료되었습니다.');
   }
 
@@ -86,7 +87,7 @@ export class InterfaceController {
   @ApiResponse({ status: 200, description: '일괄 재시도 성공' })
   async bulkRetry(@Body() dto: BulkRetryDto, @Company() company: string, @Plant() plant: string) {
     const logKeys = dto.logIds.map((item) => ({
-      transDate: new Date(item.transDate),
+      transDate: parseDateStart(item.transDate)!,
       seq: Number(item.seq),
     }));
     const data = await this.interfaceService.bulkRetry(logKeys, company, plant);

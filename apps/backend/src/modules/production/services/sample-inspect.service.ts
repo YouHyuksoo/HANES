@@ -16,6 +16,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { applyDateFilter } from '../../../shared/date-filter.util';
+import { parseDateStart } from '../../../shared/date.util';
 import {
   CreateSampleInspectDto,
   SampleInspectHistoryQueryDto,
@@ -60,7 +61,7 @@ export class SampleInspectService {
       for (const sample of dto.samples) {
         const entity = queryRunner.manager.create(SampleInspectResult, {
           orderNo: dto.orderNo,
-          inspectDate: new Date(dto.inspectDate),
+          inspectDate: parseDateStart(dto.inspectDate)!,
           inspectorName: dto.inspectorName,
           inspectType: dto.inspectType || null,
           sampleNo: sample.sampleNo,

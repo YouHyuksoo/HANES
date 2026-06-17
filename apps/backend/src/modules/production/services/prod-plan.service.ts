@@ -32,6 +32,7 @@ import {
   ProdPlanQueryDto,
   IssueJobOrderFromPlanDto,
 } from '../dto/prod-plan.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class ProdPlanService {
@@ -359,7 +360,7 @@ export class ProdPlanService {
         processCode: rootProcessCode,
         equipCode: null,
         planQty: dto.issueQty,
-        planDate: dto.planDate ? new Date(dto.planDate) : null,
+        planDate: parseDateStart(dto.planDate),
         priority: dto.priority ?? plan.priority,
         custPoNo: null,
         remark: dto.remark || `${plan.planNo}에서 발행`,

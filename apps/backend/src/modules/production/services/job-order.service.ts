@@ -36,6 +36,7 @@ import {
   ChangeJobOrderStatusDto,
   UpdateErpSyncDto,
 } from '../dto/job-order.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 /** 작업지시 조회 시 공통으로 사용하는 select 필드 */
 const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
@@ -294,7 +295,7 @@ export class JobOrderService {
         processCode,
         equipCode: dto.equipCode ?? null,
         planQty: dto.planQty,
-        planDate: dto.planDate ? new Date(dto.planDate) : null,
+        planDate: parseDateStart(dto.planDate),
         priority: dto.priority ?? 5,
         custPoNo: dto.custPoNo || null,
         remark: dto.remark,
@@ -387,7 +388,7 @@ export class JobOrderService {
           processCode: childProcessCode,
           equipCode: null,
           planQty: Math.ceil(parent.planQty * Number(bom.qtyPer)),
-          planDate: dto.planDate ? new Date(dto.planDate) : null,
+          planDate: parseDateStart(dto.planDate),
           priority: dto.priority ?? 5,
           remark: `[자동생성] ${parent.orderNo}의 반제품`,
           status: 'WAITING',
@@ -451,7 +452,7 @@ export class JobOrderService {
     if (dto.processCode !== undefined) updateData.processCode = dto.processCode || null;
     if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode || null;
     if (dto.planQty !== undefined) updateData.planQty = dto.planQty;
-    if (dto.planDate !== undefined) updateData.planDate = dto.planDate ? new Date(dto.planDate) : null;
+    if (dto.planDate !== undefined) updateData.planDate = parseDateStart(dto.planDate);
     if (dto.priority !== undefined) updateData.priority = dto.priority;
     if (dto.custPoNo !== undefined) updateData.custPoNo = dto.custPoNo;
     if (dto.remark !== undefined) updateData.remark = dto.remark;

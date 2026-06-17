@@ -13,6 +13,7 @@ import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, Pend
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 
 export interface DebugSql {
   sql: string;
@@ -543,11 +544,11 @@ export class IqcHistoryService {
 
   async uploadCert(inspectDate: string, seq: number, filePath: string, company?: string, plant?: string) {
     const log = await this.iqcLogRepository.findOne({
-      where: { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(company, plant) },
+      where: { inspectDate: parseDateStart(inspectDate)!, seq, ...this.tenantWhere(company, plant) },
     });
     if (!log) throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${inspectDate}/${seq}`);
     await this.iqcLogRepository.update(
-      { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(log.company, log.plant) },
+      { inspectDate: parseDateStart(inspectDate)!, seq, ...this.tenantWhere(log.company, log.plant) },
       { certFilePath: filePath },
     );
     return { ...log, certFilePath: filePath };
@@ -555,7 +556,7 @@ export class IqcHistoryService {
 
   async cancel(inspectDate: string, seq: number, dto: CancelIqcResultDto, company?: string, plant?: string) {
     const log = await this.iqcLogRepository.findOne({
-      where: { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(company, plant) },
+      where: { inspectDate: parseDateStart(inspectDate)!, seq, ...this.tenantWhere(company, plant) },
     });
     if (!log) {
       throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${inspectDate}/${seq}`);
@@ -635,7 +636,7 @@ export class IqcHistoryService {
 
       await queryRunner.manager.update(
         IqcLog,
-        { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(log.company, log.plant) },
+        { inspectDate: parseDateStart(inspectDate)!, seq, ...this.tenantWhere(log.company, log.plant) },
         { status: 'CANCELED', remark: dto.reason },
       );
 

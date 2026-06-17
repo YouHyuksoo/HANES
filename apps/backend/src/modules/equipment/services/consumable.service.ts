@@ -50,6 +50,7 @@ import {
   SetRepairDto,
 } from '../dto/consumable.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class ConsumableService {
@@ -161,7 +162,7 @@ export class ConsumableService {
     }
     if (nextReplaceBefore) {
       queryBuilder.andWhere('consumable.nextReplaceAt <= :nextReplaceBefore', {
-        nextReplaceBefore: new Date(nextReplaceBefore),
+        nextReplaceBefore: parseDateEnd(nextReplaceBefore)!,
       });
     }
 
@@ -241,8 +242,8 @@ export class ConsumableService {
       currentCount: dto.currentCount ?? 0,
       warningCount: dto.warningCount,
       location: dto.location,
-      lastReplaceAt: dto.lastReplaceAt ? new Date(dto.lastReplaceAt) : null,
-      nextReplaceAt: dto.nextReplaceAt ? new Date(dto.nextReplaceAt) : null,
+      lastReplaceAt: parseDateStart(dto.lastReplaceAt),
+      nextReplaceAt: parseDateStart(dto.nextReplaceAt),
       unitPrice: dto.unitPrice,
       vendor: dto.vendor,
       status: dto.status ?? 'NORMAL',
@@ -265,8 +266,8 @@ export class ConsumableService {
     if (dto.currentCount !== undefined) updateData.currentCount = dto.currentCount;
     if (dto.warningCount !== undefined) updateData.warningCount = dto.warningCount;
     if (dto.location !== undefined) updateData.location = dto.location;
-    if (dto.lastReplaceAt !== undefined) updateData.lastReplaceAt = dto.lastReplaceAt ? new Date(dto.lastReplaceAt) : null;
-    if (dto.nextReplaceAt !== undefined) updateData.nextReplaceAt = dto.nextReplaceAt ? new Date(dto.nextReplaceAt) : null;
+    if (dto.lastReplaceAt !== undefined) updateData.lastReplaceAt = parseDateStart(dto.lastReplaceAt);
+    if (dto.nextReplaceAt !== undefined) updateData.nextReplaceAt = parseDateStart(dto.nextReplaceAt);
     if (dto.unitPrice !== undefined) updateData.unitPrice = dto.unitPrice;
     if (dto.vendor !== undefined) updateData.vendor = dto.vendor;
     if (dto.status !== undefined) updateData.status = dto.status;
@@ -354,7 +355,7 @@ export class ConsumableService {
         {
           currentCount: 0,
           lastReplaceAt: new Date(),
-          nextReplaceAt: dto.nextReplaceAt ? new Date(dto.nextReplaceAt) : null,
+          nextReplaceAt: parseDateStart(dto.nextReplaceAt),
           status: 'NORMAL',
         },
       );

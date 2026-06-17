@@ -18,6 +18,7 @@ import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
 import { ScanIssueDto } from '../dto/scan-issue.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 
 @Injectable()
@@ -110,11 +111,11 @@ export class MatIssueService {
     };
 
     if (issueDateFrom && issueDateTo) {
-      where.issueDate = Between(new Date(issueDateFrom), new Date(issueDateTo));
+      where.issueDate = Between(parseDateStart(issueDateFrom)!, parseDateEnd(issueDateTo)!);
     } else if (issueDateFrom) {
-      where.issueDate = Between(new Date(issueDateFrom), new Date());
+      where.issueDate = Between(parseDateStart(issueDateFrom)!, new Date());
     } else if (issueDateTo) {
-      where.issueDate = Between(new Date('1900-01-01'), new Date(issueDateTo));
+      where.issueDate = Between(parseDateStart('1900-01-01')!, parseDateEnd(issueDateTo)!);
     }
 
     const [data, total] = await Promise.all([

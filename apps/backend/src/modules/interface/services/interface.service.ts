@@ -26,6 +26,7 @@ import {
   PartSyncDto,
   ProdResultOutboundDto,
 } from '../dto/interface.dto';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class InterfaceService {
@@ -96,7 +97,7 @@ export class InterfaceService {
       ...(messageType && { messageType }),
       ...(status && { status }),
       ...(startDate && endDate && {
-        createdAt: Between(new Date(startDate), new Date(endDate)),
+        createdAt: Between(parseDateStart(startDate)!, parseDateEnd(endDate)!),
       }),
     };
 
@@ -252,7 +253,7 @@ export class InterfaceService {
         itemCode: part.itemCode,
         planQty: dto.planQty,
         lineCode: dto.lineCode,
-        planDate: dto.planDate ? new Date(dto.planDate) : null,
+        planDate: parseDateStart(dto.planDate),
         priority: dto.priority ?? 5,
         erpSyncYn: 'Y',
         company,

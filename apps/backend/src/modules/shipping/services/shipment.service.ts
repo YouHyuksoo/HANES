@@ -46,6 +46,7 @@ import {
   ShipmentStatsQueryDto,
   ShipmentStatus,
 } from '../dto/shipment.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class ShipmentService {
@@ -77,7 +78,7 @@ export class ShipmentService {
     dto: Omit<UpdateShipmentDto, 'status' | 'shipNo'>,
   ): Partial<Pick<ShipmentLog, 'shipDate' | 'vehicleNo' | 'driverName' | 'destination' | 'customer' | 'remark' | 'shipOrderNo'>> {
     return {
-      ...(dto.shipDate !== undefined ? { shipDate: dto.shipDate ? new Date(dto.shipDate) : null } : {}),
+      ...(dto.shipDate !== undefined ? { shipDate: parseDateStart(dto.shipDate) } : {}),
       ...(dto.vehicleNo !== undefined ? { vehicleNo: dto.vehicleNo } : {}),
       ...(dto.driverName !== undefined ? { driverName: dto.driverName } : {}),
       ...(dto.destination !== undefined ? { destination: dto.destination } : {}),
@@ -161,7 +162,7 @@ export class ShipmentService {
 
     const shipment = this.shipmentRepository.create({
       shipNo: dto.shipNo,
-      shipDate: dto.shipDate ? new Date(dto.shipDate) : null,
+      shipDate: parseDateStart(dto.shipDate),
       vehicleNo: dto.vehicleNo,
       driverName: dto.driverName,
       destination: dto.destination,

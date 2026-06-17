@@ -251,19 +251,11 @@ export class LabelPrintService {
     if (printMode) qb.andWhere('log.printMode = :printMode', { printMode });
     if (status) qb.andWhere('log.status = :status', { status });
 
-    if (dateFrom && dateTo) {
-      qb.andWhere('log.printedAt BETWEEN :dateFrom AND :dateTo', {
-        dateFrom: new Date(dateFrom),
-        dateTo: new Date(dateTo),
-      });
-    } else if (dateFrom) {
-      qb.andWhere('log.printedAt >= :dateFrom', {
-        dateFrom: new Date(dateFrom),
-      });
-    } else if (dateTo) {
-      qb.andWhere('log.printedAt <= :dateTo', {
-        dateTo: new Date(dateTo),
-      });
+    if (dateFrom) {
+      qb.andWhere("log.printedAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
+    }
+    if (dateTo) {
+      qb.andWhere("log.printedAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + 1", { dateTo });
     }
 
     qb.orderBy('log.printedAt', 'DESC').skip(skip).take(limit);

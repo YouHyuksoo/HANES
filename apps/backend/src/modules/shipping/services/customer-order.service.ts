@@ -25,6 +25,7 @@ import {
   CustomerOrderQueryDto,
 } from '../dto/customer-order.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class CustomerOrderService {
@@ -51,8 +52,8 @@ export class CustomerOrderService {
     return {
       ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
       ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
-      ...(dto.orderDate !== undefined ? { orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date() } : {}),
-      ...(dto.dueDate !== undefined ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null } : {}),
+      ...(dto.orderDate !== undefined ? { orderDate: dto.orderDate ? parseDateStart(dto.orderDate) : new Date() } : {}),
+      ...(dto.dueDate !== undefined ? { dueDate: parseDateStart(dto.dueDate) } : {}),
       ...(dto.totalAmount !== undefined ? { totalAmount: dto.totalAmount } : {}),
       ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
@@ -159,8 +160,8 @@ export class CustomerOrderService {
         orderNo: dto.orderNo,
         customerId: dto.customerId,
         customerName: dto.customerName,
-        orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date(),
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+        orderDate: dto.orderDate ? parseDateStart(dto.orderDate) : new Date(),
+        dueDate: parseDateStart(dto.dueDate),
         totalAmount: dto.totalAmount,
         currency: dto.currency,
         remark: dto.remark,

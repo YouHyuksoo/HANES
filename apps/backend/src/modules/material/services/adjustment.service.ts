@@ -19,6 +19,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { CreateAdjustmentDto, AdjustmentQueryDto } from '../dto/adjustment.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class AdjustmentService {
@@ -75,7 +76,7 @@ export class AdjustmentService {
     }
 
     if (fromDate && toDate) {
-      where.createdAt = Between(new Date(fromDate), new Date(toDate));
+      where.createdAt = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
     }
 
     const [data, total] = await Promise.all([

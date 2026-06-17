@@ -21,6 +21,7 @@ import { PhysicalInvSession } from '../../../entities/physical-inv-session.entit
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 import {
   CreatePhysicalInvDto,
   PhysicalInvQueryDto,
@@ -279,12 +280,10 @@ export class PhysicalInvService {
       qb.andWhere('log.warehouseCode = :warehouseCode', { warehouseCode });
     }
     if (startDate) {
-      qb.andWhere('log.createdAt >= :startDate', { startDate: new Date(startDate) });
+      qb.andWhere("log.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
     }
     if (endDate) {
-      const end = new Date(endDate);
-      end.setDate(end.getDate() + 1);
-      qb.andWhere('log.createdAt < :endDate', { endDate: end });
+      qb.andWhere("log.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate });
     }
     if (search) {
       const upper = search.toUpperCase();
@@ -374,7 +373,7 @@ export class PhysicalInvService {
     // 湲곗〈 移댁슫???곸꽭 議고쉶
     const details = await this.countDetailRepository.find({
       where: {
-        sessionDate: new Date(sessionDate),
+        sessionDate: parseDateStart(sessionDate)!,
         seq,
         locationCode,
         ...(company ? { company } : {}),
@@ -462,7 +461,7 @@ export class PhysicalInvService {
 
     // 移댁슫???곸꽭 UPSERT
     const detailKey = {
-      sessionDate: new Date(sessionDate),
+      sessionDate: parseDateStart(sessionDate)!,
       seq,
       warehouseCode: row.warehouseCode,
       itemCode: row.itemCode,

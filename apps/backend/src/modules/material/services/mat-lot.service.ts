@@ -17,6 +17,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class MatLotService {
@@ -132,8 +133,8 @@ export class MatLotService {
       matUid: dto.matUid,
       itemCode: dto.itemCode,
       initQty: dto.initQty,
-      recvDate: dto.recvDate ? new Date(dto.recvDate) : new Date(),
-      expireDate: dto.expireDate ? new Date(dto.expireDate) : null,
+      recvDate: dto.recvDate ? parseDateStart(dto.recvDate) : new Date(),
+      expireDate: parseDateStart(dto.expireDate),
       origin: dto.origin,
       vendor: dto.vendor,
       invoiceNo: dto.invoiceNo,
@@ -166,7 +167,7 @@ export class MatLotService {
 
     const updateData: Partial<Pick<MatLot, 'iqcStatus' | 'expireDate' | 'vendor' | 'origin'>> = {};
     if (dto.iqcStatus) updateData.iqcStatus = dto.iqcStatus;
-    if (dto.expireDate) updateData.expireDate = new Date(dto.expireDate);
+    if (dto.expireDate) updateData.expireDate = parseDateStart(dto.expireDate);
     if (dto.vendor) updateData.vendor = dto.vendor;
     if (dto.origin) updateData.origin = dto.origin;
 

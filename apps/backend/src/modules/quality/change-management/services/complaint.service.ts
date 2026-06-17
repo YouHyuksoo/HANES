@@ -29,6 +29,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomerComplaint } from '../../../../entities/customer-complaint.entity';
+import { parseDateStart } from '../../../../shared/date.util';
 import {
   CreateComplaintDto,
   UpdateComplaintDto,
@@ -166,7 +167,7 @@ export class ComplaintService {
       complaintNo,
       customerCode: dto.customerCode,
       customerName: dto.customerName,
-      complaintDate: new Date(dto.complaintDate),
+      complaintDate: parseDateStart(dto.complaintDate)!,
       itemCode: dto.itemCode,
       lotNo: dto.lotNo,
       defectQty: dto.defectQty,
@@ -197,7 +198,7 @@ export class ComplaintService {
     const updateData: Partial<CustomerComplaint> = {
       ...(dto.customerCode !== undefined ? { customerCode: dto.customerCode } : {}),
       ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
-      ...(dto.complaintDate !== undefined ? { complaintDate: new Date(dto.complaintDate) } : {}),
+      ...(dto.complaintDate !== undefined ? { complaintDate: parseDateStart(dto.complaintDate)! } : {}),
       ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
       ...(dto.lotNo !== undefined ? { lotNo: dto.lotNo } : {}),
       ...(dto.defectQty !== undefined ? { defectQty: dto.defectQty } : {}),
@@ -254,7 +255,7 @@ export class ComplaintService {
     item.status = 'RESPONDING';
     if (dto.correctiveAction) item.correctiveAction = dto.correctiveAction;
     if (dto.preventiveAction) item.preventiveAction = dto.preventiveAction;
-    if (dto.responseDate) item.responseDate = new Date(dto.responseDate);
+    if (dto.responseDate) item.responseDate = parseDateStart(dto.responseDate)!;
     item.updatedBy = userId;
     this.logger.log(`고객클레임 대응 완료: ${item.complaintNo}`);
     return this.complaintRepo.save(item);

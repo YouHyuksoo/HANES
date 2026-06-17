@@ -25,6 +25,7 @@ import {
   ExecutePmWorkOrderDto,
   PmWorkOrderQueryDto,
 } from '../dto/pm-plan.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class PmPlanService {
@@ -411,8 +412,8 @@ export class PmPlanService {
       pmPlanCode: dto.pmPlanId || null,
       equipCode: dto.equipCode,
       woType: dto.woType || 'PLANNED',
-      scheduledDate: new Date(dto.scheduledDate),
-      dueDate: new Date(dto.scheduledDate),
+      scheduledDate: parseDateStart(dto.scheduledDate)!,
+      dueDate: parseDateStart(dto.scheduledDate),
       status: 'PLANNED',
       priority: dto.priority || 'MEDIUM',
       assignedWorkerCode: dto.assignedWorkerId || null,

@@ -43,6 +43,7 @@ import {
 } from '../dto/arrival.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class ArrivalService {
@@ -296,7 +297,7 @@ export class ArrivalService {
           initQty: item.receivedQty,
           currentQty: item.receivedQty,
           recvDate: txDate,
-          manufactureDate: item.manufactureDate ? new Date(item.manufactureDate) : null,
+          manufactureDate: parseDateStart(item.manufactureDate),
           expireDate: null,
           arrivalNo,
           arrivalSeq: arrival.seq,
@@ -397,7 +398,7 @@ export class ArrivalService {
         initQty: dto.qty,
         currentQty: dto.qty,
         recvDate: txDate,
-        manufactureDate: dto.manufactureDate ? new Date(dto.manufactureDate) : null,
+        manufactureDate: parseDateStart(dto.manufactureDate),
         expireDate: null,
         arrivalNo,
         arrivalSeq: 1,
@@ -1468,7 +1469,7 @@ export class ArrivalService {
       const serialCount = Math.ceil(dto.receivedQty / unit);
 
       // 5. 채번 (IQC005 신규 채번 메서드, 트랜잭션 내)
-      const txDate = new Date(dto.receivedDate);
+      const txDate = parseDateStart(dto.receivedDate)!;
       const arrivalNo = await this.numbering.nextArrivalNoV2(qr, txDate);
       const serialNos: string[] = [];
       for (let i = 0; i < serialCount; i++) {

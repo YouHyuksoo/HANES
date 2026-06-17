@@ -34,6 +34,7 @@ import {
   ChangeEquipStatusDto,
   AssignJobOrderDto,
 } from '../dto/equip-master.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 @Injectable()
 export class EquipMasterService {
@@ -182,7 +183,7 @@ export class EquipMasterService {
       port: dto.port,
       commType: dto.commType,
       commConfig: dto.commConfig ? JSON.stringify(dto.commConfig) : null,
-      installDate: dto.installDate ? new Date(dto.installDate) : null,
+      installDate: parseDateStart(dto.installDate),
       status: dto.status ?? 'NORMAL',
       useYn: dto.useYn ?? 'Y',
       ...this.tenantWhere(company, plant),
@@ -209,7 +210,7 @@ export class EquipMasterService {
     if (dto.port !== undefined) updateData.port = dto.port;
     if (dto.commType !== undefined) updateData.commType = dto.commType;
     if (dto.commConfig !== undefined) updateData.commConfig = dto.commConfig ? JSON.stringify(dto.commConfig) : null;
-    if (dto.installDate !== undefined) updateData.installDate = dto.installDate ? new Date(dto.installDate) : null;
+    if (dto.installDate !== undefined) updateData.installDate = parseDateStart(dto.installDate);
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 

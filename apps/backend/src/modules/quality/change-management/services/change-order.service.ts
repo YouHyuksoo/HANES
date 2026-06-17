@@ -29,6 +29,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChangeOrder } from '../../../../entities/change-order.entity';
+import { parseDateStart } from '../../../../shared/date.util';
 import {
   CreateChangeOrderDto,
   UpdateChangeOrderDto,
@@ -181,7 +182,7 @@ export class ChangeOrderService {
       priority: dto.priority,
       requestedBy: dto.requestedBy,
       requestedAt: new Date(),
-      effectiveDate: dto.effectiveDate ? new Date(dto.effectiveDate) : undefined,
+      effectiveDate: dto.effectiveDate ? parseDateStart(dto.effectiveDate)! : undefined,
       status: 'DRAFT',
       company,
       plant,
@@ -213,7 +214,7 @@ export class ChangeOrderService {
       ...(dto.affectedProcesses !== undefined ? { affectedProcesses: dto.affectedProcesses } : {}),
       ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
       ...(dto.requestedBy !== undefined ? { requestedBy: dto.requestedBy } : {}),
-      ...(dto.effectiveDate !== undefined ? { effectiveDate: new Date(dto.effectiveDate) } : {}),
+      ...(dto.effectiveDate !== undefined ? { effectiveDate: parseDateStart(dto.effectiveDate)! } : {}),
     };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.changeRepo.save(item);

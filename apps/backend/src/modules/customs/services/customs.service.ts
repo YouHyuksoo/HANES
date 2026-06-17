@@ -18,6 +18,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 import { CustomsEntry } from '../../../entities/customs-entry.entity';
 import { CustomsLot } from '../../../entities/customs-lot.entity';
 import { CustomsUsageReport } from '../../../entities/customs-usage-report.entity';
@@ -117,10 +118,10 @@ export class CustomsService {
     }
 
     if (startDate && endDate) {
-      queryBuilder.andWhere('ce.declarationDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.andWhere(
+        "ce.declarationDate >= TO_DATE(:startDate, 'YYYY-MM-DD') AND ce.declarationDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1",
+        { startDate, endDate },
+      );
     }
 
     queryBuilder.orderBy('ce.createdAt', 'DESC').skip(skip).take(limit);
@@ -148,10 +149,10 @@ export class CustomsService {
     }
 
     if (startDate && endDate) {
-      countQuery.andWhere('ce.declarationDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      countQuery.andWhere(
+        "ce.declarationDate >= TO_DATE(:startDate, 'YYYY-MM-DD') AND ce.declarationDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1",
+        { startDate, endDate },
+      );
     }
 
     const [entries, total] = await Promise.all([
@@ -235,8 +236,8 @@ export class CustomsService {
       entryNo: dto.entryNo,
       blNo: dto.blNo,
       invoiceNo: dto.invoiceNo,
-      declarationDate: dto.declarationDate ? new Date(dto.declarationDate) : null,
-      clearanceDate: dto.clearanceDate ? new Date(dto.clearanceDate) : null,
+      declarationDate: parseDateStart(dto.declarationDate),
+      clearanceDate: parseDateStart(dto.clearanceDate),
       origin: dto.origin,
       hsCode: dto.hsCode,
       totalAmount: dto.totalAmount,
@@ -254,8 +255,8 @@ export class CustomsService {
     const updateData: Partial<CustomsEntry> = {};
     if (dto.blNo !== undefined) updateData.blNo = dto.blNo;
     if (dto.invoiceNo !== undefined) updateData.invoiceNo = dto.invoiceNo;
-    if (dto.declarationDate !== undefined) updateData.declarationDate = new Date(dto.declarationDate);
-    if (dto.clearanceDate !== undefined) updateData.clearanceDate = new Date(dto.clearanceDate);
+    if (dto.declarationDate !== undefined) updateData.declarationDate = parseDateStart(dto.declarationDate);
+    if (dto.clearanceDate !== undefined) updateData.clearanceDate = parseDateStart(dto.clearanceDate);
     if (dto.origin !== undefined) updateData.origin = dto.origin;
     if (dto.hsCode !== undefined) updateData.hsCode = dto.hsCode;
     if (dto.totalAmount !== undefined) updateData.totalAmount = dto.totalAmount;
@@ -396,10 +397,10 @@ export class CustomsService {
     }
 
     if (startDate && endDate) {
-      queryBuilder.andWhere('cur.usageDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.andWhere(
+        "cur.usageDate >= TO_DATE(:startDate, 'YYYY-MM-DD') AND cur.usageDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1",
+        { startDate, endDate },
+      );
     }
 
     const [reports, total] = await Promise.all([

@@ -40,6 +40,7 @@ import {
   UpdateConsumableUsageMapDto,
 } from '../dto/consumables.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class ConsumablesService {
@@ -483,20 +484,25 @@ ${tenantSql}
     }
 
     if (startDate && endDate) {
-      where.createdAt = Between(new Date(startDate), new Date(endDate));
+      where.createdAt = Between(parseDateStart(startDate)!, parseDateEnd(endDate)!);
     } else if (startDate) {
-      where.createdAt = Between(new Date(startDate), new Date());
+      where.createdAt = Between(parseDateStart(startDate)!, new Date());
     }
 
-    const [data, total] = await Promise.all([
-      this.consumableLogRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.consumableLogRepository.count({ where }),
-    ]);
+    const raw = await this.consumableLogRepository.find({
+      where,
+      relations: ['master'],
+      skip,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+
+    const data = raw.map(({ master, ...log }) => ({
+      ...log,
+      consumableName: master?.consumableName ?? '',
+    }));
+
+    const total = await this.consumableLogRepository.count({ where });
 
     return { data, total, page, limit };
   }

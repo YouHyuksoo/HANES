@@ -30,6 +30,7 @@ import { ShipBoxDto } from '../dto/ship-box.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class ShipOrderService {
@@ -58,8 +59,8 @@ export class ShipOrderService {
     return {
       ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
       ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
-      ...(dto.dueDate !== undefined ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null } : {}),
-      ...(dto.shipDate !== undefined ? { shipDate: dto.shipDate ? new Date(dto.shipDate) : null } : {}),
+      ...(dto.dueDate !== undefined ? { dueDate: parseDateStart(dto.dueDate) } : {}),
+      ...(dto.shipDate !== undefined ? { shipDate: parseDateStart(dto.shipDate) } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
     };
   }
@@ -78,11 +79,11 @@ export class ShipOrderService {
       }),
     };
     if (dueDateFrom && dueDateTo) {
-      where.dueDate = Between(new Date(dueDateFrom), new Date(dueDateTo));
+      where.dueDate = Between(parseDateStart(dueDateFrom)!, parseDateEnd(dueDateTo)!);
     } else if (dueDateFrom) {
-      where.dueDate = MoreThanOrEqual(new Date(dueDateFrom));
+      where.dueDate = MoreThanOrEqual(parseDateStart(dueDateFrom)!);
     } else if (dueDateTo) {
-      where.dueDate = LessThanOrEqual(new Date(dueDateTo));
+      where.dueDate = LessThanOrEqual(parseDateEnd(dueDateTo)!);
     }
 
     const [data, total] = await Promise.all([
@@ -168,8 +169,8 @@ export class ShipOrderService {
         shipOrderNo: dto.shipOrderNo,
         customerId: dto.customerId,
         customerName: dto.customerName,
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        shipDate: dto.shipDate ? new Date(dto.shipDate) : null,
+        dueDate: parseDateStart(dto.dueDate),
+        shipDate: parseDateStart(dto.shipDate),
         remark: dto.remark,
         status: 'DRAFT',
         company: company || null,

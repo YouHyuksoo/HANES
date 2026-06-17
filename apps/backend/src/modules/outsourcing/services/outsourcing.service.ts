@@ -28,6 +28,7 @@ import {
   CreateSubconDeliveryDto,
   CreateSubconReceiveDto,
 } from '../dto/outsourcing.dto';
+import { parseDateStart } from '../../../shared/date.util';
 
 type VendorStockSummary = {
   vendorId: string;
@@ -336,8 +337,8 @@ export class OutsourcingService {
       itemName: dto.itemName,
       orderQty: dto.orderQty,
       unitPrice: dto.unitPrice,
-      orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date(),
-      dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+      orderDate: dto.orderDate ? parseDateStart(dto.orderDate) : new Date(),
+      dueDate: parseDateStart(dto.dueDate),
       remark: dto.remark,
       ...this.tenantWhere(company, plant),
     });
@@ -353,8 +354,8 @@ export class OutsourcingService {
     if (dto.itemName !== undefined) updateData.itemName = dto.itemName;
     if (dto.orderQty !== undefined) updateData.orderQty = dto.orderQty;
     if (dto.unitPrice !== undefined) updateData.unitPrice = dto.unitPrice;
-    if (dto.orderDate !== undefined) updateData.orderDate = new Date(dto.orderDate);
-    if (dto.dueDate !== undefined) updateData.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
+    if (dto.orderDate !== undefined) updateData.orderDate = parseDateStart(dto.orderDate);
+    if (dto.dueDate !== undefined) updateData.dueDate = parseDateStart(dto.dueDate);
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 

@@ -30,6 +30,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CAPARequest } from '../../../../entities/capa-request.entity';
 import { CAPAAction } from '../../../../entities/capa-action.entity';
+import { parseDateStart } from '../../../../shared/date.util';
 import {
   CreateCapaDto,
   UpdateCapaDto,
@@ -203,7 +204,7 @@ export class CapaService {
           seq: a.seq,
           actionDesc: a.actionDesc,
           responsibleCode: a.responsibleCode ?? null,
-          dueDate: a.dueDate ? new Date(a.dueDate) : null,
+          dueDate: parseDateStart(a.dueDate),
           status: 'PENDING',
         }),
       );
@@ -267,7 +268,7 @@ export class CapaService {
       throw new BadRequestException('ANALYZING 상태에서만 조치 계획을 등록할 수 있습니다.');
     }
     item.actionPlan = dto.actionPlan;
-    if (dto.targetDate) item.targetDate = new Date(dto.targetDate);
+    if (dto.targetDate) item.targetDate = parseDateStart(dto.targetDate)!;
     item.status = 'ACTION_PLANNED';
     item.updatedBy = userId;
     return this.capaRepo.save(item);
@@ -331,7 +332,7 @@ export class CapaService {
       seq: dto.seq,
       actionDesc: dto.actionDesc,
       responsibleCode: dto.responsibleCode ?? null,
-      dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+      dueDate: parseDateStart(dto.dueDate),
       status: dto.status ?? 'PENDING',
     });
     capa.updatedBy = userId;
@@ -360,7 +361,7 @@ export class CapaService {
 
     if (dto.actionDesc !== undefined) action.actionDesc = dto.actionDesc;
     if (dto.responsibleCode !== undefined) action.responsibleCode = dto.responsibleCode;
-    if (dto.dueDate !== undefined) action.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
+    if (dto.dueDate !== undefined) action.dueDate = parseDateStart(dto.dueDate);
     if (dto.status !== undefined) {
       action.status = dto.status;
       if (dto.status === 'DONE') action.completedAt = new Date();
