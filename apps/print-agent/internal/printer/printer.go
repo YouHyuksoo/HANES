@@ -21,6 +21,7 @@ type PrintPNGRequest struct {
 	HeightMM      float64 `json:"heightMm"`
 	Copies        int     `json:"copies"`
 	ContentBase64 string  `json:"contentBase64"`
+	OutputPath    string  `json:"outputPath,omitempty"`
 }
 
 type PrintResult struct {
@@ -28,12 +29,14 @@ type PrintResult struct {
 	PrinterName string `json:"printerName"`
 	Copies      int    `json:"copies"`
 	Status      string `json:"status"`
+	OutputPath  string `json:"outputPath,omitempty"`
 }
 
 func (r *PrintPNGRequest) Normalize(defaultPrinter string) {
 	r.JobID = strings.TrimSpace(r.JobID)
 	r.PrinterName = strings.TrimSpace(r.PrinterName)
 	r.Format = strings.ToLower(strings.TrimSpace(r.Format))
+	r.OutputPath = strings.TrimSpace(r.OutputPath)
 	if r.Format == "" {
 		r.Format = "png"
 	}

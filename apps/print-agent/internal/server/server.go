@@ -10,6 +10,9 @@ import (
 	"image/png"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -174,13 +177,18 @@ func (s *Server) handlePrint(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if err := s.prepareOutputPath(&req); err != nil {
+		s.logger.Append(jobs.Entry{JobID: req.JobID, PrinterName: req.PrinterName, Copies: req.Copies, Status: "rejected", Error: err.Error()})
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	result, err := s.backend.PrintPNG(r.Context(), req)
 	if err != nil {
-		s.logger.Append(jobs.Entry{JobID: req.JobID, PrinterName: req.PrinterName, Copies: req.Copies, Status: "failed", Error: err.Error()})
+		s.logger.Append(jobs.Entry{JobID: req.JobID, PrinterName: req.PrinterName, Copies: req.Copies, Status: "failed", OutputPath: req.OutputPath, Error: err.Error()})
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.logger.Append(jobs.Entry{JobID: result.JobID, PrinterName: result.PrinterName, Copies: result.Copies, Status: result.Status})
+	s.logger.Append(jobs.Entry{JobID: result.JobID, PrinterName: result.PrinterName, Copies: result.Copies, Status: result.Status, OutputPath: result.OutputPath})
 	writeJSON(w, http.StatusOK, result)
 }
 
@@ -205,14 +213,43 @@ func (s *Server) handleTestPrint(w http.ResponseWriter, r *http.Request) {
 	req.WidthMM = 60
 	req.HeightMM = 40
 	req.ContentBase64 = testPNGBase64()
+	if err := s.prepareOutputPath(&req); err != nil {
+		s.logger.Append(jobs.Entry{JobID: req.JobID, PrinterName: req.PrinterName, Copies: 1, Status: "rejected", Error: err.Error()})
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	result, err := s.backend.PrintPNG(r.Context(), req)
 	if err != nil {
-		s.logger.Append(jobs.Entry{JobID: req.JobID, PrinterName: req.PrinterName, Copies: 1, Status: "failed", Error: err.Error()})
+		s.logger.Append(jobs.Entry{JobID: req.JobID, PrinterName: req.PrinterName, Copies: 1, Status: "failed", OutputPath: req.OutputPath, Error: err.Error()})
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.logger.Append(jobs.Entry{JobID: result.JobID, PrinterName: result.PrinterName, Copies: result.Copies, Status: result.Status})
+	s.logger.Append(jobs.Entry{JobID: result.JobID, PrinterName: result.PrinterName, Copies: result.Copies, Status: result.Status, OutputPath: result.OutputPath})
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) prepareOutputPath(req *printer.PrintPNGRequest) error {
+	if !strings.Contains(strings.ToLower(req.PrinterName), "microsoft print to pdf") {
+		return nil
+	}
+	if req.OutputPath == "" {
+		req.OutputPath = filepath.Join(s.cfg.LogDir, "prints", sanitizeFileName(req.JobID)+".pdf")
+	}
+	if filepath.Ext(req.OutputPath) == "" {
+		req.OutputPath += ".pdf"
+	}
+	return os.MkdirAll(filepath.Dir(req.OutputPath), 0o755)
+}
+
+var unsafeFileNameChars = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
+
+func sanitizeFileName(value string) string {
+	value = unsafeFileNameChars.ReplaceAllString(strings.TrimSpace(value), "_")
+	value = strings.Trim(value, "._-")
+	if value == "" {
+		return "HANES-PRINT"
+	}
+	return value
 }
 
 func (s *Server) authorized(r *http.Request) bool {

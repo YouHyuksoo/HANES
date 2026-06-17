@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck, RefreshCw, Plus, Search } from 'lucide-react';
-import { Card, CardContent, Button, Input } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import api from '@/services/api';
 import PoLineGrid from './components/PoLineGrid';
@@ -23,6 +23,22 @@ import SerialIssueConfirmModal from './components/SerialIssueConfirmModal';
 import MatLabelPreviewModal from './components/MatLabelPreviewModal';
 import ManualArrivalModal from './components/ManualArrivalModal';
 import type { PoLineRow, PoLineReceiptInput, PoLineReceiptResponse } from './components/types';
+import {
+  LabelDesign,
+  createDefaultLabelDesign,
+  ensureObjectLabelDesign,
+} from '../../master/label/types';
+
+interface TemplateInfo {
+  templateKey: string;
+  templateName: string;
+  category: string;
+  printMode: string;
+  designData: LabelDesign;
+  isDefault?: boolean;
+}
+
+const DEFAULT_TEMPLATE_KEY = '__default__';
 
 export default function ArrivalPage() {
   const { t } = useTranslation();
@@ -62,6 +78,9 @@ export default function ArrivalPage() {
   const [labelData, setLabelData] = useState<PoLineReceiptResponse | null>(null);
   const [labelMeta, setLabelMeta] = useState<{ itemName?: string; receivedDate?: string; mfgPartnerLabel?: string }>({});
   const [isManualOpen, setIsManualOpen] = useState(false);
+  const [labelDesign, setLabelDesign] = useState<LabelDesign>(() => createDefaultLabelDesign('mat_lot'));
+  const [templates, setTemplates] = useState<TemplateInfo[]>([]);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState(DEFAULT_TEMPLATE_KEY);
 
   const fetchLines = useCallback(async () => {
     setLoading(true);
@@ -78,6 +97,74 @@ export default function ArrivalPage() {
   }, [itemCode, poNo]);
 
   useEffect(() => { fetchLines(); }, [fetchLines]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await api.get('/master/label-templates', { params: { category: 'mat_lot' } });
+        const rawTemplates = res.data?.data ?? [];
+        const nextTemplates: TemplateInfo[] = rawTemplates.map((tpl: {
+          templateKey?: string;
+          templateName: string;
+          category: string;
+          printMode?: string;
+          designData: string | LabelDesign;
+          isDefault?: boolean;
+        }) => {
+          const rawDesign = typeof tpl.designData === 'string' ? JSON.parse(tpl.designData) : tpl.designData;
+          return {
+            templateKey: tpl.templateKey ?? `${tpl.templateName}::${tpl.category}`,
+            templateName: tpl.templateName,
+            category: tpl.category,
+            printMode: tpl.printMode ?? 'BROWSER',
+            designData: ensureObjectLabelDesign(rawDesign, 'mat_lot'),
+            isDefault: tpl.isDefault,
+          };
+        });
+        if (cancelled) return;
+
+        setTemplates(nextTemplates);
+        const preferred = nextTemplates.find((item) => item.isDefault) ?? nextTemplates[0];
+        if (!preferred) {
+          setSelectedTemplateKey(DEFAULT_TEMPLATE_KEY);
+          setLabelDesign(createDefaultLabelDesign('mat_lot'));
+          return;
+        }
+        const rawDesign = preferred.designData;
+        setSelectedTemplateKey(preferred.templateKey);
+        setLabelDesign(ensureObjectLabelDesign(rawDesign, 'mat_lot'));
+      } catch {
+        if (cancelled) return;
+        setTemplates([]);
+        setSelectedTemplateKey(DEFAULT_TEMPLATE_KEY);
+        setLabelDesign(createDefaultLabelDesign('mat_lot'));
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const templateOptions = useMemo(() => [
+    { value: DEFAULT_TEMPLATE_KEY, label: '기본 디자인' },
+    ...templates.map((tpl) => ({
+      value: tpl.templateKey,
+      label: `${tpl.templateName}${tpl.printMode ? ` / ${tpl.printMode}` : ''}`,
+    })),
+  ], [templates]);
+
+  const handleTemplateChange = useCallback((templateKey: string) => {
+    setSelectedTemplateKey(templateKey);
+    if (templateKey === DEFAULT_TEMPLATE_KEY) {
+      setLabelDesign(createDefaultLabelDesign('mat_lot'));
+      return;
+    }
+    const tpl = templates.find((item) => item.templateKey === templateKey);
+    if (!tpl) return;
+    const rawDesign = tpl.designData;
+    setLabelDesign(ensureObjectLabelDesign(rawDesign, 'mat_lot'));
+  }, [templates]);
 
   const handleConfirmInput = (input: PoLineReceiptInput, expectedCount: number) => {
     setPendingInput({ input, expectedCount });
@@ -122,7 +209,16 @@ export default function ArrivalPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('material.arrival.iqc005Description')}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-72">
+            <Select
+              aria-label="입하 라벨 템플릿"
+              options={templateOptions}
+              value={selectedTemplateKey}
+              onChange={handleTemplateChange}
+              fullWidth
+            />
+          </div>
           <Button variant="secondary" size="sm" onClick={fetchLines}>
             <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
           </Button>
@@ -203,6 +299,10 @@ export default function ArrivalPage() {
         itemName={labelMeta.itemName}
         receivedDate={labelMeta.receivedDate}
         mfgPartnerLabel={labelMeta.mfgPartnerLabel}
+        labelDesign={labelDesign}
+        templateOptions={templateOptions}
+        selectedTemplateKey={selectedTemplateKey}
+        onTemplateChange={handleTemplateChange}
         onClose={() => setLabelData(null)}
       />
 

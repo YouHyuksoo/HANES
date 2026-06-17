@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { ClipboardList, RefreshCw, Search, Printer, Pencil, Ban } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select } from "@/components/ui";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import { PartnerSelect } from "@/components/shared";
@@ -28,6 +28,11 @@ import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
+import {
+  LabelDesign,
+  createDefaultLabelDesign,
+  ensureObjectLabelDesign,
+} from "../../master/label/types";
 
 interface ArrivalResultRow {
   arrivalNo: string;
@@ -60,7 +65,17 @@ interface SerialRow {
   checkable: boolean;
 }
 
+interface TemplateInfo {
+  templateKey: string;
+  templateName: string;
+  category: string;
+  printMode: string;
+  designData: LabelDesign;
+  isDefault?: boolean;
+}
+
 const fmtDate = (v: string | null) => (v ? String(v).slice(0, 10) : "-");
+const DEFAULT_TEMPLATE_KEY = "__default__";
 
 export default function ArrivalResultPage() {
   const { t } = useTranslation();
@@ -90,6 +105,9 @@ export default function ArrivalResultPage() {
   const [mfgCode, setMfgCode] = useState("");
   const [mfgSaving, setMfgSaving] = useState(false);
   const [labelData, setLabelData] = useState<PoLineReceiptResponse | null>(null);
+  const [labelDesign, setLabelDesign] = useState<LabelDesign>(() => createDefaultLabelDesign("mat_lot"));
+  const [templates, setTemplates] = useState<TemplateInfo[]>([]);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState(DEFAULT_TEMPLATE_KEY);
 
   const fetchResults = useCallback(async () => {
     setLoading(true);
@@ -113,6 +131,60 @@ export default function ArrivalResultPage() {
   }, [fromDate, toDate, itemCode, arrivalNo, statusFilter]);
 
   useEffect(() => { fetchResults(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchTemplates = async () => {
+      try {
+        const res = await api.get("/master/label-templates", { params: { category: "mat_lot" } });
+        const rawTemplates = res.data?.data ?? [];
+        const nextTemplates: TemplateInfo[] = rawTemplates.map((tpl: {
+          templateKey?: string;
+          templateName: string;
+          category: string;
+          printMode?: string;
+          designData: string | LabelDesign;
+          isDefault?: boolean;
+        }) => {
+          const rawDesign = typeof tpl.designData === "string" ? JSON.parse(tpl.designData) : tpl.designData;
+          return {
+            templateKey: tpl.templateKey ?? `${tpl.templateName}::${tpl.category}`,
+            templateName: tpl.templateName,
+            category: tpl.category,
+            printMode: tpl.printMode ?? "BROWSER",
+            designData: ensureObjectLabelDesign(rawDesign, "mat_lot"),
+            isDefault: tpl.isDefault,
+          };
+        });
+
+        if (cancelled) return;
+
+        setTemplates(nextTemplates);
+        const preferred = nextTemplates.find((item) => item.isDefault) ?? nextTemplates[0];
+        if (!preferred) {
+          setSelectedTemplateKey(DEFAULT_TEMPLATE_KEY);
+          setLabelDesign(createDefaultLabelDesign("mat_lot"));
+          return;
+        }
+
+        const rawDesign = preferred.designData;
+        setSelectedTemplateKey(preferred.templateKey);
+        setLabelDesign(ensureObjectLabelDesign(rawDesign, "mat_lot"));
+      } catch {
+        if (cancelled) return;
+        setTemplates([]);
+        setSelectedTemplateKey(DEFAULT_TEMPLATE_KEY);
+        setLabelDesign(createDefaultLabelDesign("mat_lot"));
+      }
+    };
+
+    fetchTemplates();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadSerials = useCallback(async (row: ArrivalResultRow) => {
     setSelected(row);
@@ -150,6 +222,27 @@ export default function ArrivalResultPage() {
   const toggleAll = () => {
     setChecked(allChecked ? new Set() : new Set(checkableSerials.map((s) => s.matUid)));
   };
+
+  const templateOptions = useMemo(() => [
+    { value: DEFAULT_TEMPLATE_KEY, label: "기본 디자인" },
+    ...templates.map((tpl) => ({
+      value: tpl.templateKey,
+      label: `${tpl.templateName}${tpl.printMode ? ` / ${tpl.printMode}` : ""}`,
+    })),
+  ], [templates]);
+
+  const handleTemplateChange = useCallback((templateKey: string) => {
+    setSelectedTemplateKey(templateKey);
+    if (templateKey === DEFAULT_TEMPLATE_KEY) {
+      setLabelDesign(createDefaultLabelDesign("mat_lot"));
+      return;
+    }
+
+    const tpl = templates.find((item) => item.templateKey === templateKey);
+    if (!tpl) return;
+    const rawDesign = tpl.designData;
+    setLabelDesign(ensureObjectLabelDesign(rawDesign, "mat_lot"));
+  }, [templates]);
 
   // 라벨 재발행
   const handleReprint = () => {
@@ -363,14 +456,25 @@ export default function ArrivalResultPage() {
 
             {/* 액션 행 */}
             {selected && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={allChecked} onChange={toggleAll} disabled={checkableSerials.length === 0} />
                   {t("material.arrivalResult.selectAll", "전체 선택")}
                 </label>
-                <Button size="sm" onClick={handleReprint} disabled={checked.size === 0}>
-                  <Printer className="w-4 h-4 mr-1" />{t("material.arrivalResult.reprint", "라벨 재발행")}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="w-48">
+                    <Select
+                      aria-label="입하 라벨 템플릿"
+                      options={templateOptions}
+                      value={selectedTemplateKey}
+                      onChange={handleTemplateChange}
+                      fullWidth
+                    />
+                  </div>
+                  <Button size="sm" onClick={handleReprint} disabled={checked.size === 0}>
+                    <Printer className="w-4 h-4 mr-1" />{t("material.arrivalResult.reprint", "라벨 재발행")}
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -463,6 +567,10 @@ export default function ArrivalResultPage() {
         mfgPartnerLabel={selected?.mfgPartnerName
           ?? (selected?.mfgPartnerCode ? resolveMfgPartnerName(selected.mfgPartnerCode) : "")}
         receivedDate={fmtDate(selected?.arrivalDate ?? null)}
+        labelDesign={labelDesign}
+        templateOptions={templateOptions}
+        selectedTemplateKey={selectedTemplateKey}
+        onTemplateChange={handleTemplateChange}
         onClose={() => setLabelData(null)}
       />
     </div>

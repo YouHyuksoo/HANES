@@ -10,6 +10,9 @@ Format:
 
 ## Completed
 
+- T-ARRIVAL-RESULT-AGENT-REPRINT | 2026-06-18 | codex | `/material/arrival-result` 라벨 재발행을 `mat_lot` 템플릿 선택 + `MatLabelPreviewModal` + 로컬 print-agent PNG 출력 방식으로 전환하고 `matlot_label` PDF 출력 확인 | evidence: JOURNAL 2026-06-18 00:36 Codex
+- T-PRINT-AGENT-PDF-OUTPUT | 2026-06-18 | codex | `Microsoft Print to PDF` 출력 실패 원인인 `DOCINFO.lpszOutput` 누락을 보정해 agent가 PDF 출력 경로를 자동 지정하도록 변경, `/material/arrival` `matlot_label` 출력 PDF 생성 확인 | evidence: JOURNAL 2026-06-18 00:10 Codex
+- T-MATERIAL-ARRIVAL-AGENT-LABEL | 2026-06-17 | codex | `/material/arrival` 입하 라벨 모달을 `mat_lot` 템플릿 선택 + `LabelDesignRenderer` 미리보기 + 로컬 print-agent PNG 출력으로 전환하고 iframe/window.print 제거 | evidence: JOURNAL 2026-06-17 23:38 Codex
 - T-CONSUMABLE-STOCK-DEPLOY-QUERY | 2026-06-17 | codex | `/consumables/stock` 배포 조회 빈 화면 원인인 이중 응답 envelope 파싱 누락을 보정하고 `limit=5000` 조회와 구조 테스트 추가 | evidence: JOURNAL 2026-06-17 15:28 Codex
 - T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 출력창을 버튼 클릭 즉시 `window.open`으로 선점하고 API 완료 후 같은 창에 라벨 HTML과 `window.print()`를 주입하도록 보정, 3002 브라우저 popup mock 검증 통과 | evidence: JOURNAL 2026-06-17 14:31 Codex
 - T-CONSUMABLE-LIFE-LARGE-INFO-CARDS | 2026-06-17 | codex | `/consumables/life` 상단 작은 상태 배지를 4개 큰 요약 정보카드로 변경, 구조 테스트/FE tsc/3002 HTTP 확인 | evidence: JOURNAL 2026-06-17 13:55 Codex

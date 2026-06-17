@@ -25,6 +25,7 @@ export interface PrintAgentPngJob {
   heightMm: number;
   copies?: number;
   contentBase64: string;
+  outputPath?: string;
 }
 
 export interface PrintAgentResult {
@@ -32,6 +33,7 @@ export interface PrintAgentResult {
   printerName: string;
   copies: number;
   status: "queued" | string;
+  outputPath?: string;
 }
 
 function printAgentHeaders() {

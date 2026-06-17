@@ -2,7 +2,7 @@
 
 ## Last Update
 
-2026-06-17 23:14
+2026-06-18 00:36
 
 ## In Review
 
@@ -17,6 +17,9 @@
 
 ## Completed
 
+- `T-ARRIVAL-RESULT-AGENT-REPRINT`: `/material/arrival-result` 라벨 재발행도 `/material/arrival`과 같은 방식으로 맞췄다. 페이지가 `mat_lot` 템플릿 목록을 조회하고 우측 재발행 영역의 `입하 라벨 템플릿` Select 선택값을 `MatLabelPreviewModal`에 전달한다. Playwright로 `R26061800003` 선택, `matlot_label::mat_lot` 유지, 바코드 ready 후 agent `/print` 1회, `MAT-ARRIVAL-VH1-RM260618-00003.pdf` 45,103 bytes 생성 확인. 구조 테스트, FE tsc, print-agent 구조 테스트, Go test PASS.
+- `T-PRINT-AGENT-PDF-OUTPUT`: `Microsoft Print to PDF` 출력이 `Access is denied`로 실패하던 원인을 보정했다. agent가 PDF 프린터를 감지하면 `logs/prints/<jobId>.pdf`를 `DOCINFO.lpszOutput`으로 넘긴다. 새 exe 빌드 후 agent 재시작 완료. `/test-print`는 `HANES-TEST-PRINT.pdf` 생성, `/material/arrival`에서는 `matlot_label::mat_lot` 선택 후 `PO-26-T01/TMN-C` 1개 입하 발행 및 `MAT-ARRIVAL-VH1-RM260618-00003.pdf` 생성 확인. 테스트 과정에서 `PO-26-T01 / TMN-C` 누적 입하수량은 3이 됐다.
+- `T-MATERIAL-ARRIVAL-AGENT-LABEL`: `/material/arrival` 입하 라벨 모달을 소모품 라벨과 같은 출력 방식으로 전환했다. 모달 오픈 시 `/master/label-templates?category=mat_lot`를 조회해 기본/저장 템플릿을 선택하고, 미리보기와 출력 모두 `LabelDesignRenderer`를 사용한다. 기존 숨김 iframe/browser `window.print()`는 제거했다. 출력 버튼은 바코드 렌더 완료와 이미지 로드를 기다린 뒤 라벨별 PNG를 만들고 로컬 print-agent `/print`로 `jobId=MAT-ARRIVAL-${matUid}` 전송한다. 검증: 구조 테스트 RED→GREEN, frontend tsc PASS, 3002 `/material/arrival` headless 브라우저 접속 console/page error 0.
 - `T-CONSUMABLE-STOCK-DEPLOY-QUERY`: `/consumables/stock` 배포 조회 빈 화면은 `GET /consumables/stocks` 응답이 `{ success, data: { data: rows } }`로 이중 감싸질 수 있는데 `useStockData`가 첫 번째 `data`까지만 읽어 배열이 아니면 빈 배열 처리한 것이 원인이다. `limit=5000`을 포함해 조회하고, 중첩 `data`까지 풀어 배열만 반영하도록 보정했다. 검증: focused 구조 테스트, frontend tsc PASS. commit/push 예정.
 - `T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT`: `/consumables/label` UID 발행 출력창을 버튼 클릭 즉시 `window.open("", "_blank")`으로 먼저 열고 대기 HTML을 표시한 뒤, UID 발행 API 완료 후 같은 창에 `LabelPrintRenderer` HTML과 `window.print()` 스크립트를 주입하도록 보정했다. 실패/0건/출력 준비 실패 시 선점한 창을 닫고 기존 toast/한 줄 상태 피드백을 유지한다. 구조 테스트는 숨김 iframe 금지와 API 전 출력창 선점을 검증하도록 갱신했다. 검증: RED 확인 후 구조 테스트 GREEN, 템플릿/print-log 구조 테스트, frontend tsc, 3002 Playwright mock popup 검증, diff check PASS. commit/push 안 함.
 - `T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT`: `/consumables/label` UID 발행 화면에 라벨디자인마스터 저장 템플릿 선택 Select를 추가했다. `/master/label-templates?category=jig` 목록을 `templateKey/designData`와 함께 보관하고, 사용자가 선택한 템플릿의 `designData`를 `ensureObjectLabelDesign(..., "jig")`로 정규화해 `LabelPrintRenderer`에 전달한다. 검증용 템플릿 `CODEX_CON_TPL_60546393`을 3013 브라우저에서 선택해 UID 발행했고, 인쇄 HTML에 marker `CODEX_TEMPLATE_MARK_60546393`, 생성 UID `C26061700014`, `@page{size:50mm 25mm`가 포함됨을 확인했다. 검증 템플릿/UID/로그는 JSHANES에서 잔여 0건으로 정리했다. 검증: 신규 구조 테스트, 기존 소모품 이미지 URL 테스트, `useConLabelIssue` 구조 테스트, frontend tsc, diff check PASS.

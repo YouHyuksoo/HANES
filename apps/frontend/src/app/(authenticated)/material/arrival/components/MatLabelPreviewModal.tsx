@@ -2,25 +2,19 @@
 
 /**
  * @file MatLabelPreviewModal.tsx
- * @description 발급된 시리얼 라벨 미리보기 (자재라벨) + 숨김 iframe 인쇄
- *
- * 초보자 가이드:
- * 1. 시리얼당 라벨 1장. 입하 라벨 표준 형식(80mm x 40mm) 사용
- * 2. 모달 DOM을 직접 window.print() 하면 Modal 조상(fixed inset-0,
- *    overflow-y-auto max-h-[75vh], body overflow:hidden)에 클리핑되어
- *    첫 페이지 1장만 인쇄된다.
- * 3. window.open 새 창 인쇄는 팝업 차단 시 조용히 무반응이 된다.
- *    → 팝업 차단과 무관한 숨김 iframe에 라벨 HTML을 복사해 인쇄한다.
+ * @description 입하 등록 후 발급된 자재 LOT 라벨 미리보기 + 로컬 print-agent 출력
  */
 
-import { useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Modal, Button } from '@/components/ui';
-import MaterialArrivalLabel, {
-  MATERIAL_ARRIVAL_LABEL_WIDTH_MM,
-  MATERIAL_ARRIVAL_LABEL_HEIGHT_MM,
-} from '@/components/material/MaterialArrivalLabel';
-import type { PoLineReceiptResponse } from './types';
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
+import { Printer } from "lucide-react";
+import { Modal, Button, Select } from "@/components/ui";
+import { printAgentPng } from "@/services/print-agent";
+import type { SelectOption } from "@/components/ui";
+import { LabelDesign, createDefaultLabelDesign } from "../../../master/label/types";
+import { LabelDesignRenderer, LabelPrintRenderer } from "../../../master/label/components/LabelDesignRenderer";
+import type { PoLineReceiptResponse } from "./types";
 
 interface Props {
   isOpen: boolean;
@@ -28,77 +22,196 @@ interface Props {
   itemName?: string;
   mfgPartnerLabel?: string;
   receivedDate?: string;
+  labelDesign?: LabelDesign;
+  templateOptions?: SelectOption[];
+  selectedTemplateKey?: string;
+  onTemplateChange?: (templateKey: string) => void;
   onClose: () => void;
 }
 
+interface PrintItem {
+  key: string;
+  data: Record<string, unknown>;
+}
+
+const DEFAULT_TEMPLATE_KEY = "__default__";
+const SVG_NS = "http://www.w3.org/2000/svg";
+const XHTML_NS = "http://www.w3.org/1999/xhtml";
+const CSS_PX_PER_MM = 96 / 25.4;
+const AGENT_PRINT_SCALE = 3;
+
+function dataUrlPayload(dataUrl: string): string {
+  return dataUrl.split(",")[1] ?? "";
+}
+
+async function waitForLabelImages(root: HTMLElement): Promise<void> {
+  const images = Array.from(root.querySelectorAll("img"));
+  await Promise.all(images.map((img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      const done = () => resolve();
+      img.addEventListener("load", done, { once: true });
+      img.addEventListener("error", done, { once: true });
+      window.setTimeout(done, 800);
+    });
+  }));
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function waitForLabelRenderReady(root: HTMLElement): Promise<void> {
+  const deadline = Date.now() + 2500;
+  while (Date.now() < deadline) {
+    if (!root.querySelector("[data-label-barcode-pending='true']")) {
+      await waitForLabelImages(root);
+      if (!root.querySelector("[data-label-barcode-pending='true']")) return;
+    }
+    await wait(50);
+  }
+  throw new Error("바코드 생성이 완료되지 않았습니다. 미리보기에서 라벨을 확인한 뒤 다시 출력하세요.");
+}
+
+async function renderLabelNodeToPngBase64(node: HTMLElement, widthMm: number, heightMm: number): Promise<string> {
+  await waitForLabelRenderReady(node);
+  const widthPx = Math.max(1, Math.round(widthMm * CSS_PX_PER_MM));
+  const heightPx = Math.max(1, Math.round(heightMm * CSS_PX_PER_MM));
+  const clone = node.cloneNode(true) as HTMLElement;
+  clone.setAttribute("xmlns", XHTML_NS);
+  clone.style.margin = "0";
+
+  const serialized = new XMLSerializer().serializeToString(clone);
+  const svg = `<svg xmlns="${SVG_NS}" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
+    <foreignObject width="100%" height="100%">${serialized}</foreignObject>
+  </svg>`;
+  const image = new Image();
+  const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("라벨 이미지를 PNG로 변환하지 못했습니다."));
+    image.src = svgUrl;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = widthPx * AGENT_PRINT_SCALE;
+  canvas.height = heightPx * AGENT_PRINT_SCALE;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("라벨 출력용 canvas를 생성하지 못했습니다.");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return dataUrlPayload(canvas.toDataURL("image/png"));
+}
+
 export default function MatLabelPreviewModal({
-  isOpen, data, itemName = '', mfgPartnerLabel = '', receivedDate = '', onClose,
+  isOpen,
+  data,
+  itemName = '',
+  mfgPartnerLabel = '',
+  receivedDate = '',
+  labelDesign = createDefaultLabelDesign("mat_lot"),
+  templateOptions = [{ value: DEFAULT_TEMPLATE_KEY, label: "기본 디자인" }],
+  selectedTemplateKey = DEFAULT_TEMPLATE_KEY,
+  onTemplateChange: handleTemplateChange = () => undefined,
+  onClose,
 }: Props) {
   const { t } = useTranslation();
   const printRef = useRef<HTMLDivElement>(null);
+  const [printing, setPrinting] = useState(false);
+  const [activePrintItems, setActivePrintItems] = useState<PrintItem[]>([]);
 
-  const PRINT_IFRAME_ID = 'mat-label-print-iframe';
+  const labelItems = useMemo<PrintItem[]>(() => {
+    if (!data) return [];
+    return data.serials.map((serial) => ({
+      key: serial.matUid,
+      data: {
+        matUid: serial.matUid,
+        itemCode: serial.itemCode,
+        itemName,
+        qty: serial.initQty,
+        unit: "EA",
+        vendor: mfgPartnerLabel,
+        lotNo: data.arrivalNo,
+        arrivalNo: data.arrivalNo,
+        arrivalSeq: serial.arrivalSeq,
+        arrivalDate: receivedDate,
+        receivedDate,
+        mfgPartner: mfgPartnerLabel,
+      },
+    }));
+  }, [data, itemName, mfgPartnerLabel, receivedDate]);
 
-  const handlePrint = () => {
-    if (!printRef.current) return;
-    // 이전 인쇄 iframe 잔존 시 제거
-    document.getElementById(PRINT_IFRAME_ID)?.remove();
+  const handlePrint = useCallback(() => {
+    if (printing || labelItems.length === 0) return;
+    setActivePrintItems(labelItems);
+    setPrinting(true);
+    const loadingToast = toast.loading(`${labelItems.length}개 입하 라벨을 agent로 전송 준비 중입니다.`);
 
-    const iframe = document.createElement('iframe');
-    iframe.id = PRINT_IFRAME_ID;
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
+    window.setTimeout(async () => {
+      try {
+        const labelNodes = Array.from(printRef.current?.children ?? [])
+          .filter((node): node is HTMLElement => node instanceof HTMLElement);
+        if (labelNodes.length !== labelItems.length) {
+          throw new Error("라벨 출력 화면을 준비하지 못했습니다.");
+        }
 
-    const doc = iframe.contentDocument;
-    const win = iframe.contentWindow;
-    if (!doc || !win) {
-      iframe.remove();
-      return;
-    }
-    doc.open();
-    doc.write(`<html><head><title>${t('material.arrival.label.title')}</title>
-      <style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#fff}.label-grid{display:flex;flex-wrap:wrap;gap:0;padding:0}
-      .material-arrival-label{width:${MATERIAL_ARRIVAL_LABEL_WIDTH_MM}mm!important;height:${MATERIAL_ARRIVAL_LABEL_HEIGHT_MM}mm!important;page-break-inside:avoid;break-inside:avoid}
-      img{max-width:100%;max-height:100%}@page{size:${MATERIAL_ARRIVAL_LABEL_WIDTH_MM}mm ${MATERIAL_ARRIVAL_LABEL_HEIGHT_MM}mm;margin:0}</style>
-      </head><body><div class="label-grid">${printRef.current.innerHTML}</div></body></html>`);
-    doc.close();
+        for (let index = 0; index < labelItems.length; index += 1) {
+          const item = labelItems[index];
+          const contentBase64 = await renderLabelNodeToPngBase64(
+            labelNodes[index],
+            labelDesign.labelWidth,
+            labelDesign.labelHeight,
+          );
+          await printAgentPng({
+            jobId: `MAT-ARRIVAL-${item.key}`,
+            widthMm: labelDesign.labelWidth,
+            heightMm: labelDesign.labelHeight,
+            copies: 1,
+            contentBase64,
+          });
+        }
 
-    // 인쇄 대화상자 종료 후 iframe 정리
-    win.addEventListener('afterprint', () => iframe.remove());
-    // QR 이미지는 data URL이라 doc.close() 시점에 로드 완료 — 바로 인쇄
-    win.focus();
-    win.print();
-  };
+        toast.success(`${labelItems.length}개 입하 라벨을 agent로 전송했습니다.`, { id: loadingToast });
+      } catch (err) {
+        const message = err instanceof Error && err.message ? err.message : "agent 출력 중 오류가 발생했습니다.";
+        toast.error(message, { id: loadingToast });
+      } finally {
+        setPrinting(false);
+        setActivePrintItems([]);
+      }
+    }, 500);
+  }, [labelDesign.labelHeight, labelDesign.labelWidth, labelItems, printing]);
 
   if (!data) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('material.arrival.label.title')} size="xl">
-      <div className="flex justify-end mb-2">
-        <Button onClick={handlePrint}>🖨 {t('material.arrival.label.print')}</Button>
-      </div>
-      <div ref={printRef} className="flex flex-wrap gap-2 bg-white p-2">
-        {data.serials.map((s) => (
-          <MaterialArrivalLabel
-            key={s.matUid}
-            item={{
-              matUid: s.matUid,
-              itemCode: s.itemCode,
-              itemName,
-              qty: s.initQty,
-              unit: 'EA',
-              vendor: mfgPartnerLabel,
-              arrivalDate: receivedDate,
-              lotNo: data.arrivalNo,
-            }}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div className="w-80 max-w-full">
+          <Select
+            aria-label="입하 라벨 템플릿"
+            options={templateOptions}
+            value={selectedTemplateKey}
+            onChange={handleTemplateChange}
+            fullWidth
           />
-        ))}
+        </div>
+        <Button onClick={handlePrint} disabled={printing || labelItems.length === 0}>
+          <Printer className="w-4 h-4 mr-1" />
+          {printing ? "출력중" : t('material.arrival.label.print')}
+        </Button>
       </div>
+      <div className="max-h-[60vh] overflow-auto rounded-md border border-border bg-white p-3">
+        <div className="flex flex-wrap gap-3">
+          {labelItems.map((item) => (
+            <div key={item.key} className="rounded border border-slate-200 bg-white p-2">
+              <LabelDesignRenderer design={labelDesign} data={item.data} unit="px" scale={6} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <LabelPrintRenderer ref={printRef} items={activePrintItems} design={labelDesign} visible={printing} />
       <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
         <Button variant="secondary" onClick={onClose}>{t('common.close')}</Button>
       </div>

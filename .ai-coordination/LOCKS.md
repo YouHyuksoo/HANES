@@ -16,6 +16,55 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-ARRIVAL-RESULT-AGENT-REPRINT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/material/arrival-result/page.tsx
+    - apps/frontend/src/app/(authenticated)/material/arrival-result/arrival-result-mfg-refresh.structure.test.mjs
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 00:36 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: `/material/arrival-result` 라벨 재발행도 `mat_lot` 템플릿 선택 + `MatLabelPreviewModal` agent 출력 방식으로 맞추고 `matlot_label` PDF 출력 확인.
+
+- task: T-PRINT-AGENT-PDF-OUTPUT
+  owner: codex
+  files:
+    - apps/print-agent/internal/printer/printer.go
+    - apps/print-agent/internal/printer/printer_windows.go
+    - apps/print-agent/internal/server/server.go
+    - apps/print-agent/internal/jobs/log.go
+    - apps/frontend/src/services/print-agent.ts
+    - tools/print-agent.structure.test.mjs
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 00:10 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: `Microsoft Print to PDF` 기본 프린터 테스트 출력 실패(`Access is denied`) 보정 완료. PDF 출력 파일 경로 자동 지정 후 `/material/arrival` `matlot_label` 출력 PDF 생성 확인.
+
+- task: T-MATERIAL-ARRIVAL-AGENT-LABEL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/material/arrival/components/MatLabelPreviewModal.tsx
+    - apps/frontend/src/app/(authenticated)/material/arrival/components/mat-label-preview-modal-print.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 23:38 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: `/material/arrival` 입하 라벨 모달을 소모품 라벨과 같은 템플릿 선택 + 로컬 print-agent PNG 출력 방식으로 전환 완료. 구조 테스트/FE tsc/3002 브라우저 로딩 확인.
+
 - task: T-PO-DATE-TIMEZONE-OFFBYONE
   owner: claude
   files:

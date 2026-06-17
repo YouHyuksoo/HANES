@@ -10,6 +10,31 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-18 00:36 Codex
+
+- 작업: `T-ARRIVAL-RESULT-AGENT-REPRINT` `/material/arrival-result` 라벨 재발행을 `/material/arrival`과 같은 `mat_lot` 템플릿 선택 + 로컬 print-agent 출력 방식으로 전환.
+- 변경: 페이지가 `/master/label-templates?category=mat_lot`를 조회하고 `LabelDesign`을 `ensureObjectLabelDesign(..., "mat_lot")`로 정규화한다. 우측 재발행 액션 영역에 `입하 라벨 템플릿` Select를 추가하고, 선택한 `labelDesign/templateOptions/selectedTemplateKey/onTemplateChange`를 `MatLabelPreviewModal`로 전달한다.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/material/arrival-result/arrival-result-mfg-refresh.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `node tools/print-agent.structure.test.mjs` PASS, `C:\go\bin\go.exe test ./...` PASS, `node --test apps/frontend/src/app/(authenticated)/material/arrival/components/mat-label-preview-modal-print.structure.test.mjs` PASS.
+- 실출력 테스트: Playwright로 `http://localhost:3002/material/arrival-result` 접속 후 `R26061800003` 행 선택, 시리얼 체크, `matlot_label / BROWSER` 선택, `라벨 재발행` 모달 진입을 확인했다. 모달 선택값은 `matlot_label::mat_lot`로 유지됐고 바코드 ready 후 출력 버튼 클릭 시 agent `/print` 1회 호출, `jobId=MAT-ARRIVAL-VH1-RM260618-00003`, 출력 PDF `C:\Users\hsyou\AppData\Roaming\HANES\print-agent\logs\prints\MAT-ARRIVAL-VH1-RM260618-00003.pdf` 45,103 bytes 확인.
+- 상태: 완료, lock released.
+
+## 2026-06-18 00:10 Codex
+
+- 작업: `T-PRINT-AGENT-PDF-OUTPUT` `Microsoft Print to PDF` 테스트 출력 실패 보정 및 `/material/arrival` 실제 출력 재검증.
+- 원인: agent의 Windows GDI 출력 경로가 `DOCINFO.lpszOutput`을 비워 둔 채 `Microsoft Print to PDF`로 `StartDocW`를 호출했다. PDF 드라이버는 저장 파일명이 없으면 대화상자/권한 문제로 `Access is denied`를 반환했다.
+- 변경: `PrintPNGRequest/PrintResult`에 `outputPath`를 추가하고, server가 프린터명이 `Microsoft Print to PDF`이면 기본 출력 경로를 `C:\Users\hsyou\AppData\Roaming\HANES\print-agent\logs\prints\<jobId>.pdf`로 자동 지정한다. Windows printer backend는 `DOCINFO.lpszOutput`에 이 경로를 넘긴다. job log에도 `outputPath`를 기록한다.
+- 검증: `node tools/print-agent.structure.test.mjs` PASS, `C:\go\bin\go.exe test ./...` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. agent 재빌드/재시작 후 `/test-print` queued 및 `HANES-TEST-PRINT.pdf` 10,553 bytes 생성 확인.
+- 실출력 테스트: `http://localhost:3002/material/arrival`에서 상단 `입하 라벨 템플릿` Select에 `matlot_label / BROWSER`가 표시되고 선택값 `matlot_label::mat_lot`이 라벨 모달까지 유지되는 것을 Playwright로 확인했다. `PO-26-T01 / TMN-C` 1개 입하 발행 후 라벨 모달에서 바코드 ready 1건, 출력 버튼 `인쇄` 클릭, agent `/print` 응답 200 queued. 생성 UID `VH1-RM260618-00003`, 출력 PDF `C:\Users\hsyou\AppData\Roaming\HANES\print-agent\logs\prints\MAT-ARRIVAL-VH1-RM260618-00003.pdf` 45,103 bytes 확인. console/page error 0.
+- 상태: 완료, lock released. 테스트 과정에서 `PO-26-T01 / TMN-C`는 누적 입하수량이 3으로 증가했다.
+## 2026-06-17 23:38 Codex
+
+- 작업: `T-MATERIAL-ARRIVAL-AGENT-LABEL` `/material/arrival` 입하 라벨 출력 방식을 소모품 라벨과 같은 템플릿 선택 + 로컬 print-agent 출력으로 전환.
+- 변경: `MatLabelPreviewModal`에서 기존 `MaterialArrivalLabel` + 숨김 iframe + `window.print()` 경로를 제거했다. 모달 오픈 시 `/master/label-templates?category=mat_lot`를 조회하고, 기본/저장 템플릿을 `ensureObjectLabelDesign(..., "mat_lot")`로 정규화해 `LabelDesignRenderer` 미리보기와 `LabelPrintRenderer` 출력 DOM에 공통 적용한다.
+- 출력: 발급된 `matUid`별 데이터를 `mat_lot` 소스 필드(`matUid`, `itemCode`, `itemName`, `qty`, `unit`, `vendor`, `lotNo`)와 추가 필드(`arrivalNo`, `arrivalSeq`, `receivedDate`)로 매핑한다. 출력 버튼은 바코드 pending이 사라지고 이미지 로드가 끝난 뒤 라벨 DOM을 PNG로 변환해 `printAgentPng()`에 `jobId=MAT-ARRIVAL-${matUid}`로 순차 전송한다.
+- 테스트: 구조 테스트를 “mat_lot 템플릿 조회/선택, 공통 렌더러 미리보기, print-agent PNG 전송, iframe/window.print 금지” 기준으로 갱신했고 RED 실패 확인 후 GREEN 통과.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/material/arrival/components/mat-label-preview-modal-print.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. Playwright headless로 `http://localhost:3002/material/arrival` 인증 접속 후 입하/PO 화면 텍스트 표시 true, console/page error 0 확인.
+- 상태: 완료, lock released. 이번 작업 파일은 `apps/frontend/src/app/(authenticated)/material/arrival/components/MatLabelPreviewModal.tsx`와 `mat-label-preview-modal-print.structure.test.mjs`이며, 워크트리의 다른 dirty 파일은 기존/외부 변경으로 유지했다.
+
 ## 2026-06-17 23:14 Codex
 
 - 작업: `T-CONSUMABLE-LABEL-REPRINT` Microsoft Print to PDF 결과에서 바코드가 검은 블록/잘림처럼 깨지는 문제 수정.
@@ -101,7 +126,6 @@ Use local time in 24-hour format.
 - 변경: `useStockData`가 `/consumables/stocks?limit=5000`을 호출하고, 1단계 배열 응답과 `{ data: rows }` 중첩 응답을 모두 풀어 최종 배열만 `rawData`로 반영하도록 보정했다. `useStockData.structure.test.mjs`를 추가해 `limit=5000`, 1차/2차 `data` 파싱, 배열 가드를 고정했다.
 - 검증: `node --test apps/frontend/src/hooks/consumables/useStockData.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. `git diff --cached --check`는 커밋 직전 실행 예정.
 - 상태: 완료, lock released.
-
 ## 2026-06-17 14:31 Codex
 
 - 작업: `T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT` `/consumables/label` UID 발행 출력창 선점 보정.

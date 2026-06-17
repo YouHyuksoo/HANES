@@ -148,6 +148,10 @@ func (localPrinter) PrintPNG(_ context.Context, req PrintPNGRequest) (PrintResul
 		cbSize:      int32(unsafe.Sizeof(docInfo{})),
 		lpszDocName: docName,
 	}
+	if req.OutputPath != "" {
+		outputPath, _ := syscall.UTF16PtrFromString(req.OutputPath)
+		doc.lpszOutput = outputPath
+	}
 	if ok, _, err := procStartDocW.Call(hdc, uintptr(unsafe.Pointer(&doc))); int32(ok) <= 0 {
 		return PrintResult{}, err
 	}
@@ -196,7 +200,7 @@ func (localPrinter) PrintPNG(_ context.Context, req PrintPNGRequest) (PrintResul
 		}
 	}
 
-	return PrintResult{JobID: req.JobID, PrinterName: req.PrinterName, Copies: req.Copies, Status: "queued"}, nil
+	return PrintResult{JobID: req.JobID, PrinterName: req.PrinterName, Copies: req.Copies, Status: "queued", OutputPath: req.OutputPath}, nil
 }
 
 func imageToBGRA(src image.Image) ([]byte, int, int) {

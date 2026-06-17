@@ -19,6 +19,7 @@ type Entry struct {
 	PrinterName string    `json:"printerName"`
 	Copies      int       `json:"copies"`
 	Status      string    `json:"status"`
+	OutputPath  string    `json:"outputPath,omitempty"`
 	Error       string    `json:"error,omitempty"`
 }
 

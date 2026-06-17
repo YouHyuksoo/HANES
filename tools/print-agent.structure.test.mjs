@@ -47,6 +47,8 @@ assert.match(printerWindows, /gdi32\.dll/, "Windows 조용한 출력은 GDI prin
 assert.match(printerWindows, /winspool\.drv/, "Windows 프린터 목록 조회는 winspool을 사용해야 합니다.");
 assert.match(printerWindows, /StretchDIBits/, "PNG 비트맵은 printer DC에 직접 그려야 합니다.");
 assert.match(printerWindows, /StartDocW/, "출력 작업은 Windows printer document로 시작해야 합니다.");
+assert.match(printerWindows, /lpszOutput/, "PDF 프린터에는 출력 파일 경로를 넘길 수 있어야 합니다.");
+assert.match(server, /prepareOutputPath/, "Microsoft Print to PDF는 저장 대화상자 없이 출력 파일 경로를 자동 지정해야 합니다.");
 
 const main = read("apps/print-agent/cmd/hanes-print-agent/main.go");
 assert.match(main, /runAgent/, "main은 플랫폼별 실행 함수로 HTTP 서버와 트레이 실행을 위임해야 합니다.");
