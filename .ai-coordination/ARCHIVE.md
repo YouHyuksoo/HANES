@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL | 2026-06-17 | codex | `/consumables/label` 배포 이미지 깨짐 원인을 `/uploads` URL 정규화 누락과 gitignore된 소모품 SVG 미배포로 확인하고 URL helper와 deploy 시드 이미지 재생성 단계 추가 | evidence: JOURNAL 2026-06-17 10:07 Codex
 - T-MATERIAL-FLOW-FE-RUNTIME | 2026-06-17 | codex | 자재관리 등록 메뉴 24/24 프론트 QA PASS 및 자재요청 MR2606170035 -> 출고 -> 자재재고 -> 공정재고/키오스크 흐름 JSHANES DB 정합성 확인 | evidence: JOURNAL 2026-06-17 04:12 Codex
 - T-SHIPPING-PACK-EMPTY-BOX-DELETE | 2026-06-17 | codex | `/shipping/pack` 빈 OPEN 박스 삭제 버튼 노출, 행 액션 4개 아이콘 슬롯 고정 정렬, 현재 담는 박스 모달/행 강조 추가 및 실제 생성/삭제 검증 | evidence: JOURNAL 2026-06-17 03:30 Codex
 - T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS | 2026-06-17 | codex | `/master/label` 좌측 필드 목록을 고정값이 아닌 디자인별 사용자 정의 `sourceFields`로 저장/추가/수정/삭제 가능하게 전환하고 3002 저장 요청 201 및 임시 템플릿 정리 확인 | evidence: JOURNAL 2026-06-17 02:49 Codex

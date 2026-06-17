@@ -16,6 +16,36 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/**
+    - apps/frontend/src/app/(authenticated)/master/label/components/LabelDesignRenderer.tsx
+    - apps/frontend/src/utils/file-url.ts
+    - .github/workflows/deploy.yml
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 배포 후 `/consumables/label` 이미지 링크 깨짐 보정 완료. `/uploads/...` URL을 API base 기준으로 정규화하고, gitignore된 소모품 시드 SVG 37개를 배포 시 재생성하도록 deploy workflow 보강. 구조 테스트/FE tsc 통과.
+
+- task: T-MASTER-LABEL-UNSAVED-GUARD
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/master/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/label/components/TemplateManager.tsx
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: active
+  note: master/label 새로저장 취소 버튼 + 미저장 변경 시 템플릿 로드 경고(dirty 가드). (codex 활발 영역 — 사용자 요청)
+
 - task: T-SHIPPING-PACK-EMPTY-BOX-DELETE
   owner: codex
   files:

@@ -10,6 +10,16 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 10:07 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL` 서버 배포 후 `/consumables/label` 이미지 링크 깨짐 원인 확인 및 보정.
+- 원인: `/consumables/label` 그리드와 라벨 인쇄 렌더러가 API 응답의 `imageUrl`(`/uploads/consumables/...`)을 그대로 `<img src>`에 사용했다. 로컬은 `/uploads` rewrite/동일 호스트 조건으로 보이지만, 배포 환경에서는 프론트 호스트 기준 경로가 되어 깨질 수 있다. 추가로 `apps/backend/uploads`는 `.gitignore` 대상이라 로컬에 존재하는 소모품 시드 SVG 37개가 Git에는 0개이고, 서버 배포 시 파일 자체가 없을 수 있다.
+- 변경: `resolveBackendFileUrl()` 공통 helper를 추가해 `/uploads/...`를 `NEXT_PUBLIC_API_URL`의 `/api` 또는 `/api/v1` 접미사를 제거한 백엔드 base URL 기준으로 변환한다. `/consumables/label` 이미지 컬럼과 `LabelDesignRenderer` 이미지 객체에 적용해 그리드와 인쇄 라벨 모두 같은 기준을 사용한다.
+- 배포 보정: `.github/workflows/deploy.yml`에 `node tools\generate-consumable-master-seed-images.mjs` 단계를 추가해 서버 배포 때 gitignore된 `apps/backend/uploads/consumables/*.svg` 37개를 재생성한다.
+- 검증: `node tools\generate-consumable-master-seed-images.mjs` 로컬 실행 성공, `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-image-url.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS.
+- 참고: 기존 `master-label-bartender-designer.structure.test.mjs`는 현재 다른 작업에서 라벨 디자이너 좌측 필드 추가/수정/삭제 UI를 제거한 상태와 예전 테스트 기대가 맞지 않아 실패한다. 이번 이미지 경로 변경과 직접 관련 없는 기존 테스트 불일치다.
+- 상태: 완료, lock released.
+
 ## 2026-06-17 04:12 Codex
 
 - 작업: `T-MATERIAL-FLOW-FE-RUNTIME` 자재관리 하위 등록 메뉴 전체를 실제 프론트로 순회하고, 자재요청 -> 자재출고 -> 자재재고 -> 공정재고/키오스크 흐름을 실데이터로 검증.

@@ -3,6 +3,7 @@
 import { forwardRef, PointerEvent, useEffect, useMemo, useState } from "react";
 import { LabelDesign, LabelElement, BarcodeFormat } from "../types";
 import { resolveLabelValue } from "../labelSources";
+import { resolveBackendFileUrl } from "@/utils/file-url";
 
 type RenderUnit = "px" | "mm";
 
@@ -92,7 +93,7 @@ function renderElementContent(element: LabelElement, data?: Record<string, unkno
   }
 
   if (element.type === "image") {
-    const src = resolveLabelValue(data, element.sourceField, element.imageUrl ?? "");
+    const src = resolveBackendFileUrl(resolveLabelValue(data, element.sourceField, element.imageUrl ?? ""));
     if (!src) return <div className="w-full h-full bg-slate-100 text-slate-400 flex items-center justify-center">IMG</div>;
     return <img src={src} alt="" className="block w-full h-full object-contain" />;
   }

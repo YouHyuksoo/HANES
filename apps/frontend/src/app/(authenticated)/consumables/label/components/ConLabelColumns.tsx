@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
+import { resolveBackendFileUrl } from "@/utils/file-url";
 
 /** 라벨 발행 가능 마스터 항목 (API 응답) */
 export interface LabelableMaster {
@@ -65,15 +66,18 @@ export function useConLabelColumns({
         header: t("consumables.master.sectionImage", "이미지"),
         size: 64,
         meta: { filterType: "none" as const, align: "center" as const },
-        cell: ({ row }) => row.original.imageUrl ? (
-          <img
-            src={row.original.imageUrl}
-            alt=""
-            className="w-9 h-9 object-cover rounded border border-border bg-surface"
-          />
-        ) : (
-          <span className="text-text-muted text-xs">-</span>
-        ),
+        cell: ({ row }) => {
+          const src = resolveBackendFileUrl(row.original.imageUrl);
+          return src ? (
+            <img
+              src={src}
+              alt=""
+              className="w-9 h-9 object-cover rounded border border-border bg-surface"
+            />
+          ) : (
+            <span className="text-text-muted text-xs">-</span>
+          );
+        },
       },
       {
         id: "consumableCode", accessorKey: "consumableCode",
