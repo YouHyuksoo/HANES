@@ -29,12 +29,6 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
     OUT_RETURN: t('consumables.issuing.typeOutReturn'),
   };
 
-  const issueReasonLabels: Record<string, string> = {
-    PRODUCTION: t('consumables.issuing.reasonProduction'),
-    REPAIR: t('consumables.issuing.reasonRepair'),
-    OTHER: t('consumables.issuing.reasonOther'),
-  };
-
   const columns = useMemo<ColumnDef<IssuingLog>[]>(
     () => [
       {
@@ -82,12 +76,6 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
         },
       },
       {
-        accessorKey: 'department',
-        header: t('consumables.comp.department'),
-        size: 100,
-        cell: ({ getValue }) => (getValue() as string) ?? '-',
-      },
-      {
         accessorKey: 'lineCode',
         header: t('consumables.comp.line'),
         size: 90,
@@ -98,15 +86,6 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
         header: t('consumables.comp.equipment'),
         size: 90,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
-      },
-      {
-        accessorKey: 'issueReason',
-        header: t('consumables.comp.issueReason'),
-        size: 90,
-        cell: ({ getValue }) => {
-          const val = getValue() as string | null;
-          return val ? issueReasonLabels[val] ?? val : '-';
-        },
       },
       {
         accessorKey: 'remark',

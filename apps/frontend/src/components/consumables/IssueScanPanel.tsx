@@ -4,7 +4,7 @@
  * @file apps/frontend/src/components/consumables/IssueScanPanel.tsx
  * @description 바코드 스캔 출고/출고취소 패널
  */
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ScanBarcode, LogOut, Undo2 } from "lucide-react";
 import { Card, CardContent, Input, Button } from "@/components/ui";
@@ -21,7 +21,6 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [scanValue, setScanValue] = useState("");
   const [mode, setMode] = useState<ScanMode>("issue");
-  const [returnReason, setReturnReason] = useState("");
   const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
@@ -41,7 +40,6 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
       } else {
         await api.post("/consumables/label/issue-return", {
           conUid: uid,
-          returnReason: returnReason || undefined,
         });
       }
       onScanSuccess?.();
@@ -49,7 +47,6 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
       // API interceptor handles error modal
     } finally {
       setScanValue("");
-      setReturnReason("");
       setIsScanning(false);
       inputRef.current?.focus();
     }
@@ -114,16 +111,6 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
                 fullWidth
               />
             </div>
-            {mode === "issue-return" && (
-              <div className="w-48">
-                <Input
-                  placeholder={t("consumables.issuing.returnReasonPlaceholder", "취소사유 (선택)")}
-                  value={returnReason}
-                  onChange={(e) => setReturnReason(e.target.value)}
-                  fullWidth
-                />
-              </div>
-            )}
             <Button onClick={handleScan} disabled={!scanValue.trim() || isScanning} className="flex-shrink-0">
               {mode === "issue"
                 ? t("consumables.issuing.confirmBtn", "출고확정")
