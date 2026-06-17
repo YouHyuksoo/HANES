@@ -20,14 +20,19 @@ interface TemplateManagerProps {
   category: LabelCategory;
   design: LabelDesign;
   onLoad: (design: LabelDesign) => void;
+  /** 현재 디자인에 미저장 변경이 있는지 — true면 템플릿 로드 전 경고 */
+  isDirty?: boolean;
+  /** 저장/덮어쓰기 성공 시 호출(상위 dirty 기준선 갱신) */
+  onSaved?: () => void;
 }
 
-export default function TemplateManager({ category, design, onLoad }: TemplateManagerProps) {
+export default function TemplateManager({ category, design, onLoad, isDirty = false, onSaved }: TemplateManagerProps) {
   const { t } = useTranslation();
   const { templates, loading, fetchList, save, update, remove } = useLabelTemplates();
   const [saveName, setSaveName] = useState("");
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LabelTemplateItem | null>(null);
+  const [pendingLoad, setPendingLoad] = useState<LabelTemplateItem | null>(null);
   const [showSave, setShowSave] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,20 +46,37 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
       await save(saveName.trim(), category, design);
       setSaveName("");
       setShowSave(false);
+      onSaved?.();
       fetchList(category);
     } catch {
       // 중복명 등 에러 시 무시 (toast 추가 가능)
     }
   };
 
+  const handleCancelSave = () => {
+    setShowSave(false);
+    setSaveName("");
+  };
+
   const handleOverwrite = async (tpl: LabelTemplateItem) => {
     await update(tpl.templateKey, design);
+    onSaved?.();
     fetchList(category);
   };
 
-  const handleLoad = (tpl: LabelTemplateItem) => {
+  /** 실제 로드 수행(경고 통과 후) */
+  const doLoad = (tpl: LabelTemplateItem) => {
     setSelectedTemplateKey(tpl.templateKey);
     onLoad(tpl.designData);
+  };
+
+  const handleLoad = (tpl: LabelTemplateItem) => {
+    // 이미 선택된 템플릿 재클릭은 그대로 로드. 미저장 변경이 있으면 경고 후 로드.
+    if (isDirty && tpl.templateKey !== selectedTemplateKey) {
+      setPendingLoad(tpl);
+      return;
+    }
+    doLoad(tpl);
   };
 
   const handleDelete = async () => {
@@ -86,17 +108,23 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
 
       {/* 새 저장 입력 */}
       {showSave && (
-        <div className="flex gap-2">
+        <div className="space-y-2">
           <input
             ref={inputRef}
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            className="flex-1 px-2 py-1.5 text-sm rounded border border-border bg-surface text-text focus:border-primary focus:outline-none"
+            placeholder={t("master.label.templateNamePlaceholder", "템플릿 이름")}
+            className="w-full px-2 py-1.5 text-sm rounded border border-border bg-surface text-text focus:border-primary focus:outline-none"
           />
-          <Button size="sm" onClick={handleSave} disabled={!saveName.trim()}>
-            {t("master.label.save")}
-          </Button>
+          <div className="flex gap-2 justify-end">
+            <Button size="sm" variant="secondary" onClick={handleCancelSave}>
+              {t("common.cancel", "취소")}
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={!saveName.trim()}>
+              {t("master.label.save")}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -142,6 +170,15 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
       onConfirm={handleDelete}
       title={t("common.deleteConfirm", "삭제 확인")}
       message={`${deleteTarget?.templateName ?? ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+      variant="danger"
+    />
+    <ConfirmModal
+      isOpen={!!pendingLoad}
+      onClose={() => setPendingLoad(null)}
+      onConfirm={() => { if (pendingLoad) doLoad(pendingLoad); setPendingLoad(null); }}
+      title={t("master.label.unsavedTitle", "저장하지 않은 변경사항")}
+      message={t("master.label.unsavedMessage", "현재 작업 중인 라벨이 저장되지 않았습니다. 다른 템플릿을 불러오면 변경사항이 사라집니다. 계속할까요?")}
+      confirmText={t("master.label.discardAndLoad", "변경 무시하고 불러오기")}
       variant="danger"
     />
     </>

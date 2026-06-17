@@ -4,7 +4,7 @@
  * @file src/app/(authenticated)/master/label/page.tsx
  * @description 객체 기반 라벨 디자인 관리 페이지
  */
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileJson2, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui";
@@ -30,12 +30,24 @@ const sourceCategoryMap: Record<LabelSourceTable, LabelCategory> = {
 
 function LabelPage() {
   const { t } = useTranslation();
-  const [design, setDesign] = useState<LabelDesign>(() => createDefaultLabelDesign("jig"));
+  const initialDesign = useMemo(() => createDefaultLabelDesign("jig"), []);
+  const [design, setDesign] = useState<LabelDesign>(initialDesign);
+  // 미저장 변경 감지용 기준선(마지막 저장/불러오기 시점의 디자인 JSON)
+  const [baseline, setBaseline] = useState<string>(() => JSON.stringify(initialDesign));
   const category = sourceCategoryMap[design.sourceTable ?? "consumable"];
 
+  const isDirty = useMemo(() => JSON.stringify(design) !== baseline, [design, baseline]);
+
   const handleLoad = useCallback((loaded: LabelDesign) => {
-    setDesign(ensureObjectLabelDesign(loaded, category));
+    const next = ensureObjectLabelDesign(loaded, category);
+    setDesign(next);
+    setBaseline(JSON.stringify(next));
   }, [category]);
+
+  // 저장/덮어쓰기 성공 시 현재 디자인을 기준선으로 갱신(→ dirty 해제)
+  const handleSaved = useCallback(() => {
+    setBaseline(JSON.stringify(design));
+  }, [design]);
 
   const sampleData = getSampleData(category, design.sourceTable, design.sourceFields);
 
@@ -62,7 +74,7 @@ function LabelPage() {
 
         <aside className="min-h-0 space-y-4 overflow-y-auto">
           <Card><CardContent>
-            <TemplateManager category={category} design={design} onLoad={handleLoad} />
+            <TemplateManager category={category} design={design} onLoad={handleLoad} isDirty={isDirty} onSaved={handleSaved} />
           </CardContent></Card>
 
           <Card><CardContent>
