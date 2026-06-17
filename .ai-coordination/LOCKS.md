@@ -16,6 +16,126 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-CONSUMABLE-LIFE-LARGE-INFO-CARDS
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/life/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/life/consumable-life-large-info-cards.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/consumables/life` 상단 정보카드를 작은 배지에서 큰 요약 카드로 변경 완료. 구조 테스트/FE tsc/diff check/3002 HTTP 200 확인. Playwright require 불가로 DOM 자동 검증은 생략. commit/push 안 함.
+
+- task: T-CONSUMABLE-LABEL-ONE-LINE-STATUS
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/consumables/label` UID 발행 상태 UI를 별도 배너 없이 헤더 한 줄 상태로 축소하고 그리드 상단 카테고리 고정 필터 추가 완료. 구조 테스트/FE tsc/diff check 통과. commit/push 안 함.
+
+- task: T-CONSUMABLE-LABEL-HIDDEN-IFRAME-PRINT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/consumables/label` UID 발행 출력 UX를 새 탭 대신 숨김 iframe 인쇄로 전환 완료. 3014 mock 브라우저에서 window.open 0회, 숨김 iframe 0x0, iframe print 1회 확인. commit/push 안 함.
+
+- task: T-CONSUMABLE-LABEL-ACTUAL-PRINT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/consumables/label` UID 발행 시 실제 인쇄창이 클릭 즉시 열리도록 보정 완료. API 완료 전 window.open 확인, 실제 API 발행 C26061700019 출력 HTML window.print 확인 후 DB cleanup 잔여 0. commit/push 안 함.
+
+- task: T-CONSUMABLE-LABEL-503-FEEDBACK
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.ts
+    - apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/consumables/label` UID 발행 API 실패 시 AxiosError 콘솔 overlay 대신 서버 메시지를 화면 피드백으로 처리하도록 보정 완료. 503 mock 브라우저 검증, FE tsc, 구조 테스트 통과. commit/push 안 함.
+
+- task: T-CONSUMABLE-LABEL-ISSUE-FEEDBACK
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/consumables/label` UID 발행 시 발행중/출력중/완료/실패 toast와 화면 배너를 표시하도록 보정 완료. 성공 후 발행 UID를 즉시 지우지 않아 결과 확인 가능. 구조 테스트/FE tsc/mock 브라우저/실제 API+DB 발행 후 cleanup 검증 완료.
+
+- task: T-WI-FILE-URL-RELATIVE-FIX
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkInstructionView.tsx
+    - apps/frontend/src/app/(authenticated)/master/work-instruction/components/WorkInstructionPreviewPanel.tsx
+    - .github/workflows/deploy.yml
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: 작업지도서 파일링크 2건 수정 — (1)src 절대URL→상대경로(b5f6fa77 배포완료, URL 정상화) (2)배포 서버 404 원인=uploads gitignore+seed생성단계 누락→deploy.yml에 work-instruction 생성 스크립트 추가(커밋/배포 대기). push는 사용자 지시 대기.
+
+- task: T-PROGRESS-PROCESS-EQUIP-COLUMNS
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/production/progress/page.tsx
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: /production/progress 그리드에 공정·설비 컬럼 추가(기존 job-orders API, i18n 재사용) 완료. 로컬 브라우저 검증(공정=MASSY, 설비 미배정 "-"). tsc 0. 백엔드 변경 없음.
+
 - task: T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT
   owner: codex
   files:
@@ -31,6 +151,7 @@ Before editing, add a lock entry. Mark it released when done.
   expires: 2026-06-17 KST
   status: released
   note: `/consumables/label` UID 발행 시 라벨디자인마스터 저장 템플릿을 선택해 출력하도록 보정 완료. 템플릿 Select 추가, 선택 템플릿 designData를 LabelPrintRenderer에 적용, 구조 테스트/FE tsc/3013 브라우저 실제 UID 발행 인쇄 HTML 검증 통과.
+
 - task: T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL
   owner: codex
   files:
@@ -48,6 +169,7 @@ Before editing, add a lock entry. Mark it released when done.
   expires: 2026-06-17 KST
   status: released
   note: `/master/equip-inspect-item` 배포 후 이미지 깨짐 보정 완료. 화면/공용 점검항목 이미지 컴포넌트에서 `/uploads/...` URL을 백엔드 base 기준으로 정규화하고, deploy workflow에서 점검항목 시드 SVG 50개를 재생성하도록 추가. 구조 테스트/FE tsc 통과.
+
 - task: T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL
   owner: codex
   files:
@@ -75,8 +197,8 @@ Before editing, add a lock entry. Mark it released when done.
   started: 2026-06-17 KST
   last_seen: 2026-06-17 KST
   expires: 2026-06-17 KST
-  status: active
-  note: master/label 새로저장 취소 버튼 + 미저장 변경 시 템플릿 로드 경고(dirty 가드). (codex 활발 영역 — 사용자 요청)
+  status: released
+  note: master/label 새로저장 취소 버튼 + 미저장 변경 시 템플릿 로드 경고(dirty 가드) 완료. 로컬 브라우저 검증(취소버튼·미저장 경고 모달·취소 시 작업유지). tsc 0. (codex 활발 영역 — 사용자 요청)
 
 - task: T-SHIPPING-PACK-EMPTY-BOX-DELETE
   owner: codex

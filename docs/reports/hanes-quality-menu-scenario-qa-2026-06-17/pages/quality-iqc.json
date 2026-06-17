@@ -52,6 +52,14 @@
           "source": "ui-network",
           "stepId": "initial-load",
           "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
           "url": "/api/system/configs/active",
           "status": 200,
           "ok": true
@@ -60,7 +68,7 @@
           "source": "ui-network",
           "stepId": "initial-load",
           "method": "GET",
-          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
           "status": 200,
           "ok": true
         },
@@ -77,14 +85,6 @@
           "stepId": "initial-load",
           "method": "GET",
           "url": "/api/master/com-codes/all-active",
-          "status": 200,
-          "ok": true
-        },
-        {
-          "source": "ui-network",
-          "stepId": "initial-load",
-          "method": "GET",
-          "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
           "status": 200,
           "ok": true
         }
@@ -352,6 +352,14 @@
       "source": "ui-network",
       "stepId": "initial-load",
       "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "stepId": "initial-load",
+      "method": "GET",
       "url": "/api/system/configs/active",
       "status": 200,
       "ok": true
@@ -360,7 +368,7 @@
       "source": "ui-network",
       "stepId": "initial-load",
       "method": "GET",
-      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
       "status": 200,
       "ok": true
     },
@@ -377,14 +385,6 @@
       "stepId": "initial-load",
       "method": "GET",
       "url": "/api/master/com-codes/all-active",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "stepId": "initial-load",
-      "method": "GET",
-      "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
       "status": 200,
       "ok": true
     },

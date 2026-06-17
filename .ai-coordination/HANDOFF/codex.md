@@ -102,6 +102,12 @@
 ## Current Known Issues
 
 - 없음.
+- `T-CONSUMABLE-LIFE-LARGE-INFO-CARDS` 완료. `/consumables/life` 상단 작은 상태 배지 4개를 큰 요약 정보카드 4개로 변경했다. 각 카드는 118px 이상 높이, 큰 수치, 상태별 아이콘/색상 톤을 가진다. 구조 테스트/FE tsc/diff check/3002 HTTP 200 확인. Playwright DOM 자동 검증은 루트에서 `@playwright/test` require 불가로 생략. commit/push 안 함.
+- `T-CONSUMABLE-LABEL-ONE-LINE-STATUS` 완료. `/consumables/label` UID 발행 상태/결과 배너를 제거하고 헤더 우측 고정 폭 한 줄 상태로 축소했다. 그리드 toolbar 검색 input 옆에 `카테고리 필터` Select를 추가해 실제 마스터 `category` 값 기준으로 고정 필터링한다. 카테고리 변경 시 숨은 선택값은 초기화한다. 구조 테스트/FE tsc/diff check 통과. commit/push 안 함.
+- `T-CONSUMABLE-LABEL-HIDDEN-IFRAME-PRINT` 완료. `/consumables/label` UID 발행 시 새 탭/전체 화면으로 전환하지 않고 숨김 iframe에 라벨 HTML을 주입해 `contentWindow.print()`를 호출한다. 3014 mock 브라우저에서 `window.openCalled=0`, iframe 0x0/opacity 0 숨김 상태, `iframePrintCalled=1` 확인. commit/push 안 함.
+- `T-CONSUMABLE-LABEL-ACTUAL-PRINT` 완료. `/consumables/label` UID 발행 시 이제 클릭 즉시 인쇄창을 먼저 열고, UID 생성 후 그 창에 라벨 HTML을 쓰며 `window.print()`를 호출한다. API 지연 mock에서 `window.open`이 API 요청보다 먼저 호출됨을 확인했고, 실제 API 발행 `C26061700019`의 출력 HTML에도 `window.print()`가 포함됨을 확인했다. 테스트 데이터는 `CONSUMABLE_STOCKS`/`LABEL_PRINT_LOGS`에서 삭제해 잔여 0건. commit/push 안 함.
+- `T-CONSUMABLE-LABEL-503-FEEDBACK` 완료. `/consumables/label` UID 발행 API가 503을 반환해도 AxiosError 객체를 console.error로 그대로 출력하지 않고, 서버 메시지를 toast/화면 배너에 표시한다. 3014 dev 서버에서 503 mock 검증 완료. 직접 API 테스트로 생성된 `C26061700017`은 `CONSUMABLE_STOCKS`/`LABEL_PRINT_LOGS`에서 삭제해 잔여 0건 확인. commit/push 안 함.
+- `T-CONSUMABLE-LABEL-ISSUE-FEEDBACK` 완료. `/consumables/label` UID 발행 버튼 클릭 시 발행중/출력중/완료/실패 toast와 화면 배너가 표시되고, 성공 후 발행 UID가 화면에 남는다. 3014 dev 브라우저 mock 검증 및 실제 API 발행 `C26061700016` 검증 완료. 테스트로 생성된 `CONSUMABLE_STOCKS` 1건과 `LABEL_PRINT_LOGS` 2건은 삭제했고 JSHANES 잔여 0건 확인. 사용자 지시에 따라 commit/push는 하지 않았다.
 - `T-SHIPPING-PACK-EMPTY-BOX-DELETE` 완료. `/shipping/pack` 행 액션은 4개 고정 아이콘 슬롯(제품 담기/마감·재오픈/라벨/빈 박스 삭제)으로 정렬했고, 빈 OPEN 박스만 삭제 확인 모달을 통해 `DELETE /shipping/boxes/:boxNo`를 호출한다. 제품 담기 모달에는 `현재 담는 박스`와 박스번호를 크게 표시하고 해당 행을 하이라이트한다. 구조 테스트, frontend tsc, 3002 브라우저 DOM, API 빈 박스 생성/삭제 검증 완료.
 - `T-SYSTEM-LABEL-MENU-RENAME` 완료. `MST_LABEL` 메뉴 labelKey `menu.master.label` 한글 값을 요청 표기 그대로 `라벨다자인관리`로 변경했다. 페이지 제목 `label.title`은 유지.
 - `T-CONSUMABLE-LABEL-PRINTLOG-PAYLOAD` 완료. `/consumables/label` 브라우저 인쇄 후 공용 `/material/label-print/log` 호출 payload를 `uidList`로 수정했다. 실제 3002에서 첫 행 선택 후 `UID 발행` 시 create 201, print-log 201 확인. 검증 UID `C26061700007` 관련 stock/log는 삭제 후 잔여 0.

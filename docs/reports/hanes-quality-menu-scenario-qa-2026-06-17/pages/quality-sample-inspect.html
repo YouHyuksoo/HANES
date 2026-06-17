@@ -54,7 +54,7 @@
       <h2>시나리오 목차</h2>
       <ol><li><a href="#initial-load">STEP 01 초기 조회</a></li><li><a href="#search-requery">STEP 02 검색 및 재조회</a></li><li><a href="#button-process-inventory">STEP 03 버튼 및 프로세스 목록화</a></li><li><a href="#action-availability">STEP 04 신규/수정/삭제 가능 여부</a></li><li><a href="#save-validation-policy">STEP 05 저장 검증 및 중복 방어 정책</a></li><li><a href="#api-db-screen-requery">STEP 06 DB/API 확인 및 화면 재조회</a></li></ol>
     </section>
-    
+
         <article class="step" id="initial-load">
           <div class="step-head">
             <div>
@@ -82,6 +82,12 @@
               <tr>
                 <td>ui-network</td>
                 <td><code>GET</code></td>
+                <td><code>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
                 <td><code>/api/auth/me</code></td>
                 <td class="pass">200</td>
               </tr>
@@ -94,7 +100,7 @@
               <tr>
                 <td>ui-network</td>
                 <td><code>GET</code></td>
-                <td><code>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</code></td>
+                <td><code>/api/production/sample-inspect-input?startDate=2026-06-16&amp;endDate=2026-06-16</code></td>
                 <td class="pass">200</td>
               </tr>
               <tr>
@@ -107,12 +113,6 @@
                 <td>ui-network</td>
                 <td><code>GET</code></td>
                 <td><code>/api/master/com-codes/all-active</code></td>
-                <td class="pass">200</td>
-              </tr>
-              <tr>
-                <td>ui-network</td>
-                <td><code>GET</code></td>
-                <td><code>/api/production/sample-inspect-input?startDate=2026-06-16&amp;endDate=2026-06-16</code></td>
                 <td class="pass">200</td>
               </tr></tbody></table>
             </section>
@@ -150,7 +150,7 @@
               <table><thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead><tbody><tr><td colspan="4">이 단계에서 신규 API 호출 없음</td></tr></tbody></table>
             </section>
           </div>
-          
+
           <figure><figcaption>검색/조회/탭 전환 후 화면</figcaption><a href="../screenshots/quality-sample-inspect/02-search-requery.png"><img src="../screenshots/quality-sample-inspect/02-search-requery.png" alt="검색/조회/탭 전환 후 화면"></a></figure>
         </article>
 
@@ -180,7 +180,7 @@
               </tr></tbody></table>
             </section>
           </div>
-          
+
           <figure><figcaption>검색 초기화 후 버튼 및 프로세스 목록 화면</figcaption><a href="../screenshots/quality-sample-inspect/03-button-process-inventory.png"><img src="../screenshots/quality-sample-inspect/03-button-process-inventory.png" alt="검색 초기화 후 버튼 및 프로세스 목록 화면"></a></figure>
         </article>
 
@@ -210,7 +210,7 @@
               </tr></tbody></table>
             </section>
           </div>
-          
+
           <figure><figcaption>저장성 프로세스 진입 화면</figcaption><a href="../screenshots/quality-sample-inspect/04-action-entry.png"><img src="../screenshots/quality-sample-inspect/04-action-entry.png" alt="저장성 프로세스 진입 화면"></a></figure>
         </article>
 
@@ -246,7 +246,7 @@
               </tr></tbody></table>
             </section>
           </div>
-          
+
           <figure><figcaption>저장 검증 정책 확인 기준 화면</figcaption><a href="../screenshots/quality-sample-inspect/05-save-validation-policy.png"><img src="../screenshots/quality-sample-inspect/05-save-validation-policy.png" alt="저장 검증 정책 확인 기준 화면"></a></figure>
         </article>
 

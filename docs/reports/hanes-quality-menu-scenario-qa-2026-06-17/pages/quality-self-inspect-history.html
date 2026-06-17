@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>자주검사이력 페이지 상세 시나리오 QA</title><style>
+    body { margin: 0; font-family: Arial, "Malgun Gothic", sans-serif; background: #f5f7fb; color: #111827; }
+    header { background: #172033; color: #fff; padding: 28px 34px; }
+    main { padding: 24px 34px 48px; }
+    h1 { margin: 0 0 8px; font-size: 26px; }
+    h2 { margin: 0 0 12px; font-size: 20px; }
+    h3 { margin: 0 0 6px; font-size: 19px; }
+    h4 { margin: 14px 0 8px; font-size: 14px; }
+    p, li { line-height: 1.55; }
+    code { background: #edf2f7; border-radius: 4px; padding: 2px 5px; }
+    pre { margin: 0; white-space: pre-wrap; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #e1e6ef; padding: 8px 10px; vertical-align: top; text-align: left; }
+    th { background: #f8fafc; }
+    img { display: block; width: 100%; }
+    figure { margin: 14px 0 0; border: 1px solid #d6deeb; border-radius: 8px; overflow: hidden; background: #fff; }
+    figcaption { padding: 10px 12px; border-bottom: 1px solid #d6deeb; font-weight: 700; background: #f8fafc; }
+    .card, .step { background: #fff; border: 1px solid #d6deeb; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .metric { background: #f8fafc; border: 1px solid #d6deeb; border-radius: 8px; padding: 12px; }
+    .metric strong { display: block; font-size: 22px; }
+    .pass { color: #047857; font-weight: 700; }
+    .warn { color: #b45309; font-weight: 700; }
+    .step-head { display: flex; justify-content: space-between; gap: 18px; border-bottom: 1px solid #e1e6ef; padding-bottom: 12px; margin-bottom: 12px; }
+    .eyebrow { color: #64748b; font-size: 12px; font-weight: 700; }
+    .cols { display: grid; grid-template-columns: minmax(0, .9fr) minmax(380px, 1.1fr); gap: 14px; }
+    .toc a { color: #1d4ed8; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    @media (max-width: 900px) { main { padding: 16px; } header { padding: 20px 16px; } .cols, .step-head { display: block; } }
+  </style></head>
+<body>
+  <header>
+    <h1>자주검사이력 페이지 상세 시나리오 QA</h1>
+    <div>대상: <code>http://localhost:3002/quality/self-inspect-history</code> / 메뉴코드: <code>QC_SELF_INSPECT_HISTORY</code> / 최종 결과: <span class="pass">PASS</span></div>
+  </header>
+  <main>
+    <section class="card">
+      <h2>요약</h2>
+      <div class="metrics">
+        <div class="metric"><strong>6</strong>실행 단계</div>
+        <div class="metric"><strong>15</strong>기록 API 호출</div>
+        <div class="metric"><strong>2</strong>DB 검증</div>
+        <div class="metric"><strong>6</strong>화면 증적</div>
+      </div>
+      <p>실제 좌측 메뉴 등록 기준으로 조회, 검색/재조회, 신규/수정/삭제 가능 여부, 저장 검증 정책, 중복 방어 정책, DB/API 확인, 화면 재조회 절차를 실행했습니다.</p>
+    </section>
+    <section class="card">
+      <h2>화면 기능 목록</h2>
+      <table><thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead><tbody><tr><td>좌측 메뉴 등록</td><td>/menu-categories/tree QUALITY/QC_SELF_INSPECT_HISTORY</td><td class="pass">실행</td><td>등록 순서 80; 실제 등록 메뉴 기준</td></tr><tr><td>초기 조회</td><td>/production/self-inspect/history?limit=20</td><td class="pass">실행</td><td>브라우저 초기 로드, UI network API, 대표 DB count 확인</td></tr><tr><td>검색/재조회</td><td>검색 입력, 조회/새로고침, 탭 전환</td><td class="pass">실행</td><td>화면에 있는 컨트롤 기준으로 실제 클릭/입력 수행</td></tr><tr><td>신규/수정/삭제 가능 여부</td><td>대표 프로세스 진입 + 행 액션 수집</td><td class="pass">실행</td><td>저장 없이 진입 가능 여부와 후보 버튼 목록화</td></tr><tr><td>저장 검증</td><td>직접 저장 미실행</td><td class="warn">별도 시나리오 대상</td><td>품질 데이터 변경이 필요한 저장형 업무는 페이지별 안전 데이터 시나리오에서 수행</td></tr><tr><td>중복 방어</td><td>동일 LOT/동일 검사키 재처리 방어</td><td class="warn">별도 시나리오 대상</td><td>공통 스윕에서는 방어 정책과 버튼/API 경계를 기록</td></tr><tr><td>DB/API 확인</td><td>직접 API + Oracle count</td><td class="pass">실행</td><td>SELF_INSPECT_RESULTS 대표 count 확인</td></tr><tr><td>화면 재조회</td><td>검색 초기화 + 조회 후 캡처</td><td class="pass">실행</td><td>검색 필터가 남지 않은 최종 화면 증적 저장</td></tr></tbody></table>
+    </section>
+    <section class="card toc">
+      <h2>시나리오 목차</h2>
+      <ol><li><a href="#initial-load">STEP 01 초기 조회</a></li><li><a href="#search-requery">STEP 02 검색 및 재조회</a></li><li><a href="#button-process-inventory">STEP 03 버튼 및 프로세스 목록화</a></li><li><a href="#action-availability">STEP 04 신규/수정/삭제 가능 여부</a></li><li><a href="#save-validation-policy">STEP 05 저장 검증 및 중복 방어 정책</a></li><li><a href="#api-db-screen-requery">STEP 06 DB/API 확인 및 화면 재조회</a></li></ol>
+    </section>
+
+        <article class="step" id="initial-load">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 01</div>
+              <h3>초기 조회</h3>
+              <p>자주검사이력 화면 진입과 초기 조회 API 로딩을 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>브라우저로 /quality/self-inspect-history 경로에 진입한다.</li><li>업무 영역 렌더링과 초기 API 응답을 수집한다.</li><li>대표 Oracle 테이블 count를 확인한다.</li></ol>
+              <h4>결과 메모</h4><ul><li>좌측 메뉴 등록 코드: QC_SELF_INSPECT_HISTORY</li><li>등록 순서: 80</li><li>화면 행 수: 1</li></ul>
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table><thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead><tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/db-info</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/auth/me</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/production/self-inspect/history?dateFrom=2026-06-16&amp;dateTo=2026-06-16&amp;limit=200</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/system/configs/active</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/processes?limit=100</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/menu-categories/tree</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/master/com-codes/all-active</code></td>
+                <td class="pass">200</td>
+              </tr></tbody></table>
+            </section>
+          </div>
+          <section><h4>DB 확인</h4><table><thead><tr><th>검증</th><th>SQL</th><th>결과</th></tr></thead><tbody>
+              <tr>
+                <td>SELF_INSPECT_RESULTS 대표 count</td>
+                <td><code>SELECT COUNT(*) AS CNT FROM SELF_INSPECT_RESULTS WHERE ROWNUM &lt;= 100000000</code></td>
+                <td class=""><pre>[
+  {
+    &quot;CNT&quot;: 12
+  }
+]</pre></td>
+              </tr></tbody></table></section>
+          <figure><figcaption>초기 조회 화면</figcaption><a href="../screenshots/quality-self-inspect-history/01-initial-load.png"><img src="../screenshots/quality-self-inspect-history/01-initial-load.png" alt="초기 조회 화면"></a></figure>
+        </article>
+
+        <article class="step" id="search-requery">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 02</div>
+              <h3>검색 및 재조회</h3>
+              <p>자주검사이력 화면의 검색, 조회, 탭 전환 동작을 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>탭이 있으면 노출 탭을 순서대로 전환한다.</li><li>검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.</li><li>실행 후 화면과 API 호출을 수집한다.</li></ol>
+              <h4>결과 메모</h4><ul><li>탭 없음 또는 전환 대상 없음</li><li>검색 입력 없이 /검색/ 실행</li><li>검색 후 화면 행 수: 1</li></ul>
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table><thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead><tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/production/self-inspect/history?dateFrom=2026-06-16&amp;dateTo=2026-06-16&amp;limit=200</code></td>
+                <td class="pass">200</td>
+              </tr></tbody></table>
+            </section>
+          </div>
+
+          <figure><figcaption>검색/조회/탭 전환 후 화면</figcaption><a href="../screenshots/quality-self-inspect-history/02-search-requery.png"><img src="../screenshots/quality-self-inspect-history/02-search-requery.png" alt="검색/조회/탭 전환 후 화면"></a></figure>
+        </article>
+
+        <article class="step" id="button-process-inventory">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 03</div>
+              <h3>버튼 및 프로세스 목록화</h3>
+              <p>자주검사이력 화면의 버튼과 입력/프로세스 진입점을 수집합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>검색 조건을 초기화하고 기준 목록 상태로 되돌린다.</li><li>업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.</li><li>입력 컨트롤의 placeholder/aria/type을 수집한다.</li></ol>
+              <h4>결과 메모</h4><ul><li>검색 입력 없이 /새로고침/ 실행</li><li>노출 버튼: 새로고침, 검색, 그리드 옵션, 전체화면</li><li>입력 컨트롤: date, date, 작업지시, select</li></ul>
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table><thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead><tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/production/self-inspect/history?dateFrom=2026-06-16&amp;dateTo=2026-06-16&amp;limit=200</code></td>
+                <td class="pass">200</td>
+              </tr></tbody></table>
+            </section>
+          </div>
+
+          <figure><figcaption>검색 초기화 후 버튼 및 프로세스 목록 화면</figcaption><a href="../screenshots/quality-self-inspect-history/03-button-process-inventory.png"><img src="../screenshots/quality-self-inspect-history/03-button-process-inventory.png" alt="검색 초기화 후 버튼 및 프로세스 목록 화면"></a></figure>
+        </article>
+
+        <article class="step" id="action-availability">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 04</div>
+              <h3>신규/수정/삭제 가능 여부</h3>
+              <p>자주검사이력 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.</li><li>진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.</li><li>그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다.</li></ol>
+              <h4>결과 메모</h4><ul><li>프로세스 진입 실행: /검색/</li><li>본문 행 액션 버튼 수: 0</li><li>저장성 후보 버튼: 없음</li></ul>
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table><thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead><tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/production/self-inspect/history?dateFrom=2026-06-16&amp;dateTo=2026-06-16&amp;limit=200</code></td>
+                <td class="pass">200</td>
+              </tr></tbody></table>
+            </section>
+          </div>
+
+          <figure><figcaption>저장성 프로세스 진입 화면</figcaption><a href="../screenshots/quality-self-inspect-history/04-action-entry.png"><img src="../screenshots/quality-self-inspect-history/04-action-entry.png" alt="저장성 프로세스 진입 화면"></a></figure>
+        </article>
+
+        <article class="step" id="save-validation-policy">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 05</div>
+              <h3>저장 검증 및 중복 방어 정책</h3>
+              <p>자주검사이력 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.</li><li>저장성 후보 버튼과 API 경계를 목록화한다.</li><li>중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다.</li></ol>
+              <h4>결과 메모</h4><ul><li>검색 입력 없이 /새로고침/ 실행</li><li>대표 조회 API 직접 호출 성공: /api/v1/production/self-inspect/history?limit=20 200</li><li>중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행</li><li>저장성 후보 버튼: 없음</li></ul>
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table><thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead><tbody>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/production/self-inspect/history?dateFrom=2026-06-16&amp;dateTo=2026-06-16&amp;limit=200</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>direct-api</td>
+                <td><code>GET</code></td>
+                <td><code>/api/v1/production/self-inspect/history?limit=20</code></td>
+                <td class="pass">200</td>
+              </tr></tbody></table>
+            </section>
+          </div>
+
+          <figure><figcaption>저장 검증 정책 확인 기준 화면</figcaption><a href="../screenshots/quality-self-inspect-history/05-save-validation-policy.png"><img src="../screenshots/quality-self-inspect-history/05-save-validation-policy.png" alt="저장 검증 정책 확인 기준 화면"></a></figure>
+        </article>
+
+        <article class="step" id="api-db-screen-requery">
+          <div class="step-head">
+            <div>
+              <div class="eyebrow">STEP 06</div>
+              <h3>DB/API 확인 및 화면 재조회</h3>
+              <p>자주검사이력 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.</p>
+            </div>
+            <strong class="pass">PASS</strong>
+          </div>
+          <div class="cols">
+            <section>
+              <h4>동작 처리</h4>
+              <ol><li>대표 API /production/self-inspect/history?limit=20를 직접 호출한다.</li><li>관련 Oracle 대표 테이블 count를 재확인한다.</li><li>검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다.</li></ol>
+              <h4>결과 메모</h4><ul><li>검색 입력 없이 /새로고침/ 실행</li><li>대표 조회 API 응답: 200</li><li>최종 화면 행 수: 1</li></ul>
+            </section>
+            <section>
+              <h4>API 호출</h4>
+              <table><thead><tr><th>구분</th><th>Method</th><th>URL</th><th>Status</th></tr></thead><tbody>
+              <tr>
+                <td>direct-api</td>
+                <td><code>GET</code></td>
+                <td><code>/api/v1/production/self-inspect/history?limit=20</code></td>
+                <td class="pass">200</td>
+              </tr>
+              <tr>
+                <td>ui-network</td>
+                <td><code>GET</code></td>
+                <td><code>/api/production/self-inspect/history?dateFrom=2026-06-16&amp;dateTo=2026-06-16&amp;limit=200</code></td>
+                <td class="pass">200</td>
+              </tr></tbody></table>
+            </section>
+          </div>
+          <section><h4>DB 확인</h4><table><thead><tr><th>검증</th><th>SQL</th><th>결과</th></tr></thead><tbody>
+              <tr>
+                <td>SELF_INSPECT_RESULTS 대표 count</td>
+                <td><code>SELECT COUNT(*) AS CNT FROM SELF_INSPECT_RESULTS WHERE ROWNUM &lt;= 100000000</code></td>
+                <td class=""><pre>[
+  {
+    &quot;CNT&quot;: 12
+  }
+]</pre></td>
+              </tr></tbody></table></section>
+          <figure><figcaption>DB/API 확인 후 최종 재조회 화면</figcaption><a href="../screenshots/quality-self-inspect-history/06-api-db-screen-requery.png"><img src="../screenshots/quality-self-inspect-history/06-api-db-screen-requery.png" alt="DB/API 확인 후 최종 재조회 화면"></a></figure>
+        </article>
+  </main>
+</body>
+</html>

@@ -11,11 +11,12 @@
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ScanBarcode, CheckCircle2, XCircle, MapPin } from "lucide-react";
+import { ScanBarcode, CheckCircle2, XCircle } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Card, CardContent, Input, Button } from "@/components/ui";
+import { Card, CardContent, Input, Button, Select } from "@/components/ui";
 import { ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import { useLocationOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 interface ScanResult {
@@ -42,6 +43,7 @@ export default function BarcodeScanPanel() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [scanValue, setScanValue] = useState("");
   const [location, setLocation] = useState("");
+  const { options: locationOptions, isLoading: locationLoading } = useLocationOptions();
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
   const [pendingList, setPendingList] = useState<PendingStock[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -163,11 +165,12 @@ export default function BarcodeScanPanel() {
               />
             </div>
             <div className="w-48">
-              <Input
+              <Select
                 placeholder={t("consumables.receiving.locationPlaceholder")}
+                options={locationOptions}
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                leftIcon={<MapPin className="w-4 h-4" />}
+                onChange={setLocation}
+                disabled={locationLoading}
                 fullWidth
               />
             </div>

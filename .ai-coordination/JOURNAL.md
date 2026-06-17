@@ -10,6 +10,30 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 13:55 Codex
+
+- 작업: `T-CONSUMABLE-LIFE-LARGE-INFO-CARDS` `/consumables/life` 상단 정보카드 확대.
+- 원인: 기존 상단 상태 정보가 `flex gap-2 text-xs`의 작은 pill 배지 4개로 표시되어 수명현황의 총계/정상/주의/교체필요 지표가 눈에 잘 들어오지 않았다.
+- 변경: `infoCards` 배열을 추가해 총계/정상/주의/교체필요 4개 지표를 반응형 큰 요약 카드(`grid-cols-1 sm:grid-cols-2 xl:grid-cols-4`)로 렌더링한다. 각 카드는 최소 높이 118px, 큰 수치(`text-3xl font-bold`), 상태별 아이콘과 색상 톤을 가진다. 기존 작은 배지 행은 제거했다.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/consumables/life/consumable-life-large-info-cards.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS, `http://localhost:3002/consumables/life` HTTP 200 확인. Playwright DOM 자동 검증은 현재 루트에서 `@playwright/test` require 불가로 수행하지 못했다.
+- 상태: 완료, lock released. 사용자 지시에 따른 commit/push 요청은 없어서 수행하지 않았다.
+
+## 2026-06-17 11:45 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-ONE-LINE-STATUS` `/consumables/label` 상태 표시 축소 및 카테고리 고정 필터 추가.
+- 원인: UID 발행 결과/상태 배너가 그리드 위 공간을 추가로 차지해 화면 높이와 배치가 변했다. 사용자는 별도 결과 영역 대신 한 줄 상태만 원했다. 또한 카테고리 기준으로 빠르게 좁히는 고정 필터가 필요했다.
+- 변경: `issueNotice` 배너와 생성 UID 결과 배너를 제거하고, 헤더 우측에 고정 폭 `role="status"` 한 줄 상태만 표시하도록 변경했다. 발행 UID 목록은 출력 렌더링에만 사용하고 성공 후 `clearCreatedUids()`로 정리한다. 그리드 toolbar 검색 input 옆에 `카테고리 필터` Select를 추가하고, 실제 `masters`의 `category` 값으로 옵션을 구성해 `filteredMasters`를 고정 필터링한다. 카테고리 변경 시 숨겨진 행 선택이 남지 않도록 선택을 초기화한다.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs` PASS, `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-template-selection.structure.test.mjs` PASS, `node apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS.
+- 상태: 완료, lock released. 사용자 지시에 따라 commit/push는 하지 않았다.
+
+## 2026-06-17 11:30 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-HIDDEN-IFRAME-PRINT` `/consumables/label` UID 라벨 출력 UX 보정.
+- 원인: 직전 보정은 팝업 차단 회피를 위해 `window.open()`을 클릭 즉시 실행했지만, 브라우저가 새 탭/창으로 포커스를 옮겨 `라벨 출력 준비 중입니다...`가 전체 화면처럼 보이는 UX 문제가 있었다.
+- 변경: 새 탭을 열지 않고 `consumable-label-print-iframe` 숨김 iframe을 생성해 라벨 HTML을 주입하고 `contentWindow.print()`를 호출하도록 전환했다. iframe은 0x0, opacity 0, pointer-events none이며 `afterprint`에서 제거한다. 오류/0건/출력 준비 실패 시 iframe을 제거한다.
+- 검증: 구조 테스트 3건, FE tsc, diff check 통과. 3014 mock 브라우저 검증에서 `windowOpenCalled=0`, iframe 0x0 숨김 상태, `iframePrintCalled=1` 확인.
+- 상태: 완료, lock released. 사용자 지시에 따라 commit/push는 하지 않았다.
+
 ## 2026-06-17 10:43 Codex
 
 - 작업: `T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT` `/consumables/label` UID 발행 시 라벨디자인마스터 저장 템플릿 선택/적용 보정.
@@ -20,6 +44,37 @@ Use local time in 24-hour format.
 - 정리: 검증용 템플릿은 API 삭제 후 0건, 검증 UID `C26061700013`, `C26061700014` 관련 `CONSUMABLE_STOCKS`와 `LABEL_PRINT_LOGS`는 JSHANES에서 삭제 후 잔여 0건 확인.
 - 참고: 기존 `master-label-bartender-designer.structure.test.mjs`는 다른 작업에서 라벨 디자이너 좌측 필드 추가/수정/삭제 UI를 제거한 상태와 예전 테스트 기대가 맞지 않아 계속 실패한다. 이번 템플릿 선택 출력 변경과 직접 관련 없는 기존 테스트 불일치다.
 - 상태: 완료, lock released.
+
+## 2026-06-17 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-ISSUE-FEEDBACK` `/consumables/label` UID 발행 피드백 보강.
+- 원인: 기존 `handleBrowserPrint()`는 선택 없음/생성 0건/팝업 차단/출력 DOM 미준비에서 조용히 `return`했고, 성공 후 `clearCreatedUids()`를 바로 호출해 생성 UID 배너가 즉시 사라질 수 있었다. 사용자는 발행이 진행 중인지, 완료됐는지, 어떤 UID가 생성됐는지 화면에서 확인하기 어려웠다.
+- 변경: `page.tsx`에 `react-hot-toast` 진행/성공/실패 메시지와 `issueNotice` 화면 배너를 추가했다. 발행 시작, UID 생성 후 인쇄창 열기, 완료, 0건, 팝업 차단, 출력 DOM 미준비, 예외 상황을 각각 표시한다. 성공 후에는 생성 UID 목록을 화면 배너와 기존 결과 배너에 남기고, 다음 발행 시작 시 이전 결과를 정리한다. 버튼 문구도 출력 단계에서는 `출력중`으로 표시한다.
+- 테스트: RED 확인 후 `apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs` 추가. 이후 `node --test` 신규 테스트 PASS, 템플릿 선택 구조 테스트 PASS, `useConLabelIssue` 구조 테스트 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS.
+- 브라우저 검증: 3014 임시 dev 서버에서 mock API로 `/consumables/label` 실제 클릭 검증. `UID를 발행하고 라벨 출력 준비 중입니다.`, `1건 UID 발행 및 라벨 출력 요청이 완료되었습니다.`, `C-FEEDBACK-0001` 화면 표시 및 출력 HTML 생성 확인.
+- 실제 API/DB 검증: 3014 화면에서 실제 API로 UID `C26061700016` 1건 발행, 완료 메시지 표시와 출력 HTML 생성 확인. JSHANES에서 `CONSUMABLE_STOCKS` 1건, `LABEL_PRINT_LOGS` 2건 존재 확인 후 삭제했다. 최종 잔여 `CONSUMABLE_STOCKS=0`, `LABEL_PRINT_LOGS=0` 확인.
+- 상태: 완료, lock released. 사용자 지시에 따라 commit/push는 하지 않았다.
+
+## 2026-06-17 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-503-FEEDBACK` `/consumables/label` UID 발행 503 오류 피드백 보정.
+- 확인: 3002 프록시 `/api/health`와 3003 백엔드 `/api/v1/health`는 DB 연결 포함 200이었다. 직접 `POST /api/v1/consumables/label/create`는 `APPCT-A`, qty 1 기준 201로 성공해 서버/DB 상시 장애는 아니었다.
+- 원인: `useConLabelIssue.createConUids()`의 catch가 AxiosError를 `console.error("Failed to create conUids:", err)`로 그대로 출력하고 `allCreated`를 반환했다. 이 때문에 Next dev console overlay에 `AxiosError: Request failed with status code 503`이 노출되고, page의 `try/catch`는 서버 메시지를 받을 수 없었다.
+- 변경: `getApiErrorMessage(err)`를 추가해 `response.data.message/error`를 우선 추출하고, 실패 시 `throw new Error(...)`로 page에 전달한다. `page.tsx`는 `err.message`를 toast와 화면 배너에 표시하며 AxiosError 객체를 console.error로 출력하지 않는다.
+- 검증: `node apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.structure.test.mjs`, `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs`, 템플릿 선택 구조 테스트, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`, 관련 파일 `git diff --check` 모두 통과.
+- 브라우저 검증: 3014 dev 서버에서 `/api/consumables/label/create`만 503 mock 처리. 화면에 `데이터베이스 연결이 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.`가 표시되고, `AxiosError`/`Request failed with status code 503` console/page overlay는 발생하지 않음을 확인했다.
+- DB 정리: 직접 API 검증으로 생성된 `C26061700017`은 JSHANES `CONSUMABLE_STOCKS` 1건, `LABEL_PRINT_LOGS` 1건을 삭제했고 최종 잔여 0건 확인.
+- 상태: 완료, lock released. 사용자 지시에 따라 commit/push는 하지 않았다.
+
+## 2026-06-17 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-ACTUAL-PRINT` `/consumables/label` UID 라벨 실제 출력창 호출 보정.
+- 원인: 기존 `handleBrowserPrint()`는 `await createConUids()`와 `setTimeout` 이후에 `window.open()`을 호출했다. 브라우저는 사용자 클릭 이벤트와 분리된 비동기 팝업/인쇄 호출을 막을 수 있어, 화면에는 처리 완료 메시지가 나오지만 실제 인쇄창이 열리지 않을 수 있었다.
+- 변경: UID 발행 버튼 클릭 직후 `const printWindow = window.open("", "_blank")`를 먼저 실행한다. 팝업이 차단되면 UID를 만들지 않고 오류를 표시한다. 팝업이 열리면 준비 화면을 먼저 쓰고, UID 생성 후 기존 `LabelPrintRenderer` HTML을 해당 창에 다시 쓰며 `window.focus(); window.print();`를 호출한다. 즉시 `window.close()`하지 않고 `onafterprint`에서 닫도록 변경했다.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs`, `node apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.structure.test.mjs`, 템플릿 선택 구조 테스트, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`, 관련 파일 `git diff --check` 모두 통과.
+- 브라우저 검증: 3014 dev 서버에서 API 응답을 1.2초 지연시켜도 `window.open`이 API 요청보다 먼저 호출됨을 확인했다. 최종 출력 HTML에 `window.print()`와 라벨 내용 `CODEX-PRINT-JIG` 포함 확인.
+- 실제 API/DB 검증: 3014 화면에서 실제 API로 `C26061700019` 1건 발행, 출력창 HTML 생성 및 `window.print()` 포함 확인. JSHANES `CONSUMABLE_STOCKS` 1건, `LABEL_PRINT_LOGS` 2건 삭제 후 최종 잔여 0건 확인.
+- 상태: 완료, lock released. 사용자 지시에 따라 commit/push는 하지 않았다.
 
 ## 2026-06-17 10:19 Codex
 

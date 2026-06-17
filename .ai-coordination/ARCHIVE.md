@@ -10,9 +10,12 @@ Format:
 
 ## Completed
 
+- T-CONSUMABLE-LIFE-LARGE-INFO-CARDS | 2026-06-17 | codex | `/consumables/life` 상단 작은 상태 배지를 4개 큰 요약 정보카드로 변경, 구조 테스트/FE tsc/3002 HTTP 확인 | evidence: JOURNAL 2026-06-17 13:55 Codex
 - T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 화면에 라벨디자인마스터 `jig` 템플릿 선택 Select를 추가하고 선택 템플릿 `designData`를 `LabelPrintRenderer` 출력에 적용, 실제 브라우저 UID 발행 인쇄 HTML 치환 검증 및 검증 데이터 정리 완료 | evidence: JOURNAL 2026-06-17 10:43 Codex
 - T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL | 2026-06-17 | codex | `/master/equip-inspect-item` 배포 이미지 깨짐 원인을 `/uploads` URL 정규화 누락과 gitignore된 점검항목 SVG 미배포로 확인하고 화면/공용 컴포넌트 URL helper 적용 및 deploy 시드 이미지 재생성 단계 추가 | evidence: JOURNAL 2026-06-17 10:19 Codex
 - T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL | 2026-06-17 | codex | `/consumables/label` 배포 이미지 깨짐 원인을 `/uploads` URL 정규화 누락과 gitignore된 소모품 SVG 미배포로 확인하고 URL helper와 deploy 시드 이미지 재생성 단계 추가 | evidence: JOURNAL 2026-06-17 10:07 Codex
+- T-CONSUMABLE-LABEL-ONE-LINE-STATUS | 2026-06-17 | codex | `/consumables/label` UID 발행 상태/결과 배너를 제거하고 헤더 한 줄 상태로 축소, 그리드 상단 카테고리 고정 드롭다운 필터 추가 | evidence: JOURNAL 2026-06-17 11:45 Codex
+- T-CONSUMABLE-LABEL-HIDDEN-IFRAME-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 출력 UX를 새 탭 전환 없이 숨김 iframe print 호출로 전환, window.open 0회/iframe print 1회 브라우저 검증 통과 | evidence: JOURNAL 2026-06-17 11:30 Codex
 - T-MATERIAL-FLOW-FE-RUNTIME | 2026-06-17 | codex | 자재관리 등록 메뉴 24/24 프론트 QA PASS 및 자재요청 MR2606170035 -> 출고 -> 자재재고 -> 공정재고/키오스크 흐름 JSHANES DB 정합성 확인 | evidence: JOURNAL 2026-06-17 04:12 Codex
 - T-SHIPPING-PACK-EMPTY-BOX-DELETE | 2026-06-17 | codex | `/shipping/pack` 빈 OPEN 박스 삭제 버튼 노출, 행 액션 4개 아이콘 슬롯 고정 정렬, 현재 담는 박스 모달/행 강조 추가 및 실제 생성/삭제 검증 | evidence: JOURNAL 2026-06-17 03:30 Codex
 - T-MASTER-LABEL-CUSTOM-SOURCE-FIELDS | 2026-06-17 | codex | `/master/label` 좌측 필드 목록을 고정값이 아닌 디자인별 사용자 정의 `sourceFields`로 저장/추가/수정/삭제 가능하게 전환하고 3002 저장 요청 201 및 임시 템플릿 정리 확인 | evidence: JOURNAL 2026-06-17 02:49 Codex
@@ -90,3 +93,6 @@ Format:
 - T-CONSUMABLE-LABEL-CARDS-REMOVE | 2026-06-16 | codex | `/consumables/label` 상단 정보카드와 카드 전용 집계/import만 제거, UID 발행/인쇄 흐름 유지, FE tsc 및 3002 HTTP 200 확인 | evidence: JOURNAL 2026-06-16 20:36 Codex
 - T-ITEM-CONSUMABLE-MOVE | 2026-06-16 | codex | JSHANES 품목마스터 `ITEM_TYPE='CONSUMABLE'` 12건을 소모품마스터로 이동하고 품목마스터 잔여 0건, 이동 12건, 백업 12건 확인 | evidence: JOURNAL 2026-06-16 21:12 Codex
 - T-CONSUMABLE-MASTER-USAGE-MAP | 2026-06-16 | codex | `/consumables/master` 우측 패널에 `CONSUMABLE_USAGE_MAP` 매핑 섹션과 `/consumables/:id/usage-maps` CRUD API 추가, 타입체크/API/DB 잔여/3002 HTTP 확인 | evidence: JOURNAL 2026-06-16 21:39 Codex
+- T-CONSUMABLE-LABEL-ISSUE-FEEDBACK | 2026-06-17 | codex | `/consumables/label` UID 발행 시 발행중/출력중/완료/실패 toast와 화면 배너를 표시하고 발행 UID 결과를 화면에 남김, 실제 API 발행 후 DB cleanup 잔여 0건 확인 | evidence: JOURNAL 2026-06-17 Codex
+- T-CONSUMABLE-LABEL-503-FEEDBACK | 2026-06-17 | codex | `/consumables/label` UID 발행 API 503 실패 시 AxiosError overlay 대신 서버 메시지를 toast/화면 배너로 표시하도록 보정, 503 mock 브라우저 검증 및 테스트 UID cleanup 완료 | evidence: JOURNAL 2026-06-17 Codex
+- T-CONSUMABLE-LABEL-ACTUAL-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 클릭 즉시 인쇄창을 먼저 열고 UID 생성 후 라벨 HTML과 `window.print()`를 주입하도록 보정, 실제 API 발행 후 cleanup 완료 | evidence: JOURNAL 2026-06-17 Codex

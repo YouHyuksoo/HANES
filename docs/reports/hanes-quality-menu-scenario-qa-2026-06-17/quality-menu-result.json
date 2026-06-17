@@ -1,0 +1,4641 @@
+{
+  "status": "PASS",
+  "baseUrl": "http://localhost:3002",
+  "apiUrl": "http://localhost:3003/api/v1",
+  "oracleSite": "JSHANES",
+  "reportRoot": "C:\\Project\\HANES\\docs\\reports\\hanes-quality-menu-scenario-qa-2026-06-17",
+  "indexPath": "C:\\Project\\HANES\\docs\\reports\\hanes-quality-menu-scenario-qa-2026-06-17\\index.html",
+  "resultPath": "C:\\Project\\HANES\\docs\\reports\\hanes-quality-menu-scenario-qa-2026-06-17\\quality-menu-result.json",
+  "menuSource": {
+    "api": "/menu-categories/tree",
+    "categoryCode": "QUALITY",
+    "categoryLabelKey": "menu.quality",
+    "registeredMenuCodes": [
+      "QC_IQC",
+      "QC_IQC_HISTORY",
+      "QC_SAMPLE_INSPECT",
+      "QC_TRACE",
+      "QC_DEFECT",
+      "QC_REWORK_INSPECT",
+      "QC_REQUEST_INSPECT",
+      "QC_SELF_INSPECT_HISTORY",
+      "MAT_SHELF_LIFE",
+      "MAT_SHELF_LIFE_HISTORY",
+      "MAT_SHELF_LIFE_REINSPECT"
+    ],
+    "excludedStaticQualityCodes": []
+  },
+  "pages": [
+    {
+      "slug": "quality-iqc",
+      "route": "/material/iqc",
+      "title": "수입검사(IQC)",
+      "api": "/material/iqc-history/pending-arrivals",
+      "tables": [
+        "IQC_LOGS",
+        "MAT_LOTS"
+      ],
+      "processPattern": [
+        {},
+        {},
+        {}
+      ],
+      "menuCode": "QC_IQC",
+      "sortOrder": 10,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 10
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "수입검사(IQC) 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /material/iqc 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "IQC_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM IQC_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 29
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            },
+            {
+              "title": "MAT_LOTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM MAT_LOTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 90
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/quality-iqc/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: QC_IQC",
+            "등록 순서: 10",
+            "화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "수입검사(IQC) 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/quality-iqc/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색어 공백 상태로 조회/Enter 실행",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "수입검사(IQC) 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/quality-iqc/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 그리드 옵션, 전체화면",
+            "입력 컨트롤: LOT번호, 품목코드 검색..., select, select"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "수입검사(IQC) 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 버튼 미노출 화면",
+            "file": "../screenshots/quality-iqc/04-action-availability.png"
+          },
+          "notes": [
+            "신규/처리/등록 진입 버튼 미노출 또는 조회 전용 화면",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "수입검사(IQC) 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/material/iqc-history/pending-arrivals",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/quality-iqc/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/material/iqc-history/pending-arrivals 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "수입검사(IQC) 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /material/iqc-history/pending-arrivals를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/material/iqc-history/pending-arrivals",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "IQC_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM IQC_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 29
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            },
+            {
+              "title": "MAT_LOTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM MAT_LOTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 90
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/quality-iqc/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 1"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/material/iqc-history/pending-arrivals",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/material/iqc-history/pending-arrivals",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/material/iqc-history/pending-arrivals?iqcStatus=PENDING",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/quality-iqc.html"
+    },
+    {
+      "slug": "quality-iqc-history",
+      "route": "/material/iqc-history",
+      "title": "IQC 이력",
+      "api": "/material/iqc-history?limit=20",
+      "tables": [
+        "IQC_LOGS"
+      ],
+      "processPattern": [
+        {},
+        {}
+      ],
+      "menuCode": "QC_IQC_HISTORY",
+      "sortOrder": 20,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 20
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "IQC 이력 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /material/iqc-history 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/material/iqc-history?limit=200&fromDate=2026-06-16&toDate=2026-06-16",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "IQC_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM IQC_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 29
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/quality-iqc-history/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: QC_IQC_HISTORY",
+            "등록 순서: 20",
+            "화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "IQC 이력 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/quality-iqc-history/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색어 공백 상태로 조회/Enter 실행",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "IQC 이력 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/material/iqc-history?limit=200&fromDate=2026-06-16&toDate=2026-06-16",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/quality-iqc-history/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 그리드 옵션, 전체화면",
+            "입력 컨트롤: LOT번호, 품목명 검색..., select, select, date, date"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "IQC 이력 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 버튼 미노출 화면",
+            "file": "../screenshots/quality-iqc-history/04-action-availability.png"
+          },
+          "notes": [
+            "신규/처리/등록 진입 버튼 미노출 또는 조회 전용 화면",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "IQC 이력 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/material/iqc-history?limit=200&fromDate=2026-06-16&toDate=2026-06-16",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/material/iqc-history?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"inspectDate\":\"2026-06-15T08:13:09.761Z\",\"seq\":1,\"arrivalNo\":\"R26061500018\",\"matUid\":null,\"itemCode\":\"TUB-A\",\"inspectType\":\"INITIAL\",\"result\":\"PASS\",\"details\":\"{\\\"type\\\":\\\"SERIAL_INSPECTION\\\",\\\"serials\\\":[{\\\"matUid\\\":\\\"VH1-RM260615-00018\\\",\\\"qty\\\":3000,\\\"result\\\":\\\"PASS\\\",\\\"items\\\":[]}]}\",\"inspectorName\":\"우검사\",\"inspectClass\":null,\"destructSampleQty\":null,\"certFilePath\":\"C:\\\\Project\\\\HANES\\\\apps\\\\backend\\\\uploads\\\\iqc-certs\\\\iqc-cert-1781511189785-892256042.xlsx\",\"sampleBarcode\":\"VH1-RM260615-00018\",\"status\":\"DONE\",\"retestRound\":null,\"remark\":null,\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-06-15T08:13:09.759Z\",\"updatedAt\":\"2026-06-15T08:13:09.775Z\",\"itemName\":\"수축튜브A\",\"unit\":\"MM\"},{\"inspectDate\":\"2026-06-15T08:07:01.853Z\",\"seq\":1,\"arrivalNo\":\"R2606150"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/quality-iqc-history/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/material/iqc-history?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "IQC 이력 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /material/iqc-history?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/material/iqc-history?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"inspectDate\":\"2026-06-15T08:13:09.761Z\",\"seq\":1,\"arrivalNo\":\"R26061500018\",\"matUid\":null,\"itemCode\":\"TUB-A\",\"inspectType\":\"INITIAL\",\"result\":\"PASS\",\"details\":\"{\\\"type\\\":\\\"SERIAL_INSPECTION\\\",\\\"serials\\\":[{\\\"matUid\\\":\\\"VH1-RM260615-00018\\\",\\\"qty\\\":3000,\\\"result\\\":\\\"PASS\\\",\\\"items\\\":[]}]}\",\"inspectorName\":\"우검사\",\"inspectClass\":null,\"destructSampleQty\":null,\"certFilePath\":\"C:\\\\Project\\\\HANES\\\\apps\\\\backend\\\\uploads\\\\iqc-certs\\\\iqc-cert-1781511189785-892256042.xlsx\",\"sampleBarcode\":\"VH1-RM260615-00018\",\"status\":\"DONE\",\"retestRound\":null,\"remark\":null,\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-06-15T08:13:09.759Z\",\"updatedAt\":\"2026-06-15T08:13:09.775Z\",\"itemName\":\"수축튜브A\",\"unit\":\"MM\"},{\"inspectDate\":\"2026-06-15T08:07:01.853Z\",\"seq\":1,\"arrivalNo\":\"R2606150"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/material/iqc-history?limit=200&fromDate=2026-06-16&toDate=2026-06-16",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "IQC_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM IQC_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 29
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/quality-iqc-history/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 1"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/material/iqc-history?limit=200&fromDate=2026-06-16&toDate=2026-06-16",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/material/iqc-history?limit=200&fromDate=2026-06-16&toDate=2026-06-16",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/material/iqc-history?limit=200&fromDate=2026-06-16&toDate=2026-06-16",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/material/iqc-history?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"inspectDate\":\"2026-06-15T08:13:09.761Z\",\"seq\":1,\"arrivalNo\":\"R26061500018\",\"matUid\":null,\"itemCode\":\"TUB-A\",\"inspectType\":\"INITIAL\",\"result\":\"PASS\",\"details\":\"{\\\"type\\\":\\\"SERIAL_INSPECTION\\\",\\\"serials\\\":[{\\\"matUid\\\":\\\"VH1-RM260615-00018\\\",\\\"qty\\\":3000,\\\"result\\\":\\\"PASS\\\",\\\"items\\\":[]}]}\",\"inspectorName\":\"우검사\",\"inspectClass\":null,\"destructSampleQty\":null,\"certFilePath\":\"C:\\\\Project\\\\HANES\\\\apps\\\\backend\\\\uploads\\\\iqc-certs\\\\iqc-cert-1781511189785-892256042.xlsx\",\"sampleBarcode\":\"VH1-RM260615-00018\",\"status\":\"DONE\",\"retestRound\":null,\"remark\":null,\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-06-15T08:13:09.759Z\",\"updatedAt\":\"2026-06-15T08:13:09.775Z\",\"itemName\":\"수축튜브A\",\"unit\":\"MM\"},{\"inspectDate\":\"2026-06-15T08:07:01.853Z\",\"seq\":1,\"arrivalNo\":\"R2606150"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/material/iqc-history?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"inspectDate\":\"2026-06-15T08:13:09.761Z\",\"seq\":1,\"arrivalNo\":\"R26061500018\",\"matUid\":null,\"itemCode\":\"TUB-A\",\"inspectType\":\"INITIAL\",\"result\":\"PASS\",\"details\":\"{\\\"type\\\":\\\"SERIAL_INSPECTION\\\",\\\"serials\\\":[{\\\"matUid\\\":\\\"VH1-RM260615-00018\\\",\\\"qty\\\":3000,\\\"result\\\":\\\"PASS\\\",\\\"items\\\":[]}]}\",\"inspectorName\":\"우검사\",\"inspectClass\":null,\"destructSampleQty\":null,\"certFilePath\":\"C:\\\\Project\\\\HANES\\\\apps\\\\backend\\\\uploads\\\\iqc-certs\\\\iqc-cert-1781511189785-892256042.xlsx\",\"sampleBarcode\":\"VH1-RM260615-00018\",\"status\":\"DONE\",\"retestRound\":null,\"remark\":null,\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":null,\"updatedBy\":null,\"createdAt\":\"2026-06-15T08:13:09.759Z\",\"updatedAt\":\"2026-06-15T08:13:09.775Z\",\"itemName\":\"수축튜브A\",\"unit\":\"MM\"},{\"inspectDate\":\"2026-06-15T08:07:01.853Z\",\"seq\":1,\"arrivalNo\":\"R2606150"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/material/iqc-history?limit=200&fromDate=2026-06-16&toDate=2026-06-16",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/quality-iqc-history.html"
+    },
+    {
+      "slug": "quality-sample-inspect",
+      "route": "/production/sample-inspect",
+      "title": "시료검사",
+      "api": "/production/sample-inspect-input?limit=20",
+      "tables": [
+        "SAMPLE_INSPECT_RESULTS"
+      ],
+      "processPattern": [
+        {},
+        {}
+      ],
+      "menuCode": "QC_SAMPLE_INSPECT",
+      "sortOrder": 30,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 30
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "시료검사 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /production/sample-inspect 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/production/sample-inspect-input?startDate=2026-06-16&endDate=2026-06-16",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "SAMPLE_INSPECT_RESULTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM SAMPLE_INSPECT_RESULTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 8
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/quality-sample-inspect/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: QC_SAMPLE_INSPECT",
+            "등록 순서: 30",
+            "화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "시료검사 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/quality-sample-inspect/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색어 공백 상태로 조회/Enter 실행",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "시료검사 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/production/sample-inspect-input?startDate=2026-06-16&endDate=2026-06-16",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/quality-sample-inspect/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 검사 입력, 그리드 옵션, 전체화면",
+            "입력 컨트롤: 작업지시번호, 품목명, 검사자 검색..., select, date, date"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "시료검사 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "action-availability",
+              "method": "GET",
+              "url": "/api/production/job-orders?limit=5000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 진입 화면",
+            "file": "../screenshots/quality-sample-inspect/04-action-entry.png"
+          },
+          "notes": [
+            "프로세스 진입 실행: /검사/",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 검사 입력"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "시료검사 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/production/sample-inspect-input?startDate=2026-06-16&endDate=2026-06-16",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/production/sample-inspect-input?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"jobOrderNo\":\"JO-20260612-375-01-01-02-01\",\"itemCode\":\"HNS02C2A\",\"itemName\":\"HNS02C2A\",\"inspectDate\":\"2026-06-11T15:00:00.000Z\",\"inspectorName\":\"박민준\",\"inspectType\":\"WEIGHT\",\"sampleNo\":1,\"measuredValue\":\"120.2\",\"specUpper\":\"125.0\",\"specLower\":\"115.0\",\"passYn\":\"Y\",\"remark\":null,\"createdAt\":\"2026-06-12T08:02:59.454Z\"},{\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"jobOrderNo\":\"JO-20260612-375-01-01-02-01\",\"itemCode\":\"HNS02C2A\",\"itemName\":\"HNS02C2A\",\"inspectDate\":\"2026-06-11T15:00:00.000Z\",\"inspectorName\":\"박민준\",\"inspectType\":\"WEIGHT\",\"sampleNo\":2,\"measuredValue\":\"119.8\",\"specUpper\":\"125.0\",\"specLower\":\"115.0\",\"passYn\":\"Y\",\"remark\":null,\"createdAt\":\"2026-06-12T08:02:59.454Z\"},{\"orderNo\":\"JO-FIX-105654\",\"jobOrderNo\":\"JO-FIX-105654\",\"itemCode\":\"HNS02\",\"itemNam"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/quality-sample-inspect/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/production/sample-inspect-input?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 검사 입력"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "시료검사 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /production/sample-inspect-input?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/production/sample-inspect-input?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"jobOrderNo\":\"JO-20260612-375-01-01-02-01\",\"itemCode\":\"HNS02C2A\",\"itemName\":\"HNS02C2A\",\"inspectDate\":\"2026-06-11T15:00:00.000Z\",\"inspectorName\":\"박민준\",\"inspectType\":\"WEIGHT\",\"sampleNo\":1,\"measuredValue\":\"120.2\",\"specUpper\":\"125.0\",\"specLower\":\"115.0\",\"passYn\":\"Y\",\"remark\":null,\"createdAt\":\"2026-06-12T08:02:59.454Z\"},{\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"jobOrderNo\":\"JO-20260612-375-01-01-02-01\",\"itemCode\":\"HNS02C2A\",\"itemName\":\"HNS02C2A\",\"inspectDate\":\"2026-06-11T15:00:00.000Z\",\"inspectorName\":\"박민준\",\"inspectType\":\"WEIGHT\",\"sampleNo\":2,\"measuredValue\":\"119.8\",\"specUpper\":\"125.0\",\"specLower\":\"115.0\",\"passYn\":\"Y\",\"remark\":null,\"createdAt\":\"2026-06-12T08:02:59.454Z\"},{\"orderNo\":\"JO-FIX-105654\",\"jobOrderNo\":\"JO-FIX-105654\",\"itemCode\":\"HNS02\",\"itemNam"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/production/sample-inspect-input?startDate=2026-06-16&endDate=2026-06-16",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "SAMPLE_INSPECT_RESULTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM SAMPLE_INSPECT_RESULTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 8
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/quality-sample-inspect/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 1"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/production/sample-inspect-input?startDate=2026-06-16&endDate=2026-06-16",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/production/sample-inspect-input?startDate=2026-06-16&endDate=2026-06-16",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "action-availability",
+          "method": "GET",
+          "url": "/api/production/job-orders?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/production/sample-inspect-input?startDate=2026-06-16&endDate=2026-06-16",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/production/sample-inspect-input?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"jobOrderNo\":\"JO-20260612-375-01-01-02-01\",\"itemCode\":\"HNS02C2A\",\"itemName\":\"HNS02C2A\",\"inspectDate\":\"2026-06-11T15:00:00.000Z\",\"inspectorName\":\"박민준\",\"inspectType\":\"WEIGHT\",\"sampleNo\":1,\"measuredValue\":\"120.2\",\"specUpper\":\"125.0\",\"specLower\":\"115.0\",\"passYn\":\"Y\",\"remark\":null,\"createdAt\":\"2026-06-12T08:02:59.454Z\"},{\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"jobOrderNo\":\"JO-20260612-375-01-01-02-01\",\"itemCode\":\"HNS02C2A\",\"itemName\":\"HNS02C2A\",\"inspectDate\":\"2026-06-11T15:00:00.000Z\",\"inspectorName\":\"박민준\",\"inspectType\":\"WEIGHT\",\"sampleNo\":2,\"measuredValue\":\"119.8\",\"specUpper\":\"125.0\",\"specLower\":\"115.0\",\"passYn\":\"Y\",\"remark\":null,\"createdAt\":\"2026-06-12T08:02:59.454Z\"},{\"orderNo\":\"JO-FIX-105654\",\"jobOrderNo\":\"JO-FIX-105654\",\"itemCode\":\"HNS02\",\"itemNam"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/production/sample-inspect-input?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"jobOrderNo\":\"JO-20260612-375-01-01-02-01\",\"itemCode\":\"HNS02C2A\",\"itemName\":\"HNS02C2A\",\"inspectDate\":\"2026-06-11T15:00:00.000Z\",\"inspectorName\":\"박민준\",\"inspectType\":\"WEIGHT\",\"sampleNo\":1,\"measuredValue\":\"120.2\",\"specUpper\":\"125.0\",\"specLower\":\"115.0\",\"passYn\":\"Y\",\"remark\":null,\"createdAt\":\"2026-06-12T08:02:59.454Z\"},{\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"jobOrderNo\":\"JO-20260612-375-01-01-02-01\",\"itemCode\":\"HNS02C2A\",\"itemName\":\"HNS02C2A\",\"inspectDate\":\"2026-06-11T15:00:00.000Z\",\"inspectorName\":\"박민준\",\"inspectType\":\"WEIGHT\",\"sampleNo\":2,\"measuredValue\":\"119.8\",\"specUpper\":\"125.0\",\"specLower\":\"115.0\",\"passYn\":\"Y\",\"remark\":null,\"createdAt\":\"2026-06-12T08:02:59.454Z\"},{\"orderNo\":\"JO-FIX-105654\",\"jobOrderNo\":\"JO-FIX-105654\",\"itemCode\":\"HNS02\",\"itemNam"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/production/sample-inspect-input?startDate=2026-06-16&endDate=2026-06-16",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/quality-sample-inspect.html"
+    },
+    {
+      "slug": "quality-trace",
+      "route": "/quality/trace",
+      "title": "추적관리",
+      "api": "/quality/trace?limit=20",
+      "tables": [
+        "TRACE_LOGS"
+      ],
+      "processPattern": [
+        {},
+        {},
+        {}
+      ],
+      "menuCode": "QC_TRACE",
+      "sortOrder": 40,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 40
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "추적관리 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /quality/trace 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "TRACE_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM TRACE_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 0
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/quality-trace/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: QC_TRACE",
+            "등록 순서: 40",
+            "화면 행 수: 0"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "추적관리 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/quality-trace/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색 입력 없이 /검색/ 실행",
+            "검색 후 화면 행 수: 0"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "추적관리 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/quality-trace/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색/조회 컨트롤 없음, 현재 화면 기준 재확인",
+            "노출 버튼: 검색",
+            "입력 컨트롤: 시리얼번호 또는 LOT번호를 입력하세요"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "추적관리 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 진입 화면",
+            "file": "../screenshots/quality-trace/04-action-entry.png"
+          },
+          "notes": [
+            "프로세스 진입 실행: /검색/",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "추적관리 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/quality/trace?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "{\"serialNo\":\"P26061200004\",\"matUid\":\"\",\"prdUid\":\"P26061200004\",\"itemNo\":\"HNS02\",\"itemName\":\"완제품 하네스\",\"workOrderNo\":\"JO-FIX-105908\",\"productionDate\":\"2026-06-12\",\"timeline\":[{\"id\":\"PR-PR26061200017\",\"timestamp\":\"2026-06-12T02:00:00.000Z\",\"process\":\"MASSY\",\"processName\":\"조립\",\"equipmentNo\":\"\",\"operator\":\"admin@hanes.com\",\"result\":\"WORK\",\"detail\":\"최종보고서 이슈 수정 재테스트 완료\"}],\"fourM\":{\"man\":[{\"process\":\"MASSY\",\"processName\":\"조립\",\"operatorId\":\"admin@hanes.com\",\"operatorName\":\"admin@hanes.com\",\"timestamp\":\"2026-06-12T02:00:00.000Z\"}],\"machine\":[],\"material\":[{\"materialCode\":\"HSG0001\",\"materialName\":\"하우징\",\"matUid\":\"M26061200056\",\"usedQty\":1,\"unit\":\"EA\",\"supplier\":\"한국단자공업\"},{\"materialCode\":\"HSG0001\",\"materialName\":\"하우징\",\"matUid\":\"VH1-RM260612-00011\",\"usedQty\":1,\"unit\":\"EA\",\"supplier\":\"VND-001\"}],\"method"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/quality-trace/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색/조회 컨트롤 없음, 현재 화면 기준 재확인",
+            "대표 조회 API 직접 호출 성공: /api/v1/quality/trace?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "추적관리 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /quality/trace?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/quality/trace?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "{\"serialNo\":\"P26061200004\",\"matUid\":\"\",\"prdUid\":\"P26061200004\",\"itemNo\":\"HNS02\",\"itemName\":\"완제품 하네스\",\"workOrderNo\":\"JO-FIX-105908\",\"productionDate\":\"2026-06-12\",\"timeline\":[{\"id\":\"PR-PR26061200017\",\"timestamp\":\"2026-06-12T02:00:00.000Z\",\"process\":\"MASSY\",\"processName\":\"조립\",\"equipmentNo\":\"\",\"operator\":\"admin@hanes.com\",\"result\":\"WORK\",\"detail\":\"최종보고서 이슈 수정 재테스트 완료\"}],\"fourM\":{\"man\":[{\"process\":\"MASSY\",\"processName\":\"조립\",\"operatorId\":\"admin@hanes.com\",\"operatorName\":\"admin@hanes.com\",\"timestamp\":\"2026-06-12T02:00:00.000Z\"}],\"machine\":[],\"material\":[{\"materialCode\":\"HSG0001\",\"materialName\":\"하우징\",\"matUid\":\"M26061200056\",\"usedQty\":1,\"unit\":\"EA\",\"supplier\":\"한국단자공업\"},{\"materialCode\":\"HSG0001\",\"materialName\":\"하우징\",\"matUid\":\"VH1-RM260612-00011\",\"usedQty\":1,\"unit\":\"EA\",\"supplier\":\"VND-001\"}],\"method"
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "TRACE_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM TRACE_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 0
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/quality-trace/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색/조회 컨트롤 없음, 현재 화면 기준 재확인",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 0"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/quality/trace?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "{\"serialNo\":\"P26061200004\",\"matUid\":\"\",\"prdUid\":\"P26061200004\",\"itemNo\":\"HNS02\",\"itemName\":\"완제품 하네스\",\"workOrderNo\":\"JO-FIX-105908\",\"productionDate\":\"2026-06-12\",\"timeline\":[{\"id\":\"PR-PR26061200017\",\"timestamp\":\"2026-06-12T02:00:00.000Z\",\"process\":\"MASSY\",\"processName\":\"조립\",\"equipmentNo\":\"\",\"operator\":\"admin@hanes.com\",\"result\":\"WORK\",\"detail\":\"최종보고서 이슈 수정 재테스트 완료\"}],\"fourM\":{\"man\":[{\"process\":\"MASSY\",\"processName\":\"조립\",\"operatorId\":\"admin@hanes.com\",\"operatorName\":\"admin@hanes.com\",\"timestamp\":\"2026-06-12T02:00:00.000Z\"}],\"machine\":[],\"material\":[{\"materialCode\":\"HSG0001\",\"materialName\":\"하우징\",\"matUid\":\"M26061200056\",\"usedQty\":1,\"unit\":\"EA\",\"supplier\":\"한국단자공업\"},{\"materialCode\":\"HSG0001\",\"materialName\":\"하우징\",\"matUid\":\"VH1-RM260612-00011\",\"usedQty\":1,\"unit\":\"EA\",\"supplier\":\"VND-001\"}],\"method"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/quality/trace?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "{\"serialNo\":\"P26061200004\",\"matUid\":\"\",\"prdUid\":\"P26061200004\",\"itemNo\":\"HNS02\",\"itemName\":\"완제품 하네스\",\"workOrderNo\":\"JO-FIX-105908\",\"productionDate\":\"2026-06-12\",\"timeline\":[{\"id\":\"PR-PR26061200017\",\"timestamp\":\"2026-06-12T02:00:00.000Z\",\"process\":\"MASSY\",\"processName\":\"조립\",\"equipmentNo\":\"\",\"operator\":\"admin@hanes.com\",\"result\":\"WORK\",\"detail\":\"최종보고서 이슈 수정 재테스트 완료\"}],\"fourM\":{\"man\":[{\"process\":\"MASSY\",\"processName\":\"조립\",\"operatorId\":\"admin@hanes.com\",\"operatorName\":\"admin@hanes.com\",\"timestamp\":\"2026-06-12T02:00:00.000Z\"}],\"machine\":[],\"material\":[{\"materialCode\":\"HSG0001\",\"materialName\":\"하우징\",\"matUid\":\"M26061200056\",\"usedQty\":1,\"unit\":\"EA\",\"supplier\":\"한국단자공업\"},{\"materialCode\":\"HSG0001\",\"materialName\":\"하우징\",\"matUid\":\"VH1-RM260612-00011\",\"usedQty\":1,\"unit\":\"EA\",\"supplier\":\"VND-001\"}],\"method"
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/quality-trace.html"
+    },
+    {
+      "slug": "quality-defect",
+      "route": "/quality/defect",
+      "title": "불량관리",
+      "api": "/quality/defect-logs?limit=20",
+      "tables": [
+        "DEFECT_LOGS"
+      ],
+      "processPattern": [
+        {},
+        {},
+        {}
+      ],
+      "menuCode": "QC_DEFECT",
+      "sortOrder": 50,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 50
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "불량관리 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /quality/defect 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/quality/defect-logs?limit=5000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "DEFECT_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM DEFECT_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 0
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/quality-defect/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: QC_DEFECT",
+            "등록 순서: 50",
+            "화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "불량관리 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/quality-defect/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색어 공백 상태로 조회/Enter 실행",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "불량관리 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/quality/defect-logs?limit=5000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/quality-defect/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 불량 등록, 그리드 옵션, 전체화면",
+            "입력 컨트롤: 작업지시, 불량명 검색..., date, date, select, select"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "불량관리 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 진입 화면",
+            "file": "../screenshots/quality-defect/04-action-entry.png"
+          },
+          "notes": [
+            "프로세스 진입 실행: /등록/",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 불량 등록"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "불량관리 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/quality/defect-logs?limit=5000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/quality/defect-logs?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/quality-defect/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/quality/defect-logs?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 불량 등록"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "불량관리 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /quality/defect-logs?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/quality/defect-logs?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/quality/defect-logs?limit=5000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "DEFECT_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM DEFECT_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 0
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/quality-defect/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 1"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/quality/defect-logs?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/quality/defect-logs?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/quality/defect-logs?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/quality/defect-logs?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/quality/defect-logs?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/quality/defect-logs?limit=5000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/quality-defect.html"
+    },
+    {
+      "slug": "quality-rework-inspect",
+      "route": "/quality/rework-inspect",
+      "title": "재작업검사",
+      "api": "/quality/reworks?limit=20&status=INSPECT_PENDING",
+      "tables": [
+        "REWORK_ORDERS",
+        "REWORK_INSPECTS"
+      ],
+      "processPattern": [
+        {},
+        {},
+        {}
+      ],
+      "menuCode": "QC_REWORK_INSPECT",
+      "sortOrder": 60,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 60
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "재작업검사 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /quality/rework-inspect 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/quality/reworks/stats",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/quality/reworks?status=INSPECT_PENDING&limit=5000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "REWORK_ORDERS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM REWORK_ORDERS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 0
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            },
+            {
+              "title": "REWORK_INSPECTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM REWORK_INSPECTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 0
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/quality-rework-inspect/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: QC_REWORK_INSPECT",
+            "등록 순서: 60",
+            "화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "재작업검사 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/quality-rework-inspect/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색어 공백 상태로 조회/Enter 실행",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "재작업검사 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/quality/reworks?status=INSPECT_PENDING&limit=5000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/quality-rework-inspect/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 그리드 옵션, 전체화면",
+            "입력 컨트롤: 검색"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "재작업검사 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 버튼 미노출 화면",
+            "file": "../screenshots/quality-rework-inspect/04-action-availability.png"
+          },
+          "notes": [
+            "신규/처리/등록 진입 버튼 미노출 또는 조회 전용 화면",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "재작업검사 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/quality/reworks?status=INSPECT_PENDING&limit=5000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/quality/reworks?limit=20&status=INSPECT_PENDING",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/quality-rework-inspect/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/quality/reworks?limit=20&status=INSPECT_PENDING 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "재작업검사 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /quality/reworks?limit=20&status=INSPECT_PENDING를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/quality/reworks?limit=20&status=INSPECT_PENDING",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/quality/reworks?status=INSPECT_PENDING&limit=5000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "REWORK_ORDERS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM REWORK_ORDERS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 0
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            },
+            {
+              "title": "REWORK_INSPECTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM REWORK_INSPECTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 0
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/quality-rework-inspect/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 1"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/quality/reworks/stats",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/quality/reworks?status=INSPECT_PENDING&limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/quality/reworks?status=INSPECT_PENDING&limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/quality/reworks?status=INSPECT_PENDING&limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/quality/reworks?limit=20&status=INSPECT_PENDING",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/quality/reworks?limit=20&status=INSPECT_PENDING",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/quality/reworks?status=INSPECT_PENDING&limit=5000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/quality-rework-inspect.html"
+    },
+    {
+      "slug": "quality-request-inspect",
+      "route": "/quality/request-inspect",
+      "title": "검사의뢰",
+      "api": "/production/self-inspect/delegates?limit=20",
+      "tables": [
+        "SELF_INSPECT_RESULTS"
+      ],
+      "processPattern": [
+        {},
+        {},
+        {}
+      ],
+      "menuCode": "QC_REQUEST_INSPECT",
+      "sortOrder": 70,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 70
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "검사의뢰 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /quality/request-inspect 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/production/self-inspect/delegates",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "SELF_INSPECT_RESULTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM SELF_INSPECT_RESULTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 12
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/quality-request-inspect/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: QC_REQUEST_INSPECT",
+            "등록 순서: 70",
+            "화면 행 수: 5"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "검사의뢰 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/quality-request-inspect/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색 입력 또는 조회 버튼 미노출",
+            "검색 후 화면 행 수: 5"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "검사의뢰 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/production/self-inspect/delegates",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/quality-request-inspect/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 그리드 옵션, 전체화면",
+            "입력 컨트롤: select"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "검사의뢰 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 버튼 미노출 화면",
+            "file": "../screenshots/quality-request-inspect/04-action-availability.png"
+          },
+          "notes": [
+            "신규/처리/등록 진입 버튼 미노출 또는 조회 전용 화면",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "검사의뢰 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/production/self-inspect/delegates",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/production/self-inspect/delegates?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"id\":\"30988EB4B025496FA490D7E01C5FFEF5\",\"orderNo\":\"JO-FIX-105736\",\"processCode\":\"ATCUT\",\"itemName\":\"전선 절단 길이 측정\",\"timing\":\"FIRST\",\"inspectMethod\":\"DELEGATE\",\"status\":\"PENDING\",\"remark\":null,\"measureValue\":null,\"sampleNo\":1,\"createdAt\":\"2026-06-12T07:54:59.563Z\",\"itemType\":null,\"unit\":null,\"standard\":null,\"lslValue\":null,\"uslValue\":null},{\"id\":\"0410FD6B39554D958996AEC92FEA4498\",\"orderNo\":\"JO-FIX-105736\",\"processCode\":\"ATCUT\",\"itemName\":\"절단면 상태 확인\",\"timing\":\"MID\",\"inspectMethod\":\"DELEGATE\",\"status\":\"PENDING\",\"remark\":null,\"measureValue\":null,\"sampleNo\":1,\"createdAt\":\"2026-06-12T07:54:59.579Z\",\"itemType\":null,\"unit\":null,\"standard\":null,\"lslValue\":null,\"uslValue\":null},{\"id\":\"0906FAFC37E847FFBBA866AE93762533\",\"orderNo\":\"JO-FIX-105654\",\"processCode\":\"ATCNS\",\"itemName\":\"탈피 길이 측정\",\"timing\":\"FI"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/quality-request-inspect/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/production/self-inspect/delegates?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "검사의뢰 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /production/self-inspect/delegates?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/production/self-inspect/delegates?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"id\":\"30988EB4B025496FA490D7E01C5FFEF5\",\"orderNo\":\"JO-FIX-105736\",\"processCode\":\"ATCUT\",\"itemName\":\"전선 절단 길이 측정\",\"timing\":\"FIRST\",\"inspectMethod\":\"DELEGATE\",\"status\":\"PENDING\",\"remark\":null,\"measureValue\":null,\"sampleNo\":1,\"createdAt\":\"2026-06-12T07:54:59.563Z\",\"itemType\":null,\"unit\":null,\"standard\":null,\"lslValue\":null,\"uslValue\":null},{\"id\":\"0410FD6B39554D958996AEC92FEA4498\",\"orderNo\":\"JO-FIX-105736\",\"processCode\":\"ATCUT\",\"itemName\":\"절단면 상태 확인\",\"timing\":\"MID\",\"inspectMethod\":\"DELEGATE\",\"status\":\"PENDING\",\"remark\":null,\"measureValue\":null,\"sampleNo\":1,\"createdAt\":\"2026-06-12T07:54:59.579Z\",\"itemType\":null,\"unit\":null,\"standard\":null,\"lslValue\":null,\"uslValue\":null},{\"id\":\"0906FAFC37E847FFBBA866AE93762533\",\"orderNo\":\"JO-FIX-105654\",\"processCode\":\"ATCNS\",\"itemName\":\"탈피 길이 측정\",\"timing\":\"FI"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/production/self-inspect/delegates",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "SELF_INSPECT_RESULTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM SELF_INSPECT_RESULTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 12
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/quality-request-inspect/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 5"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/production/self-inspect/delegates",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/production/self-inspect/delegates",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/production/self-inspect/delegates",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/production/self-inspect/delegates?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"id\":\"30988EB4B025496FA490D7E01C5FFEF5\",\"orderNo\":\"JO-FIX-105736\",\"processCode\":\"ATCUT\",\"itemName\":\"전선 절단 길이 측정\",\"timing\":\"FIRST\",\"inspectMethod\":\"DELEGATE\",\"status\":\"PENDING\",\"remark\":null,\"measureValue\":null,\"sampleNo\":1,\"createdAt\":\"2026-06-12T07:54:59.563Z\",\"itemType\":null,\"unit\":null,\"standard\":null,\"lslValue\":null,\"uslValue\":null},{\"id\":\"0410FD6B39554D958996AEC92FEA4498\",\"orderNo\":\"JO-FIX-105736\",\"processCode\":\"ATCUT\",\"itemName\":\"절단면 상태 확인\",\"timing\":\"MID\",\"inspectMethod\":\"DELEGATE\",\"status\":\"PENDING\",\"remark\":null,\"measureValue\":null,\"sampleNo\":1,\"createdAt\":\"2026-06-12T07:54:59.579Z\",\"itemType\":null,\"unit\":null,\"standard\":null,\"lslValue\":null,\"uslValue\":null},{\"id\":\"0906FAFC37E847FFBBA866AE93762533\",\"orderNo\":\"JO-FIX-105654\",\"processCode\":\"ATCNS\",\"itemName\":\"탈피 길이 측정\",\"timing\":\"FI"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/production/self-inspect/delegates?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"id\":\"30988EB4B025496FA490D7E01C5FFEF5\",\"orderNo\":\"JO-FIX-105736\",\"processCode\":\"ATCUT\",\"itemName\":\"전선 절단 길이 측정\",\"timing\":\"FIRST\",\"inspectMethod\":\"DELEGATE\",\"status\":\"PENDING\",\"remark\":null,\"measureValue\":null,\"sampleNo\":1,\"createdAt\":\"2026-06-12T07:54:59.563Z\",\"itemType\":null,\"unit\":null,\"standard\":null,\"lslValue\":null,\"uslValue\":null},{\"id\":\"0410FD6B39554D958996AEC92FEA4498\",\"orderNo\":\"JO-FIX-105736\",\"processCode\":\"ATCUT\",\"itemName\":\"절단면 상태 확인\",\"timing\":\"MID\",\"inspectMethod\":\"DELEGATE\",\"status\":\"PENDING\",\"remark\":null,\"measureValue\":null,\"sampleNo\":1,\"createdAt\":\"2026-06-12T07:54:59.579Z\",\"itemType\":null,\"unit\":null,\"standard\":null,\"lslValue\":null,\"uslValue\":null},{\"id\":\"0906FAFC37E847FFBBA866AE93762533\",\"orderNo\":\"JO-FIX-105654\",\"processCode\":\"ATCNS\",\"itemName\":\"탈피 길이 측정\",\"timing\":\"FI"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/production/self-inspect/delegates",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/quality-request-inspect.html"
+    },
+    {
+      "slug": "quality-self-inspect-history",
+      "route": "/quality/self-inspect-history",
+      "title": "자주검사이력",
+      "api": "/production/self-inspect/history?limit=20",
+      "tables": [
+        "SELF_INSPECT_RESULTS"
+      ],
+      "processPattern": [
+        {},
+        {}
+      ],
+      "menuCode": "QC_SELF_INSPECT_HISTORY",
+      "sortOrder": 80,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 80
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "자주검사이력 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /quality/self-inspect-history 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/processes?limit=100",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "SELF_INSPECT_RESULTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM SELF_INSPECT_RESULTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 12
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/quality-self-inspect-history/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: QC_SELF_INSPECT_HISTORY",
+            "등록 순서: 80",
+            "화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "자주검사이력 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "search-requery",
+              "method": "GET",
+              "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/quality-self-inspect-history/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색 입력 없이 /검색/ 실행",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "자주검사이력 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/quality-self-inspect-history/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 검색, 그리드 옵션, 전체화면",
+            "입력 컨트롤: date, date, 작업지시, select"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "자주검사이력 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "action-availability",
+              "method": "GET",
+              "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 진입 화면",
+            "file": "../screenshots/quality-self-inspect-history/04-action-entry.png"
+          },
+          "notes": [
+            "프로세스 진입 실행: /검색/",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "자주검사이력 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/production/self-inspect/history?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"id\":\"BE5F38A13840427CAFB00C7FD12CC204\",\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"equipCode\":null,\"processCode\":\"SHDRM\",\"inspectItemId\":\"975562BF97C14758929F005D2F91137D\",\"itemName\":\"편조 제거 길이 측정\",\"timing\":\"FIRST\",\"inspectMethod\":\"DIRECT\",\"status\":\"PASS\",\"prodQtyAtInspect\":null,\"inspectorId\":null,\"remark\":null,\"sampleNo\":1,\"measureValue\":15,\"inspectedAt\":\"2026-06-12T08:15:45.099Z\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"seed\",\"updatedBy\":null,\"createdAt\":\"2026-06-12T08:15:45.099Z\",\"updatedAt\":\"2026-06-12T08:15:45.099Z\"},{\"id\":\"5DBE38506FC04F219C37E14A3C973942\",\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"equipCode\":null,\"processCode\":\"SHDRM\",\"inspectItemId\":\"975562BF97C14758929F005D2F91137D\",\"itemName\":\"편조 제거 길이 측정\",\"timing\":\"MID\",\"inspectMethod\":\"DIRECT\",\"status\":\"FAIL\",\"prodQtyAtInspect\":"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/quality-self-inspect-history/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/production/self-inspect/history?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "자주검사이력 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /production/self-inspect/history?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/production/self-inspect/history?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"id\":\"BE5F38A13840427CAFB00C7FD12CC204\",\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"equipCode\":null,\"processCode\":\"SHDRM\",\"inspectItemId\":\"975562BF97C14758929F005D2F91137D\",\"itemName\":\"편조 제거 길이 측정\",\"timing\":\"FIRST\",\"inspectMethod\":\"DIRECT\",\"status\":\"PASS\",\"prodQtyAtInspect\":null,\"inspectorId\":null,\"remark\":null,\"sampleNo\":1,\"measureValue\":15,\"inspectedAt\":\"2026-06-12T08:15:45.099Z\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"seed\",\"updatedBy\":null,\"createdAt\":\"2026-06-12T08:15:45.099Z\",\"updatedAt\":\"2026-06-12T08:15:45.099Z\"},{\"id\":\"5DBE38506FC04F219C37E14A3C973942\",\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"equipCode\":null,\"processCode\":\"SHDRM\",\"inspectItemId\":\"975562BF97C14758929F005D2F91137D\",\"itemName\":\"편조 제거 길이 측정\",\"timing\":\"MID\",\"inspectMethod\":\"DIRECT\",\"status\":\"FAIL\",\"prodQtyAtInspect\":"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "SELF_INSPECT_RESULTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM SELF_INSPECT_RESULTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 12
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/quality-self-inspect-history/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 1"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/processes?limit=100",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "search-requery",
+          "method": "GET",
+          "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "action-availability",
+          "method": "GET",
+          "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/production/self-inspect/history?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"id\":\"BE5F38A13840427CAFB00C7FD12CC204\",\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"equipCode\":null,\"processCode\":\"SHDRM\",\"inspectItemId\":\"975562BF97C14758929F005D2F91137D\",\"itemName\":\"편조 제거 길이 측정\",\"timing\":\"FIRST\",\"inspectMethod\":\"DIRECT\",\"status\":\"PASS\",\"prodQtyAtInspect\":null,\"inspectorId\":null,\"remark\":null,\"sampleNo\":1,\"measureValue\":15,\"inspectedAt\":\"2026-06-12T08:15:45.099Z\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"seed\",\"updatedBy\":null,\"createdAt\":\"2026-06-12T08:15:45.099Z\",\"updatedAt\":\"2026-06-12T08:15:45.099Z\"},{\"id\":\"5DBE38506FC04F219C37E14A3C973942\",\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"equipCode\":null,\"processCode\":\"SHDRM\",\"inspectItemId\":\"975562BF97C14758929F005D2F91137D\",\"itemName\":\"편조 제거 길이 측정\",\"timing\":\"MID\",\"inspectMethod\":\"DIRECT\",\"status\":\"FAIL\",\"prodQtyAtInspect\":"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/production/self-inspect/history?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"id\":\"BE5F38A13840427CAFB00C7FD12CC204\",\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"equipCode\":null,\"processCode\":\"SHDRM\",\"inspectItemId\":\"975562BF97C14758929F005D2F91137D\",\"itemName\":\"편조 제거 길이 측정\",\"timing\":\"FIRST\",\"inspectMethod\":\"DIRECT\",\"status\":\"PASS\",\"prodQtyAtInspect\":null,\"inspectorId\":null,\"remark\":null,\"sampleNo\":1,\"measureValue\":15,\"inspectedAt\":\"2026-06-12T08:15:45.099Z\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"seed\",\"updatedBy\":null,\"createdAt\":\"2026-06-12T08:15:45.099Z\",\"updatedAt\":\"2026-06-12T08:15:45.099Z\"},{\"id\":\"5DBE38506FC04F219C37E14A3C973942\",\"orderNo\":\"JO-20260612-375-01-01-02-01\",\"equipCode\":null,\"processCode\":\"SHDRM\",\"inspectItemId\":\"975562BF97C14758929F005D2F91137D\",\"itemName\":\"편조 제거 길이 측정\",\"timing\":\"MID\",\"inspectMethod\":\"DIRECT\",\"status\":\"FAIL\",\"prodQtyAtInspect\":"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/production/self-inspect/history?dateFrom=2026-06-16&dateTo=2026-06-16&limit=200",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/quality-self-inspect-history.html"
+    },
+    {
+      "slug": "material-shelf-life",
+      "route": "/material/shelf-life",
+      "title": "유통기한",
+      "api": "/material/shelf-life?limit=20",
+      "tables": [
+        "MAT_LOTS"
+      ],
+      "processPattern": [
+        {},
+        {}
+      ],
+      "menuCode": "MAT_SHELF_LIFE",
+      "sortOrder": 90,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 90
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "유통기한 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /material/shelf-life 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/parts?limit=100",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/material/shelf-life?limit=5000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "MAT_LOTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM MAT_LOTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 90
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/material-shelf-life/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: MAT_SHELF_LIFE",
+            "등록 순서: 90",
+            "화면 행 수: 20"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "유통기한 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "search-requery",
+              "method": "GET",
+              "url": "/api/material/shelf-life?limit=5000&search=VH1-RM260612-00029",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/material-shelf-life/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색어 'VH1-RM260612-00029' 입력 후 조회/Enter 실행",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "유통기한 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/material/shelf-life?limit=5000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/material/shelf-life?limit=5000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/material-shelf-life/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 그리드 옵션, 전체화면, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사",
+            "입력 컨트롤: LOT번호, 품목명 검색..., select, select, select"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "유통기한 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 버튼 미노출 화면",
+            "file": "../screenshots/material-shelf-life/04-action-availability.png"
+          },
+          "notes": [
+            "신규/처리/등록 진입 버튼 미노출 또는 조회 전용 화면",
+            "본문 행 액션 버튼 수: 20",
+            "저장성 후보 버튼: 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "유통기한 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/material/shelf-life?limit=5000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/material/shelf-life?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"matUid\":\"VH1-RM260612-00029\",\"itemCode\":\"TMN-SE1\",\"initQty\":200,\"currentQty\":200,\"recvDate\":\"2026-06-12\",\"manufactureDate\":null,\"expireDate\":\"2026-04-28\",\"arrivalNo\":\"R26061200010\",\"arrivalSeq\":5,\"origin\":\"VH1-RM260612-00029\",\"vendor\":\"VND-001\",\"mfgPartnerCode\":\"M005\",\"invoiceNo\":null,\"poNo\":\"PO-26-T01\",\"iqcStatus\":\"PASS\",\"specialAcceptYn\":\"N\",\"status\":\"NORMAL\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"SYSTEM\",\"updatedBy\":\"claude\",\"createdAt\":\"2026-06-12T07:18:48.082Z\",\"updatedAt\":\"2026-06-12T07:47:32.126Z\",\"itemName\":\"터미널SE1\",\"unit\":\"EA\",\"expiryStatus\":\"EXPIRED\",\"daysUntilExpiry\":-50},{\"matUid\":\"VH1-RM260612-00028\",\"itemCode\":\"TMN-SE1\",\"initQty\":200,\"currentQty\":200,\"recvDate\":\"2026-06-12\",\"manufactureDate\":null,\"expireDate\":\"2026-05-13\",\"arrivalNo\":\"R26061200010\",\"arrivalSeq\":4,\"orig"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/material-shelf-life/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/material/shelf-life?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사, 재검사"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "유통기한 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /material/shelf-life?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/material/shelf-life?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[{\"matUid\":\"VH1-RM260612-00029\",\"itemCode\":\"TMN-SE1\",\"initQty\":200,\"currentQty\":200,\"recvDate\":\"2026-06-12\",\"manufactureDate\":null,\"expireDate\":\"2026-04-28\",\"arrivalNo\":\"R26061200010\",\"arrivalSeq\":5,\"origin\":\"VH1-RM260612-00029\",\"vendor\":\"VND-001\",\"mfgPartnerCode\":\"M005\",\"invoiceNo\":null,\"poNo\":\"PO-26-T01\",\"iqcStatus\":\"PASS\",\"specialAcceptYn\":\"N\",\"status\":\"NORMAL\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"SYSTEM\",\"updatedBy\":\"claude\",\"createdAt\":\"2026-06-12T07:18:48.082Z\",\"updatedAt\":\"2026-06-12T07:47:32.126Z\",\"itemName\":\"터미널SE1\",\"unit\":\"EA\",\"expiryStatus\":\"EXPIRED\",\"daysUntilExpiry\":-50},{\"matUid\":\"VH1-RM260612-00028\",\"itemCode\":\"TMN-SE1\",\"initQty\":200,\"currentQty\":200,\"recvDate\":\"2026-06-12\",\"manufactureDate\":null,\"expireDate\":\"2026-05-13\",\"arrivalNo\":\"R26061200010\",\"arrivalSeq\":4,\"orig"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/material/shelf-life?limit=5000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "MAT_LOTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM MAT_LOTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 90
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/material-shelf-life/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 20"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/parts?limit=100",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/material/shelf-life?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "search-requery",
+          "method": "GET",
+          "url": "/api/material/shelf-life?limit=5000&search=VH1-RM260612-00029",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/material/shelf-life?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/material/shelf-life?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/material/shelf-life?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/material/shelf-life?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"matUid\":\"VH1-RM260612-00029\",\"itemCode\":\"TMN-SE1\",\"initQty\":200,\"currentQty\":200,\"recvDate\":\"2026-06-12\",\"manufactureDate\":null,\"expireDate\":\"2026-04-28\",\"arrivalNo\":\"R26061200010\",\"arrivalSeq\":5,\"origin\":\"VH1-RM260612-00029\",\"vendor\":\"VND-001\",\"mfgPartnerCode\":\"M005\",\"invoiceNo\":null,\"poNo\":\"PO-26-T01\",\"iqcStatus\":\"PASS\",\"specialAcceptYn\":\"N\",\"status\":\"NORMAL\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"SYSTEM\",\"updatedBy\":\"claude\",\"createdAt\":\"2026-06-12T07:18:48.082Z\",\"updatedAt\":\"2026-06-12T07:47:32.126Z\",\"itemName\":\"터미널SE1\",\"unit\":\"EA\",\"expiryStatus\":\"EXPIRED\",\"daysUntilExpiry\":-50},{\"matUid\":\"VH1-RM260612-00028\",\"itemCode\":\"TMN-SE1\",\"initQty\":200,\"currentQty\":200,\"recvDate\":\"2026-06-12\",\"manufactureDate\":null,\"expireDate\":\"2026-05-13\",\"arrivalNo\":\"R26061200010\",\"arrivalSeq\":4,\"orig"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/material/shelf-life?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[{\"matUid\":\"VH1-RM260612-00029\",\"itemCode\":\"TMN-SE1\",\"initQty\":200,\"currentQty\":200,\"recvDate\":\"2026-06-12\",\"manufactureDate\":null,\"expireDate\":\"2026-04-28\",\"arrivalNo\":\"R26061200010\",\"arrivalSeq\":5,\"origin\":\"VH1-RM260612-00029\",\"vendor\":\"VND-001\",\"mfgPartnerCode\":\"M005\",\"invoiceNo\":null,\"poNo\":\"PO-26-T01\",\"iqcStatus\":\"PASS\",\"specialAcceptYn\":\"N\",\"status\":\"NORMAL\",\"company\":\"40\",\"plant\":\"1000\",\"createdBy\":\"SYSTEM\",\"updatedBy\":\"claude\",\"createdAt\":\"2026-06-12T07:18:48.082Z\",\"updatedAt\":\"2026-06-12T07:47:32.126Z\",\"itemName\":\"터미널SE1\",\"unit\":\"EA\",\"expiryStatus\":\"EXPIRED\",\"daysUntilExpiry\":-50},{\"matUid\":\"VH1-RM260612-00028\",\"itemCode\":\"TMN-SE1\",\"initQty\":200,\"currentQty\":200,\"recvDate\":\"2026-06-12\",\"manufactureDate\":null,\"expireDate\":\"2026-05-13\",\"arrivalNo\":\"R26061200010\",\"arrivalSeq\":4,\"orig"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/material/shelf-life?limit=5000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/material-shelf-life.html"
+    },
+    {
+      "slug": "material-shelf-life-history",
+      "route": "/material/shelf-life-history",
+      "title": "유통기한이력",
+      "api": "/material/shelf-life/reinspect?limit=20",
+      "tables": [
+        "IQC_LOGS"
+      ],
+      "processPattern": [
+        {},
+        {}
+      ],
+      "menuCode": "MAT_SHELF_LIFE_HISTORY",
+      "sortOrder": 100,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 100
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "유통기한이력 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /material/shelf-life-history 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/material/shelf-life/reinspect?limit=2000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/parts?limit=100",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "IQC_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM IQC_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 29
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/material-shelf-life-history/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: MAT_SHELF_LIFE_HISTORY",
+            "등록 순서: 100",
+            "화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "유통기한이력 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/material-shelf-life-history/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색어 공백 상태로 조회/Enter 실행",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "유통기한이력 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/material/shelf-life/reinspect?limit=2000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/material-shelf-life-history/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 그리드 옵션, 전체화면",
+            "입력 컨트롤: LOT번호, 품목명 검색..., select, select"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "유통기한이력 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 버튼 미노출 화면",
+            "file": "../screenshots/material-shelf-life-history/04-action-availability.png"
+          },
+          "notes": [
+            "신규/처리/등록 진입 버튼 미노출 또는 조회 전용 화면",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "유통기한이력 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/material/shelf-life/reinspect?limit=2000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/material/shelf-life/reinspect?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/material-shelf-life-history/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/material/shelf-life/reinspect?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "유통기한이력 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /material/shelf-life/reinspect?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/material/shelf-life/reinspect?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/material/shelf-life/reinspect?limit=2000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "IQC_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM IQC_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 29
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/material-shelf-life-history/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 조건 초기화 후 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 1"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/material/shelf-life/reinspect?limit=2000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/parts?limit=100",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/material/shelf-life/reinspect?limit=2000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/material/shelf-life/reinspect?limit=2000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/material/shelf-life/reinspect?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/material/shelf-life/reinspect?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/material/shelf-life/reinspect?limit=2000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/material-shelf-life-history.html"
+    },
+    {
+      "slug": "material-shelf-life-reinspect",
+      "route": "/material/shelf-life-reinspect",
+      "title": "유통기한재검사",
+      "api": "/material/shelf-life/reinspect?limit=20",
+      "tables": [
+        "IQC_LOGS",
+        "MAT_LOTS"
+      ],
+      "processPattern": [
+        {},
+        {},
+        {}
+      ],
+      "menuCode": "MAT_SHELF_LIFE_REINSPECT",
+      "sortOrder": 110,
+      "registeredAt": {
+        "categoryCode": "QUALITY",
+        "categoryLabelKey": "menu.quality",
+        "sortOrder": 110
+      },
+      "status": "PASS",
+      "steps": [
+        {
+          "id": "initial-load",
+          "title": "초기 조회",
+          "objective": "유통기한재검사 화면 진입과 초기 조회 API 로딩을 확인합니다.",
+          "actions": [
+            "브라우저로 /material/shelf-life-reinspect 경로에 진입한다.",
+            "업무 영역 렌더링과 초기 API 응답을 수집한다.",
+            "대표 Oracle 테이블 count를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/db-info",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/auth/me",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/configs/active",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/material/shelf-life/reinspect?limit=1000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/menu-categories/tree",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "ui-network",
+              "stepId": "initial-load",
+              "method": "GET",
+              "url": "/api/master/com-codes/all-active",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "IQC_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM IQC_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 29
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            },
+            {
+              "title": "MAT_LOTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM MAT_LOTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 90
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "초기 조회 화면",
+            "file": "../screenshots/material-shelf-life-reinspect/01-initial-load.png"
+          },
+          "notes": [
+            "좌측 메뉴 등록 코드: MAT_SHELF_LIFE_REINSPECT",
+            "등록 순서: 110",
+            "화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "search-requery",
+          "title": "검색 및 재조회",
+          "objective": "유통기한재검사 화면의 검색, 조회, 탭 전환 동작을 확인합니다.",
+          "actions": [
+            "탭이 있으면 노출 탭을 순서대로 전환한다.",
+            "검색 입력이 있으면 현재 화면에서 추출한 값으로 검색/Enter 또는 조회를 실행한다.",
+            "실행 후 화면과 API 호출을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색/조회/탭 전환 후 화면",
+            "file": "../screenshots/material-shelf-life-reinspect/02-search-requery.png"
+          },
+          "notes": [
+            "탭 없음 또는 전환 대상 없음",
+            "검색 입력 또는 조회 버튼 미노출",
+            "검색 후 화면 행 수: 1"
+          ]
+        },
+        {
+          "id": "button-process-inventory",
+          "title": "버튼 및 프로세스 목록화",
+          "objective": "유통기한재검사 화면의 버튼과 입력/프로세스 진입점을 수집합니다.",
+          "actions": [
+            "검색 조건을 초기화하고 기준 목록 상태로 되돌린다.",
+            "업무 영역의 노출 버튼 텍스트/title/aria-label을 수집한다.",
+            "입력 컨트롤의 placeholder/aria/type을 수집한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "button-process-inventory",
+              "method": "GET",
+              "url": "/api/material/shelf-life/reinspect?limit=1000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "검색 초기화 후 버튼 및 프로세스 목록 화면",
+            "file": "../screenshots/material-shelf-life-reinspect/03-button-process-inventory.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "노출 버튼: 새로고침, 합격, 불합격, 그리드 옵션, 전체화면",
+            "입력 컨트롤: VH1-RM..., 품목 기준 자동, input, input"
+          ]
+        },
+        {
+          "id": "action-availability",
+          "title": "신규/수정/삭제 가능 여부",
+          "objective": "유통기한재검사 화면의 저장성 프로세스 진입과 행 액션 노출 여부를 확인합니다.",
+          "actions": [
+            "화면별 대표 신규/처리/등록 버튼이 있으면 저장 없이 진입까지만 실행한다.",
+            "진입 화면을 캡처하고 닫기/취소/Escape로 원복한다.",
+            "그리드 행의 수정/삭제/처리류 액션 버튼 수를 확인한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장성 프로세스 버튼 미노출 화면",
+            "file": "../screenshots/material-shelf-life-reinspect/04-action-availability.png"
+          },
+          "notes": [
+            "신규/처리/등록 진입 버튼 미노출 또는 조회 전용 화면",
+            "본문 행 액션 버튼 수: 0",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "save-validation-policy",
+          "title": "저장 검증 및 중복 방어 정책",
+          "objective": "유통기한재검사 화면의 저장성 처리 경계와 중복 방어 검증 방식을 기록합니다.",
+          "actions": [
+            "품질 데이터를 변경하는 저장/삭제 버튼은 이 공통 메뉴 스윕에서 임의 실행하지 않는다.",
+            "저장성 후보 버튼과 API 경계를 목록화한다.",
+            "중복 방어는 실제 저장형 페이지별 데이터 생성 시나리오에서 동일 키/동일 LOT 재처리로 검증하도록 분리한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "ui-network",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/material/shelf-life/reinspect?limit=1000",
+              "status": 200,
+              "ok": true
+            },
+            {
+              "source": "direct-api",
+              "stepId": "save-validation-policy",
+              "method": "GET",
+              "url": "/api/v1/material/shelf-life/reinspect?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            }
+          ],
+          "dbChecks": [],
+          "evidence": {
+            "label": "저장 검증 정책 확인 기준 화면",
+            "file": "../screenshots/material-shelf-life-reinspect/05-save-validation-policy.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "대표 조회 API 직접 호출 성공: /api/v1/material/shelf-life/reinspect?limit=20 200",
+            "중복 방어 공통 시나리오: 동일 LOT/동일 검사키 재처리 방어는 페이지별 저장형 상세 시나리오에서 수행",
+            "저장성 후보 버튼: 없음"
+          ]
+        },
+        {
+          "id": "api-db-screen-requery",
+          "title": "DB/API 확인 및 화면 재조회",
+          "objective": "유통기한재검사 대표 API와 Oracle 테이블 상태를 확인한 뒤 화면을 재조회합니다.",
+          "actions": [
+            "대표 API /material/shelf-life/reinspect?limit=20를 직접 호출한다.",
+            "관련 Oracle 대표 테이블 count를 재확인한다.",
+            "검색 조건을 초기화하고 화면을 재조회한 뒤 최종 증적을 캡처한다."
+          ],
+          "result": "PASS",
+          "apiCalls": [
+            {
+              "source": "direct-api",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/v1/material/shelf-life/reinspect?limit=20",
+              "status": 200,
+              "ok": true,
+              "responsePreview": "[]"
+            },
+            {
+              "source": "ui-network",
+              "stepId": "api-db-screen-requery",
+              "method": "GET",
+              "url": "/api/material/shelf-life/reinspect?limit=1000",
+              "status": 200,
+              "ok": true
+            }
+          ],
+          "dbChecks": [
+            {
+              "title": "IQC_LOGS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM IQC_LOGS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 29
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            },
+            {
+              "title": "MAT_LOTS 대표 count",
+              "sql": "SELECT COUNT(*) AS CNT FROM MAT_LOTS WHERE ROWNUM <= 100000000",
+              "result": {
+                "success": true,
+                "data": [
+                  {
+                    "CNT": 90
+                  }
+                ],
+                "columns": [
+                  "CNT"
+                ],
+                "row_count": 1,
+                "site": "JSHANES"
+              },
+              "ok": true
+            }
+          ],
+          "evidence": {
+            "label": "DB/API 확인 후 최종 재조회 화면",
+            "file": "../screenshots/material-shelf-life-reinspect/06-api-db-screen-requery.png"
+          },
+          "notes": [
+            "검색 입력 없이 /새로고침/ 실행",
+            "대표 조회 API 응답: 200",
+            "최종 화면 행 수: 1"
+          ]
+        }
+      ],
+      "apiEvents": [
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/material/shelf-life/reinspect?limit=1000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "initial-load",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "button-process-inventory",
+          "method": "GET",
+          "url": "/api/material/shelf-life/reinspect?limit=1000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/material/shelf-life/reinspect?limit=1000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "direct-api",
+          "stepId": "save-validation-policy",
+          "method": "GET",
+          "url": "/api/v1/material/shelf-life/reinspect?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "direct-api",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/v1/material/shelf-life/reinspect?limit=20",
+          "status": 200,
+          "ok": true,
+          "responsePreview": "[]"
+        },
+        {
+          "source": "ui-network",
+          "stepId": "api-db-screen-requery",
+          "method": "GET",
+          "url": "/api/material/shelf-life/reinspect?limit=1000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "unexpectedConsole": [],
+      "unexpectedApi": [],
+      "reportFile": "pages/material-shelf-life-reinspect.html"
+    }
+  ]
+}

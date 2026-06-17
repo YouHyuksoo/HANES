@@ -63,6 +63,45 @@ export default function ConsumableLifePage() {
     replace: data.filter((d) => d.status === "REPLACE").length,
   }), [data]);
 
+  const infoCards = useMemo(() => [
+    {
+      key: "total",
+      label: t("common.total"),
+      value: stats.total,
+      subLabel: "수명관리 대상",
+      icon: Activity,
+      tone: "border-sky-200 bg-sky-50/80 text-sky-700 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-300",
+      iconTone: "bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300",
+    },
+    {
+      key: "normal",
+      label: t("consumables.life.normal"),
+      value: stats.normal,
+      subLabel: "정상 사용",
+      icon: CheckCircle,
+      tone: "border-emerald-200 bg-emerald-50/80 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300",
+      iconTone: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300",
+    },
+    {
+      key: "warning",
+      label: t("consumables.life.warning"),
+      value: stats.warning,
+      subLabel: "교체 임박",
+      icon: AlertTriangle,
+      tone: "border-amber-200 bg-amber-50/80 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300",
+      iconTone: "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300",
+    },
+    {
+      key: "replace",
+      label: t("consumables.life.replace"),
+      value: stats.replace,
+      subLabel: "즉시 조치",
+      icon: XCircle,
+      tone: "border-red-200 bg-red-50/80 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300",
+      iconTone: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300",
+    },
+  ], [stats, t]);
+
   const getProgressColor = (pct: number) => {
     if (pct >= 100) return "bg-red-500";
     if (pct >= 80) return "bg-yellow-500";
@@ -139,19 +178,28 @@ export default function ConsumableLifePage() {
         </Button>
       </div>
 
-      <div className="flex gap-2 text-xs flex-shrink-0">
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded">
-          <Activity className="w-3 h-3" /> {t("common.total")} {stats.total}
-        </span>
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded">
-          <CheckCircle className="w-3 h-3" /> {t("consumables.life.normal")} {stats.normal}
-        </span>
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 rounded">
-          <AlertTriangle className="w-3 h-3" /> {t("consumables.life.warning")} {stats.warning}
-        </span>
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded">
-          <XCircle className="w-3 h-3" /> {t("consumables.life.replace")} {stats.replace}
-        </span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 flex-shrink-0">
+        {infoCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <div
+              key={card.key}
+              data-testid={`consumable-life-card-${card.key}`}
+              className={`min-h-[118px] rounded-lg border px-5 py-4 flex items-center justify-between ${card.tone}`}
+            >
+              <div className="min-w-0">
+                <div className="text-sm font-semibold truncate">{card.label}</div>
+                <div className="mt-2 text-3xl font-bold leading-none text-text">
+                  {card.value.toLocaleString()}
+                </div>
+                <div className="mt-2 text-xs opacity-80 truncate">{card.subLabel}</div>
+              </div>
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${card.iconTone}`}>
+                <Icon className="w-6 h-6" />
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
@@ -175,7 +223,7 @@ export default function ConsumableLifePage() {
               </div>
             </div>
           }
-        
+
         sqlQuery={`SELECT *\nFROM CON_LIFE_MGMT\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>

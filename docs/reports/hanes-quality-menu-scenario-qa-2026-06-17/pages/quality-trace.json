@@ -43,7 +43,7 @@
           "source": "ui-network",
           "stepId": "initial-load",
           "method": "GET",
-          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "url": "/api/auth/me",
           "status": 200,
           "ok": true
         },
@@ -51,7 +51,7 @@
           "source": "ui-network",
           "stepId": "initial-load",
           "method": "GET",
-          "url": "/api/auth/me",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
           "status": 200,
           "ok": true
         },
@@ -274,7 +274,7 @@
       "source": "ui-network",
       "stepId": "initial-load",
       "method": "GET",
-      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "url": "/api/auth/me",
       "status": 200,
       "ok": true
     },
@@ -282,7 +282,7 @@
       "source": "ui-network",
       "stepId": "initial-load",
       "method": "GET",
-      "url": "/api/auth/me",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
       "status": 200,
       "ok": true
     },
