@@ -10,6 +10,17 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 10:43 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT` `/consumables/label` UID 발행 시 라벨디자인마스터 저장 템플릿 선택/적용 보정.
+- 원인: 기존 화면도 `/master/label-templates?category=jig`를 조회하고 `LabelPrintRenderer`를 사용했지만, 기본 템플릿 또는 첫 번째 템플릿을 자동 선택할 뿐 사용자가 라벨디자인마스터에서 만든 특정 템플릿을 선택할 수 없었다. 그래서 어떤 템플릿으로 출력되는지 운영자가 명확히 제어할 수 없었다.
+- 변경: `/consumables/label` 헤더에 라벨 템플릿 Select를 추가했다. `TemplateInfo`에 `templateKey`와 `designData`를 보관하고, 선택 변경 시 해당 템플릿의 `designData`를 `ensureObjectLabelDesign(..., "jig")`로 정규화해 `LabelPrintRenderer`에 전달한다. 템플릿이 없거나 기본 디자인을 선택하면 기존 기본 디자인으로 출력한다.
+- 검증: TDD RED 확인 후 `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-template-selection.structure.test.mjs` PASS, `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-image-url.structure.test.mjs` PASS, `node apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS.
+- 브라우저 검증: 3013 임시 프론트에서 검증용 `jig` 템플릿 `CODEX_CON_TPL_60546393`을 생성하고 `/consumables/label`에서 Select로 선택 후 첫 소모품 UID 발행을 실행했다. 인쇄 HTML에 선택 템플릿 marker `CODEX_TEMPLATE_MARK_60546393`, 생성 UID `C26061700014`, 선택 템플릿 크기 `@page{size:50mm 25mm`가 포함됨을 확인했다.
+- 정리: 검증용 템플릿은 API 삭제 후 0건, 검증 UID `C26061700013`, `C26061700014` 관련 `CONSUMABLE_STOCKS`와 `LABEL_PRINT_LOGS`는 JSHANES에서 삭제 후 잔여 0건 확인.
+- 참고: 기존 `master-label-bartender-designer.structure.test.mjs`는 다른 작업에서 라벨 디자이너 좌측 필드 추가/수정/삭제 UI를 제거한 상태와 예전 테스트 기대가 맞지 않아 계속 실패한다. 이번 템플릿 선택 출력 변경과 직접 관련 없는 기존 테스트 불일치다.
+- 상태: 완료, lock released.
+
 ## 2026-06-17 10:19 Codex
 
 - 작업: `T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL` 서버 배포 후 `/master/equip-inspect-item` 이미지 링크 깨짐 원인 확인 및 보정.

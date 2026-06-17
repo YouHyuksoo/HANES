@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 화면에 라벨디자인마스터 `jig` 템플릿 선택 Select를 추가하고 선택 템플릿 `designData`를 `LabelPrintRenderer` 출력에 적용, 실제 브라우저 UID 발행 인쇄 HTML 치환 검증 및 검증 데이터 정리 완료 | evidence: JOURNAL 2026-06-17 10:43 Codex
 - T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL | 2026-06-17 | codex | `/master/equip-inspect-item` 배포 이미지 깨짐 원인을 `/uploads` URL 정규화 누락과 gitignore된 점검항목 SVG 미배포로 확인하고 화면/공용 컴포넌트 URL helper 적용 및 deploy 시드 이미지 재생성 단계 추가 | evidence: JOURNAL 2026-06-17 10:19 Codex
 - T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL | 2026-06-17 | codex | `/consumables/label` 배포 이미지 깨짐 원인을 `/uploads` URL 정규화 누락과 gitignore된 소모품 SVG 미배포로 확인하고 URL helper와 deploy 시드 이미지 재생성 단계 추가 | evidence: JOURNAL 2026-06-17 10:07 Codex
 - T-MATERIAL-FLOW-FE-RUNTIME | 2026-06-17 | codex | 자재관리 등록 메뉴 24/24 프론트 QA PASS 및 자재요청 MR2606170035 -> 출고 -> 자재재고 -> 공정재고/키오스크 흐름 JSHANES DB 정합성 확인 | evidence: JOURNAL 2026-06-17 04:12 Codex

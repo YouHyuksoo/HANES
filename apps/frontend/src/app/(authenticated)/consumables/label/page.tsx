@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import {
   Tag, Search, RefreshCw, CheckCircle, Printer,
 } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { api } from "@/services/api";
 import { LabelableMaster, useConLabelColumns } from "./components/ConLabelColumns";
@@ -27,10 +27,15 @@ import {
 import { LabelPrintRenderer } from "../../master/label/components/LabelDesignRenderer";
 
 interface TemplateInfo {
+  templateKey: string;
   templateName: string;
   category: string;
   printMode: string;
+  designData: LabelDesign;
+  isDefault?: boolean;
 }
+
+const DEFAULT_TEMPLATE_KEY = "__default__";
 
 function ConsumableLabelPage() {
   const { t } = useTranslation();
@@ -40,6 +45,8 @@ function ConsumableLabelPage() {
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
   const [qtyMap, setQtyMap] = useState<Map<string, number>>(new Map());
   const [labelDesign, setLabelDesign] = useState<LabelDesign>(() => createDefaultLabelDesign("jig"));
+  const [templates, setTemplates] = useState<TemplateInfo[]>([]);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState(DEFAULT_TEMPLATE_KEY);
   const [template, setTemplate] = useState<TemplateInfo | null>(null);
   const [printing, setPrinting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -60,23 +67,76 @@ function ConsumableLabelPage() {
   const fetchTemplate = useCallback(async () => {
     try {
       const res = await api.get("/master/label-templates", { params: { category: "jig" } });
-      const templates = res.data?.data ?? [];
-      const tpl = templates.find((item: { isDefault: boolean }) => item.isDefault) || templates[0];
-      if (!tpl) return;
-      const rawDesign = typeof tpl.designData === "string" ? JSON.parse(tpl.designData) : tpl.designData;
+      const rawTemplates = res.data?.data ?? [];
+      const nextTemplates: TemplateInfo[] = rawTemplates.map((tpl: {
+        templateKey?: string;
+        templateName: string;
+        category: string;
+        printMode?: string;
+        designData: string | LabelDesign;
+        isDefault?: boolean;
+      }) => {
+        const rawDesign = typeof tpl.designData === "string" ? JSON.parse(tpl.designData) : tpl.designData;
+        return {
+          templateKey: tpl.templateKey ?? `${tpl.templateName}::${tpl.category}`,
+          templateName: tpl.templateName,
+          category: tpl.category,
+          printMode: tpl.printMode ?? "BROWSER",
+          designData: ensureObjectLabelDesign(rawDesign, "jig"),
+          isDefault: tpl.isDefault,
+        };
+      });
+      setTemplates(nextTemplates);
+
+      const tpl = nextTemplates.find((item) => item.isDefault) || nextTemplates[0];
+      if (!tpl) {
+        setSelectedTemplateKey(DEFAULT_TEMPLATE_KEY);
+        setTemplate(null);
+        setLabelDesign(createDefaultLabelDesign("jig"));
+        return;
+      }
+      const rawDesign = tpl.designData;
+      setSelectedTemplateKey(tpl.templateKey);
       setTemplate({
+        templateKey: tpl.templateKey,
         templateName: tpl.templateName,
         category: tpl.category,
-        printMode: tpl.printMode ?? "BROWSER",
+        printMode: tpl.printMode,
+        designData: tpl.designData,
+        isDefault: tpl.isDefault,
       });
       setLabelDesign(ensureObjectLabelDesign(rawDesign, "jig"));
     } catch {
+      setTemplates([]);
+      setSelectedTemplateKey(DEFAULT_TEMPLATE_KEY);
       setTemplate(null);
       setLabelDesign(createDefaultLabelDesign("jig"));
     }
   }, []);
 
   useEffect(() => { fetchTemplate(); }, [fetchTemplate]);
+
+  const templateOptions = useMemo(() => [
+    { value: DEFAULT_TEMPLATE_KEY, label: "기본 디자인" },
+    ...templates.map((tpl) => ({
+      value: tpl.templateKey,
+      label: `${tpl.templateName}${tpl.printMode ? ` / ${tpl.printMode}` : ""}`,
+    })),
+  ], [templates]);
+
+  const handleTemplateChange = useCallback((templateKey: string) => {
+    setSelectedTemplateKey(templateKey);
+    if (templateKey === DEFAULT_TEMPLATE_KEY) {
+      setTemplate(null);
+      setLabelDesign(createDefaultLabelDesign("jig"));
+      return;
+    }
+    const tpl = templates.find((item) => item.templateKey === templateKey);
+    if (!tpl) return;
+    const rawDesign = tpl.designData;
+    setTemplate(tpl);
+    setLabelDesign(ensureObjectLabelDesign(rawDesign, "jig"));
+  }, [templates]);
 
   /** 필터링된 마스터 목록 */
   const filteredMasters = useMemo(() => {
@@ -174,9 +234,14 @@ function ConsumableLabelPage() {
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <span className="hidden xl:inline-flex items-center h-8 px-2.5 rounded border border-border bg-surface text-xs text-text-muted">
-            {template ? `${template.templateName} / ${template.printMode}` : "기본 디자인"}
-          </span>
+          <div className="w-64">
+            <Select
+              options={templateOptions}
+              value={selectedTemplateKey}
+              onChange={handleTemplateChange}
+              fullWidth
+            />
+          </div>
           <Button size="sm" onClick={handleBrowserPrint}
             disabled={selectedCodes.size === 0 || issuing || printing}>
             <Printer className="w-4 h-4 mr-1" />

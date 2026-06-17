@@ -16,6 +16,21 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-CONSUMABLE-LABEL-TEMPLATE-SELECT-PRINT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-template-selection.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/consumables/label` UID 발행 시 라벨디자인마스터 저장 템플릿을 선택해 출력하도록 보정 완료. 템플릿 Select 추가, 선택 템플릿 designData를 LabelPrintRenderer에 적용, 구조 테스트/FE tsc/3013 브라우저 실제 UID 발행 인쇄 HTML 검증 통과.
 - task: T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL
   owner: codex
   files:
