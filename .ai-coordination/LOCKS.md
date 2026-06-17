@@ -16,6 +16,57 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-PO-DATE-TIMEZONE-OFFBYONE
+  owner: claude
+  files:
+    - apps/frontend/src/utils/date.ts
+    - apps/frontend/src/app/(authenticated)/material/po/components/PoFormPanel.tsx
+    - apps/backend/src/modules/material/services/purchase-order.service.ts
+    - apps/backend/src/modules/material/services/po-status.service.ts
+    - (외 frontend 날짜 입력 기본값 파일 다수 — getTodayLocal 적용)
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: PO 일자 off-by-one(UTC) 수정 완료 — getTodayLocal(FE)/parseDateStart·End(BE) 헬퍼 도입, FE 35파일 날짜 입력 기본값 로컬화 + BE PO create/update/조회필터(po-status·purchase-order) 보정. FE/BE tsc 0건. 실동작(오늘 PO 생성→ORDER_DATE 당일) 검증은 사용자 확인 대기.
+
+- task: T-CONSUMABLE-LABEL-REPRINT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/label/components/ConLabelDetailPanel.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs
+    - apps/frontend/src/app/(authenticated)/master/label/components/LabelDesignRenderer.tsx
+    - apps/print-agent/**
+    - tools/print-agent.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 23:14 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/consumables/label` PDF 출력 깨짐 원인은 agent가 아니라 전송 PNG 생성 시 SVG foreignObject 안에서 Tailwind class가 미적용된 것. LabelDesignRenderer 핵심 배치/이미지 스타일 inline 보강 후 전송 PNG 정상 확인.
+
+- task: T-PRINT-AGENT-GO
+  owner: codex
+  files:
+    - apps/print-agent/**
+    - apps/frontend/src/services/print-agent.ts
+    - tools/print-agent.structure.test.mjs
+    - docs/superpowers/plans/2026-06-17-hanes-print-agent.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 21:57 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: Go agent 자체 `/settings` 설정관리 페이지와 트레이 `설정` 메뉴 보강 완료. 포트/기본프린터/origin/token/log 설정은 config 파일과 agent UI에서 관리하며, 포트 변경은 restartRequired로 재시작 필요를 표시.
+
 - task: T-CONSUMABLE-STOCK-DEPLOY-QUERY
   owner: codex
   files:

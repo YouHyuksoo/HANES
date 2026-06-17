@@ -10,6 +10,90 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 23:14 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-REPRINT` Microsoft Print to PDF 결과에서 바코드가 검은 블록/잘림처럼 깨지는 문제 수정.
+- 원인: 미리보기는 브라우저 DOM에서 Tailwind CSS가 적용되어 정상이다. 하지만 agent 전송용 PNG는 `renderLabelNodeToPngBase64()`가 라벨 DOM을 SVG `foreignObject`로 직렬화한 뒤 이미지로 로드해 canvas에 그린다. 이 과정에서는 외부 Tailwind class(`relative`, `absolute`, `w-full`, `h-full`, `object-contain`, `box-border`)가 적용되지 않아 라벨 객체의 절대 배치와 바코드 이미지 맞춤이 풀렸다. 그 결과 agent가 받은 PNG 자체가 이미 바코드 일부만 잘린 상태였다.
+- 실측: Playwright로 agent `/print`를 mock해 실제 전송 PNG를 저장했다. 수정 전 `docs/reports/label-print-debug-2026-06-17/CON-REPRINT-C26061700029.png`는 바코드 일부만 검은 블록처럼 보였고, payload는 `widthMm=10`, `heightMm=10`, `base64Length=2864`였다. 선택 템플릿 `consumable_label`의 저장 크기 자체도 `10x10mm`임을 API로 확인했다.
+- 변경: `LabelDesignRenderer`에 SVG 직렬화 후에도 유지돼야 하는 핵심 스타일을 inline style로 보강했다. 라벨 루트는 `position: relative`, `overflow: hidden`, `boxSizing`, 배경/테두리를 inline으로 갖고, 각 객체는 `position: absolute`, `boxSizing: border-box`를 inline으로 가진다. 바코드/이미지의 `width/height/objectFit: contain/display:block`도 inline으로 넣었다.
+- TDD: `consumable-label-reprint.structure.test.mjs`에 foreignObject 변환용 inline style 요구를 추가했고 RED 실패 확인 후 GREEN 확인.
+- 검증: 수정 후 동일 UID `C26061700029` 재발행 payload를 다시 캡처해 `docs/reports/label-print-debug-2026-06-17/CON-REPRINT-C26061700029-after.png` 저장. 결과 QR 전체와 UID 텍스트가 정상 표시됐고 `base64Length=4488`로 증가했다. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs` PASS, issue-feedback/template-selection 구조 테스트 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `node tools/print-agent.structure.test.mjs` PASS, 관련 diff check PASS.
+- 상태: 구현/검증 완료, REVIEW 유지, lock released. 실제 저장 PDF 파일 생성은 OS `Microsoft Print to PDF` 저장 대화상자 자동화 문제로 수행하지 않았고, 이번 검증은 agent로 전달되는 PNG 원본을 확인했다.
+
+## 2026-06-17 22:48 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-REPRINT` 재발행 전 라벨 미리보기와 바코드 렌더 완료 대기 보강.
+- 원인: 라벨 바코드는 `bwip-js` 동적 import 후 canvas를 PNG data URL로 만드는 비동기 렌더인데, 기존 출력 흐름은 고정 500ms 후 DOM을 복사/캡처했다. 느린 경우 `BAR` placeholder 상태가 출력 PNG나 브라우저 인쇄 HTML에 들어갈 수 있었다.
+- 변경: `ConLabelDetailPanel`의 각 UID 행에 `미리보기` 버튼을 추가하고 `aria-label="${conUid} 라벨 미리보기"`를 부여했다. `/consumables/label` 페이지에는 `previewPrintItem` 상태와 `라벨 미리보기` Modal을 추가해 실제 `LabelDesignRenderer`로 같은 라벨을 출력 전 확인한다.
+- 변경: `LabelDesignRenderer`의 바코드 placeholder에는 `data-label-barcode-pending`, 완료 이미지는 `data-label-barcode-ready`를 부여했다. 출력 전 `waitForLabelRenderReady()`가 pending marker가 사라지고 이미지 로드가 끝날 때까지 대기하며, 시간 초과 시 미리보기 확인 안내 오류를 표시한다. 신규 발행 브라우저 인쇄와 재발행 agent PNG 캡처 모두 이 대기 로직을 거친다.
+- TDD: `consumable-label-reprint.structure.test.mjs`에 미리보기 콜백/버튼/Modal/바코드 pending-ready marker/출력 전 대기 요구를 추가했고, RED 실패 확인 후 구현해 GREEN 확인.
+- Playwright 검증: `http://localhost:3002/consumables/label`에서 UID `C26061700029` 기준 `라벨 미리보기` 버튼 클릭. 모달 표시, UID 표시, `data-label-barcode-ready` 1개, `data-label-barcode-pending` 0개 확인. 모달 닫은 뒤 `라벨 재발행` 클릭 시 popup 0, agent `/print` 1회, `jobId=CON-REPRINT-C26061700029`, `format=png`, `contentBase64Length=2864`, 상태 문구 `agent로 전송했습니다`, console/page error 0.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs` PASS. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs` PASS. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-template-selection.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- 상태: 구현/검증 완료, REVIEW 유지, lock released. Playwright에서는 OS 저장 대화상자를 피하려고 agent `/print`를 mock했다.
+
+## 2026-06-17 22:22 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-REPRINT` 재발행 출력 방식을 예전 웹 인쇄에서 print-agent 방식으로 전환.
+- 원인: `ConLabelDetailPanel`의 `재발행` 버튼은 보이도록 보정됐지만, 부모 `handleReprintLabel()`이 여전히 `window.open("", "_blank")`로 팝업을 열고 팝업 HTML 안에서 `window.print()`를 호출했다. 그래서 사용자가 본 것처럼 예전 웹 인쇄 다이얼로그 방식으로 동작했다.
+- 변경: `page.tsx`에 `printAgentPng` 연동과 `renderLabelNodeToPngBase64()` 헬퍼를 추가했다. 재발행 시 기존 `conUid`로 `activePrintItems`를 렌더링한 뒤 숨겨진 `LabelPrintRenderer` 첫 라벨 DOM을 SVG foreignObject -> canvas PNG base64로 변환하고, `POST http://127.0.0.1:37111/print` payload로 전송한다. 재발행 핸들러에서 `window.open`/`window.print` 경로는 제거했다.
+- 기록: 백엔드 `LabelPrintDto.printMode` enum은 현재 `BROWSER/ZPL_USB/ZPL_TCP`만 허용하므로 서버 enum 변경 없이 기존 `logBrowserPrint()`를 유지해 print-log는 계속 `printMode=BROWSER`로 남긴다. 실제 출력 경로는 agent다.
+- TDD: `consumable-label-reprint.structure.test.mjs`에 `printAgentPng`, `renderLabelNodeToPngBase64`, 재발행 핸들러 내 `window.open/window.print` 금지 조건을 추가했다. RED 실패 확인 후 구현했고 GREEN 확인.
+- Playwright 검증: `http://localhost:3002/consumables/label`에서 `C26061700029 라벨 재발행` 클릭. agent 요청은 저장 대화상자를 피하려고 `http://127.0.0.1:37111/print`를 route mock 처리했다. 결과 popup count 0, agent `/print` 1회, `jobId=CON-REPRINT-C26061700029`, `format=png`, `contentBase64Length=2864`, `/consumables/label/create` 요청 0건, `/material/label-print/log` POST 201, 상태 문구 `C26061700029 라벨을 agent로 전송했습니다.`, console/page error 0.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs` PASS. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-template-selection.structure.test.mjs` PASS. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 관련 파일 `git diff --check` PASS.
+- 상태: 구현/검증 완료, REVIEW 유지, lock released. 실제 OS 프린터 큐까지 보내는 검증은 이전 agent `/print` 테스트에서 `Microsoft Print to PDF queued`로 확인했고, 이번 Playwright는 agent 호출을 mock했다.
+
+## 2026-06-17 22:10 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-REPRINT` 재발행 버튼 가시성 보정 및 Playwright 재검증.
+- 원인: 기존 우측 상세 패널은 420px 폭 안에 UID/상태/위치/사용횟수/입고일/재발행 6컬럼 테이블을 넣어 `재발행` 버튼이 사용자에게 잘리거나 없는 것처럼 보일 수 있었다.
+- 변경: `ConLabelDetailPanel.tsx`의 미입고 UID 목록을 테이블에서 리스트형 행으로 바꿨다. 각 행은 UID/상태/위치와 사용횟수/입고일을 표시하고, `재발행` 버튼은 행 우측 `shrink-0` 영역에 고정했다. 버튼에는 `aria-label="${conUid} 라벨 재발행"`을 부여해 Playwright와 접근성 이름으로 직접 찾을 수 있게 했다.
+- TDD: `consumable-label-reprint.structure.test.mjs`에 420px 패널에서 넓은 테이블 구조를 금지하고 UID별 재발행 버튼 접근성 이름을 요구하는 RED 테스트를 추가했다. RED 실패 확인 후 구현했고 GREEN 확인.
+- Playwright 검증: `http://localhost:3002/consumables/label`에서 `C26061700029 라벨 재발행` 버튼을 찾았다. `buttonBox={x:1313,y:223,width:102,height:36}`, `panelBox={x:1020,y:100,width:420,height:800}`로 버튼이 패널 내부임을 확인했다. 클릭 후 출력 팝업 HTML에 `C26061700029`와 `window.print` 포함, `/consumables/label/create` 요청 0건, `/material/label-print/log` POST 201, 상태 문구 `C26061700029 라벨 재발행 인쇄 다이얼로그를 호출했습니다.` 확인. console/page error 0.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs` PASS. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-template-selection.structure.test.mjs` PASS. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 관련 tracked 파일 `git diff --check` PASS.
+- 상태: 구현/검증 완료, REVIEW 유지, lock released. `ConLabelDetailPanel.tsx`와 재발행 구조 테스트는 아직 git 기준 untracked 파일이다.
+
+## 2026-06-17 21:57 Codex
+
+- 작업: `T-PRINT-AGENT-GO` agent 자체 설정관리 보강.
+- 결정: agent 운영 설정의 주인은 웹 MES가 아니라 agent 자체로 둔다. `D-20260617-PRINT-AGENT-OWNS-CONFIG` 기록.
+- 변경: `GET /settings` 로컬 HTML 설정관리 화면 추가. 화면에서 `/health`, `/config`, `/printers`를 조회하고 `/config` 저장, `/test-print` 실행을 처리한다. 설정 항목은 `listenAddress`, 기본 프린터, 허용 Origin, token 변경/제거, 최대 payload bytes, 로그 폴더다.
+- 변경: `/config` 응답에 `configPath`, `effectiveListenAddress`, `restartRequired`를 추가했다. `listenAddress` 변경은 실행 중 서버 포트를 즉시 바꾸지 않고 재시작 필요로 표시한다. 기존 token은 `clearToken=true`가 아니면 빈 POST로 지워지지 않도록 보존한다.
+- 변경: Windows tray 메뉴에 `설정`을 추가하고 `ShellExecuteW`로 `http://<listenAddress>/settings`를 기본 브라우저에서 열도록 했다. 상태 보기에는 설정 URL도 표시한다.
+- 보정: `/test-print` 내장 PNG가 `invalid checksum`으로 실패하던 문제를 런타임 PNG 생성 방식으로 바꿔 수정했다.
+- 실측: 새 빌드로 agent를 재시작했다. 현재 PID `42964`, 경로 `C:\Project\HANES\apps\print-agent\dist\hanes-print-agent.exe`. `GET http://127.0.0.1:37111/settings` HTTP 200, 본문 `HANES Print Agent 설정` 포함. `/config`는 기본 프린터 `Microsoft Print to PDF`, `effectiveListenAddress=127.0.0.1:37111`, `restartRequired=false` 반환.
+- 실측: `/config` POST로 기본 프린터 `Microsoft Print to PDF` 저장 후 `C:\Users\hsyou\AppData\Roaming\HANES\print-agent\config.json` 반영 확인. printerName 없이 `/test-print` POST 호출 결과 `HANES-TEST-PRINT`, `Microsoft Print to PDF`, `queued` 성공 및 로그 기록 확인.
+- 실측: `listenAddress=127.0.0.1:37112` 임시 저장 시 `effectiveListenAddress=127.0.0.1:37111`, `restartRequired=true` 확인 후 `127.0.0.1:37111`로 복구해 `restartRequired=false` 확인.
+- 검증: `node tools/print-agent.structure.test.mjs` PASS. `C:\go\bin\go.exe test ./...` PASS. `C:\go\bin\go.exe build -o dist\hanes-print-agent-new.exe .\cmd\hanes-print-agent` PASS. 관련 파일 `git diff --check` PASS.
+- 상태: 구현/검증 완료, REVIEW 유지, lock released. 트레이 `설정` 메뉴 실제 마우스 클릭과 Zebra 실출력은 미검증.
+
+## 2026-06-17 21:28 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-REPRINT` `/consumables/label` 기발행 소모품 UID 재발행.
+- 변경: 우측 `ConLabelDetailPanel`의 PENDING UID 목록에 `재발행` 버튼을 추가하고, 부모 페이지에서 `handleReprintLabel()`을 통해 기존 `conUid`를 그대로 `LabelPrintRenderer`에 전달하도록 했다. 신규 발행과 재발행 출력 데이터는 `activePrintItems`로 공통화했다.
+- 보장: 재발행은 `createConUids()`나 `/consumables/label/create`를 호출하지 않고, 기존 UID로 출력 팝업을 열어 `window.print()`를 호출한 뒤 `/material/label-print/log`에 `uidList`를 남긴다.
+- 런타임 검증: `http://localhost:3002/consumables/label`에서 `APPCT-A`의 기발행 UID `C26061700029` 행 `재발행` 클릭. 출력 팝업 HTML에 `C26061700029`와 `window.print` 포함, 클릭 이후 `/consumables/label/create` 요청 0건, `/material/label-print/log` POST payload `{"category":"con_uid","printMode":"BROWSER","uidList":["C26061700029"],"labelCount":1,"status":"SUCCESS"}` 응답 201, 화면 상태 문구 `C26061700029 라벨 재발행 인쇄 다이얼로그를 호출했습니다.` 확인.
+- 검증: `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs` PASS. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs` PASS. `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-template-selection.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 관련 파일 `git diff --check` PASS.
+- 상태: 구현/검증 완료, REVIEW 유지, lock released. 실제 Zebra 물리 출력은 현재 PC에 Zebra 프린터가 없어 미검증.
+
+## 2026-06-17 21:18 Codex
+
+- 작업: `T-PRINT-AGENT-GO` Windows 트레이 상주 모드 추가.
+- 변경: `cmd/hanes-print-agent/main.go`가 플랫폼별 `runAgent()`로 실행을 위임하도록 변경했다. Windows 실행 경로는 `http.Server`를 goroutine으로 띄우고 `internal/tray`의 Win32 message loop를 실행한다. 비-Windows는 기존 HTTP-only 실행을 유지한다.
+- 트레이: `internal/tray/tray_windows.go` 추가. `Shell_NotifyIconW`로 시스템 트레이 아이콘을 등록하고, 우클릭 시 `TrackPopupMenu`로 `상태 보기`, `프린터 보기`, `종료` 메뉴를 표시한다. 상태/프린터 결과는 `MessageBoxW`로 보여주며, 종료 메뉴는 hidden window destroy 후 message loop를 종료하고 HTTP server shutdown을 호출한다.
+- 검증: `node tools/print-agent.structure.test.mjs` PASS. `C:\go\bin\go.exe test ./...` PASS. `C:\go\bin\go.exe build -o dist\hanes-print-agent.exe .\cmd\hanes-print-agent` PASS. 빌드된 exe 실행 후 `/health` true, `/printers` 2건(`OneNote(데스크톱) - 보호됨`, `Microsoft Print to PDF`) 확인 후 프로세스 종료.
+- 남은 검증: 현재 자동화로 트레이 우클릭 메뉴 육안 클릭은 확인하지 못했다. 현재 PC에 Zebra 프린터가 잡혀 있지 않아 실제 Zebra 출력도 미검증.
+- 상태: 구현 완료, REVIEW 유지, lock released.
+
+## 2026-06-17 20:58 Codex
+
+- 작업: `T-PRINT-AGENT-GO` Go 기반 HANES 로컬 프린트 에이전트 1차 추가.
+- 설계: 웹이 라벨을 PNG로 사전 렌더링하고 `http://127.0.0.1:37111` agent로 전송한다. Agent는 라벨 디자인을 해석하지 않고 Windows 프린터 드라이버에 이미지를 전달한다.
+- 변경: `apps/print-agent` Go 앱 추가. `GET /health`, `GET /printers`, `GET/POST /config`, `POST /print`, `POST /test-print`를 제공한다. 설정은 사용자 config dir의 `HANES/print-agent/config.json`, 로그는 일자별 jsonl에 기록한다. Windows 구현은 `winspool.drv`로 프린터 목록을 조회하고 `gdi32.dll` printer DC에 PNG를 `StretchDIBits`로 그리는 방식이다. 비-Windows는 명시적 unsupported stub이다.
+- 프론트: `apps/frontend/src/services/print-agent.ts`에 `checkPrintAgent`, `getPrintAgentPrinters`, `getPrintAgentConfig`, `savePrintAgentConfig`, `printAgentPng` 클라이언트를 추가했다.
+- 테스트: TDD 순서로 `tools/print-agent.structure.test.mjs`를 먼저 추가하고 누락 파일 실패를 확인한 뒤 구현했다.
+- 검증: `node tools/print-agent.structure.test.mjs` PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. `C:\go\bin\go.exe test ./...` PASS. `C:\go\bin\go.exe build -o dist\hanes-print-agent.exe .\cmd\hanes-print-agent` PASS. 빌드된 exe를 실행해 `/health` true, `/printers` 2건(`OneNote(데스크톱) - 보호됨`, `Microsoft Print to PDF`) 확인 후 프로세스 종료.
+- 상태: 구현 1차 완료, 현재 PC에 Zebra 프린터가 잡혀 있지 않아 실제 Zebra 라벨 출력은 미검증. `TASKS.md`는 REVIEW 유지, lock released.
+
 ## 2026-06-17 15:28 Codex
 
 - 작업: `T-CONSUMABLE-STOCK-DEPLOY-QUERY` `/consumables/stock` 배포 서버 재고현황 조회 빈 화면 복구.

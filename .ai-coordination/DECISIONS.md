@@ -13,6 +13,16 @@ Reason:
 - Reason text
 ```
 
+## D-20260617-PRINT-AGENT-OWNS-CONFIG
+Status: Accepted
+Decision:
+- HANES Print Agent의 운영 설정 주인은 웹 MES 화면이 아니라 agent 자체로 둔다.
+- Agent는 사용자 설정 파일 `HANES/print-agent/config.json`을 읽고 저장하며, `GET /settings` 로컬 설정관리 화면과 트레이 `설정` 메뉴를 제공한다.
+- `listenAddress` 변경은 실행 중 포트를 즉시 바꾸지 않고 설정 파일에 저장한 뒤 `restartRequired=true`로 재시작 필요를 알린다.
+Reason:
+- Agent는 웹보다 먼저 실행되어야 하며 포트, 기본 프린터, 허용 Origin, token, 로그 경로는 agent 런타임 책임이다.
+- 웹 화면 설정만으로 관리하면 agent 미실행/포트 변경/보안 token 같은 부트스트랩 설정을 안정적으로 다룰 수 없다.
+
 ## D-20260613-SQL-DEBUG-GLOBAL
 Status: Accepted
 Decision:

@@ -15,17 +15,19 @@ import toast from "react-hot-toast";
 import {
   Tag, Search, RefreshCw, Printer,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { api } from "@/services/api";
+import { printAgentPng } from "@/services/print-agent";
 import { LabelableMaster, useConLabelColumns } from "./components/ConLabelColumns";
 import { useConLabelIssue } from "./components/useConLabelIssue";
+import ConLabelDetailPanel, { InstanceItem } from "./components/ConLabelDetailPanel";
 import {
   LabelDesign,
   createDefaultLabelDesign,
   ensureObjectLabelDesign,
 } from "../../master/label/types";
-import { LabelPrintRenderer } from "../../master/label/components/LabelDesignRenderer";
+import { LabelDesignRenderer, LabelPrintRenderer } from "../../master/label/components/LabelDesignRenderer";
 
 interface TemplateInfo {
   templateKey: string;
@@ -41,7 +43,80 @@ interface IssueStatus {
   message: string;
 }
 
+interface PrintItem {
+  key: string;
+  data: Record<string, unknown>;
+}
+
 const DEFAULT_TEMPLATE_KEY = "__default__";
+const SVG_NS = "http://www.w3.org/2000/svg";
+const XHTML_NS = "http://www.w3.org/1999/xhtml";
+const CSS_PX_PER_MM = 96 / 25.4;
+const AGENT_PRINT_SCALE = 3;
+
+function dataUrlPayload(dataUrl: string): string {
+  return dataUrl.split(",")[1] ?? "";
+}
+
+async function waitForLabelImages(root: HTMLElement): Promise<void> {
+  const images = Array.from(root.querySelectorAll("img"));
+  await Promise.all(images.map((img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      const done = () => resolve();
+      img.addEventListener("load", done, { once: true });
+      img.addEventListener("error", done, { once: true });
+      window.setTimeout(done, 800);
+    });
+  }));
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function waitForLabelRenderReady(root: HTMLElement): Promise<void> {
+  const deadline = Date.now() + 2500;
+  while (Date.now() < deadline) {
+    if (!root.querySelector("[data-label-barcode-pending='true']")) {
+      await waitForLabelImages(root);
+      if (!root.querySelector("[data-label-barcode-pending='true']")) return;
+    }
+    await wait(50);
+  }
+  throw new Error("바코드 생성이 완료되지 않았습니다. 미리보기에서 라벨을 확인한 뒤 다시 출력하세요.");
+}
+
+async function renderLabelNodeToPngBase64(node: HTMLElement, widthMm: number, heightMm: number): Promise<string> {
+  await waitForLabelRenderReady(node);
+  const widthPx = Math.max(1, Math.round(widthMm * CSS_PX_PER_MM));
+  const heightPx = Math.max(1, Math.round(heightMm * CSS_PX_PER_MM));
+  const clone = node.cloneNode(true) as HTMLElement;
+  clone.setAttribute("xmlns", XHTML_NS);
+  clone.style.margin = "0";
+
+  const serialized = new XMLSerializer().serializeToString(clone);
+  const svg = `<svg xmlns="${SVG_NS}" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
+    <foreignObject width="100%" height="100%">${serialized}</foreignObject>
+  </svg>`;
+  const image = new Image();
+  const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("라벨 이미지를 PNG로 변환하지 못했습니다."));
+    image.src = svgUrl;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = widthPx * AGENT_PRINT_SCALE;
+  canvas.height = heightPx * AGENT_PRINT_SCALE;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("라벨 출력용 canvas를 생성하지 못했습니다.");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return dataUrlPayload(canvas.toDataURL("image/png"));
+}
 
 function ConsumableLabelPage() {
   const { t } = useTranslation();
@@ -57,6 +132,9 @@ function ConsumableLabelPage() {
   const [template, setTemplate] = useState<TemplateInfo | null>(null);
   const [issueStatus, setIssueStatus] = useState<IssueStatus | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [detailMaster, setDetailMaster] = useState<LabelableMaster | null>(null);
+  const [activePrintItems, setActivePrintItems] = useState<PrintItem[]>([]);
+  const [previewPrintItem, setPreviewPrintItem] = useState<PrintItem | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   /** 마스터 목록 조회 */
@@ -71,6 +149,12 @@ function ConsumableLabelPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (masters.length > 0 && !detailMaster) {
+      setDetailMaster(masters[0]);
+    }
+  }, [masters, detailMaster]);
 
   const fetchTemplate = useCallback(async () => {
     try {
@@ -249,6 +333,19 @@ function ConsumableLabelPage() {
       return;
     }
     const conUids = created.map((c) => c.conUid);
+    setActivePrintItems(created.map((item) => ({
+      key: item.conUid,
+      data: {
+        conUid: item.conUid,
+        consumableCode: item.consumableCode,
+        consumableName: item.consumableName,
+        category: item.category ?? "",
+        imageUrl: item.imageUrl ?? "",
+        stockQty: item.stockQty ?? "",
+        expectedLife: item.expectedLife ?? "",
+        location: item.location ?? "",
+      },
+    })));
 
     setPrinting(true);
     setIssueStatus({
@@ -266,117 +363,233 @@ function ConsumableLabelPage() {
         });
         return;
       }
-      printWin.document.open();
-      printWin.document.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
-        <style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#fff}.label-grid{display:flex;flex-wrap:wrap;gap:0;padding:0}
-        img{max-width:100%;max-height:100%}@page{size:${labelDesign.labelWidth}mm ${labelDesign.labelHeight}mm;margin:0}</style>
-        </head><body><div class="label-grid">${printRef.current.innerHTML}</div>
-        <script>
-          window.onload = () => {
-            window.focus();
-            window.setTimeout(() => window.print(), 150);
-          };
-        <\/script></body></html>`);
-      printWin.document.close();
-      await logBrowserPrint(conUids);
-      setPrinting(false);
-      setSelectedCodes(new Set());
-      toast.success(`${conUids.length}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.`, { id: loadingToast });
-      setIssueStatus({
-        type: "success",
-        message: `${conUids.length}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.`,
-      });
-      clearCreatedUids();
-      fetchData();
+      try {
+        await waitForLabelRenderReady(printRef.current);
+        printWin.document.open();
+        printWin.document.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
+          <style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#fff}.label-grid{display:flex;flex-wrap:wrap;gap:0;padding:0}
+          img{max-width:100%;max-height:100%}@page{size:${labelDesign.labelWidth}mm ${labelDesign.labelHeight}mm;margin:0}</style>
+          </head><body><div class="label-grid">${printRef.current.innerHTML}</div>
+          <script>
+            window.onload = () => {
+              window.focus();
+              window.setTimeout(() => window.print(), 150);
+            };
+          <\/script></body></html>`);
+        printWin.document.close();
+        await logBrowserPrint(conUids);
+        setPrinting(false);
+        setSelectedCodes(new Set());
+        toast.success(`${conUids.length}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.`, { id: loadingToast });
+        setIssueStatus({
+          type: "success",
+          message: `${conUids.length}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.`,
+        });
+        clearCreatedUids();
+        setActivePrintItems([]);
+        fetchData();
+      } catch (err) {
+        const message = err instanceof Error && err.message ? err.message : "라벨 출력 화면을 준비하지 못했습니다.";
+        setPrinting(false);
+        setActivePrintItems([]);
+        if (!printWin.closed) printWin.close();
+        toast.error(message, { id: loadingToast });
+        setIssueStatus({ type: "error", message });
+      }
     }, 500);
   }, [selectedCodes, createConUids, t, labelDesign.labelHeight, labelDesign.labelWidth, logBrowserPrint, fetchData, clearCreatedUids]);
 
-  const printItems = useMemo(() => createdUids.map((item) => ({
-    key: item.conUid,
-    data: {
-      conUid: item.conUid,
-      consumableCode: item.consumableCode,
-      consumableName: item.consumableName,
-      category: item.category ?? "",
-      imageUrl: item.imageUrl ?? "",
-      stockQty: item.stockQty ?? "",
-      expectedLife: item.expectedLife ?? "",
-      location: item.location ?? "",
-    },
-  })), [createdUids]);
+  const handlePreviewLabel = useCallback((instance: InstanceItem) => {
+    if (!detailMaster) return;
+
+    setPreviewPrintItem({
+      key: instance.conUid,
+      data: {
+        conUid: instance.conUid,
+        consumableCode: instance.consumableCode,
+        consumableName: instance.consumableName,
+        category: detailMaster.category ?? "",
+        imageUrl: detailMaster.imageUrl ?? "",
+        stockQty: detailMaster.stockQty ?? "",
+        expectedLife: instance.expectedLife ?? detailMaster.expectedLife ?? "",
+        location: instance.location ?? detailMaster.location ?? "",
+      },
+    });
+  }, [detailMaster]);
+
+  const handleReprintLabel = useCallback(async (instance: InstanceItem) => {
+    if (!detailMaster) return;
+
+    setActivePrintItems([{
+      key: instance.conUid,
+      data: {
+        conUid: instance.conUid,
+        consumableCode: instance.consumableCode,
+        consumableName: instance.consumableName,
+        category: detailMaster.category ?? "",
+        imageUrl: detailMaster.imageUrl ?? "",
+        stockQty: detailMaster.stockQty ?? "",
+        expectedLife: instance.expectedLife ?? detailMaster.expectedLife ?? "",
+        location: instance.location ?? detailMaster.location ?? "",
+      },
+    }]);
+    setPrinting(true);
+    const loadingToast = toast.loading(`${instance.conUid} 라벨을 agent로 전송 준비 중입니다.`);
+    setIssueStatus({
+      type: "loading",
+      message: `${instance.conUid} 라벨을 agent로 전송 준비 중입니다.`,
+    });
+
+    setTimeout(async () => {
+      const labelNode = printRef.current?.firstElementChild;
+      if (!(labelNode instanceof HTMLElement)) {
+        setPrinting(false);
+        setActivePrintItems([]);
+        toast.error("라벨 출력 화면을 준비하지 못했습니다.", { id: loadingToast });
+        setIssueStatus({
+          type: "error",
+          message: "라벨 출력 화면을 준비하지 못했습니다.",
+        });
+        return;
+      }
+
+      try {
+        const contentBase64 = await renderLabelNodeToPngBase64(labelNode, labelDesign.labelWidth, labelDesign.labelHeight);
+        await printAgentPng({
+          jobId: `CON-REPRINT-${instance.conUid}`,
+          widthMm: labelDesign.labelWidth,
+          heightMm: labelDesign.labelHeight,
+          copies: 1,
+          contentBase64,
+        });
+        await logBrowserPrint([instance.conUid]);
+        setPrinting(false);
+        setActivePrintItems([]);
+        toast.success(`${instance.conUid} 라벨을 agent로 전송했습니다.`, { id: loadingToast });
+        setIssueStatus({
+          type: "success",
+          message: `${instance.conUid} 라벨을 agent로 전송했습니다.`,
+        });
+      } catch (err) {
+        const message = err instanceof Error && err.message ? err.message : "agent 출력 중 오류가 발생했습니다.";
+        setPrinting(false);
+        setActivePrintItems([]);
+        toast.error(message, { id: loadingToast });
+        setIssueStatus({ type: "error", message });
+      }
+    }, 500);
+  }, [detailMaster, labelDesign.labelHeight, labelDesign.labelWidth, logBrowserPrint]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      {/* 헤더 */}
-      <div className="flex justify-between items-center flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Tag className="w-7 h-7 text-primary" />{t("consumables.label.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("consumables.label.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            role="status"
-            aria-live="polite"
-            className={`h-9 w-80 min-w-0 flex items-center justify-end truncate text-xs ${
-              issueStatus?.type === "error"
-                ? "text-red-500"
-                : issueStatus?.type === "success"
-                  ? "text-emerald-500"
-                  : "text-text-muted"
-            }`}
-            title={issueStatus?.message ?? ""}
-          >
-            <span className="truncate">
-              {issueStatus?.message ?? (selectedCodes.size > 0 ? `${selectedCodes.size}건 선택됨` : "")}
-            </span>
+    <div className="flex h-full animate-fade-in">
+      {/* 좌측: 메인 콘텐츠 */}
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        {/* 헤더 */}
+        <div className="flex justify-between items-center shrink-0">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <Tag className="w-7 h-7 text-primary" />{t("consumables.label.title")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("consumables.label.subtitle")}</p>
           </div>
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-          </Button>
-          <div className="w-64">
-            <Select
-              options={templateOptions}
-              value={selectedTemplateKey}
-              onChange={handleTemplateChange}
-              fullWidth
-            />
+          <div className="flex items-center gap-2">
+            <div
+              role="status"
+              aria-live="polite"
+              className={`h-9 w-80 min-w-0 flex items-center justify-end truncate text-xs ${
+                issueStatus?.type === "error"
+                  ? "text-red-500"
+                  : issueStatus?.type === "success"
+                    ? "text-emerald-500"
+                    : "text-text-muted"
+              }`}
+              title={issueStatus?.message ?? ""}
+            >
+              <span className="truncate">
+                {issueStatus?.message ?? (selectedCodes.size > 0 ? `${selectedCodes.size}건 선택됨` : "")}
+              </span>
+            </div>
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
+            <div className="w-64">
+              <Select
+                options={templateOptions}
+                value={selectedTemplateKey}
+                onChange={handleTemplateChange}
+                fullWidth
+              />
+            </div>
+            <Button size="sm" onClick={handleBrowserPrint}
+              disabled={selectedCodes.size === 0 || issuing || printing}>
+              <Printer className="w-4 h-4 mr-1" />
+              {printing ? "출력중" : issuing ? t("consumables.label.issuing") : t("consumables.label.issueBtn")}
+            </Button>
           </div>
-          <Button size="sm" onClick={handleBrowserPrint}
-            disabled={selectedCodes.size === 0 || issuing || printing}>
-            <Printer className="w-4 h-4 mr-1" />
-            {printing ? "출력중" : issuing ? t("consumables.label.issuing") : t("consumables.label.issueBtn")}
-          </Button>
         </div>
+
+        {/* DataGrid */}
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid data={filteredMasters} columns={columns} isLoading={loading || issuing}
+            onRowClick={(row) => setDetailMaster(row)}
+            enableColumnFilter enableExport exportFileName={t("consumables.label.title")}
+            toolbarLeft={
+              <div className="flex items-center gap-2">
+                <div className="w-72">
+                  <Input placeholder={t("consumables.label.searchPlaceholder")}
+                    value={searchText} onChange={(e) => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />} />
+                </div>
+                <div className="w-44">
+                  <Select
+                    aria-label="카테고리 필터"
+                    options={categoryFilterOptions}
+                    value={categoryFilter}
+                    onChange={handleCategoryFilterChange}
+                    fullWidth
+                  />
+                </div>
+              </div>
+            }
+            sqlQuery={`SELECT *\nFROM CON_LABELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        </CardContent></Card>
+
+        <LabelPrintRenderer ref={printRef} items={activePrintItems} design={labelDesign} visible={printing} />
       </div>
 
-      {/* DataGrid */}
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={filteredMasters} columns={columns} isLoading={loading || issuing}
-          enableColumnFilter enableExport exportFileName={t("consumables.label.title")}
-          toolbarLeft={
-            <div className="flex items-center gap-2">
-              <div className="w-72">
-                <Input placeholder={t("consumables.label.searchPlaceholder")}
-                  value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />} />
-              </div>
-              <div className="w-44">
-                <Select
-                  aria-label="카테고리 필터"
-                  options={categoryFilterOptions}
-                  value={categoryFilter}
-                  onChange={handleCategoryFilterChange}
-                  fullWidth
-                />
-              </div>
-            </div>
-          } 
-          sqlQuery={`SELECT *\nFROM CON_LABELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
+      {/* 우측: 상세 패널 */}
+      {detailMaster && (
+        <ConLabelDetailPanel
+          master={detailMaster}
+          onClose={() => setDetailMaster(null)}
+          onReprint={handleReprintLabel}
+          onPreview={handlePreviewLabel}
+        />
+      )}
 
-      <LabelPrintRenderer ref={printRef} items={printItems} design={labelDesign} visible={printing} />
+      <Modal
+        isOpen={!!previewPrintItem}
+        onClose={() => setPreviewPrintItem(null)}
+        title="라벨 미리보기"
+        size="md"
+        footer={(
+          <Button variant="secondary" onClick={() => setPreviewPrintItem(null)}>
+            {t("common.close")}
+          </Button>
+        )}
+      >
+        {previewPrintItem && (
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-full text-xs text-text-muted">
+              <span className="font-mono text-text">{previewPrintItem.key}</span>
+              <span className="ml-2">출력 전 바코드와 라벨 배치를 확인합니다.</span>
+            </div>
+            <div className="max-w-full overflow-auto rounded-md border border-border bg-white p-4">
+              <LabelDesignRenderer design={labelDesign} data={previewPrintItem.data} unit="px" scale={10} />
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

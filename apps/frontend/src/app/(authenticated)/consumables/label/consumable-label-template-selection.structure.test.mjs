@@ -13,4 +13,4 @@ assert.match(page, /templateOptions/, "템플릿 선택 Select 옵션을 구성�
 assert.match(page, /handleTemplateChange/, "템플릿 선택 변경 시 designData를 labelDesign에 적용해야 합니다.");
 assert.match(page, /<Select[\s\S]*value=\{selectedTemplateKey\}[\s\S]*onChange=\{handleTemplateChange\}/, "UID 발행 화면에서 라벨 템플릿을 선택할 수 있어야 합니다.");
 assert.match(page, /setLabelDesign\(ensureObjectLabelDesign\(rawDesign, "jig"\)\)/, "선택된 템플릿의 designData를 공통 출력 렌더러에 전달해야 합니다.");
-assert.match(page, /<LabelPrintRenderer ref=\{printRef\} items=\{printItems\} design=\{labelDesign\}/, "UID 발행 인쇄는 선택된 labelDesign으로 출력해야 합니다.");
+assert.match(page, /<LabelPrintRenderer ref=\{printRef\} items=\{activePrintItems\} design=\{labelDesign\}/, "UID 발행/재발행 인쇄는 선택된 labelDesign으로 출력해야 합니다.");

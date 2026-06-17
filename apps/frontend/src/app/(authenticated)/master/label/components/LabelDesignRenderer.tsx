@@ -28,6 +28,24 @@ const barcodeMap: Record<BarcodeFormat, string> = {
   code128: "code128",
 };
 
+const fitImageStyle = {
+  display: "block",
+  width: "100%",
+  height: "100%",
+  objectFit: "contain",
+} as const;
+
+const placeholderStyle = {
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#f1f5f9",
+  color: "#94a3b8",
+  fontSize: "10px",
+} as const;
+
 function cssSize(value: number, unit: RenderUnit, scale: number) {
   return unit === "mm" ? `${value}mm` : `${value * scale}px`;
 }
@@ -72,13 +90,17 @@ function BarcodeImage({ value, format }: { value: string; format: BarcodeFormat 
 
   if (!src) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-[10px] text-slate-400">
+      <div
+        data-label-barcode-pending="true"
+        className="w-full h-full flex items-center justify-center bg-slate-100 text-[10px] text-slate-400"
+        style={placeholderStyle}
+      >
         BAR
       </div>
     );
   }
 
-  return <img src={src} alt="" className="block w-full h-full object-contain" />;
+  return <img data-label-barcode-ready="true" src={src} alt="" className="block w-full h-full object-contain" style={fitImageStyle} />;
 }
 
 function renderElementContent(element: LabelElement, data?: Record<string, unknown>) {
@@ -94,8 +116,8 @@ function renderElementContent(element: LabelElement, data?: Record<string, unkno
 
   if (element.type === "image") {
     const src = resolveBackendFileUrl(resolveLabelValue(data, element.sourceField, element.imageUrl ?? ""));
-    if (!src) return <div className="w-full h-full bg-slate-100 text-slate-400 flex items-center justify-center">IMG</div>;
-    return <img src={src} alt="" className="block w-full h-full object-contain" />;
+    if (!src) return <div className="w-full h-full bg-slate-100 text-slate-400 flex items-center justify-center" style={placeholderStyle}>IMG</div>;
+    return <img src={src} alt="" className="block w-full h-full object-contain" style={fitImageStyle} />;
   }
 
   return null;
@@ -132,8 +154,13 @@ export function LabelDesignRenderer({
     <div
       className="relative bg-white overflow-hidden border border-slate-400"
       style={{
+        position: "relative",
         width: cssSize(design.labelWidth, unit, scale),
         height: cssSize(design.labelHeight, unit, scale),
+        background: "#ffffff",
+        overflow: "hidden",
+        border: "1px solid #94a3b8",
+        boxSizing: "border-box",
         color: "#111827",
         fontFamily: 'Arial, "Malgun Gothic", sans-serif',
       }}
@@ -141,6 +168,8 @@ export function LabelDesignRenderer({
       {elements.map((element) => {
         const selected = selectedId === element.id;
         const commonStyle = {
+          position: "absolute" as const,
+          boxSizing: "border-box" as const,
           left: cssSize(element.x, unit, scale),
           top: cssSize(element.y, unit, scale),
           width: cssSize(element.width, unit, scale),

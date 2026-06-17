@@ -2,11 +2,14 @@
 
 ## Last Update
 
-2026-06-17 15:28
+2026-06-17 23:14
 
 ## In Review
 
-- 없음.
+- `T-CONSUMABLE-LABEL-REPRINT`: 재발행 전 미리보기와 바코드 렌더 완료 대기까지 보강했다. 각 UID 행에 `미리보기` 버튼이 추가됐고, Modal 안에서 실제 `LabelDesignRenderer`로 같은 라벨을 본다. `LabelDesignRenderer`는 바코드 placeholder에 `data-label-barcode-pending`, 완료 이미지에 `data-label-barcode-ready`를 표시하며, 신규 발행 브라우저 인쇄와 재발행 agent PNG 캡처는 `waitForLabelRenderReady()`를 거쳐 pending이 사라지고 이미지 로드가 끝난 뒤에만 진행한다. Playwright에서 `C26061700029` 미리보기 모달 ready barcode 1/pending 0, UID 표시 true, 재발행 popup 0, agent `/print` 1회(`jobId=CON-REPRINT-C26061700029`, `contentBase64Length=2864`) 확인. 구조 테스트 3개와 FE tsc PASS. Playwright에서는 OS 저장 대화상자를 피하려고 agent `/print`를 mock했고, 실제 agent/PDF queued는 이전 테스트에서 확인했다.
+- `T-CONSUMABLE-LABEL-REPRINT`: Microsoft Print to PDF 결과에서 바코드가 검은 블록/잘림처럼 나온 원인은 agent가 아니라 agent에 전달되는 PNG가 이미 깨진 것이었다. `renderLabelNodeToPngBase64()`가 SVG `foreignObject`로 DOM을 직렬화할 때 Tailwind class가 적용되지 않아 `relative/absolute/object-contain/w-full/h-full/box-border`가 빠졌다. `LabelDesignRenderer`의 라벨 루트, 객체, 바코드/이미지 필수 스타일을 inline style로 보강했다. 전송 PNG before는 `docs/reports/label-print-debug-2026-06-17/CON-REPRINT-C26061700029.png`, after는 `...-after.png`이며 after는 QR 전체와 UID 텍스트가 정상이다. 구조 테스트/FE tsc/print-agent 구조 테스트/diff check PASS. 선택 템플릿 `consumable_label` 자체는 `10x10mm`라 물리 출력 크기는 작게 나간다.
+- `T-CONSUMABLE-LABEL-REPRINT`: 우측 420px 상세 패널의 기발행 UID 목록을 넓은 테이블에서 리스트형 행으로 보정했다. `재발행` 버튼은 각 UID 행 우측에 항상 보이며 `aria-label="${conUid} 라벨 재발행"`으로 찾을 수 있다. Playwright에서 `C26061700029 라벨 재발행` 버튼이 panelBox 내부에 있음을 확인했고, 클릭 후 팝업 UID/window.print 포함, `/consumables/label/create` 0건, `/material/label-print/log` 201, 상태 문구 확인까지 PASS. 구조 테스트 3개, FE tsc, diff check PASS. `ConLabelDetailPanel.tsx`와 `consumable-label-reprint.structure.test.mjs`는 아직 untracked.
+- `T-PRINT-AGENT-GO`: agent 자체 설정관리 보강 완료. `GET /settings` 로컬 HTML 설정 화면을 추가했고, Windows tray 메뉴에 `설정`을 추가해 `ShellExecuteW`로 `http://<listenAddress>/settings`를 연다. `/config`는 `configPath`, `effectiveListenAddress`, `restartRequired`를 반환하며, token은 `clearToken=true` 없이 빈 저장으로 지워지지 않는다. `/test-print` 내장 PNG checksum 실패도 런타임 PNG 생성으로 수정. 현재 새 agent PID `42964`가 `C:\Project\HANES\apps\print-agent\dist\hanes-print-agent.exe`에서 실행 중이며 `/settings` 200, 기본 프린터 `Microsoft Print to PDF` 저장, `/test-print` queued, listenAddress 변경 시 restartRequired true 확인 완료. 트레이 설정 메뉴 마우스 클릭 육안 검증과 Zebra 실출력은 남음.
 
 ## Blocked
 
@@ -103,7 +106,9 @@
 
 ## Current Known Issues
 
-- 없음.
+- 현재 PC의 agent 프린터 목록에는 `OneNote(데스크톱) - 보호됨`, `Microsoft Print to PDF`만 잡히며 Zebra 실출력 검증은 미완료. 트레이 아이콘 메뉴는 코드/빌드/API 실행 경로까지 확인했고 실제 우클릭 메뉴 육안 검증은 남아 있음.
+- agent 설정 파일은 `C:\Users\hsyou\AppData\Roaming\HANES\print-agent\config.json`이며 현재 기본 프린터는 `Microsoft Print to PDF`로 저장돼 있다.
+- `T-CONSUMABLE-LABEL-REPRINT`는 웹 팝업 인쇄 흐름과 print-log API까지 검증했다. 실제 Zebra 물리 출력은 프린터 부재로 미검증.
 - `T-CONSUMABLE-LIFE-LARGE-INFO-CARDS` 완료. `/consumables/life` 상단 작은 상태 배지 4개를 큰 요약 정보카드 4개로 변경했다. 각 카드는 118px 이상 높이, 큰 수치, 상태별 아이콘/색상 톤을 가진다. 구조 테스트/FE tsc/diff check/3002 HTTP 200 확인. Playwright DOM 자동 검증은 루트에서 `@playwright/test` require 불가로 생략. commit/push 안 함.
 - `T-CONSUMABLE-LABEL-ONE-LINE-STATUS` 완료. `/consumables/label` UID 발행 상태/결과 배너를 제거하고 헤더 우측 고정 폭 한 줄 상태로 축소했다. 그리드 toolbar 검색 input 옆에 `카테고리 필터` Select를 추가해 실제 마스터 `category` 값 기준으로 고정 필터링한다. 카테고리 변경 시 숨은 선택값은 초기화한다. 구조 테스트/FE tsc/diff check 통과. commit/push 안 함.
 - `T-CONSUMABLE-LABEL-HIDDEN-IFRAME-PRINT` 완료. `/consumables/label` UID 발행 시 새 탭/전체 화면으로 전환하지 않고 숨김 iframe에 라벨 HTML을 주입해 `contentWindow.print()`를 호출한다. 3014 mock 브라우저에서 `window.openCalled=0`, iframe 0x0/opacity 0 숨김 상태, `iframePrintCalled=1` 확인. commit/push 안 함.
