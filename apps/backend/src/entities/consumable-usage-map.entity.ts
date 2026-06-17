@@ -32,7 +32,7 @@ export class ConsumableUsageMap {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'CREATED_AT', type: 'timestamp', default: () => 'SYSTIMESTAMP' })
