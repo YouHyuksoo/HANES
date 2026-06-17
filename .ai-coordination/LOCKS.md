@@ -16,6 +16,22 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/consumables/label/page.tsx
+    - apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 14:24 KST
+  last_seen: 2026-06-17 14:31 KST
+  expires: 2026-06-17 15:24 KST
+  status: released
+  note: `/consumables/label` UID 발행 출력창을 버튼 클릭 즉시 `window.open`으로 선점하고, API 완료 후 같은 창에 라벨 HTML과 `window.print()`를 주입하도록 보정 완료. 구조 테스트 RED/GREEN, 템플릿/print-log 구조 테스트, FE tsc, 3002 브라우저 popup mock 검증, diff check 통과. commit/push 안 함.
+
 - task: T-CONSUMABLE-LIFE-LARGE-INFO-CARDS
   owner: codex
   files:

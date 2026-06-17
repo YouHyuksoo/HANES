@@ -17,10 +17,11 @@ assert.match(page, /role="status"[\s\S]*aria-live="polite"/, "UID 발행 상태�
 assert.match(page, /toast\.loading\(/, "UID 생성/출력 시작 시 발행중 메시지를 표시해야 합니다.");
 assert.match(page, /toast\.success\(/, "UID 발행 완료 시 완료 메시지를 표시해야 합니다.");
 assert.match(page, /toast\.error\(/, "UID 0건, 팝업 차단, 예외 상황은 실패 메시지를 표시해야 합니다.");
-assert.match(page, /document\.createElement\("iframe"\)/, "UID 라벨 인쇄는 화면 전환을 만들지 않는 숨김 iframe을 사용해야 합니다.");
-assert.match(page, /document\.body\.appendChild\(printFrame\)/, "숨김 iframe을 DOM에 붙인 뒤 라벨 HTML을 주입해야 합니다.");
-assert.match(page, /printFrame\.contentWindow[\s\S]*printWin\.print\(\)/, "숨김 iframe의 contentWindow.print()로 실제 인쇄를 호출해야 합니다.");
-assert.doesNotMatch(page, /window\.open\("", "_blank"\)/, "UID 발행 중 새 탭을 열면 전체 화면이 바뀌는 나쁜 UX가 됩니다.");
+assert.match(page, /const printWin = window\.open\("", "_blank"\);[\s\S]*created = await createConUids\(\)/, "UID API 대기 전에 사용자 클릭 동기 구간에서 출력창을 먼저 열어야 합니다.");
+assert.match(page, /printWin\.document\.write/, "선점한 출력창에 UID 발행 후 라벨 HTML을 주입해야 합니다.");
+assert.match(page, /printWin\.close\(\)/, "UID 발행 실패나 출력 준비 실패 시 선점한 출력창을 닫아야 합니다.");
+assert.doesNotMatch(page, /document\.createElement\("iframe"\)/, "숨김 iframe 인쇄는 배포 브라우저에서 print 호출이 무시될 수 있어 사용하지 않습니다.");
+assert.doesNotMatch(page, /document\.body\.appendChild\(printFrame\)/, "출력용 숨김 iframe을 DOM에 붙이면 안 됩니다.");
 assert.doesNotMatch(page, /window\.onload=\(\)=>\{window\.print\(\);window\.close\(\);\}/, "인쇄창을 load 즉시 print+close 하면 실제 출력 다이얼로그가 안 보일 수 있습니다.");
 assert.match(page, /const message = err instanceof Error/, "UID 발행 예외는 서버 메시지를 화면 피드백에 사용해야 합니다.");
 assert.doesNotMatch(page, /console\.error\("Failed to issue consumable labels:",\s*err\)/, "UID 발행 실패를 AxiosError 객체 그대로 console.error로 출력하면 Next dev overlay가 뜹니다.");

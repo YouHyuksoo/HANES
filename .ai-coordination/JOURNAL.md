@@ -10,6 +10,16 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 14:31 Codex
+
+- 작업: `T-CONSUMABLE-LABEL-CLICK-OPEN-PRINT` `/consumables/label` UID 발행 출력창 선점 보정.
+- 원인: 현재 소스는 숨김 iframe을 만들고 UID 발행 API 완료 후 `printWin.print()`를 호출했다. 로컬에서는 빠르게 동작할 수 있지만 배포 브라우저에서는 사용자 클릭 동기 구간을 벗어난 `print()` 호출이 무시될 수 있다.
+- 변경: `handleBrowserPrint()`에서 버튼 클릭 직후 `window.open("", "_blank")`로 출력창을 먼저 열고 대기 HTML을 표시한다. UID 발행 실패/0건/출력 준비 실패 시 선점한 창을 `close()`하고, 성공 시 같은 창에 `LabelPrintRenderer` HTML과 `window.print()` 스크립트를 주입한다. 숨김 iframe 생성/DOM 삽입 경로는 제거했다.
+- 테스트: 구조 테스트를 먼저 새 계약으로 변경해 RED 실패 확인 후 구현했다. 이후 `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-issue-feedback.structure.test.mjs`, `node --test apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-template-selection.structure.test.mjs`, `node apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.structure.test.mjs`, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 모두 통과.
+- 브라우저 검증: 3002 실제 페이지에서 Playwright headless로 인증 localStorage를 주입하고 masters/template/create/log API를 mock했다. 출력 버튼 클릭 직후 popup이 열리고 mock create 응답을 지연한 상태에서 popup body에 `UID를 발행하고 라벨 출력 준비 중입니다.`가 표시됨을 확인했다. create 응답 release 후 같은 popup HTML에 `label-grid`와 `window.print`가 포함됨을 확인했다.
+- 기타: `git diff --check` 통과. worktree에는 이번 작업 외 `apps/frontend/.gitignore`, `apps/frontend/package.json`, `/consumables/life`, `useStockData`, locale 파일, `.claude/worktrees/`, `apps/frontend/playwright.config.ts` 등 기존/타 작업 변경이 남아 있어 커밋 시 범위 선별 필요.
+- 상태: 완료, lock released. commit/push 안 함.
+
 ## 2026-06-17 13:55 Codex
 
 - 작업: `T-CONSUMABLE-LIFE-LARGE-INFO-CARDS` `/consumables/life` 상단 정보카드 확대.

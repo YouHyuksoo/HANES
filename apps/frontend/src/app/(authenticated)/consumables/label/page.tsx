@@ -42,7 +42,6 @@ interface IssueStatus {
 }
 
 const DEFAULT_TEMPLATE_KEY = "__default__";
-const PRINT_IFRAME_ID = "consumable-label-print-iframe";
 
 function ConsumableLabelPage() {
   const { t } = useTranslation();
@@ -208,30 +207,19 @@ function ConsumableLabelPage() {
   const handleBrowserPrint = useCallback(async () => {
     if (selectedCodes.size === 0) return;
 
-    document.getElementById(PRINT_IFRAME_ID)?.remove();
-    const printFrame = document.createElement("iframe");
-    printFrame.id = PRINT_IFRAME_ID;
-    printFrame.style.position = "fixed";
-    printFrame.style.right = "0";
-    printFrame.style.bottom = "0";
-    printFrame.style.width = "0";
-    printFrame.style.height = "0";
-    printFrame.style.border = "0";
-    printFrame.style.opacity = "0";
-    printFrame.style.pointerEvents = "none";
-    document.body.appendChild(printFrame);
-
-    const printDoc = printFrame.contentDocument;
-    const printWin = printFrame.contentWindow;
-    if (!printDoc || !printWin) {
-      printFrame.remove();
-      toast.error("라벨 출력 프레임을 준비하지 못했습니다.");
+    const printWin = window.open("", "_blank");
+    if (!printWin) {
+      toast.error("브라우저가 출력창을 차단했습니다. 이 사이트의 팝업을 허용해 주세요.");
       setIssueStatus({
         type: "error",
-        message: "라벨 출력 프레임을 준비하지 못했습니다.",
+        message: "브라우저가 출력창을 차단했습니다. 이 사이트의 팝업을 허용해 주세요.",
       });
       return;
     }
+    printWin.document.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
+      <style>body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#334155}</style>
+      </head><body>UID를 발행하고 라벨 출력 준비 중입니다.</body></html>`);
+    printWin.document.close();
 
     clearCreatedUids();
     const loadingToast = toast.loading("UID를 발행하고 라벨 출력 준비 중입니다.");
@@ -245,14 +233,14 @@ function ConsumableLabelPage() {
       created = await createConUids();
     } catch (err) {
       const message = err instanceof Error && err.message ? err.message : "UID 발행 중 오류가 발생했습니다.";
-      printFrame.remove();
+      printWin.close();
       toast.error(message, { id: loadingToast });
       setIssueStatus({ type: "error", message });
       return;
     }
 
     if (created.length === 0) {
-      printFrame.remove();
+      printWin.close();
       toast.error("발행된 UID가 없습니다. 선택 항목과 발행 수량을 확인하세요.", { id: loadingToast });
       setIssueStatus({
         type: "error",
@@ -268,9 +256,9 @@ function ConsumableLabelPage() {
       message: `${conUids.length}건 발행 완료. 인쇄 다이얼로그를 호출하는 중입니다.`,
     });
     setTimeout(async () => {
-      if (!printRef.current) {
+      if (!printRef.current || printWin.closed) {
         setPrinting(false);
-        printFrame.remove();
+        if (!printWin.closed) printWin.close();
         toast.error("라벨 출력 화면을 준비하지 못했습니다.", { id: loadingToast });
         setIssueStatus({
           type: "error",
@@ -278,17 +266,18 @@ function ConsumableLabelPage() {
         });
         return;
       }
-      printDoc.open();
-      printDoc.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
+      printWin.document.open();
+      printWin.document.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
         <style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#fff}.label-grid{display:flex;flex-wrap:wrap;gap:0;padding:0}
         img{max-width:100%;max-height:100%}@page{size:${labelDesign.labelWidth}mm ${labelDesign.labelHeight}mm;margin:0}</style>
-        </head><body><div class="label-grid">${printRef.current.innerHTML}</div></body></html>`);
-      printDoc.close();
-      printWin.addEventListener("afterprint", () => printFrame.remove(), { once: true });
-      window.setTimeout(() => {
-        printWin.focus();
-        printWin.print();
-      }, 250);
+        </head><body><div class="label-grid">${printRef.current.innerHTML}</div>
+        <script>
+          window.onload = () => {
+            window.focus();
+            window.setTimeout(() => window.print(), 150);
+          };
+        <\/script></body></html>`);
+      printWin.document.close();
       await logBrowserPrint(conUids);
       setPrinting(false);
       setSelectedCodes(new Set());
