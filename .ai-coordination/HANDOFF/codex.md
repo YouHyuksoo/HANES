@@ -2,7 +2,7 @@
 
 ## Last Update
 
-2026-06-17 10:07
+2026-06-17 10:19
 
 ## In Review
 
@@ -14,6 +14,7 @@
 
 ## Completed
 
+- `T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL`: 서버 배포 후 `/master/equip-inspect-item` 이미지 깨짐 원인을 `/uploads/equip-inspect-items/...` 상대 URL 직접 사용 + `apps/backend/uploads` gitignore로 인한 점검항목 시드 SVG 미배포로 확인하고 보정 완료. `/master/equip-inspect-item` 목록/편집 패널과 공용 `InspectItemImage`가 `resolveBackendFileUrl()`로 `/uploads/...`를 `NEXT_PUBLIC_API_URL` backend base 기준으로 변환한다. `.github/workflows/deploy.yml`은 배포 때 `node tools\generate-equip-inspect-item-seed-images.mjs`를 실행해 `apps/backend/uploads/equip-inspect-items/*.svg` 50개를 서버에서 재생성한다. 검증: 생성 스크립트, 신규 구조 테스트, 기존 패널 구조 테스트, frontend tsc, diff check PASS.
 - `T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL`: 서버 배포 후 `/consumables/label` 이미지 깨짐 원인을 `/uploads/consumables/...` 상대 URL 그대로 사용 + `apps/backend/uploads` gitignore로 인한 시드 SVG 미배포로 확인하고 보정 완료. `apps/frontend/src/utils/file-url.ts`의 `resolveBackendFileUrl()`로 `/uploads/...`를 `NEXT_PUBLIC_API_URL` backend base 기준으로 변환하고, 라벨 발행 그리드와 `LabelDesignRenderer` 이미지 객체에 적용했다. `.github/workflows/deploy.yml`은 배포 때 `node tools\generate-consumable-master-seed-images.mjs`를 실행해 `apps/backend/uploads/consumables/*.svg` 37개를 서버에서 재생성한다. 검증: 생성 스크립트, 신규 구조 테스트, frontend tsc, diff check PASS.
 - `T-MATERIAL-FLOW-FE-RUNTIME`: 자재관리 등록 메뉴 전체와 자재요청 -> 자재출고 -> 재고 -> 공정입고 흐름 검증 완료. `http://localhost:3012` 프론트에서 `/menu-categories/tree` 기준 MATERIAL 24개 메뉴를 순회해 24/24 PASS, 보고서 `docs/reports/hanes-material-menu-scenario-qa-2026-06-17/index.html`. 실흐름은 요청 `MR2606170035`, 작업지시 `JO-MATFE-26061618422034`로 `/material/request` 요청 생성, `/material/issue` 승인/LOT 선택/출고, `/inventory/material-stock` 자재재고, `/production/wip-material-stock` 공정재고, `/production/input-kiosk` 작업지시 로딩까지 PASS. JSHANES `MAT_ISSUE_REQUESTS`, `MAT_ISSUE_REQUEST_ITEMS`, `MAT_ISSUES`, `WIP_MAT_TRANSACTIONS`, `WIP_MAT_STOCKS` 체크 OK. 보고서 `docs/reports/hanes-material-flow-frontend-runtime-qa-2026-06-17/index.html`. 보정: QA 스크립트 proxy/API 경로 매칭, GET 503 재시도, 재고 실제 경로/공정재고 테이블 기준, 통합 MATERIAL 메뉴 24개 매핑, `/material/hold` SQL 안내 `MAT_LOTS`/`MAT_STOCKS` 기준 수정.
 - `T-MASTER-LABEL-BARTENDER-DESIGNER`: `/master/label`을 객체 기반 라벨 디자이너로 전환 완료. 상단 탭은 제거했고 좌측 `소스테이블` 선택으로 설비/소모품/작업자/자재 LOT 소스를 고른다. 객체 타입은 글자/1D/2D/박스/선/원/이미지이며, 선택 객체 드래그 이동과 모서리 앵커 리사이즈가 동작한다. `LabelDesignRenderer`/`LabelPrintRenderer`는 저장된 `elements[]`와 `sourceField`를 실제 데이터로 치환한다. `/consumables/label`은 `jig` 템플릿을 조회해 소모품 UID 출력에 사용한다. 실제 3002에서 임시 템플릿 `CODEX_PRINT_1781631331283` 저장 후 `UID 발행`으로 `C26061700011`을 생성했고, 인쇄 HTML에 `conUid`/소모품코드/소모품명/정적문구/바코드 이미지 2개가 들어가는 것을 확인했다. 검증용 템플릿/UID/로그는 모두 삭제 후 잔여 0건 확인. 검증: 구조 테스트 3개, FE tsc, 3002 브라우저 도구/앵커/템플릿 요청, UI 저장/API 조회/삭제, 실제 UID 발행 인쇄 HTML 치환 통과.

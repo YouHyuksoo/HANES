@@ -10,6 +10,15 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-17 10:19 Codex
+
+- 작업: `T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL` 서버 배포 후 `/master/equip-inspect-item` 이미지 링크 깨짐 원인 확인 및 보정.
+- 원인: 점검항목 이미지 `imageUrl`은 `/uploads/equip-inspect-items/...` 상대경로로 저장되어 있고, `/master/equip-inspect-item` 목록/편집 패널과 공용 `InspectItemImage`가 이를 그대로 `<img src>`에 사용했다. 로컬은 같은 호스트/proxy 조건으로 보일 수 있지만 배포 환경에서는 프론트 호스트 기준 경로가 되어 깨질 수 있다. 추가로 `apps/backend/uploads`는 `.gitignore` 대상이라 로컬에 있는 점검항목 시드 SVG 50개가 Git에는 없고, 서버 배포 시 재생성이 필요했다.
+- 변경: `/master/equip-inspect-item` 목록 이미지와 편집 패널 미리보기, 공용 `InspectItemImage`가 `resolveBackendFileUrl()`을 통해 `/uploads/...`를 `NEXT_PUBLIC_API_URL`의 backend base 기준으로 변환하도록 수정했다. `blob:`/`data:`/절대 URL은 helper가 그대로 유지한다.
+- 배포 보정: `.github/workflows/deploy.yml`의 runtime seed upload assets 단계에 `node tools\generate-equip-inspect-item-seed-images.mjs`를 추가해 서버 배포 때 `apps/backend/uploads/equip-inspect-items/*.svg` 50개를 재생성한다.
+- 검증: `node tools\generate-equip-inspect-item-seed-images.mjs` 성공(`generated 50 SVG files`), `node --test apps/frontend/src/app/(authenticated)/master/equip-inspect-item/equip-inspect-item-image-url.structure.test.mjs` PASS, 기존 패널 구조 테스트 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS.
+- 상태: 완료, lock released.
+
 ## 2026-06-17 10:07 Codex
 
 - 작업: `T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL` 서버 배포 후 `/consumables/label` 이미지 링크 깨짐 원인 확인 및 보정.

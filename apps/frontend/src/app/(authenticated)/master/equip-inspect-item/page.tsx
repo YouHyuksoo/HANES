@@ -12,6 +12,7 @@ import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { resolveBackendFileUrl } from "@/utils/file-url";
 
 type ItemType = "VISUAL" | "MEASURE";
 type InspectType = "DAILY" | "PERIODIC" | "PM" | "WORKER";
@@ -306,7 +307,7 @@ export default function EquipInspectItemPage() {
       accessorKey: "imageUrl", header: t("master.equipInspectItem.image", "사진"), size: 64,
       meta: { align: "center" as const },
       cell: ({ getValue, row }) => {
-        const imageUrl = getValue() as string | null;
+        const imageUrl = resolveBackendFileUrl(getValue() as string | null);
         return imageUrl ? (
           <img src={imageUrl} alt={row.original.itemName} className="w-9 h-9 object-cover rounded border border-border bg-surface" />
         ) : (
@@ -483,7 +484,7 @@ export default function EquipInspectItemPage() {
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.image", "사진")}</h3>
               {previewUrl ? (
                 <div className="relative group">
-                  <img src={previewUrl} alt={form.itemName || form.itemCode}
+                  <img src={resolveBackendFileUrl(previewUrl)} alt={form.itemName || form.itemCode}
                     className="w-full h-44 object-contain rounded-lg border border-border bg-surface" />
                   <button type="button" onClick={() => setImageDeleteConfirmOpen(true)}
                     className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">

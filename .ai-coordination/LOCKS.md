@@ -16,6 +16,23 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-EQUIP-INSPECT-ITEM-DEPLOY-IMAGE-URL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/equip-inspect-item/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/equip-inspect-item/equip-inspect-item-image-url.structure.test.mjs
+    - apps/frontend/src/components/shared/InspectItemImage.tsx
+    - .github/workflows/deploy.yml
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/ARCHIVE.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-17 KST
+  last_seen: 2026-06-17 KST
+  expires: 2026-06-17 KST
+  status: released
+  note: `/master/equip-inspect-item` 배포 후 이미지 깨짐 보정 완료. 화면/공용 점검항목 이미지 컴포넌트에서 `/uploads/...` URL을 백엔드 base 기준으로 정규화하고, deploy workflow에서 점검항목 시드 SVG 50개를 재생성하도록 추가. 구조 테스트/FE tsc 통과.
 - task: T-CONSUMABLE-LABEL-DEPLOY-IMAGE-URL
   owner: codex
   files:

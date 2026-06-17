@@ -47,7 +47,9 @@ jobs:
         shell: cmd
 
       - name: Generate runtime seed upload assets
-        run: node tools\generate-consumable-master-seed-images.mjs
+        run: |
+          node tools\generate-consumable-master-seed-images.mjs
+          node tools\generate-equip-inspect-item-seed-images.mjs
         shell: cmd
 
       - name: Start HANES PM2 processes

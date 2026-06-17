@@ -5,12 +5,13 @@
  * @description 점검항목 가이드 사진 썸네일 — 클릭 시 전체화면 확대(라이트박스)
  *
  * 초보자 가이드:
- * - imageUrl 은 백엔드 상대경로(/uploads/equip-inspect-items/...). next.config rewrite 로 프록시됨
+ * - imageUrl 은 백엔드 상대경로(/uploads/equip-inspect-items/...)일 수 있어 API base 기준으로 정규화한다
  * - 키오스크/설비점검 모두 터치/마우스로 썸네일을 눌러 확대한다
  * - 이미지가 없으면 ImageOff 플레이스홀더를 표시해 레이아웃 높이를 유지한다
  */
 import { useState, useCallback } from 'react';
 import { ImageOff } from 'lucide-react';
+import { resolveBackendFileUrl } from '@/utils/file-url';
 
 interface InspectItemImageProps {
   imageUrl?: string | null;
@@ -22,14 +23,15 @@ interface InspectItemImageProps {
 export default function InspectItemImage({ imageUrl, alt, size = 44 }: InspectItemImageProps) {
   const [zoomed, setZoomed] = useState(false);
   const [errored, setErrored] = useState(false);
+  const src = resolveBackendFileUrl(imageUrl);
 
   const openZoom = useCallback(() => {
-    if (imageUrl && !errored) setZoomed(true);
-  }, [imageUrl, errored]);
+    if (src && !errored) setZoomed(true);
+  }, [src, errored]);
 
   const closeZoom = useCallback(() => setZoomed(false), []);
 
-  if (!imageUrl || errored) {
+  if (!src || errored) {
     return (
       <span
         className="inline-flex items-center justify-center rounded border border-dashed border-border bg-surface text-text-muted"
@@ -52,7 +54,7 @@ export default function InspectItemImage({ imageUrl, alt, size = 44 }: InspectIt
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={imageUrl}
+          src={src}
           alt={alt}
           className="w-full h-full object-cover"
           onError={() => setErrored(true)}
@@ -70,7 +72,7 @@ export default function InspectItemImage({ imageUrl, alt, size = 44 }: InspectIt
           <div className="flex flex-col items-center gap-3" onClick={e => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={imageUrl}
+              src={src}
               alt={alt}
               className="max-h-[80vh] max-w-[80vw] object-contain rounded-lg bg-white dark:bg-slate-900 shadow-2xl"
             />
