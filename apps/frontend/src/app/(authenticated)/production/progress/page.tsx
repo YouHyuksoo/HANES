@@ -25,6 +25,8 @@ interface ProgressItem {
   part?: { itemCode?: string; itemName?: string };
   itemCode?: string;
   lineCode: string;
+  processCode?: string | null;
+  equipCode?: string | null;
   planQty: number;
   goodQty: number;
   defectQty: number;
@@ -91,6 +93,8 @@ export default function ProgressPage() {
     { accessorFn: (row) => row.part?.itemCode, id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
     { accessorFn: (row) => row.part?.itemName, id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     { accessorKey: 'lineCode', header: t('production.progress.line'), size: 90, meta: { filterType: 'text' as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
+    { accessorKey: 'processCode', header: t('production.order.process'), size: 90, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span> },
+    { accessorKey: 'equipCode', header: t('production.order.equip'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span> },
     { accessorKey: 'planQty', header: t('production.progress.planQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
     { accessorKey: 'goodQty', header: t('production.progress.goodQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: 'defectQty', header: t('production.progress.defectQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400">{((getValue() as number) ?? 0).toLocaleString()}</span> },
