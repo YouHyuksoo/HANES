@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { X, Edit2, Trash2, FileText, Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui";
 import api from "@/services/api";
+import { resolveBackendFileUrl } from "@/utils/file-url";
 import { getWorkInstructionKey, type WorkInstruction } from "./WorkInstructionFormPanel";
 
 interface WorkInstructionDetail extends WorkInstruction {
@@ -39,9 +40,8 @@ const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(g
 /** PDF 확장자 판별 */
 const isPdfUrl = (url: string) => /\.pdf$/i.test(getFilePath(url));
 
-/** 정적 파일은 상대경로(/uploads/...)를 그대로 사용 — next.config rewrites가 백엔드로 프록시.
- *  (NEXT_PUBLIC_API_URL로 절대 URL을 만들면 배포 환경에서 브라우저가 못 닿는 내부 주소가 되어 링크가 깨진다.) */
-const resolveFileUrl = (url: string) => url;
+/** 정적 파일 URL을 백엔드 base 기준으로 변환 (공유 유틸 resolveBackendFileUrl — codebase 통일). */
+const resolveFileUrl = (url: string) => resolveBackendFileUrl(url);
 
 export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, onDelete, animate = true }: Props) {
   const { t } = useTranslation();
