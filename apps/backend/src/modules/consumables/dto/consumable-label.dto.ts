@@ -75,6 +75,34 @@ export class BulkConfirmConReceivingDto {
   location?: string;
 }
 
+/** 단건 출고 (바코드 스캔) */
+export class IssueConDto {
+  @IsString()
+  conUid: string;
+
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @IsOptional()
+  @IsString()
+  issueReason?: string;
+
+  @IsOptional()
+  @IsString()
+  remark?: string;
+}
+
+/** 단건 출고취소 (바코드 스캔) */
+export class IssueReturnConDto {
+  @IsString()
+  conUid: string;
+
+  @IsOptional()
+  @IsString()
+  returnReason?: string;
+}
+
 /** 라벨 생성 결과 응답 */
 export class ConLabelResultDto {
   conUid: string;

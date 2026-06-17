@@ -4518,7 +4518,11 @@
       "reasonOther": "Khác",
       "returnReasonLabel": "Lý do trả hàng",
       "returnReasonPlaceholder": "Nhập lý do trả hàng",
-      "remarkPlaceholder": "Nhập ghi chú"
+      "remarkPlaceholder": "Nhập ghi chú",
+      "scanPlaceholder": "Quét mã vạch UID vật tư...",
+      "confirmBtn": "Xác nhận xuất",
+      "returnBtn": "Xác nhận hủy",
+      "returnScanHint": "Chế độ hủy xuất"
     },
     "stock": {
       "title": "Tồn kho vật tư tiêu hao",

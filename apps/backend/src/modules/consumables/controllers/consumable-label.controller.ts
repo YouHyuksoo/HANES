@@ -18,6 +18,8 @@ import {
   ConfirmConReceivingDto,
   BulkConfirmConReceivingDto,
   ReturnConReceivingDto,
+  IssueConDto,
+  IssueReturnConDto,
 } from '../dto/consumable-label.dto';
 @Controller('consumables/label')
 export class ConsumableLabelController {
@@ -55,6 +57,20 @@ export class ConsumableLabelController {
   @Post('return')
   async returnReceiving(@Body() dto: ReturnConReceivingDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.labelService.returnByScan(dto, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  /** 단건 출고 (바코드 스캔) */
+  @Post('issue')
+  async issueByScan(@Body() dto: IssueConDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelService.issueByScan(dto, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  /** 단건 출고취소 (바코드 스캔) */
+  @Post('issue-return')
+  async issueReturnByScan(@Body() dto: IssueReturnConDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelService.issueReturnByScan(dto, company, plant);
     return ResponseUtil.success(data);
   }
 

@@ -4532,7 +4532,11 @@
       "reasonOther": "Other",
       "returnReasonLabel": "Return Reason",
       "returnReasonPlaceholder": "Enter return reason",
-      "remarkPlaceholder": "Enter remark"
+      "remarkPlaceholder": "Enter remark",
+      "scanPlaceholder": "Scan consumable UID barcode...",
+      "confirmBtn": "Confirm Issue",
+      "returnBtn": "Confirm Cancel",
+      "returnScanHint": "Issue Cancel Mode"
     },
     "stock": {
       "title": "Consumable Stock",

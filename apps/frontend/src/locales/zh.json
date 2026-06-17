@@ -4518,7 +4518,11 @@
       "reasonOther": "其他",
       "returnReasonLabel": "退货原因",
       "returnReasonPlaceholder": "请输入退货原因",
-      "remarkPlaceholder": "请输入备注"
+      "remarkPlaceholder": "请输入备注",
+      "scanPlaceholder": "扫描耗材UID条码...",
+      "confirmBtn": "出库确认",
+      "returnBtn": "取消确认",
+      "returnScanHint": "取消出库模式"
     },
     "stock": {
       "title": "耗材库存",

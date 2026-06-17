@@ -4553,7 +4553,11 @@
       "returnReasonPlaceholder": "반품사유 입력",
       "remarkPlaceholder": "비고 입력",
       "typeOut": "출고",
-      "typeOutReturn": "출고반품"
+      "typeOutReturn": "출고반품",
+      "scanPlaceholder": "소모품 UID 바코드를 스캔하세요...",
+      "confirmBtn": "출고확정",
+      "returnBtn": "취소확정",
+      "returnScanHint": "출고취소 모드"
     },
     "stock": {
       "title": "소모품재고",

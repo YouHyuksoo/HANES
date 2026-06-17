@@ -22,6 +22,8 @@ import {
   ConfirmConReceivingDto,
   BulkConfirmConReceivingDto,
   ReturnConReceivingDto,
+  IssueConDto,
+  IssueReturnConDto,
   ConLabelResultDto,
 } from '../dto/consumable-label.dto';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -271,6 +273,117 @@ export class ConsumableLabelService {
         vendorCode: stock.vendorCode,
         vendorName: stock.vendorName,
         unitPrice: stock.unitPrice,
+        returnReason: dto.returnReason ?? null,
+        company: company ?? null,
+        plant: plant ?? null,
+      });
+      await queryRunner.manager.save(log);
+
+      const master = await this.masterRepo.findOne({
+        where: { consumableCode: stock.consumableCode, ...this.masterTenantWhere(company, plant) },
+      });
+
+      return {
+        conUid: stock.conUid,
+        consumableCode: stock.consumableCode,
+        consumableName: master?.consumableName ?? '',
+        status: stock.status,
+      };
+    });
+  }
+
+  /** 단건 출고 (바코드 스캔): ACTIVE → ISSUED */
+  async issueByScan(dto: IssueConDto, company?: string, plant?: string) {
+    const stock = await this.stockRepo.findOne({
+      where: { conUid: dto.conUid, ...this.stockTenantWhere(company, plant) },
+    });
+    if (!stock) throw new NotFoundException(`UID ${dto.conUid}를 찾을 수 없습니다.`);
+    if (stock.status !== 'ACTIVE') {
+      throw new BadRequestException(`출고는 ACTIVE 상태만 가능합니다. (${stock.status})`);
+    }
+
+    return this.tx.run(async (queryRunner) => {
+      stock.status = 'ISSUED';
+      stock.remark = dto.remark ?? stock.remark;
+      await queryRunner.manager.save(stock);
+
+      await queryRunner.manager.decrement(
+        ConsumableMaster,
+        { consumableCode: stock.consumableCode, ...this.masterTenantWhere(company, plant) },
+        'stockQty',
+        1,
+      );
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const logSeqResult = await queryRunner.manager.query(
+        `SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
+      );
+      const logSeq = logSeqResult[0].nextSeq;
+
+      const log = queryRunner.manager.create(ConsumableLog, {
+        transDate: today,
+        seq: logSeq,
+        consumableCode: stock.consumableCode,
+        logType: 'OUT',
+        qty: 1,
+        conUid: stock.conUid,
+        department: dto.department ?? null,
+        issueReason: dto.issueReason ?? null,
+        company: company ?? null,
+        plant: plant ?? null,
+      });
+      await queryRunner.manager.save(log);
+
+      const master = await this.masterRepo.findOne({
+        where: { consumableCode: stock.consumableCode, ...this.masterTenantWhere(company, plant) },
+      });
+
+      return {
+        conUid: stock.conUid,
+        consumableCode: stock.consumableCode,
+        consumableName: master?.consumableName ?? '',
+        status: stock.status,
+      };
+    });
+  }
+
+  /** 단건 출고취소 (바코드 스캔): ISSUED → ACTIVE */
+  async issueReturnByScan(dto: IssueReturnConDto, company?: string, plant?: string) {
+    const stock = await this.stockRepo.findOne({
+      where: { conUid: dto.conUid, ...this.stockTenantWhere(company, plant) },
+    });
+    if (!stock) throw new NotFoundException(`UID ${dto.conUid}를 찾을 수 없습니다.`);
+    if (stock.status !== 'ISSUED') {
+      throw new BadRequestException(`출고취소는 ISSUED 상태만 가능합니다. (${stock.status})`);
+    }
+
+    return this.tx.run(async (queryRunner) => {
+      stock.status = 'ACTIVE';
+      stock.remark = dto.returnReason ?? stock.remark;
+      await queryRunner.manager.save(stock);
+
+      await queryRunner.manager.increment(
+        ConsumableMaster,
+        { consumableCode: stock.consumableCode, ...this.masterTenantWhere(company, plant) },
+        'stockQty',
+        1,
+      );
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const logSeqResult = await queryRunner.manager.query(
+        `SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
+      );
+      const logSeq = logSeqResult[0].nextSeq;
+
+      const log = queryRunner.manager.create(ConsumableLog, {
+        transDate: today,
+        seq: logSeq,
+        consumableCode: stock.consumableCode,
+        logType: 'OUT_RETURN',
+        qty: 1,
+        conUid: stock.conUid,
         returnReason: dto.returnReason ?? null,
         company: company ?? null,
         plant: plant ?? null,
