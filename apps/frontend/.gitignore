@@ -35,6 +35,13 @@ Thumbs.db
 coverage
 .nyc_output
 
+# Playwright
+test-results
+playwright-report
+blob-report
+.playwright
+/e2e/.auth
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
