@@ -1,0 +1,22 @@
+{
+  "id": "master-label",
+  "title": "라벨디자인 관리",
+  "menuLabel": "라벨관리 (/master/label)",
+  "route": "/master/label",
+  "notes": [
+    "이 화면은 표준 DataGrid + 우측 슬라이드패널 CRUD 화면이 아니다. 객체 기반 라벨 디자이너(캔버스/드래그) + 우측 템플릿 사이드바(저장/덮어쓰기/삭제) 구조다.",
+    "디자인 본문은 LabelObjectDesigner 캔버스이며 자동화에 부적합하다 — CRUD 자동 생성을 강제하지 않는다.",
+    "템플릿 저장 실패(중복명 등)는 TemplateManager.handleSave의 catch 블록에서 조용히 무시된다. 오류 모달/토스트가 없으므로 create-invalid / create-duplicate(409+오류모달) 케이스는 정직하게 구현 불가하다.",
+    "템플릿 목록은 DataGrid 행이 아니라 커스텀 div 리스트라 러너의 rowText/rowActionIndex 모델과 맞지 않는다.",
+    "따라서 러너가 신뢰성 있게 검증 가능한 정직한 케이스는 load 뿐이다."
+  ],
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "라벨디자인 관리(라벨관리) 화면이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "라벨관리" }
+    }
+  ]
+}

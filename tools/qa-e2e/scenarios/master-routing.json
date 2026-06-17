@@ -1,0 +1,104 @@
+{
+  "id": "master-routing",
+  "title": "라우팅 정보",
+  "menuLabel": "라우팅/공정순서 관리 (/master/routing)",
+  "route": "/master/routing",
+  "notes": "다단계 편집 화면. 좌측 5컬럼=라우팅 그룹 목록(테이블+행별 수정/삭제 아이콘, 상단 '라우팅 추가' 모달), 우측 7컬럼=BOM 트리+공정순서 테이블, 최우측 4컬럼=선택 공정의 양품조건/투입자재/자주검사 편집 패널. 표준 CRUD 대상은 '라우팅 그룹'(routingGroup). 그룹 등록 모달의 품목(itemCode)은 필수 <select>이며 라벨 기반 텍스트 입력으로 채울 수 없어 등록/중복/수정/삭제 케이스는 select 구동 가능 여부에 의존한다.",
+  "testData": {
+    "prefix": "FECRUD",
+    "primaryKey": "routingCode",
+    "values": {
+      "routingCode": "{{prefix}}-{{stamp}}",
+      "routingName": "QA라우팅-{{stamp}}",
+      "editedName": "QA라우팅수정-{{stamp}}",
+      "description": "QA자동화 테스트 라우팅"
+    }
+  },
+  "openButton": "라우팅 추가",
+  "submitButton": "저장",
+  "editSubmitButton": "저장",
+  "cancelButton": "취소",
+  "search": { "placeholderIncludes": "검색", "value": "{{routingCode}}" },
+  "cleanup": {
+    "searchPath": "/master/routing-groups?search={{prefix}}&limit=200",
+    "deletePath": "/master/routing-groups/{{routingCode}}",
+    "listPath": "data",
+    "prefixField": "routingCode",
+    "deleteValueField": "routingCode"
+  },
+  "apiVerify": {
+    "searchPath": "/master/routing-groups?search={{routingCode}}&limit=20",
+    "listPath": "data",
+    "matchField": "routingCode",
+    "matchValue": "{{routingCode}}"
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "라우팅 정보 관리 화면이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "라우팅 정보" }
+    },
+    {
+      "id": "create-required",
+      "type": "create-invalid",
+      "title": "비정상: 필수값(라우팅명·품목) 누락 검증",
+      "expectSummary": "라우팅코드만 입력하고 라우팅명/품목을 비우면 모달의 저장 버튼이 비활성이어야 한다",
+      "fields": [
+        { "label": "라우팅코드", "value": "{{routingCode}}" }
+      ],
+      "expect": { "submitDisabled": true }
+    },
+    {
+      "id": "create-valid",
+      "type": "create",
+      "title": "정상: 신규 라우팅 그룹 등록",
+      "expectSummary": "라우팅코드·라우팅명·품목을 모두 채우면 등록되고 좌측 목록에 라우팅코드가 노출되어야 한다",
+      "fields": [
+        { "label": "라우팅코드", "value": "{{routingCode}}" },
+        { "label": "라우팅명", "value": "{{routingName}}" },
+        { "label": "품목", "type": "select", "selectFirstReal": true }
+      ],
+      "expect": { "rowText": "{{routingCode}}" }
+    },
+    {
+      "id": "create-duplicate",
+      "type": "create-duplicate",
+      "title": "비정상(RED): 동일 라우팅코드 중복 등록",
+      "expectSummary": "이미 존재하는 라우팅코드로 등록 시 409 응답 + 오류 모달이 표시되어야 한다",
+      "fields": [
+        { "label": "라우팅코드", "value": "{{routingCode}}" },
+        { "label": "라우팅명", "value": "{{routingName}}-중복" },
+        { "label": "품목", "type": "select", "selectFirstReal": true }
+      ],
+      "closeButton": "닫기",
+      "expect": { "modalText": "오류가 발생했습니다", "httpStatus": 409 }
+    },
+    {
+      "id": "update",
+      "type": "update",
+      "title": "정상: 라우팅명 수정",
+      "expectSummary": "행 수정으로 라우팅명을 변경하면 목록에 변경된 이름이 노출되어야 한다 (라우팅코드는 수정 시 비활성)",
+      "rowActionIndex": 0,
+      "fields": [
+        { "label": "라우팅명", "value": "{{editedName}}" }
+      ],
+      "expect": { "rowText": "{{editedName}}" }
+    },
+    {
+      "id": "delete",
+      "type": "delete",
+      "title": "정상: 라우팅 그룹 삭제",
+      "expectSummary": "행 삭제 아이콘 클릭 후 확인 모달에서 확인하면 행이 제거되어야 한다 (하위 공정·양품조건 포함 삭제)",
+      "rowActionIndex": 1,
+      "confirmButton": "확인"
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "정리 검증: API 조회 시 임시 라우팅 부재",
+      "expectSummary": "삭제 후 API 조회 결과에 임시 라우팅코드가 존재하지 않아야 한다"
+    }
+  ]
+}

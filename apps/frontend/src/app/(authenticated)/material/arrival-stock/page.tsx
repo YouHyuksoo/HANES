@@ -103,7 +103,7 @@ export default function ArrivalStockPage() {
 
   const formatDate = (val: string | null) => {
     if (!val) return "-";
-    return new Date(val).toLocaleDateString("ko-KR");
+    return new Date(val).toLocaleDateString();
   };
 
   const columns = useMemo<ColumnDef<ArrivalStockItem>[]>(

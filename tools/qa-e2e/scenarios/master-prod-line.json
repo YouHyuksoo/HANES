@@ -1,0 +1,104 @@
+{
+  "id": "master-prod-line",
+  "title": "생산라인관리",
+  "menuLabel": "생산라인관리 (/master/prod-line)",
+  "route": "/master/prod-line",
+  "testData": {
+    "prefix": "FECRUD",
+    "primaryKey": "lineCode",
+    "values": {
+      "lineCode": "{{prefix}}-{{stamp}}",
+      "lineName": "QA생산라인-{{stamp}}",
+      "editedName": "QA생산라인수정-{{stamp}}",
+      "oper": "#9100",
+      "lineType": "PACKING"
+    }
+  },
+  "openButton": "라인 추가",
+  "submitButton": "추가",
+  "editSubmitButton": "수정",
+  "cancelButton": "취소",
+  "search": { "placeholderIncludes": "라인코드", "value": "{{lineCode}}" },
+  "cleanup": {
+    "searchPath": "/master/prod-lines?search={{prefix}}&limit=5000",
+    "deletePath": "/master/prod-lines/{{lineCode}}",
+    "listPath": "data",
+    "prefixField": "lineCode",
+    "deleteValueField": "lineCode"
+  },
+  "apiVerify": {
+    "searchPath": "/master/prod-lines?search={{lineCode}}&limit=20",
+    "listPath": "data",
+    "matchField": "lineCode",
+    "matchValue": "{{lineCode}}"
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "생산라인관리 목록 화면이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "생산라인관리" }
+    },
+    {
+      "id": "create-required",
+      "type": "create-invalid",
+      "title": "비정상: 필수값(라인명) 누락 검증",
+      "expectSummary": "라인코드만 입력하고 라인명을 비우면 제출(추가) 버튼이 비활성이어야 한다",
+      "fields": [
+        { "label": "라인코드", "value": "{{lineCode}}" }
+      ],
+      "expect": { "submitDisabled": true }
+    },
+    {
+      "id": "create-valid",
+      "type": "create",
+      "title": "정상: 신규 생산라인 등록",
+      "expectSummary": "필수값(라인코드·라인명)을 채우면 등록되고 검색 결과에 라인코드가 노출되어야 한다",
+      "fields": [
+        { "label": "라인코드", "value": "{{lineCode}}" },
+        { "label": "라인명", "value": "{{lineName}}" },
+        { "label": "공정코드", "value": "{{oper}}" },
+        { "label": "라인유형", "value": "{{lineType}}" }
+      ],
+      "expect": { "rowText": "{{lineCode}}" }
+    },
+    {
+      "id": "create-duplicate",
+      "type": "create-duplicate",
+      "title": "비정상(RED): 동일 라인코드 중복 등록",
+      "expectSummary": "이미 존재하는 라인코드로 등록 시 409 응답 + 오류 모달이 표시되어야 한다",
+      "fields": [
+        { "label": "라인코드", "value": "{{lineCode}}" },
+        { "label": "라인명", "value": "{{lineName}}-중복" }
+      ],
+      "closeButton": "닫기",
+      "expect": { "modalText": "오류가 발생했습니다", "httpStatus": 409 }
+    },
+    {
+      "id": "update",
+      "type": "update",
+      "title": "정상: 라인명 수정",
+      "expectSummary": "행 수정으로 라인명을 변경하면 검색 결과에 변경된 이름이 노출되어야 한다",
+      "rowActionIndex": 0,
+      "fields": [
+        { "label": "라인명", "value": "{{editedName}}" }
+      ],
+      "expect": { "rowText": "{{editedName}}" }
+    },
+    {
+      "id": "delete",
+      "type": "delete",
+      "title": "정상: 생산라인 삭제",
+      "expectSummary": "삭제 확인 모달에서 삭제 버튼을 누르면 행이 제거되어야 한다",
+      "rowActionIndex": 1,
+      "confirmButton": "삭제"
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "정리 검증: API 조회 시 임시 생산라인 부재",
+      "expectSummary": "삭제 후 API 조회 결과에 임시 라인코드가 존재하지 않아야 한다"
+    }
+  ]
+}

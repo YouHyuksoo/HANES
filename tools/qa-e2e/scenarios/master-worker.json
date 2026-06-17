@@ -1,0 +1,104 @@
+{
+  "id": "master-worker",
+  "title": "작업자관리",
+  "menuLabel": "작업자관리 (/master/worker)",
+  "route": "/master/worker",
+  "testData": {
+    "prefix": "FECRUD",
+    "primaryKey": "workerCode",
+    "values": {
+      "workerCode": "{{prefix}}-{{stamp}}",
+      "workerName": "QA작업자-{{stamp}}",
+      "editedName": "QA작업자수정-{{stamp}}",
+      "phone": "010-{{stamp}}",
+      "email": "qa-{{stamp}}@example.com"
+    }
+  },
+  "openButton": "작업자 추가",
+  "submitButton": "추가",
+  "editSubmitButton": "수정",
+  "cancelButton": "취소",
+  "search": { "placeholderIncludes": "검색", "value": "{{workerCode}}" },
+  "cleanup": {
+    "searchPath": "/master/workers?search={{prefix}}&limit=200",
+    "deletePath": "/master/workers/{{workerCode}}",
+    "listPath": "data",
+    "prefixField": "workerCode",
+    "deleteValueField": "workerCode"
+  },
+  "apiVerify": {
+    "searchPath": "/master/workers?search={{workerCode}}&limit=20",
+    "listPath": "data",
+    "matchField": "workerCode",
+    "matchValue": "{{workerCode}}"
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "작업자관리 목록 화면이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "작업자관리" }
+    },
+    {
+      "id": "create-required",
+      "type": "create-invalid",
+      "title": "비정상: 필수값(이름) 누락 검증",
+      "expectSummary": "사번(작업자코드)만 입력하고 이름을 비우면 제출(추가) 버튼이 비활성이어야 한다",
+      "fields": [
+        { "label": "사번", "value": "{{workerCode}}" }
+      ],
+      "expect": { "submitDisabled": true }
+    },
+    {
+      "id": "create-valid",
+      "type": "create",
+      "title": "정상: 신규 작업자 등록",
+      "expectSummary": "필수값(사번·이름)을 채우면 등록되고 검색 결과에 사번이 노출되어야 한다",
+      "fields": [
+        { "label": "사번", "value": "{{workerCode}}" },
+        { "label": "이름", "value": "{{workerName}}" },
+        { "label": "전화번호", "value": "{{phone}}" },
+        { "label": "이메일", "value": "{{email}}" }
+      ],
+      "expect": { "rowText": "{{workerCode}}" }
+    },
+    {
+      "id": "create-duplicate",
+      "type": "create-duplicate",
+      "title": "비정상(RED): 동일 사번(작업자코드) 중복 등록",
+      "expectSummary": "이미 존재하는 사번으로 등록 시 409 응답 + 오류 모달이 표시되어야 한다",
+      "fields": [
+        { "label": "사번", "value": "{{workerCode}}" },
+        { "label": "이름", "value": "{{workerName}}-중복" }
+      ],
+      "closeButton": "닫기",
+      "expect": { "modalText": "오류가 발생했습니다", "httpStatus": 409 }
+    },
+    {
+      "id": "update",
+      "type": "update",
+      "title": "정상: 작업자명(이름) 수정",
+      "expectSummary": "행 수정으로 이름을 변경하면 검색 결과에 변경된 이름이 노출되어야 한다",
+      "rowActionIndex": 0,
+      "fields": [
+        { "label": "이름", "value": "{{editedName}}" }
+      ],
+      "expect": { "rowText": "{{editedName}}" }
+    },
+    {
+      "id": "delete",
+      "type": "delete",
+      "title": "정상: 작업자 삭제",
+      "expectSummary": "삭제 확인 모달에서 확인하면 행이 제거되어야 한다",
+      "rowActionIndex": 1,
+      "confirmButton": "확인"
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "정리 검증: API 조회 시 임시 작업자 부재",
+      "expectSummary": "삭제 후 API 조회 결과에 임시 사번이 존재하지 않아야 한다"
+    }
+  ]
+}

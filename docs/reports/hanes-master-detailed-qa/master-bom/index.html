@@ -1,0 +1,57 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<title>BOM관리 QA</title>
+<style>
+  body{font-family:'Malgun Gothic',Arial,sans-serif;margin:0;background:#f6f7f9;color:#111827}
+  header{padding:22px 32px;background:#111827;color:#fff}
+  header h1{margin:0 0 6px;font-size:22px}
+  header a{color:#93c5fd}
+  main{padding:20px 32px 48px;max-width:1200px}
+  .summary{background:#fff;border:1px solid #d8dee8;border-radius:8px;padding:16px;margin-bottom:18px;font-size:15px}
+  .case{background:#fff;border:1px solid #d8dee8;border-radius:8px;padding:16px 18px;margin-bottom:16px}
+  .case.fail{border-color:#dc2626;box-shadow:0 0 0 1px #dc2626 inset}
+  .case h2{font-size:16px;margin:0 0 10px}
+  table.kv{border-collapse:collapse;margin-bottom:12px;width:100%}
+  table.kv th{text-align:left;width:110px;color:#6b7280;font-weight:600;padding:3px 8px 3px 0;vertical-align:top;font-size:13px}
+  table.kv td{padding:3px 0;font-size:13px}
+  code{background:#eef2f7;padding:2px 5px;border-radius:4px}
+  .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+  figure{margin:0;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;background:#fafafa}
+  figcaption{padding:7px 10px;font-weight:700;font-size:12px;border-bottom:1px solid #e2e8f0}
+  img{display:block;width:100%}
+</style></head><body>
+<header>
+  <h1>BOM관리 — 상세 CRUD QA</h1>
+  <div>대상: <a href="http://localhost:3002/master/bom">http://localhost:3002/master/bom</a>
+  · 테스트 키: <code></code>
+  · 일시(KST): 2026-06-17</div>
+</header>
+<main>
+  <div class="summary">
+    <strong>결과: PASS</strong> — 총 2개 케이스 중 PASS 2 / FAIL 0
+  </div>
+
+    <section class="case ">
+      <h2>1. 화면 로드 <span style="color:#fff;background:#16a34a;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700">PASS</span></h2>
+      <table class="kv">
+        <tr><th>유형</th><td><code>load</code></td></tr>
+        <tr><th>예상 동작</th><td>BOM관리 화면이 정상 렌더링되고 제목이 노출되어야 한다</td></tr>
+        <tr><th>실제 결과</th><td>&quot;BOM관리&quot; 노출 확인</td></tr>
+
+      </table>
+      <div class="shots">
+        <figure><figcaption>화면 로드</figcaption><a href="screenshots/01-load.png"><img src="screenshots/01-load.png" alt="화면 로드"></a></figure>
+      </div>
+    </section>
+    <section class="case ">
+      <h2>2. BOM 구조 영역 노출 <span style="color:#fff;background:#16a34a;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700">PASS</span></h2>
+      <table class="kv">
+        <tr><th>유형</th><td><code>load</code></td></tr>
+        <tr><th>예상 동작</th><td>중앙 BOM 자재 구조 패널 제목이 노출되어야 한다</td></tr>
+        <tr><th>실제 결과</th><td>&quot;BOM 자재 구조&quot; 노출 확인</td></tr>
+
+      </table>
+      <div class="shots">
+        <figure><figcaption>BOM 구조 영역 노출</figcaption><a href="screenshots/02-load-structure.png"><img src="screenshots/02-load-structure.png" alt="BOM 구조 영역 노출"></a></figure>
+      </div>
+    </section>
+</main></body></html>

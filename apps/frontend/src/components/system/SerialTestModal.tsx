@@ -215,7 +215,7 @@ export default function SerialTestModal({ isOpen, onClose, config }: Props) {
 
 /** 로그 한 줄 표시 (RX=녹색, TX=노란색, SYS=파란색) */
 function LogLine({ log }: { log: SerialLogEntry }) {
-  const time = new Date(log.timestamp).toLocaleTimeString("ko-KR", {
+  const time = new Date(log.timestamp).toLocaleTimeString(undefined, {
     hour12: false,
     fractionalSecondDigits: 3,
   });

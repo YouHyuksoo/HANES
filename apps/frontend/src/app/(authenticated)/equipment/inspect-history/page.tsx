@@ -37,12 +37,7 @@ const formatInspectDate = (value: unknown) => {
   if (!value) return "-";
   const date = new Date(String(value));
   if (Number.isNaN(date.getTime())) return String(value);
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date).replace(/\. /g, "-").replace(".", "");
+  return date.toLocaleDateString();
 };
 
 const todayStr = () => {

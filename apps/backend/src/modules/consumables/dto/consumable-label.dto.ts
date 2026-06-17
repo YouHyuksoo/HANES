@@ -39,6 +39,16 @@ export class CreateConLabelsDto {
   unitPrice?: number;
 }
 
+/** 단건 반납입고 (바코드 스캔) */
+export class ReturnConReceivingDto {
+  @IsString()
+  conUid: string;
+
+  @IsOptional()
+  @IsString()
+  returnReason?: string;
+}
+
 /** 단건 입고 확정 (바코드 스캔) */
 export class ConfirmConReceivingDto {
   @IsString()

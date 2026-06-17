@@ -97,7 +97,7 @@ export default function BarcodeScanTab({ fixedIssueType, excludeIssueTypes }: Ba
       meta: { filterType: 'text' as const },
       cell: ({ getValue }) => {
         const d = new Date(getValue() as string);
-        return <span>{d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>;
+        return <span>{d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>;
       },
     },
     { accessorKey: 'itemCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },

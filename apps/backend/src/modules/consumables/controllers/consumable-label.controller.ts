@@ -17,6 +17,7 @@ import {
   CreateConLabelsDto,
   ConfirmConReceivingDto,
   BulkConfirmConReceivingDto,
+  ReturnConReceivingDto,
 } from '../dto/consumable-label.dto';
 @Controller('consumables/label')
 export class ConsumableLabelController {
@@ -47,6 +48,13 @@ export class ConsumableLabelController {
   @Post('confirm')
   async confirmReceiving(@Body() dto: ConfirmConReceivingDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.labelService.confirmReceiving(dto, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  /** 단건 반납입고 (바코드 스캔) */
+  @Post('return')
+  async returnReceiving(@Body() dto: ReturnConReceivingDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelService.returnByScan(dto, company, plant);
     return ResponseUtil.success(data);
   }
 

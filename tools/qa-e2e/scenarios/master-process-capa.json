@@ -1,0 +1,46 @@
+{
+  "id": "master-process-capa",
+  "title": "공정 CAPA 관리",
+  "menuLabel": "공정 CAPA/생산능력 마스터 (/master/process-capa)",
+  "route": "/master/process-capa",
+  "notes": [
+    "비표준 CRUD: 복합 PK(processCode+itemCode)이며 두 필드 모두 기존 마스터를 FK 검증(ProcessMaster/PartMaster).",
+    "공정=Select 컴포넌트, 품목=PartSearchModal로 선택하는 readonly Input. 둘 다 라벨로 채울 수 있는 text input이 아니라 러너의 fillByLabel로 입력 불가.",
+    "PK 자동 stamp 불가(임의 코드는 FK 검증에 실패). 따라서 create/update/delete/create-duplicate는 러너 표준 흐름으로 신뢰성 있게 구동 불가 → load + api-verify만 구성.",
+    "중복 시 백엔드는 ConflictException(HTTP 409, '이미 존재하는 공정 CAPA: ...')을 반환함(서비스 create()에서 확인).",
+    "삭제 경로는 복합키 2세그먼트 /master/process-capas/:processCode/:itemCode 로 러너 cleanup(단일키)도 미지원."
+  ],
+  "openButton": "CAPA 추가",
+  "submitButton": "추가",
+  "editSubmitButton": "수정",
+  "cancelButton": "취소",
+  "testData": {
+    "prefix": "FECAPA",
+    "primaryKey": "itemCode",
+    "values": {
+      "itemCode": "{{prefix}}-{{stamp}}"
+    }
+  },
+  "search": { "placeholderIncludes": "검색", "value": "{{itemCode}}" },
+  "apiVerify": {
+    "searchPath": "/master/process-capas?search={{itemCode}}&limit=20",
+    "listPath": "data",
+    "matchField": "itemCode",
+    "matchValue": "{{itemCode}}"
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "공정 CAPA 관리 목록 화면(제목)이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "공정 CAPA 관리" }
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "API 조회: 공정 CAPA 목록 엔드포인트 응답 확인",
+      "expectSummary": "GET /master/process-capas 가 정상 응답하고(success/data/meta), 임의의 임시 품목코드는 존재하지 않아야 한다"
+    }
+  ]
+}

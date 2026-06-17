@@ -1,0 +1,100 @@
+{
+  "id": "master-warehouse",
+  "title": "창고관리",
+  "menuLabel": "창고관리 (/master/warehouse)",
+  "route": "/master/warehouse",
+  "testData": {
+    "prefix": "FECRUD",
+    "primaryKey": "warehouseCode",
+    "values": {
+      "warehouseCode": "{{prefix}}-{{stamp}}",
+      "warehouseName": "QA창고-{{stamp}}",
+      "editedName": "QA창고수정-{{stamp}}"
+    }
+  },
+  "openButton": "신규 등록",
+  "submitButton": "저장",
+  "editSubmitButton": "저장",
+  "cancelButton": "취소",
+  "search": { "placeholderIncludes": "검색", "value": "{{warehouseCode}}" },
+  "cleanup": {
+    "searchPath": "/inventory/warehouses",
+    "deletePath": "/inventory/warehouses/{{warehouseCode}}",
+    "listPath": "data",
+    "prefixField": "warehouseCode",
+    "deleteValueField": "warehouseCode"
+  },
+  "apiVerify": {
+    "searchPath": "/inventory/warehouses",
+    "listPath": "data",
+    "matchField": "warehouseCode",
+    "matchValue": "{{warehouseCode}}"
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "창고관리 목록 화면이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "창고관리" }
+    },
+    {
+      "id": "create-required",
+      "type": "create-invalid",
+      "title": "비정상: 필수값(창고명) 누락 검증",
+      "expectSummary": "창고코드만 입력하고 창고명을 비우면 저장 버튼이 비활성이어야 한다",
+      "fields": [
+        { "label": "창고코드", "value": "{{warehouseCode}}" }
+      ],
+      "expect": { "submitDisabled": true }
+    },
+    {
+      "id": "create-valid",
+      "type": "create",
+      "title": "정상: 신규 창고 등록",
+      "expectSummary": "필수값을 모두 채우면 등록되고 검색 결과에 창고코드가 노출되어야 한다",
+      "fields": [
+        { "label": "창고코드", "value": "{{warehouseCode}}" },
+        { "label": "창고명", "value": "{{warehouseName}}" }
+      ],
+      "expect": { "rowText": "{{warehouseCode}}" }
+    },
+    {
+      "id": "create-duplicate",
+      "type": "create-duplicate",
+      "title": "비정상(RED): 동일 창고코드 중복 등록",
+      "expectSummary": "이미 존재하는 창고코드로 등록 시 409 응답 + 오류 모달이 표시되어야 한다",
+      "fields": [
+        { "label": "창고코드", "value": "{{warehouseCode}}" },
+        { "label": "창고명", "value": "{{warehouseName}}-중복" }
+      ],
+      "closeButton": "닫기",
+      "expect": { "modalText": "오류가 발생했습니다", "httpStatus": 409 }
+    },
+    {
+      "id": "update",
+      "type": "update",
+      "title": "정상: 창고명 수정",
+      "expectSummary": "행 수정으로 창고명을 변경하면 검색 결과에 변경된 이름이 노출되어야 한다",
+      "rowActionIndex": 0,
+      "fields": [
+        { "label": "창고명", "value": "{{editedName}}" }
+      ],
+      "expect": { "rowText": "{{editedName}}" }
+    },
+    {
+      "id": "delete",
+      "type": "delete",
+      "title": "정상: 창고 삭제",
+      "expectSummary": "삭제 확인 모달에서 확인하면 행이 제거되어야 한다",
+      "rowActionIndex": 1,
+      "confirmButton": "확인"
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "정리 검증: API 조회 시 임시 창고 부재",
+      "expectSummary": "삭제 후 API 조회 결과에 임시 창고코드가 존재하지 않아야 한다"
+    }
+  ]
+}

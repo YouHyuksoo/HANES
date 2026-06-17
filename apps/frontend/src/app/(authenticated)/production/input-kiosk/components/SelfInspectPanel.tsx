@@ -63,7 +63,7 @@ function aggregateByTiming(rows: ResultRow[]): AggregatedRow[] {
     const sampleCount = new Set(list.map((r) => r.sampleNo)).size;
     result.push({
       timing,
-      time: latest.createdAt ? new Date(latest.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-',
+      time: latest.createdAt ? new Date(latest.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }) : '-',
       inspector: latest.inspectorId ?? '-',
       status,
       sampleCount,

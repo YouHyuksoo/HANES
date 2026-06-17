@@ -1,0 +1,33 @@
+{
+  "id": "master-bom",
+  "title": "BOM관리",
+  "menuLabel": "BOM관리 (/master/bom)",
+  "route": "/master/bom",
+  "note": "비표준 UI: 3분할 레이아웃(좌 제품/반제품 목록 · 중앙 BOM 트리테이블 · 우 라우팅 패널). 추가/수정은 우측 슬라이드패널이 아닌 Modal(BomFormModal)이며, 자품목은 비동기 검색+드롭다운 선택이라 라벨 입력만으로는 제출 활성화/중복/수정 케이스를 정직하게 재현할 수 없어 CRUD 케이스를 생성하지 않음. 행 키는 복합키(parent::child::revision)로 단일 primaryKey 모델과도 불일치. 따라서 load + 읽기전용 api-verify만 구성.",
+  "testData": {
+    "prefix": "FECRUD",
+    "primaryKey": "itemCode",
+    "values": {}
+  },
+  "apiVerify": {
+    "searchPath": "/master/boms/parents",
+    "listPath": "data",
+    "expectNonEmpty": true
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "BOM관리 화면이 정상 렌더링되고 제목이 노출되어야 한다",
+      "expect": { "visibleText": "BOM관리" }
+    },
+    {
+      "id": "load-structure",
+      "type": "load",
+      "title": "BOM 구조 영역 노출",
+      "expectSummary": "중앙 BOM 자재 구조 패널 제목이 노출되어야 한다",
+      "expect": { "visibleText": "BOM 자재 구조" }
+    }
+  ]
+}

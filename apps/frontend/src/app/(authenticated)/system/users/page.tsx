@@ -161,7 +161,7 @@ export default function UserPage() {
       meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
-        return v ? new Date(v).toLocaleString("ko-KR") : "-";
+        return v ? new Date(v).toLocaleString() : "-";
       },
     },
   ], [t, roleLabel, isPanelOpen]);

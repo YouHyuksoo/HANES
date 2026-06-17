@@ -116,7 +116,7 @@ export default function RequestInspectPage() {
       size: 140,
       cell: ({ getValue }) => {
         const v = getValue<string>();
-        return v ? new Date(v).toLocaleString("ko-KR") : "-";
+        return v ? new Date(v).toLocaleString() : "-";
       },
     },
   ];

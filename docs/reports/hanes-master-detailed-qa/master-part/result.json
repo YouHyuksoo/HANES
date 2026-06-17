@@ -1,0 +1,71 @@
+{
+  "id": "master-part",
+  "title": "품목마스터",
+  "route": "/master/part",
+  "menuLabel": "품목관리 (/master/part)",
+  "status": "PASS",
+  "total": 7,
+  "pass": 7,
+  "fail": 0,
+  "reportRel": "master-part/index.html",
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "status": "PASS",
+      "actual": "\"품목마스터\" 노출 확인",
+      "error": null
+    },
+    {
+      "id": "create-required",
+      "type": "create-invalid",
+      "title": "비정상: 필수값(품번·품목명) 누락 검증",
+      "status": "PASS",
+      "actual": "필수값 누락 → 제출 버튼 비활성(검증 동작 정상)",
+      "error": null
+    },
+    {
+      "id": "create-valid",
+      "type": "create",
+      "title": "정상: 신규 품목 등록",
+      "status": "PASS",
+      "actual": "등록 후 검색 결과에 \"FECRUD-260617120039\" 노출",
+      "error": null
+    },
+    {
+      "id": "create-duplicate",
+      "type": "create-duplicate",
+      "title": "비정상(RED): 동일 품목코드 중복 등록",
+      "status": "PASS",
+      "actual": "중복 등록 → 오류 모달 표시 + HTTP 409 확인",
+      "error": null
+    },
+    {
+      "id": "update",
+      "type": "update",
+      "title": "정상: 품목명 수정",
+      "status": "PASS",
+      "actual": "수정 후 \"QA품목수정-260617120039\" 반영 확인",
+      "error": null
+    },
+    {
+      "id": "delete",
+      "type": "delete",
+      "title": "정상: 품목 삭제",
+      "status": "PASS",
+      "actual": "삭제 확인 모달 → 확인 → 행 제거",
+      "error": null
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "정리 검증: API 조회 시 임시 품목 부재",
+      "status": "PASS",
+      "actual": "API 조회 결과 임시 행(FECRUD-260617120039) 부재 확인 — 정리 완료",
+      "error": null
+    }
+  ],
+  "testKey": "FECRUD-260617120039",
+  "ranAt": "2026-06-17"
+}

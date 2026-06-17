@@ -190,7 +190,7 @@ export default function ImprovementRequestsPage() {
                     {item.pageUrl}
                   </p>
                   <p className="text-xs text-text-muted mt-0.5">
-                    {item.requesterNm ?? item.requesterId} · {new Date(item.createdAt).toLocaleString("ko-KR")}
+                    {item.requesterNm ?? item.requesterId} · {new Date(item.createdAt).toLocaleString()}
                   </p>
                 </div>
               </div>

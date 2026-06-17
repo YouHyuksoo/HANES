@@ -243,7 +243,7 @@ api.interceptors.response.use(
     // 네트워크 에러 (백엔드 미실행, ECONNREFUSED 등)
     if (!error.response) {
       useErrorStore.getState().showError({
-        timestamp: new Date().toLocaleString("ko-KR"),
+        timestamp: new Date().toLocaleString(),
         method: error.config?.method?.toUpperCase() || "UNKNOWN",
         url: error.config?.url || "unknown",
         status: 0,
@@ -286,7 +286,7 @@ api.interceptors.response.use(
 
     // 에러 상세 모달 표시
     useErrorStore.getState().showError({
-      timestamp: new Date().toLocaleString("ko-KR"),
+      timestamp: new Date().toLocaleString(),
       method: error.config?.method?.toUpperCase() || "UNKNOWN",
       url: error.config?.url || "unknown",
       status,

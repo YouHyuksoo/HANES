@@ -1,0 +1,104 @@
+{
+  "id": "master-equip",
+  "title": "설비마스터",
+  "menuLabel": "설비관리 (/master/equip)",
+  "route": "/master/equip",
+  "testData": {
+    "prefix": "FECRUD",
+    "primaryKey": "equipCode",
+    "values": {
+      "equipCode": "{{prefix}}-{{stamp}}",
+      "equipName": "QA설비-{{stamp}}",
+      "editedName": "QA설비수정-{{stamp}}",
+      "maker": "QA제조사-{{stamp}}",
+      "model": "QA모델-{{stamp}}"
+    }
+  },
+  "openButton": "설비 추가",
+  "submitButton": "등록",
+  "editSubmitButton": "수정",
+  "cancelButton": "취소",
+  "search": { "placeholderIncludes": "검색", "value": "{{equipCode}}" },
+  "cleanup": {
+    "searchPath": "/equipment/equips?search={{prefix}}&limit=200",
+    "deletePath": "/equipment/equips/{{equipCode}}",
+    "listPath": "data",
+    "prefixField": "equipCode",
+    "deleteValueField": "equipCode"
+  },
+  "apiVerify": {
+    "searchPath": "/equipment/equips?search={{equipCode}}&limit=20",
+    "listPath": "data",
+    "matchField": "equipCode",
+    "matchValue": "{{equipCode}}"
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "설비관리 화면(설비 기본정보 탭)이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "설비 기본정보" }
+    },
+    {
+      "id": "create-required",
+      "type": "create-invalid",
+      "title": "비정상: 필수값(설비명) 누락 검증",
+      "expectSummary": "설비코드만 입력하고 설비명을 비우면 등록 버튼이 비활성이어야 한다",
+      "fields": [
+        { "label": "설비코드", "value": "{{equipCode}}" }
+      ],
+      "expect": { "submitDisabled": true }
+    },
+    {
+      "id": "create-valid",
+      "type": "create",
+      "title": "정상: 신규 설비 등록",
+      "expectSummary": "설비코드·설비명을 채우면 등록되고 검색 결과에 설비코드가 노출되어야 한다",
+      "fields": [
+        { "label": "설비코드", "value": "{{equipCode}}" },
+        { "label": "설비명", "value": "{{equipName}}" },
+        { "label": "제조사", "value": "{{maker}}" },
+        { "label": "모델명", "value": "{{model}}" }
+      ],
+      "expect": { "rowText": "{{equipCode}}" }
+    },
+    {
+      "id": "create-duplicate",
+      "type": "create-duplicate",
+      "title": "비정상(RED): 동일 설비코드 중복 등록",
+      "expectSummary": "이미 존재하는 설비코드로 등록 시 409 응답 + 오류 모달이 표시되어야 한다",
+      "fields": [
+        { "label": "설비코드", "value": "{{equipCode}}" },
+        { "label": "설비명", "value": "{{equipName}}-중복" }
+      ],
+      "closeButton": "확인",
+      "expect": { "modalText": "오류가 발생했습니다", "httpStatus": 409 }
+    },
+    {
+      "id": "update",
+      "type": "update",
+      "title": "정상: 설비명 수정",
+      "expectSummary": "행 수정으로 설비명을 변경하면 검색 결과에 변경된 이름이 노출되어야 한다",
+      "rowActionIndex": 0,
+      "fields": [
+        { "label": "설비명", "value": "{{editedName}}" }
+      ],
+      "expect": { "rowText": "{{editedName}}" }
+    },
+    {
+      "id": "delete",
+      "type": "delete",
+      "title": "정상: 설비 삭제",
+      "expectSummary": "삭제 확인 모달에서 확인하면 행이 제거되어야 한다",
+      "rowActionIndex": 1,
+      "confirmButton": "확인"
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "정리 검증: API 조회 시 임시 설비 부재",
+      "expectSummary": "삭제 후 API 조회 결과에 임시 설비코드가 존재하지 않아야 한다"
+    }
+  ]
+}

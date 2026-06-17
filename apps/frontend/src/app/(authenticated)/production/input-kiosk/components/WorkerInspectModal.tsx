@@ -138,7 +138,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   }, [qrInput, handleQrScan]);
 
   const handleResult = useCallback((seq: number, val: 'OK' | 'NG') => {
-    const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const now = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setResults(prev => ({ ...prev, [seq]: val }));
     setScanTimes(prev => ({ ...prev, [seq]: now }));
     setActiveSeq(null);

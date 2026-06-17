@@ -36,9 +36,24 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
 
   const columns = useMemo<ColumnDef<ReceivingLog>[]>(
     () => [
-      { accessorKey: 'createdAt', header: t('consumables.comp.dateTime'), size: 140, meta: { filterType: 'date' } },
+      {
+        accessorKey: 'createdAt',
+        header: t('consumables.comp.dateTime'),
+        size: 160,
+        meta: { filterType: 'date' },
+        cell: ({ getValue }) => {
+          const v = getValue() as string | null;
+          return v ? new Date(v).toLocaleString() : "-";
+        },
+      },
       { accessorKey: 'consumableCode', header: t('consumables.comp.consumableCode'), size: 110 },
       { accessorKey: 'consumableName', header: t('consumables.comp.consumableName'), size: 140 },
+      { accessorKey: 'conUid', header: 'UID', size: 150,
+        cell: ({ getValue }) => {
+          const uid = getValue() as string | null;
+          return uid ? <span className="font-mono text-xs">{uid}</span> : <span className="text-text-muted">-</span>;
+        },
+      },
       {
         accessorKey: 'logType',
         header: t('consumables.comp.logType'),

@@ -118,7 +118,7 @@ export default function VisualInspectPage() {
       size: 150,
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        return v ? new Date(v).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-";
+        return v ? new Date(v).toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-";
       },
     },
     {

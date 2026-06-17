@@ -148,7 +148,7 @@ export default function InspectEntryPanel({
   const [saving, setSaving] = useState(false);
   const startTime = useMemo(
     () =>
-      new Date().toLocaleTimeString("ko-KR", {
+      new Date().toLocaleTimeString(undefined, {
         hour: "2-digit",
         minute: "2-digit",
       }),

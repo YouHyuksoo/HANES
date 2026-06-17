@@ -21,6 +21,7 @@ import {
   CreateConLabelsDto,
   ConfirmConReceivingDto,
   BulkConfirmConReceivingDto,
+  ReturnConReceivingDto,
   ConLabelResultDto,
 } from '../dto/consumable-label.dto';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -205,7 +206,7 @@ export class ConsumableLabelService {
         transDate: today,
         seq: logSeq,
         consumableCode: stock.consumableCode,
-        logType: 'INCOMING',
+        logType: 'IN',
         qty: 1,
         conUid: stock.conUid,
         vendorCode: stock.vendorCode,
@@ -227,6 +228,64 @@ export class ConsumableLabelService {
         consumableName: master?.consumableName ?? '',
         status: stock.status,
         recvDate: stock.recvDate,
+      };
+    });
+  }
+
+  /** 단건 반납입고 (바코드 스캔): ACTIVE → IN_RETURN 로그 */
+  async returnByScan(dto: ReturnConReceivingDto, company?: string, plant?: string) {
+    const stock = await this.stockRepo.findOne({
+      where: { conUid: dto.conUid, ...this.stockTenantWhere(company, plant) },
+    });
+    if (!stock) throw new NotFoundException(`UID ${dto.conUid}를 찾을 수 없습니다.`);
+    if (stock.status !== 'ACTIVE') {
+      throw new BadRequestException(`입고반납은 ACTIVE 상태만 가능합니다. (${stock.status})`);
+    }
+
+    return this.tx.run(async (queryRunner) => {
+      stock.status = 'RETURNED';
+      stock.remark = dto.returnReason ?? stock.remark;
+      await queryRunner.manager.save(stock);
+
+      await queryRunner.manager.decrement(
+        ConsumableMaster,
+        { consumableCode: stock.consumableCode, ...this.masterTenantWhere(company, plant) },
+        'stockQty',
+        1,
+      );
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const logSeqResult = await queryRunner.manager.query(
+        `SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`,
+      );
+      const logSeq = logSeqResult[0].nextSeq;
+
+      const log = queryRunner.manager.create(ConsumableLog, {
+        transDate: today,
+        seq: logSeq,
+        consumableCode: stock.consumableCode,
+        logType: 'IN_RETURN',
+        qty: 1,
+        conUid: stock.conUid,
+        vendorCode: stock.vendorCode,
+        vendorName: stock.vendorName,
+        unitPrice: stock.unitPrice,
+        returnReason: dto.returnReason ?? null,
+        company: company ?? null,
+        plant: plant ?? null,
+      });
+      await queryRunner.manager.save(log);
+
+      const master = await this.masterRepo.findOne({
+        where: { consumableCode: stock.consumableCode, ...this.masterTenantWhere(company, plant) },
+      });
+
+      return {
+        conUid: stock.conUid,
+        consumableCode: stock.consumableCode,
+        consumableName: master?.consumableName ?? '',
+        status: stock.status,
       };
     });
   }

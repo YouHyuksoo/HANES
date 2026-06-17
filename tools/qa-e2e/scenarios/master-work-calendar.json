@@ -1,0 +1,80 @@
+{
+  "id": "master-work-calendar",
+  "title": "생산월력관리",
+  "menuLabel": "작업 캘린더 (/master/work-calendar)",
+  "route": "/master/work-calendar",
+  "notes": "비표준 화면: 좌측 캘린더 목록(커스텀 클릭 리스트, DataGrid 아님) + 우측 폼/달력. 등록은 '캘린더 추가' 모달(우측 슬라이드패널 아님), 삭제는 행 휴지통 아이콘 + ConfirmModal. 검색창 없음(연도 클라이언트 필터만). 수정은 행 액션이 아니라 항목 선택 후 우측 CalendarFormPanel에서 처리하므로 러너 update(rowActionIndex) 패턴과 불일치 → update/create-invalid 제외.",
+  "testData": {
+    "prefix": "FECRUD",
+    "primaryKey": "calendarId",
+    "values": {
+      "calendarId": "{{prefix}}-{{stamp}}",
+      "calendarYear": "2026",
+      "remark": "QA월력-{{stamp}}"
+    }
+  },
+  "openButton": "추가",
+  "submitButton": "저장",
+  "cancelButton": "취소",
+  "cleanup": {
+    "searchPath": "/master/work-calendars?search={{prefix}}&limit=200",
+    "deletePath": "/master/work-calendars/{{calendarId}}",
+    "listPath": "data",
+    "prefixField": "calendarId",
+    "deleteValueField": "calendarId"
+  },
+  "apiVerify": {
+    "searchPath": "/master/work-calendars?search={{calendarId}}&limit=20",
+    "listPath": "data",
+    "matchField": "calendarId",
+    "matchValue": "{{calendarId}}"
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "생산월력관리 화면이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "생산월력관리" }
+    },
+    {
+      "id": "create-valid",
+      "type": "create",
+      "title": "정상: 신규 근무캘린더 등록",
+      "expectSummary": "'추가' 모달에서 캘린더ID/연도/비고를 입력하고 저장하면 좌측 목록에 캘린더ID가 노출되어야 한다",
+      "fields": [
+        { "label": "캘린더ID", "value": "{{calendarId}}" },
+        { "label": "연도", "value": "{{calendarYear}}" },
+        { "label": "비고", "value": "{{remark}}" }
+      ],
+      "expect": { "rowText": "{{calendarId}}" }
+    },
+    {
+      "id": "create-duplicate",
+      "type": "create-duplicate",
+      "title": "비정상(RED): 동일 캘린더ID 중복 등록",
+      "expectSummary": "이미 존재하는 캘린더ID로 등록 시 409 응답 + 오류 모달이 표시되어야 한다",
+      "fields": [
+        { "label": "캘린더ID", "value": "{{calendarId}}" },
+        { "label": "연도", "value": "{{calendarYear}}" },
+        { "label": "비고", "value": "{{remark}}-중복" }
+      ],
+      "closeButton": "닫기",
+      "expect": { "modalText": "오류가 발생했습니다", "httpStatus": 409 }
+    },
+    {
+      "id": "delete",
+      "type": "delete",
+      "title": "정상: 근무캘린더 삭제",
+      "expectSummary": "행 휴지통 아이콘 클릭 후 삭제 확인 모달에서 확인하면 목록에서 제거되어야 한다",
+      "rowActionIndex": 0,
+      "confirmButton": "확인"
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "정리 검증: API 조회 시 임시 캘린더 부재",
+      "expectSummary": "삭제 후 API 조회 결과에 임시 캘린더ID가 존재하지 않아야 한다"
+    }
+  ]
+}

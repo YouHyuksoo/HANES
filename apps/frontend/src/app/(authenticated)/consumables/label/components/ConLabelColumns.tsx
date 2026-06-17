@@ -9,7 +9,7 @@
  * 2. 소모품코드, 소모품명, 카테고리, 기존인스턴스수, 발행수량 입력
  * 3. qtyMap을 통해 각 마스터별 발행 수량을 관리
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
@@ -35,6 +35,48 @@ interface UseConLabelColumnsParams {
   toggleItem: (code: string) => void;
   qtyMap: Map<string, number>;
   setQty: (code: string, qty: number) => void;
+}
+
+/** 이미지 썸네일 — 클릭 시 전체화면 라이트박스 */
+function LabelImageCell({ src }: { src: string }) {
+  const [zoomed, setZoomed] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setZoomed(true)}
+        className="inline-block rounded overflow-hidden hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary transition"
+      >
+        <img
+          src={src}
+          alt=""
+          className="w-9 h-9 object-cover rounded border border-border bg-surface block"
+        />
+      </button>
+      {zoomed && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-6 cursor-zoom-out"
+          onClick={() => setZoomed(false)}
+        >
+          <div className="flex flex-col items-center gap-3" onClick={e => e.stopPropagation()}>
+            <img
+              src={src}
+              alt=""
+              className="max-h-[80vh] max-w-[80vw] object-contain rounded-lg bg-white shadow-2xl"
+            />
+            <button
+              type="button"
+              onClick={() => setZoomed(false)}
+              className="px-4 py-1.5 rounded-lg bg-white/15 text-white text-sm hover:bg-white/25 transition"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 /** DataGrid 컬럼 정의 훅 */
@@ -69,11 +111,7 @@ export function useConLabelColumns({
         cell: ({ row }) => {
           const src = resolveBackendFileUrl(row.original.imageUrl);
           return src ? (
-            <img
-              src={src}
-              alt=""
-              className="w-9 h-9 object-cover rounded border border-border bg-surface"
-            />
+            <LabelImageCell src={src} />
           ) : (
             <span className="text-text-muted text-xs">-</span>
           );

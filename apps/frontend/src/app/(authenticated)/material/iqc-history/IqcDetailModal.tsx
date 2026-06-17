@@ -54,10 +54,7 @@ const formatDate = (val: string) => {
   if (!val) return "-";
   const d = new Date(val);
   if (Number.isNaN(d.getTime())) return val;
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit",
-  }).format(d);
+  return d.toLocaleString();
 };
 
 const resultBadge = (result?: string) => {

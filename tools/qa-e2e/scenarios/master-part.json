@@ -1,0 +1,105 @@
+{
+  "id": "master-part",
+  "title": "품목마스터",
+  "menuLabel": "품목관리 (/master/part)",
+  "route": "/master/part",
+  "testData": {
+    "prefix": "FECRUD",
+    "primaryKey": "itemCode",
+    "values": {
+      "itemCode": "{{prefix}}-{{stamp}}",
+      "itemNo": "{{prefix}}NO-{{stamp}}",
+      "itemName": "QA품목-{{stamp}}",
+      "editedName": "QA품목수정-{{stamp}}",
+      "markingText": "MARK-{{stamp}}"
+    }
+  },
+  "openButton": "품목 추가",
+  "submitButton": "추가",
+  "editSubmitButton": "수정",
+  "cancelButton": "취소",
+  "search": { "placeholderIncludes": "검색", "value": "{{itemCode}}" },
+  "cleanup": {
+    "searchPath": "/master/parts?search={{prefix}}&limit=200",
+    "deletePath": "/master/parts/{{itemCode}}",
+    "listPath": "data",
+    "prefixField": "itemCode",
+    "deleteValueField": "itemCode"
+  },
+  "apiVerify": {
+    "searchPath": "/master/parts?search={{itemCode}}&limit=20",
+    "listPath": "data",
+    "matchField": "itemCode",
+    "matchValue": "{{itemCode}}"
+  },
+  "cases": [
+    {
+      "id": "load",
+      "type": "load",
+      "title": "화면 로드",
+      "expectSummary": "품목마스터 목록 화면이 정상 렌더링되어야 한다",
+      "expect": { "visibleText": "품목마스터" }
+    },
+    {
+      "id": "create-required",
+      "type": "create-invalid",
+      "title": "비정상: 필수값(품번·품목명) 누락 검증",
+      "expectSummary": "품목코드만 입력하고 품번/품목명을 비우면 제출(추가) 버튼이 비활성이어야 한다",
+      "fields": [
+        { "label": "품목코드", "value": "{{itemCode}}" }
+      ],
+      "expect": { "submitDisabled": true }
+    },
+    {
+      "id": "create-valid",
+      "type": "create",
+      "title": "정상: 신규 품목 등록",
+      "expectSummary": "필수값을 모두 채우면 등록되고 검색 결과에 품목코드가 노출되어야 한다",
+      "fields": [
+        { "label": "품목코드", "value": "{{itemCode}}" },
+        { "label": "품번", "value": "{{itemNo}}" },
+        { "label": "품목명", "value": "{{itemName}}" },
+        { "label": "마킹문구", "value": "{{markingText}}" }
+      ],
+      "expect": { "rowText": "{{itemCode}}" }
+    },
+    {
+      "id": "create-duplicate",
+      "type": "create-duplicate",
+      "title": "비정상(RED): 동일 품목코드 중복 등록",
+      "expectSummary": "이미 존재하는 품목코드로 등록 시 409 응답 + 오류 모달이 표시되어야 한다",
+      "fields": [
+        { "label": "품목코드", "value": "{{itemCode}}" },
+        { "label": "품번", "value": "{{itemNo}}" },
+        { "label": "품목명", "value": "{{itemName}}-중복" }
+      ],
+      "closeButton": "닫기",
+      "expect": { "modalText": "오류가 발생했습니다", "httpStatus": 409 }
+    },
+    {
+      "id": "update",
+      "type": "update",
+      "title": "정상: 품목명 수정",
+      "expectSummary": "행 수정으로 품목명을 변경하면 검색 결과에 변경된 이름이 노출되어야 한다",
+      "rowActionIndex": 0,
+      "fields": [
+        { "label": "품목명", "value": "{{editedName}}" }
+      ],
+      "expect": { "rowText": "{{editedName}}" }
+    },
+    {
+      "id": "delete",
+      "type": "delete",
+      "title": "정상: 품목 삭제",
+      "expectSummary": "삭제 확인 모달에서 확인하면 행이 제거되어야 한다",
+      "rowActionIndex": 1,
+      "confirmButton": "확인"
+    },
+    {
+      "id": "api-verify",
+      "type": "api-verify",
+      "title": "정리 검증: API 조회 시 임시 품목 부재",
+      "expectSummary": "삭제 후 API 조회 결과에 임시 품목코드가 존재하지 않아야 한다"
+    }
+  ]
+}

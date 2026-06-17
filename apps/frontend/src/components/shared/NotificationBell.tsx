@@ -181,7 +181,7 @@ export default function NotificationBell() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-text truncate">{noti.message}</p>
                       <p className="text-xs text-text-muted mt-0.5">
-                        {noti.jobCode} · {new Date(noti.createdAt).toLocaleString("ko-KR")}
+                        {noti.jobCode} · {new Date(noti.createdAt).toLocaleString()}
                       </p>
                     </div>
                     {noti.isRead === "N" && (

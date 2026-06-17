@@ -138,7 +138,7 @@ export default function SelfInspectHistoryPage() {
       size: 130,
       cell: ({ getValue }) => {
         const v = getValue<string>();
-        return v ? new Date(v).toLocaleString("ko-KR") : "-";
+        return v ? new Date(v).toLocaleString() : "-";
       },
     },
   ];

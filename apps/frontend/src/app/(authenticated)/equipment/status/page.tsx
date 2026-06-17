@@ -84,7 +84,7 @@ export default function EquipStatusPage() {
     [equipments],
   );
 
-  const updatedAt = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString("ko-KR") : "—";
+  const updatedAt = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "—";
 
   return (
     <>

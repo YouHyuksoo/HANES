@@ -87,7 +87,7 @@ export default function ImprovementDetailModal({ imprId, onClose, onStatusChange
                   {t(`improvement.${item.status === "PENDING" ? "statusPending" : item.status === "IN_PROGRESS" ? "statusInProgress" : "statusDone"}`)}
                 </span>
                 <span className="text-xs text-text-muted">
-                  {item.requesterNm ?? item.requesterId} · {new Date(item.createdAt).toLocaleString("ko-KR")}
+                  {item.requesterNm ?? item.requesterId} · {new Date(item.createdAt).toLocaleString()}
                 </span>
               </div>
 

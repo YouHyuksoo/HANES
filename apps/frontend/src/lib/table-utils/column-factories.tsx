@@ -40,7 +40,7 @@ export function DateCell<T>({ getValue }: CellContext<T, unknown>) {
   if (!value) return "-";
   const date = new Date(value as string);
   if (isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("ko-KR", {
+  return date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -55,7 +55,7 @@ export function DateTimeCell<T>({ getValue }: CellContext<T, unknown>) {
   if (!value) return "-";
   const date = new Date(value as string);
   if (isNaN(date.getTime())) return String(value);
-  return date.toLocaleString("ko-KR", {
+  return date.toLocaleString(undefined, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
