@@ -32,6 +32,20 @@ interface UseConLabelIssueParams {
   onRefresh: () => void;
 }
 
+function getApiErrorMessage(err: unknown): string {
+  if (err && typeof err === "object") {
+    const maybeResponse = err as { response?: { data?: { message?: unknown; error?: unknown } }; message?: unknown };
+    const serverMessage = maybeResponse.response?.data?.message ?? maybeResponse.response?.data?.error;
+    if (typeof serverMessage === "string" && serverMessage.trim()) {
+      return serverMessage;
+    }
+    if (typeof maybeResponse.message === "string" && maybeResponse.message.trim()) {
+      return maybeResponse.message;
+    }
+  }
+  return "UID 발행 중 오류가 발생했습니다.";
+}
+
 /** 소모품 라벨 발행 비즈니스 로직 훅 */
 export function useConLabelIssue({
   filteredMasters, selectedCodes, qtyMap, onRefresh,
@@ -67,8 +81,7 @@ export function useConLabelIssue({
       onRefresh();
       return allCreated;
     } catch (err) {
-      console.error("Failed to create conUids:", err);
-      return allCreated;
+      throw new Error(getApiErrorMessage(err));
     } finally {
       setIssuing(false);
     }

@@ -7,12 +7,13 @@
  * 초보자 가이드:
  * 1. 마스터 목록을 DataGrid에 표시 (체크박스 + 발행수량 입력)
  * 2. "UID 발행" 클릭 → 선택 건마다 POST create → conUid 생성
- * 3. 생성 결과를 배너로 표시 + 브라우저 인쇄
+ * 3. 생성 상태를 한 줄로 표시 + 브라우저 인쇄
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import {
-  Tag, Search, RefreshCw, CheckCircle, Printer,
+  Tag, Search, RefreshCw, Printer,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -35,19 +36,27 @@ interface TemplateInfo {
   isDefault?: boolean;
 }
 
+interface IssueStatus {
+  type: "loading" | "success" | "error";
+  message: string;
+}
+
 const DEFAULT_TEMPLATE_KEY = "__default__";
+const PRINT_IFRAME_ID = "consumable-label-print-iframe";
 
 function ConsumableLabelPage() {
   const { t } = useTranslation();
   const [masters, setMasters] = useState<LabelableMaster[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
   const [qtyMap, setQtyMap] = useState<Map<string, number>>(new Map());
   const [labelDesign, setLabelDesign] = useState<LabelDesign>(() => createDefaultLabelDesign("jig"));
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(DEFAULT_TEMPLATE_KEY);
   const [template, setTemplate] = useState<TemplateInfo | null>(null);
+  const [issueStatus, setIssueStatus] = useState<IssueStatus | null>(null);
   const [printing, setPrinting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -138,14 +147,29 @@ function ConsumableLabelPage() {
     setLabelDesign(ensureObjectLabelDesign(rawDesign, "jig"));
   }, [templates]);
 
+  const categoryFilterOptions = useMemo(() => [
+    { value: "", label: "전체 카테고리" },
+    ...Array.from(new Set(masters.map((m) => m.category).filter((category): category is string => Boolean(category))))
+      .sort()
+      .map((category) => ({ value: category, label: category })),
+  ], [masters]);
+
+  const handleCategoryFilterChange = useCallback((value: string) => {
+    setCategoryFilter(value);
+    setSelectedCodes(new Set());
+  }, []);
+
   /** 필터링된 마스터 목록 */
   const filteredMasters = useMemo(() => {
-    if (!searchText.trim()) return masters;
     const q = searchText.toLowerCase();
-    return masters.filter((m) =>
-      m.consumableCode.toLowerCase().includes(q) ||
-      m.consumableName.toLowerCase().includes(q));
-  }, [masters, searchText]);
+    return masters.filter((m) => {
+      const matchesCategory = !categoryFilter || m.category === categoryFilter;
+      const matchesSearch = !q.trim() ||
+        m.consumableCode.toLowerCase().includes(q) ||
+        m.consumableName.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [masters, searchText, categoryFilter]);
 
   /** 수량 설정 */
   const setQty = useCallback((code: string, qty: number) => {
@@ -183,24 +207,96 @@ function ConsumableLabelPage() {
   /** 브라우저 인쇄 (conUid 생성 → 인쇄 → 이력기록) */
   const handleBrowserPrint = useCallback(async () => {
     if (selectedCodes.size === 0) return;
-    const created = await createConUids();
-    if (created.length === 0) return;
+
+    document.getElementById(PRINT_IFRAME_ID)?.remove();
+    const printFrame = document.createElement("iframe");
+    printFrame.id = PRINT_IFRAME_ID;
+    printFrame.style.position = "fixed";
+    printFrame.style.right = "0";
+    printFrame.style.bottom = "0";
+    printFrame.style.width = "0";
+    printFrame.style.height = "0";
+    printFrame.style.border = "0";
+    printFrame.style.opacity = "0";
+    printFrame.style.pointerEvents = "none";
+    document.body.appendChild(printFrame);
+
+    const printDoc = printFrame.contentDocument;
+    const printWin = printFrame.contentWindow;
+    if (!printDoc || !printWin) {
+      printFrame.remove();
+      toast.error("라벨 출력 프레임을 준비하지 못했습니다.");
+      setIssueStatus({
+        type: "error",
+        message: "라벨 출력 프레임을 준비하지 못했습니다.",
+      });
+      return;
+    }
+
+    clearCreatedUids();
+    const loadingToast = toast.loading("UID를 발행하고 라벨 출력 준비 중입니다.");
+    setIssueStatus({
+      type: "loading",
+      message: "UID를 발행하고 라벨 출력 준비 중입니다.",
+    });
+
+    let created;
+    try {
+      created = await createConUids();
+    } catch (err) {
+      const message = err instanceof Error && err.message ? err.message : "UID 발행 중 오류가 발생했습니다.";
+      printFrame.remove();
+      toast.error(message, { id: loadingToast });
+      setIssueStatus({ type: "error", message });
+      return;
+    }
+
+    if (created.length === 0) {
+      printFrame.remove();
+      toast.error("발행된 UID가 없습니다. 선택 항목과 발행 수량을 확인하세요.", { id: loadingToast });
+      setIssueStatus({
+        type: "error",
+        message: "발행된 UID가 없습니다. 선택 항목과 발행 수량을 확인하세요.",
+      });
+      return;
+    }
     const conUids = created.map((c) => c.conUid);
 
     setPrinting(true);
+    setIssueStatus({
+      type: "loading",
+      message: `${conUids.length}건 발행 완료. 인쇄 다이얼로그를 호출하는 중입니다.`,
+    });
     setTimeout(async () => {
-      if (!printRef.current) { setPrinting(false); return; }
-      const win = window.open("", "_blank");
-      if (!win) { setPrinting(false); return; }
-      win.document.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
+      if (!printRef.current) {
+        setPrinting(false);
+        printFrame.remove();
+        toast.error("라벨 출력 화면을 준비하지 못했습니다.", { id: loadingToast });
+        setIssueStatus({
+          type: "error",
+          message: "라벨 출력 화면을 준비하지 못했습니다.",
+        });
+        return;
+      }
+      printDoc.open();
+      printDoc.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
         <style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#fff}.label-grid{display:flex;flex-wrap:wrap;gap:0;padding:0}
         img{max-width:100%;max-height:100%}@page{size:${labelDesign.labelWidth}mm ${labelDesign.labelHeight}mm;margin:0}</style>
-        </head><body><div class="label-grid">${printRef.current.innerHTML}</div>
-        <script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
-      win.document.close();
+        </head><body><div class="label-grid">${printRef.current.innerHTML}</div></body></html>`);
+      printDoc.close();
+      printWin.addEventListener("afterprint", () => printFrame.remove(), { once: true });
+      window.setTimeout(() => {
+        printWin.focus();
+        printWin.print();
+      }, 250);
       await logBrowserPrint(conUids);
       setPrinting(false);
       setSelectedCodes(new Set());
+      toast.success(`${conUids.length}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.`, { id: loadingToast });
+      setIssueStatus({
+        type: "success",
+        message: `${conUids.length}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.`,
+      });
       clearCreatedUids();
       fetchData();
     }, 500);
@@ -231,6 +327,22 @@ function ConsumableLabelPage() {
           <p className="text-text-muted mt-1">{t("consumables.label.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
+          <div
+            role="status"
+            aria-live="polite"
+            className={`h-9 w-80 min-w-0 flex items-center justify-end truncate text-xs ${
+              issueStatus?.type === "error"
+                ? "text-red-500"
+                : issueStatus?.type === "success"
+                  ? "text-emerald-500"
+                  : "text-text-muted"
+            }`}
+            title={issueStatus?.message ?? ""}
+          >
+            <span className="truncate">
+              {issueStatus?.message ?? (selectedCodes.size > 0 ? `${selectedCodes.size}건 선택됨` : "")}
+            </span>
+          </div>
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
@@ -245,48 +357,32 @@ function ConsumableLabelPage() {
           <Button size="sm" onClick={handleBrowserPrint}
             disabled={selectedCodes.size === 0 || issuing || printing}>
             <Printer className="w-4 h-4 mr-1" />
-            {issuing ? t("consumables.label.issuing") : t("consumables.label.issueBtn")}
+            {printing ? "출력중" : issuing ? t("consumables.label.issuing") : t("consumables.label.issueBtn")}
           </Button>
         </div>
       </div>
-
-      {/* 생성된 conUid 결과 배너 */}
-      {createdUids.length > 0 && (
-        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg flex-shrink-0">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-4 h-4 text-indigo-500 shrink-0" />
-            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
-              {t("consumables.label.issueSuccess", { count: createdUids.length })}
-            </span>
-            <button onClick={clearCreatedUids}
-              className="ml-auto text-indigo-400 hover:text-indigo-600">
-              <span className="text-xs">x</span>
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {createdUids.slice(0, 20).map((c) => (
-              <span key={c.conUid}
-                className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-800/50 text-indigo-700 dark:text-indigo-300 rounded text-xs font-mono">
-                {c.conUid}
-              </span>
-            ))}
-            {createdUids.length > 20 && (
-              <span className="text-xs text-indigo-500 dark:text-indigo-400">
-                +{createdUids.length - 20}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* DataGrid */}
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={filteredMasters} columns={columns} isLoading={loading || issuing}
           enableColumnFilter enableExport exportFileName={t("consumables.label.title")}
           toolbarLeft={
-            <Input placeholder={t("consumables.label.searchPlaceholder")}
-              value={searchText} onChange={(e) => setSearchText(e.target.value)}
-              leftIcon={<Search className="w-4 h-4" />} />
+            <div className="flex items-center gap-2">
+              <div className="w-72">
+                <Input placeholder={t("consumables.label.searchPlaceholder")}
+                  value={searchText} onChange={(e) => setSearchText(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />} />
+              </div>
+              <div className="w-44">
+                <Select
+                  aria-label="카테고리 필터"
+                  options={categoryFilterOptions}
+                  value={categoryFilter}
+                  onChange={handleCategoryFilterChange}
+                  fullWidth
+                />
+              </div>
+            </div>
           } 
           sqlQuery={`SELECT *\nFROM CON_LABELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
