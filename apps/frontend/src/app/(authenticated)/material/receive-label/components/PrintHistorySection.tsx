@@ -15,6 +15,7 @@ import { ChevronDown } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { api } from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 
 /** 발행 이력 레코드 */
 interface PrintLog {
@@ -54,10 +55,10 @@ const STATUS_COLORS: Record<string, string> = {
 /** 기간 키로부터 dateFrom 계산 */
 function calcDateFrom(key: DateRangeKey): string {
   const now = new Date();
-  if (key === 'today') return now.toISOString().slice(0, 10);
+  if (key === 'today') return getTodayLocal(now);
   const d = new Date(now);
   d.setDate(d.getDate() - (key === '7d' ? 7 : 30));
-  return d.toISOString().slice(0, 10);
+  return getTodayLocal(d);
 }
 
 export default function PrintHistorySection({ category = 'mat_lot' }: PrintHistoryProps) {

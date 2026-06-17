@@ -19,6 +19,7 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto } from '../dto/purchase-order.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -59,8 +60,8 @@ export class PurchaseOrderService {
     return {
       ...(dto.partnerId !== undefined ? { partnerId: dto.partnerId } : {}),
       ...(dto.partnerName !== undefined ? { partnerName: dto.partnerName } : {}),
-      ...(dto.orderDate !== undefined ? { orderDate: new Date(dto.orderDate) } : {}),
-      ...(dto.dueDate !== undefined ? { dueDate: new Date(dto.dueDate) } : {}),
+      ...(dto.orderDate !== undefined ? { orderDate: parseDateStart(dto.orderDate) } : {}),
+      ...(dto.dueDate !== undefined ? { dueDate: parseDateStart(dto.dueDate) } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
       ...(totalAmount !== undefined ? { totalAmount } : {}),
     };
@@ -88,8 +89,8 @@ export class PurchaseOrderService {
     }
 
     // 날짜 필터 (DB 레벨)
-    if (fromDate) qb.andWhere('po.orderDate >= :fromDate', { fromDate: new Date(fromDate) });
-    if (toDate) qb.andWhere('po.orderDate <= :toDate', { toDate: new Date(toDate) });
+    if (fromDate) qb.andWhere('po.orderDate >= :fromDate', { fromDate: parseDateStart(fromDate) });
+    if (toDate) qb.andWhere('po.orderDate <= :toDate', { toDate: parseDateEnd(toDate) });
 
     qb.orderBy('po.createdAt', 'DESC');
 
@@ -198,8 +199,8 @@ export class PurchaseOrderService {
         poNo: dto.poNo,
         partnerId: dto.partnerId,
         partnerName: resolvedPartnerName,
-        orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date(),
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+        orderDate: dto.orderDate ? parseDateStart(dto.orderDate) : new Date(),
+        dueDate: dto.dueDate ? parseDateStart(dto.dueDate) : null,
         remark: dto.remark,
         totalAmount,
         company: company ?? null,

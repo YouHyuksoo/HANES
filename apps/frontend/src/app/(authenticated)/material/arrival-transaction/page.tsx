@@ -11,6 +11,7 @@ import { Calendar, History, RefreshCw, Search } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { Button, Card, CardContent, Input, Select } from "@/components/ui";
 import { api } from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface ArrivalTransactionRow {
   transNo: string;
@@ -37,12 +38,12 @@ interface ArrivalTransactionRow {
   toWarehouse?: { warehouseCode?: string; warehouseName?: string } | null;
 }
 
-const getToday = () => new Date().toISOString().slice(0, 10);
+const getToday = () => getTodayLocal();
 
 const getOneMonthAgo = () => {
   const d = new Date();
   d.setMonth(d.getMonth() - 1);
-  return d.toISOString().slice(0, 10);
+  return getTodayLocal(d);
 };
 
 const transTypeOptions = [

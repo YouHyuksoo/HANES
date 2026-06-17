@@ -17,6 +17,7 @@ import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface ReceiptTransaction {
   id: string;
@@ -45,8 +46,8 @@ export default function ReceiptCancelPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<ReceiptTransaction | null>(null);
   const [reason, setReason] = useState("");

@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ArrivalStatus } from '@/components/material';
 import { api } from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 
 /** 입하 자재 인터페이스 */
 export interface ArrivalItem {
@@ -128,7 +129,7 @@ export function useArrivalData() {
   }, [arrivals, statusFilter, supplierFilter, searchText]);
 
   const stats = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayLocal();
     const todayItems = arrivals.filter((r) => r.arrivalDate === today);
     return {
       todayCount: todayItems.length,

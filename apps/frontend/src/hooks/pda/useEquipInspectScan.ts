@@ -18,6 +18,7 @@
  */
 import { useState, useCallback } from "react";
 import { api } from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 /** 스캔된 설비 정보 */
 export interface ScannedEquip {
@@ -154,7 +155,7 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
       // 2) 오늘 이미 점검 완료 여부 확인 (선택적 API)
       let alreadyInspected = false;
       try {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getTodayLocal();
         const { data: checkRes } = await api.get(
           "/equipment/daily-inspect/check",
           {
@@ -307,7 +308,7 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
       await api.post("/equipment/daily-inspect", {
         equipCode: scannedEquip.equipCode,
         inspectType: "DAILY",
-        inspectDate: new Date().toISOString().slice(0, 10),
+        inspectDate: getTodayLocal(),
         overallResult,
         details: {
           items: resultArray.map((r) => ({

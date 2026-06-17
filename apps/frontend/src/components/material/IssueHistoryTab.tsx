@@ -19,6 +19,7 @@ import DataGrid from '@/components/data-grid/DataGrid';
 import ComCodeBadge from '@/components/ui/ComCodeBadge';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import api from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 
 /** 출고 이력 레코드 타입 */
 interface IssueRecord {
@@ -37,7 +38,7 @@ interface IssueRecord {
 }
 
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
-const getToday = () => new Date().toISOString().slice(0, 10);
+const getToday = () => getTodayLocal();
 
 export default function IssueHistoryTab() {
   const { t } = useTranslation();

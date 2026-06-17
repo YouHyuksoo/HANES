@@ -10,6 +10,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { api } from '@/services/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getTodayLocal } from '@/utils/date';
 
 export interface IssuingLog {
   id: string;
@@ -53,7 +54,7 @@ export function useIssuingData() {
   }, [data, searchTerm, typeFilter]);
 
   const todayStats = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayLocal();
     const todayData = data.filter((d) => d.createdAt?.startsWith(today));
     return {
       outCount: todayData.filter((d) => d.logType === 'OUT').length,

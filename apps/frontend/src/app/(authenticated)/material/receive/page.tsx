@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { PackagePlus, RefreshCw, ScanLine, Search } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 import api from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 import ReceivableTable from './components/ReceivableTable';
 import ReceiveScanModal from './components/ReceiveScanModal';
 import type { ReceivableLot } from './components/types';
@@ -27,7 +28,7 @@ export default function ReceivingPage() {
   const [scanOpen, setScanOpen] = useState(false);
 
   /** 필터 상태 — 날짜 기본값: 당일 */
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayLocal();
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
   const [vendorFilter, setVendorFilter] = useState('');

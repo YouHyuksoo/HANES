@@ -18,6 +18,7 @@ import { PartnerSelect } from "@/components/shared";
 import PartSearchModal from "@/components/shared/PartSearchModal";
 import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface ItemRow {
   lineNo: number;
@@ -136,7 +137,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
         })),
       );
     } else {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getTodayLocal();
       setForm({ ...INIT_FORM, orderDate: today });
       setItems([]);
       api.get("/material/purchase-orders/next-no").then(res => {

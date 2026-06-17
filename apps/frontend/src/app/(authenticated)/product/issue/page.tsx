@@ -21,6 +21,7 @@ import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import IssueFormPanel, { IssueFormValues } from "./components/IssueFormPanel";
 
 interface ProductIssueTx {
@@ -50,8 +51,8 @@ export default function ProductIssuePage() {
   const [data, setData] = useState<ProductIssueTx[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
 
   /* 우측 패널 */
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -104,7 +105,7 @@ export default function ProductIssuePage() {
 
   /** 통계 */
   const stats = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayLocal();
     const todayDone = data.filter(
       (d) => (d.transType === "WIP_OUT" || d.transType === "FG_OUT") &&
         d.status === "DONE" && String(d.transDate).slice(0, 10) === today,

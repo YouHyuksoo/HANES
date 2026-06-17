@@ -18,6 +18,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import ScrapRegisterModal from "./components/ScrapRegisterModal";
 
 interface ScrapRecord {
@@ -39,8 +40,8 @@ export default function ScrapPage() {
   const [data, setData] = useState<ScrapRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
   const [showRegister, setShowRegister] = useState(false);
 
   const fetchData = useCallback(async () => {

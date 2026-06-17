@@ -11,6 +11,7 @@ import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { api } from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 
 interface TransactionData {
   id: string;
@@ -50,13 +51,13 @@ const getTransTypeColor = (type: string) => {
 };
 
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
-const getToday = () => new Date().toISOString().slice(0, 10);
+const getToday = () => getTodayLocal();
 
 /** 1개월 전 날짜를 YYYY-MM-DD 형식으로 반환 */
 const getOneMonthAgo = () => {
   const d = new Date();
   d.setMonth(d.getMonth() - 1);
-  return d.toISOString().slice(0, 10);
+  return getTodayLocal(d);
 };
 
 export default function TransactionPage() {

@@ -17,6 +17,7 @@ import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface ProductSummary {
   itemCode: string;
@@ -39,8 +40,8 @@ export default function ResultSummaryPage() {
   const [data, setData] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
 
   const fetchData = useCallback(async () => {
     setLoading(true);

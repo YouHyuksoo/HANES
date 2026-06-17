@@ -16,6 +16,7 @@ import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { PoStatusQueryDto } from '../dto/po-status.dto';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class PoStatusService {
@@ -42,9 +43,9 @@ export class PoStatusService {
     }
 
     if (fromDate && toDate) {
-      where.orderDate = Between(new Date(fromDate), new Date(toDate));
+      where.orderDate = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
     } else if (fromDate) {
-      where.orderDate = Between(new Date(fromDate), new Date());
+      where.orderDate = Between(parseDateStart(fromDate)!, new Date());
     }
 
     if (search) {

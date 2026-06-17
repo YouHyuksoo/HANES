@@ -20,6 +20,7 @@ import {
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import LogDetailModal from "./LogDetailModal";
 
 /** 로그 행 타입 */
@@ -47,8 +48,8 @@ export default function SchedulerLogTab() {
   const [detailTarget, setDetailTarget] = useState<SchedulerLog | null>(null);
 
   /* 필터 */
-  const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+  const today = getTodayLocal();
+  const weekAgo = getTodayLocal(new Date(Date.now() - 7 * 86400_000));
   const [startDate, setStartDate] = useState(weekAgo);
   const [endDate, setEndDate] = useState(today);
   const [jobFilter, setJobFilter] = useState("");

@@ -16,6 +16,7 @@ import { Plus, Minus } from "lucide-react";
 import { Modal, Button, Input, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import type { JobOrderOption } from "@harness/shared";
 
 interface SampleRow {
@@ -40,7 +41,7 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
 
   const [form, setForm] = useState({
     orderNo: "",
-    inspectDate: new Date().toISOString().slice(0, 10),
+    inspectDate: getTodayLocal(),
     inspectorName: "",
     inspectType: "",
   });
@@ -114,7 +115,7 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
           remark: s.remark || undefined,
         })),
       });
-      setForm({ orderNo: "", inspectDate: new Date().toISOString().slice(0, 10), inspectorName: "", inspectType: "" });
+      setForm({ orderNo: "", inspectDate: getTodayLocal(), inspectorName: "", inspectType: "" });
       setSamples([{ sampleNo: 1, measuredValue: "", specUpper: "", specLower: "", passYn: "Y", remark: "" }]);
       onCreated();
       onClose();

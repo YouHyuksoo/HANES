@@ -16,6 +16,7 @@ import { Plus, Trash2, Users } from "lucide-react";
 import { Card, CardContent, Button, ConfirmModal, Input } from "@/components/ui";
 import { WorkerAvatar } from "@/components/worker/WorkerSelector";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 /** 교육 결과 행 데이터 */
 interface TrainingResult {
@@ -64,7 +65,7 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
   const handleAdd = useCallback(async () => {
     if (!newWorkerCode.trim()) return;
     try {
-      await api.post(`/system/trainings/${planId}/results`, { workerCode: newWorkerCode.trim(), attendDate: new Date().toISOString().slice(0, 10), passed: false });
+      await api.post(`/system/trainings/${planId}/results`, { workerCode: newWorkerCode.trim(), attendDate: getTodayLocal(), passed: false });
       setNewWorkerCode(""); fetchResults(); onRefresh();
     } catch { /* api 인터셉터 */ }
   }, [planId, newWorkerCode, fetchResults, onRefresh]);

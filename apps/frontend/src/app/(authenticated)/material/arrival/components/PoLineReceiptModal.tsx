@@ -15,6 +15,7 @@ import { Modal, Button, Input, Select } from '@/components/ui';
 import MfgPartnerSelect from '@/components/shared/MfgPartnerSelect';
 import { useWarehouseOptions } from '@/hooks/useMasterOptions';
 import api from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 import type { PoLineRow, PoLineReceiptInput } from './types';
 
 interface PoLineReceiptModalProps {
@@ -30,7 +31,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
 
   const [receivedQty, setReceivedQty] = useState<number>(0);
   const [mfgPartnerCode, setMfgPartnerCode] = useState('');
-  const [receivedDate, setReceivedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [receivedDate, setReceivedDate] = useState<string>(() => getTodayLocal());
   const [remark, setRemark] = useState('');
   const [warehouseCode, setWarehouseCode] = useState('');
   const [lotUnitQty, setLotUnitQty] = useState<number | null>(null);
@@ -39,7 +40,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
     if (isOpen && line) {
       setReceivedQty(0);
       setMfgPartnerCode('');
-      setReceivedDate(new Date().toISOString().slice(0, 10));
+      setReceivedDate(getTodayLocal());
       setRemark('');
       setWarehouseCode(warehouses[0]?.value ?? '');
       api.get(`/master/parts/code/${encodeURIComponent(line.itemCode)}`, { suppressErrorModal: true })
@@ -54,7 +55,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
     return Math.ceil(receivedQty / lotUnitQty);
   }, [receivedQty, lotUnitQty]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayLocal();
   const canSave = !!line
     && receivedQty > 0
     && receivedQty <= (line?.remainingQty ?? 0)

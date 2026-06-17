@@ -18,6 +18,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { EquipSelect } from '@/components/shared';
 import api from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 
 interface ProgressItem {
   id: string;
@@ -37,7 +38,7 @@ interface ProgressItem {
 }
 
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
-const getToday = () => new Date().toISOString().slice(0, 10);
+const getToday = () => getTodayLocal();
 
 export default function ProgressPage() {
   const { t } = useTranslation();

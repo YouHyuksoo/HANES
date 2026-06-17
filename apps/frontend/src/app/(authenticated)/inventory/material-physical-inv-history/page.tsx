@@ -18,6 +18,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { WarehouseSelect } from "@/components/shared";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface InvHistoryItem {
   id: string;
@@ -40,8 +41,8 @@ export default function MaterialPhysicalInvHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
 
   const fetchData = useCallback(async () => {
     setLoading(true);

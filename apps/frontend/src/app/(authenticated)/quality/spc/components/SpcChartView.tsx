@@ -17,6 +17,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button, Input, Card, CardContent } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import SpcControlCharts from "./SpcControlCharts";
 import SpcHistogram from "./SpcHistogram";
 
@@ -62,16 +63,16 @@ export default function SpcChartView({ chart, onClose }: Props) {
   const [showImport, setShowImport] = useState(false);
   const [importFrom, setImportFrom] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1);
-    return d.toISOString().slice(0, 10);
+    return getTodayLocal(d);
   });
-  const [importTo, setImportTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [importTo, setImportTo] = useState(() => getTodayLocal());
   const [importData, setImportData] = useState<{ source: string; date: string; values: number[] }[]>([]);
   const [importLoading, setImportLoading] = useState(false);
 
   /* -- 측정값 입력 상태 -- */
   const [showAddForm, setShowAddForm] = useState(false);
   const [newValues, setNewValues] = useState("");
-  const [newSampleDate, setNewSampleDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [newSampleDate, setNewSampleDate] = useState(() => getTodayLocal());
   const [newSubgroupNo, setNewSubgroupNo] = useState(1);
   const [addingSaving, setAddingSaving] = useState(false);
 

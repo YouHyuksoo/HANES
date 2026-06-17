@@ -15,6 +15,7 @@ import { Plus, History, X } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import { EquipSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface UsageRecord {
   usageDate: string;
@@ -38,7 +39,7 @@ interface UsageForm {
   remark: string;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => getTodayLocal();
 const INIT: UsageForm = {
   usageDate: today(), shotCount: "", orderNo: "",
   equipCode: "", workerCode: "", remark: "",

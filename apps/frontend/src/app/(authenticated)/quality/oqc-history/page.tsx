@@ -19,6 +19,7 @@ import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface OqcHistoryItem {
   id: string;
@@ -41,8 +42,8 @@ export default function OqcHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [resultFilter, setResultFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
 
   const fetchData = useCallback(async () => {
     setLoading(true);

@@ -12,6 +12,7 @@ import { Printer } from "lucide-react";
 import QRCode from "react-qr-code";
 import { Modal, Button } from "@/components/ui";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface Props {
   isOpen: boolean;
@@ -84,7 +85,7 @@ export default function JobOrderPrintModal({ isOpen, orderNo, onClose }: Props) 
   }, [isOpen, orderNo]);
 
   const planQty = order?.planQty ?? 0;
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(() => getTodayLocal(), []);
 
   // 원자재만 표시 (반제품/소모품 제외)
   const rawMaterials = useMemo(

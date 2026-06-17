@@ -18,6 +18,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import SampleInspectInputModal from "./components/SampleInspectInputModal";
 
 interface SampleInspectRow {
@@ -44,8 +45,8 @@ export default function SampleInspectPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [passFilter, setPassFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
   const [showInput, setShowInput] = useState(false);
 
   const passOptions = useMemo(() => [

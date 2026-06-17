@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { ClipboardList, RefreshCw, Search } from 'lucide-react';
 import { Button, Input, Select, Card, CardContent } from '@/components/ui';
 import api from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 import ReceivingHistoryTable from '../receive/components/ReceivingHistoryTable';
 import type { ReceivingRecord } from '../receive/components/types';
 
@@ -25,7 +26,7 @@ export default function ReceiveHistoryPage() {
   const [loading, setLoading] = useState(false);
 
   /** 필터 상태 — 날짜 기본값: 당일 */
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayLocal();
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
   const [itemSearch, setItemSearch] = useState('');

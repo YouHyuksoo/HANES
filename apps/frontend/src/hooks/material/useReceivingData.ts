@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReceivingStatus } from '@/components/material';
 import { api } from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 
 /** 입고 대상 항목 인터페이스 */
 export interface ReceivingItem {
@@ -159,7 +160,7 @@ export function useReceivingData() {
   }, [items, statusFilter, searchText]);
 
   const stats = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayLocal();
     const pendingItems = items.filter((i) => i.status === 'PASSED');
     const todayStocked = items.filter(
       (i) => i.status === 'STOCKED' && i.stockedAt?.startsWith(today)

@@ -21,6 +21,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useComCodeMap } from "@/hooks/useComCode";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface IqcHistoryItem {
   id: string;
@@ -80,8 +81,8 @@ export default function IqcHistoryPage() {
   const [searchText, setSearchText] = useState("");
   const [resultFilter, setResultFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
 
   /** 상세 모달 상태 */
   const [detailRecord, setDetailRecord] = useState<IqcDetailRecord | null>(null);

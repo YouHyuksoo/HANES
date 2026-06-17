@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/ui";
 import { ComCodeSelect, PartnerSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface ComplaintFormData {
   customerCode: string;
@@ -30,7 +31,7 @@ interface ComplaintFormData {
 }
 
 const INIT: ComplaintFormData = {
-  customerCode: "", customerName: "", complaintDate: new Date().toISOString().slice(0, 10),
+  customerCode: "", customerName: "", complaintDate: getTodayLocal(),
   itemCode: "", lotNo: "", defectQty: "", complaintType: "", urgency: "MEDIUM",
   description: "", responsibleCode: "", costAmount: "",
 };
