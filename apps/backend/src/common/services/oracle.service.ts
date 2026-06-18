@@ -136,7 +136,7 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
       paramNames.push(':o_cursor');
 
       const sql = `BEGIN ${packageName}.${procName}(${paramNames.join(', ')}); END;`;
-      const result = await conn.execute(sql, bindVars, {
+      const result = await this.executeWithRetry(conn, sql, bindVars, {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
       });
 
@@ -202,7 +202,7 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
       }
 
       const sql = `BEGIN ${procName}(${paramNames.join(', ')}); END;`;
-      const result = await conn.execute(sql, bindVars);
+      const result = await this.executeWithRetry(conn, sql, bindVars);
       return getOutBinds(result.outBinds);
     } catch (err) {
       this.logger.error(
@@ -253,7 +253,7 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
       }
 
       const sql = `BEGIN ${packageName}.${procName}(${paramNames.join(', ')}); END;`;
-      const result = await conn.execute(sql, bindVars, {
+      const result = await this.executeWithRetry(conn, sql, bindVars, {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
       });
 
@@ -276,6 +276,41 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
       );
     } finally {
       if (conn) await conn.close();
+    }
+  }
+
+  /**
+   * 패키지 상태 폐기 계열 오류 여부
+   * - ORA-04068: existing state of packages has been discarded
+   * - ORA-04061/04065: 참조 패키지가 INVALID/변경됨
+   * DDL(테이블 변경 등)로 의존 패키지가 무효화된 직후, 기존 상태를 들고 있던 세션의
+   * 첫 호출에서 1회성으로 발생한다. 같은 세션에서 재시도하면 정상 동작한다.
+   */
+  private isPackageStateDiscarded(err: unknown): boolean {
+    const msg = err instanceof Error ? err.message : String(err);
+    return /ORA-0406[0-9]|ORA-04068/.test(msg);
+  }
+
+  /**
+   * 프로시저 익명블록 실행 — 패키지 상태 폐기(ORA-04068 등) 시 같은 커넥션에서 1회 재시도.
+   * ORA-04068은 본문 실행 전에 발생하고 상태가 재설정되므로 재시도가 안전하다(이중 실행 없음).
+   */
+  private async executeWithRetry(
+    conn: oracledb.Connection,
+    sql: string,
+    bindVars: Record<string, oracledb.BindParameter>,
+    options?: oracledb.ExecuteOptions,
+  ): Promise<oracledb.Result<OracleRow>> {
+    try {
+      return await conn.execute<OracleRow>(sql, bindVars, options ?? {});
+    } catch (err) {
+      if (this.isPackageStateDiscarded(err)) {
+        this.logger.warn(
+          `패키지 상태 폐기 감지(ORA-04068 등) — DDL 직후 1회성 오류로 보고 재시도: ${sql}`,
+        );
+        return await conn.execute<OracleRow>(sql, bindVars, options ?? {});
+      }
+      throw err;
     }
   }
 
