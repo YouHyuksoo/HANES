@@ -574,6 +574,15 @@ export class ProdResultService {
         company: jobOrder.company,
         plant: jobOrder.plant,
       });
+      // 불량재고 즉시 적재 — 불량을 DEFECT(불량품)창고에 반영(실물 추적)
+      await this.adsorbDefectStockInTx(queryRunner, {
+        resultNo: saved.resultNo,
+        orderNo: dto.orderNo,
+        defectQty: effectiveDefectQty,
+        processCode: dto.processCode,
+        company: jobOrder.company,
+        plant: jobOrder.plant,
+      });
     });
 
     return this.prodResultRepository.findOne({
@@ -670,8 +679,16 @@ export class ProdResultService {
           company: company ?? prodResult.company ?? undefined,
           plant: plant ?? prodResult.plant ?? undefined,
         });
+        await this.adsorbDefectStockInTx(queryRunner, {
+          resultNo,
+          orderNo: prodResult.orderNo,
+          defectQty: newDefectQty,
+          processCode: prodResult.processCode,
+          company: company ?? prodResult.company ?? undefined,
+          plant: plant ?? prodResult.plant ?? undefined,
+        });
         this.logger.log(
-          `실적 수량 변경 재계산(자재+제품재고): ${resultNo} (${oldTotalQty} → ${newTotalQty})`,
+          `실적 수량 변경 재계산(자재+제품재고+불량재고): ${resultNo} (${oldTotalQty} → ${newTotalQty})`,
         );
       }
     });
@@ -871,6 +888,14 @@ export class ProdResultService {
         resultNo: prodResult.resultNo,
         orderNo: prodResult.orderNo,
         goodQty: dto.goodQty ?? prodResult.goodQty,
+        processCode: prodResult.processCode,
+        company,
+        plant,
+      });
+      await this.adsorbDefectStockInTx(queryRunner, {
+        resultNo: prodResult.resultNo,
+        orderNo: prodResult.orderNo,
+        defectQty: dto.defectQty ?? prodResult.defectQty,
         processCode: prodResult.processCode,
         company,
         plant,
@@ -1389,6 +1414,82 @@ export class ProdResultService {
     });
     this.logger.log(
       `공정재고 자동 적재: ${jobOrder.itemCode} × ${goodQty} → WIP_MAIN (실적 #${resultNo})`,
+    );
+  }
+
+  /**
+   * 불량재고 자동 적재 — 불량(defectQty)을 DEFECT(불량품)창고에 재고화한다.
+   * 불량 실물을 추적(어느 실적/지시에서 몇 개)하기 위함. 양품 적재와 동일한 시리얼·멱등 패턴.
+   * - 멱등: 같은 실적(refId)에 이미 DEFECT_IN 트랜잭션이 있으면 건너뛴다.
+   * - refType=PROD_RESULT 이므로 실적 취소(reverseProductStock) 시 양품과 함께 자동 역분개된다.
+   */
+  private async adsorbDefectStockInTx(
+    qr: import('typeorm').QueryRunner,
+    params: {
+      resultNo: string;
+      orderNo: string;
+      defectQty: number;
+      processCode?: string | null;
+      company?: string;
+      plant?: string;
+    },
+  ): Promise<void> {
+    const { resultNo, orderNo, defectQty, processCode, company, plant } = params;
+    if (!defectQty || defectQty <= 0) return;
+
+    const { ProductTransaction } = await import('../../../entities/product-transaction.entity');
+    const already = await qr.manager.findOne(ProductTransaction, {
+      where: {
+        refType: 'PROD_RESULT',
+        refId: resultNo,
+        transType: 'DEFECT_IN',
+        status: 'DONE',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    if (already) return;
+
+    const jobOrder = await qr.manager.findOne(JobOrder, {
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      relations: ['part'],
+    });
+    if (!jobOrder?.itemCode) return;
+
+    const itemType = jobOrder.part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
+
+    const current = await qr.manager.findOne(ProdResult, {
+      where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      select: ['resultNo', 'prdUid'],
+    });
+    let prdUid = current?.prdUid?.trim() || '';
+    if (!prdUid) {
+      // 불량만 있는 실적(양품 0)도 추적 위해 시리얼 채번
+      prdUid = await this.generateProductSerial(qr, orderNo, jobOrder.company, jobOrder.plant);
+      await qr.manager.update(
+        ProdResult,
+        { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { prdUid },
+      );
+    }
+
+    await this.productInventoryService.receiveStockInTx(qr, {
+      warehouseId: 'DEFECT',
+      itemCode: jobOrder.itemCode,
+      itemType,
+      prdUid,
+      qty: defectQty,
+      transType: 'DEFECT_IN',
+      orderNo,
+      processCode: processCode || undefined,
+      refType: 'PROD_RESULT',
+      refId: resultNo,
+      remark: '생산실적 불량 자동 적재',
+      company: jobOrder.company,
+      plant: jobOrder.plant,
+    });
+    this.logger.log(
+      `불량재고 자동 적재: ${jobOrder.itemCode} × ${defectQty} → DEFECT (실적 #${resultNo})`,
     );
   }
 

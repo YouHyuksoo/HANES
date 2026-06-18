@@ -526,31 +526,68 @@ export class ReworkService {
       }
     }
 
-    // 재작업 합격 시 제품재고 복원 — 양품(passQty)을 WIP_MAIN 공정창고에 재적재한다.
-    // (격리 시점에 재고에서 차감된 게 아니라 애초에 미적재였으므로 "신규 입고"가 정합적.
-    //  INSPECT_PENDING 상태에서만 진입 가능하고 PASS 후 상태가 바뀌므로 이중적재 없음.)
-    if (dto.inspectResult === 'PASS' && (dto.passQty ?? 0) > 0) {
+    // 재작업 결과에 따라 불량재고(DEFECT창고)를 정리한다.
+    //  - 합격분(passQty): DEFECT → WIP_MAIN 공정창고로 이동(다시 정상 재고화)
+    //  - 폐기분(failQty): DEFECT → SCRAP 폐기창고로 이동
+    //  - FAIL(재재작업)은 DEFECT창고에 그대로 둔다.
+    // 격리 시점에 실적이 불량을 DEFECT창고에 적재해 두므로, 합격해도 양품이 새로 생기는 게 아니라
+    // 불량재고가 정상재고로 '이동'한다(이중계상 방지).
+    if (dto.inspectResult !== 'FAIL') {
       const part = await this.partMasterRepo.findOne({
         where: { itemCode: order.itemCode, ...this.tenantWhere(company, plant) },
         select: ['itemCode', 'itemType'],
       });
       const itemType = part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
-      await this.productInventoryService.receiveStock({
-        warehouseId: 'WIP_MAIN',
-        itemCode: order.itemCode,
-        itemType,
-        prdUid: order.prdUid?.trim() || undefined,
-        qty: dto.passQty,
-        transType: 'WIP_IN',
-        refType: 'REWORK',
-        refId: order.reworkNo,
-        remark: `재작업 합격 재고 복원 (${order.reworkNo})`,
-        company,
-        plant,
-      });
-      this.logger.log(
-        `재작업 합격 재고 복원: ${order.itemCode} × ${dto.passQty} → WIP_MAIN (재작업 #${order.reworkNo})`,
-      );
+
+      if ((dto.passQty ?? 0) > 0) {
+        const moved = await this.productInventoryService.transferStockByItem({
+          fromWarehouseId: 'DEFECT',
+          toWarehouseId: 'WIP_MAIN',
+          itemCode: order.itemCode,
+          itemType,
+          qty: dto.passQty,
+          transType: 'REWORK_IN',
+          refType: 'REWORK',
+          refId: order.reworkNo,
+          remark: `재작업 합격 (${order.reworkNo})`,
+          company,
+          plant,
+        });
+        // 불량재고가 부족하면(불량재고 도입 전 데이터 등) 부족분만 신규 입고로 보충
+        if (moved < dto.passQty) {
+          await this.productInventoryService.receiveStock({
+            warehouseId: 'WIP_MAIN',
+            itemCode: order.itemCode,
+            itemType,
+            prdUid: order.prdUid?.trim() || undefined,
+            qty: dto.passQty - moved,
+            transType: 'WIP_IN',
+            refType: 'REWORK',
+            refId: order.reworkNo,
+            remark: `재작업 합격 재고 복원(보충) (${order.reworkNo})`,
+            company,
+            plant,
+          });
+        }
+        this.logger.log(`재작업 합격 → WIP_MAIN: ${order.itemCode} × ${dto.passQty} (재작업 #${order.reworkNo})`);
+      }
+
+      if ((dto.failQty ?? 0) > 0) {
+        await this.productInventoryService.transferStockByItem({
+          fromWarehouseId: 'DEFECT',
+          toWarehouseId: 'SCRAP',
+          itemCode: order.itemCode,
+          itemType,
+          qty: dto.failQty,
+          transType: 'SCRAP_OUT',
+          refType: 'REWORK',
+          refId: order.reworkNo,
+          remark: `재작업 폐기 (${order.reworkNo})`,
+          company,
+          plant,
+        });
+        this.logger.log(`재작업 폐기 → SCRAP: ${order.itemCode} × ${dto.failQty} (재작업 #${order.reworkNo})`);
+      }
     }
 
     this.logger.log(

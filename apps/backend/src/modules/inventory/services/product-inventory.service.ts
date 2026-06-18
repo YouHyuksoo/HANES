@@ -553,6 +553,72 @@ export class ProductInventoryService {
   }
 
   /** 제품 트랜잭션 취소 (입고취소, 출고취소) */
+  /**
+   * 창고 간 수량 이동 — fromWarehouse 의 itemCode 재고를 시리얼(prdUid) 행 단위 FIFO로
+   * qty 만큼 toWarehouse 로 이동한다(시리얼 보존, 소진 행 정리). 재고 부족 시 가용분만 이동.
+   * 재작업 합격(DEFECT→WIP_MAIN)·폐기(DEFECT→SCRAP) 등 집계 수량 이동에 사용.
+   * @returns 실제 이동된 수량
+   */
+  async transferStockByItem(dto: {
+    fromWarehouseId: string;
+    toWarehouseId: string;
+    itemCode: string;
+    itemType?: string;
+    qty: number;
+    transType: string;
+    refType?: string;
+    refId?: string;
+    remark?: string;
+    company?: string;
+    plant?: string;
+  }): Promise<number> {
+    if (!dto.qty || dto.qty <= 0) return 0;
+    const tenantWhere = this.tenantWhere(dto.company, dto.plant);
+    return this.tx.run(async (qr) => {
+      const rows = await qr.manager.find(ProductStock, {
+        where: { warehouseCode: dto.fromWarehouseId, itemCode: dto.itemCode, ...tenantWhere },
+        order: { createdAt: 'ASC' },
+      });
+      let remaining = dto.qty;
+      let moved = 0;
+      for (const row of rows) {
+        if (remaining <= 0) break;
+        const take = Math.min(remaining, row.availableQty);
+        if (take <= 0) continue;
+        await this.issueStockInTx(qr, {
+          warehouseId: dto.fromWarehouseId,
+          toWarehouseId: dto.toWarehouseId,
+          itemCode: dto.itemCode,
+          itemType: dto.itemType ?? row.itemType,
+          prdUid: row.prdUid,
+          qty: take,
+          transType: dto.transType,
+          refType: dto.refType,
+          refId: dto.refId,
+          remark: dto.remark,
+          company: dto.company,
+          plant: dto.plant,
+        });
+        remaining -= take;
+        moved += take;
+      }
+      // 소진된 from 창고 행(qty 0, 예약 0) 정리
+      await qr.manager
+        .createQueryBuilder()
+        .delete()
+        .from(ProductStock)
+        .where('WAREHOUSE_CODE = :wh AND ITEM_CODE = :item AND QTY <= 0 AND RESERVED_QTY = 0', {
+          wh: dto.fromWarehouseId,
+          item: dto.itemCode,
+        })
+        .andWhere(dto.company ? 'COMPANY = :company' : '1=1', dto.company ? { company: dto.company } : {})
+        .andWhere(dto.plant ? 'PLANT_CD = :plant' : '1=1', dto.plant ? { plant: dto.plant } : {})
+        .execute();
+      this.logger.log(`재고 이동: ${dto.itemCode} × ${moved} ${dto.fromWarehouseId} → ${dto.toWarehouseId} (${dto.transType})`);
+      return moved;
+    });
+  }
+
   async cancelTransaction(dto: CancelTransactionDto, company?: string, plant?: string) {
     const originalTrans = await this.transactionRepository.findOne({
       where: {
