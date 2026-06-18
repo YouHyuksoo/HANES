@@ -71,6 +71,7 @@ export class ContinuityInspectService {
         where: {
           resultNo: prodResultNo,
           orderNo,
+          status: Not('CANCELED'),
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
@@ -82,6 +83,7 @@ export class ContinuityInspectService {
         where: {
           orderNo,
           prdUid: fgBarcode,
+          status: Not('CANCELED'),
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
@@ -92,9 +94,11 @@ export class ContinuityInspectService {
       }
     }
 
+    // 취소된 실적은 후보에서 제외한다 — 취소건이 섞여 후보가 2건이 되면 링크를 포기(null)하던 문제 방지.
     const candidates = await this.prodResultRepo.find({
       where: {
         orderNo,
+        status: Not('CANCELED'),
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
       },
