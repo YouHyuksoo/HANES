@@ -16,7 +16,8 @@ import {
   Search, RefreshCw,
   Factory, Package, Clock, CheckCircle, XCircle,
 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from '@/components/ui';
+import toast from 'react-hot-toast';
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge, ConfirmModal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
@@ -43,6 +44,7 @@ interface ProdResult {
   goodQty: number;
   defectQty: number;
   totalQty: number;
+  status: string;
   workDate: string;
   startAt: string;
   endAt: string;
@@ -53,6 +55,8 @@ export default function ProdResultPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<ProdResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<ProdResult | null>(null);
+  const [canceling, setCanceling] = useState(false);
 
   /** 공정 유형 필터 */
   const comCodeProcessOptions = useComCodeOptions('PROCESS_TYPE');
@@ -90,6 +94,24 @@ export default function ProdResultPage() {
   }, [searchText, processTypeFilter, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /** 실적 취소 — 적재된 제품재고를 역분개한다 (백엔드 cancel 엔드포인트 연결) */
+  const handleCancelConfirm = useCallback(async () => {
+    if (!cancelTarget) return;
+    setCanceling(true);
+    try {
+      await api.post(`/production/prod-results/${cancelTarget.resultNo}/cancel`, {
+        remark: '생산실적관리 화면에서 취소',
+      });
+      toast.success(t('production.result.cancelSuccess', '실적이 취소되고 재고가 역분개되었습니다.'));
+      setCancelTarget(null);
+      fetchData();
+    } catch {
+      // api 인터셉터에서 에러 토스트 처리
+    } finally {
+      setCanceling(false);
+    }
+  }, [cancelTarget, fetchData, t]);
 
   const getDefectRate = (result: ProdResult): string => {
     if (result.totalQty === 0) return '0.0';
@@ -158,6 +180,32 @@ export default function ProdResultPage() {
         meta: { filterType: 'none' as const },
         cell: ({ row }) => <span className="text-text-muted">{row.original.startAt} ~ {row.original.endAt}</span>
       },
+      {
+        accessorKey: 'status', header: t('common.status', '상태'), size: 80,
+        meta: { filterType: 'multi' as const },
+        cell: ({ getValue }) => {
+          const s = (getValue() as string) || '';
+          const cls = s === 'CANCELED' ? 'text-text-muted line-through'
+            : s === 'DONE' ? 'text-green-600 dark:text-green-400'
+            : 'text-blue-600 dark:text-blue-400';
+          return <span className={`font-medium ${cls}`}>{s}</span>;
+        },
+      },
+      {
+        id: 'actions', header: t('common.actions'), size: 80,
+        meta: { filterType: 'none' as const },
+        cell: ({ row }) => (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={row.original.status === 'CANCELED'}
+            onClick={() => setCancelTarget(row.original)}
+            className="text-red-600 dark:text-red-400"
+          >
+            {t('common.cancel', '취소')}
+          </Button>
+        ),
+      },
     ],
     [t]
   );
@@ -212,6 +260,14 @@ export default function ProdResultPage() {
             sqlQuery={`SELECT *\nFROM PROD_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent>
       </Card>
+
+      <ConfirmModal
+        isOpen={!!cancelTarget}
+        onClose={() => !canceling && setCancelTarget(null)}
+        onConfirm={handleCancelConfirm}
+        variant="danger"
+        message={`'${cancelTarget?.resultNo || ''}' ${t('production.result.cancelConfirm', '실적을 취소하시겠습니까? 적재된 제품재고가 역분개됩니다.')}`}
+      />
     </div>
   );
 }

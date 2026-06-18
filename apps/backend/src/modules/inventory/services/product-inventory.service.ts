@@ -293,24 +293,94 @@ export class ProductInventoryService {
     return saved;
   }
 
-  /** 제품 출고 처리 */
+  /**
+   * 완제품 입고: WIP_MAIN → FG 창고 이동.
+   * 박스 입고는 prdUid를 지정하지 않으므로, 생산이 시리얼(배치) 키로 적재한 WIP_MAIN 재고를
+   * itemCode 기준 FIFO로 수량만큼 차감한다(행마다 WIP_OUT+FG_IN 거래 → 시리얼 보존 + 취소 가역성).
+   * 과거 단일 IsNull 조회는 시리얼 키 재고를 못 찾아 항상 "재고 부족"으로 실패하던 구멍을 막는다.
+   * 시리얼 단위 추적은 FG_LABELS(BOX_NO 스탬프)가 담당한다.
+   */
   async receiveFinishedFromWip(dto: ProductReceiveStockDto) {
-    return this.issueStock({
-      warehouseId: 'WIP_MAIN',
-      toWarehouseId: dto.warehouseId,
-      itemCode: dto.itemCode,
-      itemType: 'FINISHED',
-      prdUid: dto.prdUid,
-      qty: dto.qty,
-      transType: 'WIP_OUT',
-      orderNo: dto.orderNo,
-      processCode: dto.processCode,
-      refType: dto.refType,
-      refId: dto.refId,
-      workerId: dto.workerId,
-      remark: dto.remark ?? '제품입고 WIP->FG 이동',
-      company: dto.company,
-      plant: dto.plant,
+    return this.tx.run(async (qr) => {
+      const tenantWhere = this.tenantWhere(dto.company, dto.plant);
+
+      // 박스 이중입고 가드 (fg/receive 경로에도 적용 — 기존 issueStock 경로엔 없던 방어)
+      if (dto.refType === 'BOX' && dto.refId) {
+        const dup = await qr.manager.findOne(ProductTransaction, {
+          where: {
+            refType: 'BOX',
+            refId: dto.refId,
+            transType: In(['WIP_OUT', 'FG_IN', 'WIP_IN']),
+            status: 'DONE',
+            ...tenantWhere,
+          },
+        });
+        if (dup) {
+          throw new ConflictException(`이미 입고된 박스입니다: ${dto.refId} (${dup.transNo})`);
+        }
+      }
+
+      const moveOne = (prdUid: string | null | undefined, qty: number) =>
+        this.issueStockInTx(qr, {
+          warehouseId: 'WIP_MAIN',
+          toWarehouseId: dto.warehouseId,
+          itemCode: dto.itemCode,
+          itemType: 'FINISHED',
+          prdUid: prdUid ?? undefined,
+          qty,
+          transType: 'WIP_OUT',
+          orderNo: dto.orderNo,
+          processCode: dto.processCode,
+          refType: dto.refType,
+          refId: dto.refId,
+          workerId: dto.workerId,
+          remark: dto.remark ?? '제품입고 WIP->FG 이동',
+          company: dto.company,
+          plant: dto.plant,
+        });
+
+      let lastTx: ProductTransaction | undefined;
+      if (dto.prdUid) {
+        // 시리얼 명시: 단건 이동(기존 호출 호환)
+        lastTx = await moveOne(dto.prdUid, dto.qty);
+      } else {
+        // 박스/수량 기준: WIP_MAIN 시리얼 행을 FIFO로 차감
+        const rows = await qr.manager.find(ProductStock, {
+          where: { warehouseCode: 'WIP_MAIN', itemCode: dto.itemCode, ...tenantWhere },
+          order: { createdAt: 'ASC' },
+        });
+        const totalAvail = rows.reduce((sum, r) => sum + r.availableQty, 0);
+        if (totalAvail < dto.qty) {
+          throw new BadRequestException(`재고 부족: 가용 ${totalAvail}, 요청 ${dto.qty}`);
+        }
+        let remaining = dto.qty;
+        for (const row of rows) {
+          if (remaining <= 0) break;
+          const take = Math.min(remaining, row.availableQty);
+          if (take <= 0) continue;
+          lastTx = await moveOne(row.prdUid, take);
+          remaining -= take;
+        }
+        // 소진된 WIP_MAIN 행(qty 0, 예약 0) 정리 — orphan 잔재 방지
+        await qr.manager
+          .createQueryBuilder()
+          .delete()
+          .from(ProductStock)
+          .where('WAREHOUSE_CODE = :wh AND ITEM_CODE = :item AND QTY <= 0 AND RESERVED_QTY = 0', {
+            wh: 'WIP_MAIN',
+            item: dto.itemCode,
+          })
+          .andWhere(dto.company ? 'COMPANY = :company' : '1=1', dto.company ? { company: dto.company } : {})
+          .andWhere(dto.plant ? 'PLANT_CD = :plant' : '1=1', dto.plant ? { plant: dto.plant } : {})
+          .execute();
+      }
+
+      // 박스 입고: 박스 시리얼(FG_LABELS)에 BOX_NO 스탬프
+      if (dto.refType === 'BOX' && dto.refId) {
+        await this.stampBoxSerials(qr.manager, dto.refId, true, dto.company, dto.plant);
+      }
+
+      return lastTx!;
     });
   }
 
