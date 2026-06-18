@@ -12,10 +12,13 @@
  */
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, QueryRunner } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
+import { AutoIssueService } from './auto-issue.service';
+import { WipMatStock } from '../../../entities/wip-mat-stock.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -39,6 +42,8 @@ export class SubprocessKittingService {
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
     private readonly productInventory: ProductInventoryService,
+    private readonly wipMatStockService: WipMatStockService,
+    private readonly autoIssueService: AutoIssueService,
   ) {}
 
   /**
@@ -82,6 +87,10 @@ export class SubprocessKittingService {
       });
       const semiCodeSet = new Set(
         childParts.filter((p) => p.itemType === 'SEMI_PRODUCT').map((p) => p.itemCode),
+      );
+      // 원자재(RAW_MATERIAL) 자식 화이트리스트 — matLots(직접투입) 검증용
+      const rawCodeSet = new Set(
+        childParts.filter((p) => p.itemType === 'RAW_MATERIAL').map((p) => p.itemCode),
       );
       // itemCode → qtyPer 매핑 (SEMI 자식만)
       const qtyPerByItem = new Map<string, number>();
@@ -192,7 +201,8 @@ export class SubprocessKittingService {
           }
         }
 
-        // matLots(원자재 직접투입) — genealogy 만 기록. 원자재 재고 차감은 Phase 2 범위 밖.
+        // matLots(원자재 직접투입) — genealogy(FG←MAT_LOT)는 각 FG에 대해 기록(기존 동작 유지).
+        // 실제 재고 차감은 FG 루프와 별개로 1회만 수행(아래 5-1).
         if (dto.matLots && dto.matLots.length > 0) {
           for (const lot of dto.matLots) {
             await qr.manager.save(ProductGenealogy, {
@@ -230,6 +240,25 @@ export class SubprocessKittingService {
         plant,
       });
 
+      // 6-1. matLots(직접투입 원자재) 실제 재고 차감 — FG 루프와 별개로 1회 처리.
+      //   · 화이트리스트: 완제품 BOM의 RAW_MATERIAL 자식만 허용.
+      //   · equipCode 있고 해당 LOT가 공정재고(WIP_MAT_STOCKS)에 있으면 → 공정재고 차감.
+      //   · 아니면 → 원자재창고(MAT_STOCKS) 차감(auto-issue fallback 저수준 경로 재사용).
+      //   · qty 의미: dto의 qty(스캔 입력) 신뢰, 없으면 1 (BOM qtyPer 자동계산은 범위 밖).
+      //   · 부족/미존재면 BadRequest로 throw → 트랜잭션 롤백.
+      if (dto.matLots && dto.matLots.length > 0) {
+        await this.deductMatLotsInTx(qr, {
+          matLots: dto.matLots,
+          rawCodeSet,
+          equipCode: dto.equipCode ?? null,
+          orderNo: dto.orderNo,
+          resultNo,
+          workerId: workerId ?? null,
+          company,
+          plant,
+        });
+      }
+
       // 7. 제품 WIP 재고 +qty (WIP_MAIN). prdUid 센티넬 '*' 집계 적재.
       await this.productInventory.receiveStockInTx(qr, {
         warehouseId: WIP_WAREHOUSE,
@@ -254,6 +283,94 @@ export class SubprocessKittingService {
 
       return { resultNo, fgBarcodes };
     });
+  }
+
+  /**
+   * matLots(직접투입 원자재 LOT) 실제 재고 차감 + 수불 기록.
+   * - kit() 트랜잭션 내에서 1회 호출(FG 루프와 별개).
+   * - 각 LOT: RAW_MATERIAL 화이트리스트 검증 → equipCode+공정재고 보유 시 WIP 차감, 아니면 원자재창고 차감.
+   * - genealogy(FG←MAT_LOT) 기록은 호출부(kit)에서 별도로 이미 처리됨(차감과 genealogy 둘 다 남음).
+   */
+  private async deductMatLotsInTx(
+    qr: QueryRunner,
+    p: {
+      matLots: { matUid: string; itemCode: string; qty?: number }[];
+      rawCodeSet: Set<string>;
+      equipCode: string | null;
+      orderNo: string;
+      resultNo: string;
+      workerId: string | null;
+      company: string;
+      plant: string;
+    },
+  ): Promise<void> {
+    for (const lot of p.matLots) {
+      // 1) BOM RAW_MATERIAL 자식 화이트리스트 검증
+      if (!p.rawCodeSet.has(lot.itemCode)) {
+        throw new BadRequestException(
+          `BOM에 없는 원자재 직접투입 LOT입니다: ${lot.matUid} (${lot.itemCode})`,
+        );
+      }
+      const qty = lot.qty ?? 1;
+      if (qty <= 0) {
+        throw new BadRequestException(`직접투입 수량이 올바르지 않습니다: ${lot.matUid} (${qty})`);
+      }
+
+      // 2) equipCode 있고 해당 LOT가 공정재고(WIP_MAT_STOCKS)에 존재하면 공정재고 차감
+      let usedWip = false;
+      if (p.equipCode) {
+        const wipRow = await qr.manager.findOne(WipMatStock, {
+          where: {
+            company: p.company,
+            plant: p.plant,
+            equipCode: p.equipCode,
+            itemCode: lot.itemCode,
+            matUid: lot.matUid,
+          },
+        });
+        if (wipRow) {
+          // 지정 LOT 우선 차감(scannedMatUids) + 부족 시 예외(BLOCK)
+          const deducted = await this.wipMatStockService.deductStockInTx(qr, {
+            equipCode: p.equipCode,
+            itemCode: lot.itemCode,
+            qty,
+            transType: 'PROD_CONSUME',
+            refType: 'KITTING',
+            refId: p.resultNo,
+            orderNo: p.orderNo,
+            scannedMatUids: [lot.matUid],
+            stockPolicy: 'BLOCK',
+            workerId: p.workerId,
+            company: p.company,
+            plant: p.plant,
+          });
+          // deductStockInTx는 (equip,item) FIFO라 다른 LOT가 차감될 수 있으므로 지정 LOT 일치 검증
+          const tookSpecified = deducted.some((d) => d.matUid === lot.matUid);
+          if (!tookSpecified) {
+            throw new BadRequestException(
+              `공정재고에서 지정 LOT를 차감하지 못했습니다: ${lot.matUid} (${lot.itemCode})`,
+            );
+          }
+          usedWip = true;
+        }
+      }
+
+      // 3) 공정재고 미사용 → 원자재창고(MAT_STOCKS) 지정 LOT 차감(auto-issue 저수준 경로 재사용)
+      if (!usedWip) {
+        await this.autoIssueService.consumeMatLotInTx(qr, {
+          matUid: lot.matUid,
+          itemCode: lot.itemCode,
+          qty,
+          orderNo: p.orderNo,
+          prodResultNo: p.resultNo,
+          refType: 'KITTING',
+          refId: p.resultNo,
+          workerId: p.workerId,
+          company: p.company,
+          plant: p.plant,
+        });
+      }
+    }
   }
 
   /** SG 라벨 단건 조회 (tenant). 없으면 NotFound. */
