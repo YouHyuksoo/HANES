@@ -135,9 +135,12 @@ export function PaginationControls<T>({
           }}
           className="h-7 px-2 text-xs bg-surface border border-border rounded text-text focus:outline-none focus:ring-1 focus:ring-primary"
         >
-          {PAGE_SIZE_OPTIONS.map((size) => (
-            <option key={size} value={size}>{size}건</option>
-          ))}
+          {/* 현재 pageSize가 표준 옵션에 없을 때도 드롭다운이 실제 값을 표시하도록 병합 */}
+          {Array.from(new Set([pagination.pageSize, ...PAGE_SIZE_OPTIONS]))
+            .sort((a, b) => a - b)
+            .map((size) => (
+              <option key={size} value={size}>{size}건</option>
+            ))}
         </select>
       </div>
     </div>

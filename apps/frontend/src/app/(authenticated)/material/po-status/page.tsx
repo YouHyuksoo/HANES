@@ -110,6 +110,13 @@ export default function PoStatusPage() {
     {
       accessorKey: "orderDate", header: t("material.po.orderDate"), size: 100,
       meta: { filterType: "date" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        if (!v) return "-";
+        if (!v.includes("T")) return v.slice(0, 10);
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? v : toYmd(d);
+      },
     },
     {
       accessorKey: "receiveRate", header: t("material.poStatus.receiveRate"), size: 130,

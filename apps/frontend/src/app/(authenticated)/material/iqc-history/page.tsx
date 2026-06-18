@@ -141,6 +141,7 @@ export default function IqcHistoryPage() {
       await api.post(
         `/material/iqc-history/${encodeURIComponent(record.inspectDate)}/${record.seq}/upload-cert`,
         formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
       );
       fetchData();
     } finally {

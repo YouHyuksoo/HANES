@@ -91,7 +91,10 @@ export default function JobOrderPage() {
     setLoading(true);
     try {
       if (viewMode === "tree") {
-        const res = await api.get("/production/job-orders/tree");
+        const treeParams: Record<string, string> = {};
+        if (startDate) treeParams.planDateFrom = startDate;
+        if (endDate) treeParams.planDateTo = endDate;
+        const res = await api.get("/production/job-orders/tree", { params: treeParams });
         setData(res.data?.data ?? []);
       } else {
         const params: Record<string, string> = { limit: "5000" };

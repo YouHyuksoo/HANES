@@ -403,17 +403,45 @@ export class JobOrderService {
   }
 
   /** 작업지시 트리 조회 (전 계층 — 메모리 조립 방식으로 임의 깊이 지원) */
-  async findTree(parentOrderNo?: string, company?: string, plant?: string) {
-    const all = await this.jobOrderRepository.find({
-      where: {
-        ...(parentOrderNo ? { parentOrderNo: IsNull() } : {}),
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-      },
-      relations: ['part', 'routing'],
-      order: { planDate: 'DESC', createdAt: 'ASC' },
-      take: 2000,
-    });
+  async findTree(
+    parentOrderNo?: string,
+    company?: string,
+    plant?: string,
+    planDateFrom?: string,
+    planDateTo?: string,
+  ) {
+    const qb = this.jobOrderRepository
+      .createQueryBuilder('jo')
+      .leftJoinAndSelect('jo.part', 'part')
+      .leftJoinAndSelect('jo.routing', 'routing')
+      .orderBy('jo.planDate', 'DESC')
+      .addOrderBy('jo.createdAt', 'ASC')
+      .take(2000);
+
+    if (parentOrderNo) qb.andWhere('jo.parentOrderNo IS NULL');
+    if (company) qb.andWhere('jo.company = :company', { company });
+    if (plant) qb.andWhere('jo.plant = :plant', { plant });
+
+    // 계획일 필터: 범위 내 + 계획일 미지정(NULL)은 항상 노출 (목록 조회와 동일 정책)
+    if (planDateFrom || planDateTo) {
+      qb.andWhere(
+        new Brackets((qb2) => {
+          qb2.where('jo.planDate IS NULL');
+          if (planDateFrom && planDateTo) {
+            qb2.orWhere(
+              "(TRUNC(jo.planDate) >= TO_DATE(:treePdf, 'YYYY-MM-DD') AND TRUNC(jo.planDate) <= TO_DATE(:treePdt, 'YYYY-MM-DD'))",
+              { treePdf: planDateFrom, treePdt: planDateTo },
+            );
+          } else if (planDateFrom) {
+            qb2.orWhere("TRUNC(jo.planDate) >= TO_DATE(:treePdf, 'YYYY-MM-DD')", { treePdf: planDateFrom });
+          } else {
+            qb2.orWhere("TRUNC(jo.planDate) <= TO_DATE(:treePdt, 'YYYY-MM-DD')", { treePdt: planDateTo });
+          }
+        }),
+      );
+    }
+
+    const all = await qb.getMany();
 
     type Node = JobOrder & { children: Node[] };
     const map = new Map<string, Node>();
@@ -423,7 +451,8 @@ export class JobOrderService {
     for (const node of map.values()) {
       if (node.parentOrderNo && map.has(node.parentOrderNo)) {
         map.get(node.parentOrderNo)!.children.push(node);
-      } else if (!node.parentOrderNo) {
+      } else {
+        // 최상위이거나, 날짜 필터로 부모가 제외된 노드(고아)는 루트로 노출(자식 누락 방지)
         roots.push(node);
       }
     }

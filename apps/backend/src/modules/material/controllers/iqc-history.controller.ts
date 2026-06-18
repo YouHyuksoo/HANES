@@ -4,7 +4,7 @@
  *              G4: 검사성적서 파일 업로드, G5: 검사필 스탬프 라벨 지원
  */
 
-import { Controller, Get, Post, Query, Body, Param, HttpCode, HttpStatus, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Param, HttpCode, HttpStatus, UseInterceptors, UploadedFile, UseGuards, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -104,6 +104,9 @@ export class IqcHistoryController {
     @Company() company: string,
     @Plant() plant: string,
   ) {
+    if (!file) {
+      throw new BadRequestException('업로드할 파일이 없습니다. (multipart/form-data의 file 필드 필요)');
+    }
     const data = await this.iqcHistoryService.uploadCert(inspectDate, Number(seq), file.path, company, plant);
     return ResponseUtil.success(data, '검사성적서가 업로드되었습니다.');
   }

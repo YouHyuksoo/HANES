@@ -24,20 +24,30 @@ export const EMPTY_DATE_FILTER: DateFilterValue = {
   to: null,
 };
 
+/** Date를 로컬 기준 'YYYY-MM-DD'로 변환 (toISOString=UTC 사용 시 KST 자정이 전날로 밀리는 문제 방지) */
+function toLocalYmd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 /**
- * 셀 값에서 날짜 문자열(YYYY-MM-DD)을 추출
- * - ISO 문자열 "2026-02-24T12:00:00Z" → "2026-02-24"
- * - 날짜 문자열 "2026-02-24" → 그대로
- * - Date 객체 → toISOString().slice(0, 10)
+ * 셀 값에서 날짜 문자열(YYYY-MM-DD)을 로컬 기준으로 추출
+ * - Date 객체 → 로컬 YMD
+ * - 타임존 포함 ISO("2026-02-24T15:00:00Z" 등) → 로컬 시각으로 변환 후 YMD (UTC 슬라이스 시 off-by-one 방지)
+ * - 시간 없는 날짜 문자열 "2026-02-24" → 그대로
  */
 function extractDateStr(raw: unknown): string | null {
   if (raw == null || raw === "") return null;
   if (raw instanceof Date) {
     if (isNaN(raw.getTime())) return null;
-    return raw.toISOString().slice(0, 10);
+    return toLocalYmd(raw);
   }
   const str = String(raw);
-  // YYYY-MM-DD 또는 YYYY-MM-DDTHH:mm:ss 형식에서 앞 10자 추출
+  // 시간(T)이 포함된 ISO datetime은 로컬 시각으로 해석해 날짜만 추출
+  if (str.includes("T")) {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return toLocalYmd(d);
+  }
+  // 시간 없는 'YYYY-MM-DD'는 그대로(로컬/UTC 변환 불필요)
   const match = str.match(/^\d{4}-\d{2}-\d{2}/);
   return match ? match[0] : null;
 }

@@ -15,13 +15,13 @@ import { useTranslation } from "react-i18next";
 import { useComCodeMap } from "@/hooks/useComCode";
 import {
   ShoppingCart, Plus, Edit2, Trash2, Search, RefreshCw,
-  CheckCircle, Truck, Archive,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import PoFormPanel from "./components/PoFormPanel";
 import type { PurchaseOrder } from "./components/PoFormPanel";
 
@@ -33,6 +33,9 @@ export default function PoPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  // 발주일 구간 필터 — 기본값 당일(오늘)
+  const [fromDate, setFromDate] = useState(getTodayLocal());
+  const [toDate, setToDate] = useState(getTodayLocal());
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPo, setEditingPo] = useState<PurchaseOrder | null>(null);
@@ -44,6 +47,8 @@ export default function PoPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/material/purchase-orders", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -51,16 +56,9 @@ export default function PoPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter]);
+  }, [searchText, statusFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => ({
-    total: data.length,
-    confirmed: data.filter(d => d.status === "CONFIRMED").length,
-    partial: data.filter(d => d.status === "PARTIAL").length,
-    received: data.filter(d => d.status === "RECEIVED").length,
-  }), [data]);
 
   const openCreate = useCallback(() => {
     setEditingPo(null);
@@ -181,18 +179,6 @@ export default function PoPage() {
           </div>
         </div>
 
-        {/* 통계 */}
-        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-          <StatCard label={t("material.po.stats.total")} value={stats.total}
-            icon={ShoppingCart} color="blue" />
-          <StatCard label={t("material.po.stats.confirmed")} value={stats.confirmed}
-            icon={CheckCircle} color="yellow" />
-          <StatCard label={t("material.po.stats.partial")} value={stats.partial}
-            icon={Truck} color="orange" />
-          <StatCard label={t("material.po.stats.received")} value={stats.received}
-            icon={Archive} color="green" />
-        </div>
-
         {/* PO 그리드 */}
         <div className="flex-1 min-h-0">
           <Card className="h-full overflow-hidden" padding="none">
@@ -202,18 +188,25 @@ export default function PoPage() {
                 onRowClick={(row) => openEdit(row)}
                 getRowId={(row) => row.poNo}
                 toolbarLeft={
-                  <div className="flex gap-3 flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="flex-1 min-w-0">
                       <Input placeholder={t("material.po.searchPlaceholder")}
                         value={searchText} onChange={e => setSearchText(e.target.value)}
                         leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                    </div>
+                    {/* 발주일 구간 */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="text-xs text-text-muted whitespace-nowrap">{t("material.po.orderDate")}</span>
+                      <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="w-36" />
+                      <span className="text-text-muted">~</span>
+                      <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="w-36" />
                     </div>
                     <div className="w-36 flex-shrink-0">
                       <ComCodeSelect groupCode="PO_STATUS"
                         value={statusFilter} onChange={setStatusFilter} fullWidth />
                     </div>
                   </div>
-                } 
+                }
                 sqlQuery={`SELECT *\nFROM PO_HEADERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
             </CardContent>
           </Card>

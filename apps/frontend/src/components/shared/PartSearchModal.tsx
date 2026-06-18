@@ -295,7 +295,7 @@ export default function PartSearchModal({
         columns={columns}
         isLoading={loading}
         onRowClick={handleRowClick}
-        pageSize={multiSelect ? 15 : 10}
+        pageSize={20}
         enableColumnFilter={false}
         enableColumnReordering={false}
         maxHeight={multiSelect ? "560px" : "400px"}

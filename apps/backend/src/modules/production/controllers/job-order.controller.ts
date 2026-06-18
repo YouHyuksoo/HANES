@@ -74,10 +74,12 @@ export class JobOrderController {
   @ApiOperation({ summary: '작업지시 트리 조회 (완제품 기준 계층구조)' })
   async findTree(
     @Query('parentId') parentId?: string,
+    @Query('planDateFrom') planDateFrom?: string,
+    @Query('planDateTo') planDateTo?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.jobOrderService.findTree(parentId, company, plant);
+    const data = await this.jobOrderService.findTree(parentId, company, plant, planDateFrom, planDateTo);
     return ResponseUtil.success(data);
   }
 
