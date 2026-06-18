@@ -164,6 +164,16 @@ export class NumberingService {
     return `PLT${this.yyMMdd(txDate)}${this.pad4(seq)}`;
   }
 
+  /** 반제품 묶음 추적라벨 채번: SG + YYMMDD + '-' + 5자리(전역 시퀀스 SEQ_SG_LABEL). 날짜는 가독성용, 유일성은 시퀀스 보장. */
+  async nextSgLabel(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_SG_LABEL.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+    return `SG${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
+  }
+
   private yyMMdd(d: Date): string {
     const yy = String(d.getFullYear()).slice(-2);
     const mm = String(d.getMonth() + 1).padStart(2, '0');
