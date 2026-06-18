@@ -10,6 +10,15 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 Claude (P3 + 전구간 실증)
+
+T-HARNESS-FLOW-RENEWAL-P3 — 서브공정 키팅 직접 원자재 차감 + 전 구간 E2E 실증.
+
+- Phase 3(main 커밋 053693af, BE tsc 0): 키팅 `kit()`의 matLots를 실제 차감 — equipCode 있으면 `WipMatStockService.deductStockInTx`(PROD_CONSUME), 없으면 신규 `AutoIssueService.consumeMatLotInTx`(원자재창고 MAT_STOCKS 차감, 기존 deductMatStock 재사용). RAW BOM 화이트리스트 검증, genealogy(FG←MAT_LOT) 유지.
+- 전 구간 E2E 실증(AppModule+실DB JSHANES, 서버 무중단, 8/9 단계): 반제품 작업지시→묶음 발행(SG)→완제품 작업지시→키팅(FG/genealogy/재고)→통전(ON_SUBPROCESS, 재발행 없음)→외관(VISUAL_PASS)→포장(BOX_NO/PACKED)→박스입고(WIP→FG). 신규 코드 버그 0. 9단계 출하는 기존 OQC게이트+팔레트 선행 필요(리뉴얼 신규부 아님).
+- 원자재 차감 실증: MAT_STOCKS 100→97, STOCK_TRANSACTIONS(MAT_OUT/KITTING), genealogy MAT_LOT 3행, BOM 음성가드 BadRequest+롤백. 테스트데이터 전량 정리.
+- 결론: 계획된 생산 프로세스(원자재→반제품묶음→서브공정키팅→제품라벨→통전→외관→포장→박스입고, genealogy+재고+수불) 정상작동 실증 완료. 남은 Phase 4(PRODUCT_STOCKS 시리얼 정리)·5(출하 단일키/우회 제거)는 라이브 출하에 파괴적이라(현 '*'/FIFO로 정상작동 중) 배포·점검창 결정 후 진행 권장. 브라우저 UI E2E는 백엔드 재배포(dist) 필요.
+
 ## 2026-06-19 Claude (P2)
 
 T-HARNESS-FLOW-RENEWAL-P2 — 생산흐름 리뉴얼 Phase 2(백엔드 엔진 + 키팅 메뉴/화면 + 실증).
