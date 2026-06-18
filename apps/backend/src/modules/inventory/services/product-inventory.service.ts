@@ -559,6 +559,73 @@ export class ProductInventoryService {
    * 재작업 합격(DEFECT→WIP_MAIN)·폐기(DEFECT→SCRAP) 등 집계 수량 이동에 사용.
    * @returns 실제 이동된 수량
    */
+  /**
+   * 창고 itemCode 재고를 시리얼(prdUid) 행 단위 FIFO로 qty 만큼 출고(차감)한다. 이동 대상 없음(시스템 외부로 출하).
+   * FG_MAIN 재고 키 체계(배치 시리얼/FG바코드)와 무관하게 수량 기준으로 차감해, 입고-출하 시리얼 키 불일치로
+   * "재고 부족"이 나던 문제를 막는다. 시리얼 단위 추적은 FG_LABELS(SHIPPED 전이)가 담당한다.
+   * 호출측 트랜잭션(qr)에 참여한다.
+   */
+  async issueStockByItemFifoInTx(
+    qr: QueryRunner,
+    dto: {
+      warehouseId: string;
+      itemCode: string;
+      qty: number;
+      transType: string;
+      refType?: string;
+      refId?: string;
+      workerId?: string;
+      remark?: string;
+      company?: string;
+      plant?: string;
+    },
+  ): Promise<number> {
+    if (!dto.qty || dto.qty <= 0) return 0;
+    const tenantWhere = this.tenantWhere(dto.company, dto.plant);
+    const rows = await qr.manager.find(ProductStock, {
+      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, ...tenantWhere },
+      order: { createdAt: 'ASC' },
+    });
+    const totalAvail = rows.reduce((sum, r) => sum + r.availableQty, 0);
+    if (totalAvail < dto.qty) {
+      throw new BadRequestException(`재고 부족: 가용 ${totalAvail}, 요청 ${dto.qty} (${dto.itemCode})`);
+    }
+    let remaining = dto.qty;
+    for (const row of rows) {
+      if (remaining <= 0) break;
+      const take = Math.min(remaining, row.availableQty);
+      if (take <= 0) continue;
+      await this.issueStockInTx(qr, {
+        warehouseId: dto.warehouseId,
+        itemCode: dto.itemCode,
+        itemType: row.itemType,
+        prdUid: row.prdUid,
+        qty: take,
+        transType: dto.transType,
+        refType: dto.refType,
+        refId: dto.refId,
+        workerId: dto.workerId,
+        remark: dto.remark,
+        company: dto.company,
+        plant: dto.plant,
+      });
+      remaining -= take;
+    }
+    // 소진된 행(qty 0, 예약 0) 정리
+    await qr.manager
+      .createQueryBuilder()
+      .delete()
+      .from(ProductStock)
+      .where('WAREHOUSE_CODE = :wh AND ITEM_CODE = :item AND QTY <= 0 AND RESERVED_QTY = 0', {
+        wh: dto.warehouseId,
+        item: dto.itemCode,
+      })
+      .andWhere(dto.company ? 'COMPANY = :company' : '1=1', dto.company ? { company: dto.company } : {})
+      .andWhere(dto.plant ? 'PLANT_CD = :plant' : '1=1', dto.plant ? { plant: dto.plant } : {})
+      .execute();
+    return dto.qty;
+  }
+
   async transferStockByItem(dto: {
     fromWarehouseId: string;
     toWarehouseId: string;

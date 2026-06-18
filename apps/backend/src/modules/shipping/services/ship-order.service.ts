@@ -360,34 +360,21 @@ export class ShipOrderService {
         throw new BadRequestException(`박스 수량(${box.qty})과 시리얼 수량(${serials.length})이 일치하지 않습니다: ${dto.boxNo}`);
       }
 
-      const issueBase = {
+      // 재고 차감 — FG_MAIN 재고를 수량 기준 FIFO로 차감한다(재고 키 체계와 무관).
+      // 입고는 배치 시리얼({orderNo}-NNN)로, 박스는 FG바코드로 키잉돼 시리얼이 어긋나도
+      // 수량 기준이라 정상 출하된다. 시리얼 단위 추적은 아래 FG_LABELS → SHIPPED 전이가 담당.
+      await this.productInventory.issueStockByItemFifoInTx(qr, {
         warehouseId: warehouse.warehouseCode,
         itemCode: box.itemCode,
-        itemType: 'FINISHED' as const,
-        transType: 'FG_OUT' as const,
+        qty: box.qty,
+        transType: 'FG_OUT',
         refType: 'SHIP_ORDER',
         refId: shipOrderNo,
         workerId: dto.workerId,
         remark: `출하지시 박스출하:${dto.boxNo}`,
         company,
         plant,
-      };
-
-      if (serials.length > 0) {
-        for (const serial of serials) {
-          await this.productInventory.issueStockInTx(qr, {
-            ...issueBase,
-            prdUid: serial,
-            qty: 1,
-          });
-        }
-      } else {
-        await this.productInventory.issueStockInTx(qr, {
-          ...issueBase,
-          prdUid: '*',
-          qty: box.qty,
-        });
-      }
+      });
 
       await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'SHIPPED' });
       if (serials.length > 0) {
