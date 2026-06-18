@@ -289,16 +289,15 @@ export default function PartSearchModal({
         </Button>
       </div>
 
-      {/* 품목 목록 */}
+      {/* 품목 목록 — 내부 maxHeight 스크롤을 두지 않아 모달 본문(max-h-75vh)만 스크롤(이중 스크롤 방지) */}
       <DataGrid
         data={data}
         columns={columns}
         isLoading={loading}
         onRowClick={handleRowClick}
-        pageSize={20}
+        pageSize={15}
         enableColumnFilter={false}
         enableColumnReordering={false}
-        maxHeight={multiSelect ? "560px" : "400px"}
       />
     </Modal>
   );
