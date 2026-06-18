@@ -31,6 +31,8 @@ import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { ReworkInspect } from '../../../../entities/rework-inspect.entity';
 import { ReworkProcess } from '../../../../entities/rework-process.entity';
 import { DefectLog } from '../../../../entities/defect-log.entity';
+import { PartMaster } from '../../../../entities/part-master.entity';
+import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import {
   CreateReworkOrderDto,
   UpdateReworkOrderDto,
@@ -53,6 +55,9 @@ export class ReworkService {
     private readonly processRepo: Repository<ReworkProcess>,
     @InjectRepository(DefectLog)
     private readonly defectLogRepo: Repository<DefectLog>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepo: Repository<PartMaster>,
+    private readonly productInventoryService: ProductInventoryService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -519,6 +524,33 @@ export class ReworkService {
         const defectWhere = this.defectLogWhere(reworkOrder.defectLogId, company, plant);
         if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: defectStatus });
       }
+    }
+
+    // 재작업 합격 시 제품재고 복원 — 양품(passQty)을 WIP_MAIN 공정창고에 재적재한다.
+    // (격리 시점에 재고에서 차감된 게 아니라 애초에 미적재였으므로 "신규 입고"가 정합적.
+    //  INSPECT_PENDING 상태에서만 진입 가능하고 PASS 후 상태가 바뀌므로 이중적재 없음.)
+    if (dto.inspectResult === 'PASS' && (dto.passQty ?? 0) > 0) {
+      const part = await this.partMasterRepo.findOne({
+        where: { itemCode: order.itemCode, ...this.tenantWhere(company, plant) },
+        select: ['itemCode', 'itemType'],
+      });
+      const itemType = part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
+      await this.productInventoryService.receiveStock({
+        warehouseId: 'WIP_MAIN',
+        itemCode: order.itemCode,
+        itemType,
+        prdUid: order.prdUid?.trim() || undefined,
+        qty: dto.passQty,
+        transType: 'WIP_IN',
+        refType: 'REWORK',
+        refId: order.reworkNo,
+        remark: `재작업 합격 재고 복원 (${order.reworkNo})`,
+        company,
+        plant,
+      });
+      this.logger.log(
+        `재작업 합격 재고 복원: ${order.itemCode} × ${dto.passQty} → WIP_MAIN (재작업 #${order.reworkNo})`,
+      );
     }
 
     this.logger.log(

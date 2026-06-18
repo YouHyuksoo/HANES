@@ -18,7 +18,9 @@ import {
   Plus, RefreshCw, ClipboardList, Clock, Play, CheckCircle, Search as SearchIcon,
   Calendar, Send, ShieldCheck, Factory, Eye, Layers, FileSearch, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
+import toast from "react-hot-toast";
+import { FileCheck } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { LineSelect, ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -74,6 +76,11 @@ export default function ReworkPage() {
   const [approveType, setApproveType] = useState<ApproveType>("qc");
   const [confirmAction, setConfirmAction] = useState<{ label: string; action: () => Promise<void> } | null>(null);
   const [resultTarget, setResultTarget] = useState<ResultTarget | null>(null);
+
+  /* ── 재검사 등록 상태 ── */
+  const [inspectTarget, setInspectTarget] = useState<ReworkOrder | null>(null);
+  const [inspectForm, setInspectForm] = useState({ inspectResult: 'PASS', passQty: '', failQty: '', inspectorCode: '', remark: '' });
+  const [submittingInspect, setSubmittingInspect] = useState(false);
 
   /* ── 데이터 조회 ── */
   const fetchData = useCallback(async () => {
@@ -135,6 +142,33 @@ export default function ReworkPage() {
     if (!selectedRow) return;
     setConfirmAction({ label: t("quality.rework.start"), action: () => patchAction(selectedRow.reworkNo, "start") });
   };
+  const openInspect = (row: ReworkOrder) => {
+    setInspectForm({ inspectResult: 'PASS', passQty: String(row.reworkQty ?? 0), failQty: '0', inspectorCode: '', remark: '' });
+    setInspectTarget(row);
+  };
+
+  const handleInspectSubmit = useCallback(async () => {
+    if (!inspectTarget || !inspectForm.inspectorCode.trim()) return;
+    setSubmittingInspect(true);
+    try {
+      await api.post('/quality/reworks/inspects', {
+        reworkNo: inspectTarget.reworkNo,
+        inspectorCode: inspectForm.inspectorCode.trim(),
+        inspectResult: inspectForm.inspectResult,
+        passQty: Number(inspectForm.passQty) || 0,
+        failQty: Number(inspectForm.failQty) || 0,
+        ...(inspectForm.remark ? { remark: inspectForm.remark } : {}),
+      });
+      toast.success(t('quality.rework.inspectSuccess', '재검사 결과가 등록되었습니다.'));
+      setInspectTarget(null);
+      fetchData();
+    } catch {
+      // api 인터셉터 처리
+    } finally {
+      setSubmittingInspect(false);
+    }
+  }, [inspectTarget, inspectForm, fetchData, t]);
+
   const handleComplete = () => {
     if (!selectedRow) return;
     setConfirmAction({ label: t("quality.rework.complete"), action: () => patchAction(selectedRow.reworkNo, "complete", { resultQty: selectedRow.reworkQty }) });
@@ -241,6 +275,7 @@ export default function ReworkPage() {
         {s === "PROD_PENDING" && <Button size="sm" onClick={handleProdApprove}><Factory className="w-4 h-4 mr-1" />{t("quality.rework.prodApprove")}</Button>}
         {s === "APPROVED" && <Button size="sm" onClick={handleStart}><Play className="w-4 h-4 mr-1" />{t("quality.rework.start")}</Button>}
         {s === "IN_PROGRESS" && <Button size="sm" onClick={handleComplete}><CheckCircle className="w-4 h-4 mr-1" />{t("quality.rework.complete")}</Button>}
+        {s === "INSPECT_PENDING" && <Button size="sm" onClick={() => openInspect(selectedRow)}><FileCheck className="w-4 h-4 mr-1" />{t("quality.rework.inspect", "재검사 등록")}</Button>}
         {(s === "QC_REJECTED" || s === "PROD_REJECTED") && (
           <>
             <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selectedRow); setIsPanelOpen(true); }}>
@@ -425,6 +460,47 @@ export default function ReworkPage() {
           onClose={() => setResultTarget(null)}
           onSave={handleResultSave} />
       )}
+
+      {/* 재검사 등록 모달 */}
+      <Modal
+        isOpen={!!inspectTarget}
+        onClose={() => !submittingInspect && setInspectTarget(null)}
+        title={`${t("quality.rework.inspect", "재검사 등록")} — ${inspectTarget?.reworkNo || ""}`}
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setInspectTarget(null)} disabled={submittingInspect}>{t("common.cancel")}</Button>
+            <Button size="sm" onClick={handleInspectSubmit} disabled={submittingInspect || !inspectForm.inspectorCode.trim()}>
+              {submittingInspect ? t("common.saving") : t("common.save")}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-xs text-text-muted">
+            {t("quality.rework.inspectHint", "합격(PASS) 시 양품 수량이 공정창고(WIP) 제품재고로 복원됩니다.")}
+          </p>
+          <div className="flex gap-2">
+            {(["PASS", "FAIL", "SCRAP"] as const).map((r) => (
+              <Button key={r} size="sm"
+                variant={inspectForm.inspectResult === r ? (r === "PASS" ? "primary" : "danger") : "secondary"}
+                onClick={() => setInspectForm(f => ({ ...f, inspectResult: r }))}>
+                {r}
+              </Button>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label={t("quality.rework.passQty", "합격수량")} type="number" min={0}
+              value={inspectForm.passQty} onChange={(e) => setInspectForm(f => ({ ...f, passQty: e.target.value }))} fullWidth />
+            <Input label={t("quality.rework.failQty", "불합격수량")} type="number" min={0}
+              value={inspectForm.failQty} onChange={(e) => setInspectForm(f => ({ ...f, failQty: e.target.value }))} fullWidth />
+          </div>
+          <Input label={t("quality.rework.inspectorCode", "검사자")} value={inspectForm.inspectorCode}
+            onChange={(e) => setInspectForm(f => ({ ...f, inspectorCode: e.target.value }))} fullWidth />
+          <Input label={t("common.remark")} value={inspectForm.remark}
+            onChange={(e) => setInspectForm(f => ({ ...f, remark: e.target.value }))} fullWidth />
+        </div>
+      </Modal>
     </div>
   );
 }
