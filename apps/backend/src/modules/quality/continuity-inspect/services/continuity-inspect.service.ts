@@ -21,7 +21,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
@@ -358,6 +358,33 @@ export class ContinuityInspectService {
       if (dto.passYn === 'Y') {
         if (timing === 'ON_INSPECT') {
           /** ON_INSPECT: 기존 로직 — 합격 시 바코드 채번 + FG_LABELS 신규 등록 */
+
+          /* 과발행 차단: 작업지시에 발행된 FG라벨(미폐기)이 생산 양품수를 넘지 못하게 한다.
+           * 생산하지 않은 수량까지 합격·발행되어 실재고보다 많은 완제품 라벨이 생기는 것을 막는다. */
+          const producedRow = await queryRunner.manager
+            .createQueryBuilder(ProdResult, 'pr')
+            .select('COALESCE(SUM(pr.goodQty), 0)', 'sum')
+            .where('pr.orderNo = :orderNo', { orderNo: dto.orderNo })
+            .andWhere("pr.status != 'CANCELED'")
+            .andWhere(company ? 'pr.company = :company' : '1=1', company ? { company } : {})
+            .andWhere(plant ? 'pr.plant = :plant' : '1=1', plant ? { plant } : {})
+            .getRawOne();
+          const producedGoodQty = Number(producedRow?.sum ?? 0);
+          const issuedCount = await queryRunner.manager.count(FgLabel, {
+            where: {
+              orderNo: dto.orderNo,
+              status: Not('VOIDED'),
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
+          });
+          if (issuedCount >= producedGoodQty) {
+            throw new BadRequestException(
+              `통전검사 합격 발행수가 생산 양품수를 초과할 수 없습니다. ` +
+                `(작업지시 ${dto.orderNo}: 생산 양품 ${producedGoodQty}, 기발행 ${issuedCount})`,
+            );
+          }
+
           fgBarcode = await this.seqGenerator.nextFgBarcode(queryRunner);
 
           savedInspect.fgBarcode = fgBarcode;
