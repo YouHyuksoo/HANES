@@ -55,7 +55,21 @@ test('PartSearchModal supports a larger multi-select picker with a bulk add acti
 
   assert.match(
     partSearchModal,
-    /maxHeight=\{multiSelect \? "560px" : "400px"\}/,
-    'larger multi-select modal should give the grid more vertical room',
+    /pageSize\?: number;/,
+    'shared part search modal should expose a configurable page size',
+  );
+
+  assert.match(
+    partSearchModal,
+    /pageSize=\{pageSize\}/,
+    'grid should honor the configurable page size instead of a hard-coded value',
+  );
+});
+
+test('PO opens the bulk picker with a compact 10-row page so the modal fits without full-screen scroll', () => {
+  assert.match(
+    poFormPanel,
+    /<PartSearchModal[\s\S]*?pageSize=\{10\}/,
+    'PO bulk picker should request a 10-row page size',
   );
 });

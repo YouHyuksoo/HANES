@@ -48,6 +48,8 @@ interface PartSearchModalProps {
   itemType?: string;
   /** 허용 품목유형 다중 제한 (예: 제품·반제품만). 지정 시 이 유형들만 조회·선택 가능 */
   allowedItemTypes?: string[];
+  /** 그리드 페이지당 행 수. 미지정 시 15행 (호출처별 모달 높이 조절용) */
+  pageSize?: number;
 }
 
 export default function PartSearchModal({
@@ -58,6 +60,7 @@ export default function PartSearchModal({
   onSelectMany,
   itemType: defaultItemType,
   allowedItemTypes,
+  pageSize = 15,
 }: PartSearchModalProps) {
   const { t } = useTranslation();
 
@@ -162,23 +165,25 @@ export default function PartSearchModal({
     [multiSelect, onSelect, onClose, togglePartSelection]
   );
 
+  /** 품목유형 코드 → 한글 라벨 매핑 (컬럼·필터 공통 사용) */
+  const typeLabelMap = useMemo<Record<string, string>>(() => ({
+    FINISHED: t("inventory.stock.fg", "완제품"),
+    SEMI_PRODUCT: t("inventory.stock.wip", "반제품"),
+    RAW_MATERIAL: t("inventory.stock.raw", "원자재"),
+    CONSUMABLE: t("inventory.stock.consumable", "소모품"),
+  }), [t]);
+
   /** 품목유형 옵션 (allowedItemTypes 지정 시 해당 유형만 노출) */
   const typeOptions = useMemo(() => {
-    const labelMap: Record<string, string> = {
-      FINISHED: t("inventory.stock.fg", "완제품"),
-      SEMI_PRODUCT: t("inventory.stock.wip", "반제품"),
-      RAW_MATERIAL: t("inventory.stock.raw", "원자재"),
-      CONSUMABLE: t("inventory.stock.consumable", "소모품"),
-    };
     const allowed = allowedItemTypes ?? [];
     const base = allowed.length > 0
       ? allowed
       : ["FINISHED", "SEMI_PRODUCT", "RAW_MATERIAL"];
     return [
       { value: "", label: t("common.all") },
-      ...base.map((v) => ({ value: v, label: labelMap[v] ?? v })),
+      ...base.map((v) => ({ value: v, label: typeLabelMap[v] ?? v })),
     ];
-  }, [t, allowedKey, allowedItemTypes]);
+  }, [t, allowedKey, allowedItemTypes, typeLabelMap]);
 
   /** DataGrid 컬럼 정의 */
   const columns = useMemo<ColumnDef<PartItem, unknown>[]>(
@@ -198,6 +203,10 @@ export default function PartSearchModal({
           accessorKey: "itemType",
           header: t("common.itemType", "품목유형"),
           size: 100,
+          cell: ({ getValue }) => {
+            const code = (getValue() as string) ?? "";
+            return typeLabelMap[code] ?? code;
+          },
         },
         {
           accessorKey: "spec",
@@ -245,7 +254,7 @@ export default function PartSearchModal({
         ...baseColumns,
       ];
     },
-    [t, multiSelect, allVisibleSelected, toggleAllVisible, selectedItemCodes, togglePartSelection]
+    [t, multiSelect, allVisibleSelected, toggleAllVisible, selectedItemCodes, togglePartSelection, typeLabelMap]
   );
 
   return (
@@ -295,7 +304,7 @@ export default function PartSearchModal({
         columns={columns}
         isLoading={loading}
         onRowClick={handleRowClick}
-        pageSize={15}
+        pageSize={pageSize}
         enableColumnFilter={false}
         enableColumnReordering={false}
       />

@@ -310,7 +310,8 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
       </div>
 
       <PartSearchModal isOpen={partModalOpen} onClose={() => setPartModalOpen(false)}
-        onSelect={handlePartSelect} multiSelect onSelectMany={handlePartSelectMany} itemType="RAW_MATERIAL" />
+        onSelect={handlePartSelect} multiSelect onSelectMany={handlePartSelectMany}
+        itemType="RAW_MATERIAL" pageSize={10} />
     </div>
   );
 }
