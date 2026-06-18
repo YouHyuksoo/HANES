@@ -1038,21 +1038,32 @@ export class ProdResultService {
    * ???? ??? ????? ?? ???? ??, ? ???? ????? ????.
    */
   private async ensureNoDownstreamProgress(prodResult: ProdResult, company?: string, plant?: string): Promise<void> {
-    if (!prodResult.prdUid) return;
-
     const { FgLabel } = await import('../../../entities/fg-label.entity');
+    const { InspectResult } = await import('../../../entities/inspect-result.entity');
     const fgLabelRepo = this.dataSource.getRepository(FgLabel);
-    const fgLabel = await fgLabelRepo.findOne({
+    const inspectRepo = this.dataSource.getRepository(InspectResult);
+
+    // 이 실적에서 통전검사로 발행된 FG바코드를 InspectResult 링크로 수집한다.
+    // (실적 prdUid 자체도 후보 — ON_PRODUCTION 모드/레거시 데이터에서 prdUid=FG바코드인 경우 대비)
+    const inspects = await inspectRepo.find({
+      where: { prodResultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      select: ['resultNo', 'fgBarcode'],
+    });
+    const barcodes = Array.from(new Set([
+      ...(prodResult.prdUid ? [prodResult.prdUid] : []),
+      ...inspects.map((i) => i.fgBarcode).filter((b): b is string => !!b),
+    ]));
+    if (barcodes.length === 0) return;
+
+    const packedLabel = await fgLabelRepo.findOne({
       where: {
-        fgBarcode: prodResult.prdUid,
+        fgBarcode: In(barcodes),
+        status: In(['PACKED', 'SHIPPED']),
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
       },
     });
-
-    if (!fgLabel || !['PACKED', 'SHIPPED'].includes(fgLabel.status)) {
-      return;
-    }
+    if (!packedLabel) return;
 
     const { BoxMaster } = await import('../../../entities/box-master.entity');
     const { PalletMaster } = await import('../../../entities/pallet-master.entity');
@@ -1064,7 +1075,7 @@ export class ProdResultService {
 
     const box = await boxRepo
       .createQueryBuilder('box')
-      .where('box.serialList LIKE :serial', { serial: `%${prodResult.prdUid}%` })
+      .where('box.serialList LIKE :serial', { serial: `%${packedLabel.fgBarcode}%` })
       .andWhere(company ? 'box.company = :company' : '1=1', { company })
       .andWhere(plant ? 'box.plant = :plant' : '1=1', { plant })
       .orderBy('box.createdAt', 'DESC')
@@ -1091,7 +1102,7 @@ export class ProdResultService {
       : null;
 
     const details = [
-      `FG 라벨: ${prodResult.prdUid}`,
+      `FG 라벨: ${packedLabel.fgBarcode}`,
       box ? `박스: ${box.boxNo}` : null,
       box?.oqcStatus ? `OQC: ${box.oqcStatus}` : null,
       pallet ? `팔레트: ${pallet.palletNo}` : null,

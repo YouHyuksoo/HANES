@@ -443,13 +443,9 @@ export class ContinuityInspectService {
           await queryRunner.manager.save(InspectResult, savedInspect);
         }
 
-        if (prodResult && fgBarcode && prodResult.prdUid !== fgBarcode) {
-          await queryRunner.manager.update(
-            ProdResult,
-            { resultNo: prodResult.resultNo },
-            { prdUid: fgBarcode },
-          );
-        }
+        // prod-result.prdUid 는 실적 자신의 시리얼({orderNo}-NNN)로 유지한다(WIP_MAIN 재고 키와 일치).
+        // 실적↔FG바코드(1:다)는 InspectResult.prodResultNo 링크로 추적하므로 prdUid 덮어쓰기는 하지 않는다.
+        // (ON_PRODUCTION 모드는 create 시점에 prdUid=fgBarcode 로 이미 설정됨 — 별도 처리 불필요)
 
       } else {
         /** FAIL 처리 */
