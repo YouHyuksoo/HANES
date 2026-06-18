@@ -3265,7 +3265,20 @@
       "pendingList": "Pending Barcodes",
       "circuitLabel": "Circuit Label",
       "scanCircuitLabel": "Scan Circuit Label",
-      "circuitRequired": "Scan the circuit label to pass."
+      "circuitRequired": "Scan the circuit label to pass.",
+      "consumablesTitle": "Consumable Equipment Parts",
+      "consumableScanPlaceholder": "Scan consumable barcode (UID)",
+      "consumableMountRequired": "{{count}} consumable(s) not mounted — mount before inspection",
+      "noConsumables": "No mapped consumables",
+      "consumableMounted": "Mounted",
+      "selectEquip": "Select Tester",
+      "selectEquipFirst": "Select a tester first",
+      "equipRequired": "Select a tester before inspection",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit Fullscreen",
+      "consumableUnmount": "Unmount",
+      "consumableUnmountConfirm": "Force-unmount consumable {{code}} from the equipment?",
+      "consumableUnmounted": "Unmounted"
     },
     "terminalResult": {
       "title": "Terminal Inspect Result",

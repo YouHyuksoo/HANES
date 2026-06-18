@@ -3586,7 +3586,20 @@
       "pendingList": "미검사 바코드",
       "circuitLabel": "회로라벨",
       "scanCircuitLabel": "회로라벨 스캔",
-      "circuitRequired": "합격하려면 회로라벨을 스캔해주세요."
+      "circuitRequired": "합격하려면 회로라벨을 스캔해주세요.",
+      "consumablesTitle": "소모성 설비부품",
+      "consumableScanPlaceholder": "소모품 바코드(UID)를 스캔하세요",
+      "consumableMountRequired": "소모품 {{count}}개 미장착 — 검사 전 장착하세요",
+      "noConsumables": "매핑된 소모품이 없습니다",
+      "consumableMounted": "장착됨",
+      "selectEquip": "검사기 선택",
+      "selectEquipFirst": "검사기를 먼저 선택하세요",
+      "equipRequired": "검사 전 검사기를 선택하세요",
+      "fullscreen": "전체화면",
+      "exitFullscreen": "전체화면 종료",
+      "consumableUnmount": "장착 해제",
+      "consumableUnmountConfirm": "{{code}} 소모품을 설비에서 강제로 장착 해제하시겠습니까?",
+      "consumableUnmounted": "장착 해제됨"
     },
     "terminalResult": {
       "title": "단자검사 실적",

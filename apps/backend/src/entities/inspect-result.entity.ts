@@ -68,6 +68,9 @@ export class InspectResult {
   @Column({ type: 'varchar2', name: 'INSPECTOR_ID', length: 36, nullable: true })
   inspectorId: string | null;
 
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true, comment: '검사 설비(검사기) 코드 - 검사 화면에서 선택한 TESTER 설비' })
+  equipCode: string | null;
+
   @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
   company: string;
 

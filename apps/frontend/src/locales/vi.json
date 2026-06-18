@@ -3251,7 +3251,20 @@
       "pendingList": "Mã vạch chờ kiểm",
       "circuitLabel": "Nhãn mạch",
       "scanCircuitLabel": "Quét nhãn mạch",
-      "circuitRequired": "Quét nhãn mạch để đạt."
+      "circuitRequired": "Quét nhãn mạch để đạt.",
+      "consumablesTitle": "Phụ tùng thiết bị tiêu hao",
+      "consumableScanPlaceholder": "Quét mã vạch vật tư tiêu hao (UID)",
+      "consumableMountRequired": "{{count}} vật tư chưa gắn — hãy gắn trước khi kiểm tra",
+      "noConsumables": "Không có vật tư tiêu hao được ánh xạ",
+      "consumableMounted": "Đã gắn",
+      "selectEquip": "Chọn máy kiểm tra",
+      "selectEquipFirst": "Hãy chọn máy kiểm tra trước",
+      "equipRequired": "Chọn máy kiểm tra trước khi kiểm tra",
+      "fullscreen": "Toàn màn hình",
+      "exitFullscreen": "Thoát toàn màn hình",
+      "consumableUnmount": "Tháo",
+      "consumableUnmountConfirm": "Tháo cưỡng bức vật tư {{code}} khỏi thiết bị?",
+      "consumableUnmounted": "Đã tháo"
     },
     "terminalResult": {
       "title": "Kết quả kiểm tra terminal",

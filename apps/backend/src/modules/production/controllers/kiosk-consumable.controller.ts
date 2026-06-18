@@ -7,7 +7,7 @@
  * - DELETE /production/job-orders/:orderNo/consumables/:conUid  : 장착 해제
  */
 import {
-  Controller, Get, Post, Delete, Param, Body,
+  Controller, Get, Post, Delete, Param, Body, Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { KioskConsumableService } from '../services/kiosk-consumable.service';
@@ -22,8 +22,15 @@ export class KioskConsumableController {
 
   @Get()
   @ApiOperation({ summary: '작업지시(모델+설비) 매핑 소모품 + 장착 현황' })
-  async findAll(@Param('orderNo') orderNo: string, @Company() company?: string, @Plant() plant?: string) {
-    const data = await this.svc.findByJobOrder(orderNo, company, plant);
+  async findAll(
+    @Param('orderNo') orderNo: string,
+    @Query('equipCode') equipCode?: string,
+    @Query('includeMounted') includeMounted?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const withMounted = includeMounted === '1' || includeMounted === 'true';
+    const data = await this.svc.findByJobOrder(orderNo, company, plant, equipCode, withMounted);
     return ResponseUtil.success(data);
   }
 
@@ -35,7 +42,7 @@ export class KioskConsumableController {
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.svc.scanMount(orderNo, body.conUid, company, plant);
+    const data = await this.svc.scanMount(orderNo, body.conUid, company, plant, body.equipCode);
     return ResponseUtil.success(data, '소모품 롯트가 장착되었습니다.');
   }
 

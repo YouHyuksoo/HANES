@@ -3251,7 +3251,20 @@
       "pendingList": "待检条码",
       "circuitLabel": "电路标签",
       "scanCircuitLabel": "扫描电路标签",
-      "circuitRequired": "合格需先扫描电路标签。"
+      "circuitRequired": "合格需先扫描电路标签。",
+      "consumablesTitle": "消耗性设备部件",
+      "consumableScanPlaceholder": "请扫描耗材条码(UID)",
+      "consumableMountRequired": "{{count}} 个耗材未装载 — 检验前请先装载",
+      "noConsumables": "没有映射的耗材",
+      "consumableMounted": "已装载",
+      "selectEquip": "选择检验设备",
+      "selectEquipFirst": "请先选择检验设备",
+      "equipRequired": "检验前请先选择检验设备",
+      "fullscreen": "全屏",
+      "exitFullscreen": "退出全屏",
+      "consumableUnmount": "卸载",
+      "consumableUnmountConfirm": "确定要将耗材 {{code}} 从设备强制卸载吗？",
+      "consumableUnmounted": "已卸载"
     },
     "terminalResult": {
       "title": "端子检查实绩",

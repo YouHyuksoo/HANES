@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   CheckCircle, XCircle, RefreshCw, Zap, ClipboardList, BarChart3, Package,
-  ScanBarcode,
+  ScanBarcode, AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -30,11 +30,23 @@ import FailModal from "./FailModal";
 interface Props {
   order: JobOrderRow;
   inspectType?: "CONTINUITY" | "TERMINAL";
+  /** 선택된 검사기(설비) 코드 — 검사 실적 기록 + 미선택 시 검사 차단 */
+  equipCode?: string;
+  /** 소모성 설비부품 장착 완료 여부(상위에서 주입, 매핑 0건이면 true) */
+  consumablesReady?: boolean;
+  /** 미장착 소모품 수량(인터락 안내 메시지용) */
+  unmountedConsumCount?: number;
 }
 
 const EMPTY_STATS: InspectStats = { total: 0, passed: 0, failed: 0, passRate: 0, planQty: 0, labelCount: 0 };
 
-export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Props) {
+export default function InspectPanel({
+  order,
+  inspectType = "CONTINUITY",
+  equipCode,
+  consumablesReady = true,
+  unmountedConsumCount = 0,
+}: Props) {
   const { t } = useTranslation();
   const [stats, setStats] = useState<InspectStats>(EMPTY_STATS);
   const [labels, setLabels] = useState<FgLabelRow[]>([]);
@@ -91,6 +103,7 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
     try {
       const payload: Record<string, unknown> = {
         orderNo: order.orderNo, itemCode: order.itemCode, lineCode: order.lineCode, passYn: "Y", inspectType,
+        ...(equipCode ? { equipCode } : {}),
       };
       if (isScanMode && scannedBarcode) {
         payload.fgBarcode = scannedBarcode;
@@ -104,7 +117,7 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
       if (isScanMode) scanInputRef.current?.focus();
     } catch { /* 에러 무시 */ }
     finally { setInspecting(false); }
-  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, circuitLabel, inspectType]);
+  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, circuitLabel, inspectType, equipCode]);
 
   /** FAIL 검사 등록 (모달에서 호출) */
   const handleFailSubmit = useCallback(async (errorCode: string, errorDetail: string) => {
@@ -113,6 +126,7 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
       const payload: Record<string, unknown> = {
         orderNo: order.orderNo, itemCode: order.itemCode, lineCode: order.lineCode,
         passYn: "N", inspectType, errorCode: errorCode || undefined, errorDetail: errorDetail || undefined,
+        ...(equipCode ? { equipCode } : {}),
       };
       if (isScanMode && scannedBarcode) {
         payload.fgBarcode = scannedBarcode;
@@ -125,7 +139,7 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
       if (isScanMode) scanInputRef.current?.focus();
     } catch { /* 에러 무시 */ }
     finally { setInspecting(false); }
-  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, inspectType]);
+  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, inspectType, equipCode]);
 
   /** 제품 바코드 입력 Enter → 회로라벨 입력칸으로 포커스 이동 */
   const handleScanKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -157,8 +171,12 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
     { accessorKey: "issuedAt", header: t("inspection.result.issuedAt"), size: 160 },
   ], [t]);
 
+  /** 검사기 미선택 시 검사 차단(인터락) — 소모품보다 우선 */
+  const equipRequired = !equipCode;
+  /** 소모성 설비부품 미장착 시 검사 차단(인터락) */
+  const consumableBlocked = !equipRequired && !consumablesReady;
   /** 스캔 모드에서 제품 바코드 미입력 시 PASS/FAIL 비활성화 */
-  const scanDisabled = isScanMode && !scannedBarcode.trim();
+  const scanDisabled = (isScanMode && !scannedBarcode.trim()) || equipRequired || consumableBlocked;
   /** 스캔 모드 PASS는 회로라벨까지 필수 */
   const passDisabled = scanDisabled || (isScanMode && !circuitLabel.trim());
   const scanDisabledReason = t(
@@ -169,6 +187,12 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
     "inspection.result.circuitRequired",
     "합격하려면 회로라벨을 스캔해주세요."
   );
+  const consumableRequiredReason = t("inspection.result.consumableMountRequired", {
+    count: unmountedConsumCount,
+  });
+  const equipRequiredReason = t("inspection.result.equipRequired");
+  /** 인터락 안내 — 검사기 미선택 우선, 다음 소모품 미장착 */
+  const interlockReason = equipRequired ? equipRequiredReason : consumableBlocked ? consumableRequiredReason : "";
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-auto">
@@ -249,6 +273,14 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
         </CardContent></Card>
       )}
 
+      {/* 인터락 안내 (검사기 미선택 / 소모품 미장착) */}
+      {interlockReason && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-orange-300 bg-orange-50 dark:border-orange-700 dark:bg-orange-900/20">
+          <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0" />
+          <span className="text-sm font-medium text-orange-700 dark:text-orange-300">{interlockReason}</span>
+        </div>
+      )}
+
       {/* 검사 버튼 */}
       <div className="flex gap-4">
         <button
@@ -257,11 +289,13 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
           title={
             inspecting
               ? t("common.saving")
-              : scanDisabled
-                ? scanDisabledReason
-                : isScanMode && !circuitLabel.trim()
-                  ? circuitRequiredReason
-                  : t("inspection.result.passBtn")
+              : interlockReason
+                ? interlockReason
+                : scanDisabled
+                  ? scanDisabledReason
+                  : isScanMode && !circuitLabel.trim()
+                    ? circuitRequiredReason
+                    : t("inspection.result.passBtn")
           }
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700
@@ -271,7 +305,7 @@ export default function InspectPanel({ order, inspectType = "CONTINUITY" }: Prop
         <button
           onClick={() => setFailModalOpen(true)}
           disabled={inspecting || scanDisabled}
-          title={inspecting ? t("common.saving") : scanDisabled ? scanDisabledReason : t("inspection.result.failBtn")}
+          title={inspecting ? t("common.saving") : interlockReason ? interlockReason : scanDisabled ? scanDisabledReason : t("inspection.result.failBtn")}
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700
             text-white font-bold text-lg transition-colors disabled:opacity-50">

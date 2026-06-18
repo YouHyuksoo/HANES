@@ -343,6 +343,7 @@ export class ContinuityInspectService {
         errorDetail: dto.errorDetail ?? null,
         circuitLabel: dto.circuitLabel ?? null,
         inspectorId: dto.workerId ?? null,
+        equipCode: dto.equipCode ?? null,
         inspectAt: new Date(),
         company: company ?? jobOrder.company,
         plant: plant ?? jobOrder.plant,
