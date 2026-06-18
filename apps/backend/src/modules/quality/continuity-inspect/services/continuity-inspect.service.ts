@@ -338,7 +338,8 @@ export class ContinuityInspectService {
    * 통전검사 결과 등록 (트랜잭션)
    * - ON_INSPECT 모드: PASS → InspectResult + FG_BARCODE 채번 + FG_LABELS 등록
    * - ON_PRODUCTION/PRE_ISSUE 모드: PASS → dto.fgBarcode로 PENDING 라벨 조회 → ISSUED 전환
- * - FAIL: InspectResult 등록
+   * - ON_SUBPROCESS 모드: PASS → dto.fgBarcode로 ISSUED 라벨(키팅 발행) 조회 → 판정/검사정보만 갱신 (바코드 채번 없음)
+   * - FAIL: InspectResult 등록
    */
   async inspect(
     dto: ContinuityInspectDto,
@@ -469,6 +470,39 @@ export class ContinuityInspectService {
             plant: plant ?? jobOrder.plant,
           });
           await queryRunner.manager.save(FgLabel, fgLabel);
+        } else if (timing === 'ON_SUBPROCESS') {
+          /** ON_SUBPROCESS: 키팅 단계에서 이미 발행된 ISSUED 라벨에 판정/검사정보만 갱신.
+           *  바코드 채번·신규 FG_LABELS 생성 없음. 라벨 식별은 dto.fgBarcode(스캔값) 사용. */
+          if (!dto.fgBarcode) {
+            throw new BadRequestException(
+              `ON_SUBPROCESS 모드에서는 fgBarcode(스캔값)가 필수입니다.`,
+            );
+          }
+          fgBarcode = dto.fgBarcode;
+
+          const issuedLabel = await queryRunner.manager.findOne(FgLabel, {
+            where: {
+              fgBarcode: dto.fgBarcode,
+              status: 'ISSUED',
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
+          });
+          if (!issuedLabel) {
+            throw new NotFoundException(
+              `ISSUED 상태의 FG 라벨을 찾을 수 없습니다: ${dto.fgBarcode}`,
+            );
+          }
+
+          issuedLabel.inspectResultId = savedInspect.resultNo;
+          issuedLabel.inspectPassYn = 'Y';
+          issuedLabel.workerId = dto.workerId ?? issuedLabel.workerId;
+          issuedLabel.equipCode = dto.equipCode ?? issuedLabel.equipCode;
+          issuedLabel.lineCode = dto.lineCode ?? issuedLabel.lineCode;
+          await queryRunner.manager.save(FgLabel, issuedLabel);
+
+          savedInspect.fgBarcode = fgBarcode;
+          await queryRunner.manager.save(InspectResult, savedInspect);
         } else {
           /** ON_PRODUCTION / PRE_ISSUE: 스캔한 바코드로 PENDING 라벨 → ISSUED 전환 */
           if (!dto.fgBarcode) {
@@ -510,7 +544,22 @@ export class ContinuityInspectService {
 
       } else {
         /** FAIL 처리 */
-        if (timing !== 'ON_INSPECT' && dto.fgBarcode) {
+        if (timing === 'ON_SUBPROCESS' && dto.fgBarcode) {
+          /** ON_SUBPROCESS: 스캔된 ISSUED 라벨에 불합격 기록 */
+          const issuedLabel = await queryRunner.manager.findOne(FgLabel, {
+            where: {
+              fgBarcode: dto.fgBarcode,
+              status: 'ISSUED',
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
+          });
+          if (issuedLabel) {
+            issuedLabel.inspectResultId = savedInspect.resultNo;
+            issuedLabel.inspectPassYn = 'N';
+            await queryRunner.manager.save(FgLabel, issuedLabel);
+          }
+        } else if (timing !== 'ON_INSPECT' && dto.fgBarcode) {
           /** ON_PRODUCTION/PRE_ISSUE: 스캔된 PENDING 라벨에 불합격 기록 */
           const pendingLabel = await queryRunner.manager.findOne(FgLabel, {
             where: {
