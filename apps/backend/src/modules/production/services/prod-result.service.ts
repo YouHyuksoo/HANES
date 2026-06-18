@@ -563,6 +563,17 @@ export class ProdResultService {
           this.logger.warn(`자동차감 경고: ${autoResult.warnings.join(', ')}`);
         }
       }
+
+      // 제품재고 즉시 적재 — 실적 저장 순간 양품을 WIP_MAIN 공정창고에 반영한다.
+      // (별도 완료 처리 없이도 키오스크 실적입력만으로 반제품/완제품 재고가 생성됨)
+      await this.adsorbProductStockInTx(queryRunner, {
+        resultNo: saved.resultNo,
+        orderNo: dto.orderNo,
+        goodQty: dto.goodQty ?? 0,
+        processCode: dto.processCode,
+        company: jobOrder.company,
+        plant: jobOrder.plant,
+      });
     });
 
     return this.prodResultRepository.findOne({
@@ -842,56 +853,15 @@ export class ProdResultService {
       }
 
       // 5. 공정창고(WIP_MAIN) 자동 적재 — 양품만 재고화
-      const goodQty = dto.goodQty ?? prodResult.goodQty;
-      if (goodQty > 0) {
-        const jobOrder = await queryRunner.manager.findOne(JobOrder, {
-          where: {
-            orderNo: prodResult.orderNo,
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
-          },
-          relations: ['part'],
-        });
-
-        if (jobOrder?.itemCode) {
-          const itemType = jobOrder.part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
-          // 시리얼 강제: 직렬관리 품목(SEMI/FINISHED)인데 실적에 prdUid가 비어 있으면
-          // 백엔드에서 시리얼을 채번한다. 누락 시 PRODUCT_STOCKS가 sentinel '*'로 집계되어
-          // 추적성이 깨지는 구멍을 막는다(구버전 키오스크/외부 API 호출 방어).
-          let prdUid = prodResult.prdUid?.trim() || '';
-          if (!prdUid) {
-            prdUid = await this.generateProductSerial(
-              queryRunner, prodResult.orderNo, jobOrder.company, jobOrder.plant,
-            );
-            await queryRunner.manager.update(
-              ProdResult,
-              { resultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-              { prdUid },
-            );
-            this.logger.warn(
-              `시리얼 미부여 실적 자동 채번: ${prodResult.resultNo} → ${prdUid} (sentinel '*' 적재 방지)`,
-            );
-          }
-          await this.productInventoryService.receiveStockInTx(queryRunner, {
-            warehouseId: 'WIP_MAIN',
-            itemCode: jobOrder.itemCode,
-            itemType,
-            prdUid,
-            qty: goodQty,
-            transType: 'WIP_IN',
-            orderNo: prodResult.orderNo,
-            processCode: prodResult.processCode || undefined,
-            refType: 'PROD_RESULT',
-            refId: prodResult.resultNo,
-            remark: `생산실적 완료 자동 적재`,
-            company: jobOrder.company,
-            plant: jobOrder.plant,
-          });
-          this.logger.log(
-            `공정재고 자동 적재: ${jobOrder.itemCode} × ${goodQty} → WIP_MAIN (실적 #${prodResult.resultNo})`,
-          );
-        }
-      }
+      //    create() 시점에 이미 적재됐으면 멱등 가드로 건너뛴다(이중적재 방지).
+      await this.adsorbProductStockInTx(queryRunner, {
+        resultNo: prodResult.resultNo,
+        orderNo: prodResult.orderNo,
+        goodQty: dto.goodQty ?? prodResult.goodQty,
+        processCode: prodResult.processCode,
+        company,
+        plant,
+      });
 
       // 6. 작업지시 자동 완료 체크
       // 해당 작업지시의 모든 실적이 DONE이고 계획수량 달성 시 자동 완료
@@ -1328,6 +1298,85 @@ export class ProdResultService {
         `${context} ${field} 값이 일치하지 않습니다. expected=${baseline ?? '-'}, ${details}`,
       );
     }
+  }
+
+  /**
+   * 공정창고(WIP_MAIN) 제품재고 자동 적재 — 양품만 재고화.
+   * 실적 저장(create) 즉시와 명시적 완료(complete) 양쪽에서 호출된다.
+   * - 멱등: 같은 실적(refId)에 이미 적재 트랜잭션(WIP_IN/FG_IN)이 있으면 건너뛴다(이중적재 방지).
+   * - 시리얼 강제: prdUid가 비면 {orderNo}-{NNN}을 채번해 sentinel '*' 집계를 막는다.
+   */
+  private async adsorbProductStockInTx(
+    qr: import('typeorm').QueryRunner,
+    params: {
+      resultNo: string;
+      orderNo: string;
+      goodQty: number;
+      processCode?: string | null;
+      company?: string;
+      plant?: string;
+    },
+  ): Promise<void> {
+    const { resultNo, orderNo, goodQty, processCode, company, plant } = params;
+    if (!goodQty || goodQty <= 0) return;
+
+    const { ProductTransaction } = await import('../../../entities/product-transaction.entity');
+    const alreadyAdsorbed = await qr.manager.findOne(ProductTransaction, {
+      where: {
+        refType: 'PROD_RESULT',
+        refId: resultNo,
+        transType: In(['WIP_IN', 'FG_IN']),
+        status: 'DONE',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    if (alreadyAdsorbed) return;
+
+    const jobOrder = await qr.manager.findOne(JobOrder, {
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      relations: ['part'],
+    });
+    if (!jobOrder?.itemCode) return;
+
+    const itemType = jobOrder.part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
+
+    // prdUid는 DB의 최신값을 재확인한다(ON_PRODUCTION FG바코드 override 반영).
+    const current = await qr.manager.findOne(ProdResult, {
+      where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      select: ['resultNo', 'prdUid'],
+    });
+    let prdUid = current?.prdUid?.trim() || '';
+    if (!prdUid) {
+      prdUid = await this.generateProductSerial(qr, orderNo, jobOrder.company, jobOrder.plant);
+      await qr.manager.update(
+        ProdResult,
+        { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { prdUid },
+      );
+      this.logger.warn(
+        `시리얼 미부여 실적 자동 채번: ${resultNo} → ${prdUid} (sentinel '*' 적재 방지)`,
+      );
+    }
+
+    await this.productInventoryService.receiveStockInTx(qr, {
+      warehouseId: 'WIP_MAIN',
+      itemCode: jobOrder.itemCode,
+      itemType,
+      prdUid,
+      qty: goodQty,
+      transType: 'WIP_IN',
+      orderNo,
+      processCode: processCode || undefined,
+      refType: 'PROD_RESULT',
+      refId: resultNo,
+      remark: '생산실적 자동 적재',
+      company: jobOrder.company,
+      plant: jobOrder.plant,
+    });
+    this.logger.log(
+      `공정재고 자동 적재: ${jobOrder.itemCode} × ${goodQty} → WIP_MAIN (실적 #${resultNo})`,
+    );
   }
 
   /**

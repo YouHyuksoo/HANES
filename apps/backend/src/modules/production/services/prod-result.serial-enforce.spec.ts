@@ -161,4 +161,72 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
       expect(manager.delete).not.toHaveBeenCalled();
     });
   });
+
+  describe('adsorbProductStockInTx (즉시 적재 + 멱등)', () => {
+    function buildAdsorbQr(opts: { existingTx?: unknown; prdUid?: string | null }) {
+      const manager = {
+        findOne: jest.fn().mockImplementation(async (entity: any) => {
+          switch (entity?.name) {
+            case 'ProductTransaction':
+              return opts.existingTx ?? null;
+            case 'JobOrder':
+              return { itemCode: 'ITEM-1', part: { itemType: 'SEMI_PRODUCT' }, company: 'C1', plant: 'P1' };
+            case 'ProdResult':
+              return { resultNo: 'PR-1', prdUid: opts.prdUid ?? null };
+            default:
+              return null;
+          }
+        }),
+        find: jest.fn().mockResolvedValue([]), // generateProductSerial 조회
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      return { qr: { manager } as any, manager };
+    }
+
+    it('skips re-adsorption when the result already has a WIP_IN transaction (idempotent)', async () => {
+      const { qr } = buildAdsorbQr({ existingTx: { transNo: 'PTX-1' } });
+      const prodInv = (target as any).productInventoryService;
+
+      await (target as any).adsorbProductStockInTx(qr, {
+        resultNo: 'PR-1', orderNo: 'WO-1', goodQty: 5, processCode: 'P1', company: 'C1', plant: 'P1',
+      });
+
+      expect(prodInv.receiveStockInTx).not.toHaveBeenCalled();
+    });
+
+    it('adsorbs WIP_IN with a generated serial when prdUid is empty', async () => {
+      const { qr, manager } = buildAdsorbQr({ existingTx: null, prdUid: null });
+      const prodInv = (target as any).productInventoryService;
+
+      await (target as any).adsorbProductStockInTx(qr, {
+        resultNo: 'PR-1', orderNo: 'WO-1', goodQty: 5, processCode: 'P1', company: 'C1', plant: 'P1',
+      });
+
+      // 시리얼 강제 채번값으로 실적 update + WIP_IN 적재
+      expect(manager.update).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ resultNo: 'PR-1' }),
+        expect.objectContaining({ prdUid: 'WO-1-001' }),
+      );
+      expect(prodInv.receiveStockInTx).toHaveBeenCalledWith(
+        qr,
+        expect.objectContaining({
+          warehouseId: 'WIP_MAIN', itemCode: 'ITEM-1', itemType: 'SEMI_PRODUCT',
+          prdUid: 'WO-1-001', qty: 5, transType: 'WIP_IN', refType: 'PROD_RESULT', refId: 'PR-1',
+        }),
+      );
+    });
+
+    it('does nothing when goodQty is 0', async () => {
+      const { qr, manager } = buildAdsorbQr({ existingTx: null });
+      const prodInv = (target as any).productInventoryService;
+
+      await (target as any).adsorbProductStockInTx(qr, {
+        resultNo: 'PR-1', orderNo: 'WO-1', goodQty: 0, company: 'C1', plant: 'P1',
+      });
+
+      expect(manager.findOne).not.toHaveBeenCalled();
+      expect(prodInv.receiveStockInTx).not.toHaveBeenCalled();
+    });
+  });
 });
