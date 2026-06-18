@@ -100,10 +100,12 @@ import { ProductionSpecificationService } from './services/production-specificat
 import { HarnessDrawingMaster } from '../../entities/harness-drawing-master.entity';
 import { HarnessDrawingRevision } from '../../entities/harness-drawing-revision.entity';
 import { HarnessCircuitSpec } from '../../entities/harness-circuit-spec.entity';
+import { SgLabel } from '../../entities/sg-label.entity';
+import { ProductGenealogy } from '../../entities/product-genealogy.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster, HarnessDrawingMaster, HarnessDrawingRevision, HarnessCircuitSpec]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster, HarnessDrawingMaster, HarnessDrawingRevision, HarnessCircuitSpec, SgLabel, ProductGenealogy]),
     InventoryModule,
     SystemModule,
   ],
