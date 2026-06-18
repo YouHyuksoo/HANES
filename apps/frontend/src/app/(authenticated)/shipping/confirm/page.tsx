@@ -12,7 +12,7 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Truck, Plus, Search, RefreshCw, CheckCircle, Package, Clock, MapPin, Upload, ArrowRight, XCircle, ScanLine } from 'lucide-react';
+import { Truck, Plus, Search, RefreshCw, CheckCircle, Package, Clock, MapPin, Upload, ArrowRight, XCircle, ScanLine, RotateCcw } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { usePartnerOptions } from '@/hooks/useMasterOptions';
@@ -64,6 +64,9 @@ export default function ShipmentPage() {
   const [cancelTarget, setCancelTarget] = useState<Shipment | null>(null);
   const [cancelRemark, setCancelRemark] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [reverseTarget, setReverseTarget] = useState<Shipment | null>(null);
+  const [reverseRemark, setReverseRemark] = useState('');
+  const [reversing, setReversing] = useState(false);
   const [createForm, setCreateForm] = useState({ shipDate: '', customerCode: '', vehicleNo: '', driverName: '', destination: '' });
 
   const fetchData = useCallback(async () => {
@@ -149,6 +152,24 @@ export default function ShipmentPage() {
     }
   }, [cancelTarget, cancelRemark, fetchData]);
 
+  /** 출하 역분개 (SHIPPED → LOADED, 제품재고 복원). ERP 연동분은 서버에서 차단됨 */
+  const handleReverseShipment = useCallback(async () => {
+    if (!reverseTarget || !reverseRemark.trim()) return;
+    setReversing(true);
+    try {
+      await api.post(`/shipping/shipments/${reverseTarget.shipNo}/reverse`, {
+        remark: reverseRemark.trim(),
+      });
+      setReverseTarget(null);
+      setReverseRemark('');
+      fetchData();
+    } catch (e) {
+      console.error('Reverse shipment failed:', e);
+    } finally {
+      setReversing(false);
+    }
+  }, [reverseTarget, reverseRemark, fetchData]);
+
   const handleFormChange = (field: string, value: string) => setCreateForm((prev) => ({ ...prev, [field]: value }));
 
   const columns = useMemo<ColumnDef<Shipment>[]>(() => [
@@ -174,6 +195,12 @@ export default function ShipmentPage() {
             <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.cancelShipment')}
               onClick={(e) => { e.stopPropagation(); setCancelTarget(s); }}>
               <XCircle className="w-4 h-4 text-red-500" />
+            </button>
+          )}
+          {s.status === 'SHIPPED' && (
+            <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.reverseShipment', '출하 역분개')}
+              onClick={(e) => { e.stopPropagation(); setReverseTarget(s); }}>
+              <RotateCcw className="w-4 h-4 text-amber-500" />
             </button>
           )}
           <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.syncERP')}
@@ -297,6 +324,36 @@ export default function ShipmentPage() {
             <Button variant="secondary" onClick={() => { setCancelTarget(null); setCancelRemark(''); }}>{t('common.cancel')}</Button>
             <Button variant="danger" onClick={handleCancelShipment} disabled={!cancelRemark.trim() || cancelling}>
               {cancelling ? t('common.processing') : t('shipping.confirm.confirmCancel')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 출하 역분개 모달 (SHIPPED → LOADED) */}
+      <Modal isOpen={!!reverseTarget} onClose={() => { setReverseTarget(null); setReverseRemark(''); }} title={t('shipping.confirm.reverseShipment', '출하 역분개')} size="lg">
+        <div className="space-y-4">
+          {reverseTarget && (
+            <div className="p-3 bg-surface-secondary rounded-lg space-y-1 text-sm">
+              <p><span className="text-text-muted">{t('shipping.confirm.shipmentNo')}:</span> {reverseTarget.shipNo}</p>
+              <p><span className="text-text-muted">{t('shipping.confirm.customer')}:</span> {reverseTarget.customer}</p>
+              <p><span className="text-text-muted">{t('shipping.confirm.shipDate')}:</span> {reverseTarget.shipDate}</p>
+            </div>
+          )}
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              {t('shipping.confirm.reverseWarning', '출하를 LOADED 상태로 되돌리고 제품재고를 복원합니다. ERP 연동된 출하는 역분개할 수 없습니다.')}
+            </p>
+          </div>
+          <Input
+            label={t('shipping.confirm.reverseReason', '역분개 사유')}
+            value={reverseRemark}
+            onChange={(e) => setReverseRemark(e.target.value)}
+            fullWidth
+          />
+          <div className="flex justify-end gap-2 pt-4 border-t border-border">
+            <Button variant="secondary" onClick={() => { setReverseTarget(null); setReverseRemark(''); }}>{t('common.cancel')}</Button>
+            <Button variant="danger" onClick={handleReverseShipment} disabled={!reverseRemark.trim() || reversing}>
+              {reversing ? t('common.processing') : t('shipping.confirm.reverseShipment', '출하 역분개')}
             </Button>
           </div>
         </div>

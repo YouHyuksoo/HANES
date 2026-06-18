@@ -103,6 +103,31 @@ export default function BoxScanShipModal({ isOpen, onClose, onShipped }: Props) 
     }
   }, [order, rows, userId, t, onShipped]);
 
+  const cancelBox = useCallback(async (boxNo: string) => {
+    if (!order) return;
+    setShipping(true); setError(null);
+    try {
+      const res = await api.post(`/shipping/orders/${encodeURIComponent(order.shipOrderNo)}/cancel-ship-box`, {
+        boxNo,
+        workerId: userId,
+      });
+      const d = res.data?.data as { itemCode: string; lineShippedQty: number; orderStatus: string };
+      setRows((prev) => prev.filter((r) => r.boxNo !== boxNo));
+      setOrder((prev) => prev && ({
+        ...prev,
+        status: d.orderStatus,
+        items: prev.items.map((it) => it.itemCode === d.itemCode ? { ...it, shippedQty: d.lineShippedQty } : it),
+      }));
+      onShipped?.();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? t('shipping.boxScan.cancelFailed', '출하 취소에 실패했습니다.'));
+    } finally {
+      setShipping(false);
+      setTimeout(() => boxRef.current?.focus(), 50);
+    }
+  }, [order, userId, t, onShipped]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('shipping.boxScan.title', '박스 스캔 출하')} size="xl">
       <div className="space-y-4">
@@ -166,7 +191,18 @@ export default function BoxScanShipModal({ isOpen, onClose, onShipped }: Props) 
               <div key={r.boxNo} className="flex items-center justify-between px-3 py-2 text-sm">
                 <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /><span className="font-mono">{r.boxNo}</span></span>
                 <span className="text-text-muted">{r.itemCode}</span>
-                <span className="font-medium">{r.qty}</span>
+                <span className="flex items-center gap-2">
+                  <span className="font-medium">{r.qty}</span>
+                  <button
+                    type="button"
+                    title={t('shipping.boxScan.cancelBox', '출하 취소')}
+                    className="p-1 hover:bg-surface rounded disabled:opacity-50"
+                    disabled={shipping}
+                    onClick={() => cancelBox(r.boxNo)}
+                  >
+                    <XCircle className="w-4 h-4 text-red-500" />
+                  </button>
+                </span>
               </div>
             ))}
           </div>
