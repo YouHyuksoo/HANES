@@ -68,6 +68,33 @@ export class CreatePartDto {
   @MaxLength(20)
   unit?: string;
 
+  @ApiPropertyOptional({ description: '색상' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  color?: string;
+
+  @ApiPropertyOptional({ description: '길이' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  length?: number;
+
+  @ApiPropertyOptional({ description: '스트리핑 전' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  stripBefore?: number;
+
+  @ApiPropertyOptional({ description: '스트리핑 후' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  stripAfter?: number;
+
   @ApiPropertyOptional({ description: '도면 번호' })
   @IsOptional()
   @IsString()

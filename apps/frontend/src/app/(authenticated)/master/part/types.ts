@@ -20,6 +20,10 @@ export interface Part {
   rev?: string; // 리비전 (Oracle REV)
   markingText?: string | null; // 마킹 문구
   unit?: string; // 단위 (기본값: EA)
+  color?: string | null; // 색상 (Oracle COLOR)
+  length?: number | null; // 길이 (Oracle LENGTH)
+  stripBefore?: number | null; // 스트리핑 전 (Oracle STRIP_BEFORE)
+  stripAfter?: number | null; // 스트리핑 후 (Oracle STRIP_AFTER)
   safetyStock?: number; // 안전재고 (기본값: 0)
   lotUnitQty?: number; // LOT 단위수량 (Oracle LOTUNITQTY)
   boxQty?: number; // 박스 입수량 (Oracle BOXQTY) (기본값: 0)

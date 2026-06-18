@@ -46,6 +46,18 @@ export class PartMaster {
   @Column({ name: 'UNIT', length: 20, default: 'EA' })
   unit: string;
 
+  @Column({ type: 'varchar2', name: 'COLOR', length: 50, nullable: true })
+  color: string | null;
+
+  @Column({ type: 'number', name: 'LENGTH', nullable: true })
+  length: number | null;
+
+  @Column({ type: 'number', name: 'STRIP_BEFORE', nullable: true })
+  stripBefore: number | null;
+
+  @Column({ type: 'number', name: 'STRIP_AFTER', nullable: true })
+  stripAfter: number | null;
+
   @Column({ type: 'varchar2', name: 'DRAW_NO', length: 50, nullable: true })
   drawNo: string | null;
 

@@ -84,6 +84,10 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     rev: editingPart?.rev || "",
     markingText: editingPart?.markingText || "",
     unit: editingPart?.unit || "EA",
+    color: editingPart?.color || "",
+    length: editingPart?.length ?? 0,
+    stripBefore: editingPart?.stripBefore ?? 0,
+    stripAfter: editingPart?.stripAfter ?? 0,
     boxQty: editingPart?.boxQty ?? 0,
     minPackQty: editingPart?.minPackQty ?? 0,
     lotUnitQty: editingPart?.lotUnitQty ?? 0,
@@ -119,6 +123,10 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       rev: editingPart?.rev || "",
       markingText: editingPart?.markingText || "",
       unit: editingPart?.unit || "EA",
+      color: editingPart?.color || "",
+      length: editingPart?.length ?? 0,
+      stripBefore: editingPart?.stripBefore ?? 0,
+      stripAfter: editingPart?.stripAfter ?? 0,
       boxQty: editingPart?.boxQty ?? 0,
       minPackQty: editingPart?.minPackQty ?? 0,
       lotUnitQty: editingPart?.lotUnitQty ?? 0,
@@ -192,6 +200,10 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         rev: form.rev || undefined,
         markingText: form.markingText || undefined,
         unit: form.unit,
+        color: form.color || undefined,
+        length: form.length || undefined,
+        stripBefore: form.stripBefore || undefined,
+        stripAfter: form.stripAfter || undefined,
         boxQty: form.boxQty,
         minPackQty: form.minPackQty,
         lotUnitQty: form.lotUnitQty || undefined,
@@ -283,6 +295,14 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               <Input label={t("master.part.spec")}
                 value={form.spec} onChange={e => setField("spec", e.target.value)} fullWidth />
             </div>
+            <Input label={t("master.part.color", "색상")}
+              value={form.color} onChange={e => setField("color", e.target.value)} fullWidth />
+            <Input label={t("master.part.length", "길이")} type="number"
+              value={String(form.length)} onChange={e => setField("length", Number(e.target.value))} fullWidth />
+            <Input label={t("master.part.stripBefore", "스트리핑 전")} type="number"
+              value={String(form.stripBefore)} onChange={e => setField("stripBefore", Number(e.target.value))} fullWidth />
+            <Input label={t("master.part.stripAfter", "스트리핑 후")} type="number"
+              value={String(form.stripAfter)} onChange={e => setField("stripAfter", Number(e.target.value))} fullWidth />
             <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false} showCode
               value={form.unit} onChange={v => setField("unit", v)} fullWidth />
             <Select label={t("master.part.inspectMethod", "검사구분")}
@@ -302,7 +322,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={String(form.boxQty)} onChange={e => setField("boxQty", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.minPackQty", "최소포장단위")} type="number"
               value={String(form.minPackQty)} onChange={e => setField("minPackQty", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.lotUnitQty", "LOT단위수량")} type="number"
+            <Input label={t("master.part.lotUnitQty", "묶음단위수량")} type="number"
               value={String(form.lotUnitQty)} onChange={e => setField("lotUnitQty", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.safetyStock")} type="number"
               value={String(form.safetyStock)} onChange={e => setField("safetyStock", Number(e.target.value))} fullWidth />

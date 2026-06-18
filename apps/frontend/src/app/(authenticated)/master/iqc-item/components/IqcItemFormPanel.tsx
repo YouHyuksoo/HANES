@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 
 export interface IqcItemPool {
   inspItemCode: string;
@@ -120,10 +121,13 @@ export default function IqcItemFormPanel({
                 fullWidth
               />
             </div>
-            <Input
+            <ComCodeSelect
+              groupCode="UNIT_TYPE"
               label={t("common.unit", "단위")}
+              includeAll={false}
+              showCode
               value={form.unit}
-              onChange={(e) => setField("unit", e.target.value)}
+              onChange={(v) => setField("unit", v)}
               fullWidth
             />
           </div>
