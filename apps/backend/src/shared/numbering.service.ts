@@ -174,6 +174,15 @@ export class NumberingService {
     return `SG${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
   }
 
+  /** 생산 genealogy ID 채번: SEQ_PROD_GENEALOGY.NEXTVAL (PRODUCT_GENEALOGY.GENEALOGY_ID용). */
+  async nextGenealogyId(qr?: QueryRunner): Promise<number> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_PROD_GENEALOGY.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    return Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+  }
+
   private yyMMdd(d: Date): string {
     const yy = String(d.getFullYear()).slice(-2);
     const mm = String(d.getMonth() + 1).padStart(2, '0');

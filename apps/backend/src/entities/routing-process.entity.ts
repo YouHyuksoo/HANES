@@ -65,6 +65,12 @@ export class RoutingProcess {
   @Column({ type: 'varchar2', name: 'DESTRUCTIVE_YN', length: 1, default: 'N', nullable: true })
   destructiveYn: string | null;
 
+  @Column({ type: 'varchar2', name: 'ISSUE_SG_LABEL_YN', length: 1, default: 'N', nullable: true })
+  issueSgLabelYn: string | null;
+
+  @Column({ type: 'varchar2', name: 'ISSUE_FG_LABEL_YN', length: 1, default: 'N', nullable: true })
+  issueFgLabelYn: string | null;
+
   @Column({ name: 'SAMPLE_QTY', type: 'number', default: 1, nullable: true })
   sampleQty: number | null;
 
