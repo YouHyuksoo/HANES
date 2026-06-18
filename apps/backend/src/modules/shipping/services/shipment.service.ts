@@ -554,11 +554,11 @@ export class ShipmentService {
       }
 
       for (const [itemCode, qty] of itemQtyMap) {
-        await this.productInventoryService.issueStockInTx(queryRunner, {
+        // 재고 키 체계(배치 시리얼/FG바코드)와 무관하게 수량 FIFO로 차감 — 입고-출하 키 불일치로
+        // 인한 "재고 부족" 방지. 시리얼 추적은 FG_LABELS(SHIPPED 전이)가 담당.
+        await this.productInventoryService.issueStockByItemFifoInTx(queryRunner, {
           warehouseId: warehouse.warehouseCode,
           itemCode,
-          itemType: 'FINISHED',
-          prdUid: '*',
           qty,
           transType: 'FG_OUT',
           refType: 'SHIPMENT',

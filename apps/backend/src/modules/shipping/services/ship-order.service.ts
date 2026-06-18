@@ -452,21 +452,13 @@ export class ShipOrderService {
         plant,
       };
 
-      if (serials.length > 0) {
-        for (const serial of serials) {
-          await this.productInventory.receiveStockInTx(qr, {
-            ...receiveBase,
-            prdUid: serial,
-            qty: 1,
-          });
-        }
-      } else {
-        await this.productInventory.receiveStockInTx(qr, {
-          ...receiveBase,
-          prdUid: '*',
-          qty: box.qty,
-        });
-      }
+      // 재고 복원 — 출하가 수량 기준 FIFO이므로 취소도 수량 집계('*')로 복원해 키 체계를 통일한다.
+      // 시리얼 단위 복원은 아래 FG_LABELS → PACKED 전이가 담당. (재출하는 수량 FIFO라 키 무관 정상)
+      await this.productInventory.receiveStockInTx(qr, {
+        ...receiveBase,
+        prdUid: '*',
+        qty: box.qty,
+      });
 
       await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED' });
       if (serials.length > 0) {
