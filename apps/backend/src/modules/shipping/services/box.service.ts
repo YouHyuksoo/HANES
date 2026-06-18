@@ -434,10 +434,11 @@ export class BoxService {
       if (!label) return true;
       if (label.itemCode !== box.itemCode) return true;
       if (label.inspectPassYn !== 'Y') return true;
-      return !['ISSUED', 'VISUAL_PASS'].includes(label.status);
+      // 외관검사 필수 — 외관검사 합격(VISUAL_PASS) 라벨만 포장할 수 있다(ISSUED=외관검사 미실시 차단).
+      return label.status !== 'VISUAL_PASS';
     });
     if (invalidLabels.length > 0) {
-      throw new BadRequestException(`검사 합격 FG만 포장할 수 있습니다: ${invalidLabels.join(', ')}`);
+      throw new BadRequestException(`외관검사 합격(VISUAL_PASS) FG만 포장할 수 있습니다: ${invalidLabels.join(', ')}`);
     }
 
     await this.assertSerialsNotPackedElsewhere(dto.serials, id, company, plant);
