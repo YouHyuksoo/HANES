@@ -26,6 +26,8 @@ export interface FgLabelRow {
   issuedAt: string;
   status: string;
   reprintCount: number;
+  /** 통전검사 합부 (N이면 재검사 가능) */
+  inspectPassYn?: string | null;
   /** 회로라벨 (설비 출력 바코드, 스캔 모드 PASS 시 매핑) */
   circuitLabel?: string | null;
 }
