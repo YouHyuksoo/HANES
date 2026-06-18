@@ -21,7 +21,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Not, In, DataSource } from 'typeorm';
+import { Repository, ILike, Like, Not, In, DataSource } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -855,11 +855,28 @@ export class ProdResultService {
 
         if (jobOrder?.itemCode) {
           const itemType = jobOrder.part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
+          // 시리얼 강제: 직렬관리 품목(SEMI/FINISHED)인데 실적에 prdUid가 비어 있으면
+          // 백엔드에서 시리얼을 채번한다. 누락 시 PRODUCT_STOCKS가 sentinel '*'로 집계되어
+          // 추적성이 깨지는 구멍을 막는다(구버전 키오스크/외부 API 호출 방어).
+          let prdUid = prodResult.prdUid?.trim() || '';
+          if (!prdUid) {
+            prdUid = await this.generateProductSerial(
+              queryRunner, prodResult.orderNo, jobOrder.company, jobOrder.plant,
+            );
+            await queryRunner.manager.update(
+              ProdResult,
+              { resultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+              { prdUid },
+            );
+            this.logger.warn(
+              `시리얼 미부여 실적 자동 채번: ${prodResult.resultNo} → ${prdUid} (sentinel '*' 적재 방지)`,
+            );
+          }
           await this.productInventoryService.receiveStockInTx(queryRunner, {
             warehouseId: 'WIP_MAIN',
             itemCode: jobOrder.itemCode,
             itemType,
-            prdUid: prodResult.prdUid || undefined,
+            prdUid,
             qty: goodQty,
             transType: 'WIP_IN',
             orderNo: prodResult.orderNo,
@@ -1313,6 +1330,34 @@ export class ProdResultService {
     }
   }
 
+  /**
+   * 제품 시리얼 강제 채번 — 키오스크가 prdUid를 전송하지 못한 실적(구버전/외부 API)을
+   * 완료 적재 시 백엔드에서 보정한다. 키오스크와 동일한 {orderNo}-{NNN} 체계를 유지하되,
+   * 해당 작업지시의 기존 시리얼 최대 시퀀스+1을 사용해 충돌을 피한다.
+   */
+  private async generateProductSerial(
+    qr: import('typeorm').QueryRunner,
+    orderNo: string,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<string> {
+    const rows = await qr.manager.find(ProdResult, {
+      where: {
+        orderNo,
+        prdUid: Like(`${orderNo}-%`),
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      select: ['resultNo', 'prdUid'],
+    });
+    let maxSeq = 0;
+    for (const row of rows ?? []) {
+      const matched = row.prdUid?.match(/-(\d+)$/);
+      if (matched) maxSeq = Math.max(maxSeq, parseInt(matched[1], 10));
+    }
+    return `${orderNo}-${String(maxSeq + 1).padStart(3, '0')}`;
+  }
+
   private async reverseProductStock(
     qr: import('typeorm').QueryRunner,
     resultNo: string,
@@ -1370,16 +1415,22 @@ export class ProdResultService {
             ],
           });
           const newQty = Math.max(stock.qty - tx.qty, 0);
-          await qr.manager.update(ProductStock,
-            {
-              warehouseCode: stock.warehouseCode,
-              itemCode: stock.itemCode,
-              prdUid: stock.prdUid,
-              ...(company ? { company } : {}),
-              ...(plant ? { plant } : {}),
-            },
-            { qty: newQty, availableQty: Math.max(newQty - stock.reservedQty, 0) },
-          );
+          const stockKey = {
+            warehouseCode: stock.warehouseCode,
+            itemCode: stock.itemCode,
+            prdUid: stock.prdUid,
+            company: stock.company,
+            plant: stock.plant,
+          };
+          // 입고 취소로 수량이 0이 되고 예약도 없으면 빈 재고행을 남기지 않는다
+          // (sentinel '*' 포함, qty=0 잔재 행 누적 방지).
+          if (newQty === 0 && stock.reservedQty === 0) {
+            await qr.manager.delete(ProductStock, stockKey);
+          } else {
+            await qr.manager.update(ProductStock, stockKey,
+              { qty: newQty, availableQty: Math.max(newQty - stock.reservedQty, 0) },
+            );
+          }
         }
       }
 
