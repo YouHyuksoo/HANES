@@ -104,6 +104,23 @@ export default function OqcInspectModal({ isOpen, onClose, requestId, onSuccess 
   }, [detail, inspectorName, sampleBoxIds, onClose, onSuccess]);
 
   const isEditable = detail?.status === "PENDING" || detail?.status === "IN_PROGRESS";
+  // OQC 재판정 — FAIL/PASS 판정 후 재검사로 결과를 정정한다(박스 미진행 시에만 백엔드 허용).
+  const isFinal = detail?.status === "PASS" || detail?.status === "FAIL";
+  const handleReJudge = useCallback(async (result: "PASS" | "FAIL") => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      await api.patch(`/quality/oqc/${detail.id}/result`, {
+        result,
+        ...(remark ? { remark } : {}),
+        inspectorName: inspectorName || undefined,
+      });
+      onClose();
+      onSuccess();
+    } catch (e) {
+      console.error("OQC re-judge failed:", e);
+    } finally { setSaving(false); }
+  }, [detail, remark, inspectorName, onClose, onSuccess]);
 
   const columns = useMemo<ColumnDef<OqcBox>[]>(() => [
     {
@@ -213,6 +230,34 @@ export default function OqcInspectModal({ isOpen, onClose, requestId, onSuccess 
               onChange={(e) => setRemark(e.target.value)}
               fullWidth
             />
+          </div>
+        )}
+
+        {/* 재판정 (판정 완료 후 결과 정정 — 박스 미진행 시) */}
+        {isFinal && (
+          <div className="flex items-center gap-2 pt-4 border-t border-border">
+            <span className="text-xs text-text-muted flex-shrink-0">{t("quality.oqc.reJudge", "재판정")}</span>
+            <Input
+              placeholder={t("quality.oqc.reJudgeReason", "재판정 사유")}
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+              className="flex-1"
+            />
+            {detail?.status !== "PASS" && (
+              <Button onClick={() => handleReJudge("PASS")} disabled={saving}>
+                <CheckCircle className="w-4 h-4 mr-1" /> {t("quality.oqc.reJudgeToPass", "PASS로 정정")}
+              </Button>
+            )}
+            {detail?.status !== "FAIL" && (
+              <Button
+                variant="secondary"
+                onClick={() => handleReJudge("FAIL")}
+                disabled={saving}
+                className="!border-red-300 !text-red-600 hover:!bg-red-50 dark:!border-red-700 dark:!text-red-400 dark:hover:!bg-red-950"
+              >
+                <XCircle className="w-4 h-4 mr-1" /> {t("quality.oqc.reJudgeToFail", "FAIL로 정정")}
+              </Button>
+            )}
           </div>
         )}
 
