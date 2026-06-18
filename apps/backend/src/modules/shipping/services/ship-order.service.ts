@@ -22,6 +22,7 @@ import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, FindO
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
@@ -41,6 +42,8 @@ export class ShipOrderService {
     private readonly shipOrderItemRepository: Repository<ShipmentOrderItem>,
     @InjectRepository(PartMaster)
     private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerRepository: Repository<PartnerMaster>,
     private readonly productInventory: ProductInventoryService,
     private readonly tx: TransactionService,
     private readonly sysConfig: SysConfigService,
@@ -53,12 +56,36 @@ export class ShipOrderService {
     };
   }
 
+  /**
+   * 고객사코드(customerId = PARTNER_MASTERS.partnerCode)로 거래처마스터에서 고객명을 해석한다.
+   * 고객명은 프론트가 보내는 값이 아니라 거래처마스터의 현재 이름을 출처로 한다.
+   */
+  private async resolveCustomerName(customerId?: string | null, company?: string, plant?: string): Promise<string | null> {
+    if (!customerId) return null;
+    const partner = await this.partnerRepository.findOne({
+      where: { partnerCode: customerId, ...this.tenantWhere(company, plant) },
+      select: ['partnerCode', 'partnerName'],
+    });
+    return partner?.partnerName ?? null;
+  }
+
+  /** 여러 customerId → 고객명 맵 (목록 조인용, N+1 회피) */
+  private async customerNameMap(customerIds: (string | null | undefined)[], company?: string, plant?: string): Promise<Map<string, string>> {
+    const ids = [...new Set(customerIds.filter((c): c is string => !!c))];
+    if (ids.length === 0) return new Map();
+    const partners = await this.partnerRepository.find({
+      where: { partnerCode: In(ids), ...this.tenantWhere(company, plant) },
+      select: ['partnerCode', 'partnerName'],
+    });
+    return new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
+  }
+
   private buildShipmentOrderUpdate(
     dto: Omit<UpdateShipOrderDto, 'items' | 'status' | 'shipOrderNo'>,
   ): Partial<Pick<ShipmentOrder, 'customerId' | 'customerName' | 'dueDate' | 'shipDate' | 'remark'>> {
     return {
       ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
-      ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
+      // customerName은 프론트 dto가 아니라 거래처마스터에서 해석한다(update()에서 처리)
       ...(dto.dueDate !== undefined ? { dueDate: parseDateStart(dto.dueDate) } : {}),
       ...(dto.shipDate !== undefined ? { shipDate: parseDateStart(dto.shipDate) } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
@@ -111,6 +138,9 @@ export class ShipOrderService {
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p.itemName]));
 
+    // 고객명은 거래처마스터에서 조인해 표시(저장값이 아니라 현재 이름)
+    const custMap = await this.customerNameMap(data.map((o) => o.customerId), company, plant);
+
     const resultData = data.map((order) => {
       const items = allItems
         .filter((i) => i.shipOrderNo === order.shipOrderNo)
@@ -118,7 +148,7 @@ export class ShipOrderService {
           ...item,
           itemName: partMap.get(item.itemCode),
         }));
-      return { ...order, items };
+      return { ...order, customerName: custMap.get(order.customerId ?? '') ?? order.customerName, items };
     });
 
     return { data: resultData, total, page, limit };
@@ -152,6 +182,7 @@ export class ShipOrderService {
 
     return {
       ...order,
+      customerName: (await this.resolveCustomerName(order.customerId, company, plant)) ?? order.customerName,
       items: itemsWithPart,
     };
   }
@@ -168,7 +199,8 @@ export class ShipOrderService {
       const order = this.shipOrderRepository.create({
         shipOrderNo: dto.shipOrderNo,
         customerId: dto.customerId,
-        customerName: dto.customerName,
+        // 고객명은 거래처마스터(customerId)에서 해석해 채운다(프론트 입력값 사용 안 함)
+        customerName: await this.resolveCustomerName(dto.customerId, company, plant),
         dueDate: parseDateStart(dto.dueDate),
         shipDate: parseDateStart(dto.shipDate),
         remark: dto.remark,
@@ -237,6 +269,10 @@ export class ShipOrderService {
       }
 
       const updateData = this.buildShipmentOrderUpdate(orderData);
+      // 고객사 변경 시 고객명은 거래처마스터에서 재해석
+      if (orderData.customerId !== undefined) {
+        updateData.customerName = await this.resolveCustomerName(orderData.customerId, company, plant);
+      }
 
       if (Object.keys(updateData).length > 0) {
         await queryRunner.manager.update(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) }, updateData);

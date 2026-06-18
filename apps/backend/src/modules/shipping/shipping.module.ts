@@ -49,6 +49,7 @@ import { ShipmentReturnItem } from '../../entities/shipment-return-item.entity';
 import { CustomerOrder } from '../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../entities/customer-order-item.entity';
 import { PartMaster } from '../../entities/part-master.entity';
+import { PartnerMaster } from '../../entities/partner-master.entity';
 import { MatLot } from '../../entities/mat-lot.entity';
 import { FgLabel } from '../../entities/fg-label.entity';
 import { OqcRequest } from '../../entities/oqc-request.entity';
@@ -71,6 +72,7 @@ import { SystemModule } from '../system/system.module';
       CustomerOrder,
       CustomerOrderItem,
       PartMaster,
+      PartnerMaster,
       MatLot,
       FgLabel,
       OqcRequest,
