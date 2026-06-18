@@ -13,6 +13,16 @@ Reason:
 - Reason text
 ```
 
+## D-20260618-HARNESS-DRAWING-REVISION
+Status: Accepted
+Decision:
+- 제품 도면관리는 기존 작업지도서/문서관리 확장이 아니라 `HARNESS_DRAWING_MASTERS` -> `HARNESS_DRAWING_REVISIONS` -> `HARNESS_CIRCUIT_SPECS` 전용 구조로 둔다.
+- 승인된 Revision은 회로 사양을 직접 수정하지 않고, `Rev 생성`으로 새 DRAFT Revision을 만들며 기존 회로를 복제해 편집한다.
+- 신규 키 채번은 Oracle `SEQUENCE.NEXTVAL`만 사용한다.
+Reason:
+- 하네스 도면은 품목별 Header, Revision, 회로별 stripping/crimping 사양이 함께 버전 관리되어야 하므로 단순 첨부문서나 작업지도서 본문으로 흡수하면 회로 단위 조회/변경 추적이 어렵다.
+- 승인본 불변성과 초안 편집 흐름을 분리해야 현장 작업 기준서의 감사 추적이 유지된다.
+
 ## D-20260617-PRINT-AGENT-OWNS-CONFIG
 Status: Accepted
 Decision:

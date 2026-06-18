@@ -2,7 +2,7 @@
 
 ## Last Update
 
-2026-06-18 00:36
+2026-06-18 13:48
 
 ## In Review
 
@@ -17,6 +17,7 @@
 
 ## Completed
 
+- `T-WIP-STOCK-ACTUAL-SQL`: `/production/wip-stock` DataGrid SQL 조회문을 실제 백엔드 조회 구조(`PRODUCT_STOCKS s LEFT JOIN ITEM_MASTERS im LEFT JOIN WAREHOUSES wh`)로 교체했다. 기존 `WIP_STOCKS` 하드코딩 제거, 화면 유형/검색 필터 반영, 구조 테스트 RED→GREEN, FE tsc, 3002 브라우저 SQL 모달 검증 완료. 커밋은 하지 않았다.
 - `T-ARRIVAL-RESULT-AGENT-REPRINT`: `/material/arrival-result` 라벨 재발행도 `/material/arrival`과 같은 방식으로 맞췄다. 페이지가 `mat_lot` 템플릿 목록을 조회하고 우측 재발행 영역의 `입하 라벨 템플릿` Select 선택값을 `MatLabelPreviewModal`에 전달한다. Playwright로 `R26061800003` 선택, `matlot_label::mat_lot` 유지, 바코드 ready 후 agent `/print` 1회, `MAT-ARRIVAL-VH1-RM260618-00003.pdf` 45,103 bytes 생성 확인. 구조 테스트, FE tsc, print-agent 구조 테스트, Go test PASS.
 - `T-PRINT-AGENT-PDF-OUTPUT`: `Microsoft Print to PDF` 출력이 `Access is denied`로 실패하던 원인을 보정했다. agent가 PDF 프린터를 감지하면 `logs/prints/<jobId>.pdf`를 `DOCINFO.lpszOutput`으로 넘긴다. 새 exe 빌드 후 agent 재시작 완료. `/test-print`는 `HANES-TEST-PRINT.pdf` 생성, `/material/arrival`에서는 `matlot_label::mat_lot` 선택 후 `PO-26-T01/TMN-C` 1개 입하 발행 및 `MAT-ARRIVAL-VH1-RM260618-00003.pdf` 생성 확인. 테스트 과정에서 `PO-26-T01 / TMN-C` 누적 입하수량은 3이 됐다.
 - `T-MATERIAL-ARRIVAL-AGENT-LABEL`: `/material/arrival` 입하 라벨 모달을 소모품 라벨과 같은 출력 방식으로 전환했다. 모달 오픈 시 `/master/label-templates?category=mat_lot`를 조회해 기본/저장 템플릿을 선택하고, 미리보기와 출력 모두 `LabelDesignRenderer`를 사용한다. 기존 숨김 iframe/browser `window.print()`는 제거했다. 출력 버튼은 바코드 렌더 완료와 이미지 로드를 기다린 뒤 라벨별 PNG를 만들고 로컬 print-agent `/print`로 `jobId=MAT-ARRIVAL-${matUid}` 전송한다. 검증: 구조 테스트 RED→GREEN, frontend tsc PASS, 3002 `/material/arrival` headless 브라우저 접속 console/page error 0.
@@ -99,6 +100,13 @@
 - .ai-coordination 작업추적 문서 초기화 완료.
 
 ## Next AI Should
+
+- `T-WIP-STOCK-ACTUAL-SQL` 완료 후 REVIEW 상태. `/production/wip-stock` SQL 미리보기는 이제 실제 `PRODUCT_STOCKS` 기반 조회 SQL과 화면 필터를 반영한다. 신규 구조 테스트, FE tsc, 3002 브라우저 SQL 모달 검증을 완료했고 커밋은 하지 않았다.
+- `T-DATAGRID-HOVER-SCROLL-REMOVE` 완료 후 REVIEW 상태. 공용 `DataGrid`의 좌우 hover 자동 스크롤 핸들 기능을 제거했고 `ScrollHandle.tsx`를 삭제했다. 신규 구조 테스트, 제품 도면관리 구조 테스트, FE tsc, 3002 브라우저 DOM 검증을 완료했다. 커밋은 하지 않았다.
+- `T-HARNESS-CIRCUIT-PAYLOAD` 완료 후 REVIEW 상태. 회로 저장 payload에서 엔티티 메타 필드를 제거해 `PUT /production/specifications/revisions/8` 400을 해결했고, Rev 생성은 prompt 대신 모달로 바꿔 취소 시 `/revise` 호출 0건을 확인했다. 커밋은 하지 않았다.
+- `T-HARNESS-CONNECTION-SYMBOL` 완료 후 REVIEW 상태. `/production/specification-setup` 회로 그리드 `연결` 컬럼을 SVG 미리보기 + 선택 컨트롤로 바꿨고, 구조 테스트 RED/GREEN, FE tsc, 3002 브라우저 렌더링을 확인했다. 커밋은 하지 않았다.
+- `T-HARNESS-DRAWING-SEED` 완료 후 REVIEW 상태. `HDW-SEED-HNS02-MAIN`, `HDW-SEED-HNS02-C1ABCD` seed를 JSHANES에 적용했고, 재실행성/API/3002 브라우저 표시를 확인했다. 검증 중 누락된 Revision 상세 GET 라우트와 화면 회로 상세 로딩도 보정했다. 커밋은 하지 않았다.
+- `T-HARNESS-DRAWING-MGMT` 완료 후 REVIEW 상태. `/production/specification-setup` 제품 도면관리 신규 화면/API/DB를 추가했고, JSHANES 마이그레이션, ERD 재생성, API 생성-승인-Rev생성-삭제, 3002 브라우저 화면 검증을 완료했다. 테스트 데이터는 삭제해 잔여 0건. 커밋은 하지 않았다.
 
 1. Read `AGENTS.md`.
 2. Read `.ai-coordination/README.md`, `STATE.md`, `TASKS.md`, `DECISIONS.md`, and `LOCKS.md`.

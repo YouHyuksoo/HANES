@@ -10,6 +10,69 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-18 13:48 Codex
+
+T-WIP-STOCK-ACTUAL-SQL - `/production/wip-stock` SQL 미리보기 실제 SQL 반영.
+
+- 원인: 화면 `DataGrid.sqlQuery`가 `WIP_STOCKS`를 하드코딩했다. 실제 백엔드 `ProductionViewsService.getWipStock()`는 `PRODUCT_STOCKS s`에서 조회하고 `ITEM_MASTERS im`, `WAREHOUSES wh`를 조인한다. 공통 SQL 모달은 preview SQL의 테이블명으로 API `meta.debugSql` 캐시를 매칭하므로, 잘못된 preview 테이블 때문에 실제 SQL 캐시 매칭도 실패할 수 있었다.
+- 변경: `apps/frontend/src/app/(authenticated)/production/wip-stock/page.tsx`에 `wipStockSql`을 추가해 실제 조회 SELECT/JOIN/WHERE/ORDER BY 구조를 표시한다. 현재 화면의 유형 필터와 검색어가 있으면 `ITEM_TYPE`/검색 조건도 SQL 미리보기에 반영한다. 구조 테스트 `wip-stock-actual-sql.structure.test.mjs`를 추가해 `WIP_STOCKS` 재유입을 막았다.
+- 검증: 구조 테스트 RED 확인 후 GREEN, `node --test apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-actual-sql.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 3002 브라우저에서 `/production/wip-stock` → 그리드 옵션 → `SQL 조회문` 모달 확인 결과 `PRODUCT_STOCKS`, `ITEM_MASTERS`, `WAREHOUSES` 표시 true, `WIP_STOCKS` 표시 false, console/page error 0.
+- 상태: REVIEW, lock released. 커밋은 하지 않음.
+
+## 2026-06-18 13:26 Codex
+
+T-DATAGRID-HOVER-SCROLL-REMOVE - 공용 DataGrid 좌우 끝 hover 자동 스크롤 제거.
+
+- 정정: 사용자의 의도는 `/production/specification-setup` 회로 테이블이 아니라 모든 공용 `DataGrid`의 좌/우 끝 hover 자동 스크롤 기능 제거였다. 앞서 추가했던 회로 테이블 전용 구조 테스트는 제거하고 공용 DataGrid 기준으로 전환했다.
+- 변경: `apps/frontend/src/components/data-grid/DataGrid.tsx`에서 `ScrollHandle` import와 좌/우 렌더링을 제거했다. `group/scroll` wrapper와 주석도 일반 테이블 컨테이너로 정리했다.
+- 삭제: `apps/frontend/src/components/data-grid/ScrollHandle.tsx` 삭제. 이 파일은 hover 시 `setInterval`로 `scrollLeft`를 변경하는 전용 구현이었다.
+- 테스트: `datagrid-scroll-handle-removal.structure.test.mjs` 추가. DataGrid에 `ScrollHandle`, `group/scroll`, `with scroll handles`가 없고 `ScrollHandle.tsx` 파일이 삭제됐는지 검증한다.
+- 검증: 신규 구조 테스트 PASS, 제품 도면관리 구조 테스트 PASS, frontend tsc PASS. 3002 브라우저 `/production/specification-setup`에서 DataGrid 렌더 후 `group/scroll=0`, `group-hover/scroll=0`, `data-scroll-id=0` 확인.
+- 상태: REVIEW, lock released. 커밋은 하지 않음.
+
+## 2026-06-18 13:18 Codex
+
+T-HARNESS-CIRCUIT-PAYLOAD - 제품 도면관리 회로 저장 400 및 Rev 생성 취소 문제 수정.
+
+- 원인: Revision 상세 API 응답의 회로 엔티티 전체(`circuitId`, `revisionId`, `sortOrder`, `company`, `plant`, `createdAt` 등)를 프론트 상태에 넣은 뒤 저장 payload에서 `...circuit`으로 그대로 재전송했다. 백엔드 DTO whitelist가 해당 필드를 거부해 `PUT /production/specifications/revisions/8` 400 발생.
+- 변경: `toCircuitPayload()`를 추가해 `HarnessCircuitSpecDto` 허용 필드만 명시적으로 전송하도록 변경했다. 빈 문자열은 `undefined`로 정리해 JSON payload에서 빠지게 했다.
+- Rev 생성: `window.prompt()`를 제거하고 공용 `Modal` 기반 Rev 생성 모달로 변경했다. 취소 버튼은 `setReviseModalOpen(false)`만 수행하며 `/revise` API를 호출하지 않는다.
+- 테스트: 구조 테스트에 payload sanitizer와 prompt 제거/모달 사용 조건을 추가해 RED 확인 후 GREEN. 구조 테스트 6/6 PASS, frontend tsc PASS.
+- 런타임 검증: 3002 브라우저에서 `HDW-SEED-HNS02-C1ABCD` 저장 클릭 시 `PUT /production/specifications/revisions/8` 200. 요청 payload에는 `circuitId/revisionId/company/createdAt` 등 금지 필드 미포함. Rev 생성 모달 취소 시 `/revise` 호출 0건 확인.
+- 상태: REVIEW, lock released. 커밋은 하지 않음.
+
+## 2026-06-18 13:11 Codex
+
+T-HARNESS-CONNECTION-SYMBOL - 제품 도면관리 회로 그리드의 연결문자 그림 표시.
+
+- 변경: `/production/specification-setup` 회로별 제작 사양 그리드의 `연결` 컬럼을 문자 입력칸에서 SVG 미리보기 + 선택 컨트롤로 변경했다.
+- 지원 형태: `STRAIGHT/LINE`은 직선, `BRIDGE`는 분기형, `ONE_SIDE`는 단측 연결 그림으로 표시한다. 저장값은 기존 `connectionSymbol` 필드를 그대로 사용한다.
+- 테스트: 구조 테스트에 `ConnectionSymbolControl`, `data-connection-symbol`, `svg`, `connectionSymbolOptions` 검증을 먼저 추가해 RED 확인 후 구현했다.
+- 검증: 구조 테스트 4/4 PASS, frontend tsc PASS. 3002 브라우저에서 `HDW-SEED-HNS02-MAIN` 선택 후 연결 셀 8개가 SVG와 select로 렌더링되고 `STRAIGHT`, `BRIDGE` 값이 표시됨을 확인했다.
+- 상태: REVIEW, lock released. 커밋은 하지 않음.
+
+## 2026-06-18 12:35 Codex
+
+T-HARNESS-DRAWING-SEED - 제품 도면관리 확인용 seed 데이터 작성 및 적용.
+
+- 추가: `apps/backend/src/migrations/2026-06-18_harness_drawing_seed.sql` 생성. `HDW-SEED-HNS02-MAIN`, `HDW-SEED-HNS02-C1ABCD` 2개 도면만 삭제 후 재삽입하는 재실행 가능 seed이며 키는 모두 `SEQ_HARNESS_* .NEXTVAL` 사용.
+- 데이터: HNS02 메인 도면 Rev.A APPROVED 6회로, Rev.B DRAFT 8회로, HNS02C1ABCD 서브 도면 Rev.A DRAFT 3회로. 화면 예시의 wire/stripping/crimping/housing/terminal 값을 포함.
+- 보정: 검증 중 `GET /production/specifications/revisions/:revisionId` 컨트롤러 라우트가 누락된 것과 화면 `loadDetail()`이 회로 없는 Revision 요약을 사용하던 문제를 수정했다.
+- 검증: seed SQL JSHANES 적용 및 재실행 성공. post-check는 도면 2건/Revision 3건/회로 17건. API에서 `HDW-SEED-HNS02-MAIN` Rev.A 6회로, Rev.B 8회로 조회 확인.
+- 테스트: production specification 구조 테스트, frontend/backend tsc 통과. 3002 브라우저에서 `/production/specification-setup` 검색 `HDW-SEED` 후 메인 도면 선택 시 Header와 회로 입력값 `VSF 0.75SQ` 표시 확인.
+- 상태: REVIEW, lock released. 커밋은 하지 않음.
+
+## 2026-06-18 12:24 Codex
+
+T-HARNESS-DRAWING-MGMT - 하네스 제품 도면관리 신규 기능 구현.
+
+- 구현: 생산관리 하위 `/production/specification-setup` 신규 화면 추가. 좌측 도면 목록, 우측 도면 Header, Revision 선택/승인/Rev 생성, 회로별 제작 사양 그리드를 제공한다.
+- 백엔드: `HARNESS_DRAWING_MASTERS`, `HARNESS_DRAWING_REVISIONS`, `HARNESS_CIRCUIT_SPECS` 엔티티/API/서비스 추가. 승인 Revision은 직접 수정 차단, Rev 생성 시 회로 복제. 키는 `SEQ_HARNESS_* .NEXTVAL` 사용.
+- DB: `apps/backend/src/migrations/2026-06-18_harness_drawing_management.sql`을 JSHANES에 적용해 테이블 3개, 시퀀스 3개, `PROD_SPEC_SETUP` 메뉴를 생성했다. `tools/generate_db_schema_doc.py`로 ERD 문서 재생성.
+- 검증: 백엔드 서비스 테스트, 프론트 구조 테스트, backend/frontend tsc 통과. 인증 API로 도면 생성 -> 승인 -> Rev 생성 -> 삭제 흐름을 실측했고 `DWG-CODEX-%` 테스트 데이터 잔여 0건 확인.
+- 브라우저: 3002/3003 dev 서버에서 `http://localhost:3002/production/specification-setup` 인증 세션 접속, `제품 도면관리`, `도면 Header`, `회로별 제작 사양`, 저장/승인 버튼 표시 확인.
+- 상태: REVIEW, lock released. 커밋은 하지 않음.
+
 ## 2026-06-18 dashboard-ora04068-fix Claude
 
 대시보드 500(`PKG_DASHBOARD.SP_JOB_ORDER_STATS` 프로시저 호출 실패) 원인 규명 + 백엔드 하드닝.

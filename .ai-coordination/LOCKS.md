@@ -16,6 +16,121 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-PRODSTOCK-SERIAL-ENFORCE
+  owner: claude
+  files:
+    - apps/backend/src/modules/production/services/prod-result.service.ts
+    - apps/backend/src/modules/production/services/prod-result.serial-enforce.spec.ts
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 키오스크 실적 완료 시 SEMI/FINISHED prdUid 누락분을 백엔드에서 {orderNo}-{NNN} 시리얼 강제 채번 + 취소 역분개 시 qty0 PRODUCT_STOCKS 빈 행 delete. 전용 spec 5건 통과·백엔드 tsc 0건. JSHANES qty0 '*' 잔재 1건 삭제. product-inventory.service.ts는 미수정.
+
+- task: T-WIP-STOCK-ACTUAL-SQL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/production/wip-stock/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-actual-sql.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: `/production/wip-stock` SQL 미리보기를 `PRODUCT_STOCKS` 기반 실제 조회 SQL로 보정 완료. 구조 테스트/FE tsc/3002 브라우저 SQL 모달 검증 후 lock 해제.
+
+- task: T-DATAGRID-HOVER-SCROLL-REMOVE
+  owner: codex
+  files:
+    - apps/frontend/src/components/data-grid/DataGrid.tsx
+    - apps/frontend/src/components/data-grid/ScrollHandle.tsx
+    - apps/frontend/src/components/data-grid/datagrid-scroll-handle-removal.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 모든 공용 DataGrid의 좌우 끝 hover 자동 스크롤 영역 제거 완료. ScrollHandle 삭제, DataGrid 렌더 제거, 구조 테스트/FE tsc/브라우저 검증 후 lock 해제.
+
+- task: T-HARNESS-CIRCUIT-PAYLOAD
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/production/specification-setup/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/specification-setup/page.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 제품 도면관리 회로 저장 시 엔티티 메타 필드가 DTO payload로 재전송되어 400 발생하는 문제와 Rev 생성 취소/브라우저 prompt 사용 문제 수정 완료. 구조 테스트/FE tsc/API/브라우저 검증 후 lock 해제.
+
+- task: T-HARNESS-CONNECTION-SYMBOL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/production/specification-setup/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/specification-setup/page.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 제품 도면관리 회로 그리드의 연결문자를 실제 선/분기/단측 SVG 그림 형태로 표시 완료. 구조 테스트/FE tsc/브라우저 검증 후 lock 해제.
+
+- task: T-HARNESS-DRAWING-SEED
+  owner: codex
+  files:
+    - apps/backend/src/modules/production/controllers/production-specification.controller.ts
+    - apps/backend/src/migrations/2026-06-18_harness_drawing_seed.sql
+    - apps/frontend/src/app/(authenticated)/production/specification-setup/page.tsx
+    - apps/frontend/src/app/(authenticated)/production/specification-setup/page.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 제품 도면관리 신규 화면 확인용 하네스 도면/Revision/회로 시드 데이터 JSHANES 적용 완료. 검증 중 누락 확인된 Revision 상세 GET 라우트와 화면 회로 상세 로딩 보정 후 API/브라우저 검증 완료.
+
+- task: T-HARNESS-DRAWING-MGMT
+  owner: codex
+  files:
+    - apps/backend/src/entities/harness-drawing-*.entity.ts
+    - apps/backend/src/modules/production/controllers/production-specification.controller.ts
+    - apps/backend/src/modules/production/services/production-specification.service.ts
+    - apps/backend/src/modules/production/dto/production-specification.dto.ts
+    - apps/backend/src/modules/production/production.module.ts
+    - apps/backend/src/migrations/2026-06-18_harness_drawing_management.sql
+    - apps/frontend/src/app/(authenticated)/production/specification-setup/**
+    - apps/frontend/src/config/menuConfig.ts
+    - apps/frontend/src/components/layout/pageRegistry.generated.ts
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
+    - docs/reports/db-schema-erd.md
+    - docs/superpowers/plans/2026-06-18-harness-drawing-management.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 하네스 제품 도면관리 신규 기능 구현 완료. Master/Revision/Circuit 신규 테이블, 생산 메뉴 신규 화면/API 추가, JSHANES/API/브라우저 검증 후 lock 해제.
+
 - task: T-DASHBOARD-ORA04068-HARDEN
   owner: claude
   files:
