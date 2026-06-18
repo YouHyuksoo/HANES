@@ -10,6 +10,16 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 Claude
+
+T-HARNESS-FLOW-RENEWAL-P1 — 하네스 생산흐름 리뉴얼 Phase 1(스키마 비파괴 추가).
+
+- 배경: grill로 전체 설계 확정(재고=PRODUCT_STOCKS 수량 / 추적=FG_LABELS+SG_LABELS 분리, 제품라벨 서브공정 발행으로 출하 키 우회 제거). 마스터 계획 `docs/superpowers/plans/2026-06-19-harness-production-flow-renewal.md`, Phase 1 sub-plan `...harness-renewal-phase1-schema.md`.
+- DB(JSHANES): `SG_LABELS`(반제품 묶음 추적라벨, 잔량 보유)·`PRODUCT_GENEALOGY`(재귀 genealogy) 테이블 + `SEQ_SG_LABEL`·`SEQ_PROD_GENEALOGY` 시퀀스 생성(oracle-db 스킬, idempotent). 신규 테이블이라 의존 PL/SQL 영향 0(기존 INVALID는 IF_PO 1건, 무관).
+- 코드: 엔티티 `SgLabel`·`ProductGenealogy` 추가, `production.module` forFeature 등록, `numbering.service.nextSgLabel`(SG+YYMMDD+5자리, 전역 SEQ) TDD RED→GREEN.
+- 검증: 백엔드 tsc 0건, `numbering.sg-label.spec` PASS. 비파괴(기존 서비스/흐름 미변경, 미사용 등록).
+- 상태: 작업 브랜치 `feat/harness-renewal-phase1`에 커밋 4건(8e67d4d8·1f3cc0ae·d2f03182·d2f59a7c), **main 미머지·미push**. lock 해제. Phase 2(채번·발행) 대기.
+
 ## 2026-06-18 13:48 Codex
 
 T-WIP-STOCK-ACTUAL-SQL - `/production/wip-stock` SQL 미리보기 실제 SQL 반영.
@@ -1168,6 +1178,15 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 변경: `apps/frontend/src/app/(authenticated)/equipment/inspect-history/page.tsx`의 SQL preview를 `EQUIP_INSPECT_LOGS log LEFT JOIN EQUIP_MASTERS equip` 기준으로 교체했다. 구조 테스트 `inspect-history-actual-sql.structure.test.mjs`를 추가해 잘못된 `EQUIP_INSPECTIONS` 재유입을 막았다.
 - 검증: 구조 테스트 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS. JSHANES 활성 계정으로 3003 API 호출 시 `meta.debugSql.tables = EQUIP_INSPECT_LOGS, EQUIP_MASTERS` 및 실제 SELECT/parameters 확인. 3002 브라우저에서 `/equipment/inspect-history` → 그리드 옵션 → `SQL 조회문` 클릭 후 모달에 `"EQUIP_INSPECT_LOGS"`, `"EQUIP_MASTERS"`, bind 변수 `:1`, `:2`가 표시되고 구 preview `EQUIP_INSPECTIONS`는 미표시임을 확인했다.
 - 상태: 완료, lock released. worktree에는 이전 작업의 backend/equipment 변경과 `.claude/worktrees` 미추적 폴더가 남아 있어 커밋 시 파일 범위 선별 필요.
+
+## 2026-06-18 21:55 Codex
+
+- 작업: `T-KIOSK-MOUNTED-RELOAD` `/production/input-kiosk` 재진입 시 장착 자재/소모품 DB 재조회 보정.
+- 원인: 자재는 `JOB_MATERIAL_LOTS`를 `GET /production/job-orders/:orderNo/material-lots`로 다시 읽는 경로가 있었지만, 소모품 화면/스캔 모달은 `GET/POST /production/job-orders/:orderNo/consumables` 호출 때 현재 키오스크에서 선택한 설비를 넘기지 않았다. 백엔드는 `equipCode` query/body를 지원하고 `includeMounted=1`이면 `CONSUMABLE_STOCKS.STATUS='MOUNTED'`와 `MOUNTED_EQUIP_CODE` 기준으로 실제 장착 롯트를 읽을 수 있는데, 키오스크만 이 계약을 쓰지 않아 재진입 후 장착 상태가 설비 기준으로 복원되지 않을 수 있었다.
+- 변경: `MaterialListPanel.tsx`가 소모품 조회 시 `params: { equipCode: selectedEquip?.equipCode, includeMounted: 1 }`를 전달하고, `ConsumableScanModal.tsx`도 목록 재조회와 스캔 장착 POST body에 같은 `equipCode`를 전달하도록 수정했다. localStorage에는 장착 UID를 추가 저장하지 않았다.
+- 검증: 신규 구조 테스트 `kiosk-mounted-reload.structure.test.mjs` RED 확인 후 GREEN. `node --test apps/frontend/src/app/(authenticated)/production/input-kiosk/components/kiosk-mounted-reload.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- 실DB/API/브라우저: JSHANES에서 `WO2606150066 / HNS02C2ABCDE / EQ-ATCNS-01` 매핑 2건과 `CONSUMABLE_STOCKS` mounted UID `CT26061600001`, `CT26061600002` 확인. 인증 API `GET http://localhost:3002/api/production/job-orders/WO2606150066/consumables?equipCode=EQ-ATCNS-01&includeMounted=1`이 두 UID를 반환. headless Playwright로 `http://localhost:3002/production/input-kiosk`에 인증/키오스크 컨텍스트만 주입했을 때 동일 API가 호출되고 화면 body에 두 UID가 표시됨을 확인했다.
+- 상태: 완료, REVIEW 대기, lock released. JSHANES `JOB_MATERIAL_LOTS`는 현재 0건이라 자재 저장 샘플 표시는 확인하지 못했지만 기존 DB 조회 경로는 테스트로 고정했다.
 
 ## 2026-06-16 23:58 Codex
 

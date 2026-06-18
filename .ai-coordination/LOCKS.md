@@ -16,6 +16,37 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-HARNESS-FLOW-RENEWAL-P1
+  owner: claude
+  files:
+    - apps/backend/src/migrations/2026-06-19_sg_labels_genealogy.sql
+    - apps/backend/src/entities/sg-label.entity.ts
+    - apps/backend/src/entities/product-genealogy.entity.ts
+    - apps/backend/src/modules/production/production.module.ts
+    - apps/backend/src/shared/numbering.service.ts
+    - apps/backend/src/shared/numbering.sg-label.spec.ts
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: 생산흐름 리뉴얼 Phase 1 완료(브랜치 feat/harness-renewal-phase1, 미머지). SG_LABELS·PRODUCT_GENEALOGY 테이블/시퀀스 JSHANES 생성, 엔티티 2종+모듈 등록+nextSgLabel 채번(TDD). BE tsc 0/jest PASS. 비파괴(기존 흐름 무변경). 커밋 8e67d4d8·1f3cc0ae·d2f03182·d2f59a7c.
+
+- task: T-KIOSK-MOUNTED-RELOAD
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/MaterialListPanel.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ConsumableScanModal.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/kiosk-mounted-reload.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: `/production/input-kiosk` 소모품 조회/스캔 API에 선택 설비 `equipCode`와 `includeMounted=1` 전달. JSHANES/API/3002 브라우저에서 `WO2606150066`, `EQ-ATCNS-01`, mounted UID 2건 재조회 표시 확인. 구조 테스트/FE tsc PASS.
+
 - task: T-PRODSTOCK-SERIAL-ENFORCE
   owner: claude
   files:
