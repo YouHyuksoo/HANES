@@ -17,7 +17,7 @@ import {
   Factory, Package, Clock, CheckCircle, XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge, ConfirmModal } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge, ConfirmModal, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
@@ -57,6 +57,11 @@ export default function ProdResultPage() {
   const [loading, setLoading] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<ProdResult | null>(null);
   const [canceling, setCanceling] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ProdResult | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [editTarget, setEditTarget] = useState<ProdResult | null>(null);
+  const [editForm, setEditForm] = useState({ goodQty: '', defectQty: '', remark: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   /** 공정 유형 필터 */
   const comCodeProcessOptions = useComCodeOptions('PROCESS_TYPE');
@@ -112,6 +117,48 @@ export default function ProdResultPage() {
       setCanceling(false);
     }
   }, [cancelTarget, fetchData, t]);
+
+  /** 실적 삭제 — 취소(CANCELED)된 실적만 가능(백엔드 가드) */
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/production/prod-results/${deleteTarget.resultNo}`);
+      toast.success(t('production.result.deleteSuccess', '실적이 삭제되었습니다.'));
+      setDeleteTarget(null);
+      fetchData();
+    } catch {
+      // api 인터셉터 처리
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteTarget, fetchData, t]);
+
+  /** 실적 수정 모달 열기 */
+  const openEdit = useCallback((row: ProdResult) => {
+    setEditForm({ goodQty: String(row.goodQty ?? 0), defectQty: String(row.defectQty ?? 0), remark: '' });
+    setEditTarget(row);
+  }, []);
+
+  /** 실적 수정 저장 — 수량 변경 시 백엔드가 자재+제품재고를 재동기화한다 */
+  const handleEditSave = useCallback(async () => {
+    if (!editTarget) return;
+    setSavingEdit(true);
+    try {
+      await api.put(`/production/prod-results/${editTarget.resultNo}`, {
+        goodQty: Number(editForm.goodQty) || 0,
+        defectQty: Number(editForm.defectQty) || 0,
+        ...(editForm.remark ? { remark: editForm.remark } : {}),
+      });
+      toast.success(t('production.result.editSuccess', '실적이 수정되었습니다.'));
+      setEditTarget(null);
+      fetchData();
+    } catch {
+      // api 인터셉터 처리
+    } finally {
+      setSavingEdit(false);
+    }
+  }, [editTarget, editForm, fetchData, t]);
 
   const getDefectRate = (result: ProdResult): string => {
     if (result.totalQty === 0) return '0.0';
@@ -192,22 +239,32 @@ export default function ProdResultPage() {
         },
       },
       {
-        id: 'actions', header: t('common.actions'), size: 80,
+        id: 'actions', header: t('common.actions'), size: 150,
         meta: { filterType: 'none' as const },
-        cell: ({ row }) => (
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={row.original.status === 'CANCELED'}
-            onClick={() => setCancelTarget(row.original)}
-            className="text-red-600 dark:text-red-400"
-          >
-            {t('common.cancel', '취소')}
-          </Button>
-        ),
+        cell: ({ row }) => {
+          if (row.original.status === 'CANCELED') {
+            return (
+              <Button size="sm" variant="ghost" onClick={() => setDeleteTarget(row.original)}
+                className="text-red-600 dark:text-red-400">
+                {t('common.delete')}
+              </Button>
+            );
+          }
+          return (
+            <div className="flex gap-1">
+              <Button size="sm" variant="ghost" onClick={() => openEdit(row.original)}>
+                {t('common.edit')}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setCancelTarget(row.original)}
+                className="text-red-600 dark:text-red-400">
+                {t('common.cancel')}
+              </Button>
+            </div>
+          );
+        },
       },
     ],
-    [t]
+    [t, openEdit]
   );
 
   return (
@@ -268,6 +325,45 @@ export default function ProdResultPage() {
         variant="danger"
         message={`'${cancelTarget?.resultNo || ''}' ${t('production.result.cancelConfirm', '실적을 취소하시겠습니까? 적재된 제품재고가 역분개됩니다.')}`}
       />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        variant="danger"
+        message={`'${deleteTarget?.resultNo || ''}' ${t('production.result.deleteConfirm', '실적을 영구 삭제하시겠습니까?')}`}
+      />
+
+      <Modal
+        isOpen={!!editTarget}
+        onClose={() => !savingEdit && setEditTarget(null)}
+        title={`${t('common.edit')} — ${editTarget?.resultNo || ''}`}
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setEditTarget(null)} disabled={savingEdit}>
+              {t('common.cancel')}
+            </Button>
+            <Button size="sm" onClick={handleEditSave} disabled={savingEdit}>
+              {savingEdit ? t('common.saving') : t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-xs text-text-muted">
+            {t('production.result.editHint', '수량 변경 시 자재 차감과 제품재고가 자동 재동기화됩니다.')}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label={t('production.result.goodQty')} type="number" min={0}
+              value={editForm.goodQty} onChange={(e) => setEditForm(f => ({ ...f, goodQty: e.target.value }))} fullWidth />
+            <Input label={t('production.result.defectQty')} type="number" min={0}
+              value={editForm.defectQty} onChange={(e) => setEditForm(f => ({ ...f, defectQty: e.target.value }))} fullWidth />
+          </div>
+          <Input label={t('common.remark')} value={editForm.remark}
+            onChange={(e) => setEditForm(f => ({ ...f, remark: e.target.value }))} fullWidth />
+        </div>
+      </Modal>
     </div>
   );
 }

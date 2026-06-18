@@ -657,8 +657,21 @@ export class ProdResultService {
             'ON_CREATE', resultNo, prodResult.orderNo, newTotalQty, queryRunner,
           );
         }
+        // 제품재고 재동기화 — 적재된 WIP 재고를 역분개 후 새 양품수량으로 재적재
+        // (적재를 create 시점으로 옮긴 뒤 수량 수정 시 제품재고가 stale 해지는 문제 해소)
+        await this.reverseProductStock(
+          queryRunner, resultNo, company ?? prodResult.company ?? undefined, plant ?? prodResult.plant ?? undefined,
+        );
+        await this.adsorbProductStockInTx(queryRunner, {
+          resultNo,
+          orderNo: prodResult.orderNo,
+          goodQty: newGoodQty,
+          processCode: prodResult.processCode,
+          company: company ?? prodResult.company ?? undefined,
+          plant: plant ?? prodResult.plant ?? undefined,
+        });
         this.logger.log(
-          `실적 수량 변경 자동차감 재계산: ${resultNo} (${oldTotalQty} → ${newTotalQty})`,
+          `실적 수량 변경 재계산(자재+제품재고): ${resultNo} (${oldTotalQty} → ${newTotalQty})`,
         );
       }
     });
