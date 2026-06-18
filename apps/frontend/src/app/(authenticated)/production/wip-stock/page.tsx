@@ -87,6 +87,39 @@ export default function WipStockPage() {
     { accessorKey: 'updatedAt', header: t('production.wipStock.updatedAt'), size: 110, meta: { filterType: 'date' as const } },
   ], [t]);
 
+  const wipStockSql = useMemo(() => {
+    const itemTypes = typeFilter
+      ? `'${typeFilter.replace(/'/g, "''")}'`
+      : "'SEMI_PRODUCT', 'FINISHED'";
+    const search = searchText.trim().replace(/'/g, "''").toUpperCase();
+
+    return `SELECT
+  s.ITEM_CODE AS "itemCode",
+  im.ITEM_NAME AS "itemName",
+  s.ITEM_TYPE AS "itemType",
+  s.WAREHOUSE_CODE AS "whCode",
+  wh.WAREHOUSE_NAME AS "whName",
+  s.QTY AS "qty",
+  im.UNIT AS "unit",
+  s.PRD_UID AS "prdUid",
+  s.UPDATED_AT AS "updatedAt"
+FROM PRODUCT_STOCKS s
+LEFT JOIN ITEM_MASTERS im
+  ON im.ITEM_CODE = s.ITEM_CODE
+ AND im.COMPANY = s.COMPANY
+ AND im.PLANT_CD = s.PLANT_CD
+LEFT JOIN WAREHOUSES wh
+  ON wh.WAREHOUSE_CODE = s.WAREHOUSE_CODE
+ AND wh.COMPANY = s.COMPANY
+ AND wh.PLANT_CD = s.PLANT_CD
+WHERE s.ITEM_TYPE IN (${itemTypes})
+  AND s.COMPANY = '40'
+  AND s.PLANT_CD = '1000'${search
+    ? `\n  AND (UPPER(s.ITEM_CODE) LIKE '%${search}%' OR UPPER(im.ITEM_NAME) LIKE '%${search}%')`
+    : ''}
+ORDER BY s.UPDATED_AT DESC`;
+  }, [searchText, typeFilter]);
+
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
@@ -121,7 +154,7 @@ export default function WipStockPage() {
               </div>
             </div>
           } 
-          sqlQuery={`SELECT *\nFROM WIP_STOCKS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={wipStockSql}/>
       </CardContent></Card>
     </div>
   );
