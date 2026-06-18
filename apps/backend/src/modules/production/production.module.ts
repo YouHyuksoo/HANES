@@ -95,10 +95,15 @@ import { ConsumableStock } from '../../entities/consumable-stock.entity';
 import { KioskConsumableController } from './controllers/kiosk-consumable.controller';
 import { KioskConsumableService } from './services/kiosk-consumable.service';
 import { WorkerMaster } from '../../entities/worker-master.entity';
+import { ProductionSpecificationController } from './controllers/production-specification.controller';
+import { ProductionSpecificationService } from './services/production-specification.service';
+import { HarnessDrawingMaster } from '../../entities/harness-drawing-master.entity';
+import { HarnessDrawingRevision } from '../../entities/harness-drawing-revision.entity';
+import { HarnessCircuitSpec } from '../../entities/harness-circuit-spec.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster, HarnessDrawingMaster, HarnessDrawingRevision, HarnessCircuitSpec]),
     InventoryModule,
     SystemModule,
   ],
@@ -114,6 +119,7 @@ import { WorkerMaster } from '../../entities/worker-master.entity';
     SelfInspectController,
     JobMaterialLotController,
     KioskConsumableController,
+    ProductionSpecificationController,
   ],
   providers: [
     JobOrderService,
@@ -130,6 +136,7 @@ import { WorkerMaster } from '../../entities/worker-master.entity';
     SelfInspectService,
     JobMaterialLotService,
     KioskConsumableService,
+    ProductionSpecificationService,
   ],
   exports: [
     JobOrderService,
@@ -139,6 +146,7 @@ import { WorkerMaster } from '../../entities/worker-master.entity';
     ProdPlanService,
     AutoIssueService,
     RepairService,
+    ProductionSpecificationService,
   ],
 })
 export class ProductionModule {}

@@ -145,6 +145,7 @@ export const menuConfig: MenuConfigItem[] = [
     children: [
       { code: "PROD_MONTHLY_PLAN", labelKey: "menu.production.monthlyPlan", path: "/production/monthly-plan" },
       { code: "PROD_SIMULATION", labelKey: "menu.production.simulation", path: "/production/simulation" },
+      { code: "PROD_SPEC_SETUP", labelKey: "menu.production.specificationSetup", path: "/production/specification-setup" },
       { code: "PROD_ORDER", labelKey: "menu.production.order", path: "/production/order" },
       { code: "PROD_RESULT", labelKey: "menu.production.result", path: "/production/result" },
       { code: "PROD_PROGRESS", labelKey: "menu.production.progress", path: "/production/progress" },

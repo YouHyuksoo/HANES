@@ -232,6 +232,7 @@
     "production": "生产管理",
     "production.monthlyPlan": "月度生产计划",
     "production.simulation": "计划模拟",
+    "production.specificationSetup": "产品图纸管理",
     "production.order": "作业指示管理",
     "production.result": "生产实绩查询",
     "production.progress": "作业指示现况查询",
@@ -2718,6 +2719,8 @@
     }
   },
   "production": {
+    "specificationSetup": "产品图纸管理",
+    "specificationSetupDescription": "按产品管理线束图纸版本和回路级制造规格。",
     "order": {
       "title": "作业指示管理",
       "description": "查看和管理生产作业指示。",

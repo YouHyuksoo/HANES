@@ -234,6 +234,7 @@
     "production": "생산관리",
     "production.monthlyPlan": "월간생산계획",
     "production.simulation": "생산계획 시뮬레이션",
+    "production.specificationSetup": "제품 도면관리",
     "production.order": "작업지시관리",
     "production.result": "생산실적조회",
     "production.progress": "작업지시현황조회",
@@ -3049,6 +3050,8 @@
     }
   },
   "production": {
+    "specificationSetup": "제품 도면관리",
+    "specificationSetupDescription": "제품별 하네스 도면 Revision과 회로별 제작 사양을 관리합니다.",
     "order": {
       "title": "작업지시 관리",
       "description": "생산 작업지시를 조회하고 상태를 관리합니다.",

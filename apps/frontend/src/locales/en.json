@@ -232,6 +232,7 @@
     "production": "Production",
     "production.monthlyPlan": "Monthly Plan",
     "production.simulation": "Plan Simulation",
+    "production.specificationSetup": "Product Drawing Management",
     "production.order": "Work Order Mgmt",
     "production.result": "Production Result Inquiry",
     "production.progress": "Order Progress Inquiry",
@@ -2732,6 +2733,8 @@
     }
   },
   "production": {
+    "specificationSetup": "Product Drawing Management",
+    "specificationSetupDescription": "Manage harness drawing revisions and circuit-level manufacturing specifications by product.",
     "order": {
       "title": "Work Order Management",
       "description": "View and manage production work orders.",

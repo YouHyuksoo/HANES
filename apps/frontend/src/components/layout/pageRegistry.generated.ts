@@ -118,6 +118,7 @@ export const pageRegistry: Record<string, ComponentType> = {
   "/production/result-summary": dynamic(() => import("@/app/(authenticated)/production/result-summary/page"), { ssr: false }),
   "/production/sample-inspect": dynamic(() => import("@/app/(authenticated)/production/sample-inspect/page"), { ssr: false }),
   "/production/simulation": dynamic(() => import("@/app/(authenticated)/production/simulation/page"), { ssr: false }),
+  "/production/specification-setup": dynamic(() => import("@/app/(authenticated)/production/specification-setup/page"), { ssr: false }),
   "/production/wip-material-stock": dynamic(() => import("@/app/(authenticated)/production/wip-material-stock/page"), { ssr: false }),
   "/production/wip-material-trans": dynamic(() => import("@/app/(authenticated)/production/wip-material-trans/page"), { ssr: false }),
   "/production/wip-stock": dynamic(() => import("@/app/(authenticated)/production/wip-stock/page"), { ssr: false }),

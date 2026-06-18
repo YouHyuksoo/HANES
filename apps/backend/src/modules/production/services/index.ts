@@ -6,3 +6,4 @@
 export * from './job-order.service';
 export * from './prod-result.service';
 export * from './production-views.service';
+export * from './production-specification.service';
