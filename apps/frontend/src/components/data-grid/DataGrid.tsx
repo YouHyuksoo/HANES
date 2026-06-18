@@ -38,7 +38,6 @@ import type { ExportFormat } from '@/hooks/useExport';
 import { SqlViewerModal, type ActiveFilter } from './SqlViewerModal';
 import { ResizeHandle } from './ResizeHandle';
 import { ColumnFilterInput } from './ColumnFilterInput';
-import { ScrollHandle } from './ScrollHandle';
 import { PaginationControls } from './PaginationControls';
 import { detectAlignment, getAlignmentClass, getPinnedStyle } from './utils';
 import { numberRangeFilterFn } from './numberFilterFn';
@@ -442,11 +441,8 @@ function DataGrid<T>({
         </div>
       )}
 
-      {/* Table Container (with scroll handles) */}
-      <div className="relative group/scroll flex-1 min-h-0 flex flex-col">
-        <ScrollHandle direction="left" scrollContainerRef={scrollContainerRef} />
-        <ScrollHandle direction="right" scrollContainerRef={scrollContainerRef} />
-
+      {/* Table Container */}
+      <div className="relative flex-1 min-h-0 flex flex-col">
         <div
           ref={scrollContainerRef}
           className="relative overflow-auto rounded-[var(--radius)] border border-border flex-1"
