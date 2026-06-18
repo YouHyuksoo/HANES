@@ -28,6 +28,10 @@ export class SgLabel {
   @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
 
+  /** 발행 생산실적 번호 — 배치(실적) 단위 추적 + 멱등 키 */
+  @Column({ type: 'varchar2', name: 'RESULT_NO', length: 50, nullable: true })
+  resultNo: string | null;
+
   @Column({ type: 'varchar2', name: 'ISSUE_PROCESS_CODE', length: 50, nullable: true })
   issueProcessCode: string | null;
 

@@ -127,6 +127,18 @@ export class CreateProdResultDto {
   @MaxLength(20)
   shiftCode?: string;
 
+  @ApiPropertyOptional({ description: '실적 묶음 수 (SG 라벨 발행 시 묶음 개수)', minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  bundleCount?: number;
+
+  @ApiPropertyOptional({ description: '묶음당 가닥수 (SG 라벨 발행 시 묶음당 수량)', minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  qtyPerBundle?: number;
+
   @ApiPropertyOptional({
     type: [ProdResultDefectDto],
     description: '불량 상세 목록 (불량입력 시). 제공되면 합계로 defectQty를 산정하고 DefectLog를 함께 저장한다.',

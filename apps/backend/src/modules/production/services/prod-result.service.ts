@@ -50,6 +50,8 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { FgLabel } from '../../../entities/fg-label.entity';
+import { SgLabel } from '../../../entities/sg-label.entity';
+import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { ShiftResolver } from '../../../utils/shift-resolver';
@@ -582,6 +584,18 @@ export class ProdResultService {
         processCode: dto.processCode,
         company: jobOrder.company,
         plant: jobOrder.plant,
+      });
+
+      // 반제품 묶음 추적라벨(SG_LABELS) 발행 — 최초 공정 양품 실적 시 1회 발행(멱등).
+      // 기존 재고 적재(adsorbProductStockInTx)와 별개의 시리얼 추적 레이어 추가일 뿐 수량 이중계상이 아니다.
+      await this.issueSgLabelInTx(queryRunner, {
+        jobOrder,
+        prodResult: saved,
+        goodQty: dto.goodQty ?? 0,
+        processCode: dto.processCode,
+        bundleCount: dto.bundleCount,
+        qtyPerBundle: dto.qtyPerBundle,
+        workerId: dto.workerId ?? undefined,
       });
     });
 
@@ -1355,6 +1369,129 @@ export class ProdResultService {
    * - 멱등: 같은 실적(refId)에 이미 적재 트랜잭션(WIP_IN/FG_IN)이 있으면 건너뛴다(이중적재 방지).
    * - 시리얼 강제: prdUid가 비면 {orderNo}-{NNN}을 채번해 sentinel '*' 집계를 막는다.
    */
+  /**
+   * 반제품 묶음 추적라벨(SG_LABELS) 발행 — 최초 공정 양품 실적 등록 시 1회 발행.
+   *
+   * 발행 조건(가드, 하나라도 불충족 시 발행하지 않고 즉시 return):
+   *  1) goodQty > 0
+   *  2) 반제품만(jobOrder.part?.itemType !== 'FINISHED')
+   *  3) 발행 공정 판정:
+   *     - 라우팅의 ROUTING_PROCESSES 중 processCode === prodResult.processCode 행의 issueSgLabelYn === 'Y' 이면 발행
+   *     - 라우팅 전체에 issueSgLabelYn='Y' 행이 하나도 없으면 폴백: 최초 공정(seq ASC 첫 행)과 일치하면 발행
+   *  4) 멱등: 같은 orderNo + issueProcessCode 로 이미 SgLabel 이 있으면 재발행 금지
+   *
+   * 수량: bundleCount·qtyPerBundle 둘 다 있으면 곱이 goodQty 와 일치해야 함(불일치 시 BadRequestException).
+   *       아니면 폴백 bundleCount=1, qtyPerBundle=goodQty.
+   */
+  private async issueSgLabelInTx(
+    qr: import('typeorm').QueryRunner,
+    args: {
+      jobOrder: JobOrder;
+      prodResult: ProdResult;
+      goodQty: number;
+      processCode?: string | null;
+      bundleCount?: number;
+      qtyPerBundle?: number;
+      workerId?: string;
+    },
+  ): Promise<void> {
+    const { jobOrder, prodResult, goodQty, bundleCount, qtyPerBundle, workerId } = args;
+    const processCode = prodResult.processCode ?? args.processCode ?? null;
+
+    // 가드 1: 양품 수량
+    if (!goodQty || goodQty <= 0) return;
+    // 가드 2: 발행 공정 코드 필수
+    if (!processCode) return;
+
+    // 가드 3: 반제품만 — part 관계가 create() jobOrder 에 없을 수 있어 재조회로 itemType 확인
+    const company = jobOrder.company ?? undefined;
+    const plant = jobOrder.plant ?? undefined;
+    const jobOrderWithPart = await qr.manager.findOne(JobOrder, {
+      where: {
+        orderNo: jobOrder.orderNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      relations: ['part'],
+    });
+    if (!jobOrderWithPart?.itemCode) return;
+    if (jobOrderWithPart.part?.itemType === 'FINISHED') return;
+
+    // 가드 3: 발행 공정 판정 (플래그 우선, 없으면 최초 공정 폴백)
+    const routingCode = jobOrderWithPart.routingCode;
+    if (!routingCode) return;
+    const tenantWhere = {
+      routingCode,
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+
+    const flaggedRows = await qr.manager.find(RoutingProcess, {
+      where: { ...tenantWhere, issueSgLabelYn: 'Y' },
+    });
+    let shouldIssue: boolean;
+    if (flaggedRows.length > 0) {
+      shouldIssue = flaggedRows.some((r) => r.processCode === processCode);
+    } else {
+      // 폴백: 최초 공정(seq ASC 첫 행)과 일치하면 발행
+      const firstStep = await qr.manager.findOne(RoutingProcess, {
+        where: tenantWhere,
+        order: { seq: 'ASC' },
+      });
+      shouldIssue = !!firstStep && firstStep.processCode === processCode;
+    }
+    if (!shouldIssue) return;
+
+    // 가드 4: 멱등 — 같은 실적(resultNo)으로 이미 발행됐으면 중단.
+    // (배치마다 실적이 다르므로 resultNo 단위로 dedup → 다중 배치 작업지시도 배치별 묶음 발행됨)
+    const existing = await qr.manager.findOne(SgLabel, {
+      where: {
+        resultNo: prodResult.resultNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    if (existing) return;
+
+    // 수량 계산
+    let resolvedBundleCount: number;
+    let resolvedQtyPerBundle: number;
+    if (bundleCount != null && qtyPerBundle != null) {
+      if (bundleCount * qtyPerBundle !== goodQty) {
+        throw new BadRequestException(
+          `SG 라벨 수량 불일치: 묶음수(${bundleCount}) × 묶음당가닥수(${qtyPerBundle}) = ${bundleCount * qtyPerBundle} ≠ 양품수량(${goodQty})`,
+        );
+      }
+      resolvedBundleCount = bundleCount;
+      resolvedQtyPerBundle = qtyPerBundle;
+    } else {
+      resolvedBundleCount = 1;
+      resolvedQtyPerBundle = goodQty;
+    }
+
+    // bundleCount 개 SgLabel 생성
+    for (let i = 0; i < resolvedBundleCount; i++) {
+      const sgBarcode = await this.numbering.nextSgLabel(qr);
+      await qr.manager.save(SgLabel, {
+        sgBarcode,
+        itemCode: jobOrderWithPart.itemCode,
+        orderNo: jobOrderWithPart.orderNo,
+        resultNo: prodResult.resultNo,
+        issueProcessCode: processCode,
+        currentProcessCode: processCode,
+        initQty: resolvedQtyPerBundle,
+        remainQty: resolvedQtyPerBundle,
+        status: 'IN_STOCK',
+        workerId: workerId ?? null,
+        company: jobOrderWithPart.company,
+        plant: jobOrderWithPart.plant,
+      });
+    }
+    this.logger.log(
+      `SG 라벨 발행: ${jobOrderWithPart.itemCode} 공정 ${processCode} — ${resolvedBundleCount}묶음 × ${resolvedQtyPerBundle}가닥 (실적 #${prodResult.resultNo})`,
+    );
+  }
+
   private async adsorbProductStockInTx(
     qr: import('typeorm').QueryRunner,
     params: {
