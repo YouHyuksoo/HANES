@@ -10,6 +10,21 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 Claude (P2)
+
+T-HARNESS-FLOW-RENEWAL-P2 — 생산흐름 리뉴얼 Phase 2(백엔드 엔진 + 키팅 메뉴/화면 + 실증).
+
+- 구현(전부 main 커밋, BE tsc 0):
+  - DDL: ROUTING_PROCESSES `ISSUE_SG_LABEL_YN`/`ISSUE_FG_LABEL_YN`, SG_LABELS `RESULT_NO` (JSHANES 적용).
+  - 채번: `nextGenealogyId`(SEQ_PROD_GENEALOGY). 라우팅 엔티티 플래그 매핑.
+  - 묶음 발행: prod-result `create()`에 `issueSgLabelInTx`(반제품+발행공정 플래그/첫공정 폴백, bundleCount×qtyPerBundle 정합, resultNo 멱등).
+  - 서브공정 키팅: `POST /production/subprocess-kitting`(+GET sg-label) — 완제품 BOM SEMI 화이트리스트, FIFO 가닥 소비, FG 발행, PRODUCT_GENEALOGY(FG←SG/MAT_LOT), 제품 WIP_IN 재고/수불, ProdResult(DONE).
+  - 통전검사: FG 발행 시점 `ON_SUBPROCESS` 분기(비파괴, 기존 ON_INSPECT 기본 유지).
+  - 프론트: 생산관리 "서브공정 키팅" 메뉴+화면(`/production/subprocess-kitting`) + i18n 4종 + MENU_CATEGORY_ITEMS.
+  - 시드: HNS02 흐름 플래그(HNS02_FA/TAPPN=SG, RT-HNS02/SASSY=FG).
+- 실증(AppModule createApplicationContext + 실DB JSHANES, 서버 무중단): kit() 실행 — FG 3건 발행(HNS02/ISSUED), SG 10→7(FIFO), genealogy 3행(FG←SG), PRODUCT_STOCKS HNS02/WIP_MAIN 0→3, PROD_RESULTS DONE goodQty3, PRODUCT_TRANSACTIONS WIP_IN/KITTING, qty=999 재고부족 BadRequest+롤백. 테스트데이터 정리 완료.
+- 미완(다음): Phase 3 원자재 서브공정 수불(현재 matLots는 genealogy만), Phase 4 PRODUCT_STOCKS 시리얼('*'/배치) 정리 마이그레이션, Phase 5 포장/출하 단일키 전환·우회 제거, Phase 6 화면 풀 와이어링·브라우저 E2E, 불량/재작업(repair 연계). 라이브 파괴적 변경이라 사용자 체크포인트 권장.
+
 ## 2026-06-19 Claude
 
 T-HARNESS-FLOW-RENEWAL-P1 — 하네스 생산흐름 리뉴얼 Phase 1(스키마 비파괴 추가).

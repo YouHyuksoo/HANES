@@ -16,6 +16,25 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-HARNESS-FLOW-RENEWAL-P2
+  owner: claude
+  files:
+    - apps/backend/src/migrations/2026-06-19_routing_process_label_flags.sql
+    - apps/backend/src/entities/routing-process.entity.ts
+    - apps/backend/src/shared/numbering.service.ts
+    - apps/backend/src/modules/production/services/prod-result.service.ts
+    - apps/backend/src/modules/production/services/auto-issue.service.ts
+    - apps/backend/src/modules/production/services/subprocess-kitting.service.ts
+    - apps/backend/src/modules/production/controllers/subprocess-kitting.controller.ts
+    - apps/backend/src/modules/production/dto/subprocess-kitting.dto.ts
+    - apps/backend/src/modules/production/production.module.ts
+    - apps/backend/src/modules/quality/continuity-inspect/services/continuity-inspect.service.ts
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: 생산흐름 리뉴얼 Phase 2 완료(main 커밋). 라우팅 라벨플래그+묶음 발행(prod-result)+서브공정 키팅 API+genealogy+제품 WIP 재고/수불+FG발행 ON_SUBPROCESS 분기+생산관리 키팅 메뉴/화면. 실증: AppModule+실DB JSHANES로 kit() 실행 — FG3 발행/SG 10→7 FIFO/genealogy 3/PRODUCT_STOCKS 0→3/WIP_IN·KITTING 수불/재고부족 BadRequest 확인 후 테스트데이터 정리. BE tsc 0. 미push. 남은 Phase 3~7(원자재 서브공정 수불·PRODUCT_STOCKS 시리얼정리 마이그레이션·포장/출하 단일키 전환·불량/재작업·화면 와이어링)은 사용자 체크포인트 권장.
+
 - task: T-HARNESS-FLOW-RENEWAL-P1
   owner: claude
   files:
