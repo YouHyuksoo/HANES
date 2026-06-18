@@ -171,14 +171,15 @@ export class JobOrderService {
     if (planDateFrom || planDateTo) {
       qb.andWhere(new Brackets((qb2) => {
         qb2.where('jo.planDate IS NULL');
+        // 컬럼에 TRUNC를 걸지 않고 [시작, 종료+1) 범위로 비교(인덱스 보존 + 종료일 풀데이 포함)
         if (planDateFrom && planDateTo) {
-          qb2.orWhere("(TRUNC(jo.planDate) >= TO_DATE(:planDateFrom, 'YYYY-MM-DD') AND TRUNC(jo.planDate) <= TO_DATE(:planDateTo, 'YYYY-MM-DD'))", {
+          qb2.orWhere("(jo.planDate >= TO_DATE(:planDateFrom, 'YYYY-MM-DD') AND jo.planDate < TO_DATE(:planDateTo, 'YYYY-MM-DD') + 1)", {
             planDateFrom, planDateTo,
           });
         } else if (planDateFrom) {
-          qb2.orWhere("TRUNC(jo.planDate) >= TO_DATE(:planDateFrom, 'YYYY-MM-DD')", { planDateFrom });
+          qb2.orWhere("jo.planDate >= TO_DATE(:planDateFrom, 'YYYY-MM-DD')", { planDateFrom });
         } else {
-          qb2.orWhere("TRUNC(jo.planDate) <= TO_DATE(:planDateTo, 'YYYY-MM-DD')", { planDateTo });
+          qb2.orWhere("jo.planDate < TO_DATE(:planDateTo, 'YYYY-MM-DD') + 1", { planDateTo });
         }
       }));
     }
@@ -427,15 +428,16 @@ export class JobOrderService {
       qb.andWhere(
         new Brackets((qb2) => {
           qb2.where('jo.planDate IS NULL');
+          // 컬럼에 TRUNC를 걸지 않고 [시작, 종료+1) 범위로 비교(인덱스 보존 + 종료일 풀데이 포함)
           if (planDateFrom && planDateTo) {
             qb2.orWhere(
-              "(TRUNC(jo.planDate) >= TO_DATE(:treePdf, 'YYYY-MM-DD') AND TRUNC(jo.planDate) <= TO_DATE(:treePdt, 'YYYY-MM-DD'))",
+              "(jo.planDate >= TO_DATE(:treePdf, 'YYYY-MM-DD') AND jo.planDate < TO_DATE(:treePdt, 'YYYY-MM-DD') + 1)",
               { treePdf: planDateFrom, treePdt: planDateTo },
             );
           } else if (planDateFrom) {
-            qb2.orWhere("TRUNC(jo.planDate) >= TO_DATE(:treePdf, 'YYYY-MM-DD')", { treePdf: planDateFrom });
+            qb2.orWhere("jo.planDate >= TO_DATE(:treePdf, 'YYYY-MM-DD')", { treePdf: planDateFrom });
           } else {
-            qb2.orWhere("TRUNC(jo.planDate) <= TO_DATE(:treePdt, 'YYYY-MM-DD')", { treePdt: planDateTo });
+            qb2.orWhere("jo.planDate < TO_DATE(:treePdt, 'YYYY-MM-DD') + 1", { treePdt: planDateTo });
           }
         }),
       );

@@ -517,7 +517,7 @@ export class EquipInspectService {
       .set(updateData)
       .where('equipCode = :equipCode', { equipCode })
       .andWhere('inspectType = :inspectType', { inspectType })
-      .andWhere('TRUNC(inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate });
+      .andWhere('inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
     if (company) updateBuilder.andWhere('company = :company', { company });
     if (plant) updateBuilder.andWhere('plant = :plant', { plant });
     await updateBuilder.execute();
@@ -566,7 +566,7 @@ export class EquipInspectService {
       .from(EquipInspectLog)
       .where('equipCode = :equipCode', { equipCode })
       .andWhere('inspectType = :inspectType', { inspectType })
-      .andWhere('TRUNC(inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate });
+      .andWhere('inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
     if (company) deleteBuilder.andWhere('company = :company', { company });
     if (plant) deleteBuilder.andWhere('plant = :plant', { plant });
     await deleteBuilder.execute();
