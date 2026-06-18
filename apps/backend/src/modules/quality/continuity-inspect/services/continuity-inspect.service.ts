@@ -210,6 +210,13 @@ export class ContinuityInspectService {
     company?: string,
     plant?: string,
   ) {
+    // 외관검사 상태변경 전용 — 임의 상태(PACKED/SHIPPED 등)로의 직접 변경을 차단한다.
+    const ALLOWED_TARGET = ['VISUAL_PASS', 'VISUAL_FAIL'];
+    if (!ALLOWED_TARGET.includes(status)) {
+      throw new BadRequestException(
+        `외관검사 상태변경은 ${ALLOWED_TARGET.join('/')} 만 허용됩니다(요청: ${status}).`,
+      );
+    }
     const label = await this.fgLabelRepo.findOne({
       where: {
         fgBarcode,
@@ -220,8 +227,62 @@ export class ContinuityInspectService {
     if (!label) {
       throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
     }
+    // 후공정/종료 상태 라벨은 외관검사 상태로 되돌릴 수 없다.
+    const BLOCKED_SOURCE = ['PACKED', 'SHIPPED', 'VOIDED'];
+    if (BLOCKED_SOURCE.includes(label.status)) {
+      throw new BadRequestException(
+        `현재 상태(${label.status})에서는 외관검사 상태로 변경할 수 없습니다.`,
+      );
+    }
     label.status = status;
     return this.fgLabelRepo.save(label);
+  }
+
+  /**
+   * 외관검사 — 검사결과 기록 + FG라벨 상태전이를 한 트랜잭션에 처리(원자성).
+   * 기존엔 inspect-results 등록과 fg-label-status 변경을 프론트에서 2번 호출해
+   * 2번째 실패 시 불일치가 생기던 문제를 해소한다.
+   */
+  async visualInspect(
+    fgBarcode: string,
+    dto: { passYn: 'Y' | 'N'; errorCode?: string | null; errorDetail?: string | null; inspectData?: string | null; inspectorId?: string | null },
+    company?: string,
+    plant?: string,
+  ): Promise<{ inspectResult: InspectResult; fgLabel: FgLabel }> {
+    return this.tx.run(async (qr) => {
+      const label = await qr.manager.findOne(FgLabel, {
+        where: { fgBarcode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      });
+      if (!label) {
+        throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
+      }
+      if (['PACKED', 'SHIPPED', 'VOIDED'].includes(label.status)) {
+        throw new BadRequestException(`현재 상태(${label.status})에서는 외관검사할 수 없습니다.`);
+      }
+
+      const inspectResultNo = await this.seqGenerator.getNo('INSPECT_RESULT', qr);
+      const inspectResult = qr.manager.create(InspectResult, {
+        resultNo: inspectResultNo,
+        prodResultNo: null,
+        inspectType: 'VISUAL',
+        inspectScope: 'FULL',
+        passYn: dto.passYn,
+        errorCode: dto.passYn === 'N' ? dto.errorCode ?? null : null,
+        errorDetail: dto.passYn === 'N' ? dto.errorDetail ?? null : null,
+        inspectData: dto.passYn === 'N' ? dto.inspectData ?? null : null,
+        fgBarcode,
+        inspectorId: dto.inspectorId ?? null,
+        inspectAt: new Date(),
+        company: company ?? label.company,
+        plant: plant ?? label.plant,
+      });
+      const savedInspect = await qr.manager.save(InspectResult, inspectResult);
+
+      label.status = dto.passYn === 'Y' ? 'VISUAL_PASS' : 'VISUAL_FAIL';
+      const savedLabel = await qr.manager.save(FgLabel, label);
+
+      return { inspectResult: savedInspect, fgLabel: savedLabel };
+    });
   }
 
   /**

@@ -60,21 +60,13 @@ export default function InspectFormPanel({ fgLabel, onClose, onSave, animate = t
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      // 1. 검사결과 등록
-      await api.post("/quality/inspect-results", {
-        prodResultNo: null,
-        inspectType: "VISUAL",
-        inspectScope: "FULL",
+      // 외관검사: 검사결과 기록 + FG라벨 상태전이를 한 트랜잭션으로(원자적) 처리
+      await api.post(`/quality/continuity-inspect/visual-inspect/${fgLabel.fgBarcode}`, {
         passYn,
-        fgBarcode: fgLabel.fgBarcode,
         errorCode: passYn === "N" ? (errorCode || null) : null,
         errorDetail: passYn === "N" ? (errorDetail || null) : null,
         inspectData: passYn === "N" ? JSON.stringify(checklist.filter((c) => c.checked)) : null,
       });
-
-      // 2. FG_LABELS 상태 업데이트
-      const newStatus = passYn === "Y" ? "VISUAL_PASS" : "VISUAL_FAIL";
-      await api.put(`/quality/continuity-inspect/fg-label-status/${fgLabel.fgBarcode}`, { status: newStatus });
 
       onSave();
       onClose();

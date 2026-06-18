@@ -89,6 +89,32 @@ export class ContinuityInspectController {
     return ResponseUtil.success(data, 'Status updated');
   }
 
+  @Post('visual-inspect/:fgBarcode')
+  @ApiOperation({ summary: '외관검사 — 검사결과 기록 + FG라벨 상태전이(원자적)' })
+  @ApiParam({ name: 'fgBarcode' })
+  @ApiResponse({ status: 201, description: 'Inspected' })
+  async visualInspect(
+    @Param('fgBarcode') fgBarcode: string,
+    @Body()
+    body: {
+      passYn: 'Y' | 'N';
+      errorCode?: string | null;
+      errorDetail?: string | null;
+      inspectData?: string | null;
+      inspectorId?: string | null;
+    },
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.visualInspect(
+      fgBarcode,
+      body,
+      company,
+      plant,
+    );
+    return ResponseUtil.success(data, '외관검사가 등록되었습니다.');
+  }
+
   @Get('fg-labels/:orderNo')
   @ApiOperation({ summary: 'List FG labels by order' })
   @ApiParam({ name: 'orderNo' })
