@@ -10,6 +10,88 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-18 dashboard-ora04068-fix Claude
+
+대시보드 500(`PKG_DASHBOARD.SP_JOB_ORDER_STATS` 프로시저 호출 실패) 원인 규명 + 백엔드 하드닝.
+
+- 원인: 본 세션의 `ALTER TABLE INSPECT_RESULTS ADD EQUIP_CODE`(LAST_DDL 2026-06-18 03:13)가 INSPECT_RESULTS를 참조하는 `PKG_DASHBOARD`를 INVALID화. 사용자가 09:21:42 대시보드 호출 시 패키지 BODY 자동 재컴파일(LAST_DDL 09:21:41)되며, 기존 패키지 상태를 들고 있던 백엔드 세션이 첫 호출에서 **ORA-04068(existing state of packages discarded)** 1회성 오류 → 500. 현재 패키지 VALID, 자가복구됨.
+- 진단(oracle-db 스킬): SP_JOB_ORDER_STATS의 SELECT 재현 정상, 프로시저 직접/백엔드 동일 익명블록 경로 모두 정상, SP_KPI(INSPECT_RESULTS 참조)도 정상. LAST_DDL 타임스탬프가 에러시각과 일치 → 확정.
+- 하드닝: `common/services/oracle.service.ts`에 `isPackageStateDiscarded`(ORA-0406x) + `executeWithRetry`(같은 커넥션 1회 재시도) 추가. callProc/callProcMultiCursor/callProcScalar 3곳 모두 적용. ORA-04068은 본문 실행 전 발생·상태 재설정되므로 재시도가 안전(이중 실행 없음). BE tsc 0.
+- 교훈: 테이블 DDL은 의존 PL/SQL 패키지를 INVALID화 → 다음 호출에서 ORA-04068 1회성 발생 가능. 마이그레이션 후 의존 패키지 수동 재컴파일(ALTER PACKAGE ... COMPILE) 권장. 미커밋.
+
+## 2026-06-18 inspection-consumable-persist Claude
+
+T-INSPECT-CONSUMABLE-PERSIST — 검사기 장착 소모품 영속화 + 교체 + 강제 장착해제 + terminal-result 동일 적용.
+
+요구(사용자): 소모품은 한번 장착되면 그 설비에 항상 장착 유지 — 작업지시가 바뀌어도 유지, 다른 롯트로 교체하거나 강제 장착해제할 때만 변경.
+
+구현:
+- BE `kiosk-consumable.service.findByJobOrder`에 `includeMountedOnEquip` 파라미터 추가. true면 (현재 품목 매핑에 없더라도) 설비에 MOUNTED인 소모품도 union하여 표시 → 작업지시(품목) 바뀌어도 설비 장착분 계속 노출. 소모품은 설비 귀속(CONSUMABLE_STOCKS.MOUNTED_EQUIP_CODE)이라 DB상 이미 영속이며, 표시 로직만 보강.
+- BE `scanMount`: 같은 설비에 이미 장착된 동일 consumableCode의 다른 롯트는 ACTIVE로 자동 해제 후 신규 장착(설비당 1롯트 불변식 = "다른 롯트로 교체").
+- BE controller GET에 `includeMounted` 쿼리(=1/true) 추가 → service에 전달. 키오스크는 미전송이라 기존 동작 유지(하위호환). 인스펙션 ConsumablePanel만 `includeMounted:1` 전송.
+- FE ConsumablePanel: 장착 행에 **강제 장착해제** 버튼(텍스트+확인 모달 ConfirmModal). DELETE unmount → ACTIVE 복귀. i18n `inspection.result.{consumableUnmount,consumableUnmountConfirm,consumableUnmounted}` ko/en/zh/vi.
+- terminal-result(`/inspection/terminal-result`)는 이미 **동일 `InspectionResultWorkflow`** 를 inspectType="TERMINAL"로 사용 → 검사기 선택/소모품/전체화면/영속/교체/강제해제 모두 자동 적용. localStorage 검사기 키도 inspectType별 분리(`hanes:inspection:equip:TERMINAL`).
+
+검증:
+- FE/BE tsc 0, locale 4파일 OK.
+- 브라우저(로그인 유효 동안): EQ-TEST-01 선택→WO2606150060(HNS02C1ABCD) CM-JG-CT1/CT2 표시→C26020100019 장착→**작업지시를 HNS02_FA(EQ-TEST-01 미매핑)로 전환해도 CM-JG-CT1 "장착됨" 유지**(includeMounted 영속 확인), 강제해제 버튼 노출.
+- 교체(다른 롯트)/강제해제 확인모달/terminal-result 화면은 dev 로그인 세션 만료(401)로 브라우저 재검증 미완 — 코드/tsc만. (사용자 로그인 시 재검증 가능)
+- 테스트 롯트 C26020100019 ACTIVE 원복.
+
+공유모듈 주의: kiosk-consumable(service/controller) 변경은 includeMounted opt-in(키오스크 영향 없음)이나, **scanMount 교체(이전 롯트 자동해제)는 키오스크에도 적용됨** — 설비당 동일소모품 1롯트는 물리적으로 옳은 불변식이라 의도적 적용(키오스크 잠재 이중장착 교정). 미커밋.
+
+## 2026-06-18 inspection-result-equip-persist Claude
+
+T-INSPECT-RESULT-EQUIP-SELECT 후속 — 선택 검사기 유지. `InspectionResultWorkflow`에서 선택 검사기를 `localStorage['hanes:inspection:equip:${inspectType}']`에 저장(handleSelectEquip)하고, 마운트 시 복원. TESTER 목록 로드 후 저장값이 목록에 없으면 정리. 검증: 로컬 3002에서 EQ-TEST-01 선택→localStorage 기록 확인→페이지 reload→Select가 "도통검사기 #1 (EQ-TEST-01)"로 자동 복원(JS+육안). FE tsc 0. 미커밋.
+
+## 2026-06-18 inspection-result-equip-select Claude
+
+T-INSPECT-RESULT-EQUIP-SELECT — `/inspection/result`(통전검사 실적)에 검사기(TESTER) 선택 기능 + 소모품 출처 교정 + 검사 실적 검사기 기록 + chromeless 전체화면.
+
+배경/의심 해소:
+- 사용자가 "설비 선택도 없는데 소모품을 어떻게 가져왔나" 의심 → 백엔드가 작업지시 생산설비(`jobOrder.equipCode`)로 조회 중이었음. 실측: WO2606150060 → EQ-ATCUT-01(자동절단 설비) → CM-BL-F01/V01(절단 블레이드). 검사 화면인데 절단설비 소모품을 표시 → 잘못된 동작. 검사는 별도 검사기(EQUIP_TYPE='TESTER')이므로 검사기 선택 후 그 기준으로 조회해야 맞음.
+
+사용자 결정(4): ① 검사기 목록=전체 TESTER, ② 검사기 소모품 매핑 샘플 시드 추가, ③ 선택 검사기를 검사 실적에도 기록, ④ 전체화면=사이드바까지 숨김.
+
+구현:
+- BE DDL: `INSPECT_RESULTS`에 `EQUIP_CODE VARCHAR2(50)` 추가(`apps/backend/src/migrations/2026-06-18_inspect_result_equip_code.sql`). 엔티티 `inspect-result.entity.ts`에 equipCode 컬럼. `continuity-inspect.service.inspect()`에서 `dto.equipCode` 저장(DTO엔 이미 equipCode 존재).
+- BE 소모품 API(공유 kiosk-consumable): service/controller/dto에 **선택적 equipCode override** 추가. 제공 시 jobOrder.equipCode 대신 사용(조회/장착). 미제공 시 기존 키오스크 동작 유지(하위호환). GET `?equipCode`, POST scan body `equipCode`.
+- DB 시드: `CONSUMABLE_USAGE_MAP`에 검사기 소모품 매핑 5건(`2026-06-18_tester_consumable_map_seed.sql`) — (HNS02C1ABCD|HNS02)×(EQ-TEST-01|EQ-AINSP-01)×JIG 소모품(CM-JG-CT1/CT2 통전검사 치구). 해당 소모품 ACTIVE 롯트 기보유.
+- FE 전체화면: `MainLayout`에 `view=full`이면 header/sidebar/tab 숨기는 chromeless 분기(기존 키오스크 `view=work` 패턴 일반화). 검사 화면 헤더에 전체화면 토글(라우터 param + Fullscreen API).
+- FE 검사기 선택: `InspectionResultWorkflow`에 검사기 Select(`/equipment/equips/type/TESTER`) + selectedEquipCode 상태. ConsumablePanel에 equipCode 전달(GET params/scan body), InspectPanel에 equipCode 전달(inspect payload + 미선택 시 검사 차단 인터락, 소모품보다 우선). i18n `inspection.result.{selectEquip,selectEquipFirst,equipRequired,fullscreen,exitFullscreen}` ko/en/zh/vi.
+
+검증(로컬 3002 브라우저 E2E):
+- 검사기 Select에 TESTER 10대 로드, EQ-AINSP-01 선택.
+- WO2606150060(HNS02C1ABCD) 선택 → 좌측 소모품이 **CM-JG-CT1(통전검사 치구)** 로 표시(절단 블레이드 아님). 배너 "소모품 1개 미장착", PASS/FAIL 비활성.
+- C26020100019 스캔 → CONSUMABLE_STOCKS.MOUNTED_EQUIP_CODE=**EQ-AINSP-01**(검사기, 작업지시 EQ-ATCUT-01 아님) 확인. 1/1, 버튼 활성.
+- PASS → INSPECT_RESULTS IR26061800008.EQUIP_CODE=**EQ-AINSP-01** 기록 확인.
+- 전체화면 토글 → `?view=full`, 사이드바/헤더/탭 숨김 전체폭. 종료 시 복귀.
+- 테스트데이터 원복: FG26061800008/IR26061800008 삭제, C26020100019 ACTIVE 복귀, prod_result 부수효과 없음.
+- FE tsc 0, BE tsc 0, locale 4파일 파싱 OK(BOM 없음).
+
+공유모듈 주의: kiosk-consumable(service/controller/dto), MainLayout은 additive/backward-compatible 변경만 — 키오스크 기존 흐름 영향 없음. DDL/seed는 JSHANES 적용 완료(deploy서버와 DB 공유라 별도 적용 불필요). 커밋/푸시 안 함.
+
+## 2026-06-18 inspection-result-consumable-move Claude
+
+T-INSPECT-RESULT-CONSUMABLE-MOUNT 후속 — 사용자 요청으로 소모성 설비부품 섹션을 우측 InspectPanel(통계 카드 아래)에서 **좌측 작업지시 목록 하단**으로 이동.
+
+- 상태 끌어올림: `consumablesReady`/`unmountedConsumCount`/`handleConsumableStatus`를 `InspectionResultWorkflow`로 이동. 좌측 컬럼을 flex-col(목록 카드 flex-1 + ConsumablePanel shrink-0)로 재구성, `<ConsumablePanel key={orderNo}>`를 좌측 하단에 렌더. `InspectPanel`은 두 값을 props로 받아 인터락(배너+PASS/FAIL 차단)만 우측에 유지.
+- `InspectPanel`에서 ConsumablePanel import/렌더와 내부 상태 제거(파일 정리). ConsumablePanel 자체는 변경 없음(이미 orderNo prop + onStatusChange 콜백 구조).
+- 검증: frontend tsc 0. 로컬 3002 — WO2606150060 선택 시 좌측 하단 0/2 카드 + 우측 "소모품 2개 미장착" 배너+버튼 비활성, C26020100025 스캔→좌측 1/2·우측 배너 "1개"로 즉시 갱신(좌→우 전파 확인)→X 해제 원복, 테스트 롯트 ACTIVE 복귀.
+- 미커밋.
+
+## 2026-06-18 inspection-result-consumable Claude
+
+T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)에 input-kiosk와 동일한 소모성 설비부품 표시+conUid 스캔 장착 추가.
+
+- 설계: `docs/superpowers/specs/2026-06-18-inspection-result-consumable-mount-design.md`. 사용자 결정 — ① 설비 기준은 input-kiosk와 동일하게 `jobOrder.equipCode`(백엔드 변경 0), ② 소모품 장착을 검사 선행 조건(미장착 시 PASS/FAIL 차단), ③ 통계 카드 아래 카드형.
+- 재사용 API(키오스크): `GET/POST(scan)/DELETE /production/job-orders/:orderNo/consumables`. 검사 화면은 이미 `order.orderNo` 컨텍스트가 있어 그대로 호출.
+- 신규 `inspection/result/components/ConsumablePanel.tsx`: kioskStore 비의존, `orderNo` prop + `onStatusChange(allMounted, unmountedCount)` 콜백. 카드 내 인라인 스캔 입력(별도 모달 X) + 소모품 행 목록(미장착/장착/경고/초과 색상, 수명 현재/예상, 해제 X). 행 스타일은 `MaterialListPanel` 소모품 섹션을 따름.
+- `InspectPanel.tsx`: 통계 카드 아래 `<ConsumablePanel>` 삽입, `consumablesReady`/`unmountedConsumCount` 상태 추가. `scanDisabled`에 `!consumablesReady`를 OR로 합쳐 PASS/FAIL 동시 차단, 버튼 title은 소모품 사유 우선. 버튼 위 주황 인터락 배너 추가. 매핑 0건이면 allMounted=true로 기존 검사 흐름 유지.
+- i18n: `inspection.result.{consumablesTitle,consumableScanPlaceholder,consumableMountRequired,noConsumables,consumableMounted}` ko/en/zh/vi 4파일 추가(BOM 없음, 파싱 OK).
+- 검증: `pnpm --filter @harness/frontend exec tsc --noEmit` 0건. 로컬 3002 브라우저 — (a) HNS02(매핑 0) 선택 시 "매핑된 소모품이 없습니다" + 검사 버튼 활성, (b) WO2606150060(HNS02C1ABCD/EQ-ATCUT-01, 매핑 2: CM-BL-F01/CM-BL-V01) 선택 시 0/2·미장착 빨강·"소모품 2개 미장착" 배너·PASS/FAIL 비활성, (c) C26020100025 스캔→CM-BL-F01 초록·4,500/2,500,000·1/2·여전히 비활성, (d) X 해제→0/2 재차단. 테스트 롯트 C26020100025 STATUS=ACTIVE 원복, EQ-ATCUT-01 장착 0 확인.
+- 백엔드/DB 스키마 변경 없음. 커밋/푸시 안 함(사용자 지시 대기).
+
 ## 2026-06-18 00:36 Codex
 
 - 작업: `T-ARRIVAL-RESULT-AGENT-REPRINT` `/material/arrival-result` 라벨 재발행을 `/material/arrival`과 같은 `mat_lot` 템플릿 선택 + 로컬 print-agent 출력 방식으로 전환.

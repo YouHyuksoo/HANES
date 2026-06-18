@@ -16,6 +16,67 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-DASHBOARD-ORA04068-HARDEN
+  owner: claude
+  files:
+    - apps/backend/src/common/services/oracle.service.ts
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 대시보드 500(PKG_DASHBOARD.SP_JOB_ORDER_STATS)은 본 세션 ALTER INSPECT_RESULTS가 의존 패키지 INVALID화→사용자 호출시 자동재컴파일+기존상태 세션 ORA-04068 1회성. 자가복구(패키지 VALID)됨. 재발방지로 oracle.service callProc/MultiCursor/Scalar에 ORA-0406x 1회 재시도(executeWithRetry) 추가. BE tsc 0. INSPECT_RESULTS 의존객체는 PKG_DASHBOARD뿐이며 VALID 확인.
+
+- task: T-INSPECT-CONSUMABLE-PERSIST
+  owner: claude
+  files:
+    - apps/backend/src/modules/production/services/kiosk-consumable.service.ts
+    - apps/backend/src/modules/production/controllers/kiosk-consumable.controller.ts
+    - apps/frontend/src/app/(authenticated)/inspection/result/components/ConsumablePanel.tsx
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 검사기 장착 소모품 영속화. findByJobOrder에 includeMountedOnEquip(설비 장착분 union, 작업지시 바뀌어도 표시 유지) 추가 — 인스펙션 ConsumablePanel만 includeMounted=1 전송(키오스크 미전송=기존동작). scanMount에 동일 소모품 이전 롯트 자동 해제(교체) 추가(설비당 1롯트 불변식). ConsumablePanel에 강제 장착해제(확인 모달) 기능 추가. terminal-result는 동일 InspectionResultWorkflow 공유라 자동 적용(localStorage 키 inspectType별 분리). FE/BE tsc 0. 작업지시 전환 영속 브라우저 검증 완료(HNS02_FA 전환에도 CM-JG-CT1 장착유지). 교체/강제해제/terminal-result는 dev 로그인세션 만료(401)로 브라우저 재검증 미완 — 코드 tsc 검증만. 테스트 롯트 ACTIVE 원복.
+
+- task: T-INSPECT-RESULT-EQUIP-SELECT
+  owner: claude
+  files:
+    - apps/backend/src/entities/inspect-result.entity.ts
+    - apps/backend/src/modules/quality/continuity-inspect/services/continuity-inspect.service.ts
+    - apps/backend/src/modules/production/services/kiosk-consumable.service.ts
+    - apps/backend/src/modules/production/controllers/kiosk-consumable.controller.ts
+    - apps/backend/src/modules/production/dto/kiosk-consumable.dto.ts
+    - apps/backend/src/migrations/2026-06-18_inspect_result_equip_code.sql
+    - apps/backend/src/migrations/2026-06-18_tester_consumable_map_seed.sql
+    - apps/frontend/src/components/layout/MainLayout.tsx
+    - apps/frontend/src/app/(authenticated)/inspection/result/**
+    - apps/frontend/src/locales/{ko,en,zh,vi}.json
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: 통전검사 실적에 검사기(TESTER) 선택 추가. 소모품을 선택 검사기 기준으로 조회/장착(kiosk-consumable에 선택적 equipCode override, 키오스크 하위호환 유지). 선택 검사기를 INSPECT_RESULTS.EQUIP_CODE에 기록(DDL). 검사기 소모품 매핑 샘플 시드. MainLayout view=full chromeless 전체화면. FE/BE tsc 0 + 로컬 3002 브라우저 E2E 검증(검사기선택→CM-JG-CT1 치구 표시→스캔장착 EQ-AINSP-01→PASS시 IR.EQUIP_CODE 기록→전체화면 사이드바숨김) 후 테스트데이터(FG/IR 삭제, 소모품 ACTIVE) 원복. DDL/seed는 JSHANES 적용완료(deploy서버와 DB공유).
+
+- task: T-INSPECT-RESULT-CONSUMABLE-MOUNT
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/inspection/result/components/ConsumablePanel.tsx
+    - apps/frontend/src/app/(authenticated)/inspection/result/components/InspectPanel.tsx
+    - apps/frontend/src/locales/ko.json
+    - apps/frontend/src/locales/en.json
+    - apps/frontend/src/locales/zh.json
+    - apps/frontend/src/locales/vi.json
+    - docs/superpowers/specs/2026-06-18-inspection-result-consumable-mount-design.md
+    - .ai-coordination/LOCKS.md
+  started: 2026-06-18 KST
+  last_seen: 2026-06-18 KST
+  expires: 2026-06-18 KST
+  status: released
+  note: /inspection/result 우측 패널에 input-kiosk와 동일한 소모성 설비부품 표시+conUid 스캔 장착 추가. 기존 키오스크 API 3종 재사용(백엔드 변경 0). 미장착 시 PASS/FAIL 인터락. tsc 0 + 로컬 3002 브라우저로 0매핑 검사가능/2매핑 인터락 차단/스캔 1장착(1/2)/해제 재차단 검증, 테스트 롯트 ACTIVE 원복 완료.
+
 - task: T-ARRIVAL-RESULT-AGENT-REPRINT
   owner: codex
   files:

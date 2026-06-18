@@ -10,6 +10,8 @@ Format:
 
 ## Completed
 
+- T-INSPECT-RESULT-EQUIP-SELECT | 2026-06-18 | claude | 통전검사 실적에 검사기(TESTER) 선택 추가 — 소모품을 선택 검사기 기준 조회/장착(kiosk-consumable에 선택적 equipCode override, 키오스크 하위호환), 선택 검사기를 INSPECT_RESULTS.EQUIP_CODE 기록(DDL), 검사기 소모품 매핑 샘플 시드, MainLayout view=full chromeless 전체화면(사이드바 숨김). FE/BE tsc 0, 브라우저 E2E 검증 후 테스트데이터 원복 | evidence: JOURNAL 2026-06-18 inspection-result-equip-select
+- T-INSPECT-RESULT-CONSUMABLE-MOUNT | 2026-06-18 | claude | `/inspection/result` 우측 InspectPanel 통계 카드 아래에 input-kiosk와 동일한 소모성 설비부품 표시+conUid 스캔 장착 카드(`ConsumablePanel`) 추가, 미장착 시 PASS/FAIL 인터락(버튼 비활성+배너). 기존 키오스크 API 3종 재사용(백엔드 0). | evidence: JOURNAL 2026-06-18 inspection-result-consumable
 - T-ARRIVAL-RESULT-AGENT-REPRINT | 2026-06-18 | codex | `/material/arrival-result` 라벨 재발행을 `mat_lot` 템플릿 선택 + `MatLabelPreviewModal` + 로컬 print-agent PNG 출력 방식으로 전환하고 `matlot_label` PDF 출력 확인 | evidence: JOURNAL 2026-06-18 00:36 Codex
 - T-PRINT-AGENT-PDF-OUTPUT | 2026-06-18 | codex | `Microsoft Print to PDF` 출력 실패 원인인 `DOCINFO.lpszOutput` 누락을 보정해 agent가 PDF 출력 경로를 자동 지정하도록 변경, `/material/arrival` `matlot_label` 출력 PDF 생성 확인 | evidence: JOURNAL 2026-06-18 00:10 Codex
 - T-MATERIAL-ARRIVAL-AGENT-LABEL | 2026-06-17 | codex | `/material/arrival` 입하 라벨 모달을 `mat_lot` 템플릿 선택 + `LabelDesignRenderer` 미리보기 + 로컬 print-agent PNG 출력으로 전환하고 iframe/window.print 제거 | evidence: JOURNAL 2026-06-17 23:38 Codex

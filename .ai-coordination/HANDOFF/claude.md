@@ -2,9 +2,28 @@
 
 ## Last Update
 
-2026-06-16 (local)
+2026-06-18 (local)
 
 ## Latest
+
+- T-INSPECT-RESULT-EQUIP-SELECT 완료(미커밋): `/inspection/result`에 검사기(TESTER) 선택 + 소모품 출처 교정 + 검사 실적 검사기 기록 + chromeless 전체화면.
+  - **검사기 선택**: 헤더에 `/equipment/equips/type/TESTER` Select. 선택 equipCode를 ConsumablePanel(소모품 조회/장착)+InspectPanel(inspect payload)에 전달. 미선택 시 검사 차단(인터락, 소모품보다 우선). **선택 검사기는 localStorage(`hanes:inspection:equip:${inspectType}`)에 스테이션 단위 저장 → 새로고침/전체화면 토글 후 자동 복원. 목록에 없는 저장값은 정리.**
+  - **소모품 출처 교정**: 기존엔 작업지시 생산설비(jobOrder.equipCode)로 조회 → 검사화면에 절단설비 소모품이 떴음. 이제 **선택 검사기 기준**. 공유 `kiosk-consumable`(service/controller/dto)에 **선택적 equipCode override** 추가(미제공 시 키오스크 기존 동작 유지=하위호환).
+  - **검사 실적 기록**: `INSPECT_RESULTS.EQUIP_CODE` 컬럼 추가(DDL, 엔티티, inspect() 저장). DTO엔 이미 equipCode 존재.
+  - **시드**: CONSUMABLE_USAGE_MAP에 검사기 소모품 매핑 5건(JIG 치구). JSHANES 적용(deploy서버와 DB공유).
+  - **전체화면**: MainLayout에 `view=full` chromeless 분기(키오스크 view=work 패턴 일반화). 검사화면 헤더 토글 버튼.
+  - 마이그레이션: `apps/backend/src/migrations/2026-06-18_inspect_result_equip_code.sql`, `..._tester_consumable_map_seed.sql`. **deploy.yml 미반영(필요시 추가) — 단 JSHANES=deploy DB 공유라 이미 적용됨.**
+  - 검증: FE/BE tsc 0. 브라우저 E2E(검사기선택→CM-JG-CT1 치구→스캔 EQ-AINSP-01 장착→PASS시 IR.EQUIP_CODE 기록→전체화면 사이드바숨김), 테스트데이터 원복 완료.
+  - **선택 검사기 유지**: localStorage `hanes:inspection:equip:${inspectType}` 저장/복원(새로고침·전체화면 토글 후 유지). 브라우저 검증 완료.
+  - **소모품 영속/교체/강제해제**(T-INSPECT-CONSUMABLE-PERSIST): 소모품은 설비 귀속 장착(CONSUMABLE_STOCKS.MOUNTED_EQUIP_CODE)이라 작업지시 바뀌어도 유지. findByJobOrder `includeMountedOnEquip`(인스펙션만 includeMounted=1)로 설비 장착분 union 표시. scanMount는 동일소모품 이전 롯트 자동해제(교체, **키오스크에도 적용**). ConsumablePanel에 강제 장착해제(확인모달). 작업지시 전환 영속은 브라우저 검증 완료, 교체/강제해제/terminal-result는 세션만료(401)로 브라우저 재검증 미완(코드/tsc만).
+  - **terminal-result(`/inspection/terminal-result`)**: 동일 `InspectionResultWorkflow`(inspectType=TERMINAL) 공유라 위 모든 개선 자동 적용. 별도 코드 불필요.
+
+- T-INSPECT-RESULT-CONSUMABLE-MOUNT 완료(미커밋): `/inspection/result`(통전검사 실적)에 input-kiosk와 동일한 소모성 설비부품 표시+conUid 스캔 장착 추가.
+  - 신규 `inspection/result/components/ConsumablePanel.tsx`(kioskStore 비의존, `orderNo` prop + `onStatusChange` 콜백, 인라인 스캔 입력).
+  - **배치: 좌측 작업지시 목록 하단**(후속 이동). 장착 상태는 `InspectionResultWorkflow`로 끌어올려 `InspectPanel`(우측)에 props 전달 → 미장착 시 PASS/FAIL 인터락(버튼 비활성+주황 배너)은 우측 버튼 옆 유지.
+  - 재사용 키오스크 API 3종(`GET/POST scan/DELETE /production/job-orders/:orderNo/consumables`). **백엔드/DB 스키마 변경 0.** 매핑 0건이면 검사 흐름 그대로.
+  - i18n `inspection.result.*` 5키 ko/en/zh/vi 추가. 설계: `docs/superpowers/specs/2026-06-18-inspection-result-consumable-mount-design.md`.
+  - 검증: frontend tsc 0. 로컬 3002 브라우저 — 매핑0(HNS02) 검사가능 / 매핑2(WO2606150060) 0/2 인터락차단 / C26020100025 스캔→1/2 / X해제→재차단, 테스트 롯트 ACTIVE 원복.
 
 - T-WIP-MAT-TRANS-SCREEN 완료(커밋 915b9c8b, 메뉴시드 6c34b8f3): 공정재고 조회/수불 화면 보강.
   - 공정재고 화면(`/production/wip-material-stock`) 상단 정보카드(StatCard) 제거.
