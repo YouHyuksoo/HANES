@@ -102,6 +102,8 @@ import { HarnessDrawingRevision } from '../../entities/harness-drawing-revision.
 import { HarnessCircuitSpec } from '../../entities/harness-circuit-spec.entity';
 import { SgLabel } from '../../entities/sg-label.entity';
 import { ProductGenealogy } from '../../entities/product-genealogy.entity';
+import { SubprocessKittingController } from './controllers/subprocess-kitting.controller';
+import { SubprocessKittingService } from './services/subprocess-kitting.service';
 
 @Module({
   imports: [
@@ -122,6 +124,7 @@ import { ProductGenealogy } from '../../entities/product-genealogy.entity';
     JobMaterialLotController,
     KioskConsumableController,
     ProductionSpecificationController,
+    SubprocessKittingController,
   ],
   providers: [
     JobOrderService,
@@ -139,6 +142,7 @@ import { ProductGenealogy } from '../../entities/product-genealogy.entity';
     JobMaterialLotService,
     KioskConsumableService,
     ProductionSpecificationService,
+    SubprocessKittingService,
   ],
   exports: [
     JobOrderService,
