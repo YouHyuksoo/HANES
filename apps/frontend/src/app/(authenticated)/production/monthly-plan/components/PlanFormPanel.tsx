@@ -164,7 +164,6 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
                 <Input
                   value={form.itemCode}
                   readOnly
-                  placeholder="HNS-001"
                   disabled={isEdit}
                   fullWidth
                 />

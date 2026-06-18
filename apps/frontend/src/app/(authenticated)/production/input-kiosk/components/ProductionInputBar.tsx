@@ -10,7 +10,7 @@
  * - 시리얼 번호: {orderNo}-{seq 3자리} 형식 자동 생성
  * - 저장 성공 시 serialSeq 자동 증가, pendingDefects 초기화
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Save, ChevronDown } from 'lucide-react';
@@ -42,6 +42,22 @@ export default function ProductionInputBar({
   const [defectQty, setDefectQty] = useState<string>('');
   const [totalQty, setTotalQty] = useState<string>('');
   const [saving, setSaving] = useState(false);
+
+  // 묶음단위(lotSize)는 품목마스터의 LOT_UNIT_QTY(묶음단위수량)를 출처로 한다.
+  // 작업지시 선택 시 해당 품목의 묶음단위수량을 조회해 기본값으로 설정(0/미설정이면 유지).
+  const selectedItemCode = selectedJobOrder?.itemCode;
+  useEffect(() => {
+    if (!selectedItemCode) return;
+    api.get(`/master/parts/code/${encodeURIComponent(selectedItemCode)}`)
+      .then(res => {
+        const q = Number(res.data?.data?.lotUnitQty);
+        if (Number.isFinite(q) && q > 0) setLotSize(q);
+      })
+      .catch(() => { /* 품목 조회 실패 시 기존 묶음단위 유지 */ });
+  }, [selectedItemCode, setLotSize]);
+
+  // 드롭다운에 품목 묶음단위(비표준 값)도 항상 표시되도록 표준 목록과 병합
+  const lotOptions = Array.from(new Set([...LOT_OPTIONS, lotSize].filter(n => n > 0))).sort((a, b) => a - b);
 
   // pendingDefects 수량 합계 → 불량수량 표시에 반영
   const pendingDefectTotal = pendingDefects.reduce((s, d) => s + d.qty, 0);
@@ -135,7 +151,7 @@ export default function ProductionInputBar({
                 onChange={e => setLotSize(Number(e.target.value))}
                 className="h-8 w-14 pl-2 pr-5 text-sm font-medium bg-surface border border-border rounded appearance-none focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                {LOT_OPTIONS.map(n => (
+                {lotOptions.map(n => (
                   <option key={n} value={n}>{n}</option>
                 ))}
               </select>
