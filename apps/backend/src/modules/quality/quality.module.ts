@@ -38,6 +38,7 @@ import { SpcModule } from './spc/spc.module';
 import { PpapModule } from './ppap/ppap.module';
 import { FaiModule } from './fai/fai.module';
 import { ContinuityInspectModule } from './continuity-inspect/continuity-inspect.module';
+import { AqlModule } from './aql/aql.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ContinuityInspectModule } from './continuity-inspect/continuity-inspect
     PpapModule,
     FaiModule,
     ContinuityInspectModule,
+    AqlModule,
   ],
   controllers: [],
   providers: [],
@@ -67,6 +69,7 @@ import { ContinuityInspectModule } from './continuity-inspect/continuity-inspect
     PpapModule,
     FaiModule,
     ContinuityInspectModule,
+    AqlModule,
   ],
 })
 export class QualityModule {}
