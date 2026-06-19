@@ -2,9 +2,15 @@
 
 ## Last Update
 
-2026-06-18 (local)
+2026-06-19 (local)
 
 ## Latest
+
+- T-HNS02-STOCK100-SEED 완료(DB 반영 commit, 코드 미커밋): JSHANES(40/1000) HNS02 완제품 제품재고 **100개**를 BOM 7단계 완전 정합 시드로 생성.
+  - 기존 HNS02 작업지시 55건 + MAT_ISSUE_REQUESTS 25/REQUEST_ITEMS 34 정리 → 작업지시 17건(품번당 1, DONE, PARENT_ID 트리) 재구성. **codex의 WO2606150066 참조 데이터는 사용자 명시 승인하에 삭제됨** — codex 키오스크/소모품 REVIEW 작업 재검증 시 해당 작업지시 없음 주의.
+  - 생성: PO1/라인18, 원자재18종(입하·IQC·입고·LOT·재고·MAT_IN), 생산실적17, 자재소비(MAT_ISSUES18·MAT_OUT18), SG라벨 20(5묶음 CONSUMED), 반제품 WIP 수불(net0), FG라벨 100(PACKED), 제품재고 HNS02 FG_MAIN **100**, FG_IN, 검사 200(AINSP+OINSP PASS), genealogy FG←SG 100.
+  - 잔량 0(반제품 WIP·시드 원자재), 수불 균형(STOCK_TX 합0), 공유 원자재 MAT_LOTS 112 보존, 출하 무변화. 독립 연결 재검증 PASS.
+  - 빌더 `tools/seed/seed_hns02_stock100.py`(BOM 재귀전개→정리→INSERT→검증, dry-run 기본 / `--commit`, 멱등). spec `docs/superpowers/specs/2026-06-19-hns02-product-stock-100-seed-design.md`. 채번 시드마커(POH-/ARH-/WOH-/FGH...), MAT_UID=VH1-RM260619.
 
 - T-INSPECT-RESULT-EQUIP-SELECT 완료(미커밋): `/inspection/result`에 검사기(TESTER) 선택 + 소모품 출처 교정 + 검사 실적 검사기 기록 + chromeless 전체화면.
   - **검사기 선택**: 헤더에 `/equipment/equips/type/TESTER` Select. 선택 equipCode를 ConsumablePanel(소모품 조회/장착)+InspectPanel(inspect payload)에 전달. 미선택 시 검사 차단(인터락, 소모품보다 우선). **선택 검사기는 localStorage(`hanes:inspection:equip:${inspectType}`)에 스테이션 단위 저장 → 새로고침/전체화면 토글 후 자동 복원. 목록에 없는 저장값은 정리.**

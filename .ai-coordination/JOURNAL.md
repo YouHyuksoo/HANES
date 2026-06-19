@@ -10,6 +10,19 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 Claude (hns02-stock100-seed)
+
+T-HNS02-STOCK100-SEED — HNS02 완제품 제품재고 100개 BOM 완전 다단계 정합 시드 (JSHANES / 40 / 1000).
+
+- 요구: 포장 가능 완제품 HNS02 제품재고 100개를 PO~입하~입고~자재재고~투입~작업지시~생산실적~반제품~제품재고~검사~장착 전구간 정합 생성. 출하 제외. 기존 트랜잭션 정리 후 클린 재구성. 기준정보 무수정.
+- 사용자 결정: 완전 다단계 BOM(원자재 7단계) / 작업지시 품번당 1건 / SG 묶음 5개 단위 / 출하 안 함(100 보유) / 기존 HNS02 작업지시 55건 전량 삭제 후 재구성(codex WO2606150066 참조 손실 감수 — 명시 승인).
+- 사전 실측: HNS02=FINISHED, 라우팅 RT-HNS02(SASSY=FG발행/AINSP/OINSP), SG발행=HNS02_FA/TAPPN. 대상 트랜잭션 테이블 간 DB FK 없음(삭제 논리역순 안전). PRODUCT_STOCKS PK=(CO,PLANT,WH,ITEM) — PRD_UID는 PK 아님. 원자재는 공유분(MAT_LOTS 112건 기존)이라 시드 채번(VH1-RM260619)만 정리 대상으로 한정.
+- 구현: tools/seed/seed_hns02_stock100.py (BOM_MASTERS 재귀 전개→수량 산출→정리 DELETE→단계별 INSERT→검증, dry-run 기본 rollback / --commit). 채번 시드 마커 POH-/ARH-/RVH-/ISH-/WOH-/PRH-/STH-/PTH-/SGH/FGH/IRH, MAT_UID는 VH1-RM 규칙.
+- 정리: MAT_ISSUE_REQUEST_ITEMS 34, MAT_ISSUE_REQUESTS 25, JOB_ORDERS(HNS02%) 55 삭제. (라벨/실적/제품재고/검사/genealogy는 기존 0건)
+- 생성: PO 1+라인18, 원자재 18종(MAT_ARRIVALS/IQC_LOGS/MAT_RECEIVINGS/MAT_LOTS/MAT_STOCKS/STOCK_TX MAT_IN), 작업지시 17(DONE, PARENT_ID 트리), 생산실적 17, 자재소비(MAT_ISSUES 18+STOCK_TX MAT_OUT 18), SG라벨 20(INIT_QTY=5, CONSUMED), 반제품 WIP 재고/수불(WIP_IN/OUT net0), FG라벨 100(PACKED), 제품재고 HNS02 FG_MAIN 100, PRODUCT_TX FG_IN, 검사 200(AINSP+OINSP 전수 PASS), genealogy FG←SG 100.
+- 검증(독립 연결 재확인 PASS): FG재고 100 / FG_LABELS PACKED 100 / SG CONSUMED 20 / JOB_ORDERS 17 / PROD_RESULTS 17 / INSPECT 200 / PRODUCT_TX 33 / STOCK_TX 36(합 0) / 반제품 WIP 잔량 0 / 시드 원자재 MAT_STOCKS 잔량 0 / 공유원자재 MAT_LOTS 112 보존 / SHIPMENT_LOGS 무변화.
+- spec: docs/superpowers/specs/2026-06-19-hns02-product-stock-100-seed-design.md. 빌더는 멱등(재실행 시 시드 채번 정리 선행).
+
 ## 2026-06-19 Claude (P3 + 전구간 실증)
 
 T-HARNESS-FLOW-RENEWAL-P3 — 서브공정 키팅 직접 원자재 차감 + 전 구간 E2E 실증.

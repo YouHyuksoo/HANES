@@ -10,6 +10,7 @@ Format:
 
 ## Completed
 
+- T-HNS02-STOCK100-SEED | 2026-06-19 | claude | JSHANES(40/1000) HNS02 완제품 제품재고 100개를 BOM 7단계 완전 전개 정합 시드로 생성 — 기존 HNS02 작업지시 55건+출고요청 25/아이템 34건 정리 후 작업지시 17건(품번당 1, DONE)·원자재 18종 PO/입하/IQC/입고/LOT/수불·SG라벨 20(5묶음)·FG라벨 100(PACKED)·제품재고 100·검사 200·genealogy 100 생성. 반제품 WIP·원자재 잔량 0, 수불 균형, 공유원자재 LOT 112건·출하 무변화. 빌더 dry-run→commit, 독립 재검증 PASS | evidence: JOURNAL 2026-06-19 hns02-stock100-seed
 - T-INSPECT-RESULT-EQUIP-SELECT | 2026-06-18 | claude | 통전검사 실적에 검사기(TESTER) 선택 추가 — 소모품을 선택 검사기 기준 조회/장착(kiosk-consumable에 선택적 equipCode override, 키오스크 하위호환), 선택 검사기를 INSPECT_RESULTS.EQUIP_CODE 기록(DDL), 검사기 소모품 매핑 샘플 시드, MainLayout view=full chromeless 전체화면(사이드바 숨김). FE/BE tsc 0, 브라우저 E2E 검증 후 테스트데이터 원복 | evidence: JOURNAL 2026-06-18 inspection-result-equip-select
 - T-INSPECT-RESULT-CONSUMABLE-MOUNT | 2026-06-18 | claude | `/inspection/result` 우측 InspectPanel 통계 카드 아래에 input-kiosk와 동일한 소모성 설비부품 표시+conUid 스캔 장착 카드(`ConsumablePanel`) 추가, 미장착 시 PASS/FAIL 인터락(버튼 비활성+배너). 기존 키오스크 API 3종 재사용(백엔드 0). | evidence: JOURNAL 2026-06-18 inspection-result-consumable
 - T-ARRIVAL-RESULT-AGENT-REPRINT | 2026-06-18 | codex | `/material/arrival-result` 라벨 재발행을 `mat_lot` 템플릿 선택 + `MatLabelPreviewModal` + 로컬 print-agent PNG 출력 방식으로 전환하고 `matlot_label` PDF 출력 확인 | evidence: JOURNAL 2026-06-18 00:36 Codex
