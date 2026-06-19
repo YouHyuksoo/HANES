@@ -136,7 +136,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
             value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
         </div>
         <Select label={t("master.part.type")} options={partTypeOptions}
-          value={form.itemType} onChange={v => setField("itemType", v)} fullWidth />
+          value={form.itemType} onChange={v => setField("itemType", v)} fullWidth required />
         <Select label={t("master.part.productType", "제품유형")}
           options={productTypeOptions}
           value={form.productType} onChange={v => setField("productType", v)} fullWidth />
@@ -155,7 +155,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         {t("master.part.sectionQty", "거래처 / 수량관리")}
       </h3>
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <Input label={t("master.part.boxQty", "박스입수량")} type="number"
+        <Input label={t("master.part.boxQty", "박스장입수량")} type="number"
           value={String(form.boxQty)} onChange={e => setField("boxQty", Number(e.target.value))} fullWidth />
         <Input label={t("master.part.lotUnitQty", "LOT단위수량")} type="number"
           value={String(form.lotUnitQty)} onChange={e => setField("lotUnitQty", Number(e.target.value))} fullWidth />
@@ -167,7 +167,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
           value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
         <Input label={t("master.part.leadTime", "리드타임(일)")} type="number"
           fullWidth />
-        <Input label={t("master.part.palletUnit", "팔레트구성단위")}
+        <Input label={t("master.part.palletUnit", "팔레트구성단위")} type="number"
           value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
         <Select label={t("master.part.storageLocation", "적재로케이션")}
           options={locationOptions}

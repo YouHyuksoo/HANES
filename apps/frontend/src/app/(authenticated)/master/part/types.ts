@@ -26,7 +26,7 @@ export interface Part {
   stripAfter?: number | null; // 스트리핑 후 (Oracle STRIP_AFTER)
   safetyStock?: number; // 안전재고 (기본값: 0)
   lotUnitQty?: number; // LOT 단위수량 (Oracle LOTUNITQTY)
-  boxQty?: number; // 박스 입수량 (Oracle BOXQTY) (기본값: 0)
+  boxQty?: number; // 박스 장입수량 (Oracle BOXQTY) (기본값: 0)
   minPackQty?: number; // 최소포장단위 수량 (기본값: 0)
   iqcYn?: UseYnValue; // IQC 대상여부 Y/N (Oracle IQCFLAG) (기본값: Y)
   inspectMethod?: string; // 검사구분 (FULL/SKIP)

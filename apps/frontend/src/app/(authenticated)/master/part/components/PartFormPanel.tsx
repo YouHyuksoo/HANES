@@ -287,7 +287,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <Select label={t("master.part.type")} options={partTypeOptions}
               value={form.itemType} 
               onChange={v => setField("itemType", v)}
-              fullWidth />
+              fullWidth required />
             <Select label={t("master.part.productType", "품목그룹")}
               options={productTypeOptions}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
@@ -318,7 +318,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             {t("master.part.sectionQty", "거래처 / 수량관리")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.part.boxQty", "박스입수량")} type="number"
+            <Input label={t("master.part.boxQty", "박스장입수량")} type="number"
               value={String(form.boxQty)} onChange={e => setField("boxQty", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.minPackQty", "최소포장단위")} type="number"
               value={String(form.minPackQty)} onChange={e => setField("minPackQty", Number(e.target.value))} fullWidth />
@@ -332,7 +332,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.expiryExtDays", "유효기간 연장(일)")} type="number"
               value={String(form.expiryExtDays)} onChange={e => setField("expiryExtDays", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.palletUnit", "팔레트구성단위")}
+            <Input label={t("master.part.palletUnit", "팔레트구성단위")} type="number"
               value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
             <div className="col-span-2">
               <Select label={t("master.part.storageLocation", "적재로케이션")}

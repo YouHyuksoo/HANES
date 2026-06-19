@@ -174,7 +174,7 @@ export default function PartPage() {
     { accessorKey: "length", header: t("master.part.length", "길이"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number | null; return v != null ? v.toLocaleString() : "-"; } },
     { accessorKey: "stripBefore", header: t("master.part.stripBefore", "스트리핑 전"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number | null; return v != null ? v.toLocaleString() : "-"; } },
     { accessorKey: "stripAfter", header: t("master.part.stripAfter", "스트리핑 후"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number | null; return v != null ? v.toLocaleString() : "-"; } },
-    { accessorKey: "boxQty", header: t("master.part.boxQty", "박스입수"), size: 70, meta: { filterType: "number" as const } },
+    { accessorKey: "boxQty", header: t("master.part.boxQty", "박스장입수"), size: 70, meta: { filterType: "number" as const } },
     { accessorKey: "minPackQty", header: t("master.part.minPackQty", "최소포장단위"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? v.toLocaleString() : "-"; } },
     { accessorKey: "lotUnitQty", header: t("master.part.lotUnitQty", "LOT수량"), size: 75, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() ?? "-" },
     {
