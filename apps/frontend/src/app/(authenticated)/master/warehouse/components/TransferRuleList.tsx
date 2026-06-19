@@ -47,7 +47,8 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
   const fetchWarehouses = useCallback(async () => {
     try {
       const res = await api.get("/inventory/warehouses");
-      const list = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      const raw = res.data?.data;
+      const list = Array.isArray(raw) ? raw : raw?.data ?? [];
       setWarehouseOptions(list.map((w: any) => ({ value: w.warehouseCode, label: `${w.warehouseCode} ${w.warehouseName}` })));
     } catch { /* ignore */ }
   }, []);
@@ -58,7 +59,8 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       const res = await api.get("/master/transfer-rules", { params });
-      setData(res.data?.data ?? []);
+      const raw = res.data?.data;
+      setData(Array.isArray(raw) ? raw : raw?.data ?? []);
     } catch {
       setData([]);
     } finally {

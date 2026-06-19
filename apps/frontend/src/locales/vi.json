@@ -2238,7 +2238,16 @@
       "extendDays": "Số ngày gia hạn",
       "retestRound": "Lần",
       "pass": "Đạt",
-      "fail": "Không đạt"
+      "fail": "Không đạt",
+      "reinspectSubtitle": "Chọn đối tượng tái kiểm tra hạn sử dụng và kiểm tra theo từng hạng mục. Xem lịch sử ở màn hình Lịch sử kiểm tra hạn sử dụng.",
+      "reinspectModalTitle": "Tái kiểm tra hạn sử dụng",
+      "reinspectTarget": "Đối tượng tái kiểm tra",
+      "inspector": "Người kiểm tra",
+      "overallResult": "Kết quả tổng hợp",
+      "submitReinspect": "Đăng ký kết quả tái kiểm tra",
+      "extendDaysHint": "Tự động theo mặt hàng",
+      "viewDetail": "Xem chi tiết kiểm tra",
+      "noInspectDetail": "Không có giá trị đo theo hạng mục (đánh giá thủ công)"
     },
     "hold": {
       "title": "Giữ tồn kho vật tư",

@@ -138,13 +138,13 @@ export default function PartnerFormPanel({ mode, editingPartner, onClose, onSave
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("master.partner.partnerCode")}
               value={form.partnerCode} onChange={e => setField("partnerCode", e.target.value)}
-              disabled={isEdit} fullWidth />
+              disabled={isEdit} fullWidth required />
             <ComCodeSelect groupCode="PARTNER_TYPE" includeAll={false}
               label={t("master.partner.partnerType")}
-              value={form.partnerType} onChange={v => setField("partnerType", v)} fullWidth />
+              value={form.partnerType} onChange={v => setField("partnerType", v)} fullWidth required />
             <div className="col-span-2">
               <Input label={t("master.partner.partnerName")}
-                value={form.partnerName} onChange={e => setField("partnerName", e.target.value)} fullWidth />
+                value={form.partnerName} onChange={e => setField("partnerName", e.target.value)} fullWidth required />
             </div>
             <Input label={t("master.partner.bizNo")}
               value={form.bizNo} onChange={e => setField("bizNo", e.target.value)} fullWidth />

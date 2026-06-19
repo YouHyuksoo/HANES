@@ -115,7 +115,7 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <Input label={t("master.vendorBarcode.vendorBarcode", "제조사 바코드")}
-                value={form.vendorBarcode} onChange={e => setField("vendorBarcode", e.target.value)} fullWidth />
+                value={form.vendorBarcode} onChange={e => setField("vendorBarcode", e.target.value)} fullWidth required />
             </div>
             <Select label={t("master.vendorBarcode.matchType", "매칭 유형")} options={MATCH_TYPE_OPTIONS}
               value={form.matchType} onChange={v => setField("matchType", v)} fullWidth />

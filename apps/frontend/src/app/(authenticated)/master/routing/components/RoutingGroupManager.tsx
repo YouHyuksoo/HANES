@@ -529,14 +529,18 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
 
       <Modal isOpen={groupModalOpen} onClose={() => setGroupModalOpen(false)} title={editingGroup ? t("master.routing.editRouting") : t("master.routing.addRouting")} size="md">
         <div className="space-y-4">
-          <Input label={t("master.routing.routingCode")} value={groupForm.routingCode} disabled={!!editingGroup} onChange={(e) => setGroupForm((f) => ({ ...f, routingCode: e.target.value }))} fullWidth />
-          <Input label={t("master.routing.routingName")} value={groupForm.routingName} onChange={(e) => setGroupForm((f) => ({ ...f, routingName: e.target.value }))} fullWidth />
+          <Input label={t("master.routing.routingCode")} value={groupForm.routingCode} disabled={!!editingGroup} onChange={(e) => setGroupForm((f) => ({ ...f, routingCode: e.target.value }))} fullWidth required />
+          <Input label={t("master.routing.routingName")} value={groupForm.routingName} onChange={(e) => setGroupForm((f) => ({ ...f, routingName: e.target.value }))} fullWidth required />
           <div>
-            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.part.itemCode", { defaultValue: "품목" })}</label>
+            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
+              {t("master.part.itemCode", { defaultValue: "품목" })}
+              <span className="text-red-500 ml-0.5">*</span>
+            </label>
             <select
               value={groupForm.itemCode}
               onChange={(e) => setGroupForm((f) => ({ ...f, itemCode: e.target.value }))}
               className={selectCls}
+              required
             >
               <option value="">-- {t("common.select")} --</option>
               {partOptions.map((option) => (
@@ -559,13 +563,16 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
           <div className="grid grid-cols-3 gap-4">
             <Input label={t("master.routing.seq")} type="number" step="10" value={processForm.seq} disabled={!!editingProcess} onChange={(e) => setProcessForm((f) => ({ ...f, seq: e.target.value }))} fullWidth />
             <div>
-              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.processCode")}</label>
-              <select value={processForm.processCode} onChange={(e) => handleProcessSelect(e.target.value)} className={selectCls}>
+              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
+                {t("master.routing.processCode")}
+                <span className="text-red-500 ml-0.5">*</span>
+              </label>
+              <select value={processForm.processCode} onChange={(e) => handleProcessSelect(e.target.value)} className={selectCls} required>
                 <option value="">-- {t("common.select")} --</option>
                 {processOptions.map((option) => <option key={option.processCode} value={option.processCode}>[{option.processCode}] {option.processName}</option>)}
               </select>
             </div>
-            <Input label={t("master.routing.processName")} value={processForm.processName} onChange={(e) => setProcessForm((f) => ({ ...f, processName: e.target.value }))} fullWidth />
+            <Input label={t("master.routing.processName")} value={processForm.processName} onChange={(e) => setProcessForm((f) => ({ ...f, processName: e.target.value }))} fullWidth required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

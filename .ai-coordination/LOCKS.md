@@ -16,6 +16,21 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-MATERIAL-ARRIVAL-QTY-FORMAT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx
+    - apps/frontend/src/app/(authenticated)/material/arrival/components/po-line-receipt-number-format.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: active
+  note: 자재입하처리 모달의 입수량 등 숫자 표시를 천단위 포맷으로 보정.
+
 - task: T-HARNESS-FLOW-RENEWAL-P45
   owner: claude
   files:
@@ -1426,3 +1441,18 @@ Before editing, add a lock entry. Mark it released when done.
 - T-CUSTOMER-INTRO-PPTX (codex, 2026-06-11): 고객 소개용 가로형 PPTX 문서 생성, 레이아웃 검사 및 패키지 검증 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.pptx`.
 - T-CUSTOMER-INTRO-HTML-REV (codex, 2026-06-11): 고객 소개 HTML 자료를 12장 워크플로우형으로 재구성하고 글자 크기/넘침 보정 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.html`.
 - T-CUSTOMER-INTRO-HTML (codex, 2026-06-11): 고객 소개용 HTML 자료 생성 완료 후 lock 해제. 파일: `docs/presentation/hanes-mes-introduction.html`, `docs/presentation/assets/*`.
+
+- task: T-MASTER-REQUIRED-MARKS
+  owner: codex
+  files:
+    - apps/frontend/src/components/ui/Select.tsx
+    - apps/frontend/src/app/(authenticated)/master/**
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: 기준정보 하위 메뉴 필수 DB/저장 필드 별표 표시 보정 완료. 구조 테스트/FE tsc PASS. 기존 released lock과 충돌 없음.

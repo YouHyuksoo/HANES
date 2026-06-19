@@ -2569,7 +2569,16 @@
       "extendDays": "적용연장일(일)",
       "retestRound": "회차",
       "pass": "합격",
-      "fail": "불합격"
+      "fail": "불합격",
+      "reinspectSubtitle": "유수명자재 재검사 대상을 선택해 검사항목별로 검사합니다. 이력은 유수명자재 검사이력 화면에서 조회합니다.",
+      "reinspectModalTitle": "유수명자재 재검사",
+      "reinspectTarget": "재검사 대상",
+      "inspector": "검사자",
+      "overallResult": "종합판정",
+      "submitReinspect": "재검사 결과 등록",
+      "extendDaysHint": "품목 기준 자동",
+      "viewDetail": "검사 상세보기",
+      "noInspectDetail": "항목별 측정값 없음 (수동 판정)"
     },
     "hold": {
       "title": "자재재고홀드",

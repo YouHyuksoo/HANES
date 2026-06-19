@@ -23,7 +23,7 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className = '', label, error, options, value, onChange, fullWidth = false, placeholder, disabled, id, ...props }, ref) => {
+  ({ className = '', label, error, options, value, onChange, fullWidth = false, placeholder, disabled, required, id, ...props }, ref) => {
     const effectivePlaceholder = placeholder || label || '전체';
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
@@ -32,6 +32,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label htmlFor={inputId} className="block text-sm font-medium text-text mb-1.5">
             {label}
+            {required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
         )}
 
@@ -40,6 +41,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
+            required={required}
             value={value}
             onChange={(e) => onChange?.(e.target.value)}
             className={`

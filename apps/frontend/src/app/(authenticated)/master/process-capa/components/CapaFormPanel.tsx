@@ -248,6 +248,7 @@ export default function CapaFormPanel({
           value={form.processCode}
           onChange={(v) => setField("processCode", v)}
           disabled={isEdit}
+          required
           fullWidth
         />
 
@@ -255,6 +256,7 @@ export default function CapaFormPanel({
         <div>
           <label className="block text-xs font-medium text-text mb-1">
             {t("processCapa.itemCode")}
+            <span className="text-red-500 ml-0.5">*</span>
           </label>
           <div className="flex gap-2">
             <Input
@@ -264,6 +266,7 @@ export default function CapaFormPanel({
                   : ""
               }
               readOnly
+              required
               fullWidth
             />
             <Button

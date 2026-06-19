@@ -240,6 +240,14 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 실출력 테스트: Playwright로 `http://localhost:3002/material/arrival-result` 접속 후 `R26061800003` 행 선택, 시리얼 체크, `matlot_label / BROWSER` 선택, `라벨 재발행` 모달 진입을 확인했다. 모달 선택값은 `matlot_label::mat_lot`로 유지됐고 바코드 ready 후 출력 버튼 클릭 시 agent `/print` 1회 호출, `jobId=MAT-ARRIVAL-VH1-RM260618-00003`, 출력 PDF `C:\Users\hsyou\AppData\Roaming\HANES\print-agent\logs\prints\MAT-ARRIVAL-VH1-RM260618-00003.pdf` 45,103 bytes 확인.
 - 상태: 완료, lock released.
 
+## 2026-06-19 Codex
+
+- 작업: `T-MASTER-REQUIRED-MARKS` 기준정보 하위 메뉴 필수컬럼 별표 표시 일관화.
+- 원인: 공통 `Input`은 `required` prop을 받으면 라벨에 `*`를 붙였지만, 공통 `Select`는 `required`를 렌더링하지 않았다. 또한 품목관리 외 기준정보 폼 일부는 저장 차단 조건 또는 DTO 필수 필드인데도 `required` prop이 누락돼 있었다.
+- 변경: `Select.tsx`에 `required` destructuring, 라벨 별표, native `required` 전달을 추가했다. 작업자/거래처/회사/사업장/공정/설비/계측기/CAPA/창고위치/공통코드/BOM/IQC 항목/라우팅/제조사바코드/품목유형 폼의 필수 필드에 `required`를 붙였다. 작업지도서 폼은 기존 수동 `*` 라벨을 제거해 자동 별표와 중복되지 않게 했다.
+- 검증: 구조 테스트 RED 확인 후 `node --test apps/frontend/src/app/(authenticated)/master/master-required-fields.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- 상태: REVIEW, lock released.
+
 ## 2026-06-18 00:10 Codex
 
 - 작업: `T-PRINT-AGENT-PDF-OUTPUT` `Microsoft Print to PDF` 테스트 출력 실패 보정 및 `/material/arrival` 실제 출력 재검증.

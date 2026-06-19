@@ -29,6 +29,54 @@ notes:
 
 ## Active Tasks
 
+## T-MATERIAL-ARRIVAL-QTY-FORMAT 자재입하처리 모달 숫자 천단위 포맷
+status: IN_PROGRESS
+owner: codex
+role: implementer
+scope:
+- `/material/arrival` 자재입하처리 모달의 입수량 등 숫자 표시 포맷 보정
+files:
+- apps/frontend/src/app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx
+- apps/frontend/src/app/(authenticated)/material/arrival/components/po-line-receipt-number-format.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- pending
+review:
+- needs-review
+notes:
+- 입력용 수량 필드는 기존 `type="number"` 동작을 유지하고, 읽기 전용 입수량/예상 시리얼 계산식 숫자 표시에 천단위 구분자를 적용한다.
+
+## T-KIOSK-MOUNTED-RELOAD 키오스크 장착 자재/소모품 DB 재조회
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/production/input-kiosk` 재진입 시 DB 저장 장착 상태 재조회
+files:
+- apps/frontend/src/app/(authenticated)/production/input-kiosk/components/MaterialListPanel.tsx
+- apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ConsumableScanModal.tsx
+- apps/frontend/src/app/(authenticated)/production/input-kiosk/components/kiosk-mounted-reload.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- 구조 테스트 RED 확인 PASS: 키오스크 소모품 호출이 `selectedEquip`/`equipCode`/`includeMounted` 없이 실패함
+- node --test apps/frontend/src/app/(authenticated)/production/input-kiosk/components/kiosk-mounted-reload.structure.test.mjs PASS
+- pnpm --filter @harness/frontend exec tsc --noEmit --pretty false PASS
+- JSHANES DB PASS: `WO2606150066/HNS02C2ABCDE/EQ-ATCNS-01`, `CONSUMABLE_USAGE_MAP` 2건, `CONSUMABLE_STOCKS` MOUNTED 2건 확인
+- API PASS: `GET /production/job-orders/WO2606150066/consumables?equipCode=EQ-ATCNS-01&includeMounted=1`이 `CT26061600001`, `CT26061600002` 반환
+- 브라우저 PASS: 3002 `/production/input-kiosk` 진입 시 같은 API 호출 및 두 mountedConUid 화면 표시
+review:
+- needs-review
+notes:
+- localStorage에 저장하지 않고 `JOB_MATERIAL_LOTS` 및 `CONSUMABLE_STOCKS` 기준으로 재조회한다.
+- 키오스크 소모품 API 호출은 현재 화면 선택 설비 `equipCode`와 `includeMounted=1`을 함께 전달해야 한다.
+- 현재 JSHANES `JOB_MATERIAL_LOTS`는 0건이라 자재 쪽은 저장 데이터 표시 샘플이 없었지만, 기존 조회 경로와 구조 테스트로 DB 재조회 계약을 고정했다.
+
 ## T-WIP-STOCK-ACTUAL-SQL 반제품/제품재고 SQL 미리보기 실제 쿼리 반영
 status: REVIEW
 owner: codex
@@ -276,3 +324,27 @@ review:
 notes:
 - 결정 D-20260611-PDA-SHIPPING-BOX-ONLY 참조. 현재 PDA는 박스 단위만 지원, 팔레트 스캔은 PALLET_NOT_SUPPORTED 안내.
 - 백엔드 shipBox()는 팔레트 적재 박스를 이중 차감 방지로 거부 — 우회 금지. shipment 자동 생성 또는 ship-pallet 전용 엔드포인트 설계 필요.
+
+## T-MASTER-REQUIRED-MARKS 기준정보 필수컬럼 별표 표시
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- 기준정보 하위 메뉴 폼의 DB/저장 필수 컬럼 라벨 `*` 표시 일관화
+files:
+- apps/frontend/src/components/ui/Select.tsx
+- apps/frontend/src/app/(authenticated)/master/**
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- 구조 테스트 RED 확인 PASS: `Select` 별표 미표시 및 기준정보 폼 required 누락으로 실패 확인
+- node --test apps/frontend/src/app/(authenticated)/master/master-required-fields.structure.test.mjs PASS
+- pnpm --filter @harness/frontend exec tsc --noEmit --pretty false PASS
+review:
+- needs-review
+notes:
+- 품목관리처럼 공통 Input/Select의 required prop을 사용해 필수 라벨 별표를 표시한다.
+- `Select`도 `Input`과 동일하게 `required` 라벨 별표와 native required 속성을 처리한다.
+- 작업지도서 폼의 수동 `*` 라벨은 자동 별표와 중복되지 않도록 제거했다.

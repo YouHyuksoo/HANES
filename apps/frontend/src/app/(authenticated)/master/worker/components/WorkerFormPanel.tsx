@@ -141,9 +141,9 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("master.worker.workerCode", "작업자코드")}
               value={form.workerCode} onChange={e => setField("workerCode", e.target.value)}
-              disabled={isEdit} fullWidth />
+              disabled={isEdit} fullWidth required />
             <Input label={t("master.worker.workerName", "작업자명")}
-              value={form.workerName} onChange={e => setField("workerName", e.target.value)} fullWidth />
+              value={form.workerName} onChange={e => setField("workerName", e.target.value)} fullWidth required />
             <Input label={t("master.worker.engName", "영문명")}
               value={form.engName} onChange={e => setField("engName", e.target.value)} fullWidth />
             <DepartmentSelect label={t("master.worker.dept", "부서")}

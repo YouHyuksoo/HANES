@@ -11,12 +11,13 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { History, Search, RefreshCw } from "lucide-react";
+import { History, Search, RefreshCw, Eye } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import { PartSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import ShelfLifeDetailModal, { type ShelfLifeDetailRecord } from "./ShelfLifeDetailModal";
 
 interface ReinspectHistoryItem {
   inspectDate: string;
@@ -27,7 +28,9 @@ interface ReinspectHistoryItem {
   result: string;
   retestRound: number | null;
   inspectorName?: string | null;
+  destructSampleQty?: number | null;
   remark?: string | null;
+  details?: string | null;
 }
 
 export default function ShelfLifeHistoryPage() {
@@ -38,6 +41,7 @@ export default function ShelfLifeHistoryPage() {
   const [searchText, setSearchText] = useState("");
   const [itemFilter, setItemFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("");
+  const [detailRecord, setDetailRecord] = useState<ShelfLifeDetailRecord | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -73,6 +77,20 @@ export default function ShelfLifeHistoryPage() {
   }, [data, itemFilter, searchText]);
 
   const columns = useMemo<ColumnDef<ReinspectHistoryItem>[]>(() => [
+    {
+      id: "actions", header: t("common.actions", "작업"), size: 70, enableSorting: false,
+      meta: { filterType: "none" as const, align: "center" as const },
+      cell: ({ row }) => (
+        <button
+          type="button"
+          className="inline-flex h-8 w-8 items-center justify-center rounded text-text-muted hover:bg-surface hover:text-primary"
+          title={t("material.shelfLife.viewDetail", "검사 상세보기")}
+          onClick={(e) => { e.stopPropagation(); setDetailRecord(row.original as ShelfLifeDetailRecord); }}
+        >
+          <Eye className="h-4 w-4" />
+        </button>
+      ),
+    },
     {
       accessorKey: "inspectDate", header: t("common.date", "검사일"), size: 120,
       meta: { filterType: "date" as const },
@@ -174,6 +192,8 @@ export default function ShelfLifeHistoryPage() {
           />
         </CardContent>
       </Card>
+
+      <ShelfLifeDetailModal record={detailRecord} onClose={() => setDetailRecord(null)} />
     </div>
   );
 }

@@ -2,10 +2,12 @@
 
 ## Last Update
 
-2026-06-18 13:48
+2026-06-18 21:55
 
 ## In Review
 
+- `T-MASTER-REQUIRED-MARKS`: 기준정보 하위 메뉴 필수컬럼 별표 표시를 보정했다. 공통 `Select`가 `required` 라벨 별표와 native required를 처리하도록 바꿨고, 작업자/거래처/회사/공정/설비/계측기/CAPA/창고위치/공통코드/BOM/IQC/라우팅/제조사바코드/품목유형 등 저장 필수 필드에 `required`를 추가했다. 작업지도서의 수동 `*` 라벨은 중복 방지를 위해 제거했다. 검증: 신규 구조 테스트 RED→GREEN, FE tsc PASS. 커밋은 하지 않았다.
+- `T-KIOSK-MOUNTED-RELOAD`: `/production/input-kiosk` 재진입 시 소모품 장착 상태가 선택 설비 기준 DB에서 복원되도록 보정했다. `MaterialListPanel`과 `ConsumableScanModal`이 `/production/job-orders/:orderNo/consumables` 조회/스캔 호출에 `equipCode: selectedEquip?.equipCode`, `includeMounted: 1`을 전달한다. localStorage에 장착 UID를 저장하지 않는다. 검증: 신규 구조 테스트 RED→GREEN, FE tsc PASS, JSHANES `WO2606150066/HNS02C2ABCDE/EQ-ATCNS-01`에서 `CONSUMABLE_STOCKS` mounted UID `CT26061600001`, `CT26061600002` 확인, 3002 API와 headless 브라우저 화면 표시 PASS. `JOB_MATERIAL_LOTS`는 현재 0건이라 자재 샘플 표시는 못 했지만 기존 재조회 경로는 테스트로 고정했다.
 - `T-CONSUMABLE-LABEL-REPRINT`: 재발행 전 미리보기와 바코드 렌더 완료 대기까지 보강했다. 각 UID 행에 `미리보기` 버튼이 추가됐고, Modal 안에서 실제 `LabelDesignRenderer`로 같은 라벨을 본다. `LabelDesignRenderer`는 바코드 placeholder에 `data-label-barcode-pending`, 완료 이미지에 `data-label-barcode-ready`를 표시하며, 신규 발행 브라우저 인쇄와 재발행 agent PNG 캡처는 `waitForLabelRenderReady()`를 거쳐 pending이 사라지고 이미지 로드가 끝난 뒤에만 진행한다. Playwright에서 `C26061700029` 미리보기 모달 ready barcode 1/pending 0, UID 표시 true, 재발행 popup 0, agent `/print` 1회(`jobId=CON-REPRINT-C26061700029`, `contentBase64Length=2864`) 확인. 구조 테스트 3개와 FE tsc PASS. Playwright에서는 OS 저장 대화상자를 피하려고 agent `/print`를 mock했고, 실제 agent/PDF queued는 이전 테스트에서 확인했다.
 - `T-CONSUMABLE-LABEL-REPRINT`: Microsoft Print to PDF 결과에서 바코드가 검은 블록/잘림처럼 나온 원인은 agent가 아니라 agent에 전달되는 PNG가 이미 깨진 것이었다. `renderLabelNodeToPngBase64()`가 SVG `foreignObject`로 DOM을 직렬화할 때 Tailwind class가 적용되지 않아 `relative/absolute/object-contain/w-full/h-full/box-border`가 빠졌다. `LabelDesignRenderer`의 라벨 루트, 객체, 바코드/이미지 필수 스타일을 inline style로 보강했다. 전송 PNG before는 `docs/reports/label-print-debug-2026-06-17/CON-REPRINT-C26061700029.png`, after는 `...-after.png`이며 after는 QR 전체와 UID 텍스트가 정상이다. 구조 테스트/FE tsc/print-agent 구조 테스트/diff check PASS. 선택 템플릿 `consumable_label` 자체는 `10x10mm`라 물리 출력 크기는 작게 나간다.
 - `T-CONSUMABLE-LABEL-REPRINT`: 우측 420px 상세 패널의 기발행 UID 목록을 넓은 테이블에서 리스트형 행으로 보정했다. `재발행` 버튼은 각 UID 행 우측에 항상 보이며 `aria-label="${conUid} 라벨 재발행"`으로 찾을 수 있다. Playwright에서 `C26061700029 라벨 재발행` 버튼이 panelBox 내부에 있음을 확인했고, 클릭 후 팝업 UID/window.print 포함, `/consumables/label/create` 0건, `/material/label-print/log` 201, 상태 문구 확인까지 PASS. 구조 테스트 3개, FE tsc, diff check PASS. `ConLabelDetailPanel.tsx`와 `consumable-label-reprint.structure.test.mjs`는 아직 untracked.
@@ -101,6 +103,7 @@
 
 ## Next AI Should
 
+- `T-KIOSK-MOUNTED-RELOAD` 완료 후 REVIEW 상태. 키오스크 소모품 재조회는 선택 설비 기준 `CONSUMABLE_STOCKS` mounted 상태를 읽도록 보정했고, 3002 브라우저에서 mounted UID 2건 표시까지 확인했다. 커밋은 하지 않았다.
 - `T-WIP-STOCK-ACTUAL-SQL` 완료 후 REVIEW 상태. `/production/wip-stock` SQL 미리보기는 이제 실제 `PRODUCT_STOCKS` 기반 조회 SQL과 화면 필터를 반영한다. 신규 구조 테스트, FE tsc, 3002 브라우저 SQL 모달 검증을 완료했고 커밋은 하지 않았다.
 - `T-DATAGRID-HOVER-SCROLL-REMOVE` 완료 후 REVIEW 상태. 공용 `DataGrid`의 좌우 hover 자동 스크롤 핸들 기능을 제거했고 `ScrollHandle.tsx`를 삭제했다. 신규 구조 테스트, 제품 도면관리 구조 테스트, FE tsc, 3002 브라우저 DOM 검증을 완료했다. 커밋은 하지 않았다.
 - `T-HARNESS-CIRCUIT-PAYLOAD` 완료 후 REVIEW 상태. 회로 저장 payload에서 엔티티 메타 필드를 제거해 `PUT /production/specifications/revisions/8` 400을 해결했고, Rev 생성은 prompt 대신 모달로 바꿔 취소 시 `/revise` 호출 0건을 확인했다. 커밋은 하지 않았다.

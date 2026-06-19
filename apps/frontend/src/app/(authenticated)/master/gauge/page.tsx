@@ -311,14 +311,14 @@ export default function GaugeMasterPage() {
             <div className="grid grid-cols-2 gap-3">
               <Input label={t("master.gauge.gaugeCode")} value={form.gaugeCode}
                 onChange={e => setField("gaugeCode", e.target.value)}
-                disabled={!!editing} fullWidth />
+                disabled={!!editing} fullWidth required />
               <Input label={t("master.gauge.gaugeName")} value={form.gaugeName}
-                onChange={e => setField("gaugeName", e.target.value)} fullWidth />
+                onChange={e => setField("gaugeName", e.target.value)} fullWidth required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <ComCodeSelect groupCode="GAUGE_TYPE" includeAll={false}
                 label={t("master.gauge.gaugeType")} value={form.gaugeType}
-                onChange={v => setField("gaugeType", v)} fullWidth />
+                onChange={v => setField("gaugeType", v)} fullWidth required />
               <ComCodeSelect groupCode="GAUGE_STATUS" includeAll={false}
                 label={t("common.status")} value={form.status}
                 onChange={v => setField("status", v)} fullWidth />

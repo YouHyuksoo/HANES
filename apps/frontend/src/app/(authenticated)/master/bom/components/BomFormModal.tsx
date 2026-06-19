@@ -119,7 +119,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
           <Input label={t("master.bom.childPartCode")} value={childSearch}
             onChange={(e) => { setChildSearch(e.target.value); setSelectedChild(null); }}
             placeholder={t("master.bom.searchChildPlaceholder")}
-            leftIcon={<Search className="w-4 h-4" />} fullWidth disabled={!!editingItem} />
+            leftIcon={<Search className="w-4 h-4" />} fullWidth disabled={!!editingItem} required />
           {showDropdown && childOptions.length > 0 && !selectedChild && (
             <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg">
               {childOptions.map((opt) => (
@@ -138,9 +138,9 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
           )}
         </div>
         <div className="grid grid-cols-3 gap-4">
-          <Input label={t("master.bom.qtyPer")} type="number" step="0.01" value={qtyPer} onChange={(e) => setQtyPer(e.target.value)} fullWidth />
+          <Input label={t("master.bom.qtyPer")} type="number" step="0.01" value={qtyPer} onChange={(e) => setQtyPer(e.target.value)} fullWidth required />
           <Input label={t("master.bom.seq", "순서")} type="number" value={seq} onChange={(e) => setSeq(e.target.value)} fullWidth />
-          <Input label={t("master.bom.revision")} value={revision} onChange={(e) => setRevision(e.target.value)} fullWidth />
+          <Input label={t("master.bom.revision")} value={revision} onChange={(e) => setRevision(e.target.value)} fullWidth required />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <ProcessSelect label={t("master.bom.processCode", "공정코드")} value={processCode} onChange={(v) => setProcessCode(v)} fullWidth />

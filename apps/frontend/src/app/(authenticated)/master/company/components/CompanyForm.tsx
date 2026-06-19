@@ -164,9 +164,9 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("master.company.companyCode")}
               value={form.companyCode} onChange={(e) => setField("companyCode", e.target.value)}
-              disabled={isEdit} fullWidth />
+              disabled={isEdit} fullWidth required />
             <Input label={t("master.company.companyName")}
-              value={form.companyName} onChange={(e) => setField("companyName", e.target.value)} fullWidth />
+              value={form.companyName} onChange={(e) => setField("companyName", e.target.value)} fullWidth required />
             <Input label={t("master.company.bizNo")}
               value={form.bizNo} onChange={(e) => setField("bizNo", e.target.value)} fullWidth />
             <Input label={t("master.company.ceoName")}
@@ -224,9 +224,9 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
             {addingPlant && (
               <div className="flex items-end gap-2 mb-2 p-2.5 bg-surface rounded-lg border border-border">
                 <Input label={t("master.company.plantCode", "사업장코드")}
-                  value={newPlant.plantCode} onChange={(e) => setNewPlant((p) => ({ ...p, plantCode: e.target.value }))} fullWidth />
+                  value={newPlant.plantCode} onChange={(e) => setNewPlant((p) => ({ ...p, plantCode: e.target.value }))} fullWidth required />
                 <Input label={t("master.company.plantName", "사업장명")}
-                  value={newPlant.plantName} onChange={(e) => setNewPlant((p) => ({ ...p, plantName: e.target.value }))} fullWidth />
+                  value={newPlant.plantName} onChange={(e) => setNewPlant((p) => ({ ...p, plantName: e.target.value }))} fullWidth required />
                 <Button size="sm" onClick={handleAddPlant}
                   disabled={!newPlant.plantCode.trim() || !newPlant.plantName.trim()}
                   className="shrink-0">{t("common.add")}</Button>

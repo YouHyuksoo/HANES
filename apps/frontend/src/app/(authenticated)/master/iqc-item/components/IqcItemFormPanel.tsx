@@ -105,6 +105,7 @@ export default function IqcItemFormPanel({
               onChange={(e) => setField("itemCode", e.target.value)}
               fullWidth
               disabled={isEdit}
+              required
             />
             <Select
               label={t("master.iqcItem.judgeMethod", "판정방법")}
@@ -118,6 +119,7 @@ export default function IqcItemFormPanel({
                 label={t("master.iqcItem.inspectItem")}
                 value={form.itemName}
                 onChange={(e) => setField("itemName", e.target.value)}
+                required
                 fullWidth
               />
             </div>

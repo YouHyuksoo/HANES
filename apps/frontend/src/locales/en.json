@@ -2252,7 +2252,16 @@
       "extendDays": "Extend Days",
       "retestRound": "Round",
       "pass": "Pass",
-      "fail": "Fail"
+      "fail": "Fail",
+      "reinspectSubtitle": "Select shelf-life reinspection targets and inspect by item. View history on the Shelf Life Inspection History screen.",
+      "reinspectModalTitle": "Shelf Life Reinspection",
+      "reinspectTarget": "Reinspection Targets",
+      "inspector": "Inspector",
+      "overallResult": "Overall Result",
+      "submitReinspect": "Submit Reinspection",
+      "extendDaysHint": "Auto by item",
+      "viewDetail": "View Inspection Detail",
+      "noInspectDetail": "No per-item measurements (manual judgment)"
     },
     "hold": {
       "title": "Material Stock Hold",

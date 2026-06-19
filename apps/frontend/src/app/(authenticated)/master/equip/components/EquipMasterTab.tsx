@@ -288,8 +288,8 @@ export default function EquipMasterTab() {
             <div>
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equip.sectionBasic", "기본정보")}</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Input label={t("master.equip.equipCode", "설비코드")} value={form.equipCode} onChange={(e) => setForm({ ...form, equipCode: e.target.value })} fullWidth disabled={!!editing} />
-                <Input label={t("master.equip.equipName", "설비명")} value={form.equipName} onChange={(e) => setForm({ ...form, equipName: e.target.value })} fullWidth />
+                <Input label={t("master.equip.equipCode", "설비코드")} value={form.equipCode} onChange={(e) => setForm({ ...form, equipCode: e.target.value })} fullWidth disabled={!!editing} required />
+                <Input label={t("master.equip.equipName", "설비명")} value={form.equipName} onChange={(e) => setForm({ ...form, equipName: e.target.value })} fullWidth required />
                 <ComCodeSelect groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "유형")} value={form.equipType} onChange={(v) => setForm({ ...form, equipType: v as EquipType })} fullWidth />
                 <ComCodeSelect groupCode="COMM_TYPE" includeAll={false} label={t("master.equip.commType", "통신방식")} value={form.commType} onChange={(v) => setForm({ ...form, commType: v as CommType })} fullWidth />
                 <div className="col-span-2">

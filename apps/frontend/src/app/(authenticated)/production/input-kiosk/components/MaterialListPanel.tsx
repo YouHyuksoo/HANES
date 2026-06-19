@@ -60,7 +60,7 @@ export default function MaterialListPanel({
   consumableScanDisabledReasons = [],
 }: MaterialListPanelProps) {
   const { t } = useTranslation();
-  const { selectedJobOrder, scannedMaterialLots, interlock, removeScannedMaterialLot, addScannedMaterialLot, setInterlock, consumableRefreshSeq, bumpConsumableRefresh } = useKioskStore();
+  const { selectedEquip, selectedJobOrder, scannedMaterialLots, interlock, removeScannedMaterialLot, addScannedMaterialLot, setInterlock, consumableRefreshSeq, bumpConsumableRefresh } = useKioskStore();
   const [bomItems, setBomItems] = useState<BomItem[]>([]);
   const [consumables, setConsumables] = useState<ConsumableMapRow[]>([]);
 
@@ -75,10 +75,12 @@ export default function MaterialListPanel({
   // 소모품 매핑(모델+설비) 로드 — 스캔 장착 후 consumableRefreshSeq 증가로 재조회
   useEffect(() => {
     if (!selectedJobOrder?.orderNo) { setConsumables([]); return; }
-    api.get(`/production/job-orders/${selectedJobOrder.orderNo}/consumables`)
+    api.get(`/production/job-orders/${selectedJobOrder.orderNo}/consumables`, {
+      params: { equipCode: selectedEquip?.equipCode, includeMounted: 1 },
+    })
       .then(res => setConsumables(res.data?.data ?? []))
       .catch(() => setConsumables([]));
-  }, [selectedJobOrder?.orderNo, consumableRefreshSeq]);
+  }, [selectedJobOrder?.orderNo, selectedEquip?.equipCode, consumableRefreshSeq]);
 
   // 작업지시 변경 시 기존 자재 스캔 내역 서버에서 로드
   useEffect(() => {

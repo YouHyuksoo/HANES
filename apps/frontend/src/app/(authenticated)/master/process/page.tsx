@@ -311,6 +311,7 @@ export default function ProcessPage() {
               setFormData((p) => ({ ...p, processCode: e.target.value }))
             }
             disabled={!!editingItem}
+            required
             fullWidth
           />
           <Select
@@ -318,6 +319,7 @@ export default function ProcessPage() {
             options={processTypeOptions}
             value={formData.processType || ""}
             onChange={(v) => setFormData((p) => ({ ...p, processType: v }))}
+            required
             fullWidth
           />
           <div className="col-span-2">
@@ -327,6 +329,7 @@ export default function ProcessPage() {
               onChange={(e) =>
                 setFormData((p) => ({ ...p, processName: e.target.value }))
               }
+              required
               fullWidth
             />
           </div>

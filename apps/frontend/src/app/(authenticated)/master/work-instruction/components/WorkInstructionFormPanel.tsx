@@ -155,14 +155,14 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.workInstruction.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={`${t("common.partCode")} *`} required
+            <Input label={t("common.partCode")} required
               value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
               readOnly={isEdit} disabled={isEdit} fullWidth />
-            <Input label={`${t("master.workInstruction.processCode")} *`} required
+            <Input label={t("master.workInstruction.processCode")} required
               value={form.processCode} onChange={e => setField("processCode", e.target.value)}
               readOnly={isEdit} disabled={isEdit} fullWidth />
             <div className="col-span-2">
-              <Input label={`${t("master.workInstruction.docTitle")} *`} required
+              <Input label={t("master.workInstruction.docTitle")} required
                 value={form.title} onChange={e => setField("title", e.target.value)} fullWidth />
             </div>
             <Input label={t("master.workInstruction.revision")}

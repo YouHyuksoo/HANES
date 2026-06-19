@@ -1,256 +1,210 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { FlaskConical, RefreshCw, CheckCircle, XCircle } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { FlaskConical, RefreshCw, Search } from "lucide-react";
+import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import ReinspectModal, { type ReinspectTarget } from "./components/ReinspectModal";
 
-interface ReinspectHistoryItem {
-  inspectDate: string;
-  seq: number;
-  matUid: string | null;
+interface ShelfLifeItem {
+  matUid: string;
   itemCode: string;
   itemName?: string | null;
-  result: string;
-  retestRound: number | null;
-  inspectorName?: string | null;
-  remark?: string | null;
+  currentQty?: number | null;
+  unit?: string | null;
+  expireDate?: string | null;
+  expiryStatus: string;
+  daysUntilExpiry: number | null;
+  vendor?: string | null;
 }
 
-interface ReinspectForm {
-  matUid: string;
-  result: "PASS" | "FAIL";
-  extendDays: string;
-  inspectorName: string;
-  remark: string;
-}
+const expiryColors: Record<string, string> = {
+  EXPIRED: "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300",
+  NEAR_EXPIRY: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-300",
+};
 
 function ShelfLifeReinspectContent() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const initialMatUid = searchParams.get("matUid") ?? "";
 
-  const [form, setForm] = useState<ReinspectForm>({
-    matUid: initialMatUid,
-    result: "PASS",
-    extendDays: "",
-    inspectorName: "",
-    remark: "",
-  });
-  const [submitting, setSubmitting] = useState(false);
+  // 재검사 대상 목록
+  const [targets, setTargets] = useState<ShelfLifeItem[]>([]);
+  const [targetsLoading, setTargetsLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [expiryFilter, setExpiryFilter] = useState("");
 
-  const [history, setHistory] = useState<ReinspectHistoryItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  // 검사 모달
+  const [modalTarget, setModalTarget] = useState<ReinspectTarget | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchHistory = useCallback(async () => {
-    setHistoryLoading(true);
+  const fetchTargets = useCallback(async () => {
+    setTargetsLoading(true);
     try {
-      const res = await api.get("/material/shelf-life/reinspect", { params: { limit: "1000" } });
-      setHistory(res.data?.data ?? []);
+      const res = await api.get("/material/shelf-life", { params: { limit: "5000" } });
+      const rows: ShelfLifeItem[] = res.data?.data ?? [];
+      // 만료/임박 LOT만 재검사 대상
+      setTargets(rows.filter((r) => r.expiryStatus === "EXPIRED" || r.expiryStatus === "NEAR_EXPIRY"));
     } catch {
-      setHistory([]);
+      setTargets([]);
     } finally {
-      setHistoryLoading(false);
+      setTargetsLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+  useEffect(() => { fetchTargets(); }, [fetchTargets]);
 
-  // URL 파라미터 변경 시 form matUid 동기화
+  const openModal = useCallback((item: ShelfLifeItem) => {
+    setModalTarget({
+      matUid: item.matUid,
+      itemCode: item.itemCode,
+      itemName: item.itemName,
+      unit: item.unit,
+      currentQty: item.currentQty,
+      expireDate: item.expireDate,
+      daysUntilExpiry: item.daysUntilExpiry,
+    });
+    setIsModalOpen(true);
+  }, []);
+
+  // URL ?matUid= 지정 시 대상 목록 로드 후 1회만 자동 오픈한다.
+  // (매번 열면 모달을 닫아도 effect가 재실행되어 다시 열려 닫을 수 없게 된다)
+  const autoOpenedMatUid = useRef<string | null>(null);
   useEffect(() => {
-    if (initialMatUid) {
-      setForm(f => ({ ...f, matUid: initialMatUid }));
+    if (!initialMatUid || targets.length === 0) return;
+    if (autoOpenedMatUid.current === initialMatUid) return;
+    const found = targets.find((tg) => tg.matUid === initialMatUid);
+    if (found) {
+      autoOpenedMatUid.current = initialMatUid;
+      openModal(found);
     }
-  }, [initialMatUid]);
+  }, [initialMatUid, targets, openModal]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!form.matUid.trim()) return;
-    setSubmitting(true);
-    try {
-      const payload: Record<string, unknown> = {
-        matUid: form.matUid.trim(),
-        result: form.result,
-        inspectorName: form.inspectorName || undefined,
-        remark: form.remark || undefined,
-      };
-      if (form.result === "PASS" && form.extendDays) {
-        payload.extendDays = Number(form.extendDays);
-      }
-      await api.post("/material/shelf-life/reinspect", payload);
-      setForm({ matUid: "", result: "PASS", extendDays: "", inspectorName: "", remark: "" });
-      fetchHistory();
-    } catch {
-      // api 인터셉터에서 처리
-    } finally {
-      setSubmitting(false);
-    }
-  }, [form, fetchHistory]);
+  const handleSubmitted = useCallback(() => {
+    fetchTargets();
+  }, [fetchTargets]);
 
-  const historyColumns = useMemo<ColumnDef<ReinspectHistoryItem>[]>(() => [
+  const expiryOptions = useMemo(() => [
+    { value: "", label: `${t("material.shelfLife.nearExpiry")} + ${t("material.shelfLife.expired")}` },
+    { value: "EXPIRED", label: t("material.shelfLife.expired") },
+    { value: "NEAR_EXPIRY", label: t("material.shelfLife.nearExpiry") },
+  ], [t]);
+
+  const visibleTargets = useMemo(() => {
+    const s = searchText.trim().toLowerCase();
+    return targets.filter((d) =>
+      (!expiryFilter || d.expiryStatus === expiryFilter) &&
+      (!s ||
+        d.matUid?.toLowerCase().includes(s) ||
+        d.itemCode?.toLowerCase().includes(s) ||
+        (d.itemName ?? "").toLowerCase().includes(s)),
+    );
+  }, [targets, searchText, expiryFilter]);
+
+  const targetColumns = useMemo<ColumnDef<ShelfLifeItem>[]>(() => [
     {
-      accessorKey: "inspectDate", header: t("common.date"), size: 120,
-      cell: ({ getValue }) => new Date(getValue() as string).toLocaleDateString(),
+      id: "actions", header: t("material.col.inspect", "검사"), size: 100, enableSorting: false,
+      meta: { filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          className="inline-flex items-center gap-1 rounded border border-primary px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary hover:text-white"
+          onClick={() => openModal(row.original)}>
+          <FlaskConical className="h-3.5 w-3.5" />
+          {t("material.shelfLife.reinspect")}
+        </button>
+      ),
     },
     {
-      accessorKey: "matUid", header: "LOT No.", size: 170,
+      accessorKey: "matUid", header: "LOT No.", size: 170, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
+    { accessorKey: "itemName", header: t("common.partName"), size: 150, meta: { filterType: "text" as const } },
     {
-      accessorKey: "itemName", header: t("common.partName"), size: 140,
+      accessorKey: "currentQty", header: t("material.shelfLife.currentQty"), size: 100,
+      meta: { filterType: "number" as const, align: "right" as const },
+      cell: ({ row }) => <span>{(row.original.currentQty ?? 0).toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
-      accessorKey: "retestRound", header: t("material.shelfLife.retestRound"), size: 70,
-      meta: { align: "center" as const },
-      cell: ({ getValue }) => <span className="font-medium">{(getValue() as number) ?? "-"}</span>,
+      accessorKey: "expireDate", header: t("material.shelfLife.expireDate"), size: 110, meta: { filterType: "date" as const },
+      cell: ({ getValue }) => { const v = getValue() as string; return v ? new Date(v).toLocaleDateString() : "-"; },
     },
     {
-      accessorKey: "result", header: t("common.result", "결과"), size: 80,
-      meta: { align: "center" as const },
+      accessorKey: "daysUntilExpiry", header: t("material.shelfLife.remainDays"), size: 90,
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => {
-        const v = getValue() as string;
-        const cls = v === "PASS"
-          ? "text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700"
-          : "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300";
-        const label = v === "PASS" ? t("material.shelfLife.pass") : t("material.shelfLife.fail");
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls}`}>{label}</span>;
+        const days = getValue() as number | null;
+        if (days === null) return <span className="text-text-muted">-</span>;
+        const cls = days < 0 ? "text-red-600 dark:text-red-400" : "text-yellow-600 dark:text-yellow-400";
+        return <span className={`font-medium ${cls}`}>{days}{t("material.shelfLife.days")}</span>;
       },
     },
     {
-      accessorKey: "inspectorName", header: t("quality.iqcHistory.inspectorName", "검사자"), size: 100,
+      accessorKey: "expiryStatus", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const label = getValue() as string;
+        const displayName = label === "EXPIRED" ? t("material.shelfLife.expired") : t("material.shelfLife.nearExpiry");
+        return <span className={`rounded px-2 py-0.5 text-xs font-medium ${expiryColors[label] || ""}`}>{displayName}</span>;
+      },
     },
-    {
-      accessorKey: "remark", header: t("common.remark"), size: 160,
-    },
-  ], [t]);
+  ], [t, openModal]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+    <div className="flex h-full flex-col gap-4 overflow-hidden p-6 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center flex-shrink-0">
+      <div className="flex flex-shrink-0 items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <FlaskConical className="w-7 h-7 text-primary" />
+          <h1 className="flex items-center gap-2 text-xl font-bold text-text">
+            <FlaskConical className="h-7 w-7 text-primary" />
             {t("material.shelfLife.reinspectTitle")}
           </h1>
-          <p className="text-text-muted mt-1">{t("material.shelfLife.reinspectSubtitle", "유수명자재 재검사 결과를 등록하고 이력을 조회합니다.")}</p>
+          <p className="mt-1 text-text-muted">{t("material.shelfLife.reinspectSubtitle", "유수명자재 재검사 대상을 선택해 검사항목별로 검사합니다. 이력은 유수명자재 검사이력 화면에서 조회합니다.")}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchHistory}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${historyLoading ? "animate-spin" : ""}`} />
+        <Button variant="secondary" size="sm" onClick={fetchTargets}>
+          <RefreshCw className={`mr-1 h-4 w-4 ${targetsLoading ? "animate-spin" : ""}`} />
           {t("common.refresh")}
         </Button>
       </div>
 
-      {/* 재검사 등록 폼 */}
-      <Card className="flex-shrink-0" padding="none">
-        <CardContent className="p-5">
-          <h2 className="text-sm font-semibold text-text mb-4 flex items-center gap-1.5">
-            <FlaskConical className="w-4 h-4 text-primary" />
-            {t("common.register")} — {t("material.shelfLife.reinspect")}
-          </h2>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-4">
-            {/* LOT No. */}
-            <div className="col-span-2 md:col-span-1">
-              <label className="text-xs font-medium text-text-muted block mb-1">LOT No. *</label>
-              <Input
-                value={form.matUid}
-                onChange={e => setForm(f => ({ ...f, matUid: e.target.value }))}
-                placeholder="VH1-RM..."
-                fullWidth
-              />
-            </div>
-
-            {/* 결과 */}
-            <div>
-              <label className="text-xs font-medium text-text-muted block mb-1">{t("common.result", "결과")} *</label>
-              <div className="flex gap-2 h-9">
-                {(["PASS", "FAIL"] as const).map(r => (
-                  <button key={r} onClick={() => setForm(f => ({ ...f, result: r }))}
-                    className={`flex-1 rounded text-sm font-medium border transition-colors flex items-center justify-center gap-1 ${
-                      form.result === r
-                        ? r === "PASS"
-                          ? "bg-green-100 border-green-400 text-green-800 dark:bg-green-900/40 dark:border-green-600 dark:text-green-300"
-                          : "bg-red-100 border-red-400 text-red-800 dark:bg-red-900/40 dark:border-red-600 dark:text-red-300"
-                        : "border-border text-text-muted hover:bg-surface-secondary"
-                    }`}>
-                    {r === "PASS"
-                      ? <><CheckCircle className="w-3.5 h-3.5" />{t("material.shelfLife.pass")}</>
-                      : <><XCircle className="w-3.5 h-3.5" />{t("material.shelfLife.fail")}</>}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 연장일 (PASS만) */}
-            <div>
-              <label className="text-xs font-medium text-text-muted block mb-1">
-                {t("material.shelfLife.extendDays")}
-              </label>
-              <Input
-                type="number"
-                min={0}
-                value={form.result === "PASS" ? form.extendDays : ""}
-                onChange={e => setForm(f => ({ ...f, extendDays: e.target.value }))}
-                placeholder={form.result === "PASS" ? "품목 기준 자동" : "-"}
-                disabled={form.result !== "PASS"}
-                fullWidth
-              />
-            </div>
-
-            {/* 검사자 */}
-            <div>
-              <label className="text-xs font-medium text-text-muted block mb-1">
-                {t("quality.iqcHistory.inspectorName", "검사자")}
-              </label>
-              <Input
-                value={form.inspectorName}
-                onChange={e => setForm(f => ({ ...f, inspectorName: e.target.value }))}
-                fullWidth
-              />
-            </div>
-
-            {/* 비고 */}
-            <div className="col-span-2 md:col-span-3">
-              <label className="text-xs font-medium text-text-muted block mb-1">{t("common.remark")}</label>
-              <Input
-                value={form.remark}
-                onChange={e => setForm(f => ({ ...f, remark: e.target.value }))}
-                fullWidth
-              />
-            </div>
-
-            {/* 등록 버튼 */}
-            <div className="flex items-end">
-              <Button className="w-full" onClick={handleSubmit}
-                disabled={submitting || !form.matUid.trim()}>
-                {submitting ? t("common.saving") : t("common.register")}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 재검사 이력 */}
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+      {/* 재검사 대상 목록 */}
+      <Card className="min-h-0 flex-1 overflow-hidden" padding="none">
         <CardContent className="h-full p-4">
           <DataGrid
-      sqlQuery={`SELECT *\nFROM MAT_LOTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
-            data={history}
-            columns={historyColumns}
-            isLoading={historyLoading}
+            data={visibleTargets}
+            columns={targetColumns}
+            isLoading={targetsLoading}
             enableColumnFilter
             enableExport
-            exportFileName={t("material.shelfLife.reinspectHistory")}
+            exportFileName={t("material.shelfLife.reinspectTarget", "재검사 대상")}
+            toolbarLeft={
+              <div className="flex min-w-0 flex-1 gap-3">
+                <div className="min-w-0 flex-1">
+                  <Input placeholder={t("material.shelfLife.searchPlaceholder")}
+                    value={searchText} onChange={(e) => setSearchText(e.target.value)}
+                    leftIcon={<Search className="h-4 w-4" />} fullWidth />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <Select options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} fullWidth />
+                </div>
+              </div>
+            }
           />
         </CardContent>
       </Card>
+
+      <ReinspectModal
+        isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setModalTarget(null); }}
+        target={modalTarget}
+        onSubmitted={handleSubmitted}
+      />
     </div>
   );
 }

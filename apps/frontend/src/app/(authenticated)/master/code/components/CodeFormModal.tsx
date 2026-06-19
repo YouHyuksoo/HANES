@@ -102,12 +102,14 @@ export default function CodeFormModal({
           value={form.detailCode}
           onChange={(e) => handleChange("detailCode", e.target.value.toUpperCase())}
           disabled={isEdit}
+          required
           fullWidth
         />
         <Input
           label={t("master.code.codeName")}
           value={form.codeName}
           onChange={(e) => handleChange("codeName", e.target.value)}
+          required
           fullWidth
         />
         <Input

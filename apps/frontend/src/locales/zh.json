@@ -2238,7 +2238,16 @@
       "extendDays": "延长天数",
       "retestRound": "次数",
       "pass": "合格",
-      "fail": "不合格"
+      "fail": "不合格",
+      "reinspectSubtitle": "选择保质期复检对象并按检验项目逐项检验。历史请在保质期检验历史画面查询。",
+      "reinspectModalTitle": "保质期复检",
+      "reinspectTarget": "复检对象",
+      "inspector": "检验员",
+      "overallResult": "综合判定",
+      "submitReinspect": "登记复检结果",
+      "extendDaysHint": "按品目自动",
+      "viewDetail": "查看检验明细",
+      "noInspectDetail": "无逐项测量值（手动判定）"
     },
     "hold": {
       "title": "物料库存冻结",

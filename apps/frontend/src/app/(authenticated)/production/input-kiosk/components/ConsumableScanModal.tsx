@@ -27,7 +27,7 @@ interface ConsumableScanModalProps {
 
 export default function ConsumableScanModal({ isOpen, onClose, onDone }: ConsumableScanModalProps) {
   const { t } = useTranslation();
-  const { selectedJobOrder, setInterlock, consumableRefreshSeq, bumpConsumableRefresh } = useKioskStore();
+  const { selectedEquip, selectedJobOrder, setInterlock, consumableRefreshSeq, bumpConsumableRefresh } = useKioskStore();
   const [items, setItems] = useState<ConsumableMapRow[]>([]);
   const [scanInput, setScanInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,11 +36,13 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
 
   useEffect(() => {
     if (!isOpen || !selectedJobOrder?.orderNo) return;
-    api.get(`/production/job-orders/${selectedJobOrder.orderNo}/consumables`)
+    api.get(`/production/job-orders/${selectedJobOrder.orderNo}/consumables`, {
+      params: { equipCode: selectedEquip?.equipCode, includeMounted: 1 },
+    })
       .then(res => setItems(res.data?.data ?? []))
       .catch(() => setItems([]));
     setTimeout(() => inputRef.current?.focus(), 100);
-  }, [isOpen, selectedJobOrder?.orderNo, consumableRefreshSeq]);
+  }, [isOpen, selectedJobOrder?.orderNo, selectedEquip?.equipCode, consumableRefreshSeq]);
 
   const allMounted = items.length === 0 || items.every(c => c.mountedConUid != null);
   const unmountedCount = items.filter(c => c.mountedConUid == null).length;
@@ -55,7 +57,7 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
     try {
       const res = await api.post(
         `/production/job-orders/${selectedJobOrder.orderNo}/consumables/scan`,
-        { conUid },
+        { conUid, equipCode: selectedEquip?.equipCode },
       );
       const lot = res.data?.data as { consumableCode: string };
       toast.success(`✓ ${lot.consumableCode}`, { duration: 1000 });
@@ -69,7 +71,7 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
       }
     }
     setTimeout(() => inputRef.current?.focus(), 50);
-  }, [scanInput, selectedJobOrder, bumpConsumableRefresh, t]);
+  }, [scanInput, selectedJobOrder, selectedEquip?.equipCode, bumpConsumableRefresh, t]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.consumableScanTitle')} size="lg">

@@ -74,7 +74,9 @@ export default function IqcHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [resultFilter, setResultFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  // IQC 이력은 기본적으로 수입검사(INITIAL)만 조회한다. 유수명 재검사(RETEST)는
+  // 전용 화면(/material/shelf-life-history)에서 조회하며, 여기서는 검사유형 필터로 선택 시에만 노출한다.
+  const [typeFilter, setTypeFilter] = useState("INITIAL");
   const [startDate, setStartDate] = useState(() => getTodayLocal());
   const [endDate, setEndDate] = useState(() => getTodayLocal());
 
