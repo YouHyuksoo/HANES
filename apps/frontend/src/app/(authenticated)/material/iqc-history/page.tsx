@@ -66,6 +66,9 @@ const formatDateTime = (value?: string | null) => {
   return date.toLocaleString();
 };
 
+const getLotNoDisplay = (record: Pick<IqcHistoryItem, "matUid" | "sampleBarcode">) =>
+  record.matUid || record.sampleBarcode || "-";
+
 export default function IqcHistoryPage() {
   const { t } = useTranslation();
   const iqcInspectTypeMap = useComCodeMap("IQC_INSPECT_TYPE");
@@ -247,9 +250,19 @@ export default function IqcHistoryPage() {
       },
     },
     {
-      accessorKey: "matUid", header: "LOT No.", size: 160,
+      accessorKey: "arrivalNo",
+      header: "입하번호",
+      size: 140,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      id: "lotNo", accessorFn: getLotNoDisplay, header: "LOT No.", size: 180,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => {
+        const lotNo = getLotNoDisplay(row.original);
+        return <span className="font-mono text-sm">{lotNo}</span>;
+      },
     },
     {
       accessorKey: "itemCode", header: t("common.partCode"), size: 110,
@@ -364,7 +377,7 @@ export default function IqcHistoryPage() {
             <div className="p-3 bg-surface-secondary rounded-lg space-y-1 text-sm">
               <p>
                 <span className="text-text-muted">LOT No.:</span>{" "}
-                {cancelTarget.matUid}
+                {getLotNoDisplay(cancelTarget)}
               </p>
               <p>
                 <span className="text-text-muted">{t("common.partName")}:</span>{" "}
