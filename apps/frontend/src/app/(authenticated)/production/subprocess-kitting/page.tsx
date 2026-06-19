@@ -75,8 +75,9 @@ export default function SubprocessKittingPage() {
         return;
       }
 
-      // Check for invalid status — treat anything other than AVAILABLE/ACTIVE/OK as invalid
-      const validStatuses = ["AVAILABLE", "ACTIVE", "OK", "NORMAL"];
+      // 키팅 소비 가능 상태만 허용 — 백엔드 kit() 및 SG_LABELS enum 기준(IN_STOCK/MOUNTED).
+      // (CONSUMED/DEFECT 등은 소비 불가)
+      const validStatuses = ["IN_STOCK", "MOUNTED"];
       if (!validStatuses.includes(data.status?.toUpperCase())) {
         setWarnMessage(`${t("production.kitting.warnInvalidStatus")} (${data.status})`);
         setWarnModalOpen(true);
