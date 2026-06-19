@@ -66,7 +66,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     tactTime: editingPart?.tactTime ?? 0,
     expiryDate: editingPart?.expiryDate ?? 0,
     iqcYn: editingPart?.iqcYn || "Y",
-    packUnit: editingPart?.packUnit || "",
+    packUnit: editingPart?.packUnit ?? 0,
     storageLocation: editingPart?.storageLocation || "",
     remark: editingPart?.remark || "",
   }));
@@ -168,7 +168,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         <Input label={t("master.part.leadTime", "리드타임(일)")} type="number"
           fullWidth />
         <Input label={t("master.part.palletUnit", "팔레트구성단위")} type="number"
-          value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
+          value={String(form.packUnit)} onChange={e => setField("packUnit", Number(e.target.value))} fullWidth />
         <Select label={t("master.part.storageLocation", "적재로케이션")}
           options={locationOptions}
           value={form.storageLocation} onChange={v => setField("storageLocation", v)}

@@ -272,7 +272,7 @@ export class PalletService {
       ? await this.partRepository.find({ where: { itemCode: In(partItemCodes), ...this.tenantWhere(company, plant) } })
       : [];
     const palletUnits = parts
-      .map(p => (p.packUnit != null ? Number(p.packUnit) : 0))
+      .map(p => p.packUnit ?? 0)
       .filter(n => Number.isFinite(n) && n > 0);
     if (palletUnits.length > 0) {
       const packUnit = Math.min(...palletUnits);

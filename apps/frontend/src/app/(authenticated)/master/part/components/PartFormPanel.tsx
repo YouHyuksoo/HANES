@@ -98,7 +98,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     iqcYn: editingPart?.iqcYn || "Y",
     inspectMethod: editingPart?.inspectMethod || "",
     useYn: editingPart?.useYn || "Y",
-    packUnit: editingPart?.packUnit || "",
+    packUnit: editingPart?.packUnit ?? 0,
     storageLocation: editingPart?.storageLocation || "",
     remark: editingPart?.remark || "",
   }));
@@ -137,7 +137,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       iqcYn: editingPart?.iqcYn || "Y",
       inspectMethod: editingPart?.inspectMethod || "",
       useYn: editingPart?.useYn || "Y",
-      packUnit: editingPart?.packUnit || "",
+      packUnit: editingPart?.packUnit ?? 0,
       storageLocation: editingPart?.storageLocation || "",
       remark: editingPart?.remark || "",
     });
@@ -333,7 +333,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <Input label={t("master.part.expiryExtDays", "유효기간 연장(일)")} type="number"
               value={String(form.expiryExtDays)} onChange={e => setField("expiryExtDays", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.palletUnit", "팔레트구성단위")} type="number"
-              value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
+              value={String(form.packUnit)} onChange={e => setField("packUnit", Number(e.target.value))} fullWidth />
             <div className="col-span-2">
               <Select label={t("master.part.storageLocation", "적재로케이션")}
                 options={locationOptions}

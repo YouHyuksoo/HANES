@@ -190,11 +190,12 @@ export class CreatePartDto {
   @Min(0)
   sampleQty?: number;
 
-  @ApiPropertyOptional({ description: '포장단위', example: 'BOX' })
+  @ApiPropertyOptional({ description: '팔레트 구성 단위(팔레트당 박스 수)', example: 40 })
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  packUnit?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  packUnit?: number;
 
   @ApiPropertyOptional({ description: '적재 로케이션', example: 'A-01-02' })
   @IsOptional()
