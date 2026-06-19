@@ -89,6 +89,71 @@ export class IqcHistoryService {
     return inspectClass ?? null;
   }
 
+  private formatKstTimestamp(date: Date) {
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException('검사일시 형식이 올바르지 않습니다.');
+    }
+
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '00';
+    const millis = String(date.getUTCMilliseconds()).padStart(3, '0');
+    return `${part('year')}-${part('month')}-${part('day')} ${part('hour')}:${part('minute')}:${part('second')}.${millis}`;
+  }
+
+  private normalizeOracleTimestampParam(inspectDate: string) {
+    const value = inspectDate.trim();
+    if (!value) {
+      throw new BadRequestException('검사일시가 비어 있습니다.');
+    }
+
+    if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)) {
+      return this.formatKstTimestamp(new Date(value));
+    }
+
+    const normalized = value.replace('T', ' ');
+    const [datePart, rawTimePart = '00:00:00.000'] = normalized.split(' ');
+    const [timePart, fraction = '000'] = rawTimePart.split('.');
+    const [hour = '00', minute = '00', second = '00'] = timePart.split(':');
+    return `${datePart} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.${fraction.padEnd(3, '0').slice(0, 3)}`;
+  }
+
+  private inspectDateEquals(alias: string, parameterName: string) {
+    return `${alias}.inspectDate = TO_TIMESTAMP(:${parameterName}, 'YYYY-MM-DD HH24:MI:SS.FF3')`;
+  }
+
+  private inspectDateColumnEquals(parameterName: string) {
+    return `INSPECT_DATE = TO_TIMESTAMP(:${parameterName}, 'YYYY-MM-DD HH24:MI:SS.FF3')`;
+  }
+
+  private async findIqcLogByInspectKey(inspectDate: string, seq: number, company?: string, plant?: string) {
+    const parsed = new Date(inspectDate);
+    if (!Number.isNaN(parsed.getTime())) {
+      const direct = await this.iqcLogRepository.findOne({
+        where: { inspectDate: parsed, seq, ...this.tenantWhere(company, plant) },
+      });
+      if (direct) return direct;
+    }
+
+    const inspectTs = this.normalizeOracleTimestampParam(inspectDate);
+    const qb = this.iqcLogRepository
+      .createQueryBuilder('iqc')
+      .where(this.inspectDateEquals('iqc', 'inspectTs'), { inspectTs })
+      .andWhere('iqc.seq = :seq', { seq });
+    if (company) qb.andWhere('iqc.company = :company', { company });
+    if (plant) qb.andWhere('iqc.plant = :plant', { plant });
+    return qb.getOne();
+  }
+
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, inspectType, result, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -542,16 +607,18 @@ export class IqcHistoryService {
   }
 
   async uploadCert(inspectDate: string, seq: number, filePath: string, company?: string, plant?: string) {
-    // PK(INSPECT_DATE)는 시·분·초를 가진 timestamp이므로 날짜로 뭉개지 말고 정확히 매칭한다.
-    const inspectTs = new Date(inspectDate);
-    const log = await this.iqcLogRepository.findOne({
-      where: { inspectDate: inspectTs, seq, ...this.tenantWhere(company, plant) },
-    });
+    const log = await this.findIqcLogByInspectKey(inspectDate, seq, company, plant);
     if (!log) throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${inspectDate}/${seq}`);
-    await this.iqcLogRepository.update(
-      { inspectDate: inspectTs, seq, ...this.tenantWhere(log.company, log.plant) },
-      { certFilePath: filePath },
-    );
+    const inspectTs = this.normalizeOracleTimestampParam(inspectDate);
+    const updateQb = this.iqcLogRepository
+      .createQueryBuilder()
+      .update(IqcLog)
+      .set({ certFilePath: filePath })
+      .where(this.inspectDateColumnEquals('inspectTs'), { inspectTs })
+      .andWhere('SEQ = :seq', { seq });
+    if (log.company) updateQb.andWhere('COMPANY = :company', { company: log.company });
+    if (log.plant) updateQb.andWhere('PLANT_CD = :plant', { plant: log.plant });
+    await updateQb.execute();
     return { ...log, certFilePath: filePath };
   }
 

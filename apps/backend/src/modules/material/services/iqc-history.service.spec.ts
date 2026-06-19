@@ -427,6 +427,52 @@ describe('IqcHistoryService cancel policy', () => {
     );
   });
 
+  it('성적서 업로드는 API ISO inspectDate를 Oracle 로컬 timestamp로 매칭한다', async () => {
+    const findQb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue({
+        inspectDate: new Date('2026-06-19T07:56:27.354Z'),
+        seq: 1,
+        arrivalNo: 'R26061900020',
+        itemCode: 'CBL-B',
+        result: 'PASS',
+        status: 'DONE',
+        company: '40',
+        plant: '1000',
+      } as IqcLog),
+    };
+    const updateQb = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+    mockIqcLogRepo.findOne.mockResolvedValue(null);
+    mockIqcLogRepo.createQueryBuilder
+      .mockReturnValueOnce(findQb as any)
+      .mockReturnValueOnce(updateQb as any);
+
+    const result = await target.uploadCert(
+      '2026-06-19T07:56:27.354Z',
+      1,
+      'C:/Project/HANES/apps/backend/uploads/iqc-certs/cert.pdf',
+      '40',
+      '1000',
+    );
+
+    expect(findQb.where).toHaveBeenCalledWith(
+      "iqc.inspectDate = TO_TIMESTAMP(:inspectTs, 'YYYY-MM-DD HH24:MI:SS.FF3')",
+      { inspectTs: '2026-06-19 16:56:27.354' },
+    );
+    expect(updateQb.where).toHaveBeenCalledWith(
+      "INSPECT_DATE = TO_TIMESTAMP(:inspectTs, 'YYYY-MM-DD HH24:MI:SS.FF3')",
+      { inspectTs: '2026-06-19 16:56:27.354' },
+    );
+    expect(result.certFilePath).toBe('C:/Project/HANES/apps/backend/uploads/iqc-certs/cert.pdf');
+  });
+
   it('moves failed IQC stock through TransactionService', async () => {
     const lot = {
       matUid: 'MAT-001',
