@@ -71,8 +71,9 @@ describe('ProductInventoryService', () => {
       .map(column => column.propertyName);
 
     expect(primaryColumnNames).toEqual(
-      expect.arrayContaining(['company', 'plant', 'warehouseCode', 'itemCode', 'prdUid']),
+      expect.arrayContaining(['company', 'plant', 'warehouseCode', 'itemCode']),
     );
+    expect(primaryColumnNames).not.toContain('prdUid');
   });
 
   describe('receiveStock', () => {
@@ -125,11 +126,11 @@ describe('ProductInventoryService', () => {
       } as any);
 
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        where: { warehouseCode: 'WH', itemCode: 'IT', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WH', itemCode: 'IT', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 30, availableQty: 25 }),
       );
     });
@@ -170,7 +171,7 @@ describe('ProductInventoryService', () => {
         plant: 'P1',
       } as any);
 
-      expect(mockTransRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(ProductTransaction, expect.objectContaining({
         transType: 'WIP_OUT',
         fromWarehouseId: 'WIP_MAIN',
         toWarehouseId: 'FG_MAIN',
@@ -182,7 +183,7 @@ describe('ProductInventoryService', () => {
       }));
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WIP_MAIN', itemCode: 'FG-001', prdUid: 'PRD-001', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WIP_MAIN', itemCode: 'FG-001', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 0, availableQty: 0 }),
       );
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
@@ -257,11 +258,11 @@ describe('ProductInventoryService', () => {
         { status: 'CANCELED' },
       );
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'WH', itemCode: 'FG', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        where: { warehouseCode: 'WH', itemCode: 'FG', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WH', itemCode: 'FG', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WH', itemCode: 'FG', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 30, availableQty: 30 }),
       );
     });
@@ -354,19 +355,19 @@ describe('ProductInventoryService', () => {
       } as any);
 
       expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, ProductStock, {
-        where: { warehouseCode: 'WH-FROM', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        where: { warehouseCode: 'WH-FROM', itemCode: 'IT', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WH-FROM', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WH-FROM', itemCode: 'IT', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 40, availableQty: 40 }),
       );
       expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(2, ProductStock, {
-        where: { warehouseCode: 'WH-TO', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        where: { warehouseCode: 'WH-TO', itemCode: 'IT', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WH-TO', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WH-TO', itemCode: 'IT', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 15, availableQty: 15 }),
       );
     });

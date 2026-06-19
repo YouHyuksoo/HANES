@@ -52,10 +52,9 @@ export class ProductPhysicalInvService {
     const qb = this.stockRepository
       .createQueryBuilder('s')
       .leftJoin(PartMaster, 'p', 'p.itemCode = s.itemCode AND p.company = s.company AND p.plant = s.plant')
-      .leftJoin(MatLot, 'l', 'l.matUid = s.prdUid AND l.company = s.company AND l.plant = s.plant')
       .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode AND w.company = s.company AND w.plant = s.plant')
       .select([
-        's.warehouseCode || \'::\' || s.itemCode || \'::\' || s.prdUid AS "id"',
+        's.warehouseCode || \'::\' || s.itemCode AS "id"',
         's.warehouseCode AS "warehouseCode"',
         's.warehouseCode AS "warehouseId"',
         'w.warehouseName AS "warehouseName"',
@@ -63,7 +62,6 @@ export class ProductPhysicalInvService {
         'p.itemName AS "itemName"',
         'p.unit AS "unit"',
         'p.itemType AS "itemType"',
-        's.prdUid AS "prdUid"',
         's.qty AS "qty"',
         's.reservedQty AS "reservedQty"',
         's.availableQty AS "availableQty"',
@@ -82,7 +80,7 @@ export class ProductPhysicalInvService {
       );
     }
 
-    qb.orderBy('p.itemCode', 'ASC').addOrderBy('l.matUid', 'ASC');
+    qb.orderBy('p.itemCode', 'ASC').addOrderBy('s.warehouseCode', 'ASC');
 
     const total = await qb.getCount();
     const data = await qb.offset(skip).limit(limit).getRawMany();
@@ -150,15 +148,14 @@ export class ProductPhysicalInvService {
       const results = [];
 
       for (const item of items) {
-        const [warehouseCode, itemCode, prdUid] = item.stockId.split('::');
-        if (!warehouseCode || !itemCode || !prdUid) {
+        const [warehouseCode, itemCode] = item.stockId.split('::');
+        if (!warehouseCode || !itemCode) {
           throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${item.stockId}`);
         }
 
         const scopedKey: FindOptionsWhere<ProductStock> = {
           warehouseCode,
           itemCode,
-          prdUid,
           ...(company && { company }),
           ...(plant && { plant }),
         };

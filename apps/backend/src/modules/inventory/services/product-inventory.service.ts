@@ -155,8 +155,8 @@ export class ProductInventoryService {
         toWarehouseId: dto.warehouseId,
         itemCode: dto.itemCode,
         itemType: dto.itemType,
-        // 집계(비직렬) 재고는 PRD_UID 센티넬 '*' 사용 (PRODUCT_STOCKS 복합 PK, NOT NULL). 취소 시 동일 키 매칭.
-        prdUid: dto.prdUid || '*',
+        // PRODUCT_TRANSACTIONS는 원장이므로 prdUid 원본 보존(없으면 null). PRODUCT_STOCKS 키엔 미사용.
+        prdUid: dto.prdUid ?? null,
         orderNo: dto.orderNo,
         processCode: dto.processCode,
         qty: dto.qty,
@@ -178,15 +178,15 @@ export class ProductInventoryService {
         await this.stampBoxSerials(queryRunner.manager, dto.refId, true, dto.company, dto.plant);
       }
 
-      // 2. 재고 업데이트
+      // 2. 재고 업데이트 (품목+창고 단일행)
       const existingStock = await queryRunner.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*', ...tenantWhere },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, ...tenantWhere },
         /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
       });
 
       if (existingStock) {
         await queryRunner.manager.update(ProductStock,
-          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, prdUid: existingStock.prdUid, ...tenantWhere },
+          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, ...tenantWhere },
           { qty: existingStock.qty + dto.qty, availableQty: existingStock.qty + dto.qty - existingStock.reservedQty },
         );
       } else {
@@ -194,7 +194,7 @@ export class ProductInventoryService {
           warehouseCode: dto.warehouseId,
           itemCode: dto.itemCode,
           itemType: dto.itemType,
-          prdUid: dto.prdUid || '*',
+          prdUid: dto.prdUid ?? null,
           orderNo: dto.orderNo || null,
           processCode: dto.processCode || null,
           qty: dto.qty,
@@ -242,7 +242,7 @@ export class ProductInventoryService {
       toWarehouseId: dto.warehouseId,
       itemCode: dto.itemCode,
       itemType: dto.itemType,
-      prdUid: dto.prdUid,
+      prdUid: dto.prdUid ?? null,
       orderNo: dto.orderNo,
       processCode: dto.processCode,
       qty: dto.qty,
@@ -265,12 +265,12 @@ export class ProductInventoryService {
     }
 
     const existingStock = await qr.manager.findOne(ProductStock, {
-      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*', ...tenantWhere },
+      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, ...tenantWhere },
     });
 
     if (existingStock) {
       await qr.manager.update(ProductStock,
-        { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, prdUid: existingStock.prdUid, ...tenantWhere },
+        { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, ...tenantWhere },
         { qty: existingStock.qty + dto.qty, availableQty: existingStock.qty + dto.qty - existingStock.reservedQty },
       );
     } else {
@@ -278,7 +278,7 @@ export class ProductInventoryService {
         warehouseCode: dto.warehouseId,
         itemCode: dto.itemCode,
         itemType: dto.itemType,
-        prdUid: dto.prdUid || '*',
+        prdUid: dto.prdUid ?? null,
         orderNo: dto.orderNo || null,
         processCode: dto.processCode || null,
         qty: dto.qty,
@@ -320,67 +320,32 @@ export class ProductInventoryService {
         }
       }
 
-      const moveOne = (prdUid: string | null | undefined, qty: number) =>
-        this.issueStockInTx(qr, {
-          warehouseId: 'WIP_MAIN',
-          toWarehouseId: dto.warehouseId,
-          itemCode: dto.itemCode,
-          itemType: 'FINISHED',
-          prdUid: prdUid ?? undefined,
-          qty,
-          transType: 'WIP_OUT',
-          orderNo: dto.orderNo,
-          processCode: dto.processCode,
-          refType: dto.refType,
-          refId: dto.refId,
-          workerId: dto.workerId,
-          remark: dto.remark ?? '제품입고 WIP->FG 이동',
-          company: dto.company,
-          plant: dto.plant,
-        });
-
-      let lastTx: ProductTransaction | undefined;
-      if (dto.prdUid) {
-        // 시리얼 명시: 단건 이동(기존 호출 호환)
-        lastTx = await moveOne(dto.prdUid, dto.qty);
-      } else {
-        // 박스/수량 기준: WIP_MAIN 시리얼 행을 FIFO로 차감
-        const rows = await qr.manager.find(ProductStock, {
-          where: { warehouseCode: 'WIP_MAIN', itemCode: dto.itemCode, ...tenantWhere },
-          order: { createdAt: 'ASC' },
-        });
-        const totalAvail = rows.reduce((sum, r) => sum + r.availableQty, 0);
-        if (totalAvail < dto.qty) {
-          throw new BadRequestException(`재고 부족: 가용 ${totalAvail}, 요청 ${dto.qty}`);
-        }
-        let remaining = dto.qty;
-        for (const row of rows) {
-          if (remaining <= 0) break;
-          const take = Math.min(remaining, row.availableQty);
-          if (take <= 0) continue;
-          lastTx = await moveOne(row.prdUid, take);
-          remaining -= take;
-        }
-        // 소진된 WIP_MAIN 행(qty 0, 예약 0) 정리 — orphan 잔재 방지
-        await qr.manager
-          .createQueryBuilder()
-          .delete()
-          .from(ProductStock)
-          .where('WAREHOUSE_CODE = :wh AND ITEM_CODE = :item AND QTY <= 0 AND RESERVED_QTY = 0', {
-            wh: 'WIP_MAIN',
-            item: dto.itemCode,
-          })
-          .andWhere(dto.company ? 'COMPANY = :company' : '1=1', dto.company ? { company: dto.company } : {})
-          .andWhere(dto.plant ? 'PLANT_CD = :plant' : '1=1', dto.plant ? { plant: dto.plant } : {})
-          .execute();
-      }
+      // WIP_MAIN 단일행(품목+창고)에서 qty만큼 1회 출고(WIP_OUT) → 목적 창고로 입고.
+      // 시리얼 추적은 FG_LABELS(BOX_NO 스탬프)가 담당하므로 재고는 수량 단일행으로 다룬다.
+      const lastTx = await this.issueStockInTx(qr, {
+        warehouseId: 'WIP_MAIN',
+        toWarehouseId: dto.warehouseId,
+        itemCode: dto.itemCode,
+        itemType: 'FINISHED',
+        prdUid: dto.prdUid ?? undefined,
+        qty: dto.qty,
+        transType: 'WIP_OUT',
+        orderNo: dto.orderNo,
+        processCode: dto.processCode,
+        refType: dto.refType,
+        refId: dto.refId,
+        workerId: dto.workerId,
+        remark: dto.remark ?? '제품입고 WIP->FG 이동',
+        company: dto.company,
+        plant: dto.plant,
+      });
 
       // 박스 입고: 박스 시리얼(FG_LABELS)에 BOX_NO 스탬프
       if (dto.refType === 'BOX' && dto.refId) {
         await this.stampBoxSerials(qr.manager, dto.refId, true, dto.company, dto.plant);
       }
 
-      return lastTx!;
+      return lastTx;
     });
   }
 
@@ -390,9 +355,9 @@ export class ProductInventoryService {
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
 
     return this.tx.run(async (queryRunner) => {
-      // 1. 재고 확인
+      // 1. 재고 확인 (품목+창고 단일행)
       const stock = await queryRunner.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*', ...tenantWhere },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, ...tenantWhere },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -411,7 +376,7 @@ export class ProductInventoryService {
         toWarehouseId: dto.toWarehouseId,
         itemCode: dto.itemCode,
         itemType: dto.itemType,
-        prdUid: dto.prdUid,
+        prdUid: dto.prdUid ?? null,
         orderNo: dto.orderNo,
         processCode: dto.processCode,
         qty: -dto.qty,
@@ -429,20 +394,20 @@ export class ProductInventoryService {
 
       // 3. 출고 창고 재고 감소
       await queryRunner.manager.update(ProductStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere },
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, ...tenantWhere },
         { qty: stock.qty - dto.qty, availableQty: stock.availableQty - dto.qty },
       );
 
       // 4. 이동 대상 창고가 있으면 입고 처리
       if (dto.toWarehouseId) {
         const targetStock = await queryRunner.manager.findOne(ProductStock, {
-          where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*', ...tenantWhere },
+          where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, ...tenantWhere },
           /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
         });
 
         if (targetStock) {
           await queryRunner.manager.update(ProductStock,
-            { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, prdUid: targetStock.prdUid, ...tenantWhere },
+            { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, ...tenantWhere },
             { qty: targetStock.qty + dto.qty, availableQty: targetStock.qty + dto.qty - targetStock.reservedQty },
           );
         } else {
@@ -450,7 +415,7 @@ export class ProductInventoryService {
             warehouseCode: dto.toWarehouseId,
             itemCode: dto.itemCode,
             itemType: dto.itemType,
-            prdUid: dto.prdUid || '*',
+            prdUid: dto.prdUid ?? null,
             orderNo: dto.orderNo || null,
             processCode: dto.processCode || null,
             qty: dto.qty,
@@ -475,9 +440,9 @@ export class ProductInventoryService {
     const transNo = await this.generateTransNo(qr);
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
 
-    // 1. 재고 확인
+    // 1. 재고 확인 (품목+창고 단일행)
     const stock = await qr.manager.findOne(ProductStock, {
-      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*', ...tenantWhere },
+      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, ...tenantWhere },
     });
 
     if (!stock || stock.availableQty < dto.qty) {
@@ -498,7 +463,7 @@ export class ProductInventoryService {
       toWarehouseId: dto.toWarehouseId,
       itemCode: dto.itemCode,
       itemType: dto.itemType,
-      prdUid: dto.prdUid,
+      prdUid: dto.prdUid ?? null,
       orderNo: dto.orderNo,
       processCode: dto.processCode,
       qty: -dto.qty,
@@ -516,19 +481,19 @@ export class ProductInventoryService {
 
     // 3. 출고 창고 재고 감소
     await qr.manager.update(ProductStock,
-      { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere },
+      { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, ...tenantWhere },
       { qty: stock.qty - dto.qty, availableQty: stock.availableQty - dto.qty },
     );
 
     // 4. 이동 대상 창고가 있으면 입고 처리
     if (dto.toWarehouseId) {
       const targetStock = await qr.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*', ...tenantWhere },
+        where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, ...tenantWhere },
       });
 
       if (targetStock) {
         await qr.manager.update(ProductStock,
-          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, prdUid: targetStock.prdUid, ...tenantWhere },
+          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, ...tenantWhere },
           { qty: targetStock.qty + dto.qty, availableQty: targetStock.qty + dto.qty - targetStock.reservedQty },
         );
       } else {
@@ -536,7 +501,7 @@ export class ProductInventoryService {
           warehouseCode: dto.toWarehouseId,
           itemCode: dto.itemCode,
           itemType: dto.itemType,
-          prdUid: dto.prdUid || '*',
+          prdUid: dto.prdUid ?? null,
           orderNo: dto.orderNo || null,
           processCode: dto.processCode || null,
           qty: dto.qty,
@@ -582,35 +547,28 @@ export class ProductInventoryService {
   ): Promise<number> {
     if (!dto.qty || dto.qty <= 0) return 0;
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
-    const rows = await qr.manager.find(ProductStock, {
+    // 품목+창고 단일행에서 qty만큼 1회 차감(시스템 외부 출하). 시리얼 추적은 FG_LABELS가 담당.
+    const stock = await qr.manager.findOne(ProductStock, {
       where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, ...tenantWhere },
-      order: { createdAt: 'ASC' },
     });
-    const totalAvail = rows.reduce((sum, r) => sum + r.availableQty, 0);
+    const totalAvail = stock?.availableQty ?? 0;
     if (totalAvail < dto.qty) {
       throw new BadRequestException(`재고 부족: 가용 ${totalAvail}, 요청 ${dto.qty} (${dto.itemCode})`);
     }
-    let remaining = dto.qty;
-    for (const row of rows) {
-      if (remaining <= 0) break;
-      const take = Math.min(remaining, row.availableQty);
-      if (take <= 0) continue;
-      await this.issueStockInTx(qr, {
-        warehouseId: dto.warehouseId,
-        itemCode: dto.itemCode,
-        itemType: row.itemType,
-        prdUid: row.prdUid,
-        qty: take,
-        transType: dto.transType,
-        refType: dto.refType,
-        refId: dto.refId,
-        workerId: dto.workerId,
-        remark: dto.remark,
-        company: dto.company,
-        plant: dto.plant,
-      });
-      remaining -= take;
-    }
+    await this.issueStockInTx(qr, {
+      warehouseId: dto.warehouseId,
+      itemCode: dto.itemCode,
+      itemType: stock!.itemType,
+      prdUid: stock!.prdUid ?? undefined,
+      qty: dto.qty,
+      transType: dto.transType,
+      refType: dto.refType,
+      refId: dto.refId,
+      workerId: dto.workerId,
+      remark: dto.remark,
+      company: dto.company,
+      plant: dto.plant,
+    });
     // 소진된 행(qty 0, 예약 0) 정리
     await qr.manager
       .createQueryBuilder()
@@ -642,23 +600,19 @@ export class ProductInventoryService {
     if (!dto.qty || dto.qty <= 0) return 0;
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
     return this.tx.run(async (qr) => {
-      const rows = await qr.manager.find(ProductStock, {
+      // 품목+창고 단일행에서 가용분만큼 1회 이동
+      const stock = await qr.manager.findOne(ProductStock, {
         where: { warehouseCode: dto.fromWarehouseId, itemCode: dto.itemCode, ...tenantWhere },
-        order: { createdAt: 'ASC' },
       });
-      let remaining = dto.qty;
-      let moved = 0;
-      for (const row of rows) {
-        if (remaining <= 0) break;
-        const take = Math.min(remaining, row.availableQty);
-        if (take <= 0) continue;
+      const moved = Math.min(dto.qty, stock?.availableQty ?? 0);
+      if (moved > 0 && stock) {
         await this.issueStockInTx(qr, {
           warehouseId: dto.fromWarehouseId,
           toWarehouseId: dto.toWarehouseId,
           itemCode: dto.itemCode,
-          itemType: dto.itemType ?? row.itemType,
-          prdUid: row.prdUid,
-          qty: take,
+          itemType: dto.itemType ?? stock.itemType,
+          prdUid: stock.prdUid ?? undefined,
+          qty: moved,
           transType: dto.transType,
           refType: dto.refType,
           refId: dto.refId,
@@ -666,8 +620,6 @@ export class ProductInventoryService {
           company: dto.company,
           plant: dto.plant,
         });
-        remaining -= take;
-        moved += take;
       }
       // 소진된 from 창고 행(qty 0, 예약 0) 정리
       await qr.manager
@@ -764,7 +716,6 @@ export class ProductInventoryService {
         where: {
           warehouseCode: originalTrans.toWarehouseId,
           itemCode: originalTrans.itemCode,
-          prdUid: originalTrans.prdUid || '*',
           ...tenantWhere,
         },
         /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
@@ -776,7 +727,7 @@ export class ProductInventoryService {
         if (newQty < 0) {
           throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
         }
-        const stockKey = { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere };
+        const stockKey = { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, ...tenantWhere };
         // 입고 취소로 수량이 0이 되고 예약도 없으면 빈 행을 남기지 않는다(qty0 잔재 방지).
         if (newQty === 0 && stock.reservedQty === 0) {
           await qr.manager.delete(ProductStock, stockKey);
@@ -792,7 +743,6 @@ export class ProductInventoryService {
         where: {
           warehouseCode: originalTrans.fromWarehouseId,
           itemCode: originalTrans.itemCode,
-          prdUid: originalTrans.prdUid || '*',
           ...tenantWhere,
         },
         /* Oracle PDB 호환: pessimistic_write 제거, 트랜잭션 isolation으로 보장 */
@@ -801,7 +751,7 @@ export class ProductInventoryService {
       if (stock) {
         this.assertSameTenant('복구 대상 제품재고', originalTrans, stock);
         await qr.manager.update(ProductStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid, ...tenantWhere },
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, ...tenantWhere },
           { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
         );
       } else {
@@ -809,7 +759,7 @@ export class ProductInventoryService {
           warehouseCode: originalTrans.fromWarehouseId,
           itemCode: originalTrans.itemCode,
           itemType: originalTrans.itemType || 'SEMI_PRODUCT',
-          prdUid: originalTrans.prdUid || '*',
+          prdUid: originalTrans.prdUid ?? null,
           qty: Math.abs(originalTrans.qty),
           reservedQty: 0,
           availableQty: Math.abs(originalTrans.qty),
@@ -841,7 +791,7 @@ export class ProductInventoryService {
     if (query.warehouseId) where.warehouseCode = query.warehouseId;
     if (query.itemCode) where.itemCode = query.itemCode;
     if (query.itemType) where.itemType = query.itemType;
-    if (query.prdUid) where.prdUid = query.prdUid;
+    // prdUid는 더 이상 재고 키가 아니므로 필터에서 제외(품목+창고 단일행)
 
     const stocks = await this.stockRepository.find({
       where,

@@ -559,7 +559,6 @@ export class ReworkService {
             warehouseId: 'WIP_MAIN',
             itemCode: order.itemCode,
             itemType,
-            prdUid: order.prdUid?.trim() || undefined,
             qty: dto.passQty - moved,
             transType: 'WIP_IN',
             refType: 'REWORK',

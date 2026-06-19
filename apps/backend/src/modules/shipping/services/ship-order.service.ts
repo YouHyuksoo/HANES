@@ -456,7 +456,6 @@ export class ShipOrderService {
       // 시리얼 단위 복원은 아래 FG_LABELS → PACKED 전이가 담당. (재출하는 수량 FIFO라 키 무관 정상)
       await this.productInventory.receiveStockInTx(qr, {
         ...receiveBase,
-        prdUid: '*',
         qty: box.qty,
       });
 

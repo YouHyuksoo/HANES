@@ -28,7 +28,6 @@ interface ProductHoldStock {
   itemCode: string;
   itemName: string;
   itemType: string;
-  prdUid: string | null;
   qty: number;
   unit: string;
   status: string;
@@ -138,13 +137,6 @@ export default function ProductHoldPage() {
     {
       accessorKey: "warehouseCode", header: t("productHold.warehouseCode"), size: 100,
       meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "prdUid", header: t("productHold.prdUid"), size: 130,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (
-        <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>
-      ),
     },
     {
       accessorKey: "qty", header: t("productHold.qty"), size: 100,
@@ -261,10 +253,6 @@ export default function ProductHoldPage() {
                 <div>
                   <span className="text-text-muted">{t("productHold.warehouseCode")}:</span>{" "}
                   {selectedStock.warehouseCode}
-                </div>
-                <div>
-                  <span className="text-text-muted">{t("productHold.prdUid")}:</span>{" "}
-                  <span className="font-mono">{selectedStock.prdUid || "-"}</span>
                 </div>
               </div>
             </div>

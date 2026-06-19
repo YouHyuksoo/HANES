@@ -219,7 +219,6 @@ export class ProductionViewsService {
         'wh.WAREHOUSE_NAME AS "whName"',
         's.QTY AS "qty"',
         'im.UNIT AS "unit"',
-        's.PRD_UID AS "prdUid"',
         's.UPDATED_AT AS "updatedAt"',
       ])
       .where('s.ITEM_TYPE IN (:...itemTypes)', {

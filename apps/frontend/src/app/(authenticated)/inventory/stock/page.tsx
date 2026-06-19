@@ -27,7 +27,6 @@ interface StockData {
   id: string;
   warehouseCode: string;
   itemCode: string;
-  prdUid?: string;
   qty: number;
   reservedQty: number;
   availableQty: number;
@@ -42,10 +41,6 @@ interface StockData {
     itemName: string;
     itemType: string;
     unit: string;
-  };
-  lot?: {
-    prdUid: string;
-    status: string;
   };
 }
 
@@ -140,14 +135,6 @@ export default function InventoryStockPage() {
     ...createWarehouseColumns<StockData>(t),
     // 품목 코드, 명 (공통 유틸리티)
     ...createPartColumns<StockData>(t),
-    // LOT 번호
-    {
-      accessorKey: 'prdUid',
-      header: t('inventory.stock.lot'),
-      size: 150,
-      meta: { filterType: 'text' as const },
-      cell: ({ getValue }: CellContext<StockData, unknown>) => getValue() || '-',
-    },
     // 현재고
     createQtyColumn<StockData>(t, 'qty'),
     // 예약수량
@@ -186,7 +173,7 @@ export default function InventoryStockPage() {
   const totalStock = filteredStocks.reduce((sum, s) => sum + s.qty, 0);
   const totalAvailable = filteredStocks.reduce((sum, s) => sum + s.availableQty, 0);
   const partCount = new Set(filteredStocks.map(s => s.itemCode)).size;
-  const lotCount = filteredStocks.filter(s => s.prdUid).length;
+  const lotCount = filteredStocks.length;
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

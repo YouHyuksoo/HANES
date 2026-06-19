@@ -1549,7 +1549,6 @@ export class ProdResultService {
       warehouseId: 'WIP_MAIN',
       itemCode: jobOrder.itemCode,
       itemType,
-      prdUid,
       qty: goodQty,
       transType: 'WIP_IN',
       orderNo,
@@ -1625,7 +1624,6 @@ export class ProdResultService {
       warehouseId: 'DEFECT',
       itemCode: jobOrder.itemCode,
       itemType,
-      prdUid,
       qty: defectQty,
       transType: 'DEFECT_IN',
       orderNo,
@@ -1711,7 +1709,6 @@ export class ProdResultService {
           where: {
             warehouseCode: tx.toWarehouseId,
             itemCode: tx.itemCode,
-            ...(tx.prdUid ? { prdUid: tx.prdUid } : {}),
             ...(company ? { company } : {}),
             ...(plant ? { plant } : {}),
           },
@@ -1729,7 +1726,6 @@ export class ProdResultService {
           const stockKey = {
             warehouseCode: stock.warehouseCode,
             itemCode: stock.itemCode,
-            prdUid: stock.prdUid,
             company: stock.company,
             plant: stock.plant,
           };

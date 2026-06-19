@@ -47,7 +47,7 @@ export class ProductHoldService {
 
     const flatData = data.map((stock) => {
       const part = partMap.get(stock.itemCode);
-      const stockId = `${stock.warehouseCode}::${stock.itemCode}::${stock.prdUid}`;
+      const stockId = `${stock.warehouseCode}::${stock.itemCode}`;
       return {
         ...stock,
         id: stockId,
@@ -60,12 +60,12 @@ export class ProductHoldService {
     return { data: flatData, total, page, limit };
   }
 
-  private parseStockId(stockId: string): { warehouseCode: string; itemCode: string; prdUid: string } {
-    const [warehouseCode, itemCode, prdUid] = stockId.split('::');
-    if (!warehouseCode || !itemCode || !prdUid) {
-      throw new NotFoundException(`�߸��� ��� ID �����Դϴ�: ${stockId} (��: WH001::ITEM001::LOT001)`);
+  private parseStockId(stockId: string): { warehouseCode: string; itemCode: string } {
+    const [warehouseCode, itemCode] = stockId.split('::');
+    if (!warehouseCode || !itemCode) {
+      throw new NotFoundException(`�߸��� ��� ID �����Դϴ�: ${stockId} (��: WH001::ITEM001)`);
     }
-    return { warehouseCode, itemCode, prdUid };
+    return { warehouseCode, itemCode };
   }
 
   async hold(dto: ProductHoldActionDto, company?: string, plant?: string, userId?: string) {

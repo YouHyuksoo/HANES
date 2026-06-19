@@ -259,12 +259,11 @@ export class SubprocessKittingService {
         });
       }
 
-      // 7. 제품 WIP 재고 +qty (WIP_MAIN). prdUid 센티넬 '*' 집계 적재.
+      // 7. 제품 WIP 재고 +qty (WIP_MAIN). 품목+창고 단일행 집계 적재.
       await this.productInventory.receiveStockInTx(qr, {
         warehouseId: WIP_WAREHOUSE,
         itemCode: jobOrder.itemCode,
         itemType: 'FINISHED',
-        prdUid: '*',
         qty: dto.qty,
         transType: 'WIP_IN',
         orderNo: dto.orderNo,
