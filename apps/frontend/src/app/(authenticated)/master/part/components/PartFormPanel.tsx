@@ -332,7 +332,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
             <Input label={t("master.part.expiryExtDays", "유효기간 연장(일)")} type="number"
               value={String(form.expiryExtDays)} onChange={e => setField("expiryExtDays", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.packUnit", "포장단위")}
+            <Input label={t("master.part.palletUnit", "팔레트구성단위")}
               value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
             <div className="col-span-2">
               <Select label={t("master.part.storageLocation", "적재로케이션")}

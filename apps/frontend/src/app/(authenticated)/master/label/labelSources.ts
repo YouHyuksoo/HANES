@@ -69,7 +69,7 @@ export const labelSources: Record<LabelSourceTable, LabelSourceDefinition> = {
       { key: "itemCode", label: "제품코드", sample: "HNS02C1ABCD" },
       { key: "itemName", label: "제품명", sample: "하네스 완제품" },
       { key: "qty", label: "수량", sample: "20" },
-      { key: "packUnit", label: "구성단위", sample: "20" },
+      { key: "boxQty", label: "박스입수량", sample: "20" },
       { key: "palletNo", label: "파렛트번호", sample: "PLT-260617-001" },
     ],
   },

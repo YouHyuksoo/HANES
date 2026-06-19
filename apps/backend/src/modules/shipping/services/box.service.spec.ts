@@ -117,7 +117,7 @@ describe('BoxService', () => {
       serialList: null,
     } as BoxMaster);
     mockLotRepo.find.mockResolvedValue([]);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', packUnit: '10' } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as PartMaster);
     mockFgLabelRepo.find.mockResolvedValue([
       { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'N', status: 'ISSUED' } as FgLabel,
     ]);
@@ -182,9 +182,9 @@ describe('BoxService', () => {
         plant: 'P1',
       } as BoxMaster);
     mockLotRepo.find.mockResolvedValue([{ matUid: 'FG-001', itemCode: 'ITEM-001' } as MatLot]);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', packUnit: '10' } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as PartMaster);
     mockFgLabelRepo.find.mockResolvedValue([
-      { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'ISSUED' } as FgLabel,
+      { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'VISUAL_PASS' } as FgLabel,
     ]);
     mockBoxRepo.find.mockResolvedValue([]);
 
@@ -215,7 +215,7 @@ describe('BoxService', () => {
       plant: 'P1',
     } as BoxMaster);
     mockLotRepo.find.mockResolvedValue([]);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', packUnit: '10' } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as PartMaster);
     mockFgLabelRepo.find.mockResolvedValue([
       { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'VISUAL_PASS' } as FgLabel,
     ]);

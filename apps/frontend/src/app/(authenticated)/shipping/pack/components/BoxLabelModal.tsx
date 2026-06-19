@@ -18,7 +18,7 @@ export interface BoxLabelInfo {
   itemCode: string;
   itemName: string | null;
   qty: number;
-  packUnit: number | null;
+  boxQty: number | null;
   serialList: string | null;
   closeAt: string | null;
   createdAt: string;
@@ -120,7 +120,7 @@ export default function BoxLabelModal({ isOpen, box, autoPrint = false, onClose 
                 <td className="border border-black px-2 py-1 font-mono">{box.itemCode}</td>
                 <th className="border border-black bg-gray-100 px-2 py-1 text-left w-[64px]">{t("shipping.pack.packedQty", "포장수량")}</th>
                 <td className="border border-black px-2 py-1 text-right font-bold">
-                  {(box.qty ?? 0).toLocaleString()}{box.packUnit ? ` / ${box.packUnit.toLocaleString()}` : ""}
+                  {(box.qty ?? 0).toLocaleString()}{box.boxQty ? ` / ${box.boxQty.toLocaleString()}` : ""}
                 </td>
               </tr>
               <tr>

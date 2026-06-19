@@ -197,7 +197,7 @@ export default function PartPage() {
     { accessorKey: "tactTime", header: t("master.part.tactTime", "택타임"), size: 65, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}s` : "-"; } },
     { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
     { accessorKey: "expiryExtDays", header: t("master.part.expiryExtDays", "연장기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
-    { accessorKey: "packUnit", header: t("master.part.packUnit", "포장단위"), size: 70, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "packUnit", header: t("master.part.palletUnit", "팔레트구성단위"), size: 90, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "storageLocation", header: t("master.part.storageLocation", "적재위치"), size: 90, cell: ({ getValue }) => getValue() || "-" },
     {
       accessorKey: "useYn", header: t("common.useYn", "사용여부"), size: 60,

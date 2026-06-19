@@ -101,7 +101,7 @@ export class PartMaster {
   sampleQty: number | null; // 샘플검사 수량
 
   @Column({ type: 'varchar2', name: 'PACK_UNIT', length: 50, nullable: true })
-  packUnit: string | null;
+  packUnit: string | null; // 팔레트 구성 단위(팔레트당 박스 수)
 
   @Column({ type: 'varchar2', name: 'STORAGE_LOCATION', length: 100, nullable: true })
   storageLocation: string | null;

@@ -146,7 +146,7 @@ export class BoxService {
       this.boxRepository.count({ where }),
     ]);
 
-    // 품목명·박스 구성단위(packUnit) 일괄 보강 (N+1 방지)
+    // 품목명·박스입수량(boxQty) 일괄 보강 (N+1 방지)
     const itemCodes = [...new Set(data.map((b) => b.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
       ? await this.partRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
@@ -154,12 +154,12 @@ export class BoxService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
     const enriched = data.map((box) => {
       const part = partMap.get(box.itemCode);
-      const pu = part?.packUnit ? Number(part.packUnit) : null;
+      const bq = part?.boxQty != null ? Number(part.boxQty) : null;
       return {
         ...box,
         itemName: part?.itemName ?? null,
         itemType: part?.itemType ?? null,
-        packUnit: pu != null && Number.isFinite(pu) && pu > 0 ? pu : null,
+        boxQty: bq != null && Number.isFinite(bq) && bq > 0 ? bq : null,
       };
     });
 
@@ -443,9 +443,9 @@ export class BoxService {
 
     await this.assertSerialsNotPackedElsewhere(dto.serials, id, company, plant);
 
-    const packUnit = part?.packUnit ? parseInt(part.packUnit, 10) : 0;
-    if (packUnit > 0 && existingSerials.length + dto.serials.length > packUnit) {
-      throw new BadRequestException(`포장단위(${packUnit})를 초과했습니다.`);
+    const boxQty = part?.boxQty != null ? Number(part.boxQty) : 0;
+    if (boxQty > 0 && existingSerials.length + dto.serials.length > boxQty) {
+      throw new BadRequestException(`박스입수량(${boxQty})를 초과했습니다.`);
     }
 
     const newSerialList = [...existingSerials, ...dto.serials];

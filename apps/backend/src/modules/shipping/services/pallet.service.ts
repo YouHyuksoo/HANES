@@ -264,6 +264,23 @@ export class PalletService {
       throw new BadRequestException(`이미 다른 팔레트에 할당된 박스가 있습니다: ${assignedBoxes.map(b => b.boxNo).join(', ')}`);
     }
 
+    // 팔레트 구성 단위(packUnit, 팔레트당 박스 수) 검증.
+    // 추가 박스들의 품목이 섞여 있을 수 있으므로 각 품목 packUnit 중 가장 작은(가장 엄격한) 값으로 검증한다.
+    // packUnit 미설정(0/null)인 품목은 검증 대상에서 제외한다(혼재 가정).
+    const partItemCodes = [...new Set(boxes.map(b => b.itemCode).filter(Boolean))];
+    const parts = partItemCodes.length > 0
+      ? await this.partRepository.find({ where: { itemCode: In(partItemCodes), ...this.tenantWhere(company, plant) } })
+      : [];
+    const palletUnits = parts
+      .map(p => (p.packUnit != null ? Number(p.packUnit) : 0))
+      .filter(n => Number.isFinite(n) && n > 0);
+    if (palletUnits.length > 0) {
+      const packUnit = Math.min(...palletUnits);
+      if (pallet.boxCount + dto.boxIds.length > packUnit) {
+        throw new BadRequestException(`팔레트구성단위(${packUnit})를 초과했습니다.`);
+      }
+    }
+
     // 트랜잭션으로 박스 할당 및 팔레트 집계 업데이트
     await this.tx.run(async (queryRunner) => {
       // 박스 업데이트

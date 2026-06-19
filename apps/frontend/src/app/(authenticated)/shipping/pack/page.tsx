@@ -7,7 +7,7 @@
  * 워크플로우:
  * 1. **박스 생성(발번)**: 포장할 품목을 선택해 박스를 먼저 생성 (boxNo 자동 채번, qty=0)
  * 2. **박스 구성(시리얼 추가)**: 검사 합격 FG 시리얼을 박스에 담는다.
- *    품목 마스터의 박스 구성단위(packUnit)를 초과할 수 없고, 미만은 허용된다.
+ *    품목 마스터의 박스입수량(boxQty)를 초과할 수 없고, 미만은 허용된다.
  * 3. **박스 완료(마감)**: 마감하면 박스 1개가 완성된다 (CLOSED + OQC 자동 생성)
  *    필요 시 재오픈 가능.
  *
@@ -40,8 +40,8 @@ interface Box {
   closeAt: string | null;
   palletNo: string | null;
   oqcStatus: string | null;
-  /** 품목 마스터의 박스 구성단위 (없으면 제한 없음) */
-  packUnit: number | null;
+  /** 품목 마스터의 박스입수량 (없으면 제한 없음) */
+  boxQty: number | null;
   createdAt: string;
 }
 
@@ -194,8 +194,8 @@ export default function PackPage() {
       setSerialInput("");
       setLastAddedSerial(nextSerial);
       const updated = await refreshSelected(selectedBox.boxNo);
-      // 포장단위 도달 → 자동 마감 + 박스라벨 자동 출력
-      if (updated && updated.packUnit != null && parseSerials(updated).length >= updated.packUnit) {
+      // 박스입수량 도달 → 자동 마감 + 박스라벨 자동 출력
+      if (updated && updated.boxQty != null && parseSerials(updated).length >= updated.boxQty) {
         await triggerPackComplete(updated);
         return;
       }
@@ -336,8 +336,8 @@ export default function PackPage() {
     {
       accessorKey: "qty", header: t("shipping.pack.packedQty"), size: 110, meta: { align: "center" as const, filterType: "number" as const },
       cell: ({ row }) => {
-        const { qty, packUnit } = row.original;
-        return <span className="font-medium">{(qty ?? 0).toLocaleString()}{packUnit ? <span className="text-text-muted"> / {packUnit.toLocaleString()}</span> : null}</span>;
+        const { qty, boxQty } = row.original;
+        return <span className="font-medium">{(qty ?? 0).toLocaleString()}{boxQty ? <span className="text-text-muted"> / {boxQty.toLocaleString()}</span> : null}</span>;
       },
     },
     { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
@@ -346,7 +346,7 @@ export default function PackPage() {
 
   // 시리얼 모달 용량 계산
   const modalSerials = parseSerials(selectedBox);
-  const modalPackUnit = selectedBox?.packUnit ?? null;
+  const modalPackUnit = selectedBox?.boxQty ?? null;
   const atLimit = modalPackUnit != null && modalSerials.length >= modalPackUnit;
 
   useEffect(() => {

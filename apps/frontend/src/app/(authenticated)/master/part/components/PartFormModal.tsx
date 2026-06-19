@@ -167,7 +167,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
           value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
         <Input label={t("master.part.leadTime", "리드타임(일)")} type="number"
           fullWidth />
-        <Input label={t("master.part.packUnit", "포장단위")}
+        <Input label={t("master.part.palletUnit", "팔레트구성단위")}
           value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
         <Select label={t("master.part.storageLocation", "적재로케이션")}
           options={locationOptions}
