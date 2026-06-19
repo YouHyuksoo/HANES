@@ -10,6 +10,15 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 Claude (hns02-seed 출하지시 추가)
+
+T-HNS02-STOCK100-SEED 후속 — 출하지시·출하이력 표시 요구. 사용자 결정: 출하지시만, 재고 100 유지.
+
+- 흐름 파악: 출하지시 화면(`/shipping/order`)·출하이력 화면(`/shipping/history`) 모두 `GET /shipping/orders`(SHIPMENT_ORDERS) 조회, **출하이력 화면 날짜필터 기본값 없음**. 실제 출하/재고차감은 출하확정(`/shipping/confirm`, SHIPMENT_LOGS, mark-shipped)에서만 발생.
+- 추가: 빌더에 SHIPMENT_ORDERS 1건(SOH-260619-001, CONFIRMED, CUS-001 현대자동차, SHIP_DATE=오늘) + SHIPMENT_ORDER_ITEMS(HNS02 ORDER_QTY=100, SHIPPED_QTY=0). SHIPMENT_LOGS는 미생성 → 재고 미차감. 정리 DELETE에 SOH-260619% 추가. 멱등 재실행(--commit).
+- 검증 PASS: SHIPMENT_ORDERS 1/ITEMS 100/SHIPMENT_LOGS 0/제품재고 HNS02 100 유지. 독립연결 재확인.
+- spec §4.9/§5 갱신. 출하지시·출하이력 화면에 노출, 출하확정 화면은 빈 상태(의도).
+
 ## 2026-06-19 Claude (hns02-seed 포장실적 보완)
 
 T-HNS02-STOCK100-SEED 후속 — 포장실적 화면(`/production/pack-result`)에 시드가 안 보이는 문제 수정.
