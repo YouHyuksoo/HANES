@@ -256,6 +256,7 @@
     "inspection.protocol": "检测协议设置",
     "inspection.equip": "检测设备联动管理",
     "quality": "质量管理",
+    "quality.aql": "AQL基准管理",
     "quality.defect": "不良登记管理",
     "quality.inspect": "外观检查",
     "quality.trace": "追溯查询",
@@ -3354,6 +3355,13 @@
     }
   },
   "quality": {
+    "aql": {
+      "title": "AQL基准管理",
+      "subtitle": "管理用于计算IQC抽样数量和Ac/Re判定基准的AQL基准。",
+      "standardSection": "AQL基准",
+      "ruleSection": "LOT数量判定基准",
+      "empty": "没有已登记的AQL基准。"
+    },
     "defect": {
       "title": "不良管理",
       "description": "管理不良发生现况，追踪修理状态。",

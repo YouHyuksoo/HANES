@@ -29,6 +29,177 @@ notes:
 
 ## Active Tasks
 
+## T-IQC-HISTORY-CERT-TIMESTAMP IQC 이력 성적서 업로드 timestamp 매칭
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/material/iqc-history` 검사성적서 업로드 404 원인 수정
+files:
+- apps/backend/src/modules/material/services/iqc-history.service.ts
+- apps/backend/src/modules/material/services/iqc-history.service.spec.ts
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- JSHANES 확인: 에러 ISO `2026-06-19T07:56:27.354Z`는 DB `IQC_LOGS.INSPECT_DATE=2026-06-19 16:56:27.354`, `SEQ=1` 행과 대응
+- RED 확인: 기존 구현은 `findOne(Date)` 실패 시 404를 던짐
+- pnpm --filter @harness/backend test -- iqc-history.service.spec.ts -t "성적서 업로드" PASS
+- pnpm --filter @harness/backend exec tsc --noEmit --pretty false PASS
+review:
+- needs-review
+notes:
+- 화면은 `2026-06-19T07:56:27.354Z`를 보내지만 JSHANES `IQC_LOGS.INSPECT_DATE`는 `2026-06-19 16:56:27.354` 로컬 TIMESTAMP로 저장되어 exact Date PK 비교가 실패했다.
+- 업로드는 기존 `findOne(Date)` 실패 시 ISO를 KST Oracle timestamp 문자열로 변환해 QueryBuilder fallback 조회/업데이트를 수행한다.
+
+## T-IQC-HISTORY-ARRIVALNO-COLUMN IQC 이력 그리드 입하번호 표시
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/material/iqc-history` 그리드 입하번호 컬럼 추가
+files:
+- apps/frontend/src/app/(authenticated)/material/iqc-history/page.tsx
+- apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: `node --test apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs`에서 입하번호 컬럼 누락 실패 확인
+- node --test apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs PASS
+- pnpm --filter @harness/frontend exec tsc --noEmit --pretty false PASS
+- 브라우저 PASS: 3002 `/material/iqc-history` 그리드 헤더 `입하번호`, 행 값 `R26061900002` 표시
+review:
+- needs-review
+notes:
+- 백엔드 응답과 타입에는 `arrivalNo`가 이미 있으며, 목록 그리드 표시만 누락되어 있다.
+
+## T-ISSUE-REQUEST-BARCODE-VALIDATION 출고요청 바코드 출고 품목 검증
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- 출고요청 기반 바코드 출고 시 요청 품목과 스캔 LOT 품목 일치 검증
+files:
+- apps/backend/src/modules/material/services/issue-request.service.ts
+- apps/backend/src/modules/material/services/issue-request.service.spec.ts
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: 기존 `issueFromRequest`는 요청항목 ITEM-A에 ITEM-B LOT를 보내도 정상 완료됨
+- pnpm --filter @harness/backend test -- issue-request.service.spec.ts PASS
+- pnpm --filter @harness/backend exec tsc --noEmit --pretty false PASS
+- JSHANES `40/1000` 출고요청 상태: COMPLETED 8건, APPROVED/REQUESTED 0건
+- JSHANES 완료 요청 기준 요청품목과 출고 LOT 품목 불일치 0건
+review:
+- needs-review
+notes:
+- 웹 요청출고 API는 실제 출고 생성 전에 요청항목 `ITEM_CODE`와 스캔 `MAT_UID`의 LOT `ITEM_CODE`를 대조하도록 보정했다.
+- PDA `/material/issues/scan` 흐름은 출고요청번호를 소비하지 않는 별도 작업지시/BOM 기반 전량출고 흐름이다.
+
+## T-HNS02-260619-SEED-CLEANUP HNS02 260619 시드 데이터 정리
+status: REVIEW
+owner: codex
+role: operator
+scope:
+- JSHANES `40/1000` HNS02 260619 시드성 데이터 정리
+files:
+- tools/seed/cleanup_hns02_260619_seed.py
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- dry-run PASS: 삭제 후보 679건, after-in-tx 시드 마커 잔여 0
+- commit PASS: 삭제 679건 적용
+- post-check PASS: LOT-입고/LOT-수불 품목 불일치 0, 재고 invariant 0, 미완료 출고요청 0
+review:
+- needs-review
+notes:
+- `tools/seed/cleanup_hns02_260619_seed.py --commit`으로 JSHANES `40/1000`에 반영했다.
+
+## T-IQC-AQL-MENU AQL 기준관리 메뉴 진입점 추가
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- 품질관리 하위 `AQL 기준관리` 메뉴/라우트 진입점 추가
+files:
+- apps/frontend/src/config/menuConfig.ts
+- apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
+- apps/frontend/src/components/layout/pageRegistry.generated.ts
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+- apps/frontend/src/app/(authenticated)/quality/aql/page.tsx
+- apps/frontend/src/app/(authenticated)/quality/aql/aql-menu.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: `node --test apps/frontend/src/app/(authenticated)/quality/aql/aql-menu.structure.test.mjs` 4건 실패 확인
+- node --test apps/frontend/src/app/(authenticated)/quality/aql/aql-menu.structure.test.mjs PASS
+- pnpm --filter @harness/frontend exec tsc --noEmit --pretty false PASS
+review:
+- needs-review
+notes:
+- AQL CRUD/API/DB 구현은 하지 않고, 메뉴 클릭 시 라우트가 깨지지 않는 기본 진입점만 추가한다.
+
+## T-IQC-HISTORY-LOTNO-FALLBACK IQC 이력 LOT No. 시료바코드 표시
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/material/iqc-history` 입하단위 IQC 이력의 LOT No. 표시 보정
+files:
+- apps/frontend/src/app/(authenticated)/material/iqc-history/page.tsx
+- apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- JSHANES PASS: `R26061900002` 이력은 `IQC_LOGS.MAT_UID IS NULL`, `SAMPLE_BARCODE='VH1-RM260619-00011'` 확인
+- API PASS: `/api/material/iqc-history?limit=5&inspectType=INITIAL&fromDate=2026-06-19&toDate=2026-06-19` 첫 행 `matUid=null`, `sampleBarcode='VH1-RM260619-00011'`
+- node --test apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs PASS
+- pnpm --filter @harness/frontend exec tsc --noEmit --pretty false PASS
+- 브라우저 PASS: 3002 `/material/iqc-history` 첫 행 `R26061900002 / CBL-B` LOT No.에 `VH1-RM260619-00011` 표시
+- git diff --check 대상 파일 PASS
+review:
+- needs-review
+notes:
+- 입하단위 IQC 이력은 `IQC_LOGS.MAT_UID`가 `NULL`이고 실제 스캔 시료 LOT는 `SAMPLE_BARCODE`에 저장된다. 목록 LOT No.는 `matUid || sampleBarcode`로 표시한다.
+
+## T-IQC-AQL-PLAN IQC 우선 AQL 기준관리 설계/계획
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- IQC 우선 AQL 기준관리 도입 설계와 구현 계획 문서화
+files:
+- docs/superpowers/specs/2026-06-19-iqc-aql-design.md
+- docs/superpowers/plans/2026-06-19-iqc-aql-implementation.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- 설계 문서 생성 확인: docs/superpowers/specs/2026-06-19-iqc-aql-design.md
+- 구현 계획 문서 생성 확인: docs/superpowers/plans/2026-06-19-iqc-aql-implementation.md
+- 문서 핵심 조건 확인: `SAMPLE_QTY` 미사용/물리삭제 보류, `QC_AQL`, `AQL_SAMPLE_SIZE`, `INSPECT_CLASS` 불변 명시
+- git diff --check -- docs/superpowers/specs/2026-06-19-iqc-aql-design.md docs/superpowers/plans/2026-06-19-iqc-aql-implementation.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md PASS
+review:
+- needs-review
+notes:
+- 기존 `IQC_PART_SPECS.SAMPLE_QTY`는 1차에서 화면/로직 미사용 처리하고 물리 삭제는 안정화 후 2차로 분리한다.
+- 구현 코드는 수정하지 않았다. 사용자 리뷰 후 실행 단계로 전환한다.
+
 ## T-MATERIAL-ARRIVAL-QTY-FORMAT 자재입하처리 모달 숫자 천단위 포맷
 status: REVIEW
 owner: codex

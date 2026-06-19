@@ -256,6 +256,7 @@
     "inspection.protocol": "Tester Protocol",
     "inspection.equip": "Equipment Link Mgmt",
     "quality": "Quality",
+    "quality.aql": "AQL Standards",
     "quality.defect": "Defect Registration",
     "quality.inspect": "Visual Inspect",
     "quality.trace": "Traceability",
@@ -3368,6 +3369,13 @@
     }
   },
   "quality": {
+    "aql": {
+      "title": "AQL Standards",
+      "subtitle": "Manage AQL standards used to calculate IQC sample size and Ac/Re criteria.",
+      "standardSection": "AQL Standard",
+      "ruleSection": "LOT Quantity Rules",
+      "empty": "No AQL standards registered."
+    },
     "defect": {
       "title": "Defect Management",
       "description": "Manage defect status and track repairs.",

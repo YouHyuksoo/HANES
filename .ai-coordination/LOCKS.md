@@ -16,6 +16,117 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-IQC-HISTORY-CERT-TIMESTAMP
+  owner: codex
+  files:
+    - apps/backend/src/modules/material/services/iqc-history.service.ts
+    - apps/backend/src/modules/material/services/iqc-history.service.spec.ts
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: IQC 이력 성적서 업로드가 ISO UTC inspectDate로 404 나는 문제 보정. focused test/BE tsc PASS.
+
+- task: T-ISSUE-REQUEST-BARCODE-VALIDATION
+  owner: codex
+  files:
+    - apps/backend/src/modules/material/services/issue-request.service.ts
+    - apps/backend/src/modules/material/services/issue-request.service.spec.ts
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: 출고요청 기반 바코드 출고에서 요청 품목과 스캔 LOT 품목 불일치 차단 보정. focused Jest/BE tsc/DB 조회 PASS.
+
+- task: T-HNS02-260619-SEED-CLEANUP
+  owner: codex
+  files:
+    - tools/seed/cleanup_hns02_260619_seed.py
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: JSHANES 40/1000 HNS02 260619 시드성 데이터 679건 정리 완료. dry-run/commit/post-check PASS.
+
+- task: T-IQC-AQL-MENU
+  owner: codex
+  files:
+    - apps/frontend/src/config/menuConfig.ts
+    - apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
+    - apps/frontend/src/components/layout/pageRegistry.generated.ts
+    - apps/frontend/src/locales/ko.json
+    - apps/frontend/src/locales/en.json
+    - apps/frontend/src/locales/zh.json
+    - apps/frontend/src/locales/vi.json
+    - apps/frontend/src/app/(authenticated)/quality/aql/page.tsx
+    - apps/frontend/src/app/(authenticated)/quality/aql/aql-menu.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: 품질관리 하위 AQL 기준관리 메뉴 진입점 추가 완료. 구조 테스트 RED→GREEN 및 FE tsc PASS. CRUD/API/DB 구현은 범위 제외.
+
+- task: T-IQC-HISTORY-ARRIVALNO-COLUMN
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/material/iqc-history/page.tsx
+    - apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: IQC 이력조회 그리드에 백엔드 응답 `arrivalNo`를 입하번호 컬럼으로 표시 완료. 구조 테스트/FE tsc/3002 브라우저 DOM 확인 PASS.
+
+- task: T-IQC-HISTORY-LOTNO-FALLBACK
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/material/iqc-history/page.tsx
+    - apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: IQC 이력조회 LOT No. 컬럼이 입하단위 이력의 `sampleBarcode`를 fallback 표시하도록 보정 완료. 구조 테스트/FE tsc/API/브라우저 검증 PASS.
+
+- task: T-IQC-AQL-PLAN
+  owner: codex
+  files:
+    - docs/superpowers/specs/2026-06-19-iqc-aql-design.md
+    - docs/superpowers/plans/2026-06-19-iqc-aql-implementation.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: IQC 우선 AQL 기준관리 도입 설계/계획 문서화 완료. 구현 코드는 수정하지 않음. 사용자 리뷰 대기.
+
 - task: T-MATERIAL-ARRIVAL-QTY-FORMAT
   owner: codex
   files:

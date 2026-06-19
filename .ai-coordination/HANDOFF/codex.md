@@ -2,10 +2,14 @@
 
 ## Last Update
 
-2026-06-18 21:55
+2026-06-19 16:50 KST
 
 ## In Review
 
+- `T-IQC-HISTORY-ARRIVALNO-COLUMN`: `/material/iqc-history` 그리드에 `입하번호` 컬럼을 추가했다. 백엔드 응답/타입의 `arrivalNo`를 그대로 표시하며 API/DB 변경은 없다. 검증: 구조 테스트 RED→GREEN, FE tsc PASS, Playwright CLI 3002 DOM에서 헤더 `입하번호`와 행 값 `R26061900002` 표시 확인. 커밋하지 않았다.
+- `T-IQC-AQL-MENU`: 품질관리 하위에 `AQL 기준관리` 메뉴와 `/quality/aql` 라우트 진입점을 추가했다. `menuConfig`, 백엔드 메뉴 코드 validator, page registry, ko/en/zh/vi locale, 기본 placeholder page를 갱신했다. DB/API/CRUD는 아직 구현하지 않았다. 검증: 구조 테스트 RED→GREEN, `node --test apps/frontend/src/app/(authenticated)/quality/aql/aql-menu.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 커밋하지 않았다.
+- `T-HNS02-260619-SEED-CLEANUP`: JSHANES `40/1000`에서 HNS02 260619 시드성 데이터 정리 완료. `tools/seed/cleanup_hns02_260619_seed.py`를 추가했고 dry-run 후 `--commit`으로 679건 삭제했다. 삭제 범위는 `ARH/RVH/STH/ISH/WOH/PRH/FGH/SGH/BXH/SOH/PTH/POH-260619` 마커와 `created_by='seed'`로 제한했다. 사후 검증: 시드 마커 잔여 0, LOT-입고/LOT-수불 품목 불일치 0, `MAT_STOCKS`/`MAT_ARRIVAL_STOCKS` invariant 0, 미완료 출고요청 0. `R26061900002`는 PASS 10건 1,000,000 수량, 입하재고 AVAILABLE 10건 1,000,000으로 남아 있다. 커밋하지 않았다.
+- `T-IQC-HISTORY-LOTNO-FALLBACK`: `/material/iqc-history` LOT No. 컬럼이 입하단위 IQC 이력의 `sampleBarcode`를 fallback 표시하도록 보정했다. 원인은 `IQC_LOGS.MAT_UID`가 입하단위 저장에서 `NULL`인데 그리드가 `matUid`만 표시한 것. 검증: JSHANES/API shape, 구조 테스트, FE tsc, 3002 브라우저 첫 행 `R26061900002 / CBL-B` LOT No. `VH1-RM260619-00011` 표시 PASS. 커밋하지 않았다.
 - `T-MASTER-REQUIRED-MARKS`: 기준정보 하위 메뉴 필수컬럼 별표 표시를 보정했다. 공통 `Select`가 `required` 라벨 별표와 native required를 처리하도록 바꿨고, 작업자/거래처/회사/공정/설비/계측기/CAPA/창고위치/공통코드/BOM/IQC/라우팅/제조사바코드/품목유형 등 저장 필수 필드에 `required`를 추가했다. 작업지도서의 수동 `*` 라벨은 중복 방지를 위해 제거했다. 검증: 신규 구조 테스트 RED→GREEN, FE tsc PASS. 커밋은 하지 않았다.
 - `T-KIOSK-MOUNTED-RELOAD`: `/production/input-kiosk` 재진입 시 소모품 장착 상태가 선택 설비 기준 DB에서 복원되도록 보정했다. `MaterialListPanel`과 `ConsumableScanModal`이 `/production/job-orders/:orderNo/consumables` 조회/스캔 호출에 `equipCode: selectedEquip?.equipCode`, `includeMounted: 1`을 전달한다. localStorage에 장착 UID를 저장하지 않는다. 검증: 신규 구조 테스트 RED→GREEN, FE tsc PASS, JSHANES `WO2606150066/HNS02C2ABCDE/EQ-ATCNS-01`에서 `CONSUMABLE_STOCKS` mounted UID `CT26061600001`, `CT26061600002` 확인, 3002 API와 headless 브라우저 화면 표시 PASS. `JOB_MATERIAL_LOTS`는 현재 0건이라 자재 샘플 표시는 못 했지만 기존 재조회 경로는 테스트로 고정했다.
 - `T-CONSUMABLE-LABEL-REPRINT`: 재발행 전 미리보기와 바코드 렌더 완료 대기까지 보강했다. 각 UID 행에 `미리보기` 버튼이 추가됐고, Modal 안에서 실제 `LabelDesignRenderer`로 같은 라벨을 본다. `LabelDesignRenderer`는 바코드 placeholder에 `data-label-barcode-pending`, 완료 이미지에 `data-label-barcode-ready`를 표시하며, 신규 발행 브라우저 인쇄와 재발행 agent PNG 캡처는 `waitForLabelRenderReady()`를 거쳐 pending이 사라지고 이미지 로드가 끝난 뒤에만 진행한다. Playwright에서 `C26061700029` 미리보기 모달 ready barcode 1/pending 0, UID 표시 true, 재발행 popup 0, agent `/print` 1회(`jobId=CON-REPRINT-C26061700029`, `contentBase64Length=2864`) 확인. 구조 테스트 3개와 FE tsc PASS. Playwright에서는 OS 저장 대화상자를 피하려고 agent `/print`를 mock했고, 실제 agent/PDF queued는 이전 테스트에서 확인했다.
@@ -19,6 +23,7 @@
 
 ## Completed
 
+- `T-IQC-AQL-PLAN`: IQC 우선 AQL 기준관리 설계/구현 계획 문서 작성 완료. 산출물은 `docs/superpowers/specs/2026-06-19-iqc-aql-design.md`, `docs/superpowers/plans/2026-06-19-iqc-aql-implementation.md`. 구현 코드는 수정하지 않았고 커밋하지 않았다. 기존 `IQC_PART_SPECS.SAMPLE_QTY`는 1차에서 화면/로직 미사용, 물리 삭제는 2차로 계획했다.
 - `T-MATERIAL-ARRIVAL-QTY-FORMAT`: `/material/arrival` 자재입하처리 모달의 읽기 전용 입수량(`serialUnitQty`), 예상 시리얼 계산식, 예상 시리얼수에 천단위 구분자 표시를 적용했다. 입력용 입하수량 `Input type="number"`는 기존 동작 유지. 구조 테스트 RED→GREEN, frontend tsc PASS. 커밋은 하지 않았다.
 - `T-WIP-STOCK-ACTUAL-SQL`: `/production/wip-stock` DataGrid SQL 조회문을 실제 백엔드 조회 구조(`PRODUCT_STOCKS s LEFT JOIN ITEM_MASTERS im LEFT JOIN WAREHOUSES wh`)로 교체했다. 기존 `WIP_STOCKS` 하드코딩 제거, 화면 유형/검색 필터 반영, 구조 테스트 RED→GREEN, FE tsc, 3002 브라우저 SQL 모달 검증 완료. 커밋은 하지 않았다.
 - `T-ARRIVAL-RESULT-AGENT-REPRINT`: `/material/arrival-result` 라벨 재발행도 `/material/arrival`과 같은 방식으로 맞췄다. 페이지가 `mat_lot` 템플릿 목록을 조회하고 우측 재발행 영역의 `입하 라벨 템플릿` Select 선택값을 `MatLabelPreviewModal`에 전달한다. Playwright로 `R26061800003` 선택, `matlot_label::mat_lot` 유지, 바코드 ready 후 agent `/print` 1회, `MAT-ARRIVAL-VH1-RM260618-00003.pdf` 45,103 bytes 생성 확인. 구조 테스트, FE tsc, print-agent 구조 테스트, Go test PASS.
@@ -104,6 +109,10 @@
 
 ## Next AI Should
 
+- `T-IQC-HISTORY-CERT-TIMESTAMP` 완료 후 REVIEW 상태. `/material/iqc-history` 성적서 업로드가 ISO UTC inspectDate(`2026-06-19T07:56:27.354Z`)를 Oracle 로컬 TIMESTAMP(`2026-06-19 16:56:27.354`)와 exact match하지 못해 404 나는 문제를 보정했다. `uploadCert()`는 기존 `findOne(Date)` 실패 시 Asia/Seoul timestamp 문자열 + `TO_TIMESTAMP` QueryBuilder fallback으로 조회/업데이트한다. 검증: focused Jest `-t "성적서 업로드"`, backend tsc, diff check PASS. 실제 더미 업로드는 DB/파일 변경이라 생략.
+- `T-ISSUE-REQUEST-BARCODE-VALIDATION` 완료 후 REVIEW 상태. 웹 요청출고 API `IssueRequestService.issueFromRequest()`가 실제 출고 생성 전에 요청항목 `ITEM_CODE`와 스캔 LOT `ITEM_CODE`를 대조하도록 보정했다. 불일치 시 `MatIssueService.createInTx()` 호출 전 차단한다. 검증: 회귀 테스트 RED→GREEN, `pnpm --filter @harness/backend test -- issue-request.service.spec.ts`, backend tsc, JSHANES 완료 요청 품목 불일치 0건. 현재 JSHANES `40/1000`에는 APPROVED/REQUESTED 출고요청이 없어 브라우저 실출고 재현은 하지 않았다.
+- `T-IQC-AQL-MENU` 완료 후 REVIEW 상태. 메뉴/라우트 진입점만 추가했고 DB/API/CRUD는 미구현이다. 다음 구현 시 기존 계획 문서의 `AQL_STANDARDS`, `AQL_SAMPLING_RULES`, `IQC_PART_SPECS.AQL_CODE`, `IQC_LOGS.AQL_*` 단계부터 진행한다.
+- `T-IQC-AQL-PLAN`은 REVIEW 상태. 사용자 리뷰 후 구현 진행 시 `docs/superpowers/plans/2026-06-19-iqc-aql-implementation.md`를 기준으로 TDD 단계별 실행한다. 현재 워크트리에는 기존 무관 변경 `apps/backend/src/modules/material/services/iqc-history.service.ts`와 `.claude/worktrees/`가 있으므로 커밋 시 범위 선별이 필요하다.
 - `T-MATERIAL-ARRIVAL-QTY-FORMAT` 완료 후 REVIEW 상태. `/material/arrival` 자재입하처리 모달의 입수량/계산식/예상 시리얼수 숫자 표시만 천단위 포맷으로 보정했고, 입력 필드 동작은 유지했다. 신규 구조 테스트와 FE tsc를 완료했고 커밋은 하지 않았다.
 - `T-KIOSK-MOUNTED-RELOAD` 완료 후 REVIEW 상태. 키오스크 소모품 재조회는 선택 설비 기준 `CONSUMABLE_STOCKS` mounted 상태를 읽도록 보정했고, 3002 브라우저에서 mounted UID 2건 표시까지 확인했다. 커밋은 하지 않았다.
 - `T-WIP-STOCK-ACTUAL-SQL` 완료 후 REVIEW 상태. `/production/wip-stock` SQL 미리보기는 이제 실제 `PRODUCT_STOCKS` 기반 조회 SQL과 화면 필터를 반영한다. 신규 구조 테스트, FE tsc, 3002 브라우저 SQL 모달 검증을 완료했고 커밋은 하지 않았다.

@@ -258,6 +258,7 @@
     "inspection.protocol": "검사기프로토콜",
     "inspection.equip": "검사기연동관리",
     "quality": "품질관리",
+    "quality.aql": "AQL 기준관리",
     "quality.defect": "불량등록관리",
     "quality.inspect": "외관검사",
     "quality.trace": "추적성조회",
@@ -3689,6 +3690,13 @@
     }
   },
   "quality": {
+    "aql": {
+      "title": "AQL 기준관리",
+      "subtitle": "IQC 시료수와 합격/불합격 판정 기준으로 사용할 AQL 기준을 관리합니다.",
+      "standardSection": "AQL 기준",
+      "ruleSection": "LOT 수량별 판정 기준",
+      "empty": "등록된 AQL 기준이 없습니다."
+    },
     "defect": {
       "title": "불량관리",
       "description": "불량 발생 현황을 관리하고 수리 상태를 추적합니다.",

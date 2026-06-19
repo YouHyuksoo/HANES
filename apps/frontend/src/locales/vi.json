@@ -256,6 +256,7 @@
     "inspection.protocol": "Giao thức thiết bị KT",
     "inspection.equip": "Quản lý liên kết thiết bị",
     "quality": "Quản lý chất lượng",
+    "quality.aql": "Quản lý tiêu chuẩn AQL",
     "quality.defect": "Đăng ký lỗi",
     "quality.inspect": "Kiểm tra ngoại quan",
     "quality.trace": "Truy vết",
@@ -3354,6 +3355,13 @@
     }
   },
   "quality": {
+    "aql": {
+      "title": "Quản lý tiêu chuẩn AQL",
+      "subtitle": "Quản lý tiêu chuẩn AQL dùng để tính cỡ mẫu IQC và tiêu chí Ac/Re.",
+      "standardSection": "Tiêu chuẩn AQL",
+      "ruleSection": "Tiêu chí theo số lượng LOT",
+      "empty": "Chưa có tiêu chuẩn AQL."
+    },
     "defect": {
       "title": "Quản lý lỗi",
       "description": "Quản lý tình trạng lỗi và theo dõi sửa chữa.",

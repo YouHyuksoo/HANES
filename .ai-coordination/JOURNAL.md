@@ -10,6 +10,37 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 16:50 Codex
+
+- 작업: `T-IQC-HISTORY-ARRIVALNO-COLUMN` `/material/iqc-history` 그리드 입하번호 표시.
+- 변경: `page.tsx`의 IQC 이력 DataGrid columns에 `arrivalNo` 컬럼을 추가했다. 백엔드 응답과 `IqcHistoryItem` 타입에는 이미 `arrivalNo`가 있어서 API/DB 변경 없이 화면 표시만 보정했다.
+- 검증: 구조 테스트에 입하번호 컬럼 누락 RED를 추가해 실패 확인 후 구현했다. `node --test apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs` 2/2 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. Playwright CLI로 3002 `/material/iqc-history` 인증 세션 진입 후 DOM에서 `입하번호` 헤더와 `R26061900002` 행 값 표시 확인.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-19 16:34 Codex
+
+- 작업: `T-IQC-AQL-MENU` 품질관리 하위 AQL 기준관리 메뉴 진입점 추가.
+- 변경: `menuConfig`에 `QC_AQL`과 `/quality/aql`을 추가하고, 백엔드 메뉴 코드 validator에 `QC_AQL`을 허용했다. page registry를 생성기로 갱신하고 ko/en/zh/vi 메뉴/페이지 문구를 추가했다. `/quality/aql/page.tsx`는 AQL 기준/LOT 수량별 판정 기준 placeholder 화면으로 생성했다.
+- 범위 제한: DB/API/CRUD 구현은 하지 않았다. 현재는 메뉴 클릭 시 화면이 깨지지 않는 진입점만 추가했다.
+- 검증: 신규 구조 테스트를 먼저 RED로 확인한 뒤 구현 후 `node --test apps/frontend/src/app/(authenticated)/quality/aql/aql-menu.structure.test.mjs` 4/4 PASS. `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- 상태: REVIEW 대기, lock released.
+
+## 2026-06-19 16:07 Codex
+
+- 작업: `T-IQC-HISTORY-LOTNO-FALLBACK` `/material/iqc-history` LOT No. 빈 값 보정.
+- 원인: 입하단위 IQC 저장은 `IQC_LOGS.MAT_UID`를 `NULL`로 두고 실제 스캔 시료 LOT를 `SAMPLE_BARCODE`에 저장하지만, 이력조회 그리드는 `matUid`만 `LOT No.`로 표시했다.
+- 변경: `page.tsx`에 `getLotNoDisplay(record) = record.matUid || record.sampleBarcode || "-"`를 추가하고, 목록 LOT No. 컬럼과 판정취소 모달 LOT No. 표시가 같은 fallback을 쓰도록 했다. 구조 테스트 `iqc-history-lot-no.structure.test.mjs`를 추가했다.
+- 검증: JSHANES `R26061900002` 이력 `MAT_UID NULL`, `SAMPLE_BARCODE='VH1-RM260619-00011'` 확인. API 첫 행도 같은 shape 확인. `node --test apps/frontend/src/app/(authenticated)/material/iqc-history/iqc-history-lot-no.structure.test.mjs`, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`, 대상 파일 `git diff --check` PASS. 3002 브라우저에서 첫 행 `R26061900002 / CBL-B` LOT No.가 `VH1-RM260619-00011`로 표시됨.
+- 상태: REVIEW, lock released. 커밋하지 않음.
+
+## 2026-06-19 15:55 Codex
+
+- 작업: `T-IQC-AQL-PLAN` IQC 우선 AQL 기준관리 설계/계획 문서화.
+- 결정 반영: 1차 적용 범위는 IQC로 한정한다. 기존 `IQC_PART_SPECS.SAMPLE_QTY`는 AQL 적용 후 혼동을 막기 위해 화면/로직에서 제거하되, DB 컬럼 물리 삭제는 안정화 후 2차로 분리한다. `IQC_LOGS.INSPECT_CLASS`는 기존 legacy 검사분류 의미를 유지하고 AQL 축으로 사용하지 않는다.
+- 산출물: `docs/superpowers/specs/2026-06-19-iqc-aql-design.md`, `docs/superpowers/plans/2026-06-19-iqc-aql-implementation.md`.
+- 검증: 문서 파일 존재 확인, 핵심 키워드(`SAMPLE_QTY`, `QC_AQL`, `AQL_SAMPLE_SIZE`, `INSPECT_CLASS`) 포함 확인, 대상 문서/coordination `git diff --check` PASS.
+- 상태: REVIEW 대기, lock released. 구현 코드는 수정하지 않았고 커밋하지 않았다.
+
 ## 2026-06-19 Claude (창고 드롭다운 빈값 버그 수정)
 
 창고관리 로케이션 탭/이동규칙 탭의 창고 선택 드롭다운이 비는 버그 수정.
@@ -1354,3 +1385,28 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 프론트 변경: `apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableFormPanel.tsx` 패널 폭을 560px로 넓히고, 기존 기본정보/수명/거래처/이미지 섹션 아래에 `소모품 사용매핑` 고정 섹션을 추가했다. 신규 등록 모드에서는 저장 후 매핑 가능 안내만 표시하고, 수정/선택 모드에서는 제품/모델(`/master/parts`), 설비(`/equipment/equips`), 단위사용량, 사용여부, 비고 입력 후 저장/토글/삭제할 수 있다.
 - 검증: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false`, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` 통과. API `GET /api/v1/consumables/CM-JG-SL1/usage-maps`는 2건 반환. API 생성/삭제 경로는 `APPCT-A/HNS02/EQ-SASSY-01` 테스트 매핑을 생성 후 삭제해 둘 다 success true 확인, JSHANES 잔여 0건 확인. `http://localhost:3002/consumables/master` HTTP 200. 이 워크스페이스에는 Playwright 패키지/설정이 없어 브라우저 DOM 자동 검증은 수행하지 못했다.
 - 상태: 완료, lock released.
+# 2026-06-19 codex T-HNS02-260619-SEED-CLEANUP
+- 요청: 원자재 IQC/입하/입고/재고/출고예정 정합성 어긋난 데이터를 정리.
+- 원인: HNS02 260619 시드가 `VH1-RM260619-*` MAT_UID 공간을 실제 `R260619*` 원자재 입하/IQC 데이터와 공유해 `ARH/RVH/STH/ISH/WOH/PRH/FGH/SGH/BXH/SOH/PTH/POH-260619` 마커 데이터가 현재 흐름과 충돌했다.
+- 작업: `tools/seed/cleanup_hns02_260619_seed.py` 작성. 기본은 dry-run rollback, `--commit`으로 반영.
+- dry-run: `python tools/seed/cleanup_hns02_260619_seed.py` 실행. 삭제 후보 679건, after-in-tx 시드 마커 잔여 0, LOT-입고/LOT-수불 품목 불일치 0, `MAT_STOCKS` invariant 0 확인 후 rollback.
+- 반영: `python tools/seed/cleanup_hns02_260619_seed.py --commit` 실행. 총 679건 삭제 후 commit.
+- 삭제 건수: `PRODUCT_GENEALOGY` 100, `INSPECT_RESULTS` 200, `BOX_MASTERS` 10, `FG_LABELS` 100, `SG_LABELS` 20, `SHIPMENT_ORDER_ITEMS` 1, `SHIPMENT_ORDERS` 1, `PRODUCT_TRANSACTIONS` 33, `PRODUCT_STOCKS` 17, `PROD_RESULTS` 17, `MAT_ISSUES` 18, `STOCK_TRANSACTIONS` 36, `MAT_STOCKS` 18, `MAT_RECEIVINGS` 18, `MAT_LOTS` 18, `IQC_LOGS` 18, `MAT_ARRIVALS` 18, `JOB_ORDERS` 17, `PURCHASE_ORDER_ITEMS` 18, `PURCHASE_ORDERS` 1.
+- 사후 검증: `ARH/RVH/STH/ISH/WOH/FGH` 잔여 0, LOT-입고 품목/입하 불일치 0, LOT-수불 품목 불일치 0, `MAT_STOCKS` 및 `MAT_ARRIVAL_STOCKS` 수량 invariant 0, 미완료 출고요청 없음.
+- `R26061900002` 확인: `MAT_ARRIVALS` PASS 10건 1,000,000, `MAT_LOTS` PASS 10건 1,000,000, `MAT_ARRIVAL_STOCKS` AVAILABLE 10건 1,000,000.
+
+# 2026-06-19 codex T-ISSUE-REQUEST-BARCODE-VALIDATION
+- 요청: 출고요청한 내용에 대한 바코드스캔 출고처리가 문제 없는지 점검.
+- 원인: 웹 요청출고 API `IssueRequestService.issueFromRequest()`가 실제 출고 `MatIssueService.createInTx()`를 먼저 호출하고, 이후 요청항목 `issuedQty`만 갱신했다. 이 경로에는 요청항목 `ITEM_CODE`와 스캔 `MAT_UID`의 `MAT_LOTS.ITEM_CODE` 대조가 없어 잘못된 품목 LOT도 수량만 맞으면 출고될 수 있었다.
+- 변경: 실제 출고 생성 전에 같은 트랜잭션 안에서 요청항목 존재, 잔여수량, 스캔 LOT 존재, 요청품목과 LOT 품목 일치를 선검증하도록 보정했다. 불일치 시 `출고요청 품목과 스캔 LOT 품목이 일치하지 않습니다` 오류로 중단하며 `MatIssueService.createInTx()`를 호출하지 않는다.
+- 테스트: 신규 회귀 테스트로 ITEM-A 요청항목에 ITEM-B LOT를 넣는 케이스가 기존 구현에서 정상 완료되는 RED를 확인했고, 수정 후 `pnpm --filter @harness/backend test -- issue-request.service.spec.ts` 15/15 PASS.
+- 검증: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS. JSHANES `40/1000` 기준 출고요청은 COMPLETED 8건만 있고 APPROVED/REQUESTED는 0건이라 즉시 브라우저 실출고 재현 데이터는 없었다. 완료 요청 기준 요청품목과 출고 LOT 품목 불일치 조회는 0건.
+- 참고: PDA `/material/issues/scan`은 출고요청번호를 소비하지 않는 작업지시/BOM 기반 전량 출고 흐름이므로, 출고요청 내용과의 직접 매칭 보장은 웹 요청출고 API 경로에서 처리한다.
+
+# 2026-06-19 codex T-IQC-HISTORY-CERT-TIMESTAMP
+- 요청: `/material/iqc-history`에서 검사성적서 업로드 시 `IQC 이력을 찾을 수 없습니다: 2026-06-19T07:56:27.354Z/1` 404가 발생.
+- 원인: 화면은 API 응답 Date를 ISO UTC 문자열(`2026-06-19T07:56:27.354Z`)로 다시 보내지만, JSHANES `IQC_LOGS.INSPECT_DATE`는 timezone 없는 Oracle `TIMESTAMP`라 같은 이력이 `2026-06-19 16:56:27.354`로 저장되어 있었다. 기존 `uploadCert()`는 `new Date(inspectDate)`를 그대로 PK 조건에 넣어 exact match를 시도해 404가 났다.
+- DB 확인: `COMPANY=40`, `PLANT_CD=1000`, `INSPECT_TYPE=INITIAL`, 2026-06-19 최신 행에서 `R26061900020 / CBL-B / SEQ=1 / INSPECT_DATE=2026-06-19 16:56:27.354 / CERT_FILE_PATH=NULL` 확인. 에러 timestamp의 07:56Z와 KST 로컬 16:56이 대응된다.
+- 변경: `IqcHistoryService.uploadCert()`에서 기존 `findOne(Date)`를 먼저 시도하고, 실패하면 ISO/offset timestamp를 Asia/Seoul 기준 `YYYY-MM-DD HH24:MI:SS.FF3` 문자열로 정규화해 `TO_TIMESTAMP(:inspectTs, ...)` QueryBuilder 조회/업데이트 fallback을 수행한다.
+- 테스트: 신규 회귀 테스트로 ISO `2026-06-19T07:56:27.354Z`가 `2026-06-19 16:56:27.354` 조건으로 조회/업데이트되는지 검증. `pnpm --filter @harness/backend test -- iqc-history.service.spec.ts -t "성적서 업로드"` PASS.
+- 검증: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS, 대상 파일 `git diff --check` PASS. 실제 업로드 API는 DB와 파일을 변경하므로 임의 더미 업로드 실측은 수행하지 않았다.

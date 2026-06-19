@@ -123,6 +123,7 @@ export const pageRegistry: Record<string, ComponentType> = {
   "/production/wip-material-stock": dynamic(() => import("@/app/(authenticated)/production/wip-material-stock/page"), { ssr: false }),
   "/production/wip-material-trans": dynamic(() => import("@/app/(authenticated)/production/wip-material-trans/page"), { ssr: false }),
   "/production/wip-stock": dynamic(() => import("@/app/(authenticated)/production/wip-stock/page"), { ssr: false }),
+  "/quality/aql": dynamic(() => import("@/app/(authenticated)/quality/aql/page"), { ssr: false }),
   "/quality/audit": dynamic(() => import("@/app/(authenticated)/quality/audit/page"), { ssr: false }),
   "/quality/capa": dynamic(() => import("@/app/(authenticated)/quality/capa/page"), { ssr: false }),
   "/quality/change-control": dynamic(() => import("@/app/(authenticated)/quality/change-control/page"), { ssr: false }),
