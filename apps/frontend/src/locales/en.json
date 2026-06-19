@@ -3170,6 +3170,12 @@
     },
     "wipStock": {
       "title": "WIP/FG Stock",
+      "fgBarcode": "Product Barcode",
+      "inspectPass": "Inspect",
+      "orderNo": "Work Order",
+      "issuedAt": "Issued At",
+      "fgPanelTitle": "Unpacked FG Labels",
+      "fgPanelEmpty": "Select an item on the left to see unpacked FG labels",
       "description": "View WIP and finished goods stock status",
       "excelDownload": "Excel Download",
       "itemCount": "Item Count",

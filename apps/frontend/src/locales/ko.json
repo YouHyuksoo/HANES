@@ -3491,6 +3491,12 @@
     },
     "wipStock": {
       "title": "반제품/제품 재고",
+      "fgBarcode": "제품바코드",
+      "inspectPass": "검사",
+      "orderNo": "작업지시",
+      "issuedAt": "발행일시",
+      "fgPanelTitle": "미포장 제품(FG라벨)",
+      "fgPanelEmpty": "좌측에서 품목을 선택하면 미포장 FG라벨이 표시됩니다",
       "description": "반제품(WIP)과 완제품(FG)의 재고 현황을 조회합니다",
       "excelDownload": "엑셀 다운로드",
       "itemCount": "품목 수",

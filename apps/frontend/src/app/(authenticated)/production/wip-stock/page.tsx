@@ -29,12 +29,24 @@ interface WipStock {
   updatedAt: string;
 }
 
+interface FgLabelRow {
+  fgBarcode: string;
+  status: string;
+  inspectPassYn: string | null;
+  orderNo: string | null;
+  equipCode: string | null;
+  issuedAt: string;
+}
+
 export default function WipStockPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<WipStock[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [selectedItem, setSelectedItem] = useState<WipStock | null>(null);
+  const [fgLabels, setFgLabels] = useState<FgLabelRow[]>([]);
+  const [fgLoading, setFgLoading] = useState(false);
 
   const typeOptions = useMemo(() => [
     { value: '', label: t('production.wipStock.allType') },
@@ -58,6 +70,24 @@ export default function WipStockPage() {
   }, [searchText, typeFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const fetchFgLabels = useCallback(async (itemCode: string) => {
+    setFgLoading(true);
+    try {
+      const res = await api.get('/production/wip-stock/fg-labels', { params: { itemCode } });
+      const raw = res.data?.data;
+      setFgLabels(Array.isArray(raw) ? raw : raw?.data ?? []);
+    } catch {
+      setFgLabels([]);
+    } finally {
+      setFgLoading(false);
+    }
+  }, []);
+
+  const handleRowClick = useCallback((row: WipStock) => {
+    setSelectedItem(row);
+    fetchFgLabels(row.itemCode);
+  }, [fetchFgLabels]);
 
   const stats = useMemo(() => ({
     totalItems: data.length,
@@ -83,6 +113,14 @@ export default function WipStockPage() {
     { accessorKey: 'qty', header: t('production.wipStock.stockQty'), size: 100, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: 'unit', header: t('production.wipStock.unit'), size: 60, meta: { filterType: 'text' as const } },
     { accessorKey: 'updatedAt', header: t('production.wipStock.updatedAt'), size: 110, meta: { filterType: 'date' as const } },
+  ], [t]);
+
+  const fgColumns = useMemo<ColumnDef<FgLabelRow>[]>(() => [
+    { accessorKey: 'fgBarcode', header: t('production.wipStock.fgBarcode'), size: 160, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span> },
+    { accessorKey: 'status', header: t('common.status'), size: 100, meta: { filterType: 'multi' as const } },
+    { accessorKey: 'inspectPassYn', header: t('production.wipStock.inspectPass'), size: 60, meta: { filterType: 'multi' as const }, cell: ({ getValue }) => (getValue() === 'Y' ? 'PASS' : ((getValue() as string) ?? '-')) },
+    { accessorKey: 'orderNo', header: t('production.wipStock.orderNo'), size: 150, meta: { filterType: 'text' as const }, cell: ({ getValue }) => (getValue() as string) ?? '-' },
+    { accessorKey: 'issuedAt', header: t('production.wipStock.issuedAt'), size: 140, meta: { filterType: 'date' as const }, cell: ({ getValue }) => (getValue() as string)?.slice(0, 16) ?? '-' },
   ], [t]);
 
   const wipStockSql = useMemo(() => {
@@ -138,21 +176,39 @@ ORDER BY s.UPDATED_AT DESC`;
         <StatCard label={t('production.wipStock.totalStock')} value={stats.totalQty} icon={Warehouse} color="purple" />
       </div>
 
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
-          enableExport exportFileName={t('production.wipStock.title')}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t('production.wipStock.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+      <div className="flex-1 min-h-0 flex gap-4">
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+            onRowClick={handleRowClick}
+            enableExport exportFileName={t('production.wipStock.title')}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t('production.wipStock.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
+                </div>
               </div>
-              <div className="w-40 flex-shrink-0">
-                <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
-              </div>
+            }
+            sqlQuery={wipStockSql}/>
+        </CardContent></Card>
+
+        <Card className="w-[540px] flex-shrink-0 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4 flex flex-col">
+          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+            <Package className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold text-text">{t('production.wipStock.fgPanelTitle')}</h2>
+            {selectedItem && <span className="text-sm text-text-muted truncate">— {selectedItem.itemCode} ({fgLabels.length})</span>}
+          </div>
+          {selectedItem ? (
+            <div className="flex-1 min-h-0">
+              <DataGrid data={fgLabels} columns={fgColumns} isLoading={fgLoading} enableColumnFilter />
             </div>
-          } 
-          sqlQuery={wipStockSql}/>
-      </CardContent></Card>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-text-muted text-sm">{t('production.wipStock.fgPanelEmpty')}</div>
+          )}
+        </CardContent></Card>
+      </div>
     </div>
   );
 }

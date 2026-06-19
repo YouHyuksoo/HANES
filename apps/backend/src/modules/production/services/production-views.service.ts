@@ -18,6 +18,7 @@ import { ProdResult } from '../../../entities/prod-result.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { ProductStock } from '../../../entities/product-stock.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
 import {
   ProgressQueryDto,
   SampleInspectQueryDto,
@@ -36,6 +37,8 @@ export class ProductionViewsService {
     private readonly boxMasterRepository: Repository<BoxMaster>,
     @InjectRepository(ProductStock)
     private readonly stockRepository: Repository<ProductStock>,
+    @InjectRepository(FgLabel)
+    private readonly fgLabelRepository: Repository<FgLabel>,
   ) {}
 
   /**
@@ -244,5 +247,32 @@ export class ProductionViewsService {
     const data = await qb.offset(skip).limit(limit).getRawMany();
 
     return { data, total, page, limit };
+  }
+
+  /**
+   * 선택 품목의 미포장(BOX_NO NULL) FG라벨 상세 — wip-stock 우측 패널
+   * 포장 전(ISSUED/VISUAL_PASS/VISUAL_FAIL) + 박스 미배정 라벨만. PACKED는 BOX_NO 존재로 자동 제외.
+   */
+  async getWipStockFgLabels(itemCode: string, company?: string, plant?: string) {
+    const qb = this.fgLabelRepository
+      .createQueryBuilder('fg')
+      .select([
+        'fg.fgBarcode AS "fgBarcode"',
+        'fg.itemCode AS "itemCode"',
+        'fg.status AS "status"',
+        'fg.inspectPassYn AS "inspectPassYn"',
+        'fg.orderNo AS "orderNo"',
+        'fg.equipCode AS "equipCode"',
+        'fg.issuedAt AS "issuedAt"',
+      ])
+      .where('fg.itemCode = :itemCode', { itemCode })
+      .andWhere('fg.boxNo IS NULL')
+      .andWhere("fg.status NOT IN ('VOIDED', 'SHIPPED')");
+    if (company) qb.andWhere('fg.company = :company', { company });
+    if (plant) qb.andWhere('fg.plant = :plant', { plant });
+    qb.orderBy('fg.issuedAt', 'DESC');
+
+    const data = await qb.getRawMany();
+    return { data, total: data.length, page: 1, limit: data.length };
   }
 }

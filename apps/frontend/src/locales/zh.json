@@ -3156,6 +3156,12 @@
     },
     "wipStock": {
       "title": "半成品/成品库存",
+      "fgBarcode": "产品条码",
+      "inspectPass": "检验",
+      "orderNo": "工单",
+      "issuedAt": "发行时间",
+      "fgPanelTitle": "未包装成品(FG标签)",
+      "fgPanelEmpty": "在左侧选择品项后显示未包装FG标签",
       "description": "查询半成品(WIP)和成品(FG)的库存现况",
       "excelDownload": "Excel下载",
       "itemCount": "品目数",

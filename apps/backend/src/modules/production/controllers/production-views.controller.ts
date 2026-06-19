@@ -58,4 +58,12 @@ export class ProductionViewsController {
     const result = await this.viewsService.getWipStock(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
+
+  @Get('wip-stock/fg-labels')
+  @ApiOperation({ summary: '제품재고 미포장 FG라벨 상세', description: '선택 품목의 박스 미배정(미포장) FG라벨 목록' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async getWipStockFgLabels(@Query('itemCode') itemCode: string, @Company() company: string, @Plant() plant: string) {
+    const result = await this.viewsService.getWipStockFgLabels(itemCode, company, plant);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
 }

@@ -3156,6 +3156,12 @@
     },
     "wipStock": {
       "title": "Tồn kho bán thành phẩm/Thành phẩm",
+      "fgBarcode": "Mã vạch sản phẩm",
+      "inspectPass": "Kiểm tra",
+      "orderNo": "Lệnh sản xuất",
+      "issuedAt": "Thời gian phát hành",
+      "fgPanelTitle": "Nhãn FG chưa đóng gói",
+      "fgPanelEmpty": "Chọn mặt hàng bên trái để xem nhãn FG chưa đóng gói",
       "description": "Tra cứu tình hình tồn kho bán thành phẩm (WIP) và thành phẩm (FG)",
       "excelDownload": "Tải Excel",
       "itemCount": "Số mặt hàng",
