@@ -10,6 +10,15 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 Claude (hns02-seed 포장실적 보완)
+
+T-HNS02-STOCK100-SEED 후속 — 포장실적 화면(`/production/pack-result`)에 시드가 안 보이는 문제 수정.
+
+- 근본원인(코드+데이터 확정): 포장실적 화면은 `ProductionViewsService.getPackResult`가 **`BOX_MASTERS`(박스 단위)** 조회 + **날짜 필터 기본 '오늘'**. 1차 시드는 FG라벨을 PACKED로만 만들고 **BOX_MASTERS 미생성**(spec §4.6 누락) → 시드분 0. 기존 HNS02 박스 8건은 6/12~6/17이라 오늘 필터에서 제외.
+- 수정: 빌더에 박스입고 추가 — FG라벨 100개를 10개/박스로 묶어 BOX_MASTERS 10건(BXH260619-001~010, QTY=10, STATUS=CLOSED, OQC_STATUS=PASS, SERIAL_LIST=FG바코드10), FG_LABELS.BOX_NO 스탬프. 정리 DELETE에 BOX_MASTERS(BXH260619%) 추가. 멱등 재실행(--commit).
+- 검증 PASS: BOX_MASTERS 시드 10 / FG BOX_NO 스탬프 100 / 나머지(제품재고100·FG100·SG20·작업지시17·검사200·수불균형·출하무변화) 유지. 포장실적 조회조건(40/1000, CREATED_AT>=오늘)으로 박스 10건 노출 확인.
+- spec §4.6/§5 갱신.
+
 ## 2026-06-19 Claude (P4·P5 재고 일원화)
 
 T-HARNESS-FLOW-RENEWAL-P45 — PRODUCT_STOCKS 시리얼(PRD_UID) 제거, 품목+창고 수량 일원화 + 출하 단순화.
