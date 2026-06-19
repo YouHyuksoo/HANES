@@ -13,7 +13,6 @@ import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, Pend
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { parseDateStart } from '../../../shared/date.util';
 
 export interface DebugSql {
   sql: string;
@@ -543,12 +542,14 @@ export class IqcHistoryService {
   }
 
   async uploadCert(inspectDate: string, seq: number, filePath: string, company?: string, plant?: string) {
+    // PK(INSPECT_DATE)는 시·분·초를 가진 timestamp이므로 날짜로 뭉개지 말고 정확히 매칭한다.
+    const inspectTs = new Date(inspectDate);
     const log = await this.iqcLogRepository.findOne({
-      where: { inspectDate: parseDateStart(inspectDate)!, seq, ...this.tenantWhere(company, plant) },
+      where: { inspectDate: inspectTs, seq, ...this.tenantWhere(company, plant) },
     });
     if (!log) throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${inspectDate}/${seq}`);
     await this.iqcLogRepository.update(
-      { inspectDate: parseDateStart(inspectDate)!, seq, ...this.tenantWhere(log.company, log.plant) },
+      { inspectDate: inspectTs, seq, ...this.tenantWhere(log.company, log.plant) },
       { certFilePath: filePath },
     );
     return { ...log, certFilePath: filePath };
@@ -556,7 +557,7 @@ export class IqcHistoryService {
 
   async cancel(inspectDate: string, seq: number, dto: CancelIqcResultDto, company?: string, plant?: string) {
     const log = await this.iqcLogRepository.findOne({
-      where: { inspectDate: parseDateStart(inspectDate)!, seq, ...this.tenantWhere(company, plant) },
+      where: { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(company, plant) },
     });
     if (!log) {
       throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${inspectDate}/${seq}`);
@@ -636,7 +637,7 @@ export class IqcHistoryService {
 
       await queryRunner.manager.update(
         IqcLog,
-        { inspectDate: parseDateStart(inspectDate)!, seq, ...this.tenantWhere(log.company, log.plant) },
+        { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(log.company, log.plant) },
         { status: 'CANCELED', remark: dto.reason },
       );
 
