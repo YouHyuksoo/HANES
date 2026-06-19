@@ -16,6 +16,27 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-HARNESS-FLOW-RENEWAL-P45
+  owner: claude
+  files:
+    - apps/backend/src/entities/product-stock.entity.ts
+    - apps/backend/src/modules/inventory/services/product-inventory.service.ts
+    - apps/backend/src/modules/inventory/services/product-physical-inv.service.ts
+    - apps/backend/src/modules/inventory/services/product-hold.service.ts
+    - apps/backend/src/modules/production/services/prod-result.service.ts
+    - apps/backend/src/modules/production/services/subprocess-kitting.service.ts
+    - apps/backend/src/modules/production/services/production-views.service.ts
+    - apps/backend/src/modules/quality/**/rework.service.ts
+    - apps/backend/src/modules/shipping/services/ship-order.service.ts
+    - apps/backend/src/modules/shipping/services/shipment.service.ts
+    - apps/backend/src/migrations/2026-06-19_product_stocks_drop_prduid_pk.sql
+    - apps/frontend/src/app/(authenticated)/inventory/{stock,product-hold,product-physical-inv}/**
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: 생산흐름 리뉴얼 Phase 4·5 완료(main 커밋 78d46411). PRODUCT_STOCKS 품목+창고 수량 일원화(PK 단일화, PRD_UID 비키화·NULL 잔존), ProductInventoryService 단일행화, 호출부 prdUid 제거, hold/physical-inv stockId 2-part, 프론트 prdUid 정리. issueStockInTx 소진행 삭제 보완. 백/프론트 tsc 0, 실DB 재검증 PASS. PRD_UID 컬럼 물리 drop은 안정 후 2차. 미push.
+
 - task: T-HARNESS-FLOW-RENEWAL-P2
   owner: claude
   files:

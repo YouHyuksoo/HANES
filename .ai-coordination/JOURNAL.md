@@ -10,6 +10,18 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 Claude (P4·P5 재고 일원화)
+
+T-HARNESS-FLOW-RENEWAL-P45 — PRODUCT_STOCKS 시리얼(PRD_UID) 제거, 품목+창고 수량 일원화 + 출하 단순화.
+
+- DDL: PRODUCT_STOCKS PK를 `(COMPANY,PLANT_CD,WAREHOUSE_CODE,ITEM_CODE)`로 단일화, PRD_UID는 PK 제외·NULL 잔존(2단계 안전, 물리 drop은 추후). 빈 테이블이라 무손실.
+- 코드(단일행화): 엔티티 PrimaryColumn 제거, `ProductInventoryService`(receive/issue/issueStockByItemFifo/transfer/receiveFinishedFromWip/cancel/getStock) 품목+창고 단일행 처리·FIFO 루프 제거. `issueStockInTx` 소진행 삭제 보완(qty0 잔재 방지). PRODUCT_TRANSACTIONS.prdUid는 원장 유지.
+- 호출부: prod-result(adsorb/defect/reverse), subprocess-kitting, ship-order(cancelShipBox), rework — PRODUCT_STOCKS용 prdUid 제거. ProdResult.prdUid 채번은 유지.
+- hold/physical-inv: stockId `wh::item::prdUid` → `wh::item`(2-part) 백/프론트 동기. production-views·inventory 화면 prdUid 컬럼 정리.
+- 검증: 백/프론트 tsc 0. 실DB(AppModule, 서버 무중단) 재검증 — 묶음발행/키팅/박스입고(WIP→FG) 단일행(PRD_UID=NULL, '*' 없음), 과다 키팅 BadRequest 롤백, 단일행 불변식 확인. 테스트데이터 정리.
+- 사고복구: 동시 작업 중 한 subagent의 git stash로 codex 미커밋분이 stash에 갇혔던 것을 선별 복원(codex 파일·locales·LOCKS), stash drop. codex 작업·내 kitting locale 키 보존.
+- 상태: main 커밋(78d46411 + qty0 보완). **미push**(라이브 출하 영향이라 9단계 출하 OQC/팔레트 E2E는 미수행 — 배포 시점 사용자 결정). lock 해제.
+
 ## 2026-06-19 Claude (hns02-stock100-seed)
 
 T-HNS02-STOCK100-SEED — HNS02 완제품 제품재고 100개 BOM 완전 다단계 정합 시드 (JSHANES / 40 / 1000).
