@@ -25,6 +25,11 @@ interface PoLineReceiptModalProps {
   onConfirm: (input: PoLineReceiptInput, expectedCount: number) => void;
 }
 
+const formatQuantity = (value: number | null | undefined) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return value.toLocaleString();
+};
+
 export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }: PoLineReceiptModalProps) {
   const { t } = useTranslation();
   const { options: warehouses } = useWarehouseOptions('RAW');
@@ -152,7 +157,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
             <span>{t('material.arrival.col.serialUnitQty')}</span>
             <Input
               type="text"
-              value={lotUnitQty === null ? t('material.arrival.singleLot') : String(lotUnitQty)}
+              value={lotUnitQty === null ? t('material.arrival.singleLot') : formatQuantity(lotUnitQty)}
               disabled
               className="text-right bg-gray-50 dark:bg-gray-800/50 text-slate-600 dark:text-slate-400"
             />
@@ -163,9 +168,9 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
             <span>{t('material.arrival.col.expectedSerialCount')}</span>
             <div className="h-10 border border-gray-200 rounded px-3 flex items-center justify-between bg-white">
               <span className="text-xs text-slate-500">
-                {receivedQty.toLocaleString()} ÷ {lotUnitQty ?? '-'} →
+                {receivedQty.toLocaleString()} ÷ {formatQuantity(lotUnitQty)} →
               </span>
-              <span className="font-bold text-pink-600 text-lg">{expectedCount}개</span>
+              <span className="font-bold text-pink-600 text-lg">{expectedCount.toLocaleString()}개</span>
             </div>
           </label>
         </div>

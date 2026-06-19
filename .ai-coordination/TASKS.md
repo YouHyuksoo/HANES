@@ -30,7 +30,7 @@ notes:
 ## Active Tasks
 
 ## T-MATERIAL-ARRIVAL-QTY-FORMAT 자재입하처리 모달 숫자 천단위 포맷
-status: IN_PROGRESS
+status: REVIEW
 owner: codex
 role: implementer
 scope:
@@ -43,11 +43,13 @@ files:
 - .ai-coordination/JOURNAL.md
 - .ai-coordination/HANDOFF/codex.md
 verification:
-- pending
+- 구조 테스트 RED 확인 PASS: `formatQuantity` 부재 및 `String(lotUnitQty)`/raw `lotUnitQty ?? '-'` 표시로 실패 확인
+- node --test apps/frontend/src/app/(authenticated)/material/arrival/components/po-line-receipt-number-format.structure.test.mjs PASS
+- pnpm --filter @harness/frontend exec tsc --noEmit --pretty false PASS
 review:
 - needs-review
 notes:
-- 입력용 수량 필드는 기존 `type="number"` 동작을 유지하고, 읽기 전용 입수량/예상 시리얼 계산식 숫자 표시에 천단위 구분자를 적용한다.
+- 입력용 입하수량 필드는 기존 `type="number"` 동작을 유지하고, 읽기 전용 입수량/예상 시리얼 계산식/예상 시리얼수 숫자 표시에 천단위 구분자를 적용했다.
 
 ## T-KIOSK-MOUNTED-RELOAD 키오스크 장착 자재/소모품 DB 재조회
 status: REVIEW

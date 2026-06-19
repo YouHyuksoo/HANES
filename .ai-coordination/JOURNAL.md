@@ -10,6 +10,23 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-19 Claude (창고 드롭다운 빈값 버그 수정)
+
+창고관리 로케이션 탭/이동규칙 탭의 창고 선택 드롭다운이 비는 버그 수정.
+
+- 근본원인(브라우저 실응답으로 확정): `GET /inventory/warehouses` 응답이 **이중 중첩** `{success, data:{data:[13건], total, page, limit}, meta}`. 정상 코드(WarehouseList·useMasterOptions hook)는 `raw=res.data.data` → `raw.data`로 두 번 언랩. 버그 코드(LocationList·TransferRuleList)는 `res.data.data`(=`{data,total}` 객체)를 배열로 가정해 `.map()` TypeError → `catch` 삼킴 → 드롭다운 빈 상태.
+- 수정: `const raw = res.data?.data; Array.isArray(raw) ? raw : raw?.data ?? []`로 통일. LocationList(fetchWarehouses/fetchData), TransferRuleList(fetchWarehouses/fetchData) **4곳**.
+- systemic 점검(제1지침): `useMasterOptions.ts` hook은 이미 정상. 동일 잘못된 파싱은 창고관리 2개 컴포넌트에만 존재.
+- 검증: 브라우저 실응답 `res.data.data.data=13건` 확인, 프론트 tsc 0. **코드는 a25f9bd3(작업트리 전체 커밋, 타 세션)에 이미 포함됨.**
+
+## 2026-06-19 14:49 Codex
+
+- 작업: `T-MATERIAL-ARRIVAL-QTY-FORMAT` `/material/arrival` 자재입하처리 모달 숫자 천단위 포맷 적용.
+- 원인: `PoLineReceiptModal.tsx`의 입수량(read-only `serialUnitQty`) 표시가 `String(lotUnitQty)`를 사용하고, 예상 시리얼 계산식도 `{lotUnitQty ?? '-'}`를 그대로 출력해 1000 이상 값에 구분자가 붙지 않았다.
+- 변경: 표시 전용 `formatQuantity()` helper를 추가해 입수량과 계산식의 나눗셈 값, 예상 시리얼수에 `toLocaleString()` 천단위 포맷을 적용했다. 사용자가 직접 입력하는 입하수량 `Input type="number"`는 기존 입력 동작을 유지했다.
+- 검증: 구조 테스트 RED 확인 후 GREEN. `node --test apps/frontend/src/app/(authenticated)/material/arrival/components/po-line-receipt-number-format.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- 상태: 완료, REVIEW 대기, lock released.
+
 ## 2026-06-19 Claude (hns02-seed 출하지시 추가)
 
 T-HNS02-STOCK100-SEED 후속 — 출하지시·출하이력 표시 요구. 사용자 결정: 출하지시만, 재고 100 유지.

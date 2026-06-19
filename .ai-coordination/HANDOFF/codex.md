@@ -19,6 +19,7 @@
 
 ## Completed
 
+- `T-MATERIAL-ARRIVAL-QTY-FORMAT`: `/material/arrival` 자재입하처리 모달의 읽기 전용 입수량(`serialUnitQty`), 예상 시리얼 계산식, 예상 시리얼수에 천단위 구분자 표시를 적용했다. 입력용 입하수량 `Input type="number"`는 기존 동작 유지. 구조 테스트 RED→GREEN, frontend tsc PASS. 커밋은 하지 않았다.
 - `T-WIP-STOCK-ACTUAL-SQL`: `/production/wip-stock` DataGrid SQL 조회문을 실제 백엔드 조회 구조(`PRODUCT_STOCKS s LEFT JOIN ITEM_MASTERS im LEFT JOIN WAREHOUSES wh`)로 교체했다. 기존 `WIP_STOCKS` 하드코딩 제거, 화면 유형/검색 필터 반영, 구조 테스트 RED→GREEN, FE tsc, 3002 브라우저 SQL 모달 검증 완료. 커밋은 하지 않았다.
 - `T-ARRIVAL-RESULT-AGENT-REPRINT`: `/material/arrival-result` 라벨 재발행도 `/material/arrival`과 같은 방식으로 맞췄다. 페이지가 `mat_lot` 템플릿 목록을 조회하고 우측 재발행 영역의 `입하 라벨 템플릿` Select 선택값을 `MatLabelPreviewModal`에 전달한다. Playwright로 `R26061800003` 선택, `matlot_label::mat_lot` 유지, 바코드 ready 후 agent `/print` 1회, `MAT-ARRIVAL-VH1-RM260618-00003.pdf` 45,103 bytes 생성 확인. 구조 테스트, FE tsc, print-agent 구조 테스트, Go test PASS.
 - `T-PRINT-AGENT-PDF-OUTPUT`: `Microsoft Print to PDF` 출력이 `Access is denied`로 실패하던 원인을 보정했다. agent가 PDF 프린터를 감지하면 `logs/prints/<jobId>.pdf`를 `DOCINFO.lpszOutput`으로 넘긴다. 새 exe 빌드 후 agent 재시작 완료. `/test-print`는 `HANES-TEST-PRINT.pdf` 생성, `/material/arrival`에서는 `matlot_label::mat_lot` 선택 후 `PO-26-T01/TMN-C` 1개 입하 발행 및 `MAT-ARRIVAL-VH1-RM260618-00003.pdf` 생성 확인. 테스트 과정에서 `PO-26-T01 / TMN-C` 누적 입하수량은 3이 됐다.
@@ -103,6 +104,7 @@
 
 ## Next AI Should
 
+- `T-MATERIAL-ARRIVAL-QTY-FORMAT` 완료 후 REVIEW 상태. `/material/arrival` 자재입하처리 모달의 입수량/계산식/예상 시리얼수 숫자 표시만 천단위 포맷으로 보정했고, 입력 필드 동작은 유지했다. 신규 구조 테스트와 FE tsc를 완료했고 커밋은 하지 않았다.
 - `T-KIOSK-MOUNTED-RELOAD` 완료 후 REVIEW 상태. 키오스크 소모품 재조회는 선택 설비 기준 `CONSUMABLE_STOCKS` mounted 상태를 읽도록 보정했고, 3002 브라우저에서 mounted UID 2건 표시까지 확인했다. 커밋은 하지 않았다.
 - `T-WIP-STOCK-ACTUAL-SQL` 완료 후 REVIEW 상태. `/production/wip-stock` SQL 미리보기는 이제 실제 `PRODUCT_STOCKS` 기반 조회 SQL과 화면 필터를 반영한다. 신규 구조 테스트, FE tsc, 3002 브라우저 SQL 모달 검증을 완료했고 커밋은 하지 않았다.
 - `T-DATAGRID-HOVER-SCROLL-REMOVE` 완료 후 REVIEW 상태. 공용 `DataGrid`의 좌우 hover 자동 스크롤 핸들 기능을 제거했고 `ScrollHandle.tsx`를 삭제했다. 신규 구조 테스트, 제품 도면관리 구조 테스트, FE tsc, 3002 브라우저 DOM 검증을 완료했다. 커밋은 하지 않았다.

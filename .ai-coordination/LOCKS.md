@@ -28,8 +28,8 @@ Before editing, add a lock entry. Mark it released when done.
   started: 2026-06-19 KST
   last_seen: 2026-06-19 KST
   expires: 2026-06-19 KST
-  status: active
-  note: 자재입하처리 모달의 입수량 등 숫자 표시를 천단위 포맷으로 보정.
+  status: released
+  note: 자재입하처리 모달의 입수량/계산식/예상 시리얼수 표시 천단위 포맷 보정 완료. 구조 테스트 RED→GREEN 및 FE tsc PASS.
 
 - task: T-HARNESS-FLOW-RENEWAL-P45
   owner: claude
