@@ -395,6 +395,40 @@ export class IssueRequestService {
     const requestTenantWhere = this.tenantWhere(effectiveCompany, effectivePlant);
 
     return this.tx.run(async (queryRunner) => {
+      const validatedItems: Array<{ dtoItem: RequestIssueDto['items'][number]; reqItem: MatIssueRequestItem }> = [];
+
+      for (const dtoItem of dto.items) {
+        const reqItemSeq = Number(dtoItem.requestItemId);
+        const reqItem = await this.requestItemRepository.findOne({
+          where: { requestId: requestNo, seq: reqItemSeq, ...requestTenantWhere },
+        });
+        if (!reqItem) {
+          throw new BadRequestException(`출고요청 항목을 찾을 수 없습니다: ${dtoItem.requestItemId}`);
+        }
+
+        const remainingQty = reqItem.requestQty - reqItem.issuedQty;
+        if (dtoItem.issueQty > remainingQty) {
+          throw new BadRequestException(
+            `요청 수량을 초과해 출고할 수 없습니다. 항목 ${reqItemSeq}, 잔여: ${remainingQty}, 요청: ${dtoItem.issueQty}`,
+          );
+        }
+
+        const lot = await queryRunner.manager.findOne(MatLot, {
+          where: { matUid: dtoItem.matUid, ...requestTenantWhere },
+        });
+        if (!lot) {
+          throw new BadRequestException(`LOT를 찾을 수 없습니다: ${dtoItem.matUid}`);
+        }
+
+        if (lot.itemCode !== reqItem.itemCode) {
+          throw new BadRequestException(
+            `출고요청 품목과 스캔 LOT 품목이 일치하지 않습니다. 항목 ${reqItemSeq}, 요청품목: ${reqItem.itemCode}, LOT품목: ${lot.itemCode}`,
+          );
+        }
+
+        validatedItems.push({ dtoItem, reqItem });
+      }
+
       const issueResult = await this.matIssueService.createInTx(queryRunner, {
         orderNo: request.orderNo ?? undefined,
         warehouseCode: dto.warehouseCode,
@@ -405,26 +439,10 @@ export class IssueRequestService {
       }, effectiveCompany ?? undefined, effectivePlant ?? undefined);
 
       // 각 요청 품목의 issuedQty 갱신
-      for (const dtoItem of dto.items) {
-        // requestItemId는 seq 번호
-        const reqItemSeq = Number(dtoItem.requestItemId);
-        const reqItem = await this.requestItemRepository.findOne({
-          where: { requestId: requestNo, seq: reqItemSeq, ...requestTenantWhere },
+      for (const { dtoItem, reqItem } of validatedItems) {
+        await queryRunner.manager.update(MatIssueRequestItem, { requestId: reqItem.requestId, seq: reqItem.seq, ...requestTenantWhere }, {
+          issuedQty: reqItem.issuedQty + dtoItem.issueQty,
         });
-        if (!reqItem) {
-          throw new BadRequestException(`출고요청 항목을 찾을 수 없습니다: ${dtoItem.requestItemId}`);
-        }
-        const remainingQty = reqItem.requestQty - reqItem.issuedQty;
-        if (dtoItem.issueQty > remainingQty) {
-          throw new BadRequestException(
-            `요청 수량을 초과해 출고할 수 없습니다. 항목 ${reqItemSeq}, 잔여: ${remainingQty}, 요청: ${dtoItem.issueQty}`,
-          );
-        }
-        if (reqItem) {
-          await queryRunner.manager.update(MatIssueRequestItem, { requestId: reqItem.requestId, seq: reqItem.seq, ...requestTenantWhere }, {
-            issuedQty: reqItem.issuedQty + dtoItem.issueQty,
-          });
-        }
       }
 
       // 모든 품목 완전 출고 여부 확인

@@ -10,6 +10,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
@@ -416,12 +417,17 @@ describe('IssueRequestService', () => {
       requestItemRepo.findOne.mockResolvedValue({
         requestId: 'REQ-001',
         seq: 1,
+        itemCode: 'ITEM-001',
         requestQty: 10,
         issuedQty: 2,
       } as MatIssueRequestItem);
       requestItemRepo.find.mockResolvedValue([
-        { requestId: 'REQ-001', seq: 1, requestQty: 10, issuedQty: 2 } as MatIssueRequestItem,
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 2 } as MatIssueRequestItem,
       ]);
+      queryRunner.manager.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+      } as MatLot);
 
       await service.issueFromRequest('REQ-001', {
         warehouseCode: 'WH-01',
@@ -467,6 +473,40 @@ describe('IssueRequestService', () => {
 
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('스캔 LOT 품목이 요청 품목과 다르면 실제 출고를 호출하지 않는다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: null,
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue({ issueNo: 'ISSUE-001' } as any);
+      requestItemRepo.findOne.mockResolvedValue({
+        requestId: 'REQ-001',
+        seq: 1,
+        itemCode: 'ITEM-A',
+        requestQty: 10,
+        issuedQty: 0,
+      } as MatIssueRequestItem);
+      queryRunner.manager.findOne.mockResolvedValue({
+        matUid: 'MAT-B',
+        itemCode: 'ITEM-B',
+      } as MatLot);
+
+      await expect(
+        service.issueFromRequest('REQ-001', {
+          warehouseCode: 'WH-01',
+          items: [{ requestItemId: '1', matUid: 'MAT-B', issueQty: 3 }],
+        }, 'C1', 'P1'),
+      ).rejects.toThrow('출고요청 품목과 스캔 LOT 품목이 일치하지 않습니다');
+
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect((matIssueService as any).createInTx).not.toHaveBeenCalled();
+      expect(queryRunner.manager.update).not.toHaveBeenCalled();
     });
 
     it('실출고는 조회된 요청 테넌트가 요청 테넌트와 다르면 트랜잭션을 시작하지 않는다', async () => {
