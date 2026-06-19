@@ -479,11 +479,18 @@ export class ProductInventoryService {
 
     const saved = await qr.manager.save(ProductTransaction, transaction);
 
-    // 3. 출고 창고 재고 감소
-    await qr.manager.update(ProductStock,
-      { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, ...tenantWhere },
-      { qty: stock.qty - dto.qty, availableQty: stock.availableQty - dto.qty },
-    );
+    // 3. 출고 창고 재고 감소 (소진 시 행 삭제 — qty0 잔재 방지, FIFO/transfer 차감과 일관)
+    const newFromQty = stock.qty - dto.qty;
+    if (newFromQty <= 0 && stock.reservedQty === 0) {
+      await qr.manager.delete(ProductStock,
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, ...tenantWhere },
+      );
+    } else {
+      await qr.manager.update(ProductStock,
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, ...tenantWhere },
+        { qty: newFromQty, availableQty: stock.availableQty - dto.qty },
+      );
+    }
 
     // 4. 이동 대상 창고가 있으면 입고 처리
     if (dto.toWarehouseId) {
