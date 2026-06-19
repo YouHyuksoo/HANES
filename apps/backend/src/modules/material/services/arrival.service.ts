@@ -622,7 +622,7 @@ export class ArrivalService {
     // 입하번호 + PO + 품번 그룹 단위 집계 (시리얼은 우측에서 별도 조회)
     const grouped =
       `SELECT a."ARRIVAL_NO" AS "arrivalNo", a."PO_NO" AS "poNo", a."ITEM_CODE" AS "itemCode",` +
-      ` MIN(a."SEQ") AS "seq", MIN(a."ARRIVAL_DATE") AS "arrivalDate", SUM(a."QTY") AS "qty",` +
+      ` MIN(a."SEQ") AS "seq", MIN(a."ARRIVAL_DATE") AS "arrivalDate", MAX(a."CREATED_AT") AS "createdAt", SUM(a."QTY") AS "qty",` +
       ` MAX(a."IQC_STATUS") AS "iqcStatus", MAX(a."VENDOR_ID") AS "vendorId", MAX(a."VENDOR_NAME") AS "vendorName",` +
       ` MAX(i."ITEM_NAME") AS "itemName", MAX(i."ITEM_TYPE") AS "itemType", MAX(NVL(i."IQC_FLAG",'N')) AS "iqcFlag",` +
       ` COUNT(CASE WHEN a."STATUS" <> 'CANCELED' THEN 1 END) AS "activeCount",` +
@@ -660,7 +660,7 @@ export class ArrivalService {
     const limBind = binds.push(limit);
     const dataSql =
       `SELECT base.* FROM (${inner}) base${filter}` +
-      ` ORDER BY base."arrivalDate" DESC, base."arrivalNo" DESC, base."itemCode"` +
+      ` ORDER BY base."createdAt" DESC, base."arrivalDate" DESC, base."arrivalNo" DESC, base."itemCode"` +
       ` OFFSET :${offBind} ROWS FETCH NEXT :${limBind} ROWS ONLY`;
     const rows = await this.dataSource.query(dataSql, binds);
 
@@ -675,6 +675,7 @@ export class ArrivalService {
         lineNo: r.lineNo ?? null,
         relNo: r.relNo ?? null,
         arrivalDate: r.arrivalDate,
+        createdAt: r.createdAt ?? null,
         itemCode: r.itemCode,
         itemName: r.itemName ?? null,
         qty: Number(r.qty ?? 0),

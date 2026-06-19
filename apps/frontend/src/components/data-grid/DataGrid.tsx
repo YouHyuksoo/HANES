@@ -112,6 +112,8 @@ export interface DataGridProps<T> {
   sqlQuery?: string;
   /** 서버사이드 필터 상태 — SQL 뷰어에 WHERE 조건으로 반영 (빈 문자열/null/undefined 자동 제외) */
   sqlFilters?: Record<string, unknown>;
+  /** 초기 정렬 상태(기본정렬). 예: [{ id: "createdAt", desc: true }] */
+  initialSorting?: SortingState;
 }
 
 function DataGrid<T>({
@@ -139,8 +141,9 @@ function DataGrid<T>({
   enableFullscreen = true,
   sqlQuery,
   sqlFilters,
+  initialSorting,
 }: DataGridProps<T>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(initialSorting ?? []);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});

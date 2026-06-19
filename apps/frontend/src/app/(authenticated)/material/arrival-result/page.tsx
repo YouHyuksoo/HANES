@@ -41,6 +41,7 @@ interface ArrivalResultRow {
   lineNo: number | null;
   relNo: number | null;
   arrivalDate: string | null;
+  createdAt: string | null;
   itemCode: string;
   itemName: string | null;
   qty: number;
@@ -346,6 +347,7 @@ export default function ArrivalResultPage() {
     { accessorKey: "lineNo", header: "L/N", size: 50, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center">{(getValue() as number) ?? "-"}</div> },
     { accessorKey: "relNo", header: "R/N", size: 50, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center">{(getValue() as number) ?? "-"}</div> },
     { accessorKey: "arrivalDate", header: t("material.arrivalResult.col.arrivalDate", "입하일"), size: 105, meta: { filterType: "date" as const }, cell: ({ getValue }) => <div className="text-center">{fmtDate(getValue() as string)}</div> },
+    { accessorKey: "createdAt", header: t("material.arrivalResult.col.createdAt", "등록일자"), size: 110, meta: { filterType: "date" as const }, cell: ({ getValue }) => <div className="text-center">{fmtDate(getValue() as string)}</div> },
     {
       accessorKey: "itemCode",
       header: t("common.partCode"),
@@ -401,6 +403,7 @@ export default function ArrivalResultPage() {
       sqlQuery={`SELECT *\nFROM MAT_ARRIVALS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
               data={rows}
               columns={columns}
+              initialSorting={[{ id: "createdAt", desc: true }]}
               isLoading={loading}
               enableColumnFilter
               enableExport
