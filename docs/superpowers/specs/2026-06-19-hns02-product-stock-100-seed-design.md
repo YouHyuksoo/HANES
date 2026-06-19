@@ -185,8 +185,10 @@ HNS02 100개 기준 누적 소요량(= 작업지시 PLAN_QTY=GOOD_QTY):
 - SG_LABELS 상태 전이로 표현: IN_STOCK → MOUNTED(상위 공정 장착) → CONSUMED. MOUNTED_EQUIP_CODE/CURRENT_PROCESS_CODE 세팅
 - 원자재 자동장착은 수불 없음(설계 원칙) → STOCK_TRANSACTIONS MAT_OUT(소비)로만 표현
 
-### 4.9 출하
-- 생성하지 않음. SHIPMENT_ORDERS/SHIPMENT_LOGS 무변경.
+### 4.9 출하지시 (재고 미차감)
+- **SHIPMENT_ORDERS 1건**(`SOH-260619-001`, STATUS='CONFIRMED', 고객 CUS-001/현대자동차, SHIP_DATE=오늘) + **SHIPMENT_ORDER_ITEMS**(HNS02 ORDER_QTY=100, SHIPPED_QTY=0)
+- 출하지시 화면(`/shipping/order`) + 출하이력 화면(`/shipping/history`, 둘 다 `GET /shipping/orders`=SHIPMENT_ORDERS 조회, 날짜필터 없음)에 노출
+- **실제 출하(SHIPMENT_LOGS)는 생성 안 함** → mark-shipped 미실행 → 제품재고 100·박스 10 그대로 유지(재고 차감 없음). 출하확정 화면(`/shipping/confirm`, SHIPMENT_LOGS)은 빈 상태
 
 ## 5. 최종 상태 (검증 기준)
 
@@ -202,7 +204,8 @@ HNS02 100개 기준 누적 소요량(= 작업지시 PLAN_QTY=GOOD_QTY):
 | 반제품 PRODUCT_STOCKS(WIP) 잔량 | 0 (전량 소비) |
 | MAT_STOCKS 원자재 잔량 | 0 (입고=소비) |
 | 수불 차변=대변 정합 | STOCK_TX/PRODUCT_TX 합계 균형 |
-| SHIPMENT_* | 변화 없음 |
+| SHIPMENT_ORDERS (출하지시) | 1건 CONFIRMED (HNS02 100, SHIPPED_QTY=0) |
+| SHIPMENT_LOGS (실제 출하) | 0 (재고 미차감) |
 
 ## 6. 구현 방식
 
