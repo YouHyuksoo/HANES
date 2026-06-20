@@ -1,9 +1,42 @@
 {
+  "part": {
+    "code": "品目代码",
+    "name": "品目名称"
+  },
+  "equip": {
+    "code": "设备代码",
+    "name": "设备名称"
+  },
+  "worker": {
+    "code": "作业者代码",
+    "name": "作业者姓名"
+  },
+  "partner": {
+    "code": "客户代码",
+    "name": "客户名称"
+  },
+  "warehouse": {
+    "code": "仓库代码",
+    "name": "仓库名称"
+  },
   "common": {
     "save": "保存",
     "cancel": "取消",
     "delete": "删除",
     "confirmDelete": "确定要删除吗？",
+    "qty": "数量",
+    "view": "查看",
+    "unused": "未使用",
+    "deleteConfirm": "删除确认",
+    "deleteError": "删除时出错",
+    "deleted": "已删除",
+    "loadError": "查询时出错",
+    "requiredField": "请输入必填项。",
+    "saveError": "保存时出错",
+    "saved": "已保存",
+    "use": "使用",
+    "warehouse": "仓库",
+    "件": "件",
     "edit": "编辑",
     "change": "更改",
     "add": "添加",
@@ -895,6 +928,18 @@
   "master": {
     "part": {
       "title": "零件主数据",
+      "iqc": {
+        "methodFull": "检查"
+      },
+      "basicSampleQty": "基本样本数",
+      "expiryExtDays": "有效期延长(天)",
+      "image": "照片",
+      "imageChange": "更换照片",
+      "imageDeleteConfirm": "确定删除品目照片吗？",
+      "imageUploadHint": "点击选择品目照片",
+      "markingText": "打标文字",
+      "palletUnit": "托盘组成单位",
+      "sectionImage": "照片",
       "subtitle": "注册和管理零件信息。",
       "description": "注册和管理零件信息。",
       "partCode": "零件代码",
@@ -920,17 +965,21 @@
       "iqcFlag": "IQC对象",
       "inspectMethod": "检查区分",
       "iqcAqlPolicyCode": "AQL策略",
+      "storageLocation": "品目固定存放库位",
       "inspectFull": "检查",
       "inspectSkip": "免检",
       "tactTime": "节拍时间(秒)",
       "expiryDate": "有效期(天)",
       "sectionBasic": "基本信息",
       "sectionQty": "供应商 / 数量管理",
+      "imageLoadFailed": "无法加载图片",
       "partType": "品目类型",
       "itemCode": "品目代码"
     },
     "bom": {
       "title": "BOM管理",
+      "collapseAll": "全部折叠",
+      "expandAll": "展开全部",
       "subtitle": "管理物料清单(BOM)。",
       "description": "管理物料清单(BOM)。",
       "childPartCode": "子零件代码",
@@ -960,7 +1009,20 @@
       "oper": "投入工序",
       "excelUpload": "Excel上传",
       "downloadTemplate": "下载模板",
-      "childItem": "物料"
+      "childItem": "物料",
+      "bomStructureTitle": "BOM物料结构",
+      "bomStructureDesc": "此处仅管理子品目、用量、适用日等BOM构成。工序顺序在工艺路线管理中管理。",
+      "goRoutingManagement": "前往工艺路线管理",
+      "deleteConfirm": "确定删除此BOM项目吗？",
+      "deleteSuccess": "BOM已删除。",
+      "noRoutingData": "无工艺路线数据",
+      "processCode": "工序代码",
+      "routingViewTarget": "工艺路线查询对象",
+      "saveSuccess": "BOM已保存。",
+      "selectChildPart": "请选择子品目",
+      "seq": "顺序",
+      "side": "面",
+      "viewAllRouting": "查看全部工艺路线"
     },
     "gauge": {
       "title": "量具主数据",
@@ -982,6 +1044,39 @@
     },
     "equip": {
       "title": "设备主数据",
+      "addBomItem": "添加BOM品目",
+      "addBomLink": "添加BOM关联",
+      "bomItem": "BOM品目",
+      "bomList": "BOM列表",
+      "editBomItem": "编辑BOM品目",
+      "editBomLink": "编辑BOM关联",
+      "equipList": "设备列表",
+      "expireDate": "有效期限",
+      "installDate": "安装日期",
+      "itemCode": "品目代码",
+      "itemName": "品目名称",
+      "itemType": "品目类型",
+      "linkBomItem": "关联品目",
+      "maker": "制造商",
+      "quantity": "数量",
+      "replacementCycle": "更换周期(天)",
+      "safetyStock": "安全库存",
+      "searchEquip": "搜索设备...",
+      "sectionBasic": "基本信息",
+      "sectionComm": "通信设置",
+      "sectionMaker": "制造信息",
+      "sectionSpec": "规格 / 采购信息",
+      "sectionStock": "库存",
+      "selectEquip": "请选择设备",
+      "selectEquipFirst": "请先选择设备。",
+      "selectEquipHint": "在左侧选择设备以查询BOM。",
+      "serialPort": "串口",
+      "spec": "规格",
+      "stockQty": "库存",
+      "tabBom": "设备BOM管理",
+      "tabMasters": "设备基本信息",
+      "unit": "单位",
+      "unitPrice": "单价",
       "subtitle": "注册和管理设备信息。",
       "description": "注册和管理设备信息。",
       "equipCode": "设备代码",
@@ -1011,6 +1106,10 @@
     },
     "code": {
       "title": "代码管理",
+      "badge": "徽章",
+      "codeDesc": "说明",
+      "attr1": "徽章颜色 (Tailwind)",
+      "groupsCount": "个组",
       "subtitle": "管理公共代码。",
       "detailCode": "明细代码",
       "codeName": "代码名称",
@@ -1030,6 +1129,8 @@
     },
     "partner": {
       "title": "合作伙伴管理",
+      "sectionBasic": "基本信息",
+      "sectionContact": "联系方式",
       "subtitle": "管理供应商和客户合作伙伴信息。",
       "partnerCode": "合作伙伴代码",
       "partnerName": "合作伙伴名称",
@@ -1068,6 +1169,8 @@
     },
     "process": {
       "title": "工序主数据",
+      "lineType": "线别",
+      "assignEquipment": "设备配置",
       "subtitle": "注册和管理工序信息。",
       "processCode": "工序代码",
       "processName": "工序名称",
@@ -1094,6 +1197,9 @@
     },
     "routing": {
       "title": "工艺路线信息",
+      "circuitSpec": "回路规格",
+      "cutStripSpec": "长度/Strip",
+      "noCircuitLink": "未连接",
       "subtitle": "管理工序路线信息。",
       "seq": "顺序",
       "processCode": "工序代码",
@@ -1160,7 +1266,18 @@
       "issueSgLabel": "发放SG标签",
       "issueFgLabel": "发放FG标签",
       "sgLabelShort": "SG",
-      "fgLabelShort": "FG"
+      "fgLabelShort": "FG",
+      "conditionEditorDesc": "登记通过此工序所需的检查项目、基准值和单位。",
+      "itemSelectDesc": "选择成品或半成品后，可管理该品目的工艺路线工序顺序。",
+      "itemSelectTitle": "工艺路线对象品目",
+      "processNode": "工序",
+      "processSequenceDesc": "选择品目下的P工序后，可在右侧编辑良品条件。",
+      "stepManageCondition": "良品条件管理",
+      "stepManageConditionDesc": "管理各工序的检查基准值及设备I/F状态。",
+      "stepManageProcess": "工序顺序管理",
+      "stepManageProcessDesc": "按顺序添加/修改所选品目的作业工序。",
+      "stepSelectItem": "选择品目",
+      "stepSelectItemDesc": "选择要登记工艺路线的成品/半成品。"
     },
     "workCalendar": {
       "title": "生产月历管理",
@@ -1224,6 +1341,16 @@
     },
     "worker": {
       "title": "作业员管理",
+      "email": "邮箱",
+      "emptyMessage": "无已登记的作业者。",
+      "engName": "英文名",
+      "hireDate": "入职日",
+      "phone": "电话",
+      "position": "职级",
+      "quitDate": "离职日",
+      "remark": "备注",
+      "sectionBasic": "基本信息",
+      "sectionWork": "工作信息",
       "subtitle": "注册和管理作业员信息。",
       "workerCode": "工号",
       "workerName": "姓名",
@@ -1253,8 +1380,16 @@
       "cropProcessing": "处理中...",
       "deleteConfirm": "确定要删除吗？"
     },
+    "iqcGroup": {
+      "methodFull": "检查",
+      "methodSkip": "免检"
+    },
+    "iqcLink": {
+      "group": "检查组"
+    },
     "iqcItem": {
       "title": "检查项目主数据",
+      "sectionBasic": "基本信息",
       "subtitle": "注册并管理IQC使用的全局检查项目。",
       "seq": "序号",
       "inspectItem": "检查项目",
@@ -1318,6 +1453,11 @@
     },
     "equipInspect": {
       "title": "设备点检项目",
+      "selectedCount": "已选 {{count}} 个",
+      "bulkRegister": "批量登记 {{count}} 个",
+      "alreadyRegistered": "已登记",
+      "selectItemsGuide": "请选择项目",
+      "sortSeq": "顺序",
       "subtitle": "管理设备日常/定期点检基准。",
       "qrLabel": "QR标签",
       "qrLabelTitle": "点检项目QR标签",
@@ -1376,6 +1516,13 @@
     },
     "equipInspectItem": {
       "title": "点检项目主数据",
+      "image": "照片",
+      "imageChange": "更换照片",
+      "imageDeleteConfirm": "确定删除点检项目照片吗？",
+      "imageUploadHint": "点击选择点检项目照片",
+      "imageLoadFailed": "无法加载图片",
+      "sectionBasic": "基本信息",
+      "sectionCriteria": "判定基准",
       "subtitle": "按设备类型登记和管理点检项目。设备点检映射的基准信息。",
       "statTotal": "全部项目",
       "statEquipTypes": "设备类型数"
@@ -1395,6 +1542,7 @@
     "workInstruction": {
       "title": "作业指导书",
       "subtitle": "管理各零件/工序的作业指导。",
+      "sectionBasic": "基本信息",
       "processCode": "工序代码",
       "docTitle": "文档名称",
       "updatedAt": "更新日期",
@@ -1418,6 +1566,8 @@
     },
     "transferRule": {
       "title": "仓库移转规则",
+      "deleteConfirm": "确定删除此移库规则吗？",
+      "deleteRule": "删除规则",
       "subtitle": "管理仓库间移转许可规则。",
       "fromWarehouseCode": "出发仓代码",
       "fromWarehouseName": "出发仓名称",
@@ -1502,10 +1652,19 @@
       "printModeBrowser": "浏览器打印",
       "printModeZpl": "ZPL 打印",
       "printModeBoth": "同时（浏览器+ZPL）",
-      "variableHelper": "变量助手（点击插入）"
+      "variableHelper": "变量助手（点击插入）",
+      "catMatLot": "物料批次标签",
+      "designOnly": "仅提供标签设计",
+      "designOnlyHint": "此画面仅管理设计和模板。实际发行在各业务画面进行。",
+      "matLotDesignHint": "请设置设计并保存为模板。发行在物料管理 > 入库标签发行中进行。",
+      "matLotDesignOnly": "仅物料批次标签设计"
     },
     "company": {
       "title": "公司管理",
+      "deletePlantConfirm": "确定删除事业场 '{{name}}' 吗？",
+      "deleteConfirm": "确定删除 '{{name}}' 吗？",
+      "sectionBasic": "基本信息",
+      "sectionContact": "联系方式",
       "subtitle": "注册和管理公司信息。",
       "companyCode": "公司代码",
       "companyName": "公司名称",
@@ -1527,6 +1686,8 @@
     },
     "vendorBarcode": {
       "title": "供应商条码映射",
+      "sectionBarcode": "条码信息",
+      "sectionPart": "品目映射",
       "subtitle": "将供应商条码映射到MES物料编号以实现自动匹配",
       "vendorBarcode": "供应商条码",
       "partCode": "物料编号",

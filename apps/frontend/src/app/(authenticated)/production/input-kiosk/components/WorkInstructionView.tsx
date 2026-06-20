@@ -44,6 +44,10 @@ export default function WorkInstructionView() {
   const [instructions, setInstructions] = useState<WorkInstruction[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [zoomed, setZoomed] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // 페이지 전환 시 이미지 로드 에러 상태 리셋
+  useEffect(() => { setImgError(false); }, [activeIdx]);
 
   // 공정코드: 선택된 설비 기준 우선, 없으면 작업지시 공정코드로 폴백
   const processCode = selectedEquip?.processCode ?? selectedJobOrder?.processCode;
@@ -132,12 +136,13 @@ export default function WorkInstructionView() {
             <span className="text-sm">{t('kiosk.instruction.noInstruction')}</span>
             <span className="text-xs opacity-60">{t('kiosk.instruction.noInstructionHint')}</span>
           </div>
-        ) : fileUrl && isImageUrl(current?.imageUrl) ? (
+        ) : fileUrl && isImageUrl(current?.imageUrl) && !imgError ? (
           <img
             src={fileUrl}
             alt={current.title}
             className="w-full h-auto object-contain cursor-zoom-in"
             onClick={() => setZoomed(true)}
+            onError={() => setImgError(true)}
           />
         ) : fileUrl && isPdfUrl(current?.imageUrl) ? (
           <iframe
@@ -174,7 +179,7 @@ export default function WorkInstructionView() {
       </div>
 
       {/* 줌 오버레이 */}
-      {zoomed && fileUrl && isImageUrl(current?.imageUrl) && (
+      {zoomed && fileUrl && isImageUrl(current?.imageUrl) && !imgError && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-zoom-out"
           onClick={() => setZoomed(false)}

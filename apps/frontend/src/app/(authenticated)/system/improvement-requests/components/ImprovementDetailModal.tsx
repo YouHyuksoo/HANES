@@ -39,6 +39,10 @@ export default function ImprovementDetailModal({ imprId, onClose, onStatusChange
   const { t } = useTranslation();
   const [item, setItem] = useState<ImprRequestItem | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [screenshotError, setScreenshotError] = useState(false);
+
+  // 스크린샷 변경 시 로드 에러 상태 리셋
+  useEffect(() => { setScreenshotError(false); }, [item?.screenshot]);
 
   useEffect(() => {
     improvementRequestService.detail(imprId).then(setItem).catch(() => {
@@ -111,11 +115,11 @@ export default function ImprovementDetailModal({ imprId, onClose, onStatusChange
                 <p className="text-sm text-text bg-surface rounded px-3 py-2 whitespace-pre-wrap">{item.description}</p>
               </div>
 
-              {item.screenshot ? (
+              {item.screenshot && !screenshotError ? (
                 <div>
                   <p className="text-xs font-medium text-text-muted mb-1">{t("improvement.screenshot")}</p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.screenshot} alt="screenshot" className="w-full rounded border border-border" />
+                  <img src={item.screenshot} alt="screenshot" onError={() => setScreenshotError(true)} className="w-full rounded border border-border" />
                 </div>
               ) : (
                 <p className="text-xs text-text-muted">{t("improvement.noScreenshot")}</p>

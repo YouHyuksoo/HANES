@@ -1,9 +1,42 @@
 {
+  "part": {
+    "code": "Mã mặt hàng",
+    "name": "Tên mặt hàng"
+  },
+  "equip": {
+    "code": "Mã thiết bị",
+    "name": "Tên thiết bị"
+  },
+  "worker": {
+    "code": "Mã công nhân",
+    "name": "Tên công nhân"
+  },
+  "partner": {
+    "code": "Mã đối tác",
+    "name": "Tên đối tác"
+  },
+  "warehouse": {
+    "code": "Mã kho",
+    "name": "Tên kho"
+  },
   "common": {
     "save": "Lưu",
     "cancel": "Hủy",
     "delete": "Xóa",
     "confirmDelete": "Bạn có chắc chắn muốn xóa không?",
+    "qty": "Số lượng",
+    "view": "Xem",
+    "unused": "Không sử dụng",
+    "deleteConfirm": "Xác nhận xóa",
+    "deleteError": "Lỗi khi xóa",
+    "deleted": "Đã xóa",
+    "loadError": "Lỗi khi tải",
+    "requiredField": "Vui lòng nhập các mục bắt buộc.",
+    "saveError": "Lỗi khi lưu",
+    "saved": "Đã lưu",
+    "use": "Sử dụng",
+    "warehouse": "Kho",
+    "件": "",
     "edit": "Sửa",
     "change": "Thay đổi",
     "add": "Thêm",
@@ -895,6 +928,18 @@
   "master": {
     "part": {
       "title": "Danh mục linh kiện",
+      "iqc": {
+        "methodFull": "Kiểm tra"
+      },
+      "basicSampleQty": "Số mẫu cơ bản",
+      "expiryExtDays": "Gia hạn HSD (ngày)",
+      "image": "Ảnh",
+      "imageChange": "Đổi ảnh",
+      "imageDeleteConfirm": "Xóa ảnh mặt hàng?",
+      "imageUploadHint": "Nhấp để chọn ảnh mặt hàng",
+      "markingText": "Nội dung khắc",
+      "palletUnit": "Đơn vị pallet",
+      "sectionImage": "Ảnh",
       "subtitle": "Đăng ký và quản lý thông tin linh kiện.",
       "description": "Đăng ký và quản lý thông tin linh kiện.",
       "partCode": "Mã linh kiện",
@@ -920,17 +965,21 @@
       "iqcFlag": "Đối tượng IQC",
       "inspectMethod": "Phân biệt kiểm tra",
       "iqcAqlPolicyCode": "Chính sách AQL",
+      "storageLocation": "Vị trí lưu trữ cố định",
       "inspectFull": "Kiểm tra",
       "inspectSkip": "Bỏ qua",
       "tactTime": "Thời gian tact (giây)",
       "expiryDate": "Hạn sử dụng (ngày)",
       "sectionBasic": "Thông tin cơ bản",
       "sectionQty": "Nhà cung cấp / Quản lý SL",
+      "imageLoadFailed": "Không thể tải hình ảnh",
       "partType": "Loại sản phẩm",
       "itemCode": "Mã hàng"
     },
     "bom": {
       "title": "Quản lý BOM",
+      "collapseAll": "Thu gọn tất cả",
+      "expandAll": "Mở rộng tất cả",
       "subtitle": "Quản lý danh sách vật tư (BOM).",
       "description": "Quản lý danh sách vật tư (BOM).",
       "childPartCode": "Mã linh kiện con",
@@ -960,7 +1009,20 @@
       "oper": "Công đoạn sử dụng",
       "excelUpload": "Tải lên Excel",
       "downloadTemplate": "Tải mẫu",
-      "childItem": "Vật tư"
+      "childItem": "Vật tư",
+      "bomStructureTitle": "Cấu trúc vật tư BOM",
+      "bomStructureDesc": "Tại đây chỉ quản lý cấu thành BOM như linh kiện con, định mức, ngày áp dụng. Trình tự công đoạn được quản lý trong Quản lý định tuyến.",
+      "goRoutingManagement": "Đến Quản lý định tuyến",
+      "deleteConfirm": "Xóa mục BOM này?",
+      "deleteSuccess": "Đã xóa BOM.",
+      "noRoutingData": "Không có dữ liệu định tuyến",
+      "processCode": "Mã công đoạn",
+      "routingViewTarget": "Đối tượng xem định tuyến",
+      "saveSuccess": "Đã lưu BOM.",
+      "selectChildPart": "Vui lòng chọn linh kiện con",
+      "seq": "Thứ tự",
+      "side": "Mặt",
+      "viewAllRouting": "Xem toàn bộ định tuyến"
     },
     "gauge": {
       "title": "Quản lý dụng cụ đo",
@@ -982,6 +1044,39 @@
     },
     "equip": {
       "title": "Danh mục thiết bị",
+      "addBomItem": "Thêm mục BOM",
+      "addBomLink": "Thêm liên kết BOM",
+      "bomItem": "Mục BOM",
+      "bomList": "Danh sách BOM",
+      "editBomItem": "Sửa mục BOM",
+      "editBomLink": "Sửa liên kết BOM",
+      "equipList": "Danh sách thiết bị",
+      "expireDate": "Hạn sử dụng",
+      "installDate": "Ngày lắp đặt",
+      "itemCode": "Mã mặt hàng",
+      "itemName": "Tên mặt hàng",
+      "itemType": "Loại mặt hàng",
+      "linkBomItem": "Liên kết mặt hàng",
+      "maker": "Nhà sản xuất",
+      "quantity": "Số lượng",
+      "replacementCycle": "Chu kỳ thay thế (ngày)",
+      "safetyStock": "Tồn kho an toàn",
+      "searchEquip": "Tìm thiết bị...",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionComm": "Cài đặt truyền thông",
+      "sectionMaker": "Thông tin sản xuất",
+      "sectionSpec": "Quy cách / Thông tin mua hàng",
+      "sectionStock": "Tồn kho",
+      "selectEquip": "Vui lòng chọn thiết bị",
+      "selectEquipFirst": "Vui lòng chọn thiết bị trước.",
+      "selectEquipHint": "Chọn thiết bị bên trái để xem BOM.",
+      "serialPort": "Cổng Serial",
+      "spec": "Quy cách",
+      "stockQty": "Tồn kho",
+      "tabBom": "Quản lý BOM thiết bị",
+      "tabMasters": "Thông tin cơ bản thiết bị",
+      "unit": "Đơn vị",
+      "unitPrice": "Đơn giá",
       "subtitle": "Đăng ký và quản lý thông tin thiết bị.",
       "description": "Đăng ký và quản lý thông tin thiết bị.",
       "equipCode": "Mã thiết bị",
@@ -1011,6 +1106,10 @@
     },
     "code": {
       "title": "Quản lý mã",
+      "badge": "Nhãn",
+      "codeDesc": "Mô tả",
+      "attr1": "Màu nhãn (Tailwind)",
+      "groupsCount": " nhóm",
       "subtitle": "Quản lý mã chung.",
       "detailCode": "Mã chi tiết",
       "codeName": "Tên mã",
@@ -1030,6 +1129,8 @@
     },
     "partner": {
       "title": "Quản lý đối tác",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionContact": "Liên hệ",
       "subtitle": "Quản lý thông tin nhà cung cấp và khách hàng.",
       "partnerCode": "Mã đối tác",
       "partnerName": "Tên đối tác",
@@ -1068,6 +1169,8 @@
     },
     "process": {
       "title": "Danh mục công đoạn",
+      "lineType": "Loại line",
+      "assignEquipment": "Bố trí thiết bị",
       "subtitle": "Đăng ký và quản lý thông tin công đoạn.",
       "processCode": "Mã công đoạn",
       "processName": "Tên công đoạn",
@@ -1094,6 +1197,9 @@
     },
     "routing": {
       "title": "Thông tin quy trình",
+      "circuitSpec": "Quy cách mạch",
+      "cutStripSpec": "Dài/Strip",
+      "noCircuitLink": "Chưa liên kết",
       "subtitle": "Quản lý thông tin quy trình công đoạn.",
       "seq": "STT",
       "processCode": "Mã công đoạn",
@@ -1160,7 +1266,18 @@
       "issueSgLabel": "Phát hành nhãn SG",
       "issueFgLabel": "Phát hành nhãn FG",
       "sgLabelShort": "SG",
-      "fgLabelShort": "FG"
+      "fgLabelShort": "FG",
+      "conditionEditorDesc": "Đăng ký hạng mục kiểm tra, giá trị tiêu chuẩn và đơn vị để vượt qua công đoạn này.",
+      "itemSelectDesc": "Khi chọn thành phẩm hoặc bán thành phẩm, quản lý trình tự công đoạn định tuyến của mặt hàng đó.",
+      "itemSelectTitle": "Mặt hàng đối tượng định tuyến",
+      "processNode": "Công đoạn",
+      "processSequenceDesc": "Khi chọn công đoạn P dưới mặt hàng, chỉnh sửa điều kiện hàng tốt ở bên phải.",
+      "stepManageCondition": "Quản lý điều kiện hàng tốt",
+      "stepManageConditionDesc": "Quản lý giá trị tiêu chuẩn kiểm tra và trạng thái I/F thiết bị theo từng công đoạn.",
+      "stepManageProcess": "Quản lý trình tự công đoạn",
+      "stepManageProcessDesc": "Thêm/sửa công đoạn của mặt hàng đã chọn theo thứ tự.",
+      "stepSelectItem": "Chọn mặt hàng",
+      "stepSelectItemDesc": "Chọn thành phẩm/bán thành phẩm để đăng ký định tuyến."
     },
     "workCalendar": {
       "title": "Quản lý lịch sản xuất",
@@ -1224,6 +1341,16 @@
     },
     "worker": {
       "title": "Quản lý công nhân",
+      "email": "Email",
+      "emptyMessage": "Chưa có công nhân nào.",
+      "engName": "Tên tiếng Anh",
+      "hireDate": "Ngày vào làm",
+      "phone": "Điện thoại",
+      "position": "Chức vụ",
+      "quitDate": "Ngày nghỉ việc",
+      "remark": "Ghi chú",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionWork": "Thông tin làm việc",
       "subtitle": "Đăng ký và quản lý thông tin công nhân.",
       "workerCode": "Mã nhân viên",
       "workerName": "Họ tên",
@@ -1253,8 +1380,16 @@
       "cropProcessing": "Đang xử lý...",
       "deleteConfirm": "Bạn có chắc muốn xóa?"
     },
+    "iqcGroup": {
+      "methodFull": "Kiểm tra",
+      "methodSkip": "Miễn kiểm"
+    },
+    "iqcLink": {
+      "group": "Nhóm kiểm tra"
+    },
     "iqcItem": {
       "title": "Danh mục kiểm tra",
+      "sectionBasic": "Thông tin cơ bản",
       "subtitle": "Đăng ký và quản lý các hạng mục kiểm tra IQC dùng chung.",
       "seq": "STT",
       "inspectItem": "Hạng mục kiểm tra",
@@ -1318,6 +1453,11 @@
     },
     "equipInspect": {
       "title": "Hạng mục kiểm tra thiết bị",
+      "selectedCount": "Đã chọn {{count}}",
+      "bulkRegister": "Đăng ký {{count}}",
+      "alreadyRegistered": "Đã đăng ký",
+      "selectItemsGuide": "Vui lòng chọn hạng mục",
+      "sortSeq": "Thứ tự",
       "subtitle": "Quản lý tiêu chuẩn kiểm tra hàng ngày/định kỳ thiết bị.",
       "qrLabel": "Nhãn QR",
       "qrLabelTitle": "Nhãn QR hạng mục kiểm tra",
@@ -1376,6 +1516,13 @@
     },
     "equipInspectItem": {
       "title": "Danh mục hạng mục kiểm tra",
+      "image": "Ảnh",
+      "imageChange": "Đổi ảnh",
+      "imageDeleteConfirm": "Xóa ảnh hạng mục kiểm tra?",
+      "imageUploadHint": "Nhấp để chọn ảnh hạng mục kiểm tra",
+      "imageLoadFailed": "Không thể tải hình ảnh",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionCriteria": "Tiêu chí đánh giá",
       "subtitle": "Đăng ký và quản lý hạng mục kiểm tra theo loại thiết bị. Thông tin chuẩn cho việc ánh xạ kiểm tra thiết bị.",
       "statTotal": "Tổng hạng mục",
       "statEquipTypes": "Số loại thiết bị"
@@ -1394,6 +1541,7 @@
     },
     "workInstruction": {
       "title": "Hướng dẫn công việc",
+      "sectionBasic": "Thông tin cơ bản",
       "subtitle": "Quản lý hướng dẫn công việc theo linh kiện/công đoạn.",
       "processCode": "Mã công đoạn",
       "docTitle": "Tên tài liệu",
@@ -1418,6 +1566,8 @@
     },
     "transferRule": {
       "title": "Quy tắc chuyển kho",
+      "deleteConfirm": "Xóa quy tắc chuyển kho này?",
+      "deleteRule": "Xóa quy tắc",
       "subtitle": "Quản lý quy tắc cho phép chuyển kho.",
       "fromWarehouseCode": "Mã kho đi",
       "fromWarehouseName": "Tên kho đi",
@@ -1502,10 +1652,19 @@
       "printModeBrowser": "In trình duyệt",
       "printModeZpl": "In ZPL",
       "printModeBoth": "Cả hai (Trình duyệt+ZPL)",
-      "variableHelper": "Trợ giúp biến (nhấp để chèn)"
+      "variableHelper": "Trợ giúp biến (nhấp để chèn)",
+      "catMatLot": "Nhãn lô vật tư",
+      "designOnly": "Chỉ cung cấp thiết kế nhãn",
+      "designOnlyHint": "Màn hình này chỉ quản lý thiết kế và mẫu. Việc phát hành thực tế được thực hiện ở từng màn hình nghiệp vụ.",
+      "matLotDesignHint": "Thiết lập thiết kế và lưu thành mẫu. Việc phát hành được thực hiện ở Quản lý vật tư > Phát hành nhãn nhập kho.",
+      "matLotDesignOnly": "Chỉ thiết kế nhãn lô vật tư"
     },
     "company": {
       "title": "Quản lý công ty",
+      "deletePlantConfirm": "Xóa nhà máy '{{name}}'?",
+      "deleteConfirm": "Xóa '{{name}}'?",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionContact": "Liên hệ",
       "subtitle": "Đăng ký và quản lý thông tin công ty.",
       "companyCode": "Mã công ty",
       "companyName": "Tên công ty",
@@ -1527,6 +1686,8 @@
     },
     "vendorBarcode": {
       "title": "Ánh xạ mã vạch nhà cung cấp",
+      "sectionBarcode": "Thông tin mã vạch",
+      "sectionPart": "Ánh xạ mặt hàng",
       "subtitle": "Ánh xạ mã vạch nhà cung cấp với mã vật tư MES để tự động khớp",
       "vendorBarcode": "Mã vạch NCC",
       "partCode": "Mã vật tư",

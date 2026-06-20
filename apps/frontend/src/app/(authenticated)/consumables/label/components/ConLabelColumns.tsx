@@ -37,9 +37,18 @@ interface UseConLabelColumnsParams {
   setQty: (code: string, qty: number) => void;
 }
 
-/** 이미지 썸네일 — 클릭 시 전체화면 라이트박스 */
+/** 이미지 썸네일 — 클릭 시 전체화면 라이트박스. 로드 실패 시 placeholder로 fallback */
 function LabelImageCell({ src }: { src: string }) {
   const [zoomed, setZoomed] = useState(false);
+  const [errored, setErrored] = useState(false);
+
+  if (errored) {
+    return (
+      <div className="w-9 h-9 rounded border border-dashed border-border flex items-center justify-center bg-surface">
+        <span className="text-text-muted text-xs">-</span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -51,6 +60,7 @@ function LabelImageCell({ src }: { src: string }) {
         <img
           src={src}
           alt=""
+          onError={() => setErrored(true)}
           className="w-9 h-9 object-cover rounded border border-border bg-surface block"
         />
       </button>

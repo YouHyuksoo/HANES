@@ -25,6 +25,20 @@ import ConsumableFormPanel, {
 } from "./components/ConsumableFormPanel";
 import ConsumableUsageMapPanel from "./components/ConsumableUsageMapPanel";
 
+/** 소모품 썸네일 — 이미지 로드 실패 시 '-'로 fallback */
+function ConsumableImageThumb({ src }: { src: string }) {
+  const [errored, setErrored] = useState(false);
+  if (errored) return <span className="text-text-muted text-xs">-</span>;
+  return (
+    <img
+      src={src}
+      alt=""
+      onError={() => setErrored(true)}
+      className="w-8 h-8 object-cover rounded border border-border"
+    />
+  );
+}
+
 function ConsumableMasterPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<ConsumableItem[]>([]);
@@ -138,7 +152,7 @@ function ConsumableMasterPage() {
         size: 60,
         meta: { filterType: "none" as const, align: "center" as const },
         cell: ({ row }) => row.original.imageUrl ? (
-          <img src={row.original.imageUrl} alt="" className="w-8 h-8 object-cover rounded border border-border" />
+          <ConsumableImageThumb src={row.original.imageUrl} />
         ) : (
           <span className="text-text-muted text-xs">-</span>
         ),

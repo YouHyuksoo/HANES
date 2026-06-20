@@ -62,6 +62,7 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
   const [tempImageSrc, setTempImageSrc] = useState("");
   const [croppedImage, setCroppedImage] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [photoError, setPhotoError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const roleOptions = useMemo(() => [
@@ -89,6 +90,9 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
     setCroppedImage(null);
     setPreviewUrl(editingUser?.photoUrl ?? "");
   }, [editingUser]);
+
+  // 사진 URL 변경 시 로드 에러 상태 리셋
+  useEffect(() => { setPhotoError(false); }, [previewUrl]);
 
   useEffect(() => {
     api.get("/system/pda-roles/active")
@@ -214,8 +218,8 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
           <div className="flex flex-col items-center gap-2">
             <div className="relative">
               <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-primary/30">
-                {previewUrl ? (
-                  <img src={previewUrl} alt="" className="w-full h-full object-cover" />
+                {previewUrl && !photoError ? (
+                  <img src={previewUrl} alt="" onError={() => setPhotoError(true)} className="w-full h-full object-cover" />
                 ) : (
                   <Users className="w-8 h-8 text-primary" />
                 )}

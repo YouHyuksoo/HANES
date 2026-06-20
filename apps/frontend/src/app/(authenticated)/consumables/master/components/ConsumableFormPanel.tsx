@@ -74,8 +74,14 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
   const categoryOptions = useComCodeOptions("CONSUMABLE_CATEGORY");
   const [form, setForm] = useState<ConsumableFormValues>(EMPTY);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
+
+  // imageUrl 변경 시 이미지 로드 에러 상태 리셋
+  useEffect(() => {
+    setImageError(false);
+  }, [imageUrl]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -285,11 +291,21 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
             <>
               {imageUrl ? (
                 <div className="relative group">
-                  <img
-                    src={imageUrl}
-                    alt={item?.consumableName || ""}
-                    className="w-full h-48 object-contain rounded-lg border border-border bg-surface"
-                  />
+                  {imageError ? (
+                    <div className="w-full h-48 rounded-lg border border-border bg-surface flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="w-8 h-8 text-text-muted" />
+                      <span className="text-xs text-text-muted">
+                        {t("consumables.master.imageLoadFailed", "이미지를 불러올 수 없습니다")}
+                      </span>
+                    </div>
+                  ) : (
+                    <img
+                      src={imageUrl}
+                      alt={item?.consumableName || ""}
+                      onError={() => setImageError(true)}
+                      className="w-full h-48 object-contain rounded-lg border border-border bg-surface"
+                    />
+                  )}
                   <button
                     onClick={() => setImageDeleteConfirmOpen(true)}
                     disabled={uploading}

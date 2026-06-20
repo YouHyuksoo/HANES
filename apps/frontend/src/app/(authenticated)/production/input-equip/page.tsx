@@ -20,7 +20,7 @@ import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/com
 import api from '@/services/api';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { JobOrder } from '@/components/production/JobOrderSelectModal';
-import type { Worker } from '@/components/worker/WorkerSelector';
+import { WorkerPhoto, type Worker } from '@/components/worker/WorkerSelector';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useInputEquipStore } from '@/stores/inputEquipStore';
@@ -372,13 +372,16 @@ export default function InputEquipPage() {
             </div>
             {selectedWorker ? (
               <div className="flex items-center gap-3">
-                {selectedWorker.photoUrl ? (
-                  <img src={selectedWorker.photoUrl} alt={selectedWorker.workerName} className="w-12 h-12 rounded-full object-cover border-2 border-primary/20" />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">{selectedWorker.workerName.charAt(0)}</span>
-                  </div>
-                )}
+                <WorkerPhoto
+                  src={selectedWorker.photoUrl}
+                  alt={selectedWorker.workerName}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-primary/20"
+                  fallback={
+                    <div className="w-12 h-12 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+                      <span className="text-lg font-bold text-primary">{selectedWorker.workerName.charAt(0)}</span>
+                    </div>
+                  }
+                />
                 <div>
                   <p className="text-sm font-bold text-text">{selectedWorker.workerName}</p>
                   <p className="text-xs text-text-muted">{selectedWorker.workerCode} | {selectedWorker.dept}</p>

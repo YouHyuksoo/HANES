@@ -10,7 +10,7 @@
  * 3. **미리보기**: 크롭 완료된 이미지를 원형 프리뷰로 표시
  */
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera, X, Loader2 } from "lucide-react";
 import api from "@/services/api";
@@ -26,6 +26,10 @@ function WorkerPhotoUpload({ value, onChange, size = "lg" }: WorkerPhotoUploadPr
   const fileRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // 사진 URL 변경 시 로드 에러 상태 리셋
+  useEffect(() => { setImgError(false); }, [value]);
 
   const sizeClass = size === "lg" ? "w-28 h-28" : "w-16 h-16";
   const iconSize = size === "lg" ? "w-8 h-8" : "w-5 h-5";
@@ -82,8 +86,8 @@ function WorkerPhotoUpload({ value, onChange, size = "lg" }: WorkerPhotoUploadPr
           <div className="w-full h-full flex items-center justify-center text-text-muted">
             <Loader2 className={`${iconSize} animate-spin`} />
           </div>
-        ) : value ? (
-          <img src={imgSrc ?? ""} alt="worker" className="w-full h-full object-cover" />
+        ) : value && !imgError ? (
+          <img src={imgSrc ?? ""} alt="worker" onError={() => setImgError(true)} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-text-muted">
             <Camera className={iconSize} />

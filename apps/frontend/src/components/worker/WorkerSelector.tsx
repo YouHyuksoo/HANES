@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ScanLine, X } from "lucide-react";
 import api from "@/services/api";
@@ -46,10 +46,13 @@ const deptColors: Record<string, string> = {
 export function WorkerAvatar({ name, dept, photoUrl, size = "md" }: { name?: string | null; dept?: string | null; photoUrl?: string | null; size?: "sm" | "md" | "lg" }) {
   const sizeClass = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-12 h-12 text-base" : "w-10 h-10 text-sm";
   const displayName = getWorkerDisplayName(name);
+  // 사진 로드 실패 시 이니셜 아바타로 fallback
+  const [photoError, setPhotoError] = useState(false);
+  useEffect(() => { setPhotoError(false); }, [photoUrl]);
 
-  if (photoUrl) {
+  if (photoUrl && !photoError) {
     return (
-      <img src={photoUrl} alt={displayName} className={`${sizeClass} rounded-full object-cover shrink-0`} />
+      <img src={photoUrl} alt={displayName} onError={() => setPhotoError(true)} className={`${sizeClass} rounded-full object-cover shrink-0`} />
     );
   }
 
@@ -60,6 +63,14 @@ export function WorkerAvatar({ name, dept, photoUrl, size = "md" }: { name?: str
       {initial}
     </span>
   );
+}
+
+/** 작업자 사진 — 사진 없음/로드 실패 시 fallback(이니셜 등)으로 대체. 커스텀 스타일이 필요한 곳에서 사용 */
+export function WorkerPhoto({ src, alt, className, fallback }: { src?: string | null; alt: string; className: string; fallback: ReactNode }) {
+  const [errored, setErrored] = useState(false);
+  useEffect(() => { setErrored(false); }, [src]);
+  if (!src || errored) return <>{fallback}</>;
+  return <img src={src} alt={alt} onError={() => setErrored(true)} className={className} />;
 }
 
 function WorkerSelector({ value, onChange, label }: WorkerSelectorProps) {

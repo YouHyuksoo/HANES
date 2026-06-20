@@ -56,9 +56,9 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   ], [t]);
 
   const iqcOptions = useMemo(() => [
-    { value: "Y", label: "Y (대상)" },
-    { value: "N", label: "N (비대상)" },
-  ], []);
+    { value: "Y", label: t("master.part.iqcTarget", "Y (대상)") },
+    { value: "N", label: t("master.part.iqcNotTarget", "N (비대상)") },
+  ], [t]);
 
   // 제품유형: 코드마스터(PRODUCT_TYPE) 기반 — 화면 하드코딩 금지
   const productTypeOptions = useComCodeOptions("PRODUCT_TYPE");

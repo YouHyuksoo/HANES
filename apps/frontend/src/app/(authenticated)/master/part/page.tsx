@@ -204,8 +204,8 @@ export default function PartPage() {
     },
     { accessorKey: "sampleQty", header: t("master.part.basicSampleQty", "기본시료수"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() ?? "-" },
     { accessorKey: "iqcAqlPolicyCode", header: t("master.part.iqcAqlPolicyCode", "AQL 정책"), size: 130, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
-    { accessorKey: "expiryExtDays", header: t("master.part.expiryExtDays", "연장기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
+    { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? t("master.part.daysSuffix", "{{count}}일", { count: v }) : "-"; } },
+    { accessorKey: "expiryExtDays", header: t("master.part.expiryExtDays", "연장기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? t("master.part.daysSuffix", "{{count}}일", { count: v }) : "-"; } },
     { accessorKey: "packUnit", header: t("master.part.palletUnit", "팔레트구성단위"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "storageLocation", header: t("master.part.storageLocation", "품목고정 적재로케이션"), size: 130, cell: ({ getValue }) => getValue() || "-" },
     {
@@ -240,10 +240,10 @@ export default function PartPage() {
     try {
       const res = await api.post("/interface/inbound/item-master");
       const { insert, update } = res.data.data ?? {};
-      setSyncResult({ ok: true, msg: `동기화 완료 — 신규 ${insert ?? 0}건, 변경 ${update ?? 0}건` });
+      setSyncResult({ ok: true, msg: t("master.part.erpSyncDone", "동기화 완료 — 신규 {{insert}}건, 변경 {{update}}건", { insert: insert ?? 0, update: update ?? 0 }) });
       fetchParts();
     } catch (e: any) {
-      setSyncResult({ ok: false, msg: `동기화 실패: ${e?.response?.data?.message ?? e.message}` });
+      setSyncResult({ ok: false, msg: t("master.part.erpSyncFailed", "동기화 실패: {{message}}", { message: e?.response?.data?.message ?? e.message }) });
     } finally {
       setErpSyncing(false);
     }
@@ -267,7 +267,7 @@ export default function PartPage() {
               </span>
             )}
             <Button variant="secondary" size="sm" onClick={handleErpSync} disabled={erpSyncing}>
-              <Download className={`w-4 h-4 mr-1 ${erpSyncing ? "animate-bounce" : ""}`} />ERP 동기화
+              <Download className={`w-4 h-4 mr-1 ${erpSyncing ? "animate-bounce" : ""}`} />{t("master.part.erpSync", "ERP 동기화")}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => { fetchParts(); }}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
@@ -326,7 +326,7 @@ export default function PartPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.itemCode || ""} (${deleteTarget?.itemName || ""})'을(를) 삭제하시겠습니까?`}
+        message={t("master.part.deleteConfirmMessage", "'{{itemCode}} ({{itemName}})'을(를) 삭제하시겠습니까?", { itemCode: deleteTarget?.itemCode || "", itemName: deleteTarget?.itemName || "" })}
       />
     </div>
   );

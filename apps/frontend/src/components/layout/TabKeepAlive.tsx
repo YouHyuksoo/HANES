@@ -13,7 +13,6 @@ import { memo, useEffect, useMemo, useRef, useState, type ComponentType, type Re
 import { usePathname } from "next/navigation";
 import { useTabStore, MAX_TABS } from "@/stores/tabStore";
 import { getPageComponent } from "./pageRegistry.generated";
-import { restoreTabPageState, saveTabPageState } from "./tabPageState";
 
 type CachedPage = {
   path: string;
@@ -38,7 +37,6 @@ const KeepAliveCell = memo(function KeepAliveCell({
       className="h-full"
       style={{ display: active ? undefined : "none" }}
       aria-hidden={!active}
-      data-tab-page-state-root
     >
       <Component />
     </div>
@@ -48,10 +46,9 @@ const KeepAliveCell = memo(function KeepAliveCell({
 export default function TabKeepAlive({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const tabs = useTabStore((s) => s.tabs);
-  const rootsRef = useRef(new Map<string, HTMLDivElement | null>());
   const pagesRef = useRef(new Map<string, CachedPage>());
-  const pathnameRef = useRef(pathname);
-  const [loadedPage, setLoadedPage] = useState<LoadedPage>({ path: pathname, Component: null });
+  // path:"" 초기값 — registry resolve 전(로딩 중)과 resolve 후 컴포넌트 없음(미등록)을 구분한다.
+  const [loadedPage, setLoadedPage] = useState<LoadedPage>({ path: "", Component: null });
   const cachedCurrentPage = pagesRef.current.get(pathname);
   const currentComponent =
     cachedCurrentPage?.Component ??
@@ -84,7 +81,6 @@ export default function TabKeepAlive({ children }: { children: ReactNode }) {
   for (const path of Array.from(pagesRef.current.keys())) {
     if (path !== pathname && !openPathSet.has(path)) {
       pagesRef.current.delete(path);
-      rootsRef.current.delete(path);
     }
   }
 
@@ -93,53 +89,11 @@ export default function TabKeepAlive({ children }: { children: ReactNode }) {
     .slice(0, MAX_TABS)
     .sort((a, b) => a.lastSeen - b.lastSeen);
 
-  useEffect(() => {
-    pathnameRef.current = pathname;
-    const timers: number[] = [];
-    const restore = () => restoreTabPageState(pathname, rootsRef.current.get(pathname) ?? null);
-    const raf = window.requestAnimationFrame(restore);
-    for (const delay of [50, 150, 350, 750]) {
-      timers.push(window.setTimeout(restore, delay));
-    }
-
-    return () => {
-      saveTabPageState(pathname, rootsRef.current.get(pathname) ?? null);
-      window.cancelAnimationFrame(raf);
-      timers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [pathname]);
-
-  useEffect(() => {
-    const saveCurrent = () => {
-      saveTabPageState(pathnameRef.current, rootsRef.current.get(pathnameRef.current) ?? null);
-    };
-
-    document.addEventListener("pointerdown", saveCurrent, true);
-    document.addEventListener("keydown", saveCurrent, true);
-    document.addEventListener("input", saveCurrent, true);
-    document.addEventListener("change", saveCurrent, true);
-    window.addEventListener("beforeunload", saveCurrent);
-    document.addEventListener("visibilitychange", saveCurrent);
-
-    return () => {
-      saveCurrent();
-      document.removeEventListener("pointerdown", saveCurrent, true);
-      document.removeEventListener("keydown", saveCurrent, true);
-      document.removeEventListener("input", saveCurrent, true);
-      document.removeEventListener("change", saveCurrent, true);
-      window.removeEventListener("beforeunload", saveCurrent);
-      document.removeEventListener("visibilitychange", saveCurrent);
-    };
-  }, []);
-
   return (
     <>
       {visiblePages.map((page) => (
         <div
           key={page.path}
-          ref={(el) => {
-            rootsRef.current.set(page.path, el);
-          }}
           className="h-full"
           style={{ display: page.path === pathname ? undefined : "none" }}
           aria-hidden={page.path !== pathname}
@@ -147,7 +101,16 @@ export default function TabKeepAlive({ children }: { children: ReactNode }) {
           <KeepAliveCell active={page.path === pathname} Component={page.Component} />
         </div>
       ))}
-      {!currentComponent && <div className="h-full">{children}</div>}
+      {!currentComponent &&
+        (loadedPage.path === pathname ? (
+          // registry resolve 완료 + 컴포넌트 없음(미등록 경로)일 때만 App Router children 사용
+          <div className="h-full">{children}</div>
+        ) : (
+          // registry 로딩 중 — children을 마운트하면 keep-alive 컴포넌트와 2중 마운트되어 API가 중복 호출됨
+          <div className="h-full flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ))}
     </>
   );
 }

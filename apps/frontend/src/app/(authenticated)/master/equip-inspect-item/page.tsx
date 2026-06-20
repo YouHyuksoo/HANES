@@ -81,6 +81,21 @@ const normalizeUnitCode = (unit: string | null | undefined) => {
   return trimmed.toLowerCase() === "mm" ? "MM" : trimmed;
 };
 
+/** 점검항목 썸네일 — 이미지 로드 실패 시 placeholder 아이콘으로 fallback */
+function EquipInspectImageThumb({ src, alt }: { src: string; alt: string }) {
+  const [errored, setErrored] = useState(false);
+  if (errored) {
+    return (
+      <div className="w-9 h-9 mx-auto rounded border border-dashed border-border flex items-center justify-center bg-surface">
+        <ImageIcon className="w-4 h-4 text-text-muted" />
+      </div>
+    );
+  }
+  return (
+    <img src={src} alt={alt} onError={() => setErrored(true)} className="w-9 h-9 object-cover rounded border border-border bg-surface" />
+  );
+}
+
 export default function EquipInspectItemPage() {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,7 +111,11 @@ export default function EquipInspectItemPage() {
   const [form, setForm] = useState<InspectItemForm>(() => emptyForm());
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
+
+  // previewUrl 변경 시 이미지 로드 에러 상태 리셋
+  useEffect(() => { setImageError(false); }, [previewUrl]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -309,7 +328,7 @@ export default function EquipInspectItemPage() {
       cell: ({ getValue, row }) => {
         const imageUrl = resolveBackendFileUrl(getValue() as string | null);
         return imageUrl ? (
-          <img src={imageUrl} alt={row.original.itemName} className="w-9 h-9 object-cover rounded border border-border bg-surface" />
+          <EquipInspectImageThumb src={imageUrl} alt={row.original.itemName} />
         ) : (
           <div className="w-9 h-9 mx-auto rounded border border-dashed border-border flex items-center justify-center bg-surface">
             <ImageIcon className="w-4 h-4 text-text-muted" />
@@ -484,8 +503,16 @@ export default function EquipInspectItemPage() {
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.image", "사진")}</h3>
               {previewUrl ? (
                 <div className="relative group">
-                  <img src={resolveBackendFileUrl(previewUrl)} alt={form.itemName || form.itemCode}
-                    className="w-full h-44 object-contain rounded-lg border border-border bg-surface" />
+                  {imageError ? (
+                    <div className="w-full h-44 rounded-lg border border-border bg-surface flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="w-8 h-8 text-text-muted" />
+                      <span className="text-xs text-text-muted">{t("master.equipInspectItem.imageLoadFailed", "이미지를 불러올 수 없습니다")}</span>
+                    </div>
+                  ) : (
+                    <img src={resolveBackendFileUrl(previewUrl)} alt={form.itemName || form.itemCode}
+                      onError={() => setImageError(true)}
+                      className="w-full h-44 object-contain rounded-lg border border-border bg-surface" />
+                  )}
                   <button type="button" onClick={() => setImageDeleteConfirmOpen(true)}
                     className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
                     <Trash2 className="w-3.5 h-3.5" />

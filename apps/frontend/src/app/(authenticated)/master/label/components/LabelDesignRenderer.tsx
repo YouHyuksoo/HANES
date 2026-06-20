@@ -103,6 +103,16 @@ function BarcodeImage({ value, format }: { value: string; format: BarcodeFormat 
   return <img data-label-barcode-ready="true" src={src} alt="" className="block w-full h-full object-contain" style={fitImageStyle} />;
 }
 
+/** 라벨 이미지 요소 — 로드 실패 시 IMG placeholder로 fallback */
+function LabelImageElement({ src }: { src: string }) {
+  const [errored, setErrored] = useState(false);
+  useEffect(() => { setErrored(false); }, [src]);
+  if (errored) {
+    return <div className="w-full h-full bg-slate-100 text-slate-400 flex items-center justify-center" style={placeholderStyle}>IMG</div>;
+  }
+  return <img src={src} alt="" onError={() => setErrored(true)} className="block w-full h-full object-contain" style={fitImageStyle} />;
+}
+
 function renderElementContent(element: LabelElement, data?: Record<string, unknown>) {
   const value = resolveLabelValue(data, element.sourceField, element.text ?? element.sourceField ?? "");
 
@@ -117,7 +127,7 @@ function renderElementContent(element: LabelElement, data?: Record<string, unkno
   if (element.type === "image") {
     const src = resolveBackendFileUrl(resolveLabelValue(data, element.sourceField, element.imageUrl ?? ""));
     if (!src) return <div className="w-full h-full bg-slate-100 text-slate-400 flex items-center justify-center" style={placeholderStyle}>IMG</div>;
-    return <img src={src} alt="" className="block w-full h-full object-contain" style={fitImageStyle} />;
+    return <LabelImageElement src={src} />;
   }
 
   return null;

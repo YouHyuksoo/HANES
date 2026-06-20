@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, ArrowLeft, UserCheck, Search, ScanLine, X } from "lucide-react";
 import { Modal, Button } from "@/components/ui";
@@ -30,6 +30,14 @@ const getDeptBadgeColor = (dept: string): string => {
   };
   return colors[dept] ?? "bg-gray-100 text-gray-700 dark:bg-gray-800/30 dark:text-gray-300";
 };
+
+/** 작업자 사진 — 사진 없음/로드 실패 시 fallback(이니셜)으로 대체 */
+function WorkerPhoto({ src, alt, className, fallback }: { src?: string | null; alt: string; className: string; fallback: ReactNode }) {
+  const [errored, setErrored] = useState(false);
+  useEffect(() => { setErrored(false); }, [src]);
+  if (!src || errored) return <>{fallback}</>;
+  return <img src={src} alt={alt} onError={() => setErrored(true)} className={className} />;
+}
 
 interface WorkerSelectModalProps {
   isOpen: boolean;
@@ -169,13 +177,16 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
                       onClick={() => setTempWorker(worker)}
                       className="w-full flex items-center gap-4 px-4 py-4 rounded-xl border border-border bg-surface hover:bg-background active:bg-primary/10 active:border-primary/30 transition-colors text-left"
                     >
-                      {worker.photoUrl ? (
-                        <img src={worker.photoUrl} alt={worker.workerName} className="w-12 h-12 rounded-full object-cover shrink-0" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-lg font-bold text-primary">{worker.workerName.charAt(0)}</span>
-                        </div>
-                      )}
+                      <WorkerPhoto
+                        src={worker.photoUrl}
+                        alt={worker.workerName}
+                        className="w-12 h-12 rounded-full object-cover shrink-0"
+                        fallback={
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="text-lg font-bold text-primary">{worker.workerName.charAt(0)}</span>
+                          </div>
+                        }
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="text-base font-semibold text-text">{worker.workerName}</div>
                         <div className="text-sm text-text-muted mt-0.5">{worker.workerCode}</div>
@@ -224,19 +235,18 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
         /* ── Step 2: 사진 확인 ── */
         <div className="flex flex-col items-center py-8 space-y-6">
           <div className="relative">
-            {tempWorker.photoUrl ? (
-              <img
-                src={tempWorker.photoUrl}
-                alt={tempWorker.workerName}
-                className="w-36 h-36 rounded-full object-cover border-4 border-primary/20 shadow-lg"
-              />
-            ) : (
-              <div className="w-36 h-36 rounded-full bg-primary/10 border-4 border-primary/20 shadow-lg flex items-center justify-center">
-                <span className="text-5xl font-bold text-primary">
-                  {tempWorker.workerName.charAt(0)}
-                </span>
-              </div>
-            )}
+            <WorkerPhoto
+              src={tempWorker.photoUrl}
+              alt={tempWorker.workerName}
+              className="w-36 h-36 rounded-full object-cover border-4 border-primary/20 shadow-lg"
+              fallback={
+                <div className="w-36 h-36 rounded-full bg-primary/10 border-4 border-primary/20 shadow-lg flex items-center justify-center">
+                  <span className="text-5xl font-bold text-primary">
+                    {tempWorker.workerName.charAt(0)}
+                  </span>
+                </div>
+              }
+            />
             <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center border-3 border-white dark:border-gray-800 shadow-md">
               <UserCheck className="w-5 h-5 text-white" />
             </div>
