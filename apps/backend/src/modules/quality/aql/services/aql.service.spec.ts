@@ -316,6 +316,33 @@ describe('AqlService', () => {
     })).rejects.toThrow(BadRequestException);
   });
 
+  it('파괴검사 항목은 불량 1건이면 FAIL, AQL과 무관하게 판정한다', async () => {
+    specItemRepo.find.mockResolvedValue([
+      { seq: 1, inspItemCode: 'IQC-VISUAL', defectGrade: 'MINOR', inspectionLevel: 'II', aql: 2.5, inspectionType: 'AQL', sampleMethod: 'AQL', sampleQty: null },
+      { seq: 2, inspItemCode: 'IQC-PULL', defectGrade: 'MAJOR', inspectionLevel: null, aql: null, inspectionType: 'DESTRUCTIVE', sampleMethod: 'FIXED', sampleQty: 5 },
+    ]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'CBL-A', inspectionLevel: 'II' });
+    partnerRepo.findOne.mockResolvedValue(null);
+    // 외관 AQL Ac5/Re6 가정
+    jest.spyOn(service as any, 'resolveSeverityRule').mockResolvedValue({ aqlCode: 'AQL-II-2.5', aqlValue: 2.5, codeLetter: 'F', sampleSize: 80, acceptQty: 5, rejectQty: 6 });
+
+    const res = await service.resolveIqcPolicyByItem({
+      itemCode: 'CBL-A', vendorCode: null, lotQty: 1200,
+      itemDefectCounts: { 1: 0, 2: 1 },           // 외관 0, 인장 1
+      itemInspectedCounts: { 2: 5 },
+      company: '40', plant: '1000',
+    });
+
+    expect(res.result).toBe('FAIL');
+    const pull = res.itemResults!.find((r) => r.inspItemCode === 'IQC-PULL')!;
+    expect(pull.inspectionType).toBe('DESTRUCTIVE');
+    expect(pull.requiredQty).toBe(5);
+    expect(pull.inspectedQty).toBe(5);
+    expect(pull.result).toBe('FAIL');
+    const visual = res.itemResults!.find((r) => r.inspItemCode === 'IQC-VISUAL')!;
+    expect(visual.result).toBe('PASS');   // 외관 0건은 PASS
+  });
+
   it('switches NORMAL supplier inspection mode to TIGHTENED when recent 5 lots include 2 fails', async () => {
     partnerRepo.findOne.mockResolvedValue({
       company: '40',

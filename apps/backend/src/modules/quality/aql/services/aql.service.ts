@@ -40,6 +40,9 @@ export type IqcItemJudgeResult = {
   defectCount: number;
   acceptQty: number | null;
   rejectQty: number | null;
+  inspectionType: string;
+  requiredQty: number | null;
+  inspectedQty: number | null;
   result: 'PASS' | 'FAIL';
   reason: string;
 };
@@ -277,6 +280,7 @@ export class AqlService {
     vendorCode?: string | null;
     lotQty: number;
     itemDefectCounts: Record<number, number>; // seq -> FAIL 샘플 수
+    itemInspectedCounts?: Record<number, number>; // seq -> 실제 검사수량(파괴/전수용)
     fallbackDefectCounts?: IqcDefectCounts;
     fallbackDefectCodes?: IqcDefectCodeCount[];
     company?: string;
@@ -291,12 +295,14 @@ export class AqlService {
       },
       order: { seq: 'ASC' },
     });
-    const gradedItems = specItems.filter(
-      (item) => ['CRITICAL', 'MAJOR', 'MINOR'].includes(String(item.defectGrade ?? '').trim().toUpperCase()),
-    );
+    const activeItems = specItems.filter((item) => {
+      const grade = String(item.defectGrade ?? '').trim().toUpperCase();
+      const type = String(item.inspectionType ?? 'AQL').trim().toUpperCase();
+      return ['CRITICAL', 'MAJOR', 'MINOR'].includes(grade) || ['DESTRUCTIVE', 'FULL'].includes(type);
+    });
 
     // 등급 설정 검사항목이 없으면 기존 품목 단일 모델로 폴백
-    if (gradedItems.length === 0) {
+    if (activeItems.length === 0) {
       return this.resolveIqcPolicy({
         itemCode: input.itemCode,
         vendorCode: input.vendorCode,
@@ -340,8 +346,10 @@ export class AqlService {
     const itemResults: IqcItemJudgeResult[] = [];
     const failReasons: string[] = [];
 
-    for (const item of gradedItems) {
+    for (const item of activeItems) {
       const grade = String(item.defectGrade ?? '').trim().toUpperCase();
+      const type = String(item.inspectionType ?? 'AQL').trim().toUpperCase();
+      const method = String(item.sampleMethod ?? 'AQL').trim().toUpperCase();
       const level = (item.inspectionLevel || partLevel).trim().toUpperCase();
       const aql = item.aql != null ? Number(item.aql) : null;
       const defectCount = this.toNonNegativeInt(input.itemDefectCounts[item.seq]);
@@ -353,8 +361,19 @@ export class AqlService {
       let itemResult: 'PASS' | 'FAIL' = 'PASS';
       let reason = '';
       let rule: AqlSeverityRule | null = null;
+      let requiredQty: number | null = null;
+      let inspectedQty: number | null = null;
 
-      if (grade === 'CRITICAL') {
+      if (type === 'DESTRUCTIVE' || type === 'FULL' || method === 'FIXED') {
+        // 파괴/전수/고정 — AQL 무관, 불량 1건 이상이면 FAIL
+        requiredQty = type === 'FULL' ? lotQty : this.toNonNegativeInt(item.sampleQty);
+        inspectedQty = this.toNonNegativeInt(input.itemInspectedCounts?.[item.seq]) || requiredQty;
+        if (defectCount > 0) {
+          itemResult = 'FAIL';
+          reason = `${item.inspItemCode} ${type === 'FULL' ? '전수' : '파괴'}검사 불량 ${defectCount}건`;
+        }
+      } else if (grade === 'CRITICAL') {
+        requiredQty = inspectedQty = null;
         if (defectCount > 0) {
           itemResult = 'FAIL';
           reason = `${item.inspItemCode} Critical 불량 ${defectCount}건`;
@@ -362,6 +381,7 @@ export class AqlService {
       } else if (aql != null) {
         rule = await this.resolveSeverityRule(level, inspectionMode, aql, lotQty, input.company, input.plant);
         sampleQty = Math.max(sampleQty, rule.sampleSize);
+        requiredQty = inspectedQty = rule.sampleSize;
         if (grade === 'MAJOR' && !majorRule) majorRule = rule;
         if (grade === 'MINOR' && !minorRule) minorRule = rule;
         if (defectCount > rule.acceptQty) {
@@ -387,6 +407,9 @@ export class AqlService {
         defectCount,
         acceptQty: rule?.acceptQty ?? null,
         rejectQty: rule?.rejectQty ?? null,
+        inspectionType: type,
+        requiredQty,
+        inspectedQty,
         result: itemResult,
         reason,
       });
