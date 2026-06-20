@@ -89,6 +89,8 @@ export class ProcessService {
       processCode: dto.processCode,
       processName: dto.processName,
       processType: dto.processType,
+      processCategory: dto.processCategory ?? null,
+      lineType: dto.lineType ?? null,
       sortOrder: dto.sortOrder ?? 0,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
@@ -105,6 +107,7 @@ export class ProcessService {
       | 'processName'
       | 'processType'
       | 'processCategory'
+      | 'lineType'
       | 'sortOrder'
       | 'remark'
       | 'useYn'
@@ -112,6 +115,7 @@ export class ProcessService {
       ...(dto.processName !== undefined ? { processName: dto.processName } : {}),
       ...(dto.processType !== undefined ? { processType: dto.processType } : {}),
       ...(dto.processCategory !== undefined ? { processCategory: dto.processCategory } : {}),
+      ...(dto.lineType !== undefined ? { lineType: dto.lineType } : {}),
       ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),

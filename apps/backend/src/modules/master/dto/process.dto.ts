@@ -35,6 +35,12 @@ export class CreateProcessDto {
   @MaxLength(50)
   processCategory?: string;
 
+  @ApiPropertyOptional({ description: '라인구분: LV=저전압 HV=고전압 CM=공통' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['LV', 'HV', 'CM'])
+  lineType?: string;
+
   @ApiPropertyOptional({ description: '정렬 순서', default: 0 })
   @IsOptional()
   @Type(() => Number)

@@ -3,6 +3,7 @@ export interface EquipOption {
   equipName: string;
   processCode?: string;
   processName?: string;
+  lineType?: string;
 }
 
 type UnknownRecord = Record<string, unknown>;
@@ -28,8 +29,10 @@ export function normalizeEquipOptions(payload: unknown): EquipOption[] {
     const equipName = typeof item.equipName === 'string' && item.equipName.trim()
       ? item.equipName
       : item.equipCode;
-    const processCode = typeof item.processCode === 'string' ? item.processCode : undefined;
-    const processName = typeof item.processName === 'string' ? item.processName : undefined;
-    return [{ equipCode: item.equipCode, equipName, processCode, processName }];
+    const option: EquipOption = { equipCode: item.equipCode, equipName };
+    if (typeof item.processCode === 'string') option.processCode = item.processCode;
+    if (typeof item.processName === 'string') option.processName = item.processName;
+    if (typeof item.lineType === 'string') option.lineType = item.lineType;
+    return [option];
   });
 }

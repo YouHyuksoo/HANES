@@ -22,6 +22,7 @@ export interface Process {
   processName: string;
   processType: string;
   processCategory?: string;
+  lineType?: string;
   sortOrder: number;
   remark?: string;
   useYn: string;
@@ -51,6 +52,7 @@ export default function ProcessList({
   const { t } = useTranslation();
 
   const processCategoryOptions = useComCodeOptions("PROCESS_CATEGORY");
+  const lineTypeOptions = useComCodeOptions("LINE_TYPE");
 
   const columns = useMemo<ColumnDef<Process>[]>(
     () => [
@@ -91,6 +93,19 @@ export default function ProcessList({
         accessorKey: "processName",
         header: t("master.process.processName"),
         size: 140,
+      },
+      {
+        accessorKey: "lineType",
+        header: t("master.process.lineType", { defaultValue: "라인" }),
+        size: 70,
+        meta: {
+          filterType: "multi" as const,
+          filterOptions: lineTypeOptions,
+        },
+        cell: ({ getValue }) => {
+          const v = getValue() as string;
+          return v ? <ComCodeBadge groupCode="LINE_TYPE" code={v} /> : "-";
+        },
       },
       {
         accessorKey: "processType",
@@ -159,7 +174,7 @@ export default function ProcessList({
         },
       },
     ],
-    [t, equipCounts, onEdit, onDelete, processCategoryOptions],
+    [t, equipCounts, onEdit, onDelete, processCategoryOptions, lineTypeOptions],
   );
 
   return (

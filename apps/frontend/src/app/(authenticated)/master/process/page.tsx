@@ -13,6 +13,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Workflow, RefreshCw } from "lucide-react";
 import { Button, Modal, Input, Select, ConfirmModal } from "@/components/ui";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import ProcessList, { type Process } from "./components/ProcessList";
@@ -340,6 +341,14 @@ export default function ProcessPage() {
             onChange={(v) =>
               setFormData((p) => ({ ...p, processCategory: v }))
             }
+            fullWidth
+          />
+          <ComCodeSelect
+            label={t("master.process.lineType", { defaultValue: "라인구분" })}
+            groupCode="LINE_TYPE"
+            includeAll={false}
+            value={formData.lineType || ""}
+            onChange={(v) => setFormData((p) => ({ ...p, lineType: v }))}
             fullWidth
           />
           <Input

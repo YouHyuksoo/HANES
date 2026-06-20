@@ -110,19 +110,22 @@ export class EquipMasterService {
       qb.clone().getCount(),
     ]);
 
-    // 공정명 매핑 — PROCESS_MASTERS 단일 출처 (단일 IN 조회, N+1 회피)
+    // 공정명·라인구분 매핑 — PROCESS_MASTERS 단일 출처 (단일 IN 조회, N+1 회피)
     const processCodes = [...new Set(data.map((e) => e.processCode).filter((c): c is string => !!c))];
-    const nameMap = new Map<string, string>();
+    const procMap = new Map<string, { processName: string; lineType: string | null }>();
     if (processCodes.length) {
       const processes = await this.processRepository.find({
         where: { processCode: In(processCodes) },
-        select: ['processCode', 'processName'],
+        select: ['processCode', 'processName', 'lineType'],
       });
-      processes.forEach((p) => nameMap.set(p.processCode, p.processName));
+      processes.forEach((p) =>
+        procMap.set(p.processCode, { processName: p.processName, lineType: p.lineType }),
+      );
     }
     const enriched = data.map((e) => ({
       ...this.withClientId(e),
-      processName: e.processCode ? nameMap.get(e.processCode) ?? null : null,
+      processName: e.processCode ? procMap.get(e.processCode)?.processName ?? null : null,
+      lineType: e.processCode ? procMap.get(e.processCode)?.lineType ?? null : null,
     }));
 
     return { data: enriched, total, page, limit };
