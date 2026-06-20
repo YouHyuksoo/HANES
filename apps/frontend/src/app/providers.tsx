@@ -168,7 +168,7 @@ export function Providers({ children }: ProvidersProps) {
       <SysConfigPrefetch />
       <LanguageSync />
       <Toaster
-        position="top-right"
+        position="bottom-left"
         toastOptions={{
           duration: 4000,
           style: { fontSize: "14px", maxWidth: "420px" },
