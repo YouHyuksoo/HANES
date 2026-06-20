@@ -181,10 +181,9 @@ describe('ProductInventoryService', () => {
         refType: 'PROD_RESULT',
         refId: 'PR-1',
       }));
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
         ProductStock,
         { warehouseCode: 'WIP_MAIN', itemCode: 'FG-001', company: 'C1', plant: 'P1' },
-        expect.objectContaining({ qty: 0, availableQty: 0 }),
       );
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         ProductStock,
@@ -264,6 +263,45 @@ describe('ProductInventoryService', () => {
         ProductStock,
         { warehouseCode: 'WH', itemCode: 'FG', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 30, availableQty: 30 }),
+      );
+    });
+
+    it('keeps FG label boxNo when canceling a box warehouse receipt', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTransRepo.findOne.mockResolvedValue({
+        transNo: 'PTX-BOX-IN',
+        transType: 'FG_IN',
+        status: 'DONE',
+        fromWarehouseId: null,
+        toWarehouseId: 'FG_MAIN',
+        itemCode: 'FG-001',
+        itemType: 'FINISHED',
+        prdUid: null,
+        qty: 5,
+        refType: 'BOX',
+        refId: 'BOX-001',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+      mockTransRepo.create.mockReturnValue({ transNo: 'PTX-BOX-CANCEL' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX-BOX-CANCEL' } as any);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'FG_MAIN',
+        itemCode: 'FG-001',
+        qty: 5,
+        reservedQty: 0,
+        availableQty: 5,
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      await target.cancelTransaction({ transactionId: 'PTX-BOX-IN' } as any, 'C1', 'P1');
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+        FgLabel,
+        { boxNo: 'BOX-001', company: 'C1', plant: 'P1' },
+        { boxNo: null },
       );
     });
 

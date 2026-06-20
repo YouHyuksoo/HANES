@@ -60,6 +60,7 @@ export class ComCodeService {
     attr1: string | null;
     attr2: string | null;
     attr3: string | null;
+    defectGrade: string | null;
   }>>> {
     const codes = await this.comCodeRepository.find({
       where: { useYn: 'Y', ...this.tenantWhere(company, plant) },
@@ -73,6 +74,7 @@ export class ComCodeService {
         attr1: true,
         attr2: true,
         attr3: true,
+        defectGrade: true,
       },
     });
 
@@ -84,6 +86,7 @@ export class ComCodeService {
       attr1: string | null;
       attr2: string | null;
       attr3: string | null;
+      defectGrade: string | null;
     }>> = {};
 
     for (const code of codes) {
@@ -255,6 +258,7 @@ export class ComCodeService {
       attr1: dto.attr1,
       attr2: dto.attr2,
       attr3: dto.attr3,
+      defectGrade: dto.defectGrade ?? null,
       company: company || null,
       plant: plant || null,
     });
@@ -269,7 +273,7 @@ export class ComCodeService {
     await this.findById(id, company, plant); // 존재 확인
     const { groupCode, detailCode } = this.parseId(id);
 
-    const updateData: Partial<Pick<ComCode, 'parentCode' | 'codeName' | 'codeDesc' | 'sortOrder' | 'useYn' | 'attr1' | 'attr2' | 'attr3'>> = {};
+    const updateData: Partial<Pick<ComCode, 'parentCode' | 'codeName' | 'codeDesc' | 'sortOrder' | 'useYn' | 'attr1' | 'attr2' | 'attr3' | 'defectGrade'>> = {};
     if (dto.parentCode !== undefined) updateData.parentCode = dto.parentCode;
     if (dto.codeName !== undefined) updateData.codeName = dto.codeName;
     if (dto.codeDesc !== undefined) updateData.codeDesc = dto.codeDesc;
@@ -278,6 +282,7 @@ export class ComCodeService {
     if (dto.attr1 !== undefined) updateData.attr1 = dto.attr1;
     if (dto.attr2 !== undefined) updateData.attr2 = dto.attr2;
     if (dto.attr3 !== undefined) updateData.attr3 = dto.attr3;
+    if (dto.defectGrade !== undefined) updateData.defectGrade = dto.defectGrade;
 
     await this.comCodeRepository.update(
       { groupCode, detailCode, ...this.tenantWhere(company, plant) },

@@ -214,6 +214,7 @@
     "material.lotMerge": "Gộp LOT",
     "material.shelfLife": "Hạn sử dụng vật tư",
     "material.shelfLifeReinspect": "Tái kiểm tra hạn sử dụng",
+    "material.shelfLifeHistory": "Lịch sử kiểm tra hạn sử dụng",
     "material.hold": "Giữ tồn kho vật tư",
     "material.scrap": "Xử lý hủy vật tư",
     "material.adjustment": "Xử lý điều chỉnh tồn kho",
@@ -4196,7 +4197,10 @@
       "statusShipped": "Đã xuất",
       "searchPlaceholder": "Tìm mã lệnh, khách hàng...",
       "editTitle": "Sửa lệnh xuất hàng",
-      "addTitle": "Đăng ký lệnh xuất hàng"
+      "addTitle": "Đăng ký lệnh xuất hàng",
+      "printOrder": "In lệnh xuất hàng",
+      "printTitle": "Lệnh xuất hàng",
+      "printDate": "Ngày in"
     },
     "history": {
       "title": "Lịch sử xuất hàng",
@@ -4325,6 +4329,11 @@
       "subtitle": "Xem tồn chờ xuất được nhập bằng quét thùng và từng sản phẩm trong thùng.",
       "searchPlaceholder": "Tìm mã thùng...",
       "boxQty": "SL tồn",
+      "inventoryState": "Trạng thái tồn",
+      "packedWaiting": "Đã đóng gói chờ nhập",
+      "warehouseReceived": "Tồn kho",
+      "warehouseCode": "Kho",
+      "receivedAt": "Thời gian nhập",
       "itemsTitle": "Sản phẩm trong thùng",
       "itemCount": "Số sản phẩm",
       "selectBox": "Chọn một thùng",

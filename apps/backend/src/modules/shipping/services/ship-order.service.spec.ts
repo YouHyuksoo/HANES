@@ -11,6 +11,7 @@ import { ShipOrderService } from './ship-order.service';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
@@ -18,23 +19,28 @@ import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('ShipOrderService', () => {
   let target: ShipOrderService;
   let mockOrderRepo: DeepMocked<Repository<ShipmentOrder>>;
   let mockItemRepo: DeepMocked<Repository<ShipmentOrderItem>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartnerRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockOrderRepo = createMock<Repository<ShipmentOrder>>();
     mockItemRepo = createMock<Repository<ShipmentOrderItem>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartnerRepo = createMock<Repository<PartnerMaster>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQr = createMock<QueryRunner>();
+    mockNumbering = createMock<NumberingService>();
     mockDataSource.createQueryRunner.mockReturnValue(mockQr);
     mockTx.run.mockImplementation(async (callback) => callback(mockQr));
     mockQr.connect.mockResolvedValue(undefined);
@@ -49,12 +55,14 @@ describe('ShipOrderService', () => {
         { provide: getRepositoryToken(ShipmentOrder), useValue: mockOrderRepo },
         { provide: getRepositoryToken(ShipmentOrderItem), useValue: mockItemRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerRepo },
         { provide: getRepositoryToken(Warehouse), useValue: createMock<Repository<Warehouse>>() },
         { provide: getRepositoryToken(BoxMaster), useValue: createMock<Repository<BoxMaster>>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
         { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ShipOrderService>(ShipOrderService);
@@ -167,7 +175,40 @@ describe('ShipOrderService', () => {
   });
 
   describe('create', () => {
+    it('should generate shipOrderNo when creating an order', async () => {
+      mockNumbering.nextShipmentNo.mockResolvedValue('SO-AUTO-001');
+      mockOrderRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ shipOrderNo: 'SO-AUTO-001', status: 'DRAFT' } as any);
+      mockOrderRepo.create.mockImplementation((payload) => payload as any);
+      mockItemRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save
+        .mockImplementation(async (entity: any) => Array.isArray(entity) ? entity : entity);
+      mockItemRepo.find.mockResolvedValue([]);
+      mockPartRepo.findOne.mockResolvedValue(null);
+      mockPartnerRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.create({
+        customerId: 'CUST-1',
+        items: [{ itemCode: 'ITEM-1', orderQty: 1 }],
+      } as any, 'C1', 'P1');
+
+      expect(mockNumbering.nextShipmentNo).toHaveBeenCalledWith(mockQr);
+      expect(mockOrderRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        shipOrderNo: 'SO-AUTO-001',
+        customerId: 'CUST-1',
+        company: 'C1',
+        plant: 'P1',
+      }));
+      expect(mockItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        shipOrderNo: 'SO-AUTO-001',
+        itemCode: 'ITEM-1',
+      }));
+      expect(result.shipOrderNo).toBe('SO-AUTO-001');
+    });
+
     it('should create through TransactionService', async () => {
+      mockNumbering.nextShipmentNo.mockResolvedValue('SO-001');
       mockOrderRepo.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ shipOrderNo: 'SO-001', status: 'DRAFT' } as any);
@@ -178,6 +219,7 @@ describe('ShipOrderService', () => {
         .mockResolvedValueOnce([] as any);
       mockItemRepo.find.mockResolvedValue([]);
       mockPartRepo.findOne.mockResolvedValue(null);
+      mockPartnerRepo.findOne.mockResolvedValue(null);
 
       await target.create({
         shipOrderNo: 'SO-001',
@@ -225,11 +267,13 @@ describe('ShipOrderService.shipBox', () => {
         { provide: getRepositoryToken(ShipmentOrder), useValue: {} },
         { provide: getRepositoryToken(ShipmentOrderItem), useValue: {} },
         { provide: getRepositoryToken(PartMaster), useValue: {} },
+        { provide: getRepositoryToken(PartnerMaster), useValue: {} },
         { provide: getRepositoryToken(Warehouse), useValue: {} },
         { provide: getRepositoryToken(BoxMaster), useValue: {} },
         { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed }) } },
-        { provide: ProductInventoryService, useValue: { issueStockInTx, receiveStockInTx } },
+        { provide: ProductInventoryService, useValue: { issueStockByItemFifoInTx: issueStockInTx, receiveStockInTx } },
         { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
+        { provide: NumberingService, useValue: { nextShipmentNo: jest.fn().mockResolvedValue('SO-TEST') } },
       ],
     }).compile();
     service = moduleRef.get(ShipOrderService);
@@ -244,16 +288,10 @@ describe('ShipOrderService.shipBox', () => {
       allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 }],
     });
     const res = await service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000');
-    expect(issueStockInTx).toHaveBeenCalledTimes(2);
-    expect(issueStockInTx).toHaveBeenNthCalledWith(
-      1,
+    expect(issueStockInTx).toHaveBeenCalledTimes(1);
+    expect(issueStockInTx).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 1, transType: 'FG_OUT', prdUid: 'FG1', refType: 'SHIP_ORDER', refId: 'SO1' }),
-    );
-    expect(issueStockInTx).toHaveBeenNthCalledWith(
-      2,
-      expect.anything(),
-      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 1, transType: 'FG_OUT', prdUid: 'FG2', refType: 'SHIP_ORDER', refId: 'SO1' }),
+      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 2, transType: 'FG_OUT', refType: 'SHIP_ORDER', refId: 'SO1' }),
     );
     expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), { status: 'SHIPPED' });
     expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'SHIPPED' });
@@ -343,16 +381,10 @@ describe('ShipOrderService.shipBox', () => {
 
     const res = await service.cancelShipBox('SO1', { boxNo: 'BX1', workerId: 'worker1' }, '40', '1000');
 
-    expect(receiveStockInTx).toHaveBeenCalledTimes(2);
-    expect(receiveStockInTx).toHaveBeenNthCalledWith(
-      1,
+    expect(receiveStockInTx).toHaveBeenCalledTimes(1);
+    expect(receiveStockInTx).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 1, transType: 'FG_OUT_CANCEL', prdUid: 'FG1', refType: 'SHIP_ORDER_CANCEL', refId: 'SO1' }),
-    );
-    expect(receiveStockInTx).toHaveBeenNthCalledWith(
-      2,
-      expect.anything(),
-      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 1, transType: 'FG_OUT_CANCEL', prdUid: 'FG2', refType: 'SHIP_ORDER_CANCEL', refId: 'SO1' }),
+      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 2, transType: 'FG_OUT_CANCEL', refType: 'SHIP_ORDER_CANCEL', refId: 'SO1' }),
     );
     expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), { status: 'CLOSED' });
     expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'PACKED' });

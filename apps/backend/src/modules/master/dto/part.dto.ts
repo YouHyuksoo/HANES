@@ -183,12 +183,39 @@ export class CreatePartDto {
   @IsIn(['Y', 'N'])
   isSplittable?: string;
 
-  @ApiPropertyOptional({ description: '샘플검사 수량', example: 5 })
+  @ApiPropertyOptional({ description: '샘플검사 수량', example: 0.5 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
+  @IsNumber()
   @Min(0)
   sampleQty?: number;
+
+  @ApiPropertyOptional({ description: 'AQL 검사수준', example: 'II' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  inspectionLevel?: string;
+
+  @ApiPropertyOptional({ description: 'Critical AQL', example: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  aqlCritical?: number;
+
+  @ApiPropertyOptional({ description: 'Major AQL', example: 1.0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  aqlMajor?: number;
+
+  @ApiPropertyOptional({ description: 'Minor AQL', example: 2.5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  aqlMinor?: number;
 
   @ApiPropertyOptional({ description: '팔레트 구성 단위(팔레트당 박스 수)', example: 40 })
   @IsOptional()

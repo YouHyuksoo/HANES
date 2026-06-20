@@ -214,6 +214,7 @@
     "material.lotMerge": "物料合并",
     "material.shelfLife": "物料保质期管理",
     "material.shelfLifeReinspect": "保质期复检",
+    "material.shelfLifeHistory": "保质期检验历史",
     "material.hold": "物料库存冻结管理",
     "material.scrap": "物料报废处理",
     "material.adjustment": "库存调整处理",
@@ -4196,7 +4197,10 @@
       "statusShipped": "出货完成",
       "searchPlaceholder": "搜索出货指示编号、客户...",
       "editTitle": "编辑出货指示",
-      "addTitle": "登记出货指示"
+      "addTitle": "登记出货指示",
+      "printOrder": "打印出货指示书",
+      "printTitle": "出货指示书",
+      "printDate": "打印日期"
     },
     "history": {
       "title": "出货历史查询",
@@ -4325,6 +4329,11 @@
       "subtitle": "查询通过箱扫描入库的待出货库存及箱内单个产品。",
       "searchPlaceholder": "搜索箱号...",
       "boxQty": "库存数量",
+      "inventoryState": "库存状态",
+      "packedWaiting": "已包装待入库",
+      "warehouseReceived": "仓库库存",
+      "warehouseCode": "仓库",
+      "receivedAt": "入库时间",
       "itemsTitle": "箱内单个产品",
       "itemCount": "产品数",
       "selectBox": "请选择箱",

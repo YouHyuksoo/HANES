@@ -98,6 +98,8 @@ export class PartnerService {
       fax: dto.fax,
       email: dto.email,
       contactPerson: dto.contactPerson,
+      qualityGrade: dto.qualityGrade ?? null,
+      inspectionMode: dto.inspectionMode ?? 'NORMAL',
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
       company,
@@ -119,6 +121,8 @@ export class PartnerService {
       | 'fax'
       | 'email'
       | 'contactPerson'
+      | 'qualityGrade'
+      | 'inspectionMode'
       | 'remark'
       | 'useYn'
     >> = {
@@ -131,6 +135,8 @@ export class PartnerService {
       ...(dto.fax !== undefined ? { fax: dto.fax } : {}),
       ...(dto.email !== undefined ? { email: dto.email } : {}),
       ...(dto.contactPerson !== undefined ? { contactPerson: dto.contactPerson } : {}),
+      ...(dto.qualityGrade !== undefined ? { qualityGrade: dto.qualityGrade || null } : {}),
+      ...(dto.inspectionMode !== undefined ? { inspectionMode: dto.inspectionMode } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
     };

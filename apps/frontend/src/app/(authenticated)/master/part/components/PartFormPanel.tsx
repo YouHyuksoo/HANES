@@ -14,12 +14,12 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ImageIcon, RefreshCw, Trash2, Upload } from "lucide-react";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
-import { Button, ConfirmModal, Input, Select } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { Button, ConfirmModal } from "@/components/ui";
 import { useLocationOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import { Part } from "../types";
+import { FieldComCodeSelect, FieldInput, FieldLabel, FieldSelect, FieldYnRadio } from "./PartFieldHelp";
 
 interface Props {
   editingPart: Part | null;
@@ -28,6 +28,8 @@ interface Props {
   /** 슬라이드 인 애니메이션 적용 여부 (기본: true) */
   animate?: boolean;
 }
+
+const PACKAGING_QTY_OPTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
 export default function PartFormPanel({ editingPart, onClose, onSave, animate = true }: Props) {
   const { t } = useTranslation();
@@ -46,31 +48,17 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     { value: "CONSUMABLE", label: t("inventory.stock.consumable", "소모품") },
   ], [t]);
 
+  const iqcOptions = useMemo(() => [
+    { value: "Y", label: "Y (대상)" },
+    { value: "N", label: "N (비대상)" },
+  ], []);
+
   // 제품유형: 코드마스터(PRODUCT_TYPE) 기반 — 화면 하드코딩 금지
   const productTypeOptions = useComCodeOptions("PRODUCT_TYPE");
   const rawIqcInspectMethodOptions = useComCodeOptions("IQC_INSPECT_METHOD", false);
   const iqcInspectMethodOptions = useMemo(
     () => [{ value: "", label: "-" }, ...rawIqcInspectMethodOptions],
     [rawIqcInspectMethodOptions],
-  );
-
-  /** Y/N 라디오 버튼 그룹 */
-  const YnRadio = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium text-text-muted">{label}</label>
-      <div className="flex gap-3 h-[34px] items-center">
-        {[
-          { v: "Y", l: "Y", cls: "text-green-600 dark:text-green-400" },
-          { v: "N", l: "N", cls: "text-red-500 dark:text-red-400" },
-        ].map(opt => (
-          <label key={opt.v} className={`flex items-center gap-1.5 cursor-pointer text-xs ${value === opt.v ? opt.cls + " font-semibold" : "text-text-muted"}`}>
-            <input type="radio" checked={value === opt.v} onChange={() => onChange(opt.v)}
-              className="w-3.5 h-3.5 accent-primary" />
-            {opt.l}
-          </label>
-        ))}
-      </div>
-    </div>
   );
 
   const [form, setForm] = useState(() => ({
@@ -92,11 +80,15 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     minPackQty: editingPart?.minPackQty ?? 0,
     lotUnitQty: editingPart?.lotUnitQty ?? 0,
     safetyStock: editingPart?.safetyStock ?? 0,
-    tactTime: editingPart?.tactTime ?? 0,
     expiryDate: editingPart?.expiryDate ?? 0,
     expiryExtDays: editingPart?.expiryExtDays ?? 0,
     iqcYn: editingPart?.iqcYn || "Y",
     inspectMethod: editingPart?.inspectMethod || "",
+    sampleQty: editingPart?.sampleQty ?? 0,
+    inspectionLevel: editingPart?.inspectionLevel || "II",
+    aqlCritical: editingPart?.aqlCritical ?? 0,
+    aqlMajor: editingPart?.aqlMajor ?? 1,
+    aqlMinor: editingPart?.aqlMinor ?? 2.5,
     useYn: editingPart?.useYn || "Y",
     packUnit: editingPart?.packUnit ?? 0,
     storageLocation: editingPart?.storageLocation || "",
@@ -131,11 +123,15 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       minPackQty: editingPart?.minPackQty ?? 0,
       lotUnitQty: editingPart?.lotUnitQty ?? 0,
       safetyStock: editingPart?.safetyStock ?? 0,
-      tactTime: editingPart?.tactTime ?? 0,
       expiryDate: editingPart?.expiryDate ?? 0,
       expiryExtDays: editingPart?.expiryExtDays ?? 0,
       iqcYn: editingPart?.iqcYn || "Y",
       inspectMethod: editingPart?.inspectMethod || "",
+      sampleQty: editingPart?.sampleQty ?? 0,
+      inspectionLevel: editingPart?.inspectionLevel || "II",
+      aqlCritical: editingPart?.aqlCritical ?? 0,
+      aqlMajor: editingPart?.aqlMajor ?? 1,
+      aqlMinor: editingPart?.aqlMinor ?? 2.5,
       useYn: editingPart?.useYn || "Y",
       packUnit: editingPart?.packUnit ?? 0,
       storageLocation: editingPart?.storageLocation || "",
@@ -208,11 +204,15 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         minPackQty: form.minPackQty,
         lotUnitQty: form.lotUnitQty || undefined,
         safetyStock: form.safetyStock,
-        tactTime: form.tactTime,
         expiryDate: form.expiryDate,
         expiryExtDays: form.expiryExtDays,
         iqcYn: form.iqcYn,
         inspectMethod: form.inspectMethod || undefined,
+        sampleQty: form.sampleQty || undefined,
+        inspectionLevel: form.inspectionLevel || undefined,
+        aqlCritical: form.aqlCritical,
+        aqlMajor: form.aqlMajor,
+        aqlMinor: form.aqlMinor,
         useYn: form.useYn,
         packUnit: form.packUnit || undefined,
         storageLocation: form.storageLocation || undefined,
@@ -266,88 +266,97 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             {t("master.part.sectionBasic", "기본정보")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.part.partCode")} required
+            <FieldInput field="itemCode" label={t("master.part.partCode")} required
               value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
               disabled={isEdit} fullWidth />
-            <Input label={t("master.part.partNo", "품번")} required
+            <FieldInput field="itemNo" label={t("master.part.partNo", "품번")} required
               value={form.itemNo} onChange={e => setField("itemNo", e.target.value)} fullWidth />
-            <div className="col-span-2">
-              <Input label={t("master.part.partName")} required
-                value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
-            </div>
-            <Input label={t("master.part.custPartNo", "고객품번")}
+            <FieldInput field="itemName" label={t("master.part.partName")} required wrapperClassName="col-span-2"
+              value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
+            <FieldInput field="custPartNo" label={t("master.part.custPartNo", "고객품번")}
               value={form.custPartNo} onChange={e => setField("custPartNo", e.target.value)} fullWidth />
-            <Input label={t("master.part.rev", "리비전")}
+            <FieldInput field="rev" label={t("master.part.rev", "리비전")}
               value={form.rev} onChange={e => setField("rev", e.target.value)} fullWidth />
-            <div className="col-span-2">
-              <Input label={t("master.part.markingText", "마킹문구")}
-                value={form.markingText} maxLength={100}
-                onChange={e => setField("markingText", e.target.value)} fullWidth />
-            </div>
-            <Select label={t("master.part.type")} options={partTypeOptions}
+            <FieldInput field="markingText" label={t("master.part.markingText", "마킹문구")} wrapperClassName="col-span-2"
+              value={form.markingText} maxLength={100}
+              onChange={e => setField("markingText", e.target.value)} fullWidth />
+            <FieldSelect field="itemType" label={t("master.part.type")} options={partTypeOptions}
               value={form.itemType} 
               onChange={v => setField("itemType", v)}
               fullWidth required />
-            <Select label={t("master.part.productType", "품목그룹")}
+            <FieldSelect field="productType" label={t("master.part.productType", "품목그룹")}
               options={productTypeOptions}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
-            <div className="col-span-2">
-              <Input label={t("master.part.spec")}
-                value={form.spec} onChange={e => setField("spec", e.target.value)} fullWidth />
-            </div>
-            <Input label={t("master.part.color", "색상")}
+            <FieldInput field="spec" label={t("master.part.spec")} wrapperClassName="col-span-2"
+              value={form.spec} onChange={e => setField("spec", e.target.value)} fullWidth />
+            <FieldInput field="color" label={t("master.part.color", "색상")}
               value={form.color} onChange={e => setField("color", e.target.value)} fullWidth />
-            <Input label={t("master.part.length", "길이")} type="number"
+            <FieldInput field="length" label={t("master.part.length", "길이")} type="number"
               value={String(form.length)} onChange={e => setField("length", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.stripBefore", "스트리핑 전")} type="number"
+            <FieldInput field="stripBefore" label={t("master.part.stripBefore", "스트리핑 전")} type="number"
               value={String(form.stripBefore)} onChange={e => setField("stripBefore", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.stripAfter", "스트리핑 후")} type="number"
+            <FieldInput field="stripAfter" label={t("master.part.stripAfter", "스트리핑 후")} type="number"
               value={String(form.stripAfter)} onChange={e => setField("stripAfter", Number(e.target.value))} fullWidth />
-            <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false} showCode
+            <FieldComCodeSelect field="unit" groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false} showCode
               value={form.unit} onChange={v => setField("unit", v)} fullWidth />
-            <Select label={t("master.part.inspectMethod", "검사구분")}
+            <FieldSelect field="iqcYn" label={t("master.part.iqcFlag", "IQC대상")} options={iqcOptions}
+              value={form.iqcYn} onChange={v => setField("iqcYn", v)} fullWidth />
+            <FieldSelect field="inspectMethod" label={t("master.part.inspectMethod", "검사구분")}
               options={iqcInspectMethodOptions}
               value={form.inspectMethod} onChange={v => setField("inspectMethod", v)} fullWidth />
-            <YnRadio label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
+            <FieldInput field="sampleQty" label={t("master.part.basicSampleQty", "기본시료수")} type="number" step="0.001"
+              value={String(form.sampleQty)} onChange={e => setField("sampleQty", Number(e.target.value))} fullWidth />
+            <FieldComCodeSelect field="inspectionLevel" groupCode="AQL_INSP_LEVEL" label={t("master.part.inspectionLevel", "검사수준")} includeAll={false} showCode
+              value={form.inspectionLevel} onChange={v => setField("inspectionLevel", v)} fullWidth />
+            <FieldComCodeSelect field="aqlCritical" groupCode="AQL_VALUE" label={t("master.part.aqlCritical", "Critical AQL")} includeAll={false} showCode
+              value={String(form.aqlCritical)} onChange={v => setField("aqlCritical", Number(v))} fullWidth />
+            <FieldComCodeSelect field="aqlMajor" groupCode="AQL_VALUE" label={t("master.part.aqlMajor", "Major AQL")} includeAll={false} showCode
+              value={String(form.aqlMajor)} onChange={v => setField("aqlMajor", Number(v))} fullWidth />
+            <FieldComCodeSelect field="aqlMinor" groupCode="AQL_VALUE" label={t("master.part.aqlMinor", "Minor AQL")} includeAll={false} showCode
+              value={String(form.aqlMinor)} onChange={v => setField("aqlMinor", Number(v))} fullWidth />
+            <FieldYnRadio field="useYn" label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>
 
-        {/* 거래처/수량 섹션 */}
+        {/* 수량 섹션 */}
         <div>
-          <h3 className="text-xs font-semibold text-text-muted mb-2">
-            {t("master.part.sectionQty", "거래처 / 수량관리")}
-          </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.part.boxQty", "박스장입수량")} type="number"
-              value={String(form.boxQty)} onChange={e => setField("boxQty", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.minPackQty", "최소포장단위")} type="number"
-              value={String(form.minPackQty)} onChange={e => setField("minPackQty", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.lotUnitQty", "묶음단위수량")} type="number"
-              value={String(form.lotUnitQty)} onChange={e => setField("lotUnitQty", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.safetyStock")} type="number"
-              value={String(form.safetyStock)} onChange={e => setField("safetyStock", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.tactTime", "택타임(초)")} type="number"
-              value={String(form.tactTime)} onChange={e => setField("tactTime", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.expiryDate", "유효기간(일)")} type="number"
-              value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.expiryExtDays", "유효기간 연장(일)")} type="number"
-              value={String(form.expiryExtDays)} onChange={e => setField("expiryExtDays", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.palletUnit", "팔레트구성단위")} type="number"
-              value={String(form.packUnit)} onChange={e => setField("packUnit", Number(e.target.value))} fullWidth />
-            <div className="col-span-2">
-              <Select label={t("master.part.storageLocation", "적재로케이션")}
-                options={locationOptions}
-                value={form.storageLocation} onChange={v => setField("storageLocation", v)}
-                disabled={locationLoading} fullWidth />
+            <div>
+              <FieldInput
+                field="boxQty"
+                label={t("master.part.boxQty", "박스장입수량")}
+                type="number"
+                list="part-panel-box-qty-options"
+                value={String(form.boxQty)}
+                onChange={e => setField("boxQty", Number(e.target.value))}
+                fullWidth
+              />
+              <datalist id="part-panel-box-qty-options">
+                {PACKAGING_QTY_OPTIONS.map(qty => <option key={qty} value={qty} />)}
+              </datalist>
             </div>
+            <FieldInput field="minPackQty" label={t("master.part.minPackQty", "최소불출단위수량(자재)")} type="number"
+              value={String(form.minPackQty)} onChange={e => setField("minPackQty", Number(e.target.value))} fullWidth />
+            <FieldInput field="lotUnitQty" label={t("master.part.lotUnitQty", "묶음단위수량(생산공정품)")} type="number"
+              value={String(form.lotUnitQty)} onChange={e => setField("lotUnitQty", Number(e.target.value))} fullWidth />
+            <FieldInput field="safetyStock" label={t("master.part.safetyStock")} type="number"
+              value={String(form.safetyStock)} onChange={e => setField("safetyStock", Number(e.target.value))} fullWidth />
+            <FieldInput field="expiryDate" label={t("master.part.expiryDate", "유효기간(일)")} type="number"
+              value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
+            <FieldInput field="expiryExtDays" label={t("master.part.expiryExtDays", "유효기간 연장(일)")} type="number"
+              value={String(form.expiryExtDays)} onChange={e => setField("expiryExtDays", Number(e.target.value))} fullWidth />
+            <FieldInput field="packUnit" label={t("master.part.palletUnit", "팔레트구성단위")} type="number"
+              value={String(form.packUnit)} onChange={e => setField("packUnit", Number(e.target.value))} fullWidth />
+            <FieldSelect field="storageLocation" label={t("master.part.storageLocation", "품목고정 적재로케이션")}
+              options={locationOptions}
+              value={form.storageLocation} onChange={v => setField("storageLocation", v)}
+              disabled={locationLoading} fullWidth wrapperClassName="col-span-2" />
           </div>
         </div>
 
         {/* 비고 */}
         <div>
-          <h3 className="text-xs font-semibold text-text-muted mb-2">
-            {t("master.part.sectionImage", "사진")}
-          </h3>
+          <FieldLabel field="imageUrl" label={t("master.part.sectionImage", "사진")} />
           {previewUrl ? (
             <div className="relative group">
               <img
@@ -405,7 +414,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         </div>
 
         <div>
-          <Input label={t("common.remark")}
+          <FieldInput field="remark" label={t("common.remark")}
             value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />
         </div>
       </div>

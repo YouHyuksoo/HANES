@@ -298,13 +298,18 @@ export class EquipInspectService {
     const inspectAt = dto.inspectAt ? new Date(dto.inspectAt) : new Date();
     const operationalWindow = await this.resolveOperationalWindow(
       equip,
-      dto.inspectDate ? this.resolveReferenceTime(dto.inspectDate) : inspectAt,
+      inspectType === 'WORKER'
+        ? inspectAt
+        : dto.inspectDate ? this.resolveReferenceTime(dto.inspectDate) : inspectAt,
     );
+    const inspectDate = inspectType === 'WORKER'
+      ? inspectAt
+      : dto.inspectDate ? parseDateStart(dto.inspectDate) : inspectAt;
 
-    const log = this.equipInspectLogRepository.create({
+    const logData = {
       equipCode: dto.equipCode,
       inspectType,
-      inspectDate: dto.inspectDate ? parseDateStart(dto.inspectDate) : inspectAt,
+      inspectDate,
       orderNo: dto.orderNo ?? null,
       workDate: this.parseYmdLocal(operationalWindow.workDate),
       inspectAt,
@@ -316,9 +321,13 @@ export class EquipInspectService {
       remark: dto.remark,
       company: context?.company ?? equip.company,
       plant: context?.plant ?? equip.plant,
-    });
+    };
 
-    const saved = await this.equipInspectLogRepository.save(log);
+    const saved = inspectType === 'WORKER'
+      ? await this.insertWorkerInspectLog(logData)
+      : await this.equipInspectLogRepository.save(
+        this.equipInspectLogRepository.create(logData),
+      );
 
     if (saved.overallResult && saved.overallResult.toUpperCase().includes('FAIL')) {
       await this.equipMasterRepository.update(
@@ -339,6 +348,66 @@ export class EquipInspectService {
         lineCode: equip.lineCode,
       },
     };
+  }
+
+  private async insertWorkerInspectLog(log: Partial<EquipInspectLog>): Promise<EquipInspectLog> {
+    // TypeORM Oracle DATE binding can persist date-only values; explicit TO_DATE keeps the PK time part.
+    await this.equipInspectLogRepository.query(
+      `INSERT INTO EQUIP_INSPECT_LOGS (
+        EQUIP_CODE,
+        INSPECT_TYPE,
+        INSPECT_DATE,
+        ORDER_NO,
+        WORK_DATE,
+        INSPECT_AT,
+        OP_WINDOW_START_AT,
+        OP_WINDOW_END_AT,
+        INSPECTOR_NAME,
+        OVERALL_RESULT,
+        DETAILS,
+        REMARK,
+        COMPANY,
+        PLANT_CD
+      ) VALUES (
+        :1,
+        :2,
+        TO_DATE(:3, 'YYYY-MM-DD HH24:MI:SS'),
+        :4,
+        TO_DATE(:5, 'YYYY-MM-DD'),
+        TO_TIMESTAMP(:6, 'YYYY-MM-DD HH24:MI:SS.FF3'),
+        TO_TIMESTAMP(:7, 'YYYY-MM-DD HH24:MI:SS.FF3'),
+        TO_TIMESTAMP(:8, 'YYYY-MM-DD HH24:MI:SS.FF3'),
+        :9,
+        :10,
+        :11,
+        :12,
+        :13,
+        :14
+      )`,
+      [
+        log.equipCode,
+        log.inspectType,
+        this.formatDateTime(log.inspectDate as Date),
+        log.orderNo,
+        this.formatYmdLocal(log.workDate as Date),
+        this.formatDateTimeMillis(log.inspectAt as Date),
+        this.formatDateTimeMillis(log.opWindowStartAt as Date),
+        this.formatDateTimeMillis(log.opWindowEndAt as Date),
+        log.inspectorName ?? null,
+        log.overallResult ?? 'PASS',
+        log.details ?? null,
+        log.remark ?? null,
+        log.company,
+        log.plant,
+      ],
+    );
+
+    const now = log.inspectAt instanceof Date ? log.inspectAt : new Date();
+    return {
+      ...log,
+      createdAt: now,
+      updatedAt: now,
+    } as EquipInspectLog;
   }
 
   private assertTenantMatchesEquipment(
@@ -491,6 +560,10 @@ export class EquipInspectService {
 
   private formatDateTime(date: Date): string {
     return `${this.formatYmdLocal(date)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+  }
+
+  private formatDateTimeMillis(date: Date): string {
+    return `${this.formatDateTime(date)}.${String(date.getMilliseconds()).padStart(3, '0')}`;
   }
 
   /** 점검 결과 수정 (복합키) */

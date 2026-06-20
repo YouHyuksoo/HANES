@@ -214,6 +214,7 @@
     "material.lotMerge": "Lot Merge",
     "material.shelfLife": "Material Shelf Life",
     "material.shelfLifeReinspect": "Shelf Life Reinspection",
+    "material.shelfLifeHistory": "Shelf Life Inspection History",
     "material.hold": "Material Stock Hold",
     "material.scrap": "Material Scrap Process",
     "material.adjustment": "Stock Adjust Process",
@@ -4210,7 +4211,10 @@
       "statusShipped": "Shipped",
       "searchPlaceholder": "Search order no, customer...",
       "editTitle": "Edit Shipment Order",
-      "addTitle": "Register Shipment Order"
+      "addTitle": "Register Shipment Order",
+      "printOrder": "Print Shipment Order",
+      "printTitle": "Shipment Order",
+      "printDate": "Print Date"
     },
     "history": {
       "title": "Shipment History",
@@ -4339,6 +4343,11 @@
       "subtitle": "View scanned box stock waiting for shipment and the individual products inside each box.",
       "searchPlaceholder": "Search box no...",
       "boxQty": "Stock Qty",
+      "inventoryState": "Stock State",
+      "packedWaiting": "Packed Waiting",
+      "warehouseReceived": "Warehouse Stock",
+      "warehouseCode": "Warehouse",
+      "receivedAt": "Received At",
       "itemsTitle": "Products in Box",
       "itemCount": "Products",
       "selectBox": "Select a box",

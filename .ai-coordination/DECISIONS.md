@@ -23,6 +23,30 @@ Reason:
 - 하네스 도면은 품목별 Header, Revision, 회로별 stripping/crimping 사양이 함께 버전 관리되어야 하므로 단순 첨부문서나 작업지도서 본문으로 흡수하면 회로 단위 조회/변경 추적이 어렵다.
 - 승인본 불변성과 초안 편집 흐름을 분리해야 현장 작업 기준서의 감사 추적이 유지된다.
 
+## D-20260620-CODE-VALUE-SELECT-STANDARD
+Status: Accepted
+Decision:
+- HANES 화면에서 코드성/기준정보성 값은 자유입력보다 공통코드 또는 기준정보 선택 방식을 우선한다.
+- 검사수준, AQL, 검사구분, 단위, 상태, 라인, 설비, 공정, 품목, 거래처처럼 관리 기준이 있는 값은 `Input` 직접입력으로 만들지 않는다.
+- 필요한 공통코드/기준정보가 없으면 임시 자유입력으로 우회하지 않고 기준 데이터를 먼저 추가한다.
+- 단, 기본시료수처럼 코드가 아니라 사용자가 수량 기준값을 입력해야 하는 항목은 숫자 입력을 허용하며 소수점도 저장 가능해야 한다.
+Reason:
+- 사용자가 `/master/part` 검사 관련 항목을 입력방식이 아닌 선택방식으로 바꾸고, 이 원칙을 항상 지킬 개발표준으로 명시하라고 요청했다.
+- 코드성 값의 자유입력은 오탈자와 기준 불일치를 만들어 MES/QMS 판정, 집계, 조회 조건 정합성을 깨뜨린다.
+
+## D-20260620-IQC-DEFECT-GRADE-AQL
+Status: Accepted
+Decision:
+- IQC 불량코드는 반드시 `CRITICAL`, `MAJOR`, `MINOR` 중 하나의 등급을 가진다.
+- 등급은 기존 `COM_CODES.ATTR1`이 아니라 전용 컬럼 `COM_CODES.DEFECT_GRADE`로 관리한다.
+- IQC 판정 입력은 Critical/Major/Minor 수량 직접입력이 아니라 `DEFECT_TYPE` 불량코드와 수량을 입력받고, 서버가 코드 등급으로 집계한다.
+- Critical 수량이 1건 이상이면 AQL 계산과 관계없이 즉시 LOT FAIL 처리한다.
+- Major와 Minor는 각각 품목별 AQL 기준으로 Ac/Re를 독립 계산하며, 어느 한 등급이라도 불합격이면 LOT는 FAIL 처리한다.
+Reason:
+- `ATTR1`은 기존 `DEFECT_TYPE`에서 색상 또는 영문 설명으로 이미 사용 중이라 불량등급 저장소로 재사용하면 기존 UI/표시 의미가 깨진다.
+- 등급별 AQL 판정은 Critical, Major, Minor의 허용수량 기준이 다르므로 합산하거나 한 규칙으로 처리하면 LOT 판정이 틀어진다.
+- 사용자가 불량코드 등급 필수와 Major/Minor 독립 Ac/Re 판정을 명시했다.
+
 ## D-20260617-PRINT-AGENT-OWNS-CONFIG
 Status: Accepted
 Decision:

@@ -42,6 +42,9 @@ export class IqcLog {
   @Column({ name: 'ITEM_CODE', length: 255 })
   itemCode: string;
 
+  @Column({ type: 'varchar2', name: 'VENDOR_CODE', length: 50, nullable: true })
+  vendorCode: string | null;
+
   @Column({ name: 'INSPECT_TYPE', length: 50, default: 'INITIAL' })
   inspectType: string;
 
@@ -69,6 +72,48 @@ export class IqcLog {
   /** 검사 시료 바코드(시리얼) — 입력/스캔. 여러 개는 콤마 구분 */
   @Column({ type: 'varchar2', name: 'SAMPLE_BARCODE', length: 500, nullable: true, default: null })
   sampleBarcode: string | null;
+
+  @Column({ name: 'LOT_QTY', type: 'number', nullable: true, default: null })
+  lotQty: number | null;
+
+  @Column({ type: 'varchar2', name: 'AQL_INSPECTION_LEVEL', length: 20, nullable: true, default: null })
+  aqlInspectionLevel: string | null;
+
+  @Column({ type: 'varchar2', name: 'AQL_INSPECTION_MODE', length: 20, nullable: true, default: null })
+  aqlInspectionMode: string | null;
+
+  @Column({ name: 'AQL_SAMPLE_QTY', type: 'number', nullable: true, default: null })
+  aqlSampleQty: number | null;
+
+  @Column({ type: 'varchar2', name: 'AQL_MAJOR_CODE', length: 50, nullable: true, default: null })
+  aqlMajorCode: string | null;
+
+  @Column({ name: 'AQL_MAJOR_AC', type: 'number', nullable: true, default: null })
+  aqlMajorAc: number | null;
+
+  @Column({ name: 'AQL_MAJOR_RE', type: 'number', nullable: true, default: null })
+  aqlMajorRe: number | null;
+
+  @Column({ type: 'varchar2', name: 'AQL_MINOR_CODE', length: 50, nullable: true, default: null })
+  aqlMinorCode: string | null;
+
+  @Column({ name: 'AQL_MINOR_AC', type: 'number', nullable: true, default: null })
+  aqlMinorAc: number | null;
+
+  @Column({ name: 'AQL_MINOR_RE', type: 'number', nullable: true, default: null })
+  aqlMinorRe: number | null;
+
+  @Column({ name: 'DEFECT_CRITICAL', type: 'number', default: 0 })
+  defectCritical: number;
+
+  @Column({ name: 'DEFECT_MAJOR', type: 'number', default: 0 })
+  defectMajor: number;
+
+  @Column({ name: 'DEFECT_MINOR', type: 'number', default: 0 })
+  defectMinor: number;
+
+  @Column({ type: 'varchar2', name: 'AQL_JUDGE_REASON', length: 500, nullable: true, default: null })
+  aqlJudgeReason: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;

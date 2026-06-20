@@ -18,6 +18,7 @@ import {
   IsString,
   IsOptional,
   IsInt,
+  IsIn,
   Min,
   MaxLength,
 } from 'class-validator';
@@ -83,6 +84,12 @@ export class CreateComCodeDto {
   @IsString()
   @MaxLength(200)
   attr3?: string;
+
+  @ApiPropertyOptional({ description: '불량 등급. DEFECT_TYPE 그룹에서 필수', enum: ['CRITICAL', 'MAJOR', 'MINOR'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['CRITICAL', 'MAJOR', 'MINOR'])
+  defectGrade?: 'CRITICAL' | 'MAJOR' | 'MINOR';
 }
 
 /**

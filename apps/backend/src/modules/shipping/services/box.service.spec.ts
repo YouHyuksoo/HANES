@@ -109,6 +109,66 @@ describe('BoxService', () => {
     });
   });
 
+  it('findStockByBox separates packed waiting boxes from warehouse received boxes', async () => {
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        {
+          boxNo: 'BOX-PACKED',
+          itemCode: 'ITEM-001',
+          qty: '2',
+          orderNo: 'WO-001',
+          latestAt: new Date('2026-06-20T01:00:00Z'),
+          receivedFlag: '0',
+          receivedAt: null,
+          warehouseCode: null,
+        },
+        {
+          boxNo: 'BOX-RECEIVED',
+          itemCode: 'ITEM-001',
+          qty: '3',
+          orderNo: 'WO-002',
+          latestAt: new Date('2026-06-20T02:00:00Z'),
+          receivedFlag: '1',
+          receivedAt: new Date('2026-06-20T03:00:00Z'),
+          warehouseCode: 'FG_MAIN',
+        },
+      ]),
+    };
+    mockFgLabelRepo.createQueryBuilder.mockReturnValue(qb as any);
+    mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Harness' } as PartMaster]);
+
+    const rows = await target.findStockByBox(undefined, 'C1', 'P1');
+
+    expect(qb.leftJoin).toHaveBeenCalledWith(
+      expect.anything(),
+      'tx',
+      expect.stringContaining('tx.refType = :boxRefType'),
+      expect.objectContaining({ boxRefType: 'BOX' }),
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({
+        boxNo: 'BOX-PACKED',
+        inventoryState: 'PACKED_WAITING',
+        warehouseCode: null,
+        receivedAt: null,
+      }),
+      expect.objectContaining({
+        boxNo: 'BOX-RECEIVED',
+        inventoryState: 'WAREHOUSE_RECEIVED',
+        warehouseCode: 'FG_MAIN',
+        receivedAt: new Date('2026-06-20T03:00:00Z'),
+      }),
+    ]);
+  });
+
   it('addSerial rejects labels that did not pass inspection', async () => {
     mockBoxRepo.findOne.mockResolvedValue({
       boxNo: 'BOX-001',

@@ -50,7 +50,6 @@ const testData = {
   minPackQty: 3,
   lotUnitQty: 6,
   safetyStock: 4,
-  tactTime: 5,
   expiryDate: 30,
   expiryExtDays: 7,
   packUnit: 'BOX',
@@ -315,7 +314,6 @@ async function fillPartForm(page, values) {
   await fillByLabel(page, '최소포장단위', values.minPackQty);
   await fillByLabel(page, 'LOT단위수량', values.lotUnitQty);
   await fillByLabel(page, '안전재고', values.safetyStock);
-  await fillByLabel(page, '택타임(초)', values.tactTime);
   await fillByLabel(page, '유효기간(일)', values.expiryDate);
   await fillByLabel(page, '유효기간 연장(일)', values.expiryExtDays);
   await fillByLabel(page, '포장단위', values.packUnit);

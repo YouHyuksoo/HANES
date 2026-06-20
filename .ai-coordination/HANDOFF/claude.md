@@ -2,9 +2,33 @@
 
 ## Last Update
 
-2026-06-19 (local)
+2026-06-20 (local)
 
 ## Latest
+
+- T-PROCESS-LINE-TYPE-UI 완료(DB 일부 commit, 코드 미커밋): PROCESS_MASTERS LINE_TYPE 화면 반영.
+  - BE: process dto/service `lineType`(+create의 processCategory 누락 동반 수정), equip-master findAll `lineType` 매핑.
+  - FE: 공정마스터 화면 라인 컬럼/필터/입력(ComCodeSelect), 설비선택 모달을 라인(저전압/고전압/공통)별 섹션→공정 카드 2단계 그룹. equipOptions normalize에 lineType + undefined필드 정리.
+  - DB: COM_CODES LINE_TYPE 3건 commit. 시드 `tools/seed/seed_line_type_comcode.py`.
+  - 검증: FE/BE tsc 0, equipOptions 2/2. 브라우저 렌더는 dev 서버 재컴파일 불안정으로 미완 — 사용자 직접 확인 권장. locales codex 점유라 t() defaultValue 폴백.
+
+- T-PROCESS-MASTER-PDF-REORG 완료(DB 반영 commit, 코드 미커밋): THN 제조공정 흐름도 PDF 기준 `PROCESS_MASTERS` 정비.
+  - `LINE_TYPE`(LV/HV/CM) 컬럼 비파괴 ADD. 기존 18개 **코드 유지**, 명칭/라인/순서만 정비. 신규 23개(LV17·HV4·CM2) INSERT. PRC-* 4개 비활성. 활성 41개.
+  - **PROCESS_CODE 무변경** → 23개 참조 테이블 무손상. 그로멧/부자재삽입은 공용(CM). 엔티티 `lineType` 추가, BE tsc 0.
+  - 시드 `tools/seed/seed_process_master_pdf.py`(멱등), 설계 `docs/superpowers/specs/2026-06-20-process-master-pdf-reorg-design.md`. JSHANES commit 완료.
+  - **남은 것**: 화면 반영(공정마스터 LINE_TYPE 컬럼/필터, 설비선택 모달 라인별 그룹)은 별도. IF_PO INVALID는 무관(원래 깨짐).
+
+- T-KIOSK-EQUIP-MODAL-GROUP 완료(코드 미커밋): `/production/input-kiosk` 설비선택 모달을 공정별 그룹화 + 확대.
+  - `EquipSelectModal.tsx`만 수정. Modal `size="full"`(90vw), 공정별 그룹(`useMemo`, 공정명순/미지정 맨뒤) + `columns-2~5` 멀티컬럼 카드. 스캔+검색 한 줄 압축.
+  - `equips`는 이미 `processCode`/`processName` 보유(`/equipment/equips` findAll PROCESS_MASTERS 조인). 신규 라벨은 `t(noProcess, {defaultValue})` 폴백 — **locales는 codex(T-SHIP-ORDER-PRINT) active 점유라 미수정**.
+  - 검증: FE tsc 0, 3002 브라우저 실측(22공정/48설비 5컬럼 거의 한 화면, 스크롤 최소). input-kiosk 일시 500은 codex의 3002 재시작 직후 컴파일 지연(stash 검증으로 무관 확정).
+
+- T-QUALITY-AQL-COMCODE-DROPDOWN 완료(DB 시드 commit, 코드 미커밋): `/quality/aql` 기준관리의 코드성 입력 3종을 공통코드 드롭다운으로 전환.
+  - 검사수준→`AQL_INSP_LEVEL`(신규 7종), AQL값→`AQL_VALUE`(신규 26종), 사용여부→`USE_YN`(기존) 모두 `ComCodeSelect includeAll={false}`.
+  - JSHANES(40/1000) `COM_CODES` 33건 시드 commit. 빌더 `tools/seed/seed_aql_comcodes.py`(멱등, dry-run/`--commit`).
+  - **AQL_VALUE DETAIL_CODE는 JS canonical(`1.0`→`"1"`, `0.040`→`"0.04"`)** — 프론트 `String(aqlValue)` 매칭용. CODE_NAME만 ISO 표준 표기. 기존 데이터(II/1.0/2.5/4.0) 매칭 확인.
+  - i18n 4파일 `comCode.AQL_INSP_LEVEL.*` 7키 추가. AQL값은 숫자라 codeName 폴백.
+  - 검증: FE tsc 0, 구조 테스트 5/5, locale JSON parse OK. 브라우저 E2E 미수행(사용자 확인 권장).
 
 - T-HNS02-STOCK100-SEED 완료(DB 반영 commit, 코드 미커밋): JSHANES(40/1000) HNS02 완제품 제품재고 **100개**를 BOM 7단계 완전 정합 시드로 생성.
   - 기존 HNS02 작업지시 55건 + MAT_ISSUE_REQUESTS 25/REQUEST_ITEMS 34 정리 → 작업지시 17건(품번당 1, DONE, PARENT_ID 트리) 재구성. **codex의 WO2606150066 참조 데이터는 사용자 명시 승인하에 삭제됨** — codex 키오스크/소모품 REVIEW 작업 재검증 시 해당 작업지시 없음 주의.

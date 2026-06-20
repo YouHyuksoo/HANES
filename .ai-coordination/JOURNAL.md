@@ -10,6 +10,163 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-20 Codex (T-BOX-STOCK-PACKED-VS-RECEIVED)
+
+- 요청: 박스포장으로 `BOX_NO`를 부여받은 상태와 제품입고 후 창고재고 상태를 구분. `BOX_NO`는 포장 식별자로 유지하고, 창고이동 기준으로만 쓰면 안 된다는 도메인 정정 반영.
+- 원인: `/shipping/box-stock` 조회가 `FG_LABELS.BOX_NO IS NOT NULL AND STATUS <> 'SHIPPED'`만으로 박스별 재고를 집계해 포장대기와 창고입고 완료를 같은 상태로 보였다.
+- 변경: `BoxService.findStockByBox()`와 `findStockSerials()`가 `PRODUCT_TRANSACTIONS`를 `refType='BOX'`, `transType IN ('WIP_OUT','FG_IN')`, `status='DONE'` 조건으로 left join해 `inventoryState`를 `PACKED_WAITING` 또는 `WAREHOUSE_RECEIVED`로 반환한다. `/shipping/box-stock` 화면은 재고상태, 창고, 입고일시 컬럼과 SQL 미리보기를 추가했다. `ProductInventoryService.cancelTransactionInTx()`는 박스 입고취소 시 `FG_LABELS.BOX_NO`를 지우지 않고 수불 전표 취소와 재고 역분개만 수행한다.
+- 테스트: 백엔드 회귀 테스트는 기존 구현에서 `PRODUCT_TRANSACTIONS` 조인이 없어 RED 실패 후 GREEN 통과했다. 입고취소 시 `BOX_NO` 유지 테스트도 기존 구현에서 RED 실패 후 GREEN 통과했다. 프론트 구조 테스트도 `inventoryState`/수불 조인 SQL 누락으로 RED 실패 후 GREEN 통과했다.
+- 검증: `pnpm --filter @harness/backend test -- product-inventory.service.spec.ts box.service.spec.ts --runInBand` 36/36 PASS, 신규/기존 box-stock 구조 테스트 PASS, ko/en/zh/vi JSON parse PASS, BE/FE `tsc --noEmit` PASS, JSHANES SQL 정상 실행(현재 미출하 박스 라벨 0건), 대상 파일 `git diff --check` PASS. 직접 API 호출은 인증 누락으로 401이라 브라우저 세션 실측은 수행하지 못했다.
+
+## 2026-06-20 Claude (T-PROCESS-LINE-TYPE-UI)
+
+- 작업: PROCESS_MASTERS `LINE_TYPE` 화면 반영 (T-PROCESS-MASTER-PDF-REORG 후속).
+- 백엔드: `process.dto.ts` CreateProcessDto에 `lineType`(IsIn LV/HV/CM). `process.service.ts` create에 lineType + **processCategory 누락 동반 수정**(기존 create에 processCategory 미저장 버그), update Pick/매핑에 lineType. `equip-master.service.ts` findAll에서 PROCESS_MASTERS 조인 시 processName과 함께 `lineType` 매핑(설비모달용).
+- 프론트: `master/process` ProcessList에 라인 컬럼(ComCodeBadge groupCode=LINE_TYPE)+멀티필터, page.tsx 모달에 라인 입력(ComCodeSelect). 설비선택 모달(`EquipSelectModal`)을 **라인(저전압/고전압/공통)별 섹션 → 공정별 카드 멀티컬럼** 2단계 그룹으로 재구성. `equipOptions.ts` normalize에 lineType 파싱 + undefined 필드 미포함으로 정리.
+- DB: `COM_CODES` LINE_TYPE 3건(LV=저전압/HV=고전압/CM=공통, attr1 배지색) JSHANES commit. 시드 `tools/seed/seed_line_type_comcode.py`(멱등).
+- i18n: 신규 라벨(`master.process.lineType`, `kiosk.equip.noLine`)은 `t(..., {defaultValue})` 폴백 — locales 4파일 codex 점유 회피.
+- 검증: FE/BE `tsc --noEmit` 0. `equipOptions.test.mjs` 2/2 PASS(기존에 undefined 필드 때문에 깨질 상태였던 테스트를 normalize 정리로 동반 GREEN). 브라우저 렌더 검증은 dev 서버가 BE3+FE3 파일 재컴파일 중이라 새 페이지 진입 일시 실패(사용자 기존 탭은 정상) — 코드/DB 검증으로 갈음, 사용자 직접 확인 권장. 코드 미커밋.
+
+## 2026-06-20 13:15 Codex
+
+- 작업: `T-IQC-AQL-Z14-POLICY` IQC AQL 정책 구현.
+- 변경: `ITEM_MASTERS`에 품목 기준 `INSPECTION_LEVEL/AQL_CRITICAL/AQL_MAJOR/AQL_MINOR`, `PARTNER_MASTERS`에 `QUALITY_GRADE/INSPECTION_MODE`, `IQC_LOGS`에 AQL 판정 근거/불량수/업체/LOT 수량 컬럼을 추가했다. `AQL_SAMPLING_RULES.CODE_LETTER`와 `VENDOR_INSPECTION_MODE_HISTORY`도 추가했다.
+- 변경: `AqlService.resolveIqcPolicy()`가 품목 AQL + 업체 검사강도 + LOT 수량으로 Major/Minor 샘플수량/Ac/Re를 산출하고, Critical 불량 1건 이상은 즉시 FAIL 처리한다. `updateVendorInspectionModeAfterLot()`로 최근 이력 기반 NORMAL/TIGHTENED/REDUCED 자동전환과 이력 저장을 처리한다.
+- 변경: `/material/iqc-history/arrival` 저장은 프론트 요청 결과를 그대로 믿지 않고 서버 AQL 판정 결과로 `MAT_LOTS`, `MAT_ARRIVALS`, `IQC_LOGS`를 저장한다. 기존 기본시료수(`SAMPLE_QTY`)는 파괴시료/검사시료 용도로 유지하고, AQL 샘플수량은 별도 `AQL_SAMPLE_QTY`로 저장한다.
+- 화면: `/master/part` 품목 폼/그리드에 기본시료수, 검사수준, Critical/Major/Minor AQL 입력/표시를 추가했다. IQC 모달에는 AQL 샘플수량/검사수준/검사모드/Ac/Re 표시와 Critical/Major/Minor 불량수 입력을 추가했다.
+- DB: `apps/backend/src/migrations/2026-06-20_iqc_aql_z14_policy.sql`을 JSHANES에 적용 완료. post-check: ITEM 4, PARTNER 2, IQC_LOGS 15, HISTORY_TABLE 1, CODE_LETTER_ROWS 45.
+- 검증: backend AQL/IQC focused Jest 23건 PASS, backend tsc PASS, frontend tsc PASS, IQC modal/master part 구조 테스트 PASS, `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py` PASS, `git diff --check` PASS.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-20 12:56 Codex
+
+- 작업: `T-IQC-AQL-Z14-POLICY` IQC AQL 정석 구조 설계/계획.
+- 배경: 사용자가 `품목별 AQL + 업체별 검사강도 + Critical/Major/Minor + ISO 2859-1 자동계산 + 업체 검사모드 자동전환` 정책을 제시하고, 2안 정석 구현을 선택했다.
+- 확인: 현재 repo의 `ITEM_MASTERS`에는 `INSPECTION_LEVEL/AQL_CRITICAL/AQL_MAJOR/AQL_MINOR`가 없고, `PARTNER_MASTERS`에는 `QUALITY_GRADE/INSPECTION_MODE`가 없다. 기존 `/quality/aql`은 LOT 범위별 `sampleSize/Ac/Re` 직접 등록형 1차 화면이다.
+- 변경: 새 설계 문서 `docs/superpowers/specs/2026-06-20-iqc-aql-z14-policy-design.md` 작성. 기존 `docs/superpowers/specs/2026-06-19-iqc-aql-design.md`는 superseded 표시.
+- 계획: 구현 계획 `docs/superpowers/plans/2026-06-20-iqc-aql-z14-policy-implementation.md` 작성. 스키마/엔티티, AQL policy resolve engine, 마스터 UI/API, IQC 서버 판정, 업체 검사모드 자동전환, Oracle/ERD/runtime 검증으로 분리했다.
+- 검증: `git diff --check` PASS.
+- 상태: REVIEW 대기, lock released. 생산 코드 수정 없음, 커밋하지 않음.
+
+## 2026-06-20 Claude (T-PROCESS-MASTER-PDF-REORG)
+
+- 작업: `03.제조공정_THN.pdf`(THN 와이어링하네스 공정 흐름도, 저전압/고전압) 기준 `PROCESS_MASTERS` 정비.
+- 설계(brainstorming): `docs/superpowers/specs/2026-06-20-process-master-pdf-reorg-design.md`. 확정 — 코드 유지 + LINE_TYPE 컬럼 + 저/고전압 둘 다 + 제조공정만 + 신규 전부 추가 + 그로멧·부자재삽입 공용(CM).
+- 변경: ① `PROCESS_MASTERS`에 `LINE_TYPE VARCHAR2(2)`(LV/HV/CM) 비파괴 ADD. ② 기존 18개 PROCESS_CODE **무변경**, PROCESS_NAME/LINE_TYPE/SORT_ORDER만 UPDATE(WELDR→초음파융착, TUBHT→열수축, SHDRM→실드편조절단, OINSP→육안검사 등). ③ 신규 23개 INSERT(저전압17·고전압4·공통2). ④ 미사용 PRC-* 4개 USE_YN='N'. ⑤ 엔티티 `process-master.entity.ts`에 `lineType` 필드(nullable, type 명시).
+- 적용: 멱등 시드 `tools/seed/seed_process_master_pdf.py`(컬럼ADD존재시skip + UPDATE + 없을때만INSERT + 비활성, dry-run 기본/`--commit`). JSHANES commit. SORT 체계 LV 1000~/HV 2000~/CM 3000~.
+- 검증: dry-run/commit 일치, 실DB 재조회 활성 41(LV25/HV6/CM10)+비활성4. BE `tsc --noEmit` 0. `PROCESS_CODE` 무변경으로 23개 참조 테이블(라우팅/작업지시/생산실적/genealogy/SPC 등) 무손상. DDL 후 INVALID는 IF_PO 1건뿐이나 PROCESS_MASTERS 미참조(원래 INVALID, 무관).
+- 남은 것: 화면 반영(공정마스터 화면 LINE_TYPE 컬럼/필터, 설비선택 모달 라인별 그룹)은 별도 작업. 코드 미커밋(시드/엔티티/spec).
+
+## 2026-06-20 11:58 Codex
+
+- 작업: `T-MATERIAL-PO-STATUS-RECEIVED-GREEN` `/material/po-status` PO현황 입고완료 상태 배지 색상 보정.
+- 원인: PO현황 좌측 그리드는 `입고율`을 갖고 있고 실제 데이터 중 `receiveRate=100`인 행이 많지만, 상태 배지는 원래 `PO_STATUS` 공통코드의 `attr1`과 상태 코드명만 사용해 `확정/임시저장` 또는 분홍 계열로 보일 수 있었다.
+- 변경: `/material/po-status/page.tsx`에 `RECEIVED_STATUS_CLASS`를 추가하고, 상태값이 `RECEIVED`이거나 좌측 행 `receiveRate >= 100`이면 상태 배지 문구를 `입고완료`로 표시하고 초록 클래스를 우선 적용한다. 좌측 `입고율` 진행바도 100%는 초록, 부분입고는 노랑, 0%는 회색으로 맞췄다. 다른 상태는 기존 공통코드 색상을 유지한다.
+- 테스트: 구조 테스트 `po-status-received-green.structure.test.mjs`를 추가/확장해 초록 전용 클래스, `RECEIVED 또는 receiveRate>=100` 판단, 입고완료 문구, 좌측 진행바 색상을 고정했다. RED 실패 확인 후 GREEN 통과.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/material/po-status/po-status-received-green.structure.test.mjs"` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 Playwright `/material/po-status` 좌측 그리드에서 `입고율 100%` 행들이 `입고완료` 초록 배지와 초록 진행바로 표시됨을 확인했다. console/page error 0, `git diff --check` PASS.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-20 11:55 Codex
+
+- 작업: `T-TOAST-BOTTOM-LEFT` 전역 toast 이벤트 메시지 위치 변경.
+- 원인/범위: `react-hot-toast` 공통 `Toaster`가 [providers.tsx](/c:/Project/HANES/apps/frontend/src/app/providers.tsx)의 `position="top-right"`로 설정되어 모든 토스트가 우상단에 표시됐다.
+- 변경: `Toaster` 위치를 `position="bottom-left"`로 변경하고, `apps/frontend/src/app/toaster-position.structure.test.mjs`로 좌하단 계약을 고정했다.
+- 검증: 구조 테스트 RED(`top-right` 기존 설정 실패) 확인 후 GREEN, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-20 11:28 Codex
+
+- 작업: `T-MASTER-PART-LABEL-TERMS` `/master/part` 품목정보 용어 변경, 입력 컬럼 도움말 추가, 미사용 택타임 제거.
+- 변경: 그리드와 등록/수정 패널의 `박스입수량`을 `박스장입수량`, `최소포장단위`를 `최소불출단위수량(자재)`, `묶음단위수량`을 `묶음단위수량(생산공정품)`, `적재 로케이션`을 `품목고정 적재로케이션`으로 맞췄다. `거래처 / 수량관리` 섹션 제목은 제거했다.
+- 도움말: `PartFieldHelp.tsx`를 추가해 품목정보 입력 라벨 옆 `?` 아이콘을 공통 처리하고, title/aria-label에 컬럼 설명과 `ITEM_MASTERS.*` DB 컬럼명을 표시한다.
+- 포장 후보: `박스장입수량` 입력에 `10,20,30,40,50,60,70,80,90,100` datalist 후보를 붙였고 직접 타이핑은 유지했다.
+- 정리: `/master/part` 관리 화면과 품목 QA 시나리오에서 미사용 `택타임` 입력/컬럼/payload/type 참조를 제거했다.
+- 검증: 구조 테스트 RED→GREEN, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `http://localhost:3002/master/part` 200, 3002 Playwright DOM에서 도움말 27개와 DB 컬럼 title/새 라벨/택타임 미표시/후보값 확인 PASS, `git diff --check` PASS.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-20 10:52 Codex
+
+- 작업: `T-SHIP-ORDER-SQL-PREVIEW` `/shipping/order` SQL 미리보기 보정.
+- 원인: 화면 `DataGrid.sqlQuery`가 실제 테이블이 아닌 `SHIPPING_ORDERS`를 표시하고 있어 `/shipping/orders` 실제 조회 구조와 달랐다.
+- 근거: 백엔드 `ShipOrderService.findAll()`은 `SHIPMENT_ORDERS`를 조회하고, 조회된 출하지시번호 기준으로 `SHIPMENT_ORDER_ITEMS`, `ITEM_MASTERS`, `PARTNER_MASTERS` 데이터를 보강한다.
+- 변경: `/shipping/order/page.tsx`의 SQL 미리보기를 `SHIPMENT_ORDERS so` 기준으로 바꾸고 `SHIPMENT_ORDER_ITEMS soi`, `ITEM_MASTERS im`, `PARTNER_MASTERS pm` LEFT JOIN 및 `so.COMPANY`, `so.PLANT_CD`, `so.CREATED_AT DESC` 조건을 표시했다.
+- 검증: SQL preview 구조 테스트 RED→GREEN, 기존 ship-order print/payload 구조 테스트 PASS, FE tsc PASS, `http://localhost:3014/shipping/order` 200 및 compile PASS, `git diff --check` PASS.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-20 Claude (T-KIOSK-EQUIP-MODAL-GROUP)
+
+- 작업: `/production/input-kiosk` 설비선택 모달(`EquipSelectModal.tsx`) 직접선택 목록을 공정별 그룹화 + 모달 확대 + 스크롤 최소화.
+- 변경: `equips`(이미 `processCode`/`processName` 보유 — `/equipment/equips` findAll이 PROCESS_MASTERS 조인으로 채움)를 `useMemo`로 공정별 그룹핑(공정명 가나다순, 미지정 맨 뒤, 그룹 내 설비명순). 검색은 설비코드/명+공정코드/명 매칭. Modal `size="md"`→`"full"`(90vw). 그룹은 `columns-2 md:3 xl:4 2xl:5` 멀티컬럼 + `break-inside-avoid` 카드. 스캔+검색을 한 줄로 압축해 세로 공간 확보.
+- i18n: 신규 라벨은 `kiosk.equip.noProcess` 1개뿐이고 현재 전 설비가 공정 보유라 거의 미표시 → `t(..., {defaultValue:'공정 미지정'})` 폴백 처리. **locales 4파일은 codex(T-SHIP-ORDER-PRINT)가 active 점유 중이라 미수정**(충돌 회피).
+- 검증: FE `tsc --noEmit` 0건. 3002 브라우저 실측 — 설비선택 모달이 22개 공정/48설비를 5컬럼으로 거의 한 화면에 표시(스크롤 최소), 공정 카드(공정명+설비수 배지)·설비 버튼(명+코드) 정상.
+- 참고: 검증 중 input-kiosk 일시 500 — codex가 3002 dev 서버를 재시작(아래 10:50 항목)한 직후 첫 컴파일 지연이었음. EquipSelectModal만 stash해도 500 동일 → 내 변경 무관 확인, 재컴파일 완료 후 정상. (별건: 진입 시 localStorage의 삭제된 작업지시 WO2606150057 404 에러모달 — 데이터 이슈, 본 작업 무관.)
+
+## 2026-06-20 10:50 Codex
+
+- 작업: `T-SHIP-CONFIRM-ORDER-PANEL` `/shipping/confirm` 좌측 미출하 출하지시 그리드 패널 추가.
+- 변경: 기존 `/shipping/orders?status=CONFIRMED&limit=5000` API를 조회해 `orderQty > shippedQty`인 품목이 남은 출하지시만 좌측 패널에 표시한다. 컬럼은 출하지시번호, 고객사, 잔여수량, 출하일이다.
+- 변경: 좌측 출하지시 행을 클릭하면 `BoxScanShipModal`에 `initialShipOrderNo`를 전달해 출하지시를 자동 조회한다. 이 경로에서는 출하지시번호 수동 입력 영역을 숨기고 박스 바코드 입력부터 진행한다. 상단 `박스 스캔 출하` 버튼은 기존 수동 입력 흐름을 유지한다.
+- 런타임: 기존 3002 dev 서버가 500을 반환해 재시작했다. 3005 `next start`는 전체 페이지 500이라 사용하지 않았고, 3006 임시 dev 검증 후 종료했다. 최종 검증은 3002에서 완료했다.
+- 검증: 구조 테스트 4개 RED/GREEN 및 회귀 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `pnpm --filter @harness/frontend build` PASS, 3003 API 미출하 후보 확인, 3002 Playwright에서 좌측 패널/행 클릭/모달 자동 로딩/수동 출하지시번호 프롬프트 미표시/console error 0 확인, `git diff --check` PASS.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-20 10:35 Codex
+
+- 작업: `T-SHIP-ORDER-PRINT` `/shipping/order` 등록 출하지시서 출력 기능 추가.
+- 변경: 출하지시 목록 행 액션에 출력 버튼을 추가하고, 선택한 출하지시를 A4 브라우저 출력 영역(`ship-order-print-root`)으로 렌더링한다. 출력물 상단에는 `shipOrderNo` 텍스트와 `react-qr-code` 기반 2D QR 바코드를 함께 표시한다. 품목 목록, 고객사, 상태, 납기일, 출하일, 비고, 합계수량을 출력한다.
+- locale: `shipping.shipOrder.printOrder`, `printTitle`, `printDate`를 ko/en/zh/vi에 추가했다.
+- 검증: 구조 테스트 RED→GREEN, locale JSON parse PASS, `git diff --check` PASS, 별도 dev 서버 `http://localhost:3014/shipping/order` 200 및 `/shipping/order` compile PASS.
+- 제한: 기존 `localhost:3002`는 HTTP 요청이 timeout이라 건드리지 않았다. 전체 FE tsc는 현재 진행 중인 `/shipping/confirm/page.tsx:318`의 `selectedRowId` 타입 오류(`string | null` -> `string | undefined`)로 실패했으며 이번 `/shipping/order` 변경과는 별도다.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-20 Claude
+
+- 작업: `T-QUALITY-AQL-COMCODE-DROPDOWN` `/quality/aql` 기준관리 화면의 코드성 입력 필드를 공통코드 드롭다운으로 전환.
+- 코드화 대상(사용자 확정: 3개 모두 + ISO 2859-1 표준 전체):
+  - 검사수준 `inspectionLevel`: 자유텍스트 → `ComCodeSelect groupCode="AQL_INSP_LEVEL"` (신규 그룹 7종: 특별 S-1~S-4, 일반 I/II/III)
+  - AQL값 `aqlValue`: number Input → `ComCodeSelect groupCode="AQL_VALUE"` (신규 그룹 26종: 0.010~1000)
+  - 사용여부 `useYn`: 하드코딩 Select → `ComCodeSelect groupCode="USE_YN"` (기존 그룹 재사용)
+- DB: JSHANES(40/1000) `COM_CODES`에 AQL_INSP_LEVEL(7)+AQL_VALUE(26)=33건 commit. 빌더 `tools/seed/seed_aql_comcodes.py`(DELETE 후 INSERT, 멱등, dry-run 기본/`--commit`). pre-check: 두 그룹 0건/USE_YN 2건 존재. post-check: 33건 재조회 확인.
+- **핵심 설계**: AQL_VALUE `DETAIL_CODE`는 프론트 `String(form.aqlValue)`와 정확히 매칭돼야 기존 값이 드롭다운에 선택 표시됨 → DETAIL_CODE는 JS canonical 표기(`1.0`→`"1"`, `0.040`→`"0.04"`), `CODE_NAME`(라벨)만 ISO 표준 표기. 기존 데이터 II/1.0/2.5/4.0 모두 매칭 확인.
+- i18n: ko/en/zh/vi 4파일에 `comCode.AQL_INSP_LEVEL.*` 7키 추가(검사수준 다국어). AQL값은 숫자 표기라 DB codeName 폴백으로 충분(키 생략).
+- 스코프: 입력 폼만 전환. 좌측 그리드 검사수준/AQL값 컬럼은 코드값 자체가 의미라 그대로 유지. 제1지침 점검 — inspectionLevel/aqlValue 입력 화면은 `/quality/aql` 1곳뿐(유사 문제 없음).
+- 검증: FE `tsc --noEmit` 0건, 구조 테스트 5/5 PASS, locale JSON 4파일 parse OK. 브라우저 E2E는 미수행(사용자 확인 권장). 코드 미커밋.
+
+## 2026-06-19 19:13 Codex
+
+- 작업: `T-SHIP-CONFIRM-CARD-REMOVE` `/shipping/confirm` 출하확정 화면 정보카드 제거.
+- 변경: `page.tsx`에서 상단 4개 `StatCard` 상태 요약 영역과 관련 `stats` 계산, 미사용 아이콘/import를 제거했다. 조회 그리드, 필터, 등록, 박스스캔출하, 출하확정/취소/역분개 모달 흐름은 유지했다.
+- 검증: 구조 테스트 RED(`StatCard` 존재) 확인 후 GREEN, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `git diff --check` PASS.
+- 런타임 참고: `localhost:3002`는 node PID `55728`이 listen 중이나 `Invoke-WebRequest`가 30초 타임아웃되어 HTTP/브라우저 확인은 완료하지 못했다.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-19 19:02 Codex
+
+- 작업: `T-MENU-LOCALE-MISSING` 사이드바 메뉴 번역 누락 보정.
+- 변경: `menuConfig.ts`의 `labelKey`를 기준으로 ko/en/zh/vi locale 누락을 검증하는 구조 테스트 `apps/frontend/src/config/menu-locale-coverage.structure.test.mjs`를 추가했다.
+- RED: 테스트 기준을 실제 i18next 점 포함 locale 키 구조에 맞춘 뒤 `en/zh/vi: menu.material.shelfLifeHistory` 누락을 확인했다.
+- 조치: `apps/frontend/src/locales/en.json`, `zh.json`, `vi.json`의 menu 블록에 `material.shelfLifeHistory` 번역을 추가했다.
+- 검증: `node --test apps/frontend/src/config/menu-locale-coverage.structure.test.mjs` PASS, ko/en/zh/vi JSON parse PASS.
+- 상태: REVIEW 대기, lock released. 커밋하지 않음.
+
+## 2026-06-19 18:55 Codex
+
+- 작업: `T-SHIP-OQC-GATE-OFF` JSHANES `40/1000` 출하 OQC 게이트 비활성화.
+- pre-check: `SYS_CONFIGS`에서 `CONFIG_KEY=OQC_ENABLED`, `CONFIG_VALUE=Y`, `IS_ACTIVE=Y` 확인.
+- 조치: 기존 API `PATCH /api/system/configs/OQC_ENABLED`에 `{ "configValue": "N" }` 전송해 설정 변경.
+- post-check: JSHANES DB `OQC_ENABLED=N`, `/api/system/configs/active` 응답 map `OQC_ENABLED=N`, `/api/system/configs?configGroup=QUALITY` 응답 `configValue=N` 확인.
+- 비고: 코드 변경 없음. 실제 출하 처리는 수행하지 않았다. 이후 출하 게이트는 마감 박스 `CLOSED` 기준이며 `OQC_STATUS=PASS` 요구가 꺼진다.
+- 상태: REVIEW 대기, lock released.
+
+## 2026-06-19 18:46 Codex
+
+- 작업: `T-SHIP-SO999-APPROVE` JSHANES `40/1000` 출하지시 `SO-20260619-999` 출하 가능 상태 보정.
+- pre-check: `SHIPMENT_ORDERS` 상태 `DRAFT`, `SHIPMENT_ORDER_ITEMS`는 `HNS02` 지시수량 10/출하수량 0. `BX2606190002`는 `HNS02` 10개, `CLOSED`, `OQC_STATUS=PENDING`, 팔레트 미적재. `FG_MAIN/HNS02` 가용수량 10. `SYS_CONFIGS.OQC_ENABLED=Y`.
+- 조치: 기존 API `PUT /api/shipping/orders/SO-20260619-999/confirm` 호출로 출하지시를 `CONFIRMED` 처리했다. 이어 기존 API `POST /api/quality/oqc/OQC-20260619-001/execute` 호출로 `BX2606190002` OQC를 `PASS` 처리했다.
+- post-check: `SO-20260619-999=CONFIRMED`, `BX2606190002=CLOSED/PASS`, `FG_MAIN/HNS02 AVAILABLE_QTY=10`.
+- 비고: 실제 `ship-box` 출하 처리는 수행하지 않았다. 화면에서 출하지시 `SO-20260619-999`와 박스 `BX2606190002`를 스캔하면 출하 게이트 조건은 충족한다.
+- 상태: REVIEW 대기, lock released. 코드 변경 없음.
+
 ## 2026-06-19 16:50 Codex
 
 - 작업: `T-IQC-HISTORY-ARRIVALNO-COLUMN` `/material/iqc-history` 그리드 입하번호 표시.
@@ -1410,3 +1567,79 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 변경: `IqcHistoryService.uploadCert()`에서 기존 `findOne(Date)`를 먼저 시도하고, 실패하면 ISO/offset timestamp를 Asia/Seoul 기준 `YYYY-MM-DD HH24:MI:SS.FF3` 문자열로 정규화해 `TO_TIMESTAMP(:inspectTs, ...)` QueryBuilder 조회/업데이트 fallback을 수행한다.
 - 테스트: 신규 회귀 테스트로 ISO `2026-06-19T07:56:27.354Z`가 `2026-06-19 16:56:27.354` 조건으로 조회/업데이트되는지 검증. `pnpm --filter @harness/backend test -- iqc-history.service.spec.ts -t "성적서 업로드"` PASS.
 - 검증: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS, 대상 파일 `git diff --check` PASS. 실제 업로드 API는 DB와 파일을 변경하므로 임의 더미 업로드 실측은 수행하지 않았다.
+
+# 2026-06-19 codex T-EQUIP-INSPECT-WORKER-PK-COLLISION
+- 요청: `/equipment/daily-inspect` 작업자설비점검 저장 시 `ORA-00001 TEST.PK_EQUIP_INSPECT_LOGS` 오류 정리.
+- 원인: `EQUIP_INSPECT_LOGS` 물리 PK는 `EQUIP_CODE + INSPECT_TYPE + INSPECT_DATE`인데, WORKER 이력의 `INSPECT_DATE`가 `2026-06-19 00:00:00`처럼 날짜값으로 저장되어 같은 장비/유형/일자에서 작업지시가 달라도 PK가 충돌했다.
+- DB 정리: JSHANES `40/1000` 기준 `EQ-ATCNS-01`, `WORKER`, `2026-06-19 00:00:00` 충돌 로그 `WO2606190100`, `WO2606190118` 각 1건 삭제. 최종 2026-06-19 해당 장비 WORKER 로그 잔여 0건 확인.
+- 변경: `EquipInspectService.create()`에서 `WORKER` 저장만 분기해 `INSPECT_DATE`를 `TO_DATE(:3, 'YYYY-MM-DD HH24:MI:SS')`로 명시 삽입한다. `DAILY` 저장은 기존 TypeORM 저장 경로를 유지한다.
+- 테스트: 신규 회귀 테스트가 기존 구현에서 `mockLogRepo.query` 호출 0회로 RED 실패하는 것을 확인했고, 수정 후 GREEN 통과.
+- 검증: `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts` 15/15 PASS, `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS, 관련 파일 `git diff --check` PASS.
+
+# 2026-06-19 codex T-IQC-AQL-CRUD
+- 요청: `/quality/aql`이 빈 껍데기라 실제 등록 기능이 필요함.
+- 범위: AQL 기준관리 CRUD/API/DB 구현까지. IQC 품목별 AQL 기준 연결과 IQC 검사 적용은 후속 단계로 분리.
+- DB: JSHANES에 `AQL_STANDARDS`, `AQL_SAMPLING_RULES`를 생성했다. `AQL_SAMPLING_RULES`는 `AQL_STANDARDS`에 FK cascade를 갖고, LOT 범위와 Ac/Re 체크 제약을 포함한다.
+- 백엔드: `AqlModule`, controller/service/DTO/entity/spec를 추가했다. API는 목록, 상세, 등록, 수정, soft-disable 삭제, `resolve?aqlCode=&lotQty=`를 제공한다. service는 LOT 범위 중복, `rejectQty > acceptQty`, inactive 기준 resolve 차단을 검증한다.
+- 프론트: `/quality/aql` page를 DataGrid + 우측 입력 패널 + LOT 수량별 sampling rule 편집 UI로 교체했다. 저장 전 LOT 범위 중복과 Ac/Re 오류를 화면에서 차단한다.
+- 문서: `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py`로 `docs/reports/db-schema-erd.md`를 JSHANES 기준 재생성했고 `AQL_STANDARDS`, `AQL_SAMPLING_RULES` 반영을 확인했다.
+- 검증: backend spec RED→GREEN, frontend 구조 테스트 RED→GREEN, BE/FE tsc PASS, JSHANES 마이그레이션 적용 및 재실행 idempotent PASS, API 목록/등록/상세/resolve/수정/삭제 PASS, 3002 브라우저 UI 표시 PASS.
+- 정리: API 검증 데이터 `AQL-CODEX-260619`는 `AQL_SAMPLING_RULES` 2건, `AQL_STANDARDS` 1건 물리 삭제 후 잔여 0 확인.
+
+# 2026-06-19 codex T-SHIP-ORDER-AUTO-NO
+- 요청: `/shipping/order` 출하지시 등록 시 출하지시번호를 사용자가 입력하지 않고 자동 생성.
+- 원인: 프론트 등록 폼이 `shipOrderNo`를 필수 입력처럼 관리했고, 백엔드 `CreateShipOrderDto`도 필수값으로 검증해 신규 등록자가 번호 규칙을 직접 알아야 했다.
+- 변경: `CreateShipOrderDto.shipOrderNo`를 선택값으로 바꾸고, `ShipOrderService.create()`에서 미입력 시 트랜잭션 안에서 `NumberingService.nextShipmentNo()`로 채번한다. 중복 검사는 자동/수동 번호 모두 생성 후 수행한다.
+- 프론트: `/shipping/order` 신규 등록 폼은 출하지시번호를 payload에 보내지 않고, 비활성 입력에 `자동생성`만 표시한다. 수정 모드에서는 기존 출하지시번호를 표시하되 변경하지 않는다.
+- 테스트: 자동 채번 backend 회귀 테스트와 frontend payload 구조 테스트를 RED→GREEN으로 추가했다. 전체 `ship-order.service.spec.ts`, frontend 구조 테스트, BE/FE `tsc --noEmit`, `git diff --check` 통과.
+- 실측: 3003 API에 `shipOrderNo` 없이 출하지시를 등록해 `SH2606190001` 자동 발급을 확인했고, 검증 데이터 삭제 후 JSHANES `SHIPMENT_ORDERS`/`SHIPMENT_ORDER_ITEMS` 잔여 0건을 확인했다. 3002 브라우저에서 등록 모달 `출하지시번호=자동생성`, disabled true, console error 0 확인.
+
+# 2026-06-19 codex T-SHIP-BOX-STOCK-CARD-REMOVE
+- 요청: `/shipping/box-stock` 정보카드 제거.
+- 확인: 현재 상단 KPI형 `StatCard`는 없지만 좌/우 조회 영역이 `Card/CardContent` 프레임으로 감싸져 화면상 카드형 정보 영역처럼 보이는 구조였다.
+- 변경: `/shipping/box-stock` 페이지에서 `Card/CardContent` import와 wrapper를 제거하고 일반 `div` 레이아웃으로 바꿨다. 박스 목록 DataGrid, 박스 내 개별제품 DataGrid, 검색, 선택 박스 상세 조회 API 호출은 유지했다.
+- 테스트: 신규 구조 테스트가 기존 코드에서 `<Card>` 존재로 RED 실패한 뒤, 수정 후 GREEN 통과했다.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/shipping/box-stock/box-stock-no-info-cards.structure.test.mjs"` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 HTTP 200, Playwright에서 `제품재고조회` 표시/카드형 wrapper 0/console error 0 확인, `git diff --check` PASS.
+
+# 2026-06-19 codex T-SHIP-CONFIRM-BOXSCAN-ORDERNO
+- 요청: `/shipping/confirm` 박스스캔출하 모달에 출하지시번호를 미리 표시.
+- 확인: `BoxScanShipModal`은 출하지시번호 입력칸은 유지하지만, 주문 조회 후 박스 스캔 단계의 요약 영역에는 고객사/상태만 보여줘 현재 출하지시번호를 작업자가 다시 확인하기 어려웠다.
+- 변경: 주문 조회 성공 후 표시되는 요약 영역 첫 줄에 `출하지시번호` 라벨과 `order.shipOrderNo`를 큰 monospace 강조값으로 추가했다. `ship-box`/`cancel-ship-box` API 호출과 스캔 흐름은 변경하지 않았다.
+- 테스트: 신규 구조 테스트가 기존 코드에서 `order.shipOrderNo` 요약 표시 누락으로 RED 실패한 뒤, 수정 후 GREEN 통과했다.
+- 검증: `node --test apps/frontend/src/components/shipping/box-scan-ship-modal-order-no.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 HTTP 200, Playwright에서 `SO-RV-26061202215660` 조회 후 출하지시번호/고객사/박스 바코드 입력 표시와 console error 0 확인, `git diff --check` PASS.
+
+# 2026-06-20 codex T-MASTER-PART-IQC-CODE-SELECT
+- 요청: `/master/part` 검사 관련 항목을 입력 방식이 아니라 선택 방식으로 변경하고, 자유입력보다 공통코드/기준정보 선택을 우선하는 원칙을 개발표준과 기억 메모에 남김.
+- 변경: `PartFormPanel.tsx`, `PartFormModal.tsx`에서 기본시료수는 ISO 2859-1 샘플 크기 계열 선택값으로 변경했다. 검사수준은 `AQL_INSP_LEVEL`, Critical/Major/Minor AQL은 `AQL_VALUE` 공통코드 선택으로 변경했다. 모달의 검사구분 하드코딩 `FULL/SKIP`도 `IQC_INSPECT_METHOD` 공통코드 선택으로 맞췄다.
+- 표준화: `docs/standards/implementation-rules.md`, `AGENTS.md`, 사용자 기억 메모에 코드성/기준정보성 값은 자유입력보다 공통코드 또는 기준정보 선택 방식을 우선한다는 규칙을 기록했다.
+- 테스트: 구조 테스트에 검사 기준 필드가 `FieldInput`이면 실패하는 계약을 추가했고 RED 확인 후 GREEN 통과했다.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs"` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+
+# 2026-06-20 codex T-MASTER-PART-IQC-CODE-SELECT 보정
+- 요청: 기본시료수는 소수점 이하도 직접 넣을 수 있어야 함.
+- 원인: 직전 변경에서 기본시료수를 ISO 샘플 크기 선택값으로 제한했고, 백엔드 `CreatePartDto.sampleQty`도 `@IsInt()`라 소수 입력을 막았다.
+- 변경: `PartFormPanel.tsx`, `PartFormModal.tsx`의 기본시료수를 `FieldInput type="number" step="0.001"`로 되돌렸다. 검사수준/AQL/검사구분 공통코드 선택 방식은 유지했다. `part.dto.ts`의 `sampleQty`는 `@IsNumber()`로 변경해 소수 저장을 허용한다.
+- 테스트: 구조 테스트가 `sampleQty` 선택식이면 실패하고, `sampleQty` DTO가 `@IsInt()`면 실패하도록 갱신했다. RED 확인 후 GREEN 통과.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs"` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS.
+
+# 2026-06-20 codex T-IQC-DEFECT-CODE-SEVERITY-AQL
+- 요청: IQC 불량코드는 반드시 Critical/Major/Minor 등급을 가지고, IQC 판정 시 등급별 AQL을 독립 적용하며 Critical 1건 이상은 즉시 FAIL 처리.
+- 확인: 기존 `COM_CODES.ATTR1`은 `DEFECT_TYPE`에서 색상/영문 설명으로 이미 사용 중이었다. 따라서 불량등급 저장에는 전용 `DEFECT_GRADE` 컬럼을 추가했다.
+- DB: JSHANES `COM_CODES`에 `DEFECT_GRADE VARCHAR2(20)` 추가, `DEFECT_TYPE`에는 등급 필수 체크 제약과 허용값 체크 제약을 적용했다. 기존 12개 불량코드는 `CRACK=CRITICAL`, `DIM/MATERIAL/WORK/FUNC/WELD/ASM/MAT=MAJOR`, `APP/MARK/BURR/ETC=MINOR`로 백필했다.
+- 백엔드: IQC AQL 정책 계산이 `defectCodes[{defectCode, qty}]`를 받아 `DEFECT_TYPE.DEFECT_GRADE`로 Critical/Major/Minor 수량을 집계한다. 등급 누락/미등록/사용중지 코드는 판정을 중단한다. Major와 Minor는 각각 독립 Ac/Re 판정하고 하나라도 실패하면 LOT FAIL 처리한다.
+- 프론트: `/material/iqc` 모달에서 등급별 수량 직접입력을 제거하고 `DEFECT_TYPE` 불량코드 선택 + 수량 입력 행으로 변경했다. 선택된 코드의 등급을 화면에 표시하고, 저장 payload는 `defects` 배열로 전송한다.
+- 문서: `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py`로 `docs/reports/db-schema-erd.md`를 JSHANES 기준 재생성했다.
+- 검증: backend focused RED/GREEN, frontend structure RED/GREEN 확인. 최종 `pnpm --filter @harness/backend test -- aql.service.spec.ts iqc-history.service.spec.ts --runInBand` 26/26 PASS, `node --test apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs` 3/3 PASS, BE/FE `tsc --noEmit` PASS, JSHANES 컬럼/제약/불량코드 12건 등급 조회 PASS, 관련 파일 `git diff --check` PASS.
+
+# 2026-06-20 codex T-IQC-PART-SPEC-AQL-SUMMARY
+- 요청: `/master/iqc-part-spec`에 AQL 관련 내용도 같이 표시되어야 하는 것 아니냐는 지적.
+- 변경: 품목별 IQC 항목관리 우측 상단에 선택 품목의 `AQL 기준` 요약 영역을 추가했다. 검사수준, 기본시료수, Critical/Major/Minor AQL을 품목마스터 응답에서 표시한다.
+- 변경: Ac/Re는 LOT 수량이 있어야 산출되므로 `LOT 수량 미리보기` 숫자 입력을 추가하고, 선택 품목 + 입력 LOT 수량으로 `/quality/aql/resolve-iqc`를 호출해 샘플수량, Major Ac/Re, Minor Ac/Re를 표시한다.
+- 유지: 기존 좌측 품목 목록 3/12, 우측 관리 영역 9/12 레이아웃과 `IqcSpecPanel` 검사항목 저장 흐름은 변경하지 않았다.
+- 검증: 신규 구조 테스트 RED 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-aql-summary.structure.test.mjs" "apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-layout.structure.test.mjs"` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/master/iqc-part-spec` HTTP 200, 대상 파일 `git diff --check` PASS.
+
+# 2026-06-20 codex T-IQC-PART-SPEC-LEFT-PANEL
+- 요청: `/master/iqc-part-spec` 좌측 패널을 더 작게 표시.
+- 변경: `page.tsx`의 12컬럼 그리드 비율을 좌측 `col-span-4`, 우측 `col-span-8`에서 좌측 `col-span-3`, 우측 `col-span-9`로 조정해 품목 목록은 줄이고 규격 관리 영역을 넓혔다.
+- 테스트: 구조 테스트 `iqc-part-spec-layout.structure.test.mjs`를 추가했고 기존 `4/8` 레이아웃에서 RED, 변경 후 GREEN을 확인했다.
+- 검증: 구조 테스트 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/master/iqc-part-spec` HTTP 200, 대상 파일 `git diff --check` PASS.

@@ -50,6 +50,12 @@ export class PartnerMaster {
   @Column({ type: 'varchar2', name: 'CONTACT_PERSON', length: 50, nullable: true })
   contactPerson: string | null;
 
+  @Column({ type: 'varchar2', name: 'QUALITY_GRADE', length: 20, nullable: true })
+  qualityGrade: string | null;
+
+  @Column({ type: 'varchar2', name: 'INSPECTION_MODE', length: 20, default: 'NORMAL' })
+  inspectionMode: string;
+
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 

@@ -98,7 +98,19 @@ export class PartMaster {
   isSplittable: string; // 자재 분할 가능 여부 (Y/N)
 
   @Column({ name: 'SAMPLE_QTY', type: 'int', nullable: true })
-  sampleQty: number | null; // 샘플검사 수량
+  sampleQty: number | null; // 기본시료수. AQL 산출 샘플수량과 별개
+
+  @Column({ type: 'varchar2', name: 'INSPECTION_LEVEL', length: 20, nullable: true })
+  inspectionLevel: string | null;
+
+  @Column({ type: 'number', name: 'AQL_CRITICAL', precision: 8, scale: 3, nullable: true })
+  aqlCritical: number | null;
+
+  @Column({ type: 'number', name: 'AQL_MAJOR', precision: 8, scale: 3, nullable: true })
+  aqlMajor: number | null;
+
+  @Column({ type: 'number', name: 'AQL_MINOR', precision: 8, scale: 3, nullable: true })
+  aqlMinor: number | null;
 
   @Column({ type: 'int', name: 'PACK_UNIT', nullable: true })
   packUnit: number | null; // 팔레트 구성 단위(팔레트당 박스 수)

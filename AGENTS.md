@@ -45,6 +45,7 @@
 - 마이그레이션 파일은 `apps/backend/src/migrations/`에 보관
 - `SEQ` 채번은 Oracle `SEQUENCE.NEXTVAL`만 사용한다. `MAX(SEQ)+1`, `NVL(MAX(...))+1`, 날짜별 1부터 재시작 채번은 금지한다.
 - 테이블/컬럼/PK/FK/CHECK/코드 도메인 등 DB 스키마를 변경하면 반드시 `python tools/generate_db_schema_doc.py`를 실행해 `docs/reports/db-schema-erd.md`를 함께 갱신한다. 스키마 변경 PR/커밋은 마이그레이션 SQL과 ERD 문서 갱신을 같은 작업 범위에 포함해야 한다.
+- 화면 개발 시 검사수준, AQL, 검사구분, 단위, 상태, 라인, 설비, 공정, 품목, 거래처처럼 코드성/기준정보성 값은 자유입력보다 공통코드 또는 기준정보 선택 방식을 우선한다. 공통코드/기준정보가 없으면 먼저 기준을 추가하고 선택 컴포넌트로 연결한다.
 
 ---
 

@@ -67,6 +67,18 @@ export class CreatePartnerDto {
   @MaxLength(50)
   contactPerson?: string;
 
+  @ApiPropertyOptional({ description: '품질등급', example: 'A' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  qualityGrade?: string;
+
+  @ApiPropertyOptional({ description: '검사모드', enum: ['TIGHTENED', 'NORMAL', 'REDUCED'], default: 'NORMAL' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['TIGHTENED', 'NORMAL', 'REDUCED'])
+  inspectionMode?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()

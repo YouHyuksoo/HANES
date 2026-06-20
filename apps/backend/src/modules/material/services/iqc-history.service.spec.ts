@@ -13,6 +13,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { AqlService } from '../../quality/aql/services/aql.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -31,6 +32,7 @@ describe('IqcHistoryService cancel policy', () => {
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockSysConfigService: DeepMocked<SysConfigService>;
+  let mockAqlService: DeepMocked<AqlService>;
   let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
@@ -46,6 +48,7 @@ describe('IqcHistoryService cancel policy', () => {
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
     mockSysConfigService = createMock<SysConfigService>();
+    mockAqlService = createMock<AqlService>();
     mockTx = createMock<TransactionService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
@@ -55,6 +58,22 @@ describe('IqcHistoryService cancel policy', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
+    mockAqlService.resolveIqcPolicy.mockResolvedValue({
+      itemCode: 'ITEM-001',
+      vendorCode: 'SUP-001',
+      lotQty: 10,
+      inspectionLevel: 'II',
+      inspectionMode: 'NORMAL',
+      result: 'PASS',
+      sampleQty: 5,
+      defectCritical: 0,
+      defectMajor: 0,
+      defectMinor: 0,
+      majorRule: { aqlCode: 'AQL-II-1.0', aqlValue: 1, codeLetter: 'A', sampleSize: 5, acceptQty: 0, rejectQty: 1 },
+      minorRule: { aqlCode: 'AQL-II-2.5', aqlValue: 2.5, codeLetter: 'A', sampleSize: 5, acceptQty: 0, rejectQty: 1 },
+      judgeReason: 'AQL 기준 합격',
+    });
+    mockAqlService.updateVendorInspectionModeAfterLot.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -69,6 +88,7 @@ describe('IqcHistoryService cancel policy', () => {
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: SysConfigService, useValue: mockSysConfigService },
+        { provide: AqlService, useValue: mockAqlService },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },
       ],
@@ -83,7 +103,12 @@ describe('IqcHistoryService cancel policy', () => {
 
   describe('findAll', () => {
     it('품목 마스터가 누락되어도 IQC 이력 원본 itemCode는 유지한다', async () => {
-      mockIqcLogRepo.find.mockResolvedValue([
+      const qb = createMock<any>();
+      qb.andWhere.mockReturnValue(qb);
+      qb.orderBy.mockReturnValue(qb);
+      qb.skip.mockReturnValue(qb);
+      qb.take.mockReturnValue(qb);
+      qb.getMany.mockResolvedValue([
         {
           inspectDate: new Date('2026-04-08'),
           seq: 1,
@@ -93,7 +118,8 @@ describe('IqcHistoryService cancel policy', () => {
           status: 'DONE',
         } as IqcLog,
       ]);
-      mockIqcLogRepo.count.mockResolvedValue(1);
+      qb.getCount.mockResolvedValue(1);
+      mockIqcLogRepo.createQueryBuilder.mockReturnValue(qb);
       mockPartMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findAll({ page: 1, limit: 10 });
@@ -109,7 +135,12 @@ describe('IqcHistoryService cancel policy', () => {
     });
 
     it('IQC 이력 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
-      mockIqcLogRepo.find.mockResolvedValue([
+      const qb = createMock<any>();
+      qb.andWhere.mockReturnValue(qb);
+      qb.orderBy.mockReturnValue(qb);
+      qb.skip.mockReturnValue(qb);
+      qb.take.mockReturnValue(qb);
+      qb.getMany.mockResolvedValue([
         {
           inspectDate: new Date('2026-04-08'),
           itemCode: 'ITEM-001',
@@ -118,7 +149,8 @@ describe('IqcHistoryService cancel policy', () => {
           plant: 'P1',
         } as IqcLog,
       ]);
-      mockIqcLogRepo.count.mockResolvedValue(1);
+      qb.getCount.mockResolvedValue(1);
+      mockIqcLogRepo.createQueryBuilder.mockReturnValue(qb);
       mockPartMasterRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
@@ -129,17 +161,22 @@ describe('IqcHistoryService cancel policy', () => {
     });
 
     it('날짜만 넘어온 조회 종료일은 해당 일자 전체를 포함한다', async () => {
-      mockIqcLogRepo.find.mockResolvedValue([]);
-      mockIqcLogRepo.count.mockResolvedValue(0);
+      const qb = createMock<any>();
+      qb.andWhere.mockReturnValue(qb);
+      qb.orderBy.mockReturnValue(qb);
+      qb.skip.mockReturnValue(qb);
+      qb.take.mockReturnValue(qb);
+      qb.getMany.mockResolvedValue([]);
+      qb.getCount.mockResolvedValue(0);
+      mockIqcLogRepo.createQueryBuilder.mockReturnValue(qb);
       mockPartMasterRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10, fromDate: '2026-06-08', toDate: '2026-06-08' });
 
-      const findArgs = mockIqcLogRepo.find.mock.calls[0][0] as any;
-      expect(findArgs.where.inspectDate._value).toEqual([
-        new Date('2026-06-08T00:00:00.000Z'),
-        new Date('2026-06-08T23:59:59.999Z'),
-      ]);
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "iqc.inspectDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND iqc.inspectDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
+        { fromDate: '2026-06-08', toDate: '2026-06-08' },
+      );
     });
   });
 
@@ -264,6 +301,8 @@ describe('IqcHistoryService cancel policy', () => {
           arrivalNo: 'ARR-001',
           itemCode: 'ITEM-001',
           iqcStatus: 'PENDING',
+          vendor: 'SUP-001',
+          initQty: 5,
           company: 'HANES',
           plant: 'P01',
         } as MatLot,
@@ -272,6 +311,8 @@ describe('IqcHistoryService cancel policy', () => {
           arrivalNo: 'ARR-001',
           itemCode: 'ITEM-001',
           iqcStatus: 'PENDING',
+          vendor: 'SUP-001',
+          initQty: 5,
           company: 'HANES',
           plant: 'P01',
         } as MatLot,
@@ -295,6 +336,61 @@ describe('IqcHistoryService cancel policy', () => {
         { iqcStatus: 'PASS' },
       );
       expect(result).toEqual(expect.objectContaining({ affectedSerials: 2 }));
+    });
+
+    it('입하단위 IQC 저장은 요청 result가 아니라 서버 AQL 판정 결과를 저장한다', async () => {
+      mockMatLotRepo.find.mockResolvedValue([
+        {
+          matUid: 'MAT-001',
+          arrivalNo: 'ARR-001',
+          itemCode: 'ITEM-001',
+          iqcStatus: 'PENDING',
+          vendor: 'SUP-001',
+          initQty: 100,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatLot,
+      ]);
+      mockAqlService.resolveIqcPolicy.mockResolvedValue({
+        itemCode: 'ITEM-001',
+        vendorCode: 'SUP-001',
+        lotQty: 100,
+        inspectionLevel: 'II',
+        inspectionMode: 'NORMAL',
+        result: 'FAIL',
+        sampleQty: 20,
+        defectCritical: 0,
+        defectMajor: 2,
+        defectMinor: 0,
+        majorRule: { aqlCode: 'AQL-II-1.0', aqlValue: 1, codeLetter: 'F', sampleSize: 20, acceptQty: 1, rejectQty: 2 },
+        minorRule: null,
+        judgeReason: 'Major 불량 2건이 Ac 1 초과',
+      });
+      mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001', result: 'FAIL' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001', result: 'FAIL' } as IqcLog);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+      mockWarehouseRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.createArrivalResult({
+        arrivalNo: 'ARR-001',
+        itemCode: 'ITEM-001',
+        result: 'PASS',
+        defectMajor: 2,
+      } as any, 'HANES', 'P01');
+
+      expect(mockMatLotRepo.update).toHaveBeenCalledWith(
+        { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' },
+        { iqcStatus: 'FAIL' },
+      );
+      expect(mockIqcLogRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        result: 'FAIL',
+        vendorCode: 'SUP-001',
+        defectMajor: 2,
+        aqlMajorCode: 'AQL-II-1.0',
+        aqlMajorAc: 1,
+        aqlMajorRe: 2,
+      }));
+      expect(result).toEqual(expect.objectContaining({ result: 'FAIL' }));
     });
   });
 

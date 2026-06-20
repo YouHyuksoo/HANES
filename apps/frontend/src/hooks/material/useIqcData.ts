@@ -43,6 +43,7 @@ export interface IqcSubmitExtra {
   sampleQty?: number;
   certFile?: File;
   sampleBarcode?: string;
+  defects?: Array<{ defectCode: string; qty: number }>;
 }
 
 const INITIAL_RESULT_FORM: IqcResultForm = { result: '', inspector: '', remark: '' };
@@ -150,6 +151,7 @@ export function useIqcData() {
         details: details ? JSON.stringify(details) : undefined,
         sampleQty: extra?.sampleQty || undefined,
         sampleBarcode: extra?.sampleBarcode || undefined,
+        defects: extra?.defects,
         inspectClass: selectedItem.inspectMethod || undefined,
       });
 

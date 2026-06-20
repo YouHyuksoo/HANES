@@ -52,6 +52,9 @@ export class ComCode {
   @Column({ type: 'varchar2', name: 'ATTR3', length: 100, nullable: true })
   attr3: string | null;
 
+  @Column({ type: 'varchar2', name: 'DEFECT_GRADE', length: 20, nullable: true })
+  defectGrade: 'CRITICAL' | 'MAJOR' | 'MINOR' | null;
+
   @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
   company: string;
 

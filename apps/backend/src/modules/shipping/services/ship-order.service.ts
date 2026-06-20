@@ -32,6 +32,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class ShipOrderService {
@@ -47,6 +48,7 @@ export class ShipOrderService {
     private readonly productInventory: ProductInventoryService,
     private readonly tx: TransactionService,
     private readonly sysConfig: SysConfigService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -189,15 +191,16 @@ export class ShipOrderService {
 
   /** 출하지시 생성 */
   async create(dto: CreateShipOrderDto, company?: string, plant?: string) {
-    const existing = await this.shipOrderRepository.findOne({
-      where: { shipOrderNo: dto.shipOrderNo, ...this.tenantWhere(company, plant) },
-    });
-    if (existing) throw new ConflictException(`이미 존재하는 출하지시 번호입니다: ${dto.shipOrderNo}`);
-
     let savedShipOrderNo!: string;
     await this.tx.run(async (queryRunner) => {
+      const shipOrderNo = dto.shipOrderNo?.trim() || await this.numbering.nextShipmentNo(queryRunner);
+      const existing = await this.shipOrderRepository.findOne({
+        where: { shipOrderNo, ...this.tenantWhere(company, plant) },
+      });
+      if (existing) throw new ConflictException(`이미 존재하는 출하지시 번호입니다: ${shipOrderNo}`);
+
       const order = this.shipOrderRepository.create({
-        shipOrderNo: dto.shipOrderNo,
+        shipOrderNo,
         customerId: dto.customerId,
         // 고객명은 거래처마스터(customerId)에서 해석해 채운다(프론트 입력값 사용 안 함)
         customerName: await this.resolveCustomerName(dto.customerId, company, plant),

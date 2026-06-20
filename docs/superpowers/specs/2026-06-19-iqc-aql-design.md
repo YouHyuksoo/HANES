@@ -1,5 +1,7 @@
 # IQC AQL 기준관리 설계
 
+> Superseded: 이 문서는 LOT 범위별 수동 AQL rule 관리 1차 설계다. 2026-06-20에 사용자가 `품목별 AQL + 업체별 검사강도 + ISO 2859-1 자동계산 + 업체 검사모드 자동전환` 정책을 확정했으므로, 최신 설계는 `docs/superpowers/specs/2026-06-20-iqc-aql-z14-policy-design.md`를 기준으로 한다.
+
 ## 목적
 
 IQC 검사에서 수동 `SAMPLE_QTY` 입력을 없애고, 입하 LOT 수량과 품목별 AQL 기준에 따라 시료수, 합격 허용수(Ac), 불합격 판정수(Re)를 자동 산출한다.

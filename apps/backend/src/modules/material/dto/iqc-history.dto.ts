@@ -4,7 +4,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, IsDateString, IsIn, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNumber, Min, Max, IsDateString, IsIn, IsNotEmpty, MaxLength, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -66,6 +66,19 @@ export class CreateIqcResultDto {
   destructSampleQty?: number;
 }
 
+export class IqcDefectCodeQtyDto {
+  @ApiProperty({ description: '불량코드 (COM_CODES DEFECT_TYPE)' })
+  @IsString()
+  @IsNotEmpty()
+  defectCode: string;
+
+  @ApiProperty({ description: '불량 수량', example: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  qty: number;
+}
+
 export class CreateArrivalIqcResultDto {
   @ApiProperty({ description: '입하번호 (ARRIVAL_NO)' })
   @IsString()
@@ -112,7 +125,7 @@ export class CreateArrivalIqcResultDto {
   @ApiPropertyOptional({ description: '샘플 수량 (검사자 수동 입력 시료 개수)' })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
+  @IsNumber()
   @Min(0)
   sampleQty?: number;
 
@@ -121,6 +134,34 @@ export class CreateArrivalIqcResultDto {
   @IsString()
   @MaxLength(500)
   sampleBarcode?: string;
+
+  @ApiPropertyOptional({ description: 'Critical 불량 수량' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  defectCritical?: number;
+
+  @ApiPropertyOptional({ description: 'Major 불량 수량' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  defectMajor?: number;
+
+  @ApiPropertyOptional({ description: 'Minor 불량 수량' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  defectMinor?: number;
+
+  @ApiPropertyOptional({ description: '불량코드별 수량. 불량코드는 DEFECT_TYPE 공통코드 ATTR1에 CRITICAL/MAJOR/MINOR 등급이 필수다.', type: [IqcDefectCodeQtyDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => IqcDefectCodeQtyDto)
+  defects?: IqcDefectCodeQtyDto[];
 }
 
 export class PendingArrivalQueryDto {

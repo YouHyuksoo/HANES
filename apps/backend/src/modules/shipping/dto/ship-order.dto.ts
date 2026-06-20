@@ -49,10 +49,11 @@ export class ShipOrderItemDto {
 
 /** 출하지시 생성 DTO */
 export class CreateShipOrderDto {
-  @ApiProperty({ description: '출하지시 번호', example: 'SO-20250201-001', maxLength: 50 })
+  @ApiPropertyOptional({ description: '출하지시 번호. 미입력 시 서버에서 자동 채번', example: 'SO-20250201-001', maxLength: 50 })
+  @IsOptional()
   @IsString()
   @MaxLength(50)
-  shipOrderNo: string;
+  shipOrderNo?: string;
 
   @ApiPropertyOptional({ description: '고객 ID' })
   @IsOptional()

@@ -30,7 +30,11 @@ export interface Part {
   minPackQty?: number; // 최소포장단위 수량 (기본값: 0)
   iqcYn?: UseYnValue; // IQC 대상여부 Y/N (Oracle IQCFLAG) (기본값: Y)
   inspectMethod?: string; // 검사구분 (FULL/SKIP)
-  tactTime?: number; // 택타임 초 (Oracle TACTTIME) (기본값: 0)
+  sampleQty?: number | null; // 기본시료수
+  inspectionLevel?: string | null; // AQL 검사수준
+  aqlCritical?: number | null; // Critical AQL
+  aqlMajor?: number | null; // Major AQL
+  aqlMinor?: number | null; // Minor AQL
   expiryDate?: number; // 유효기간 일 (Oracle EXPIRYDATE) (기본값: 0)
   expiryExtDays?: number; // 유효기간 연장 최대 일수 (Oracle EXPIRY_EXT_DAYS) (기본값: 0)
   packUnit?: number; // 팔레트 구성 단위(팔레트당 박스 수)

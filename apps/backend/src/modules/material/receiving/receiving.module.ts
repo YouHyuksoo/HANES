@@ -17,6 +17,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { SystemModule } from '../../system/system.module';
+import { AqlModule } from '../../quality/aql/aql.module';
 import { ArrivalController } from '../controllers/arrival.controller';
 import { ConcessionController } from '../controllers/concession.controller';
 import { IqcHistoryController } from '../controllers/iqc-history.controller';
@@ -31,6 +32,7 @@ import { ReceivingService } from '../services/receiving.service';
 @Module({
   imports: [
     SystemModule,
+    AqlModule,
     TypeOrmModule.forFeature([
       IqcLog,
       LabelPrintLog,

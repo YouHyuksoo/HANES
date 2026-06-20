@@ -109,11 +109,21 @@ export class PartService {
       safetyStock: dto.safetyStock ?? 0,
       lotUnitQty: dto.lotUnitQty,
       boxQty: dto.boxQty ?? 0,
+      minPackQty: dto.minPackQty ?? 0,
       iqcYn: dto.iqcYn ?? 'Y',
       inspectMethod: dto.inspectMethod ?? null,
+      inspectionLevel: dto.inspectionLevel ?? null,
+      aqlCritical: dto.aqlCritical ?? null,
+      aqlMajor: dto.aqlMajor ?? null,
+      aqlMinor: dto.aqlMinor ?? null,
       tactTime: dto.tactTime ?? 0,
       expiryDate: dto.expiryDate ?? 0,
       expiryExtDays: dto.expiryExtDays ?? 0,
+      toleranceRate: dto.toleranceRate ?? 5,
+      isSplittable: dto.isSplittable ?? 'Y',
+      sampleQty: dto.sampleQty ?? null,
+      packUnit: dto.packUnit ?? null,
+      storageLocation: dto.storageLocation ?? null,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
       imageUrl: dto.imageUrl,
@@ -147,6 +157,10 @@ export class PartService {
       | 'boxQty'
       | 'iqcYn'
       | 'inspectMethod'
+      | 'inspectionLevel'
+      | 'aqlCritical'
+      | 'aqlMajor'
+      | 'aqlMinor'
       | 'tactTime'
       | 'expiryDate'
       | 'expiryExtDays'
@@ -179,6 +193,10 @@ export class PartService {
       ...(dto.boxQty !== undefined ? { boxQty: dto.boxQty } : {}),
       ...(dto.iqcYn !== undefined ? { iqcYn: dto.iqcYn } : {}),
       ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),
+      ...(dto.inspectionLevel !== undefined ? { inspectionLevel: dto.inspectionLevel || null } : {}),
+      ...(dto.aqlCritical !== undefined ? { aqlCritical: dto.aqlCritical } : {}),
+      ...(dto.aqlMajor !== undefined ? { aqlMajor: dto.aqlMajor } : {}),
+      ...(dto.aqlMinor !== undefined ? { aqlMinor: dto.aqlMinor } : {}),
       ...(dto.tactTime !== undefined ? { tactTime: dto.tactTime } : {}),
       ...(dto.expiryDate !== undefined ? { expiryDate: dto.expiryDate } : {}),
       ...(dto.expiryExtDays !== undefined ? { expiryExtDays: dto.expiryExtDays } : {}),

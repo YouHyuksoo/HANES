@@ -94,11 +94,11 @@ describe('EquipInspectService', () => {
         remark: '정상',
         equipName: '자동절단 설비 #1',
         lineCode: 'LINE-01',
-        equip: {
+        equip: expect.objectContaining({
           equipCode: 'EQ-ATCUT-01',
           equipName: '자동절단 설비 #1',
           lineCode: 'LINE-01',
-        },
+        }),
       }));
       expect(qb.andWhere).toHaveBeenCalledWith('log.company = :company', { company: '40' });
       expect(qb.andWhere).toHaveBeenCalledWith('log.plant = :plant', { plant: '1000' });
@@ -166,6 +166,50 @@ describe('EquipInspectService', () => {
       mockEquipRepo.update.mockResolvedValue({ affected: 1 } as any);
       await target.create({ equipCode: 'EQ-001', inspectType: 'DAILY', inspectDate: '2026-03-18', overallResult: 'FAIL' } as any);
       expect(mockEquipRepo.update).toHaveBeenCalledWith({ equipCode: 'EQ-001' }, { status: 'INTERLOCK' });
+    });
+    it('stores WORKER inspectDate with inspection time to avoid date-level primary key collisions', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({
+        equipCode: 'EQ-ATCNS-01',
+        company: '40',
+        plant: '1000',
+        processCode: 'ATCNS',
+      } as any);
+      mockCalendarRepo.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any);
+      mockLogRepo.query.mockResolvedValue({ affected: 1 } as any);
+
+      const result = await target.create({
+        equipCode: 'EQ-ATCNS-01',
+        inspectType: 'WORKER',
+        orderNo: 'WO2606190110',
+        inspectAt: '2026-06-19T17:23:26',
+        inspectorName: '오지훈, 강태영',
+        overallResult: 'PASS',
+        details: { items: [] },
+      } as any, { company: '40', plant: '1000' });
+
+      expect(mockLogRepo.query).toHaveBeenCalledWith(
+        expect.stringContaining("TO_DATE(:3, 'YYYY-MM-DD HH24:MI:SS')"),
+        expect.arrayContaining([
+          'EQ-ATCNS-01',
+          'WORKER',
+          '2026-06-19 17:23:26',
+          'WO2606190110',
+        ]),
+      );
+      expect(mockLogRepo.create).not.toHaveBeenCalled();
+      expect(mockLogRepo.save).not.toHaveBeenCalled();
+      expect(result).toEqual(expect.objectContaining({
+        equipCode: 'EQ-ATCNS-01',
+        inspectType: 'WORKER',
+        orderNo: 'WO2606190110',
+        overallResult: 'PASS',
+      }));
     });
   });
 

@@ -46,10 +46,9 @@ export class ProductInventoryService {
   ) {}
 
   /**
-   * 박스 입고/취소 시 박스에 담긴 시리얼(FG_LABELS)의 BOX_NO 스탬프.
-   * - 입고: 박스 serialList의 시리얼에 박스번호 부여 → 제품재고(미출하)로 인식
-   * - 취소: 해당 박스번호가 찍힌 시리얼을 NULL로 되돌림
-   * 재고 단위(시리얼)는 FG_LABELS가 단일 출처이므로 여기서 함께 관리한다.
+   * 박스 입고 시 박스에 담긴 시리얼(FG_LABELS)의 BOX_NO 스탬프.
+   * BOX_NO는 포장 식별자이므로 입고 취소 시에도 지우지 않는다.
+   * 창고재고 여부는 PRODUCT_TRANSACTIONS의 BOX 입고 이동 이력으로 판정한다.
    */
   private async stampBoxSerials(
     manager: EntityManager,
@@ -69,12 +68,7 @@ export class ProductInventoryService {
         { boxNo },
       );
     } else {
-      // 취소: 박스번호로 직접 해제 (serialList 의존 없이 안전)
-      await manager.update(
-        FgLabel,
-        { boxNo, ...tenantWhere },
-        { boxNo: null },
-      );
+      return;
     }
   }
 
@@ -712,10 +706,8 @@ export class ProductInventoryService {
 
     const savedCancelTrans = await qr.manager.save(ProductTransaction, cancelTrans);
 
-    // 박스 입고 취소: 해당 박스 시리얼(FG_LABELS)의 BOX_NO 해제 → 재고에서 제외
-    if (originalTrans.refType === 'BOX' && originalTrans.refId && originalTrans.qty > 0) {
-      await this.stampBoxSerials(qr.manager, originalTrans.refId, false, originalTrans.company, originalTrans.plant);
-    }
+    // BOX_NO는 포장 식별자이므로 입고 취소 시에도 유지한다.
+    // 창고재고 여부는 아래 원본 전표 CANCELED 상태와 재고 역분개 결과로 판단한다.
 
     // 3. 재고 복구 — 원래 입고/이동-입고 창고에서 감소
     if (originalTrans.toWarehouseId) {

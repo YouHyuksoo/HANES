@@ -22,6 +22,7 @@ export interface ComCodeItem {
   attr1: string | null;
   attr2: string | null;
   attr3: string | null;
+  defectGrade: "CRITICAL" | "MAJOR" | "MINOR" | null;
 }
 
 export type ComCodeMap = Record<string, ComCodeItem[]>;

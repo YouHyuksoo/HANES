@@ -11,6 +11,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { AqlService } from '../../quality/aql/services/aql.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -57,6 +58,7 @@ export class IqcHistoryService {
     private readonly partMasterRepository: Repository<PartMaster>,
     private readonly dataSource: DataSource,
     private readonly sysConfigService: SysConfigService,
+    private readonly aqlService: AqlService,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
   ) {}
@@ -413,6 +415,19 @@ export class IqcHistoryService {
 
     const tenantCompany = lots[0].company;
     const tenantPlant = lots[0].plant;
+    const vendorCode = lots[0].vendor ?? null;
+    const lotQty = lots.reduce((sum, lot) => sum + (Number(lot.initQty) || 0), 0);
+    const defectCounts = this.resolveDefectCounts(dto);
+    const aqlPolicy = await this.aqlService.resolveIqcPolicy({
+      itemCode: dto.itemCode,
+      vendorCode,
+      lotQty,
+      defectCounts,
+      defectCodes: dto.defects,
+      company: tenantCompany,
+      plant: tenantPlant,
+    });
+    const finalResult = aqlPolicy.result;
 
     // 1) 입하건의 PENDING 시리얼 전체 일괄 판정
     await this.matLotRepository.update(
@@ -422,7 +437,7 @@ export class IqcHistoryService {
         iqcStatus: 'PENDING',
         ...this.tenantWhere(tenantCompany, tenantPlant),
       },
-      { iqcStatus: dto.result },
+      { iqcStatus: finalResult },
     );
     await this.matArrivalRepository.update(
       {
@@ -431,7 +446,7 @@ export class IqcHistoryService {
         iqcStatus: 'PENDING',
         ...this.tenantWhere(tenantCompany, tenantPlant),
       },
-      { iqcStatus: dto.result },
+      { iqcStatus: finalResult },
     );
 
     // 2) 검사 이력 1건 생성 (matUid=null → 입하단위 검사 표식)
@@ -439,13 +454,28 @@ export class IqcHistoryService {
       arrivalNo: dto.arrivalNo,
       matUid: null,
       itemCode: dto.itemCode,
+      vendorCode,
       inspectType: dto.inspectType || 'INITIAL',
-      result: dto.result,
+      result: finalResult,
       details: dto.details || null,
       inspectorName: dto.inspectorName || null,
       inspectClass: this.normalizeIqcInspectClass(dto.inspectClass) || null,
       destructSampleQty: dto.sampleQty || null,
       sampleBarcode: dto.sampleBarcode || null,
+      lotQty: aqlPolicy.lotQty,
+      aqlInspectionLevel: aqlPolicy.inspectionLevel,
+      aqlInspectionMode: aqlPolicy.inspectionMode,
+      aqlSampleQty: aqlPolicy.sampleQty || null,
+      aqlMajorCode: aqlPolicy.majorRule?.aqlCode ?? null,
+      aqlMajorAc: aqlPolicy.majorRule?.acceptQty ?? null,
+      aqlMajorRe: aqlPolicy.majorRule?.rejectQty ?? null,
+      aqlMinorCode: aqlPolicy.minorRule?.aqlCode ?? null,
+      aqlMinorAc: aqlPolicy.minorRule?.acceptQty ?? null,
+      aqlMinorRe: aqlPolicy.minorRule?.rejectQty ?? null,
+      defectCritical: aqlPolicy.defectCritical,
+      defectMajor: aqlPolicy.defectMajor,
+      defectMinor: aqlPolicy.defectMinor,
+      aqlJudgeReason: aqlPolicy.judgeReason,
       remark: dto.remark || null,
       inspectDate: new Date(),
       company: tenantCompany,
@@ -458,7 +488,7 @@ export class IqcHistoryService {
     });
 
     // 3) PASS + 품목에 유효기간 설정 시 → 각 시리얼 expireDate 자동 계산
-    if (dto.result === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
+    if (finalResult === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
       for (const lot of lots) {
         const baseDate = lot.recvDate ? new Date(lot.recvDate) : new Date();
         baseDate.setHours(0, 0, 0, 0);
@@ -471,14 +501,14 @@ export class IqcHistoryService {
     }
 
     // 4) FAIL → 입하건 전체 시리얼을 불용창고로 이동
-    if (dto.result === 'FAIL') {
+    if (finalResult === 'FAIL') {
       for (const lot of lots) {
         await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
       }
     }
 
     // 5) PASS + 샘플수량 → 파괴검사 시료 자동출고 (AUTO_ISSUE 모드, 시리얼 순서대로 차감)
-    if (dto.result === 'PASS' && dto.sampleQty && dto.sampleQty > 0) {
+    if (finalResult === 'PASS' && dto.sampleQty && dto.sampleQty > 0) {
       const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE');
       if (issueMode === 'AUTO_ISSUE') {
         let remaining = dto.sampleQty;
@@ -496,13 +526,51 @@ export class IqcHistoryService {
       }
     }
 
+    await this.aqlService.updateVendorInspectionModeAfterLot({
+      vendorCode,
+      arrivalNo: dto.arrivalNo,
+      itemCode: dto.itemCode,
+      company: tenantCompany,
+      plant: tenantPlant,
+    });
+
     return {
       ...saved,
       arrivalNo: dto.arrivalNo,
       itemCode: dto.itemCode,
       itemName: part?.itemName ?? null,
       affectedSerials: lots.length,
+      result: finalResult,
+      aql: aqlPolicy,
     };
+  }
+
+  private resolveDefectCounts(dto: CreateArrivalIqcResultDto) {
+    const providedMajor = dto.defectMajor != null;
+    const counts = {
+      critical: this.toNonNegativeInt(dto.defectCritical),
+      major: this.toNonNegativeInt(dto.defectMajor),
+      minor: this.toNonNegativeInt(dto.defectMinor),
+    };
+
+    if (!providedMajor && counts.critical === 0 && counts.minor === 0 && dto.details) {
+      counts.major = this.countFailedSerials(dto.details);
+    }
+    return counts;
+  }
+
+  private countFailedSerials(details: string) {
+    try {
+      const parsed = JSON.parse(details) as { serials?: Array<{ result?: string }> };
+      return (parsed.serials ?? []).filter((serial) => serial.result === 'FAIL').length;
+    } catch {
+      return 0;
+    }
+  }
+
+  private toNonNegativeInt(value: unknown) {
+    const n = Math.trunc(Number(value ?? 0));
+    return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
   private async handleIqcFail(

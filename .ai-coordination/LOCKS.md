@@ -16,6 +16,451 @@ Before editing, add a lock entry. Mark it released when done.
 ## Active Locks
 
 ```md
+- task: T-IQC-PART-SPEC-AQL-SUMMARY
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/iqc-part-spec/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-aql-summary.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/master/iqc-part-spec` 선택 품목 AQL 요약 및 LOT 수량 기준 샘플/Ac/Re 미리보기 표시 완료. 구조 테스트/FE tsc/3002 HTTP/diff check PASS.
+
+- task: T-IQC-PART-SPEC-LEFT-PANEL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/iqc-part-spec/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-layout.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/master/iqc-part-spec` 좌측 품목 패널을 4/12에서 3/12로 축소하고 우측 규격 패널을 9/12로 확대 완료. 구조 테스트/FE tsc/3002 HTTP/diff check PASS.
+
+- task: T-IQC-DEFECT-CODE-SEVERITY-AQL
+  owner: codex
+  files:
+    - apps/backend/src/modules/quality/aql/services/aql.service.ts
+    - apps/backend/src/modules/quality/aql/services/aql.service.spec.ts
+    - apps/backend/src/entities/com-code.entity.ts
+    - apps/backend/src/modules/master/dto/com-code.dto.ts
+    - apps/backend/src/modules/master/services/com-code.service.ts
+    - apps/backend/src/modules/material/dto/iqc-history.dto.ts
+    - apps/backend/src/modules/material/services/iqc-history.service.ts
+    - apps/backend/src/migrations/2026-06-20_iqc_defect_code_grade.sql
+    - apps/frontend/src/components/material/IqcModal.tsx
+    - apps/frontend/src/hooks/material/useIqcData.ts
+    - apps/frontend/src/hooks/useComCode.ts
+    - apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs
+    - docs/reports/db-schema-erd.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: IQC 불량코드 등급(Critical/Major/Minor) 기반 AQL 판정 보정 완료. 테스트/타입검사/DB 적용/ERD 재생성 확인.
+
+- task: T-MASTER-PART-IQC-CODE-SELECT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
+    - apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx
+    - apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs
+    - apps/backend/src/modules/master/dto/part.dto.ts
+    - docs/standards/implementation-rules.md
+    - AGENTS.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/master/part` 기본시료수는 코드값이 아니라 수량 기준값이므로 소수점 직접 입력 가능하도록 보정 완료. 검사수준/AQL 선택 방식은 유지. FE 구조 테스트, BE/FE tsc PASS.
+
+- task: T-BOX-STOCK-PACKED-VS-RECEIVED
+  owner: codex
+  files:
+    - apps/backend/src/modules/shipping/services/box.service.ts
+    - apps/backend/src/modules/shipping/services/box.service.spec.ts
+    - apps/backend/src/modules/inventory/services/product-inventory.service.ts
+    - apps/backend/src/modules/inventory/services/product-inventory.service.spec.ts
+    - apps/backend/src/modules/shipping/controllers/box-stock.controller.ts
+    - apps/frontend/src/app/(authenticated)/shipping/box-stock/page.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: 박스포장 BOX_NO는 유지하되 제품입고 전 포장대기와 입고 후 창고재고를 구분하도록 박스재고 조회/표시 보정 완료. 입고취소 시 BOX_NO 유지 포함. BE/FE 테스트·tsc·JSHANES SQL·diff check PASS.
+
+- task: T-PROCESS-LINE-TYPE-UI
+  owner: claude
+  files:
+    - apps/backend/src/modules/master/dto/process.dto.ts
+    - apps/backend/src/modules/master/services/process.service.ts
+    - apps/backend/src/modules/equipment/services/equip-master.service.ts
+    - apps/frontend/src/app/(authenticated)/master/process/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/process/components/ProcessList.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/EquipSelectModal.tsx
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/utils/equipOptions.ts
+    - tools/seed/seed_line_type_comcode.py
+    - JSHANES DB: COM_CODES (LINE_TYPE)
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/claude.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: PROCESS_MASTERS LINE_TYPE 화면 반영 완료. 공정마스터 화면 라인 컬럼/필터/입력(ComCodeSelect) + 설비선택 모달 라인별(저전압/고전압/공통) 2단계 그룹. BE dto/service lineType + create processCategory 누락 동반수정 + equip findAll lineType 매핑. LINE_TYPE 공통코드 3건 JSHANES commit. equipOptions undefined필드 미포함 정리(깨진 테스트 동반 GREEN). FE/BE tsc 0, equipOptions 2/2 PASS. locales codex 점유라 t() defaultValue 폴백. 브라우저 렌더 검증은 dev 서버 재컴파일 불안정으로 미완(코드/DB 검증 완료). 코드 미커밋.
+
+- task: T-IQC-AQL-Z14-POLICY
+  owner: codex
+  files:
+    - docs/superpowers/specs/2026-06-20-iqc-aql-z14-policy-design.md
+    - docs/superpowers/specs/2026-06-19-iqc-aql-design.md
+    - docs/superpowers/plans/2026-06-20-iqc-aql-z14-policy-implementation.md
+    - apps/backend/src/entities/part-master.entity.ts
+    - apps/backend/src/entities/partner-master.entity.ts
+    - apps/backend/src/entities/iqc-log.entity.ts
+    - apps/backend/src/entities/aql-*.entity.ts
+    - apps/backend/src/modules/quality/aql/**
+    - apps/backend/src/modules/material/**
+    - apps/backend/src/modules/master/**
+    - apps/backend/src/migrations/2026-06-20_iqc_aql_z14_policy.sql
+    - apps/frontend/src/app/(authenticated)/master/part/**
+    - apps/frontend/src/components/material/IqcModal.tsx
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: 품목별 AQL/업체 검사강도/ISO 2859-1 정책 구현 완료. JSHANES 마이그레이션/ERD/테스트/BE·FE tsc/diff check PASS.
+
+- task: T-PROCESS-MASTER-PDF-REORG
+  owner: claude
+  files:
+    - docs/superpowers/specs/2026-06-20-process-master-pdf-reorg-design.md
+    - tools/seed/seed_process_master_pdf.py
+    - apps/backend/src/entities/process-master.entity.ts
+    - JSHANES DB: PROCESS_MASTERS (LINE_TYPE 컬럼 + 데이터)
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/claude.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: PDF(THN 제조공정 흐름도) 기준 PROCESS_MASTERS 정비 완료. LINE_TYPE(LV/HV/CM) 컬럼 ADD + 기존 18 정비(코드 유지) + 신규 23(LV17·HV4·CM2) + PRC-* 4 비활성. JSHANES commit, 활성 41(LV25/HV6/CM10) 재조회 확인. 엔티티 lineType 추가, BE tsc 0. PROCESS_CODE 무변경(23개 참조 무손상). 화면(공정마스터/설비모달 라인표시)은 별도. 코드 미커밋.
+
+- task: T-TOAST-BOTTOM-LEFT
+  owner: codex
+  files:
+    - apps/frontend/src/app/providers.tsx
+    - apps/frontend/src/app/toaster-position.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: 전역 toast 이벤트 메시지 위치를 좌하단으로 이동 완료. 구조 테스트 RED/GREEN, FE tsc PASS.
+
+- task: T-MATERIAL-PO-STATUS-RECEIVED-GREEN
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/material/po-status/page.tsx
+    - apps/frontend/src/app/(authenticated)/material/po-status/po-status-received-green.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/material/po-status` 좌측 그리드 입고율 100% 기준 `입고완료` 초록 배지/진행바 표시 보정 완료. 구조 테스트/FE tsc/3002 Playwright/diff check PASS.
+
+- task: T-MASTER-PART-LABEL-TERMS
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/master/part/page.tsx
+    - apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
+    - apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx
+    - apps/frontend/src/app/(authenticated)/master/part/components/PartFieldHelp.tsx
+    - apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs
+    - apps/frontend/src/locales/ko.json
+    - tools/hanes-master-part-page-scenario-qa.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/master/part` 품목정보 용어/도움말/택타임 제거 완료. 구조 테스트, FE tsc, 3002 Playwright DOM, diff check PASS.
+
+- task: T-SHIP-ORDER-SQL-PREVIEW
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/order/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/order/ship-order-sql-preview.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/shipping/order` SQL 미리보기 `SHIPMENT_ORDERS`/`SHIPMENT_ORDER_ITEMS`/`ITEM_MASTERS`/`PARTNER_MASTERS` 구조로 보정 완료. 구조/회귀 테스트, FE tsc, 3014 compile, diff check PASS.
+
+- task: T-KIOSK-EQUIP-MODAL-GROUP
+  owner: claude
+  files:
+    - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/EquipSelectModal.tsx
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/claude.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/production/input-kiosk` 설비선택 모달을 공정별 그룹화 + size full + 멀티컬럼(2~5컬럼)으로 전환 완료. 3002 브라우저 실측 — 22개 공정/48설비가 5컬럼으로 거의 한 화면 표시, 스크롤 최소. locales는 codex(T-SHIP-ORDER-PRINT) active 점유라 미수정(신규 라벨 t() defaultValue 폴백). FE tsc 0.
+
+- task: T-SHIP-ORDER-PRINT
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/order/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/order/ship-order-print.structure.test.mjs
+    - apps/frontend/src/locales/ko.json
+    - apps/frontend/src/locales/en.json
+    - apps/frontend/src/locales/zh.json
+    - apps/frontend/src/locales/vi.json
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/shipping/order` 출하지시서 출력 및 출하지시번호 2D QR 바코드 표시 추가 완료. 구조 테스트/JSON parse/diff check/3014 compile PASS. FE tsc는 기존 `/shipping/confirm` 타입 오류로 실패.
+
+- task: T-SHIP-CONFIRM-ORDER-PANEL
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/confirm/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-order-panel.structure.test.mjs
+    - apps/frontend/src/components/shipping/BoxScanShipModal.tsx
+    - apps/frontend/src/components/shipping/box-scan-ship-modal-initial-order.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/shipping/confirm` 좌측 미출하 출하지시 패널 추가 완료. 구조 테스트/FE tsc/build/API/3002 Playwright/diff check PASS.
+
+- task: T-QUALITY-AQL-COMCODE-DROPDOWN
+  owner: claude
+  files:
+    - tools/seed/seed_aql_comcodes.py
+    - JSHANES DB data: COM_CODES (AQL_INSP_LEVEL, AQL_VALUE)
+    - apps/frontend/src/app/(authenticated)/quality/aql/page.tsx
+    - apps/frontend/src/locales/ko.json
+    - apps/frontend/src/locales/en.json
+    - apps/frontend/src/locales/zh.json
+    - apps/frontend/src/locales/vi.json
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/claude.md
+  started: 2026-06-20 KST
+  last_seen: 2026-06-20 KST
+  expires: 2026-06-20 KST
+  status: released
+  note: `/quality/aql` 검사수준/AQL값/사용여부를 공통코드 드롭다운으로 전환 완료. COM_CODES AQL_INSP_LEVEL(7)+AQL_VALUE(26) ISO 2859-1 JSHANES 시드 33건 commit·재조회 확인. AQL_VALUE DETAIL_CODE는 JS canonical(1.0→"1")로 String(aqlValue) 매칭. i18n 4파일 AQL_INSP_LEVEL 추가. FE tsc 0, 구조 테스트 5/5 PASS.
+
+- task: T-SHIP-CONFIRM-CARD-REMOVE
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/confirm/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-no-info-cards.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: `/shipping/confirm` 상단 정보카드 제거 완료. 구조 테스트/FE tsc/diff check PASS. 3002 HTTP는 타임아웃.
+
+- task: T-SHIP-CONFIRM-BOXSCAN-ORDERNO
+  owner: codex
+  files:
+    - apps/frontend/src/components/shipping/BoxScanShipModal.tsx
+    - apps/frontend/src/components/shipping/box-scan-ship-modal-order-no.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: `/shipping/confirm` 박스스캔출하 모달 출하지시번호 표시 완료. 구조 테스트/FE tsc/3002 Playwright 확인 PASS.
+
+- task: T-SHIP-BOX-STOCK-CARD-REMOVE
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/box-stock/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/box-stock/box-stock-no-info-cards.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: `/shipping/box-stock` 카드형 정보 영역 제거 완료. 구조 테스트/FE tsc/3002 브라우저 확인 PASS.
+
+- task: T-MENU-LOCALE-MISSING
+  owner: codex
+  files:
+    - apps/frontend/src/config/menuConfig.ts
+    - apps/frontend/src/locales/ko.json
+    - apps/frontend/src/locales/en.json
+    - apps/frontend/src/locales/zh.json
+    - apps/frontend/src/locales/vi.json
+    - apps/frontend/src/config/menu-locale-coverage.structure.test.mjs
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: `menu.material.shelfLifeHistory` en/zh/vi 누락 보정 및 menu locale coverage 구조 테스트 추가 완료. focused test/JSON parse PASS.
+
+- task: T-SHIP-OQC-GATE-OFF
+  owner: codex
+  files:
+    - JSHANES DB data: SYS_CONFIGS.OQC_ENABLED
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: `SYS_CONFIGS.OQC_ENABLED`를 `N`으로 변경 완료. DB/API 활성 설정 확인 완료.
+
+- task: T-SHIP-SO999-APPROVE
+  owner: codex
+  files:
+    - JSHANES DB data: SO-20260619-999
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: SO-20260619-999 CONFIRMED 처리 및 BX2606190002 OQC PASS 처리 완료. 실제 출하는 미수행.
+
+- task: T-SHIP-ORDER-AUTO-NO
+  owner: codex
+  files:
+    - apps/frontend/src/app/(authenticated)/shipping/order/page.tsx
+    - apps/frontend/src/app/(authenticated)/shipping/order/ship-order-payload.structure.test.mjs
+    - apps/backend/src/modules/shipping/dto/ship-order.dto.ts
+    - apps/backend/src/modules/shipping/services/ship-order.service.ts
+    - apps/backend/src/modules/shipping/services/ship-order.service.spec.ts
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: `/shipping/order` 등록 시 서버 자동 채번 적용 완료. 검증용 `SH2606190001`은 삭제 후 잔여 0건 확인.
+
+- task: T-WIP-STOCK-FG-PANEL
+  owner: claude
+  files:
+    - apps/backend/src/modules/production/services/production-views.service.ts
+    - apps/backend/src/modules/production/controllers/production-views.controller.ts
+    - apps/backend/src/modules/production/dto/production-views.dto.ts
+    - apps/frontend/src/app/(authenticated)/production/wip-stock/page.tsx
+  started: 2026-06-19 KST
+  status: active
+  note: wip-stock 우측에 선택 품목의 미포장(BOX_NO NULL) FG_LABELS 상세 그리드 패널 추가. 백엔드 조회 API(getWipStockFgLabels) + 프론트 좌우 분할.
+
+- task: T-IQC-AQL-CRUD
+  owner: codex
+  files:
+    - apps/backend/src/entities/aql-standard.entity.ts
+    - apps/backend/src/entities/aql-sampling-rule.entity.ts
+    - apps/backend/src/modules/quality/aql/**
+    - apps/backend/src/modules/quality/quality.module.ts
+    - apps/backend/src/migrations/2026-06-19_iqc_aql_standards.sql
+    - apps/frontend/src/app/(authenticated)/quality/aql/**
+    - docs/reports/db-schema-erd.md
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: `/quality/aql` 기준관리 CRUD/API/DB 구현 완료. JSHANES 마이그레이션/ERD/API/브라우저/BE·FE tsc/테스트 PASS, 검증 데이터 정리 완료.
+
+- task: T-EQUIP-INSPECT-WORKER-PK-COLLISION
+  owner: codex
+  files:
+    - apps/backend/src/modules/equipment/services/equip-inspect.service.ts
+    - apps/backend/src/modules/equipment/services/equip-inspect.service.spec.ts
+    - .ai-coordination/TASKS.md
+    - .ai-coordination/LOCKS.md
+    - .ai-coordination/JOURNAL.md
+    - .ai-coordination/HANDOFF/codex.md
+  started: 2026-06-19 KST
+  last_seen: 2026-06-19 KST
+  expires: 2026-06-19 KST
+  status: released
+  note: 작업자설비점검 WORKER 로그 날짜 00:00:00 PK 충돌 보정 완료. JSHANES 충돌 데이터 2건 삭제 후 잔여 0건 확인. focused RED/GREEN, service spec, BE tsc, diff check PASS.
+
 - task: T-IQC-HISTORY-CERT-TIMESTAMP
   owner: codex
   files:

@@ -12,6 +12,7 @@ import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
+import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import {
@@ -233,8 +234,8 @@ export class BoxService {
 
   /**
    * 박스별 제품재고 집계 (왼쪽 그리드)
-   * 재고 단위 = 시리얼(FG_LABELS). 재고 = BOX_NO 부여됨(입고) + 미출하.
-   * BOX_MASTERS(박스 포장 테이블)가 아니라 FG_LABELS 하나로 박스별 재고를 SQL 집계한다.
+   * 재고 단위 = 시리얼(FG_LABELS). BOX_NO는 포장 식별이고, 창고입고 여부는
+   * PRODUCT_TRANSACTIONS(refType=BOX) 입고 이동 이력으로 별도 판정한다.
    */
   async findStockByBox(boxNo: string | undefined, company?: string, plant?: string) {
     const qb = this.fgLabelRepository
@@ -244,6 +245,26 @@ export class BoxService {
       .addSelect('COUNT(*)', 'qty')
       .addSelect('MIN(l.orderNo)', 'orderNo')
       .addSelect('MAX(l.issuedAt)', 'latestAt')
+      .addSelect('MAX(CASE WHEN tx.transNo IS NOT NULL THEN 1 ELSE 0 END)', 'receivedFlag')
+      .addSelect('MAX(tx.transDate)', 'receivedAt')
+      .addSelect('MAX(COALESCE(tx.toWarehouseId, tx.fromWarehouseId))', 'warehouseCode')
+      .leftJoin(
+        ProductTransaction,
+        'tx',
+        [
+          'tx.refType = :boxRefType',
+          'tx.refId = l.boxNo',
+          'tx.status = :doneStatus',
+          'tx.transType IN (:...receiveTransTypes)',
+          'tx.company = l.company',
+          'tx.plant = l.plant',
+        ].join(' AND '),
+        {
+          boxRefType: 'BOX',
+          doneStatus: 'DONE',
+          receiveTransTypes: ['WIP_OUT', 'FG_IN'],
+        },
+      )
       .where('l.boxNo IS NOT NULL')
       .andWhere("l.status <> 'SHIPPED'")
       .groupBy('l.boxNo')
@@ -259,6 +280,9 @@ export class BoxService {
       qty: string | number;
       orderNo: string | null;
       latestAt: Date | null;
+      receivedFlag: string | number | null;
+      receivedAt: Date | null;
+      warehouseCode: string | null;
     }>();
 
     // 품목명 일괄 보강 (N+1 방지)
@@ -275,6 +299,9 @@ export class BoxService {
       qty: Number(r.qty) || 0,
       orderNo: r.orderNo ?? null,
       latestAt: r.latestAt ?? null,
+      inventoryState: Number(r.receivedFlag) > 0 ? 'WAREHOUSE_RECEIVED' : 'PACKED_WAITING',
+      warehouseCode: r.warehouseCode ?? null,
+      receivedAt: r.receivedAt ?? null,
     }));
   }
 
@@ -283,10 +310,67 @@ export class BoxService {
    * 선택 박스의 미출하 시리얼(FG_LABELS)을 반환한다.
    */
   async findStockSerials(boxNo: string, company?: string, plant?: string) {
-    const labels = await this.fgLabelRepository.find({
-      where: { boxNo, status: Not('SHIPPED'), ...this.tenantWhere(company, plant) },
-      order: { fgBarcode: 'ASC' },
-    });
+    const qb = this.fgLabelRepository
+      .createQueryBuilder('l')
+      .select('l.fgBarcode', 'fgBarcode')
+      .addSelect('l.itemCode', 'itemCode')
+      .addSelect('l.orderNo', 'orderNo')
+      .addSelect('l.equipCode', 'equipCode')
+      .addSelect('l.workerId', 'workerId')
+      .addSelect('l.lineCode', 'lineCode')
+      .addSelect('l.status', 'status')
+      .addSelect('l.inspectPassYn', 'inspectPassYn')
+      .addSelect('l.issuedAt', 'issuedAt')
+      .addSelect('MAX(CASE WHEN tx.transNo IS NOT NULL THEN 1 ELSE 0 END)', 'receivedFlag')
+      .addSelect('MAX(tx.transDate)', 'receivedAt')
+      .addSelect('MAX(COALESCE(tx.toWarehouseId, tx.fromWarehouseId))', 'warehouseCode')
+      .leftJoin(
+        ProductTransaction,
+        'tx',
+        [
+          'tx.refType = :boxRefType',
+          'tx.refId = l.boxNo',
+          'tx.status = :doneStatus',
+          'tx.transType IN (:...receiveTransTypes)',
+          'tx.company = l.company',
+          'tx.plant = l.plant',
+        ].join(' AND '),
+        {
+          boxRefType: 'BOX',
+          doneStatus: 'DONE',
+          receiveTransTypes: ['WIP_OUT', 'FG_IN'],
+        },
+      )
+      .where('l.boxNo = :boxNo', { boxNo })
+      .andWhere("l.status <> 'SHIPPED'");
+    if (company) qb.andWhere('l.company = :company', { company });
+    if (plant) qb.andWhere('l.plant = :plant', { plant });
+    qb
+      .groupBy('l.fgBarcode')
+      .addGroupBy('l.itemCode')
+      .addGroupBy('l.orderNo')
+      .addGroupBy('l.equipCode')
+      .addGroupBy('l.workerId')
+      .addGroupBy('l.lineCode')
+      .addGroupBy('l.status')
+      .addGroupBy('l.inspectPassYn')
+      .addGroupBy('l.issuedAt')
+      .orderBy('l.fgBarcode', 'ASC');
+
+    const labels = await qb.getRawMany<{
+      fgBarcode: string;
+      itemCode: string;
+      orderNo: string | null;
+      equipCode: string | null;
+      workerId: string | null;
+      lineCode: string | null;
+      status: string | null;
+      inspectPassYn: string | null;
+      issuedAt: Date | null;
+      receivedFlag: string | number | null;
+      receivedAt: Date | null;
+      warehouseCode: string | null;
+    }>();
 
     const itemCodes = [...new Set(labels.map((l) => l.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
@@ -306,6 +390,9 @@ export class BoxService {
       status: label.status ?? null,
       inspectPassYn: label.inspectPassYn ?? null,
       issuedAt: label.issuedAt ?? null,
+      inventoryState: Number(label.receivedFlag) > 0 ? 'WAREHOUSE_RECEIVED' : 'PACKED_WAITING',
+      warehouseCode: label.warehouseCode ?? null,
+      receivedAt: label.receivedAt ?? null,
     }));
   }
 

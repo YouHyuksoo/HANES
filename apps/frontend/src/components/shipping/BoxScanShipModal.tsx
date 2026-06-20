@@ -29,9 +29,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onShipped?: () => void; // 출하 1건 성공 시 부모 목록 갱신
+  initialShipOrderNo?: string;
 }
 
-export default function BoxScanShipModal({ isOpen, onClose, onShipped }: Props) {
+export default function BoxScanShipModal({ isOpen, onClose, onShipped, initialShipOrderNo }: Props) {
   const { t } = useTranslation();
   const userId = useAuthStore((s) => s.user?.id);
 
@@ -71,6 +72,12 @@ export default function BoxScanShipModal({ isOpen, onClose, onShipped }: Props) 
       setLoadingOrder(false);
     }
   }, [t]);
+
+  useEffect(() => {
+    if (!isOpen || !initialShipOrderNo) return;
+    setOrderNoInput(initialShipOrderNo);
+    loadOrder(initialShipOrderNo);
+  }, [isOpen, initialShipOrderNo, loadOrder]);
 
   const shipBox = useCallback(async (box: string) => {
     const boxNo = box.trim();
@@ -131,23 +138,29 @@ export default function BoxScanShipModal({ isOpen, onClose, onShipped }: Props) 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('shipping.boxScan.title', '박스 스캔 출하')} size="xl">
       <div className="space-y-4">
-        <div className="flex gap-2 items-end">
-          <Input
-            label={t('shipping.boxScan.shipOrderNo', '출하지시번호')}
-            placeholder={t('shipping.boxScan.scanOrder', '출하지시 바코드 스캔/입력')}
-            value={orderNoInput}
-            onChange={(e) => setOrderNoInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') loadOrder(orderNoInput); }}
-            leftIcon={<ScanLine className="w-4 h-4" />}
-            fullWidth
-          />
-          <Button onClick={() => loadOrder(orderNoInput)} disabled={loadingOrder}>
-            {t('common.search', '조회')}
-          </Button>
-        </div>
+        {!initialShipOrderNo && (
+          <div className="flex gap-2 items-end">
+            <Input
+              label={t('shipping.boxScan.shipOrderNo', '출하지시번호')}
+              placeholder={t('shipping.boxScan.scanOrder', '출하지시 바코드 스캔/입력')}
+              value={orderNoInput}
+              onChange={(e) => setOrderNoInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') loadOrder(orderNoInput); }}
+              leftIcon={<ScanLine className="w-4 h-4" />}
+              fullWidth
+            />
+            <Button onClick={() => loadOrder(orderNoInput)} disabled={loadingOrder}>
+              {t('common.search', '조회')}
+            </Button>
+          </div>
+        )}
 
         {order && (
           <div className="p-3 bg-surface-secondary rounded-lg space-y-2 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-text-muted">{t('shipping.boxScan.shipOrderNo', '출하지시번호')}</span>
+              <span className="font-mono text-lg font-bold text-primary">{order.shipOrderNo}</span>
+            </div>
             <div className="flex gap-4">
               <span><span className="text-text-muted">{t('shipping.boxScan.customer', '고객사')}:</span> {order.customerName ?? '-'}</span>
               <span><span className="text-text-muted">{t('common.status', '상태')}:</span> {order.status}</span>

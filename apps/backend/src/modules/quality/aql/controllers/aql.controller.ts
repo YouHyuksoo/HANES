@@ -35,6 +35,25 @@ export class AqlController {
     return ResponseUtil.success(data);
   }
 
+  @Get('resolve-iqc')
+  @ApiOperation({ summary: '품목/업체/LOT 수량 기준 IQC AQL 정책 산출' })
+  async resolveIqc(
+    @Query('itemCode') itemCode: string,
+    @Query('vendorCode') vendorCode: string,
+    @Query('lotQty') lotQty: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.aqlService.resolveIqcPolicy({
+      itemCode,
+      vendorCode,
+      lotQty: Number(lotQty),
+      company,
+      plant,
+    });
+    return ResponseUtil.success(data);
+  }
+
   @Get(':aqlCode')
   @ApiOperation({ summary: 'AQL 기준 단건 조회' })
   async findOne(

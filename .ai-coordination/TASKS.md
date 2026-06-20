@@ -29,6 +29,551 @@ notes:
 
 ## Active Tasks
 
+## T-IQC-PART-SPEC-AQL-SUMMARY 품목별 IQC 항목관리 AQL 요약 표시
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/master/iqc-part-spec`에서 선택 품목의 IQC AQL 기준을 검사 항목과 함께 표시
+files:
+- apps/frontend/src/app/(authenticated)/master/iqc-part-spec/page.tsx
+- apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-aql-summary.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-aql-summary.structure.test.mjs"`가 AQL 요약 필드 부재로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-aql-summary.structure.test.mjs" "apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-layout.structure.test.mjs"` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `Invoke-WebRequest -UseBasicParsing http://localhost:3002/master/iqc-part-spec -TimeoutSec 30` 200.
+- PASS: 대상 파일 `git diff --check`.
+review:
+- needs-review
+notes:
+- 품목 선택 후 검사수준, 기본시료수, Critical/Major/Minor AQL, 샘플수량/Ac/Re 기준을 한 화면에서 확인 가능하게 한다.
+- 사용자가 `/master/iqc-part-spec`에 AQL 관련 내용도 같이 표시되어야 하는 것 아니냐고 지적했다.
+- Ac/Re는 LOT 수량이 필요하므로 화면에서 `LOT 수량 미리보기` 입력값 기준으로 `/quality/aql/resolve-iqc`를 호출해 표시한다.
+
+## T-IQC-PART-SPEC-LEFT-PANEL 품목별 IQC 항목관리 좌측 패널 축소
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/master/iqc-part-spec` 좌측 품목 목록 패널 폭을 줄이고 우측 규격 관리 영역을 넓힘
+files:
+- apps/frontend/src/app/(authenticated)/master/iqc-part-spec/page.tsx
+- apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-layout.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-layout.structure.test.mjs"`가 기존 `col-span-4/8` 레이아웃으로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-layout.structure.test.mjs"` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `Invoke-WebRequest -UseBasicParsing http://localhost:3002/master/iqc-part-spec -TimeoutSec 30` 200.
+- PASS: 대상 파일 `git diff --check`.
+review:
+- needs-review
+notes:
+- 기존 `col-span-4/8` 레이아웃을 좌측 3, 우측 9 비율로 조정한다.
+
+## T-IQC-DEFECT-CODE-SEVERITY-AQL IQC 불량코드 등급별 AQL 판정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- IQC 판정 시 불량코드가 가진 `CRITICAL`/`MAJOR`/`MINOR` 등급으로 불량수량을 집계
+- Critical은 1건 이상 즉시 FAIL, Major/Minor는 각각 독립 Ac/Re 판정
+- `/material/iqc` 모달에서 등급별 수량 직접입력 대신 불량코드+수량 입력으로 전환
+files:
+- apps/backend/src/modules/quality/aql/services/aql.service.ts
+- apps/backend/src/modules/quality/aql/services/aql.service.spec.ts
+- apps/backend/src/entities/com-code.entity.ts
+- apps/backend/src/modules/master/dto/com-code.dto.ts
+- apps/backend/src/modules/master/services/com-code.service.ts
+- apps/backend/src/modules/material/dto/iqc-history.dto.ts
+- apps/backend/src/modules/material/services/iqc-history.service.ts
+- apps/backend/src/migrations/2026-06-20_iqc_defect_code_grade.sql
+- apps/frontend/src/components/material/IqcModal.tsx
+- apps/frontend/src/hooks/material/useIqcData.ts
+- apps/frontend/src/hooks/useComCode.ts
+- apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs
+- docs/reports/db-schema-erd.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: backend AQL focused test에서 불량코드 입력이 등급별 수량으로 집계되지 않고 Critical 즉시 FAIL도 동작하지 않는 것 확인.
+- RED: IQC modal structure test에서 불량코드 행 상태/공통코드 조회/payload 계약 부재 확인.
+- GREEN: `pnpm --filter @harness/backend test -- aql.service.spec.ts iqc-history.service.spec.ts --runInBand` PASS, 26/26.
+- GREEN: `node --test apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs` PASS, 3/3.
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS.
+- `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- JSHANES 마이그레이션 적용 PASS: `COM_CODES.DEFECT_GRADE` 추가, `DEFECT_TYPE` 12건 등급 백필, 체크 제약 2건 확인.
+- `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py` PASS, 162 tables/2698 columns.
+- 관련 파일 `git diff --check` PASS.
+review:
+- needs-review
+notes:
+- 불량코드 등급은 `COM_CODES.GROUP_CODE='DEFECT_TYPE'`, `DEFECT_GRADE IN ('CRITICAL','MAJOR','MINOR')` 기준으로 사용한다.
+- 등급이 없거나 허용값이 아니면 IQC 판정을 중단한다.
+
+## T-MASTER-PART-IQC-CODE-SELECT 품목마스터 검사 기준 선택식 전환
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/master/part` 품목 등록/수정 화면의 코드성 검사 항목을 공통코드/기준정보 선택 방식으로 전환
+- 기본시료수는 수량 기준값이므로 소수점 직접 입력을 허용
+- 입력방식보다 공통코드 또는 기준정보 선택을 우선하는 개발 표준 명시 및 기억 메모 반영
+files:
+- apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx
+- apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs
+- apps/backend/src/modules/master/dto/part.dto.ts
+- docs/standards/implementation-rules.md
+- AGENTS.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs"`
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false`
+review:
+- needs-review
+notes:
+- 검사수준과 AQL 값은 기존 공통코드 `AQL_INSP_LEVEL`, `AQL_VALUE`를 사용한다.
+- 기본시료수는 코드성 값이 아니라 검사 수량 기준값이므로 소수점 직접 입력을 허용한다.
+- 개발 표준 문서와 사용자 기억 메모에 "코드성/기준정보성 값은 자유입력보다 공통코드 또는 기준정보 선택 우선" 원칙을 기록했다.
+
+## T-BOX-STOCK-PACKED-VS-RECEIVED 박스포장 재고와 창고재고 구분
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- 박스포장 시 `FG_LABELS.BOX_NO`는 유지
+- 제품입고 전 포장대기 재고와 제품입고 후 창고재고를 `/shipping/box-stock`에서 구분 표시
+files:
+- apps/backend/src/modules/shipping/services/box.service.ts
+- apps/backend/src/modules/shipping/services/box.service.spec.ts
+- apps/backend/src/modules/inventory/services/product-inventory.service.ts
+- apps/backend/src/modules/inventory/services/product-inventory.service.spec.ts
+- apps/backend/src/modules/shipping/controllers/box-stock.controller.ts
+- apps/frontend/src/app/(authenticated)/shipping/box-stock/page.tsx
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `pnpm --filter @harness/backend test -- box.service.spec.ts -t "findStockByBox separates" --runInBand`가 `PRODUCT_TRANSACTIONS` 조인 부재로 실패 확인.
+- GREEN: `pnpm --filter @harness/backend test -- box.service.spec.ts -t "findStockByBox separates" --runInBand` PASS.
+- RED/GREEN: `pnpm --filter @harness/backend test -- product-inventory.service.spec.ts -t "keeps FG label boxNo" --runInBand`.
+- PASS: `pnpm --filter @harness/backend test -- product-inventory.service.spec.ts box.service.spec.ts --runInBand` 36/36.
+- RED/GREEN: `node --test "apps/frontend/src/app/(authenticated)/shipping/box-stock/box-stock-inventory-state.structure.test.mjs"`.
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/box-stock/box-stock-no-info-cards.structure.test.mjs"`.
+- PASS: ko/en/zh/vi locale JSON parse.
+- PASS: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false`.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: JSHANES SQL로 `FG_LABELS` + `PRODUCT_TRANSACTIONS(refType=BOX, WIP_OUT/FG_IN)` 조회 정상 실행. 현재 미출하 박스 라벨은 0건.
+- 참고: `http://localhost:3003/api/v1/shipping/box-stock` 직접 호출은 인증 누락으로 401.
+- PASS: `git diff --check` 대상 파일 통과.
+review:
+- needs-review
+notes:
+- `BOX_NO IS NOT NULL`은 포장 식별 조건이지 창고입고 조건이 아니다.
+- 창고입고 여부는 `PRODUCT_TRANSACTIONS`의 박스 `WIP_OUT`/`FG_IN` 입고 이동 이력으로 판정한다.
+- 입고취소는 `FG_LABELS.BOX_NO`를 지우지 않고 수불 전표 취소와 재고 역분개만 수행한다.
+
+## T-IQC-AQL-Z14-POLICY 품목별 AQL/업체 검사강도 정석 설계
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- 품목별 Critical/Major/Minor AQL과 업체별 검사강도 기반 IQC AQL 정책 설계
+- ISO 2859-1 / ANSI ASQ Z1.4 자동 샘플수량/Ac/Re 산출 계획
+- 품목/업체 마스터 필드, AQL 자동산출, IQC 서버 판정 구현
+files:
+- docs/superpowers/specs/2026-06-20-iqc-aql-z14-policy-design.md
+- docs/superpowers/specs/2026-06-19-iqc-aql-design.md
+- docs/superpowers/plans/2026-06-20-iqc-aql-z14-policy-implementation.md
+- apps/backend/src/entities/part-master.entity.ts
+- apps/backend/src/entities/partner-master.entity.ts
+- apps/backend/src/entities/iqc-log.entity.ts
+- apps/backend/src/entities/aql-*.entity.ts
+- apps/backend/src/modules/quality/aql/**
+- apps/backend/src/modules/material/**
+- apps/backend/src/modules/master/**
+- apps/backend/src/migrations/2026-06-20_iqc_aql_z14_policy.sql
+- apps/frontend/src/app/(authenticated)/master/part/**
+- apps/frontend/src/components/material/IqcModal.tsx
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: `docs/superpowers/specs/2026-06-20-iqc-aql-z14-policy-design.md` 작성.
+- PASS: 기존 `docs/superpowers/specs/2026-06-19-iqc-aql-design.md` superseded 표시.
+- PASS: `docs/superpowers/plans/2026-06-20-iqc-aql-z14-policy-implementation.md` 작성.
+- PASS: 대상 문서/협업 파일 `git diff --check` 통과.
+- PASS: `pnpm --filter @harness/backend test -- aql.service.spec.ts iqc-history.service.spec.ts --runInBand`.
+- PASS: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false`.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `node --test apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs apps/frontend/src/components/material/iqc-modal-compact-scan-layout.structure.test.mjs "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs"`.
+- PASS: JSHANES `2026-06-20_iqc_aql_z14_policy.sql` 적용 성공.
+- PASS: JSHANES post-check `ITEM=4`, `PARTNER=2`, `IQC_LOGS=15`, `HISTORY_TABLE=1`, `CODE_LETTER_ROWS=45`.
+- PASS: `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py`로 `docs/reports/db-schema-erd.md` 갱신.
+- PASS: 대상 변경 파일 `git diff --check` 통과.
+review:
+- needs-review
+notes:
+- 사용자가 2안 정석 구조를 선택했다.
+- 기존 2026-06-19 AQL 설계는 superseded 처리하고, 새 설계/계획을 기준으로 구현한다.
+- 2026-06-20 12:56까지 설계/계획 문서화 완료. 이후 같은 작업 ID로 구현 진행.
+- 품목 AQL 기준, 업체 검사강도, IQC 서버 AQL 판정, Critical 즉시 FAIL, 업체 검사모드 자동전환 이력을 구현했다.
+
+## T-TOAST-BOTTOM-LEFT 토스트 이벤트 메시지 좌하단 이동
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- 전역 toast 이벤트 메시지 위치를 우상단에서 좌하단으로 이동
+files:
+- apps/frontend/src/app/providers.tsx
+- apps/frontend/src/app/toaster-position.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test apps/frontend/src/app/toaster-position.structure.test.mjs` 기존 `top-right` 설정으로 실패 확인.
+- GREEN: `node --test apps/frontend/src/app/toaster-position.structure.test.mjs` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+review:
+- needs-review
+notes:
+- `react-hot-toast` 공통 `Toaster` 위치 계약을 `bottom-left`로 고정한다.
+
+## T-MATERIAL-PO-STATUS-RECEIVED-GREEN PO현황 입고완료 색상 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/material/po-status` 입고완료 상태 배지 색상 보정
+files:
+- apps/frontend/src/app/(authenticated)/material/po-status/page.tsx
+- apps/frontend/src/app/(authenticated)/material/po-status/po-status-received-green.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/material/po-status/po-status-received-green.structure.test.mjs"` 초록 전용 클래스/우선 적용 누락으로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/material/po-status/po-status-received-green.structure.test.mjs"` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: 3002 Playwright `/material/po-status` 좌측 그리드에서 `입고율 100%` 행들이 `입고완료` 초록 배지와 초록 진행바로 표시됨. console/page error 0.
+- PASS: `git diff --check`.
+review:
+- needs-review
+notes:
+- `PO_STATUS.RECEIVED` 또는 좌측 그리드 `receiveRate >= 100`이면 `/material/po-status`에서 `입고완료` 초록 상태 배지로 표시한다.
+
+## T-MASTER-PART-LABEL-TERMS 품목정보 용어 변경
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/master/part` 품목정보 화면 표시 용어 변경
+files:
+- apps/frontend/src/app/(authenticated)/master/part/page.tsx
+- apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx
+- apps/frontend/src/app/(authenticated)/master/part/components/PartFieldHelp.tsx
+- apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs
+- apps/frontend/src/locales/ko.json
+- tools/hanes-master-part-page-scenario-qa.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs"` 기존 용어/섹션 문구/도움말 누락/택타임 잔존으로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs"` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `Invoke-WebRequest -UseBasicParsing http://localhost:3002/master/part -TimeoutSec 30` 200.
+- PASS: 3002 Playwright DOM 검증. `품목 추가` 후 도움말 27개, `BOX_QTY/MIN_PACK_QTY/LOT_UNIT_QTY/STORAGE_LOCATION` DB 컬럼 title 표시, 10~100 후보값, `거래처 / 수량관리`/`택타임` 미표시 확인.
+- PASS: `git diff --check`.
+review:
+- needs-review
+notes:
+- `박스입수량` -> `박스장입수량`, `최소포장단위` -> `최소불출단위수량(자재)`, `묶음단위수량` -> `묶음단위수량(생산공정품)`.
+- `거래처 / 수량관리` 섹션 문구는 화면에서 제거한다.
+- 입력 컬럼 제목 옆 `?` 도움말에 설명과 `ITEM_MASTERS` DB 컬럼명을 표시한다.
+- `택타임`은 화면 사용처가 없어 `/master/part` 관리 UI와 QA 입력 시나리오에서 제거한다.
+
+## T-SHIP-ORDER-SQL-PREVIEW 출하지시등록 SQL 미리보기 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/order` DataGrid SQL 미리보기 실제 조회 구조 반영
+files:
+- apps/frontend/src/app/(authenticated)/shipping/order/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/order/ship-order-sql-preview.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-sql-preview.structure.test.mjs"` `SHIPPING_ORDERS` 오기와 조인 누락으로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-sql-preview.structure.test.mjs"` PASS.
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-print.structure.test.mjs"` PASS.
+- PASS: `node "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-payload.structure.test.mjs"` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `http://localhost:3014/shipping/order` 200 및 Next compile PASS.
+- PASS: `git diff --check`.
+review:
+- needs-review
+notes:
+- 실제 `/shipping/orders` 조회는 `SHIPMENT_ORDERS` 헤더 조회 후 `SHIPMENT_ORDER_ITEMS`, `ITEM_MASTERS`, `PARTNER_MASTERS`를 보강한다.
+- 화면 SQL 미리보기는 `SHIPMENT_ORDERS so` + 품목/품목명/고객명 LEFT JOIN 및 company/plant 조건을 표시한다.
+
+## T-SHIP-ORDER-PRINT 출하지시서 출력 기능
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/order` 등록된 출하지시서 브라우저 출력
+files:
+- apps/frontend/src/app/(authenticated)/shipping/order/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/order/ship-order-print.structure.test.mjs
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-print.structure.test.mjs"` QR/출력 영역 누락으로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-print.structure.test.mjs"` PASS.
+- PASS: ko/en/zh/vi locale JSON parse.
+- PASS: `git diff --check`.
+- PASS: `http://localhost:3014/shipping/order` 200 및 Next dev compile PASS. 3002는 HTTP timeout이라 기존 서버는 건드리지 않고 3014를 별도 기동했다.
+- 참고: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`는 기존 진행 중 변경 `apps/frontend/src/app/(authenticated)/shipping/confirm/page.tsx:318`의 `selectedRowId` `string | null` 타입 오류로 실패했다.
+review:
+- needs-review
+notes:
+- 출하지시번호는 출력물 상단에 텍스트와 2D QR 바코드로 함께 표시한다.
+- 리스트 행 출력 버튼은 `window.print()`를 호출하고, print media에서는 `ship-order-print-root`만 표시한다.
+
+## T-SHIP-CONFIRM-ORDER-PANEL 출하확정 좌측 출하지시 패널
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/confirm` 좌측 미출하 출하지시 그리드 패널 추가
+files:
+- apps/frontend/src/app/(authenticated)/shipping/confirm/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-order-panel.structure.test.mjs
+- apps/frontend/src/components/shipping/BoxScanShipModal.tsx
+- apps/frontend/src/components/shipping/box-scan-ship-modal-initial-order.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-order-panel.structure.test.mjs"` 좌측 패널/출하지시 조회 연결 누락으로 실패 확인.
+- RED: `node --test apps/frontend/src/components/shipping/box-scan-ship-modal-initial-order.structure.test.mjs` 모달 초기 출하지시번호 prop 누락으로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-order-panel.structure.test.mjs"` PASS.
+- GREEN: `node --test apps/frontend/src/components/shipping/box-scan-ship-modal-initial-order.structure.test.mjs` PASS.
+- PASS: `node --test apps/frontend/src/components/shipping/box-scan-ship-modal-order-no.structure.test.mjs`.
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-no-info-cards.structure.test.mjs"`.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `pnpm --filter @harness/frontend build`.
+- PASS: 3003 API `/api/v1/shipping/orders?status=CONFIRMED&limit=5000`에서 미출하 후보 `SO-RV-26061202215660`, `SO-OK-2606120221` 확인.
+- PASS: 3002 `/shipping/confirm` Playwright 확인. 좌측 `미출하 출하지시` 패널과 `SO-RV-26061202215660` 표시, 행 클릭 시 박스스캔 모달 자동 로딩, 고객사/박스 바코드 입력 표시, 출하지시번호 수동 입력 프롬프트 미표시, console error 0.
+- PASS: `git diff --check`.
+review:
+- needs-review
+notes:
+- `CONFIRMED` 출하지시 중 잔여수량이 있는 지시를 좌측 패널에 표시하고, 선택 시 박스스캔 모달에 출하지시번호를 자동 전달한다.
+- 상단 `박스 스캔 출하` 버튼은 기존처럼 수동 출하지시번호 입력 흐름을 유지한다.
+
+## T-SHIP-CONFIRM-CARD-REMOVE 출하확정 정보카드 제거
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/confirm` 카드형 정보 영역 제거
+files:
+- apps/frontend/src/app/(authenticated)/shipping/confirm/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-no-info-cards.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-no-info-cards.structure.test.mjs"` `StatCard` 렌더링 존재로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/shipping/confirm/shipping-confirm-no-info-cards.structure.test.mjs"` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `git diff --check`.
+- 참고: `localhost:3002`는 node PID `55728`이 listen 중이나 `Invoke-WebRequest`가 30초 타임아웃되어 브라우저/HTTP 확인은 완료하지 못했다.
+review:
+- needs-review
+notes:
+- 조회/출하/스캔/모달 기능은 유지하고 상단 상태 요약 정보카드만 제거한다.
+
+## T-SHIP-CONFIRM-BOXSCAN-ORDERNO 박스스캔출하 모달 출하지시번호 표시
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/confirm` 박스스캔출하 모달에 조회된 출하지시번호 표시
+files:
+- apps/frontend/src/components/shipping/BoxScanShipModal.tsx
+- apps/frontend/src/components/shipping/box-scan-ship-modal-order-no.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test apps/frontend/src/components/shipping/box-scan-ship-modal-order-no.structure.test.mjs` 표시 누락으로 실패
+- GREEN: `node --test apps/frontend/src/components/shipping/box-scan-ship-modal-order-no.structure.test.mjs`
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `Invoke-WebRequest -UseBasicParsing http://localhost:3002/shipping/confirm` 200
+- PASS: Playwright 3002 `/shipping/confirm` 박스스캔출하 모달에서 `SO-RV-26061202215660` 조회 후 번호/고객사/박스입력 표시, console error 0
+- PASS: `git diff --check`
+review:
+- needs-review
+notes:
+- 주문 조회 후 박스 스캔 전에 현재 출하지시번호를 별도 요약 영역으로 보여준다.
+
+## T-SHIP-BOX-STOCK-CARD-REMOVE 박스재고조회 정보카드 제거
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/box-stock` 카드형 정보 영역 제거
+files:
+- apps/frontend/src/app/(authenticated)/shipping/box-stock/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/box-stock/box-stock-no-info-cards.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/box-stock/box-stock-no-info-cards.structure.test.mjs"` 카드 프레임 존재로 실패
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/shipping/box-stock/box-stock-no-info-cards.structure.test.mjs"`
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `Invoke-WebRequest -UseBasicParsing http://localhost:3002/shipping/box-stock` 200
+- PASS: Playwright 3002 `/shipping/box-stock` title 표시, 카드형 wrapper 0, console error 0
+- PASS: `git diff --check`
+review:
+- needs-review
+notes:
+- 조회/상세 그리드 기능은 유지하고 `Card/CardContent` 프레임만 제거했다.
+
+## T-MENU-LOCALE-MISSING 메뉴 번역 누락 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `menuConfig` labelKey 기준 ko/en/zh/vi locale 누락 보정
+files:
+- apps/frontend/src/config/menuConfig.ts
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+- apps/frontend/src/config/menu-locale-coverage.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test apps/frontend/src/config/menu-locale-coverage.structure.test.mjs` 실패 확인. 실제 누락은 `en/zh/vi: menu.material.shelfLifeHistory`.
+- GREEN: `node --test apps/frontend/src/config/menu-locale-coverage.structure.test.mjs` PASS.
+- `node -e "const fs=require('fs'); for (const l of ['ko','en','zh','vi']) JSON.parse(fs.readFileSync('apps/frontend/src/locales/'+l+'.json','utf8')); console.log('locale json ok');"` PASS.
+review:
+- needs-review
+notes:
+- `menuConfig` labelKey와 i18next의 점 포함 locale 키 구조를 기준으로 누락 검증 테스트를 추가했다.
+- `menu.material.shelfLifeHistory`를 en/zh/vi menu locale에 추가했다. 기존 dirty locale 변경은 유지했다.
+
+## T-SHIP-OQC-GATE-OFF OQC 출하 게이트 비활성화
+status: REVIEW
+owner: codex
+role: operator
+scope:
+- JSHANES `40/1000` `SYS_CONFIGS.OQC_ENABLED` 비활성화
+files:
+- JSHANES DB data: `SYS_CONFIGS.OQC_ENABLED`
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+verification:
+- pre-check PASS: JSHANES `SYS_CONFIGS.OQC_ENABLED=Y`
+- API PASS: `PATCH /api/system/configs/OQC_ENABLED` `{ configValue: "N" }` 성공
+- post-check PASS: DB `CONFIG_VALUE=N`, `/api/system/configs/active` map `OQC_ENABLED=N`
+review:
+- needs-review
+notes:
+- 코드 변경 없이 출하 게이트 설정만 껐다. 실제 출하 처리는 수행하지 않았다.
+
+## T-SHIP-SO999-APPROVE SO-20260619-999 출하 가능 상태 보정
+status: REVIEW
+owner: codex
+role: operator
+scope:
+- JSHANES `40/1000` SO-20260619-999 출하지시 상태 확인 및 승인 상태 보정
+files:
+- JSHANES DB data: `SO-20260619-999`
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+verification:
+- pre-check PASS: `SO-20260619-999`는 `DRAFT`, 품목 `HNS02` 10개, 출하수량 0
+- API PASS: `PUT /api/shipping/orders/SO-20260619-999/confirm` 성공, 상태 `CONFIRMED`
+- OQC PASS: `POST /api/quality/oqc/OQC-20260619-001/execute`로 `BX2606190002` `PASS`
+- post-check PASS: `SO CONFIRMED`, `BX2606190002 CLOSED/PASS`, `FG_MAIN HNS02 AVAILABLE_QTY=10`
+review:
+- needs-review
+notes:
+- 실제 출하 처리는 수행하지 않았고, 출하 스캔 가능 조건만 맞췄다.
+
+## T-SHIP-ORDER-AUTO-NO 출하지시번호 자동 채번
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/order` 출하지시 등록 시 번호 수동입력 제거 및 서버 자동 채번
+files:
+- apps/frontend/src/app/(authenticated)/shipping/order/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/order/ship-order-payload.structure.test.mjs
+- apps/backend/src/modules/shipping/dto/ship-order.dto.ts
+- apps/backend/src/modules/shipping/services/ship-order.service.ts
+- apps/backend/src/modules/shipping/services/ship-order.service.spec.ts
+verification:
+- RED: `pnpm --filter @harness/backend test -- ship-order.service.spec.ts -t "generate shipOrderNo" --runInBand`
+- RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-payload.structure.test.mjs"`
+- GREEN: `pnpm --filter @harness/backend test -- ship-order.service.spec.ts --runInBand`
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-payload.structure.test.mjs"`
+- PASS: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `POST /api/v1/shipping/orders` without `shipOrderNo` generated `SH2606190001`, then deleted and DB residue 0 confirmed
+- PASS: `http://localhost:3002/shipping/order` Playwright registration modal shows `출하지시번호=자동생성`, disabled true, console errors 0
+- PASS: `git diff --check`
+review:
+- needs-review
+notes:
+- 기존 `NumberingService.nextShipmentNo()`를 사용해 서버에서 출하지시번호를 생성한다. 신규 등록 화면은 번호를 전송하지 않고 비활성 `자동생성` 필드만 표시한다.
+
 ## T-IQC-HISTORY-CERT-TIMESTAMP IQC 이력 성적서 업로드 timestamp 매칭
 status: REVIEW
 owner: codex
@@ -497,6 +1042,60 @@ review:
 notes:
 - 결정 D-20260611-PDA-SHIPPING-BOX-ONLY 참조. 현재 PDA는 박스 단위만 지원, 팔레트 스캔은 PALLET_NOT_SUPPORTED 안내.
 - 백엔드 shipBox()는 팔레트 적재 박스를 이중 차감 방지로 거부 — 우회 금지. shipment 자동 생성 또는 ship-pallet 전용 엔드포인트 설계 필요.
+
+## T-IQC-AQL-CRUD AQL 기준관리 CRUD/API/DB 구현
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- `/quality/aql` 기준관리 등록/수정/삭제와 LOT 범위 rule 관리
+files:
+- apps/backend/src/entities/aql-standard.entity.ts
+- apps/backend/src/entities/aql-sampling-rule.entity.ts
+- apps/backend/src/modules/quality/aql/**
+- apps/backend/src/modules/quality/quality.module.ts
+- apps/backend/src/migrations/2026-06-19_iqc_aql_standards.sql
+- apps/frontend/src/app/(authenticated)/quality/aql/**
+- docs/reports/db-schema-erd.md
+verification:
+- RED 확인: backend AQL entity/service spec가 신규 모듈 부재로 실패
+- RED 확인: frontend `/quality/aql` 구조 테스트가 placeholder page로 실패
+- pnpm --filter @harness/backend test -- aql-standard.entity.spec.ts aql.service.spec.ts --runInBand PASS
+- node --test "apps/frontend/src/app/(authenticated)/quality/aql/iqc-aql.structure.test.mjs" PASS
+- pnpm --filter @harness/backend exec tsc --noEmit --pretty false PASS
+- pnpm --filter @harness/frontend exec tsc --noEmit --pretty false PASS
+- JSHANES 마이그레이션 적용 PASS: `AQL_STANDARDS`, `AQL_SAMPLING_RULES` 생성 및 재실행 idempotent PASS
+- ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py PASS, ERD 문서 AQL 테이블 반영 확인
+- API PASS: 목록/등록/상세/resolve/수정/삭제 soft-disable 확인, 검증 데이터 물리 삭제 후 잔여 0
+- 브라우저 PASS: 3002 `/quality/aql` 제목/저장/추가/rule 입력 UI 표시 및 console/page error 0
+review:
+- needs-review
+notes:
+- 이번 범위는 AQL 기준관리 CRUD까지로 제한한다. IQC 품목별 기준 연결과 IQC 검사 적용은 후속 단계로 분리한다.
+- 테스트 기준코드 `AQL-CODEX-260619`는 API 검증 후 `AQL_SAMPLING_RULES`, `AQL_STANDARDS`에서 물리 삭제했다.
+
+## T-EQUIP-INSPECT-WORKER-PK-COLLISION 작업자설비점검 PK 충돌 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/equipment/daily-inspect` WORKER 저장 시 `EQUIP_INSPECT_LOGS` 물리 PK 충돌 방지
+files:
+- apps/backend/src/modules/equipment/services/equip-inspect.service.ts
+- apps/backend/src/modules/equipment/services/equip-inspect.service.spec.ts
+verification:
+- JSHANES pre-check: `EQ-ATCNS-01`/`WORKER`/2026-06-19 00:00:00 충돌 로그 확인.
+- JSHANES cleanup: `WO2606190100`, `WO2606190118` 충돌 로그 각 1건 삭제, 최종 잔여 0건.
+- RED: `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts -t "stores WORKER inspectDate"` 실패 확인.
+- GREEN: 동일 focused test PASS.
+- `pnpm --filter @harness/backend test -- equip-inspect.service.spec.ts` PASS.
+- `pnpm --filter @harness/backend exec tsc --noEmit --pretty false` PASS.
+- `git diff --check -- apps/backend/src/modules/equipment/services/equip-inspect.service.ts apps/backend/src/modules/equipment/services/equip-inspect.service.spec.ts .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` PASS.
+review:
+- needs-review
+notes:
+- 원인: WORKER 이력의 `INSPECT_DATE`가 날짜 00:00:00으로 저장되어 같은 장비/유형/일자에서 작업지시가 달라도 기존 PK와 충돌.
+- 변경: WORKER 저장만 명시 SQL `TO_DATE(:3, 'YYYY-MM-DD HH24:MI:SS')`로 실제 점검시각을 물리 PK에 보존한다. DAILY 저장 경로는 유지.
 
 ## T-MASTER-REQUIRED-MARKS 기준정보 필수컬럼 별표 표시
 status: REVIEW

@@ -1,17 +1,17 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-19 18:05:07
+- 작성일: 2026-06-20 14:15:34
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 161
-- 컬럼 수: 2664
-- PK 보유 테이블: 157
+- 테이블 수: 162
+- 컬럼 수: 2698
+- PK 보유 테이블: 158
 - DB FK 수: 14
-- COM_CODES 그룹 수: 150
+- COM_CODES 그룹 수: 153
 
 ## 2. 모듈별 테이블
 
@@ -57,6 +57,7 @@
 - `ROUTING_PROCESSES`: - / PK: `COMPANY, PLANT_CD, ROUTING_CODE, SEQ`
 - `SHIFT_PATTERNS`: - / PK: `COMPANY, PLANT_CD, SHIFT_CODE`
 - `VENDOR_BARCODE_MAPPINGS`: 자재 제조사 바코드 매핑 / PK: `VENDOR_BARCODE`
+- `VENDOR_INSPECTION_MODE_HISTORY`: 공급업체 검사강도 자동 전환 이력 / PK: `SEQ`
 - `VENDOR_MASTERS`: 자재 공급업체(벤더) 마스터 / PK: `VENDOR_CODE`
 - `WAREHOUSE_LOCATIONS`: 창고 로케이션(세부위치) / PK: `COMPANY, PLANT_CD, WAREHOUSE_CODE, LOCATION_CODE`
 - `WAREHOUSE_TRANSFER_RULES`: 창고 간 이동 허용 규칙 / PK: `COMPANY, PLANT_CD, FROM_WAREHOUSE_ID, TO_WAREHOUSE_ID`
@@ -2411,6 +2412,18 @@ erDiagram
     TIMESTAMP_6 UPDATED_AT NOT_NULL
     string more_columns
   }
+  VENDOR_INSPECTION_MODE_HISTORY {
+    NUMBER SEQ PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 VENDOR_CODE NOT_NULL
+    VARCHAR2_20 PREV_MODE
+    VARCHAR2_20 NEW_MODE NOT_NULL
+    VARCHAR2_500 REASON
+    VARCHAR2_100 REF_ARRIVAL_NO
+    VARCHAR2_50 REF_ITEM_CODE
+    TIMESTAMP_6 CHANGED_AT NOT_NULL
+  }
   VENDOR_MASTERS {
     VARCHAR2_50 VENDOR_CODE PK NOT_NULL
     VARCHAR2_255 VENDOR_NAME NOT_NULL
@@ -2658,6 +2671,7 @@ erDiagram
 | `INV_ADJ_LOGS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `IQC_ITEM_MASTERS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `IQC_LOGS` | `ITEM_CODE` | `ITEM_MASTERS` |
+| `IQC_LOGS` | `VENDOR_CODE` | `VENDOR_BARCODE_MAPPINGS` |
 | `IQC_PART_SPECS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `IQC_PART_SPEC_ITEMS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `ITEM_MASTERS` | `ITEM_CODE` | `ITEM_MASTERS_CONSUMABLE_BAK_20260616` |
@@ -2800,7 +2814,6 @@ erDiagram
 | `TRAINING_RESULTS` | `WORKER_CODE` | `WORKER_MASTERS` |
 | `USERS` | `PDA_ROLE_CODE` | `PDA_ROLE_MENU` |
 | `USER_AUTHS` | `MENU_CODE` | `MENU_CATEGORIES` |
-| `VENDOR_BARCODE_MAPPINGS` | `ITEM_CODE` | `ITEM_MASTERS` |
 
 ## 5. 모듈별 ERD
 
@@ -3358,6 +3371,18 @@ erDiagram
     TIMESTAMP_6 CREATED_AT NOT_NULL
     TIMESTAMP_6 UPDATED_AT NOT_NULL
     string more_columns
+  }
+  VENDOR_INSPECTION_MODE_HISTORY {
+    NUMBER SEQ PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 VENDOR_CODE NOT_NULL
+    VARCHAR2_20 PREV_MODE
+    VARCHAR2_20 NEW_MODE NOT_NULL
+    VARCHAR2_500 REASON
+    VARCHAR2_100 REF_ARRIVAL_NO
+    VARCHAR2_50 REF_ITEM_CODE
+    TIMESTAMP_6 CHANGED_AT NOT_NULL
   }
   VENDOR_MASTERS {
     VARCHAR2_50 VENDOR_CODE PK NOT_NULL
@@ -5266,6 +5291,7 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `CODE_LETTER` | `VARCHAR2(5)` | `Y` |  |  | ISO 2859-1 / ANSI ASQ Z1.4 코드 문자 |
 
 ### `AQL_STANDARDS`
 
@@ -5279,7 +5305,7 @@ erDiagram
 | `AQL_CODE` | `VARCHAR2(50)` | `N` | PK |  | AQL 코드 |
 | `AQL_NAME` | `VARCHAR2(100)` | `N` |  |  | AQL 명칭 |
 | `INSPECTION_LEVEL` | `VARCHAR2(20)` | `Y` |  |  | 검사수준 |
-| `AQL_VALUE` | `NUMBER(8,3)` | `Y` |  |  | AQL 값 |
+| `AQL_VALUE` | `NUMBER(8,3)` | `Y` |  | COM_CODES.AQL_VALUE: 0.01=0.010, 0.015=0.015, 0.025=0.025, 0.04=0.040, 0.065=0.065, 0.1=0.10, 0.15=0.15, 0.25=0.25, 0.4=0.40, 0.65=0.65, 1=1.0, 1.5=1.5, 2.5=2.5, 4=4.0, 6.5=6.5, 10=10, 15=15, 25=25, 40=40, 65=65 | AQL 값 |
 | `USE_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `USE_YN IN ('Y', 'N')`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N |  |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
@@ -5595,6 +5621,7 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `DEFECT_GRADE` | `VARCHAR2(20)` | `Y` |  | CHECK `DEFECT_GRADE IS NULL OR DEFECT_GRADE IN ('CRITICAL', 'MAJOR', 'MINOR')` | 불량코드 등급. DEFECT_TYPE 그룹은 CRITICAL/MAJOR/MINOR 필수 |
 
 ### `CONSUMABLE_LOGS`
 
@@ -6542,6 +6569,21 @@ erDiagram
 | `MAT_UID` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `RETEST_ROUND` | `NUMBER` | `Y` |  |  |  |
 | `SAMPLE_BARCODE` | `VARCHAR2(500)` | `Y` |  | 기본값 `NULL` |  |
+| `VENDOR_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `LOT_QTY` | `NUMBER` | `Y` |  |  |  |
+| `AQL_INSPECTION_LEVEL` | `VARCHAR2(20)` | `Y` |  |  |  |
+| `AQL_INSPECTION_MODE` | `VARCHAR2(20)` | `Y` |  |  |  |
+| `AQL_SAMPLE_QTY` | `NUMBER` | `Y` |  |  |  |
+| `AQL_MAJOR_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `AQL_MAJOR_AC` | `NUMBER` | `Y` |  |  |  |
+| `AQL_MAJOR_RE` | `NUMBER` | `Y` |  |  |  |
+| `AQL_MINOR_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `AQL_MINOR_AC` | `NUMBER` | `Y` |  |  |  |
+| `AQL_MINOR_RE` | `NUMBER` | `Y` |  |  |  |
+| `DEFECT_CRITICAL` | `NUMBER` | `Y` |  | 기본값 `0` |  |
+| `DEFECT_MAJOR` | `NUMBER` | `Y` |  | 기본값 `0` |  |
+| `DEFECT_MINOR` | `NUMBER` | `Y` |  | 기본값 `0` |  |
+| `AQL_JUDGE_REASON` | `VARCHAR2(500)` | `Y` |  |  |  |
 
 ### `IQC_PART_SPECS`
 
@@ -6654,7 +6696,7 @@ erDiagram
 | `STORAGE_LOCATION` | `VARCHAR2(100)` | `Y` |  |  | 보관위치 |
 | `TOLERANCE_RATE` | `NUMBER(5,2)` | `N` |  | 기본값 `5.0` | PO 수량 오차 허용률 (%) |
 | `IS_SPLITTABLE` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'` | 자재 분할 가능 여부 (Y/N) |
-| `SAMPLE_QTY` | `NUMBER(10)` | `Y` |  |  | 샘플검사 수량 |
+| `SAMPLE_QTY` | `NUMBER(10)` | `Y` |  |  | 기본시료수. IQC 검사 시 사용할 시료량이며 AQL 산출 샘플수량과 별개 |
 | `INSPECT_METHOD` | `VARCHAR2(20)` | `Y` |  | 기본값 `NULL`<br>COM_CODES.INSPECT_METHOD: VISUAL=육안검사, MEASUREMENT=계측검사, FUNCTIONAL=기능검사, ELECTRICAL=전기검사, DESTRUCTIVE=파괴검사 |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -6667,6 +6709,10 @@ erDiagram
 | `LENGTH` | `NUMBER` | `Y` |  |  | 품목 길이 |
 | `STRIP_BEFORE` | `NUMBER` | `Y` |  |  | 스트리핑 전 |
 | `STRIP_AFTER` | `NUMBER` | `Y` |  |  | 스트리핑 후 |
+| `INSPECTION_LEVEL` | `VARCHAR2(20)` | `Y` |  |  | 품목 기준 AQL 검사수준 |
+| `AQL_CRITICAL` | `NUMBER(8,3)` | `Y` |  |  | 품목 기준 Critical AQL. Critical 불량은 1건 이상 즉시 불합격 |
+| `AQL_MAJOR` | `NUMBER(8,3)` | `Y` |  |  | 품목 기준 Major AQL |
+| `AQL_MINOR` | `NUMBER(8,3)` | `Y` |  |  | 품목 기준 Minor AQL |
 
 ### `ITEM_MASTERS_CONSUMABLE_BAK_20260616`
 
@@ -7285,6 +7331,8 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `QUALITY_GRADE` | `VARCHAR2(20)` | `Y` |  |  | 공급업체 품질등급 |
+| `INSPECTION_MODE` | `VARCHAR2(20)` | `Y` |  | 기본값 `'NORMAL'`<br>CHECK `INSPECTION_MODE IN ('TIGHTENED', 'NORMAL', 'REDUCED')` | 공급업체 검사강도: TIGHTENED/NORMAL/REDUCED |
 
 ### `PDA_ROLE`
 
@@ -7611,6 +7659,7 @@ erDiagram
 | `PROCESS_CATEGORY` | `VARCHAR2(50)` | `Y` |  | COM_CODES.PROCESS_CATEGORY: WIRE=전선, TERMINAL=단자, ASSEMBLY=조립, INSPECTION=검사, HEAT=열처리 | 공정 카테고리 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `LINE_TYPE` | `VARCHAR2(2)` | `Y` |  | COM_CODES.LINE_TYPE: LV=저전압, HV=고전압, CM=공통 | 공정 라인구분: LV=저전압 HV=고전압 CM=공통 |
 
 ### `PROCESS_QUALITY_CONDITIONS`
 
@@ -7729,7 +7778,7 @@ erDiagram
 | `WH_LOC` | `VARCHAR2(255)` | `Y` |  |  | 창고 위치 |
 | `ERP_CODE` | `VARCHAR2(255)` | `Y` |  |  | ERP 연동 코드 |
 | `OPER` | `VARCHAR2(255)` | `Y` |  |  | 작업장(Operation) |
-| `LINE_TYPE` | `VARCHAR2(255)` | `Y` |  |  | 라인유형 |
+| `LINE_TYPE` | `VARCHAR2(255)` | `Y` |  | COM_CODES.LINE_TYPE: LV=저전압, HV=고전압, CM=공통 | 라인유형 |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  | 비고 |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 회사코드 (멀티테넌시) |
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
@@ -8873,6 +8922,24 @@ erDiagram
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 회사코드 (멀티테넌시) |
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
+
+### `VENDOR_INSPECTION_MODE_HISTORY`
+
+- 설명: 공급업체 검사강도 자동 전환 이력
+- PK: `SEQ`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `SEQ` | `NUMBER` | `N` | PK | 기본값 `"TEST"."ISEQ$$_84862".nextval` |  |
+| `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `VENDOR_CODE` | `VARCHAR2(50)` | `N` |  |  |  |
+| `PREV_MODE` | `VARCHAR2(20)` | `Y` |  |  |  |
+| `NEW_MODE` | `VARCHAR2(20)` | `N` |  | CHECK `NEW_MODE IN ('TIGHTENED', 'NORMAL', 'REDUCED')` |  |
+| `REASON` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `REF_ARRIVAL_NO` | `VARCHAR2(100)` | `Y` |  |  |  |
+| `REF_ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `CHANGED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `VENDOR_MASTERS`
 

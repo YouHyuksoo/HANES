@@ -16,6 +16,19 @@ import api from "@/services/api";
 interface PartItem {
   itemCode: string;
   itemName: string;
+  sampleQty?: number | null;
+  inspectionLevel?: string | null;
+  aqlCritical?: number | null;
+  aqlMajor?: number | null;
+  aqlMinor?: number | null;
+}
+
+interface AqlPolicyPreview {
+  inspectionLevel: string;
+  inspectionMode: string;
+  sampleQty: number;
+  majorRule?: { aqlCode: string; acceptQty: number; rejectQty: number } | null;
+  minorRule?: { aqlCode: string; acceptQty: number; rejectQty: number } | null;
 }
 
 export default function IqcPartSpecPage() {
@@ -26,6 +39,9 @@ export default function IqcPartSpecPage() {
   const [partsLoading, setPartsLoading] = useState(false);
   const [selectedItemCode, setSelectedItemCode] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [aqlPreviewLotQty, setAqlPreviewLotQty] = useState("1000");
+  const [aqlPreview, setAqlPreview] = useState<AqlPolicyPreview | null>(null);
+  const [aqlPreviewLoading, setAqlPreviewLoading] = useState(false);
 
   const fetchBase = useCallback(async () => {
     setPartsLoading(true);
@@ -70,6 +86,45 @@ export default function IqcPartSpecPage() {
     [parts, selectedItemCode]
   );
 
+  const selectedPart = useMemo(
+    () => parts.find((p) => p.itemCode === selectedItemCode) ?? null,
+    [parts, selectedItemCode]
+  );
+
+  useEffect(() => {
+    if (!selectedPart) {
+      setAqlPreview(null);
+      return;
+    }
+
+    const lotQty = Math.max(1, Number(aqlPreviewLotQty) || 1);
+    let cancelled = false;
+    setAqlPreviewLoading(true);
+    api.get("/quality/aql/resolve-iqc", {
+      params: {
+        itemCode: selectedPart.itemCode,
+        lotQty,
+      },
+    })
+      .then((res) => {
+        if (!cancelled) setAqlPreview(res.data?.data ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setAqlPreview(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAqlPreviewLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPart, aqlPreviewLotQty]);
+
+  const renderAqlValue = (value: number | null | undefined) => (
+    value === null || value === undefined ? "-" : value
+  );
+
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex-shrink-0">
@@ -94,12 +149,76 @@ export default function IqcPartSpecPage() {
             loading={partsLoading}
           />
         </div>
-        <div className="col-span-9 min-h-0">
-          <IqcSpecPanel
-            itemCode={selectedItemCode}
-            itemName={selectedItemName}
-            poolItems={poolItems}
-          />
+        <div className="col-span-9 min-h-0 flex flex-col gap-3">
+          {selectedPart && (
+            <div className="flex-shrink-0 rounded-lg border border-border bg-bg px-4 py-3" data-iqc-part-aql-summary>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-text">AQL 기준</div>
+                  <div className="mt-0.5 text-xs text-text-muted">
+                    {selectedPart.itemCode} · {selectedPart.itemName}
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-text-muted">
+                  <span className="whitespace-nowrap">LOT 수량 미리보기</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={aqlPreviewLotQty}
+                    onChange={(e) => setAqlPreviewLotQty(e.target.value)}
+                    className="h-8 w-28 rounded border border-border bg-surface px-2 text-right text-sm text-text tabular-nums focus:border-primary focus:outline-none"
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">검사수준</div>
+                  <div className="mt-1 text-sm font-semibold text-text">{selectedPart.inspectionLevel || "-"}</div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">기본시료수</div>
+                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">{renderAqlValue(selectedPart.sampleQty)}</div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">Critical AQL</div>
+                  <div className="mt-1 text-sm font-semibold text-red-400 tabular-nums">{renderAqlValue(selectedPart.aqlCritical)}</div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">Major AQL</div>
+                  <div className="mt-1 text-sm font-semibold text-amber-300 tabular-nums">{renderAqlValue(selectedPart.aqlMajor)}</div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">Minor AQL</div>
+                  <div className="mt-1 text-sm font-semibold text-cyan-300 tabular-nums">{renderAqlValue(selectedPart.aqlMinor)}</div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">샘플수량</div>
+                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                    {aqlPreviewLoading ? "..." : (aqlPreview?.sampleQty ?? "-")}
+                  </div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">Major Ac/Re</div>
+                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                    {aqlPreviewLoading ? "..." : (aqlPreview?.majorRule ? `${aqlPreview.majorRule.acceptQty}/${aqlPreview.majorRule.rejectQty}` : "-")}
+                  </div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">Minor Ac/Re</div>
+                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                    {aqlPreviewLoading ? "..." : (aqlPreview?.minorRule ? `${aqlPreview.minorRule.acceptQty}/${aqlPreview.minorRule.rejectQty}` : "-")}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex-1 min-h-0">
+            <IqcSpecPanel
+              itemCode={selectedItemCode}
+              itemName={selectedItemName}
+              poolItems={poolItems}
+            />
+          </div>
         </div>
       </div>
     </div>

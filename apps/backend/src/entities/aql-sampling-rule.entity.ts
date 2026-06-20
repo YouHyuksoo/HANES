@@ -26,6 +26,9 @@ export class AqlSamplingRule {
   @Column({ type: 'number', name: 'SAMPLE_SIZE' })
   sampleSize: number;
 
+  @Column({ type: 'varchar2', name: 'CODE_LETTER', length: 5, nullable: true })
+  codeLetter: string | null;
+
   @Column({ type: 'number', name: 'ACCEPT_QTY' })
   acceptQty: number;
 
