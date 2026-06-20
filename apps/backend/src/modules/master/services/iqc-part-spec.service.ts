@@ -106,6 +106,9 @@ export class IqcPartSpecService {
             defectGrade: it.defectGrade ?? null,
             inspectionLevel: it.inspectionLevel ?? null,
             aql: it.aql ?? null,
+            inspectionType: it.inspectionType ?? null,
+            sampleMethod: it.sampleMethod ?? null,
+            sampleQty: it.sampleQty ?? null,
             useYn: it.useYn ?? 'Y',
             company,
             plant,
@@ -133,6 +136,7 @@ export class IqcPartSpecService {
   ): Promise<Array<{
     itemCode: string;
     seq: number;
+    inspItemCode: string;
     inspectItem: string;
     spec: string | null;
     lsl: number | null;
@@ -143,6 +147,9 @@ export class IqcPartSpecService {
     defectGrade: string | null;
     inspectionLevel: string | null;
     aql: number | null;
+    inspectionType: string;
+    sampleMethod: string;
+    sampleQty: number | null;
   }>> {
     const spec = await this.findByItemCode(itemCode, company, plant);
     if (!spec || !spec.items || spec.items.length === 0) return [];
@@ -153,6 +160,7 @@ export class IqcPartSpecService {
       .map((item) => ({
         itemCode,
         seq: item.seq,
+        inspItemCode: item.inspItemCode,
         inspectItem: item.inspItem.inspItemName,
         spec: item.judgeCriteria ?? item.inspItem.criteria ?? null,
         lsl: item.lsl !== null ? item.lsl : (item.inspItem.lsl ?? null),
@@ -163,6 +171,9 @@ export class IqcPartSpecService {
         defectGrade: item.defectGrade ?? null,
         inspectionLevel: item.inspectionLevel ?? null,
         aql: item.aql != null ? Number(item.aql) : null,
+        inspectionType: (item.inspectionType ?? 'AQL').toUpperCase(),
+        sampleMethod: (item.sampleMethod ?? 'AQL').toUpperCase(),
+        sampleQty: item.sampleQty != null ? Number(item.sampleQty) : null,
       }));
   }
 

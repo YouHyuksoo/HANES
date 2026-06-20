@@ -80,6 +80,19 @@ describe('IqcPartSpecService', () => {
     }));
   });
 
+  it('resolveItems가 파괴검사 항목의 inspectionType/sampleQty를 반환한다', async () => {
+    mockSpecRepo.findOne.mockResolvedValue({
+      itemCode: 'CBL-A', items: [
+        { seq: 1, useYn: 'Y', inspItemCode: 'IQC-PULL', inspItem: { inspItemName: '인장', judgeMethod: 'MEASURE', unit: 'N' },
+          lsl: null, usl: null, judgeCriteria: null, defectGrade: 'MAJOR',
+          inspectionLevel: null, aql: null, inspectionType: 'DESTRUCTIVE', sampleMethod: 'FIXED', sampleQty: 5 },
+      ],
+    } as any);
+    const res = await target.resolveItems('CBL-A', '40', '1000');
+    expect(res[0].inspectionType).toBe('DESTRUCTIVE');
+    expect(res[0].sampleQty).toBe(5);
+  });
+
   it('deletes an item spec only within the tenant context', async () => {
     const spec = { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as IqcPartSpec;
     mockSpecRepo.findOne.mockResolvedValue(spec);
