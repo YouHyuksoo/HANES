@@ -17,6 +17,7 @@ import { ProcessQualityCondition } from '../../../entities/process-quality-condi
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
+import { ProcessMaster } from '../../../entities/process-master.entity';
 import {
   CreateRoutingGroupDto, UpdateRoutingGroupDto, RoutingGroupQueryDto,
   CreateRoutingProcessDto, UpdateRoutingProcessDto,
@@ -30,6 +31,8 @@ export class RoutingGroupService {
     private readonly groupRepo: Repository<RoutingGroup>,
     @InjectRepository(RoutingProcess)
     private readonly processRepo: Repository<RoutingProcess>,
+    @InjectRepository(ProcessMaster)
+    private readonly processMasterRepo: Repository<ProcessMaster>,
     @InjectRepository(ProcessQualityCondition)
     private readonly conditionRepo: Repository<ProcessQualityCondition>,
     @InjectRepository(PartMaster)
@@ -46,6 +49,14 @@ export class RoutingGroupService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private async resolveProcessMaster(processCode: string, company?: string, plant?: string) {
+    const processMaster = await this.processMasterRepo.findOne({
+      where: { processCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
+    });
+    if (!processMaster) throw new NotFoundException(`공정마스터를 찾을 수 없습니다: ${processCode}`);
+    return processMaster;
   }
 
   // ??? ?쇱슦??洹몃９ CRUD ???
@@ -158,17 +169,20 @@ export class RoutingGroupService {
       where: { routingCode: dto.routingCode, seq: dto.seq, ...this.tenantWhere(company, plant) },
     });
     if (existing) throw new ConflictException(`?대? 議댁옱?섎뒗 怨듭젙?쒖꽌: ${dto.routingCode} / seq ${dto.seq}`);
+    const processMaster = await this.resolveProcessMaster(dto.processCode, company, plant);
 
     const proc = this.processRepo.create({
       routingCode: dto.routingCode,
       seq: dto.seq,
       processCode: dto.processCode,
-      processName: dto.processName,
-      processType: dto.processType ?? null,
+      processName: processMaster.processName,
+      processType: processMaster.processType ?? dto.processType ?? null,
       equipType: dto.equipType ?? null,
       stdTime: dto.stdTime ?? null,
       setupTime: dto.setupTime ?? null,
       sampleInspectYn: dto.sampleInspectYn ?? 'N',
+      issueSgLabelYn: dto.issueSgLabelYn ?? 'N',
+      issueFgLabelYn: dto.issueFgLabelYn ?? 'N',
       useYn: dto.useYn ?? 'Y',
       qcSelfYn: dto.qcSelfYn ?? 'N',
       inspectMethod: dto.inspectMethod ?? 'DIRECT',
@@ -183,6 +197,9 @@ export class RoutingGroupService {
   async updateProcess(routingCode: string, seq: number, dto: UpdateRoutingProcessDto, company?: string, plant?: string) {
     const existing = await this.processRepo.findOne({ where: { routingCode, seq, ...this.tenantWhere(company, plant) } });
     if (!existing) throw new NotFoundException(`怨듭젙?쒖꽌瑜?李얠쓣 ???놁뒿?덈떎: ${routingCode}/${seq}`);
+    const processMaster = dto.processCode !== undefined
+      ? await this.resolveProcessMaster(dto.processCode, company, plant)
+      : null;
 
     const updateData: Partial<Pick<
       RoutingProcess,
@@ -193,6 +210,8 @@ export class RoutingGroupService {
       | 'stdTime'
       | 'setupTime'
       | 'sampleInspectYn'
+      | 'issueSgLabelYn'
+      | 'issueFgLabelYn'
       | 'useYn'
       | 'qcSelfYn'
       | 'inspectMethod'
@@ -200,12 +219,14 @@ export class RoutingGroupService {
       | 'sampleQty'
     >> = {
       ...(dto.processCode !== undefined ? { processCode: dto.processCode } : {}),
-      ...(dto.processName !== undefined ? { processName: dto.processName } : {}),
-      ...(dto.processType !== undefined ? { processType: dto.processType } : {}),
+      ...(processMaster ? { processName: processMaster.processName, processType: processMaster.processType ?? dto.processType ?? null } : {}),
+      ...(!processMaster && dto.processType !== undefined ? { processType: dto.processType } : {}),
       ...(dto.equipType !== undefined ? { equipType: dto.equipType } : {}),
       ...(dto.stdTime !== undefined ? { stdTime: dto.stdTime } : {}),
       ...(dto.setupTime !== undefined ? { setupTime: dto.setupTime } : {}),
       ...(dto.sampleInspectYn !== undefined ? { sampleInspectYn: dto.sampleInspectYn } : {}),
+      ...(dto.issueSgLabelYn !== undefined ? { issueSgLabelYn: dto.issueSgLabelYn } : {}),
+      ...(dto.issueFgLabelYn !== undefined ? { issueFgLabelYn: dto.issueFgLabelYn } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
       ...(dto.qcSelfYn !== undefined ? { qcSelfYn: dto.qcSelfYn } : {}),
       ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),

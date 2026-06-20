@@ -15,6 +15,7 @@ import { getMetadataArgsStorage } from 'typeorm';
 import { RoutingGroupService } from './routing-group.service';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
+import { ProcessMaster } from '../../../entities/process-master.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -26,6 +27,7 @@ describe('RoutingGroupService', () => {
   let target: RoutingGroupService;
   let mockGroupRepo: DeepMocked<Repository<RoutingGroup>>;
   let mockProcessRepo: DeepMocked<Repository<RoutingProcess>>;
+  let mockProcessMasterRepo: DeepMocked<Repository<ProcessMaster>>;
   let mockConditionRepo: DeepMocked<Repository<ProcessQualityCondition>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockBomRepo: DeepMocked<Repository<BomMaster>>;
@@ -37,6 +39,7 @@ describe('RoutingGroupService', () => {
   beforeEach(async () => {
     mockGroupRepo = createMock<Repository<RoutingGroup>>();
     mockProcessRepo = createMock<Repository<RoutingProcess>>();
+    mockProcessMasterRepo = createMock<Repository<ProcessMaster>>();
     mockConditionRepo = createMock<Repository<ProcessQualityCondition>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockBomRepo = createMock<Repository<BomMaster>>();
@@ -44,6 +47,14 @@ describe('RoutingGroupService', () => {
     mockDataSource = createMock<DataSource>();
     mockEntityManager = createMock<EntityManager>();
     mockTx = createMock<TransactionService>();
+    mockProcessMasterRepo.findOne.mockImplementation(async (options: any) => {
+      const processCode = options?.where?.processCode ?? 'P01';
+      return {
+        processCode,
+        processName: 'Process',
+        processType: 'ASSY',
+      } as ProcessMaster;
+    });
 
     // Transaction mock: execute callback with mockEntityManager
     mockDataSource.transaction.mockImplementation(async (cb: any) => {
@@ -56,6 +67,7 @@ describe('RoutingGroupService', () => {
         RoutingGroupService,
         { provide: getRepositoryToken(RoutingGroup), useValue: mockGroupRepo },
         { provide: getRepositoryToken(RoutingProcess), useValue: mockProcessRepo },
+        { provide: getRepositoryToken(ProcessMaster), useValue: mockProcessMasterRepo },
         { provide: getRepositoryToken(ProcessQualityCondition), useValue: mockConditionRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
@@ -254,6 +266,64 @@ describe('RoutingGroupService', () => {
       });
     });
 
+    it('should create a process with SG and FG label issue flags', async () => {
+      const dto = {
+        routingCode: 'RG01',
+        seq: 10,
+        processCode: 'P01',
+        processName: 'Process',
+        issueSgLabelYn: 'Y',
+        issueFgLabelYn: 'Y',
+      } as any;
+      const created = { ...dto, useYn: 'Y' } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(null);
+      mockProcessRepo.create.mockReturnValue(created);
+      mockProcessRepo.save.mockResolvedValue(created);
+
+      await target.createProcess(dto, 'C1', 'P1');
+
+      expect(mockProcessRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          processName: 'Process',
+          issueSgLabelYn: 'Y',
+          issueFgLabelYn: 'Y',
+          company: 'C1',
+          plant: 'P1',
+        }),
+      );
+    });
+
+    it('uses PROCESS_MASTERS name when creating a routing process', async () => {
+      const dto = {
+        routingCode: 'RG01',
+        seq: 10,
+        processCode: 'P01',
+        processName: 'Spoofed Name',
+      } as any;
+      const created = { ...dto, processName: 'Master Process', useYn: 'Y' } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(null);
+      mockProcessMasterRepo.findOne.mockResolvedValue({
+        processCode: 'P01',
+        processName: 'Master Process',
+        processType: 'ASSY',
+      } as ProcessMaster);
+      mockProcessRepo.create.mockReturnValue(created);
+      mockProcessRepo.save.mockResolvedValue(created);
+
+      await target.createProcess(dto, 'C1', 'P1');
+
+      expect(mockProcessMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { processCode: 'P01', useYn: 'Y', company: 'C1', plant: 'P1' },
+      });
+      expect(mockProcessRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          processCode: 'P01',
+          processName: 'Master Process',
+          processType: 'ASSY',
+        }),
+      );
+    });
+
     it('should throw ConflictException when process exists', async () => {
       // Arrange
       const dto = { routingCode: 'RG01', seq: 10 } as any;
@@ -278,6 +348,56 @@ describe('RoutingGroupService', () => {
       expect(mockProcessRepo.update).toHaveBeenCalledWith(
         { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
         expect.objectContaining({ processCode: 'P02' }),
+      );
+    });
+
+    it('should update SG and FG label issue flags', async () => {
+      const existing = { routingCode: 'RG01', seq: 10 } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(existing);
+      mockProcessRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.updateProcess(
+        'RG01',
+        10,
+        { issueSgLabelYn: 'Y', issueFgLabelYn: 'N' } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockProcessRepo.update).toHaveBeenCalledWith(
+        { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
+        expect.objectContaining({ issueSgLabelYn: 'Y', issueFgLabelYn: 'N' }),
+      );
+    });
+
+    it('uses PROCESS_MASTERS name when updating a routing process code', async () => {
+      const existing = { routingCode: 'RG01', seq: 10, processCode: 'OLD', processName: 'Old' } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(existing);
+      mockProcessMasterRepo.findOne.mockResolvedValue({
+        processCode: 'P02',
+        processName: 'Master Process 2',
+        processType: 'INSP',
+      } as ProcessMaster);
+      mockProcessRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.updateProcess(
+        'RG01',
+        10,
+        { processCode: 'P02', processName: 'Spoofed Name' } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockProcessMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { processCode: 'P02', useYn: 'Y', company: 'C1', plant: 'P1' },
+      });
+      expect(mockProcessRepo.update).toHaveBeenCalledWith(
+        { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
+        expect.objectContaining({
+          processCode: 'P02',
+          processName: 'Master Process 2',
+          processType: 'INSP',
+        }),
       );
     });
 

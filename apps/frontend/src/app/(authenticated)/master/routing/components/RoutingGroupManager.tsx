@@ -54,7 +54,18 @@ interface RoutingInfo extends RoutingGroupItem {
 }
 
 const EMPTY_GROUP = { routingCode: "", routingName: "", itemCode: "", description: "", useYn: "Y" };
-const EMPTY_PROCESS = { seq: "10", processCode: "", processName: "", processType: "", equipType: "", stdTime: "", setupTime: "", sampleInspectYn: "N" };
+const EMPTY_PROCESS = {
+  seq: "10",
+  processCode: "",
+  processName: "",
+  processType: "",
+  equipType: "",
+  stdTime: "",
+  setupTime: "",
+  sampleInspectYn: "N",
+  issueSgLabelYn: "N",
+  issueFgLabelYn: "N",
+};
 
 const partTypeIcon = (itemType?: string) => {
   if (itemType === "FINISHED" || itemType === "FG") return Package;
@@ -231,6 +242,11 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     [processForm.processCode, processOptions],
   );
 
+  const selectedProcessName = useMemo(
+    () => selectedProcessOption?.processName || processForm.processName,
+    [processForm.processName, selectedProcessOption?.processName],
+  );
+
   const selectedProcessTypeLabel = useMemo(() => {
     if (!selectedProcessOption?.processType) return "-";
     return processTypeOptions.find((option) => option.value === selectedProcessOption.processType)?.label
@@ -310,6 +326,8 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       stdTime: process.stdTime != null ? String(process.stdTime) : "",
       setupTime: process.setupTime != null ? String(process.setupTime) : "",
       sampleInspectYn: process.sampleInspectYn || "N",
+      issueSgLabelYn: process.issueSgLabelYn || "N",
+      issueFgLabelYn: process.issueFgLabelYn || "N",
     });
     setProcessModalOpen(true);
   };
@@ -320,16 +338,18 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   };
 
   const saveProcess = async () => {
-    if (!routingInfo || !processForm.processCode || !processForm.processName) return;
+    if (!routingInfo || !processForm.processCode || !selectedProcessName) return;
     const body = {
       routingCode: routingInfo.routingCode,
       seq: Number(processForm.seq),
       processCode: processForm.processCode,
-      processName: processForm.processName,
+      processName: selectedProcessName,
       equipType: processForm.equipType || undefined,
       stdTime: processForm.stdTime ? Number(processForm.stdTime) : undefined,
       setupTime: processForm.setupTime ? Number(processForm.setupTime) : undefined,
       sampleInspectYn: processForm.sampleInspectYn || "N",
+      issueSgLabelYn: processForm.issueSgLabelYn || "N",
+      issueFgLabelYn: processForm.issueFgLabelYn || "N",
       useYn: "Y",
     };
     if (editingProcess) {
@@ -484,13 +504,14 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                   <th className="text-left py-2">{t("master.routing.processName")}</th>
                   <th className="text-center py-2 w-28">{t("master.routing.processCode")}</th>
                   <th className="text-center py-2 w-20">{t("master.routing.sampleInspect")}</th>
+                  <th className="text-center py-2 w-24">{t("master.routing.labelIssue")}</th>
                   <th className="text-right py-2 px-2 w-24">{t("common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {processes.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-10 text-center text-text-muted dark:text-gray-400">
+                    <td colSpan={6} className="px-4 py-10 text-center text-text-muted dark:text-gray-400">
                       선택한 품목의 라우팅에 등록된 공정이 없습니다.
                     </td>
                   </tr>
@@ -511,6 +532,23 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                         ) : (
                           <span className="text-text-muted text-[10px]">-</span>
                         )}
+                      </td>
+                      <td className="py-2 text-center">
+                        <div className="inline-flex items-center justify-center gap-1">
+                          {process.issueSgLabelYn === 'Y' && (
+                            <span className="inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                              {t("master.routing.sgLabelShort")}
+                            </span>
+                          )}
+                          {process.issueFgLabelYn === 'Y' && (
+                            <span className="inline-flex items-center rounded bg-cyan-100 px-1.5 py-0.5 text-[10px] font-bold text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+                              {t("master.routing.fgLabelShort")}
+                            </span>
+                          )}
+                          {process.issueSgLabelYn !== 'Y' && process.issueFgLabelYn !== 'Y' && (
+                            <span className="text-text-muted text-[10px]">-</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2 px-2 text-right whitespace-nowrap">
                         <button onClick={(e) => { e.stopPropagation(); openEditProcess(process); }} className="p-1 rounded hover:bg-white/20"><Edit2 className="w-3.5 h-3.5" /></button>
@@ -572,7 +610,15 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                 {processOptions.map((option) => <option key={option.processCode} value={option.processCode}>[{option.processCode}] {option.processName}</option>)}
               </select>
             </div>
-            <Input label={t("master.routing.processName")} value={processForm.processName} onChange={(e) => setProcessForm((f) => ({ ...f, processName: e.target.value }))} fullWidth required />
+            <div>
+              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.processName")}</label>
+              <div
+                data-testid="routing-process-name-display"
+                className="flex h-10 items-center rounded-lg border border-border bg-surface px-3 text-sm text-text dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              >
+                {selectedProcessName || "-"}
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -611,10 +657,35 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
               </label>
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-2">
+              {t("master.routing.labelIssue")}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 dark:border-gray-600 dark:bg-gray-800">
+                <input
+                  type="checkbox"
+                  checked={processForm.issueSgLabelYn === "Y"}
+                  onChange={(e) => setProcessForm((f) => ({ ...f, issueSgLabelYn: e.target.checked ? "Y" : "N" }))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-text dark:text-gray-200">{t("master.routing.issueSgLabel")}</span>
+              </label>
+              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 dark:border-gray-600 dark:bg-gray-800">
+                <input
+                  type="checkbox"
+                  checked={processForm.issueFgLabelYn === "Y"}
+                  onChange={(e) => setProcessForm((f) => ({ ...f, issueFgLabelYn: e.target.checked ? "Y" : "N" }))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-text dark:text-gray-200">{t("master.routing.issueFgLabel")}</span>
+              </label>
+            </div>
+          </div>
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setProcessModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={saveProcess} disabled={!processForm.processCode || !processForm.processName}>{t("common.save")}</Button>
+          <Button onClick={saveProcess} disabled={!processForm.processCode || !selectedProcessName}>{t("common.save")}</Button>
         </div>
       </Modal>
 

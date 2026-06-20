@@ -1,6 +1,6 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-20 14:15:34
+- 작성일: 2026-06-20 20:45:52
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -8,10 +8,10 @@
 ## 1. 요약
 
 - 테이블 수: 162
-- 컬럼 수: 2698
+- 컬럼 수: 2703
 - PK 보유 테이블: 158
 - DB FK 수: 14
-- COM_CODES 그룹 수: 153
+- COM_CODES 그룹 수: 154
 
 ## 2. 모듈별 테이블
 
@@ -1424,6 +1424,7 @@ erDiagram
     TIMESTAMP_6 CLOSE_TIME
     TIMESTAMP_6 CREATED_AT NOT_NULL
     TIMESTAMP_6 UPDATED_AT NOT_NULL
+    string more_columns
   }
   PARTNER_MASTERS {
     VARCHAR2_50 PARTNER_CODE PK NOT_NULL
@@ -4472,6 +4473,7 @@ erDiagram
     TIMESTAMP_6 CLOSE_TIME
     TIMESTAMP_6 CREATED_AT NOT_NULL
     TIMESTAMP_6 UPDATED_AT NOT_NULL
+    string more_columns
   }
   PROD_LINE_MASTERS {
     VARCHAR2_50 LINE_CODE PK NOT_NULL
@@ -5621,7 +5623,7 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
-| `DEFECT_GRADE` | `VARCHAR2(20)` | `Y` |  | CHECK `DEFECT_GRADE IS NULL OR DEFECT_GRADE IN ('CRITICAL', 'MAJOR', 'MINOR')` | 불량코드 등급. DEFECT_TYPE 그룹은 CRITICAL/MAJOR/MINOR 필수 |
+| `DEFECT_GRADE` | `VARCHAR2(20)` | `Y` |  | CHECK `DEFECT_GRADE IS NULL OR DEFECT_GRADE IN ('CRITICAL', 'MAJOR', 'MINOR')`<br>COM_CODES.DEFECT_GRADE: CRITICAL=치명(Critical), MAJOR=중결점(Major), MINOR=경결점(Minor) | 불량코드 등급. DEFECT_TYPE 그룹은 CRITICAL/MAJOR/MINOR 필수 |
 
 ### `CONSUMABLE_LOGS`
 
@@ -6584,6 +6586,7 @@ erDiagram
 | `DEFECT_MAJOR` | `NUMBER` | `Y` |  | 기본값 `0` |  |
 | `DEFECT_MINOR` | `NUMBER` | `Y` |  | 기본값 `0` |  |
 | `AQL_JUDGE_REASON` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `ITEM_RESULTS` | `CLOB` | `Y` |  |  | 검사항목별 AQL 판정결과(JSON) |
 
 ### `IQC_PART_SPECS`
 
@@ -6623,6 +6626,9 @@ erDiagram
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `JUDGE_CRITERIA` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `DEFECT_GRADE` | `VARCHAR2(10)` | `Y` |  | COM_CODES.DEFECT_GRADE: CRITICAL=치명(Critical), MAJOR=중결점(Major), MINOR=경결점(Minor) | 불량등급: CRITICAL/MAJOR/MINOR |
+| `INSPECTION_LEVEL` | `VARCHAR2(5)` | `Y` |  |  | ISO 2859-1 검사수준 |
+| `AQL` | `NUMBER` | `Y` |  |  | 합격품질수준(AQL) |
 
 ### `IQC_TEMPLATES`
 
@@ -7305,6 +7311,7 @@ erDiagram
 | `CLOSE_TIME` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `SHIP_ORDER_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
 
 ### `PARTNER_MASTERS`
 

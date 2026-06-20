@@ -20,6 +20,7 @@ import {
 @Entity({ name: 'PALLET_MASTERS' })
 @Index(['status'])
 @Index(['shipmentId'])
+@Index(['shipOrderNo'])
 export class PalletMaster {
   @PrimaryColumn({ name: 'PALLET_NO', length: 50 })
   palletNo: string;
@@ -38,6 +39,9 @@ export class PalletMaster {
 
   @Column({ type: 'varchar2', name: 'SHIPMENT_ID', length: 255, nullable: true })
   shipmentId: string | null;
+
+  @Column({ type: 'varchar2', name: 'SHIP_ORDER_NO', length: 50, nullable: true })
+  shipOrderNo: string | null;
 
   @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
   company: string;

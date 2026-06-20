@@ -66,4 +66,17 @@ export class ProductionViewsController {
     const result = await this.viewsService.getWipStockFgLabels(itemCode, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
+
+  @Get('wip-stock/labels')
+  @ApiOperation({ summary: '재공 상세 라벨 조회', description: 'SEMI_PRODUCT는 SG_LABELS, FINISHED는 FG_LABELS에서 선택 품목 라벨 목록을 조회' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async getWipStockLabels(
+    @Query('itemCode') itemCode: string,
+    @Query('itemType') itemType: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.viewsService.getWipStockLabels(itemCode, itemType, company, plant);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
 }

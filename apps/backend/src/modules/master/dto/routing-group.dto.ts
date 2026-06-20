@@ -71,9 +71,9 @@ export class CreateRoutingProcessDto {
   @IsString() @MaxLength(50)
   processCode: string;
 
-  @ApiProperty({ description: '공정명' })
-  @IsString() @MaxLength(200)
-  processName: string;
+  @ApiPropertyOptional({ description: '공정명은 공정코드 기준 PROCESS_MASTERS에서 자동 적용된다.' })
+  @IsOptional() @IsString() @MaxLength(200)
+  processName?: string;
 
   @ApiPropertyOptional({ description: '공정 유형' })
   @IsOptional() @IsString() @MaxLength(50)
@@ -94,6 +94,18 @@ export class CreateRoutingProcessDto {
   @ApiPropertyOptional({ description: '샘플검사 필요 여부', default: 'N' })
   @IsOptional() @IsString() @IsIn(['Y', 'N'])
   sampleInspectYn?: string;
+
+  @ApiPropertyOptional({ description: 'SG 라벨 발행 여부', default: 'N' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  issueSgLabelYn?: string;
+
+  @ApiPropertyOptional({ description: 'FG 라벨 발행 여부', default: 'N' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  issueFgLabelYn?: string;
 
   @ApiPropertyOptional({ description: '자주검사 여부', default: 'N' })
   @IsOptional()

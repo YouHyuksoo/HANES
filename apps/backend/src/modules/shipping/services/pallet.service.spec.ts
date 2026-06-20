@@ -197,9 +197,9 @@ describe('PalletService', () => {
 
     it('assignToShipment uses TransactionService', async () => {
       mockPalletRepo.findOne
-        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'CLOSED', shipmentId: null } as any)
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'CLOSED', shipmentId: null, shipOrderNo: null } as any)
         .mockResolvedValueOnce({ palletNo: 'P-001', status: 'LOADED', shipmentId: 'SHIP-001' } as any);
-      mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING' } as any);
+      mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING', shipOrderNo: null } as any);
       mockSummaryQb({ count: '1', boxCount: '1', totalQty: '2' });
 
       await target.assignToShipment('P-001', { shipmentId: 'SHIP-001' } as any);
@@ -208,6 +208,22 @@ describe('PalletService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQr.commitTransaction).not.toHaveBeenCalled();
       expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('assignToShipment blocks order-bound pallet from unrelated manual shipment', async () => {
+      mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'CLOSED', shipmentId: null, shipOrderNo: 'SO-001' } as any);
+      mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING', shipOrderNo: null } as any);
+
+      await expect(target.assignToShipment('P-001', { shipmentId: 'SHIP-001' } as any)).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('assignToShipment blocks pallet from a different ship order', async () => {
+      mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'CLOSED', shipmentId: null, shipOrderNo: 'SO-001' } as any);
+      mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING', shipOrderNo: 'SO-002' } as any);
+
+      await expect(target.assignToShipment('P-001', { shipmentId: 'SHIP-001' } as any)).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
 
     it('removeFromShipment uses TransactionService', async () => {

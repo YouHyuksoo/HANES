@@ -26,6 +26,8 @@ TODO -> IN_PROGRESS -> BLOCKED
 - Agent presence는 증거 기반으로 표시한다. fresh heartbeat 또는 최근 `last_seen`이 있을 때만 `online`으로 보고, fresh 신호가 없으면 `offline`, 만료됐거나 오래된 active lock은 `stale`로 본다.
 - If `expires` has passed, mark the lock `stale` in `LOCKS.md` before taking over.
 - Never overwrite another active lock silently.
+- 작업이 끝나면 결과와 검증은 `JOURNAL.md`에, 완료 색인은 `ARCHIVE.md`에 남긴 뒤 해당 lock 항목은 `LOCKS.md`에서 제거한다.
+- `LOCKS.md`의 `## Active Locks`에는 `status: released` 항목을 남기지 않는다. released 누적은 대시보드와 다음 세션이 실제 잠금으로 오해하게 만든다.
 
 ## Conflict Protocol
 

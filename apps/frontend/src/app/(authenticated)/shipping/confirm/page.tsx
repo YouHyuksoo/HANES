@@ -12,15 +12,16 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Truck, Plus, Search, RefreshCw, MapPin, Upload, ArrowRight, XCircle, ScanLine, RotateCcw } from 'lucide-react';
+import { Truck, Search, RefreshCw, Upload, ArrowRight, XCircle, RotateCcw } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { usePartnerOptions } from '@/hooks/useMasterOptions';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { ShipmentStatusBadge, ShipmentScanModal, BoxScanShipModal } from '@/components/shipping';
+import { ShipmentStatusBadge, ShipmentScanModal } from '@/components/shipping';
 import type { ShipmentStatus } from '@/components/shipping';
 import api from '@/services/api';
+import OrderFulfillmentModal from './OrderFulfillmentModal';
 
 interface Shipment {
   id: string;
@@ -59,7 +60,6 @@ export default function ShipmentPage() {
   const [shipOrders, setShipOrders] = useState<ShipOrderSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingShipOrders, setLoadingShipOrders] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const comCodeOptions = useComCodeOptions('SHIPMENT_STATUS');
   const statusOptions = useMemo(() => [
@@ -73,10 +73,9 @@ export default function ShipmentPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [customerFilter, setCustomerFilter] = useState('');
   const [searchText, setSearchText] = useState('');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
-  const [isBoxScanOpen, setIsBoxScanOpen] = useState(false);
+  const [isFulfillmentOpen, setIsFulfillmentOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [selectedShipOrderNo, setSelectedShipOrderNo] = useState<string | null>(null);
   const [scanTarget, setScanTarget] = useState<Shipment | null>(null);
@@ -86,7 +85,6 @@ export default function ShipmentPage() {
   const [reverseTarget, setReverseTarget] = useState<Shipment | null>(null);
   const [reverseRemark, setReverseRemark] = useState('');
   const [reversing, setReversing] = useState(false);
-  const [createForm, setCreateForm] = useState({ shipDate: '', customerCode: '', vehicleNo: '', driverName: '', destination: '' });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -133,29 +131,15 @@ export default function ShipmentPage() {
     fetchShipOrders();
   }, [fetchData, fetchShipOrders]);
 
-  const openBoxScanForOrder = useCallback((order: ShipOrderSummary) => {
+  const openFulfillmentForOrder = useCallback((order: ShipOrderSummary) => {
     setSelectedShipOrderNo(order.shipOrderNo);
-    setIsBoxScanOpen(true);
+    setIsFulfillmentOpen(true);
   }, []);
 
-  const handleBoxShipped = useCallback(() => {
+  const handleFulfillmentChanged = useCallback(() => {
     fetchData();
     fetchShipOrders();
   }, [fetchData, fetchShipOrders]);
-
-  const handleCreate = useCallback(async () => {
-    setSaving(true);
-    try {
-      await api.post('/shipping/shipments', createForm);
-      setIsCreateModalOpen(false);
-      setCreateForm({ shipDate: '', customerCode: '', vehicleNo: '', driverName: '', destination: '' });
-      fetchData();
-    } catch (e) {
-      console.error('Create failed:', e);
-    } finally {
-      setSaving(false);
-    }
-  }, [createForm, fetchData]);
 
   const handleStatusChange = useCallback(async (shipment: Shipment) => {
     if (shipment.status === 'DELIVERED') return;
@@ -218,8 +202,6 @@ export default function ShipmentPage() {
       setReversing(false);
     }
   }, [reverseTarget, reverseRemark, fetchData]);
-
-  const handleFormChange = (field: string, value: string) => setCreateForm((prev) => ({ ...prev, [field]: value }));
 
   const shipOrderColumns = useMemo<ColumnDef<ShipOrderSummary>[]>(() => [
     { accessorKey: 'shipOrderNo', header: t('shipping.shipOrder.shipOrderNo', '출하지시번호'), size: 150, meta: { filterType: 'text' as const } },
@@ -288,10 +270,6 @@ export default function ShipmentPage() {
           <Button variant="secondary" size="sm" onClick={handleRefresh}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => { setSelectedShipOrderNo(null); setIsBoxScanOpen(true); }}>
-            <ScanLine className="w-4 h-4 mr-1" /> {t('shipping.boxScan.title', '박스 스캔 출하')}
-          </Button>
-          <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> {t('shipping.confirm.createShipment')}</Button>
         </div>
       </div>
 
@@ -300,7 +278,7 @@ export default function ShipmentPage() {
           <div className="flex items-center justify-between gap-3 flex-shrink-0">
             <div className="min-w-0">
               <h2 className="text-sm font-semibold text-text">{t('shipping.confirm.unshippedOrders', '미출하 출하지시')}</h2>
-              <p className="text-xs text-text-muted mt-1">{t('shipping.confirm.unshippedOrdersHint', '행을 선택하면 박스 스캔 출하를 시작합니다.')}</p>
+              <p className="text-xs text-text-muted mt-1">{t('shipping.confirm.unshippedOrdersHint', '행을 선택하면 출하지시 기준 팔레트 작업을 시작합니다.')}</p>
             </div>
             <Button variant="secondary" size="sm" onClick={fetchShipOrders}>
               <RefreshCw className={`w-4 h-4 ${loadingShipOrders ? "animate-spin" : ""}`} />
@@ -314,7 +292,7 @@ export default function ShipmentPage() {
               enableColumnFilter
               enableExport
               exportFileName={t('shipping.confirm.unshippedOrders', '미출하 출하지시')}
-              onRowClick={openBoxScanForOrder}
+              onRowClick={openFulfillmentForOrder}
               selectedRowId={selectedShipOrderNo ?? undefined}
               getRowId={(row) => row.shipOrderNo}
               emptyMessage={t('shipping.confirm.noUnshippedOrders', '미출하 출하지시가 없습니다.')}
@@ -343,25 +321,6 @@ export default function ShipmentPage() {
             sqlQuery={`SELECT *\nFROM SHIPPING_CONFIRMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent></Card>
       </div>
-
-      {/* 출하 등록 모달 */}
-      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t('shipping.confirm.createShipment')} size="lg">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t('shipping.confirm.shipDate')} type="date" value={createForm.shipDate} onChange={(e) => handleFormChange('shipDate', e.target.value)} fullWidth />
-            <Select label={t('shipping.confirm.customer')} options={customerOptions} value={createForm.customerCode} onChange={(v) => handleFormChange('customerCode', v)} fullWidth />
-            <Input label={t('shipping.confirm.vehicleNo')} placeholder="12가 3456" value={createForm.vehicleNo} onChange={(e) => handleFormChange('vehicleNo', e.target.value)} fullWidth />
-            <Input label={t('shipping.confirm.driver')} placeholder={t('shipping.confirm.driverPlaceholder')} value={createForm.driverName} onChange={(e) => handleFormChange('driverName', e.target.value)} fullWidth />
-          </div>
-          <Input label={t('shipping.confirm.destination')} placeholder={t('shipping.confirm.destinationPlaceholder')} value={createForm.destination} onChange={(e) => handleFormChange('destination', e.target.value)} leftIcon={<MapPin className="w-4 h-4" />} fullWidth />
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={handleCreate} disabled={saving}>
-              {saving ? t('common.saving') : t('common.create')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       {/* 상세 모달 */}
       <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title={t('shipping.confirm.detail')} size="lg">
@@ -457,11 +416,11 @@ export default function ShipmentPage() {
         />
       )}
 
-      <BoxScanShipModal
-        isOpen={isBoxScanOpen}
-        onClose={() => { setIsBoxScanOpen(false); handleBoxShipped(); }}
-        onShipped={handleBoxShipped}
-        initialShipOrderNo={selectedShipOrderNo ?? undefined}
+      <OrderFulfillmentModal
+        isOpen={isFulfillmentOpen}
+        shipOrderNo={selectedShipOrderNo}
+        onClose={() => setIsFulfillmentOpen(false)}
+        onChanged={handleFulfillmentChanged}
       />
     </div>
   );

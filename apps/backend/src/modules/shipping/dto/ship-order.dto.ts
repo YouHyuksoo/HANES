@@ -124,3 +124,27 @@ export class ShipOrderQueryDto extends PaginationQueryDto {
   @IsDateString()
   dueDateTo?: string;
 }
+
+/** 출하지시 기준 팔레트 생성 DTO */
+export class CreateShipOrderPalletDto {
+  @ApiPropertyOptional({ description: '팔레트 번호. 미입력 시 서버에서 자동 채번', example: 'PLT2606200001', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  palletNo?: string;
+}
+
+/** 출하지시 기준 팔레트 바코드 출하 DTO */
+export class ShipOrderPalletsDto {
+  @ApiProperty({ description: '출하 처리할 팔레트 번호 목록', type: [String], example: ['PLT2606200001'] })
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1)
+  palletNos: string[];
+
+  @ApiPropertyOptional({ description: '작업자 ID', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  workerId?: string;
+}

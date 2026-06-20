@@ -32,8 +32,15 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { ShipOrderService } from '../services/ship-order.service';
-import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dto/ship-order.dto';
+import {
+  CreateShipOrderDto,
+  UpdateShipOrderDto,
+  ShipOrderQueryDto,
+  CreateShipOrderPalletDto,
+  ShipOrderPalletsDto,
+} from '../dto/ship-order.dto';
 import { ShipBoxDto } from '../dto/ship-box.dto';
+import { AddBoxToPalletDto, RemoveBoxFromPalletDto } from '../dto/pallet.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('출하관리 - 출하지시')
@@ -88,6 +95,82 @@ export class ShipOrderController {
   async confirm(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
     const data = await this.shipOrderService.confirm(id, company, plant);
     return ResponseUtil.success(data, '출하지시가 확정되었습니다.');
+  }
+
+  @Get(':id/fulfillment')
+  @ApiOperation({ summary: '출하지시 중심 출하작업 현황' })
+  @ApiParam({ name: 'id', description: '출하지시 번호' })
+  async getFulfillment(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.getFulfillment(id, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Post(':id/pallets')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '출하지시 팔레트 생성' })
+  @ApiParam({ name: 'id', description: '출하지시 번호' })
+  async createOrderPallet(
+    @Param('id') id: string,
+    @Body() dto: CreateShipOrderPalletDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.shipOrderService.createPalletForOrder(id, dto, company, plant);
+    return ResponseUtil.success(data, '출하지시 팔레트가 생성되었습니다.');
+  }
+
+  @Post(':id/pallets/:palletNo/boxes')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '출하지시 팔레트 박스 적재' })
+  async addBoxesToOrderPallet(
+    @Param('id') id: string,
+    @Param('palletNo') palletNo: string,
+    @Body() dto: AddBoxToPalletDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.shipOrderService.addBoxesToOrderPallet(id, palletNo, dto, company, plant);
+    return ResponseUtil.success(data, '박스가 출하지시 팔레트에 적재되었습니다.');
+  }
+
+  @Delete(':id/pallets/:palletNo/boxes')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '출하지시 팔레트 박스 제거' })
+  async removeBoxesFromOrderPallet(
+    @Param('id') id: string,
+    @Param('palletNo') palletNo: string,
+    @Body() dto: RemoveBoxFromPalletDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.shipOrderService.removeBoxesFromOrderPallet(id, palletNo, dto, company, plant);
+    return ResponseUtil.success(data, '박스가 출하지시 팔레트에서 제거되었습니다.');
+  }
+
+  @Post(':id/pallets/:palletNo/close')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '팔레트 라벨 발행 완료' })
+  async closeOrderPallet(
+    @Param('id') id: string,
+    @Param('palletNo') palletNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.shipOrderService.closeOrderPallet(id, palletNo, company, plant);
+    return ResponseUtil.success(data, '팔레트 라벨 발행이 완료되었습니다.');
+  }
+
+  @Post(':id/ship-pallets')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '출하지시 팔레트 바코드 제품출하 확정' })
+  async shipOrderPallets(
+    @Param('id') id: string,
+    @Body() dto: ShipOrderPalletsDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.shipOrderService.shipOrderPallets(id, dto, company, plant);
+    return ResponseUtil.success(data, '제품출하가 확정되었습니다.');
   }
 
   @Post(':id/ship-box')

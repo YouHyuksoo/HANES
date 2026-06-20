@@ -12,6 +12,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 describe('ShipmentService', () => {
   let target: ShipmentService;
@@ -52,6 +53,7 @@ describe('ShipmentService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
         { provide: ProductInventoryService, useValue: mockProductInventoryService },
+        { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -103,10 +105,10 @@ describe('ShipmentService', () => {
       expect.objectContaining({ fgBarcode: expect.anything() }),
       { status: 'SHIPPED' },
     );
-    expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledTimes(1);
-    expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledWith(
+    expect(mockProductInventoryService.issueStockByItemFifoInTx).toHaveBeenCalledTimes(1);
+    expect(mockProductInventoryService.issueStockByItemFifoInTx).toHaveBeenCalledWith(
       mockQueryRunner,
-      expect.objectContaining({ warehouseId: 'FG-WH', itemCode: 'ITEM-001', prdUid: '*', qty: 2 }),
+      expect.objectContaining({ warehouseId: 'FG-WH', itemCode: 'ITEM-001', qty: 2 }),
     );
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
@@ -130,7 +132,7 @@ describe('ShipmentService', () => {
     } as any);
 
     await expect(target.markAsShipped('SHIP-001')).rejects.toThrow(BadRequestException);
-    expect(mockProductInventoryService.issueStockInTx).not.toHaveBeenCalled();
+    expect(mockProductInventoryService.issueStockByItemFifoInTx).not.toHaveBeenCalled();
     expect(mockTx.run).not.toHaveBeenCalled();
   });
 
@@ -241,9 +243,9 @@ describe('ShipmentService', () => {
 
   it('loadPallets uses TransactionService', async () => {
     mockShipmentRepo.findOne
-      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING' } as ShipmentLog)
-      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING' } as ShipmentLog);
-    mockPalletRepo.find.mockResolvedValue([{ palletNo: 'P-001', status: 'CLOSED' }] as PalletMaster[]);
+      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING', shipOrderNo: null } as ShipmentLog)
+      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING', shipOrderNo: null } as ShipmentLog);
+    mockPalletRepo.find.mockResolvedValue([{ palletNo: 'P-001', status: 'CLOSED', shipOrderNo: null }] as PalletMaster[]);
     mockBoxRepo.createQueryBuilder.mockReturnValue({
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
@@ -262,6 +264,22 @@ describe('ShipmentService', () => {
 
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+  });
+
+  it('loadPallets blocks order-bound pallets from unrelated manual shipments', async () => {
+    mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING', shipOrderNo: null } as ShipmentLog);
+    mockPalletRepo.find.mockResolvedValue([{ palletNo: 'P-001', status: 'CLOSED', shipOrderNo: 'SO-001' }] as PalletMaster[]);
+
+    await expect(target.loadPallets('SHIP-001', { palletIds: ['P-001'] } as any)).rejects.toThrow(BadRequestException);
+    expect(mockTx.run).not.toHaveBeenCalled();
+  });
+
+  it('loadPallets blocks pallets from a different ship order', async () => {
+    mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING', shipOrderNo: 'SO-002' } as ShipmentLog);
+    mockPalletRepo.find.mockResolvedValue([{ palletNo: 'P-001', status: 'CLOSED', shipOrderNo: 'SO-001' }] as PalletMaster[]);
+
+    await expect(target.loadPallets('SHIP-001', { palletIds: ['P-001'] } as any)).rejects.toThrow(BadRequestException);
+    expect(mockTx.run).not.toHaveBeenCalled();
   });
 
   it('unloadPallets uses TransactionService', async () => {

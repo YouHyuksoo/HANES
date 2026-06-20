@@ -22,6 +22,7 @@
 5. 작업 결과, 검증 명령, 남은 위험을 `JOURNAL.md`에 append한다.
 6. 완료된 작업은 `TASKS.md`에서 제거하고 `ARCHIVE.md`에 한 줄 요약만 남긴다.
 7. 다음 AI가 이어받을 수 있게 `HANDOFF/<agent-name>.md`를 갱신한다.
+8. 작업이 끝난 lock은 `LOCKS.md`에서 제거한다. 완료 이력을 `status: released`로 Active Locks에 남기지 않는다.
 
 ## 역할 분리
 
@@ -43,6 +44,7 @@
 
 - `TASKS.md`에는 `TODO`, `IN_PROGRESS`, `BLOCKED` 작업만 둔다.
 - `DONE` 작업은 `ARCHIVE.md`로 옮기고 `TASKS.md`에서 제거한다.
+- `LOCKS.md`에는 현재 `active`/`stale` 잠금만 둔다. 완료된 잠금 이력은 `JOURNAL.md`와 `ARCHIVE.md`에만 남긴다.
 - `ARCHIVE.md`에는 작업 ID, 제목, 완료일, owner, 결과 한 줄만 남긴다.
 - 완료 작업의 상세 변경 파일, 검증 로그, 판단 근거는 `JOURNAL.md`에만 남긴다.
 - 새 AI 세션은 기본적으로 `ARCHIVE.md`를 읽지 않는다. 과거 작업 확인이 필요할 때만 특정 작업 ID로 검색한다.

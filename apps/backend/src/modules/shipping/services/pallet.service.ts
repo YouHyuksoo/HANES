@@ -456,6 +456,14 @@ export class PalletService {
       throw new BadRequestException(`출하 상태(${shipment.status})가 PREPARING이 아닙니다. PREPARING 상태 출하에만 팔레트를 할당할 수 있습니다.`);
     }
 
+    if (shipment.shipOrderNo) {
+      if (pallet.shipOrderNo !== shipment.shipOrderNo) {
+        throw new BadRequestException('출하지시가 다른 팔레트는 출하에 할당할 수 없습니다.');
+      }
+    } else if (pallet.shipOrderNo) {
+      throw new BadRequestException('출하지시에 귀속된 팔레트는 출하지시 작업 화면에서 출하 처리해야 합니다.');
+    }
+
     // 트랜잭션으로 팔레트 할당 및 출하 집계 업데이트
     await this.tx.run(async (queryRunner) => {
       // 팔레트 업데이트

@@ -19,6 +19,7 @@ import { InspectResult } from '../../../entities/inspect-result.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
+import { SgLabel } from '../../../entities/sg-label.entity';
 import {
   ProgressQueryDto,
   SampleInspectQueryDto,
@@ -39,6 +40,8 @@ export class ProductionViewsService {
     private readonly stockRepository: Repository<ProductStock>,
     @InjectRepository(FgLabel)
     private readonly fgLabelRepository: Repository<FgLabel>,
+    @InjectRepository(SgLabel)
+    private readonly sgLabelRepository: Repository<SgLabel>,
   ) {}
 
   /**
@@ -249,15 +252,40 @@ export class ProductionViewsService {
     return { data, total, page, limit };
   }
 
-  /**
-   * 선택 품목의 미포장(BOX_NO NULL) FG라벨 상세 — wip-stock 우측 패널
-   * 포장 전(ISSUED/VISUAL_PASS/VISUAL_FAIL) + 박스 미배정 라벨만. PACKED는 BOX_NO 존재로 자동 제외.
-   */
-  async getWipStockFgLabels(itemCode: string, company?: string, plant?: string) {
+  async getWipStockLabels(itemCode: string, itemType: string, company?: string, plant?: string) {
+    if (itemType === 'SEMI_PRODUCT') {
+      const qb = this.sgLabelRepository
+        .createQueryBuilder('sg')
+        .select([
+          `'SG' AS "labelType"`,
+          'sg.sgBarcode AS "barcode"',
+          'sg.itemCode AS "itemCode"',
+          'sg.status AS "status"',
+          'sg.orderNo AS "orderNo"',
+          'sg.resultNo AS "resultNo"',
+          'sg.issueProcessCode AS "issueProcessCode"',
+          'sg.currentProcessCode AS "currentProcessCode"',
+          'sg.mountedEquipCode AS "mountedEquipCode"',
+          'sg.warehouseCode AS "warehouseCode"',
+          'sg.initQty AS "initQty"',
+          'sg.remainQty AS "remainQty"',
+          'sg.issuedAt AS "issuedAt"',
+        ])
+        .where('sg.itemCode = :itemCode', { itemCode })
+        .andWhere("sg.status NOT IN ('CONSUMED', 'DEFECT')");
+      if (company) qb.andWhere('sg.company = :company', { company });
+      if (plant) qb.andWhere('sg.plant = :plant', { plant });
+      qb.orderBy('sg.issuedAt', 'DESC');
+
+      const data = await qb.getRawMany();
+      return { data, total: data.length, page: 1, limit: data.length };
+    }
+
     const qb = this.fgLabelRepository
       .createQueryBuilder('fg')
       .select([
-        'fg.fgBarcode AS "fgBarcode"',
+        `'FG' AS "labelType"`,
+        'fg.fgBarcode AS "barcode"',
         'fg.itemCode AS "itemCode"',
         'fg.status AS "status"',
         'fg.inspectPassYn AS "inspectPassYn"',
@@ -274,5 +302,12 @@ export class ProductionViewsService {
 
     const data = await qb.getRawMany();
     return { data, total: data.length, page: 1, limit: data.length };
+  }
+
+  /**
+   * @deprecated use getWipStockLabels(itemCode, itemType)
+   */
+  async getWipStockFgLabels(itemCode: string, company?: string, plant?: string) {
+    return this.getWipStockLabels(itemCode, 'FINISHED', company, plant);
   }
 }

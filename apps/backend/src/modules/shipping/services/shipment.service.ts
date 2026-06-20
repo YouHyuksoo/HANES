@@ -278,6 +278,22 @@ export class ShipmentService {
       throw new BadRequestException(`이미 다른 출하에 할당된 팔레트가 있습니다: ${assignedPallets.map(p => p.palletNo).join(', ')}`);
     }
 
+    if (shipment.shipOrderNo) {
+      const wrongOrderPallets = pallets.filter(p => p.shipOrderNo !== shipment.shipOrderNo);
+      if (wrongOrderPallets.length > 0) {
+        throw new BadRequestException(
+          `출하지시가 다른 팔레트는 적재할 수 없습니다: ${wrongOrderPallets.map(p => p.palletNo).join(', ')}`,
+        );
+      }
+    } else {
+      const orderBoundPallets = pallets.filter(p => p.shipOrderNo);
+      if (orderBoundPallets.length > 0) {
+        throw new BadRequestException(
+          `출하지시에 귀속된 팔레트는 출하지시 작업 화면에서 출하 처리해야 합니다: ${orderBoundPallets.map(p => p.palletNo).join(', ')}`,
+        );
+      }
+    }
+
     // OQC 검증: OQC 사용여부(OQC_ENABLED) 설정이 켜진 경우에만 PASS 아닌 박스 적재 차단. 미사용이면 모두 적재 가능.
     const palletNos = pallets.map(p => p.palletNo);
     if (palletNos.length > 0 && (await this.sysConfig.isEnabled('OQC_ENABLED'))) {

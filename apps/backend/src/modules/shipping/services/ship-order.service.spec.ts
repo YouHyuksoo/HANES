@@ -15,6 +15,8 @@ import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
+import { PalletMaster } from '../../../entities/pallet-master.entity';
+import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
@@ -27,6 +29,9 @@ describe('ShipOrderService', () => {
   let mockItemRepo: DeepMocked<Repository<ShipmentOrderItem>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockPartnerRepo: DeepMocked<Repository<PartnerMaster>>;
+  let mockBoxRepo: DeepMocked<Repository<BoxMaster>>;
+  let mockPalletRepo: DeepMocked<Repository<PalletMaster>>;
+  let mockShipmentRepo: DeepMocked<Repository<ShipmentLog>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
@@ -37,6 +42,9 @@ describe('ShipOrderService', () => {
     mockItemRepo = createMock<Repository<ShipmentOrderItem>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockPartnerRepo = createMock<Repository<PartnerMaster>>();
+    mockBoxRepo = createMock<Repository<BoxMaster>>();
+    mockPalletRepo = createMock<Repository<PalletMaster>>();
+    mockShipmentRepo = createMock<Repository<ShipmentLog>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQr = createMock<QueryRunner>();
@@ -57,7 +65,9 @@ describe('ShipOrderService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerRepo },
         { provide: getRepositoryToken(Warehouse), useValue: createMock<Repository<Warehouse>>() },
-        { provide: getRepositoryToken(BoxMaster), useValue: createMock<Repository<BoxMaster>>() },
+        { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
+        { provide: getRepositoryToken(PalletMaster), useValue: mockPalletRepo },
+        { provide: getRepositoryToken(ShipmentLog), useValue: mockShipmentRepo },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
@@ -234,6 +244,86 @@ describe('ShipOrderService', () => {
       expect(mockQr.release).not.toHaveBeenCalled();
     });
   });
+
+  describe('출하지시 중심 팔레트 작업', () => {
+    beforeEach(() => {
+      mockOrderRepo.findOne.mockResolvedValue({
+        shipOrderNo: 'SO-001',
+        status: 'CONFIRMED',
+        customerName: '거래처A',
+        customerId: 'CUST-A',
+        shipDate: new Date('2026-06-20'),
+      } as any);
+      mockItemRepo.find.mockResolvedValue([
+        { shipOrderNo: 'SO-001', seq: 1, itemCode: 'ITEM-A', orderQty: 10, shippedQty: 0 },
+      ] as any);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-A', itemName: '제품A' } as any);
+      mockPartnerRepo.findOne.mockResolvedValue(null);
+    });
+
+    it('출하지시에 귀속된 팔레트를 생성한다', async () => {
+      mockNumbering.nextPalletNo.mockResolvedValue('PLT-001');
+      mockPalletRepo.findOne.mockResolvedValue(null);
+      mockPalletRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save.mockImplementation(async (entity: any) => entity);
+
+      const result = await target.createPalletForOrder('SO-001', {}, 'C1', 'P1');
+
+      expect(result).toEqual(expect.objectContaining({
+        palletNo: 'PLT-001',
+        shipOrderNo: 'SO-001',
+        status: 'OPEN',
+      }));
+      expect(mockNumbering.nextPalletNo).toHaveBeenCalledWith(mockQr);
+      expect(mockPalletRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        palletNo: 'PLT-001',
+        shipOrderNo: 'SO-001',
+        company: 'C1',
+        plant: 'P1',
+      }));
+    });
+
+    it('출하지시에 없는 품목 박스는 출하지시 팔레트에 적재하지 않는다', async () => {
+      mockPalletRepo.findOne.mockResolvedValue({
+        palletNo: 'PLT-001',
+        shipOrderNo: 'SO-001',
+        status: 'OPEN',
+        boxCount: 0,
+      } as any);
+      mockBoxRepo.find.mockResolvedValue([
+        { boxNo: 'BX-OTHER', itemCode: 'OTHER', qty: 1, status: 'CLOSED', oqcStatus: 'PASS', palletNo: null },
+      ] as any);
+
+      await expect(
+        target.addBoxesToOrderPallet('SO-001', 'PLT-001', { boxIds: ['BX-OTHER'] }, 'C1', 'P1'),
+      ).rejects.toThrow('출하지시에 없는 품목입니다');
+
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('팔레트 바코드 출하 시 내부 출하건을 자동 생성해 제품출하까지 진행한다', async () => {
+      mockNumbering.nextShipmentNo.mockResolvedValue('SHP-001');
+      mockPalletRepo.find.mockResolvedValue([
+        { palletNo: 'PLT-001', shipOrderNo: 'SO-001', status: 'CLOSED', shipmentId: null, boxCount: 1, totalQty: 10 },
+      ] as any);
+      mockBoxRepo.find.mockResolvedValue([
+        { boxNo: 'BX-001', itemCode: 'ITEM-A', qty: 10, status: 'CLOSED', oqcStatus: 'PASS', palletNo: 'PLT-001', serialList: null },
+      ] as any);
+      mockShipmentRepo.findOne.mockResolvedValue(null);
+      mockShipmentRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save.mockImplementation(async (entity: any) => entity);
+      mockQr.manager.findOne.mockResolvedValue({ warehouseCode: 'FG_MAIN' } as any);
+
+      await target.shipOrderPallets('SO-001', { palletNos: ['PLT-001'] }, 'C1', 'P1');
+
+      expect(mockShipmentRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        shipNo: 'SHP-001',
+        shipOrderNo: 'SO-001',
+        customer: '거래처A',
+        status: 'LOADED',
+      }));
+    });
+  });
 });
 
 describe('ShipOrderService.shipBox', () => {
@@ -270,6 +360,8 @@ describe('ShipOrderService.shipBox', () => {
         { provide: getRepositoryToken(PartnerMaster), useValue: {} },
         { provide: getRepositoryToken(Warehouse), useValue: {} },
         { provide: getRepositoryToken(BoxMaster), useValue: {} },
+        { provide: getRepositoryToken(PalletMaster), useValue: {} },
+        { provide: getRepositoryToken(ShipmentLog), useValue: {} },
         { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed }) } },
         { provide: ProductInventoryService, useValue: { issueStockByItemFifoInTx: issueStockInTx, receiveStockInTx } },
         { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
