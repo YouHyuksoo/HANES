@@ -957,7 +957,7 @@ export class IqcHistoryService {
             iqcStatus: log.result,
             ...this.tenantWhere(log.company, log.plant),
           },
-          { iqcStatus: 'PENDING' },
+          { iqcStatus: 'PENDING', expireDate: null },
         );
         await queryRunner.manager.update(
           MatArrival,

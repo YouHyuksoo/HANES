@@ -675,7 +675,7 @@ describe('IqcHistoryService cancel policy', () => {
     expect(manager.update).toHaveBeenCalledWith(
       MatLot,
       { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', company: 'HANES', plant: 'P01' },
-      { iqcStatus: 'PENDING' },
+      { iqcStatus: 'PENDING', expireDate: null },
     );
     expect(manager.update).toHaveBeenCalledWith(
       MatArrival,
