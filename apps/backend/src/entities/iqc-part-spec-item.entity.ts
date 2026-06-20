@@ -49,6 +49,18 @@ export class IqcPartSpecItem {
   @Column({ name: 'AQL', type: 'decimal', precision: 7, scale: 3, nullable: true })
   aql: number | null;
 
+  /** 검사유형 AQL/DESTRUCTIVE/FULL (IQC_ITEM_INSP_TYPE). NULL=AQL로 간주 */
+  @Column({ name: 'INSPECTION_TYPE', type: 'varchar2', length: 12, nullable: true })
+  inspectionType: string | null;
+
+  /** 샘플방식 AQL(자동)/FIXED(고정) (IQC_SAMPLE_METHOD). NULL=AQL */
+  @Column({ name: 'SAMPLE_METHOD', type: 'varchar2', length: 8, nullable: true })
+  sampleMethod: string | null;
+
+  /** FIXED/DESTRUCTIVE 고정 샘플수(LOT당) */
+  @Column({ name: 'SAMPLE_QTY', type: 'decimal', precision: 10, scale: 0, nullable: true })
+  sampleQty: number | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
