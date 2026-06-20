@@ -419,12 +419,17 @@ export class IqcHistoryService {
     const lotQty = lots.reduce((sum, lot) => sum + (Number(lot.initQty) || 0), 0);
     const defectCounts = this.resolveDefectCounts(dto);
     const itemDefectCounts = this.countFailByInspItem(dto.details);
+    const destructive = this.parseDestructive(dto.details);
+    for (const [seq, qty] of Object.entries(destructive.defects)) {
+      itemDefectCounts[Number(seq)] = (itemDefectCounts[Number(seq)] ?? 0) + qty;
+    }
     // 검사항목별(각 항목 검사수준/등급/AQL) 판정. 등급 설정 항목이 없으면 내부에서 품목 단일로 폴백.
     const aqlPolicy = await this.aqlService.resolveIqcPolicyByItem({
       itemCode: dto.itemCode,
       vendorCode,
       lotQty,
       itemDefectCounts,
+      itemInspectedCounts: destructive.inspected,
       fallbackDefectCounts: defectCounts,
       fallbackDefectCodes: dto.defects,
       company: tenantCompany,
@@ -594,6 +599,32 @@ export class IqcHistoryService {
       return out;
     }
     return out;
+  }
+
+  /**
+   * details(SERIAL_INSPECTION)의 destructive 섹션에서 검사항목(seq)별 검사수량/불량수를 집계한다.
+   */
+  private parseDestructive(details?: string | null): {
+    defects: Record<number, number>;
+    inspected: Record<number, number>;
+  } {
+    const defects: Record<number, number> = {};
+    const inspected: Record<number, number> = {};
+    if (!details) return { defects, inspected };
+    try {
+      const parsed = JSON.parse(details) as {
+        destructive?: Array<{ seq?: number; inspectedQty?: number; defectQty?: number }>;
+      };
+      for (const d of parsed.destructive ?? []) {
+        const seq = Number(d.seq);
+        if (!Number.isFinite(seq)) continue;
+        defects[seq] = (defects[seq] ?? 0) + this.toNonNegativeInt(d.defectQty);
+        inspected[seq] = (inspected[seq] ?? 0) + this.toNonNegativeInt(d.inspectedQty);
+      }
+    } catch {
+      return { defects, inspected };
+    }
+    return { defects, inspected };
   }
 
   private toNonNegativeInt(value: unknown) {

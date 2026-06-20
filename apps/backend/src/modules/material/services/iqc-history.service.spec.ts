@@ -338,6 +338,35 @@ describe('IqcHistoryService cancel policy', () => {
       expect(result).toEqual(expect.objectContaining({ affectedSerials: 2 }));
     });
 
+    it('details.destructive의 불량을 파괴검사 판정에 합류시킨다', async () => {
+      const details = JSON.stringify({
+        type: 'SERIAL_INSPECTION',
+        serials: [{ matUid: 'S1', result: 'PASS', items: [{ itemId: 'CBL-A::1', judge: 'PASS' }] }],
+        destructive: [{ seq: 2, inspItemCode: 'IQC-PULL', requiredQty: 5, inspectedQty: 5, defectQty: 1, result: 'FAIL' }],
+      });
+      mockMatLotRepo.find.mockResolvedValue([
+        {
+          matUid: 'MAT-001',
+          arrivalNo: 'A1',
+          itemCode: 'CBL-A',
+          iqcStatus: 'PENDING',
+          vendor: 'SUP-001',
+          initQty: 5,
+          company: '40',
+          plant: '1000',
+        } as MatLot,
+      ]);
+      mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'A1', itemCode: 'CBL-A' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'A1', itemCode: 'CBL-A' } as IqcLog);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'CBL-A', itemName: 'Cable A' } as PartMaster);
+
+      await target.createArrivalResult({ arrivalNo: 'A1', itemCode: 'CBL-A', result: 'PASS', details } as any, '40', '1000');
+
+      const call = (mockAqlService.resolveIqcPolicyByItem as jest.Mock).mock.calls[0][0];
+      expect(call.itemDefectCounts[2]).toBe(1);        // 파괴 불량 합류
+      expect(call.itemInspectedCounts[2]).toBe(5);     // 검사수량 합류
+    });
+
     it('입하단위 IQC 저장은 요청 result가 아니라 서버 AQL 판정 결과를 저장한다', async () => {
       mockMatLotRepo.find.mockResolvedValue([
         {
