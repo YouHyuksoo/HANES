@@ -83,7 +83,7 @@ export default function IqcPartSpecPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
-        <div className="col-span-4 min-h-0">
+        <div className="col-span-3 min-h-0">
           <ItemListPanel
             parts={parts}
             linkCountMap={specCountMap}
@@ -94,7 +94,7 @@ export default function IqcPartSpecPage() {
             loading={partsLoading}
           />
         </div>
-        <div className="col-span-8 min-h-0">
+        <div className="col-span-9 min-h-0">
           <IqcSpecPanel
             itemCode={selectedItemCode}
             itemName={selectedItemName}
