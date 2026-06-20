@@ -17,10 +17,11 @@ test('TabKeepAlive lazily keeps visited page components alive without importing 
   assert.match(source, /Component: currentComponent/);
   assert.match(source, /<KeepAliveCell active=\{page\.path === pathname\} Component=\{page\.Component\}/);
   assert.match(source, /slice\(0,\s*MAX_TABS\)/);
-  assert.match(source, /restoreTabPageState\(pathname,\s*rootsRef\.current\.get\(pathname\)/);
-  assert.match(source, /saveTabPageState\(pathname,\s*rootsRef\.current\.get\(pathname\)/);
-  assert.match(source, /saveTabPageState\(pathnameRef\.current,\s*rootsRef\.current\.get\(pathnameRef\.current\)/);
-  assert.match(source, /data-tab-page-state-root/);
+  // keep-alive(display:none)만으로 상태를 보존한다. DOM 직렬화 저장/복원 레이어는 제거됨.
+  assert.doesNotMatch(source, /restoreTabPageState/);
+  assert.doesNotMatch(source, /saveTabPageState/);
+  assert.doesNotMatch(source, /tabPageState/);
+  assert.doesNotMatch(source, /addEventListener\(["']keydown["']/);
   assert.doesNotMatch(registrySource, /export const pageRegistry/);
   assert.doesNotMatch(registrySource, /next\/dynamic/);
   assert.doesNotMatch(registrySource, /@\/app\/\(authenticated\)\/master\/part\/page/);
