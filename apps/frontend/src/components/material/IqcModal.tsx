@@ -360,62 +360,71 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t("material.iqc.modalTitle")} size="full">
-      <div className="flex h-[calc(75vh-32px)] max-h-[620px] flex-col gap-1.5 overflow-hidden">
-        <div className="grid grid-cols-12 gap-1.5 rounded-lg bg-background p-1.5">
-          <div className="col-span-7 grid grid-cols-4 gap-x-3 gap-y-1 rounded-md bg-surface px-2.5 py-1.5 text-xs">
-            <p className="min-w-0 text-text-muted">{t("material.iqc.arrivalNoLabel")}: <span className="font-semibold text-text">{selectedItem.arrivalNo}</span></p>
-            <p className="min-w-0 text-text-muted">{t("material.iqc.supplierLabel")}: <span className="font-semibold text-text">{selectedItem.supplierName}</span></p>
-            <p className="min-w-0 text-text-muted">{t("material.iqc.serialCount", "시리얼수")}: <span className="font-semibold text-text">{selectedItem.serialCount.toLocaleString()}</span></p>
-            <p className="min-w-0 text-text-muted">{t("material.iqc.totalQty", "총수량")}: <span className="font-semibold text-text">{selectedItem.totalQty.toLocaleString()} {selectedItem.unit}</span></p>
-            <p className="col-span-4 min-w-0 truncate text-text-muted" title={`${selectedItem.itemName} (${selectedItem.itemCode})`}>
-              {t("material.iqc.partLabel")}: <span className="font-semibold text-text">{selectedItem.itemName} ({selectedItem.itemCode})</span>
-            </p>
-          </div>
+      <div className="flex h-[calc(75vh-32px)] max-h-[620px] flex-col gap-2 overflow-hidden">
+        {/* 상단: 입하 정보 */}
+        <div className="grid grid-cols-5 gap-x-4 gap-y-0.5 rounded-md bg-surface px-3 py-1.5 text-xs flex-shrink-0">
+          <p className="min-w-0 truncate text-text-muted">{t("material.iqc.arrivalNoLabel")}: <span className="font-semibold text-text">{selectedItem.arrivalNo}</span></p>
+          <p className="min-w-0 truncate text-text-muted">{t("material.iqc.supplierLabel")}: <span className="font-semibold text-text">{selectedItem.supplierName}</span></p>
+          <p className="min-w-0 truncate text-text-muted">{t("material.iqc.serialCount", "시리얼수")}: <span className="font-semibold text-text">{selectedItem.serialCount.toLocaleString()}</span></p>
+          <p className="min-w-0 truncate text-text-muted">{t("material.iqc.totalQty", "총수량")}: <span className="font-semibold text-text">{selectedItem.totalQty.toLocaleString()} {selectedItem.unit}</span></p>
+          <p className="min-w-0 truncate text-text-muted" title={`${selectedItem.itemName} (${selectedItem.itemCode})`}>
+            {t("material.iqc.partLabel")}: <span className="font-semibold text-text">{selectedItem.itemName} ({selectedItem.itemCode})</span>
+          </p>
+        </div>
 
-          <div className="col-span-5 relative">
-            <div className="mb-1 flex items-center justify-between">
-              <span className="text-xs font-semibold text-text">{t("material.iqc.serialJudge", "시리얼별 판정")}</span>
-              <span className="text-xs text-text-muted">{scannedSerials.length.toLocaleString()} / {pendingSerials.length.toLocaleString()}</span>
+        {/* 본문 3컬럼: 입력폼 / 스캔시리얼 / 측정 */}
+        <div className="grid min-h-0 flex-1 grid-cols-12 gap-2">
+          {/* 좌측: 입력 폼 (위→아래) */}
+          <div className="col-span-3 flex min-h-0 flex-col gap-2.5 overflow-y-auto rounded-lg border border-border bg-background/40 p-2.5">
+            {/* 시리얼 스캔 */}
+            <div className="relative">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs font-semibold text-text">{t("material.iqc.serialScan", "시리얼 스캔")}</span>
+                <span className="text-xs text-text-muted">{scannedSerials.length.toLocaleString()} / {pendingSerials.length.toLocaleString()}</span>
+              </div>
+              <ScanLine className="absolute left-2.5 bottom-2.5 w-4 h-4 text-text-muted" />
+              <input
+                ref={serialScanInputRef}
+                value={serialScanValue}
+                onChange={(e) => setSerialScanValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSerialScan();
+                  }
+                }}
+                placeholder={t("material.iqc.serialScanPlaceholder", "시리얼을 스캔하거나 입력 후 Enter")}
+                className="h-9 w-full pl-8 pr-3 text-sm rounded-md border border-border bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {scanSerialError && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{scanSerialError}</p>
+              )}
             </div>
-            <ScanLine className="absolute left-2.5 top-7 w-4 h-4 text-text-muted" />
-            <input
-              ref={serialScanInputRef}
-              value={serialScanValue}
-              onChange={(e) => setSerialScanValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSerialScan();
-                }
-              }}
-              placeholder={t("material.iqc.serialScanPlaceholder", "시리얼을 스캔하거나 입력 후 Enter")}
-              className="h-9 w-full pl-8 pr-3 text-sm rounded-md border border-border bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            {scanSerialError && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{scanSerialError}</p>
-            )}
-          </div>
 
-          <div className="col-span-12 grid grid-cols-12 gap-1.5">
-            <label className="col-span-2">
+            {/* 검사자 */}
+            <label className="block">
               <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.inspectorLabel")}</span>
               <input
                 value={form.inspector}
                 onChange={(e) => setForm((prev) => ({ ...prev, inspector: e.target.value }))}
                 placeholder={t("material.iqc.inspectorPlaceholder")}
-                className="h-7 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="h-8 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </label>
-            <label className="col-span-4">
+
+            {/* 비고 */}
+            <label className="block">
               <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("common.remark")}</span>
               <input
                 value={form.remark}
                 onChange={(e) => setForm((prev) => ({ ...prev, remark: e.target.value }))}
                 placeholder={t("material.iqc.remarkPlaceholder")}
-                className="h-7 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="h-8 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </label>
-            <label className="col-span-2">
+
+            {/* 기본시료수 */}
+            <label className="block">
               <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.basicSampleQty", "기본시료수")}</span>
               <input
                 type="number"
@@ -423,16 +432,20 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                 value={sampleQty}
                 onChange={(e) => setSampleQty(e.target.value)}
                 placeholder="0"
-                className="h-7 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="h-8 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </label>
-            <div className="col-span-2 rounded border border-border bg-background px-2 py-1">
+
+            {/* AQL 샘플수량 */}
+            <div className="rounded border border-border bg-background px-2 py-1.5">
               <span className="block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.aqlSampleQty", "AQL 샘플수량")}</span>
               <span className="mt-1 block text-xs font-semibold text-text">
                 {aqlPolicy ? `${aqlPolicy.sampleQty.toLocaleString()} / ${aqlPolicy.inspectionLevel} / ${aqlPolicy.inspectionMode}` : "-"}
               </span>
             </div>
-            <div className="col-span-2">
+
+            {/* 검사성적서 */}
+            <div className="block">
               <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.certFile", "검사성적서")}</span>
               <input
                 ref={fileInputRef}
@@ -445,33 +458,37 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                 variant="secondary"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-7 w-full min-w-0 justify-start truncate px-2 text-xs"
+                className="h-8 w-full min-w-0 justify-start truncate px-2 text-xs"
               >
                 <Upload className="mr-1 h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{certFile ? certFile.name : t("material.iqc.uploadCert", "파일 선택")}</span>
               </Button>
             </div>
-            <div className="col-span-6 rounded border border-border bg-background p-1.5">
+
+            {/* 불량코드 */}
+            <div className="rounded border border-border bg-background p-1.5">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[11px] font-medium leading-none text-text-muted">
                   {t("material.iqc.defectCodes", "불량코드")}
                 </span>
-                <span className="text-[11px] text-text-muted">
-                  {aqlPolicy?.majorRule ? `Major Ac ${aqlPolicy.majorRule.acceptQty} / Re ${aqlPolicy.majorRule.rejectQty}` : ""}
-                  {aqlPolicy?.majorRule && aqlPolicy?.minorRule ? " · " : ""}
-                  {aqlPolicy?.minorRule ? `Minor Ac ${aqlPolicy.minorRule.acceptQty} / Re ${aqlPolicy.minorRule.rejectQty}` : ""}
-                </span>
               </div>
+              {(aqlPolicy?.majorRule || aqlPolicy?.minorRule) && (
+                <p className="mb-1 text-[10px] text-text-muted">
+                  {aqlPolicy?.majorRule ? `Major Ac ${aqlPolicy.majorRule.acceptQty}/Re ${aqlPolicy.majorRule.rejectQty}` : ""}
+                  {aqlPolicy?.majorRule && aqlPolicy?.minorRule ? " · " : ""}
+                  {aqlPolicy?.minorRule ? `Minor Ac ${aqlPolicy.minorRule.acceptQty}/Re ${aqlPolicy.minorRule.rejectQty}` : ""}
+                </p>
+              )}
               <div className="space-y-1">
                 {defectRows.map((row) => {
                   const selectedCode = defectCodes.find((code) => code.detailCode === row.defectCode);
                   const severity = String(selectedCode?.defectGrade ?? "").toUpperCase();
                   return (
-                    <div key={row.id} className="grid grid-cols-[1fr_64px_56px_28px] gap-1">
+                    <div key={row.id} className="grid grid-cols-[1fr_48px_36px_24px] gap-1">
                       <select
                         value={row.defectCode}
                         onChange={(e) => updateDefectRow(row.id, { defectCode: e.target.value })}
-                        className="h-7 min-w-0 rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                        className="h-7 min-w-0 rounded border border-border bg-surface px-1 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                       >
                         <option value="">{t("material.iqc.selectDefectCode", "불량코드 선택")}</option>
                         {defectCodes.map((code) => (
@@ -485,9 +502,9 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                         min={1}
                         value={row.qty}
                         onChange={(e) => updateDefectRow(row.id, { qty: e.target.value })}
-                        className="h-7 rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                        className="h-7 min-w-0 rounded border border-border bg-surface px-1 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                       />
-                      <span className="flex h-7 items-center justify-center rounded bg-surface px-1 text-[10px] font-semibold text-text-muted">
+                      <span className="flex h-7 items-center justify-center rounded bg-surface px-0.5 text-[10px] font-semibold text-text-muted">
                         {severity || "-"}
                       </span>
                       <button
@@ -507,58 +524,57 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border">
-          <div className="grid min-h-0 flex-1 grid-cols-12">
-            <div className="col-span-4 flex min-h-0 flex-col border-r border-border bg-background/40">
-              <div className="px-3 py-2 border-b border-border text-xs font-medium text-text-muted">
-                {t("material.iqc.scannedSerials", "스캔한 시리얼")}
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {scannedSerials.length === 0 ? (
-                  <div className="p-4 text-sm text-text-muted text-center">
-                    {t("material.iqc.scanFirst", "시리얼을 먼저 스캔하세요.")}
-                  </div>
-                ) : (
-                  scannedSerials.map((matUid, idx) => {
-                    const result = getSerialResult(serialInspectionMap[matUid]);
-                    return (
-                      <button
-                        key={matUid}
-                        type="button"
-                        onClick={() => setSelectedSerial(matUid)}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left border-b border-border hover:bg-surface ${
-                          selectedSerial === matUid ? "bg-primary/10" : ""
-                        }`}
-                      >
-                        <div className="min-w-0">
-                          <p className="text-xs text-text-muted">{idx + 1}</p>
-                          <p className="font-mono text-sm text-text truncate">{matUid}</p>
-                        </div>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          result === "PASS"
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                            : result === "FAIL"
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                              : "bg-surface text-text-muted"
-                        }`}>
-                          {result || t("material.iqc.pendingJudge", "대기")}
-                        </span>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
+          {/* 중간: 스캔한 시리얼 목록 */}
+          <div className="col-span-3 flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-background/40">
+            <div className="px-3 py-2 border-b border-border text-xs font-medium text-text-muted flex-shrink-0">
+              {t("material.iqc.scannedSerials", "스캔한 시리얼")} ({scannedSerials.length})
             </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {scannedSerials.length === 0 ? (
+                <div className="p-4 text-sm text-text-muted text-center">
+                  {t("material.iqc.scanFirst", "시리얼을 먼저 스캔하세요.")}
+                </div>
+              ) : (
+                scannedSerials.map((matUid, idx) => {
+                  const result = getSerialResult(serialInspectionMap[matUid]);
+                  return (
+                    <button
+                      key={matUid}
+                      type="button"
+                      onClick={() => setSelectedSerial(matUid)}
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left border-b border-border hover:bg-surface ${
+                        selectedSerial === matUid ? "bg-primary/10" : ""
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs text-text-muted">{idx + 1}</p>
+                        <p className="font-mono text-sm text-text truncate">{matUid}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        result === "PASS"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                          : result === "FAIL"
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                            : "bg-surface text-text-muted"
+                      }`}>
+                        {result || t("material.iqc.pendingJudge", "대기")}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
 
-            <div className="col-span-8">
+          {/* 우측: 측정 */}
+          <div className="col-span-6 flex min-h-0 flex-col overflow-hidden rounded-lg border border-border">
               {!selectedSerial ? (
-                <div className="h-full min-h-[320px] flex items-center justify-center text-sm text-text-muted">
+                <div className="h-full flex items-center justify-center text-sm text-text-muted">
                   {t("material.iqc.selectScannedSerial", "왼쪽에서 스캔한 시리얼을 선택하세요.")}
                 </div>
               ) : (
-                <div className="h-full flex flex-col">
+                <div className="h-full flex flex-col min-h-0">
                   <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-text-muted">{t("material.iqc.selectedSerial", "선택 시리얼")}</p>
@@ -694,7 +710,6 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
               {t("material.iqc.serialSubmit", "검사결과 등록")} ({scannedSerials.length})
             </Button>
           </div>
-        </div>
       </div>
     </Modal>
   );
