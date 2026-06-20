@@ -10,6 +10,83 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-21 Claude (이미지 로드 실패 시 placeholder fallback 일괄 적용)
+
+- 배경: `/uploads/parts/...png 404`(파일 누락)로 깨진 이미지 노출. 서버 업로드 이미지를 onError 처리 없이 렌더하던 화면 전반 점검.
+- 적용 파일:
+  - `master/part/page.tsx`(썸네일→PartImageThumb), `master/part/components/PartFormPanel.tsx`(폼 미리보기, imageError state)
+  - `consumables/master/page.tsx`(썸네일→ConsumableImageThumb), `consumables/master/components/ConsumableFormPanel.tsx`
+  - `components/worker/WorkerSelector.tsx`(WorkerAvatar onError→이니셜), `WorkerSelectModal.tsx`(WorkerPhoto 로컬 컴포넌트, 리스트+Step2), `WorkerPhotoUpload.tsx`(Camera fallback)
+  - `system/users/components/UserFormPanel.tsx`(Users 아이콘 fallback)
+- 공통 패턴: 이미지 url 변경 시 에러 state 리셋(useEffect), onError로 placeholder 전환, 깨진 경로도 삭제 가능하도록 삭제 버튼 유지.
+- 적용 파일 (2차 — 남은 후보 개별 처리):
+  - `production/input-{manual,equip,machine,inspect}/page.tsx`(작업자 사진 → 공통 `WorkerPhoto`로 교체, 이니셜 fallback). `WorkerSelector.tsx`에 `WorkerPhoto` export 추가.
+  - `system/improvement-requests/components/ImprovementDetailModal.tsx`(screenshot → noScreenshot 텍스트로 fallback)
+  - `master/equip-inspect-item/page.tsx`(썸네일→EquipInspectImageThumb, 폼 imageError state)
+  - `production/input-kiosk/components/WorkInstructionView.tsx`(작업지도서 이미지 → onError 시 본문 placeholder로, 줌도 차단)
+  - `consumables/label/components/ConLabelColumns.tsx`(LabelImageCell errored→'-')
+  - `master/label/components/LabelDesignRenderer.tsx`(이미지 요소만 LabelImageElement로 분리, IMG placeholder fallback)
+- i18n: `master.part.imageLoadFailed`, `consumables.master.imageLoadFailed`, `master.equipInspectItem.imageLoadFailed` ko/en/zh/vi 추가(검증 완료).
+- 제외(동적 생성 이미지, 404 무관): `master/label/ZplEditor.tsx`(ZPL 미리보기 외부 생성), `LabelDesignRenderer` 바코드(BarcodeImage, dataURL 생성).
+- 검증: `pnpm --filter @harness/frontend exec tsc --noEmit` 통과(에러 0). i18n JSON 4파일 파싱 정상.
+
+## 2026-06-21 Claude (메뉴 진입 시 페이지 2중 마운트 → API 중복 호출 제거)
+
+- 증상: 메뉴 진입 시 동일 API가 2번씩 호출(예: `/quality/aql`의 `aql?limit=5000`, `aql/policies` 각 2회). 모든 페이지 공통.
+- 원인: `MainLayout`이 본문을 `TabKeepAlive`로 감싸는데, registry 동적 import resolve 전 fallback으로 App Router `children`(page.tsx)을 마운트 → AqlPage 마운트 #1(API 1차). ~1초 뒤 registry resolve되면 `KeepAliveCell`이 같은 페이지를 다시 마운트 #2(API 2차). children 버전과 keep-alive 버전이 둘 다 마운트되어 mount/effect가 2회 발생.
+- 수정: `apps/frontend/src/components/layout/TabKeepAlive.tsx`
+  - `loadedPage` 초기값 `path: pathname` → `path: ""` (로딩 중 vs 미등록 페이지 구분).
+  - fallback 렌더를 `loadedPage.path === pathname`일 때만 `children` 사용, 로딩 중에는 빈 `div`로 대체해 children 2중 마운트 차단.
+- 결과: keep-alive registry 컴포넌트만 1회 마운트. 미등록 경로는 종전대로 children fallback 유지.
+- 검증: `pnpm --filter @harness/frontend exec tsc --noEmit` 통과(에러 0). 런타임 네트워크 중복 제거는 사용자 dev 서버에서 메뉴 진입 시 단일 호출 확인 필요.
+
+## 2026-06-21 Claude (회로사양 UI: 크게보기 + 터미널/하우징 BOM 참조)
+
+- 작업: `/production/specification-setup` 회로별 제작 사양 ① 크게 보기(전체화면 모달) ② 터미널/하우징/전선을 BOM 자재 productType 참조 select로 전환.
+- ① 크게 보기: 테이블을 `CircuitSpecTable` 컴포넌트로 추출 → 카드/모달 재사용. 카드 헤더에 "크게 보기" 버튼, `size="full"`(90vw×90vh) 모달에서 편집·회로추가·삭제 가능. 연결 형태 그림 가로 1줄화 및 연결심볼 5종(직선/양단압착/스플라이스/분기/단측, 구 LINE→STRAIGHT 통합)도 같은 세션에서 처리.
+- ② 터미널/하우징 참조: 사용자 결정 = "도면 품목의 BOM 자재" 방식(전선과 동일).
+  - 백엔드 `bom.service.ts`: findAll/findByParentId/findById의 part `select`에 `productType` 추가 → BOM 조회 응답 `childPart.productType` 노출. (DDL/엔티티 변경 없음, 컬럼 기존 존재)
+  - 프론트 `page.tsx`: BOM 응답을 평탄화 매핑(childPart.itemName/itemNo/unit/productType). 이 과정에서 기존 전선 드롭다운이 `item.childItemName`을 직접 참조해 이름/단위가 안 뜨던 매핑 오류도 수정. `wireOptions`(부속자재 productType 제외)/`terminalOptions`(TERMINAL)/`housingOptions`(HOUSING)로 분류. A/B Housing·Terminal 4개 컬럼 + Wire를 `ItemRefSelect`로 전환. 기존 자유텍스트 값은 "(미등록)" fallback 옵션으로 보존.
+- DB 실측(JSHANES, company=40/plant=1000): PRODUCT_TYPE 분류 존재하나 시드 수준 — TERMINAL 4(TMN-A/B/C/SE1), HOUSING 1(HSG0001), CONNECTOR 1, WIRE 3, 미분류(null) 18. BOM 자식에도 동일 분포. → 드롭다운 선택지가 적으므로 운영 전 ITEM_MASTERS.PRODUCT_TYPE 분류 보강 필요(데이터 작업, 코드 아님).
+- 검증: page.structure.test.mjs 7/7 pass(테스트 심볼명 loadBomWireOptions→loadBomOptions, wireItemOptions→bomOptions 동기화), 프론트 `tsc --noEmit` EXIT=0.
+- 주의: 백엔드 전체 `tsc --noEmit`는 codex 진행 중 `aql.service.spec.ts`(createPolicy/deletePolicy 누락)로 실패 상태 — 본 변경(bom.service.ts)과 무관, 에러 목록에 본 파일 없음.
+- 남은 것: productType 미설정 BOM 자식은 터미널/하우징 드롭다운에 노출 안 됨(전선은 미분류 포함). 커넥터(CONNECTOR) 컬럼은 별도 논의 필요 시 추가.
+
+## 2026-06-21 Codex
+
+- 작업: `T-HARNESS-WIRE-SPEC-SEPARATION` 전선 길이/스트리핑 사양 분리.
+- 변경: `/master/part` 품목마스터에서 `LENGTH`, `STRIP_BEFORE`, `STRIP_AFTER` 코드/API/UI 계약 제거. `HARNESS_CIRCUIT_SPECS.WIRE_ITEM_CODE` 추가 및 BOM child 검증. `ROUTING_MATERIALS.CIRCUIT_ID` 추가 및 회로 사양 선택 연결.
+- DB: JSHANES에 `apps/backend/src/migrations/2026-06-21_harness_wire_spec_separation.sql` 적용 PASS. 확인 쿼리에서 `ITEM_MASTERS` 길이/스트리핑 컬럼 제거, `HARNESS_CIRCUIT_SPECS.WIRE_ITEM_CODE`, `ROUTING_MATERIALS.CIRCUIT_ID`, `FK_ROUTING_MATERIALS_CIRCUIT ENABLED` 확인.
+- 문서: `docs/reports/db-schema-erd.md` 재생성, `docs/superpowers/specs/2026-06-21-harness-wire-spec-separation-design.md` 작성.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs" "apps/frontend/src/app/(authenticated)/production/specification-setup/page.structure.test.mjs" "apps/frontend/src/app/(authenticated)/master/routing/routing-material-circuit-link.structure.test.mjs"` PASS 17/17.
+- 검증: `pnpm.cmd --filter @harness/backend test -- production-specification.service.spec.ts routing-group.service.spec.ts --runInBand` PASS 35/35.
+- 검증: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false` PASS.
+- 검증: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- 검증: `git diff --check` PASS.
+- 남은 위험: 현재 worktree에는 품질/AQL/TabKeepAlive 등 다른 작업 변경이 함께 존재하므로 커밋 시 파일 범위를 분리해야 한다.
+
+## 2026-06-21 Claude
+
+- 작업: `T-TAB-KEEPALIVE-ONLY` 탭 상태보존을 keep-alive(display:none) 단일 메커니즘으로 정리. 메뉴 클릭/페이지 이동 체감 지연 원인 점검 중 발견한 중복 레이어 제거.
+- 배경: `TabKeepAlive`는 이미 떠난 탭을 `display:none`으로 살려둬 React state·DOM 입력값·스크롤이 그대로 보존됨. 그 위에 `tabPageState.ts`가 별도로 DOM을 직렬화해 sessionStorage에 저장/복원하는 두 번째 레이어가 얹혀 있었음. 이게 평상시 비용을 깔았음:
+  - `document`에 `pointerdown/keydown/input/change` 캡처 리스너 4종을 디바운스 없이 등록 → 매 입력·클릭마다 저장 실행.
+  - 저장/복원 시 `root.querySelectorAll("*")` 전체 DOM 순회 + 각 노드 `scrollTop/scrollLeft` 접근(강제 reflow). DataGrid 등 노드 많은 화면에서 layout thrashing.
+  - 페이지 진입마다 `restore`를 raf + setTimeout(50/150/350/750ms) = 최대 5회 반복(매번 전체 DOM 순회).
+- 변경:
+  - `apps/frontend/src/components/layout/TabKeepAlive.tsx`: `tabPageState` import, restore/save useEffect, 전역 캡처 리스너 useEffect, `pathnameRef`, `rootsRef`, ref 콜백, `data-tab-page-state-root` 제거. keep-alive 캐시 로직(pagesRef/visiblePages/display:none)은 유지.
+  - `apps/frontend/src/components/layout/tabPageState.ts`: 파일 삭제(참조처 0).
+  - `tab-keep-alive-unique-paths.structure.test.mjs`: save/restore/data-attr assertion 제거, 부재 검증(doesNotMatch)으로 교체.
+- 검증: 구조 테스트 pass(1/1), `tsc --noEmit` EXIT=0, 앱 코드 내 `tabPageState` 잔존 참조 grep 0건.
+- 영향/주의: 새로고침(F5) 시 입력값 sessionStorage 복원 기능은 함께 사라짐. 단 `tabStore`도 persist가 없어 새로고침하면 탭 자체가 초기화되므로 실효성이 낮던 기능이라 일관성 있게 제거. 탭 evict는 MAX_TABS=10 + addTab 차단 구조상 사실상 발생 안 함 → keep-alive로 항상 보존됨.
+- 남은 것: 메뉴 클릭→이동 지연의 잔여 원인(동적 import 청크 컴파일/진입 API 페칭)은 별도 실측 필요. 이번 변경은 "탭 저장 기능" 의심분만 제거.
+
+## 2026-06-20 23:45 Hermes
+
+- 작업: `T-QUALITY-DEFECT-FILTER-ONE-LINE` `/quality/defect` 필터 툴바가 두 줄로 감기던 레이아웃을 한 줄 배치로 조정했다.
+- 변경: 검색 입력은 남는 폭을 사용하고, 날짜 범위와 불량유형/상태 Select는 `shrink-0` 고정 폭으로 배치했다. 기존 `flex-wrap`과 Select `fullWidth`로 인한 줄바꿈을 제거하고 좁은 폭에서는 툴바 내부 가로 스크롤로 대응한다.
+- 검증: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. Playwright headless 1366x768에서 `/quality/defect` 필터 컨트롤 5개가 모두 top=213 한 줄에 표시됨을 확인했다. `git diff --check` PASS.
+- 상태: lock 제거. 커밋하지 않음.
+
 ## 2026-06-20 21:47 Codex
 
 - 작업: `T-MENU-OPEN-DELAY` 최종 보정. 그룹별 registry도 한 그룹 안에 여러 page `dynamic()`을 담아 cold compile 범위가 아직 커서, registry를 경로별 파일 1개당 page 1개 구조로 더 세분화했다.
@@ -1758,3 +1835,64 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 검증: `node --test apps/frontend/src/components/layout/tab-keep-alive-unique-paths.structure.test.mjs apps/frontend/src/components/layout/sidebar-menu-navigation.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
 - 실측: 수정 후 3002 반복 HTTP 측정에서 `/dashboard` 514ms, `/master/part` 281ms, `/production/wip-stock` 212ms, `/system/menu-categories` 258ms.
 - 추가 검증: Playwright headless mock에서 `/master/part` 본문 검색 입력 `CODX_STATE_KEEP` 복원 확인. 우측 등록 패널에 `CODX_PANEL_KEEP` 입력 후 대시보드 탭 이동, 품목 탭 재진입 시 패널/입력값 보존 확인. 최종 3002 HTTP 측정 `/dashboard` 1030ms, `/master/part` 860ms, `/production/wip-stock` 331ms, `/system/menu-categories` 462ms.
+
+# 2026-06-21 01:11 codex T-MASTER-PART-MODEL-NAME
+- 요청: `http://localhost:3002/master/part` 품목관리 화면에 자동차용 MES 관리 특성인 `차종` 컬럼 추가.
+- 변경: `ITEM_MASTERS.MODEL_NAME VARCHAR2(100)` nullable 컬럼 마이그레이션을 추가하고 JSHANES에 적용했다. `PartMaster`, `CreatePartDto/UpdatePartDto`, `PartService` create/update/search, `/master/part` 타입/그리드/우측 패널/레거시 모달/help/locale에 `modelName`/`차종`을 연결했다.
+- 문서: `python tools/generate_db_schema_doc.py`로 `docs/reports/db-schema-erd.md`를 JSHANES 기준 재생성했다.
+- 검증: 구조 테스트 RED 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs"` PASS, FE/BE `pnpm.cmd ... tsc --noEmit --pretty false` PASS, `git diff --check` PASS.
+- DB 검증: 적용 전 JSHANES `ITEM_MASTERS.MODEL_NAME` 0건, 마이그레이션 적용 및 재실행 성공, 적용 후 `VARCHAR2(100)`/주석 `차종` 확인.
+- 화면 검증: 3002 HTTP 200. Playwright DOM에서 목록 헤더 `차종`, mock 행 값 `CN7`, `품목 추가` 우측 패널 라벨 `차종`, console/page error 0 확인.
+
+# 2026-06-21 codex T-IQC-AQL-POLICY-CODE
+- 요청: `/master/part`의 검사수준/Critical/Major/Minor AQL 개별 속성을 품목 속성이 아니라 AQL 정책 코드 참조 구조로 개선.
+- 변경: 신규 `IQC_AQL_POLICIES` 엔티티/테이블/목록 API `GET /quality/aql/policies`를 추가했다. 정책은 `INSPECTION_LEVEL`, `MAJOR_AQL_CODE`, `MINOR_AQL_CODE`, `CRITICAL_MODE`를 가진다.
+- 변경: `ITEM_MASTERS` 애플리케이션 계약을 `iqcAqlPolicyCode`로 전환했다. `PartMaster`, `CreatePartDto/UpdatePartDto`, `PartService`, `/master/part` 타입/목록/우측 패널/레거시 모달/help/locale에서 구 AQL 개별 필드를 제거했다.
+- 변경: `AqlService.resolveIqcPolicy()`는 품목의 `IQC_AQL_POLICY_CODE`로 정책을 조회한 뒤 `AQL_STANDARDS` 코드와 sampling rule을 산출한다. Critical 1건 즉시 FAIL 결정은 유지했다. `IQC_PART_SPEC_ITEMS`의 검사수준/AQL은 항목별 override로 유지했다.
+- DB 검증: JSHANES pre-check에서 구 컬럼 4개 존재, 정책 테이블 0건 확인. 마이그레이션 적용 및 재실행 PASS. post-check에서 `ITEM_MASTERS`는 `IQC_AQL_POLICY_CODE`만 남고 구 AQL 컬럼은 제거됨. IQC 대상 19건은 정책 코드 보유, 비대상 17건은 null, orphan 정책 참조 0건.
+- 문서: `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py`로 `docs/reports/db-schema-erd.md` 재생성.
+- 검증: RED/GREEN 구조 테스트 12건 PASS, `aql.service.spec.ts`/`iqc-history.service.spec.ts` 31건 PASS, FE/BE typecheck PASS, `git diff --check` PASS, 3002 `/master/part` HTTP 200.
+
+# 2026-06-21 codex T-IQC-AQL-POLICY-CODE 정책관리 완성
+- 요청: `/master/part` AQL 정책이 1개만 보이는 이유 확인 후 정책관리까지 완성.
+- 원인: `/master/part`는 `AQL_STANDARDS`가 아니라 `IQC_AQL_POLICIES`를 조회하고 있었고, JSHANES 정책 테이블에는 1건만 있었다. `AQL_STANDARDS`는 `AQL-II-1.0`, `AQL-II-2.5`, `AQL-II-4.0` 3건이었다.
+- 변경: `CreateIqcAqlPolicyDto`, `UpdateIqcAqlPolicyDto`와 `POST/PUT/DELETE /quality/aql/policies`를 추가했다. 정책 등록/수정 시 Major/Minor AQL 기준 코드가 활성 `AQL_STANDARDS`인지 검증한다.
+- 변경: `/quality/aql` 우측 패널에 `AQL 정책관리` 폼/목록을 추가해 `IQC_AQL_POLICIES` 정책 코드, 정책명, 검사수준, Major/Minor AQL 기준을 관리한다.
+- 변경: 품목에 배정된 정책은 사용중지할 수 없도록 `deletePolicy()`에서 `ITEM_MASTERS.IQC_AQL_POLICY_CODE` 참조를 검사한다.
+- DB 적용: 기존 마이그레이션 seed를 보강하고 JSHANES 재적용. 정책은 `AQLP-II-1.0-2.5`, `AQLP-II-1.0-4.0`, `AQLP-II-2.5-4.0` 3건. 정책 AQL 기준 orphan 0건, 품목 정책 참조는 기존 19건 유지.
+- 검증: 정책 CRUD 구조 테스트 RED→GREEN, backend policy spec RED→GREEN. `aql.service.spec.ts` 16/16 PASS, FE/BE typecheck PASS, `/quality/aql` 및 `/master/part` HTTP 200, 3002 `/api/quality/aql/policies`는 인증 게이트 401 확인, `git diff --check` PASS.
+
+# 2026-06-21 codex T-IQC-AQL-POLICY-CODE 정책관리 좌측상단 배치
+- 요청: `/quality/aql`의 정책관리는 우측상단보다 좌측상단에 있는 것이 자연스럽다는 지적.
+- 변경: `/quality/aql` 12컬럼 첫 좌측 카드에 `AQL 정책관리` 폼과 정책 목록을 배치했다. 우측 카드는 `AQL_STANDARDS` 기준 목록, AQL 기준 등록/수정, LOT 판정기준 관리로 정리했다.
+- 테스트: 구조 테스트에 `AQL 정책관리`가 AQL 기준 목록/폼보다 먼저 렌더되어 좌측상단 작업 영역이 되도록 계약을 추가했다. 기존 배치에서 RED 실패 확인 후 GREEN 통과했다.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/quality/aql/iqc-aql.structure.test.mjs"` 4/4 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/quality/aql` HTTP 200, `git diff --check` PASS. Headless Chrome은 인증 세션이 없어 로그인 페이지만 확인했다.
+
+# 2026-06-21 codex T-IQC-AQL-POLICY-CODE 정책 도움말 및 좌측 패널 보정
+- 요청: `/quality/aql` 좌측 정책관리에도 자세한 `?` 도움말을 추가하고, 우측 AQL 코드 설명이 예전 품목 직접 연결 설명으로 남아 있는 문제를 수정. 좌측 섹션은 한 화면에 보여야 하며 우측상단 추가 버튼도 무엇을 추가하는지 명확해야 한다는 추가 지적 반영.
+- 변경: `AqlFieldHelp.tsx`에 `IQC_AQL_POLICIES` 정책 필드 도움말을 추가했다. `AQL_STANDARDS.AQL_CODE` 설명은 품목 직접 참조가 아니라 `IQC_AQL_POLICIES.MAJOR_AQL_CODE`/`MINOR_AQL_CODE`에서 참조되는 기준 코드라고 수정했다.
+- 변경: 좌측 정책관리 폼 라벨과 정책 목록 헤더에 `HelpField`/`HelpHeader`를 적용했다. 좌측 카드는 `overflow-auto`를 제거하고 `p-3 overflow-hidden flex flex-col`, 3열 폼, `flex-1 min-h-0` 정책 그리드로 바꿔 자체 세로 스크롤이 생기지 않게 했다.
+- 변경: 상단 `추가` 버튼 문구를 `AQL 기준 추가`로 바꿔 좌측 `정책 추가`와 구분했다.
+- 검증: 구조 테스트 RED→GREEN. `node --test "apps/frontend/src/app/(authenticated)/quality/aql/iqc-aql.structure.test.mjs"` 7/7 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/quality/aql` HTTP 200.
+
+# 2026-06-21 codex T-IQC-AQL-POLICY-CODE `/master/iqc-part-spec` 실제 IQC 판정 경로 연결
+- 요청: `/master/iqc-part-spec`과 품목관리 AQL 관리가 유기적으로 연결되어 있는지 확인 후 개선.
+- 원인: 데이터 구조는 `ITEM_MASTERS.IQC_AQL_POLICY_CODE -> IQC_AQL_POLICIES -> AQL_STANDARDS`와 `IQC_PART_SPEC_ITEMS` override로 연결돼 있었지만, `/master/iqc-part-spec` 상단 AQL 미리보기는 품목 정책 단독 endpoint인 `/quality/aql/resolve-iqc`를 호출했다. 실제 IQC 저장/판정은 `AqlService.resolveIqcPolicyByItem()`로 검사항목별 등급/AQL/파괴검사를 적용한다.
+- 변경: `GET /quality/aql/resolve-iqc-items` endpoint를 추가해 `resolveIqcPolicyByItem()` 결과를 반환하게 했다. `/master/iqc-part-spec` 미리보기는 이 endpoint를 호출하고, 상단 요약에 `검사항목 기준`과 `파괴/고정` 건수를 표시한다.
+- DB 확인: JSHANES 기준 IQC 대상 품목 19건은 정책 코드를 보유하고 orphan 정책 참조는 0건이었다. 활성 `IQC_PART_SPEC_ITEMS` 검사항목 기준은 53건이며, 정책과 검사항목 Major/Minor AQL 및 검사수준 불일치 0건을 확인했다.
+- 검증: 관련 구조 테스트 18/18 PASS, `aql.service.spec.ts` 16/16 PASS, FE/BE typecheck PASS.
+
+# 2026-06-21 codex T-IQC-AQL-ACTUAL-PREVIEW 검사모달 AQL 실제 판정 경로 보정
+- 요청: AQL 정책코드 기반 IQC 검사프로세스 리뷰 결과 중 실제 수정 필요 항목 반영.
+- 원인: `/master/iqc-part-spec` 미리보기는 검사항목별 경로로 보정됐지만, 실제 검사 모달 `IqcModal`은 아직 `/quality/aql/resolve-iqc` 단일 정책 preview를 호출했다. 또한 품목 정책코드가 없으면 `resolveIqcPolicy()`에서 Major/Minor rule이 `null`이 되어 Major/Minor 불량이 있어도 PASS가 될 수 있었다.
+- 변경: `IqcModal` preview 호출을 `/quality/aql/resolve-iqc-items`로 변경하고 `itemResults` 기반 `검사항목 기준`, `파괴/고정`, 항목별 `Ac/Re` 또는 고정시료 정보를 표시했다. `useIqcData`는 `vendorCode`와 `supplierName`을 분리해 preview에는 코드값을 넘긴다.
+- 변경: `AqlService.resolvePartPolicy()`는 `ITEM_MASTERS.IQC_AQL_POLICY_CODE` 미설정 시 `BadRequestException`을 던져 조용한 PASS를 차단한다. 기존 fallback은 정책코드가 있는 품목에 대해서만 유지한다.
+- 테스트: 신규 구조 테스트와 서비스 테스트를 먼저 RED로 확인한 뒤 GREEN 처리했다. IQC 모달 구조 테스트 10/10 PASS, `aql.service.spec.ts` 17/17 PASS, `iqc-history.service.spec.ts` 17/17 PASS, FE/BE typecheck PASS, 3002 `/material/iqc` HTTP 200, `git diff --check` PASS.
+
+# 2026-06-21 codex T-IQC-AQL-TRACEABILITY-FIX IQC AQL 추적성/불량코드 판정 보정
+- 요청: IQC AQL 최종 리뷰에서 남은 실질 문제 해결.
+- 변경: `IqcModal` 저장 payload의 `sampleBarcode`는 전체 스캔 시리얼 join이 아니라 500바이트 이내 요약 문자열로 전송한다. 전체 시리얼/항목 상세는 기존처럼 `DETAILS` CLOB에 남긴다.
+- 변경: `IqcModal`은 FAIL 판정이 있으면 불량코드를 요구하고, FAIL 판정 없이 불량코드만 입력된 상태는 제출하지 못하게 했다.
+- 변경: `IqcHistoryService.createArrivalResult()`는 API 직접 호출에서도 `details`가 모두 PASS인데 불량코드만 있는 저장을 `BadRequestException`으로 차단한다. 검사항목 없는 수동 FAIL은 시리얼 result FAIL을 근거로 인정한다.
+- 변경: 서버 저장 시에도 `sampleBarcode`가 500바이트를 초과하면 `...(+N more)` 형태로 요약해 `IQC_LOGS.SAMPLE_BARCODE` 저장 실패를 방지한다.
+- 검증: RED 확인 후 GREEN. `node --test apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs` 5/5 PASS, `pnpm.cmd --filter @harness/backend exec jest src/modules/material/services/iqc-history.service.spec.ts --runInBand` 20/20 PASS, IQC 모달/이력 구조 테스트 15/15 PASS, FE/BE typecheck PASS, 대상 파일 `git diff --check` PASS.
