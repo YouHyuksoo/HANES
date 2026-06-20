@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import toast from "react-hot-toast";
 import { ClipboardList, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
-import { Button, Card, CardContent, ConfirmModal, Input, Select } from "@/components/ui";
+import { Button, Card, CardContent, ConfirmModal, Input } from "@/components/ui";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -263,13 +264,14 @@ export default function AqlPage() {
               <Input label="AQL 명칭" required value={form.aqlName}
                 onChange={(event) => setField("aqlName", event.target.value)}
                 placeholder="일반검사 AQL 1.0" />
-              <Input label="검사수준" value={form.inspectionLevel ?? ""}
-                onChange={(event) => setField("inspectionLevel", event.target.value)}
-                placeholder="II" />
-              <Input label="AQL 값" type="number" step="0.001" value={form.aqlValue ?? ""}
-                onChange={(event) => setField("aqlValue", toNumber(event.target.value, 0))} />
-              <Select label="사용여부" value={form.useYn} onChange={(value) => setField("useYn", value)}
-                options={[{ value: "Y", label: "사용" }, { value: "N", label: "미사용" }]} />
+              <ComCodeSelect label="검사수준" groupCode="AQL_INSP_LEVEL" includeAll={false}
+                value={form.inspectionLevel ?? ""}
+                onChange={(value) => setField("inspectionLevel", value)} />
+              <ComCodeSelect label="AQL 값" groupCode="AQL_VALUE" includeAll={false}
+                value={form.aqlValue == null ? "" : String(form.aqlValue)}
+                onChange={(value) => setField("aqlValue", value === "" ? 0 : Number(value))} />
+              <ComCodeSelect label="사용여부" groupCode="USE_YN" includeAll={false}
+                value={form.useYn} onChange={(value) => setField("useYn", value)} />
               <div className="col-span-3">
                 <Input label="비고" value={form.remark ?? ""}
                   onChange={(event) => setField("remark", event.target.value)}
