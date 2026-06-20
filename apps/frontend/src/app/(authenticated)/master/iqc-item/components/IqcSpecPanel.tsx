@@ -47,7 +47,6 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
   const inspLevelOptions = useComCodeOptions("AQL_INSP_LEVEL");
   const aqlOptions = useComCodeOptions("AQL_VALUE");
   const inspectTypeOptions = useComCodeOptions("IQC_ITEM_INSP_TYPE");
-  const sampleMethodOptions = useComCodeOptions("IQC_SAMPLE_METHOD");
 
   const loadSpec = useCallback(async (code: string) => {
     setLoading(true);

@@ -367,7 +367,8 @@ export class AqlService {
       if (type === 'DESTRUCTIVE' || type === 'FULL' || method === 'FIXED') {
         // 파괴/전수/고정 — AQL 무관, 불량 1건 이상이면 FAIL
         requiredQty = type === 'FULL' ? lotQty : this.toNonNegativeInt(item.sampleQty);
-        inspectedQty = this.toNonNegativeInt(input.itemInspectedCounts?.[item.seq]) || requiredQty;
+        const providedInspected = input.itemInspectedCounts?.[item.seq];
+        inspectedQty = providedInspected != null ? this.toNonNegativeInt(providedInspected) : requiredQty;
         if (defectCount > 0) {
           itemResult = 'FAIL';
           reason = `${item.inspItemCode} ${type === 'FULL' ? '전수' : '파괴'}검사 불량 ${defectCount}건`;

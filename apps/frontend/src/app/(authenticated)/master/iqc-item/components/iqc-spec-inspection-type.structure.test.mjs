@@ -4,9 +4,8 @@ import { readFileSync } from 'node:fs';
 
 const src = readFileSync(new URL('./IqcSpecPanel.tsx', import.meta.url), 'utf8');
 
-test('검사유형/샘플수 공통코드 옵션을 사용한다', () => {
+test('검사유형 공통코드 옵션을 사용한다', () => {
   assert.match(src, /useComCodeOptions\("IQC_ITEM_INSP_TYPE"\)/);
-  assert.match(src, /useComCodeOptions\("IQC_SAMPLE_METHOD"\)/);
 });
 test('save body에 inspectionType/sampleMethod/sampleQty가 포함된다', () => {
   assert.match(src, /inspectionType: it\.inspectionType/);
