@@ -49,6 +49,7 @@ export default function PartPage() {
   const [useYnFilter, setUseYnFilter] = useState("");
 
   const [erpSyncing, setErpSyncing] = useState(false);
+  const [erpSyncConfirmOpen, setErpSyncConfirmOpen] = useState(false);
   const [syncResult, setSyncResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
@@ -235,6 +236,7 @@ export default function PartPage() {
   }, [fetchParts]);
 
   const handleErpSync = useCallback(async () => {
+    setErpSyncConfirmOpen(false);
     setErpSyncing(true);
     setSyncResult(null);
     try {
@@ -266,7 +268,7 @@ export default function PartPage() {
                 {syncResult.msg}
               </span>
             )}
-            <Button variant="secondary" size="sm" onClick={handleErpSync} disabled={erpSyncing}>
+            <Button variant="secondary" size="sm" onClick={() => setErpSyncConfirmOpen(true)} disabled={erpSyncing}>
               <Download className={`w-4 h-4 mr-1 ${erpSyncing ? "animate-bounce" : ""}`} />{t("master.part.erpSync", "ERP 동기화")}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => { fetchParts(); }}>
@@ -327,6 +329,14 @@ export default function PartPage() {
         onConfirm={handleDeleteConfirm}
         variant="danger"
         message={t("master.part.deleteConfirmMessage", "'{{itemCode}} ({{itemName}})'을(를) 삭제하시겠습니까?", { itemCode: deleteTarget?.itemCode || "", itemName: deleteTarget?.itemName || "" })}
+      />
+
+      <ConfirmModal
+        isOpen={erpSyncConfirmOpen}
+        onClose={() => setErpSyncConfirmOpen(false)}
+        onConfirm={handleErpSync}
+        title={t("master.part.erpSync", "ERP 동기화")}
+        message={t("master.part.erpSyncConfirmMessage", "ERP 품목 마스터를 동기화하시겠습니까? ERP의 전체 품목이 MES에 추가/변경됩니다.")}
       />
     </div>
   );
