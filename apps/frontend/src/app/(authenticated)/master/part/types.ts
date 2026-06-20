@@ -14,6 +14,7 @@ export interface Part {
   itemName: string;
   itemNo?: string; // 품번 (Oracle PARTNO)
   custPartNo?: string; // 고객사 품번 (Oracle CUSTPARTNO)
+  modelName?: string | null; // 차종
   itemType: PartType;
   productType?: string; // 제품유형 코드 (Oracle PRODUCTTYPE)
   spec?: string;
@@ -21,9 +22,6 @@ export interface Part {
   markingText?: string | null; // 마킹 문구
   unit?: string; // 단위 (기본값: EA)
   color?: string | null; // 색상 (Oracle COLOR)
-  length?: number | null; // 길이 (Oracle LENGTH)
-  stripBefore?: number | null; // 스트리핑 전 (Oracle STRIP_BEFORE)
-  stripAfter?: number | null; // 스트리핑 후 (Oracle STRIP_AFTER)
   safetyStock?: number; // 안전재고 (기본값: 0)
   lotUnitQty?: number; // LOT 단위수량 (Oracle LOTUNITQTY)
   boxQty?: number; // 박스 장입수량 (Oracle BOXQTY) (기본값: 0)
@@ -31,10 +29,7 @@ export interface Part {
   iqcYn?: UseYnValue; // IQC 대상여부 Y/N (Oracle IQCFLAG) (기본값: Y)
   inspectMethod?: string; // 검사구분 (FULL/SKIP)
   sampleQty?: number | null; // 기본시료수
-  inspectionLevel?: string | null; // AQL 검사수준
-  aqlCritical?: number | null; // Critical AQL
-  aqlMajor?: number | null; // Major AQL
-  aqlMinor?: number | null; // Minor AQL
+  iqcAqlPolicyCode?: string | null; // IQC AQL 정책 코드
   expiryDate?: number; // 유효기간 일 (Oracle EXPIRYDATE) (기본값: 0)
   expiryExtDays?: number; // 유효기간 연장 최대 일수 (Oracle EXPIRY_EXT_DAYS) (기본값: 0)
   packUnit?: number; // 팔레트 구성 단위(팔레트당 박스 수)

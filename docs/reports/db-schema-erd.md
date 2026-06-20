@@ -1,17 +1,17 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-20 20:45:52
+- 작성일: 2026-06-21 02:05:54
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 162
-- 컬럼 수: 2703
-- PK 보유 테이블: 158
-- DB FK 수: 14
-- COM_CODES 그룹 수: 154
+- 테이블 수: 163
+- 컬럼 수: 2723
+- PK 보유 테이블: 159
+- DB FK 수: 15
+- COM_CODES 그룹 수: 156
 
 ## 2. 모듈별 테이블
 
@@ -161,6 +161,7 @@
 - `FAI_REQUESTS`: - / PK: `FAI_NO`
 - `GAUGE_MASTERS`: - / PK: `GAUGE_CODE`
 - `INSPECT_RESULTS`: 검사 결과 (공정검사/AOI 등) / PK: `RESULT_NO`
+- `IQC_AQL_POLICIES`: IQC AQL 정책 기준정보 / PK: `COMPANY, PLANT_CD, POLICY_CODE`
 - `IQC_ITEM_MASTERS`: IQC 검사항목 마스터 (품목별) / PK: `COMPANY, PLANT_CD, ITEM_CODE, SEQ`
 - `IQC_ITEM_POOL`: IQC 검사항목 풀 마스터 / PK: `COMPANY, PLANT_CD, INSP_ITEM_CODE`
 - `IQC_LOGS`: IQC 검사 이력 로그 / PK: `INSPECT_DATE, SEQ`
@@ -953,6 +954,21 @@ erDiagram
     VARCHAR2_50 COMPANY NOT_NULL
     DATE ADJ_DATE PK NOT_NULL
     NUMBER_5 SEQ PK NOT_NULL
+    string more_columns
+  }
+  IQC_AQL_POLICIES {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_50 POLICY_CODE PK NOT_NULL
+    VARCHAR2_100 POLICY_NAME NOT_NULL
+    VARCHAR2_20 INSPECTION_LEVEL
+    VARCHAR2_50 MAJOR_AQL_CODE
+    VARCHAR2_50 MINOR_AQL_CODE
+    VARCHAR2_30 CRITICAL_MODE NOT_NULL
+    VARCHAR2_1 USE_YN NOT_NULL
+    VARCHAR2_500 REMARK
+    VARCHAR2_50 CREATED_BY
+    VARCHAR2_50 UPDATED_BY
     string more_columns
   }
   IQC_ITEM_MASTERS {
@@ -1933,6 +1949,7 @@ erDiagram
     VARCHAR2_50 UPDATED_BY
     TIMESTAMP_6 CREATED_AT NOT_NULL
     TIMESTAMP_6 UPDATED_AT NOT_NULL
+    string more_columns
   }
   ROUTING_PROCESSES {
     VARCHAR2_50 ROUTING_CODE PK NOT_NULL
@@ -2585,6 +2602,7 @@ erDiagram
   PROD_PLANS }o--|| ITEM_MASTERS : "ITEM_CODE"
   REWORK_RESULTS }o--|| REWORK_PROCESSES : "REWORK_ORDER_ID,PROCESS_CODE"
   ROLE_MENU_PERMISSIONS }o--|| ROLES : "COMPANY,PLANT_CD,ROLE_CODE"
+  ROUTING_MATERIALS }o--|| HARNESS_CIRCUIT_SPECS : "CIRCUIT_ID"
   SCHEDULER_LOGS }o--|| SCHEDULER_JOBS : "COMPANY,PLANT_CD,JOB_CODE"
   SIMULATION_PLANS }o--|| SIMULATION_HEADERS : "SIM_ID"
   SIMULATION_SCHEDULES }o--|| SIMULATION_HEADERS : "SIM_ID"
@@ -2605,6 +2623,7 @@ erDiagram
 | `PROD_PLANS` | `ITEM_CODE` | `ITEM_MASTERS` | `ITEM_CODE` | `NO ACTION` |
 | `REWORK_RESULTS` | `REWORK_ORDER_ID, PROCESS_CODE` | `REWORK_PROCESSES` | `REWORK_ORDER_ID, PROCESS_CODE` | `NO ACTION` |
 | `ROLE_MENU_PERMISSIONS` | `COMPANY, PLANT_CD, ROLE_CODE` | `ROLES` | `COMPANY, PLANT_CD, CODE` | `NO ACTION` |
+| `ROUTING_MATERIALS` | `CIRCUIT_ID` | `HARNESS_CIRCUIT_SPECS` | `CIRCUIT_ID` | `NO ACTION` |
 | `SCHEDULER_LOGS` | `COMPANY, PLANT_CD, JOB_CODE` | `SCHEDULER_JOBS` | `COMPANY, PLANT_CD, JOB_CODE` | `NO ACTION` |
 | `SIMULATION_PLANS` | `SIM_ID` | `SIMULATION_HEADERS` | `SIM_ID` | `NO ACTION` |
 | `SIMULATION_SCHEDULES` | `SIM_ID` | `SIMULATION_HEADERS` | `SIM_ID` | `NO ACTION` |
@@ -3327,6 +3346,7 @@ erDiagram
     VARCHAR2_50 UPDATED_BY
     TIMESTAMP_6 CREATED_AT NOT_NULL
     TIMESTAMP_6 UPDATED_AT NOT_NULL
+    string more_columns
   }
   ROUTING_PROCESSES {
     VARCHAR2_50 ROUTING_CODE PK NOT_NULL
@@ -4746,6 +4766,21 @@ erDiagram
     VARCHAR2_50 CREATED_BY
     VARCHAR2_50 UPDATED_BY
     VARCHAR2_30 RESULT_NO PK NOT_NULL
+    string more_columns
+  }
+  IQC_AQL_POLICIES {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_50 POLICY_CODE PK NOT_NULL
+    VARCHAR2_100 POLICY_NAME NOT_NULL
+    VARCHAR2_20 INSPECTION_LEVEL
+    VARCHAR2_50 MAJOR_AQL_CODE
+    VARCHAR2_50 MINOR_AQL_CODE
+    VARCHAR2_30 CRITICAL_MODE NOT_NULL
+    VARCHAR2_1 USE_YN NOT_NULL
+    VARCHAR2_500 REMARK
+    VARCHAR2_50 CREATED_BY
+    VARCHAR2_50 UPDATED_BY
     string more_columns
   }
   IQC_ITEM_MASTERS {
@@ -6346,6 +6381,7 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `WIRE_ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  | 회로별 전선 BOM 품목코드 |
 
 ### `HARNESS_DRAWING_MASTERS`
 
@@ -6493,6 +6529,28 @@ erDiagram
 | `ADJ_DATE` | `DATE` | `N` | PK | 기본값 `SYSDATE` |  |
 | `SEQ` | `NUMBER(5)` | `N` | PK | 기본값 `1` |  |
 
+### `IQC_AQL_POLICIES`
+
+- 설명: IQC AQL 정책 기준정보
+- PK: `COMPANY, PLANT_CD, POLICY_CODE`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
+| `POLICY_CODE` | `VARCHAR2(50)` | `N` | PK |  | IQC AQL 정책 코드 |
+| `POLICY_NAME` | `VARCHAR2(100)` | `N` |  |  | IQC AQL 정책명 |
+| `INSPECTION_LEVEL` | `VARCHAR2(20)` | `Y` |  |  | 검사수준 |
+| `MAJOR_AQL_CODE` | `VARCHAR2(50)` | `Y` |  |  | Major AQL 기준 코드 |
+| `MINOR_AQL_CODE` | `VARCHAR2(50)` | `Y` |  |  | Minor AQL 기준 코드 |
+| `CRITICAL_MODE` | `VARCHAR2(30)` | `N` |  | 기본값 `'IMMEDIATE_FAIL'`<br>CHECK `CRITICAL_MODE IN ('IMMEDIATE_FAIL')` | Critical 불량 판정 방식 |
+| `USE_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `USE_YN IN ('Y', 'N')`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N |  |
+| `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+
 ### `IQC_ITEM_MASTERS`
 
 - 설명: IQC 검사항목 마스터 (품목별)
@@ -6629,6 +6687,9 @@ erDiagram
 | `DEFECT_GRADE` | `VARCHAR2(10)` | `Y` |  | COM_CODES.DEFECT_GRADE: CRITICAL=치명(Critical), MAJOR=중결점(Major), MINOR=경결점(Minor) | 불량등급: CRITICAL/MAJOR/MINOR |
 | `INSPECTION_LEVEL` | `VARCHAR2(5)` | `Y` |  |  | ISO 2859-1 검사수준 |
 | `AQL` | `NUMBER` | `Y` |  |  | 합격품질수준(AQL) |
+| `INSPECTION_TYPE` | `VARCHAR2(12)` | `Y` |  |  | 검사유형 AQL/DESTRUCTIVE/FULL (IQC_INSPECT_TYPE) |
+| `SAMPLE_METHOD` | `VARCHAR2(8)` | `Y` |  |  | 샘플방식 AQL(자동)/FIXED(고정) (IQC_SAMPLE_METHOD) |
+| `SAMPLE_QTY` | `NUMBER` | `Y` |  |  | FIXED/DESTRUCTIVE 고정 샘플수(LOT당) |
 
 ### `IQC_TEMPLATES`
 
@@ -6667,6 +6728,12 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `DEFECT_GRADE` | `VARCHAR2(10)` | `Y` |  | COM_CODES.DEFECT_GRADE: CRITICAL=치명(Critical), MAJOR=중결점(Major), MINOR=경결점(Minor) |  |
+| `INSPECTION_LEVEL` | `VARCHAR2(5)` | `Y` |  |  |  |
+| `AQL` | `NUMBER` | `Y` |  |  |  |
+| `INSPECTION_TYPE` | `VARCHAR2(12)` | `Y` |  |  |  |
+| `SAMPLE_METHOD` | `VARCHAR2(8)` | `Y` |  |  |  |
+| `SAMPLE_QTY` | `NUMBER` | `Y` |  |  |  |
 
 ### `ITEM_MASTERS`
 
@@ -6712,13 +6779,8 @@ erDiagram
 | `MARKING_TEXT` | `VARCHAR2(100)` | `Y` |  |  | 마킹 문구 |
 | `MIN_PACK_QTY` | `NUMBER` | `N` |  | 기본값 `0` |  |
 | `COLOR` | `VARCHAR2(50)` | `Y` |  |  | 품목 색상 |
-| `LENGTH` | `NUMBER` | `Y` |  |  | 품목 길이 |
-| `STRIP_BEFORE` | `NUMBER` | `Y` |  |  | 스트리핑 전 |
-| `STRIP_AFTER` | `NUMBER` | `Y` |  |  | 스트리핑 후 |
-| `INSPECTION_LEVEL` | `VARCHAR2(20)` | `Y` |  |  | 품목 기준 AQL 검사수준 |
-| `AQL_CRITICAL` | `NUMBER(8,3)` | `Y` |  |  | 품목 기준 Critical AQL. Critical 불량은 1건 이상 즉시 불합격 |
-| `AQL_MAJOR` | `NUMBER(8,3)` | `Y` |  |  | 품목 기준 Major AQL |
-| `AQL_MINOR` | `NUMBER(8,3)` | `Y` |  |  | 품목 기준 Minor AQL |
+| `MODEL_NAME` | `VARCHAR2(100)` | `Y` |  |  | 차종 |
+| `IQC_AQL_POLICY_CODE` | `VARCHAR2(50)` | `Y` |  |  | IQC AQL 정책 코드 |
 
 ### `ITEM_MASTERS_CONSUMABLE_BAK_20260616`
 
@@ -8152,6 +8214,7 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `CIRCUIT_ID` | `NUMBER` | `Y` | FK->HARNESS_CIRCUIT_SPECS(CIRCUIT_ID) |  | 공정 투입자재가 참조하는 회로 사양 ID |
 
 ### `ROUTING_PROCESSES`
 

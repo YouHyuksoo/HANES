@@ -95,6 +95,50 @@ export class CreateAqlDto {
 
 export class UpdateAqlDto extends PartialType(CreateAqlDto) {}
 
+export class CreateIqcAqlPolicyDto {
+  @ApiProperty({ description: 'IQC AQL 정책 코드', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  policyCode: string;
+
+  @ApiProperty({ description: 'IQC AQL 정책명', maxLength: 100 })
+  @IsString()
+  @MaxLength(100)
+  policyName: string;
+
+  @ApiPropertyOptional({ description: '검사수준', maxLength: 20 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  inspectionLevel?: string;
+
+  @ApiPropertyOptional({ description: 'Major AQL 기준 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  majorAqlCode?: string;
+
+  @ApiPropertyOptional({ description: 'Minor AQL 기준 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  minorAqlCode?: string;
+
+  @ApiPropertyOptional({ description: '사용여부', enum: ['Y', 'N'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  useYn?: string;
+
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+}
+
+export class UpdateIqcAqlPolicyDto extends PartialType(CreateIqcAqlPolicyDto) {}
+
 export class AqlQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '검색어' })
   @IsOptional()

@@ -18,6 +18,7 @@ export interface IqcItem {
   arrivalNo: string;
   itemCode: string;
   itemName: string;
+  vendorCode: string;
   supplierName: string;
   /** 입하건 총수량 (SUM INIT_QTY) */
   totalQty: number;
@@ -87,7 +88,8 @@ export function useIqcData() {
         arrivalNo: g.arrivalNo || '-',
         itemCode: g.itemCode || '',
         itemName: g.itemName || '',
-        supplierName: g.vendor || '-',
+        vendorCode: g.vendor || '',
+        supplierName: g.vendorName || g.vendor || '-',
         totalQty: g.totalQty ?? 0,
         serialCount: g.serialCount ?? 0,
         unit: g.unit || 'EA',

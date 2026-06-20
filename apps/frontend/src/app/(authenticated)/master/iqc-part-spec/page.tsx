@@ -17,18 +17,22 @@ interface PartItem {
   itemCode: string;
   itemName: string;
   sampleQty?: number | null;
-  inspectionLevel?: string | null;
-  aqlCritical?: number | null;
-  aqlMajor?: number | null;
-  aqlMinor?: number | null;
+  iqcAqlPolicyCode?: string | null;
 }
 
 interface AqlPolicyPreview {
   inspectionLevel: string;
   inspectionMode: string;
   sampleQty: number;
+  policyCode?: string | null;
   majorRule?: { aqlCode: string; acceptQty: number; rejectQty: number } | null;
   minorRule?: { aqlCode: string; acceptQty: number; rejectQty: number } | null;
+  itemResults?: Array<{
+    defectGrade?: string | null;
+    inspectionType?: string | null;
+    requiredQty?: number | null;
+    sampleQty?: number | null;
+  }>;
 }
 
 export default function IqcPartSpecPage() {
@@ -100,7 +104,7 @@ export default function IqcPartSpecPage() {
     const lotQty = Math.max(1, Number(aqlPreviewLotQty) || 1);
     let cancelled = false;
     setAqlPreviewLoading(true);
-    api.get("/quality/aql/resolve-iqc", {
+    api.get("/quality/aql/resolve-iqc-items", {
       params: {
         itemCode: selectedPart.itemCode,
         lotQty,
@@ -124,6 +128,17 @@ export default function IqcPartSpecPage() {
   const renderAqlValue = (value: number | null | undefined) => (
     value === null || value === undefined ? "-" : value
   );
+
+  const itemSpecSummary = useMemo(() => {
+    const results = aqlPreview?.itemResults ?? [];
+    return {
+      total: results.length,
+      critical: results.filter((item) => item.defectGrade === "CRITICAL").length,
+      major: results.filter((item) => item.defectGrade === "MAJOR").length,
+      minor: results.filter((item) => item.defectGrade === "MINOR").length,
+      fixed: results.filter((item) => item.inspectionType === "DESTRUCTIVE" || item.inspectionType === "FULL" || item.requiredQty != null || item.sampleQty != null).length,
+    };
+  }, [aqlPreview]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -172,24 +187,18 @@ export default function IqcPartSpecPage() {
               </div>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">검사수준</div>
-                  <div className="mt-1 text-sm font-semibold text-text">{selectedPart.inspectionLevel || "-"}</div>
+                  <div className="text-[11px] text-text-muted">AQL 정책</div>
+                  <div className="mt-1 text-sm font-semibold text-text">{selectedPart.iqcAqlPolicyCode || "-"}</div>
                 </div>
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
                   <div className="text-[11px] text-text-muted">기본시료수</div>
                   <div className="mt-1 text-sm font-semibold text-text tabular-nums">{renderAqlValue(selectedPart.sampleQty)}</div>
                 </div>
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">Critical AQL</div>
-                  <div className="mt-1 text-sm font-semibold text-red-400 tabular-nums">{renderAqlValue(selectedPart.aqlCritical)}</div>
-                </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">Major AQL</div>
-                  <div className="mt-1 text-sm font-semibold text-amber-300 tabular-nums">{renderAqlValue(selectedPart.aqlMajor)}</div>
-                </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">Minor AQL</div>
-                  <div className="mt-1 text-sm font-semibold text-cyan-300 tabular-nums">{renderAqlValue(selectedPart.aqlMinor)}</div>
+                  <div className="text-[11px] text-text-muted">검사수준</div>
+                  <div className="mt-1 text-sm font-semibold text-text">
+                    {aqlPreviewLoading ? "..." : (aqlPreview?.inspectionLevel ?? "-")}
+                  </div>
                 </div>
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
                   <div className="text-[11px] text-text-muted">샘플수량</div>
@@ -207,6 +216,18 @@ export default function IqcPartSpecPage() {
                   <div className="text-[11px] text-text-muted">Minor Ac/Re</div>
                   <div className="mt-1 text-sm font-semibold text-text tabular-nums">
                     {aqlPreviewLoading ? "..." : (aqlPreview?.minorRule ? `${aqlPreview.minorRule.acceptQty}/${aqlPreview.minorRule.rejectQty}` : "-")}
+                  </div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">검사항목 기준</div>
+                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                    {aqlPreviewLoading ? "..." : `${itemSpecSummary.total}건`}
+                  </div>
+                </div>
+                <div className="rounded border border-border/70 bg-surface px-3 py-2">
+                  <div className="text-[11px] text-text-muted">파괴/고정</div>
+                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                    {aqlPreviewLoading ? "..." : `${itemSpecSummary.fixed}건`}
                   </div>
                 </div>
               </div>

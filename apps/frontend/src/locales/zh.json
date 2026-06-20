@@ -912,15 +912,14 @@
       "custPartNo": "客户品番",
       "rev": "版本",
       "productType": "产品类型",
+      "modelName": "车型",
       "boxQty": "箱入数量",
       "minPackQty": "最小包装数量",
       "lotUnitQty": "捆包单位数量",
       "color": "颜色",
-      "length": "长度",
-      "stripBefore": "剥皮前",
-      "stripAfter": "剥皮后",
       "iqcFlag": "IQC对象",
       "inspectMethod": "检查区分",
+      "iqcAqlPolicyCode": "AQL策略",
       "inspectFull": "检查",
       "inspectSkip": "免检",
       "tactTime": "节拍时间(秒)",
@@ -1298,7 +1297,11 @@
       "destructive": "破坏检查",
       "nonDestructive": "非破坏",
       "inspItem": "检查项目",
-      "type": "类型"
+      "type": "类型",
+      "inspectionType": "检验类型",
+      "sampleQtyCol": "样本数",
+      "defectGrade": "缺陷等级",
+      "inspectionLevel": "检验水平"
     },
     "iqcTemplate": {
       "title": "IQC项目模板管理",
@@ -4549,6 +4552,7 @@
       "warningThreshold": "警告阈值",
       "sectionImage": "图片",
       "imageUploadHint": "点击上传图片",
+      "imageLoadFailed": "无法加载图片",
       "imageChange": "更换图片",
       "imageSaveFirst": "保存后可上传图片"
     },

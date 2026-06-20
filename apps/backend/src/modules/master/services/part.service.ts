@@ -49,7 +49,7 @@ export class PartService {
     if (search) {
       const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(p.itemCode LIKE :search OR p.itemName LIKE :searchRaw OR p.itemNo LIKE :search OR p.custPartNo LIKE :search OR p.spec LIKE :searchRaw OR p.markingText LIKE :searchRaw)',
+        '(p.itemCode LIKE :search OR p.itemName LIKE :searchRaw OR p.itemNo LIKE :search OR p.custPartNo LIKE :search OR p.modelName LIKE :searchRaw OR p.spec LIKE :searchRaw OR p.markingText LIKE :searchRaw)',
         { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
@@ -96,14 +96,12 @@ export class PartService {
       custPartNo: dto.custPartNo,
       itemType: dto.itemType,
       productType: dto.productType,
+      modelName: dto.modelName ?? null,
       spec: dto.spec,
       rev: dto.rev,
       markingText: dto.markingText,
       unit: dto.unit ?? 'EA',
       color: dto.color ?? null,
-      length: dto.length ?? null,
-      stripBefore: dto.stripBefore ?? null,
-      stripAfter: dto.stripAfter ?? null,
       drawNo: dto.drawNo,
       leadTime: dto.leadTime ?? 0,
       safetyStock: dto.safetyStock ?? 0,
@@ -112,10 +110,7 @@ export class PartService {
       minPackQty: dto.minPackQty ?? 0,
       iqcYn: dto.iqcYn ?? 'Y',
       inspectMethod: dto.inspectMethod ?? null,
-      inspectionLevel: dto.inspectionLevel ?? null,
-      aqlCritical: dto.aqlCritical ?? null,
-      aqlMajor: dto.aqlMajor ?? null,
-      aqlMinor: dto.aqlMinor ?? null,
+      iqcAqlPolicyCode: dto.iqcAqlPolicyCode ?? null,
       tactTime: dto.tactTime ?? 0,
       expiryDate: dto.expiryDate ?? 0,
       expiryExtDays: dto.expiryExtDays ?? 0,
@@ -142,14 +137,12 @@ export class PartService {
       | 'custPartNo'
       | 'itemType'
       | 'productType'
+      | 'modelName'
       | 'spec'
       | 'rev'
       | 'markingText'
       | 'unit'
       | 'color'
-      | 'length'
-      | 'stripBefore'
-      | 'stripAfter'
       | 'drawNo'
       | 'leadTime'
       | 'safetyStock'
@@ -157,10 +150,7 @@ export class PartService {
       | 'boxQty'
       | 'iqcYn'
       | 'inspectMethod'
-      | 'inspectionLevel'
-      | 'aqlCritical'
-      | 'aqlMajor'
-      | 'aqlMinor'
+      | 'iqcAqlPolicyCode'
       | 'tactTime'
       | 'expiryDate'
       | 'expiryExtDays'
@@ -178,14 +168,12 @@ export class PartService {
       ...(dto.custPartNo !== undefined ? { custPartNo: dto.custPartNo } : {}),
       ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
       ...(dto.productType !== undefined ? { productType: dto.productType } : {}),
+      ...(dto.modelName !== undefined ? { modelName: dto.modelName || null } : {}),
       ...(dto.spec !== undefined ? { spec: dto.spec } : {}),
       ...(dto.rev !== undefined ? { rev: dto.rev } : {}),
       ...(dto.markingText !== undefined ? { markingText: dto.markingText } : {}),
       ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
       ...(dto.color !== undefined ? { color: dto.color } : {}),
-      ...(dto.length !== undefined ? { length: dto.length } : {}),
-      ...(dto.stripBefore !== undefined ? { stripBefore: dto.stripBefore } : {}),
-      ...(dto.stripAfter !== undefined ? { stripAfter: dto.stripAfter } : {}),
       ...(dto.drawNo !== undefined ? { drawNo: dto.drawNo } : {}),
       ...(dto.leadTime !== undefined ? { leadTime: dto.leadTime } : {}),
       ...(dto.safetyStock !== undefined ? { safetyStock: dto.safetyStock } : {}),
@@ -193,10 +181,7 @@ export class PartService {
       ...(dto.boxQty !== undefined ? { boxQty: dto.boxQty } : {}),
       ...(dto.iqcYn !== undefined ? { iqcYn: dto.iqcYn } : {}),
       ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),
-      ...(dto.inspectionLevel !== undefined ? { inspectionLevel: dto.inspectionLevel || null } : {}),
-      ...(dto.aqlCritical !== undefined ? { aqlCritical: dto.aqlCritical } : {}),
-      ...(dto.aqlMajor !== undefined ? { aqlMajor: dto.aqlMajor } : {}),
-      ...(dto.aqlMinor !== undefined ? { aqlMinor: dto.aqlMinor } : {}),
+      ...(dto.iqcAqlPolicyCode !== undefined ? { iqcAqlPolicyCode: dto.iqcAqlPolicyCode || null } : {}),
       ...(dto.tactTime !== undefined ? { tactTime: dto.tactTime } : {}),
       ...(dto.expiryDate !== undefined ? { expiryDate: dto.expiryDate } : {}),
       ...(dto.expiryExtDays !== undefined ? { expiryExtDays: dto.expiryExtDays } : {}),

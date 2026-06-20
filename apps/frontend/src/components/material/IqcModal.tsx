@@ -62,6 +62,18 @@ interface AqlPolicyPreview {
   inspectionLevel: string;
   inspectionMode: string;
   sampleQty: number;
+  itemResults?: Array<{
+    seq: number;
+    inspItemCode?: string | null;
+    defectGrade?: string | null;
+    inspectionLevel?: string | null;
+    aql?: number | null;
+    acceptQty?: number | null;
+    rejectQty?: number | null;
+    inspectionType?: string | null;
+    requiredQty?: number | null;
+    inspectedQty?: number | null;
+  }>;
   majorRule?: { aqlCode: string; acceptQty: number; rejectQty: number } | null;
   minorRule?: { aqlCode: string; acceptQty: number; rejectQty: number } | null;
 }
@@ -210,10 +222,10 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   useEffect(() => {
     if (!isOpen || !selectedItem) return;
 
-    api.get("/quality/aql/resolve-iqc", {
+    api.get("/quality/aql/resolve-iqc-items", {
       params: {
         itemCode: selectedItem.itemCode,
-        vendorCode: selectedItem.supplierName,
+        vendorCode: selectedItem.vendorCode,
         lotQty: selectedItem.totalQty,
       },
     })
@@ -229,6 +241,20 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     () => inspectItems.filter((it) => ['DESTRUCTIVE', 'FULL'].includes((it.inspectionType ?? 'AQL').toUpperCase())),
     [inspectItems],
   );
+
+  const aqlItemSummary = useMemo(() => {
+    const itemResults = aqlPolicy?.itemResults ?? [];
+    return {
+      total: itemResults.length,
+      fixed: itemResults.filter((item) => {
+        const type = String(item.inspectionType ?? '').toUpperCase();
+        return type === 'DESTRUCTIVE' || type === 'FULL' || item.requiredQty != null || item.inspectedQty != null;
+      }).length,
+      rules: itemResults
+        .filter((item) => item.acceptQty != null || item.rejectQty != null || item.requiredQty != null)
+        .slice(0, 3),
+    };
+  }, [aqlPolicy?.itemResults]);
 
   useEffect(() => {
     if (aqlItems.length === 0) return;
@@ -552,6 +578,26 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
               <span className="mt-1 block text-xs font-semibold text-text">
                 {aqlPolicy ? `${aqlPolicy.sampleQty.toLocaleString()} / ${aqlPolicy.inspectionLevel} / ${aqlPolicy.inspectionMode}` : "-"}
               </span>
+              {aqlPolicy && (
+                <span className="mt-1 block text-[10px] leading-tight text-text-muted">
+                  검사항목 기준 {aqlItemSummary.total}건
+                  {aqlItemSummary.fixed > 0 ? ` · 파괴/고정 ${aqlItemSummary.fixed}건` : ""}
+                </span>
+              )}
+              {aqlItemSummary.rules.length > 0 && (
+                <div className="mt-1 space-y-0.5">
+                  {aqlItemSummary.rules.map((item) => (
+                    <div key={`${item.seq}-${item.inspItemCode ?? ''}`} className="flex min-w-0 items-center justify-between gap-1 text-[10px] text-text-muted">
+                      <span className="truncate">{item.inspItemCode ?? `SEQ ${item.seq}`} {item.defectGrade ?? ""}</span>
+                      <span className="shrink-0 tabular-nums">
+                        {item.acceptQty != null || item.rejectQty != null
+                          ? `Ac/Re ${item.acceptQty ?? "-"}/${item.rejectQty ?? "-"}`
+                          : `시료 ${item.requiredQty ?? "-"}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 검사성적서 */}

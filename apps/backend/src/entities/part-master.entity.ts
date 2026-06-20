@@ -34,6 +34,9 @@ export class PartMaster {
   @Column({ type: 'varchar2', name: 'PRODUCT_TYPE', length: 50, nullable: true })
   productType: string | null;
 
+  @Column({ type: 'varchar2', name: 'MODEL_NAME', length: 100, nullable: true })
+  modelName: string | null;
+
   @Column({ type: 'varchar2', name: 'SPEC', length: 255, nullable: true })
   spec: string | null;
 
@@ -48,15 +51,6 @@ export class PartMaster {
 
   @Column({ type: 'varchar2', name: 'COLOR', length: 50, nullable: true })
   color: string | null;
-
-  @Column({ type: 'number', name: 'LENGTH', nullable: true })
-  length: number | null;
-
-  @Column({ type: 'number', name: 'STRIP_BEFORE', nullable: true })
-  stripBefore: number | null;
-
-  @Column({ type: 'number', name: 'STRIP_AFTER', nullable: true })
-  stripAfter: number | null;
 
   @Column({ type: 'varchar2', name: 'DRAW_NO', length: 50, nullable: true })
   drawNo: string | null;
@@ -100,17 +94,8 @@ export class PartMaster {
   @Column({ name: 'SAMPLE_QTY', type: 'int', nullable: true })
   sampleQty: number | null; // 기본시료수. AQL 산출 샘플수량과 별개
 
-  @Column({ type: 'varchar2', name: 'INSPECTION_LEVEL', length: 20, nullable: true })
-  inspectionLevel: string | null;
-
-  @Column({ type: 'number', name: 'AQL_CRITICAL', precision: 8, scale: 3, nullable: true })
-  aqlCritical: number | null;
-
-  @Column({ type: 'number', name: 'AQL_MAJOR', precision: 8, scale: 3, nullable: true })
-  aqlMajor: number | null;
-
-  @Column({ type: 'number', name: 'AQL_MINOR', precision: 8, scale: 3, nullable: true })
-  aqlMinor: number | null;
+  @Column({ type: 'varchar2', name: 'IQC_AQL_POLICY_CODE', length: 50, nullable: true })
+  iqcAqlPolicyCode: string | null;
 
   @Column({ type: 'int', name: 'PACK_UNIT', nullable: true })
   packUnit: number | null; // 팔레트 구성 단위(팔레트당 박스 수)

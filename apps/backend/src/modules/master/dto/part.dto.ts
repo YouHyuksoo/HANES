@@ -44,6 +44,12 @@ export class CreatePartDto {
   @MaxLength(20)
   productType?: string;
 
+  @ApiPropertyOptional({ description: '차종', example: 'CN7' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  modelName?: string;
+
   @ApiPropertyOptional({ description: '규격' })
   @IsOptional()
   @IsString()
@@ -73,27 +79,6 @@ export class CreatePartDto {
   @IsString()
   @MaxLength(50)
   color?: string;
-
-  @ApiPropertyOptional({ description: '길이' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  length?: number;
-
-  @ApiPropertyOptional({ description: '스트리핑 전' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  stripBefore?: number;
-
-  @ApiPropertyOptional({ description: '스트리핑 후' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  stripAfter?: number;
 
   @ApiPropertyOptional({ description: '도면 번호' })
   @IsOptional()
@@ -190,32 +175,11 @@ export class CreatePartDto {
   @Min(0)
   sampleQty?: number;
 
-  @ApiPropertyOptional({ description: 'AQL 검사수준', example: 'II' })
+  @ApiPropertyOptional({ description: 'IQC AQL 정책 코드', example: 'AQLP-II-1.0-2.5' })
   @IsOptional()
   @IsString()
-  @MaxLength(20)
-  inspectionLevel?: string;
-
-  @ApiPropertyOptional({ description: 'Critical AQL', example: 0 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  aqlCritical?: number;
-
-  @ApiPropertyOptional({ description: 'Major AQL', example: 1.0 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  aqlMajor?: number;
-
-  @ApiPropertyOptional({ description: 'Minor AQL', example: 2.5 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  aqlMinor?: number;
+  @MaxLength(50)
+  iqcAqlPolicyCode?: string;
 
   @ApiPropertyOptional({ description: '팔레트 구성 단위(팔레트당 박스 수)', example: 40 })
   @IsOptional()

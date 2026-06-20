@@ -1,10 +1,9 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
-import { CircleHelp } from "lucide-react";
 import { Input, Select } from "@/components/ui";
 import type { InputProps, SelectProps } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, HelpTooltip } from "@/components/shared";
 
 export const PART_FIELD_HELP = {
   itemCode: { db: "ITEM_MASTERS.ITEM_CODE", description: "MES 내부에서 품목을 식별하는 고유 코드입니다." },
@@ -15,19 +14,14 @@ export const PART_FIELD_HELP = {
   markingText: { db: "ITEM_MASTERS.MARKING_TEXT", description: "라벨, 마킹 설비 등에 전달할 표시 문구입니다." },
   itemType: { db: "ITEM_MASTERS.ITEM_TYPE", description: "원자재, 반제품, 완제품 등 MES 흐름 분류입니다." },
   productType: { db: "ITEM_MASTERS.PRODUCT_TYPE", description: "품목군 또는 제품 계열을 나타내는 코드입니다." },
+  modelName: { db: "ITEM_MASTERS.MODEL_NAME", description: "차량 모델 또는 차종을 구분하는 품목 관리 특성입니다." },
   spec: { db: "ITEM_MASTERS.SPEC", description: "품목 규격, 사양, 치수 등 보조 설명입니다." },
   color: { db: "ITEM_MASTERS.COLOR", description: "전선색 등 품목 색상 정보입니다." },
-  length: { db: "ITEM_MASTERS.LENGTH", description: "품목 기준 길이입니다." },
-  stripBefore: { db: "ITEM_MASTERS.STRIP_BEFORE", description: "가공 전 스트리핑 기준 길이입니다." },
-  stripAfter: { db: "ITEM_MASTERS.STRIP_AFTER", description: "가공 후 스트리핑 기준 길이입니다." },
   unit: { db: "ITEM_MASTERS.UNIT", description: "수량을 해석하는 기본 단위입니다." },
   iqcYn: { db: "ITEM_MASTERS.IQC_FLAG", description: "수입검사 기준 적용 대상 여부입니다." },
   inspectMethod: { db: "ITEM_MASTERS.INSPECT_METHOD", description: "IQC 검사 또는 무검사 적용 방식을 구분합니다." },
   sampleQty: { db: "ITEM_MASTERS.SAMPLE_QTY", description: "IQC 검사 시 사용할 기본시료수입니다. AQL 산출 샘플수량과 별개입니다." },
-  inspectionLevel: { db: "ITEM_MASTERS.INSPECTION_LEVEL", description: "품목 기준 AQL 검사수준입니다." },
-  aqlCritical: { db: "ITEM_MASTERS.AQL_CRITICAL", description: "품목 기준 Critical AQL입니다. Critical 불량은 1건 이상 즉시 불합격입니다." },
-  aqlMajor: { db: "ITEM_MASTERS.AQL_MAJOR", description: "품목 기준 Major AQL입니다." },
-  aqlMinor: { db: "ITEM_MASTERS.AQL_MINOR", description: "품목 기준 Minor AQL입니다." },
+  iqcAqlPolicyCode: { db: "ITEM_MASTERS.IQC_AQL_POLICY_CODE", description: "품목에 적용할 IQC AQL 정책 기준정보 코드입니다." },
   useYn: { db: "ITEM_MASTERS.USE_YN", description: "신규 조회, 선택, 사용 가능 여부입니다." },
   boxQty: { db: "ITEM_MASTERS.BOX_QTY", description: "박스 하나에 장입하는 기준 수량입니다. 10 단위 후보를 선택하거나 직접 입력할 수 있습니다." },
   minPackQty: { db: "ITEM_MASTERS.MIN_PACK_QTY", description: "자재 불출 시 최소 단위로 취급할 수량입니다." },
@@ -58,14 +52,7 @@ export function FieldLabel({ field, label, required }: Omit<FieldBaseProps, "chi
     <label className="mb-1.5 flex items-center gap-1 text-sm font-medium text-text">
       <span>{label}</span>
       {required && <span className="text-red-500">*</span>}
-      <span
-        data-part-field-help={field}
-        title={`${help.description}\nDB: ${help.db}`}
-        aria-label={`${label} 설명. ${help.description} DB 컬럼 ${help.db}`}
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:text-primary"
-      >
-        <CircleHelp className="w-3.5 h-3.5" />
-      </span>
+      <HelpTooltip description={help.description} db={help.db} dataField={field} />
     </label>
   );
 }

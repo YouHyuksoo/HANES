@@ -4,12 +4,20 @@ import { In, Repository } from 'typeorm';
 import { AqlStandard } from '../../../../entities/aql-standard.entity';
 import { AqlSamplingRule } from '../../../../entities/aql-sampling-rule.entity';
 import { ComCode } from '../../../../entities/com-code.entity';
+import { IqcAqlPolicy } from '../../../../entities/iqc-aql-policy.entity';
 import { IqcLog } from '../../../../entities/iqc-log.entity';
 import { PartMaster } from '../../../../entities/part-master.entity';
 import { PartnerMaster } from '../../../../entities/partner-master.entity';
 import { VendorInspectionModeHistory } from '../../../../entities/vendor-inspection-mode-history.entity';
 import { IqcPartSpecItem } from '../../../../entities/iqc-part-spec-item.entity';
-import { AqlQueryDto, AqlRuleDto, CreateAqlDto, UpdateAqlDto } from '../dto/aql.dto';
+import {
+  AqlQueryDto,
+  AqlRuleDto,
+  CreateAqlDto,
+  CreateIqcAqlPolicyDto,
+  UpdateAqlDto,
+  UpdateIqcAqlPolicyDto,
+} from '../dto/aql.dto';
 
 type IqcDefectCounts = {
   critical?: number | null;
@@ -51,6 +59,7 @@ export type IqcAqlPolicyResolution = {
   itemCode: string;
   vendorCode: string | null;
   lotQty: number;
+  policyCode: string | null;
   inspectionLevel: string;
   inspectionMode: string;
   result: 'PASS' | 'FAIL';
@@ -72,6 +81,8 @@ export class AqlService {
     private readonly standardRepo: Repository<AqlStandard>,
     @InjectRepository(AqlSamplingRule)
     private readonly ruleRepo: Repository<AqlSamplingRule>,
+    @InjectRepository(IqcAqlPolicy)
+    private readonly policyRepo: Repository<IqcAqlPolicy>,
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
     @InjectRepository(PartnerMaster)
@@ -115,6 +126,70 @@ export class AqlService {
       order: { lotQtyFrom: 'ASC' },
     });
     return { ...standard, rules };
+  }
+
+  async findPolicies(query: { useYn?: string }, company?: string, plant?: string) {
+    const qb = this.policyRepo.createQueryBuilder('policy');
+    if (company) qb.andWhere('policy.company = :company', { company });
+    if (plant) qb.andWhere('policy.plant = :plant', { plant });
+    if (query.useYn) qb.andWhere('policy.useYn = :useYn', { useYn: query.useYn });
+    return qb.orderBy('policy.policyCode', 'ASC').getMany();
+  }
+
+  async createPolicy(dto: CreateIqcAqlPolicyDto, company: string, plant: string, userId: string) {
+    const policyCode = this.normalizeCode(dto.policyCode);
+    const exists = await this.policyRepo.findOne({ where: { company, plant, policyCode } });
+    if (exists) throw new BadRequestException(`이미 등록된 IQC AQL 정책입니다: ${policyCode}`);
+    await this.assertPolicyAqlCodesActive(dto.majorAqlCode, dto.minorAqlCode, company, plant);
+
+    const policy = this.policyRepo.create({
+      company,
+      plant,
+      policyCode,
+      policyName: dto.policyName.trim(),
+      inspectionLevel: dto.inspectionLevel || null,
+      majorAqlCode: dto.majorAqlCode ? this.normalizeCode(dto.majorAqlCode) : null,
+      minorAqlCode: dto.minorAqlCode ? this.normalizeCode(dto.minorAqlCode) : null,
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: dto.useYn ?? 'Y',
+      remark: dto.remark ?? null,
+      createdBy: userId,
+      updatedBy: userId,
+    });
+    await this.policyRepo.save(policy);
+    return policy;
+  }
+
+  async updatePolicy(policyCodeParam: string, dto: UpdateIqcAqlPolicyDto, company: string, plant: string, userId: string) {
+    const policy = await this.findPolicyOrThrow(policyCodeParam, company, plant, { allowInactive: true });
+    await this.assertPolicyAqlCodesActive(
+      dto.majorAqlCode ?? policy.majorAqlCode ?? undefined,
+      dto.minorAqlCode ?? policy.minorAqlCode ?? undefined,
+      company,
+      plant,
+    );
+
+    Object.assign(policy, {
+      policyName: dto.policyName ?? policy.policyName,
+      inspectionLevel: dto.inspectionLevel ?? policy.inspectionLevel,
+      majorAqlCode: dto.majorAqlCode !== undefined ? (dto.majorAqlCode ? this.normalizeCode(dto.majorAqlCode) : null) : policy.majorAqlCode,
+      minorAqlCode: dto.minorAqlCode !== undefined ? (dto.minorAqlCode ? this.normalizeCode(dto.minorAqlCode) : null) : policy.minorAqlCode,
+      useYn: dto.useYn ?? policy.useYn,
+      remark: dto.remark ?? policy.remark,
+      updatedBy: userId,
+    });
+    await this.policyRepo.save(policy);
+    return policy;
+  }
+
+  async deletePolicy(policyCodeParam: string, company: string, plant: string, userId = 'system') {
+    const policy = await this.findPolicyOrThrow(policyCodeParam, company, plant, { allowInactive: true });
+    const assignedCount = await this.partRepo.count({ where: { company, plant, iqcAqlPolicyCode: policy.policyCode } });
+    if (assignedCount > 0) throw new BadRequestException('품목에 배정된 AQL 정책은 사용중지할 수 없습니다.');
+    policy.useYn = 'N';
+    policy.updatedBy = userId;
+    await this.policyRepo.save(policy);
+    return { policyCode: policy.policyCode, deleted: true };
   }
 
   async create(dto: CreateAqlDto, company: string, plant: string, userId: string) {
@@ -222,7 +297,8 @@ export class AqlService {
         })
       : null;
 
-    const inspectionLevel = (part.inspectionLevel || 'II').trim().toUpperCase();
+    const policy = await this.resolvePartPolicy(part, input.company, input.plant);
+    const inspectionLevel = (policy?.inspectionLevel || 'II').trim().toUpperCase();
     const inspectionMode = this.normalizeInspectionMode(partner?.inspectionMode);
     const lotQty = Math.max(1, Number(input.lotQty) || 1);
     const defectCounts = await this.resolveIqcDefectCounts(input.defectCounts, input.defectCodes, input.company, input.plant);
@@ -230,11 +306,11 @@ export class AqlService {
     const defectMajor = defectCounts.major;
     const defectMinor = defectCounts.minor;
 
-    const majorRule = part.aqlMajor != null
-      ? await this.resolveSeverityRule(inspectionLevel, inspectionMode, Number(part.aqlMajor), lotQty, input.company, input.plant)
+    const majorRule = policy?.majorAqlCode
+      ? await this.resolveRuleByStandardCode(policy.majorAqlCode, lotQty, input.company, input.plant)
       : null;
-    const minorRule = part.aqlMinor != null
-      ? await this.resolveSeverityRule(inspectionLevel, inspectionMode, Number(part.aqlMinor), lotQty, input.company, input.plant)
+    const minorRule = policy?.minorAqlCode
+      ? await this.resolveRuleByStandardCode(policy.minorAqlCode, lotQty, input.company, input.plant)
       : null;
 
     let result: 'PASS' | 'FAIL' = 'PASS';
@@ -255,6 +331,7 @@ export class AqlService {
       itemCode: part.itemCode,
       vendorCode,
       lotQty,
+      policyCode: policy?.policyCode ?? null,
       inspectionLevel,
       inspectionMode,
       result,
@@ -332,7 +409,8 @@ export class AqlService {
         })
       : null;
 
-    const partLevel = (part?.inspectionLevel || 'II').trim().toUpperCase();
+    const policy = part ? await this.resolvePartPolicy(part, input.company, input.plant) : null;
+    const partLevel = (policy?.inspectionLevel || 'II').trim().toUpperCase();
     const inspectionMode = this.normalizeInspectionMode(partner?.inspectionMode);
     const lotQty = Math.max(1, Number(input.lotQty) || 1);
 
@@ -420,6 +498,7 @@ export class AqlService {
       itemCode: input.itemCode,
       vendorCode,
       lotQty,
+      policyCode: policy?.policyCode ?? null,
       inspectionLevel: partLevel,
       inspectionMode,
       result,
@@ -519,6 +598,66 @@ export class AqlService {
     });
     if (!standard) throw new NotFoundException(`AQL 기준을 찾을 수 없습니다: ${aqlCode}`);
     return standard;
+  }
+
+  private async findPolicyOrThrow(policyCodeParam: string, company?: string, plant?: string, options?: { allowInactive?: boolean }) {
+    const policyCode = this.normalizeCode(policyCodeParam);
+    const policy = await this.policyRepo.findOne({
+      where: {
+        policyCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    if (!policy) throw new NotFoundException(`IQC AQL 정책을 찾을 수 없습니다: ${policyCode}`);
+    if (!options?.allowInactive && policy.useYn !== 'Y') throw new BadRequestException('사용 중지된 IQC AQL 정책입니다.');
+    return policy;
+  }
+
+  private async assertPolicyAqlCodesActive(
+    majorAqlCode: string | null | undefined,
+    minorAqlCode: string | null | undefined,
+    company?: string,
+    plant?: string,
+  ) {
+    for (const aqlCode of [majorAqlCode, minorAqlCode].filter(Boolean) as string[]) {
+      const standard = await this.findStandardOrThrow(aqlCode, company, plant);
+      if (standard.useYn !== 'Y') throw new BadRequestException(`사용 중지된 AQL 기준입니다: ${standard.aqlCode}`);
+    }
+  }
+
+  private async resolvePartPolicy(part: PartMaster, company?: string, plant?: string) {
+    const policyCode = part.iqcAqlPolicyCode?.trim();
+    if (!policyCode) {
+      throw new BadRequestException(`IQC AQL 정책이 설정되지 않은 품목입니다: ${part.itemCode}`);
+    }
+    return this.findPolicyOrThrow(policyCode, company, plant);
+  }
+
+  private async resolveRuleByStandardCode(
+    aqlCodeParam: string,
+    lotQty: number,
+    company?: string,
+    plant?: string,
+  ): Promise<AqlSeverityRule> {
+    const standard = await this.findStandardOrThrow(aqlCodeParam, company, plant);
+    if (standard.useYn !== 'Y') throw new BadRequestException('사용 중지된 AQL 기준입니다.');
+
+    const rules = await this.ruleRepo.find({
+      where: { company: standard.company, plant: standard.plant, aqlCode: standard.aqlCode },
+      order: { lotQtyFrom: 'ASC' },
+    });
+    const matched = rules.find((rule) => rule.lotQtyFrom <= lotQty && lotQty <= rule.lotQtyTo);
+    if (!matched) throw new NotFoundException('LOT 수량에 해당하는 AQL sampling rule이 없습니다.');
+
+    return {
+      aqlCode: standard.aqlCode,
+      aqlValue: standard.aqlValue ?? 0,
+      codeLetter: matched.codeLetter ?? this.deriveCodeLetter(matched.lotQtyFrom),
+      sampleSize: matched.sampleSize,
+      acceptQty: matched.acceptQty,
+      rejectQty: matched.rejectQty,
+    };
   }
 
   private async resolveSeverityRule(

@@ -912,15 +912,14 @@
       "custPartNo": "Số LK khách hàng",
       "rev": "Phiên bản",
       "productType": "Loại sản phẩm",
+      "modelName": "Dòng xe",
       "boxQty": "SL hộp",
       "minPackQty": "SL đóng gói tối thiểu",
       "lotUnitQty": "SL đơn vị bó",
       "color": "Màu sắc",
-      "length": "Chiều dài",
-      "stripBefore": "Trước khi tuốt",
-      "stripAfter": "Sau khi tuốt",
       "iqcFlag": "Đối tượng IQC",
       "inspectMethod": "Phân biệt kiểm tra",
+      "iqcAqlPolicyCode": "Chính sách AQL",
       "inspectFull": "Kiểm tra",
       "inspectSkip": "Bỏ qua",
       "tactTime": "Thời gian tact (giây)",
@@ -1298,7 +1297,11 @@
       "destructive": "Phá hủy",
       "nonDestructive": "Không phá hủy",
       "inspItem": "Hạng mục kiểm tra",
-      "type": "Loại"
+      "type": "Loại",
+      "inspectionType": "Loại kiểm tra",
+      "sampleQtyCol": "Số mẫu",
+      "defectGrade": "Cấp lỗi",
+      "inspectionLevel": "Mức kiểm tra"
     },
     "iqcTemplate": {
       "title": "Quản lý mẫu hạng mục IQC",
@@ -4549,6 +4552,7 @@
       "warningThreshold": "Ngưỡng cảnh báo",
       "sectionImage": "Hình ảnh",
       "imageUploadHint": "Nhấp để tải lên hình ảnh",
+      "imageLoadFailed": "Không thể tải hình ảnh",
       "imageChange": "Thay đổi hình ảnh",
       "imageSaveFirst": "Lưu trước để tải lên hình ảnh"
     },

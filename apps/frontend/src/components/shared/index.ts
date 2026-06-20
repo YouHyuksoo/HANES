@@ -20,3 +20,5 @@ export { default as UseYnSelect } from "./UseYnSelect";
 export { default as OrderSearchModal } from "./OrderSearchModal";
 export type { OrderItem } from "./OrderSearchModal";
 export { default as InspectItemImage } from "./InspectItemImage";
+export { default as HelpTooltip } from "./HelpTooltip";
+export type { HelpTooltipProps } from "./HelpTooltip";

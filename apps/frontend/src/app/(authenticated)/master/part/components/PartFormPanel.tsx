@@ -31,6 +31,13 @@ interface Props {
 
 const PACKAGING_QTY_OPTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
+type IqcAqlPolicyOption = {
+  policyCode: string;
+  policyName?: string | null;
+  majorAqlCode?: string | null;
+  minorAqlCode?: string | null;
+};
+
 export default function PartFormPanel({ editingPart, onClose, onSave, animate = true }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingPart;
@@ -60,6 +67,29 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     () => [{ value: "", label: "-" }, ...rawIqcInspectMethodOptions],
     [rawIqcInspectMethodOptions],
   );
+  const [iqcAqlPolicyOptions, setIqcAqlPolicyOptions] = useState([{ value: "", label: "-" }]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get("/quality/aql/policies", { params: { useYn: "Y" } })
+      .then((res) => {
+        if (cancelled) return;
+        const policies: IqcAqlPolicyOption[] = res.data?.data ?? [];
+        setIqcAqlPolicyOptions([
+          { value: "", label: "-" },
+          ...policies.map((policy) => ({
+            value: policy.policyCode,
+            label: `${policy.policyCode} - ${policy.policyName || policy.policyCode}`,
+          })),
+        ]);
+      })
+      .catch(() => {
+        if (!cancelled) setIqcAqlPolicyOptions([{ value: "", label: "-" }]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [form, setForm] = useState(() => ({
     itemCode: editingPart?.itemCode || "",
@@ -68,14 +98,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     custPartNo: editingPart?.custPartNo || "",
     itemType: (editingPart?.itemType || "RAW_MATERIAL") as Part["itemType"],
     productType: editingPart?.productType || "",
+    modelName: editingPart?.modelName || "",
     spec: editingPart?.spec || "",
     rev: editingPart?.rev || "",
     markingText: editingPart?.markingText || "",
     unit: editingPart?.unit || "EA",
     color: editingPart?.color || "",
-    length: editingPart?.length ?? 0,
-    stripBefore: editingPart?.stripBefore ?? 0,
-    stripAfter: editingPart?.stripAfter ?? 0,
     boxQty: editingPart?.boxQty ?? 0,
     minPackQty: editingPart?.minPackQty ?? 0,
     lotUnitQty: editingPart?.lotUnitQty ?? 0,
@@ -85,10 +113,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     iqcYn: editingPart?.iqcYn || "Y",
     inspectMethod: editingPart?.inspectMethod || "",
     sampleQty: editingPart?.sampleQty ?? 0,
-    inspectionLevel: editingPart?.inspectionLevel || "II",
-    aqlCritical: editingPart?.aqlCritical ?? 0,
-    aqlMajor: editingPart?.aqlMajor ?? 1,
-    aqlMinor: editingPart?.aqlMinor ?? 2.5,
+    iqcAqlPolicyCode: editingPart?.iqcAqlPolicyCode || "",
     useYn: editingPart?.useYn || "Y",
     packUnit: editingPart?.packUnit ?? 0,
     storageLocation: editingPart?.storageLocation || "",
@@ -97,6 +122,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   const [saving, setSaving] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(editingPart?.imageUrl ?? null);
+  const [imageError, setImageError] = useState(false);
   const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
 
   // editingPart 변경 시 폼 리셋
@@ -111,14 +137,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       custPartNo: editingPart?.custPartNo || "",
       itemType: (editingPart?.itemType || "RAW_MATERIAL") as Part["itemType"],
       productType: editingPart?.productType || "",
+      modelName: editingPart?.modelName || "",
       spec: editingPart?.spec || "",
       rev: editingPart?.rev || "",
       markingText: editingPart?.markingText || "",
       unit: editingPart?.unit || "EA",
       color: editingPart?.color || "",
-      length: editingPart?.length ?? 0,
-      stripBefore: editingPart?.stripBefore ?? 0,
-      stripAfter: editingPart?.stripAfter ?? 0,
       boxQty: editingPart?.boxQty ?? 0,
       minPackQty: editingPart?.minPackQty ?? 0,
       lotUnitQty: editingPart?.lotUnitQty ?? 0,
@@ -128,10 +152,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       iqcYn: editingPart?.iqcYn || "Y",
       inspectMethod: editingPart?.inspectMethod || "",
       sampleQty: editingPart?.sampleQty ?? 0,
-      inspectionLevel: editingPart?.inspectionLevel || "II",
-      aqlCritical: editingPart?.aqlCritical ?? 0,
-      aqlMajor: editingPart?.aqlMajor ?? 1,
-      aqlMinor: editingPart?.aqlMinor ?? 2.5,
+      iqcAqlPolicyCode: editingPart?.iqcAqlPolicyCode || "",
       useYn: editingPart?.useYn || "Y",
       packUnit: editingPart?.packUnit ?? 0,
       storageLocation: editingPart?.storageLocation || "",
@@ -143,6 +164,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   }, [editingPart]);
 
   useEffect(() => {
+    setImageError(false);
     return () => {
       if (previewUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl);
@@ -192,14 +214,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         itemNo: form.itemNo,
         custPartNo: form.custPartNo || undefined,
         productType: form.productType || undefined,
+        modelName: form.modelName || undefined,
         spec: form.spec || undefined,
         rev: form.rev || undefined,
         markingText: form.markingText || undefined,
         unit: form.unit,
         color: form.color || undefined,
-        length: form.length || undefined,
-        stripBefore: form.stripBefore || undefined,
-        stripAfter: form.stripAfter || undefined,
         boxQty: form.boxQty,
         minPackQty: form.minPackQty,
         lotUnitQty: form.lotUnitQty || undefined,
@@ -209,10 +229,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         iqcYn: form.iqcYn,
         inspectMethod: form.inspectMethod || undefined,
         sampleQty: form.sampleQty || undefined,
-        inspectionLevel: form.inspectionLevel || undefined,
-        aqlCritical: form.aqlCritical,
-        aqlMajor: form.aqlMajor,
-        aqlMinor: form.aqlMinor,
+        iqcAqlPolicyCode: form.iqcAqlPolicyCode || undefined,
         useYn: form.useYn,
         packUnit: form.packUnit || undefined,
         storageLocation: form.storageLocation || undefined,
@@ -287,16 +304,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <FieldSelect field="productType" label={t("master.part.productType", "품목그룹")}
               options={productTypeOptions}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
+            <FieldInput field="modelName" label={t("master.part.modelName", "차종")}
+              value={form.modelName} onChange={e => setField("modelName", e.target.value)} fullWidth />
             <FieldInput field="spec" label={t("master.part.spec")} wrapperClassName="col-span-2"
               value={form.spec} onChange={e => setField("spec", e.target.value)} fullWidth />
             <FieldInput field="color" label={t("master.part.color", "색상")}
               value={form.color} onChange={e => setField("color", e.target.value)} fullWidth />
-            <FieldInput field="length" label={t("master.part.length", "길이")} type="number"
-              value={String(form.length)} onChange={e => setField("length", Number(e.target.value))} fullWidth />
-            <FieldInput field="stripBefore" label={t("master.part.stripBefore", "스트리핑 전")} type="number"
-              value={String(form.stripBefore)} onChange={e => setField("stripBefore", Number(e.target.value))} fullWidth />
-            <FieldInput field="stripAfter" label={t("master.part.stripAfter", "스트리핑 후")} type="number"
-              value={String(form.stripAfter)} onChange={e => setField("stripAfter", Number(e.target.value))} fullWidth />
             <FieldComCodeSelect field="unit" groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false} showCode
               value={form.unit} onChange={v => setField("unit", v)} fullWidth />
             <FieldSelect field="iqcYn" label={t("master.part.iqcFlag", "IQC대상")} options={iqcOptions}
@@ -306,14 +319,9 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={form.inspectMethod} onChange={v => setField("inspectMethod", v)} fullWidth />
             <FieldInput field="sampleQty" label={t("master.part.basicSampleQty", "기본시료수")} type="number" step="0.001"
               value={String(form.sampleQty)} onChange={e => setField("sampleQty", Number(e.target.value))} fullWidth />
-            <FieldComCodeSelect field="inspectionLevel" groupCode="AQL_INSP_LEVEL" label={t("master.part.inspectionLevel", "검사수준")} includeAll={false} showCode
-              value={form.inspectionLevel} onChange={v => setField("inspectionLevel", v)} fullWidth />
-            <FieldComCodeSelect field="aqlCritical" groupCode="AQL_VALUE" label={t("master.part.aqlCritical", "Critical AQL")} includeAll={false} showCode
-              value={String(form.aqlCritical)} onChange={v => setField("aqlCritical", Number(v))} fullWidth />
-            <FieldComCodeSelect field="aqlMajor" groupCode="AQL_VALUE" label={t("master.part.aqlMajor", "Major AQL")} includeAll={false} showCode
-              value={String(form.aqlMajor)} onChange={v => setField("aqlMajor", Number(v))} fullWidth />
-            <FieldComCodeSelect field="aqlMinor" groupCode="AQL_VALUE" label={t("master.part.aqlMinor", "Minor AQL")} includeAll={false} showCode
-              value={String(form.aqlMinor)} onChange={v => setField("aqlMinor", Number(v))} fullWidth />
+            <FieldSelect field="iqcAqlPolicyCode" label={t("master.part.iqcAqlPolicyCode", "AQL 정책")}
+              options={iqcAqlPolicyOptions}
+              value={form.iqcAqlPolicyCode} onChange={v => setField("iqcAqlPolicyCode", v)} fullWidth />
             <FieldYnRadio field="useYn" label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>
@@ -359,11 +367,21 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
           <FieldLabel field="imageUrl" label={t("master.part.sectionImage", "사진")} />
           {previewUrl ? (
             <div className="relative group">
-              <img
-                src={previewUrl}
-                alt={form.itemName || form.itemCode}
-                className="w-full h-44 object-contain rounded-lg border border-border bg-surface"
-              />
+              {imageError ? (
+                <div className="w-full h-44 rounded-lg border border-border bg-surface flex flex-col items-center justify-center gap-2">
+                  <ImageIcon className="w-8 h-8 text-text-muted" />
+                  <span className="text-xs text-text-muted">
+                    {t("master.part.imageLoadFailed", "이미지를 불러올 수 없습니다")}
+                  </span>
+                </div>
+              ) : (
+                <img
+                  src={previewUrl}
+                  alt={form.itemName || form.itemCode}
+                  onError={() => setImageError(true)}
+                  className="w-full h-44 object-contain rounded-lg border border-border bg-surface"
+                />
+              )}
               <button
                 type="button"
                 onClick={() => setImageDeleteConfirmOpen(true)}

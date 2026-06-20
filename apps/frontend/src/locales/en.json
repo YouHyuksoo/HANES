@@ -912,15 +912,14 @@
       "custPartNo": "Cust. Part No.",
       "rev": "Revision",
       "productType": "Product Type",
+      "modelName": "Vehicle Model",
       "boxQty": "Box Qty",
       "minPackQty": "Min Pack Qty",
       "lotUnitQty": "Bundle Unit Qty",
       "color": "Color",
-      "length": "Length",
-      "stripBefore": "Strip Before",
-      "stripAfter": "Strip After",
       "iqcFlag": "IQC Target",
       "inspectMethod": "Inspection Status",
+      "iqcAqlPolicyCode": "AQL Policy",
       "inspectFull": "Inspection",
       "inspectSkip": "Skip",
       "tactTime": "Tact Time (sec)",
@@ -1312,7 +1311,11 @@
       "destructive": "Destructive",
       "nonDestructive": "Non-destructive",
       "inspItem": "Inspection Item",
-      "type": "Type"
+      "type": "Type",
+      "inspectionType": "Inspection Type",
+      "sampleQtyCol": "Sample Qty",
+      "defectGrade": "Defect Grade",
+      "inspectionLevel": "Inspection Level"
     },
     "iqcTemplate": {
       "title": "IQC Item Template Management",
@@ -4563,6 +4566,7 @@
       "warningThreshold": "Warning Threshold",
       "sectionImage": "Image",
       "imageUploadHint": "Click to upload image",
+      "imageLoadFailed": "Unable to load image",
       "imageChange": "Change Image",
       "imageSaveFirst": "Save first to upload image"
     },

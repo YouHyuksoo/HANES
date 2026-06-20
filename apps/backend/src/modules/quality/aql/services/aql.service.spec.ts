@@ -7,6 +7,7 @@ function createRepoMock() {
     save: jest.fn(async (value) => value),
     findOne: jest.fn(),
     find: jest.fn(),
+    count: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
     createQueryBuilder: jest.fn(),
@@ -16,6 +17,7 @@ function createRepoMock() {
 describe('AqlService', () => {
   let standardRepo: ReturnType<typeof createRepoMock>;
   let ruleRepo: ReturnType<typeof createRepoMock>;
+  let policyRepo: ReturnType<typeof createRepoMock>;
   let partRepo: ReturnType<typeof createRepoMock>;
   let partnerRepo: ReturnType<typeof createRepoMock>;
   let iqcLogRepo: ReturnType<typeof createRepoMock>;
@@ -27,6 +29,7 @@ describe('AqlService', () => {
   beforeEach(() => {
     standardRepo = createRepoMock();
     ruleRepo = createRepoMock();
+    policyRepo = createRepoMock();
     partRepo = createRepoMock();
     partnerRepo = createRepoMock();
     iqcLogRepo = createRepoMock();
@@ -36,6 +39,7 @@ describe('AqlService', () => {
     service = new AqlService(
       standardRepo as any,
       ruleRepo as any,
+      policyRepo as any,
       partRepo as any,
       partnerRepo as any,
       iqcLogRepo as any,
@@ -98,16 +102,52 @@ describe('AqlService', () => {
     await expect(service.resolveByAqlCode('AQL-1.0', 25, '40', '1000')).rejects.toThrow(NotFoundException);
   });
 
+  it('creates an IQC AQL policy from active major/minor AQL standards', async () => {
+    policyRepo.findOne.mockResolvedValue(null);
+    standardRepo.findOne
+      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
+      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' });
+
+    const result = await service.createPolicy({
+      policyCode: 'AQLP-II-1.0-2.5',
+      policyName: 'II Major 1.0 Minor 2.5',
+      inspectionLevel: 'II',
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      useYn: 'Y',
+    }, '40', '1000', 'tester');
+
+    expect(policyRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+      policyCode: 'AQLP-II-1.0-2.5',
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+    }));
+    expect(result).toEqual(expect.objectContaining({ policyCode: 'AQLP-II-1.0-2.5' }));
+  });
+
+  it('blocks disabling an IQC AQL policy that is assigned to item masters', async () => {
+    policyRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', policyCode: 'AQLP-II-1.0-2.5', useYn: 'Y' });
+    partRepo.count.mockResolvedValue(1);
+
+    await expect(service.deletePolicy('AQLP-II-1.0-2.5', '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
+  });
+
   it('resolves item AQL policy and fails immediately on critical defects', async () => {
     partRepo.findOne.mockResolvedValue({
       itemCode: 'PCB',
+      iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+    });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
       inspectionLevel: 'II',
-      aqlMajor: 1,
-      aqlMinor: 2.5,
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue({ partnerCode: 'SUP-A', inspectionMode: 'NORMAL' });
     standardRepo.findOne
-      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' });
     ruleRepo.find
@@ -131,13 +171,18 @@ describe('AqlService', () => {
   it('uses item major AQL Ac/Re instead of trusting a caller supplied pass result', async () => {
     partRepo.findOne.mockResolvedValue({
       itemCode: 'HARNESS',
+      iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+    });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
       inspectionLevel: 'II',
-      aqlMajor: 1,
-      aqlMinor: 2.5,
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue({ partnerCode: 'SUP-B', inspectionMode: 'NORMAL' });
     standardRepo.findOne
-      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' });
     ruleRepo.find
@@ -160,9 +205,15 @@ describe('AqlService', () => {
   it('aggregates IQC defect codes by mandatory severity and applies major/minor AQL independently', async () => {
     partRepo.findOne.mockResolvedValue({
       itemCode: 'HARNESS',
+      iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+    });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
       inspectionLevel: 'II',
-      aqlMajor: 1,
-      aqlMinor: 2.5,
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue({ partnerCode: 'SUP-B', inspectionMode: 'NORMAL' });
     comCodeRepo.find.mockResolvedValue([
@@ -170,7 +221,6 @@ describe('AqlService', () => {
       { groupCode: 'DEFECT_TYPE', detailCode: 'D-MIN', defectGrade: 'MINOR', useYn: 'Y' },
     ]);
     standardRepo.findOne
-      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' });
     ruleRepo.find
@@ -199,16 +249,21 @@ describe('AqlService', () => {
   it('fails immediately when an IQC defect code is critical regardless of major/minor Ac/Re', async () => {
     partRepo.findOne.mockResolvedValue({
       itemCode: 'HARNESS',
+      iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+    });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
       inspectionLevel: 'II',
-      aqlMajor: 1,
-      aqlMinor: 2.5,
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue({ partnerCode: 'SUP-B', inspectionMode: 'NORMAL' });
     comCodeRepo.find.mockResolvedValue([
       { groupCode: 'DEFECT_TYPE', detailCode: 'D-CRI', defectGrade: 'CRITICAL', useYn: 'Y' },
     ]);
     standardRepo.findOne
-      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' });
     ruleRepo.find
@@ -233,7 +288,15 @@ describe('AqlService', () => {
     specItemRepo.find.mockResolvedValue([
       { seq: 1, inspItemCode: 'FUNC', defectGrade: 'CRITICAL', inspectionLevel: 'S4', aql: null, useYn: 'Y' },
     ]);
-    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II' });
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II', iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
+      inspectionLevel: 'II',
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
+    });
     partnerRepo.findOne.mockResolvedValue(null);
 
     const result = await service.resolveIqcPolicyByItem({
@@ -254,7 +317,15 @@ describe('AqlService', () => {
     specItemRepo.find.mockResolvedValue([
       { seq: 1, inspItemCode: 'DIM', defectGrade: 'MAJOR', inspectionLevel: 'II', aql: 1.0, useYn: 'Y' },
     ]);
-    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II' });
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II', iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
+      inspectionLevel: 'II',
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
+    });
     partnerRepo.findOne.mockResolvedValue(null);
     standardRepo.findOne
       .mockResolvedValueOnce(null)
@@ -277,8 +348,22 @@ describe('AqlService', () => {
 
   it('falls back to part-level policy when no inspection item has a defect grade', async () => {
     specItemRepo.find.mockResolvedValue([]);
-    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II', aqlMajor: null, aqlMinor: null });
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
+      inspectionLevel: 'II',
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
+    });
     partnerRepo.findOne.mockResolvedValue(null);
+    standardRepo.findOne
+      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
+      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' });
+    ruleRepo.find
+      .mockResolvedValueOnce([{ lotQtyFrom: 1, lotQtyTo: 200, sampleSize: 13, acceptQty: 0, rejectQty: 1 }])
+      .mockResolvedValueOnce([{ lotQtyFrom: 1, lotQtyTo: 200, sampleSize: 13, acceptQty: 1, rejectQty: 2 }]);
 
     const result = await service.resolveIqcPolicyByItem({
       itemCode: 'PCB',
@@ -291,15 +376,38 @@ describe('AqlService', () => {
     });
 
     expect(result.result).toBe('PASS');
+    expect(result.policyCode).toBe('AQLP-II-1.0-2.5');
     expect(result.itemResults).toBeUndefined();
+  });
+
+  it('rejects IQC AQL resolution when an item has no policy and no item-level AQL criteria', async () => {
+    specItemRepo.find.mockResolvedValue([]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', iqcAqlPolicyCode: null });
+    partnerRepo.findOne.mockResolvedValue(null);
+
+    await expect(service.resolveIqcPolicyByItem({
+      itemCode: 'PCB',
+      vendorCode: null,
+      lotQty: 100,
+      itemDefectCounts: {},
+      fallbackDefectCounts: { critical: 0, major: 1, minor: 0 },
+      company: '40',
+      plant: '1000',
+    })).rejects.toThrow(BadRequestException);
   });
 
   it('rejects IQC defect codes without Critical/Major/Minor severity', async () => {
     partRepo.findOne.mockResolvedValue({
       itemCode: 'HARNESS',
+      iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+    });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
       inspectionLevel: 'II',
-      aqlMajor: 1,
-      aqlMinor: 2.5,
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue({ partnerCode: 'SUP-B', inspectionMode: 'NORMAL' });
     comCodeRepo.find.mockResolvedValue([
@@ -321,7 +429,15 @@ describe('AqlService', () => {
       { seq: 1, inspItemCode: 'IQC-VISUAL', defectGrade: 'MINOR', inspectionLevel: 'II', aql: 2.5, inspectionType: 'AQL', sampleMethod: 'AQL', sampleQty: null },
       { seq: 2, inspItemCode: 'IQC-PULL', defectGrade: 'MAJOR', inspectionLevel: null, aql: null, inspectionType: 'DESTRUCTIVE', sampleMethod: 'FIXED', sampleQty: 5 },
     ]);
-    partRepo.findOne.mockResolvedValue({ itemCode: 'CBL-A', inspectionLevel: 'II' });
+    partRepo.findOne.mockResolvedValue({ itemCode: 'CBL-A', inspectionLevel: 'II', iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
+      inspectionLevel: 'II',
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
+    });
     partnerRepo.findOne.mockResolvedValue(null);
     // 외관 AQL Ac5/Re6 가정
     jest.spyOn(service as any, 'resolveSeverityRule').mockResolvedValue({ aqlCode: 'AQL-II-2.5', aqlValue: 2.5, codeLetter: 'F', sampleSize: 80, acceptQty: 5, rejectQty: 6 });
