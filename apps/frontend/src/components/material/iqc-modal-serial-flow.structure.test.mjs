@@ -33,3 +33,18 @@ test('IQC modal records defect codes instead of direct severity count inputs', (
   assert.doesNotMatch(modalSource, /defectMajor/);
   assert.doesNotMatch(modalSource, /defectMinor/);
 });
+
+test('IQC modal aligns defect-code entry with actual failed inspection evidence', () => {
+  assert.match(modalSource, /hasDefectCodeRows/);
+  assert.match(modalSource, /needsDefectCode/);
+  assert.match(modalSource, /hasContradictingDefectCodes/);
+  assert.match(modalSource, /canSubmit[\s\S]*!needsDefectCode[\s\S]*hasDefectCodeRows/);
+  assert.match(modalSource, /canSubmit[\s\S]*!hasContradictingDefectCodes/);
+});
+
+test('IQC modal does not send every scanned serial into 500-byte SAMPLE_BARCODE', () => {
+  assert.match(modalSource, /function\s+buildSampleBarcode/);
+  assert.match(modalSource, /MAX_SAMPLE_BARCODE_BYTES\s*=\s*500/);
+  assert.match(modalSource, /sampleBarcode:\s*buildSampleBarcode\(scannedSerials\)/);
+  assert.doesNotMatch(modalSource, /sampleBarcode:\s*scannedSerials\.join\(","\)/);
+});

@@ -102,6 +102,33 @@ interface IqcModalProps {
   ) => void;
 }
 
+const MAX_SAMPLE_BARCODE_BYTES = 500;
+
+function utf8Bytes(value: string) {
+  return new TextEncoder().encode(value).length;
+}
+
+function buildSampleBarcode(serials: string[]) {
+  const values = serials.map((serial) => serial.trim()).filter(Boolean);
+  const joined = values.join(",");
+  if (utf8Bytes(joined) <= MAX_SAMPLE_BARCODE_BYTES) return joined;
+
+  const kept: string[] = [];
+  for (const value of values) {
+    const next = [...kept, value];
+    const remaining = values.length - next.length;
+    const suffix = remaining > 0 ? `...(+${remaining} more)` : "";
+    const candidate = suffix ? `${next.join(",")},${suffix}` : next.join(",");
+    if (utf8Bytes(candidate) > MAX_SAMPLE_BARCODE_BYTES) break;
+    kept.push(value);
+  }
+
+  const remaining = values.length - kept.length;
+  return remaining > 0
+    ? `${kept.length > 0 ? `${kept.join(",")},` : ""}...(+${remaining} more)`
+    : kept.join(",");
+}
+
 function judgeValue(value: string, lsl: number | null, usl: number | null): "PASS" | "FAIL" | "" {
   if (!value.trim()) return "";
   if (lsl === null && usl === null) return "PASS";
@@ -397,7 +424,6 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const passCount = serialInspectionPayload.filter((serial) => serial.result === "PASS").length;
   const failCount = serialInspectionPayload.filter((serial) => serial.result === "FAIL").length;
   const anyFail = failCount > 0;
-  const canSubmit = (scannedSerials.length > 0 || (aqlItems.length === 0 && destructItems.length > 0)) && !loadingItems && !isIncomplete;
   const effectiveDefectRows = useMemo(
     () => defectRows
       .map((row) => ({ defectCode: row.defectCode.trim(), qty: Number(row.qty) || 0 }))
@@ -430,6 +456,14 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     };
   }), [destructItems, destructInputs]);
   const anyDestructFail = destructivePayload.some((d) => d.result === 'FAIL');
+  const hasDefectCodeRows = effectiveDefectRows.length > 0;
+  const needsDefectCode = anyFail || anyDestructFail;
+  const hasContradictingDefectCodes = hasDefectCodeRows && !needsDefectCode;
+  const canSubmit = (scannedSerials.length > 0 || (aqlItems.length === 0 && destructItems.length > 0))
+    && !loadingItems
+    && !isIncomplete
+    && (!needsDefectCode || hasDefectCodeRows)
+    && !hasContradictingDefectCodes;
 
   const handleSerialSubmit = useCallback(() => {
     if (!selectedItem || !canSubmit) return;
@@ -443,7 +477,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     }, verdict, {
       sampleQty: sampleQty ? Number(sampleQty) : undefined,
       certFile: certFile ?? undefined,
-      sampleBarcode: scannedSerials.join(","),
+      sampleBarcode: buildSampleBarcode(scannedSerials),
       defects: effectiveDefectRows,
     });
   }, [anyDestructFail, anyFail, canSubmit, certFile, destructivePayload, effectiveDefectRows, onSubmit, sampleQty, scannedSerials, selectedItem, serialInspectionPayload, setForm]);
@@ -906,12 +940,16 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                 ? <span className="text-text-muted">{t("material.iqc.noScannedSerials", "스캔한 시리얼이 없습니다.")}</span>
                 : isIncomplete
                   ? <span className="text-amber-600 dark:text-amber-300">{t("material.iqc.incompleteSerialJudge", "판정이 끝나지 않은 시리얼이 있습니다.")}</span>
-                  : anyFail
+                  : hasContradictingDefectCodes
+                    ? <span className="text-amber-600 dark:text-amber-300">불량코드는 FAIL 판정 항목이 있을 때만 입력할 수 있습니다.</span>
+                  : needsDefectCode && !hasDefectCodeRows
+                    ? <span className="text-amber-600 dark:text-amber-300">FAIL 판정에는 불량코드가 필요합니다.</span>
+                  : anyFail || anyDestructFail
                     ? <span className="text-red-600 dark:text-red-400">FAIL {failCount} / PASS {passCount}</span>
                     : <span className="text-green-600 dark:text-green-400">PASS {passCount}</span>}
             </span>
-            <Button size="sm" variant={anyFail ? "danger" : "primary"} onClick={handleSerialSubmit} disabled={!canSubmit}>
-              {anyFail ? <XCircle className="w-4 h-4 mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+            <Button size="sm" variant={needsDefectCode ? "danger" : "primary"} onClick={handleSerialSubmit} disabled={!canSubmit}>
+              {needsDefectCode ? <XCircle className="w-4 h-4 mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
               {t("material.iqc.serialSubmit", "검사결과 등록")} ({scannedSerials.length})
             </Button>
           </div>

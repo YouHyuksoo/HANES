@@ -423,6 +423,106 @@ describe('IqcHistoryService cancel policy', () => {
       }));
       expect(result).toEqual(expect.objectContaining({ result: 'FAIL' }));
     });
+
+    it('입하단위 IQC 저장은 긴 시리얼 목록을 SAMPLE_BARCODE 500바이트 이내로 요약한다', async () => {
+      const scanned = Array.from({ length: 80 }, (_, i) => `MAT-TRACE-${String(i + 1).padStart(4, '0')}`);
+      const details = JSON.stringify({
+        type: 'SERIAL_INSPECTION',
+        serials: scanned.map((matUid) => ({ matUid, result: 'PASS', items: [] })),
+      });
+      mockMatLotRepo.find.mockResolvedValue([
+        {
+          matUid: 'MAT-TRACE-0001',
+          arrivalNo: 'ARR-TRACE',
+          itemCode: 'ITEM-TRACE',
+          iqcStatus: 'PENDING',
+          vendor: 'SUP-001',
+          initQty: 1,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatLot,
+      ]);
+      mockIqcLogRepo.create.mockImplementation((input) => input as IqcLog);
+      mockIqcLogRepo.save.mockImplementation(async (input) => input as IqcLog);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-TRACE', itemName: 'Trace Item' } as PartMaster);
+
+      await target.createArrivalResult({
+        arrivalNo: 'ARR-TRACE',
+        itemCode: 'ITEM-TRACE',
+        result: 'PASS',
+        details,
+        sampleBarcode: scanned.join(','),
+      } as any, 'HANES', 'P01');
+
+      const saved = (mockIqcLogRepo.create as jest.Mock).mock.calls[0][0];
+      expect(Buffer.byteLength(saved.sampleBarcode, 'utf8')).toBeLessThanOrEqual(500);
+      expect(saved.sampleBarcode).toContain('MAT-TRACE-0001');
+      expect(saved.sampleBarcode).toMatch(/\(\+\d+ more\)$/);
+    });
+
+    it('details가 모두 PASS인데 불량코드만 입력된 입하단위 IQC 저장은 차단한다', async () => {
+      const details = JSON.stringify({
+        type: 'SERIAL_INSPECTION',
+        serials: [{ matUid: 'MAT-001', result: 'PASS', items: [{ itemId: 'ITEM-001::1', judge: 'PASS' }] }],
+      });
+      mockMatLotRepo.find.mockResolvedValue([
+        {
+          matUid: 'MAT-001',
+          arrivalNo: 'ARR-001',
+          itemCode: 'ITEM-001',
+          iqcStatus: 'PENDING',
+          vendor: 'SUP-001',
+          initQty: 10,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatLot,
+      ]);
+
+      await expect(target.createArrivalResult({
+        arrivalNo: 'ARR-001',
+        itemCode: 'ITEM-001',
+        result: 'PASS',
+        details,
+        defects: [{ defectCode: 'SCRATCH', qty: 1 }],
+      } as any, 'HANES', 'P01')).rejects.toThrow('불량코드는 FAIL 판정 항목과 함께 입력해야 합니다');
+
+      expect(mockAqlService.resolveIqcPolicyByItem).not.toHaveBeenCalled();
+      expect(mockIqcLogRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('검사항목 없는 수동 FAIL은 불량코드 입력과 함께 저장 경로를 허용한다', async () => {
+      const details = JSON.stringify({
+        type: 'SERIAL_INSPECTION',
+        serials: [{ matUid: 'MAT-001', result: 'FAIL', items: [] }],
+      });
+      mockMatLotRepo.find.mockResolvedValue([
+        {
+          matUid: 'MAT-001',
+          arrivalNo: 'ARR-001',
+          itemCode: 'ITEM-001',
+          iqcStatus: 'PENDING',
+          vendor: 'SUP-001',
+          initQty: 10,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatLot,
+      ]);
+      mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001' } as IqcLog);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+
+      await target.createArrivalResult({
+        arrivalNo: 'ARR-001',
+        itemCode: 'ITEM-001',
+        result: 'FAIL',
+        details,
+        defects: [{ defectCode: 'SCRATCH', qty: 1 }],
+      } as any, 'HANES', 'P01');
+
+      expect(mockAqlService.resolveIqcPolicyByItem).toHaveBeenCalledWith(expect.objectContaining({
+        fallbackDefectCodes: [{ defectCode: 'SCRATCH', qty: 1 }],
+      }));
+    });
   });
 
   it('blocks cancel when receiving already exists', async () => {

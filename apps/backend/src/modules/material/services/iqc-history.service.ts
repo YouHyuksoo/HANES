@@ -423,6 +423,7 @@ export class IqcHistoryService {
     for (const [seq, qty] of Object.entries(destructive.defects)) {
       itemDefectCounts[Number(seq)] = (itemDefectCounts[Number(seq)] ?? 0) + qty;
     }
+    this.assertDefectCodesHaveFailedInspection(dto, itemDefectCounts);
     // 검사항목별(각 항목 검사수준/등급/AQL) 판정. 등급 설정 항목이 없으면 내부에서 품목 단일로 폴백.
     const aqlPolicy = await this.aqlService.resolveIqcPolicyByItem({
       itemCode: dto.itemCode,
@@ -469,7 +470,7 @@ export class IqcHistoryService {
       inspectorName: dto.inspectorName || null,
       inspectClass: this.normalizeIqcInspectClass(dto.inspectClass) || null,
       destructSampleQty: dto.sampleQty || null,
-      sampleBarcode: dto.sampleBarcode || null,
+      sampleBarcode: this.compactSampleBarcode(dto.sampleBarcode, dto.details),
       lotQty: aqlPolicy.lotQty,
       aqlInspectionLevel: aqlPolicy.inspectionLevel,
       aqlInspectionMode: aqlPolicy.inspectionMode,
@@ -597,6 +598,85 @@ export class IqcHistoryService {
       }
     } catch {
       return out;
+    }
+    return out;
+  }
+
+  private assertDefectCodesHaveFailedInspection(
+    dto: CreateArrivalIqcResultDto,
+    itemDefectCounts: Record<number, number>,
+  ) {
+    if (!dto.details) return;
+    const defectCodeQty = (dto.defects ?? []).reduce((sum, defect) => sum + this.toNonNegativeInt(defect.qty), 0);
+    if (defectCodeQty <= 0) return;
+
+    const itemFailedQty = Object.values(itemDefectCounts).reduce(
+      (sum, qty) => sum + this.toNonNegativeInt(qty),
+      0,
+    );
+    const failedInspectionQty = itemFailedQty + this.countFailedSerials(dto.details);
+    if (failedInspectionQty <= 0) {
+      throw new BadRequestException('불량코드는 FAIL 판정 항목과 함께 입력해야 합니다.');
+    }
+  }
+
+  private compactSampleBarcode(value?: string | null, details?: string | null) {
+    const raw = value?.trim();
+    if (!raw) return null;
+    if (this.fitsUtf8Bytes(raw, 500)) return raw;
+
+    const detailSerials = this.extractSerialsFromDetails(details);
+    const source = detailSerials.length > 0
+      ? detailSerials
+      : raw.split(',').map((item) => item.trim()).filter(Boolean);
+
+    if (source.length === 0) return this.truncateUtf8Bytes(raw, 500);
+    return this.compactListForVarchar2(source, 500);
+  }
+
+  private extractSerialsFromDetails(details?: string | null) {
+    if (!details) return [];
+    try {
+      const parsed = JSON.parse(details) as { serials?: Array<{ matUid?: string }> };
+      return (parsed.serials ?? [])
+        .map((serial) => String(serial.matUid ?? '').trim())
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
+  private compactListForVarchar2(values: string[], maxBytes: number) {
+    const normalized = values.map((value) => value.trim()).filter(Boolean);
+    const joined = normalized.join(',');
+    if (this.fitsUtf8Bytes(joined, maxBytes)) return joined;
+
+    const kept: string[] = [];
+    for (const value of normalized) {
+      const next = [...kept, value];
+      const remaining = normalized.length - next.length;
+      const suffix = remaining > 0 ? `...(+${remaining} more)` : '';
+      const candidate = suffix ? `${next.join(',')},${suffix}` : next.join(',');
+      if (!this.fitsUtf8Bytes(candidate, maxBytes)) break;
+      kept.push(value);
+    }
+
+    const remaining = normalized.length - kept.length;
+    const compacted = remaining > 0
+      ? `${kept.length > 0 ? `${kept.join(',')},` : ''}...(+${remaining} more)`
+      : kept.join(',');
+    return this.truncateUtf8Bytes(compacted, maxBytes);
+  }
+
+  private fitsUtf8Bytes(value: string, maxBytes: number) {
+    return Buffer.byteLength(value, 'utf8') <= maxBytes;
+  }
+
+  private truncateUtf8Bytes(value: string, maxBytes: number) {
+    let out = '';
+    for (const char of value) {
+      if (Buffer.byteLength(out + char, 'utf8') > maxBytes) break;
+      out += char;
     }
     return out;
   }
