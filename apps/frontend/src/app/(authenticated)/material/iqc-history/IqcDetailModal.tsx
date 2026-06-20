@@ -18,6 +18,9 @@ interface ItemJudgeEntry {
   rejectQty?: number | null;
   result?: string;
   reason?: string;
+  inspectionType?: string;
+  requiredQty?: number | null;
+  inspectedQty?: number | null;
 }
 
 interface InspectionItem {
@@ -135,6 +138,8 @@ export default function IqcDetailModal({ record, onClose }: Props) {
                     <tr>
                       <th className="text-left px-2 py-1.5 font-medium text-text-muted">검사항목</th>
                       <th className="text-left px-2 py-1.5 font-medium text-text-muted">불량등급</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">검사유형</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">요구/검사</th>
                       <th className="text-center px-2 py-1.5 font-medium text-text-muted">검사수준</th>
                       <th className="text-right px-2 py-1.5 font-medium text-text-muted">AQL</th>
                       <th className="text-right px-2 py-1.5 font-medium text-text-muted">불량수</th>
@@ -149,6 +154,14 @@ export default function IqcDetailModal({ record, onClose }: Props) {
                         <td className="px-2 py-1.5 font-medium text-text">{r.inspItemCode || "-"}</td>
                         <td className="px-2 py-1.5">
                           {r.defectGrade ? <ComCodeBadge groupCode="DEFECT_GRADE" code={r.defectGrade} /> : <span className="text-text-muted">-</span>}
+                        </td>
+                        <td className="px-2 py-1.5 text-center">
+                          {r.inspectionType && r.inspectionType !== 'AQL'
+                            ? <ComCodeBadge groupCode="IQC_ITEM_INSP_TYPE" code={r.inspectionType} />
+                            : <span className="text-text-muted">AQL</span>}
+                        </td>
+                        <td className="px-2 py-1.5 text-center tabular-nums text-text-muted">
+                          {r.requiredQty != null ? `${r.inspectedQty ?? '-'}/${r.requiredQty}` : '-'}
                         </td>
                         <td className="px-2 py-1.5 text-center text-text">{r.inspectionLevel || "-"}</td>
                         <td className="px-2 py-1.5 text-right tabular-nums text-text">{r.aql ?? "-"}</td>
