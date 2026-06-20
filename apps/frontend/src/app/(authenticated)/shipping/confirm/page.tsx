@@ -12,7 +12,7 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Truck, Search, RefreshCw, Upload, ArrowRight, XCircle, RotateCcw } from 'lucide-react';
+import { Truck, Search, RefreshCw, Upload, ArrowRight, XCircle, RotateCcw, ClipboardCheck } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { usePartnerOptions } from '@/hooks/useMasterOptions';
@@ -204,6 +204,23 @@ export default function ShipmentPage() {
   }, [reverseTarget, reverseRemark, fetchData]);
 
   const shipOrderColumns = useMemo<ColumnDef<ShipOrderSummary>[]>(() => [
+    {
+      id: 'fulfillmentAction',
+      header: '',
+      size: 44,
+      meta: { align: 'center' as const, filterType: 'none' as const },
+      cell: ({ row }) => (
+        <button
+          type="button"
+          className="rounded p-1 text-primary hover:bg-surface"
+          title={t('shipping.confirm.startFulfillment', '출하작업')}
+          aria-label={t('shipping.confirm.startFulfillment', '출하작업')}
+          onClick={(e) => { e.stopPropagation(); openFulfillmentForOrder(row.original); }}
+        >
+          <ClipboardCheck className="h-4 w-4" />
+        </button>
+      ),
+    },
     { accessorKey: 'shipOrderNo', header: t('shipping.shipOrder.shipOrderNo', '출하지시번호'), size: 150, meta: { filterType: 'text' as const } },
     { accessorKey: 'customerName', header: t('shipping.confirm.customer'), size: 120, meta: { filterType: 'text' as const }, cell: ({ getValue }) => getValue() || '-' },
     {
@@ -217,7 +234,7 @@ export default function ShipmentPage() {
       },
     },
     { accessorKey: 'shipDate', header: t('shipping.confirm.shipDate'), size: 105, meta: { filterType: 'date' as const }, cell: ({ getValue }) => getValue() || '-' },
-  ], [t]);
+  ], [t, openFulfillmentForOrder]);
 
   const columns = useMemo<ColumnDef<Shipment>[]>(() => [
     { accessorKey: 'shipNo', header: t('shipping.confirm.shipmentNo'), size: 160, meta: { filterType: 'text' as const } },
@@ -278,7 +295,7 @@ export default function ShipmentPage() {
           <div className="flex items-center justify-between gap-3 flex-shrink-0">
             <div className="min-w-0">
               <h2 className="text-sm font-semibold text-text">{t('shipping.confirm.unshippedOrders', '미출하 출하지시')}</h2>
-              <p className="text-xs text-text-muted mt-1">{t('shipping.confirm.unshippedOrdersHint', '행을 선택하면 출하지시 기준 팔레트 작업을 시작합니다.')}</p>
+              <p className="text-xs text-text-muted mt-1">{t('shipping.confirm.unshippedOrdersHint', '작업 아이콘을 누르면 출하지시 기준 팔레트 작업을 시작합니다.')}</p>
             </div>
             <Button variant="secondary" size="sm" onClick={fetchShipOrders}>
               <RefreshCw className={`w-4 h-4 ${loadingShipOrders ? "animate-spin" : ""}`} />
@@ -292,7 +309,6 @@ export default function ShipmentPage() {
               enableColumnFilter
               enableExport
               exportFileName={t('shipping.confirm.unshippedOrders', '미출하 출하지시')}
-              onRowClick={openFulfillmentForOrder}
               selectedRowId={selectedShipOrderNo ?? undefined}
               getRowId={(row) => row.shipOrderNo}
               emptyMessage={t('shipping.confirm.noUnshippedOrders', '미출하 출하지시가 없습니다.')}

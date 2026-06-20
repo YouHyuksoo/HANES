@@ -16,7 +16,7 @@ import QRCode from "react-qr-code";
 import {
   ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2, X, Printer,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
@@ -52,7 +52,7 @@ export default function ShipOrderPage() {
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
   const [isPartModalOpen, setIsPartModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShipOrder | null>(null);
   const [form, setForm] = useState({ customerId: "", dueDate: "", shipDate: "", remark: "" });
@@ -95,7 +95,7 @@ export default function ShipOrderPage() {
     setEditingItem(null);
     setForm({ customerId: "", dueDate: "", shipDate: "", remark: "" });
     setOrderItems([]);
-    setIsModalOpen(true);
+    setIsFormPanelOpen(true);
   }, []);
 
   const openEdit = useCallback((item: ShipOrder) => {
@@ -108,7 +108,7 @@ export default function ShipOrderPage() {
       orderQty: Number(line.orderQty) || 0,
       remark: line.remark || "",
     })));
-    setIsModalOpen(true);
+    setIsFormPanelOpen(true);
   }, []);
 
   const addOrderItem = useCallback((part: PartItem) => {
@@ -167,7 +167,7 @@ export default function ShipOrderPage() {
       } else {
         await api.post("/shipping/orders", payload);
       }
-      setIsModalOpen(false);
+      setIsFormPanelOpen(false);
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
@@ -191,6 +191,11 @@ export default function ShipOrderPage() {
   const handlePrintShipOrder = useCallback((order: ShipOrder) => {
     setPrintTarget(order);
     window.setTimeout(() => window.print(), 80);
+  }, []);
+
+  const closeFormPanel = useCallback(() => {
+    setIsFormPanelOpen(false);
+    setEditingItem(null);
   }, []);
 
   const columns = useMemo<ColumnDef<ShipOrder>[]>(() => [
@@ -230,20 +235,21 @@ export default function ShipOrderPage() {
           <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
         </div>
       </div>
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
-          enableExport exportFileName={t("shipping.shipOrder.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("shipping.shipOrder.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(420px,480px)] gap-4">
+        <Card className="min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+            enableExport exportFileName={t("shipping.shipOrder.title")}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("shipping.shipOrder.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                </div>
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
-              </div>
-            </div>
-          } 
-          sqlQuery={`SELECT
+            }
+            sqlQuery={`SELECT
   so.SHIP_ORDER_NO,
   so.CUSTOMER_ID,
   COALESCE(pm.PARTNER_NAME, so.CUSTOMER_NAME) AS CUSTOMER_NAME,
@@ -275,104 +281,126 @@ WHERE so.COMPANY = '40'
   /* 검색: so.SHIP_ORDER_NO LIKE :search */
   /* 상태: so.STATUS = :status */
 ORDER BY so.CREATED_AT DESC`}/>
-      </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("shipping.shipOrder.editTitle") : t("shipping.shipOrder.addTitle")} size="xl">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t("shipping.shipOrder.shipOrderNo")} placeholder={t("common.autoGenerated", "자동생성")}
-              value={shipOrderNoDisplay.shipOrderNo} disabled fullWidth />
-            <Select label={t("shipping.shipOrder.customer")} options={customerOptions}
-              value={form.customerId} onChange={v => setForm(p => ({ ...p, customerId: v }))} fullWidth />
-            <Input label={t("shipping.shipOrder.dueDate")} type="date"
-              value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} fullWidth />
-            <Input label={t("shipping.shipOrder.shipDate")} type="date"
-              value={form.shipDate} onChange={e => setForm(p => ({ ...p, shipDate: e.target.value }))} fullWidth />
-          </div>
-          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
-            value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
+        </CardContent></Card>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-text">
-                {t("shipping.shipOrder.items", "출하지시 품목")}
-              </h3>
-              <Button variant="secondary" size="sm" onClick={() => setIsPartModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-1" />
-                {t("common.add")}
+        <aside className="flex min-h-0 flex-col overflow-hidden rounded border border-border bg-surface">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold text-text">
+                {isFormPanelOpen
+                  ? editingItem ? t("shipping.shipOrder.editTitle") : t("shipping.shipOrder.addTitle")
+                  : t("shipping.shipOrder.addTitle")}
+              </h2>
+              <p className="mt-1 text-xs text-text-muted">
+                {isFormPanelOpen
+                  ? t("shipping.shipOrder.subtitle")
+                  : t("shipping.shipOrder.searchPlaceholder")}
+              </p>
+            </div>
+            {isFormPanelOpen && (
+              <button type="button" onClick={closeFormPanel} className="rounded p-1 text-text-muted hover:bg-surface-secondary hover:text-text" aria-label={t("common.close", "닫기")}>
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {!isFormPanelOpen ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
+              <ClipboardList className="h-10 w-10 text-text-muted" />
+              <p className="mt-3 text-sm font-medium text-text">{t("shipping.shipOrder.addTitle")}</p>
+              <p className="mt-1 text-xs leading-5 text-text-muted">
+                {t("shipping.shipOrder.subtitle")}
+              </p>
+              <Button className="mt-4" size="sm" onClick={openCreate}>
+                <Plus className="mr-1 h-4 w-4" />
+                {t("common.register")}
               </Button>
             </div>
-
-            <div className="border border-border rounded-lg overflow-hidden">
-              <table className="w-full text-xs">
-                <thead className="bg-background/50">
-                  <tr>
-                    <th className="text-left px-3 py-2 text-text-muted font-medium">{t("common.partCode")}</th>
-                    <th className="text-left px-3 py-2 text-text-muted font-medium">{t("common.partName")}</th>
-                    <th className="text-center px-3 py-2 text-text-muted font-medium w-20">{t("common.unit")}</th>
-                    <th className="text-center px-3 py-2 text-text-muted font-medium w-32">{t("pda.shipping.orderQty", "지시수량")}</th>
-                    <th className="text-left px-3 py-2 text-text-muted font-medium w-40">{t("common.remark")}</th>
-                    <th className="w-10" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {orderItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-3 py-6 text-center text-text-muted">
-                        {t("shipping.shipOrder.noItems", "품목을 추가해 주세요.")}
-                      </td>
-                    </tr>
-                  ) : orderItems.map((item) => (
-                    <tr key={item.itemCode} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{item.itemCode}</td>
-                      <td className="px-3 py-2">{item.itemName || "-"}</td>
-                      <td className="px-3 py-2 text-center text-text-muted">{item.unit || "-"}</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={item.orderQty ? String(item.orderQty) : ""}
-                          onChange={(e) => updateOrderItem(item.itemCode, "orderQty", Math.trunc(Number(e.target.value)) || 0)}
-                          fullWidth
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          value={item.remark || ""}
-                          onChange={(e) => updateOrderItem(item.itemCode, "remark", e.target.value)}
-                          fullWidth
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => removeOrderItem(item.itemCode)}
-                          className="p-1 rounded hover:bg-red-50 text-red-500"
-                          aria-label={t("common.delete")}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {orderItems.length > 0 && (
-                <div className="px-3 py-2 border-t border-border bg-background/30 text-xs text-text-muted flex justify-end gap-4">
-                  <span>{t("shipping.shipOrder.itemCount")}: <strong className="text-text">{orderItems.length.toLocaleString()}</strong></span>
-                  <span>{t("common.totalQty")}: <strong className="text-text">{totalOrderQty.toLocaleString()}</strong></span>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Input label={t("shipping.shipOrder.shipOrderNo")} placeholder={t("common.autoGenerated", "자동생성")}
+                    value={shipOrderNoDisplay.shipOrderNo} disabled fullWidth />
+                  <Select label={t("shipping.shipOrder.customer")} options={customerOptions}
+                    value={form.customerId} onChange={v => setForm(p => ({ ...p, customerId: v }))} fullWidth />
+                  <Input label={t("shipping.shipOrder.dueDate")} type="date"
+                    value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} fullWidth />
+                  <Input label={t("shipping.shipOrder.shipDate")} type="date"
+                    value={form.shipDate} onChange={e => setForm(p => ({ ...p, shipDate: e.target.value }))} fullWidth />
                 </div>
-              )}
+                <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
+                  value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-text">
+                      {t("shipping.shipOrder.items", "출하지시 품목")}
+                    </h3>
+                    <Button variant="secondary" size="sm" onClick={() => setIsPartModalOpen(true)}>
+                      <Plus className="w-4 h-4 mr-1" />
+                      {t("common.add")}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {orderItems.length === 0 ? (
+                      <div className="rounded border border-dashed border-border px-3 py-8 text-center text-sm text-text-muted">
+                        {t("shipping.shipOrder.noItems", "품목을 추가해 주세요.")}
+                      </div>
+                    ) : orderItems.map((item) => (
+                      <div key={item.itemCode} className="rounded border border-border bg-surface-secondary p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-text">{item.itemName || "-"}</div>
+                            <div className="mt-1 font-mono text-xs text-text-muted">{item.itemCode} · {item.unit || "-"}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeOrderItem(item.itemCode)}
+                            className="rounded p-1 text-red-500 hover:bg-red-50"
+                            aria-label={t("common.delete")}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="mt-3 grid grid-cols-[120px_minmax(0,1fr)] gap-2">
+                          <Input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={item.orderQty ? String(item.orderQty) : ""}
+                            onChange={(e) => updateOrderItem(item.itemCode, "orderQty", Math.trunc(Number(e.target.value)) || 0)}
+                            fullWidth
+                          />
+                          <Input
+                            value={item.remark || ""}
+                            placeholder={t("common.remark")}
+                            onChange={(e) => updateOrderItem(item.itemCode, "remark", e.target.value)}
+                            fullWidth
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {orderItems.length > 0 && (
+                    <div className="rounded border border-border bg-background/30 px-3 py-2 text-xs text-text-muted flex justify-end gap-4">
+                      <span>{t("shipping.shipOrder.itemCount")}: <strong className="text-text">{orderItems.length.toLocaleString()}</strong></span>
+                      <span>{t("common.totalQty")}: <strong className="text-text">{totalOrderQty.toLocaleString()}</strong></span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 border-t border-border p-4">
+                <Button variant="secondary" onClick={closeFormPanel}>{t("common.cancel")}</Button>
+                <Button onClick={handleSave} disabled={!canSave || saving}>
+                  {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
+                </Button>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleSave} disabled={!canSave || saving}>
-              {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+          )}
+        </aside>
+      </div>
       <ConfirmModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

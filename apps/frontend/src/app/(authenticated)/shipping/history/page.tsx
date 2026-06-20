@@ -14,9 +14,8 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   History, Search, RefreshCw,
-  FileText, CheckCircle, Truck, Archive,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -66,13 +65,6 @@ export default function ShipHistoryPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = useMemo(() => ({
-    total: data.length,
-    shipped: data.filter((d) => d.status === "SHIPPED").length,
-    confirmed: data.filter((d) => d.status === "CONFIRMED").length,
-    totalQty: data.reduce((sum, d) => sum + d.totalQty, 0),
-  }), [data]);
-
   const columns = useMemo<ColumnDef<ShipHistory>[]>(() => [
     { accessorKey: "shipOrderNo", header: t("shipping.history.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.history.customer"), size: 120, meta: { filterType: "text" as const } },
@@ -94,12 +86,6 @@ export default function ShipHistoryPage() {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("shipping.history.statTotal")} value={stats.total} icon={FileText} color="blue" />
-        <StatCard label={t("shipping.history.statusShipped")} value={stats.shipped} icon={Truck} color="green" />
-        <StatCard label={t("shipping.history.statConfirmedWait")} value={stats.confirmed} icon={CheckCircle} color="yellow" />
-        <StatCard label={t("shipping.history.statTotalQty")} value={stats.totalQty.toLocaleString()} icon={Archive} color="purple" />
       </div>
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter

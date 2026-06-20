@@ -177,7 +177,7 @@ export default function OrderFulfillmentModal({ isOpen, shipOrderNo, onClose, on
   }, [onClose, onChanged]);
 
   return (
-    <Modal isOpen={isOpen} onClose={closeWithRefresh} title="출하작업" size="xl">
+    <Modal isOpen={isOpen} onClose={closeWithRefresh} title="출하작업" size="full">
       <div className="flex h-[78vh] min-h-0 flex-col gap-4">
         <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
           <div className="min-w-0">
