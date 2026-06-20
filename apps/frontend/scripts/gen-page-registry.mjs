@@ -11,7 +11,7 @@
  *
  * 사용: `node scripts/gen-page-registry.mjs` (페이지 추가/삭제 후 재실행)
  */
-import { readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, dirname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +19,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const FRONTEND_ROOT = join(__dirname, "..");
 const AUTH_ROOT = join(FRONTEND_ROOT, "src", "app", "(authenticated)");
 const OUT_FILE = join(FRONTEND_ROOT, "src", "components", "layout", "pageRegistry.generated.ts");
+const OUT_DIR = join(FRONTEND_ROOT, "src", "components", "layout", "page-registries");
 
 /** page.tsx 파일을 재귀적으로 수집 */
 function collectPages(dir) {
@@ -61,40 +62,86 @@ for (const p of pages) {
   seen.set(p.route, p.spec);
 }
 
-const entries = pages
+function registryName(route) {
+  const parts = route.split("/").filter(Boolean);
+  return (parts.length ? parts : ["root"])
+    .join("__")
+    .replace(/[^a-zA-Z0-9_-]/g, "-");
+}
+
+rmSync(OUT_DIR, { recursive: true, force: true });
+mkdirSync(OUT_DIR, { recursive: true });
+
+const registryNames = new Map();
+for (const page of pages) {
+  const name = registryName(page.route);
+  const previous = registryNames.get(name);
+  if (previous) {
+    throw new Error(`Registry name collision: ${previous} and ${page.route} -> ${name}`);
+  }
+  registryNames.set(name, page.route);
+
+  const routeContent = `/**
+ * @file src/components/layout/page-registries/${name}.generated.ts
+ * @description 자동 생성 파일 — 직접 수정 금지. \`node scripts/gen-page-registry.mjs\`로 재생성.
+ */
+import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
+
+export function getPageComponent(): ComponentType {
+  return dynamic(() => import("${page.spec}"), { ssr: false });
+}
+`;
+
+  writeFileSync(join(OUT_DIR, `${name}.generated.ts`), routeContent, "utf8");
+}
+
+const routeCases = pages
   .map(
-    (p) => `    case "${p.route}":
-      component = dynamic(() => import("${p.spec}"), { ssr: false });
-      break;`,
+    (page) => `    case "${page.route}": {
+      const mod = await import("./page-registries/${registryName(page.route)}.generated");
+      component = mod.getPageComponent();
+      break;
+    }`,
   )
   .join("\n");
 
 const content = `/**
  * @file src/components/layout/pageRegistry.generated.ts
  * @description 자동 생성 파일 — 직접 수정 금지. \`node scripts/gen-page-registry.mjs\`로 재생성.
- *              (authenticated) 영역 경로 → 페이지 컴포넌트 lazy dynamic factory.
- *              호출된 경로만 dynamic 생성해 dev 서버의 전체 page compile 폭주를 피한다.
+ *              (authenticated) 영역 경로 → 페이지별 lazy dynamic factory.
+ *              현재 경로의 작은 registry만 필요 시 import해 dev 서버의 전체 page compile 폭주를 피한다.
  */
-import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 
 const pageComponentCache = new Map<string, ComponentType>();
+const pageComponentPromiseCache = new Map<string, Promise<ComponentType | null>>();
 
-export function getPageComponent(path: string): ComponentType | null {
+export async function getPageComponent(path: string): Promise<ComponentType | null> {
   const cached = pageComponentCache.get(path);
   if (cached) return cached;
 
+  const pending = pageComponentPromiseCache.get(path);
+  if (pending) return pending;
+
+  const promise = loadPageComponent(path);
+  pageComponentPromiseCache.set(path, promise);
+  const component = await promise;
+  if (component) pageComponentCache.set(path, component);
+  pageComponentPromiseCache.delete(path);
+  return component;
+}
+
+async function loadPageComponent(path: string): Promise<ComponentType | null> {
   let component: ComponentType | null = null;
   switch (path) {
-${entries}
+${routeCases}
     default:
       return null;
   }
-
-  pageComponentCache.set(path, component);
   return component;
 }
 `;
 
 writeFileSync(OUT_FILE, content, "utf8");
-console.log(`Generated ${pages.length} routes → ${relative(FRONTEND_ROOT, OUT_FILE)}`);
+console.log(`Generated ${pages.length} route registries → ${relative(FRONTEND_ROOT, OUT_FILE)}`);

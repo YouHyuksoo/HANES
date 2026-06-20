@@ -1,498 +1,824 @@
 /**
  * @file src/components/layout/pageRegistry.generated.ts
  * @description 자동 생성 파일 — 직접 수정 금지. `node scripts/gen-page-registry.mjs`로 재생성.
- *              (authenticated) 영역 경로 → 페이지 컴포넌트 lazy dynamic factory.
- *              호출된 경로만 dynamic 생성해 dev 서버의 전체 page compile 폭주를 피한다.
+ *              (authenticated) 영역 경로 → 페이지별 lazy dynamic factory.
+ *              현재 경로의 작은 registry만 필요 시 import해 dev 서버의 전체 page compile 폭주를 피한다.
  */
-import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 
 const pageComponentCache = new Map<string, ComponentType>();
+const pageComponentPromiseCache = new Map<string, Promise<ComponentType | null>>();
 
-export function getPageComponent(path: string): ComponentType | null {
+export async function getPageComponent(path: string): Promise<ComponentType | null> {
   const cached = pageComponentCache.get(path);
   if (cached) return cached;
 
+  const pending = pageComponentPromiseCache.get(path);
+  if (pending) return pending;
+
+  const promise = loadPageComponent(path);
+  pageComponentPromiseCache.set(path, promise);
+  const component = await promise;
+  if (component) pageComponentCache.set(path, component);
+  pageComponentPromiseCache.delete(path);
+  return component;
+}
+
+async function loadPageComponent(path: string): Promise<ComponentType | null> {
   let component: ComponentType | null = null;
   switch (path) {
-    case "/consumables/issuing":
-      component = dynamic(() => import("@/app/(authenticated)/consumables/issuing/page"), { ssr: false });
-      break;
-    case "/consumables/label":
-      component = dynamic(() => import("@/app/(authenticated)/consumables/label/page"), { ssr: false });
-      break;
-    case "/consumables/life":
-      component = dynamic(() => import("@/app/(authenticated)/consumables/life/page"), { ssr: false });
-      break;
-    case "/consumables/master":
-      component = dynamic(() => import("@/app/(authenticated)/consumables/master/page"), { ssr: false });
-      break;
-    case "/consumables/mount":
-      component = dynamic(() => import("@/app/(authenticated)/consumables/mount/page"), { ssr: false });
-      break;
-    case "/consumables/receiving":
-      component = dynamic(() => import("@/app/(authenticated)/consumables/receiving/page"), { ssr: false });
-      break;
-    case "/consumables/stock":
-      component = dynamic(() => import("@/app/(authenticated)/consumables/stock/page"), { ssr: false });
-      break;
-    case "/customs/entry":
-      component = dynamic(() => import("@/app/(authenticated)/customs/entry/page"), { ssr: false });
-      break;
-    case "/customs/stock":
-      component = dynamic(() => import("@/app/(authenticated)/customs/stock/page"), { ssr: false });
-      break;
-    case "/customs/usage":
-      component = dynamic(() => import("@/app/(authenticated)/customs/usage/page"), { ssr: false });
-      break;
-    case "/dashboard":
-      component = dynamic(() => import("@/app/(authenticated)/dashboard/page"), { ssr: false });
-      break;
-    case "/equipment/calibration-history":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/calibration-history/page"), { ssr: false });
-      break;
-    case "/equipment/daily-inspect":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/daily-inspect/page"), { ssr: false });
-      break;
-    case "/equipment/inspect-calendar":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/inspect-calendar/page"), { ssr: false });
-      break;
-    case "/equipment/inspect-history":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/inspect-history/page"), { ssr: false });
-      break;
-    case "/equipment/mold":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/mold/page"), { ssr: false });
-      break;
-    case "/equipment/mold-mgmt":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/mold-mgmt/page"), { ssr: false });
-      break;
-    case "/equipment/periodic-inspect":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/periodic-inspect/page"), { ssr: false });
-      break;
-    case "/equipment/periodic-inspect-calendar":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/periodic-inspect-calendar/page"), { ssr: false });
-      break;
-    case "/equipment/pm-calendar":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/pm-calendar/page"), { ssr: false });
-      break;
-    case "/equipment/pm-plan":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/pm-plan/page"), { ssr: false });
-      break;
-    case "/equipment/pm-result":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/pm-result/page"), { ssr: false });
-      break;
-    case "/equipment/status":
-      component = dynamic(() => import("@/app/(authenticated)/equipment/status/page"), { ssr: false });
-      break;
-    case "/inspection/history":
-      component = dynamic(() => import("@/app/(authenticated)/inspection/history/page"), { ssr: false });
-      break;
-    case "/inspection/protocol":
-      component = dynamic(() => import("@/app/(authenticated)/inspection/protocol/page"), { ssr: false });
-      break;
-    case "/inspection/result":
-      component = dynamic(() => import("@/app/(authenticated)/inspection/result/page"), { ssr: false });
-      break;
-    case "/inspection/terminal-result":
-      component = dynamic(() => import("@/app/(authenticated)/inspection/terminal-result/page"), { ssr: false });
-      break;
-    case "/interface/dashboard":
-      component = dynamic(() => import("@/app/(authenticated)/interface/dashboard/page"), { ssr: false });
-      break;
-    case "/interface/log":
-      component = dynamic(() => import("@/app/(authenticated)/interface/log/page"), { ssr: false });
-      break;
-    case "/interface/manual":
-      component = dynamic(() => import("@/app/(authenticated)/interface/manual/page"), { ssr: false });
-      break;
-    case "/inventory/material-physical-inv":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/material-physical-inv/page"), { ssr: false });
-      break;
-    case "/inventory/material-physical-inv-apply":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/material-physical-inv-apply/page"), { ssr: false });
-      break;
-    case "/inventory/material-physical-inv-history":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/material-physical-inv-history/page"), { ssr: false });
-      break;
-    case "/inventory/material-stock":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/material-stock/page"), { ssr: false });
-      break;
-    case "/inventory/product-hold":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/product-hold/page"), { ssr: false });
-      break;
-    case "/inventory/product-physical-inv":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/product-physical-inv/page"), { ssr: false });
-      break;
-    case "/inventory/product-physical-inv-history":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/product-physical-inv-history/page"), { ssr: false });
-      break;
-    case "/inventory/stock":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/stock/page"), { ssr: false });
-      break;
-    case "/inventory/transaction":
-      component = dynamic(() => import("@/app/(authenticated)/inventory/transaction/page"), { ssr: false });
-      break;
-    case "/master/bom":
-      component = dynamic(() => import("@/app/(authenticated)/master/bom/page"), { ssr: false });
-      break;
-    case "/master/code":
-      component = dynamic(() => import("@/app/(authenticated)/master/code/page"), { ssr: false });
-      break;
-    case "/master/company":
-      component = dynamic(() => import("@/app/(authenticated)/master/company/page"), { ssr: false });
-      break;
-    case "/master/equip":
-      component = dynamic(() => import("@/app/(authenticated)/master/equip/page"), { ssr: false });
-      break;
-    case "/master/equip-inspect":
-      component = dynamic(() => import("@/app/(authenticated)/master/equip-inspect/page"), { ssr: false });
-      break;
-    case "/master/equip-inspect-item":
-      component = dynamic(() => import("@/app/(authenticated)/master/equip-inspect-item/page"), { ssr: false });
-      break;
-    case "/master/gauge":
-      component = dynamic(() => import("@/app/(authenticated)/master/gauge/page"), { ssr: false });
-      break;
-    case "/master/iqc-item":
-      component = dynamic(() => import("@/app/(authenticated)/master/iqc-item/page"), { ssr: false });
-      break;
-    case "/master/iqc-part-spec":
-      component = dynamic(() => import("@/app/(authenticated)/master/iqc-part-spec/page"), { ssr: false });
-      break;
-    case "/master/label":
-      component = dynamic(() => import("@/app/(authenticated)/master/label/page"), { ssr: false });
-      break;
-    case "/master/part":
-      component = dynamic(() => import("@/app/(authenticated)/master/part/page"), { ssr: false });
-      break;
-    case "/master/partner":
-      component = dynamic(() => import("@/app/(authenticated)/master/partner/page"), { ssr: false });
-      break;
-    case "/master/process":
-      component = dynamic(() => import("@/app/(authenticated)/master/process/page"), { ssr: false });
-      break;
-    case "/master/process-capa":
-      component = dynamic(() => import("@/app/(authenticated)/master/process-capa/page"), { ssr: false });
-      break;
-    case "/master/prod-line":
-      component = dynamic(() => import("@/app/(authenticated)/master/prod-line/page"), { ssr: false });
-      break;
-    case "/master/routing":
-      component = dynamic(() => import("@/app/(authenticated)/master/routing/page"), { ssr: false });
-      break;
-    case "/master/vendor-barcode":
-      component = dynamic(() => import("@/app/(authenticated)/master/vendor-barcode/page"), { ssr: false });
-      break;
-    case "/master/warehouse":
-      component = dynamic(() => import("@/app/(authenticated)/master/warehouse/page"), { ssr: false });
-      break;
-    case "/master/work-calendar":
-      component = dynamic(() => import("@/app/(authenticated)/master/work-calendar/page"), { ssr: false });
-      break;
-    case "/master/work-instruction":
-      component = dynamic(() => import("@/app/(authenticated)/master/work-instruction/page"), { ssr: false });
-      break;
-    case "/master/worker":
-      component = dynamic(() => import("@/app/(authenticated)/master/worker/page"), { ssr: false });
-      break;
-    case "/material/adjustment":
-      component = dynamic(() => import("@/app/(authenticated)/material/adjustment/page"), { ssr: false });
-      break;
-    case "/material/arrival":
-      component = dynamic(() => import("@/app/(authenticated)/material/arrival/page"), { ssr: false });
-      break;
-    case "/material/arrival-result":
-      component = dynamic(() => import("@/app/(authenticated)/material/arrival-result/page"), { ssr: false });
-      break;
-    case "/material/arrival-stock":
-      component = dynamic(() => import("@/app/(authenticated)/material/arrival-stock/page"), { ssr: false });
-      break;
-    case "/material/arrival-transaction":
-      component = dynamic(() => import("@/app/(authenticated)/material/arrival-transaction/page"), { ssr: false });
-      break;
-    case "/material/concession":
-      component = dynamic(() => import("@/app/(authenticated)/material/concession/page"), { ssr: false });
-      break;
-    case "/material/hold":
-      component = dynamic(() => import("@/app/(authenticated)/material/hold/page"), { ssr: false });
-      break;
-    case "/material/iqc":
-      component = dynamic(() => import("@/app/(authenticated)/material/iqc/page"), { ssr: false });
-      break;
-    case "/material/iqc-history":
-      component = dynamic(() => import("@/app/(authenticated)/material/iqc-history/page"), { ssr: false });
-      break;
-    case "/material/issue":
-      component = dynamic(() => import("@/app/(authenticated)/material/issue/page"), { ssr: false });
-      break;
-    case "/material/issue-other":
-      component = dynamic(() => import("@/app/(authenticated)/material/issue-other/page"), { ssr: false });
-      break;
-    case "/material/lot":
-      component = dynamic(() => import("@/app/(authenticated)/material/lot/page"), { ssr: false });
-      break;
-    case "/material/lot-merge":
-      component = dynamic(() => import("@/app/(authenticated)/material/lot-merge/page"), { ssr: false });
-      break;
-    case "/material/lot-split":
-      component = dynamic(() => import("@/app/(authenticated)/material/lot-split/page"), { ssr: false });
-      break;
-    case "/material/misc-receipt":
-      component = dynamic(() => import("@/app/(authenticated)/material/misc-receipt/page"), { ssr: false });
-      break;
-    case "/material/physical-inv":
-      component = dynamic(() => import("@/app/(authenticated)/material/physical-inv/page"), { ssr: false });
-      break;
-    case "/material/physical-inv-history":
-      component = dynamic(() => import("@/app/(authenticated)/material/physical-inv-history/page"), { ssr: false });
-      break;
-    case "/material/po":
-      component = dynamic(() => import("@/app/(authenticated)/material/po/page"), { ssr: false });
-      break;
-    case "/material/po-status":
-      component = dynamic(() => import("@/app/(authenticated)/material/po-status/page"), { ssr: false });
-      break;
-    case "/material/receipt-cancel":
-      component = dynamic(() => import("@/app/(authenticated)/material/receipt-cancel/page"), { ssr: false });
-      break;
-    case "/material/receive":
-      component = dynamic(() => import("@/app/(authenticated)/material/receive/page"), { ssr: false });
-      break;
-    case "/material/receive-history":
-      component = dynamic(() => import("@/app/(authenticated)/material/receive-history/page"), { ssr: false });
-      break;
-    case "/material/receive-label":
-      component = dynamic(() => import("@/app/(authenticated)/material/receive-label/page"), { ssr: false });
-      break;
-    case "/material/request":
-      component = dynamic(() => import("@/app/(authenticated)/material/request/page"), { ssr: false });
-      break;
-    case "/material/scrap":
-      component = dynamic(() => import("@/app/(authenticated)/material/scrap/page"), { ssr: false });
-      break;
-    case "/material/shelf-life":
-      component = dynamic(() => import("@/app/(authenticated)/material/shelf-life/page"), { ssr: false });
-      break;
-    case "/material/shelf-life-history":
-      component = dynamic(() => import("@/app/(authenticated)/material/shelf-life-history/page"), { ssr: false });
-      break;
-    case "/material/shelf-life-reinspect":
-      component = dynamic(() => import("@/app/(authenticated)/material/shelf-life-reinspect/page"), { ssr: false });
-      break;
-    case "/material/stock":
-      component = dynamic(() => import("@/app/(authenticated)/material/stock/page"), { ssr: false });
-      break;
-    case "/outsourcing/order":
-      component = dynamic(() => import("@/app/(authenticated)/outsourcing/order/page"), { ssr: false });
-      break;
-    case "/outsourcing/receive":
-      component = dynamic(() => import("@/app/(authenticated)/outsourcing/receive/page"), { ssr: false });
-      break;
-    case "/outsourcing/vendor":
-      component = dynamic(() => import("@/app/(authenticated)/outsourcing/vendor/page"), { ssr: false });
-      break;
-    case "/product/issue":
-      component = dynamic(() => import("@/app/(authenticated)/product/issue/page"), { ssr: false });
-      break;
-    case "/product/issue-cancel":
-      component = dynamic(() => import("@/app/(authenticated)/product/issue-cancel/page"), { ssr: false });
-      break;
-    case "/product/receipt-cancel":
-      component = dynamic(() => import("@/app/(authenticated)/product/receipt-cancel/page"), { ssr: false });
-      break;
-    case "/product/receive":
-      component = dynamic(() => import("@/app/(authenticated)/product/receive/page"), { ssr: false });
-      break;
-    case "/production/input-equip":
-      component = dynamic(() => import("@/app/(authenticated)/production/input-equip/page"), { ssr: false });
-      break;
-    case "/production/input-inspect":
-      component = dynamic(() => import("@/app/(authenticated)/production/input-inspect/page"), { ssr: false });
-      break;
-    case "/production/input-kiosk":
-      component = dynamic(() => import("@/app/(authenticated)/production/input-kiosk/page"), { ssr: false });
-      break;
-    case "/production/input-machine":
-      component = dynamic(() => import("@/app/(authenticated)/production/input-machine/page"), { ssr: false });
-      break;
-    case "/production/input-manual":
-      component = dynamic(() => import("@/app/(authenticated)/production/input-manual/page"), { ssr: false });
-      break;
-    case "/production/monthly-plan":
-      component = dynamic(() => import("@/app/(authenticated)/production/monthly-plan/page"), { ssr: false });
-      break;
-    case "/production/order":
-      component = dynamic(() => import("@/app/(authenticated)/production/order/page"), { ssr: false });
-      break;
-    case "/production/pack-result":
-      component = dynamic(() => import("@/app/(authenticated)/production/pack-result/page"), { ssr: false });
-      break;
-    case "/production/progress":
-      component = dynamic(() => import("@/app/(authenticated)/production/progress/page"), { ssr: false });
-      break;
-    case "/production/repair":
-      component = dynamic(() => import("@/app/(authenticated)/production/repair/page"), { ssr: false });
-      break;
-    case "/production/result":
-      component = dynamic(() => import("@/app/(authenticated)/production/result/page"), { ssr: false });
-      break;
-    case "/production/result-summary":
-      component = dynamic(() => import("@/app/(authenticated)/production/result-summary/page"), { ssr: false });
-      break;
-    case "/production/sample-inspect":
-      component = dynamic(() => import("@/app/(authenticated)/production/sample-inspect/page"), { ssr: false });
-      break;
-    case "/production/simulation":
-      component = dynamic(() => import("@/app/(authenticated)/production/simulation/page"), { ssr: false });
-      break;
-    case "/production/specification-setup":
-      component = dynamic(() => import("@/app/(authenticated)/production/specification-setup/page"), { ssr: false });
-      break;
-    case "/production/subprocess-kitting":
-      component = dynamic(() => import("@/app/(authenticated)/production/subprocess-kitting/page"), { ssr: false });
-      break;
-    case "/production/wip-material-stock":
-      component = dynamic(() => import("@/app/(authenticated)/production/wip-material-stock/page"), { ssr: false });
-      break;
-    case "/production/wip-material-trans":
-      component = dynamic(() => import("@/app/(authenticated)/production/wip-material-trans/page"), { ssr: false });
-      break;
-    case "/production/wip-stock":
-      component = dynamic(() => import("@/app/(authenticated)/production/wip-stock/page"), { ssr: false });
-      break;
-    case "/quality/aql":
-      component = dynamic(() => import("@/app/(authenticated)/quality/aql/page"), { ssr: false });
-      break;
-    case "/quality/audit":
-      component = dynamic(() => import("@/app/(authenticated)/quality/audit/page"), { ssr: false });
-      break;
-    case "/quality/capa":
-      component = dynamic(() => import("@/app/(authenticated)/quality/capa/page"), { ssr: false });
-      break;
-    case "/quality/change-control":
-      component = dynamic(() => import("@/app/(authenticated)/quality/change-control/page"), { ssr: false });
-      break;
-    case "/quality/complaint":
-      component = dynamic(() => import("@/app/(authenticated)/quality/complaint/page"), { ssr: false });
-      break;
-    case "/quality/control-plan":
-      component = dynamic(() => import("@/app/(authenticated)/quality/control-plan/page"), { ssr: false });
-      break;
-    case "/quality/defect":
-      component = dynamic(() => import("@/app/(authenticated)/quality/defect/page"), { ssr: false });
-      break;
-    case "/quality/fai":
-      component = dynamic(() => import("@/app/(authenticated)/quality/fai/page"), { ssr: false });
-      break;
-    case "/quality/inspect":
-      component = dynamic(() => import("@/app/(authenticated)/quality/inspect/page"), { ssr: false });
-      break;
-    case "/quality/msa":
-      component = dynamic(() => import("@/app/(authenticated)/quality/msa/page"), { ssr: false });
-      break;
-    case "/quality/oqc":
-      component = dynamic(() => import("@/app/(authenticated)/quality/oqc/page"), { ssr: false });
-      break;
-    case "/quality/oqc-history":
-      component = dynamic(() => import("@/app/(authenticated)/quality/oqc-history/page"), { ssr: false });
-      break;
-    case "/quality/ppap":
-      component = dynamic(() => import("@/app/(authenticated)/quality/ppap/page"), { ssr: false });
-      break;
-    case "/quality/request-inspect":
-      component = dynamic(() => import("@/app/(authenticated)/quality/request-inspect/page"), { ssr: false });
-      break;
-    case "/quality/rework":
-      component = dynamic(() => import("@/app/(authenticated)/quality/rework/page"), { ssr: false });
-      break;
-    case "/quality/rework-history":
-      component = dynamic(() => import("@/app/(authenticated)/quality/rework-history/page"), { ssr: false });
-      break;
-    case "/quality/rework-inspect":
-      component = dynamic(() => import("@/app/(authenticated)/quality/rework-inspect/page"), { ssr: false });
-      break;
-    case "/quality/self-inspect-history":
-      component = dynamic(() => import("@/app/(authenticated)/quality/self-inspect-history/page"), { ssr: false });
-      break;
-    case "/quality/spc":
-      component = dynamic(() => import("@/app/(authenticated)/quality/spc/page"), { ssr: false });
-      break;
-    case "/quality/trace":
-      component = dynamic(() => import("@/app/(authenticated)/quality/trace/page"), { ssr: false });
-      break;
-    case "/sales/customer-po":
-      component = dynamic(() => import("@/app/(authenticated)/sales/customer-po/page"), { ssr: false });
-      break;
-    case "/sales/customer-po-status":
-      component = dynamic(() => import("@/app/(authenticated)/sales/customer-po-status/page"), { ssr: false });
-      break;
-    case "/shipping/box-stock":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/box-stock/page"), { ssr: false });
-      break;
-    case "/shipping/confirm":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/confirm/page"), { ssr: false });
-      break;
-    case "/shipping/customer-po":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/customer-po/page"), { ssr: false });
-      break;
-    case "/shipping/customer-po-status":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/customer-po-status/page"), { ssr: false });
-      break;
-    case "/shipping/history":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/history/page"), { ssr: false });
-      break;
-    case "/shipping/order":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/order/page"), { ssr: false });
-      break;
-    case "/shipping/pack":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/pack/page"), { ssr: false });
-      break;
-    case "/shipping/pallet":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/pallet/page"), { ssr: false });
-      break;
-    case "/shipping/return":
-      component = dynamic(() => import("@/app/(authenticated)/shipping/return/page"), { ssr: false });
-      break;
-    case "/system/comm-config":
-      component = dynamic(() => import("@/app/(authenticated)/system/comm-config/page"), { ssr: false });
-      break;
-    case "/system/config":
-      component = dynamic(() => import("@/app/(authenticated)/system/config/page"), { ssr: false });
-      break;
-    case "/system/department":
-      component = dynamic(() => import("@/app/(authenticated)/system/department/page"), { ssr: false });
-      break;
-    case "/system/document":
-      component = dynamic(() => import("@/app/(authenticated)/system/document/page"), { ssr: false });
-      break;
-    case "/system/improvement-requests":
-      component = dynamic(() => import("@/app/(authenticated)/system/improvement-requests/page"), { ssr: false });
-      break;
-    case "/system/menu-categories":
-      component = dynamic(() => import("@/app/(authenticated)/system/menu-categories/page"), { ssr: false });
-      break;
-    case "/system/pda-roles":
-      component = dynamic(() => import("@/app/(authenticated)/system/pda-roles/page"), { ssr: false });
-      break;
-    case "/system/roles":
-      component = dynamic(() => import("@/app/(authenticated)/system/roles/page"), { ssr: false });
-      break;
-    case "/system/scheduler":
-      component = dynamic(() => import("@/app/(authenticated)/system/scheduler/page"), { ssr: false });
-      break;
-    case "/system/training":
-      component = dynamic(() => import("@/app/(authenticated)/system/training/page"), { ssr: false });
-      break;
-    case "/system/users":
-      component = dynamic(() => import("@/app/(authenticated)/system/users/page"), { ssr: false });
-      break;
-    case "/workflow":
-      component = dynamic(() => import("@/app/(authenticated)/workflow/page"), { ssr: false });
-      break;
+    case "/consumables/issuing": {
+      const mod = await import("./page-registries/consumables__issuing.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/consumables/label": {
+      const mod = await import("./page-registries/consumables__label.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/consumables/life": {
+      const mod = await import("./page-registries/consumables__life.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/consumables/master": {
+      const mod = await import("./page-registries/consumables__master.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/consumables/mount": {
+      const mod = await import("./page-registries/consumables__mount.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/consumables/receiving": {
+      const mod = await import("./page-registries/consumables__receiving.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/consumables/stock": {
+      const mod = await import("./page-registries/consumables__stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/customs/entry": {
+      const mod = await import("./page-registries/customs__entry.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/customs/stock": {
+      const mod = await import("./page-registries/customs__stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/customs/usage": {
+      const mod = await import("./page-registries/customs__usage.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/dashboard": {
+      const mod = await import("./page-registries/dashboard.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/calibration-history": {
+      const mod = await import("./page-registries/equipment__calibration-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/daily-inspect": {
+      const mod = await import("./page-registries/equipment__daily-inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/inspect-calendar": {
+      const mod = await import("./page-registries/equipment__inspect-calendar.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/inspect-history": {
+      const mod = await import("./page-registries/equipment__inspect-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/mold": {
+      const mod = await import("./page-registries/equipment__mold.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/mold-mgmt": {
+      const mod = await import("./page-registries/equipment__mold-mgmt.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/periodic-inspect": {
+      const mod = await import("./page-registries/equipment__periodic-inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/periodic-inspect-calendar": {
+      const mod = await import("./page-registries/equipment__periodic-inspect-calendar.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/pm-calendar": {
+      const mod = await import("./page-registries/equipment__pm-calendar.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/pm-plan": {
+      const mod = await import("./page-registries/equipment__pm-plan.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/pm-result": {
+      const mod = await import("./page-registries/equipment__pm-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/equipment/status": {
+      const mod = await import("./page-registries/equipment__status.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inspection/history": {
+      const mod = await import("./page-registries/inspection__history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inspection/protocol": {
+      const mod = await import("./page-registries/inspection__protocol.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inspection/result": {
+      const mod = await import("./page-registries/inspection__result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inspection/terminal-result": {
+      const mod = await import("./page-registries/inspection__terminal-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/interface/dashboard": {
+      const mod = await import("./page-registries/interface__dashboard.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/interface/log": {
+      const mod = await import("./page-registries/interface__log.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/interface/manual": {
+      const mod = await import("./page-registries/interface__manual.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/material-physical-inv": {
+      const mod = await import("./page-registries/inventory__material-physical-inv.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/material-physical-inv-apply": {
+      const mod = await import("./page-registries/inventory__material-physical-inv-apply.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/material-physical-inv-history": {
+      const mod = await import("./page-registries/inventory__material-physical-inv-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/material-stock": {
+      const mod = await import("./page-registries/inventory__material-stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/product-hold": {
+      const mod = await import("./page-registries/inventory__product-hold.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/product-physical-inv": {
+      const mod = await import("./page-registries/inventory__product-physical-inv.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/product-physical-inv-history": {
+      const mod = await import("./page-registries/inventory__product-physical-inv-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/stock": {
+      const mod = await import("./page-registries/inventory__stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inventory/transaction": {
+      const mod = await import("./page-registries/inventory__transaction.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/bom": {
+      const mod = await import("./page-registries/master__bom.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/code": {
+      const mod = await import("./page-registries/master__code.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/company": {
+      const mod = await import("./page-registries/master__company.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/equip": {
+      const mod = await import("./page-registries/master__equip.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/equip-inspect": {
+      const mod = await import("./page-registries/master__equip-inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/equip-inspect-item": {
+      const mod = await import("./page-registries/master__equip-inspect-item.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/gauge": {
+      const mod = await import("./page-registries/master__gauge.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/iqc-item": {
+      const mod = await import("./page-registries/master__iqc-item.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/iqc-part-spec": {
+      const mod = await import("./page-registries/master__iqc-part-spec.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/label": {
+      const mod = await import("./page-registries/master__label.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/part": {
+      const mod = await import("./page-registries/master__part.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/partner": {
+      const mod = await import("./page-registries/master__partner.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/process": {
+      const mod = await import("./page-registries/master__process.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/process-capa": {
+      const mod = await import("./page-registries/master__process-capa.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/prod-line": {
+      const mod = await import("./page-registries/master__prod-line.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/routing": {
+      const mod = await import("./page-registries/master__routing.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/vendor-barcode": {
+      const mod = await import("./page-registries/master__vendor-barcode.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/warehouse": {
+      const mod = await import("./page-registries/master__warehouse.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/work-calendar": {
+      const mod = await import("./page-registries/master__work-calendar.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/work-instruction": {
+      const mod = await import("./page-registries/master__work-instruction.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/worker": {
+      const mod = await import("./page-registries/master__worker.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/adjustment": {
+      const mod = await import("./page-registries/material__adjustment.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/arrival": {
+      const mod = await import("./page-registries/material__arrival.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/arrival-result": {
+      const mod = await import("./page-registries/material__arrival-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/arrival-stock": {
+      const mod = await import("./page-registries/material__arrival-stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/arrival-transaction": {
+      const mod = await import("./page-registries/material__arrival-transaction.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/concession": {
+      const mod = await import("./page-registries/material__concession.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/hold": {
+      const mod = await import("./page-registries/material__hold.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/iqc": {
+      const mod = await import("./page-registries/material__iqc.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/iqc-history": {
+      const mod = await import("./page-registries/material__iqc-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/issue": {
+      const mod = await import("./page-registries/material__issue.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/issue-other": {
+      const mod = await import("./page-registries/material__issue-other.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/lot": {
+      const mod = await import("./page-registries/material__lot.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/lot-merge": {
+      const mod = await import("./page-registries/material__lot-merge.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/lot-split": {
+      const mod = await import("./page-registries/material__lot-split.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/misc-receipt": {
+      const mod = await import("./page-registries/material__misc-receipt.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/physical-inv": {
+      const mod = await import("./page-registries/material__physical-inv.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/physical-inv-history": {
+      const mod = await import("./page-registries/material__physical-inv-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/po": {
+      const mod = await import("./page-registries/material__po.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/po-status": {
+      const mod = await import("./page-registries/material__po-status.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/receipt-cancel": {
+      const mod = await import("./page-registries/material__receipt-cancel.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/receive": {
+      const mod = await import("./page-registries/material__receive.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/receive-history": {
+      const mod = await import("./page-registries/material__receive-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/receive-label": {
+      const mod = await import("./page-registries/material__receive-label.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/request": {
+      const mod = await import("./page-registries/material__request.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/scrap": {
+      const mod = await import("./page-registries/material__scrap.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/shelf-life": {
+      const mod = await import("./page-registries/material__shelf-life.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/shelf-life-history": {
+      const mod = await import("./page-registries/material__shelf-life-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/shelf-life-reinspect": {
+      const mod = await import("./page-registries/material__shelf-life-reinspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/stock": {
+      const mod = await import("./page-registries/material__stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/outsourcing/order": {
+      const mod = await import("./page-registries/outsourcing__order.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/outsourcing/receive": {
+      const mod = await import("./page-registries/outsourcing__receive.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/outsourcing/vendor": {
+      const mod = await import("./page-registries/outsourcing__vendor.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/product/issue": {
+      const mod = await import("./page-registries/product__issue.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/product/issue-cancel": {
+      const mod = await import("./page-registries/product__issue-cancel.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/product/receipt-cancel": {
+      const mod = await import("./page-registries/product__receipt-cancel.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/product/receive": {
+      const mod = await import("./page-registries/product__receive.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/input-equip": {
+      const mod = await import("./page-registries/production__input-equip.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/input-inspect": {
+      const mod = await import("./page-registries/production__input-inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/input-kiosk": {
+      const mod = await import("./page-registries/production__input-kiosk.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/input-machine": {
+      const mod = await import("./page-registries/production__input-machine.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/input-manual": {
+      const mod = await import("./page-registries/production__input-manual.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/monthly-plan": {
+      const mod = await import("./page-registries/production__monthly-plan.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/order": {
+      const mod = await import("./page-registries/production__order.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/pack-result": {
+      const mod = await import("./page-registries/production__pack-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/progress": {
+      const mod = await import("./page-registries/production__progress.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/repair": {
+      const mod = await import("./page-registries/production__repair.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/result": {
+      const mod = await import("./page-registries/production__result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/result-summary": {
+      const mod = await import("./page-registries/production__result-summary.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/sample-inspect": {
+      const mod = await import("./page-registries/production__sample-inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/simulation": {
+      const mod = await import("./page-registries/production__simulation.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/specification-setup": {
+      const mod = await import("./page-registries/production__specification-setup.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/subprocess-kitting": {
+      const mod = await import("./page-registries/production__subprocess-kitting.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/wip-material-stock": {
+      const mod = await import("./page-registries/production__wip-material-stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/wip-material-trans": {
+      const mod = await import("./page-registries/production__wip-material-trans.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/wip-stock": {
+      const mod = await import("./page-registries/production__wip-stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/aql": {
+      const mod = await import("./page-registries/quality__aql.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/audit": {
+      const mod = await import("./page-registries/quality__audit.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/capa": {
+      const mod = await import("./page-registries/quality__capa.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/change-control": {
+      const mod = await import("./page-registries/quality__change-control.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/complaint": {
+      const mod = await import("./page-registries/quality__complaint.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/control-plan": {
+      const mod = await import("./page-registries/quality__control-plan.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/defect": {
+      const mod = await import("./page-registries/quality__defect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/fai": {
+      const mod = await import("./page-registries/quality__fai.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/inspect": {
+      const mod = await import("./page-registries/quality__inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/msa": {
+      const mod = await import("./page-registries/quality__msa.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/oqc": {
+      const mod = await import("./page-registries/quality__oqc.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/oqc-history": {
+      const mod = await import("./page-registries/quality__oqc-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/ppap": {
+      const mod = await import("./page-registries/quality__ppap.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/request-inspect": {
+      const mod = await import("./page-registries/quality__request-inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/rework": {
+      const mod = await import("./page-registries/quality__rework.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/rework-history": {
+      const mod = await import("./page-registries/quality__rework-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/rework-inspect": {
+      const mod = await import("./page-registries/quality__rework-inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/self-inspect-history": {
+      const mod = await import("./page-registries/quality__self-inspect-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/spc": {
+      const mod = await import("./page-registries/quality__spc.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/trace": {
+      const mod = await import("./page-registries/quality__trace.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/sales/customer-po": {
+      const mod = await import("./page-registries/sales__customer-po.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/sales/customer-po-status": {
+      const mod = await import("./page-registries/sales__customer-po-status.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/box-stock": {
+      const mod = await import("./page-registries/shipping__box-stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/confirm": {
+      const mod = await import("./page-registries/shipping__confirm.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/customer-po": {
+      const mod = await import("./page-registries/shipping__customer-po.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/customer-po-status": {
+      const mod = await import("./page-registries/shipping__customer-po-status.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/history": {
+      const mod = await import("./page-registries/shipping__history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/order": {
+      const mod = await import("./page-registries/shipping__order.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/pack": {
+      const mod = await import("./page-registries/shipping__pack.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/pallet": {
+      const mod = await import("./page-registries/shipping__pallet.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/shipping/return": {
+      const mod = await import("./page-registries/shipping__return.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/comm-config": {
+      const mod = await import("./page-registries/system__comm-config.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/config": {
+      const mod = await import("./page-registries/system__config.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/department": {
+      const mod = await import("./page-registries/system__department.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/document": {
+      const mod = await import("./page-registries/system__document.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/improvement-requests": {
+      const mod = await import("./page-registries/system__improvement-requests.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/menu-categories": {
+      const mod = await import("./page-registries/system__menu-categories.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/pda-roles": {
+      const mod = await import("./page-registries/system__pda-roles.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/roles": {
+      const mod = await import("./page-registries/system__roles.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/scheduler": {
+      const mod = await import("./page-registries/system__scheduler.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/training": {
+      const mod = await import("./page-registries/system__training.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/system/users": {
+      const mod = await import("./page-registries/system__users.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/workflow": {
+      const mod = await import("./page-registries/workflow.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     default:
       return null;
   }
-
-  pageComponentCache.set(path, component);
   return component;
 }

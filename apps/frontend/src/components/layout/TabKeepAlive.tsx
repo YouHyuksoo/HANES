@@ -4,12 +4,12 @@
  *
  * pageRegistry.generated.ts가 모든 페이지 dynamic 컴포넌트를 top-level에서 만들면 Next dev 서버가
  * 메뉴 클릭 시 authenticated page 전체를 on-demand compile 대상으로 잡아 화면 열림이 수십 초 지연된다.
- * getPageComponent(path)는 실제 방문한 경로만 dynamic 생성하므로, 열린 탭의 React state를 보존하면서
- * 전체 page compile 폭주를 피한다.
+ * getPageComponent(path)는 실제 방문한 경로의 작은 registry만 import하므로, 열린 탭의
+ * React state를 보존하면서 전체 page compile 폭주를 피한다.
  */
 "use client";
 
-import { memo, useEffect, useMemo, useRef, type ComponentType, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useTabStore, MAX_TABS } from "@/stores/tabStore";
 import { getPageComponent } from "./pageRegistry.generated";
@@ -19,6 +19,11 @@ type CachedPage = {
   path: string;
   Component: ComponentType;
   lastSeen: number;
+};
+
+type LoadedPage = {
+  path: string;
+  Component: ComponentType | null;
 };
 
 const KeepAliveCell = memo(function KeepAliveCell({
@@ -46,7 +51,21 @@ export default function TabKeepAlive({ children }: { children: ReactNode }) {
   const rootsRef = useRef(new Map<string, HTMLDivElement | null>());
   const pagesRef = useRef(new Map<string, CachedPage>());
   const pathnameRef = useRef(pathname);
-  const currentComponent = getPageComponent(pathname);
+  const [loadedPage, setLoadedPage] = useState<LoadedPage>({ path: pathname, Component: null });
+  const cachedCurrentPage = pagesRef.current.get(pathname);
+  const currentComponent =
+    cachedCurrentPage?.Component ??
+    (loadedPage.path === pathname ? loadedPage.Component : null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPageComponent(pathname).then((Component) => {
+      if (!cancelled) setLoadedPage({ path: pathname, Component });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   if (currentComponent) {
     const cachedPage = pagesRef.current.get(pathname);

@@ -56,11 +56,21 @@ verification:
 - FAIL 확인: App Router `children` 캐시 방식은 실제 브라우저에서 `/master/part` 품목 추가 패널 입력 `CODX_REAL_KEEP` 후 대시보드 이동/품목 탭 복귀 시 패널이 초기화되어 값이 사라졌다.
 - PASS: `getPageComponent(path)` lazy registry + 실제 page component keep-alive 적용 후 동일 3002 Playwright 로그인 세션에서 `/master/part` 품목 추가 패널 입력 `CODX_REAL_KEEP` 보존 확인.
 - PASS: lazy registry 적용 후 최종 3002 HTTP 반복 측정 `/dashboard` 521ms, `/master/part` 330ms, `/production/wip-stock` 523ms, `/system/menu-categories` 266ms.
+- FAIL 확인: 단일 `pageRegistry.generated.ts` lazy factory는 runtime 호출 경로는 1개였지만 파일 안에 모든 page `dynamic()` switch가 남아 있어 Turbopack trace에서 registry HMR/compile이 계속 크게 잡혔다.
+- PASS: 그룹별 registry 분리 후 구조 테스트 2건 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `git diff --check` PASS.
+- PASS: 그룹별 registry 분리 후 3002 HTTP `/dashboard` 1008ms, `/master/part` 442ms, `/production/wip-stock` 1982ms, `/system/menu-categories` 218ms, `/shipping/confirm` 451ms.
+- PASS: 그룹별 registry 분리 후 Playwright 로그인 세션에서 `기준정보 > 품목관리` 메뉴 클릭 1473ms, 대시보드 탭 298ms, 품목관리 탭 복귀 889ms, 품목 추가 폼 입력값 보존 true.
+- PASS: 경로별 registry 분리 후 구조 테스트 2건 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- PASS: `.next` 캐시 삭제 후 3002 clean restart. cold compile `/dashboard` 14913ms, `/master/part` 10331ms, `/production/wip-stock` 10769ms, `/system/menu-categories` 13657ms, `/shipping/confirm` 15599ms. warm 재방문 `/dashboard` 457ms, `/master/part` 269ms, `/production/wip-stock` 248ms, `/system/menu-categories` 199ms, `/shipping/confirm` 163ms.
+- BLOCKED 확인: `/dashboard/summary` API 500 전역 모달이 브라우저 자동 메뉴 클릭 재검증을 막았다. 직전 동일 `TabKeepAlive` 로직에서는 Playwright로 품목 추가 폼 입력값 보존 확인 완료.
 review:
 - needs-review
 notes:
 - 원인: `TabKeepAlive`가 `pageRegistry.generated.ts`를 import해 Next dev 서버가 메뉴 클릭 시 authenticated page 전체를 on-demand compile 대상으로 잡았다.
 - 변경: top-level `pageRegistry` 객체는 제거하고 `getPageComponent(path)`가 호출된 경로만 `dynamic()` 생성하도록 `pageRegistry.generated.ts`를 lazy factory로 재생성했다.
+- 추가 변경: 단일 generated registry도 Turbopack 추적 범위가 커서, 메인 registry는 top-level 메뉴 그룹만 async import하고 실제 page `dynamic()` 목록은 `page-registries/*.generated.ts`로 분리했다.
+- 최종 변경: 그룹 registry도 cold compile 범위가 남아 있어, `page-registries/<route>.generated.ts` 경로별 1 page 파일로 더 분리했다.
+- 주의: Windows PowerShell에서는 `pnpm` 직접 호출 금지. `pnpm.ps1` 파일 연결이 Notepad로 열릴 수 있으므로 `pnpm.cmd`를 명시한다.
 - 보정: `TabKeepAlive`는 방문한 실제 page component만 경로별 최대 `MAX_TABS`개 hidden mount로 유지해 열린 탭의 React state를 보존한다. DOM 입력값/선택값/스크롤 `sessionStorage` 저장은 추가 복원 보조로 유지한다.
 
 ## T-ROUTING-LABEL-ISSUE-UI 라우팅 공정 SG/FG 라벨 발행 설정 UI 추가

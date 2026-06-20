@@ -10,6 +10,24 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-20 21:47 Codex
+
+- 작업: `T-MENU-OPEN-DELAY` 최종 보정. 그룹별 registry도 한 그룹 안에 여러 page `dynamic()`을 담아 cold compile 범위가 아직 커서, registry를 경로별 파일 1개당 page 1개 구조로 더 세분화했다.
+- 변경: 메인 `pageRegistry.generated.ts`는 경로별 `page-registries/<route>.generated.ts`만 async import한다. 예: `/master/part`는 `master__part.generated.ts` 하나만 import하며, 그 파일만 `@/app/(authenticated)/master/part/page` dynamic import를 가진다.
+- 검증: 구조 테스트 2건 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. `.next` 캐시 삭제 후 3002 clean restart PASS.
+- 실측: clean restart 직후 cold compile은 `/dashboard` 14913ms, `/master/part` 10331ms, `/production/wip-stock` 10769ms, `/system/menu-categories` 13657ms, `/shipping/confirm` 15599ms로 아직 dev 서버 첫 컴파일 비용이 남았다. 같은 경로 재방문 warm 상태는 `/dashboard` 457ms, `/master/part` 269ms, `/production/wip-stock` 248ms, `/system/menu-categories` 199ms, `/shipping/confirm` 163ms.
+- 한계: `/dashboard/summary` API 500 전역 모달이 브라우저 자동 메뉴 클릭 검증을 막았다. 이번 최종 변경은 `TabKeepAlive` state 보존 로직이 아니라 registry 파일 분할만 바꾼 것이며, 직전 동일 `TabKeepAlive` 코드에서 품목 추가 폼 입력값 보존은 Playwright로 확인했다.
+- 주의: dev 서버 `predev`는 로컬 미추적 `/production/fg-stock` page까지 registry에 넣으므로, 커밋 전 generated 파일에서 해당 case와 `production__fg-stock.generated.ts`를 제거했다.
+
+## 2026-06-20 21:18 Codex
+
+- 작업: `T-MENU-OPEN-DELAY` 메뉴 첫 진입 지연 추가 보정. 직전 커밋의 단일 `pageRegistry.generated.ts` lazy factory는 runtime 호출 경로는 1개로 줄였지만, 파일 안에 모든 authenticated page `dynamic()` switch가 남아 있어 Turbopack HMR/compile trace에서 여전히 전체 registry를 추적했다.
+- 변경: `apps/frontend/scripts/gen-page-registry.mjs`를 top-level 메뉴 그룹별 registry 생성 방식으로 바꿨다. 메인 `pageRegistry.generated.ts`는 `master`, `production`, `shipping` 같은 그룹 파일만 비동기 import하고, 실제 page `dynamic()` 목록은 `page-registries/*.generated.ts`에 분리했다. `TabKeepAlive`는 async `getPageComponent(path)` 결과를 받아 기존처럼 방문 탭 page component를 hidden mount로 유지한다.
+- 주의: 로컬 미추적 `/production/fg-stock` page가 codegen에 섞였으나 커밋 대상 generated file에서는 해당 case를 제거했다. 커밋 시 미추적 route를 포함하지 않는다.
+- 검증: `node --test apps/frontend/src/components/layout/tab-keep-alive-unique-paths.structure.test.mjs apps/frontend/src/components/layout/sidebar-menu-navigation.structure.test.mjs` PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `git diff --check` PASS.
+- 실측: 3002 HTTP `/dashboard` 1008ms, `/master/part` 442ms, `/production/wip-stock` 1982ms, `/system/menu-categories` 218ms, `/shipping/confirm` 451ms. Playwright 로그인 세션에서 `기준정보 > 품목관리` 메뉴 클릭 1473ms, 대시보드 탭 298ms, 품목관리 탭 복귀 889ms, 품목 추가 폼 입력값 보존 true 확인.
+- 운영 실수 방지: PowerShell에서 `pnpm`을 직접 호출하면 `pnpm.ps1` 파일 연결이 Notepad로 열릴 수 있으므로, HANES 작업에서는 반드시 `pnpm.cmd` 또는 직접 `node` 실행을 사용한다.
+
 ## 2026-06-20 20:37 Codex
 
 - 작업: `T-MENU-OPEN-DELAY` 탭 보존 재수정. 단순 App Router `children` 캐시는 실제 브라우저에서 `/master/part` 품목 추가 패널 입력 후 대시보드 이동/품목 탭 복귀 시 패널이 초기화되는 것을 확인했다.
