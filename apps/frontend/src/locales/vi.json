@@ -4852,6 +4852,15 @@
     "dashboard": "Bảng điều khiển"
   },
   "comCode": {
+    "AQL_INSP_LEVEL": {
+      "S-1": "Mức kiểm tra đặc biệt S-1",
+      "S-2": "Mức kiểm tra đặc biệt S-2",
+      "S-3": "Mức kiểm tra đặc biệt S-3",
+      "S-4": "Mức kiểm tra đặc biệt S-4",
+      "I": "Mức kiểm tra chung I",
+      "II": "Mức kiểm tra chung II",
+      "III": "Mức kiểm tra chung III"
+    },
     "PRODUCT_TYPE": {
       "HARNESS": "Bó dây",
       "MODEL": "Mẫu/Mã bán hàng",

@@ -4866,6 +4866,15 @@
     "dashboard": "Dashboard"
   },
   "comCode": {
+    "AQL_INSP_LEVEL": {
+      "S-1": "Special Level S-1",
+      "S-2": "Special Level S-2",
+      "S-3": "Special Level S-3",
+      "S-4": "Special Level S-4",
+      "I": "General Level I",
+      "II": "General Level II",
+      "III": "General Level III"
+    },
     "PRODUCT_TYPE": {
       "HARNESS": "Harness",
       "MODEL": "Model/Sales Code",
