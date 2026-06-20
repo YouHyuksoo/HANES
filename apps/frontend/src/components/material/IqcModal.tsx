@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine, ListChecks } from "lucide-react";
 import { Button, Modal, ComCodeBadge } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import { useComCodeList } from "@/hooks/useComCode";
@@ -140,6 +140,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [aqlPolicy, setAqlPolicy] = useState<AqlPolicyPreview | null>(null);
   const [defectRows, setDefectRows] = useState<DefectRow[]>([]);
   const [certFile, setCertFile] = useState<File | null>(null);
+  const [showPendingList, setShowPendingList] = useState(false);
   const serialScanInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -258,6 +259,20 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     window.setTimeout(() => serialScanInputRef.current?.focus(), 0);
   }, [findPendingSerial, inspectItems, serialScanValue, t]);
 
+  const handleAddAllPending = useCallback(() => {
+    const unscanned = pendingSerials.filter((p) => !scannedSerials.includes(p.matUid));
+    if (unscanned.length === 0) return;
+    setScannedSerials((prev) => [...prev, ...unscanned.map((p) => p.matUid)]);
+    setSerialInspectionMap((prev) => {
+      const next = { ...prev };
+      for (const p of unscanned) {
+        if (!next[p.matUid]) next[p.matUid] = { result: "", rows: createMeasurementRows(inspectItems) };
+      }
+      return next;
+    });
+    setSelectedSerial(unscanned[0].matUid);
+  }, [pendingSerials, scannedSerials, inspectItems]);
+
   const updateSerialMeasurement = useCallback((matUid: string, idx: number, value: string) => {
     setSerialInspectionMap((prev) => {
       const inspection = prev[matUid];
@@ -316,6 +331,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     ? pendingSerials.find((serial) => serial.matUid === selectedSerial)
     : undefined;
   const hasInspectItems = inspectItems.length > 0;
+  const unscannedPending = pendingSerials.filter((p) => !scannedSerials.includes(p.matUid));
   const isIncomplete = serialInspectionPayload.some((serial) => !serial.result);
   const passCount = serialInspectionPayload.filter((serial) => serial.result === "PASS").length;
   const failCount = serialInspectionPayload.filter((serial) => serial.result === "FAIL").length;
@@ -376,28 +392,72 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
         <div className="grid min-h-0 flex-1 grid-cols-12 gap-2">
           {/* 좌측: 입력 폼 (위→아래) */}
           <div className="col-span-3 flex min-h-0 flex-col gap-2.5 overflow-y-auto rounded-lg border border-border bg-background/40 p-2.5">
-            {/* 시리얼 스캔 */}
-            <div className="relative">
+            {/* 시리얼 스캔 + 검사대기 조회 */}
+            <div>
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-xs font-semibold text-text">{t("material.iqc.serialScan", "시리얼 스캔")}</span>
                 <span className="text-xs text-text-muted">{scannedSerials.length.toLocaleString()} / {pendingSerials.length.toLocaleString()}</span>
               </div>
-              <ScanLine className="absolute left-2.5 bottom-2.5 w-4 h-4 text-text-muted" />
-              <input
-                ref={serialScanInputRef}
-                value={serialScanValue}
-                onChange={(e) => setSerialScanValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleSerialScan();
-                  }
-                }}
-                placeholder={t("material.iqc.serialScanPlaceholder", "시리얼을 스캔하거나 입력 후 Enter")}
-                className="h-9 w-full pl-8 pr-3 text-sm rounded-md border border-border bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
+              <div className="relative">
+                <ScanLine className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <input
+                  ref={serialScanInputRef}
+                  value={serialScanValue}
+                  onChange={(e) => setSerialScanValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSerialScan();
+                    }
+                  }}
+                  placeholder={t("material.iqc.serialScanPlaceholder", "시리얼을 스캔하거나 입력 후 Enter")}
+                  className="h-9 w-full pl-8 pr-3 text-sm rounded-md border border-border bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
               {scanSerialError && (
                 <p className="mt-1 text-xs text-red-600 dark:text-red-400">{scanSerialError}</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowPendingList((v) => !v)}
+                className="mt-1.5 flex w-full items-center justify-center gap-1 rounded border border-border bg-surface px-2 py-1.5 text-xs text-text transition-colors hover:border-primary hover:text-primary"
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+                {t("material.iqc.viewPending", "검사대기 시리얼 조회")} ({unscannedPending.length})
+              </button>
+              {showPendingList && (
+                <div className="mt-1 overflow-hidden rounded-md border border-border bg-surface">
+                  <div className="flex items-center justify-between border-b border-border px-2 py-1">
+                    <span className="text-[11px] text-text-muted">{t("material.iqc.pendingSerials", "검사대기")} {unscannedPending.length}</span>
+                    <button
+                      type="button"
+                      onClick={handleAddAllPending}
+                      disabled={unscannedPending.length === 0}
+                      className="text-[11px] font-medium text-primary hover:underline disabled:opacity-40"
+                    >
+                      {t("material.iqc.addAll", "전체 추가")}
+                    </button>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto">
+                    {unscannedPending.length === 0 ? (
+                      <div className="px-2 py-3 text-center text-[11px] text-text-muted">
+                        {t("material.iqc.noPending", "검사대기 시리얼이 없습니다.")}
+                      </div>
+                    ) : (
+                      unscannedPending.map((p) => (
+                        <button
+                          key={p.matUid}
+                          type="button"
+                          onClick={() => handleSerialScan(p.matUid)}
+                          className="flex w-full items-center justify-between gap-2 border-b border-border/50 px-2 py-1.5 text-left text-xs hover:bg-primary/5"
+                        >
+                          <span className="truncate font-mono text-text">{p.matUid}</span>
+                          <span className="shrink-0 text-text-muted">{(p.currentQty ?? p.initQty ?? 0).toLocaleString()}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
               )}
             </div>
 
