@@ -5,7 +5,20 @@
  */
 import { useState } from "react";
 import { CheckCircle, XCircle } from "lucide-react";
-import { Modal } from "@/components/ui";
+import { Modal, ComCodeBadge } from "@/components/ui";
+
+interface ItemJudgeEntry {
+  seq?: number;
+  inspItemCode?: string;
+  defectGrade?: string | null;
+  inspectionLevel?: string | null;
+  aql?: number | null;
+  defectCount?: number;
+  acceptQty?: number | null;
+  rejectQty?: number | null;
+  result?: string;
+  reason?: string;
+}
 
 interface InspectionItem {
   itemId?: string;
@@ -43,6 +56,7 @@ export interface IqcDetailRecord {
   sampleBarcode?: string | null;
   remark?: string | null;
   details?: string | null;
+  itemResults?: string | null;
 }
 
 interface Props {
@@ -76,6 +90,14 @@ export default function IqcDetailModal({ record, onClose }: Props) {
 
   const serials: SerialEntry[] = details?.serials ?? [];
 
+  const itemResults: ItemJudgeEntry[] = (() => {
+    if (!record?.itemResults) return [];
+    try {
+      const parsed = JSON.parse(record.itemResults);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  })();
+
   // 모달 열릴 때 첫 시리얼 자동 선택
   const activeSerial = selectedSerial || serials[0]?.matUid || "";
   const activeEntry = serials.find((s) => s.matUid === activeSerial);
@@ -102,6 +124,47 @@ export default function IqcDetailModal({ record, onClose }: Props) {
           </div>
 
           <div className="border-t border-border" />
+
+          {/* 검사항목별 판정 (검사항목별 AQL 모델) */}
+          {itemResults.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-text-muted mb-2">검사항목별 판정 ({itemResults.length})</p>
+              <div className="border border-border rounded-lg overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-surface border-b border-border">
+                    <tr>
+                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">검사항목</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">불량등급</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">검사수준</th>
+                      <th className="text-right px-2 py-1.5 font-medium text-text-muted">AQL</th>
+                      <th className="text-right px-2 py-1.5 font-medium text-text-muted">불량수</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">Ac/Re</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">판정</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">사유</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itemResults.map((r, idx) => (
+                      <tr key={r.inspItemCode ?? idx} className="border-t border-border hover:bg-surface/50">
+                        <td className="px-2 py-1.5 font-medium text-text">{r.inspItemCode || "-"}</td>
+                        <td className="px-2 py-1.5">
+                          {r.defectGrade ? <ComCodeBadge groupCode="DEFECT_GRADE" code={r.defectGrade} /> : <span className="text-text-muted">-</span>}
+                        </td>
+                        <td className="px-2 py-1.5 text-center text-text">{r.inspectionLevel || "-"}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-text">{r.aql ?? "-"}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-text">{r.defectCount ?? 0}</td>
+                        <td className="px-2 py-1.5 text-center tabular-nums text-text-muted">
+                          {r.acceptQty != null ? `${r.acceptQty}/${r.rejectQty}` : "-"}
+                        </td>
+                        <td className="px-2 py-1.5 text-center">{resultBadge(r.result)}</td>
+                        <td className="px-2 py-1.5 text-text-muted">{r.reason || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* 시리얼 상세 */}
           {serials.length > 0 ? (
