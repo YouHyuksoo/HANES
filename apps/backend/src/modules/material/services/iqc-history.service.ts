@@ -479,6 +479,7 @@ export class IqcHistoryService {
       defectMajor: aqlPolicy.defectMajor,
       defectMinor: aqlPolicy.defectMinor,
       aqlJudgeReason: aqlPolicy.judgeReason,
+      itemResults: aqlPolicy.itemResults?.length ? JSON.stringify(aqlPolicy.itemResults) : null,
       remark: dto.remark || null,
       inspectDate: new Date(),
       company: tenantCompany,

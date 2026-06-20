@@ -54,6 +54,10 @@ export class IqcLog {
   @Column({ name: 'DETAILS', type: 'clob', nullable: true })
   details: string | null;
 
+  /** 검사항목별 AQL 판정결과(JSON) */
+  @Column({ name: 'ITEM_RESULTS', type: 'clob', nullable: true })
+  itemResults: string | null;
+
   @Column({ type: 'varchar2', name: 'INSPECTOR_NAME', length: 100, nullable: true })
   inspectorName: string | null;
 
