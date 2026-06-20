@@ -26,6 +26,9 @@ export class HarnessCircuitSpec {
   @Column({ type: 'varchar2', name: 'WIRE_SPEC', length: 100, nullable: true })
   wireSpec: string | null;
 
+  @Column({ type: 'varchar2', name: 'WIRE_ITEM_CODE', length: 50, nullable: true })
+  wireItemCode: string | null;
+
   @Column({ type: 'varchar2', name: 'WIRE_SIZE', length: 50, nullable: true })
   wireSize: string | null;
 

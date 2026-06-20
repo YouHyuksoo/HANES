@@ -29,6 +29,33 @@ export class IqcTemplateItemDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['CRITICAL', 'MAJOR', 'MINOR'])
+  defectGrade?: string | null;
+
+  @IsOptional()
+  @IsString()
+  inspectionLevel?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  aql?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['AQL', 'DESTRUCTIVE', 'FULL'])
+  inspectionType?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['AQL', 'FIXED'])
+  sampleMethod?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  sampleQty?: number | null;
+
+  @IsOptional()
+  @IsString()
   useYn?: string;
 }
 

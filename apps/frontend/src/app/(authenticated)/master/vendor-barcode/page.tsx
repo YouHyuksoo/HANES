@@ -20,9 +20,9 @@ import api from "@/services/api";
 import VendorBarcodeFormPanel, { type VendorBarcodeMapping } from "./components/VendorBarcodeFormPanel";
 
 const MATCH_TYPE_OPTIONS = [
-  { value: "EXACT", label: "정확 일치" },
-  { value: "PREFIX", label: "접두사" },
-  { value: "REGEX", label: "정규식" },
+  { value: "EXACT", labelKey: "master.vendorBarcode.matchExact", labelFallback: "정확 일치" },
+  { value: "PREFIX", labelKey: "master.vendorBarcode.matchPrefix", labelFallback: "접두사" },
+  { value: "REGEX", labelKey: "master.vendorBarcode.matchRegex", labelFallback: "정규식" },
 ];
 
 const MATCH_TYPE_COLORS: Record<string, string> = {
@@ -95,7 +95,7 @@ export default function VendorBarcodeMappingPage() {
     { value: "", label: t("master.vendorBarcode.matchType", "매칭유형") + ": " + t("common.all") },
     ...MATCH_TYPE_OPTIONS.map(o => ({
       value: o.value,
-      label: t("master.vendorBarcode.matchType", "매칭유형") + ": " + t(`master.vendorBarcode.match${o.value.charAt(0) + o.value.slice(1).toLowerCase()}`, o.label),
+      label: t("master.vendorBarcode.matchType", "매칭유형") + ": " + t(o.labelKey, o.labelFallback),
     })),
   ], [t]);
 
@@ -126,7 +126,7 @@ export default function VendorBarcodeMappingPage() {
     { accessorKey: "vendorName", header: t("master.vendorBarcode.vendorName", "제조사명"), size: 120 },
     {
       accessorKey: "matchType", header: t("master.vendorBarcode.matchType", "매칭유형"), size: 90,
-      meta: { filterType: "multi" as const, filterOptions: MATCH_TYPE_OPTIONS.map(o => ({ value: o.value, label: o.label })) },
+      meta: { filterType: "multi" as const, filterOptions: MATCH_TYPE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey, o.labelFallback) })) },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return <span className={`px-2 py-0.5 text-xs rounded-full ${MATCH_TYPE_COLORS[v] ?? ""}`}>{v}</span>;
@@ -197,7 +197,10 @@ export default function VendorBarcodeMappingPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.vendorBarcode || ""}'을(를) 삭제하시겠습니까?`}
+        message={t("master.company.deleteConfirm", {
+          name: deleteTarget?.vendorBarcode || "",
+          defaultValue: `'${deleteTarget?.vendorBarcode || ""}'을(를) 삭제하시겠습니까?`,
+        })}
       />
     </div>
   );

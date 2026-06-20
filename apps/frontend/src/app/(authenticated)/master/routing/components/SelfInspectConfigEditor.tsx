@@ -206,8 +206,8 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                   onChange={(e) => handleChange(idx, "itemType", e.target.value)}
                   className="w-24 px-2 py-1 border border-border rounded bg-background text-text text-xs"
                 >
-                  <option value="VISUAL">판정형</option>
-                  <option value="MEASURE">측정형</option>
+                  <option value="VISUAL">{t("selfInspect.typeVisual", "판정형")}</option>
+                  <option value="MEASURE">{t("selfInspect.typeMeasure", "측정형")}</option>
                 </select>
               </div>
 
@@ -227,7 +227,7 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                     type="text"
                     value={row.unit ?? ""}
                     onChange={(e) => handleChange(idx, "unit", e.target.value || null)}
-                    placeholder="단위"
+                    placeholder={t("common.unit", "단위")}
                     className="w-16 px-2 py-1 border border-border rounded bg-background text-text text-xs"
                   />
                   <input
@@ -258,11 +258,11 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                   onChange={(e) => handleChange(idx, "inspectMethod", e.target.value)}
                   className="w-24 px-2 py-1 border border-border rounded bg-background text-text text-xs"
                 >
-                  <option value="DIRECT">직접검사</option>
-                  <option value="DELEGATE">의뢰검사</option>
+                  <option value="DIRECT">{t("selfInspect.methodDirect", "직접검사")}</option>
+                  <option value="DELEGATE">{t("selfInspect.methodDelegate", "의뢰검사")}</option>
                 </select>
                 <label className="flex items-center gap-1 text-text-muted">
-                  <span>샘플수</span>
+                  <span>{t("selfInspect.sampleCount", "샘플수")}</span>
                   <input
                     type="number"
                     min={1}
@@ -278,13 +278,13 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                     onChange={(e) => handleChange(idx, "isDestructive", e.target.checked)}
                     className="rounded"
                   />
-                  <span>파괴</span>
+                  <span>{t("selfInspect.destructive", "파괴")}</span>
                 </label>
               </div>
 
               {/* 검사시점 체크박스 */}
               <div className="flex gap-2 items-center">
-                <span className="text-text-muted">시점:</span>
+                <span className="text-text-muted">{t("selfInspect.timing", "시점")}:</span>
                 {TIMING_OPTIONS.map((timingOpt) => (
                   <label key={timingOpt} className="flex items-center gap-1 text-text-muted cursor-pointer">
                     <input
@@ -293,7 +293,7 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                       onChange={() => handleTimingToggle(idx, timingOpt)}
                       className="rounded"
                     />
-                    <span>{timingOpt === "FIRST" ? "초물" : timingOpt === "MID" ? "중물" : "종물"}</span>
+                    <span>{timingOpt === "FIRST" ? t("selfInspect.timingFirst", "초물") : timingOpt === "MID" ? t("selfInspect.timingMid", "중물") : t("selfInspect.timingLast", "종물")}</span>
                   </label>
                 ))}
               </div>
@@ -302,7 +302,7 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
               <div className="flex gap-2 items-center justify-between">
                 <div className="flex gap-2 items-center">
                   <label className="flex items-center gap-1 text-text-muted">
-                    <span>순서</span>
+                    <span>{t("selfInspect.sortOrder", "순서")}</span>
                     <input
                       type="number"
                       value={row.sortOrder}
@@ -315,8 +315,8 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                     onChange={(e) => handleChange(idx, "useYn", e.target.value)}
                     className="w-16 px-2 py-1 border border-border rounded bg-background text-text text-xs"
                   >
-                    <option value="Y">사용</option>
-                    <option value="N">미사용</option>
+                    <option value="Y">{t("selfInspect.useY", "사용")}</option>
+                    <option value="N">{t("selfInspect.useN", "미사용")}</option>
                   </select>
                 </div>
                 <div className="flex gap-1">
@@ -327,7 +327,7 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                       className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-primary text-white hover:bg-primary/90"
                     >
                       <Save className="w-3 h-3" />
-                      저장
+                      {t("common.save", "저장")}
                     </button>
                   )}
                   <button
@@ -336,7 +336,7 @@ export default function SelfInspectConfigEditor({ selectedProcess }: Props) {
                     className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-red-500 text-white hover:bg-red-600"
                   >
                     <Trash2 className="w-3 h-3" />
-                    삭제
+                    {t("common.delete", "삭제")}
                   </button>
                 </div>
               </div>

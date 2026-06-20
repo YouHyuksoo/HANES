@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { CheckCircle2, CopyPlus, FileSpreadsheet, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
+import { CheckCircle2, CopyPlus, FileSpreadsheet, Maximize2, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { Button, Card, CardContent, Input, Modal, Select } from "@/components/ui";
@@ -14,6 +14,7 @@ type RevisionStatus = "DRAFT" | "APPROVED" | "OBSOLETE";
 interface HarnessCircuitSpec {
   circuitId?: number;
   circuitNo: string;
+  wireItemCode?: string;
   wireSpec?: string;
   wireSize?: string;
   colorCode?: string;
@@ -52,8 +53,29 @@ interface HarnessDrawing {
   revision?: HarnessDrawingRevision;
 }
 
+interface BomOption {
+  childItemCode: string;
+  childItemName?: string | null;
+  childItemNo?: string | null;
+  qtyPer?: number;
+  unit?: string | null;
+  productType?: string | null;
+}
+
+interface BomApiRow {
+  childItemCode: string;
+  qtyPer?: number;
+  childPart?: {
+    itemName?: string | null;
+    itemNo?: string | null;
+    unit?: string | null;
+    productType?: string | null;
+  } | null;
+}
+
 const emptyCircuit = (index: number): HarnessCircuitSpec => ({
   circuitNo: String(index + 1),
+  wireItemCode: "",
   wireSpec: "",
   wireSize: "",
   colorCode: "",
@@ -63,7 +85,7 @@ const emptyCircuit = (index: number): HarnessCircuitSpec => ({
   stripB: "",
   endAHousing: "",
   endATerminal: "",
-  connectionSymbol: "LINE",
+  connectionSymbol: "STRAIGHT",
   endBTerminal: "",
   endBHousing: "",
   tubeSpec: "",
@@ -84,21 +106,28 @@ const toOptionalText = (value?: string | null) => {
 
 const connectionSymbolOptions = [
   { value: "STRAIGHT", label: "직선" },
+  { value: "BOTH_CRIMP", label: "양단 압착" },
+  { value: "SPLICE", label: "스플라이스" },
   { value: "BRIDGE", label: "분기" },
   { value: "ONE_SIDE", label: "단측" },
-  { value: "LINE", label: "라인" },
 ];
+
+const connectionSymbolValues = connectionSymbolOptions.map((option) => option.value);
+
+// 전선 드롭다운에서 제외할 부속자재 productType (터미널/하우징 등은 전용 컬럼에서 선택)
+const ACCESSORY_PRODUCT_TYPES = ["TERMINAL", "HOUSING", "CONNECTOR", "SEAL", "HOLDER", "TAPE", "TUBE", "SHIELD", "CLIP", "GROMMET", "LABEL"];
 
 const normalizeConnectionSymbol = (value?: string | null) => {
   const normalized = value?.trim().toUpperCase();
-  if (normalized === "STRAIGHT" || normalized === "BRIDGE" || normalized === "ONE_SIDE" || normalized === "LINE") {
-    return normalized;
-  }
-  return "LINE";
+  // 구 "LINE"은 "직선(STRAIGHT)"으로 통합 — 기존 데이터 호환
+  if (normalized === "LINE") return "STRAIGHT";
+  if (normalized && connectionSymbolValues.includes(normalized)) return normalized;
+  return "STRAIGHT";
 };
 
 const toCircuitPayload = (circuit: HarnessCircuitSpec) => ({
   circuitNo: circuit.circuitNo.trim(),
+  wireItemCode: toOptionalText(circuit.wireItemCode),
   wireSpec: toOptionalText(circuit.wireSpec),
   wireSize: toOptionalText(circuit.wireSize),
   colorCode: toOptionalText(circuit.colorCode),
@@ -125,8 +154,10 @@ export default function ProductionSpecificationSetupPage() {
   const [selected, setSelected] = useState<HarnessDrawing | null>(null);
   const [selectedRevisionId, setSelectedRevisionId] = useState<number | null>(null);
   const [reviseModalOpen, setReviseModalOpen] = useState(false);
+  const [expandOpen, setExpandOpen] = useState(false);
   const [reviseReason, setReviseReason] = useState("");
   const [revising, setRevising] = useState(false);
+  const [bomOptions, setBomOptions] = useState<BomOption[]>([]);
   const [headerForm, setHeaderForm] = useState({
     drawingNo: "",
     itemCode: "",
@@ -142,6 +173,11 @@ export default function ProductionSpecificationSetupPage() {
     () => selected?.revisions?.find((revision) => revision.revisionId === selectedRevisionId) ?? selected?.revision,
     [selected, selectedRevisionId],
   );
+
+  // BOM 자재를 productType으로 분류 — 전선/터미널/하우징 드롭다운에 각각 공급
+  const wireOptions = useMemo(() => bomOptions.filter((o) => !ACCESSORY_PRODUCT_TYPES.includes(o.productType ?? "")), [bomOptions]);
+  const terminalOptions = useMemo(() => bomOptions.filter((o) => o.productType === "TERMINAL"), [bomOptions]);
+  const housingOptions = useMemo(() => bomOptions.filter((o) => o.productType === "HOUSING" || o.productType === "CONNECTOR"), [bomOptions]);
   const isApproved = selectedRevision?.status === "APPROVED";
 
   const fetchDrawings = useCallback(async () => {
@@ -183,6 +219,32 @@ export default function ProductionSpecificationSetupPage() {
 
   useEffect(() => { fetchDrawings(); }, [fetchDrawings]);
 
+  const loadBomOptions = useCallback(async (itemCode: string) => {
+    const code = itemCode.trim();
+    if (!code) {
+      setBomOptions([]);
+      return;
+    }
+    try {
+      const res = await api.get("/master/boms", { params: { parentItemCode: code, limit: 5000 } });
+      const rows = (res.data?.data ?? []) as BomApiRow[];
+      setBomOptions(rows.map((row) => ({
+        childItemCode: row.childItemCode,
+        childItemName: row.childPart?.itemName ?? null,
+        childItemNo: row.childPart?.itemNo ?? null,
+        qtyPer: row.qtyPer,
+        unit: row.childPart?.unit ?? null,
+        productType: row.childPart?.productType ?? null,
+      })));
+    } catch {
+      setBomOptions([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBomOptions(headerForm.itemCode);
+  }, [headerForm.itemCode, loadBomOptions]);
+
   const columns = useMemo<ColumnDef<HarnessDrawing>[]>(() => [
     { accessorKey: "drawingNo", header: "도면번호", size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "erpItemNo", header: "ERP 품번", size: 160, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
@@ -204,6 +266,9 @@ export default function ProductionSpecificationSetupPage() {
         : row
     )));
   };
+
+  const addCircuit = () => setCircuits((prev) => [...prev, emptyCircuit(prev.length)]);
+  const removeCircuit = (index: number) => setCircuits((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
 
   const buildCircuitsPayload = () => circuits
     .filter((circuit) => circuit.circuitNo.trim())
@@ -371,57 +436,60 @@ export default function ProductionSpecificationSetupPage() {
             <CardContent className="h-full p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-bold text-text">회로별 제작 사양</h2>
-                <Button size="sm" variant="secondary" onClick={() => setCircuits((prev) => [...prev, emptyCircuit(prev.length)])} disabled={isApproved} leftIcon={<Plus className="w-4 h-4" />}>
-                  회로 추가
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setExpandOpen(true)} leftIcon={<Maximize2 className="w-4 h-4" />}>
+                    크게 보기
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={addCircuit} disabled={isApproved} leftIcon={<Plus className="w-4 h-4" />}>
+                    회로 추가
+                  </Button>
+                </div>
               </div>
-              <div className="min-h-0 flex-1 overflow-auto border border-border rounded">
-                <table className="min-w-[1320px] w-full text-xs">
-                  <thead className="sticky top-0 bg-surface border-b border-border z-10">
-                    <tr className="text-text-muted">
-                      {["Circuit", "Wire Spec", "Size", "Color", "Length", "Strip A", "Strip B", "A Housing", "A Terminal", "연결", "B Terminal", "B Housing", "Tube", "Sub", "비고", ""].map((header) => (
-                        <th key={header} className="px-2 py-2 text-left font-semibold whitespace-nowrap">{header}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {circuits.map((row, index) => (
-                      <tr key={`${row.circuitId ?? "new"}-${index}`} className="border-b border-border/70 hover:bg-surface/60">
-                        <td className="p-1"><GridInput value={row.circuitNo} onChange={(v) => updateCircuit(index, "circuitNo", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.wireSpec ?? ""} onChange={(v) => updateCircuit(index, "wireSpec", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.wireSize ?? ""} onChange={(v) => updateCircuit(index, "wireSize", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.colorCode ?? ""} onChange={(v) => updateCircuit(index, "colorCode", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput type="number" value={row.lengthMm ?? ""} onChange={(v) => updateCircuit(index, "lengthMm", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput type="number" value={row.stripA ?? ""} onChange={(v) => updateCircuit(index, "stripA", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput type="number" value={row.stripB ?? ""} onChange={(v) => updateCircuit(index, "stripB", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.endAHousing ?? ""} onChange={(v) => updateCircuit(index, "endAHousing", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.endATerminal ?? ""} onChange={(v) => updateCircuit(index, "endATerminal", v)} disabled={isApproved} /></td>
-                        <td className="p-1 min-w-[118px]">
-                          <ConnectionSymbolControl
-                            value={row.connectionSymbol ?? "LINE"}
-                            onChange={(v) => updateCircuit(index, "connectionSymbol", v)}
-                            disabled={isApproved}
-                          />
-                        </td>
-                        <td className="p-1"><GridInput value={row.endBTerminal ?? ""} onChange={(v) => updateCircuit(index, "endBTerminal", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.endBHousing ?? ""} onChange={(v) => updateCircuit(index, "endBHousing", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.tubeSpec ?? ""} onChange={(v) => updateCircuit(index, "tubeSpec", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.subNo ?? ""} onChange={(v) => updateCircuit(index, "subNo", v)} disabled={isApproved} /></td>
-                        <td className="p-1"><GridInput value={row.remark ?? ""} onChange={(v) => updateCircuit(index, "remark", v)} disabled={isApproved} /></td>
-                        <td className="p-1 text-center">
-                          <button type="button" className="p-1 rounded hover:bg-red-100 text-red-500 disabled:opacity-40" disabled={isApproved || circuits.length === 1} onClick={() => setCircuits((prev) => prev.filter((_, rowIndex) => rowIndex !== index))} title="회로 삭제">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <CircuitSpecTable
+                circuits={circuits}
+                wireOptions={wireOptions}
+                terminalOptions={terminalOptions}
+                housingOptions={housingOptions}
+                isApproved={isApproved}
+                onUpdate={updateCircuit}
+                onRemove={removeCircuit}
+              />
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <Modal
+        isOpen={expandOpen}
+        onClose={() => setExpandOpen(false)}
+        title="회로별 제작 사양"
+        size="full"
+        footer={(
+          <Button variant="ghost" onClick={() => setExpandOpen(false)}>닫기</Button>
+        )}
+      >
+        <div className="flex flex-col gap-3 h-[74vh]">
+          <div className="flex items-center justify-between flex-shrink-0">
+            {selectedRevision && (
+              <span className={`px-2 py-1 rounded text-xs font-semibold ${isApproved ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                Rev {selectedRevision.revisionCode} / {selectedRevision.status}
+              </span>
+            )}
+            <Button size="sm" variant="secondary" onClick={addCircuit} disabled={isApproved} leftIcon={<Plus className="w-4 h-4" />} className="ml-auto">
+              회로 추가
+            </Button>
+          </div>
+          <CircuitSpecTable
+            circuits={circuits}
+            wireOptions={wireOptions}
+            terminalOptions={terminalOptions}
+            housingOptions={housingOptions}
+            isApproved={isApproved}
+            onUpdate={updateCircuit}
+            onRemove={removeCircuit}
+          />
+        </div>
+      </Modal>
 
       <Modal
         isOpen={reviseModalOpen}
@@ -456,6 +524,114 @@ export default function ProductionSpecificationSetupPage() {
   );
 }
 
+function ItemRefSelect({
+  value,
+  options,
+  placeholder,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  options: BomOption[];
+  placeholder: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const current = value ?? "";
+  const missing = current !== "" && !options.some((option) => option.childItemCode === current);
+  return (
+    <select
+      value={current}
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-8 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary disabled:cursor-not-allowed disabled:text-text-muted"
+    >
+      <option value="">{placeholder}</option>
+      {missing && <option value={current}>{current} (미등록)</option>}
+      {options.map((item) => (
+        <option key={item.childItemCode} value={item.childItemCode}>
+          {item.childItemCode}{item.childItemName ? ` / ${item.childItemName}` : ""}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function CircuitSpecTable({
+  circuits,
+  wireOptions,
+  terminalOptions,
+  housingOptions,
+  isApproved,
+  onUpdate,
+  onRemove,
+}: {
+  circuits: HarnessCircuitSpec[];
+  wireOptions: BomOption[];
+  terminalOptions: BomOption[];
+  housingOptions: BomOption[];
+  isApproved: boolean;
+  onUpdate: (index: number, field: keyof HarnessCircuitSpec, value: string) => void;
+  onRemove: (index: number) => void;
+}) {
+  return (
+    <div className="min-h-0 flex-1 overflow-auto border border-border rounded">
+      <table className="min-w-[1680px] w-full text-xs">
+        <thead className="sticky top-0 bg-surface border-b border-border z-10">
+          <tr className="text-text-muted">
+            {["Circuit", "Wire Item", "Wire Spec", "Size", "Color", "Length", "Strip A", "Strip B", "A Housing/Conn", "A Terminal", "연결", "B Terminal", "B Housing/Conn", "Tube", "Sub", "비고", ""].map((header) => (
+              <th key={header} className="px-2 py-2 text-left font-semibold whitespace-nowrap">{header}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {circuits.map((row, index) => (
+            <tr key={`${row.circuitId ?? "new"}-${index}`} className="border-b border-border/70 hover:bg-surface/60">
+              <td className="p-1"><GridInput value={row.circuitNo} onChange={(v) => onUpdate(index, "circuitNo", v)} disabled={isApproved} /></td>
+              <td className="p-1 min-w-[180px]">
+                <ItemRefSelect value={row.wireItemCode ?? ""} options={wireOptions} placeholder="BOM 전선 선택" disabled={isApproved} onChange={(v) => onUpdate(index, "wireItemCode", v)} />
+              </td>
+              <td className="p-1"><GridInput value={row.wireSpec ?? ""} onChange={(v) => onUpdate(index, "wireSpec", v)} disabled={isApproved} /></td>
+              <td className="p-1"><GridInput value={row.wireSize ?? ""} onChange={(v) => onUpdate(index, "wireSize", v)} disabled={isApproved} /></td>
+              <td className="p-1"><GridInput value={row.colorCode ?? ""} onChange={(v) => onUpdate(index, "colorCode", v)} disabled={isApproved} /></td>
+              <td className="p-1"><GridInput type="number" value={row.lengthMm ?? ""} onChange={(v) => onUpdate(index, "lengthMm", v)} disabled={isApproved} /></td>
+              <td className="p-1"><GridInput type="number" value={row.stripA ?? ""} onChange={(v) => onUpdate(index, "stripA", v)} disabled={isApproved} /></td>
+              <td className="p-1"><GridInput type="number" value={row.stripB ?? ""} onChange={(v) => onUpdate(index, "stripB", v)} disabled={isApproved} /></td>
+              <td className="p-1 min-w-[150px]">
+                <ItemRefSelect value={row.endAHousing ?? ""} options={housingOptions} placeholder="하우징/커넥터 선택" disabled={isApproved} onChange={(v) => onUpdate(index, "endAHousing", v)} />
+              </td>
+              <td className="p-1 min-w-[150px]">
+                <ItemRefSelect value={row.endATerminal ?? ""} options={terminalOptions} placeholder="터미널 선택" disabled={isApproved} onChange={(v) => onUpdate(index, "endATerminal", v)} />
+              </td>
+              <td className="p-1 min-w-[168px]">
+                <ConnectionSymbolControl
+                  value={row.connectionSymbol ?? "STRAIGHT"}
+                  onChange={(v) => onUpdate(index, "connectionSymbol", v)}
+                  disabled={isApproved}
+                />
+              </td>
+              <td className="p-1 min-w-[150px]">
+                <ItemRefSelect value={row.endBTerminal ?? ""} options={terminalOptions} placeholder="터미널 선택" disabled={isApproved} onChange={(v) => onUpdate(index, "endBTerminal", v)} />
+              </td>
+              <td className="p-1 min-w-[150px]">
+                <ItemRefSelect value={row.endBHousing ?? ""} options={housingOptions} placeholder="하우징/커넥터 선택" disabled={isApproved} onChange={(v) => onUpdate(index, "endBHousing", v)} />
+              </td>
+              <td className="p-1"><GridInput value={row.tubeSpec ?? ""} onChange={(v) => onUpdate(index, "tubeSpec", v)} disabled={isApproved} /></td>
+              <td className="p-1"><GridInput value={row.subNo ?? ""} onChange={(v) => onUpdate(index, "subNo", v)} disabled={isApproved} /></td>
+              <td className="p-1"><GridInput value={row.remark ?? ""} onChange={(v) => onUpdate(index, "remark", v)} disabled={isApproved} /></td>
+              <td className="p-1 text-center">
+                <button type="button" className="p-1 rounded hover:bg-red-100 text-red-500 disabled:opacity-40" disabled={isApproved || circuits.length === 1} onClick={() => onRemove(index)} title="회로 삭제">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function ConnectionSymbolControl({
   value,
   onChange,
@@ -468,31 +644,52 @@ function ConnectionSymbolControl({
   const symbol = normalizeConnectionSymbol(value);
 
   return (
-    <div data-connection-symbol={symbol} className="flex min-w-[108px] flex-col gap-1">
-      <div className="h-8 rounded border border-border bg-white px-1 shadow-inner">
+    <div data-connection-symbol={symbol} className="flex items-center gap-1">
+      <div className="h-8 w-[84px] shrink-0 rounded border border-border bg-white px-1 shadow-inner">
         <svg viewBox="0 0 104 30" className="h-full w-full" role="img" aria-label={`연결 형태 ${symbol}`}>
-          <line x1="4" y1="15" x2="100" y2="15" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
+          {/* 메인 라인 */}
+          {symbol === "ONE_SIDE" ? (
+            <>
+              <line x1="4" y1="15" x2="55" y2="15" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
+              <line x1="55" y1="15" x2="55" y2="25" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
+            </>
+          ) : (
+            <line x1="4" y1="15" x2="100" y2="15" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
+          )}
           {(symbol === "BRIDGE") && (
             <>
               <polyline points="20,15 52,4 84,15" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
               <polyline points="20,15 52,26 84,15" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
             </>
           )}
-          {(symbol === "ONE_SIDE") && (
+          {(symbol === "SPLICE") && (
             <>
-              <line x1="4" y1="15" x2="55" y2="15" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
-              <line x1="55" y1="15" x2="55" y2="25" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
+              {/* 중간 결선(스플라이스) 가지 + 분기점 */}
+              <line x1="52" y1="15" x2="52" y2="3" stroke="currentColor" strokeWidth="2.5" className="text-slate-900" />
+              <circle cx="52" cy="3" r="2.5" className="fill-slate-900" />
+              <circle cx="52" cy="15" r="4" className="fill-slate-900" />
             </>
           )}
-          <circle cx="4" cy="15" r="2.5" className="fill-slate-900" />
-          {(symbol !== "ONE_SIDE") && <circle cx="100" cy="15" r="2.5" className="fill-slate-900" />}
+          {/* 끝점 / 단자 */}
+          {symbol === "BOTH_CRIMP" ? (
+            <>
+              {/* 양단 압착 단자 */}
+              <rect x="1" y="8" width="11" height="14" rx="1.5" className="fill-slate-900" />
+              <rect x="92" y="8" width="11" height="14" rx="1.5" className="fill-slate-900" />
+            </>
+          ) : (
+            <>
+              <circle cx="4" cy="15" r="2.5" className="fill-slate-900" />
+              {(symbol !== "ONE_SIDE") && <circle cx="100" cy="15" r="2.5" className="fill-slate-900" />}
+            </>
+          )}
         </svg>
       </div>
       <select
         value={symbol}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="h-7 rounded border border-border bg-surface px-1 text-[11px] text-text outline-none focus:border-primary disabled:cursor-not-allowed disabled:text-text-muted"
+        className="h-8 min-w-[60px] flex-1 rounded border border-border bg-surface px-1 text-[11px] text-text outline-none focus:border-primary disabled:cursor-not-allowed disabled:text-text-muted"
         title="연결 형태"
       >
         {connectionSymbolOptions.map((option) => (

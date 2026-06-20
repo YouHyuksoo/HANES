@@ -1275,7 +1275,43 @@
       "sectionQty": "",
       "imageLoadFailed": "이미지를 불러올 수 없습니다",
       "partType": "품목유형",
-      "itemCode": "품목코드"
+      "itemCode": "품목코드",
+      "erpSync": "ERP 동기화",
+      "erpSyncDone": "동기화 완료 — 신규 {{insert}}건, 변경 {{update}}건",
+      "erpSyncFailed": "동기화 실패: {{message}}",
+      "daysSuffix": "{{count}}일",
+      "deleteConfirmMessage": "'{{itemCode}} ({{itemName}})'을(를) 삭제하시겠습니까?",
+      "iqcTarget": "Y (대상)",
+      "iqcNotTarget": "N (비대상)",
+      "fieldHelp": {
+        "itemCode": "MES 내부에서 품목을 식별하는 고유 코드입니다.",
+        "itemNo": "도면, ERP, 고객 문서에서 쓰는 품번입니다.",
+        "itemName": "현장에서 식별할 품목명입니다.",
+        "custPartNo": "고객사가 사용하는 품번입니다.",
+        "rev": "품목 도면 또는 사양의 리비전입니다.",
+        "markingText": "라벨, 마킹 설비 등에 전달할 표시 문구입니다.",
+        "itemType": "원자재, 반제품, 완제품 등 MES 흐름 분류입니다.",
+        "productType": "품목군 또는 제품 계열을 나타내는 코드입니다.",
+        "modelName": "차량 모델 또는 차종을 구분하는 품목 관리 특성입니다.",
+        "spec": "품목 규격, 사양, 치수 등 보조 설명입니다.",
+        "color": "전선색 등 품목 색상 정보입니다.",
+        "unit": "수량을 해석하는 기본 단위입니다.",
+        "iqcYn": "수입검사 기준 적용 대상 여부입니다.",
+        "inspectMethod": "IQC 검사 또는 무검사 적용 방식을 구분합니다.",
+        "sampleQty": "IQC 검사 시 사용할 기본시료수입니다. AQL 산출 샘플수량과 별개입니다.",
+        "iqcAqlPolicyCode": "품목에 적용할 IQC AQL 정책 기준정보 코드입니다.",
+        "useYn": "신규 조회, 선택, 사용 가능 여부입니다.",
+        "boxQty": "박스 하나에 장입하는 기준 수량입니다. 10 단위 후보를 선택하거나 직접 입력할 수 있습니다.",
+        "minPackQty": "자재 불출 시 최소 단위로 취급할 수량입니다.",
+        "lotUnitQty": "생산 공정품을 묶음 단위로 처리할 기준 수량입니다.",
+        "safetyStock": "재고 부족 판단에 쓰는 기준 수량입니다.",
+        "expiryDate": "입고 또는 제조 기준 유효기간 일수입니다.",
+        "expiryExtDays": "품질 판단 후 유효기간을 연장할 수 있는 최대 일수입니다.",
+        "packUnit": "팔레트 또는 상위 포장 단위 구성 기준입니다.",
+        "storageLocation": "품목별로 고정해 둘 기본 적재 로케이션입니다.",
+        "imageUrl": "품목 사진 파일 경로입니다.",
+        "remark": "품목 관리 참고사항입니다."
+      }
     },
     "bom": {
       "title": "BOM관리",
@@ -1323,7 +1359,35 @@
       "viewAllRouting": "전체 라우팅 보기",
       "excelUpload": "엑셀 업로드",
       "downloadTemplate": "폼 다운로드",
-      "childItem": "자재"
+      "childItem": "자재",
+      "excelUploadTitle": "BOM 엑셀 업로드",
+      "uploadWithCount": "업로드",
+      "xlsxOnlyHint": ".xlsx 파일만 업로드 가능합니다",
+      "analyzingFile": "파일 분석 중...",
+      "uploadStatusNew": "신규",
+      "uploadStatusDuplicateDb": "DB중복",
+      "uploadStatusDuplicateFile": "파일중복",
+      "uploadStatusError": "오류",
+      "summaryDuplicate": "중복",
+      "duplicateFoundWarning": "중복 {{count}}건 발견 — 업로드할 수 없습니다.",
+      "duplicateFoundDetail": "동일한 상위품목+하위품목+적용일자 조합이 이미 존재합니다. 파일을 수정 후 다시 선택하세요.",
+      "colRow": "행",
+      "colParentItem": "상위품목",
+      "colChildItem": "하위품목",
+      "colValidFrom": "적용일자",
+      "colMessage": "메시지",
+      "resultInserted": "추가",
+      "resultSkipped": "스킵",
+      "resultError": "에러",
+      "errorDetail": "에러 상세",
+      "pageSubtitle": "제품/반제품 BOM 구조를 선택하고, 선택된 BOM 행 기준으로 라우팅과 투입자재를 관리합니다.",
+      "productSemiProductList": "제품/반제품 목록",
+      "selectedItemRouting": "선택 품목 라우팅",
+      "selectBomRowPrompt": "BOM 행을 선택하세요",
+      "selectBomRowPromptDot": "BOM 행을 선택하세요.",
+      "noRoutingInfo": "등록된 라우팅 정보가 없습니다.",
+      "selectProcessPrompt": "공정을 선택하세요.",
+      "noBomData": "BOM 데이터가 없습니다."
     },
     "gauge": {
       "title": "계측기 마스터",
@@ -1403,7 +1467,11 @@
       "ipAddress": "IP주소",
       "port": "포트",
       "remark": "비고",
-      "remarkPlaceholder": "비고 입력"
+      "remarkPlaceholder": "비고 입력",
+      "bomItemTypePart": "부품",
+      "bomItemTypeConsumable": "소모품",
+      "deleteBomLinkConfirm": "'{{name}}' 연결을 삭제하시겠습니까?",
+      "commTypeShort": "통신"
     },
     "code": {
       "title": "코드관리",
@@ -1426,7 +1494,8 @@
       "codesCount": "건",
       "detailCodePlaceholder": "코드 입력",
       "codeNamePlaceholder": "코드명 입력",
-      "codeNameEnPlaceholder": "영문명 입력"
+      "codeNameEnPlaceholder": "영문명 입력",
+      "preview": "미리보기"
     },
     "partner": {
       "title": "거래처관리",
@@ -1578,7 +1647,11 @@
       "issueSgLabel": "SG 라벨 발행",
       "issueFgLabel": "FG 라벨 발행",
       "sgLabelShort": "SG",
-      "fgLabelShort": "FG"
+      "fgLabelShort": "FG",
+      "bomStructure": "BOM 구조",
+      "routingNotRegistered": "라우팅 미등록",
+      "noRoutingForItem": "선택한 품목에 등록된 라우팅이 없습니다.",
+      "noProcessForRouting": "선택한 품목의 라우팅에 등록된 공정이 없습니다."
     },
     "workCalendar": {
       "title": "생산월력관리",
@@ -1737,7 +1810,23 @@
       "inspectionType": "검사유형",
       "sampleQtyCol": "샘플수",
       "defectGrade": "불량등급",
-      "inspectionLevel": "검사수준"
+      "inspectionLevel": "검사수준",
+      "selectItemHint": "좌측에서 품목을 선택하세요.",
+      "defaultSampleQty": "기본 시료수",
+      "destInspection": "파괴검사",
+      "templateManage": "템플릿 불러오기/관리",
+      "lsl": "하한(LSL)",
+      "usl": "상한(USL)",
+      "noInspItems": "검사항목이 없습니다. [항목 추가]를 눌러 추가하세요.",
+      "selectOption": "-- 선택 --",
+      "fixedQtyPlaceholder": "고정수",
+      "auto": "자동",
+      "lslPlaceholder": "하한",
+      "uslPlaceholder": "상한",
+      "judgeCriteriaPlaceholder": "판정기준 입력",
+      "confirm": "확인",
+      "notSelected": "미선택",
+      "deleteRow": "행 삭제"
     },
     "iqcTemplate": {
       "title": "IQC 항목 템플릿 관리",
@@ -1813,7 +1902,8 @@
       "itemTypeMeasure": "측정형",
       "spec": "규격",
       "selectPoolItem": "점검항목 마스터 선택",
-      "noPoolForType": "이 설비유형/점검유형에 등록된 점검항목 마스터가 없습니다. 점검항목 마스터에서 먼저 등록하세요."
+      "noPoolForType": "이 설비유형/점검유형에 등록된 점검항목 마스터가 없습니다. 점검항목 마스터에서 먼저 등록하세요.",
+      "equipTypeEtc": "기타"
     },
     "equipInspectItem": {
       "title": "점검항목 마스터",
@@ -1957,7 +2047,79 @@
       "printModeBrowser": "브라우저 인쇄",
       "printModeZpl": "ZPL 인쇄",
       "printModeBoth": "병행(브라우저+ZPL)",
-      "variableHelper": "변수 도우미 (클릭하여 삽입)"
+      "variableHelper": "변수 도우미 (클릭하여 삽입)",
+      "sourceAndObjects": "소스와 객체",
+      "sourceTable": "소스테이블",
+      "elemText": "글자",
+      "elemBarcode": "바코드",
+      "elemBox": "박스",
+      "elemLine": "선",
+      "elemCircle": "원",
+      "elemImage": "이미지",
+      "elem1d": "1D",
+      "elem2d": "2D",
+      "srcEquipment": "설비",
+      "srcConsumable": "소모품",
+      "srcWorker": "작업자",
+      "srcMatLot": "자재 LOT",
+      "srcBox": "제품포장",
+      "fieldsHint": "필드 (클릭하면 글자 추가)",
+      "addFieldTextObject": "'{{label}}' 글자 객체 추가",
+      "designCanvas": "디자인 캔버스",
+      "designCanvasHint": "객체를 끌어서 이동하고 모서리 앵커로 크기를 조절합니다.",
+      "objectProps": "객체 속성",
+      "noSelection": "선택 없음",
+      "sourceField": "소스 필드",
+      "fixedText": "고정 문구",
+      "fontSizeMm": "글자 크기(mm)",
+      "fontWeight": "굵기",
+      "align": "정렬",
+      "barcodeType": "바코드 유형",
+      "defaultImageUrl": "기본 이미지 URL",
+      "lineWidthMm": "선 두께(mm)",
+      "lineTextColor": "선/글자",
+      "fillColor": "채움",
+      "selectCanvasObject": "캔버스의 객체를 선택하세요.",
+      "field": {
+        "equipment": {
+          "equipCode": "설비코드",
+          "equipName": "설비명",
+          "equipType": "설비유형",
+          "lineCode": "라인",
+          "plant": "사업장"
+        },
+        "consumable": {
+          "conUid": "소모품 UID",
+          "consumableCode": "소모품코드",
+          "consumableName": "소모품명",
+          "category": "분류",
+          "location": "보관위치",
+          "imageUrl": "사진 URL"
+        },
+        "worker": {
+          "workerCode": "작업자코드",
+          "workerName": "작업자명",
+          "dept": "부서",
+          "phone": "연락처"
+        },
+        "mat_lot": {
+          "matUid": "자재 UID",
+          "itemCode": "품목코드",
+          "itemName": "품목명",
+          "qty": "수량",
+          "unit": "단위",
+          "vendor": "거래처",
+          "lotNo": "LOT 번호"
+        },
+        "box": {
+          "boxNo": "박스번호",
+          "itemCode": "제품코드",
+          "itemName": "제품명",
+          "qty": "수량",
+          "boxQty": "박스입수량",
+          "palletNo": "파렛트번호"
+        }
+      }
     },
     "company": {
       "title": "회사관리",
@@ -2007,6 +2169,16 @@
       "createSuccess": "바코드 매핑이 생성되었습니다.",
       "updateSuccess": "바코드 매핑이 수정되었습니다.",
       "deleteSuccess": "바코드 매핑이 삭제되었습니다."
+    },
+    "iqcPartSpec": {
+      "aqlCriteria": "AQL 기준",
+      "lotQtyPreview": "LOT 수량 미리보기",
+      "aqlPolicy": "AQL 정책",
+      "defaultSampleQty": "기본시료수",
+      "sampleQty": "샘플수량",
+      "inspItemCriteria": "검사항목 기준",
+      "destFixed": "파괴/고정",
+      "countCases": "{{count}}건"
     }
   },
   "material": {
@@ -6851,5 +7023,25 @@
     "statusDone": "완료",
     "noScreenshot": "스크린샷 없음",
     "capturing": "화면 캡처 중..."
+  },
+  "selfInspect": {
+    "typeVisual": "판정형",
+    "typeMeasure": "측정형",
+    "methodDirect": "직접검사",
+    "methodDelegate": "의뢰검사",
+    "sampleCount": "샘플수",
+    "destructive": "파괴",
+    "timing": "시점",
+    "timingFirst": "초물",
+    "timingMid": "중물",
+    "timingLast": "종물",
+    "sortOrder": "순서",
+    "useY": "사용",
+    "useN": "미사용",
+    "itemNameRequired": "항목명을 입력하세요",
+    "addItem": "항목 추가",
+    "noItems": "등록된 자주검사 항목이 없습니다",
+    "itemName": "항목명",
+    "standard": "기준/규격 (선택)"
   }
 }

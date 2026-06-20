@@ -974,7 +974,43 @@
       "sectionQty": "Vendor / Qty Management",
       "imageLoadFailed": "Unable to load image",
       "partType": "Part Type",
-      "itemCode": "Item Code"
+      "itemCode": "Item Code",
+      "erpSync": "ERP Sync",
+      "erpSyncDone": "Sync complete — {{insert}} new, {{update}} updated",
+      "erpSyncFailed": "Sync failed: {{message}}",
+      "daysSuffix": "{{count}} day(s)",
+      "deleteConfirmMessage": "Delete '{{itemCode}} ({{itemName}})'?",
+      "iqcTarget": "Y (Target)",
+      "iqcNotTarget": "N (Not Target)",
+      "fieldHelp": {
+        "itemCode": "Unique code identifying the item within MES.",
+        "itemNo": "Part number used in drawings, ERP, and customer documents.",
+        "itemName": "Item name used for identification on the floor.",
+        "custPartNo": "Part number used by the customer.",
+        "rev": "Revision of the item drawing or specification.",
+        "markingText": "Marking text sent to labels and marking equipment.",
+        "itemType": "MES flow classification such as raw material, WIP, or finished goods.",
+        "productType": "Code indicating the item group or product family.",
+        "modelName": "Item attribute distinguishing the vehicle model.",
+        "spec": "Supplementary description such as item spec, dimensions.",
+        "color": "Item color information such as wire color.",
+        "unit": "Base unit for interpreting quantities.",
+        "iqcYn": "Whether incoming inspection criteria apply.",
+        "inspectMethod": "Distinguishes IQC inspection or skip-inspection method.",
+        "sampleQty": "Default sample count for IQC inspection. Separate from the AQL-derived sample size.",
+        "iqcAqlPolicyCode": "Master code of the IQC AQL policy applied to the item.",
+        "useYn": "Whether the item is available for lookup, selection, and use.",
+        "boxQty": "Reference quantity packed in one box. Choose a multiple of 10 or enter directly.",
+        "minPackQty": "Quantity treated as the minimum unit when issuing material.",
+        "lotUnitQty": "Reference quantity for handling production WIP in bundle units.",
+        "safetyStock": "Reference quantity used to judge stock shortage.",
+        "expiryDate": "Validity period in days based on receipt or manufacture.",
+        "expiryExtDays": "Maximum days the validity period can be extended after quality review.",
+        "packUnit": "Composition basis for the pallet or upper packaging unit.",
+        "storageLocation": "Default storage location fixed per item.",
+        "imageUrl": "File path of the item image.",
+        "remark": "Notes for item management."
+      }
     },
     "bom": {
       "title": "BOM Management",
@@ -1022,7 +1058,35 @@
       "selectChildPart": "Select a child part",
       "seq": "Seq",
       "side": "Side",
-      "viewAllRouting": "View All Routing"
+      "viewAllRouting": "View All Routing",
+      "excelUploadTitle": "BOM Excel Upload",
+      "uploadWithCount": "Upload",
+      "xlsxOnlyHint": "Only .xlsx files can be uploaded",
+      "analyzingFile": "Analyzing file...",
+      "uploadStatusNew": "New",
+      "uploadStatusDuplicateDb": "DB Duplicate",
+      "uploadStatusDuplicateFile": "File Duplicate",
+      "uploadStatusError": "Error",
+      "summaryDuplicate": "Duplicate",
+      "duplicateFoundWarning": "{{count}} duplicates found — cannot upload.",
+      "duplicateFoundDetail": "The same parent item + child item + valid-from combination already exists. Please fix the file and select it again.",
+      "colRow": "Row",
+      "colParentItem": "Parent Item",
+      "colChildItem": "Child Item",
+      "colValidFrom": "Valid From",
+      "colMessage": "Message",
+      "resultInserted": "Inserted",
+      "resultSkipped": "Skipped",
+      "resultError": "Error",
+      "errorDetail": "Error Detail",
+      "pageSubtitle": "Select a product/semi-product BOM structure, then manage routing and input materials based on the selected BOM row.",
+      "productSemiProductList": "Product/Semi-product List",
+      "selectedItemRouting": "Selected Item Routing",
+      "selectBomRowPrompt": "Select a BOM row",
+      "selectBomRowPromptDot": "Select a BOM row.",
+      "noRoutingInfo": "No routing information registered.",
+      "selectProcessPrompt": "Select a process.",
+      "noBomData": "No BOM data."
     },
     "gauge": {
       "title": "Gauge Master",
@@ -1102,7 +1166,11 @@
       "ipAddress": "IP Address",
       "port": "Port",
       "remark": "Remark",
-      "remarkPlaceholder": "Enter remark"
+      "remarkPlaceholder": "Enter remark",
+      "bomItemTypePart": "Part",
+      "bomItemTypeConsumable": "Consumable",
+      "deleteBomLinkConfirm": "Delete the link to '{{name}}'?",
+      "commTypeShort": "Comm"
     },
     "code": {
       "title": "Code Management",
@@ -1125,7 +1193,8 @@
       "codesCount": " codes",
       "detailCodePlaceholder": "Enter code",
       "codeNamePlaceholder": "Enter code name",
-      "codeNameEnPlaceholder": "Enter English name"
+      "codeNameEnPlaceholder": "Enter English name",
+      "preview": "Preview"
     },
     "partner": {
       "title": "Partner Management",
@@ -1277,7 +1346,11 @@
       "issueSgLabel": "Issue SG Label",
       "issueFgLabel": "Issue FG Label",
       "sgLabelShort": "SG",
-      "fgLabelShort": "FG"
+      "fgLabelShort": "FG",
+      "bomStructure": "BOM Structure",
+      "routingNotRegistered": "Routing Not Registered",
+      "noRoutingForItem": "No routing registered for the selected item.",
+      "noProcessForRouting": "No process registered in the routing of the selected item."
     },
     "workCalendar": {
       "title": "Work Calendar",
@@ -1436,7 +1509,23 @@
       "inspectionType": "Inspection Type",
       "sampleQtyCol": "Sample Qty",
       "defectGrade": "Defect Grade",
-      "inspectionLevel": "Inspection Level"
+      "inspectionLevel": "Inspection Level",
+      "selectItemHint": "Select an item from the left.",
+      "defaultSampleQty": "Default Sample Qty",
+      "destInspection": "Destructive Test",
+      "templateManage": "Load/Manage Template",
+      "lsl": "Lower (LSL)",
+      "usl": "Upper (USL)",
+      "noInspItems": "No inspection items. Click [Add Item] to add.",
+      "selectOption": "-- Select --",
+      "fixedQtyPlaceholder": "Fixed Qty",
+      "auto": "Auto",
+      "lslPlaceholder": "Lower",
+      "uslPlaceholder": "Upper",
+      "judgeCriteriaPlaceholder": "Enter judgment criteria",
+      "confirm": "Confirm",
+      "notSelected": "Not selected",
+      "deleteRow": "Delete row"
     },
     "iqcTemplate": {
       "title": "IQC Item Template Management",
@@ -1512,7 +1601,8 @@
       "itemTypeMeasure": "Measure",
       "spec": "Spec",
       "selectPoolItem": "Select inspection item master",
-      "noPoolForType": "No inspection item master registered for this equipment type / inspection type. Register one in the inspection item master first."
+      "noPoolForType": "No inspection item master registered for this equipment type / inspection type. Register one in the inspection item master first.",
+      "equipTypeEtc": "Etc"
     },
     "equipInspectItem": {
       "title": "Inspection Item Master",
@@ -1657,7 +1747,79 @@
       "designOnly": "Label Design Only",
       "designOnlyHint": "This screen manages only design and templates. Actual issuance is done in each business screen.",
       "matLotDesignHint": "Set the design and save as a template. Issuance is done in Material Management > Receiving Label Issuance.",
-      "matLotDesignOnly": "Material Lot Label Design Only"
+      "matLotDesignOnly": "Material Lot Label Design Only",
+      "sourceAndObjects": "Source & Objects",
+      "sourceTable": "Source Table",
+      "elemText": "Text",
+      "elemBarcode": "Barcode",
+      "elemBox": "Box",
+      "elemLine": "Line",
+      "elemCircle": "Circle",
+      "elemImage": "Image",
+      "elem1d": "1D",
+      "elem2d": "2D",
+      "srcEquipment": "Equipment",
+      "srcConsumable": "Consumable",
+      "srcWorker": "Worker",
+      "srcMatLot": "Material LOT",
+      "srcBox": "Product Packaging",
+      "fieldsHint": "Fields (click to add text)",
+      "addFieldTextObject": "Add '{{label}}' text object",
+      "designCanvas": "Design Canvas",
+      "designCanvasHint": "Drag objects to move and use corner anchors to resize.",
+      "objectProps": "Object Properties",
+      "noSelection": "No selection",
+      "sourceField": "Source Field",
+      "fixedText": "Fixed Text",
+      "fontSizeMm": "Font Size (mm)",
+      "fontWeight": "Weight",
+      "align": "Align",
+      "barcodeType": "Barcode Type",
+      "defaultImageUrl": "Default Image URL",
+      "lineWidthMm": "Line Width (mm)",
+      "lineTextColor": "Line/Text",
+      "fillColor": "Fill",
+      "selectCanvasObject": "Select an object on the canvas.",
+      "field": {
+        "equipment": {
+          "equipCode": "Equipment Code",
+          "equipName": "Equipment Name",
+          "equipType": "Equipment Type",
+          "lineCode": "Line",
+          "plant": "Plant"
+        },
+        "consumable": {
+          "conUid": "Consumable UID",
+          "consumableCode": "Consumable Code",
+          "consumableName": "Consumable Name",
+          "category": "Category",
+          "location": "Location",
+          "imageUrl": "Image URL"
+        },
+        "worker": {
+          "workerCode": "Worker Code",
+          "workerName": "Worker Name",
+          "dept": "Department",
+          "phone": "Phone"
+        },
+        "mat_lot": {
+          "matUid": "Material UID",
+          "itemCode": "Item Code",
+          "itemName": "Item Name",
+          "qty": "Quantity",
+          "unit": "Unit",
+          "vendor": "Vendor",
+          "lotNo": "LOT No."
+        },
+        "box": {
+          "boxNo": "Box No.",
+          "itemCode": "Product Code",
+          "itemName": "Product Name",
+          "qty": "Quantity",
+          "boxQty": "Qty per Box",
+          "palletNo": "Pallet No."
+        }
+      }
     },
     "company": {
       "title": "Company Master",
@@ -1707,6 +1869,16 @@
       "createSuccess": "Barcode mapping created successfully.",
       "updateSuccess": "Barcode mapping updated successfully.",
       "deleteSuccess": "Barcode mapping deleted successfully."
+    },
+    "iqcPartSpec": {
+      "aqlCriteria": "AQL Criteria",
+      "lotQtyPreview": "LOT Qty Preview",
+      "aqlPolicy": "AQL Policy",
+      "defaultSampleQty": "Default Sample Qty",
+      "sampleQty": "Sample Qty",
+      "inspItemCriteria": "Inspection Item Criteria",
+      "destFixed": "Destructive/Fixed",
+      "countCases": "{{count}}"
     }
   },
   "material": {
@@ -6847,5 +7019,25 @@
     "statusDone": "Done",
     "noScreenshot": "No Screenshot",
     "capturing": "Capturing screen..."
+  },
+  "selfInspect": {
+    "typeVisual": "Judgment",
+    "typeMeasure": "Measurement",
+    "methodDirect": "Direct Inspection",
+    "methodDelegate": "Delegated Inspection",
+    "sampleCount": "Sample Count",
+    "destructive": "Destructive",
+    "timing": "Timing",
+    "timingFirst": "First",
+    "timingMid": "Mid",
+    "timingLast": "Last",
+    "sortOrder": "Order",
+    "useY": "Active",
+    "useN": "Inactive",
+    "itemNameRequired": "Enter the item name",
+    "addItem": "Add Item",
+    "noItems": "No self-inspection items registered",
+    "itemName": "Item Name",
+    "standard": "Standard/Spec (optional)"
   }
 }

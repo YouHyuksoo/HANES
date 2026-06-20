@@ -98,28 +98,28 @@ export default function ItemListPanel({
                   key={part.itemCode}
                   type="button"
                   onClick={() => onSelect(part.itemCode)}
-                  className={`w-full text-left px-4 py-2.5 transition-colors ${
+                  className={`w-full text-left px-4 py-2 transition-colors ${
                     isSelected
                       ? "bg-primary text-white"
                       : "hover:bg-surface dark:hover:bg-slate-800"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={`text-xs font-mono ${
+                    <div className="min-w-0 flex-1 flex items-baseline gap-2">
+                      <span
+                        className={`text-xs font-mono flex-shrink-0 ${
                           isSelected ? "text-white/80" : "text-text-muted"
                         }`}
                       >
                         {part.itemCode}
-                      </p>
-                      <p
+                      </span>
+                      <span
                         className={`text-sm font-medium truncate ${
                           isSelected ? "text-white" : "text-text"
                         }`}
                       >
                         {part.itemName}
-                      </p>
+                      </span>
                     </div>
                     {linkCount > 0 && (
                       <span

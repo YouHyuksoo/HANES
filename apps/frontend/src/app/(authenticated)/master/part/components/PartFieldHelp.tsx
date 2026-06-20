@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Input, Select } from "@/components/ui";
 import type { InputProps, SelectProps } from "@/components/ui";
 import { ComCodeSelect, HelpTooltip } from "@/components/shared";
@@ -46,13 +47,14 @@ type FieldBaseProps = {
 };
 
 export function FieldLabel({ field, label, required }: Omit<FieldBaseProps, "children" | "className">) {
+  const { t } = useTranslation();
   const help = PART_FIELD_HELP[field];
 
   return (
     <label className="mb-1.5 flex items-center gap-1 text-sm font-medium text-text">
       <span>{label}</span>
       {required && <span className="text-red-500">*</span>}
-      <HelpTooltip description={help.description} db={help.db} dataField={field} />
+      <HelpTooltip description={t(`master.part.fieldHelp.${field}`, help.description)} db={help.db} dataField={field} />
     </label>
   );
 }

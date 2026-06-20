@@ -974,7 +974,43 @@
       "sectionQty": "供应商 / 数量管理",
       "imageLoadFailed": "无法加载图片",
       "partType": "品目类型",
-      "itemCode": "品目代码"
+      "itemCode": "品目代码",
+      "erpSync": "ERP 同步",
+      "erpSyncDone": "同步完成 — 新增 {{insert}} 条，变更 {{update}} 条",
+      "erpSyncFailed": "同步失败：{{message}}",
+      "daysSuffix": "{{count}} 天",
+      "deleteConfirmMessage": "确定要删除 '{{itemCode}} ({{itemName}})' 吗？",
+      "iqcTarget": "Y (适用)",
+      "iqcNotTarget": "N (不适用)",
+      "fieldHelp": {
+        "itemCode": "在 MES 内部识别品目的唯一代码。",
+        "itemNo": "图纸、ERP、客户文件中使用的品号。",
+        "itemName": "现场识别使用的品目名称。",
+        "custPartNo": "客户使用的品号。",
+        "rev": "品目图纸或规格的版本。",
+        "markingText": "传递给标签、打标设备的标识文字。",
+        "itemType": "原材料、半成品、成品等 MES 流程分类。",
+        "productType": "表示品目组或产品系列的代码。",
+        "modelName": "区分车辆型号或车种的品目管理属性。",
+        "spec": "品目规格、规范、尺寸等辅助说明。",
+        "color": "线色等品目颜色信息。",
+        "unit": "解释数量的基本单位。",
+        "iqcYn": "是否适用进货检验标准。",
+        "inspectMethod": "区分 IQC 检验或免检的适用方式。",
+        "sampleQty": "IQC 检验使用的基本样本数。与 AQL 推算的样本数量不同。",
+        "iqcAqlPolicyCode": "应用于品目的 IQC AQL 政策基准信息代码。",
+        "useYn": "是否可供新查询、选择和使用。",
+        "boxQty": "装入一个箱子的基准数量。可选择 10 的倍数或直接输入。",
+        "minPackQty": "领料时作为最小单位处理的数量。",
+        "lotUnitQty": "将生产工序品按捆单位处理的基准数量。",
+        "safetyStock": "用于判断库存不足的基准数量。",
+        "expiryDate": "以入库或制造为基准的有效期天数。",
+        "expiryExtDays": "质量判定后可延长有效期的最大天数。",
+        "packUnit": "托盘或上级包装单位的构成基准。",
+        "storageLocation": "按品目固定的默认存储库位。",
+        "imageUrl": "品目照片文件路径。",
+        "remark": "品目管理参考事项。"
+      }
     },
     "bom": {
       "title": "BOM管理",
@@ -1022,7 +1058,35 @@
       "selectChildPart": "请选择子品目",
       "seq": "顺序",
       "side": "面",
-      "viewAllRouting": "查看全部工艺路线"
+      "viewAllRouting": "查看全部工艺路线",
+      "excelUploadTitle": "BOM Excel 上传",
+      "uploadWithCount": "上传",
+      "xlsxOnlyHint": "仅支持上传 .xlsx 文件",
+      "analyzingFile": "正在分析文件...",
+      "uploadStatusNew": "新增",
+      "uploadStatusDuplicateDb": "数据库重复",
+      "uploadStatusDuplicateFile": "文件重复",
+      "uploadStatusError": "错误",
+      "summaryDuplicate": "重复",
+      "duplicateFoundWarning": "发现 {{count}} 条重复 — 无法上传。",
+      "duplicateFoundDetail": "相同的上级品目+下级品目+适用日期组合已存在。请修改文件后重新选择。",
+      "colRow": "行",
+      "colParentItem": "上级品目",
+      "colChildItem": "下级品目",
+      "colValidFrom": "适用日期",
+      "colMessage": "消息",
+      "resultInserted": "新增",
+      "resultSkipped": "跳过",
+      "resultError": "错误",
+      "errorDetail": "错误详情",
+      "pageSubtitle": "选择产品/半成品 BOM 结构，并基于所选 BOM 行管理工艺路线和投入物料。",
+      "productSemiProductList": "产品/半成品列表",
+      "selectedItemRouting": "所选品目工艺路线",
+      "selectBomRowPrompt": "请选择 BOM 行",
+      "selectBomRowPromptDot": "请选择 BOM 行。",
+      "noRoutingInfo": "没有已登记的工艺路线信息。",
+      "selectProcessPrompt": "请选择工序。",
+      "noBomData": "没有 BOM 数据。"
     },
     "gauge": {
       "title": "量具主数据",
@@ -1102,7 +1166,11 @@
       "ipAddress": "IP地址",
       "port": "端口",
       "remark": "备注",
-      "remarkPlaceholder": "请输入备注"
+      "remarkPlaceholder": "请输入备注",
+      "bomItemTypePart": "零件",
+      "bomItemTypeConsumable": "耗材",
+      "deleteBomLinkConfirm": "确定删除“{{name}}”的关联吗？",
+      "commTypeShort": "通信"
     },
     "code": {
       "title": "代码管理",
@@ -1125,7 +1193,8 @@
       "codesCount": "条",
       "detailCodePlaceholder": "请输入代码",
       "codeNamePlaceholder": "请输入代码名称",
-      "codeNameEnPlaceholder": "请输入英文名"
+      "codeNameEnPlaceholder": "请输入英文名",
+      "preview": "预览"
     },
     "partner": {
       "title": "合作伙伴管理",
@@ -1277,7 +1346,11 @@
       "stepManageProcess": "工序顺序管理",
       "stepManageProcessDesc": "按顺序添加/修改所选品目的作业工序。",
       "stepSelectItem": "选择品目",
-      "stepSelectItemDesc": "选择要登记工艺路线的成品/半成品。"
+      "stepSelectItemDesc": "选择要登记工艺路线的成品/半成品。",
+      "bomStructure": "BOM 结构",
+      "routingNotRegistered": "工艺路线未登记",
+      "noRoutingForItem": "所选品目没有已登记的工艺路线。",
+      "noProcessForRouting": "所选品目的工艺路线中没有已登记的工序。"
     },
     "workCalendar": {
       "title": "生产月历管理",
@@ -1436,7 +1509,23 @@
       "inspectionType": "检验类型",
       "sampleQtyCol": "样本数",
       "defectGrade": "缺陷等级",
-      "inspectionLevel": "检验水平"
+      "inspectionLevel": "检验水平",
+      "selectItemHint": "请从左侧选择品目。",
+      "defaultSampleQty": "基本样本数",
+      "destInspection": "破坏检查",
+      "templateManage": "加载/管理模板",
+      "lsl": "下限(LSL)",
+      "usl": "上限(USL)",
+      "noInspItems": "没有检查项目。请点击[添加项目]进行添加。",
+      "selectOption": "-- 选择 --",
+      "fixedQtyPlaceholder": "固定数",
+      "auto": "自动",
+      "lslPlaceholder": "下限",
+      "uslPlaceholder": "上限",
+      "judgeCriteriaPlaceholder": "输入判定标准",
+      "confirm": "确认",
+      "notSelected": "未选择",
+      "deleteRow": "删除行"
     },
     "iqcTemplate": {
       "title": "IQC项目模板管理",
@@ -1512,7 +1601,8 @@
       "itemTypeMeasure": "测量型",
       "spec": "规格",
       "selectPoolItem": "选择点检项目主数据",
-      "noPoolForType": "该设备类型/点检类型下没有已登记的点检项目主数据。请先在点检项目主数据中登记。"
+      "noPoolForType": "该设备类型/点检类型下没有已登记的点检项目主数据。请先在点检项目主数据中登记。",
+      "equipTypeEtc": "其他"
     },
     "equipInspectItem": {
       "title": "点检项目主数据",
@@ -1657,7 +1747,79 @@
       "designOnly": "仅提供标签设计",
       "designOnlyHint": "此画面仅管理设计和模板。实际发行在各业务画面进行。",
       "matLotDesignHint": "请设置设计并保存为模板。发行在物料管理 > 入库标签发行中进行。",
-      "matLotDesignOnly": "仅物料批次标签设计"
+      "matLotDesignOnly": "仅物料批次标签设计",
+      "sourceAndObjects": "数据源与对象",
+      "sourceTable": "数据源表",
+      "elemText": "文字",
+      "elemBarcode": "条码",
+      "elemBox": "方框",
+      "elemLine": "线条",
+      "elemCircle": "圆形",
+      "elemImage": "图片",
+      "elem1d": "1D",
+      "elem2d": "2D",
+      "srcEquipment": "设备",
+      "srcConsumable": "耗材",
+      "srcWorker": "作业者",
+      "srcMatLot": "物料批次",
+      "srcBox": "产品包装",
+      "fieldsHint": "字段（点击添加文字）",
+      "addFieldTextObject": "添加“{{label}}”文字对象",
+      "designCanvas": "设计画布",
+      "designCanvasHint": "拖动对象移动，使用边角锚点调整大小。",
+      "objectProps": "对象属性",
+      "noSelection": "未选择",
+      "sourceField": "数据源字段",
+      "fixedText": "固定文字",
+      "fontSizeMm": "字号(mm)",
+      "fontWeight": "粗细",
+      "align": "对齐",
+      "barcodeType": "条码类型",
+      "defaultImageUrl": "默认图片URL",
+      "lineWidthMm": "线宽(mm)",
+      "lineTextColor": "线条/文字",
+      "fillColor": "填充",
+      "selectCanvasObject": "请选择画布上的对象。",
+      "field": {
+        "equipment": {
+          "equipCode": "设备代码",
+          "equipName": "设备名称",
+          "equipType": "设备类型",
+          "lineCode": "线体",
+          "plant": "工厂"
+        },
+        "consumable": {
+          "conUid": "耗材UID",
+          "consumableCode": "耗材代码",
+          "consumableName": "耗材名称",
+          "category": "分类",
+          "location": "存放位置",
+          "imageUrl": "图片URL"
+        },
+        "worker": {
+          "workerCode": "作业者代码",
+          "workerName": "作业者姓名",
+          "dept": "部门",
+          "phone": "联系方式"
+        },
+        "mat_lot": {
+          "matUid": "物料UID",
+          "itemCode": "品目代码",
+          "itemName": "品目名称",
+          "qty": "数量",
+          "unit": "单位",
+          "vendor": "供应商",
+          "lotNo": "批次号"
+        },
+        "box": {
+          "boxNo": "箱号",
+          "itemCode": "产品代码",
+          "itemName": "产品名称",
+          "qty": "数量",
+          "boxQty": "每箱数量",
+          "palletNo": "托盘号"
+        }
+      }
     },
     "company": {
       "title": "公司管理",
@@ -1707,6 +1869,16 @@
       "createSuccess": "条码映射创建成功。",
       "updateSuccess": "条码映射更新成功。",
       "deleteSuccess": "条码映射删除成功。"
+    },
+    "iqcPartSpec": {
+      "aqlCriteria": "AQL 基准",
+      "lotQtyPreview": "LOT 数量预览",
+      "aqlPolicy": "AQL 策略",
+      "defaultSampleQty": "基本样本数",
+      "sampleQty": "样本数量",
+      "inspItemCriteria": "检查项目基准",
+      "destFixed": "破坏/固定",
+      "countCases": "{{count}}件"
     }
   },
   "material": {
@@ -6847,5 +7019,25 @@
     "statusDone": "已完成",
     "noScreenshot": "无截图",
     "capturing": "正在截图..."
+  },
+  "selfInspect": {
+    "typeVisual": "判定型",
+    "typeMeasure": "测量型",
+    "methodDirect": "直接检查",
+    "methodDelegate": "委托检查",
+    "sampleCount": "样本数",
+    "destructive": "破坏",
+    "timing": "时点",
+    "timingFirst": "首件",
+    "timingMid": "中件",
+    "timingLast": "末件",
+    "sortOrder": "顺序",
+    "useY": "使用",
+    "useN": "未使用",
+    "itemNameRequired": "请输入项目名称",
+    "addItem": "添加项目",
+    "noItems": "没有已登记的自主检查项目",
+    "itemName": "项目名称",
+    "standard": "基准/规格（可选）"
   }
 }

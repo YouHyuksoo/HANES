@@ -17,9 +17,40 @@
   - **Kimi Code CLI**: `~/.agents/skills/`
 - **교훈**: 두 시스템은 완전히 분리되어 있음. 교차 참조하지 않도록 주의
 
+### 2025-06-21
+
+#### 3. IQC AQL 프로세스 리뷰 — 근거 없는 가정 금지 + stale 코드 판단 금지
+
+##### 3a. 근거 없는 가정 금지
+- **실수**:
+  - `IqcModal`의 `supplierName`이 업체명(문자열)일 것이라 추정만 하고 실제 DB/API 응답값을 확인하지 않음. 실제로는 백엔드가 `PARTNER_CODE`를 내려주고 있었음.
+  - `iqc-part-spec` 페이지의 preview API가 이미 `resolve-iqc-items`로 전환된 사실을 `page.tsx` 본문을 읽지 않고 외부 리뷰 보고서만 참고해 "불일치"라고 주장함.
+  - 서버가 `aqlPolicy.result`로 프론트 verdict를 무시하고 최종 재정의하는 구조를 추적하지 못하고 "프론트 판정이 최종을 오염시킨다"는 근거 없는 우려를 씀.
+  - 검토 중인 API(`POST /material/iqc-history/arrival`)의 실제 서비스 코드 흐름을 끝까지 읽지 않고 중간 단계에서 결론을 내림.
+- **교훈** (무조건 지켜야 할 규칙):
+  1. **변수명만 보고 데이터 타입/값을 추정하지 말 것. 반드시 실제 API 응답을 생성하는 백엔드 서비스/쿼리 코드를 찾아서 확인한다.**
+  2. **"A 화면이 X API를 쓴다"고 주장하려면 반드시 해당 화면의 소스 코드를 직접 읽어서 확인한다. 외부 리뷰/문서를 근거로 삼지 않는다.**
+  3. **CRUD 저장 API를 리뷰할 때는 반드시 Controller → Service → Entity까지 전체 호출 체인을 읽고, 프론트 제출값이 서버에서 어떻게 재정의/검증되는지 추적한다.**
+  4. **"~일 것이다", "~할 가능성이 있다"는 표현은 리뷰에 쓰지 않는다. 코드로 증명되거나 재현될 수 있는 사실만 리뷰에 포함한다.**
+  5. **리뷰 우선순위는 "실제 운영 데이터에서 지금 터지는가?"를 먼저 확인하고, 그다음 "코드 방어 필요성"을 논한다. 이론적 위험만으로 경고를 올리지 않는다.**
+- **관련 파일**: `apps/frontend/src/components/material/IqcModal.tsx`, `apps/frontend/src/hooks/material/useIqcData.ts`, `apps/frontend/src/app/(authenticated)/master/iqc-part-spec/page.tsx`, `apps/backend/src/modules/material/services/iqc-history.service.ts`, `apps/backend/src/modules/quality/aql/services/aql.service.ts`
+
+##### 3b. stale 코드 기준 판단 금지
+- **실수**:
+  - 1차 리뷰 이후 HEAD가 `a5e9fa08`로 앞서갔는데, `Read` 도구로 읽은 파일 내용을 재확인 없이 "현재 코드"라고 가정하고 리뷰를 씀.
+  - `resolvePartPolicy()`가 이미 `BadRequestException` throw로 강화된 상태(`aql.service.ts:631-633`)였지만, 이전에 읽은 null 반환 코드 기준으로 "정책 미설정 PASS 위험"이라고 주장함.
+  - `buildSampleBarcode()`(`IqcModal.tsx:111`)와 `compactSampleBarcode()`(`iqc-history.service.ts:623`)가 이미 존재하는데 "sampleBarcode 500자 제한 터짐"이라고 경고함.
+  - `assertDefectCodesHaveFailedInspection()`(`iqc-history.service.ts:605`)가 이미 있는데 "defectCodes 무시됨"이라고 주장함.
+- **교훈** (무조건 지켜야 할 규칙):
+  1. **코드 리뷰/판단을 내리기 전에 반드시 `git log --oneline -3`으로 HEAD를 확인한다.**
+  2. **이전 세션에서 읽은 파일 내용을 "현재 상태"로 가정하지 않는다. `Read` 도구로 다시 읽어서 HEAD의 최신 상태를 확인한다.**
+  3. **"~일 것이다"보다 더 위험한 것은 "이미 해결된 문제를 현재 문제라고 주장하는 것"이다. stale 데이터로 판단하지 않는다.**
+  4. **특정 라인 번호를 지목할 때는 반드시 해당 시점의 HEAD에서 다시 읽은 라인 번호를 사용한다.**
+- **관련 파일**: `apps/backend/src/modules/quality/aql/services/aql.service.ts`, `apps/frontend/src/components/material/IqcModal.tsx`, `apps/backend/src/modules/material/services/iqc-history.service.ts`
+
 ### 2025-06-17
 
-#### 3. jsPDF + autotable 한글 폰트 (CID/CJK)
+#### 4. jsPDF + autotable 한글 폰트 (CID/CJK)
 - **문제**: html2canvas는 Tailwind CSS `lab()` 색상 함수 파싱 실패 → 사용 불가. jsPDF + autotable에서 한글 깨짐.
 - **해결** (정석):
   1. 폰트 TTF를 `fetch` → `arrayBuffer()` → `btoa()` → `addFileToVFS("name.ttf", base64)`

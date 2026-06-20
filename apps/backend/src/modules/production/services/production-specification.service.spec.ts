@@ -7,6 +7,7 @@ import { ProductionSpecificationService } from './production-specification.servi
 import { HarnessDrawingMaster } from '../../../entities/harness-drawing-master.entity';
 import { HarnessDrawingRevision } from '../../../entities/harness-drawing-revision.entity';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProductionSpecificationService', () => {
@@ -14,6 +15,7 @@ describe('ProductionSpecificationService', () => {
   let masterRepo: DeepMocked<Repository<HarnessDrawingMaster>>;
   let revisionRepo: DeepMocked<Repository<HarnessDrawingRevision>>;
   let circuitRepo: DeepMocked<Repository<HarnessCircuitSpec>>;
+  let bomRepo: DeepMocked<Repository<BomMaster>>;
   let tx: DeepMocked<TransactionService>;
   let qr: DeepMocked<QueryRunner>;
 
@@ -21,6 +23,7 @@ describe('ProductionSpecificationService', () => {
     masterRepo = createMock<Repository<HarnessDrawingMaster>>();
     revisionRepo = createMock<Repository<HarnessDrawingRevision>>();
     circuitRepo = createMock<Repository<HarnessCircuitSpec>>();
+    bomRepo = createMock<Repository<BomMaster>>();
     tx = createMock<TransactionService>();
     qr = createMock<QueryRunner>();
 
@@ -34,6 +37,7 @@ describe('ProductionSpecificationService', () => {
         { provide: getRepositoryToken(HarnessDrawingMaster), useValue: masterRepo },
         { provide: getRepositoryToken(HarnessDrawingRevision), useValue: revisionRepo },
         { provide: getRepositoryToken(HarnessCircuitSpec), useValue: circuitRepo },
+        { provide: getRepositoryToken(BomMaster), useValue: bomRepo },
         { provide: TransactionService, useValue: tx },
       ],
     }).compile();
@@ -85,6 +89,20 @@ describe('ProductionSpecificationService', () => {
     ).rejects.toThrow(BadRequestException);
 
     expect(circuitRepo.delete).not.toHaveBeenCalled();
+  });
+
+  it('rejects circuit wire item codes that are not active BOM children for the drawing item', async () => {
+    revisionRepo.findOne.mockResolvedValue({ revisionId: 201, drawingId: 101, status: 'DRAFT' } as HarnessDrawingRevision);
+    masterRepo.findOne.mockResolvedValue({ drawingId: 101, itemCode: 'FG01' } as HarnessDrawingMaster);
+    bomRepo.find.mockResolvedValue([{ parentItemCode: 'FG01', childItemCode: 'WIRE01', useYn: 'Y' }] as BomMaster[]);
+
+    await expect(
+      target.updateRevision(201, {
+        circuits: [{ circuitNo: '1', wireItemCode: 'WIRE99', lengthMm: 900, stripA: 5, stripB: 5 }],
+      }, '40', '1000', 'tester'),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(qr.manager.delete).not.toHaveBeenCalledWith(HarnessCircuitSpec, expect.anything());
   });
 
   it('creates the next draft revision and clones existing circuits', async () => {

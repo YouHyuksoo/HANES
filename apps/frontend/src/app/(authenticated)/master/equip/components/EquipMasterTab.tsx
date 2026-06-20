@@ -259,9 +259,9 @@ export default function EquipMasterTab() {
                       fullWidth
                     />
                   </div>
-                  <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} labelPrefix="유형" />
+                  <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} labelPrefix={t("master.equip.type", "유형")} />
                   <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("master.equip.line", "라인")} />
-                  <ComCodeSelect groupCode="COMM_TYPE" value={commFilter} onChange={setCommFilter} labelPrefix="통신" />
+                  <ComCodeSelect groupCode="COMM_TYPE" value={commFilter} onChange={setCommFilter} labelPrefix={t("master.equip.commTypeShort", "통신")} />
                 </div>
               } 
               sqlQuery={`SELECT *\nFROM EQUIP_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
@@ -336,7 +336,7 @@ export default function EquipMasterTab() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.equipName || ""}'을(를) 삭제하시겠습니까?`}
+        message={t("common.deleteConfirmMessage", "{{name}} 을(를) 삭제하시겠습니까?", { name: `'${deleteTarget?.equipName || ""}'` })}
       />
 
       <Modal isOpen={alertModal.open} onClose={() => setAlertModal({ ...alertModal, open: false })} title={alertModal.title} size="sm">

@@ -17,6 +17,7 @@ import { ProcessQualityCondition } from '../../../entities/process-quality-condi
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
+import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import {
   CreateRoutingGroupDto, UpdateRoutingGroupDto, RoutingGroupQueryDto,
@@ -41,6 +42,8 @@ export class RoutingGroupService {
     private readonly bomRepo: Repository<BomMaster>,
     @InjectRepository(RoutingMaterial)
     private readonly materialRepo: Repository<RoutingMaterial>,
+    @InjectRepository(HarnessCircuitSpec)
+    private readonly circuitRepo: Repository<HarnessCircuitSpec>,
     private readonly tx: TransactionService,
   ) {}
 
@@ -49,6 +52,58 @@ export class RoutingGroupService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private async findCircuitOptions(itemCode: string, childCodes: string[], company?: string, plant?: string) {
+    if (childCodes.length === 0) return [];
+    const binds: unknown[] = [itemCode];
+    let tenantFilter = '';
+    if (company) {
+      binds.push(company);
+      tenantFilter += ` AND m.COMPANY = :${binds.length} AND r.COMPANY = :${binds.length} AND c.COMPANY = :${binds.length}`;
+    }
+    if (plant) {
+      binds.push(plant);
+      tenantFilter += ` AND m.PLANT_CD = :${binds.length} AND r.PLANT_CD = :${binds.length} AND c.PLANT_CD = :${binds.length}`;
+    }
+    const childPlaceholders = childCodes.map((code) => {
+      binds.push(code);
+      return `:${binds.length}`;
+    }).join(', ');
+
+    return this.circuitRepo.query(
+      `SELECT c.CIRCUIT_ID AS "circuitId",
+              c.CIRCUIT_NO AS "circuitNo",
+              c.WIRE_ITEM_CODE AS "wireItemCode",
+              c.LENGTH_MM AS "lengthMm",
+              c.STRIP_A_MM AS "stripA",
+              c.STRIP_B_MM AS "stripB"
+         FROM HARNESS_DRAWING_MASTERS m
+         JOIN HARNESS_DRAWING_REVISIONS r ON r.DRAWING_ID = m.DRAWING_ID
+         JOIN HARNESS_CIRCUIT_SPECS c ON c.REVISION_ID = r.REVISION_ID
+        WHERE m.ITEM_CODE = :1
+          AND m.USE_YN = 'Y'
+          AND c.WIRE_ITEM_CODE IN (${childPlaceholders})
+          ${tenantFilter}
+        ORDER BY r.CREATED_AT DESC, c.SORT_ORDER ASC`,
+      binds,
+    );
+  }
+
+  private async validateMaterialCircuitLinks(
+    itemCode: string,
+    materials: BulkSaveRoutingMaterialDto['materials'],
+    company?: string,
+    plant?: string,
+  ) {
+    for (const material of materials) {
+      if (material.circuitId == null) continue;
+      const rows = await this.findCircuitOptions(itemCode, [material.childItemCode], company, plant);
+      const found = rows.some((row: { circuitId: number | string }) => Number(row.circuitId) === Number(material.circuitId));
+      if (!found) {
+        throw new ConflictException(`라우팅 자재와 연결할 수 없는 회로 사양입니다: ${material.childItemCode}/${material.circuitId}`);
+      }
+    }
   }
 
   private async resolveProcessMaster(processCode: string, company?: string, plant?: string) {
@@ -334,10 +389,18 @@ export class RoutingGroupService {
 
     const materialMap = new Map(materials.map((m) => [m.childItemCode, m]));
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const circuitOptions = await this.findCircuitOptions(group.itemCode, childCodes, company, plant);
+    const circuitOptionsByWire = new Map<string, any[]>();
+    for (const circuit of circuitOptions) {
+      const key = String(circuit.wireItemCode);
+      circuitOptionsByWire.set(key, [...(circuitOptionsByWire.get(key) ?? []), circuit]);
+    }
 
     return bomItems.map((bom) => {
       const material = materialMap.get(bom.childItemCode);
       const part = partMap.get(bom.childItemCode);
+      const options = circuitOptionsByWire.get(bom.childItemCode) ?? [];
+      const linkedCircuit = options.find((circuit) => Number(circuit.circuitId) === Number(material?.circuitId));
       return {
         routingCode,
         seq,
@@ -348,6 +411,12 @@ export class RoutingGroupService {
         unit: part?.unit ?? null,
         qtyPer: bom.qtyPer,
         selected: !!material,
+        circuitId: material?.circuitId ?? null,
+        circuitNo: linkedCircuit?.circuitNo ?? null,
+        lengthMm: linkedCircuit?.lengthMm != null ? Number(linkedCircuit.lengthMm) : null,
+        stripA: linkedCircuit?.stripA != null ? Number(linkedCircuit.stripA) : null,
+        stripB: linkedCircuit?.stripB != null ? Number(linkedCircuit.stripB) : null,
+        circuitOptions: options,
         allocQty: material?.allocQty ?? null,
         issueMethod: material?.issueMethod ?? 'BACKFLUSH',
         useYn: material?.useYn ?? 'Y',
@@ -373,6 +442,7 @@ export class RoutingGroupService {
     if (invalid) {
       throw new ConflictException(`BOM에 없는 자재는 공정에 매핑할 수 없습니다: ${invalid.childItemCode}`);
     }
+    await this.validateMaterialCircuitLinks(group.itemCode, dto.materials, company, plant);
 
     return this.tx.run(async (queryRunner) => {
       await queryRunner.manager.delete(RoutingMaterial, { routingCode, seq, company: tenant.company, plant: tenant.plant });
@@ -383,6 +453,7 @@ export class RoutingGroupService {
           routingCode,
           seq,
           childItemCode: m.childItemCode,
+          circuitId: m.circuitId ?? null,
           allocQty: m.allocQty ?? 0,
           issueMethod: m.issueMethod ?? 'BACKFLUSH',
           useYn: 'Y',

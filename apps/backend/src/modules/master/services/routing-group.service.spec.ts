@@ -20,6 +20,7 @@ import { ProcessQualityCondition } from '../../../entities/process-quality-condi
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
+import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -32,6 +33,7 @@ describe('RoutingGroupService', () => {
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockBomRepo: DeepMocked<Repository<BomMaster>>;
   let mockMaterialRepo: DeepMocked<Repository<RoutingMaterial>>;
+  let mockCircuitRepo: DeepMocked<Repository<HarnessCircuitSpec>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockEntityManager: DeepMocked<EntityManager>;
   let mockTx: DeepMocked<TransactionService>;
@@ -44,6 +46,8 @@ describe('RoutingGroupService', () => {
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockBomRepo = createMock<Repository<BomMaster>>();
     mockMaterialRepo = createMock<Repository<RoutingMaterial>>();
+    mockCircuitRepo = createMock<Repository<HarnessCircuitSpec>>();
+    mockCircuitRepo.query.mockResolvedValue([]);
     mockDataSource = createMock<DataSource>();
     mockEntityManager = createMock<EntityManager>();
     mockTx = createMock<TransactionService>();
@@ -72,6 +76,7 @@ describe('RoutingGroupService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
         { provide: getRepositoryToken(RoutingMaterial), useValue: mockMaterialRepo },
+        { provide: getRepositoryToken(HarnessCircuitSpec), useValue: mockCircuitRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],

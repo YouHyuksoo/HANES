@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Save, Trash2, ArrowRight } from "lucide-react";
-import { Modal, Button, ConfirmModal } from "@/components/ui";
+import { Modal, Button, ConfirmModal, ComCodeBadge } from "@/components/ui";
 import type { IqcSpecRow, IqcTemplate } from "../types";
 import api from "@/services/api";
 
@@ -36,6 +36,12 @@ function mapItems(raw: any[]): IqcSpecRow[] {
     lsl: it.lsl ?? null,
     usl: it.usl ?? null,
     judgeCriteria: it.judgeCriteria ?? null,
+    defectGrade: it.defectGrade ?? null,
+    inspectionLevel: it.inspectionLevel ?? null,
+    aql: it.aql ?? null,
+    inspectionType: it.inspectionType ?? null,
+    sampleMethod: it.sampleMethod ?? null,
+    sampleQty: it.sampleQty ?? null,
     useYn: it.useYn ?? "Y",
   }));
 }
@@ -99,6 +105,12 @@ export default function IqcTemplatePickerModal({
             lsl: it.lsl,
             usl: it.usl,
             judgeCriteria: it.judgeCriteria ?? null,
+            defectGrade: it.defectGrade ?? null,
+            inspectionLevel: it.inspectionLevel ?? null,
+            aql: it.aql ?? null,
+            inspectionType: it.inspectionType ?? null,
+            sampleMethod: it.sampleMethod ?? null,
+            sampleQty: it.sampleQty ?? null,
             useYn: it.useYn,
           })),
       });
@@ -157,7 +169,7 @@ export default function IqcTemplatePickerModal({
           <div className="col-span-4 flex flex-col border border-border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-bg-elevated">
               <span className="text-sm font-medium text-text">{t("master.iqcTemplate.list", "템플릿 목록")}</span>
-              <button onClick={() => setDeleteConfirmOpen(true)} disabled={!selectedId} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 disabled:text-text-muted disabled:cursor-not-allowed" aria-label="삭제">
+              <button onClick={() => setDeleteConfirmOpen(true)} disabled={!selectedId} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 disabled:text-text-muted disabled:cursor-not-allowed" aria-label={t("common.delete", "삭제")}>
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -203,12 +215,17 @@ export default function IqcTemplatePickerModal({
               </Button>
             </div>
             <div className="flex-1 overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-bg-elevated border-b border-border">
+              <table className="w-full text-sm [&_th]:border-r [&_td]:border-r [&_th]:border-border/60 [&_td]:border-border/60 [&_tr>*:last-child]:border-r-0">
+                <thead className="sticky top-0 bg-primary/10 border-b border-primary/30">
                   <tr>
                     <th className="px-3 py-2 text-left text-text-muted font-medium w-12">{t("master.iqcItem.seq", "순서")}</th>
                     <th className="px-3 py-2 text-left text-text-muted font-medium">{t("master.iqcItem.inspItem", "검사항목")}</th>
                     <th className="px-3 py-2 text-left text-text-muted font-medium w-20">{t("master.iqcItem.type", "종류")}</th>
+                    <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.inspectionType", "검사유형")}</th>
+                    <th className="px-3 py-2 text-right text-text-muted font-medium w-16">{t("master.iqcItem.sampleQtyCol", "샘플수")}</th>
+                    <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.defectGrade", "불량등급")}</th>
+                    <th className="px-3 py-2 text-left text-text-muted font-medium w-20">{t("master.iqcItem.inspectionLevel", "검사수준")}</th>
+                    <th className="px-3 py-2 text-right text-text-muted font-medium w-16">AQL</th>
                     <th className="px-3 py-2 text-right text-text-muted font-medium w-20">LSL</th>
                     <th className="px-3 py-2 text-right text-text-muted font-medium w-20">USL</th>
                     <th className="px-3 py-2 text-left text-text-muted font-medium">{t("master.iqcItem.judgeCriteria", "판정기준")}</th>
@@ -216,10 +233,11 @@ export default function IqcTemplatePickerModal({
                 </thead>
                 <tbody>
                   {!selected || selected.items.length === 0 ? (
-                    <tr><td colSpan={6} className="py-8 text-center text-text-muted text-sm">{t("master.iqcTemplate.selectHint", "템플릿을 선택하세요.")}</td></tr>
+                    <tr><td colSpan={11} className="py-8 text-center text-text-muted text-sm">{t("master.iqcTemplate.selectHint", "템플릿을 선택하세요.")}</td></tr>
                   ) : (
                     selected.items.map((row, idx) => {
                       const isMeasure = row.judgeMethod === "MEASURE";
+                      const isFixedSample = row.inspectionType === "DESTRUCTIVE" || row.inspectionType === "FULL";
                       return (
                         <tr key={idx} className="border-b border-border">
                           <td className="px-3 py-1.5 text-center text-text-muted">{row.seq}</td>
@@ -229,6 +247,21 @@ export default function IqcTemplatePickerModal({
                               {isMeasure ? t("master.iqcItem.typeMeasure", "측정형") : t("master.iqcItem.typeVisual", "판정형")}
                             </span>
                           </td>
+                          <td className="px-3 py-1.5">
+                            {row.inspectionType && row.inspectionType !== "AQL"
+                              ? <ComCodeBadge groupCode="IQC_ITEM_INSP_TYPE" code={row.inspectionType} />
+                              : <span className="text-text-muted text-xs">AQL</span>}
+                          </td>
+                          <td className="px-3 py-1.5 text-right tabular-nums text-text">
+                            {isFixedSample ? (row.sampleQty ?? "-") : <span className="text-text-muted text-xs">{t("master.iqcItem.auto", "자동")}</span>}
+                          </td>
+                          <td className="px-3 py-1.5">
+                            {row.defectGrade
+                              ? <ComCodeBadge groupCode="DEFECT_GRADE" code={row.defectGrade} className="!rounded px-2.5 py-1" />
+                              : <span className="text-text-muted text-xs">-</span>}
+                          </td>
+                          <td className="px-3 py-1.5 text-text">{row.inspectionLevel || <span className="text-text-muted text-xs">-</span>}</td>
+                          <td className="px-3 py-1.5 text-right tabular-nums text-text">{row.aql != null ? row.aql : <span className="text-text-muted text-xs">-</span>}</td>
                           <td className="px-3 py-1.5 text-right text-text">{isMeasure ? (row.lsl ?? "-") : "-"}</td>
                           <td className="px-3 py-1.5 text-right text-text">{isMeasure ? (row.usl ?? "-") : "-"}</td>
                           <td className="px-3 py-1.5 text-text">{!isMeasure ? (row.judgeCriteria ?? "-") : "-"}</td>

@@ -47,6 +47,39 @@ Reason:
 - 등급별 AQL 판정은 Critical, Major, Minor의 허용수량 기준이 다르므로 합산하거나 한 규칙으로 처리하면 LOT 판정이 틀어진다.
 - 사용자가 불량코드 등급 필수와 Major/Minor 독립 Ac/Re 판정을 명시했다.
 
+## D-20260621-ITEM-MODEL-NAME
+Status: Accepted
+Decision:
+- 자동차용 MES의 품목 관리 특성인 차종은 `ITEM_MASTERS.MODEL_NAME` nullable 문자열 컬럼으로 관리한다.
+- `/master/part` 목록, 검색, 등록, 수정 DTO/API는 `modelName` 필드로 같은 값을 전달한다.
+Reason:
+- 차종은 품목/제품군과 함께 운영자가 품목을 식별하고 검색해야 하는 자동차 하네스 MES 기준정보 특성이다.
+- 현재 범위에서는 별도 차종 마스터나 공통코드 기준이 없어, 기존 품목 기본정보 텍스트 특성과 같은 방식으로 추가하는 것이 가장 낮은 위험이다.
+
+## D-20260621-HARNESS-WIRE-SPEC-SEPARATION
+Status: Accepted
+Decision:
+- 전선 절단 길이와 Strip A/B는 품목마스터 속성이 아니라 `HARNESS_CIRCUIT_SPECS` 회로별 제조 사양으로 관리한다.
+- `HARNESS_CIRCUIT_SPECS.WIRE_ITEM_CODE`는 BOM 자재 품목을 참조하고, 저장 시 도면 품목의 활성 BOM child인지 검증한다.
+- `ROUTING_MATERIALS.CIRCUIT_ID`는 공정 투입 자재를 회로 사양과 연결하는 선택 링크로 둔다.
+Reason:
+- 같은 전선 원자재가 제품/회로별로 다른 절단 길이를 가지므로 `ITEM_MASTERS`에 길이/스트리핑 값을 두면 품목코드 폭발 또는 잘못된 마스터 값이 발생한다.
+- BOM은 자재 소요량 기준, 회로스펙은 제조 조건 기준, 라우팅은 공정 배치 기준으로 분리해야 운영 데이터 정합성이 유지된다.
+
+## D-20260621-IQC-AQL-POLICY-CODE
+Status: Accepted
+Decision:
+- `ITEM_MASTERS`는 AQL 검사수준/Critical/Major/Minor 개별 값을 직접 보유하지 않고 `IQC_AQL_POLICY_CODE`만 보유한다.
+- AQL 정책 조합은 신규 `IQC_AQL_POLICIES` 기준정보에서 `INSPECTION_LEVEL`, `MAJOR_AQL_CODE`, `MINOR_AQL_CODE`, `CRITICAL_MODE`로 관리한다.
+- `/master/part`는 `AQL 정책` 선택만 제공하고, `/quality/aql/resolve-iqc`는 품목의 정책 코드를 따라 sampling rule을 산출한다.
+- `IQC_PART_SPEC_ITEMS`의 검사수준/AQL은 품목 정책을 대체하는 것이 아니라 검사항목별 override 기준으로 유지한다.
+- 실제 IQC 검사 화면과 저장 판정은 검사항목별 판정 경로인 `resolveIqcPolicyByItem()`을 기준으로 맞춘다.
+- IQC AQL 판정 대상 품목에 `IQC_AQL_POLICY_CODE`가 없으면 기본 PASS로 우회하지 않고 설정오류로 차단한다.
+Reason:
+- AQL 값은 품목 고유 속성이 아니라 검사 정책 기준정보이므로 품목마다 개별 값을 중복 저장하면 정책 변경과 품목 변경이 섞인다.
+- 정책 코드를 참조하면 품목마스터 화면은 단순해지고, AQL 기준/샘플링 rule/품목 적용 사이의 출처가 분리되어 운영 변경 추적이 쉬워진다.
+- 정책 미설정 상태에서 Major/Minor AQL rule이 `null`이면 불량이 있어도 PASS로 저장될 수 있으므로 운영상 검사불가로 보는 것이 맞다.
+
 ## D-20260617-PRINT-AGENT-OWNS-CONFIG
 Status: Accepted
 Decision:

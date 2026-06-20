@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
+import { BomMaster } from '../../../entities/bom-master.entity';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 import { HarnessDrawingMaster } from '../../../entities/harness-drawing-master.entity';
 import { HarnessDrawingRevision } from '../../../entities/harness-drawing-revision.entity';
@@ -33,6 +34,8 @@ export class ProductionSpecificationService {
     private readonly revisionRepo: Repository<HarnessDrawingRevision>,
     @InjectRepository(HarnessCircuitSpec)
     private readonly circuitRepo: Repository<HarnessCircuitSpec>,
+    @InjectRepository(BomMaster)
+    private readonly bomRepo: Repository<BomMaster>,
     private readonly tx: TransactionService,
   ) {}
 
@@ -51,6 +54,28 @@ export class ProductionSpecificationService {
   private normalizeText(value?: string | null): string | null {
     const normalized = value?.trim();
     return normalized ? normalized : null;
+  }
+
+  private async validateCircuitWireItems(
+    itemCode: string,
+    circuits: HarnessCircuitSpecDto[] | undefined,
+    company: string,
+    plant: string,
+  ) {
+    const wireItemCodes = [...new Set((circuits ?? [])
+      .map((circuit) => this.normalizeText(circuit.wireItemCode))
+      .filter((value): value is string => !!value))];
+    if (wireItemCodes.length === 0) return;
+
+    const bomItems = await this.bomRepo.find({
+      where: { parentItemCode: itemCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
+      select: ['childItemCode'],
+    });
+    const bomChildSet = new Set(bomItems.map((bom) => bom.childItemCode));
+    const invalid = wireItemCodes.find((wireItemCode) => !bomChildSet.has(wireItemCode));
+    if (invalid) {
+      throw new BadRequestException(`BOM에 없는 전선 품목은 회로 사양에 연결할 수 없습니다: ${invalid}`);
+    }
   }
 
   private nextRevisionCode(source: string): string {
@@ -78,6 +103,7 @@ export class ProductionSpecificationService {
         sortOrder: index + 1,
         circuitNo: circuit.circuitNo,
         wireSpec: this.normalizeText(circuit.wireSpec),
+        wireItemCode: this.normalizeText(circuit.wireItemCode),
         wireSize: this.normalizeText(circuit.wireSize),
         colorCode: this.normalizeText(circuit.colorCode),
         colorName: this.normalizeText(circuit.colorName),
@@ -165,6 +191,8 @@ export class ProductionSpecificationService {
     });
     if (existing) throw new ConflictException(`이미 등록된 도면번호입니다: ${dto.drawingNo}`);
 
+    await this.validateCircuitWireItems(dto.itemCode, dto.circuits, company, plant);
+
     let newDrawingId = 0;
     let newRevisionId = 0;
     await this.tx.run(async (queryRunner) => {
@@ -241,6 +269,13 @@ export class ProductionSpecificationService {
     if (revision.status === 'APPROVED' && dto.circuits !== undefined) {
       throw new BadRequestException('승인된 Revision은 회로 사양을 직접 수정할 수 없습니다. 새 Revision을 생성하세요.');
     }
+    if (dto.circuits !== undefined) {
+      const master = await this.masterRepo.findOne({
+        where: { drawingId: revision.drawingId, ...this.tenantWhere(company, plant) },
+      });
+      if (!master) throw new NotFoundException(`도면을 찾을 수 없습니다: ${revision.drawingId}`);
+      await this.validateCircuitWireItems(master.itemCode, dto.circuits, company, plant);
+    }
 
     await this.tx.run(async (queryRunner) => {
       const manager = queryRunner.manager;
@@ -310,6 +345,7 @@ export class ProductionSpecificationService {
         sourceCircuits.map((c) => ({
           circuitNo: c.circuitNo,
           wireSpec: c.wireSpec ?? undefined,
+          wireItemCode: c.wireItemCode ?? undefined,
           wireSize: c.wireSize ?? undefined,
           colorCode: c.colorCode ?? undefined,
           colorName: c.colorName ?? undefined,

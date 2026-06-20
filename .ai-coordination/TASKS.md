@@ -29,6 +29,142 @@ notes:
 
 ## Active Tasks
 
+## T-IQC-AQL-TRACEABILITY-FIX IQC AQL 추적성/불량코드 판정 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/material/iqc` 검사 저장 시 시료 바코드 길이 초과 저장 실패 방지
+- 불량코드 입력과 항목 FAIL 판정의 의미 정렬
+- `/material/iqc-history`에서 항목별 AQL 판정 결과 확인성 개선
+files:
+- apps/frontend/src/components/material/IqcModal.tsx
+- apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/material/iqc-history/**
+- apps/backend/src/modules/material/services/iqc-history.service.ts
+- apps/backend/src/modules/material/services/iqc-history.service.spec.ts
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: IQC 모달 구조 테스트가 불량코드/FAIL 정렬과 `SAMPLE_BARCODE` 요약 함수 부재로 실패 확인
+- RED: `iqc-history.service.spec.ts`가 긴 시리얼 목록 500바이트 초과와 PASS+불량코드 저장 허용으로 실패 확인
+- GREEN: `node --test apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs`
+- GREEN: `pnpm.cmd --filter @harness/backend exec jest src/modules/material/services/iqc-history.service.spec.ts --runInBand`
+- PASS: IQC 모달/이력 관련 구조 테스트 15건
+- PASS: frontend/backend `tsc --noEmit --pretty false`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `/quality/defect`는 hermes 작업 잠금 대상이므로 수정하지 않는다.
+- `SAMPLE_BARCODE`에는 전체 시리얼을 저장하지 않고 500바이트 이내 요약만 저장한다. 전체 시리얼 상세는 `DETAILS` CLOB에 남는다.
+- 불량코드는 FAIL 판정 근거가 있는 경우에만 입력/저장되도록 프론트와 서버에서 방어한다.
+
+## T-IQC-AQL-POLICY-CODE 품목 AQL 정책코드 전환
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- `/master/part` AQL 개별 속성 제거 및 AQL 정책 선택 전환
+- `ITEM_MASTERS`와 IQC AQL 판정의 정책 코드 기준 연결
+- `/quality/aql` AQL 정책관리 CRUD 완성
+files:
+- apps/backend/src/entities/part-master.entity.ts
+- apps/backend/src/entities/iqc-aql-policy.entity.ts
+- apps/backend/src/modules/master/dto/part.dto.ts
+- apps/backend/src/modules/master/services/part.service.ts
+- apps/backend/src/modules/quality/aql/**
+- apps/backend/src/migrations/2026-06-21_iqc_aql_policy_code.sql
+- apps/frontend/src/app/(authenticated)/master/part/**
+- apps/frontend/src/app/(authenticated)/master/iqc-part-spec/**
+- apps/frontend/src/app/(authenticated)/quality/aql/**
+- apps/frontend/src/locales/{ko,en,zh,vi}.json
+- docs/reports/db-schema-erd.md
+verification:
+- RED 확인: 구조 테스트와 AQL service spec이 신규 정책 코드 계약 부재로 실패
+- GREEN: `/master/part`, `/master/iqc-part-spec`, `/quality/aql` 구조 테스트 12건 PASS
+- GREEN: 정책 CRUD 구조 테스트 RED→GREEN, `aql.service.spec.ts` 정책 CRUD RED→GREEN
+- PASS: `aql.service.spec.ts` 16건 PASS, 기존 `iqc-history.service.spec.ts` 계약 반영
+- PASS: frontend/backend typecheck, `git diff --check`
+- PASS: JSHANES 마이그레이션 적용/재실행, `ITEM_MASTERS` 구 AQL 컬럼 제거 및 `IQC_AQL_POLICY_CODE` 확인
+- PASS: JSHANES IQC 대상 19건 정책 코드 보유, orphan 정책 참조 0건
+- PASS: JSHANES `IQC_AQL_POLICIES` 정책 3건 확인, 정책 AQL 기준 orphan 0건
+- PASS: `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py`
+- PASS: 3002 `/master/part`, `/quality/aql` HTTP 200, `/api/quality/aql/policies` 인증 게이트 401 확인
+- PASS: `/quality/aql` 정책관리 좌측상단 배치 구조 테스트 RED→GREEN, FE typecheck, 3002 `/quality/aql` HTTP 200
+- PASS: `/quality/aql` 정책 도움말/좌측 스크롤 제거/상단 `AQL 기준 추가` 문구 구조 테스트 RED→GREEN, FE typecheck, 3002 `/quality/aql` HTTP 200
+review:
+- needs-review
+notes:
+- 품목은 `iqcAqlPolicyCode`만 보유하고 검사수준/Major/Minor 조합은 `IQC_AQL_POLICIES` 기준정보에서 관리한다.
+- `/quality/aql` 좌측상단에서 정책 등록/수정/사용중지를 관리한다. 품목에 배정된 정책은 사용중지 차단한다.
+- `/quality/aql` 도움말은 품목이 AQL 코드를 직접 참조하는 설명이 아니라 `ITEM_MASTERS.IQC_AQL_POLICY_CODE -> IQC_AQL_POLICIES -> AQL_STANDARDS` 구조를 기준으로 작성한다.
+
+## T-HARNESS-WIRE-SPEC-SEPARATION 전선 길이/스트리핑 사양 분리
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- 품목마스터 전선 길이/스트리핑 속성 제거
+- BOM 자재 소요량과 회로/라우팅 사양 연결
+files:
+- apps/backend/src/entities, apps/backend/src/modules/master, apps/backend/src/modules/production
+- apps/frontend/src/app/(authenticated)/master/part, master/routing, production/specification-setup
+- apps/backend/src/migrations, docs/reports/db-schema-erd.md
+verification:
+- PASS: RED/GREEN 구조 테스트, backend focused spec, frontend/backend typecheck, JSHANES migration, ERD 갱신, git diff --check
+review:
+- needs-review
+notes:
+- 전선 원자재는 품목 고유 길이를 갖지 않고 제품/회로/공정 사양으로 절단/스트리핑 조건을 관리한다.
+
+## T-MASTER-PART-MODEL-NAME 품목관리 차종 컬럼 추가
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- `/master/part` 품목관리 차종 표시/등록/수정
+- `ITEM_MASTERS` 차종 컬럼 추가
+files:
+- apps/backend/src/entities/part-master.entity.ts
+- apps/backend/src/modules/master/dto/part.dto.ts
+- apps/backend/src/modules/master/services/part.service.ts
+- apps/backend/src/migrations/2026-06-21_add_item_master_model_name.sql
+- apps/frontend/src/app/(authenticated)/master/part/**
+- docs/reports/db-schema-erd.md
+verification:
+- RED: `/master/part` 구조 테스트가 `modelName`/`차종` 부재로 실패 확인
+- GREEN: `/master/part` 구조 테스트 PASS
+- PASS: frontend/backend typecheck, `git diff --check`
+- PASS: JSHANES 마이그레이션/재실행/컬럼 확인, ERD 갱신
+- PASS: 3002 Playwright DOM에서 목록 헤더/값/추가 패널 라벨 확인
+review:
+- needs-review
+notes:
+- 사용자 요청: 자동차용 MES 관리 특성으로 `/master/part`에 차종 컬럼을 추가한다.
+
+## T-QUALITY-DEFECT-FILTER-ONE-LINE 불량관리 필터 한 줄 배치
+status: IN_PROGRESS
+owner: hermes
+role: implementer
+scope:
+- `/quality/defect` 필터 영역 레이아웃 조정
+files:
+- apps/frontend/src/app/(authenticated)/quality/defect/page.tsx
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/hermes.md
+verification:
+- `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- 브라우저에서 `http://localhost:3002/quality/defect` 필터 한 줄 배치 확인
+review:
+- needs-review
+notes:
+- 사용자 요청: 필터 항목이 두 줄로 보여 공간 낭비가 크므로 한 줄로 처리한다.
+
 ## T-MENU-OPEN-DELAY 메뉴 클릭 후 화면 열림 지연 원인 진단
 status: REVIEW
 owner: codex
@@ -1340,3 +1476,55 @@ notes:
 - 품목관리처럼 공통 Input/Select의 required prop을 사용해 필수 라벨 별표를 표시한다.
 - `Select`도 `Input`과 동일하게 `required` 라벨 별표와 native required 속성을 처리한다.
 - 작업지도서 폼의 수동 `*` 라벨은 자동 별표와 중복되지 않도록 제거했다.
+
+## T-IQC-AQL-POLICY-CODE `/master/iqc-part-spec` 실제 IQC 판정 경로 연결
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/master/iqc-part-spec` 선택 품목 AQL 미리보기를 실제 IQC 검사항목 판정 경로로 연결
+files:
+- apps/backend/src/modules/quality/aql/controllers/aql.controller.ts
+- apps/frontend/src/app/(authenticated)/master/iqc-part-spec/page.tsx
+- apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-aql-summary.structure.test.mjs
+verification:
+- RED 확인: `/master/iqc-part-spec` 구조 테스트가 `resolve-iqc-items` endpoint 부재와 품목정책 단독 미리보기 호출로 실패
+- node --test "apps/frontend/src/app/(authenticated)/master/iqc-part-spec/iqc-part-spec-aql-summary.structure.test.mjs" "apps/frontend/src/app/(authenticated)/master/part/part-label-terms.structure.test.mjs" "apps/frontend/src/app/(authenticated)/quality/aql/iqc-aql.structure.test.mjs" PASS
+- pnpm.cmd --filter @harness/backend exec jest src/modules/quality/aql/services/aql.service.spec.ts --runInBand PASS
+- pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false PASS
+- pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false PASS
+review:
+- needs-review
+notes:
+- `/quality/aql/resolve-iqc-items` endpoint를 추가해 `AqlService.resolveIqcPolicyByItem()` 결과를 화면 미리보기에 사용한다.
+- `/master/iqc-part-spec` 상단 요약은 품목 정책 코드뿐 아니라 검사항목별 AQL/파괴/고정 기준 건수를 함께 보여준다.
+
+## T-IQC-AQL-ACTUAL-PREVIEW 검사모달 AQL 실제 판정 경로 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/material/iqc` 검사 모달 AQL 미리보기를 실제 저장 판정 경로와 일치
+- AQL 정책 미설정 품목의 조용한 PASS 방지
+files:
+- apps/frontend/src/components/material/IqcModal.tsx
+- apps/frontend/src/hooks/material/useIqcData.ts
+- apps/frontend/src/components/material/iqc-modal-aql-preview.structure.test.mjs
+- apps/frontend/src/components/material/iqc-modal-compact-scan-layout.structure.test.mjs
+- apps/backend/src/modules/quality/aql/services/aql.service.ts
+- apps/backend/src/modules/quality/aql/services/aql.service.spec.ts
+verification:
+- RED 확인: 검사 모달이 `/quality/aql/resolve-iqc` 및 `selectedItem.supplierName`을 사용하고, 정책 없는 품목이 PASS로 resolve되어 신규 테스트 실패
+- node --test apps/frontend/src/components/material/iqc-modal-aql-preview.structure.test.mjs apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs apps/frontend/src/components/material/iqc-modal-destructive.structure.test.mjs apps/frontend/src/components/material/iqc-modal-compact-scan-layout.structure.test.mjs PASS
+- pnpm.cmd --filter @harness/backend exec jest src/modules/quality/aql/services/aql.service.spec.ts --runInBand PASS
+- pnpm.cmd --filter @harness/backend exec jest src/modules/material/services/iqc-history.service.spec.ts --runInBand PASS
+- pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false PASS
+- pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false PASS
+- 3002 `/material/iqc` HTTP 200
+- git diff --check PASS
+review:
+- needs-review
+notes:
+- `IqcModal`은 `/quality/aql/resolve-iqc-items`를 호출하고 항목별 AQL/파괴/고정 요약을 표시한다.
+- `useIqcData`는 표시명 `supplierName`과 실제 코드 `vendorCode`를 분리해 AQL preview에는 `vendorCode`를 전달한다.
+- `AqlService.resolvePartPolicy()`는 정책코드 미설정 시 `BadRequestException`으로 차단한다.

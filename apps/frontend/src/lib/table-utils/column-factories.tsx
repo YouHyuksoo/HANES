@@ -68,6 +68,7 @@ export function DateTimeCell<T>({ getValue }: CellContext<T, unknown>) {
  * 사용여부 Cell (Y/N)
  */
 export function UseYnCell<T>({ getValue }: CellContext<T, unknown>) {
+  const { t } = useTranslation();
   const value = getValue();
   const isActive = value === "Y" || value === true;
   return (
@@ -78,7 +79,7 @@ export function UseYnCell<T>({ getValue }: CellContext<T, unknown>) {
           : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
       }`}
     >
-      {isActive ? "사용" : "미사용"}
+      {isActive ? t("common.use", "사용") : t("common.unused", "미사용")}
     </span>
   );
 }

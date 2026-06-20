@@ -1,6 +1,7 @@
 "use client";
 
 import { PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Barcode, Circle, Copy, Image as ImageIcon, Minus, Square, TableProperties, Trash2, Type,
 } from "lucide-react";
@@ -42,15 +43,6 @@ type Interaction =
       origin: LabelElement;
     };
 
-const elementLabels: Record<LabelElementKind, string> = {
-  text: "글자",
-  barcode: "바코드",
-  box: "박스",
-  line: "선",
-  circle: "원",
-  image: "이미지",
-};
-
 function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -64,6 +56,22 @@ function round(value: number) {
 }
 
 export default function LabelObjectDesigner({ category, design, onChange }: LabelObjectDesignerProps) {
+  const { t } = useTranslation();
+  const elementLabels: Record<LabelElementKind, string> = {
+    text: t("master.label.elemText", "글자"),
+    barcode: t("master.label.elemBarcode", "바코드"),
+    box: t("master.label.elemBox", "박스"),
+    line: t("master.label.elemLine", "선"),
+    circle: t("master.label.elemCircle", "원"),
+    image: t("master.label.elemImage", "이미지"),
+  };
+  const sourceTableLabels: Record<LabelSourceTable, string> = {
+    equipment: t("master.label.srcEquipment", "설비"),
+    consumable: t("master.label.srcConsumable", "소모품"),
+    worker: t("master.label.srcWorker", "작업자"),
+    mat_lot: t("master.label.srcMatLot", "자재 LOT"),
+    box: t("master.label.srcBox", "제품포장"),
+  };
   const canvasRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(design.elements?.[0]?.id ?? null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
@@ -76,6 +84,12 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
   const selected = useMemo(
     () => design.elements?.find((element) => element.id === selectedId) ?? null,
     [design.elements, selectedId],
+  );
+
+  const fieldLabel = useCallback(
+    (table: LabelSourceTable, key: string, fallback: string) =>
+      t(`master.label.field.${table}.${key}`, fallback),
+    [t],
   );
 
   const updateDesign = useCallback((patch: Partial<LabelDesign>) => {
@@ -241,42 +255,42 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
       <section className="min-h-0 rounded border border-border bg-surface p-3 overflow-y-auto">
         <div className="flex items-center gap-2 text-sm font-semibold text-text mb-3">
           <TableProperties className="w-4 h-4 text-primary" />
-          소스와 객체
+          {t("master.label.sourceAndObjects", "소스와 객체")}
         </div>
 
-        <label className="block text-xs font-medium text-text-muted mb-1">소스테이블</label>
+        <label className="block text-xs font-medium text-text-muted mb-1">{t("master.label.sourceTable", "소스테이블")}</label>
         <select
           value={source.table}
           onChange={(event) => changeSourceTable(event.target.value as LabelSourceTable)}
           className="w-full h-9 rounded border border-border bg-background px-2 text-sm text-text mb-4"
         >
           {Object.values(labelSources).map((item) => (
-            <option key={item.table} value={item.table}>{item.label}</option>
+            <option key={item.table} value={item.table}>{sourceTableLabels[item.table]}</option>
           ))}
         </select>
 
         <div className="grid grid-cols-2 gap-2">
-          <ToolButton icon={Type} label="글자" onClick={() => addElement("text")} />
-          <ToolButton icon={Barcode} label="1D" onClick={() => addElement("barcode", "code128")} />
-          <ToolButton icon={Barcode} label="2D" onClick={() => addElement("barcode", "qrcode")} />
-          <ToolButton icon={Square} label="박스" onClick={() => addElement("box")} />
-          <ToolButton icon={Minus} label="선" onClick={() => addElement("line")} />
-          <ToolButton icon={Circle} label="원" onClick={() => addElement("circle")} />
-          <ToolButton icon={ImageIcon} label="이미지" onClick={() => addElement("image")} />
+          <ToolButton icon={Type} label={t("master.label.elemText", "글자")} onClick={() => addElement("text")} />
+          <ToolButton icon={Barcode} label={t("master.label.elem1d", "1D")} onClick={() => addElement("barcode", "code128")} />
+          <ToolButton icon={Barcode} label={t("master.label.elem2d", "2D")} onClick={() => addElement("barcode", "qrcode")} />
+          <ToolButton icon={Square} label={t("master.label.elemBox", "박스")} onClick={() => addElement("box")} />
+          <ToolButton icon={Minus} label={t("master.label.elemLine", "선")} onClick={() => addElement("line")} />
+          <ToolButton icon={Circle} label={t("master.label.elemCircle", "원")} onClick={() => addElement("circle")} />
+          <ToolButton icon={ImageIcon} label={t("master.label.elemImage", "이미지")} onClick={() => addElement("image")} />
         </div>
 
         <div className="mt-5 space-y-1.5">
-          <div className="text-xs font-semibold text-text-muted">필드 (클릭하면 글자 추가)</div>
+          <div className="text-xs font-semibold text-text-muted">{t("master.label.fieldsHint", "필드 (클릭하면 글자 추가)")}</div>
           {sourceFields.map((field) => (
             <button
               key={field.key}
               type="button"
               onClick={() => addElement("text", undefined, field.key)}
-              title={`'${field.label}' 글자 객체 추가`}
+              title={t("master.label.addFieldTextObject", "'{{label}}' 글자 객체 추가", { label: fieldLabel(source.table, field.key, field.label) })}
               className="block w-full text-left rounded border border-border bg-background px-2 py-1.5 hover:border-primary hover:bg-primary/5 transition-colors"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="min-w-0 flex-1 truncate text-xs font-medium text-text">{field.label}</span>
+                <span className="min-w-0 flex-1 truncate text-xs font-medium text-text">{fieldLabel(source.table, field.key, field.label)}</span>
                 <span className="shrink-0 font-mono text-[10px] text-text-muted">{field.key}</span>
               </div>
               <div className="truncate text-[10px] text-text-muted">{field.sample || "—"}</div>
@@ -288,8 +302,8 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
       <section className="min-w-0 min-h-0 rounded border border-border bg-slate-100 dark:bg-slate-950 p-4 overflow-auto">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-sm font-semibold text-text">디자인 캔버스</div>
-            <div className="text-xs text-text-muted">객체를 끌어서 이동하고 모서리 앵커로 크기를 조절합니다.</div>
+            <div className="text-sm font-semibold text-text">{t("master.label.designCanvas", "디자인 캔버스")}</div>
+            <div className="text-xs text-text-muted">{t("master.label.designCanvasHint", "객체를 끌어서 이동하고 모서리 앵커로 크기를 조절합니다.")}</div>
           </div>
           <div className="flex items-center gap-2 text-xs text-text-muted">
             <NumberInput label="W" value={design.labelWidth} onChange={(value) => updateDesign({ labelWidth: value })} />
@@ -315,8 +329,8 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
       <section className="min-h-0 rounded border border-border bg-surface p-3 overflow-y-auto">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div>
-            <div className="text-sm font-semibold text-text">객체 속성</div>
-            <div className="text-xs text-text-muted">{selected ? elementLabels[selected.type] : "선택 없음"}</div>
+            <div className="text-sm font-semibold text-text">{t("master.label.objectProps", "객체 속성")}</div>
+            <div className="text-xs text-text-muted">{selected ? elementLabels[selected.type] : t("master.label.noSelection", "선택 없음")}</div>
           </div>
           <div className="flex gap-1">
             <Button size="sm" variant="secondary" onClick={duplicateSelected} disabled={!selected}>
@@ -339,14 +353,14 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
 
             {(selected.type === "text" || selected.type === "barcode" || selected.type === "image") && (
               <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">소스 필드</label>
+                <label className="block text-xs font-medium text-text-muted mb-1">{t("master.label.sourceField", "소스 필드")}</label>
                 <select
                   value={selected.sourceField ?? ""}
                   onChange={(event) => updateElement(selected.id, { sourceField: event.target.value })}
                   className="w-full h-9 rounded border border-border bg-background px-2 text-sm text-text"
                 >
                   {sourceFields.map((field) => (
-                    <option key={field.key} value={field.key}>{field.label} ({field.key})</option>
+                    <option key={field.key} value={field.key}>{fieldLabel(source.table, field.key, field.label)} ({field.key})</option>
                   ))}
                 </select>
               </div>
@@ -354,18 +368,18 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
 
             {selected.type === "text" && (
               <>
-                <TextInput label="고정 문구" value={selected.text ?? ""} onChange={(value) => updateElement(selected.id, { text: value })} />
-                <NumberInput label="글자 크기(mm)" value={selected.fontSize ?? 3} onChange={(value) => updateElement(selected.id, { fontSize: value })} />
+                <TextInput label={t("master.label.fixedText", "고정 문구")} value={selected.text ?? ""} onChange={(value) => updateElement(selected.id, { text: value })} />
+                <NumberInput label={t("master.label.fontSizeMm", "글자 크기(mm)")} value={selected.fontSize ?? 3} onChange={(value) => updateElement(selected.id, { fontSize: value })} />
                 <div className="grid grid-cols-2 gap-2">
-                  <SelectInput label="굵기" value={selected.fontWeight ?? "normal"} options={["normal", "bold"]} onChange={(value) => updateElement(selected.id, { fontWeight: value as "normal" | "bold" })} />
-                  <SelectInput label="정렬" value={selected.align ?? "left"} options={["left", "center", "right"]} onChange={(value) => updateElement(selected.id, { align: value as "left" | "center" | "right" })} />
+                  <SelectInput label={t("master.label.fontWeight", "굵기")} value={selected.fontWeight ?? "normal"} options={["normal", "bold"]} onChange={(value) => updateElement(selected.id, { fontWeight: value as "normal" | "bold" })} />
+                  <SelectInput label={t("master.label.align", "정렬")} value={selected.align ?? "left"} options={["left", "center", "right"]} onChange={(value) => updateElement(selected.id, { align: value as "left" | "center" | "right" })} />
                 </div>
               </>
             )}
 
             {selected.type === "barcode" && (
               <SelectInput
-                label="바코드 유형"
+                label={t("master.label.barcodeType", "바코드 유형")}
                 value={selected.barcodeFormat ?? "qrcode"}
                 options={BARCODE_FORMATS.map((format) => format.value)}
                 onChange={(value) => updateElement(selected.id, { barcodeFormat: value as BarcodeFormat })}
@@ -373,25 +387,25 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
             )}
 
             {selected.type === "image" && (
-              <TextInput label="기본 이미지 URL" value={selected.imageUrl ?? ""} onChange={(value) => updateElement(selected.id, { imageUrl: value })} />
+              <TextInput label={t("master.label.defaultImageUrl", "기본 이미지 URL")} value={selected.imageUrl ?? ""} onChange={(value) => updateElement(selected.id, { imageUrl: value })} />
             )}
 
             {(selected.type === "box" || selected.type === "circle" || selected.type === "line") && (
-              <NumberInput label="선 두께(mm)" value={selected.lineWidth ?? 0.35} onChange={(value) => updateElement(selected.id, { lineWidth: value })} />
+              <NumberInput label={t("master.label.lineWidthMm", "선 두께(mm)")} value={selected.lineWidth ?? 0.35} onChange={(value) => updateElement(selected.id, { lineWidth: value })} />
             )}
 
             <div className="grid grid-cols-2 gap-2">
-              <ColorInput label="선/글자" value={selected.type === "text" ? (selected.textColor ?? "#111827") : (selected.strokeColor ?? "#111827")}
+              <ColorInput label={t("master.label.lineTextColor", "선/글자")} value={selected.type === "text" ? (selected.textColor ?? "#111827") : (selected.strokeColor ?? "#111827")}
                 onChange={(value) => updateElement(selected.id, selected.type === "text" ? { textColor: value } : { strokeColor: value })} />
               {(selected.type === "box" || selected.type === "circle") && (
-                <ColorInput label="채움" value={selected.fillColor === "transparent" ? "#ffffff" : selected.fillColor ?? "#ffffff"}
+                <ColorInput label={t("master.label.fillColor", "채움")} value={selected.fillColor === "transparent" ? "#ffffff" : selected.fillColor ?? "#ffffff"}
                   onChange={(value) => updateElement(selected.id, { fillColor: value })} />
               )}
             </div>
           </div>
         ) : (
           <div className="h-32 rounded border border-dashed border-border flex items-center justify-center text-sm text-text-muted">
-            캔버스의 객체를 선택하세요.
+            {t("master.label.selectCanvasObject", "캔버스의 객체를 선택하세요.")}
           </div>
         )}
       </section>

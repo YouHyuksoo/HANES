@@ -974,7 +974,43 @@
       "sectionQty": "Nhà cung cấp / Quản lý SL",
       "imageLoadFailed": "Không thể tải hình ảnh",
       "partType": "Loại sản phẩm",
-      "itemCode": "Mã hàng"
+      "itemCode": "Mã hàng",
+      "erpSync": "Đồng bộ ERP",
+      "erpSyncDone": "Đồng bộ hoàn tất — {{insert}} mới, {{update}} cập nhật",
+      "erpSyncFailed": "Đồng bộ thất bại: {{message}}",
+      "daysSuffix": "{{count}} ngày",
+      "deleteConfirmMessage": "Xóa '{{itemCode}} ({{itemName}})'?",
+      "iqcTarget": "Y (Áp dụng)",
+      "iqcNotTarget": "N (Không áp dụng)",
+      "fieldHelp": {
+        "itemCode": "Mã duy nhất nhận diện vật tư trong MES.",
+        "itemNo": "Số part dùng trong bản vẽ, ERP và tài liệu khách hàng.",
+        "itemName": "Tên vật tư dùng để nhận diện tại hiện trường.",
+        "custPartNo": "Số part do khách hàng sử dụng.",
+        "rev": "Bản sửa đổi của bản vẽ hoặc quy cách vật tư.",
+        "markingText": "Nội dung đánh dấu gửi đến nhãn và thiết bị marking.",
+        "itemType": "Phân loại luồng MES như nguyên liệu, bán thành phẩm, thành phẩm.",
+        "productType": "Mã chỉ nhóm vật tư hoặc dòng sản phẩm.",
+        "modelName": "Thuộc tính quản lý vật tư phân biệt mẫu xe.",
+        "spec": "Mô tả bổ sung như quy cách, kích thước vật tư.",
+        "color": "Thông tin màu vật tư như màu dây.",
+        "unit": "Đơn vị cơ bản để diễn giải số lượng.",
+        "iqcYn": "Có áp dụng tiêu chí kiểm tra đầu vào hay không.",
+        "inspectMethod": "Phân biệt phương thức kiểm IQC hoặc miễn kiểm.",
+        "sampleQty": "Số mẫu cơ bản dùng khi kiểm IQC. Khác với cỡ mẫu tính theo AQL.",
+        "iqcAqlPolicyCode": "Mã thông tin chuẩn của chính sách IQC AQL áp dụng cho vật tư.",
+        "useYn": "Có thể tra cứu, chọn và sử dụng hay không.",
+        "boxQty": "Số lượng chuẩn đóng trong một thùng. Chọn bội số 10 hoặc nhập trực tiếp.",
+        "minPackQty": "Số lượng xử lý làm đơn vị tối thiểu khi xuất vật tư.",
+        "lotUnitQty": "Số lượng chuẩn để xử lý bán thành phẩm sản xuất theo đơn vị bó.",
+        "safetyStock": "Số lượng chuẩn dùng để đánh giá thiếu tồn kho.",
+        "expiryDate": "Số ngày hạn sử dụng tính từ nhập kho hoặc sản xuất.",
+        "expiryExtDays": "Số ngày tối đa có thể gia hạn hạn sử dụng sau khi đánh giá chất lượng.",
+        "packUnit": "Cơ sở cấu thành đơn vị pallet hoặc đóng gói cấp trên.",
+        "storageLocation": "Vị trí lưu trữ mặc định cố định theo từng vật tư.",
+        "imageUrl": "Đường dẫn tệp ảnh vật tư.",
+        "remark": "Ghi chú quản lý vật tư."
+      }
     },
     "bom": {
       "title": "Quản lý BOM",
@@ -1022,7 +1058,35 @@
       "selectChildPart": "Vui lòng chọn linh kiện con",
       "seq": "Thứ tự",
       "side": "Mặt",
-      "viewAllRouting": "Xem toàn bộ định tuyến"
+      "viewAllRouting": "Xem toàn bộ định tuyến",
+      "excelUploadTitle": "Tải lên Excel BOM",
+      "uploadWithCount": "Tải lên",
+      "xlsxOnlyHint": "Chỉ có thể tải lên tệp .xlsx",
+      "analyzingFile": "Đang phân tích tệp...",
+      "uploadStatusNew": "Mới",
+      "uploadStatusDuplicateDb": "Trùng DB",
+      "uploadStatusDuplicateFile": "Trùng tệp",
+      "uploadStatusError": "Lỗi",
+      "summaryDuplicate": "Trùng lặp",
+      "duplicateFoundWarning": "Phát hiện {{count}} bản trùng — không thể tải lên.",
+      "duplicateFoundDetail": "Tổ hợp hạng mục trên + hạng mục dưới + ngày áp dụng giống nhau đã tồn tại. Vui lòng sửa tệp và chọn lại.",
+      "colRow": "Dòng",
+      "colParentItem": "Hạng mục trên",
+      "colChildItem": "Hạng mục dưới",
+      "colValidFrom": "Ngày áp dụng",
+      "colMessage": "Thông báo",
+      "resultInserted": "Đã thêm",
+      "resultSkipped": "Đã bỏ qua",
+      "resultError": "Lỗi",
+      "errorDetail": "Chi tiết lỗi",
+      "pageSubtitle": "Chọn cấu trúc BOM sản phẩm/bán thành phẩm, sau đó quản lý định tuyến và vật tư đầu vào theo dòng BOM đã chọn.",
+      "productSemiProductList": "Danh sách sản phẩm/bán thành phẩm",
+      "selectedItemRouting": "Định tuyến hạng mục đã chọn",
+      "selectBomRowPrompt": "Vui lòng chọn dòng BOM",
+      "selectBomRowPromptDot": "Vui lòng chọn dòng BOM.",
+      "noRoutingInfo": "Không có thông tin định tuyến đã đăng ký.",
+      "selectProcessPrompt": "Vui lòng chọn công đoạn.",
+      "noBomData": "Không có dữ liệu BOM."
     },
     "gauge": {
       "title": "Quản lý dụng cụ đo",
@@ -1102,7 +1166,11 @@
       "ipAddress": "Địa chỉ IP",
       "port": "Cổng",
       "remark": "Ghi chú",
-      "remarkPlaceholder": "Nhập ghi chú"
+      "remarkPlaceholder": "Nhập ghi chú",
+      "bomItemTypePart": "Linh kiện",
+      "bomItemTypeConsumable": "Vật tư tiêu hao",
+      "deleteBomLinkConfirm": "Xóa liên kết '{{name}}'?",
+      "commTypeShort": "Giao tiếp"
     },
     "code": {
       "title": "Quản lý mã",
@@ -1125,7 +1193,8 @@
       "codesCount": " mã",
       "detailCodePlaceholder": "Nhập mã",
       "codeNamePlaceholder": "Nhập tên mã",
-      "codeNameEnPlaceholder": "Nhập tên tiếng Anh"
+      "codeNameEnPlaceholder": "Nhập tên tiếng Anh",
+      "preview": "Xem trước"
     },
     "partner": {
       "title": "Quản lý đối tác",
@@ -1277,7 +1346,11 @@
       "stepManageProcess": "Quản lý trình tự công đoạn",
       "stepManageProcessDesc": "Thêm/sửa công đoạn của mặt hàng đã chọn theo thứ tự.",
       "stepSelectItem": "Chọn mặt hàng",
-      "stepSelectItemDesc": "Chọn thành phẩm/bán thành phẩm để đăng ký định tuyến."
+      "stepSelectItemDesc": "Chọn thành phẩm/bán thành phẩm để đăng ký định tuyến.",
+      "bomStructure": "Cấu trúc BOM",
+      "routingNotRegistered": "Định tuyến chưa đăng ký",
+      "noRoutingForItem": "Không có định tuyến đăng ký cho hạng mục đã chọn.",
+      "noProcessForRouting": "Không có công đoạn đăng ký trong định tuyến của hạng mục đã chọn."
     },
     "workCalendar": {
       "title": "Quản lý lịch sản xuất",
@@ -1436,7 +1509,23 @@
       "inspectionType": "Loại kiểm tra",
       "sampleQtyCol": "Số mẫu",
       "defectGrade": "Cấp lỗi",
-      "inspectionLevel": "Mức kiểm tra"
+      "inspectionLevel": "Mức kiểm tra",
+      "selectItemHint": "Vui lòng chọn mặt hàng ở bên trái.",
+      "defaultSampleQty": "Số mẫu mặc định",
+      "destInspection": "Kiểm tra phá hủy",
+      "templateManage": "Tải/Quản lý mẫu",
+      "lsl": "Cận dưới (LSL)",
+      "usl": "Cận trên (USL)",
+      "noInspItems": "Không có hạng mục kiểm tra. Nhấn [Thêm hạng mục] để thêm.",
+      "selectOption": "-- Chọn --",
+      "fixedQtyPlaceholder": "Số cố định",
+      "auto": "Tự động",
+      "lslPlaceholder": "Cận dưới",
+      "uslPlaceholder": "Cận trên",
+      "judgeCriteriaPlaceholder": "Nhập tiêu chí phán định",
+      "confirm": "Xác nhận",
+      "notSelected": "Chưa chọn",
+      "deleteRow": "Xóa dòng"
     },
     "iqcTemplate": {
       "title": "Quản lý mẫu hạng mục IQC",
@@ -1512,7 +1601,8 @@
       "itemTypeMeasure": "Định lượng",
       "spec": "Quy cách",
       "selectPoolItem": "Chọn hạng mục kiểm tra chuẩn",
-      "noPoolForType": "Chưa có hạng mục kiểm tra chuẩn nào được đăng ký cho loại thiết bị / loại kiểm tra này. Vui lòng đăng ký trước trong danh mục hạng mục kiểm tra."
+      "noPoolForType": "Chưa có hạng mục kiểm tra chuẩn nào được đăng ký cho loại thiết bị / loại kiểm tra này. Vui lòng đăng ký trước trong danh mục hạng mục kiểm tra.",
+      "equipTypeEtc": "Khác"
     },
     "equipInspectItem": {
       "title": "Danh mục hạng mục kiểm tra",
@@ -1657,7 +1747,79 @@
       "designOnly": "Chỉ cung cấp thiết kế nhãn",
       "designOnlyHint": "Màn hình này chỉ quản lý thiết kế và mẫu. Việc phát hành thực tế được thực hiện ở từng màn hình nghiệp vụ.",
       "matLotDesignHint": "Thiết lập thiết kế và lưu thành mẫu. Việc phát hành được thực hiện ở Quản lý vật tư > Phát hành nhãn nhập kho.",
-      "matLotDesignOnly": "Chỉ thiết kế nhãn lô vật tư"
+      "matLotDesignOnly": "Chỉ thiết kế nhãn lô vật tư",
+      "sourceAndObjects": "Nguồn & Đối tượng",
+      "sourceTable": "Bảng nguồn",
+      "elemText": "Chữ",
+      "elemBarcode": "Mã vạch",
+      "elemBox": "Hộp",
+      "elemLine": "Đường kẻ",
+      "elemCircle": "Hình tròn",
+      "elemImage": "Hình ảnh",
+      "elem1d": "1D",
+      "elem2d": "2D",
+      "srcEquipment": "Thiết bị",
+      "srcConsumable": "Vật tư tiêu hao",
+      "srcWorker": "Công nhân",
+      "srcMatLot": "LOT vật tư",
+      "srcBox": "Đóng gói sản phẩm",
+      "fieldsHint": "Trường (nhấp để thêm chữ)",
+      "addFieldTextObject": "Thêm đối tượng chữ '{{label}}'",
+      "designCanvas": "Canvas thiết kế",
+      "designCanvasHint": "Kéo đối tượng để di chuyển và dùng điểm neo góc để chỉnh kích thước.",
+      "objectProps": "Thuộc tính đối tượng",
+      "noSelection": "Chưa chọn",
+      "sourceField": "Trường nguồn",
+      "fixedText": "Văn bản cố định",
+      "fontSizeMm": "Cỡ chữ (mm)",
+      "fontWeight": "Độ đậm",
+      "align": "Căn lề",
+      "barcodeType": "Loại mã vạch",
+      "defaultImageUrl": "URL hình ảnh mặc định",
+      "lineWidthMm": "Độ dày đường (mm)",
+      "lineTextColor": "Đường/Chữ",
+      "fillColor": "Tô màu",
+      "selectCanvasObject": "Hãy chọn một đối tượng trên canvas.",
+      "field": {
+        "equipment": {
+          "equipCode": "Mã thiết bị",
+          "equipName": "Tên thiết bị",
+          "equipType": "Loại thiết bị",
+          "lineCode": "Chuyền",
+          "plant": "Nhà máy"
+        },
+        "consumable": {
+          "conUid": "UID vật tư",
+          "consumableCode": "Mã vật tư",
+          "consumableName": "Tên vật tư",
+          "category": "Phân loại",
+          "location": "Vị trí lưu trữ",
+          "imageUrl": "URL hình ảnh"
+        },
+        "worker": {
+          "workerCode": "Mã công nhân",
+          "workerName": "Tên công nhân",
+          "dept": "Bộ phận",
+          "phone": "Liên hệ"
+        },
+        "mat_lot": {
+          "matUid": "UID vật tư",
+          "itemCode": "Mã hạng mục",
+          "itemName": "Tên hạng mục",
+          "qty": "Số lượng",
+          "unit": "Đơn vị",
+          "vendor": "Nhà cung cấp",
+          "lotNo": "Số LOT"
+        },
+        "box": {
+          "boxNo": "Số hộp",
+          "itemCode": "Mã sản phẩm",
+          "itemName": "Tên sản phẩm",
+          "qty": "Số lượng",
+          "boxQty": "SL mỗi hộp",
+          "palletNo": "Số pallet"
+        }
+      }
     },
     "company": {
       "title": "Quản lý công ty",
@@ -1707,6 +1869,16 @@
       "createSuccess": "Tạo ánh xạ mã vạch thành công.",
       "updateSuccess": "Cập nhật ánh xạ mã vạch thành công.",
       "deleteSuccess": "Xóa ánh xạ mã vạch thành công."
+    },
+    "iqcPartSpec": {
+      "aqlCriteria": "Tiêu chuẩn AQL",
+      "lotQtyPreview": "Xem trước số lượng LOT",
+      "aqlPolicy": "Chính sách AQL",
+      "defaultSampleQty": "Số mẫu mặc định",
+      "sampleQty": "Số lượng mẫu",
+      "inspItemCriteria": "Tiêu chuẩn hạng mục kiểm tra",
+      "destFixed": "Phá hủy/Cố định",
+      "countCases": "{{count}}"
     }
   },
   "material": {
@@ -6847,5 +7019,25 @@
     "statusDone": "Hoàn thành",
     "noScreenshot": "Không có ảnh chụp",
     "capturing": "Đang chụp màn hình..."
+  },
+  "selfInspect": {
+    "typeVisual": "Đánh giá",
+    "typeMeasure": "Đo lường",
+    "methodDirect": "Kiểm tra trực tiếp",
+    "methodDelegate": "Kiểm tra ủy thác",
+    "sampleCount": "Số mẫu",
+    "destructive": "Phá hủy",
+    "timing": "Thời điểm",
+    "timingFirst": "Sản phẩm đầu",
+    "timingMid": "Sản phẩm giữa",
+    "timingLast": "Sản phẩm cuối",
+    "sortOrder": "Thứ tự",
+    "useY": "Sử dụng",
+    "useN": "Không sử dụng",
+    "itemNameRequired": "Vui lòng nhập tên hạng mục",
+    "addItem": "Thêm hạng mục",
+    "noItems": "Chưa có hạng mục tự kiểm tra",
+    "itemName": "Tên hạng mục",
+    "standard": "Tiêu chuẩn/Quy cách (tùy chọn)"
   }
 }

@@ -35,9 +35,9 @@ interface Props {
 }
 
 const MATCH_TYPE_OPTIONS = [
-  { value: "EXACT", label: "정확 일치" },
-  { value: "PREFIX", label: "접두사" },
-  { value: "REGEX", label: "정규식" },
+  { value: "EXACT", labelKey: "master.vendorBarcode.matchExact", labelFallback: "정확 일치" },
+  { value: "PREFIX", labelKey: "master.vendorBarcode.matchPrefix", labelFallback: "접두사" },
+  { value: "REGEX", labelKey: "master.vendorBarcode.matchRegex", labelFallback: "정규식" },
 ];
 
 export type { VendorBarcodeMapping };
@@ -117,7 +117,8 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
               <Input label={t("master.vendorBarcode.vendorBarcode", "제조사 바코드")}
                 value={form.vendorBarcode} onChange={e => setField("vendorBarcode", e.target.value)} fullWidth required />
             </div>
-            <Select label={t("master.vendorBarcode.matchType", "매칭 유형")} options={MATCH_TYPE_OPTIONS}
+            <Select label={t("master.vendorBarcode.matchType", "매칭 유형")}
+              options={MATCH_TYPE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey, o.labelFallback) }))}
               value={form.matchType} onChange={v => setField("matchType", v)} fullWidth />
             <Select label={t("master.vendorBarcode.useYn", "사용여부")}
               options={[{ value: "Y", label: "Y" }, { value: "N", label: "N" }]}

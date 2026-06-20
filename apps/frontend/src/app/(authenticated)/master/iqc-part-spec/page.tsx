@@ -169,13 +169,13 @@ export default function IqcPartSpecPage() {
             <div className="flex-shrink-0 rounded-lg border border-border bg-bg px-4 py-3" data-iqc-part-aql-summary>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-text">AQL 기준</div>
+                  <div className="text-sm font-semibold text-text">{t("master.iqcPartSpec.aqlCriteria", "AQL 기준")}</div>
                   <div className="mt-0.5 text-xs text-text-muted">
                     {selectedPart.itemCode} · {selectedPart.itemName}
                   </div>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-text-muted">
-                  <span className="whitespace-nowrap">LOT 수량 미리보기</span>
+                  <span className="whitespace-nowrap">{t("master.iqcPartSpec.lotQtyPreview", "LOT 수량 미리보기")}</span>
                   <input
                     type="number"
                     min={1}
@@ -187,21 +187,21 @@ export default function IqcPartSpecPage() {
               </div>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">AQL 정책</div>
+                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.aqlPolicy", "AQL 정책")}</div>
                   <div className="mt-1 text-sm font-semibold text-text">{selectedPart.iqcAqlPolicyCode || "-"}</div>
                 </div>
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">기본시료수</div>
+                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.defaultSampleQty", "기본시료수")}</div>
                   <div className="mt-1 text-sm font-semibold text-text tabular-nums">{renderAqlValue(selectedPart.sampleQty)}</div>
                 </div>
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">검사수준</div>
+                  <div className="text-[11px] text-text-muted">{t("master.iqcItem.inspectionLevel", "검사수준")}</div>
                   <div className="mt-1 text-sm font-semibold text-text">
                     {aqlPreviewLoading ? "..." : (aqlPreview?.inspectionLevel ?? "-")}
                   </div>
                 </div>
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">샘플수량</div>
+                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.sampleQty", "샘플수량")}</div>
                   <div className="mt-1 text-sm font-semibold text-text tabular-nums">
                     {aqlPreviewLoading ? "..." : (aqlPreview?.sampleQty ?? "-")}
                   </div>
@@ -219,15 +219,15 @@ export default function IqcPartSpecPage() {
                   </div>
                 </div>
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">검사항목 기준</div>
+                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.inspItemCriteria", "검사항목 기준")}</div>
                   <div className="mt-1 text-sm font-semibold text-text tabular-nums">
-                    {aqlPreviewLoading ? "..." : `${itemSpecSummary.total}건`}
+                    {aqlPreviewLoading ? "..." : t("master.iqcPartSpec.countCases", "{{count}}건", { count: itemSpecSummary.total })}
                   </div>
                 </div>
                 <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">파괴/고정</div>
+                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.destFixed", "파괴/고정")}</div>
                   <div className="mt-1 text-sm font-semibold text-text tabular-nums">
-                    {aqlPreviewLoading ? "..." : `${itemSpecSummary.fixed}건`}
+                    {aqlPreviewLoading ? "..." : t("master.iqcPartSpec.countCases", "{{count}}건", { count: itemSpecSummary.fixed })}
                   </div>
                 </div>
               </div>

@@ -166,10 +166,10 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Button size="sm" variant="ghost" onClick={handleExport}>
-            <Download className="w-4 h-4 mr-1" />내보내기
+            <Download className="w-4 h-4 mr-1" />{t("common.export")}
           </Button>
           {!compact && <Button size="sm" variant="ghost" onClick={() => setUploadModalOpen(true)}>
-            <Upload className="w-4 h-4 mr-1" />엑셀 업로드
+            <Upload className="w-4 h-4 mr-1" />{t("master.bom.excelUpload")}
           </Button>}
           <Button size="sm" onClick={() => { setEditingBom(null); setIsModalOpen(true); }}>
             <Plus className="w-4 h-4 mr-1" />{t("master.bom.addBom")}
@@ -198,7 +198,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
             {loading ? (
               <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">{t("common.loading")}</td></tr>
             ) : treeWithRoot.length === 0 ? (
-              <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">BOM 데이터가 없습니다.</td></tr>
+              <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">{t("master.bom.noBomData", "BOM 데이터가 없습니다.")}</td></tr>
             ) : (
               <BomTreeRows items={treeWithRoot} expanded={expanded} onToggle={toggleExpand}
                 onEdit={handleEdit} onDelete={setDeletingBom} onViewRouting={handleViewRouting}

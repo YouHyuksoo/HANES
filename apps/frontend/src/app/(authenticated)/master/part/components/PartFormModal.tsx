@@ -44,8 +44,8 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
   ], [t]);
 
   const iqcOptions = [
-    { value: "Y", label: "Y (대상)" },
-    { value: "N", label: "N (비대상)" },
+    { value: "Y", label: t("master.part.iqcTarget", "Y (대상)") },
+    { value: "N", label: t("master.part.iqcNotTarget", "N (비대상)") },
   ];
 
   const { options: rawLocationOptions, isLoading: locationLoading } = useLocationOptions();

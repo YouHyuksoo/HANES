@@ -38,6 +38,30 @@ export class IqcTemplateItem {
   @Column({ name: 'JUDGE_CRITERIA', type: 'varchar2', length: 500, nullable: true })
   judgeCriteria: string | null;
 
+  /** 불량등급: CRITICAL/MAJOR/MINOR (DEFECT_GRADE 공통코드) */
+  @Column({ name: 'DEFECT_GRADE', type: 'varchar2', length: 10, nullable: true })
+  defectGrade: string | null;
+
+  /** ISO 2859-1 검사수준 (AQL_INSP_LEVEL 공통코드) */
+  @Column({ name: 'INSPECTION_LEVEL', type: 'varchar2', length: 5, nullable: true })
+  inspectionLevel: string | null;
+
+  /** 합격품질수준 AQL (AQL_VALUE 공통코드) */
+  @Column({ name: 'AQL', type: 'decimal', precision: 7, scale: 3, nullable: true })
+  aql: number | null;
+
+  /** 검사유형 AQL/DESTRUCTIVE/FULL (IQC_ITEM_INSP_TYPE). NULL=AQL로 간주 */
+  @Column({ name: 'INSPECTION_TYPE', type: 'varchar2', length: 12, nullable: true })
+  inspectionType: string | null;
+
+  /** 샘플방식 AQL(자동)/FIXED(고정) (IQC_SAMPLE_METHOD). NULL=AQL */
+  @Column({ name: 'SAMPLE_METHOD', type: 'varchar2', length: 8, nullable: true })
+  sampleMethod: string | null;
+
+  /** FIXED/DESTRUCTIVE 고정 샘플수(LOT당) */
+  @Column({ name: 'SAMPLE_QTY', type: 'decimal', precision: 10, scale: 0, nullable: true })
+  sampleQty: number | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

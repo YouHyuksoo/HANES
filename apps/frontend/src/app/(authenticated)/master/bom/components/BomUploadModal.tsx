@@ -39,11 +39,11 @@ interface BomUploadModalProps {
 
 type Stage = "idle" | "previewing" | "previewed" | "uploading" | "done";
 
-const STATUS_STYLES: Record<PreviewRow["status"], { bg: string; label: string; icon: React.ReactNode }> = {
-  new: { bg: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300", label: "신규", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-  duplicate_db: { bg: "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300", label: "DB중복", icon: <XCircle className="w-3.5 h-3.5" /> },
-  duplicate_file: { bg: "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300", label: "파일중복", icon: <XCircle className="w-3.5 h-3.5" /> },
-  error: { bg: "bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400", label: "오류", icon: <AlertCircle className="w-3.5 h-3.5" /> },
+const STATUS_STYLES: Record<PreviewRow["status"], { bg: string; labelKey: string; labelFallback: string; icon: React.ReactNode }> = {
+  new: { bg: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300", labelKey: "master.bom.uploadStatusNew", labelFallback: "신규", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  duplicate_db: { bg: "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300", labelKey: "master.bom.uploadStatusDuplicateDb", labelFallback: "DB중복", icon: <XCircle className="w-3.5 h-3.5" /> },
+  duplicate_file: { bg: "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300", labelKey: "master.bom.uploadStatusDuplicateFile", labelFallback: "파일중복", icon: <XCircle className="w-3.5 h-3.5" /> },
+  error: { bg: "bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400", labelKey: "master.bom.uploadStatusError", labelFallback: "오류", icon: <AlertCircle className="w-3.5 h-3.5" /> },
 };
 
 export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploadModalProps) {
@@ -126,18 +126,18 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="BOM 엑셀 업로드"
+      title={t("master.bom.excelUploadTitle", "BOM 엑셀 업로드")}
       size="xl"
       footer={
         <>
           {stage === "previewed" && !hasDuplicates && (
             <Button size="sm" onClick={handleUpload} disabled={!canUpload} isLoading={false}>
               <Upload className="w-4 h-4 mr-1" />
-              업로드 ({preview?.newCount ?? 0}건)
+              {t("master.bom.uploadWithCount", "업로드")} ({preview?.newCount ?? 0}{t("common.count", "건")})
             </Button>
           )}
           {stage === "done" && (
-            <Button size="sm" onClick={handleClose}>닫기</Button>
+            <Button size="sm" onClick={handleClose}>{t("common.close")}</Button>
           )}
           <Button variant="ghost" size="sm" onClick={handleClose}>{t("common.close")}</Button>
         </>
@@ -153,14 +153,14 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
           disabled={stage === "previewing" || stage === "uploading"}
           className="block w-full text-sm text-text file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
         />
-        <p className="text-xs text-text-muted mt-1">.xlsx 파일만 업로드 가능합니다</p>
+        <p className="text-xs text-text-muted mt-1">{t("master.bom.xlsxOnlyHint", ".xlsx 파일만 업로드 가능합니다")}</p>
       </div>
 
       {/* 로딩 */}
       {stage === "previewing" && (
         <div className="flex items-center justify-center gap-2 py-10 text-text-muted">
           <FileSpreadsheet className="w-5 h-5 animate-pulse text-primary" />
-          <span className="text-sm">파일 분석 중...</span>
+          <span className="text-sm">{t("master.bom.analyzingFile", "파일 분석 중...")}</span>
         </div>
       )}
 
@@ -169,9 +169,9 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
         <div className="space-y-3">
           {/* 요약 배지 */}
           <div className="flex items-center gap-2 flex-wrap">
-            <SummaryBadge label="신규" count={preview.newCount} color="emerald" />
-            <SummaryBadge label="중복" count={preview.duplicateCount} color="red" />
-            <SummaryBadge label="오류" count={preview.errorCount} color="gray" />
+            <SummaryBadge label={t("master.bom.uploadStatusNew", "신규")} count={preview.newCount} color="emerald" />
+            <SummaryBadge label={t("master.bom.summaryDuplicate", "중복")} count={preview.duplicateCount} color="red" />
+            <SummaryBadge label={t("master.bom.uploadStatusError", "오류")} count={preview.errorCount} color="gray" />
           </div>
 
           {/* 중복 경고 배너 */}
@@ -179,8 +179,8 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
             <div className="flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2.5 text-sm text-red-700 dark:text-red-300">
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <div>
-                <span className="font-semibold">중복 {preview.duplicateCount}건 발견 — 업로드할 수 없습니다.</span>
-                <p className="text-xs mt-0.5 opacity-80">동일한 상위품목+하위품목+적용일자 조합이 이미 존재합니다. 파일을 수정 후 다시 선택하세요.</p>
+                <span className="font-semibold">{t("master.bom.duplicateFoundWarning", { count: preview.duplicateCount, defaultValue: "중복 {{count}}건 발견 — 업로드할 수 없습니다." })}</span>
+                <p className="text-xs mt-0.5 opacity-80">{t("master.bom.duplicateFoundDetail", "동일한 상위품목+하위품목+적용일자 조합이 이미 존재합니다. 파일을 수정 후 다시 선택하세요.")}</p>
               </div>
             </div>
           )}
@@ -191,12 +191,12 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-surface dark:bg-gray-800 border-b border-border">
                   <tr className="text-text-muted">
-                    <th className="px-2 py-2 text-center w-12">행</th>
-                    <th className="px-2 py-2 text-left">상위품목</th>
-                    <th className="px-2 py-2 text-left">하위품목</th>
-                    <th className="px-2 py-2 text-center w-24">적용일자</th>
-                    <th className="px-2 py-2 text-center w-8">수량</th>
-                    <th className="px-2 py-2 text-center w-20">상태</th>
+                    <th className="px-2 py-2 text-center w-12">{t("master.bom.colRow", "행")}</th>
+                    <th className="px-2 py-2 text-left">{t("master.bom.colParentItem", "상위품목")}</th>
+                    <th className="px-2 py-2 text-left">{t("master.bom.colChildItem", "하위품목")}</th>
+                    <th className="px-2 py-2 text-center w-24">{t("master.bom.colValidFrom", "적용일자")}</th>
+                    <th className="px-2 py-2 text-center w-8">{t("common.quantity", "수량")}</th>
+                    <th className="px-2 py-2 text-center w-20">{t("common.status", "상태")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,7 +211,7 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
                         <td className="px-2 py-1.5 text-center">{r.qtyPer ?? "-"}</td>
                         <td className="px-2 py-1.5 text-center">
                           <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium ${s.bg}`} title={r.message}>
-                            {s.icon}{s.label}
+                            {s.icon}{t(s.labelKey, s.labelFallback)}
                           </span>
                         </td>
                       </tr>
@@ -228,21 +228,21 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
       {stage === "done" && result && (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
-            <StatCard label="추가" value={result.inserted} color="emerald" />
-            <StatCard label="스킵" value={result.skipped} color="amber" />
-            <StatCard label="에러" value={result.errors.length} color="red" />
+            <StatCard label={t("master.bom.resultInserted", "추가")} value={result.inserted} color="emerald" />
+            <StatCard label={t("master.bom.resultSkipped", "스킵")} value={result.skipped} color="amber" />
+            <StatCard label={t("master.bom.resultError", "에러")} value={result.errors.length} color="red" />
           </div>
           {result.errors.length > 0 && (
             <div className="border border-red-200 dark:border-red-800 rounded overflow-hidden">
               <div className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm font-medium">
-                <AlertCircle className="w-4 h-4" />에러 상세
+                <AlertCircle className="w-4 h-4" />{t("master.bom.errorDetail", "에러 상세")}
               </div>
               <div className="max-h-48 overflow-y-auto min-h-0">
                 <table className="w-full text-sm">
                   <thead className="bg-surface sticky top-0">
                     <tr>
-                      <th className="px-3 py-1.5 text-left text-text-muted font-medium w-20">행</th>
-                      <th className="px-3 py-1.5 text-left text-text-muted font-medium">메시지</th>
+                      <th className="px-3 py-1.5 text-left text-text-muted font-medium w-20">{t("master.bom.colRow", "행")}</th>
+                      <th className="px-3 py-1.5 text-left text-text-muted font-medium">{t("master.bom.colMessage", "메시지")}</th>
                     </tr>
                   </thead>
                   <tbody>

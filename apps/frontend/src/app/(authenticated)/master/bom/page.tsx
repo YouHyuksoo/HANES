@@ -157,7 +157,7 @@ export default function BomPage() {
             {t("master.bom.title")}
           </h1>
           <p className="text-sm text-text-muted mt-0.5">
-            제품/반제품 BOM 구조를 선택하고, 선택된 BOM 행 기준으로 라우팅과 투입자재를 관리합니다. ({filteredParents.length}건)
+            {t("master.bom.pageSubtitle", "제품/반제품 BOM 구조를 선택하고, 선택된 BOM 행 기준으로 라우팅과 투입자재를 관리합니다.")} ({filteredParents.length}{t("common.count", "건")})
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ export default function BomPage() {
         <div className="col-span-3 flex flex-col min-h-0">
           <Card padding="none" className="flex-1 flex flex-col min-h-0">
             <CardContent className="flex-1 flex flex-col min-h-0 p-3">
-              <div className="text-sm font-semibold text-text mb-2 shrink-0">제품/반제품 목록</div>
+              <div className="text-sm font-semibold text-text mb-2 shrink-0">{t("master.bom.productSemiProductList", "제품/반제품 목록")}</div>
               <Input
                 placeholder={t("master.bom.searchPlaceholder")}
                 value={searchText}
@@ -303,10 +303,10 @@ export default function BomPage() {
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-text flex items-center gap-1.5">
                     <GitBranch className="w-4 h-4 text-primary" />
-                    선택 품목 라우팅
+                    {t("master.bom.selectedItemRouting", "선택 품목 라우팅")}
                   </div>
                   <div className="text-xs text-text-muted truncate">
-                    {selectedBomItem ? `${selectedBomItem.itemCode} - ${selectedBomItem.itemName}` : "BOM 행을 선택하세요"}
+                    {selectedBomItem ? `${selectedBomItem.itemCode} - ${selectedBomItem.itemName}` : t("master.bom.selectBomRowPrompt", "BOM 행을 선택하세요")}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -336,7 +336,7 @@ export default function BomPage() {
                   </div>
                 ) : processes.length === 0 ? (
                   <div className="py-10 text-center text-sm text-text-muted">
-                    {selectedBomItem ? "등록된 라우팅 정보가 없습니다." : "BOM 행을 선택하세요."}
+                    {selectedBomItem ? t("master.bom.noRoutingInfo", "등록된 라우팅 정보가 없습니다.") : t("master.bom.selectBomRowPromptDot", "BOM 행을 선택하세요.")}
                   </div>
                 ) : (
                   <table className="w-full text-xs">
@@ -409,7 +409,7 @@ export default function BomPage() {
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full text-text-muted text-sm">
-                  {selectedBomItem ? "공정을 선택하세요." : "BOM 행을 선택하세요."}
+                  {selectedBomItem ? t("master.bom.selectProcessPrompt", "공정을 선택하세요.") : t("master.bom.selectBomRowPromptDot", "BOM 행을 선택하세요.")}
                 </div>
               )}
             </CardContent>

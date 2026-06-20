@@ -10,8 +10,9 @@
  * 4. [저장] 한 번에 POST /master/iqc-part-specs
  */
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Save, ClipboardList, Pencil, Check, X } from "lucide-react";
-import { Button, Card, CardContent, ComCodeBadge } from "@/components/ui";
+import { Button, ComCodeBadge } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import type { IqcPoolItem, IqcPartSpec, IqcSpecRow } from "../types";
 import IqcTemplatePickerModal from "./IqcTemplatePickerModal";
@@ -32,6 +33,7 @@ const EMPTY_SPEC: IqcPartSpec = {
 };
 
 export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
+  const { t } = useTranslation();
   const [spec, setSpec] = useState<IqcPartSpec>(EMPTY_SPEC);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -230,96 +232,83 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
   if (!itemCode) {
     return (
       <div className="h-full flex items-center justify-center text-text-muted text-sm">
-        좌측에서 품목을 선택하세요.
+        {t("master.iqcItem.selectItemHint", "좌측에서 품목을 선택하세요.")}
       </div>
     );
   }
 
   return (
     <div className="h-full flex flex-col gap-4 overflow-hidden">
-      {/* 헤더 카드 */}
-      <Card>
-        <CardContent className="py-3">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="font-semibold text-text min-w-0 truncate max-w-xs">
-              {itemName}
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-text-muted whitespace-nowrap">기본 시료수</label>
-              <input
-                type="number"
-                min={1}
-                value={spec.sampleQty}
-                onChange={(e) => updateHeader('sampleQty', Number(e.target.value))}
-                className="w-20 border border-border rounded px-2 py-1 text-sm bg-bg text-text"
-              />
-              <span className="text-sm text-text-muted">개</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-text-muted whitespace-nowrap">파괴검사</label>
-              <button
-                onClick={() => updateHeader('isDest', spec.isDest === 'Y' ? 'N' : 'Y')}
-                className={`px-3 py-1 rounded text-sm font-medium border transition-colors ${
-                  spec.isDest === 'Y'
-                    ? 'bg-red-600 text-white border-red-600'
-                    : 'bg-bg text-text-muted border-border hover:border-text-muted'
-                }`}
-              >
-                {spec.isDest === 'Y' ? '파괴' : '비파괴'}
-              </button>
-            </div>
-            <div className="ml-auto">
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={saving || !dirty}
-                className="flex items-center gap-1"
-              >
-                <Save className="w-4 h-4" />
-                {saving ? '저장 중…' : '저장'}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 검사항목 DataGrid */}
+      {/* 검사항목 DataGrid (헤더 컨트롤을 툴바에 통합) */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden border border-border rounded-lg bg-bg">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-          <span className="text-sm font-medium text-text">검사항목</span>
+        <div className="flex items-center gap-x-4 gap-y-2 flex-wrap px-4 py-2 border-b border-border">
+          <span className="text-sm font-medium text-text">{t("master.iqcItem.inspItem", "검사항목")}</span>
           <div className="flex items-center gap-2">
+            <label className="text-sm text-text-muted whitespace-nowrap">{t("master.iqcItem.defaultSampleQty", "기본 시료수")}</label>
+            <input
+              type="number"
+              min={1}
+              value={spec.sampleQty}
+              onChange={(e) => updateHeader('sampleQty', Number(e.target.value))}
+              className="w-16 border border-border rounded px-2 py-1 text-sm bg-bg text-text"
+            />
+            <span className="text-sm text-text-muted">{t("master.iqcTemplate.itemsUnit", "개")}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-text-muted whitespace-nowrap">{t("master.iqcItem.destInspection", "파괴검사")}</label>
+            <button
+              onClick={() => updateHeader('isDest', spec.isDest === 'Y' ? 'N' : 'Y')}
+              className={`px-3 py-1 rounded text-sm font-medium border transition-colors ${
+                spec.isDest === 'Y'
+                  ? 'bg-red-600 text-white border-red-600'
+                  : 'bg-bg text-text-muted border-border hover:border-text-muted'
+              }`}
+            >
+              {spec.isDest === 'Y' ? t("master.iqcItem.destructive", "파괴") : t("master.iqcItem.nonDestructive", "비파괴")}
+            </button>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setTemplateOpen(true)} className="flex items-center gap-1">
               <ClipboardList className="w-3.5 h-3.5" />
-              템플릿 불러오기/관리
+              {t("master.iqcItem.templateManage", "템플릿 불러오기/관리")}
             </Button>
             <Button size="sm" variant="outline" onClick={addRow} className="flex items-center gap-1">
               <Plus className="w-3.5 h-3.5" />
-              항목 추가
+              {t("master.iqcItem.addItem", "항목 추가")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || !dirty}
+              className="flex items-center gap-1"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? t("common.saving", "저장 중…") : t("common.save", "저장")}
             </Button>
           </div>
         </div>
 
         {loading ? (
           <div className="flex-1 flex items-center justify-center text-text-muted text-sm">
-            불러오는 중…
+            {t("common.loading", "불러오는 중…")}
           </div>
         ) : (
           <div className="flex-1 overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-bg-elevated border-b border-border">
+            <table className="w-full text-sm [&_th]:border-r [&_td]:border-r [&_th]:border-border/60 [&_td]:border-border/60 [&_tr>*:last-child]:border-r-0">
+              <thead className="sticky top-0 bg-primary/10 border-b border-primary/30">
                 <tr>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-10">순서</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium">검사항목</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">종류</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">검사유형</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">샘플수</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">불량등급</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">검사수준</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-10">{t("master.iqcItem.seq", "순서")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium">{t("master.iqcItem.inspItem", "검사항목")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">{t("master.iqcItem.type", "종류")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.inspectionType", "검사유형")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">{t("master.iqcItem.sampleQtyCol", "샘플수")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.defectGrade", "불량등급")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">{t("master.iqcItem.inspectionLevel", "검사수준")}</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-20">AQL</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">하한(LSL)</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">상한(USL)</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium">판정기준</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-14">단위</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.lsl", "하한(LSL)")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.usl", "상한(USL)")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium">{t("master.iqcItem.judgeCriteria", "판정기준")}</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-14">{t("common.unit", "단위")}</th>
                   <th className="px-3 py-2 w-20"></th>
                 </tr>
               </thead>
@@ -327,7 +316,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                 {spec.items.length === 0 && (
                   <tr>
                     <td colSpan={13} className="py-8 text-center text-text-muted text-sm">
-                      검사항목이 없습니다. [항목 추가]를 눌러 추가하세요.
+                      {t("master.iqcItem.noInspItems", "검사항목이 없습니다. [항목 추가]를 눌러 추가하세요.")}
                     </td>
                   </tr>
                 )}
@@ -346,7 +335,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             onChange={(e) => updateDraft('inspItemCode', e.target.value)}
                             className="w-full border border-border rounded px-2 py-1 bg-surface text-text text-sm focus:border-primary focus:outline-none"
                           >
-                            <option value="">-- 선택 --</option>
+                            <option value="">{t("master.iqcItem.selectOption", "-- 선택 --")}</option>
                             {poolItems.filter((p) => p.useYn === 'Y').map((p) => (
                               <option key={p.inspItemCode} value={p.inspItemCode}>
                                 {p.inspItemCode} {p.inspItemName}
@@ -361,7 +350,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                                 ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300'
                                 : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
                             }`}>
-                              {isMeasure ? '측정형' : '판정형'}
+                              {isMeasure ? t("master.iqcItem.typeMeasure", "측정형") : t("master.iqcItem.typeVisual", "판정형")}
                             </span>
                           ) : <span className="text-text-muted text-xs">-</span>}
                         </td>
@@ -384,9 +373,9 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               value={draft.sampleQty ?? ''}
                               onChange={(e) => updateDraft('sampleQty', e.target.value === '' ? null : Number(e.target.value))}
                               className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
-                              placeholder="고정수"
+                              placeholder={t("master.iqcItem.fixedQtyPlaceholder", "고정수")}
                             />
-                          ) : <span className="text-text-muted text-xs">자동</span>}
+                          ) : <span className="text-text-muted text-xs">{t("master.iqcItem.auto", "자동")}</span>}
                         </td>
                         <td className="px-3 py-2">
                           <select
@@ -431,7 +420,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               value={draft.lsl ?? ''}
                               onChange={(e) => updateDraft('lsl', e.target.value === '' ? null : Number(e.target.value))}
                               className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
-                              placeholder="하한"
+                              placeholder={t("master.iqcItem.lslPlaceholder", "하한")}
                             />
                           ) : <span className="text-text-muted text-xs">-</span>}
                         </td>
@@ -442,7 +431,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               value={draft.usl ?? ''}
                               onChange={(e) => updateDraft('usl', e.target.value === '' ? null : Number(e.target.value))}
                               className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
-                              placeholder="상한"
+                              placeholder={t("master.iqcItem.uslPlaceholder", "상한")}
                             />
                           ) : <span className="text-text-muted text-xs">-</span>}
                         </td>
@@ -451,7 +440,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             type="text"
                             value={draft.judgeCriteria ?? ''}
                             onChange={(e) => updateDraft('judgeCriteria', e.target.value === '' ? null : e.target.value)}
-                            placeholder="판정기준 입력"
+                            placeholder={t("master.iqcItem.judgeCriteriaPlaceholder", "판정기준 입력")}
                             className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
                           />
                         </td>
@@ -461,18 +450,18 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             <button
                               onClick={confirmEdit}
                               className="flex items-center gap-0.5 rounded bg-primary px-2 py-1 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
-                              title="확인"
+                              title={t("master.iqcItem.confirm", "확인")}
                             >
                               <Check className="w-3.5 h-3.5" />
-                              확인
+                              {t("master.iqcItem.confirm", "확인")}
                             </button>
                             <button
                               onClick={cancelEdit}
                               className="flex items-center gap-0.5 rounded border border-border px-2 py-1 text-xs text-text-muted hover:text-text transition-colors"
-                              title="취소"
+                              title={t("common.cancel", "취소")}
                             >
                               <X className="w-3.5 h-3.5" />
-                              취소
+                              {t("common.cancel", "취소")}
                             </button>
                           </div>
                         </td>
@@ -484,7 +473,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                     <tr key={idx} className="border-b border-border hover:bg-bg-elevated transition-colors">
                       <td className="px-3 py-2 text-text-muted text-center">{row.seq}</td>
                       <td className="px-3 py-2 font-medium text-text">
-                        {row.inspItemName || row.inspItemCode || <span className="text-text-muted italic">미선택</span>}
+                        {row.inspItemName || row.inspItemCode || <span className="text-text-muted italic">{t("master.iqcItem.notSelected", "미선택")}</span>}
                         {row.inspItemCode && (
                           <span className="ml-1.5 text-xs text-text-muted">({row.inspItemCode})</span>
                         )}
@@ -496,7 +485,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300'
                               : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
                           }`}>
-                            {row.judgeMethod === 'MEASURE' ? '측정형' : '판정형'}
+                            {row.judgeMethod === 'MEASURE' ? t("master.iqcItem.typeMeasure", "측정형") : t("master.iqcItem.typeVisual", "판정형")}
                           </span>
                         ) : <span className="text-text-muted text-xs">-</span>}
                       </td>
@@ -508,11 +497,11 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                       <td className="px-3 py-2 text-right tabular-nums text-text">
                         {(row.inspectionType === 'DESTRUCTIVE' || row.inspectionType === 'FULL')
                           ? (row.sampleQty ?? <span className="text-text-muted text-xs">-</span>)
-                          : <span className="text-text-muted text-xs">자동</span>}
+                          : <span className="text-text-muted text-xs">{t("master.iqcItem.auto", "자동")}</span>}
                       </td>
                       <td className="px-3 py-2">
                         {row.defectGrade
-                          ? <ComCodeBadge groupCode="DEFECT_GRADE" code={row.defectGrade} />
+                          ? <ComCodeBadge groupCode="DEFECT_GRADE" code={row.defectGrade} className="!rounded px-2.5 py-1" />
                           : <span className="text-text-muted text-xs">-</span>}
                       </td>
                       <td className="px-3 py-2 text-text font-medium">
@@ -539,16 +528,16 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             onClick={() => startEdit(idx)}
                             disabled={editingIdx !== -1}
                             className="flex items-center gap-0.5 rounded border border-border px-2 py-1 text-xs text-text-muted hover:border-primary hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            title="수정"
+                            title={t("common.edit", "수정")}
                           >
                             <Pencil className="w-3 h-3" />
-                            수정
+                            {t("common.edit", "수정")}
                           </button>
                           <button
                             onClick={() => removeRow(idx)}
                             disabled={editingIdx !== -1}
                             className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-1"
-                            aria-label="행 삭제"
+                            aria-label={t("master.iqcItem.deleteRow", "행 삭제")}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

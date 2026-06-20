@@ -24,6 +24,12 @@ export class HarnessCircuitSpecDto {
   @MaxLength(100)
   wireSpec?: string;
 
+  @ApiPropertyOptional({ description: 'BOM 전선 품목 코드', example: 'WIRE-VSF-075-BL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  wireItemCode?: string;
+
   @ApiPropertyOptional({ description: '전선 크기', example: '26' })
   @IsOptional()
   @IsString()

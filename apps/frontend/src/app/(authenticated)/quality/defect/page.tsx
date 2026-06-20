@@ -166,17 +166,21 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
           enableExport
           exportFileName={t("quality.defect.title")}
           toolbarLeft={
-            <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
-              <div className="flex-1 min-w-[200px]">
+            <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap">
+              <div className="min-w-[180px] flex-1">
                 <Input placeholder={t("quality.defect.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <div className="flex items-center gap-2">
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-32" />
                 <span className="text-text-muted">~</span>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
+                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-32" />
               </div>
-              <ComCodeSelect groupCode="DEFECT_TYPE" labelPrefix={t('quality.defect.type', '불량유형')} value={defectType} onChange={setDefectType} fullWidth />
-              <ComCodeSelect groupCode="DEFECT_LOG_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
+              <div className="w-40 shrink-0">
+                <ComCodeSelect groupCode="DEFECT_TYPE" labelPrefix={t('quality.defect.type', '불량유형')} value={defectType} onChange={setDefectType} className="w-full" />
+              </div>
+              <div className="w-36 shrink-0">
+                <ComCodeSelect groupCode="DEFECT_LOG_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} className="w-full" />
+              </div>
             </div>
           }
 

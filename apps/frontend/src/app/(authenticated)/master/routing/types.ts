@@ -70,9 +70,24 @@ export interface RoutingMaterial {
   unit: string | null;
   qtyPer: number;
   selected: boolean;
+  circuitId: number | null;
+  circuitNo: string | null;
+  lengthMm: number | null;
+  stripA: number | null;
+  stripB: number | null;
+  circuitOptions?: RoutingMaterialCircuitOption[];
   allocQty: number | null;
   issueMethod: string;
   useYn: string;
+}
+
+export interface RoutingMaterialCircuitOption {
+  circuitId: number;
+  circuitNo: string;
+  wireItemCode: string;
+  lengthMm: number | null;
+  stripA: number | null;
+  stripB: number | null;
 }
 
 export interface EditableRoutingMaterial {
@@ -82,6 +97,12 @@ export interface EditableRoutingMaterial {
   unit: string;
   qtyPer: number;
   selected: boolean;
+  circuitId: string;
+  circuitNo: string;
+  lengthMm: number | null;
+  stripA: number | null;
+  stripB: number | null;
+  circuitOptions: RoutingMaterialCircuitOption[];
   allocQty: string;
   issueMethod: string;
 }

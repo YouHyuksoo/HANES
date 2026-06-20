@@ -57,6 +57,24 @@ test('production specification setup only sends DTO fields when saving circuits'
   assert.doesNotMatch(page, /revisionId:\s*circuit\.revisionId/);
 });
 
+test('production specification setup links each circuit wire to a BOM item code', () => {
+  const page = read('apps/frontend/src/app/(authenticated)/production/specification-setup/page.tsx');
+  const dto = read('apps/backend/src/modules/production/dto/production-specification.dto.ts');
+  const entity = read('apps/backend/src/entities/harness-circuit-spec.entity.ts');
+  const service = read('apps/backend/src/modules/production/services/production-specification.service.ts');
+
+  assert.match(page, /wireItemCode/);
+  assert.match(page, /loadBomOptions/);
+  assert.match(page, /bomOptions/);
+  assert.match(page, /circuit\.wireItemCode/);
+  assert.match(page, /wireItemCode: toOptionalText\(circuit\.wireItemCode\)/);
+
+  assert.match(dto, /wireItemCode\?: string;/);
+  assert.match(entity, /WIRE_ITEM_CODE/);
+  assert.match(service, /validateCircuitWireItems/);
+  assert.match(service, /BomMaster/);
+});
+
 test('production specification setup uses a modal for revise and cancel does not call API', () => {
   const page = read('apps/frontend/src/app/(authenticated)/production/specification-setup/page.tsx');
 

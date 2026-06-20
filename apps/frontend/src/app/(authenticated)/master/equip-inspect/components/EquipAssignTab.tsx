@@ -91,13 +91,13 @@ export default function EquipAssignTab() {
 
     const groups: Record<string, EquipSummary[]> = {};
     for (const equip of filtered) {
-      const key = equip.equipType || "기타";
+      const key = equip.equipType || t("master.equipInspect.equipTypeEtc", "기타");
       if (!groups[key]) groups[key] = [];
       groups[key].push(equip);
     }
 
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [equips, searchText]);
+  }, [equips, searchText, t]);
 
   /* ── 검색 시 모든 그룹 확장 ── */
   useEffect(() => {

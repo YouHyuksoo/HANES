@@ -172,6 +172,10 @@ export class MaterialItemDto {
   childItemCode: string;
 
   @ApiPropertyOptional()
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1)
+  circuitId?: number;
+
+  @ApiPropertyOptional()
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
   allocQty?: number;
 

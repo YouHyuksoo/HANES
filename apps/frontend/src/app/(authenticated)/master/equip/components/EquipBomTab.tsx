@@ -21,7 +21,7 @@ import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from "@
 import DataGrid from "@/components/data-grid/DataGrid";
 import {
   EquipMaster, EquipBomItem, EquipBomRel,
-  BomItemType, BOM_ITEM_TYPE_COLORS, BOM_ITEM_TYPE_LABELS,
+  BomItemType, BOM_ITEM_TYPE_COLORS,
 } from "../types";
 import api from "@/services/api";
 
@@ -201,11 +201,16 @@ export default function EquipBomTab() {
     return bomRels.filter(r => r.equipCode === selectedEquipId && r.useYn === "Y");
   }, [bomRels, selectedEquipId]);
 
+  const bomItemTypeLabels = useMemo<Record<BomItemType, string>>(() => ({
+    PART: t("master.equip.bomItemTypePart", "부품"),
+    CONSUMABLE: t("master.equip.bomItemTypeConsumable", "소모품"),
+  }), [t]);
+
   const itemTypeOptions = useMemo(() => [
     { value: "", label: t("master.equip.itemType", "품목유형") },
-    { value: "PART", label: BOM_ITEM_TYPE_LABELS.PART },
-    { value: "CONSUMABLE", label: BOM_ITEM_TYPE_LABELS.CONSUMABLE },
-  ], [t]);
+    { value: "PART", label: bomItemTypeLabels.PART },
+    { value: "CONSUMABLE", label: bomItemTypeLabels.CONSUMABLE },
+  ], [t, bomItemTypeLabels]);
 
   // ========================================
   // 핸들러 - BOM 품목
@@ -367,7 +372,7 @@ export default function EquipBomTab() {
         const v = getValue() as BomItemType;
         return (
           <span className={`px-2 py-0.5 text-xs rounded-full ${BOM_ITEM_TYPE_COLORS[v]}`}>
-            {BOM_ITEM_TYPE_LABELS[v]}
+            {bomItemTypeLabels[v]}
           </span>
         );
       },
@@ -393,7 +398,7 @@ export default function EquipBomTab() {
         );
       },
     },
-  ], [t]);
+  ], [t, bomItemTypeLabels]);
 
   const bomRelColumns = useMemo<ColumnDef<EquipBomRel>[]>(() => [
     {
@@ -416,7 +421,7 @@ export default function EquipBomTab() {
         const v = row.original.bomItem?.itemType as BomItemType;
         return (
           <span className={`px-2 py-0.5 text-xs rounded-full ${BOM_ITEM_TYPE_COLORS[v]}`}>
-            {BOM_ITEM_TYPE_LABELS[v]}
+            {bomItemTypeLabels[v]}
           </span>
         );
       },
@@ -442,7 +447,7 @@ export default function EquipBomTab() {
       },
     },
     { accessorKey: "remark", header: t("common.remark", "비고"), size: 120 },
-  ], [t]);
+  ], [t, bomItemTypeLabels]);
 
   // ========================================
   // 렌더링
@@ -564,7 +569,7 @@ export default function EquipBomTab() {
               <div className="grid grid-cols-2 gap-3">
                 <Input label={t("master.equip.itemCode", "품목코드")} value={itemForm.itemCode} onChange={(e) => setItemForm({ ...itemForm, itemCode: e.target.value })} fullWidth disabled={!!editingItem} />
                 <Input label={t("master.equip.itemName", "품목명")} value={itemForm.itemName} onChange={(e) => setItemForm({ ...itemForm, itemName: e.target.value })} fullWidth />
-                <Select label={t("master.equip.itemType", "유형")} options={[{ value: "PART", label: BOM_ITEM_TYPE_LABELS.PART }, { value: "CONSUMABLE", label: BOM_ITEM_TYPE_LABELS.CONSUMABLE }]} value={itemForm.itemType} onChange={(v) => setItemForm({ ...itemForm, itemType: v as BomItemType })} fullWidth />
+                <Select label={t("master.equip.itemType", "유형")} options={[{ value: "PART", label: bomItemTypeLabels.PART }, { value: "CONSUMABLE", label: bomItemTypeLabels.CONSUMABLE }]} value={itemForm.itemType} onChange={(v) => setItemForm({ ...itemForm, itemType: v as BomItemType })} fullWidth />
                 <Input label={t("master.equip.unit", "단위")} value={itemForm.unit} onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })} fullWidth />
               </div>
             </div>
@@ -626,7 +631,7 @@ export default function EquipBomTab() {
         onClose={() => setDeleteItemTarget(null)}
         onConfirm={handleDeleteItemConfirm}
         variant="danger"
-        message={`'${deleteItemTarget?.itemName || ""}'을(를) 삭제하시겠습니까?`}
+        message={t("common.deleteConfirmMessage", "{{name}} 을(를) 삭제하시겠습니까?", { name: `'${deleteItemTarget?.itemName || ""}'` })}
       />
 
       {/* 삭제 확인 모달 - 설비-BOM 연결 */}
@@ -635,7 +640,7 @@ export default function EquipBomTab() {
         onClose={() => setDeleteRelTarget(null)}
         onConfirm={handleDeleteRelConfirm}
         variant="danger"
-        message={`'${deleteRelTarget?.bomItem?.itemName || ""}' 연결을 삭제하시겠습니까?`}
+        message={t("master.equip.deleteBomLinkConfirm", "'{{name}}' 연결을 삭제하시겠습니까?", { name: deleteRelTarget?.bomItem?.itemName || "" })}
       />
 
       {/* 알림 모달 */}

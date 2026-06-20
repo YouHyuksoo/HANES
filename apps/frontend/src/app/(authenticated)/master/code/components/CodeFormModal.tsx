@@ -153,7 +153,7 @@ export default function CodeFormModal({
           {form.attr1 && (
             <div className="mt-1.5">
               <span className={`px-2 py-0.5 text-xs rounded-full ${form.attr1}`}>
-                {form.codeName || "미리보기"}
+                {form.codeName || t("master.code.preview", "미리보기")}
               </span>
             </div>
           )}

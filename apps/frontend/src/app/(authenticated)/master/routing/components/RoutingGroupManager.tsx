@@ -451,7 +451,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white text-xs">
                     {selectedGroup.itemType?.slice(0, 1) || "P"}
                   </span>
-                  <span className="truncate">BOM 구조</span>
+                  <span className="truncate">{t("master.routing.bomStructure", "BOM 구조")}</span>
                   <span className="font-mono text-xs text-text-muted dark:text-gray-400">[{selectedGroup.itemCode || selectedGroup.routingCode}]</span>
                 </div>
                 <div className="mt-2">
@@ -483,7 +483,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                 <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.processSequenceTitle")}</div>
                 {selectedBomItem && (
                   <div className="text-xs text-text-muted truncate">
-                    {selectedBomItem.breadcrumb} {routingInfo ? `- ${routingInfo.routingName}` : "- 라우팅 미등록"}
+                    {selectedBomItem.breadcrumb} {routingInfo ? `- ${routingInfo.routingName}` : `- ${t("master.routing.routingNotRegistered", "라우팅 미등록")}`}
                   </div>
                 )}
               </div>
@@ -494,7 +494,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
             <div className="flex justify-center py-12"><RefreshCw className="w-6 h-6 text-primary animate-spin" /></div>
           ) : !routingInfo ? (
             <div className="flex h-full items-center justify-center px-4 text-center text-sm text-text-muted dark:text-gray-400">
-              선택한 품목에 등록된 라우팅이 없습니다.
+              {t("master.routing.noRoutingForItem", "선택한 품목에 등록된 라우팅이 없습니다.")}
             </div>
           ) : (
             <table className="w-full text-xs">
@@ -512,7 +512,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                 {processes.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-10 text-center text-text-muted dark:text-gray-400">
-                      선택한 품목의 라우팅에 등록된 공정이 없습니다.
+                      {t("master.routing.noProcessForRouting", "선택한 품목의 라우팅에 등록된 공정이 없습니다.")}
                     </td>
                   </tr>
                 )}
@@ -527,7 +527,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                       <td className="py-2 text-center">
                         {process.sampleInspectYn === 'Y' ? (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                            필요
+                            {t("master.routing.sampleInspectRequired", "필요")}
                           </span>
                         ) : (
                           <span className="text-text-muted text-[10px]">-</span>

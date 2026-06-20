@@ -26,6 +26,9 @@ export class RoutingMaterial {
   @PrimaryColumn({ name: 'CHILD_ITEM_CODE', length: 50 })
   childItemCode: string;
 
+  @Column({ name: 'CIRCUIT_ID', type: 'number', nullable: true })
+  circuitId: number | null;
+
   @Column({ name: 'ALLOC_QTY', type: 'decimal', precision: 10, scale: 4, default: 0 })
   allocQty: number;
 

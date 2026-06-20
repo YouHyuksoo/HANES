@@ -15,6 +15,12 @@ function toEditable(material: RoutingMaterial): EditableRoutingMaterial {
     unit: material.unit || "",
     qtyPer: Number(material.qtyPer || 0),
     selected: material.selected,
+    circuitId: material.circuitId != null ? String(material.circuitId) : "",
+    circuitNo: material.circuitNo || "",
+    lengthMm: material.lengthMm ?? null,
+    stripA: material.stripA ?? null,
+    stripB: material.stripB ?? null,
+    circuitOptions: material.circuitOptions ?? [],
     allocQty: material.allocQty != null ? String(material.allocQty) : String(material.qtyPer || 0),
     issueMethod: material.issueMethod || "BACKFLUSH",
   };
@@ -54,6 +60,17 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
     ));
   }, []);
 
+  const changeCircuit = useCallback((material: EditableRoutingMaterial, circuitId: string) => {
+    const circuit = material.circuitOptions.find((option) => String(option.circuitId) === circuitId);
+    change(material.childItemCode, {
+      circuitId,
+      circuitNo: circuit?.circuitNo ?? "",
+      lengthMm: circuit?.lengthMm ?? null,
+      stripA: circuit?.stripA ?? null,
+      stripB: circuit?.stripB ?? null,
+    });
+  }, [change]);
+
   const save = useCallback(async () => {
     setSaving(true);
     try {
@@ -62,6 +79,7 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
           .filter((material) => material.selected)
           .map((material) => ({
             childItemCode: material.childItemCode,
+            circuitId: material.circuitId ? Number(material.circuitId) : undefined,
             allocQty: material.allocQty ? Number(material.allocQty) : 0,
             issueMethod: material.issueMethod || "BACKFLUSH",
           })),
@@ -113,6 +131,8 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
                 <th className="py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-10">{t("common.select")}</th>
                 <th className="text-left py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[170px]">{t("master.bom.childItem", { defaultValue: "자재" })}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[80px]">{t("master.bom.qtyPer", { defaultValue: "BOM수량" })}</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[150px]">{t("master.routing.circuitSpec", { defaultValue: "회로사양" })}</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[120px]">{t("master.routing.cutStripSpec", { defaultValue: "길이/Strip" })}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[90px]">{t("master.routing.allocQty", { defaultValue: "투입수량" })}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[110px]">{t("master.routing.issueMethod", { defaultValue: "투입방식" })}</th>
               </tr>
@@ -135,6 +155,26 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
                     </div>
                   </td>
                   <td className="py-1.5 px-2 text-center text-text dark:text-gray-200">{material.qtyPer}</td>
+                  <td className="py-1.5 px-2">
+                    <select
+                      value={material.circuitId}
+                      disabled={!material.selected}
+                      onChange={(e) => changeCircuit(material, e.target.value)}
+                      className={`${inputCls} disabled:opacity-50`}
+                    >
+                      <option value="">{t("master.routing.noCircuitLink", { defaultValue: "미연결" })}</option>
+                      {material.circuitOptions.map((circuit) => (
+                        <option key={circuit.circuitId} value={circuit.circuitId}>
+                          {circuit.circuitNo}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="py-1.5 px-2 text-center text-[11px] text-text-muted dark:text-gray-400">
+                    {material.circuitId
+                      ? `${material.lengthMm ?? "-"} / ${material.stripA ?? "-"} / ${material.stripB ?? "-"}`
+                      : "-"}
+                  </td>
                   <td className="py-1.5 px-2">
                     <input
                       type="number"

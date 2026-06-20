@@ -157,7 +157,7 @@ export default function WorkerPage() {
                     leftIcon={<Search className="w-4 h-4" />}
                   />
                   <div className="w-28 flex-shrink-0">
-                    <ComCodeSelect groupCode="USE_YN" value={useYnFilter} onChange={setUseYnFilter} labelPrefix="사용여부" fullWidth />
+                    <ComCodeSelect groupCode="USE_YN" value={useYnFilter} onChange={setUseYnFilter} labelPrefix={t("common.useYn", "사용여부")} fullWidth />
                   </div>
                 </div>
               }
@@ -182,7 +182,10 @@ export default function WorkerPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.workerName || ""}'을(를) 삭제하시겠습니까?`}
+        message={t("master.company.deleteConfirm", {
+          name: deleteTarget?.workerName || "",
+          defaultValue: `'${deleteTarget?.workerName || ""}'을(를) 삭제하시겠습니까?`,
+        })}
       />
     </div>
   );

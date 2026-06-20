@@ -148,7 +148,7 @@ function PartnerPage() {
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <Building2 className="w-7 h-7 text-primary" />{t("master.partner.title")}
             </h1>
-            <p className="text-text-muted mt-1">{t("master.partner.subtitle")} ({partners.length}건)</p>
+            <p className="text-text-muted mt-1">{t("master.partner.subtitle")} ({partners.length}{t("common.count", "건")})</p>
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={fetchPartners}>
@@ -208,7 +208,7 @@ function PartnerPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.partnerName || ""}'을(를) 삭제하시겠습니까?`}
+        message={`'${deleteTarget?.partnerName || ""}'${t("common.deleteMessage", "을(를) 삭제하시겠습니까?")}`}
       />
     </div>
   );
