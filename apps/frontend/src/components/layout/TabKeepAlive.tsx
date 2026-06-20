@@ -1,54 +1,41 @@
 /**
  * @file src/components/layout/TabKeepAlive.tsx
- * @description 탭 기반 페이지 keep-alive — 열린 탭 페이지들을 레이아웃에서 직접 마운트 유지
+ * @description 탭 본문 렌더러
  *
- * 왜 이 방식인가:
- * 1. Next App Router는 활성 라우트만 {children}에 렌더하고, 라우트가 바뀌면 비활성 세그먼트를
- *    언마운트한다. children(=LayoutRouter)을 캐시해 숨기는 방식은 라우트 컨텍스트 전파로
- *    비활성 페이지가 강제 언마운트되어 동작하지 않는다(React19/Next15에서 실측 확인).
- * 2. 대신 경로→컴포넌트 레지스트리(pageRegistry.generated.ts)로 열린 탭 페이지들을 레이아웃이
- *    직접 렌더한다. 레지스트리 컴포넌트는 라우트 컨텍스트에 묶이지 않으므로, 같은 컴포넌트
- *    참조 + 안정 key(div key=path)로 React가 인스턴스를 유지 → 입력값·열린 패널 등 상태 보존.
- * 3. 비활성 탭은 display:none으로 숨기되 마운트는 유지한다.
- *
- * 폴백: 활성 경로가 레지스트리에 없으면(드묾) {children}으로 일반 렌더(keep-alive 미적용).
- *
- * 성능:
- * - 각 페이지 셀을 React.memo(KeepAliveCell)로 격리한다. 탭 추가/전환으로 이 컴포넌트가
- *   리렌더돼도 표시 여부(active)가 바뀐 셀만 리렌더되고, 나머지 열린 페이지(무거운 그리드 등)는
- *   리렌더를 건너뛴다. memo 없이는 새 탭을 열 때마다 열린 모든 페이지가 동시 리렌더돼 메인
- *   스레드가 막히고 새 화면이 한참 뒤에 떴다.
- * - 동시 마운트 수를 MAX_ALIVE개로 제한한다(LRU). 그 이상은 가장 오래 보지 않은 탭부터
- *   언마운트해 DOM/메모리 누적을 막는다(재방문 시 다시 마운트되며 상태는 초기화).
+ * pageRegistry.generated.ts가 모든 페이지 dynamic 컴포넌트를 top-level에서 만들면 Next dev 서버가
+ * 메뉴 클릭 시 authenticated page 전체를 on-demand compile 대상으로 잡아 화면 열림이 수십 초 지연된다.
+ * getPageComponent(path)는 실제 방문한 경로만 dynamic 생성하므로, 열린 탭의 React state를 보존하면서
+ * 전체 page compile 폭주를 피한다.
  */
 "use client";
 
+import { memo, useEffect, useMemo, useRef, type ComponentType, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { memo, useRef, type ComponentType, type ReactNode } from "react";
-import { useTabStore } from "@/stores/tabStore";
-import { pageRegistry } from "./pageRegistry.generated";
+import { useTabStore, MAX_TABS } from "@/stores/tabStore";
+import { getPageComponent } from "./pageRegistry.generated";
+import { restoreTabPageState, saveTabPageState } from "./tabPageState";
 
-/** 동시 마운트 유지 상한(활성 포함). tabStore MAX_TABS(10) 이하로 둬 누적 부담을 막는다. */
-const MAX_ALIVE = 10;
+type CachedPage = {
+  path: string;
+  Component: ComponentType;
+  lastSeen: number;
+};
 
-/**
- * keep-alive 페이지 셀. props(Comp, active)가 바뀔 때만 리렌더된다.
- * Comp는 모듈 레벨 pageRegistry의 안정 참조라, 표시 여부(active)가 그대로면 memo가 리렌더를 막는다.
- */
 const KeepAliveCell = memo(function KeepAliveCell({
-  Comp,
   active,
+  Component,
 }: {
-  Comp: ComponentType;
   active: boolean;
+  Component: ComponentType;
 }) {
   return (
     <div
       className="h-full"
       style={{ display: active ? undefined : "none" }}
       aria-hidden={!active}
+      data-tab-page-state-root
     >
-      <Comp />
+      <Component />
     </div>
   );
 });
@@ -56,41 +43,92 @@ const KeepAliveCell = memo(function KeepAliveCell({
 export default function TabKeepAlive({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const tabs = useTabStore((s) => s.tabs);
+  const rootsRef = useRef(new Map<string, HTMLDivElement | null>());
+  const pagesRef = useRef(new Map<string, CachedPage>());
+  const pathnameRef = useRef(pathname);
+  const currentComponent = getPageComponent(pathname);
 
-  const activeInRegistry = pathname in pageRegistry;
-
-  // 열린 탭 중 레지스트리에 등록된 경로(탭 표시 순서 유지, 중복 path 제거)
-  const openPaths = Array.from(
-    new Set(tabs.map((t) => t.path).filter((p) => p in pageRegistry)),
-  );
-
-  // LRU: 최근 활성화된 경로일수록 앞. 마운트 유지 한도 적용 기준이다.
-  // 렌더 중 갱신이지만 입력(pathname/openPaths)에만 의존하는 idempotent 연산이라 안전하다.
-  const lruRef = useRef<string[]>([]);
-  if (activeInRegistry) {
-    lruRef.current = [pathname, ...lruRef.current.filter((p) => p !== pathname)];
+  if (currentComponent) {
+    const cachedPage = pagesRef.current.get(pathname);
+    if (cachedPage) {
+      cachedPage.lastSeen = Date.now();
+    } else {
+      pagesRef.current.set(pathname, {
+        path: pathname,
+        Component: currentComponent,
+        lastSeen: Date.now(),
+      });
+    }
   }
-  const openSet = new Set(openPaths);
-  lruRef.current = lruRef.current.filter((p) => openSet.has(p)); // 닫힌 탭 정리
 
-  // 마운트 유지 대상: LRU 상위 MAX_ALIVE개(활성 경로는 항상 포함)
-  const aliveSet = new Set(lruRef.current.slice(0, MAX_ALIVE));
-  if (activeInRegistry) aliveSet.add(pathname);
+  const openPathSet = useMemo(() => new Set(tabs.map((tab) => tab.path)), [tabs]);
+  for (const path of Array.from(pagesRef.current.keys())) {
+    if (path !== pathname && !openPathSet.has(path)) {
+      pagesRef.current.delete(path);
+      rootsRef.current.delete(path);
+    }
+  }
+
+  const visiblePages = Array.from(pagesRef.current.values())
+    .sort((a, b) => b.lastSeen - a.lastSeen)
+    .slice(0, MAX_TABS)
+    .sort((a, b) => a.lastSeen - b.lastSeen);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+    const timers: number[] = [];
+    const restore = () => restoreTabPageState(pathname, rootsRef.current.get(pathname) ?? null);
+    const raf = window.requestAnimationFrame(restore);
+    for (const delay of [50, 150, 350, 750]) {
+      timers.push(window.setTimeout(restore, delay));
+    }
+
+    return () => {
+      saveTabPageState(pathname, rootsRef.current.get(pathname) ?? null);
+      window.cancelAnimationFrame(raf);
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    const saveCurrent = () => {
+      saveTabPageState(pathnameRef.current, rootsRef.current.get(pathnameRef.current) ?? null);
+    };
+
+    document.addEventListener("pointerdown", saveCurrent, true);
+    document.addEventListener("keydown", saveCurrent, true);
+    document.addEventListener("input", saveCurrent, true);
+    document.addEventListener("change", saveCurrent, true);
+    window.addEventListener("beforeunload", saveCurrent);
+    document.addEventListener("visibilitychange", saveCurrent);
+
+    return () => {
+      saveCurrent();
+      document.removeEventListener("pointerdown", saveCurrent, true);
+      document.removeEventListener("keydown", saveCurrent, true);
+      document.removeEventListener("input", saveCurrent, true);
+      document.removeEventListener("change", saveCurrent, true);
+      window.removeEventListener("beforeunload", saveCurrent);
+      document.removeEventListener("visibilitychange", saveCurrent);
+    };
+  }, []);
 
   return (
     <>
-      {openPaths
-        .filter((p) => aliveSet.has(p))
-        .map((path) => (
-          <KeepAliveCell
-            key={path}
-            Comp={pageRegistry[path]}
-            active={path === pathname}
-          />
-        ))}
-
-      {/* 레지스트리에 없는 활성 경로는 keep-alive 대상이 아니므로 일반 children 렌더 */}
-      {!activeInRegistry && <div className="h-full">{children}</div>}
+      {visiblePages.map((page) => (
+        <div
+          key={page.path}
+          ref={(el) => {
+            rootsRef.current.set(page.path, el);
+          }}
+          className="h-full"
+          style={{ display: page.path === pathname ? undefined : "none" }}
+          aria-hidden={page.path !== pathname}
+        >
+          <KeepAliveCell active={page.path === pathname} Component={page.Component} />
+        </div>
+      ))}
+      {!currentComponent && <div className="h-full">{children}</div>}
     </>
   );
 }

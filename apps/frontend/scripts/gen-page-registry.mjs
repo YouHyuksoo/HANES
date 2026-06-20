@@ -1,6 +1,6 @@
 /**
  * @file scripts/gen-page-registry.mjs
- * @description (authenticated) 영역의 모든 page.tsx를 스캔해 경로→동적 import 레지스트리를 생성한다.
+ * @description (authenticated) 영역의 모든 page.tsx를 스캔해 경로→lazy 동적 import 레지스트리를 생성한다.
  *
  * 왜 codegen인가:
  * - 레이아웃 레벨 keep-alive(TabKeepAlive)는 활성 라우트뿐 아니라 열린 탭 페이지들을
@@ -62,21 +62,38 @@ for (const p of pages) {
 }
 
 const entries = pages
-  .map((p) => `  "${p.route}": dynamic(() => import("${p.spec}"), { ssr: false }),`)
+  .map(
+    (p) => `    case "${p.route}":
+      component = dynamic(() => import("${p.spec}"), { ssr: false });
+      break;`,
+  )
   .join("\n");
 
 const content = `/**
  * @file src/components/layout/pageRegistry.generated.ts
  * @description 자동 생성 파일 — 직접 수정 금지. \`node scripts/gen-page-registry.mjs\`로 재생성.
- *              (authenticated) 영역 경로 → 페이지 컴포넌트(dynamic, ssr:false) 매핑.
- *              TabKeepAlive가 열린 탭 페이지들을 레이아웃에서 직접 마운트 유지하는 데 사용한다.
+ *              (authenticated) 영역 경로 → 페이지 컴포넌트 lazy dynamic factory.
+ *              호출된 경로만 dynamic 생성해 dev 서버의 전체 page compile 폭주를 피한다.
  */
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 
-export const pageRegistry: Record<string, ComponentType> = {
+const pageComponentCache = new Map<string, ComponentType>();
+
+export function getPageComponent(path: string): ComponentType | null {
+  const cached = pageComponentCache.get(path);
+  if (cached) return cached;
+
+  let component: ComponentType | null = null;
+  switch (path) {
 ${entries}
-};
+    default:
+      return null;
+  }
+
+  pageComponentCache.set(path, component);
+  return component;
+}
 `;
 
 writeFileSync(OUT_FILE, content, "utf8");

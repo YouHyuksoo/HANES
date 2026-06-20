@@ -10,6 +10,66 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-20 20:37 Codex
+
+- 작업: `T-MENU-OPEN-DELAY` 탭 보존 재수정. 단순 App Router `children` 캐시는 실제 브라우저에서 `/master/part` 품목 추가 패널 입력 후 대시보드 이동/품목 탭 복귀 시 패널이 초기화되는 것을 확인했다.
+- 원인: `children`은 Next App Router 라우트 컨텍스트에 묶여 있어 ref에 보관해도 페이지 컴포넌트 인스턴스 keep-alive로 동작하지 않았다. 기존 30초 지연의 원인은 keep-alive 자체가 아니라 `pageRegistry.generated.ts`의 top-level `dynamic()` 159개 생성으로 dev 서버가 전체 authenticated page를 compile 대상으로 잡은 구조였다.
+- 변경: `apps/frontend/scripts/gen-page-registry.mjs`와 `pageRegistry.generated.ts`를 `getPageComponent(path)` lazy factory로 바꿨다. `TabKeepAlive`는 현재 방문한 경로만 `getPageComponent(path)`로 dynamic 생성하고, 열린 탭 page component를 최대 `MAX_TABS`개 hidden mount로 유지한다. `tabPageState.ts` 입력/select/checkbox/radio/스크롤 sessionStorage 복원은 보조 장치로 유지했다.
+- 검증: `node --test apps/frontend/src/components/layout/tab-keep-alive-unique-paths.structure.test.mjs apps/frontend/src/components/layout/sidebar-menu-navigation.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS. 3002 Playwright 로그인 세션에서 `/master/part` 품목 추가 패널 입력 `CODX_REAL_KEEP`가 대시보드 이동 후 품목 탭 복귀에도 보존됨을 확인했다.
+- 성능: lazy registry 적용 후 3002 HTTP 반복 측정 최종 `/dashboard` 521ms, `/master/part` 330ms, `/production/wip-stock` 523ms, `/system/menu-categories` 266ms. 커밋하지 않았다.
+
+## 2026-06-20 19:33 Codex
+
+- 작업: `T-ROUTING-LABEL-ISSUE-UI` `/master/routing` 공정순서에 `ISSUE_SG_LABEL_YN`, `ISSUE_FG_LABEL_YN` 설정 UI를 추가했다.
+- 원인: `ROUTING_PROCESSES` 엔티티와 SG/FG 라벨 발행 로직은 플래그를 사용하지만, 라우팅 공정 UI/프론트 타입/DTO/서비스 저장 경로에 해당 필드가 없어 운영자가 설정할 수 없었다.
+- 변경: 백엔드 `CreateRoutingProcessDto`/`UpdateRoutingProcessDto`와 `RoutingGroupService` create/update 저장 경로에 `issueSgLabelYn`, `issueFgLabelYn`을 추가했다. `/master/routing` 프론트 타입, 공정 등록/수정 모달 체크박스, 저장 payload, 공정 그리드 `라벨발행` 배지를 추가했고 ko/en/zh/vi locale을 보강했다.
+- 검증: 구조 테스트 RED 6건 실패 확인 후 GREEN 6/6 PASS. `routing-group.service.spec.ts` focused 2/2 및 전체 28/28 PASS. FE/BE `tsc --noEmit` PASS, 대상 파일 `git diff --check` PASS. 3012 브라우저에서 모달 체크박스와 그리드 SG/FG 배지 표시 확인, API roundtrip으로 생성/수정/조회 및 검증 데이터 삭제 후 JSHANES 잔여 0 확인.
+- 참고: 3002 프론트는 HTTP 요청이 30초 타임아웃되어 3012 dev 서버에서 런타임 검증했다. 커밋하지 않았다.
+
+## 2026-06-20 Claude (T-IQC-JUDGE-BY-ITEM)
+
+- 작업: IQC 수입검사 판정을 "품목 단일 검사수준 + 등급별 불량합계" → "검사항목별(각 항목 검사수준/등급/AQL) 판정"으로 전환. (T-IQC-SPEC-ITEM-LEVEL-AQL 마스터 구조의 판정 로직 후속)
+- 백엔드:
+  - `aql.module.ts`: IqcPartSpecItem forFeature 등록.
+  - `aql.service.ts`: **resolveIqcPolicyByItem 신규**. IQC_PART_SPEC_ITEMS에서 등급 설정된 검사항목별로 검사수준(항목→품목 폴백)+AQL→resolveSeverityRule(Ac/Re) 산출. CRITICAL 항목 불량1+ FAIL, MAJOR/MINOR 항목 불량>Ac FAIL(AQL 미설정 시 1+ FAIL 보수), 하나라도 FAIL→LOT FAIL. **등급 설정 항목 0개면 기존 resolveIqcPolicy로 폴백**(하위호환). 반환 shape은 IqcAqlPolicyResolution 호환 + itemResults[] 추가.
+  - `iqc-history.service.ts`: `countFailByInspItem`(details SERIAL_INSPECTION의 itemId `code::seq`에서 검사항목별 FAIL 샘플 집계) + createArrivalResult가 resolveIqcPolicy→resolveIqcPolicyByItem 호출(fallback counts 전달). IqcLog 생성부는 반환 호환이라 무변경.
+- 입력 무변경: 검사자는 기존처럼 시리얼별 항목 측정(LSL/USL 자동판정). 백엔드가 details(항목별 FAIL) + 마스터(항목별 등급/AQL) 조인해 판정.
+- 검증: BE `tsc --noEmit` 0. jest 신규 3건(Critical 항목 FAIL / Major AQL Ac초과 FAIL / 등급 미설정 폴백) + 기존 회귀 PASS — aql.service 13/13, iqc-history 통과(mock을 resolveIqcPolicyByItem로 갱신). 코드 미커밋.
+- 검사 화면 표시: resolveItems(iqc-part-spec.service)에 defectGrade/inspectionLevel/aql 반환 추가, IqcModal 측정행 검사항목 셀에 불량등급 배지+검사수준/AQL 표시. FE/BE tsc 0.
+- **커밋 655f32e0**(마스터 구조 + 판정 전환 + 화면 표시 12파일). DB(IQC_PART_SPEC_ITEMS 3컬럼 + DEFECT_GRADE 코드)는 시드로 commit 완료. codex z14는 이미 3ca39c1c로 커밋돼 있어 내 변경만 분리 커밋됨.
+- IQC_LOGS 항목별 영구저장 완료(커밋 2044b737): IQC_LOGS.ITEM_RESULTS CLOB 추가(seed_iqc_log_item_results.py 멱등, DDL 후 PKG_DASHBOARD/IF_PO/IF_ITEM_MASTER COMPILE→VALID 복구), IqcLog.itemResults 필드, createArrivalResult가 itemResults JSON 저장, 이력 조회 getMany 자동 반환. BE tsc 0/jest 16 PASS.
+- codex z14(품목 단일) 위에 항목별 확장 — 등급 미설정 품목은 폴백으로 기존 동작.
+- 이력 화면 표시 완료(커밋 2b03b18d): IqcDetailModal에 검사항목별 판정 섹션(검사항목/불량등급 배지/검사수준/AQL/불량수/Ac·Re/판정/사유). 백엔드 조회 `...log` spread로 itemResults 자동 반환. FE tsc 0. itemResults 없는 기존 이력은 섹션 미표시.
+- 이번 세션 IQC 커밋 체인: 655f32e0(마스터+판정전환+검사화면) → 2044b737(이력 영구저장) → 2b03b18d(이력 표시). DB 시드 commit 완료. 미push.
+
+## 2026-06-20 14:59 Codex
+
+- 작업: `T-PROD-WIP-FG-STOCK-MENU-SPLIT` `/production/wip-stock` 합산 재고 화면을 반제품재공조회와 제품재공조회 메뉴로 분리.
+- 변경: 기존 페이지 본문을 `WipStockView` 공통 컴포넌트로 분리하고 `/production/wip-stock`은 `SEMI_PRODUCT`, 신규 `/production/fg-stock`은 `FINISHED` 고정 조회로 구성했다. 제품 화면에만 미포장 FG라벨 우측 패널을 표시한다.
+- 메뉴: `menuConfig.ts`에서 `PROD_WIP_STOCK` 라벨을 `menu.production.wipSemiStock`로 변경하고 `PROD_FG_STOCK` 신규 메뉴를 `/production/fg-stock`에 추가했다. `pageRegistry.generated.ts`, ko/en/zh/vi locale, menu-code-validator, seed JSON을 동기화했다.
+- DB: `apps/backend/src/migrations/2026-06-20_split_wip_fg_stock_menus.sql`을 JSHANES에 적용하고 재실행성까지 확인했다. 최종 `MENU_CATEGORY_ITEMS`는 `PROD_WIP_STOCK=70`, `PROD_FG_STOCK=71`, `ROLE_MENU_PERMISSIONS`는 MANAGER/OPERATOR `CAN_ACCESS='Y'`.
+- 검증: 신규 구조 테스트는 RED 실패 후 GREEN, 관련 구조 테스트 5건 PASS, FE tsc PASS, 3002 HTTP 두 라우트 200. 브라우저 실측에서 두 제목과 API 요청 `itemType=SEMI_PRODUCT`/`FINISHED`, console/page error 0 확인. 대상 파일 diff check PASS.
+- 상태: REVIEW 대기, lock 제거. 커밋하지 않음.
+
+## 2026-06-20 Claude (T-IQC-SPEC-ITEM-LEVEL-AQL)
+
+- 작업: 품목별 IQC 검사항목(IQC_PART_SPEC_ITEMS)에 **검사항목별 불량등급/검사수준/AQL** 도입. 검사기준서(Control Plan) 구조 — "품목 1개=검사수준 1개"가 아니라 품목 × 검사항목마다 등급/검사수준/AQL 관리(사용자 요구).
+- DB(JSHANES): IQC_PART_SPEC_ITEMS에 `DEFECT_GRADE`(VARCHAR2 10)/`INSPECTION_LEVEL`(VARCHAR2 5)/`AQL`(NUMBER) 비파괴 ADD. COM_CODES `DEFECT_GRADE` 그룹(CRITICAL/MAJOR/MINOR, 배지색) 시드. 시드 `tools/seed/seed_iqc_spec_item_level_aql.py`(멱등). commit.
+- 백엔드: `iqc-part-spec-item.entity.ts` 3필드(nullable, type 명시), `iqc-part-spec.dto.ts` IqcPartSpecItemDto 3필드(defectGrade IsIn CRITICAL/MAJOR/MINOR), `iqc-part-spec.service.ts` upsert 매핑. findByItemCode/findAll은 relations로 자동 포함.
+- 프론트: `iqc-item/types.ts` IqcSpecRow 3필드. `IqcSpecPanel.tsx`(품목별 IQC 그리드)에 불량등급(DEFECT_GRADE 배지/드롭다운)·검사수준(AQL_INSP_LEVEL 드롭다운, 표시는 코드)·AQL(AQL_VALUE 드롭다운) 컬럼 추가 — 표시/편집 양쪽. 검사수준/AQL은 기존 공통코드 재사용.
+- 검사수준/AQL/등급은 측정형·판정형 무관하게 모든 항목에 적용(LSL/USL는 측정형만 유지).
+- 범위: 마스터 데이터 구조 + 입력 화면까지. **판정 산출 로직(검사수준→코드문자→Ac/Re) 항목별 전환은 미포함** — codex z14(품목 단일) 산출 로직과 얽혀 별도 작업 권장. resolveItems도 미변경.
+- 검증: BE/FE `tsc --noEmit` 0. **3002 브라우저 E2E**: `/master/iqc-part-spec` CBL-A 선택→검사항목 그리드에 불량등급/검사수준/AQL 컬럼 표시, "수정"→3종 드롭다운 정상. 코드 미커밋. codex 미커밋 변경 위에 쌓임.
+- **함정**: 엔티티 AQL을 처음 `@Column type:'number'`로 했더니 BE 부팅 실패(GET /health 500). TypeORM Oracle에서 `'number'`는 비표준 — lsl/usl처럼 `type:'decimal' precision/scale`로 수정해 복구. Oracle NUMBER는 decimal 매핑.
+- 참고: codex가 ITEM_MASTERS에 품목 단일 검사수준/AQL을 구현(미커밋)했고 /master/part·/master/iqc-part-spec page.tsx에 AQL 요약을 붙임. 본 작업은 검사항목 단위로 모델을 확장한 것 — ITEM_MASTERS 품목 단일값은 폴백/정리 대상(추후).
+
+## 2026-06-20 14:44 Codex
+
+- 작업: `LOCKS.md` 누적 정리 및 ai-coordination 종료 정리 규칙 보강.
+- 확인: coordination 상태는 `enabled=false`로 정지 상태였지만, `LOCKS.md`의 `## Active Locks` 아래에 `status: released` 항목이 다수 누적되어 대시보드/다음 세션에서 아직 잠금이 남은 것처럼 보일 수 있었다.
+- 조치: `LOCKS.md`를 현재 활성 잠금 없음으로 축소하고, 완료 lock은 `JOURNAL.md`/`ARCHIVE.md`/`HANDOFF`에 증거를 남긴 뒤 `LOCKS.md`에서 제거한다는 규칙을 `README.md`와 `PROTOCOL.md`에 추가했다.
+- 스킬 보강: `ai-coordination` 스킬과 `check_coordination.py`에 Active Locks 내 released/stale 누적 경고 및 종료 시 lock 제거 규칙을 추가했다.
+
 ## 2026-06-20 Codex (T-BOX-STOCK-PACKED-VS-RECEIVED)
 
 - 요청: 박스포장으로 `BOX_NO`를 부여받은 상태와 제품입고 후 창고재고 상태를 구분. `BOX_NO`는 포장 식별자로 유지하고, 창고이동 기준으로만 쓰면 안 된다는 도메인 정정 반영.
@@ -1643,3 +1703,40 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 변경: `page.tsx`의 12컬럼 그리드 비율을 좌측 `col-span-4`, 우측 `col-span-8`에서 좌측 `col-span-3`, 우측 `col-span-9`로 조정해 품목 목록은 줄이고 규격 관리 영역을 넓혔다.
 - 테스트: 구조 테스트 `iqc-part-spec-layout.structure.test.mjs`를 추가했고 기존 `4/8` 레이아웃에서 RED, 변경 후 GREEN을 확인했다.
 - 검증: 구조 테스트 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/master/iqc-part-spec` HTTP 200, 대상 파일 `git diff --check` PASS.
+
+# 2026-06-20 15:33 codex T-WIP-MAT-LABEL-RAW-PROCESS
+- 요청: `/production/wip-material-stock` 메뉴명을 `공정재고`에서 `원자재공정재고`로, `공정수불`을 `원자재공정수불`로 변경.
+- 변경: `apps/frontend/src/locales/ko.json`의 한국어 메뉴 키 `menu.production.wipMaterialStock`, `menu.production.wipMaterialTrans`와 화면 제목/설명을 새 용어로 변경했다. 라우트, 메뉴 코드, DB 메뉴 데이터는 변경하지 않았다.
+- 테스트: 신규 구조 테스트 `wip-material-menu-label.structure.test.mjs`를 추가했고 기존 `공정재고` 값에서 RED 실패 확인 후 GREEN 통과했다.
+- 검증: `node --test "apps/frontend/src/app/(authenticated)/production/wip-material-stock/wip-material-menu-label.structure.test.mjs" apps/frontend/src/config/menu-locale-coverage.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 두 라우트 HTTP 200, Playwright DOM 제목 `원자재공정재고`/`원자재공정수불` 및 console/page error 0 확인, 대상 파일 `git diff --check` PASS.
+
+# 2026-06-20 17:58 codex T-FG-STOCK-CARD-REMOVE-TYPE-FILTER
+- 요청: `/production/fg-stock` 정보카드 제거, 좌측 그리드에 유형 필터 추가.
+- 변경: 공유 `WipStockView`에서 상단 `StatCard` 2개와 통계 계산을 제거했다. `/production/fg-stock`만 `enableTypeFilter`를 켜고, 좌측 그리드 툴바에 `유형: 전체/완제품/반제품` Select를 표시한다.
+- 변경: 유형 필터는 기본 `FINISHED`로 시작하며, 변경 시 `/production/wip-stock` 조회 파라미터 `itemType`과 SQL 미리보기의 `s.ITEM_TYPE` 조건이 함께 바뀐다. `wip-stock` 메뉴는 필터 없이 기존 `SEMI_PRODUCT` 고정 조회를 유지한다.
+- 테스트: 신규 구조 테스트가 기존 코드에서 `enableTypeFilter` 부재와 `StatCard` 잔존으로 RED 실패하는 것을 확인했고, 수정 후 기존 split/SQL 구조 테스트와 함께 GREEN 통과했다.
+- 검증: 구조 테스트 5건 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/production/fg-stock` HTTP 200, Playwright에서 정보카드 문구 0건, 유형 옵션 3개, API 요청 `FINISHED -> SEMI_PRODUCT`, console/page error 0 확인, 대상 파일 `git diff --check` PASS.
+
+# 2026-06-20 18:37 codex T-WIP-STOCK-LABEL-DETAIL-PANEL
+- 요청: `/production/wip-stock`에도 라벨이 있을 수 있으므로 `/production/fg-stock`처럼 상세 라벨정보를 표시해야 함.
+- 확인: 백엔드 `GET /production/wip-stock/fg-labels`는 `FG_LABELS`를 `itemCode` 기준으로 조회하므로 반제품 품목도 라벨이 있으면 반환할 수 있다. 문제는 프론트 `WipStockView`가 `itemType === "FINISHED"`에서만 우측 패널과 행 클릭 라벨 조회를 허용한 조건이었다.
+- 변경: `showFgPanel` 조건을 제거하고 반제품/제품 화면 모두 우측 `상세 라벨정보` 패널을 항상 렌더한다. 행 클릭 시 품목 유형과 관계없이 `/production/wip-stock/fg-labels?itemCode=...`를 호출한다.
+- 변경: 패널 제목/빈 상태 문구를 `미포장 제품(FG라벨)`에서 범용 `상세 라벨정보`로 바꿀 수 있도록 `labelPanelTitle`, `labelPanelEmpty` locale 키를 ko/en/zh/vi에 추가했다. 기존 `fgPanelTitle`/`fgPanelEmpty` 키는 호환을 위해 남겼다.
+- 검증: 신규 구조 테스트 RED 확인 후 GREEN. 관련 구조 테스트 8건 PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/production/wip-stock` HTTP 200, Playwright에서 우측 패널 표시 및 반제품 `HNS02C2ABCDE` 클릭 시 라벨 API 호출 확인. 현재 해당 품목의 라벨 상세 데이터는 0건이라 패널 그리드는 `데이터가 없습니다.`로 표시된다. 대상 파일 `git diff --check` PASS.
+
+# 2026-06-20 18:53 codex T-WIP-FG-LABEL-SOURCE-SPLIT
+- 요청: `SG_LABELS`와 `FG_LABELS` 두 개로 분리 조회되도록 수정.
+- 원인: 직전 상태는 `/production/wip-stock` 반제품 화면도 우측 패널은 열리지만, API가 `/production/wip-stock/fg-labels` 하나뿐이라 `FG_LABELS`만 조회했다. 반제품 묶음 라벨 source인 `SG_LABELS`를 전혀 보지 않았다.
+- 변경: 백엔드 `GET /production/wip-stock/labels?itemCode=&itemType=` endpoint를 추가했다. `itemType='SEMI_PRODUCT'`이면 `SgLabel` repository로 `SG_LABELS`를 조회해 `labelType='SG'`, `barcode`, `remainQty`, `currentProcessCode`, `mountedEquipCode` 등을 반환한다. 그 외 `FINISHED`는 `FgLabel` repository로 `FG_LABELS`를 조회해 `labelType='FG'`, `barcode`, `inspectPassYn` 등을 반환한다. 기존 `/fg-labels` endpoint는 호환용으로 `FINISHED` wrapper로 유지했다.
+- 변경: 프론트 `WipStockView`는 행 클릭 시 `/production/wip-stock/labels`에 `itemCode`와 `row.itemType`을 함께 전달하고, 우측 그리드는 공통 컬럼 `구분`, `라벨바코드`, `상태`, `잔량`, `검사`, `작업지시`, `현재공정`, `장착설비`, `발행일시`로 표시한다.
+- 검증: 구조 테스트 RED 확인 후 GREEN. 관련 구조 테스트 9건 PASS, FE/BE tsc PASS. 3002 브라우저 fetch 실측에서 `SEMI_PRODUCT/HNS02C2ABCDE`는 `SG_LABELS` SQL과 `labelType=SG` 1건, `FINISHED` 요청은 `FG_LABELS` SQL을 사용하는 것 확인. 화면 우측 패널에 `라벨바코드`, `잔량` 컬럼 표시 및 console/page error 0 확인.
+
+# 2026-06-20 20:02 codex T-MENU-OPEN-DELAY
+- 요청: 예전에는 메뉴 클릭 시 화면이 바로 열렸는데 지금은 30초 이상 기다려야 열리는 원인 확인.
+- 원인: `TabKeepAlive`가 레이아웃 런타임에서 `pageRegistry.generated.ts`를 import하고, 해당 registry가 authenticated `page.tsx` 163개를 `next/dynamic` 정적 목록으로 들고 있었다. Next dev 서버가 메뉴 하나를 열 때 전체 page loader를 on-demand compile 대상으로 잡아 지연이 발생했다.
+- 증거: 수정 전 HTTP 측정에서 `/dashboard` 첫 응답 22.8초, `/master/part` 8.9초, `/production/wip-stock` 4.0초. `.next/trace`에는 `/system/menu-categories` RSC 요청 89~109초, `/inspection/terminal-result` compile 68초, authenticated page loader 다수 동시 준비 기록이 있었다.
+- 변경: `TabKeepAlive`에서 `pageRegistry.generated.ts`, `useTabStore`, 동적 page cell 렌더링을 제거했다. 탭 UI는 `TabBar`/`tabStore`가 유지하고, 본문은 App Router `children`만 렌더한다.
+- 보정: 전체 page registry 방식 대신 방문한 App Router `children`만 경로별로 최대 `MAX_TABS`개 캐시하도록 바꿨다. 열린 탭의 React state를 보존하며, `tabPageState.ts`는 본문 입력값, select/checkbox/radio 값, 스크롤 위치를 `sessionStorage`에 저장하는 추가 복원 보조로 유지한다.
+- 검증: `node --test apps/frontend/src/components/layout/tab-keep-alive-unique-paths.structure.test.mjs apps/frontend/src/components/layout/sidebar-menu-navigation.structure.test.mjs` PASS, `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false` PASS.
+- 실측: 수정 후 3002 반복 HTTP 측정에서 `/dashboard` 514ms, `/master/part` 281ms, `/production/wip-stock` 212ms, `/system/menu-categories` 258ms.
+- 추가 검증: Playwright headless mock에서 `/master/part` 본문 검색 입력 `CODX_STATE_KEEP` 복원 확인. 우측 등록 패널에 `CODX_PANEL_KEEP` 입력 후 대시보드 탭 이동, 품목 탭 재진입 시 패널/입력값 보존 확인. 최종 3002 HTTP 측정 `/dashboard` 1030ms, `/master/part` 860ms, `/production/wip-stock` 331ms, `/system/menu-categories` 462ms.

@@ -2,7 +2,18 @@
 
 ## Last Update
 
-2026-06-20 14:20 KST
+2026-06-20 20:37 KST
+
+## In Review
+
+- `T-MENU-OPEN-DELAY`: 메뉴 클릭 후 화면이 30초 이상 늦게 열리던 원인을 수정했다. 원인은 기존 `pageRegistry.generated.ts`가 top-level에서 authenticated page 전체를 `dynamic()` 생성해 Next dev on-demand compile 폭주를 만든 것이다. 단순 App Router `children` 캐시는 실제 브라우저에서 `/master/part` 품목 추가 패널이 탭 복귀 시 초기화되어 실패 확인했다. 현재 구현은 `getPageComponent(path)` lazy factory로 방문한 경로만 dynamic 생성하고, `TabKeepAlive`가 실제 page component를 최대 `MAX_TABS`개 hidden mount로 유지한다. `tabPageState.ts` 입력/select/checkbox/radio/스크롤 sessionStorage 복원은 보조 장치다. 검증: layout 구조 테스트 2건 PASS, FE tsc PASS, 3002 Playwright 로그인 세션에서 `/master/part` 품목 추가 패널 입력 `CODX_REAL_KEEP`가 대시보드 이동 후 품목 탭 복귀에도 보존됨 확인, 최종 HTTP `/dashboard` 521ms, `/master/part` 330ms, `/production/wip-stock` 523ms, `/system/menu-categories` 266ms. 커밋하지 않았다.
+- `T-ROUTING-LABEL-ISSUE-UI`: `/master/routing` 공정 등록/수정 모달에 `라벨발행` 영역을 추가해 `SG 라벨 발행`, `FG 라벨 발행` 체크박스를 설정할 수 있게 했다. 백엔드 DTO/service create/update가 `issueSgLabelYn`, `issueFgLabelYn`을 저장하고, 프론트 공정 그리드는 `라벨발행` 컬럼에 SG/FG 배지를 표시한다. 검증: 구조 테스트 RED→GREEN 6/6, backend focused 2/2 및 전체 spec 28/28, FE/BE tsc, 3012 브라우저 모달/그리드 확인, API 생성/수정/조회 roundtrip, JSHANES 검증 데이터 잔여 0, diff check PASS. 3002는 HTTP 타임아웃이라 3012 dev 서버에서 확인했다. 커밋하지 않았다.
+- `T-PROD-WIP-FG-STOCK-MENU-SPLIT`: `/production/wip-stock` 합산 화면을 공통 `WipStockView`로 분리하고, `/production/wip-stock`은 `SEMI_PRODUCT` 고정 `반제품재공조회`, 신규 `/production/fg-stock`은 `FINISHED` 고정 `제품재공조회`로 추가했다. 제품 화면에만 미포장 FG라벨 우측 패널이 보인다. `PROD_FG_STOCK` 메뉴/validator/locale/pageRegistry/seed JSON/DB migration 반영 완료. JSHANES에는 `PROD_WIP_STOCK` sort 70, `PROD_FG_STOCK` sort 71, MANAGER/OPERATOR 권한 Y 확인. 구조 테스트 5건, FE tsc, 3002 브라우저 제목/API itemType 분리/console error 0, diff check PASS. 커밋하지 않았다.
+
+## Coordination Cleanup
+
+- `LOCKS.md`는 현재 활성 잠금 없음으로 정리했다.
+- 앞으로 완료된 작업은 `JOURNAL.md`/`ARCHIVE.md`/`HANDOFF`에 기록한 뒤 `LOCKS.md`의 lock 항목을 제거한다. `status: released`를 Active Locks에 누적하지 않는다.
 
 ## In Review
 
@@ -123,6 +134,10 @@
 
 ## Next AI Should
 
+- `T-WIP-FG-LABEL-SOURCE-SPLIT` 완료 후 REVIEW 상태. 재공 상세 라벨 API는 이제 `/production/wip-stock/labels?itemCode=&itemType=`이며, `SEMI_PRODUCT`는 `SG_LABELS`, `FINISHED`는 `FG_LABELS`를 조회한다. 프론트 우측 패널은 공통 컬럼 `구분/라벨바코드/상태/잔량/검사/작업지시/현재공정/장착설비/발행일시`를 표시한다. 기존 `/fg-labels` endpoint는 호환용 FINISHED wrapper로 남겼다. 3002 실측: `HNS02C2ABCDE` 반제품은 `SG_LABELS` SQL과 `labelType=SG` 1건 반환, FINISHED 요청은 `FG_LABELS` SQL 확인. 구조 테스트 9건, FE/BE tsc, 브라우저 API/DOM 검증 PASS. 커밋하지 않았다.
+- `T-WIP-STOCK-LABEL-DETAIL-PANEL`은 후속 `T-WIP-FG-LABEL-SOURCE-SPLIT`으로 보강됐다. `/production/wip-stock` 우측 `상세 라벨정보` 패널은 유지하되, 현재 행 클릭 API는 `/production/wip-stock/labels?itemCode=&itemType=`가 맞다. 이전 `/fg-labels` 단일 조회 설명은 현재 계약이 아니다.
+- `T-FG-STOCK-CARD-REMOVE-TYPE-FILTER` 완료 후 REVIEW 상태. `/production/fg-stock` 상단 정보카드 2개를 제거했고, 좌측 그리드 툴바에 `유형: 전체/완제품/반제품` Select를 추가했다. 기본값은 `FINISHED`, 선택 변경 시 API `itemType`과 SQL 미리보기 조건이 함께 바뀐다. `/production/wip-stock`는 필터 없이 `SEMI_PRODUCT` 고정 유지. 검증: 신규 구조 테스트 RED→GREEN, split/SQL 구조 테스트 PASS, FE tsc PASS, 3002 HTTP 200, Playwright DOM/API/console 검증 PASS, diff check PASS. 커밋하지 않았다.
+- `T-WIP-MAT-LABEL-RAW-PROCESS` 완료 후 REVIEW 상태. `/production/wip-material-stock` 한국어 메뉴/화면 제목은 `원자재공정재고`, `/production/wip-material-trans`는 `원자재공정수불`로 변경했다. 라우트/메뉴코드/DB 메뉴는 변경하지 않았다. 검증: 신규 구조 테스트 RED→GREEN, menu locale coverage, FE tsc, 3002 HTTP 200, Playwright DOM 제목/console error 0, diff check PASS. 커밋하지 않았다.
 - `T-IQC-PART-SPEC-AQL-SUMMARY` 완료 후 REVIEW 상태. `/master/iqc-part-spec` 우측 상단에 선택 품목 AQL 요약을 추가했다. 품목마스터 응답의 검사수준/기본시료수/Critical AQL/Major AQL/Minor AQL을 표시하고, `LOT 수량 미리보기` 값으로 `/quality/aql/resolve-iqc`를 호출해 샘플수량 및 Major/Minor Ac/Re를 보여준다. 기존 검사항목 저장 흐름은 유지. 검증: 신규 구조 테스트 RED→GREEN, 기존 layout 구조 테스트 PASS, FE tsc PASS, 3002 HTTP 200, diff check PASS. 커밋하지 않았다.
 - `T-IQC-DEFECT-CODE-SEVERITY-AQL` 완료 후 REVIEW 상태. IQC 불량코드 등급은 `COM_CODES.DEFECT_GRADE` 전용 컬럼으로 관리하고, `DEFECT_TYPE`에는 등급 필수/허용값 체크 제약이 있다. `/material/iqc`는 불량코드+수량을 저장 payload `defects`로 보내며, 서버가 Critical/Major/Minor로 집계해 Critical 즉시 FAIL, Major/Minor 독립 Ac/Re 판정을 수행한다. JSHANES 기존 12개 불량코드는 등급 백필 완료. 검증: backend AQL/IQC spec 26/26, IQC modal structure 3/3, BE/FE tsc, ERD 재생성, DB 컬럼/제약/코드 조회, diff check PASS. 커밋하지 않았다.
 - `T-SHIP-CONFIRM-CARD-REMOVE` 완료 후 REVIEW 상태. `/shipping/confirm` 상단 `StatCard` 정보카드는 제거됐고 구조 테스트/FE tsc/diff check는 통과했다. 3002 서버는 node PID `55728`이 listen 중이나 HTTP 요청이 30초 타임아웃됐으므로, 필요하면 서버 상태를 복구한 뒤 브라우저 미표시만 재확인한다.

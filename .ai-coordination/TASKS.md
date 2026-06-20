@@ -29,6 +29,216 @@ notes:
 
 ## Active Tasks
 
+## T-MENU-OPEN-DELAY 메뉴 클릭 후 화면 열림 지연 원인 진단
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- 메뉴 클릭 후 30초 이상 지연되는 경로의 실제 병목 확인
+files:
+- apps/frontend/src/components/layout/**
+- apps/frontend/src/config/menuConfig.ts
+- apps/frontend/scripts/gen-page-registry.mjs
+- apps/frontend/src/components/layout/pageRegistry.generated.ts
+- apps/backend/src/modules/menu-categories/**
+- apps/frontend/src/components/layout/tab-keep-alive-unique-paths.structure.test.mjs
+- apps/frontend/src/components/layout/tabPageState.ts
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+verification:
+- 원인 확인: `.next/trace`에서 `/system/menu-categories` RSC 요청 89~109초, `/inspection/terminal-result` compile 68초, authenticated page loader 다수 동시 준비 확인.
+- PASS: `node --test apps/frontend/src/components/layout/tab-keep-alive-unique-paths.structure.test.mjs apps/frontend/src/components/layout/sidebar-menu-navigation.structure.test.mjs`
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 수정 후 3002 HTTP 반복 측정 `/dashboard` 514ms, `/master/part` 281ms, `/production/wip-stock` 212ms, `/system/menu-categories` 258ms.
+- PASS: Playwright headless mock에서 `/master/part` 본문 검색 입력 `CODX_STATE_KEEP` 입력 후 `/dashboard` 이동, `/master/part` 재진입 시 값 복원 확인.
+- PASS: Playwright headless mock에서 `/master/part` 우측 등록 패널 입력 `CODX_PANEL_KEEP` 입력 후 대시보드 탭 이동, 품목 탭 재진입 시 패널/입력값 보존 확인.
+- PASS: 최종 3002 HTTP 측정 `/dashboard` 1030ms, `/master/part` 860ms, `/production/wip-stock` 331ms, `/system/menu-categories` 462ms.
+- FAIL 확인: App Router `children` 캐시 방식은 실제 브라우저에서 `/master/part` 품목 추가 패널 입력 `CODX_REAL_KEEP` 후 대시보드 이동/품목 탭 복귀 시 패널이 초기화되어 값이 사라졌다.
+- PASS: `getPageComponent(path)` lazy registry + 실제 page component keep-alive 적용 후 동일 3002 Playwright 로그인 세션에서 `/master/part` 품목 추가 패널 입력 `CODX_REAL_KEEP` 보존 확인.
+- PASS: lazy registry 적용 후 최종 3002 HTTP 반복 측정 `/dashboard` 521ms, `/master/part` 330ms, `/production/wip-stock` 523ms, `/system/menu-categories` 266ms.
+review:
+- needs-review
+notes:
+- 원인: `TabKeepAlive`가 `pageRegistry.generated.ts`를 import해 Next dev 서버가 메뉴 클릭 시 authenticated page 전체를 on-demand compile 대상으로 잡았다.
+- 변경: top-level `pageRegistry` 객체는 제거하고 `getPageComponent(path)`가 호출된 경로만 `dynamic()` 생성하도록 `pageRegistry.generated.ts`를 lazy factory로 재생성했다.
+- 보정: `TabKeepAlive`는 방문한 실제 page component만 경로별 최대 `MAX_TABS`개 hidden mount로 유지해 열린 탭의 React state를 보존한다. DOM 입력값/선택값/스크롤 `sessionStorage` 저장은 추가 복원 보조로 유지한다.
+
+## T-ROUTING-LABEL-ISSUE-UI 라우팅 공정 SG/FG 라벨 발행 설정 UI 추가
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/master/routing` 공정순서에서 `ISSUE_SG_LABEL_YN`, `ISSUE_FG_LABEL_YN` 설정/표시
+files:
+- apps/backend/src/modules/master/dto/routing-group.dto.ts
+- apps/backend/src/modules/master/services/routing-group.service.ts
+- apps/backend/src/modules/master/services/routing-group.service.spec.ts
+- apps/frontend/src/app/(authenticated)/master/routing/types.ts
+- apps/frontend/src/app/(authenticated)/master/routing/components/RoutingGroupManager.tsx
+- apps/frontend/src/app/(authenticated)/master/routing/routing-label-issue-flags.structure.test.mjs
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/master/routing/routing-label-issue-flags.structure.test.mjs"`가 플래그 type/UI/DTO/service/locale 부재로 6건 실패 확인.
+- GREEN: 동일 구조 테스트 6/6 PASS.
+- PASS: `pnpm --filter @harness/backend test -- routing-group.service.spec.ts -t "label issue flags" --runInBand` 2/2 PASS.
+- PASS: `pnpm --filter @harness/backend test -- routing-group.service.spec.ts --runInBand` 28/28 PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false`.
+- PASS: 3012 브라우저 실측에서 `/master/routing` 공정 수정 모달 `라벨발행`, `SG 라벨 발행`, `FG 라벨 발행` 체크박스 표시 확인. 그리드 `라벨발행` 컬럼과 기존 `FG` 배지 표시 확인.
+- PASS: 3012 API roundtrip으로 임시 라우팅 그룹/공정 생성 후 `issueSgLabelYn='Y'`, `issueFgLabelYn='N'` 저장, update 후 `issueSgLabelYn='N'`, `issueFgLabelYn='Y'` 조회 확인. 검증 데이터 삭제 후 JSHANES `ROUTING_CODE LIKE 'CODX_LABEL_%'` 잔여 0 확인.
+- PASS: 대상 파일 `git diff --check`.
+review:
+- needs-review
+notes:
+- 현재 `ROUTING_PROCESSES` 엔티티에는 컬럼이 있으나 `/master/routing` UI와 DTO/서비스 저장 경로에 빠져 운영자가 설정할 수 없다.
+- 3002 프론트는 HTTP 요청이 30초 타임아웃되어 3012 dev 서버에서 런타임 검증했다.
+
+## T-WIP-FG-LABEL-SOURCE-SPLIT 재공 상세 라벨 SG/FG 분리 조회
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/production/wip-stock`, `/production/fg-stock` 상세 라벨정보를 품목 유형별로 `SG_LABELS`/`FG_LABELS` 분리 조회
+files:
+- apps/backend/src/modules/production/services/production-views.service.ts
+- apps/backend/src/modules/production/controllers/production-views.controller.ts
+- apps/frontend/src/app/(authenticated)/production/wip-stock/WipStockView.tsx
+- apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-label-detail.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-actual-sql.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/fg-stock/fg-stock-type-filter.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-label-detail.structure.test.mjs"`가 기존 `/fg-labels` 단일 조회와 `FG_LABELS` 전용 서비스로 실패 확인.
+- GREEN: wip label detail, fg type filter, wip split, wip SQL, menu locale 구조 테스트 9건 PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: `pnpm --filter @harness/backend exec tsc --noEmit --pretty false`.
+- PASS: 3002 브라우저 fetch 실측. `SEMI_PRODUCT/HNS02C2ABCDE`는 `/api/production/wip-stock/labels?...itemType=SEMI_PRODUCT`에서 `SG_LABELS` SQL과 `labelType=SG` 1건 반환. `FINISHED` 요청은 `FG_LABELS` SQL 사용 확인.
+- PASS: 3002 `/production/wip-stock` 우측 패널에 `라벨바코드`, `잔량` 컬럼 표시 및 console/page error 0 확인.
+review:
+- needs-review
+notes:
+- `SEMI_PRODUCT` 상세는 `SG_LABELS`, `FINISHED` 상세는 `FG_LABELS`가 source of truth다.
+
+## T-WIP-STOCK-LABEL-DETAIL-PANEL 반제품재공조회 라벨 상세 패널 표시
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/production/wip-stock`에서 좌측 품목 선택 시 우측 상세 라벨정보 패널 표시
+files:
+- apps/frontend/src/app/(authenticated)/production/wip-stock/WipStockView.tsx
+- apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-label-detail.structure.test.mjs
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-label-detail.structure.test.mjs"`가 `showFgPanel` 조건과 일반 라벨 패널 문구 부재로 실패 확인.
+- GREEN: wip label detail, fg type filter, wip split, wip SQL, menu locale 구조 테스트 8건 PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: 3002 `/production/wip-stock` HTTP 200.
+- PASS: Playwright에서 반제품재공조회 우측 `상세 라벨정보` 패널 표시, 반제품 행 `HNS02C2ABCDE` 클릭 시 `/api/production/wip-stock/fg-labels?itemCode=HNS02C2ABCDE` 호출, console/page error 0 확인.
+- PASS: 대상 파일 `git diff --check`.
+review:
+- needs-review
+notes:
+- 백엔드 `/production/wip-stock/fg-labels`는 `itemCode` 기준 `FG_LABELS`를 조회하므로 반제품 품목도 라벨이 있으면 반환 가능하다.
+- 현재 JSHANES `HNS02C2ABCDE` 반제품 재고는 1건이고, 연결 라벨 상세는 0건이라 패널은 `데이터가 없습니다.`로 표시된다.
+
+## T-FG-STOCK-CARD-REMOVE-TYPE-FILTER 제품재공조회 정보카드 제거 및 유형 필터 추가
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/production/fg-stock` 상단 정보카드 제거
+- 좌측 품목 그리드 툴바에 유형 필터 추가
+files:
+- apps/frontend/src/app/(authenticated)/production/wip-stock/WipStockView.tsx
+- apps/frontend/src/app/(authenticated)/production/fg-stock/page.tsx
+- apps/frontend/src/app/(authenticated)/production/fg-stock/fg-stock-type-filter.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-menu-split.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-actual-sql.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/production/fg-stock/fg-stock-type-filter.structure.test.mjs"`가 `enableTypeFilter` 부재와 `StatCard` 잔존으로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/production/fg-stock/fg-stock-type-filter.structure.test.mjs" "apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-menu-split.structure.test.mjs" "apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-actual-sql.structure.test.mjs"` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: 3002 `/production/fg-stock` HTTP 200.
+- PASS: Playwright DOM에서 `품목 수`/`총 재고` 정보카드 0건, 유형 옵션 `전체/완제품/반제품`, API 요청 `itemType=FINISHED` 후 `SEMI_PRODUCT`, console/page error 0 확인.
+- PASS: 대상 파일 `git diff --check`.
+review:
+- needs-review
+notes:
+- 기본 조회 유형은 `FINISHED`로 유지하고, `fg-stock` 화면에서만 유형 Select를 노출한다.
+
+## T-WIP-MAT-LABEL-RAW-PROCESS 원자재 공정재고/수불 메뉴명 변경
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/production/wip-material-stock`, `/production/wip-material-trans` 한국어 메뉴명과 화면 제목 변경
+files:
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/app/(authenticated)/production/wip-material-stock/wip-material-menu-label.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/production/wip-material-stock/wip-material-menu-label.structure.test.mjs"`가 기존 `공정재고` 값으로 실패 확인.
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/production/wip-material-stock/wip-material-menu-label.structure.test.mjs" apps/frontend/src/config/menu-locale-coverage.structure.test.mjs` PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: 3002 HTTP `/production/wip-material-stock`, `/production/wip-material-trans` 200.
+- PASS: Playwright DOM에서 제목 `원자재공정재고`, `원자재공정수불`, console/page error 0 확인.
+- PASS: 대상 파일 `git diff --check`.
+review:
+- needs-review
+notes:
+- 메뉴 키/라우트/DB 메뉴 코드는 유지하고 한국어 표시 문구만 변경한다.
+
+## T-PROD-WIP-FG-STOCK-MENU-SPLIT 반제품/제품 재공조회 메뉴 분리
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/production/wip-stock` 합산 화면을 반제품재공조회와 제품재공조회로 메뉴/라우트 분리
+files:
+- apps/frontend/src/app/(authenticated)/production/wip-stock/**
+- apps/frontend/src/app/(authenticated)/production/fg-stock/**
+- apps/frontend/src/config/menuConfig.ts
+- apps/frontend/src/components/layout/pageRegistry.generated.ts
+- apps/frontend/src/locales/{ko,en,zh,vi}.json
+- apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
+- apps/backend/src/migrations/2026-06-20_split_wip_fg_stock_menus.sql
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/production/wip-stock/wip-stock-menu-split.structure.test.mjs"`가 신규 공유 컴포넌트/제품 라우트/메뉴 부재로 실패 확인.
+- GREEN: wip-stock split/SQL, menu locale, menu-code-validator 구조 테스트 5건 PASS.
+- PASS: `pnpm --filter @harness/frontend exec tsc --noEmit --pretty false`.
+- PASS: JSHANES 메뉴 마이그레이션 적용 및 재실행 성공, `PROD_WIP_STOCK` 70 / `PROD_FG_STOCK` 71 확인, `PROD_FG_STOCK` MANAGER/OPERATOR 권한 확인.
+- PASS: 3002 브라우저에서 `/production/wip-stock` 제목 `반제품재공조회`, `/production/fg-stock` 제목 `제품재공조회`, API 요청 `itemType=SEMI_PRODUCT`/`FINISHED`, console/page error 0 확인.
+- PASS: 대상 파일 `git diff --check`.
+review:
+- needs-review
+notes:
+- 기존 `/production/wip-stock`는 `SEMI_PRODUCT`, 신규 `/production/fg-stock`는 `FINISHED` 고정 조회로 둔다.
+
 ## T-IQC-PART-SPEC-AQL-SUMMARY 품목별 IQC 항목관리 AQL 요약 표시
 status: REVIEW
 owner: codex
