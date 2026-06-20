@@ -50,6 +50,8 @@ interface PoStatusRaw {
   items: PoStatusItemRaw[];
 }
 
+const RECEIVED_STATUS_CLASS = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+
 export default function PoStatusPage() {
   const { t } = useTranslation();
   const poStatusMap = useComCodeMap("PO_STATUS");
@@ -123,10 +125,11 @@ export default function PoStatusPage() {
       meta: { filterType: "none" as const },
       cell: ({ getValue }) => {
         const rate = getValue() as number;
+        const rateClass = rate >= 100 ? "bg-green-500" : rate > 0 ? "bg-yellow-500" : "bg-gray-400";
         return (
           <div className="flex items-center gap-2">
             <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-primary h-2 rounded-full"
+              <div className={`h-2 rounded-full ${rateClass}`}
                 style={{ width: `${Math.min(rate, 100)}%` }} />
             </div>
             <span className="text-xs font-medium w-10 text-right">{rate}%</span>
@@ -137,11 +140,14 @@ export default function PoStatusPage() {
     {
       accessorKey: "status", header: t("common.status"), size: 100,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
+      cell: ({ getValue, row }) => {
         const s = getValue() as string;
+        const isReceived = s === "RECEIVED" || row.original.receiveRate >= 100;
+        const statusClass = isReceived ? RECEIVED_STATUS_CLASS : poStatusMap[s]?.attr1 || "";
+        const statusLabel = isReceived ? poStatusMap.RECEIVED?.codeName || "입고완료" : poStatusMap[s]?.codeName || s;
         return (
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${poStatusMap[s]?.attr1 || ""}`}>
-            {poStatusMap[s]?.codeName || s}
+          <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusClass}`}>
+            {statusLabel}
           </span>
         );
       },
