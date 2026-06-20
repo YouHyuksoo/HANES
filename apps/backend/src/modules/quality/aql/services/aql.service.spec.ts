@@ -133,6 +133,14 @@ describe('AqlService', () => {
     await expect(service.deletePolicy('AQLP-II-1.0-2.5', '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
   });
 
+  it('blocks disabling an AQL standard referenced by active IQC AQL policies', async () => {
+    standardRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' });
+    policyRepo.count.mockResolvedValue(1);
+
+    await expect(service.delete('AQL-II-1.0', '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
+    expect(standardRepo.save).not.toHaveBeenCalled();
+  });
+
   it('resolves item AQL policy and fails immediately on critical defects', async () => {
     partRepo.findOne.mockResolvedValue({
       itemCode: 'PCB',
@@ -485,5 +493,39 @@ describe('AqlService', () => {
     expect(partnerRepo.save).toHaveBeenCalledWith(expect.objectContaining({ inspectionMode: 'TIGHTENED' }));
     expect(modeHistoryRepo.save).toHaveBeenCalledWith(expect.objectContaining({ newMode: 'TIGHTENED' }));
     expect(result).toEqual(expect.objectContaining({ changed: true, inspectionMode: 'TIGHTENED' }));
+  });
+
+  it('reverts supplier inspection mode when the latest mode history belongs to the canceled IQC lot', async () => {
+    partnerRepo.findOne.mockResolvedValue({
+      company: '40',
+      plant: '1000',
+      partnerCode: 'SUP-C',
+      inspectionMode: 'TIGHTENED',
+    });
+    modeHistoryRepo.find.mockResolvedValue([
+      {
+        vendorCode: 'SUP-C',
+        prevMode: 'NORMAL',
+        newMode: 'TIGHTENED',
+        refArrivalNo: 'ARR-1',
+        refItemCode: 'ITEM-1',
+      },
+    ]);
+
+    const result = await service.revertVendorInspectionModeForCanceledLot({
+      vendorCode: 'SUP-C',
+      arrivalNo: 'ARR-1',
+      itemCode: 'ITEM-1',
+      company: '40',
+      plant: '1000',
+    });
+
+    expect(partnerRepo.save).toHaveBeenCalledWith(expect.objectContaining({ inspectionMode: 'NORMAL' }));
+    expect(modeHistoryRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+      prevMode: 'TIGHTENED',
+      newMode: 'NORMAL',
+      reason: 'IQC 판정 취소로 검사강도 원복',
+    }));
+    expect(result).toEqual(expect.objectContaining({ changed: true, inspectionMode: 'NORMAL' }));
   });
 });

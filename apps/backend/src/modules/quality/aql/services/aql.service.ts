@@ -237,6 +237,15 @@ export class AqlService {
   async delete(aqlCodeParam: string, company: string, plant: string, userId = 'system') {
     const aqlCode = this.normalizeCode(aqlCodeParam);
     const standard = await this.findStandardOrThrow(aqlCode, company, plant);
+    const assignedPolicyCount = await this.policyRepo.count({
+      where: [
+        { company, plant, useYn: 'Y', majorAqlCode: aqlCode },
+        { company, plant, useYn: 'Y', minorAqlCode: aqlCode },
+      ],
+    });
+    if (assignedPolicyCount > 0) {
+      throw new BadRequestException('IQC AQL 정책에서 참조 중인 AQL 기준은 사용중지할 수 없습니다.');
+    }
     standard.useYn = 'N';
     standard.updatedBy = userId;
     await this.standardRepo.save(standard);
@@ -585,6 +594,68 @@ export class AqlService {
     }));
 
     return { vendorCode, inspectionMode: nextMode, previousMode: currentMode, changed: true, reason };
+  }
+
+  async revertVendorInspectionModeForCanceledLot(input: {
+    vendorCode?: string | null;
+    itemCode?: string | null;
+    arrivalNo?: string | null;
+    company?: string;
+    plant?: string;
+  }) {
+    const vendorCode = input.vendorCode?.trim();
+    if (!vendorCode) return null;
+
+    const partner = await this.partnerRepo.findOne({
+      where: {
+        partnerCode: vendorCode,
+        ...(input.company ? { company: input.company } : {}),
+        ...(input.plant ? { plant: input.plant } : {}),
+      },
+    });
+    if (!partner) return null;
+
+    const currentMode = this.normalizeInspectionMode(partner.inspectionMode);
+    const histories = await this.modeHistoryRepo.find({
+      where: {
+        vendorCode,
+        ...(input.company ? { company: input.company } : {}),
+        ...(input.plant ? { plant: input.plant } : {}),
+      },
+      order: { changedAt: 'DESC', seq: 'DESC' },
+      take: 1,
+    });
+    const latest = histories[0];
+    if (!latest) return { vendorCode, inspectionMode: currentMode, changed: false };
+
+    const sameCanceledLot =
+      (latest.refArrivalNo ?? null) === (input.arrivalNo ?? null) &&
+      (latest.refItemCode ?? null) === (input.itemCode ?? null);
+    const latestNewMode = this.normalizeInspectionMode(latest.newMode);
+    if (!sameCanceledLot || currentMode !== latestNewMode) {
+      return { vendorCode, inspectionMode: currentMode, changed: false };
+    }
+
+    const revertedMode = this.normalizeInspectionMode(latest.prevMode);
+    if (revertedMode === currentMode) {
+      return { vendorCode, inspectionMode: currentMode, changed: false };
+    }
+
+    const reason = 'IQC 판정 취소로 검사강도 원복';
+    partner.inspectionMode = revertedMode;
+    await this.partnerRepo.save(partner);
+    await this.modeHistoryRepo.save(this.modeHistoryRepo.create({
+      company: partner.company,
+      plant: partner.plant,
+      vendorCode,
+      prevMode: currentMode,
+      newMode: revertedMode,
+      reason,
+      refArrivalNo: input.arrivalNo ?? null,
+      refItemCode: input.itemCode ?? null,
+    }));
+
+    return { vendorCode, inspectionMode: revertedMode, previousMode: currentMode, changed: true, reason };
   }
 
   private async findStandardOrThrow(aqlCodeParam: string, company?: string, plant?: string) {

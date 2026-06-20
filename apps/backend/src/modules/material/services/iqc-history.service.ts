@@ -887,6 +887,32 @@ export class IqcHistoryService {
           `파괴검사 시료 자동출고(${sampleIssue.transNo})가 이미 반영되어 있습니다. 시료 출고를 먼저 정리한 뒤 IQC 판정을 취소해 주세요.`,
         );
       }
+    } else if (!log.matUid && log.arrivalNo && log.itemCode && log.result === 'PASS') {
+      const arrivalLots = await this.matLotRepository.find({
+        where: {
+          arrivalNo: log.arrivalNo,
+          itemCode: log.itemCode,
+          ...this.tenantWhere(log.company, log.plant),
+        },
+      });
+      for (const lot of arrivalLots ?? []) {
+        const sampleIssue = await this.stockTransactionRepository.findOne({
+          where: {
+            matUid: lot.matUid,
+            itemCode: lot.itemCode,
+            refType: 'IQC_DESTRUCT',
+            cancelRefId: IsNull(),
+            status: 'DONE',
+            ...this.tenantWhere(lot.company, lot.plant),
+          },
+          order: { createdAt: 'DESC' },
+        });
+        if (sampleIssue) {
+          throw new BadRequestException(
+            `파괴검사 시료 자동출고(${sampleIssue.transNo})가 이미 반영되어 있습니다. 시료 출고를 먼저 정리한 뒤 IQC 판정을 취소해 주세요.`,
+          );
+        }
+      }
     }
 
     await this.tx.run(async (queryRunner) => {
@@ -956,6 +982,14 @@ export class IqcHistoryService {
           );
         }
       }
+    });
+
+    await this.aqlService.revertVendorInspectionModeForCanceledLot({
+      vendorCode: log.vendorCode,
+      arrivalNo: log.arrivalNo,
+      itemCode: log.itemCode,
+      company: log.company,
+      plant: log.plant,
     });
 
     return { inspectDate, seq, status: 'CANCELED' };

@@ -75,6 +75,7 @@ describe('IqcHistoryService cancel policy', () => {
       judgeReason: 'AQL 기준 합격',
     });
     mockAqlService.updateVendorInspectionModeAfterLot.mockResolvedValue(null);
+    mockAqlService.revertVendorInspectionModeForCanceledLot.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -562,6 +563,35 @@ describe('IqcHistoryService cancel policy', () => {
     );
   });
 
+  it('blocks arrival-level PASS cancel when destructive sample issue exists for an arrival lot', async () => {
+    mockIqcLogRepo.findOne.mockResolvedValue({
+      inspectDate: new Date('2026-04-08'),
+      seq: 1,
+      arrivalNo: 'ARR-001',
+      matUid: null,
+      itemCode: 'ITEM-001',
+      vendorCode: 'SUP-001',
+      result: 'PASS',
+      status: 'DONE',
+      company: 'HANES',
+      plant: 'P01',
+    } as any);
+    mockMatReceivingRepo.findOne.mockResolvedValue(null);
+    mockMatLotRepo.find.mockResolvedValue([
+      { matUid: 'MAT-001', itemCode: 'ITEM-001', arrivalNo: 'ARR-001', company: 'HANES', plant: 'P01' } as MatLot,
+    ]);
+    mockStockTxRepo.findOne.mockResolvedValue({
+      transNo: 'TX-IQC-DESTRUCT',
+      refType: 'IQC_DESTRUCT',
+      status: 'DONE',
+    } as any);
+
+    await expect(target.cancel('2026-04-08', 1, { reason: 'retest' } as any)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(mockTx.run).not.toHaveBeenCalled();
+  });
+
   it('reverses IQC fail move before canceling the result', async () => {
     mockIqcLogRepo.findOne.mockResolvedValue({
       inspectDate: new Date('2026-04-08'),
@@ -652,6 +682,39 @@ describe('IqcHistoryService cancel policy', () => {
       { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', company: 'HANES', plant: 'P01' },
       { iqcStatus: 'PENDING' },
     );
+  });
+
+  it('IQC 판정 취소 후 업체 검사강도 변경 이력을 원복한다', async () => {
+    mockIqcLogRepo.findOne.mockResolvedValue({
+      inspectDate: new Date('2026-04-08'),
+      seq: 1,
+      arrivalNo: 'ARR-001',
+      matUid: null,
+      itemCode: 'ITEM-001',
+      vendorCode: 'SUP-001',
+      result: 'FAIL',
+      status: 'DONE',
+      company: 'HANES',
+      plant: 'P01',
+    } as any);
+    mockMatReceivingRepo.findOne.mockResolvedValue(null);
+    mockNumbering.nextInTx.mockResolvedValue('TX-CANCEL-001');
+
+    const manager = {
+      find: jest.fn().mockResolvedValue([]),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.cancel('2026-04-08', 1, { reason: 'retest' } as any);
+
+    expect(mockAqlService.revertVendorInspectionModeForCanceledLot).toHaveBeenCalledWith({
+      vendorCode: 'SUP-001',
+      arrivalNo: 'ARR-001',
+      itemCode: 'ITEM-001',
+      company: 'HANES',
+      plant: 'P01',
+    });
   });
 
   it('성적서 업로드는 API ISO inspectDate를 Oracle 로컬 timestamp로 매칭한다', async () => {
