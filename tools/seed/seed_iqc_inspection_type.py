@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""IQC 검사유형/샘플방식 공통코드 시드 (IQC_INSPECT_TYPE, IQC_SAMPLE_METHOD)."""
+"""IQC 검사유형/샘플방식 공통코드 시드 (IQC_ITEM_INSP_TYPE, IQC_SAMPLE_METHOD)."""
 import json, os, sys, oracledb
 
 COMMIT = "--commit" in sys.argv
 CO, PLANT, WORKER = "40", "1000", "seed"
 
 GROUPS = {
-    "IQC_INSPECT_TYPE": [
+    "IQC_ITEM_INSP_TYPE": [
         ("AQL", "AQL샘플링", 1),
         ("DESTRUCTIVE", "파괴검사", 2),
         ("FULL", "전수검사", 3),
