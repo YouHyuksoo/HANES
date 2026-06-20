@@ -1748,7 +1748,8 @@
       "destructive": "破坏/全数检验",
       "inspectedQty": "检验数",
       "defectQty": "不良数",
-      "destructiveHint": "检验数 / 不良数 — 1件不良即FAIL"
+      "destructiveHint": "检验数 / 不良数 — 1件不良即FAIL",
+      "removeSerial": "移除序列号"
     },
     "receive": {
       "title": "物料入库管理",

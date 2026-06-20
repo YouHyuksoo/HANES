@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine, ListChecks } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine, ListChecks, X } from "lucide-react";
 import { Button, Modal, ComCodeBadge } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import { useComCodeList } from "@/hooks/useComCode";
@@ -297,6 +297,16 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     });
     setSelectedSerial(unscanned[0].matUid);
   }, [pendingSerials, scannedSerials, aqlItems]);
+
+  const handleRemoveSerial = useCallback((matUid: string) => {
+    setScannedSerials((prev) => prev.filter((s) => s !== matUid));
+    setSerialInspectionMap((prev) => {
+      const next = { ...prev };
+      delete next[matUid];
+      return next;
+    });
+    setSelectedSerial((prev) => (prev === matUid ? "" : prev));
+  }, []);
 
   const updateSerialMeasurement = useCallback((matUid: string, idx: number, value: string) => {
     setSerialInspectionMap((prev) => {
@@ -675,28 +685,41 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                 scannedSerials.map((matUid, idx) => {
                   const result = getSerialResult(serialInspectionMap[matUid]);
                   return (
-                    <button
+                    <div
                       key={matUid}
-                      type="button"
-                      onClick={() => setSelectedSerial(matUid)}
-                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left border-b border-border hover:bg-surface ${
+                      className={`flex items-center gap-1 border-b border-border hover:bg-surface ${
                         selectedSerial === matUid ? "bg-primary/10" : ""
                       }`}
                     >
-                      <div className="min-w-0">
-                        <p className="text-xs text-text-muted">{idx + 1}</p>
-                        <p className="font-mono text-sm text-text truncate">{matUid}</p>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        result === "PASS"
-                          ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                          : result === "FAIL"
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                            : "bg-surface text-text-muted"
-                      }`}>
-                        {result || t("material.iqc.pendingJudge", "대기")}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSerial(matUid)}
+                        className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2 text-left"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs text-text-muted">{idx + 1}</p>
+                          <p className="font-mono text-sm text-text truncate">{matUid}</p>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          result === "PASS"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                            : result === "FAIL"
+                              ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                              : "bg-surface text-text-muted"
+                        }`}>
+                          {result || t("material.iqc.pendingJudge", "대기")}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSerial(matUid)}
+                        aria-label={t("material.iqc.removeSerial", "시리얼 제거")}
+                        title={t("material.iqc.removeSerial", "시리얼 제거")}
+                        className="mr-2 shrink-0 rounded p-1 text-text-muted transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/40"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   );
                 })
               )}

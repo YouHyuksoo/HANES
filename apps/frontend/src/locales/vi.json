@@ -1748,7 +1748,8 @@
       "destructive": "Kiểm tra phá hủy/toàn bộ",
       "inspectedQty": "Số kiểm",
       "defectQty": "Số lỗi",
-      "destructiveHint": "Số kiểm / Số lỗi — 1 lỗi là FAIL"
+      "destructiveHint": "Số kiểm / Số lỗi — 1 lỗi là FAIL",
+      "removeSerial": "Xóa serial"
     },
     "receive": {
       "title": "Nhập kho vật tư",

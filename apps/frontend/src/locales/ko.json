@@ -2078,7 +2078,8 @@
       "destructive": "파괴/전수 검사",
       "inspectedQty": "검사수량",
       "defectQty": "불량수",
-      "destructiveHint": "검사수량 / 불량수 — 불량 1건이면 FAIL"
+      "destructiveHint": "검사수량 / 불량수 — 불량 1건이면 FAIL",
+      "removeSerial": "시리얼 제거"
     },
     "receive": {
       "title": "자재입고관리",

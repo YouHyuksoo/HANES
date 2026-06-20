@@ -1762,7 +1762,8 @@
       "destructive": "Destructive/Full Inspection",
       "inspectedQty": "Inspected",
       "defectQty": "Defects",
-      "destructiveHint": "Inspected Qty / Defects — 1 defect means FAIL"
+      "destructiveHint": "Inspected Qty / Defects — 1 defect means FAIL",
+      "removeSerial": "Remove serial"
     },
     "receive": {
       "title": "Material Receiving",
