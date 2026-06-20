@@ -29,6 +29,19 @@ export class IqcPartSpecItemDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['CRITICAL', 'MAJOR', 'MINOR'])
+  defectGrade?: string | null;
+
+  @IsOptional()
+  @IsString()
+  inspectionLevel?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  aql?: number | null;
+
+  @IsOptional()
+  @IsString()
   useYn?: string;
 }
 

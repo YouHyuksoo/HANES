@@ -103,6 +103,9 @@ export class IqcPartSpecService {
             lsl: it.lsl ?? null,
             usl: it.usl ?? null,
             judgeCriteria: it.judgeCriteria ?? null,
+            defectGrade: it.defectGrade ?? null,
+            inspectionLevel: it.inspectionLevel ?? null,
+            aql: it.aql ?? null,
             useYn: it.useYn ?? 'Y',
             company,
             plant,
@@ -137,6 +140,9 @@ export class IqcPartSpecService {
     unit: string | null;
     judgeMethod: string;
     judgeCriteria: string | null;
+    defectGrade: string | null;
+    inspectionLevel: string | null;
+    aql: number | null;
   }>> {
     const spec = await this.findByItemCode(itemCode, company, plant);
     if (!spec || !spec.items || spec.items.length === 0) return [];
@@ -154,6 +160,9 @@ export class IqcPartSpecService {
         unit: item.inspItem.unit ?? null,
         judgeMethod: item.inspItem.judgeMethod,
         judgeCriteria: item.judgeCriteria ?? item.inspItem.criteria ?? null,
+        defectGrade: item.defectGrade ?? null,
+        inspectionLevel: item.inspectionLevel ?? null,
+        aql: item.aql != null ? Number(item.aql) : null,
       }));
   }
 

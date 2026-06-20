@@ -11,7 +11,8 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Save, ClipboardList, Pencil, Check, X } from "lucide-react";
-import { Button, Card, CardContent } from "@/components/ui";
+import { Button, Card, CardContent, ComCodeBadge } from "@/components/ui";
+import { useComCodeOptions } from "@/hooks/useComCode";
 import type { IqcPoolItem, IqcPartSpec, IqcSpecRow } from "../types";
 import IqcTemplatePickerModal from "./IqcTemplatePickerModal";
 import api from "@/services/api";
@@ -41,6 +42,11 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
   // 수정 임시 값
   const [editDraft, setEditDraft] = useState<IqcSpecRow | null>(null);
 
+  // 검사기준서: 불량등급/검사수준/AQL 공통코드 옵션
+  const defectGradeOptions = useComCodeOptions("DEFECT_GRADE");
+  const inspLevelOptions = useComCodeOptions("AQL_INSP_LEVEL");
+  const aqlOptions = useComCodeOptions("AQL_VALUE");
+
   const loadSpec = useCallback(async (code: string) => {
     setLoading(true);
     setEditingIdx(-1);
@@ -63,6 +69,9 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
             lsl: it.lsl ?? null,
             usl: it.usl ?? null,
             judgeCriteria: it.judgeCriteria ?? null,
+            defectGrade: it.defectGrade ?? null,
+            inspectionLevel: it.inspectionLevel ?? null,
+            aql: it.aql ?? null,
             useYn: it.useYn ?? 'Y',
           })),
         });
@@ -96,7 +105,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
     const maxSeq = spec.items.length > 0
       ? Math.max(...spec.items.map((i) => i.seq))
       : 0;
-    const newRow: IqcSpecRow = { seq: maxSeq + 1, inspItemCode: '', lsl: null, usl: null, judgeCriteria: null, useYn: 'Y' };
+    const newRow: IqcSpecRow = { seq: maxSeq + 1, inspItemCode: '', lsl: null, usl: null, judgeCriteria: null, defectGrade: null, inspectionLevel: null, aql: null, useYn: 'Y' };
     setSpec((prev) => ({ ...prev, items: [...prev.items, newRow] }));
     setDirty(true);
     // 새 행은 바로 수정 모드로
@@ -181,6 +190,9 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
             lsl: it.lsl,
             usl: it.usl,
             judgeCriteria: it.judgeCriteria ?? null,
+            defectGrade: it.defectGrade ?? null,
+            inspectionLevel: it.inspectionLevel ?? null,
+            aql: it.aql ?? null,
             useYn: it.useYn,
           })),
       });
@@ -284,6 +296,9 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-10">순서</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium">검사항목</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-20">종류</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">불량등급</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">검사수준</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">AQL</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-24">하한(LSL)</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-24">상한(USL)</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium">판정기준</th>
@@ -294,7 +309,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
               <tbody>
                 {spec.items.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-text-muted text-sm">
+                    <td colSpan={11} className="py-8 text-center text-text-muted text-sm">
                       검사항목이 없습니다. [항목 추가]를 눌러 추가하세요.
                     </td>
                   </tr>
@@ -332,6 +347,42 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               {isMeasure ? '측정형' : '판정형'}
                             </span>
                           ) : <span className="text-text-muted text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          <select
+                            value={draft.defectGrade ?? ''}
+                            onChange={(e) => updateDraft('defectGrade', e.target.value || null)}
+                            className="w-full border border-border rounded px-2 py-1 bg-surface text-text text-sm focus:border-primary focus:outline-none"
+                          >
+                            <option value="">-</option>
+                            {defectGradeOptions.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          <select
+                            value={draft.inspectionLevel ?? ''}
+                            onChange={(e) => updateDraft('inspectionLevel', e.target.value || null)}
+                            className="w-full border border-border rounded px-2 py-1 bg-surface text-text text-sm focus:border-primary focus:outline-none"
+                          >
+                            <option value="">-</option>
+                            {inspLevelOptions.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          <select
+                            value={draft.aql == null ? '' : String(draft.aql)}
+                            onChange={(e) => updateDraft('aql', e.target.value === '' ? null : Number(e.target.value))}
+                            className="w-full border border-border rounded px-2 py-1 bg-surface text-text text-sm focus:border-primary focus:outline-none"
+                          >
+                            <option value="">-</option>
+                            {aqlOptions.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
                         </td>
                         <td className="px-3 py-2">
                           {isMeasure ? (
@@ -408,6 +459,17 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             {row.judgeMethod === 'MEASURE' ? '측정형' : '판정형'}
                           </span>
                         ) : <span className="text-text-muted text-xs">-</span>}
+                      </td>
+                      <td className="px-3 py-2">
+                        {row.defectGrade
+                          ? <ComCodeBadge groupCode="DEFECT_GRADE" code={row.defectGrade} />
+                          : <span className="text-text-muted text-xs">-</span>}
+                      </td>
+                      <td className="px-3 py-2 text-text font-medium">
+                        {row.inspectionLevel || <span className="text-text-muted text-xs">-</span>}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums text-text">
+                        {row.aql != null ? row.aql : <span className="text-text-muted text-xs">-</span>}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums text-text">
                         {row.lsl !== null ? row.lsl : <span className="text-text-muted text-xs">-</span>}

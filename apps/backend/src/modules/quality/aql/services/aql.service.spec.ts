@@ -21,6 +21,7 @@ describe('AqlService', () => {
   let iqcLogRepo: ReturnType<typeof createRepoMock>;
   let modeHistoryRepo: ReturnType<typeof createRepoMock>;
   let comCodeRepo: ReturnType<typeof createRepoMock>;
+  let specItemRepo: ReturnType<typeof createRepoMock>;
   let service: AqlService;
 
   beforeEach(() => {
@@ -31,6 +32,7 @@ describe('AqlService', () => {
     iqcLogRepo = createRepoMock();
     modeHistoryRepo = createRepoMock();
     comCodeRepo = createRepoMock();
+    specItemRepo = createRepoMock();
     service = new AqlService(
       standardRepo as any,
       ruleRepo as any,
@@ -39,6 +41,7 @@ describe('AqlService', () => {
       iqcLogRepo as any,
       modeHistoryRepo as any,
       comCodeRepo as any,
+      specItemRepo as any,
     );
   });
 
@@ -224,6 +227,71 @@ describe('AqlService', () => {
     expect(result.defectCritical).toBe(1);
     expect(result.result).toBe('FAIL');
     expect(result.judgeReason).toContain('Critical');
+  });
+
+  it('judges per inspection item — a critical item with a defect fails the lot', async () => {
+    specItemRepo.find.mockResolvedValue([
+      { seq: 1, inspItemCode: 'FUNC', defectGrade: 'CRITICAL', inspectionLevel: 'S4', aql: null, useYn: 'Y' },
+    ]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II' });
+    partnerRepo.findOne.mockResolvedValue(null);
+
+    const result = await service.resolveIqcPolicyByItem({
+      itemCode: 'PCB',
+      vendorCode: null,
+      lotQty: 100,
+      itemDefectCounts: { 1: 1 },
+      company: '40',
+      plant: '1000',
+    });
+
+    expect(result.result).toBe('FAIL');
+    expect(result.defectCritical).toBe(1);
+    expect(result.itemResults?.find((r) => r.inspItemCode === 'FUNC')?.result).toBe('FAIL');
+  });
+
+  it('judges per inspection item — a major item exceeding its AQL Ac fails the lot', async () => {
+    specItemRepo.find.mockResolvedValue([
+      { seq: 1, inspItemCode: 'DIM', defectGrade: 'MAJOR', inspectionLevel: 'II', aql: 1.0, useYn: 'Y' },
+    ]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II' });
+    partnerRepo.findOne.mockResolvedValue(null);
+    standardRepo.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' });
+    ruleRepo.find.mockResolvedValue([{ lotQtyFrom: 1, lotQtyTo: 200, sampleSize: 20, acceptQty: 1, rejectQty: 2 }]);
+
+    const result = await service.resolveIqcPolicyByItem({
+      itemCode: 'PCB',
+      vendorCode: null,
+      lotQty: 100,
+      itemDefectCounts: { 1: 2 },
+      company: '40',
+      plant: '1000',
+    });
+
+    expect(result.result).toBe('FAIL');
+    expect(result.defectMajor).toBe(2);
+    expect(result.itemResults?.[0].acceptQty).toBe(1);
+  });
+
+  it('falls back to part-level policy when no inspection item has a defect grade', async () => {
+    specItemRepo.find.mockResolvedValue([]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II', aqlMajor: null, aqlMinor: null });
+    partnerRepo.findOne.mockResolvedValue(null);
+
+    const result = await service.resolveIqcPolicyByItem({
+      itemCode: 'PCB',
+      vendorCode: null,
+      lotQty: 100,
+      itemDefectCounts: {},
+      fallbackDefectCounts: { critical: 0, major: 0, minor: 0 },
+      company: '40',
+      plant: '1000',
+    });
+
+    expect(result.result).toBe('PASS');
+    expect(result.itemResults).toBeUndefined();
   });
 
   it('rejects IQC defect codes without Critical/Major/Minor severity', async () => {

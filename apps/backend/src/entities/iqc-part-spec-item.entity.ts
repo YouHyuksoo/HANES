@@ -37,6 +37,18 @@ export class IqcPartSpecItem {
   @Column({ name: 'JUDGE_CRITERIA', type: 'varchar2', length: 500, nullable: true })
   judgeCriteria: string | null;
 
+  /** 불량등급: CRITICAL/MAJOR/MINOR (DEFECT_GRADE 공통코드) */
+  @Column({ name: 'DEFECT_GRADE', type: 'varchar2', length: 10, nullable: true })
+  defectGrade: string | null;
+
+  /** ISO 2859-1 검사수준 (AQL_INSP_LEVEL 공통코드) */
+  @Column({ name: 'INSPECTION_LEVEL', type: 'varchar2', length: 5, nullable: true })
+  inspectionLevel: string | null;
+
+  /** 합격품질수준 AQL (AQL_VALUE 공통코드) */
+  @Column({ name: 'AQL', type: 'decimal', precision: 7, scale: 3, nullable: true })
+  aql: number | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

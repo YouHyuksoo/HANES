@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine } from "lucide-react";
-import { Button, Modal } from "@/components/ui";
+import { Button, Modal, ComCodeBadge } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import { useComCodeList } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -22,6 +22,9 @@ interface IqcInspectItem {
   unit: string | null;
   judgeMethod?: string;
   judgeCriteria: string | null;
+  defectGrade?: string | null;
+  inspectionLevel?: string | null;
+  aql?: number | null;
 }
 
 interface MeasurementRow {
@@ -35,6 +38,9 @@ interface MeasurementRow {
   judgeCriteria: string;
   measuredValue: string;
   judge: "PASS" | "FAIL" | "";
+  defectGrade: string | null;
+  inspectionLevel: string | null;
+  aql: number | null;
 }
 
 interface PendingSerial {
@@ -106,6 +112,9 @@ function createMeasurementRows(items: IqcInspectItem[]): MeasurementRow[] {
     judgeCriteria: item.judgeCriteria || "",
     measuredValue: "",
     judge: "",
+    defectGrade: item.defectGrade ?? null,
+    inspectionLevel: item.inspectionLevel ?? null,
+    aql: item.aql ?? null,
   }));
 }
 
@@ -581,7 +590,21 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                           {selectedInspection.rows.map((row, idx) => (
                             <tr key={row.itemId} className="border-t border-border hover:bg-surface/50">
                               <td className="px-2 py-1.5 text-text-muted">{idx + 1}</td>
-                              <td className="px-2 py-1.5 font-medium text-text">{row.inspectItem}</td>
+                              <td className="px-2 py-1.5 font-medium text-text">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{row.inspectItem}</span>
+                                  {row.defectGrade && (
+                                    <ComCodeBadge groupCode="DEFECT_GRADE" code={row.defectGrade} />
+                                  )}
+                                </div>
+                                {(row.inspectionLevel || row.aql != null) && (
+                                  <div className="text-[11px] text-text-muted mt-0.5">
+                                    {row.inspectionLevel ? `검사수준 ${row.inspectionLevel}` : ""}
+                                    {row.inspectionLevel && row.aql != null ? " · " : ""}
+                                    {row.aql != null ? `AQL ${row.aql}` : ""}
+                                  </div>
+                                )}
+                              </td>
                               <td className="px-2 py-1.5 text-text-muted">
                                 {row.spec || "-"}
                               </td>

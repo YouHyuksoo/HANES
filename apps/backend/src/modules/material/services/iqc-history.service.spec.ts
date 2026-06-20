@@ -58,7 +58,7 @@ describe('IqcHistoryService cancel policy', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
-    mockAqlService.resolveIqcPolicy.mockResolvedValue({
+    mockAqlService.resolveIqcPolicyByItem.mockResolvedValue({
       itemCode: 'ITEM-001',
       vendorCode: 'SUP-001',
       lotQty: 10,
@@ -351,7 +351,7 @@ describe('IqcHistoryService cancel policy', () => {
           plant: 'P01',
         } as MatLot,
       ]);
-      mockAqlService.resolveIqcPolicy.mockResolvedValue({
+      mockAqlService.resolveIqcPolicyByItem.mockResolvedValue({
         itemCode: 'ITEM-001',
         vendorCode: 'SUP-001',
         lotQty: 100,

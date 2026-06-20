@@ -8,6 +8,7 @@ import { IqcLog } from '../../../../entities/iqc-log.entity';
 import { PartMaster } from '../../../../entities/part-master.entity';
 import { PartnerMaster } from '../../../../entities/partner-master.entity';
 import { VendorInspectionModeHistory } from '../../../../entities/vendor-inspection-mode-history.entity';
+import { IqcPartSpecItem } from '../../../../entities/iqc-part-spec-item.entity';
 import { AqlQueryDto, AqlRuleDto, CreateAqlDto, UpdateAqlDto } from '../dto/aql.dto';
 
 type IqcDefectCounts = {
@@ -30,6 +31,19 @@ type AqlSeverityRule = {
   rejectQty: number;
 };
 
+export type IqcItemJudgeResult = {
+  seq: number;
+  inspItemCode: string;
+  defectGrade: string;
+  inspectionLevel: string;
+  aql: number | null;
+  defectCount: number;
+  acceptQty: number | null;
+  rejectQty: number | null;
+  result: 'PASS' | 'FAIL';
+  reason: string;
+};
+
 export type IqcAqlPolicyResolution = {
   itemCode: string;
   vendorCode: string | null;
@@ -44,6 +58,8 @@ export type IqcAqlPolicyResolution = {
   majorRule: AqlSeverityRule | null;
   minorRule: AqlSeverityRule | null;
   judgeReason: string;
+  /** 검사항목별 판정 결과 (검사항목별 모델에서만 채워짐) */
+  itemResults?: IqcItemJudgeResult[];
 };
 
 @Injectable()
@@ -63,6 +79,8 @@ export class AqlService {
     private readonly modeHistoryRepo: Repository<VendorInspectionModeHistory>,
     @InjectRepository(ComCode)
     private readonly comCodeRepo: Repository<ComCode>,
+    @InjectRepository(IqcPartSpecItem)
+    private readonly specItemRepo: Repository<IqcPartSpecItem>,
   ) {}
 
   async findAll(query: AqlQueryDto, company?: string, plant?: string) {
@@ -244,6 +262,151 @@ export class AqlService {
       majorRule,
       minorRule,
       judgeReason,
+    };
+  }
+
+  /**
+   * 검사항목별 AQL 판정 — 각 검사항목(IQC_PART_SPEC_ITEMS)의 검사수준/불량등급/AQL로 항목별 Ac/Re 산출 후 판정.
+   * - CRITICAL 등급 항목: 불량 1건 이상이면 FAIL
+   * - MAJOR/MINOR 등급 항목: AQL→Ac 초과 시 FAIL (AQL 미설정 시 1건 이상 FAIL로 보수 판정)
+   * - 항목 중 하나라도 FAIL이면 LOT FAIL
+   * 등급(DEFECT_GRADE)이 설정된 검사항목이 없으면 기존 품목 단일 resolveIqcPolicy로 폴백한다.
+   */
+  async resolveIqcPolicyByItem(input: {
+    itemCode: string;
+    vendorCode?: string | null;
+    lotQty: number;
+    itemDefectCounts: Record<number, number>; // seq -> FAIL 샘플 수
+    fallbackDefectCounts?: IqcDefectCounts;
+    fallbackDefectCodes?: IqcDefectCodeCount[];
+    company?: string;
+    plant?: string;
+  }): Promise<IqcAqlPolicyResolution> {
+    const specItems = await this.specItemRepo.find({
+      where: {
+        itemCode: input.itemCode,
+        useYn: 'Y',
+        ...(input.company ? { company: input.company } : {}),
+        ...(input.plant ? { plant: input.plant } : {}),
+      },
+      order: { seq: 'ASC' },
+    });
+    const gradedItems = specItems.filter(
+      (item) => ['CRITICAL', 'MAJOR', 'MINOR'].includes(String(item.defectGrade ?? '').trim().toUpperCase()),
+    );
+
+    // 등급 설정 검사항목이 없으면 기존 품목 단일 모델로 폴백
+    if (gradedItems.length === 0) {
+      return this.resolveIqcPolicy({
+        itemCode: input.itemCode,
+        vendorCode: input.vendorCode,
+        lotQty: input.lotQty,
+        defectCounts: input.fallbackDefectCounts,
+        defectCodes: input.fallbackDefectCodes,
+        company: input.company,
+        plant: input.plant,
+      });
+    }
+
+    const part = await this.partRepo.findOne({
+      where: {
+        itemCode: input.itemCode,
+        ...(input.company ? { company: input.company } : {}),
+        ...(input.plant ? { plant: input.plant } : {}),
+      },
+    });
+    const vendorCode = input.vendorCode?.trim() || null;
+    const partner = vendorCode
+      ? await this.partnerRepo.findOne({
+          where: {
+            partnerCode: vendorCode,
+            ...(input.company ? { company: input.company } : {}),
+            ...(input.plant ? { plant: input.plant } : {}),
+          },
+        })
+      : null;
+
+    const partLevel = (part?.inspectionLevel || 'II').trim().toUpperCase();
+    const inspectionMode = this.normalizeInspectionMode(partner?.inspectionMode);
+    const lotQty = Math.max(1, Number(input.lotQty) || 1);
+
+    let result: 'PASS' | 'FAIL' = 'PASS';
+    let defectCritical = 0;
+    let defectMajor = 0;
+    let defectMinor = 0;
+    let sampleQty = 0;
+    let majorRule: AqlSeverityRule | null = null;
+    let minorRule: AqlSeverityRule | null = null;
+    const itemResults: IqcItemJudgeResult[] = [];
+    const failReasons: string[] = [];
+
+    for (const item of gradedItems) {
+      const grade = String(item.defectGrade ?? '').trim().toUpperCase();
+      const level = (item.inspectionLevel || partLevel).trim().toUpperCase();
+      const aql = item.aql != null ? Number(item.aql) : null;
+      const defectCount = this.toNonNegativeInt(input.itemDefectCounts[item.seq]);
+
+      if (grade === 'CRITICAL') defectCritical += defectCount;
+      else if (grade === 'MAJOR') defectMajor += defectCount;
+      else if (grade === 'MINOR') defectMinor += defectCount;
+
+      let itemResult: 'PASS' | 'FAIL' = 'PASS';
+      let reason = '';
+      let rule: AqlSeverityRule | null = null;
+
+      if (grade === 'CRITICAL') {
+        if (defectCount > 0) {
+          itemResult = 'FAIL';
+          reason = `${item.inspItemCode} Critical 불량 ${defectCount}건`;
+        }
+      } else if (aql != null) {
+        rule = await this.resolveSeverityRule(level, inspectionMode, aql, lotQty, input.company, input.plant);
+        sampleQty = Math.max(sampleQty, rule.sampleSize);
+        if (grade === 'MAJOR' && !majorRule) majorRule = rule;
+        if (grade === 'MINOR' && !minorRule) minorRule = rule;
+        if (defectCount > rule.acceptQty) {
+          itemResult = 'FAIL';
+          reason = `${item.inspItemCode} ${grade} 불량 ${defectCount}건이 Ac ${rule.acceptQty} 초과`;
+        }
+      } else if (defectCount > 0) {
+        // 등급은 있으나 AQL 미설정 → 보수적으로 1건 이상이면 FAIL
+        itemResult = 'FAIL';
+        reason = `${item.inspItemCode} ${grade} 불량 ${defectCount}건 (AQL 미설정)`;
+      }
+
+      if (itemResult === 'FAIL') {
+        result = 'FAIL';
+        failReasons.push(reason);
+      }
+      itemResults.push({
+        seq: item.seq,
+        inspItemCode: item.inspItemCode,
+        defectGrade: grade,
+        inspectionLevel: level,
+        aql,
+        defectCount,
+        acceptQty: rule?.acceptQty ?? null,
+        rejectQty: rule?.rejectQty ?? null,
+        result: itemResult,
+        reason,
+      });
+    }
+
+    return {
+      itemCode: input.itemCode,
+      vendorCode,
+      lotQty,
+      inspectionLevel: partLevel,
+      inspectionMode,
+      result,
+      sampleQty,
+      defectCritical,
+      defectMajor,
+      defectMinor,
+      majorRule,
+      minorRule,
+      judgeReason: result === 'PASS' ? '검사항목별 AQL 기준 합격' : failReasons.join('; '),
+      itemResults,
     };
   }
 

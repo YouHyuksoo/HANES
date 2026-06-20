@@ -418,12 +418,15 @@ export class IqcHistoryService {
     const vendorCode = lots[0].vendor ?? null;
     const lotQty = lots.reduce((sum, lot) => sum + (Number(lot.initQty) || 0), 0);
     const defectCounts = this.resolveDefectCounts(dto);
-    const aqlPolicy = await this.aqlService.resolveIqcPolicy({
+    const itemDefectCounts = this.countFailByInspItem(dto.details);
+    // 검사항목별(각 항목 검사수준/등급/AQL) 판정. 등급 설정 항목이 없으면 내부에서 품목 단일로 폴백.
+    const aqlPolicy = await this.aqlService.resolveIqcPolicyByItem({
       itemCode: dto.itemCode,
       vendorCode,
       lotQty,
-      defectCounts,
-      defectCodes: dto.defects,
+      itemDefectCounts,
+      fallbackDefectCounts: defectCounts,
+      fallbackDefectCodes: dto.defects,
       company: tenantCompany,
       plant: tenantPlant,
     });
@@ -566,6 +569,30 @@ export class IqcHistoryService {
     } catch {
       return 0;
     }
+  }
+
+  /**
+   * 검사 details(SERIAL_INSPECTION)에서 검사항목(seq)별 FAIL 샘플 수를 집계한다.
+   * itemId 포맷은 `${itemCode}::${seq}` (IqcModal createMeasurementRows).
+   */
+  private countFailByInspItem(details?: string | null): Record<number, number> {
+    const out: Record<number, number> = {};
+    if (!details) return out;
+    try {
+      const parsed = JSON.parse(details) as {
+        serials?: Array<{ items?: Array<{ itemId?: string; judge?: string }> }>;
+      };
+      for (const serial of parsed.serials ?? []) {
+        for (const item of serial.items ?? []) {
+          if (item.judge !== 'FAIL') continue;
+          const seq = Number(String(item.itemId ?? '').split('::')[1]);
+          if (Number.isFinite(seq)) out[seq] = (out[seq] ?? 0) + 1;
+        }
+      }
+    } catch {
+      return out;
+    }
+    return out;
   }
 
   private toNonNegativeInt(value: unknown) {

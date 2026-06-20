@@ -38,6 +38,10 @@ export interface IqcSpecRow {
   lsl: number | null;
   usl: number | null;
   judgeCriteria?: string | null;
+  // 검사기준서: 검사항목별 불량등급/검사수준/AQL
+  defectGrade?: string | null;       // CRITICAL/MAJOR/MINOR
+  inspectionLevel?: string | null;   // II, S4 ... (AQL_INSP_LEVEL)
+  aql?: number | null;               // AQL_VALUE
   useYn: string;
 }
 

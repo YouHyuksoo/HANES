@@ -7,6 +7,7 @@ import { ComCode } from '../../../entities/com-code.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { VendorInspectionModeHistory } from '../../../entities/vendor-inspection-mode-history.entity';
+import { IqcPartSpecItem } from '../../../entities/iqc-part-spec-item.entity';
 import { AqlController } from './controllers/aql.controller';
 import { AqlService } from './services/aql.service';
 
@@ -19,6 +20,7 @@ import { AqlService } from './services/aql.service';
     PartMaster,
     PartnerMaster,
     VendorInspectionModeHistory,
+    IqcPartSpecItem,
   ])],
   controllers: [AqlController],
   providers: [AqlService],
