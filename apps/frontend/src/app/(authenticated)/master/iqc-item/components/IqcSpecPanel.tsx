@@ -46,6 +46,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
   const defectGradeOptions = useComCodeOptions("DEFECT_GRADE");
   const inspLevelOptions = useComCodeOptions("AQL_INSP_LEVEL");
   const aqlOptions = useComCodeOptions("AQL_VALUE");
+  const inspectTypeOptions = useComCodeOptions("IQC_ITEM_INSP_TYPE");
+  const sampleMethodOptions = useComCodeOptions("IQC_SAMPLE_METHOD");
 
   const loadSpec = useCallback(async (code: string) => {
     setLoading(true);
@@ -72,6 +74,9 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
             defectGrade: it.defectGrade ?? null,
             inspectionLevel: it.inspectionLevel ?? null,
             aql: it.aql ?? null,
+            inspectionType: it.inspectionType ?? null,
+            sampleMethod: it.sampleMethod ?? null,
+            sampleQty: it.sampleQty ?? null,
             useYn: it.useYn ?? 'Y',
           })),
         });
@@ -105,7 +110,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
     const maxSeq = spec.items.length > 0
       ? Math.max(...spec.items.map((i) => i.seq))
       : 0;
-    const newRow: IqcSpecRow = { seq: maxSeq + 1, inspItemCode: '', lsl: null, usl: null, judgeCriteria: null, defectGrade: null, inspectionLevel: null, aql: null, useYn: 'Y' };
+    const newRow: IqcSpecRow = { seq: maxSeq + 1, inspItemCode: '', lsl: null, usl: null, judgeCriteria: null, defectGrade: null, inspectionLevel: null, aql: null, inspectionType: 'AQL', sampleMethod: 'AQL', sampleQty: null, useYn: 'Y' };
     setSpec((prev) => ({ ...prev, items: [...prev.items, newRow] }));
     setDirty(true);
     // 새 행은 바로 수정 모드로
@@ -168,6 +173,14 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
         usl: null,
         judgeCriteria: null,
       });
+    } else if (field === 'inspectionType') {
+      const v = value as string;
+      setEditDraft({
+        ...editDraft,
+        inspectionType: v,
+        sampleMethod: v === 'AQL' ? 'AQL' : 'FIXED',
+        sampleQty: v === 'AQL' ? null : editDraft.sampleQty,
+      });
     } else {
       setEditDraft({ ...editDraft, [field]: value });
     }
@@ -193,6 +206,9 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
             defectGrade: it.defectGrade ?? null,
             inspectionLevel: it.inspectionLevel ?? null,
             aql: it.aql ?? null,
+            inspectionType: it.inspectionType ?? null,
+            sampleMethod: it.sampleMethod ?? null,
+            sampleQty: it.sampleQty ?? null,
             useYn: it.useYn,
           })),
       });
@@ -296,6 +312,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-10">순서</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium">검사항목</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-20">종류</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">검사유형</th>
+                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">샘플수</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-24">불량등급</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-20">검사수준</th>
                   <th className="px-3 py-2 text-left text-text-muted font-medium w-20">AQL</th>
@@ -309,7 +327,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
               <tbody>
                 {spec.items.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="py-8 text-center text-text-muted text-sm">
+                    <td colSpan={13} className="py-8 text-center text-text-muted text-sm">
                       검사항목이 없습니다. [항목 추가]를 눌러 추가하세요.
                     </td>
                   </tr>
@@ -347,6 +365,29 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               {isMeasure ? '측정형' : '판정형'}
                             </span>
                           ) : <span className="text-text-muted text-xs">-</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          <select
+                            value={draft.inspectionType ?? 'AQL'}
+                            onChange={(e) => updateDraft('inspectionType', e.target.value)}
+                            className="w-full border border-border rounded px-2 py-1 bg-surface text-text text-sm focus:border-primary focus:outline-none"
+                          >
+                            {inspectTypeOptions.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          {(draft.inspectionType === 'DESTRUCTIVE' || draft.inspectionType === 'FULL' || draft.sampleMethod === 'FIXED') ? (
+                            <input
+                              type="number"
+                              min={1}
+                              value={draft.sampleQty ?? ''}
+                              onChange={(e) => updateDraft('sampleQty', e.target.value === '' ? null : Number(e.target.value))}
+                              className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
+                              placeholder="고정수"
+                            />
+                          ) : <span className="text-text-muted text-xs">자동</span>}
                         </td>
                         <td className="px-3 py-2">
                           <select
@@ -459,6 +500,16 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             {row.judgeMethod === 'MEASURE' ? '측정형' : '판정형'}
                           </span>
                         ) : <span className="text-text-muted text-xs">-</span>}
+                      </td>
+                      <td className="px-3 py-2">
+                        {row.inspectionType && row.inspectionType !== 'AQL'
+                          ? <ComCodeBadge groupCode="IQC_ITEM_INSP_TYPE" code={row.inspectionType} />
+                          : <span className="text-text-muted text-xs">AQL</span>}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums text-text">
+                        {(row.inspectionType === 'DESTRUCTIVE' || row.inspectionType === 'FULL')
+                          ? (row.sampleQty ?? <span className="text-text-muted text-xs">-</span>)
+                          : <span className="text-text-muted text-xs">자동</span>}
                       </td>
                       <td className="px-3 py-2">
                         {row.defectGrade

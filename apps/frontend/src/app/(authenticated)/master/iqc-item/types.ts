@@ -42,6 +42,9 @@ export interface IqcSpecRow {
   defectGrade?: string | null;       // CRITICAL/MAJOR/MINOR
   inspectionLevel?: string | null;   // II, S4 ... (AQL_INSP_LEVEL)
   aql?: number | null;               // AQL_VALUE
+  inspectionType?: string | null;   // AQL/DESTRUCTIVE/FULL (IQC_ITEM_INSP_TYPE)
+  sampleMethod?: string | null;     // AQL/FIXED (IQC_SAMPLE_METHOD)
+  sampleQty?: number | null;        // FIXED/DESTRUCTIVE 고정 샘플수
   useYn: string;
 }
 
