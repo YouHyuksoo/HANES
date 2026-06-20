@@ -2074,7 +2074,11 @@
       "certFile": "검사성적서",
       "uploadCert": "파일 선택",
       "sampleBarcode": "시료 바코드",
-      "sampleBarcodePlaceholder": "바코드 스캔 또는 입력 (여러 개는 콤마로 구분)"
+      "sampleBarcodePlaceholder": "바코드 스캔 또는 입력 (여러 개는 콤마로 구분)",
+      "destructive": "파괴/전수 검사",
+      "inspectedQty": "검사수량",
+      "defectQty": "불량수",
+      "destructiveHint": "검사수량 / 불량수 — 불량 1건이면 FAIL"
     },
     "receive": {
       "title": "자재입고관리",

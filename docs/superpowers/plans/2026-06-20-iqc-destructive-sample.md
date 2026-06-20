@@ -28,7 +28,9 @@
 - DDL: `IQC_PART_SPEC_ITEMS` 3컬럼 ADD (oracle-db 스킬로 실행)
 
 **Interfaces:**
-- Produces: 컬럼 `INSPECTION_TYPE`(VARCHAR2 12) / `SAMPLE_METHOD`(VARCHAR2 8) / `SAMPLE_QTY`(NUMBER), 공통코드 그룹 `IQC_INSPECT_TYPE`(AQL/DESTRUCTIVE/FULL), `IQC_SAMPLE_METHOD`(AQL/FIXED).
+- Produces: 컬럼 `INSPECTION_TYPE`(VARCHAR2 12) / `SAMPLE_METHOD`(VARCHAR2 8) / `SAMPLE_QTY`(NUMBER), 공통코드 그룹 `IQC_ITEM_INSP_TYPE`(AQL/DESTRUCTIVE/FULL — 검사항목 검사유형), `IQC_SAMPLE_METHOD`(AQL/FIXED).
+
+> **그룹코드 주의:** 검사항목 검사유형은 `IQC_ITEM_INSP_TYPE`를 사용한다. 기존 `IQC_INSPECT_TYPE` 그룹은 IqcLog의 `inspectType`(INITIAL/RETEST, 검사회차)에 이미 점유되어 있어 재사용 금지(드롭다운 혼선).
 
 - [ ] **Step 1: 실제 스키마 확인 (현재 컬럼 존재 여부)**
 
@@ -49,7 +51,7 @@ ALTER TABLE IQC_PART_SPEC_ITEMS ADD (
   SAMPLE_QTY      NUMBER
 );
 /
-COMMENT ON COLUMN IQC_PART_SPEC_ITEMS.INSPECTION_TYPE IS '검사유형 AQL/DESTRUCTIVE/FULL (IQC_INSPECT_TYPE)';
+COMMENT ON COLUMN IQC_PART_SPEC_ITEMS.INSPECTION_TYPE IS '검사유형 AQL/DESTRUCTIVE/FULL (IQC_ITEM_INSP_TYPE)';
 /
 COMMENT ON COLUMN IQC_PART_SPEC_ITEMS.SAMPLE_METHOD IS '샘플방식 AQL(자동)/FIXED(고정) (IQC_SAMPLE_METHOD)';
 /
@@ -78,14 +80,14 @@ Expected: INVALID가 없거나, 있으면 `ALTER PACKAGE <name> COMPILE;`로 VAL
 Create `tools/seed/seed_iqc_inspection_type.py` (기존 `seed_iqc_aql_link.py`의 oracledb 연결 패턴 그대로):
 ```python
 # -*- coding: utf-8 -*-
-"""IQC 검사유형/샘플방식 공통코드 시드 (IQC_INSPECT_TYPE, IQC_SAMPLE_METHOD)."""
+"""IQC 검사유형/샘플방식 공통코드 시드 (IQC_ITEM_INSP_TYPE, IQC_SAMPLE_METHOD)."""
 import json, os, sys, oracledb
 
 COMMIT = "--commit" in sys.argv
 CO, PLANT, WORKER = "40", "1000", "seed"
 
 GROUPS = {
-    "IQC_INSPECT_TYPE": [
+    "IQC_ITEM_INSP_TYPE": [
         ("AQL", "AQL샘플링", 1),
         ("DESTRUCTIVE", "파괴검사", 2),
         ("FULL", "전수검사", 3),
@@ -167,7 +169,7 @@ git commit -m "feat(iqc): 검사유형 컬럼 DDL + 공통코드 시드"
 
 Modify `iqc-part-spec-item.entity.ts` — 50행(`aql: number | null;`) 다음에 삽입:
 ```ts
-  /** 검사유형 AQL/DESTRUCTIVE/FULL (IQC_INSPECT_TYPE). NULL=AQL로 간주 */
+  /** 검사유형 AQL/DESTRUCTIVE/FULL (IQC_ITEM_INSP_TYPE). NULL=AQL로 간주 */
   @Column({ name: 'INSPECTION_TYPE', type: 'varchar2', length: 12, nullable: true })
   inspectionType: string | null;
 
@@ -572,14 +574,14 @@ git commit -m "feat(iqc): 검사결과 등록에 파괴검사 details 파싱 합
 - Test: `apps/frontend/src/app/(authenticated)/master/iqc-item/components/iqc-spec-inspection-type.structure.test.mjs`
 
 **Interfaces:**
-- Consumes: 공통코드 `IQC_INSPECT_TYPE`/`IQC_SAMPLE_METHOD`(Task 1), 백엔드 save/load 필드(Task 3).
+- Consumes: 공통코드 `IQC_ITEM_INSP_TYPE`/`IQC_SAMPLE_METHOD`(Task 1), 백엔드 save/load 필드(Task 3).
 - Produces: 화면에서 항목별 검사유형/샘플방식/샘플수 입력 → POST body에 포함.
 
 - [ ] **Step 1: IqcSpecRow 타입 확장**
 
 Modify `types.ts` — `IqcSpecRow`의 `aql?` 필드(44행) 다음에 추가:
 ```ts
-  inspectionType?: string | null;   // AQL/DESTRUCTIVE/FULL (IQC_INSPECT_TYPE)
+  inspectionType?: string | null;   // AQL/DESTRUCTIVE/FULL (IQC_ITEM_INSP_TYPE)
   sampleMethod?: string | null;     // AQL/FIXED (IQC_SAMPLE_METHOD)
   sampleQty?: number | null;        // FIXED/DESTRUCTIVE 고정 샘플수
 ```
@@ -589,7 +591,7 @@ Modify `types.ts` — `IqcSpecRow`의 `aql?` 필드(44행) 다음에 추가:
 Modify `IqcSpecPanel.tsx`:
 - 옵션 훅 추가(48행 `aqlOptions` 다음):
 ```ts
-  const inspectTypeOptions = useComCodeOptions("IQC_INSPECT_TYPE");
+  const inspectTypeOptions = useComCodeOptions("IQC_ITEM_INSP_TYPE");
   const sampleMethodOptions = useComCodeOptions("IQC_SAMPLE_METHOD");
 ```
 - `loadSpec` 매핑(74행 `aql:` 다음):
@@ -662,7 +664,7 @@ Modify 읽기행 — `종류` 셀(452-462행) 다음에 추가:
 ```tsx
                       <td className="px-3 py-2">
                         {row.inspectionType && row.inspectionType !== 'AQL'
-                          ? <ComCodeBadge groupCode="IQC_INSPECT_TYPE" code={row.inspectionType} />
+                          ? <ComCodeBadge groupCode="IQC_ITEM_INSP_TYPE" code={row.inspectionType} />
                           : <span className="text-text-muted text-xs">AQL</span>}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums text-text">
@@ -683,7 +685,7 @@ import { readFileSync } from 'node:fs';
 const src = readFileSync(new URL('./IqcSpecPanel.tsx', import.meta.url), 'utf8');
 
 test('검사유형/샘플수 공통코드 옵션을 사용한다', () => {
-  assert.match(src, /useComCodeOptions\("IQC_INSPECT_TYPE"\)/);
+  assert.match(src, /useComCodeOptions\("IQC_ITEM_INSP_TYPE"\)/);
   assert.match(src, /useComCodeOptions\("IQC_SAMPLE_METHOD"\)/);
 });
 test('save body에 inspectionType/sampleMethod/sampleQty가 포함된다', () => {
@@ -919,7 +921,7 @@ Modify — `검사항목별 판정` 표 헤더(136-144행) `불량등급` `<th>`
 ```tsx
                         <td className="px-2 py-1.5 text-center">
                           {r.inspectionType && r.inspectionType !== 'AQL'
-                            ? <ComCodeBadge groupCode="IQC_INSPECT_TYPE" code={r.inspectionType} />
+                            ? <ComCodeBadge groupCode="IQC_ITEM_INSP_TYPE" code={r.inspectionType} />
                             : <span className="text-text-muted">AQL</span>}
                         </td>
                         <td className="px-2 py-1.5 text-center tabular-nums text-text-muted">
@@ -950,7 +952,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const src = readFileSync(new URL('./IqcDetailModal.tsx', import.meta.url), 'utf8');
 test('검사유형/검사수량 컬럼을 표시한다', () => {
-  assert.match(src, /IQC_INSPECT_TYPE/);
+  assert.match(src, /IQC_ITEM_INSP_TYPE/);
   assert.match(src, /requiredQty/);
 });
 ```
@@ -975,7 +977,7 @@ git commit -m "feat(iqc): 이력 검사유형 표시 + 파괴검사 검증 시�
 ## 구현 후 검증 체크리스트
 
 - [ ] DB: `IQC_PART_SPEC_ITEMS`에 3컬럼 존재, INVALID PL/SQL 0건
-- [ ] 공통코드: `IQC_INSPECT_TYPE`/`IQC_SAMPLE_METHOD` 조회됨
+- [ ] 공통코드: `IQC_ITEM_INSP_TYPE`/`IQC_SAMPLE_METHOD` 조회됨
 - [ ] 판정: 파괴검사 불량 1건 → 항목 FAIL → LOT FAIL (jest 통과)
 - [ ] 폴백: 검사유형/등급 미설정 품목은 기존 동작 그대로 (기존 jest 통과)
 - [ ] i18n: ko/en/zh/vi 4파일 동기화, BOM 없음

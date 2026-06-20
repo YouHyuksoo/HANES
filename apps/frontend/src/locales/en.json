@@ -1758,7 +1758,11 @@
       "certFile": "Inspection Certificate",
       "uploadCert": "Select File",
       "sampleBarcode": "Sample Barcode",
-      "sampleBarcodePlaceholder": "Scan or enter barcode (comma-separated for multiple)"
+      "sampleBarcodePlaceholder": "Scan or enter barcode (comma-separated for multiple)",
+      "destructive": "Destructive/Full Inspection",
+      "inspectedQty": "Inspected",
+      "defectQty": "Defects",
+      "destructiveHint": "Inspected Qty / Defects — 1 defect means FAIL"
     },
     "receive": {
       "title": "Material Receiving",

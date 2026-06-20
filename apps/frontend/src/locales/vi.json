@@ -1744,7 +1744,11 @@
       "certFile": "Giấy chứng nhận kiểm tra",
       "uploadCert": "Chọn tệp",
       "sampleBarcode": "Mã vạch mẫu",
-      "sampleBarcodePlaceholder": "Quét hoặc nhập mã vạch (nhiều mã ngăn cách bằng dấu phẩy)"
+      "sampleBarcodePlaceholder": "Quét hoặc nhập mã vạch (nhiều mã ngăn cách bằng dấu phẩy)",
+      "destructive": "Kiểm tra phá hủy/toàn bộ",
+      "inspectedQty": "Số kiểm",
+      "defectQty": "Số lỗi",
+      "destructiveHint": "Số kiểm / Số lỗi — 1 lỗi là FAIL"
     },
     "receive": {
       "title": "Nhập kho vật tư",

@@ -25,6 +25,10 @@ interface IqcInspectItem {
   defectGrade?: string | null;
   inspectionLevel?: string | null;
   aql?: number | null;
+  inspItemCode?: string;
+  inspectionType?: string | null;
+  sampleMethod?: string | null;
+  sampleQty?: number | null;
 }
 
 interface MeasurementRow {
@@ -141,6 +145,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [defectRows, setDefectRows] = useState<DefectRow[]>([]);
   const [certFile, setCertFile] = useState<File | null>(null);
   const [showPendingList, setShowPendingList] = useState(false);
+  const [destructInputs, setDestructInputs] = useState<Record<number, { inspectedQty: string; defectQty: string }>>({});
   const serialScanInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -157,6 +162,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       setAqlPolicy(null);
       setDefectRows([]);
       setCertFile(null);
+      setDestructInputs({});
       return;
     }
 
@@ -215,18 +221,37 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       .catch(() => setAqlPolicy(null));
   }, [isOpen, selectedItem]);
 
+  const aqlItems = useMemo(
+    () => inspectItems.filter((it) => (it.inspectionType ?? 'AQL').toUpperCase() === 'AQL'),
+    [inspectItems],
+  );
+  const destructItems = useMemo(
+    () => inspectItems.filter((it) => ['DESTRUCTIVE', 'FULL'].includes((it.inspectionType ?? 'AQL').toUpperCase())),
+    [inspectItems],
+  );
+
   useEffect(() => {
-    if (inspectItems.length === 0) return;
+    if (aqlItems.length === 0) return;
     setSerialInspectionMap((prev) => {
       const next = { ...prev };
       for (const matUid of scannedSerials) {
         if (!next[matUid] || next[matUid].rows.length === 0) {
-          next[matUid] = { result: "", rows: createMeasurementRows(inspectItems) };
+          next[matUid] = { result: "", rows: createMeasurementRows(aqlItems) };
         }
       }
       return next;
     });
-  }, [inspectItems, scannedSerials]);
+  }, [aqlItems, scannedSerials]);
+
+  useEffect(() => {
+    setDestructInputs((prev) => {
+      const next = { ...prev };
+      for (const it of destructItems) {
+        if (!next[it.seq]) next[it.seq] = { inspectedQty: String(it.sampleQty ?? ''), defectQty: '0' };
+      }
+      return next;
+    });
+  }, [destructItems]);
 
   const findPendingSerial = useCallback((rawSerial: string) => {
     const normalized = rawSerial.toUpperCase();
@@ -251,13 +276,13 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       ...prev,
       [matched.matUid]: prev[matched.matUid] ?? {
         result: "",
-        rows: createMeasurementRows(inspectItems),
+        rows: createMeasurementRows(aqlItems),
       },
     }));
     setSelectedSerial(matched.matUid);
     setSerialScanValue("");
     window.setTimeout(() => serialScanInputRef.current?.focus(), 0);
-  }, [findPendingSerial, inspectItems, serialScanValue, t]);
+  }, [findPendingSerial, aqlItems, serialScanValue, t]);
 
   const handleAddAllPending = useCallback(() => {
     const unscanned = pendingSerials.filter((p) => !scannedSerials.includes(p.matUid));
@@ -266,12 +291,12 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     setSerialInspectionMap((prev) => {
       const next = { ...prev };
       for (const p of unscanned) {
-        if (!next[p.matUid]) next[p.matUid] = { result: "", rows: createMeasurementRows(inspectItems) };
+        if (!next[p.matUid]) next[p.matUid] = { result: "", rows: createMeasurementRows(aqlItems) };
       }
       return next;
     });
     setSelectedSerial(unscanned[0].matUid);
-  }, [pendingSerials, scannedSerials, inspectItems]);
+  }, [pendingSerials, scannedSerials, aqlItems]);
 
   const updateSerialMeasurement = useCallback((matUid: string, idx: number, value: string) => {
     setSerialInspectionMap((prev) => {
@@ -336,7 +361,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const passCount = serialInspectionPayload.filter((serial) => serial.result === "PASS").length;
   const failCount = serialInspectionPayload.filter((serial) => serial.result === "FAIL").length;
   const anyFail = failCount > 0;
-  const canSubmit = scannedSerials.length > 0 && !loadingItems && !isIncomplete;
+  const canSubmit = (scannedSerials.length > 0 || (aqlItems.length === 0 && destructItems.length > 0)) && !loadingItems && !isIncomplete;
   const effectiveDefectRows = useMemo(
     () => defectRows
       .map((row) => ({ defectCode: row.defectCode.trim(), qty: Number(row.qty) || 0 }))
@@ -356,21 +381,36 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     setDefectRows((prev) => prev.filter((row) => row.id !== id));
   }, []);
 
+  const destructivePayload = useMemo(() => destructItems.map((it) => {
+    const v = destructInputs[it.seq] ?? { inspectedQty: '', defectQty: '0' };
+    const defectQty = Number(v.defectQty) || 0;
+    return {
+      seq: it.seq,
+      inspItemCode: it.inspItemCode ?? '',
+      requiredQty: it.sampleQty ?? null,
+      inspectedQty: Number(v.inspectedQty) || 0,
+      defectQty,
+      result: defectQty > 0 ? 'FAIL' : 'PASS',
+    };
+  }), [destructItems, destructInputs]);
+  const anyDestructFail = destructivePayload.some((d) => d.result === 'FAIL');
+
   const handleSerialSubmit = useCallback(() => {
     if (!selectedItem || !canSubmit) return;
 
-    const verdict = anyFail ? "FAILED" : "PASSED";
+    const verdict = (anyFail || anyDestructFail) ? "FAILED" : "PASSED";
     setForm((prev) => ({ ...prev, result: verdict as IqcResultForm["result"] }));
     onSubmit({
       type: "SERIAL_INSPECTION",
       serials: serialInspectionPayload,
+      destructive: destructivePayload,
     }, verdict, {
       sampleQty: sampleQty ? Number(sampleQty) : undefined,
       certFile: certFile ?? undefined,
       sampleBarcode: scannedSerials.join(","),
       defects: effectiveDefectRows,
     });
-  }, [anyFail, canSubmit, certFile, effectiveDefectRows, onSubmit, sampleQty, scannedSerials, selectedItem, serialInspectionPayload, setForm]);
+  }, [anyDestructFail, anyFail, canSubmit, certFile, destructivePayload, effectiveDefectRows, onSubmit, sampleQty, scannedSerials, selectedItem, serialInspectionPayload, setForm]);
 
   if (!selectedItem) return null;
 
@@ -583,6 +623,42 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                 </Button>
               </div>
             </div>
+
+            {/* 파괴/전수 검사 */}
+            {destructItems.length > 0 && (
+              <div className="rounded border border-border bg-background p-1.5">
+                <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">
+                  {t("material.iqc.destructive", "파괴/전수 검사")}
+                </span>
+                <div className="space-y-1">
+                  {destructItems.map((it) => {
+                    const v = destructInputs[it.seq] ?? { inspectedQty: '', defectQty: '0' };
+                    const defectN = Number(v.defectQty) || 0;
+                    return (
+                      <div key={it.seq} className="grid grid-cols-[1fr_44px_44px] items-center gap-1">
+                        <span className="truncate text-[11px] text-text" title={it.inspectItem}>
+                          {it.inspectItem}
+                          <span className="ml-1 text-text-muted">({it.sampleQty ?? '-'})</span>
+                        </span>
+                        <input
+                          type="number" min={0} value={v.inspectedQty}
+                          onChange={(e) => setDestructInputs((p) => ({ ...p, [it.seq]: { ...v, inspectedQty: e.target.value } }))}
+                          className="h-7 min-w-0 rounded border border-border bg-surface px-1 text-xs text-text"
+                          title={t("material.iqc.inspectedQty", "검사수량")}
+                        />
+                        <input
+                          type="number" min={0} value={v.defectQty}
+                          onChange={(e) => setDestructInputs((p) => ({ ...p, [it.seq]: { ...v, defectQty: e.target.value } }))}
+                          className={`h-7 min-w-0 rounded border px-1 text-xs ${defectN > 0 ? 'border-red-400 text-red-600' : 'border-border text-text'} bg-surface`}
+                          title={t("material.iqc.defectQty", "불량수")}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-1 text-[10px] text-text-muted">{t("material.iqc.destructiveHint", "검사수량 / 불량수 — 불량 1건이면 FAIL")}</p>
+              </div>
+            )}
           </div>
 
           {/* 중간: 스캔한 시리얼 목록 */}

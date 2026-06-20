@@ -1744,7 +1744,11 @@
       "certFile": "检查成绩书",
       "uploadCert": "选择文件",
       "sampleBarcode": "试料条码",
-      "sampleBarcodePlaceholder": "扫描或输入条码（多个用逗号分隔）"
+      "sampleBarcodePlaceholder": "扫描或输入条码（多个用逗号分隔）",
+      "destructive": "破坏/全数检验",
+      "inspectedQty": "检验数",
+      "defectQty": "不良数",
+      "destructiveHint": "检验数 / 不良数 — 1件不良即FAIL"
     },
     "receive": {
       "title": "物料入库管理",
