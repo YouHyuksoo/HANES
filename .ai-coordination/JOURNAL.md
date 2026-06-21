@@ -10,6 +10,12 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-21 Claude (i18n 혼입 이력 메모 — 분리 보류)
+
+- 사실: 커밋 341f1c15(fix(ui))와 631fa09c(feat(part))의 locales 4파일에 **다른 세션의 미커밋 i18n 변경이 함께 혼입**됨(ko.json 기준 내 키 2줄=imageLoadFailed, 타 세션 키 ~121줄 등). 통째 커밋 방침(사용자 승인)에 따른 결과.
+- 영향: 혼입된 타 세션 i18n은 해당 커밋에만 존재하는 **유일본**이며 이후 1a0fca2c는 locales 미수정 → **중복·충돌·손실 없음, i18n 기능 정상**. 문제는 "커밋 메시지와 내용 불일치"라는 이력 미관뿐.
+- 결정: history 재작성(rebase/reset)으로 분리하지 않음. 이유 — main을 다중 세션이 공유·동시 커밋 중이고, 내 두 커밋 위에 타 세션 커밋 4개(7fa0e92d/1a0fca2c/0cf26d52 등)가 쌓여 있어 재작성 시 그 커밋 해시가 바뀌어 다른 세션 작업이 깨질 위험이 큼. 실익(이력 미관) < 위험(타 세션 손상). 사용자 승인 하에 보류.
+
 ## 2026-06-21 Claude (이미지 로드 실패 시 placeholder fallback 일괄 적용)
 
 - 배경: `/uploads/parts/...png 404`(파일 누락)로 깨진 이미지 노출. 서버 업로드 이미지를 onError 처리 없이 렌더하던 화면 전반 점검.

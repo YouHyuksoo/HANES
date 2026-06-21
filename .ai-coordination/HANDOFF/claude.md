@@ -2,9 +2,17 @@
 
 ## Last Update
 
-2026-06-20 (local)
+2026-06-21 (local)
 
 ## Latest
+
+- T-I18N-FULL-SWEEP 진행중(코드 미커밋, **하드코딩 전환 미완**): 전체 `(authenticated)` 화면 i18n 누락 점검.
+  - **번역 키 누락은 100% 해결**: 모든 `t()` 정적 키가 ko/en/zh/vi 4파일에 존재(ko 미존재 0, 4언어 불일치 0, 키 수 동일 6641). master 그리드/폴백-only 키, 공통 컬럼 팩토리(`lib/table-utils/column-factories.tsx`의 `part.code`/`equip.code` 등 최상위 키) 누락 보강 포함.
+  - **하드코딩 `t()` 전환**: 80개 코드 파일 완료(14개 병렬 에이전트). production/system/material/consumables/equipment/quality/shipping 등. `${}` 폴백은 i18next `{{}}` 보간으로 변환.
+  - **미완**: 6개 에이전트가 세션 한도(6am 리셋)로 중단 → 코드에 한글 하드코딩 잔여. 측정 1075라인(과대추정, types.ts 상수·dead코드·멀티라인 t()·주석 다수 포함). 실제 미전환 주로 **master 잔여(labelSources.ts/types.ts)·production 나머지·quality aql/spc·shipping·equipment 일부**.
+  - **회귀 없음**: 중단 코드도 `t(key,폴백)` 형태라 tsc 0 통과, 한글 폴백 표시(기능 정상, 다국어만 미적용). locale 4언어 완전 동기화, CRLF 유지, BOM 없음.
+  - **인계 절차서: `docs/i18n-hardcoding-migration-guide.md`** — 측정/병렬에이전트/locale삽입(setIfAbsent+CRLF 재직렬화)/폴백복구/검증 스크립트 포함. 다른 AI는 이 문서대로 미완 모듈을 이어서 처리하면 됨.
+  - **핵심 함정**: locale은 CRLF(LF 섞임 금지), BOM 금지, `JSON.stringify(,,2)+\n`→CRLF가 원본과 바이트동일(재직렬화 안전), `common.*` 새 키 금지, 4언어 동시.
 
 - T-PROCESS-LINE-TYPE-UI 완료(DB 일부 commit, 코드 미커밋): PROCESS_MASTERS LINE_TYPE 화면 반영.
   - BE: process dto/service `lineType`(+create의 processCategory 누락 동반 수정), equip-master findAll `lineType` 매핑.
