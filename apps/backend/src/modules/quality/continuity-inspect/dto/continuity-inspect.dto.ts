@@ -10,7 +10,7 @@
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, IsInt, IsIn, Min, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsIn, Min, MaxLength, ValidateNested } from 'class-validator';
 
 /**
  * 통전검사 결과 등록 DTO
@@ -272,3 +272,101 @@ export class CreateEquipProtocolDto {
 }
 
 export class UpdateEquipProtocolDto extends PartialType(CreateEquipProtocolDto) {}
+
+/**
+ * 통합검사 한 스텝의 결과 (회로/리크/내전압/구조)
+ */
+export class IntegratedInspectStepDto {
+  @ApiProperty({
+    description: '검사 유형',
+    enum: ['CONTINUITY', 'LEAK', 'HIPOT', 'STRUCTURE'],
+  })
+  @IsString()
+  @IsIn(['CONTINUITY', 'LEAK', 'HIPOT', 'STRUCTURE'])
+  inspectType: string;
+
+  @ApiProperty({ description: '합격 여부', enum: ['Y', 'N'] })
+  @IsString()
+  @IsIn(['Y', 'N'])
+  passYn: string;
+
+  @ApiPropertyOptional({ description: '불량 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  errorCode?: string;
+
+  @ApiPropertyOptional({ description: '불량 상세', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  errorDetail?: string;
+
+  @ApiPropertyOptional({ description: '검사 데이터 (JSON string)' })
+  @IsOptional()
+  @IsString()
+  inspectData?: string;
+}
+
+/**
+ * 통합검사 DTO — 회로/리크/내전압/구조 4개 검사를 한 번에 제출
+ * ALL PASS 시 FG_BARCODE 발행, 하나라도 FAIL이면 종합 FAIL(미발행)
+ */
+export class IntegratedInspectDto {
+  @ApiProperty({ description: '작업지시 번호', example: 'JO-20260316-001' })
+  @IsString()
+  @MaxLength(50)
+  orderNo: string;
+
+  @ApiProperty({ description: '품목 코드', example: 'ITEM-001' })
+  @IsString()
+  @MaxLength(50)
+  itemCode: string;
+
+  @ApiPropertyOptional({ description: '설비 코드' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  equipCode?: string;
+
+  @ApiPropertyOptional({ description: '작업자 ID' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  workerId?: string;
+
+  @ApiPropertyOptional({ description: '라인 코드' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  lineCode?: string;
+
+  @ApiProperty({
+    description: '검사 스텝별 결과 (최대 4개)',
+    type: [IntegratedInspectStepDto],
+  })
+  @ValidateNested({ each: true })
+  @Type(() => IntegratedInspectStepDto)
+  steps: IntegratedInspectStepDto[];
+}
+
+/**
+ * 통합검사 응답 DTO
+ */
+export class IntegratedInspectResponseDto {
+  @ApiProperty({ description: '종합 합격 여부 (ALL PASS=true)' })
+  overallPass: boolean;
+
+  @ApiProperty({ description: '발행된 FG 바코드 (전체 합격 시만 존재)', nullable: true })
+  fgBarcode: string | null;
+
+  @ApiProperty({ description: '생성된 검사실적 ID 목록' })
+  inspectResultIds: string[];
+
+  @ApiProperty({ description: '스텝별 결과 요약' })
+  stepResults: Array<{
+    inspectType: string;
+    passYn: string;
+    resultNo: string;
+  }>;
+}

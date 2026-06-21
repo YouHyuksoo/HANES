@@ -37,6 +37,8 @@ import {
   PreIssueDto,
   ReInspectDto,
   UpdateEquipProtocolDto,
+  IntegratedInspectDto,
+  IntegratedInspectResponseDto,
 } from '../dto/continuity-inspect.dto';
 
 @Injectable()
@@ -180,7 +182,8 @@ export class ContinuityInspectService {
       qb.andWhere('fg.plant = :plant', { plant: query.plant });
     }
 
-    qb.andWhere('fg.status != :excludedStatus', { excludedStatus: 'STRUCTURE_PASS' });
+    qb.andWhere('fg.status NOT IN (:...excludedStatuses)', { excludedStatuses: ['PACKED', 'SHIPPED', 'VOIDED'] });
+    qb.andWhere('fg.structureYn IS NULL');
 
     const [data, total] = await qb.getManyAndCount();
     return { data, total, page, limit };
@@ -251,6 +254,9 @@ export class ContinuityInspectService {
     company?: string,
     plant?: string,
   ): Promise<{ inspectResult: InspectResult; fgLabel: FgLabel }> {
+    if (await this.sysConfigService.isEnabled('VISUAL_INSP_BYPASS')) {
+      throw new BadRequestException('외관검사가 시스템 설정에서 bypass 처리되었습니다. 관리자에게 문의하세요.');
+    }
     return this.tx.run(async (qr) => {
       const label = await qr.manager.findOne(FgLabel, {
         where: { fgBarcode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -773,6 +779,134 @@ export class ContinuityInspectService {
   }
 
   /**
+   * 통합검사 — 회로/리크/내전압/구조 4개 검사를 한 번에 처리
+   * - ALL PASS → FG 바코드 발행 + FG_LABEL 등록
+   * - 하나라도 FAIL → 종합 FAIL (FG 바코드 미발행)
+   * - 각 스텝은 INSPECT_RESULTS에 개별 기록
+   */
+  async integratedInspect(
+    dto: IntegratedInspectDto,
+    company?: string,
+    plant?: string,
+  ): Promise<IntegratedInspectResponseDto> {
+    const steps = dto.steps ?? [];
+    if (steps.length === 0) {
+      throw new BadRequestException('최소 1개 이상의 검사 스텝이 필요합니다.');
+    }
+
+    return this.tx.run(async (queryRunner) => {
+      /** 1. 작업지시 존재 확인 */
+      const jobOrder = await queryRunner.manager.findOne(JobOrder, {
+        where: {
+          orderNo: dto.orderNo,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+      });
+      if (!jobOrder) {
+        throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${dto.orderNo}`);
+      }
+
+      /** 2. 종합 합부 판정 — 하나라도 N이면 전체 FAIL */
+      const overallPass = steps.every((s) => s.passYn === 'Y');
+
+      /** 3. FG 바코드 발행 (ALL PASS 시에만) & 과발행 차단 */
+      let fgBarcode: string | null = null;
+      if (overallPass) {
+        const producedRow = await queryRunner.manager
+          .createQueryBuilder(ProdResult, 'pr')
+          .select('COALESCE(SUM(pr.goodQty), 0)', 'sum')
+          .where('pr.orderNo = :orderNo', { orderNo: dto.orderNo })
+          .andWhere("pr.status != 'CANCELED'")
+          .andWhere(company ? 'pr.company = :company' : '1=1', company ? { company } : {})
+          .andWhere(plant ? 'pr.plant = :plant' : '1=1', plant ? { plant } : {})
+          .getRawOne();
+        const producedGoodQty = Number(producedRow?.sum ?? 0);
+
+        // 기 발행: 구조검사에서 통전검사로 발행된 ISSUED 라벨 포함
+        const issuedCount = await queryRunner.manager.count(FgLabel, {
+          where: {
+            orderNo: dto.orderNo,
+            status: Not('VOIDED'),
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+        });
+
+        if (issuedCount >= producedGoodQty) {
+          throw new BadRequestException(
+            `통합검사 합격 발행수가 생산 양품수를 초과할 수 없습니다. ` +
+              `(작업지시 ${dto.orderNo}: 생산 양품 ${producedGoodQty}, 기발행 ${issuedCount})`,
+          );
+        }
+
+        fgBarcode = await this.seqGenerator.nextFgBarcode(queryRunner);
+      }
+
+      /** 4. 각 스텝별 INSPECT_RESULT 생성 */
+      const inspectResultIds: string[] = [];
+      const stepResults: IntegratedInspectResponseDto['stepResults'] = [];
+
+      for (const step of steps) {
+        const inspectResultNo = await this.seqGenerator.getNo('INSPECT_RESULT', queryRunner);
+        const inspectResult = queryRunner.manager.create(InspectResult, {
+          resultNo: inspectResultNo,
+          prodResultNo: null,
+          inspectType: step.inspectType,
+          inspectScope: 'FULL',
+          passYn: step.passYn,
+          errorCode: step.passYn === 'N' ? (step.errorCode ?? null) : null,
+          errorDetail: step.passYn === 'N' ? (step.errorDetail ?? null) : null,
+          inspectData: step.passYn === 'N' ? (step.inspectData ?? null) : null,
+          fgBarcode,
+          inspectorId: dto.workerId ?? null,
+          equipCode: dto.equipCode ?? null,
+          inspectAt: new Date(),
+          company: company ?? jobOrder.company,
+          plant: plant ?? jobOrder.plant,
+        });
+        const saved = await queryRunner.manager.save(InspectResult, inspectResult);
+        inspectResultIds.push(saved.resultNo);
+        stepResults.push({ inspectType: step.inspectType, passYn: step.passYn, resultNo: saved.resultNo });
+      }
+
+      /** 5. ALL PASS 시 FG_LABEL 등록 */
+      if (overallPass && fgBarcode) {
+        // 첫 번째 스텝(CONTINUITY 우선) 결과를 inspectResultId로 연결
+        const continuityResult = steps.find((s) => s.inspectType === 'CONTINUITY');
+        const continuityId = continuityResult
+          ? inspectResultIds[steps.indexOf(continuityResult)]
+          : inspectResultIds[0];
+
+        const structureResult = steps.find((s) => s.inspectType === 'STRUCTURE');
+        const structureIdx = structureResult ? steps.indexOf(structureResult) : -1;
+
+        const fgLabel = queryRunner.manager.create(FgLabel, {
+          fgBarcode,
+          itemCode: dto.itemCode,
+          orderNo: dto.orderNo,
+          equipCode: dto.equipCode ?? null,
+          workerId: dto.workerId ?? null,
+          lineCode: dto.lineCode ?? null,
+          status: 'ISSUED',
+          inspectResultId: continuityId,
+          inspectPassYn: 'Y',
+          structureYn: structureIdx >= 0 ? steps[structureIdx].passYn : null,
+          company: company ?? jobOrder.company,
+          plant: plant ?? jobOrder.plant,
+        });
+        await queryRunner.manager.save(FgLabel, fgLabel);
+      }
+
+      this.logger.log(
+        `통합검사 완료: orderNo=${dto.orderNo}, overallPass=${overallPass}, fgBarcode=${fgBarcode}, steps=${steps.length}`,
+      );
+
+      return { overallPass, fgBarcode, inspectResultIds, stepResults };
+    });
+  }
+
+  /**
    * 작업지시별 통전검사 통계
    */
   async getStats(orderNo: string, company?: string, plant?: string, inspectType = 'CONTINUITY') {
@@ -961,7 +1095,8 @@ export class ContinuityInspectService {
 
   /**
    * 구조검사 — 저전압 공정 DIM'S/부재자누락 검사
-   * FG_BARCODE 스캔 → 검사결과 기록 + FG라벨 상태전이(원자적)
+   * FG_BARCODE 스캔 → 검사결과 기록 + FG_LABELS.STRUCTURE_YN 갱신
+   * STATUS는 변경하지 않음 (생산흐름과 독립적)
    */
   async structureInspect(
     fgBarcode: string,
@@ -969,6 +1104,9 @@ export class ContinuityInspectService {
     company?: string,
     plant?: string,
   ): Promise<{ inspectResult: InspectResult; fgLabel: FgLabel }> {
+    if (await this.sysConfigService.isEnabled('STRUCTURE_INSP_BYPASS')) {
+      throw new BadRequestException('구조검사가 시스템 설정에서 bypass 처리되었습니다. 관리자에게 문의하세요.');
+    }
     return this.tx.run(async (qr) => {
       const label = await qr.manager.findOne(FgLabel, {
         where: { fgBarcode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -995,7 +1133,7 @@ export class ContinuityInspectService {
       });
       const savedInspect = await qr.manager.save(InspectResult, inspectResult);
 
-      label.status = dto.passYn === 'Y' ? 'STRUCTURE_PASS' : 'STRUCTURE_FAIL';
+      label.structureYn = dto.passYn;
       label.inspectResultId = savedInspect.resultNo;
       label.inspectPassYn = dto.passYn;
       const savedLabel = await qr.manager.save(FgLabel, label);

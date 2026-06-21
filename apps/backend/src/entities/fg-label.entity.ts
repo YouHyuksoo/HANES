@@ -70,6 +70,9 @@ export class FgLabel {
   @Column({ type: 'varchar2', name: 'INSPECT_PASS_YN', length: 1, nullable: true })
   inspectPassYn: string | null;
 
+  @Column({ type: 'varchar2', name: 'STRUCTURE_YN', length: 1, nullable: true })
+  structureYn: string | null;
+
   @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
   company: string;
 

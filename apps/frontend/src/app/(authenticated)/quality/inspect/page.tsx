@@ -13,13 +13,14 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Eye, RefreshCw, Search, CheckCircle, XCircle, ScanLine, Maximize2, Minimize2,
+  Eye, RefreshCw, Search, CheckCircle, XCircle, ScanLine, Maximize2, Minimize2, List,
 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import InspectFormPanel from "./components/InspectFormPanel";
+import FgLabelSelectModal from "./components/FgLabelSelectModal";
 import type { FgLabelInfo, VisualInspectRecord } from "./types";
 
 export default function VisualInspectPage() {
@@ -31,6 +32,7 @@ export default function VisualInspectPage() {
   const [scannedLabel, setScannedLabel] = useState<FgLabelInfo | null>(null);
   const [scanError, setScanError] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
   const panelAnimateRef = useRef(true);
@@ -64,26 +66,31 @@ export default function VisualInspectPage() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
-  /** 바코드 스캔 처리 */
-  const handleScan = useCallback(async () => {
-    const barcode = scanInput.trim();
-    if (!barcode) return;
+  const openInspectPanel = useCallback(async (barcode: string) => {
     setScanError("");
     try {
       const res = await api.get(`/quality/continuity-inspect/fg-label/${barcode}`);
       const label: FgLabelInfo = res.data?.data;
-      if (!label) {
-        setScanError(t("quality.inspect.barcodeNotFound", "바코드를 찾을 수 없습니다"));
-        return;
-      }
+      if (!label) return;
       setScannedLabel(label);
       panelAnimateRef.current = !isPanelOpen;
       setIsPanelOpen(true);
-      setScanInput("");
     } catch {
       setScanError(t("quality.inspect.barcodeNotFound", "바코드를 찾을 수 없습니다"));
     }
-  }, [scanInput, isPanelOpen, t]);
+  }, [isPanelOpen, t]);
+
+  /** 바코드 스캔 처리 */
+  const handleScan = useCallback(async () => {
+    const barcode = scanInput.trim();
+    if (!barcode) return;
+    setScanInput("");
+    await openInspectPanel(barcode);
+  }, [scanInput, openInspectPanel]);
+
+  const handleSelectLabel = useCallback((barcode: string) => {
+    openInspectPanel(barcode);
+  }, [openInspectPanel]);
 
   /** Enter 키로 스캔 */
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -179,7 +186,9 @@ export default function VisualInspectPage() {
                 fullWidth
                 autoFocus
               />
-              <Button size="sm" onClick={handleScan}>{t("quality.inspect.judgement", "판정")}</Button>
+              <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => setIsSelectModalOpen(true)}>
+                <List className="w-4 h-4 mr-1" />{t("common.select", "선택")}
+              </Button>
             </div>
             {scanError && (
               <p className="mt-2 text-sm text-red-500">{scanError}</p>
@@ -209,6 +218,12 @@ export default function VisualInspectPage() {
         onClose={handlePanelClose}
         onSave={handlePanelSave}
         animate={panelAnimateRef.current}
+      />
+
+      <FgLabelSelectModal
+        isOpen={isSelectModalOpen}
+        onClose={() => setIsSelectModalOpen(false)}
+        onSelect={handleSelectLabel}
       />
     </div>
   );

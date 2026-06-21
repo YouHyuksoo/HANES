@@ -168,6 +168,7 @@ export const menuConfig: MenuConfigItem[] = [
     labelKey: "menu.inspection",
     icon: ScanLine,
     children: [
+      { code: "INSP_INTEGRATED", labelKey: "menu.inspection.integrated", path: "/inspection/integrated" },
       { code: "INSP_STRUCTURE", labelKey: "menu.inspection.structure", path: "/inspection/structure" },
       { code: "INSP_RESULT", labelKey: "menu.inspection.result", path: "/inspection/result" },
       { code: "INSP_TERMINAL_RESULT", labelKey: "menu.inspection.terminalResult", path: "/inspection/terminal-result" },

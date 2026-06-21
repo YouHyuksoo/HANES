@@ -29,6 +29,7 @@ import {
   ReInspectDto,
   UpdateEquipProtocolDto,
   VoidLabelDto,
+  IntegratedInspectDto,
 } from '../dto/continuity-inspect.dto';
 import { ContinuityInspectService } from '../services/continuity-inspect.service';
 
@@ -167,6 +168,20 @@ export class ContinuityInspectController {
     const result = await this.continuityInspectService.inspect(dto, company, plant);
     const message = dto.passYn === 'Y' ? `PASS: ${result.fgBarcode}` : 'FAIL recorded';
     return ResponseUtil.success(result, message);
+  }
+
+  @Post('integrated-inspect')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '통합검사 — 회로/리크/내전압/구조 4개 검사 동시 처리' })
+  @ApiResponse({ status: 201, description: 'Inspected' })
+  async integratedInspect(
+    @Body() dto: IntegratedInspectDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.integratedInspect(dto, company, plant);
+    const message = data.overallPass ? `통합검사 PASS: ${data.fgBarcode}` : '통합검사 FAIL (일부 스텝 불합격)';
+    return ResponseUtil.success(data, message);
   }
 
   @Post('structure-inspect/:fgBarcode')

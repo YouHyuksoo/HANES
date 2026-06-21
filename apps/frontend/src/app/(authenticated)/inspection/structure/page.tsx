@@ -173,7 +173,6 @@ export default function StructureInspectPage() {
                 fullWidth
                 autoFocus
               />
-              <Button size="sm" className="whitespace-nowrap" onClick={handleScan}>{t("quality.inspect.judgement", "판정")}</Button>
               <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => setIsSelectModalOpen(true)}>
                 <List className="w-4 h-4 mr-1" />{t("common.select", "선택")}
               </Button>

@@ -320,6 +320,7 @@
     "production.wipMaterialTrans": "원자재공정수불",
     "production.repair": "수리관리",
     "inspection": "검사관리",
+    "inspection.integrated": "통합검사",
     "inspection.structure": "구조검사",
     "inspection.result": "통전검사",
     "inspection.terminalResult": "단자검사",
@@ -4264,6 +4265,23 @@
       "commLog": "통신 로그",
       "commLogSubtitle": "최근 수신/전송 데이터",
       "realtime": "실시간"
+    },
+    "integrated": {
+      "title": "통합검사",
+      "description": "회로/리크/내전압/구조 통합 검사",
+      "searchPlaceholder": "작업지시번호/품목 검색...",
+      "selectOrder": "통합검사할 작업지시를 선택하세요",
+      "continuity": "회로검사",
+      "leak": "리크검사",
+      "hipot": "내전압검사",
+      "structure": "구조검사",
+      "overallPass": "종합 합격",
+      "overallFail": "종합 불합격",
+      "overallPassDesc": "모든 검사 스텝이 합격했습니다.",
+      "overallFailDesc": "하나 이상의 검사 스텝이 불합격입니다.",
+      "submit": "통합검사 제출",
+      "submitted": "통합검사가 완료되었습니다.",
+      "allRequired": "모든 검사 스텝의 판정을 선택하세요"
     },
     "history": {
       "scopeFull": "전수",

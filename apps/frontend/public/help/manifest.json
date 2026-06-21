@@ -32,6 +32,7 @@
       "key": "quality",
       "title": "품질관리",
       "items": [
+        { "menuCode": "QC_IQC_PART_SPEC", "title": "품목별 IQC 항목관리", "path": "/master/iqc-part-spec" },
         { "menuCode": "QC_AQL", "title": "AQL 기준관리", "path": "/quality/aql" }
       ]
     }
