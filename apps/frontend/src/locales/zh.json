@@ -928,6 +928,63 @@
       "statsPlanned": "已计划",
       "statsInProgress": "进行中",
       "statsCompleted": "已完成"
+    },
+    "scheduler": {
+      "title": "调度器管理",
+      "jobs": "作业管理",
+      "logs": "执行历史",
+      "dashboard": "仪表板",
+      "jobCode": "作业代码",
+      "jobName": "作业名称",
+      "jobGroup": "作业组",
+      "execType": "执行类型",
+      "execTarget": "执行目标",
+      "cronExpr": "Cron 表达式",
+      "cronDesc": "执行周期",
+      "isActive": "启用",
+      "maxRetry": "最大重试",
+      "timeoutSec": "超时(秒)",
+      "description": "说明",
+      "lastRunAt": "上次执行",
+      "nextRunAt": "下次执行",
+      "runNow": "立即执行",
+      "startTime": "开始时间",
+      "endTime": "结束时间",
+      "duration": "耗时",
+      "affectedRows": "处理行数",
+      "retryCount": "重试次数",
+      "resultMsg": "结果消息",
+      "errorMsg": "错误详情",
+      "todayTotal": "今日执行",
+      "todaySuccess": "成功",
+      "todayFail": "失败",
+      "successRate": "成功率",
+      "trendChart": "7天执行趋势",
+      "ratioChart": "按作业成功/失败",
+      "recentFails": "最近失败",
+      "confirmDelete": "确定删除此作业吗？",
+      "confirmRun": "立即执行此作业吗？",
+      "addJob": "注册作业",
+      "editJob": "修改作业",
+      "serviceMethod": "服务.方法",
+      "packageProc": "包.过程",
+      "sqlQuery": "SQL 查询",
+      "httpMethod": "HTTP 方法",
+      "httpUrl": "URL",
+      "httpHeaders": "标头 (JSON)",
+      "httpBody": "正文 (JSON)",
+      "scriptPath": "脚本路径",
+      "scriptArgs": "执行参数",
+      "cronGuide": "Cron 表达式指南 (秒 分 时 日 月 星期)",
+      "cronEvery5Min": "每5分钟",
+      "cronEvery10Min": "每10分钟",
+      "cronEvery30Min": "每30分钟",
+      "cronHourly": "每小时整点",
+      "cronDaily2am": "每天凌晨2点",
+      "cronWeekday9And18": "工作日9点/18点"
+    },
+    "menuCategories": {
+      "selectCategoryToMove": "请选择要移动到的类别。"
     }
   },
   "serial": {
@@ -1029,7 +1086,7 @@
         "iqcYn": "是否适用进货检验标准。",
         "inspectMethod": "区分 IQC 检验或免检的适用方式。",
         "sampleQty": "IQC 检验使用的基本样本数。与 AQL 推算的样本数量不同。",
-        "iqcAqlPolicyCode": "应用于品目的 IQC AQL 政策基准信息代码。",
+        "iqcAqlPolicyCode": "应用于该品目入厂检验(IQC)的 AQL(合格质量限)政策。\n\n• AQL 含义：仍可判定 LOT 合格的最大不良水平，数值越小标准越严格。\n• 政策构成：每个政策按缺陷等级捆绑 Major(重缺陷)·Minor(轻缺陷) AQL 值及检验水平(通常为 II)。\n• 判定方式：入厂 LOT 检验时根据 LOT 大小自动算出样本数(n)·合格(Ac)·不合格(Re) 判定数，不良数 ≤ Ac 合格，≥ Re 不合格。\n• 登记位置：在[质量管理 > AQL 基准管理]中管理政策与各 LOT 判定基准。\n• 留空时：不应用 AQL 自动判定(无检验或手动判定)。",
         "useYn": "是否可供新查询、选择和使用。",
         "boxQty": "装入一个箱子的基准数量。可选择 10 的倍数或直接输入。",
         "minPackQty": "领料时作为最小单位处理的数量。",
@@ -2030,11 +2087,17 @@
         "notice": "保存时重新计算剩余数量,超出将被拒绝。每个序列号会生成对应标签。",
         "serialIssueTitle": "确认发行序列号",
         "serialIssueBody": "将发行 {{count}} 个序列号。继续吗?",
-        "serialIssueNote": "发行后将自动打开标签预览。"
+        "serialIssueNote": "发行后将自动打开标签预览。",
+        "serialCountUnit": "{{count}}个"
       },
       "label": {
         "title": "材料标签预览",
-        "print": "打印"
+        "print": "打印",
+        "printing": "打印中",
+        "toastPreparing": "正在准备向 agent 发送 {{count}} 个入库标签。",
+        "toastSent": "已向 agent 发送 {{count}} 个入库标签。",
+        "toastError": "agent 打印时发生错误。",
+        "errorPrepareScreen": "无法准备标签打印画面。"
       },
       "selectPoDesc": "请选择可到货的PO。",
       "selectWarehouse": "选择仓库",
@@ -2048,7 +2111,9 @@
       "cancelWarning": "取消到货将创建冲销交易并扣减库存。此操作不可撤销。",
       "cancelReason": "取消原因",
       "cancelReasonPlaceholder": "请输入取消原因",
-      "confirmCancel": "确认取消"
+      "confirmCancel": "确认取消",
+      "defaultDesign": "默认设计",
+      "labelTemplate": "入库标签模板"
     },
     "iqc": {
       "title": "来料检验(IQC)",
@@ -2490,7 +2555,8 @@
         "confirmed": "已确认",
         "partial": "部分入库",
         "received": "入库完成"
-      }
+      },
+      "selectPoHint": "选择采购订单以查看品目入库情况"
     },
     "arrivalStock": {
       "title": "到货库存现况",
@@ -2546,7 +2612,36 @@
       "cancelWarning": "取消判定后，该LOT的IQC状态将恢复为「待检」。需要重新检查。",
       "cancelReason": "取消原因",
       "cancelReasonPlaceholder": "请输入取消原因",
-      "confirmCancel": "取消判定"
+      "confirmCancel": "取消判定",
+      "viewDetail": "检验明细查看",
+      "viewCert": "查看检验报告",
+      "uploadCert": "上传检验报告",
+      "reuploadCert": "重新上传检验报告",
+      "cert": "报告",
+      "attached": "已附",
+      "notAttached": "未附",
+      "arrivalNo": "入库单号",
+      "detail": {
+        "title": "IQC检验明细 — {{name}} ({{date}})",
+        "item": "品目",
+        "judge": "判定",
+        "itemJudgeTitle": "按检验项目判定",
+        "inspectItem": "检验项目",
+        "defectGrade": "不良等级",
+        "requiredInspected": "要求/检验",
+        "inspectLevel": "检验水平",
+        "defectCount": "不良数",
+        "reason": "事由",
+        "serial": "序列号",
+        "spec": "规格",
+        "lsl": "下限",
+        "usl": "上限",
+        "measuredValue": "测量值",
+        "noItemValues": "无各项目测量值（手动判定）",
+        "selectSerial": "请选择序列号。",
+        "scanSerial": "扫描序列号",
+        "noData": "无详细检验数据。"
+      }
     },
     "lotSplit": {
       "title": "物料分割",
@@ -2834,6 +2929,24 @@
         "total": "全部入库",
         "cancellable": "可取消",
         "canceled": "已取消"
+      }
+    },
+    "arrivalTransaction": {
+      "title": "入库收发查询",
+      "subtitle": "查询反映到入库库存的入库及入库取消台账。",
+      "empty": "未查询到入库收发记录。",
+      "searchPlaceholder": "搜索交易号、入库单号、品目",
+      "typeIn": "入库",
+      "typeCancel": "入库取消",
+      "statusDone": "完成",
+      "statusCanceled": "取消",
+      "col": {
+        "transDate": "交易日期",
+        "transNo": "交易号",
+        "arrivalNo": "入库单号",
+        "warehouse": "入库仓库",
+        "reference": "参照",
+        "worker": "作业者"
       }
     }
   },
@@ -3145,7 +3258,14 @@
       "warnZeroQty": "该标签剩余数量为零。",
       "warnInvalidStatus": "该标签处于不可用状态。",
       "executeFailed": "配套执行失败。",
-      "executeSuccess": "配套已完成。"
+      "executeSuccess": "配套已完成。",
+      "alreadyScanned": "标签已扫描。",
+      "optional": "可选",
+      "requireOrderNo": "请输入工单号。",
+      "requireProcessCode": "请输入子工序代码。",
+      "requireQty": "请输入发行数量。",
+      "requireSgLabel": "请至少扫描一个SG追踪标签。",
+      "sgLabelLookupFailed": "SG标签查询失败。"
     },
     "order": {
       "title": "作业指示管理",
@@ -3225,7 +3345,8 @@
       "preparedBy": "制单人",
       "warehouseConfirm": "仓库确认",
       "receivedBy": "领取人",
-      "noRawMaterial": "无原材料"
+      "noRawMaterial": "无原材料",
+      "exportFileName": "工单"
     },
     "result": {
       "title": "生产实绩查询",
@@ -3503,7 +3624,8 @@
       "sampleCount": "样品数",
       "startDate": "开始日期",
       "endDate": "结束日期",
-      "inspectTypePlaceholder": "外观检查、尺寸检查等"
+      "inspectTypePlaceholder": "外观检查、尺寸检查等",
+      "exportFileName": "抽样检验"
     },
     "resultSummary": {
       "title": "生产实绩综合查询",
@@ -3654,7 +3776,10 @@
       "totalReceived": "入库数",
       "totalInRepair": "修理中",
       "totalCompleted": "完成数",
-      "scanBarcode": "请扫描条码"
+      "scanBarcode": "请扫描条码",
+      "statusCompleted": "完成",
+      "statusInRepair": "维修中",
+      "statusReceived": "入库"
     },
     "workOrderCtx": {
       "selectOrder": "请选择作业指示",
@@ -3670,6 +3795,45 @@
     "inputKiosk": {
       "title": "实绩录入(终端)",
       "description": "在现场设备终端录入生产实绩"
+    },
+    "specSetup": {
+      "drawingNo": "图号",
+      "erpItemNo": "ERP 物料号",
+      "customerPartNo": "客户料号",
+      "initialRev": "初始版本",
+      "drawingHeader": "图纸表头",
+      "searchPlaceholder": "搜索图号/ERP/物料",
+      "approve": "批准",
+      "createRev": "创建版本",
+      "circuitSpecTitle": "线路制作规格",
+      "expandView": "放大查看",
+      "addCircuit": "添加线路",
+      "removeCircuit": "删除线路",
+      "reviseGuide": "复制当前版本的线路规格以创建新的 DRAFT 版本。",
+      "changeReason": "变更原因",
+      "changeReasonPlaceholder": "请输入变更原因",
+      "drawingNoItemRequired": "图号和物料代码为必填项。",
+      "savedDrawing": "已保存产品图纸。",
+      "createdDrawing": "已创建产品图纸。",
+      "saveFailed": "保存失败。",
+      "approvedRevision": "已批准版本。",
+      "createdRevision": "已创建新版本。",
+      "deleteConfirm": "确定删除所选产品图纸吗？",
+      "deletedDrawing": "已删除产品图纸。",
+      "unregistered": "(未登记)",
+      "colConnection": "连接",
+      "selectWire": "选择 BOM 电线",
+      "selectHousing": "选择壳体/连接器",
+      "selectTerminal": "选择端子",
+      "connectionType": "连接形式",
+      "connectionTypeAria": "连接形式 {{symbol}}",
+      "symbol": {
+        "STRAIGHT": "直线",
+        "BOTH_CRIMP": "两端压接",
+        "SPLICE": "拼接",
+        "BRIDGE": "分支",
+        "ONE_SIDE": "单侧"
+      }
     }
   },
   "inspection": {
@@ -3775,6 +3939,10 @@
       "commLog": "通信日志",
       "commLogSubtitle": "最近接收/发送数据",
       "realtime": "实时"
+    },
+    "history": {
+      "scopeFull": "全数",
+      "scopeSample": "抽样"
     }
   },
   "quality": {
@@ -3783,7 +3951,50 @@
       "subtitle": "管理用于计算IQC抽样数量和Ac/Re判定基准的AQL基准。",
       "standardSection": "AQL基准",
       "ruleSection": "LOT数量判定基准",
-      "empty": "没有已登记的AQL基准。"
+      "empty": "没有已登记的AQL基准。",
+      "addPolicy": "添加策略",
+      "addRule": "添加判定标准",
+      "addStandard": "添加AQL基准",
+      "aqlCode": "AQL代码",
+      "aqlName": "AQL名称",
+      "aqlNamePlaceholder": "一般检验AQL 1.0",
+      "aqlValue": "AQL值",
+      "disable": "停用",
+      "disablePolicyMsg": "确定停用策略 {{code}} 吗？",
+      "disablePolicyTitle": "停用AQL策略",
+      "disableStandardMsg": "确定停用基准 {{code}} 吗？",
+      "disableStandardTitle": "停用AQL基准",
+      "editStandard": "修改AQL基准",
+      "inspectionLevel": "检验水平",
+      "policyCode": "策略代码",
+      "policyName": "策略名称",
+      "policySection": "AQL策略管理",
+      "policySectionDesc": "基于IQC_AQL_POLICIES管理应用于品目的Major/Minor AQL组合。",
+      "registerStandard": "登记AQL基准",
+      "remark": "备注",
+      "ruleEmpty": "请按LOT数量添加判定标准。",
+      "savePolicy": "保存策略",
+      "searchPlaceholder": "搜索AQL代码/名称",
+      "selectOption": "选择",
+      "toastCreated": "AQL基准已登记。",
+      "toastPolicyCreated": "AQL策略已登记。",
+      "toastPolicyUpdated": "AQL策略已修改。",
+      "toastUpdated": "AQL基准已修改。",
+      "use": "使用",
+      "useYn": "使用与否",
+      "validateAqlCode": "请输入AQL代码。",
+      "validateAqlName": "请输入AQL名称。",
+      "validateLotOverlap": "LOT数量范围重叠。",
+      "validateLotRange": "LOT数量From不能大于To。",
+      "validateMajorAql": "请选择Major AQL基准。",
+      "validateMinorAql": "请选择Minor AQL基准。",
+      "validatePolicyCode": "请输入策略代码。",
+      "validatePolicyName": "请输入策略名称。",
+      "validateReAc": "Re数量必须大于Ac数量。",
+      "major": "主要",
+      "majorAql": "主要 AQL",
+      "minor": "次要",
+      "minorAql": "次要 AQL"
     },
     "defect": {
       "title": "不良管理",
@@ -4003,7 +4214,8 @@
       "defectQtyShort": "不良数量",
       "workDetail": "作业内容",
       "workTimeMin": "作业时间(分)",
-      "inspectHint": "判定合格(PASS)时，良品数量将恢复至工序仓库(WIP)产品库存。"
+      "inspectHint": "判定合格(PASS)时，良品数量将恢复至工序仓库(WIP)产品库存。",
+      "selectPartFirst": "请先选择品目"
     },
     "change": {
       "title": "变更管理",
@@ -4199,7 +4411,22 @@
       "noMesData": "所选期间没有可导入的测量数据。",
       "measuredValues": "测量值",
       "dataSource": "数据源",
-      "sourceInspectItem": "源检验项目"
+      "sourceInspectItem": "源检验项目",
+      "dataSourceIqcHint": "从进货检验(SAMPLE_INSPECT_RESULTS)获取测量值。",
+      "dataSourceManualHint": "手动输入模式：通过添加测量数据按钮直接输入。",
+      "dataSourceOqcHint": "从出货检验(OQC_REQUESTS)按品目获取测量值。",
+      "dataSourceProcessHint": "从工序检验(INSPECT_RESULTS)获取测量值。",
+      "foundCount": "发现 {{count}} 件",
+      "histBin": "区间: {{bin}}",
+      "histFrequency": "频率",
+      "histFrequencyValue": "{{count}} 件",
+      "importSourcesHint": "进货·工序·首件检验整合",
+      "manualModeImportHint": "手动输入模式 — 请在管理图设置中更改数据源",
+      "registerCount": "登记 {{count}} 件",
+      "sourceFai": "首件检验",
+      "sourceInspectItemPlaceholder": "例：压接高度",
+      "sourceIqc": "进货检验",
+      "sourceProcess": "工序检验"
     },
     "controlPlan": {
       "title": "控制计划",
@@ -4413,7 +4640,9 @@
       "descPlaceholder": "输入计划说明",
       "sectionBasic": "基本信息",
       "sectionCycle": "周期设置",
-      "equipName": "设备名称"
+      "equipName": "设备名称",
+      "fieldInput": "请输入 {{field}}",
+      "fieldRequired": "{{field}} 为必填项"
     },
     "pmWorkOrder": {
       "woSchedule": "工单现况",
@@ -4450,7 +4679,8 @@
       "woPlanned": "计划",
       "woInProgress": "进行中",
       "woCompleted": "完成",
-      "woOverdue": "逾期"
+      "woOverdue": "逾期",
+      "weekdays": "日,一,二,三,四,五,六"
     },
     "inspectCalendar": {
       "title": "日常点检日历",
@@ -4493,7 +4723,10 @@
       "legendAllPass": "全部合格",
       "legendInProgress": "进行中",
       "legendFail": "有不合格",
-      "legendNotStarted": "未开始"
+      "legendNotStarted": "未开始",
+      "failCauseRequired": "需要输入 {{label}}",
+      "itemResultRequired": "需输入 {{label}}",
+      "weekdays": "日,一,二,三,四,五,六"
     },
     "periodicInspectCalendar": {
       "title": "定期点检日历",
@@ -4529,7 +4762,35 @@
       "noItems": "未登记点检项目",
       "savedOk": "日常点检已保存 (PASS)",
       "savedNg": "日常点检已保存 — NG · 维修申请已登记",
-      "saveError": "日常点检保存失败"
+      "saveError": "日常点检保存失败",
+      "badRemarkPlaceholder": "输入不良内容...",
+      "colCriteria": "基准",
+      "colItem": "点检项目",
+      "colJudge": "判定",
+      "colMeasure": "测量值/输入",
+      "colPhoto": "照片",
+      "colType": "类型",
+      "defaultCriteria": "正常",
+      "doneCount": "完成 {{done}}/{{total}}",
+      "failLabel": "不合格 (NG)",
+      "fillAllItems": "请填写所有点检项目。",
+      "groupEtc": "其他",
+      "itemCountSuffix": "{{count}} 项",
+      "ngCount": "· NG {{ng}} 件",
+      "overallFailDescription": "{{total}} 项中 {{ngCount}} 项 NG",
+      "overallJudgeArrow": "→ 综合判定",
+      "overallPassDescription": "全部 {{total}} 项 OK",
+      "overallTitle": "综合判定",
+      "passLabel": "合格 (PASS)",
+      "pendingLabel": "待处理",
+      "saveButtonNg": "保存 (NG)",
+      "saveButtonPass": "保存 (PASS)",
+      "selectPlaceholder": "-- 选择 --",
+      "statusDoneNg": "完成(NG)",
+      "statusDoneOk": "完成(OK)",
+      "statusNone": "未点检",
+      "typeMeasure": "测量型",
+      "typeVisual": "判定型"
     },
     "periodicInspect": {
       "title": "定期点检",
@@ -4625,7 +4886,8 @@
       "currentInfo": "当前现况",
       "warningLabel": "警告",
       "overdueLabel": "超出",
-      "retiredLabel": "报废"
+      "retiredLabel": "报废",
+      "fieldRequired": "{{field}} 为必填项"
     },
     "calibrationHistory": {
       "calNo": "校准编号",
@@ -4911,7 +5173,20 @@
       "cancelReason": "取消原因",
       "cancelReasonPlaceholder": "请输入取消原因...",
       "confirmCancel": "确认取消",
-      "statCanceled": "已取消"
+      "statCanceled": "已取消",
+      "availableBoxes": "可用箱",
+      "confirmProductShip": "确认产品出货",
+      "loadSelectedBoxes": "装载所选箱",
+      "noLoadableBoxes": "没有可装载的箱。",
+      "noPallets": "没有已创建的托盘。",
+      "orderLabel": "指示",
+      "palletComposition": "托盘构成",
+      "printPalletLabel": "发行托盘标签",
+      "productShipScan": "产品出货扫描",
+      "scanLabel": "扫描",
+      "scanPalletBarcode": "扫描托盘条码",
+      "scheduledShip": "出货预定",
+      "shipLabel": "出货"
     },
     "scan": {
       "title": "出货扫描验证",
@@ -5057,7 +5332,11 @@
       "usageMapSelectGuide": "从左侧列表中选择耗材，即可随时管理产品/设备使用映射。",
       "usageMapTitle": "耗材使用映射",
       "usagePerUnit": "单位用量",
-      "usagePerUnitShort": "用量"
+      "usagePerUnitShort": "用量",
+      "codeRequired": "请输入耗材代码。",
+      "nameRequired": "请输入耗材名称。",
+      "namePlaceholder": "110端子压接模具",
+      "locationPlaceholder": "模具室-A1"
     },
     "receiving": {
       "title": "耗材入库",
@@ -5198,7 +5477,27 @@
       "pending": "待入库",
       "qtyInput": "发行数量",
       "searchPlaceholder": "搜索耗材代码、名称...",
-      "issueSuccess": "已创建{{count}}个耗材UID。"
+      "issueSuccess": "已创建{{count}}个耗材UID。",
+      "defaultDesign": "默认设计",
+      "popupBlocked": "浏览器拦截了打印窗口。请允许此站点的弹出窗口。",
+      "preparingPrint": "正在发行 UID 并准备打印标签。",
+      "issueError": "发行 UID 时发生错误。",
+      "noIssuedUid": "没有发行的 UID。请检查所选项目和发行数量。",
+      "issuedCallingDialog": "已发行 {{count}} 件。正在调用打印对话框。",
+      "printScreenFailed": "无法准备标签打印画面。",
+      "issuedAndPrinted": "发行 {{count}} 个 UID 后已调用打印对话框。",
+      "sendingToAgent": "正在准备将标签 {{conUid}} 发送到 agent。",
+      "sentToAgent": "标签 {{conUid}} 已发送到 agent。",
+      "agentPrintError": "agent 打印过程中发生错误。",
+      "itemsSelected": "已选择 {{count}} 件",
+      "printingState": "打印中",
+      "categoryFilter": "类别筛选",
+      "previewTitle": "标签预览",
+      "previewHint": "打印前请确认条码和标签布局。",
+      "preview": "预览",
+      "reprint": "重新发行",
+      "previewAria": "预览标签 {{conUid}}",
+      "reprintAria": "重新发行标签 {{conUid}}"
     },
     "search": {
       "title": "耗材搜索",
@@ -6700,7 +6999,8 @@
       "confirmDelete": "将删除{{count}}条草稿并重新编排，是否继续？",
       "noDemand": "该期间无未发货订单。",
       "emptyGuide": "设置条件后点击[预览]。"
-    }
+    },
+    "deleteConfirm": "确定删除“{{planNo}}”吗？"
   },
   "simulation": {
     "title": "生产计划模拟",
@@ -6744,6 +7044,20 @@
       "dueMarker": "交期",
       "onTime": "达成",
       "delay": "延迟"
+    },
+    "processCapaCol": "工序/产能",
+    "resultCol": "结果",
+    "perDay": "{{value}}/天",
+    "daysNeeded": "需 {{days}} 天",
+    "process": {
+      "PRC-CUT": "切断",
+      "PRC-STRIP": "剥皮",
+      "PRC-CRIMP": "压接",
+      "PRC-PRESUB": "预组装",
+      "PRC-ASSY": "组装",
+      "PRC-TAPE": "缠胶带",
+      "PRC-TEST": "检查",
+      "PRC-PACK": "包装"
     }
   },
   "processCapa": {
@@ -6952,7 +7266,11 @@
       "title": "作业指导书",
       "selectJobOrder": "选择作业指示后显示作业指导书",
       "noInstruction": "无作业指导书",
-      "noInstructionHint": "请为该品目/工序登记作业指导书"
+      "noInstructionHint": "请为该品目/工序登记作业指导书",
+      "noPrevPage": "没有上一页",
+      "noNextPage": "没有下一页",
+      "prevPage": "上一页",
+      "nextPage": "下一页"
     },
     "routing": {
       "title": "工艺路线",
@@ -6966,7 +7284,8 @@
       "defectTotal": "不良合计",
       "recentHistory": "作业历史",
       "autoRefresh": "10秒自动刷新",
-      "noHistory": "无作业历史"
+      "noHistory": "无作业历史",
+      "equipInterface": "设备"
     },
     "input": {
       "selfInspect": "工序抽样检验",
@@ -7067,7 +7386,13 @@
       "inspectorRequired": "点检人员 (必填)",
       "inspectTime": "点检时间",
       "inspectorHint": "请选择设备维护人员",
-      "overallResult": "综合判定"
+      "overallResult": "综合判定",
+      "pendingCount": "未完成 {{count}}",
+      "workDate": "作业日",
+      "validWindow": "有效区间",
+      "answeredProgress": "{{answered}} / {{total}} 项",
+      "overallNgSummary": "{{total}} 项中 {{ng}} 项 NG",
+      "overallPassSummary": "全部 {{total}} 项合格"
     },
     "workerInspect": {
       "check1": "设备电源及安全装置是否正常",
@@ -7118,7 +7443,10 @@
       "colType": "区分/检查者",
       "colJudge": "判定",
       "colSample": "样本",
-      "noHistory": "无检查履历"
+      "noHistory": "无检查履历",
+      "delegating": "委托中",
+      "blockBadge": "已阻止！",
+      "notifyBadge": "建议↑"
     },
     "defect": {
       "title": "不良输入",
@@ -7155,7 +7483,10 @@
     "unit": "单位",
     "standard": "基准/规格",
     "noSpec": "未设置规格（LSL/USL）",
-    "visualItem": "判定型项目（无规格）"
+    "visualItem": "判定型项目（无规格）",
+    "timingFirst": "首件",
+    "timingMid": "中间件",
+    "timingLast": "末件"
   },
   "selfInspectHistory": {
     "title": "工序抽样检验历史",
@@ -7167,7 +7498,13 @@
     "status": "结果",
     "createdAt": "登记时间",
     "resultList": "检查历史",
-    "selectHint": "请从左侧选择历史"
+    "selectHint": "请从左侧选择历史",
+    "timingFirst": "首件",
+    "timingMid": "中间件",
+    "timingLast": "末件",
+    "sampleNo": "样品编号",
+    "measureValue": "测量值",
+    "remark": "备注"
   },
   "improvement": {
     "fabTooltip": "提交改善申请",
@@ -7190,7 +7527,12 @@
     "noScreenshot": "无截图",
     "capturing": "正在截图...",
     "empty": "没有已登记的改善请求",
-    "keywordPlaceholder": "搜索说明或页面"
+    "keywordPlaceholder": "搜索说明或页面",
+    "detailLoadError": "加载详情失败",
+    "statusChanged": "状态已变更",
+    "statusChangeError": "状态变更失败",
+    "startProcessing": "开始处理",
+    "completeProcessing": "完成处理"
   },
   "selfInspect": {
     "typeVisual": "判定型",

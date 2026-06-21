@@ -62,7 +62,7 @@ export default function HelpTooltip({ description, db, dataField }: HelpTooltipP
             {/* 화살표 */}
             <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 rounded-sm border-l border-t border-slate-700 bg-slate-900 dark:border-slate-600 dark:bg-slate-800" />
             <div className="relative overflow-hidden rounded-xl border border-slate-700 bg-slate-900 text-slate-100 shadow-2xl ring-1 ring-black/5 dark:border-slate-600 dark:bg-slate-800">
-              <p className="px-3.5 pb-2.5 pt-3 text-[12.5px] leading-relaxed text-slate-100">
+              <p className="whitespace-pre-line px-3.5 pb-2.5 pt-3 text-[12.5px] leading-relaxed text-slate-100">
                 {description}
               </p>
               <div className="flex items-center gap-2 border-t border-slate-700/80 bg-slate-950/60 px-3.5 py-2 dark:border-slate-600/70 dark:bg-slate-900/60">

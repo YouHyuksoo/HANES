@@ -928,6 +928,63 @@
       "statsPlanned": "Planned",
       "statsInProgress": "In Progress",
       "statsCompleted": "Completed"
+    },
+    "scheduler": {
+      "title": "Scheduler Management",
+      "jobs": "Job Management",
+      "logs": "Execution History",
+      "dashboard": "Dashboard",
+      "jobCode": "Job Code",
+      "jobName": "Job Name",
+      "jobGroup": "Job Group",
+      "execType": "Execution Type",
+      "execTarget": "Execution Target",
+      "cronExpr": "Cron Expression",
+      "cronDesc": "Schedule",
+      "isActive": "Active",
+      "maxRetry": "Max Retries",
+      "timeoutSec": "Timeout (sec)",
+      "description": "Description",
+      "lastRunAt": "Last Run",
+      "nextRunAt": "Next Run",
+      "runNow": "Run Now",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "duration": "Duration",
+      "affectedRows": "Affected Rows",
+      "retryCount": "Retries",
+      "resultMsg": "Result Message",
+      "errorMsg": "Error Detail",
+      "todayTotal": "Today's Runs",
+      "todaySuccess": "Success",
+      "todayFail": "Failure",
+      "successRate": "Success Rate",
+      "trendChart": "7-Day Execution Trend",
+      "ratioChart": "Success/Failure by Job",
+      "recentFails": "Recent Failures",
+      "confirmDelete": "Delete this job?",
+      "confirmRun": "Run this job now?",
+      "addJob": "Add Job",
+      "editJob": "Edit Job",
+      "serviceMethod": "Service.Method",
+      "packageProc": "Package.Procedure",
+      "sqlQuery": "SQL Query",
+      "httpMethod": "HTTP Method",
+      "httpUrl": "URL",
+      "httpHeaders": "Headers (JSON)",
+      "httpBody": "Body (JSON)",
+      "scriptPath": "Script Path",
+      "scriptArgs": "Arguments",
+      "cronGuide": "Cron Expression Guide (sec min hour day month weekday)",
+      "cronEvery5Min": "Every 5 min",
+      "cronEvery10Min": "Every 10 min",
+      "cronEvery30Min": "Every 30 min",
+      "cronHourly": "Every hour on the hour",
+      "cronDaily2am": "Daily at 2 AM",
+      "cronWeekday9And18": "Weekdays at 9/18"
+    },
+    "menuCategories": {
+      "selectCategoryToMove": "Please select a category to move to."
     }
   },
   "serial": {
@@ -1029,7 +1086,7 @@
         "iqcYn": "Whether incoming inspection criteria apply.",
         "inspectMethod": "Distinguishes IQC inspection or skip-inspection method.",
         "sampleQty": "Default sample count for IQC inspection. Separate from the AQL-derived sample size.",
-        "iqcAqlPolicyCode": "Master code of the IQC AQL policy applied to the item.",
+        "iqcAqlPolicyCode": "AQL (Acceptable Quality Limit) policy applied to this item's incoming inspection (IQC).\n\n• What AQL is: the maximum defect level at which a lot is still accepted. Lower values mean stricter criteria.\n• Policy makeup: each policy bundles a Major (critical) and Minor AQL value per defect grade plus an inspection level (usually II).\n• How it judges: on incoming lot inspection it derives the sample size (n) and accept (Ac)/reject (Re) numbers from the lot size — defects ≤ Ac pass, ≥ Re fail.\n• Where to set up: manage policies and per-lot criteria under [Quality > AQL Standards].\n• If left empty: automatic AQL judgment is not applied (no inspection or manual judgment).",
         "useYn": "Whether the item is available for lookup, selection, and use.",
         "boxQty": "Reference quantity packed in one box. Choose a multiple of 10 or enter directly.",
         "minPackQty": "Quantity treated as the minimum unit when issuing material.",
@@ -2030,11 +2087,17 @@
         "notice": "Remaining qty is re-checked on save. Excess will be rejected. Labels will be issued for each generated serial.",
         "serialIssueTitle": "Confirm Serial Issuance",
         "serialIssueBody": "{{count}} serials will be issued. Continue?",
-        "serialIssueNote": "Label preview will open automatically after issuance."
+        "serialIssueNote": "Label preview will open automatically after issuance.",
+        "serialCountUnit": "{{count}}"
       },
       "label": {
         "title": "Material Label Preview",
-        "print": "Print"
+        "print": "Print",
+        "printing": "Printing",
+        "toastPreparing": "Preparing to send {{count}} arrival labels to the agent.",
+        "toastSent": "Sent {{count}} arrival labels to the agent.",
+        "toastError": "An error occurred during agent printing.",
+        "errorPrepareScreen": "Failed to prepare the label print view."
       },
       "selectPoDesc": "Select a PO available for arrival.",
       "selectWarehouse": "Select warehouse",
@@ -2048,7 +2111,9 @@
       "cancelWarning": "Canceling arrival will create a reversal transaction and deduct stock. This action cannot be undone.",
       "cancelReason": "Cancel Reason",
       "cancelReasonPlaceholder": "Enter cancel reason",
-      "confirmCancel": "Confirm Cancel"
+      "confirmCancel": "Confirm Cancel",
+      "defaultDesign": "Default Design",
+      "labelTemplate": "Arrival Label Template"
     },
     "iqc": {
       "title": "IQC Inspection",
@@ -2490,7 +2555,8 @@
         "confirmed": "Confirmed",
         "partial": "Partial",
         "received": "Received"
-      }
+      },
+      "selectPoHint": "Select a PO to view item receiving status"
     },
     "arrivalStock": {
       "title": "Arrival Stock Status",
@@ -2546,7 +2612,36 @@
       "cancelWarning": "Canceling the judgment will revert the LOT's IQC status to 'Pending'. Re-inspection will be required.",
       "cancelReason": "Cancel Reason",
       "cancelReasonPlaceholder": "Enter cancellation reason",
-      "confirmCancel": "Cancel Judgment"
+      "confirmCancel": "Cancel Judgment",
+      "viewDetail": "View Inspection Details",
+      "viewCert": "View Inspection Certificate",
+      "uploadCert": "Upload Inspection Certificate",
+      "reuploadCert": "Re-upload Inspection Certificate",
+      "cert": "Certificate",
+      "attached": "Attached",
+      "notAttached": "Not Attached",
+      "arrivalNo": "Arrival No.",
+      "detail": {
+        "title": "IQC Inspection Details — {{name}} ({{date}})",
+        "item": "Item",
+        "judge": "Judgment",
+        "itemJudgeTitle": "Judgment by Inspection Item",
+        "inspectItem": "Inspection Item",
+        "defectGrade": "Defect Grade",
+        "requiredInspected": "Required/Inspected",
+        "inspectLevel": "Inspection Level",
+        "defectCount": "Defect Count",
+        "reason": "Reason",
+        "serial": "Serial",
+        "spec": "Spec",
+        "lsl": "LSL",
+        "usl": "USL",
+        "measuredValue": "Measured Value",
+        "noItemValues": "No item measurements (manual judgment)",
+        "selectSerial": "Please select a serial.",
+        "scanSerial": "Scanned Serial",
+        "noData": "No detailed inspection data."
+      }
     },
     "lotSplit": {
       "title": "Lot Split",
@@ -2834,6 +2929,24 @@
         "total": "Total Receipts",
         "cancellable": "Cancellable",
         "canceled": "Canceled"
+      }
+    },
+    "arrivalTransaction": {
+      "title": "Arrival Transaction Inquiry",
+      "subtitle": "Inquire the ledger of arrivals and arrival cancellations reflected in arrival stock.",
+      "empty": "No arrival transaction records found.",
+      "searchPlaceholder": "Search transaction no., arrival no., item",
+      "typeIn": "Arrival",
+      "typeCancel": "Arrival Cancel",
+      "statusDone": "Done",
+      "statusCanceled": "Canceled",
+      "col": {
+        "transDate": "Transaction Date",
+        "transNo": "Transaction No.",
+        "arrivalNo": "Arrival No.",
+        "warehouse": "Arrival Warehouse",
+        "reference": "Reference",
+        "worker": "Worker"
       }
     }
   },
@@ -3145,7 +3258,14 @@
       "warnZeroQty": "This label has zero remaining quantity.",
       "warnInvalidStatus": "This label is in an unusable status.",
       "executeFailed": "Kitting execution failed.",
-      "executeSuccess": "Kitting completed successfully."
+      "executeSuccess": "Kitting completed successfully.",
+      "alreadyScanned": "Label already scanned.",
+      "optional": "Optional",
+      "requireOrderNo": "Enter the work order number.",
+      "requireProcessCode": "Enter the sub-process code.",
+      "requireQty": "Enter the issue quantity.",
+      "requireSgLabel": "Scan at least one SG tracking label.",
+      "sgLabelLookupFailed": "Failed to look up SG label."
     },
     "order": {
       "title": "Work Order Management",
@@ -3225,7 +3345,8 @@
       "preparedBy": "Prepared By",
       "warehouseConfirm": "Warehouse",
       "receivedBy": "Received By",
-      "noRawMaterial": "No raw materials"
+      "noRawMaterial": "No raw materials",
+      "exportFileName": "Work Order"
     },
     "result": {
       "title": "Production Result",
@@ -3503,7 +3624,8 @@
       "sampleCount": "Sample Count",
       "startDate": "Start Date",
       "endDate": "End Date",
-      "inspectTypePlaceholder": "Visual, Dimensional, etc."
+      "inspectTypePlaceholder": "Visual, Dimensional, etc.",
+      "exportFileName": "Sample Inspection"
     },
     "resultSummary": {
       "title": "Production Result Summary",
@@ -3654,7 +3776,10 @@
       "totalReceived": "Received",
       "totalInRepair": "In Repair",
       "totalCompleted": "Completed",
-      "scanBarcode": "Scan barcode"
+      "scanBarcode": "Scan barcode",
+      "statusCompleted": "Completed",
+      "statusInRepair": "In Repair",
+      "statusReceived": "Received"
     },
     "workOrderCtx": {
       "selectOrder": "Select a work order",
@@ -3670,6 +3795,45 @@
     "inputKiosk": {
       "title": "Result Input (Kiosk)",
       "description": "Enter production results at the on-site equipment kiosk"
+    },
+    "specSetup": {
+      "drawingNo": "Drawing No.",
+      "erpItemNo": "ERP Item No.",
+      "customerPartNo": "Customer Part No.",
+      "initialRev": "Initial Rev",
+      "drawingHeader": "Drawing Header",
+      "searchPlaceholder": "Search drawing / ERP / item",
+      "approve": "Approve",
+      "createRev": "Create Rev",
+      "circuitSpecTitle": "Circuit Build Spec",
+      "expandView": "Expand",
+      "addCircuit": "Add Circuit",
+      "removeCircuit": "Remove Circuit",
+      "reviseGuide": "Clones the current revision's circuit spec to create a new DRAFT revision.",
+      "changeReason": "Change Reason",
+      "changeReasonPlaceholder": "Enter change reason",
+      "drawingNoItemRequired": "Drawing No. and item code are required.",
+      "savedDrawing": "Product drawing saved.",
+      "createdDrawing": "Product drawing created.",
+      "saveFailed": "Save failed.",
+      "approvedRevision": "Revision approved.",
+      "createdRevision": "New revision created.",
+      "deleteConfirm": "Delete the selected product drawing?",
+      "deletedDrawing": "Product drawing deleted.",
+      "unregistered": "(unregistered)",
+      "colConnection": "Connection",
+      "selectWire": "Select BOM wire",
+      "selectHousing": "Select housing/connector",
+      "selectTerminal": "Select terminal",
+      "connectionType": "Connection Type",
+      "connectionTypeAria": "Connection type {{symbol}}",
+      "symbol": {
+        "STRAIGHT": "Straight",
+        "BOTH_CRIMP": "Both-End Crimp",
+        "SPLICE": "Splice",
+        "BRIDGE": "Bridge",
+        "ONE_SIDE": "One-Side"
+      }
     }
   },
   "inspection": {
@@ -3775,6 +3939,10 @@
       "commLog": "Comm Log",
       "commLogSubtitle": "Recent received/sent data",
       "realtime": "Realtime"
+    },
+    "history": {
+      "scopeFull": "Full",
+      "scopeSample": "Sample"
     }
   },
   "quality": {
@@ -3783,7 +3951,50 @@
       "subtitle": "Manage AQL standards used to calculate IQC sample size and Ac/Re criteria.",
       "standardSection": "AQL Standard",
       "ruleSection": "LOT Quantity Rules",
-      "empty": "No AQL standards registered."
+      "empty": "No AQL standards registered.",
+      "addPolicy": "Add Policy",
+      "addRule": "Add Rule",
+      "addStandard": "Add AQL Standard",
+      "aqlCode": "AQL Code",
+      "aqlName": "AQL Name",
+      "aqlNamePlaceholder": "General Inspection AQL 1.0",
+      "aqlValue": "AQL Value",
+      "disable": "Disable",
+      "disablePolicyMsg": "Disable policy {{code}}?",
+      "disablePolicyTitle": "Disable AQL Policy",
+      "disableStandardMsg": "Disable standard {{code}}?",
+      "disableStandardTitle": "Disable AQL Standard",
+      "editStandard": "Edit AQL Standard",
+      "inspectionLevel": "Inspection Level",
+      "policyCode": "Policy Code",
+      "policyName": "Policy Name",
+      "policySection": "AQL Policy Management",
+      "policySectionDesc": "Manage Major/Minor AQL combinations applied to items based on IQC_AQL_POLICIES.",
+      "registerStandard": "Register AQL Standard",
+      "remark": "Remark",
+      "ruleEmpty": "Add judgment rules by LOT quantity.",
+      "savePolicy": "Save Policy",
+      "searchPlaceholder": "Search AQL code/name",
+      "selectOption": "Select",
+      "toastCreated": "AQL standard registered.",
+      "toastPolicyCreated": "AQL policy registered.",
+      "toastPolicyUpdated": "AQL policy updated.",
+      "toastUpdated": "AQL standard updated.",
+      "use": "Use",
+      "useYn": "Use Y/N",
+      "validateAqlCode": "Enter the AQL code.",
+      "validateAqlName": "Enter the AQL name.",
+      "validateLotOverlap": "LOT quantity ranges overlap.",
+      "validateLotRange": "LOT quantity From cannot exceed To.",
+      "validateMajorAql": "Select the Major AQL standard.",
+      "validateMinorAql": "Select the Minor AQL standard.",
+      "validatePolicyCode": "Enter the policy code.",
+      "validatePolicyName": "Enter the policy name.",
+      "validateReAc": "Re must be greater than Ac.",
+      "major": "Major",
+      "majorAql": "Major AQL",
+      "minor": "Minor",
+      "minorAql": "Minor AQL"
     },
     "defect": {
       "title": "Defect Management",
@@ -4003,7 +4214,8 @@
       "defectQtyShort": "Defect Qty",
       "workDetail": "Work Detail",
       "workTimeMin": "Work Time (min)",
-      "inspectHint": "On PASS, good quantity is restored to WIP warehouse product stock."
+      "inspectHint": "On PASS, good quantity is restored to WIP warehouse product stock.",
+      "selectPartFirst": "Please select an item first"
     },
     "change": {
       "title": "Change Control",
@@ -4199,7 +4411,22 @@
       "noMesData": "No measurement data found for the selected period.",
       "measuredValues": "Measured Values",
       "dataSource": "Data Source",
-      "sourceInspectItem": "Source Inspection Item"
+      "sourceInspectItem": "Source Inspection Item",
+      "dataSourceIqcHint": "Imports measured values from incoming inspection (SAMPLE_INSPECT_RESULTS).",
+      "dataSourceManualHint": "Manual input mode: enter directly via the Add Measurement button.",
+      "dataSourceOqcHint": "Imports measured values by item from outgoing inspection (OQC_REQUESTS).",
+      "dataSourceProcessHint": "Imports measured values from process inspection (INSPECT_RESULTS).",
+      "foundCount": "{{count}} found",
+      "histBin": "Bin: {{bin}}",
+      "histFrequency": "Frequency",
+      "histFrequencyValue": "{{count}}",
+      "importSourcesHint": "Incoming · Process · First-article integrated",
+      "manualModeImportHint": "Manual input mode — change the data source in chart settings",
+      "registerCount": "{{count}} registered",
+      "sourceFai": "First-Article Inspection",
+      "sourceInspectItemPlaceholder": "e.g., Crimp Height",
+      "sourceIqc": "Incoming Inspection",
+      "sourceProcess": "Process Inspection"
     },
     "controlPlan": {
       "title": "Control Plan",
@@ -4413,7 +4640,9 @@
       "descPlaceholder": "Enter plan description",
       "sectionBasic": "Basic Info",
       "sectionCycle": "Cycle Settings",
-      "equipName": "Equipment Name"
+      "equipName": "Equipment Name",
+      "fieldInput": "Enter {{field}}",
+      "fieldRequired": "{{field}} is required"
     },
     "pmWorkOrder": {
       "woSchedule": "Work Order Schedule",
@@ -4450,7 +4679,8 @@
       "woPlanned": "Planned",
       "woInProgress": "In Progress",
       "woCompleted": "Completed",
-      "woOverdue": "Overdue"
+      "woOverdue": "Overdue",
+      "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat"
     },
     "inspectCalendar": {
       "title": "Daily Inspect Calendar",
@@ -4493,7 +4723,10 @@
       "legendAllPass": "All Pass",
       "legendInProgress": "In Progress",
       "legendFail": "Has Fail",
-      "legendNotStarted": "Not Started"
+      "legendNotStarted": "Not Started",
+      "failCauseRequired": "{{label}} is required",
+      "itemResultRequired": "{{label}} required",
+      "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat"
     },
     "periodicInspectCalendar": {
       "title": "Periodic Inspect Calendar",
@@ -4529,7 +4762,35 @@
       "noItems": "No inspection items registered",
       "savedOk": "Daily inspection saved (PASS)",
       "savedNg": "Daily inspection saved — NG · Maintenance request registered",
-      "saveError": "Failed to save daily inspection"
+      "saveError": "Failed to save daily inspection",
+      "badRemarkPlaceholder": "Enter defect details...",
+      "colCriteria": "Criteria",
+      "colItem": "Item",
+      "colJudge": "Judgment",
+      "colMeasure": "Value/Input",
+      "colPhoto": "Photo",
+      "colType": "Type",
+      "defaultCriteria": "Normal",
+      "doneCount": "Done {{done}}/{{total}}",
+      "failLabel": "Fail (NG)",
+      "fillAllItems": "Please fill in all inspection items.",
+      "groupEtc": "Etc",
+      "itemCountSuffix": "{{count}} items",
+      "ngCount": "· NG {{ng}}",
+      "overallFailDescription": "{{ngCount}} NG out of {{total}} items",
+      "overallJudgeArrow": "→ Overall",
+      "overallPassDescription": "All {{total}} items OK",
+      "overallTitle": "Overall Result",
+      "passLabel": "Pass (PASS)",
+      "pendingLabel": "Pending",
+      "saveButtonNg": "Save (NG)",
+      "saveButtonPass": "Save (PASS)",
+      "selectPlaceholder": "-- Select --",
+      "statusDoneNg": "Done(NG)",
+      "statusDoneOk": "Done(OK)",
+      "statusNone": "Not Inspected",
+      "typeMeasure": "Measurement",
+      "typeVisual": "Judgment"
     },
     "periodicInspect": {
       "title": "Periodic Inspection",
@@ -4625,7 +4886,8 @@
       "currentInfo": "Current Info",
       "warningLabel": "Warning",
       "overdueLabel": "Overdue",
-      "retiredLabel": "Retired"
+      "retiredLabel": "Retired",
+      "fieldRequired": "{{field}} is required"
     },
     "calibrationHistory": {
       "calNo": "Calibration No.",
@@ -4911,7 +5173,20 @@
       "cancelReason": "Cancel Reason",
       "cancelReasonPlaceholder": "Enter cancel reason...",
       "confirmCancel": "Confirm Cancel",
-      "statCanceled": "Canceled"
+      "statCanceled": "Canceled",
+      "availableBoxes": "Available Boxes",
+      "confirmProductShip": "Confirm Product Shipment",
+      "loadSelectedBoxes": "Load Selected Boxes",
+      "noLoadableBoxes": "No loadable boxes.",
+      "noPallets": "No pallets created.",
+      "orderLabel": "Order",
+      "palletComposition": "Pallet Composition",
+      "printPalletLabel": "Print Pallet Label",
+      "productShipScan": "Product Shipment Scan",
+      "scanLabel": "Scan",
+      "scanPalletBarcode": "Scan Pallet Barcode",
+      "scheduledShip": "Scheduled Shipment",
+      "shipLabel": "Shipment"
     },
     "scan": {
       "title": "Shipment Scan Verification",
@@ -5057,7 +5332,11 @@
       "usageMapSelectGuide": "Select a consumable from the left list to manage product/equipment usage mappings at any time.",
       "usageMapTitle": "Consumable Usage Mapping",
       "usagePerUnit": "Usage per Unit",
-      "usagePerUnitShort": "Usage"
+      "usagePerUnitShort": "Usage",
+      "codeRequired": "Enter the consumable code.",
+      "nameRequired": "Enter the consumable name.",
+      "namePlaceholder": "110 terminal crimping mold",
+      "locationPlaceholder": "Mold Room-A1"
     },
     "receiving": {
       "title": "Consumable Receiving",
@@ -5198,7 +5477,27 @@
       "pending": "Pending",
       "qtyInput": "Issue Qty",
       "searchPlaceholder": "Search consumable code, name...",
-      "issueSuccess": "{{count}} consumable UIDs have been created."
+      "issueSuccess": "{{count}} consumable UIDs have been created.",
+      "defaultDesign": "Default Design",
+      "popupBlocked": "The browser blocked the print window. Please allow pop-ups for this site.",
+      "preparingPrint": "Issuing UIDs and preparing label printing.",
+      "issueError": "An error occurred while issuing UIDs.",
+      "noIssuedUid": "No UIDs were issued. Check the selected items and issue quantity.",
+      "issuedCallingDialog": "{{count}} issued. Calling the print dialog.",
+      "printScreenFailed": "Failed to prepare the label print screen.",
+      "issuedAndPrinted": "Issued {{count}} UIDs and called the print dialog.",
+      "sendingToAgent": "Preparing to send label {{conUid}} to the agent.",
+      "sentToAgent": "Label {{conUid}} was sent to the agent.",
+      "agentPrintError": "An error occurred during agent printing.",
+      "itemsSelected": "{{count}} selected",
+      "printingState": "Printing",
+      "categoryFilter": "Category Filter",
+      "previewTitle": "Label Preview",
+      "previewHint": "Check the barcode and label layout before printing.",
+      "preview": "Preview",
+      "reprint": "Reprint",
+      "previewAria": "Preview label {{conUid}}",
+      "reprintAria": "Reprint label {{conUid}}"
     },
     "search": {
       "title": "Consumable Search",
@@ -6700,7 +6999,8 @@
       "confirmDelete": "{{count}} existing DRAFT plans will be deleted and regenerated. Proceed?",
       "noDemand": "No outstanding orders for this period.",
       "emptyGuide": "Set conditions and click [Preview]."
-    }
+    },
+    "deleteConfirm": "Delete '{{planNo}}'?"
   },
   "simulation": {
     "title": "Production Plan Simulation",
@@ -6744,6 +7044,20 @@
       "dueMarker": "Due Date",
       "onTime": "On Time",
       "delay": "Delayed"
+    },
+    "processCapaCol": "Process/CAPA",
+    "resultCol": "Result",
+    "perDay": "{{value}}/day",
+    "daysNeeded": "{{days}} days",
+    "process": {
+      "PRC-CUT": "Cutting",
+      "PRC-STRIP": "Stripping",
+      "PRC-CRIMP": "Crimping",
+      "PRC-PRESUB": "Pre-Assembly",
+      "PRC-ASSY": "Assembly",
+      "PRC-TAPE": "Taping",
+      "PRC-TEST": "Inspection",
+      "PRC-PACK": "Packing"
     }
   },
   "processCapa": {
@@ -6952,7 +7266,11 @@
       "title": "Work Instruction",
       "selectJobOrder": "Select a job order to view work instruction",
       "noInstruction": "No work instruction",
-      "noInstructionHint": "Please register a work instruction for this item/process"
+      "noInstructionHint": "Please register a work instruction for this item/process",
+      "noPrevPage": "No previous page",
+      "noNextPage": "No next page",
+      "prevPage": "Previous",
+      "nextPage": "Next"
     },
     "routing": {
       "title": "Routing",
@@ -6966,7 +7284,8 @@
       "defectTotal": "Defect Total",
       "recentHistory": "Work History",
       "autoRefresh": "10s auto-refresh",
-      "noHistory": "No work history"
+      "noHistory": "No work history",
+      "equipInterface": "Equipment"
     },
     "input": {
       "selfInspect": "Process Sample Inspection",
@@ -7067,7 +7386,13 @@
       "inspectorRequired": "Inspector (Required)",
       "inspectTime": "Inspect Time",
       "inspectorHint": "Select a maintenance team member",
-      "overallResult": "Overall Result"
+      "overallResult": "Overall Result",
+      "pendingCount": "Pending {{count}}",
+      "workDate": "Work date",
+      "validWindow": "Valid window",
+      "answeredProgress": "{{answered}} / {{total}} items",
+      "overallNgSummary": "{{ng}} of {{total}} items NG",
+      "overallPassSummary": "All {{total}} items passed"
     },
     "workerInspect": {
       "check1": "Equipment power and safety devices normal",
@@ -7118,7 +7443,10 @@
       "colType": "Type/Inspector",
       "colJudge": "Result",
       "colSample": "Samples",
-      "noHistory": "No inspection history"
+      "noHistory": "No inspection history",
+      "delegating": "Requesting",
+      "blockBadge": "Blocked!",
+      "notifyBadge": "Recommended↑"
     },
     "defect": {
       "title": "Defect Input",
@@ -7155,7 +7483,10 @@
     "unit": "Unit",
     "standard": "Standard",
     "noSpec": "No spec (LSL/USL) configured",
-    "visualItem": "Visual item (no spec)"
+    "visualItem": "Visual item (no spec)",
+    "timingFirst": "First",
+    "timingMid": "In-process",
+    "timingLast": "Last"
   },
   "selfInspectHistory": {
     "title": "Process Sample Inspection History",
@@ -7167,7 +7498,13 @@
     "status": "Result",
     "createdAt": "Registered At",
     "resultList": "Inspection History",
-    "selectHint": "Select a record from the left"
+    "selectHint": "Select a record from the left",
+    "timingFirst": "First",
+    "timingMid": "In-process",
+    "timingLast": "Last",
+    "sampleNo": "Sample No.",
+    "measureValue": "Measured Value",
+    "remark": "Remarks"
   },
   "improvement": {
     "fabTooltip": "Submit Improvement Request",
@@ -7190,7 +7527,12 @@
     "noScreenshot": "No Screenshot",
     "capturing": "Capturing screen...",
     "empty": "No improvement requests registered",
-    "keywordPlaceholder": "Search description or page"
+    "keywordPlaceholder": "Search description or page",
+    "detailLoadError": "Failed to load details",
+    "statusChanged": "Status has been changed",
+    "statusChangeError": "Failed to change status",
+    "startProcessing": "Start Processing",
+    "completeProcessing": "Mark Complete"
   },
   "selfInspect": {
     "typeVisual": "Judgment",

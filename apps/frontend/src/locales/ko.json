@@ -928,6 +928,63 @@
       "statsPlanned": "예정",
       "statsInProgress": "진행중",
       "statsCompleted": "완료"
+    },
+    "scheduler": {
+      "title": "스케줄러 관리",
+      "jobs": "작업 관리",
+      "logs": "실행 이력",
+      "dashboard": "대시보드",
+      "jobCode": "작업코드",
+      "jobName": "작업명",
+      "jobGroup": "작업그룹",
+      "execType": "실행유형",
+      "execTarget": "실행대상",
+      "cronExpr": "크론표현식",
+      "cronDesc": "실행주기",
+      "isActive": "활성",
+      "maxRetry": "최대재시도",
+      "timeoutSec": "타임아웃(초)",
+      "description": "설명",
+      "lastRunAt": "마지막실행",
+      "nextRunAt": "다음실행",
+      "runNow": "즉시실행",
+      "startTime": "시작시각",
+      "endTime": "종료시각",
+      "duration": "소요시간",
+      "affectedRows": "처리건수",
+      "retryCount": "재시도",
+      "resultMsg": "결과메시지",
+      "errorMsg": "에러상세",
+      "todayTotal": "오늘 실행",
+      "todaySuccess": "성공",
+      "todayFail": "실패",
+      "successRate": "성공률",
+      "trendChart": "7일간 실행 추이",
+      "ratioChart": "작업별 성공/실패",
+      "recentFails": "최근 실패",
+      "confirmDelete": "이 작업을 삭제하시겠습니까?",
+      "confirmRun": "이 작업을 즉시 실행하시겠습니까?",
+      "addJob": "작업 등록",
+      "editJob": "작업 수정",
+      "serviceMethod": "서비스.메서드",
+      "packageProc": "패키지.프로시저",
+      "sqlQuery": "SQL 쿼리",
+      "httpMethod": "HTTP 메서드",
+      "httpUrl": "URL",
+      "httpHeaders": "헤더 (JSON)",
+      "httpBody": "Body (JSON)",
+      "scriptPath": "스크립트 경로",
+      "scriptArgs": "실행 인자",
+      "cronGuide": "크론 표현식 가이드 (초 분 시 일 월 요일)",
+      "cronEvery5Min": "5분마다",
+      "cronEvery10Min": "10분마다",
+      "cronEvery30Min": "30분마다",
+      "cronHourly": "매시 정각",
+      "cronDaily2am": "매일 새벽 2시",
+      "cronWeekday9And18": "평일 9시/18시"
+    },
+    "menuCategories": {
+      "selectCategoryToMove": "이동할 카테고리를 선택하세요."
     }
   },
   "serial": {
@@ -1037,7 +1094,9 @@
       "descPlaceholder": "계획 설명 입력",
       "sectionBasic": "기본정보",
       "sectionCycle": "주기 설정",
-      "equipName": "설비명"
+      "equipName": "설비명",
+      "fieldInput": "{{field}}을(를) 입력하세요",
+      "fieldRequired": "{{field}}은(는) 필수입니다"
     },
     "pmWorkOrder": {
       "woSchedule": "Work Order 현황",
@@ -1074,7 +1133,8 @@
       "woPlanned": "예정",
       "woInProgress": "진행중",
       "woCompleted": "완료",
-      "woOverdue": "연체"
+      "woOverdue": "연체",
+      "weekdays": "일,월,화,수,목,금,토"
     },
     "inspectCalendar": {
       "title": "일상점검 캘린더",
@@ -1117,7 +1177,10 @@
       "legendAllPass": "전체합격",
       "legendInProgress": "진행중",
       "legendFail": "불합격있음",
-      "legendNotStarted": "미시작"
+      "legendNotStarted": "미시작",
+      "failCauseRequired": "{{label}} 입력이 필요합니다",
+      "itemResultRequired": "{{label}} 입력 필요",
+      "weekdays": "일,월,화,수,목,금,토"
     },
     "periodicInspectCalendar": {
       "title": "정기점검 캘린더",
@@ -1153,7 +1216,35 @@
       "noItems": "등록된 점검항목이 없습니다",
       "savedOk": "일일점검이 저장되었습니다 (PASS)",
       "savedNg": "일일점검이 저장되었습니다 — NG · 정비요청이 등록됩니다",
-      "saveError": "일일점검 저장에 실패했습니다"
+      "saveError": "일일점검 저장에 실패했습니다",
+      "badRemarkPlaceholder": "불량 내용 입력...",
+      "colCriteria": "기준",
+      "colItem": "점검항목",
+      "colJudge": "판정",
+      "colMeasure": "측정값/입력",
+      "colPhoto": "사진",
+      "colType": "유형",
+      "defaultCriteria": "정상",
+      "doneCount": "완료 {{done}}/{{total}}",
+      "failLabel": "불합격 (NG)",
+      "fillAllItems": "점검 항목을 모두 입력하세요.",
+      "groupEtc": "기타",
+      "itemCountSuffix": "{{count}}항목",
+      "ngCount": "· NG {{ng}}건",
+      "overallFailDescription": "{{total}}항목 중 {{ngCount}}건 NG",
+      "overallJudgeArrow": "→ 종합판정",
+      "overallPassDescription": "전 {{total}}항목 OK",
+      "overallTitle": "종합 판정",
+      "passLabel": "합격 (PASS)",
+      "pendingLabel": "대기",
+      "saveButtonNg": "저장 (NG)",
+      "saveButtonPass": "저장 (PASS)",
+      "selectPlaceholder": "-- 선택 --",
+      "statusDoneNg": "완료(NG)",
+      "statusDoneOk": "완료(OK)",
+      "statusNone": "미점검",
+      "typeMeasure": "측정형",
+      "typeVisual": "판정형"
     },
     "periodicInspect": {
       "title": "정기점검",
@@ -1284,7 +1375,8 @@
       "currentInfo": "현재 현황",
       "warningLabel": "경고",
       "overdueLabel": "초과",
-      "retiredLabel": "폐기"
+      "retiredLabel": "폐기",
+      "fieldRequired": "{{field}}은(는) 필수입니다"
     },
     "calibrationHistory": {
       "calNo": "교정번호",
@@ -1403,7 +1495,7 @@
         "iqcYn": "수입검사 기준 적용 대상 여부입니다.",
         "inspectMethod": "IQC 검사 또는 무검사 적용 방식을 구분합니다.",
         "sampleQty": "IQC 검사 시 사용할 기본시료수입니다. AQL 산출 샘플수량과 별개입니다.",
-        "iqcAqlPolicyCode": "품목에 적용할 IQC AQL 정책 기준정보 코드입니다.",
+        "iqcAqlPolicyCode": "이 품목의 수입검사(IQC)에 적용할 AQL(합격품질한계) 정책입니다.\n\n• AQL이란: LOT을 합격으로 인정하는 허용 불량 수준입니다. 값이 작을수록 더 엄격한 기준입니다.\n• 정책 구성: 하나의 정책에 Major(중결함)·Minor(경결함) 결함등급별 AQL 값과 검사수준(보통 II)이 묶여 있습니다.\n• 판정 방식: 입고 LOT 검사 시 LOT 크기에 맞춰 샘플수(n)·합격(Ac)·불합격(Re) 판정개수를 자동 산출하여, 불량수 ≤ Ac면 합격, ≥ Re면 불합격으로 판정합니다.\n• 등록 위치: [품질관리 > AQL 기준관리]에서 정책과 LOT별 판정기준을 관리합니다.\n• 비워두면: AQL 자동 판정이 적용되지 않습니다(무검사 또는 수동 판정).",
         "useYn": "신규 조회, 선택, 사용 가능 여부입니다.",
         "boxQty": "박스 하나에 장입하는 기준 수량입니다. 10 단위 후보를 선택하거나 직접 입력할 수 있습니다.",
         "minPackQty": "자재 불출 시 최소 단위로 취급할 수량입니다.",
@@ -2405,11 +2497,17 @@
         "notice": "저장 직전 잔량 재계산. 잔량 초과 시 거절. 저장 시 발급될 시리얼 수만큼 라벨이 발행됩니다.",
         "serialIssueTitle": "시리얼 발급 확인",
         "serialIssueBody": "{{count}}건의 시리얼을 발급합니다. 계속하시겠습니까?",
-        "serialIssueNote": "발급 후 자동으로 라벨 미리보기가 표시됩니다."
+        "serialIssueNote": "발급 후 자동으로 라벨 미리보기가 표시됩니다.",
+        "serialCountUnit": "{{count}}개"
       },
       "label": {
         "title": "자재 라벨 미리보기",
-        "print": "인쇄"
+        "print": "인쇄",
+        "printing": "출력중",
+        "toastPreparing": "{{count}}개 입하 라벨을 agent로 전송 준비 중입니다.",
+        "toastSent": "{{count}}개 입하 라벨을 agent로 전송했습니다.",
+        "toastError": "agent 출력 중 오류가 발생했습니다.",
+        "errorPrepareScreen": "라벨 출력 화면을 준비하지 못했습니다."
       },
       "selectPoDesc": "입하 가능한 PO를 선택해주세요.",
       "selectWarehouse": "창고 선택",
@@ -2423,7 +2521,9 @@
       "cancelWarning": "입하를 취소하면 역분개 처리되어 재고가 차감됩니다. 이 작업은 되돌릴 수 없습니다.",
       "cancelReason": "취소 사유",
       "cancelReasonPlaceholder": "취소 사유를 입력해주세요",
-      "confirmCancel": "취소 확인"
+      "confirmCancel": "취소 확인",
+      "defaultDesign": "기본 디자인",
+      "labelTemplate": "입하 라벨 템플릿"
     },
     "iqc": {
       "title": "수입검사(IQC)",
@@ -2865,7 +2965,8 @@
         "confirmed": "확정",
         "partial": "부분입고",
         "received": "입고완료"
-      }
+      },
+      "selectPoHint": "PO를 선택하면 품목 입고현황이 표시됩니다"
     },
     "arrivalStock": {
       "title": "입하재고현황",
@@ -2921,7 +3022,36 @@
       "cancelWarning": "판정을 취소하면 해당 LOT의 IQC 상태가 '대기'로 복원됩니다. 재검사가 필요합니다.",
       "cancelReason": "취소 사유",
       "cancelReasonPlaceholder": "취소 사유를 입력하세요",
-      "confirmCancel": "판정 취소"
+      "confirmCancel": "판정 취소",
+      "viewDetail": "검사 상세보기",
+      "viewCert": "검사성적서 열람",
+      "uploadCert": "검사성적서 업로드",
+      "reuploadCert": "검사성적서 재업로드",
+      "cert": "성적서",
+      "attached": "첨부",
+      "notAttached": "미첨부",
+      "arrivalNo": "입하번호",
+      "detail": {
+        "title": "IQC 검사 상세 — {{name}} ({{date}})",
+        "item": "품목",
+        "judge": "판정",
+        "itemJudgeTitle": "검사항목별 판정",
+        "inspectItem": "검사항목",
+        "defectGrade": "불량등급",
+        "requiredInspected": "요구/검사",
+        "inspectLevel": "검사수준",
+        "defectCount": "불량수",
+        "reason": "사유",
+        "serial": "시리얼",
+        "spec": "규격",
+        "lsl": "하한",
+        "usl": "상한",
+        "measuredValue": "측정값",
+        "noItemValues": "항목별 측정값 없음 (수동 판정)",
+        "selectSerial": "시리얼을 선택하세요.",
+        "scanSerial": "스캔 시리얼",
+        "noData": "상세 검사 데이터가 없습니다."
+      }
     },
     "lotSplit": {
       "title": "자재분할",
@@ -3209,6 +3339,24 @@
         "total": "전체 입고",
         "cancellable": "취소가능",
         "canceled": "취소완료"
+      }
+    },
+    "arrivalTransaction": {
+      "title": "입하수불조회",
+      "subtitle": "입하재고에 반영되는 입하 및 입하취소 원장을 조회합니다.",
+      "empty": "조회된 입하수불 내역이 없습니다.",
+      "searchPlaceholder": "거래번호, 입하번호, 품목 검색",
+      "typeIn": "입하",
+      "typeCancel": "입하취소",
+      "statusDone": "완료",
+      "statusCanceled": "취소",
+      "col": {
+        "transDate": "거래일시",
+        "transNo": "거래번호",
+        "arrivalNo": "입하번호",
+        "warehouse": "입하창고",
+        "reference": "참조",
+        "worker": "작업자"
       }
     }
   },
@@ -3520,7 +3668,14 @@
       "warnZeroQty": "잔여수량이 0인 라벨입니다.",
       "warnInvalidStatus": "사용 불가 상태의 라벨입니다.",
       "executeFailed": "키팅 실행에 실패했습니다.",
-      "executeSuccess": "키팅이 완료되었습니다."
+      "executeSuccess": "키팅이 완료되었습니다.",
+      "alreadyScanned": "이미 스캔된 라벨입니다.",
+      "optional": "선택 사항",
+      "requireOrderNo": "작업지시번호를 입력하세요.",
+      "requireProcessCode": "서브공정코드를 입력하세요.",
+      "requireQty": "발행수량을 입력하세요.",
+      "requireSgLabel": "SG 추적라벨을 하나 이상 스캔하세요.",
+      "sgLabelLookupFailed": "SG 라벨 조회에 실패했습니다."
     },
     "order": {
       "title": "작업지시 관리",
@@ -3600,7 +3755,8 @@
       "preparedBy": "작성자",
       "warehouseConfirm": "창고확인",
       "receivedBy": "수령자",
-      "noRawMaterial": "원자재가 없습니다"
+      "noRawMaterial": "원자재가 없습니다",
+      "exportFileName": "작업지시"
     },
     "result": {
       "title": "생산실적 조회",
@@ -3882,7 +4038,8 @@
       "sampleCount": "샘플 수",
       "startDate": "시작일",
       "endDate": "종료일",
-      "inspectTypePlaceholder": "외관검사, 치수검사 등"
+      "inspectTypePlaceholder": "외관검사, 치수검사 등",
+      "exportFileName": "샘플검사"
     },
     "resultSummary": {
       "title": "작업실적 통합조회",
@@ -4033,7 +4190,10 @@
       "totalReceived": "입고 건수",
       "totalInRepair": "수리중",
       "totalCompleted": "완료 건수",
-      "scanBarcode": "바코드를 스캔하세요"
+      "scanBarcode": "바코드를 스캔하세요",
+      "statusCompleted": "완료",
+      "statusInRepair": "수리중",
+      "statusReceived": "입고"
     },
     "workOrderCtx": {
       "selectOrder": "작업지시를 선택하세요",
@@ -4045,7 +4205,46 @@
       "progress": "진행률",
       "remaining": "잔여수량"
     },
-    "line": "라인"
+    "line": "라인",
+    "specSetup": {
+      "drawingNo": "도면번호",
+      "erpItemNo": "ERP 품번",
+      "customerPartNo": "고객 품번",
+      "initialRev": "최초 Rev",
+      "drawingHeader": "도면 Header",
+      "searchPlaceholder": "도면번호 / ERP 품번 / 품목 검색",
+      "approve": "승인",
+      "createRev": "Rev 생성",
+      "circuitSpecTitle": "회로별 제작 사양",
+      "expandView": "크게 보기",
+      "addCircuit": "회로 추가",
+      "removeCircuit": "회로 삭제",
+      "reviseGuide": "현재 Revision의 회로 사양을 복제해 새 DRAFT Revision을 생성합니다.",
+      "changeReason": "변경 사유",
+      "changeReasonPlaceholder": "변경 사유를 입력하세요",
+      "drawingNoItemRequired": "도면번호와 품목코드는 필수입니다.",
+      "savedDrawing": "제품 도면을 저장했습니다.",
+      "createdDrawing": "제품 도면을 생성했습니다.",
+      "saveFailed": "저장에 실패했습니다.",
+      "approvedRevision": "Revision을 승인했습니다.",
+      "createdRevision": "새 Revision을 생성했습니다.",
+      "deleteConfirm": "선택한 제품 도면을 삭제하시겠습니까?",
+      "deletedDrawing": "제품 도면을 삭제했습니다.",
+      "unregistered": "(미등록)",
+      "colConnection": "연결",
+      "selectWire": "BOM 전선 선택",
+      "selectHousing": "하우징/커넥터 선택",
+      "selectTerminal": "터미널 선택",
+      "connectionType": "연결 형태",
+      "connectionTypeAria": "연결 형태 {{symbol}}",
+      "symbol": {
+        "STRAIGHT": "직선",
+        "BOTH_CRIMP": "양단 압착",
+        "SPLICE": "스플라이스",
+        "BRIDGE": "분기",
+        "ONE_SIDE": "단측"
+      }
+    }
   },
   "inspection": {
     "result": {
@@ -4150,6 +4349,10 @@
       "commLog": "통신 로그",
       "commLogSubtitle": "최근 수신/전송 데이터",
       "realtime": "실시간"
+    },
+    "history": {
+      "scopeFull": "전수",
+      "scopeSample": "샘플"
     }
   },
   "quality": {
@@ -4158,7 +4361,50 @@
       "subtitle": "IQC 시료수와 합격/불합격 판정 기준으로 사용할 AQL 기준을 관리합니다.",
       "standardSection": "AQL 기준",
       "ruleSection": "LOT 수량별 판정 기준",
-      "empty": "등록된 AQL 기준이 없습니다."
+      "empty": "등록된 AQL 기준이 없습니다.",
+      "addPolicy": "정책 추가",
+      "addRule": "판정기준 추가",
+      "addStandard": "AQL 기준 추가",
+      "aqlCode": "AQL 코드",
+      "aqlName": "AQL 명칭",
+      "aqlNamePlaceholder": "일반검사 AQL 1.0",
+      "aqlValue": "AQL 값",
+      "disable": "사용중지",
+      "disablePolicyMsg": "{{code}} 정책을 사용중지하시겠습니까?",
+      "disablePolicyTitle": "AQL 정책 사용중지",
+      "disableStandardMsg": "{{code}} 기준을 사용중지하시겠습니까?",
+      "disableStandardTitle": "AQL 기준 사용중지",
+      "editStandard": "AQL 기준 수정",
+      "inspectionLevel": "검사수준",
+      "policyCode": "정책 코드",
+      "policyName": "정책명",
+      "policySection": "AQL 정책관리",
+      "policySectionDesc": "IQC_AQL_POLICIES 기준으로 품목에 적용할 Major/Minor AQL 조합을 관리합니다.",
+      "registerStandard": "AQL 기준 등록",
+      "remark": "비고",
+      "ruleEmpty": "LOT 수량별 판정기준을 추가하세요.",
+      "savePolicy": "정책 저장",
+      "searchPlaceholder": "AQL 코드/명칭 검색",
+      "selectOption": "선택",
+      "toastCreated": "AQL 기준이 등록되었습니다.",
+      "toastPolicyCreated": "AQL 정책이 등록되었습니다.",
+      "toastPolicyUpdated": "AQL 정책이 수정되었습니다.",
+      "toastUpdated": "AQL 기준이 수정되었습니다.",
+      "use": "사용",
+      "useYn": "사용여부",
+      "validateAqlCode": "AQL 코드를 입력하세요.",
+      "validateAqlName": "AQL 명칭을 입력하세요.",
+      "validateLotOverlap": "LOT 수량 범위가 겹칩니다.",
+      "validateLotRange": "LOT 수량 From은 To보다 클 수 없습니다.",
+      "validateMajorAql": "Major AQL 기준을 선택하세요.",
+      "validateMinorAql": "Minor AQL 기준을 선택하세요.",
+      "validatePolicyCode": "정책 코드를 입력하세요.",
+      "validatePolicyName": "정책명을 입력하세요.",
+      "validateReAc": "Re 수량은 Ac 수량보다 커야 합니다.",
+      "major": "Major",
+      "majorAql": "Major AQL",
+      "minor": "Minor",
+      "minorAql": "Minor AQL"
     },
     "defect": {
       "title": "불량관리",
@@ -4378,7 +4624,8 @@
       "defectQtyShort": "불량수량",
       "workDetail": "작업내역",
       "workTimeMin": "작업시간(분)",
-      "inspectHint": "합격(PASS) 시 양품 수량이 공정창고(WIP) 제품재고로 복원됩니다."
+      "inspectHint": "합격(PASS) 시 양품 수량이 공정창고(WIP) 제품재고로 복원됩니다.",
+      "selectPartFirst": "품목을 먼저 선택하세요"
     },
     "change": {
       "title": "변경점관리",
@@ -4574,7 +4821,22 @@
       "noMesData": "해당 기간에 가져올 측정 데이터가 없습니다.",
       "measuredValues": "측정값",
       "dataSource": "데이터 소스",
-      "sourceInspectItem": "소스 검사항목"
+      "sourceInspectItem": "소스 검사항목",
+      "dataSourceIqcHint": "수입검사(SAMPLE_INSPECT_RESULTS)에서 측정값을 가져옵니다.",
+      "dataSourceManualHint": "수동입력 모드: 측정데이터 추가 버튼으로 직접 입력합니다.",
+      "dataSourceOqcHint": "출하검사(OQC_REQUESTS)에서 품목별 측정값을 가져옵니다.",
+      "dataSourceProcessHint": "공정검사(INSPECT_RESULTS)에서 측정값을 가져옵니다.",
+      "foundCount": "{{count}}건 발견",
+      "histBin": "구간: {{bin}}",
+      "histFrequency": "빈도",
+      "histFrequencyValue": "{{count}}건",
+      "importSourcesHint": "수입검사 · 공정검사 · 초물검사 통합",
+      "manualModeImportHint": "수동입력 모드 — 관리도 설정에서 데이터 소스를 변경하세요",
+      "registerCount": "{{count}}건 등록",
+      "sourceFai": "초물검사",
+      "sourceInspectItemPlaceholder": "예: 크림프 높이",
+      "sourceIqc": "수입검사",
+      "sourceProcess": "공정검사"
     },
     "controlPlan": {
       "title": "관리계획서",
@@ -4911,7 +5173,20 @@
       "cancelReason": "취소 사유",
       "cancelReasonPlaceholder": "취소 사유를 입력하세요...",
       "confirmCancel": "취소 확정",
-      "statCanceled": "취소"
+      "statCanceled": "취소",
+      "availableBoxes": "가용 박스",
+      "confirmProductShip": "제품출하 확정",
+      "loadSelectedBoxes": "선택 박스 적재",
+      "noLoadableBoxes": "적재 가능한 박스가 없습니다.",
+      "noPallets": "생성된 팔레트가 없습니다.",
+      "orderLabel": "지시",
+      "palletComposition": "팔레트 구성",
+      "printPalletLabel": "팔레트 라벨 발행",
+      "productShipScan": "제품출하 스캔",
+      "scanLabel": "스캔",
+      "scanPalletBarcode": "팔레트 바코드 스캔",
+      "scheduledShip": "출하예정",
+      "shipLabel": "출하"
     },
     "scan": {
       "title": "출하 스캔 검증",
@@ -5057,7 +5332,11 @@
       "usageMapSelectGuide": "왼쪽 목록에서 소모품을 선택하면 제품/설비 사용매핑을 상시 관리할 수 있습니다.",
       "usageMapTitle": "소모품 사용매핑",
       "usagePerUnit": "단위사용량",
-      "usagePerUnitShort": "사용량"
+      "usagePerUnitShort": "사용량",
+      "codeRequired": "소모품 코드를 입력하세요.",
+      "nameRequired": "소모품명을 입력하세요.",
+      "namePlaceholder": "110단자 압착금형",
+      "locationPlaceholder": "금형실-A1"
     },
     "receiving": {
       "title": "소모품입고",
@@ -5198,7 +5477,27 @@
       "pending": "미입고",
       "qtyInput": "발행수량",
       "searchPlaceholder": "소모품코드, 소모품명 검색...",
-      "issueSuccess": "{{count}}건의 소모품 UID가 생성되었습니다."
+      "issueSuccess": "{{count}}건의 소모품 UID가 생성되었습니다.",
+      "defaultDesign": "기본 디자인",
+      "popupBlocked": "브라우저가 출력창을 차단했습니다. 이 사이트의 팝업을 허용해 주세요.",
+      "preparingPrint": "UID를 발행하고 라벨 출력 준비 중입니다.",
+      "issueError": "UID 발행 중 오류가 발생했습니다.",
+      "noIssuedUid": "발행된 UID가 없습니다. 선택 항목과 발행 수량을 확인하세요.",
+      "issuedCallingDialog": "{{count}}건 발행 완료. 인쇄 다이얼로그를 호출하는 중입니다.",
+      "printScreenFailed": "라벨 출력 화면을 준비하지 못했습니다.",
+      "issuedAndPrinted": "{{count}}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.",
+      "sendingToAgent": "{{conUid}} 라벨을 agent로 전송 준비 중입니다.",
+      "sentToAgent": "{{conUid}} 라벨을 agent로 전송했습니다.",
+      "agentPrintError": "agent 출력 중 오류가 발생했습니다.",
+      "itemsSelected": "{{count}}건 선택됨",
+      "printingState": "출력중",
+      "categoryFilter": "카테고리 필터",
+      "previewTitle": "라벨 미리보기",
+      "previewHint": "출력 전 바코드와 라벨 배치를 확인합니다.",
+      "preview": "미리보기",
+      "reprint": "재발행",
+      "previewAria": "{{conUid}} 라벨 미리보기",
+      "reprintAria": "{{conUid}} 라벨 재발행"
     },
     "search": {
       "title": "소모품 검색",
@@ -6700,7 +6999,8 @@
       "confirmDelete": "선택한 수주를 생산계획으로 가져옵니다. 진행하시겠습니까?",
       "noDemand": "해당 기간에 미출하 수주가 없습니다.",
       "emptyGuide": "조건을 설정한 후 [조회]를 클릭하세요."
-    }
+    },
+    "deleteConfirm": "'{{planNo}}'을(를) 삭제하시겠습니까?"
   },
   "simulation": {
     "title": "생산계획 시뮬레이션",
@@ -6744,6 +7044,20 @@
       "dueMarker": "납기",
       "onTime": "준수",
       "delay": "지연"
+    },
+    "processCapaCol": "공정/CAPA",
+    "resultCol": "결과",
+    "perDay": "{{value}}/일",
+    "daysNeeded": "{{days}}일소요",
+    "process": {
+      "PRC-CUT": "절단",
+      "PRC-STRIP": "탈피",
+      "PRC-CRIMP": "압착",
+      "PRC-PRESUB": "선조립",
+      "PRC-ASSY": "조립",
+      "PRC-TAPE": "테이핑",
+      "PRC-TEST": "검사",
+      "PRC-PACK": "포장"
     }
   },
   "processCapa": {
@@ -6952,7 +7266,11 @@
       "title": "작업지도서",
       "selectJobOrder": "작업지시를 선택하면 작업지도서가 표시됩니다",
       "noInstruction": "작업지도서 없음",
-      "noInstructionHint": "해당 품목/공정의 작업지도서를 등록해주세요"
+      "noInstructionHint": "해당 품목/공정의 작업지도서를 등록해주세요",
+      "noPrevPage": "이전 페이지가 없습니다",
+      "noNextPage": "다음 페이지가 없습니다",
+      "prevPage": "이전",
+      "nextPage": "다음"
     },
     "routing": {
       "title": "라우팅",
@@ -6966,7 +7284,8 @@
       "defectTotal": "불량 합계",
       "recentHistory": "작업이력",
       "autoRefresh": "10초 자동갱신",
-      "noHistory": "작업이력 없음"
+      "noHistory": "작업이력 없음",
+      "equipInterface": "설비"
     },
     "input": {
       "selfInspect": "공정샘플검사 입력",
@@ -7067,7 +7386,13 @@
       "inspectorRequired": "점검자 선택 (필수)",
       "inspectTime": "점검 시각",
       "inspectorHint": "설비관리팀 담당자를 선택하세요",
-      "overallResult": "종합 판정"
+      "overallResult": "종합 판정",
+      "pendingCount": "미완료 {{count}}",
+      "workDate": "조업일",
+      "validWindow": "유효구간",
+      "answeredProgress": "{{answered}} / {{total}} 항목",
+      "overallNgSummary": "{{total}}개 항목 중 {{ng}}건 NG",
+      "overallPassSummary": "전 {{total}}개 항목 합격"
     },
     "workerInspect": {
       "check1": "설비 전원 및 안전장치 정상 여부",
@@ -7118,7 +7443,10 @@
       "colType": "구분/검사자",
       "colJudge": "판정",
       "colSample": "샘플",
-      "noHistory": "검사 이력 없음"
+      "noHistory": "검사 이력 없음",
+      "delegating": "의뢰중",
+      "blockBadge": "차단!",
+      "notifyBadge": "권장↑"
     },
     "defect": {
       "title": "불량입력",
@@ -7155,7 +7483,10 @@
     "unit": "단위",
     "standard": "기준/규격",
     "noSpec": "설정된 규격(LSL/USL)이 없습니다",
-    "visualItem": "판정형 항목 (규격 없음)"
+    "visualItem": "판정형 항목 (규격 없음)",
+    "timingFirst": "초물",
+    "timingMid": "중물",
+    "timingLast": "종물"
   },
   "selfInspectHistory": {
     "title": "공정샘플검사 이력",
@@ -7167,7 +7498,13 @@
     "status": "결과",
     "createdAt": "등록일시",
     "resultList": "검사 이력",
-    "selectHint": "좌측에서 이력을 선택하세요"
+    "selectHint": "좌측에서 이력을 선택하세요",
+    "timingFirst": "초물",
+    "timingMid": "중물",
+    "timingLast": "종물",
+    "sampleNo": "시료번호",
+    "measureValue": "측정값",
+    "remark": "비고"
   },
   "improvement": {
     "fabTooltip": "개선요청 등록",
@@ -7190,7 +7527,12 @@
     "noScreenshot": "스크린샷 없음",
     "capturing": "화면 캡처 중...",
     "empty": "등록된 개선요청이 없습니다",
-    "keywordPlaceholder": "설명 또는 페이지 검색"
+    "keywordPlaceholder": "설명 또는 페이지 검색",
+    "detailLoadError": "상세 조회 실패",
+    "statusChanged": "상태가 변경되었습니다",
+    "statusChangeError": "상태 변경 실패",
+    "startProcessing": "처리 시작",
+    "completeProcessing": "완료 처리"
   },
   "selfInspect": {
     "typeVisual": "판정형",

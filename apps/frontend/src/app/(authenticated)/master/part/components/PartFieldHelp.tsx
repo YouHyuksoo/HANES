@@ -22,7 +22,16 @@ export const PART_FIELD_HELP = {
   iqcYn: { db: "ITEM_MASTERS.IQC_FLAG", description: "수입검사 기준 적용 대상 여부입니다." },
   inspectMethod: { db: "ITEM_MASTERS.INSPECT_METHOD", description: "IQC 검사 또는 무검사 적용 방식을 구분합니다." },
   sampleQty: { db: "ITEM_MASTERS.SAMPLE_QTY", description: "IQC 검사 시 사용할 기본시료수입니다. AQL 산출 샘플수량과 별개입니다." },
-  iqcAqlPolicyCode: { db: "ITEM_MASTERS.IQC_AQL_POLICY_CODE", description: "품목에 적용할 IQC AQL 정책 기준정보 코드입니다." },
+  iqcAqlPolicyCode: {
+    db: "ITEM_MASTERS.IQC_AQL_POLICY_CODE",
+    description:
+      "이 품목의 수입검사(IQC)에 적용할 AQL(합격품질한계) 정책입니다.\n\n" +
+      "• AQL이란: LOT을 합격으로 인정하는 허용 불량 수준입니다. 값이 작을수록 더 엄격한 기준입니다.\n" +
+      "• 정책 구성: 하나의 정책에 Major(중결함)·Minor(경결함) 결함등급별 AQL 값과 검사수준(보통 II)이 묶여 있습니다.\n" +
+      "• 판정 방식: 입고 LOT 검사 시 LOT 크기에 맞춰 샘플수(n)·합격(Ac)·불합격(Re) 판정개수를 자동 산출하여, 불량수 ≤ Ac면 합격, ≥ Re면 불합격으로 판정합니다.\n" +
+      "• 등록 위치: [품질관리 > AQL 기준관리]에서 정책과 LOT별 판정기준을 관리합니다.\n" +
+      "• 비워두면: AQL 자동 판정이 적용되지 않습니다(무검사 또는 수동 판정).",
+  },
   useYn: { db: "ITEM_MASTERS.USE_YN", description: "신규 조회, 선택, 사용 가능 여부입니다." },
   boxQty: { db: "ITEM_MASTERS.BOX_QTY", description: "박스 하나에 장입하는 기준 수량입니다. 10 단위 후보를 선택하거나 직접 입력할 수 있습니다." },
   minPackQty: { db: "ITEM_MASTERS.MIN_PACK_QTY", description: "자재 불출 시 최소 단위로 취급할 수량입니다." },

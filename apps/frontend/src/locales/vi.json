@@ -928,6 +928,63 @@
       "statsPlanned": "Đa len kế hoạch",
       "statsInProgress": "Đang tiến hanh",
       "statsCompleted": "Hoan thanh"
+    },
+    "scheduler": {
+      "title": "Quản lý bộ lập lịch",
+      "jobs": "Quản lý công việc",
+      "logs": "Lịch sử thực thi",
+      "dashboard": "Bảng điều khiển",
+      "jobCode": "Mã công việc",
+      "jobName": "Tên công việc",
+      "jobGroup": "Nhóm công việc",
+      "execType": "Loại thực thi",
+      "execTarget": "Đối tượng thực thi",
+      "cronExpr": "Biểu thức Cron",
+      "cronDesc": "Chu kỳ thực thi",
+      "isActive": "Kích hoạt",
+      "maxRetry": "Số lần thử lại tối đa",
+      "timeoutSec": "Thời gian chờ (giây)",
+      "description": "Mô tả",
+      "lastRunAt": "Lần chạy cuối",
+      "nextRunAt": "Lần chạy tiếp theo",
+      "runNow": "Chạy ngay",
+      "startTime": "Thời gian bắt đầu",
+      "endTime": "Thời gian kết thúc",
+      "duration": "Thời lượng",
+      "affectedRows": "Số dòng xử lý",
+      "retryCount": "Số lần thử lại",
+      "resultMsg": "Thông báo kết quả",
+      "errorMsg": "Chi tiết lỗi",
+      "todayTotal": "Chạy hôm nay",
+      "todaySuccess": "Thành công",
+      "todayFail": "Thất bại",
+      "successRate": "Tỷ lệ thành công",
+      "trendChart": "Xu hướng thực thi 7 ngày",
+      "ratioChart": "Thành công/Thất bại theo công việc",
+      "recentFails": "Thất bại gần đây",
+      "confirmDelete": "Xóa công việc này?",
+      "confirmRun": "Chạy công việc này ngay?",
+      "addJob": "Thêm công việc",
+      "editJob": "Sửa công việc",
+      "serviceMethod": "Service.Method",
+      "packageProc": "Package.Procedure",
+      "sqlQuery": "Truy vấn SQL",
+      "httpMethod": "Phương thức HTTP",
+      "httpUrl": "URL",
+      "httpHeaders": "Headers (JSON)",
+      "httpBody": "Body (JSON)",
+      "scriptPath": "Đường dẫn script",
+      "scriptArgs": "Tham số thực thi",
+      "cronGuide": "Hướng dẫn biểu thức Cron (giây phút giờ ngày tháng thứ)",
+      "cronEvery5Min": "Mỗi 5 phút",
+      "cronEvery10Min": "Mỗi 10 phút",
+      "cronEvery30Min": "Mỗi 30 phút",
+      "cronHourly": "Mỗi giờ đúng giờ",
+      "cronDaily2am": "Hàng ngày lúc 2 giờ sáng",
+      "cronWeekday9And18": "Ngày thường lúc 9/18 giờ"
+    },
+    "menuCategories": {
+      "selectCategoryToMove": "Vui lòng chọn danh mục để di chuyển đến."
     }
   },
   "serial": {
@@ -1029,7 +1086,7 @@
         "iqcYn": "Có áp dụng tiêu chí kiểm tra đầu vào hay không.",
         "inspectMethod": "Phân biệt phương thức kiểm IQC hoặc miễn kiểm.",
         "sampleQty": "Số mẫu cơ bản dùng khi kiểm IQC. Khác với cỡ mẫu tính theo AQL.",
-        "iqcAqlPolicyCode": "Mã thông tin chuẩn của chính sách IQC AQL áp dụng cho vật tư.",
+        "iqcAqlPolicyCode": "Chính sách AQL (Giới hạn chất lượng chấp nhận) áp dụng cho kiểm tra đầu vào (IQC) của vật tư này.\n\n• AQL là gì: mức lỗi tối đa mà LOT vẫn được chấp nhận. Giá trị càng nhỏ tiêu chuẩn càng nghiêm.\n• Cấu thành: mỗi chính sách gồm giá trị AQL theo cấp lỗi Major (lỗi nặng)·Minor (lỗi nhẹ) và mức kiểm tra (thường là II).\n• Cách phán định: khi kiểm tra LOT đầu vào, tự tính cỡ mẫu (n)·số chấp nhận (Ac)·số từ chối (Re) theo cỡ LOT — số lỗi ≤ Ac thì đạt, ≥ Re thì không đạt.\n• Nơi đăng ký: quản lý chính sách và tiêu chí theo LOT tại [Quản lý chất lượng > Quản lý chuẩn AQL].\n• Để trống: không áp dụng phán định AQL tự động (không kiểm tra hoặc phán định thủ công).",
         "useYn": "Có thể tra cứu, chọn và sử dụng hay không.",
         "boxQty": "Số lượng chuẩn đóng trong một thùng. Chọn bội số 10 hoặc nhập trực tiếp.",
         "minPackQty": "Số lượng xử lý làm đơn vị tối thiểu khi xuất vật tư.",
@@ -2030,11 +2087,17 @@
         "notice": "Số lượng còn lại sẽ được tính lại khi lưu. Vượt quá sẽ bị từ chối. Mỗi serial sẽ in nhãn tương ứng.",
         "serialIssueTitle": "Xác nhận phát hành serial",
         "serialIssueBody": "Sẽ phát hành {{count}} serial. Tiếp tục?",
-        "serialIssueNote": "Bản xem trước nhãn sẽ mở tự động sau khi phát hành."
+        "serialIssueNote": "Bản xem trước nhãn sẽ mở tự động sau khi phát hành.",
+        "serialCountUnit": "{{count}}"
       },
       "label": {
         "title": "Xem trước nhãn vật tư",
-        "print": "In"
+        "print": "In",
+        "printing": "Đang in",
+        "toastPreparing": "Đang chuẩn bị gửi {{count}} nhãn nhập kho đến agent.",
+        "toastSent": "Đã gửi {{count}} nhãn nhập kho đến agent.",
+        "toastError": "Đã xảy ra lỗi khi in qua agent.",
+        "errorPrepareScreen": "Không thể chuẩn bị màn hình in nhãn."
       },
       "selectPoDesc": "Chọn PO có thể nhập hàng.",
       "selectWarehouse": "Chọn kho",
@@ -2048,7 +2111,9 @@
       "cancelWarning": "Hủy nhập hàng sẽ tạo giao dịch đảo ngược và giảm tồn kho. Thao tác này không thể hoàn tác.",
       "cancelReason": "Lý do hủy",
       "cancelReasonPlaceholder": "Nhập lý do hủy",
-      "confirmCancel": "Xác nhận hủy"
+      "confirmCancel": "Xác nhận hủy",
+      "defaultDesign": "Thiết kế mặc định",
+      "labelTemplate": "Mẫu nhãn nhập kho"
     },
     "iqc": {
       "title": "Kiểm tra đầu vào (IQC)",
@@ -2490,7 +2555,8 @@
         "confirmed": "Đã xác nhận",
         "partial": "Nhận một phần",
         "received": "Đã nhận đủ"
-      }
+      },
+      "selectPoHint": "Chọn một PO để xem tình trạng nhập kho theo mục"
     },
     "arrivalStock": {
       "title": "Tình trạng tồn kho nhập hàng",
@@ -2546,7 +2612,36 @@
       "cancelWarning": "Khi hủy phán định, trạng thái IQC của LOT sẽ được khôi phục về 'Chờ'. Cần kiểm tra lại.",
       "cancelReason": "Lý do hủy",
       "cancelReasonPlaceholder": "Nhập lý do hủy",
-      "confirmCancel": "Hủy phán định"
+      "confirmCancel": "Hủy phán định",
+      "viewDetail": "Xem chi tiết kiểm tra",
+      "viewCert": "Xem chứng chỉ kiểm tra",
+      "uploadCert": "Tải lên chứng chỉ kiểm tra",
+      "reuploadCert": "Tải lại chứng chỉ kiểm tra",
+      "cert": "Chứng chỉ",
+      "attached": "Đã đính kèm",
+      "notAttached": "Chưa đính kèm",
+      "arrivalNo": "Số nhập kho",
+      "detail": {
+        "title": "Chi tiết kiểm tra IQC — {{name}} ({{date}})",
+        "item": "Mặt hàng",
+        "judge": "Đánh giá",
+        "itemJudgeTitle": "Đánh giá theo hạng mục kiểm tra",
+        "inspectItem": "Hạng mục kiểm tra",
+        "defectGrade": "Cấp độ lỗi",
+        "requiredInspected": "Yêu cầu/Kiểm tra",
+        "inspectLevel": "Mức kiểm tra",
+        "defectCount": "Số lỗi",
+        "reason": "Lý do",
+        "serial": "Số serial",
+        "spec": "Quy cách",
+        "lsl": "Giới hạn dưới",
+        "usl": "Giới hạn trên",
+        "measuredValue": "Giá trị đo",
+        "noItemValues": "Không có giá trị đo theo hạng mục (đánh giá thủ công)",
+        "selectSerial": "Vui lòng chọn số serial.",
+        "scanSerial": "Serial đã quét",
+        "noData": "Không có dữ liệu kiểm tra chi tiết."
+      }
     },
     "lotSplit": {
       "title": "Chia tách vật tư",
@@ -2834,6 +2929,24 @@
         "total": "Tổng nhập kho",
         "cancellable": "Có thể hủy",
         "canceled": "Đã hủy"
+      }
+    },
+    "arrivalTransaction": {
+      "title": "Tra cứu xuất nhập nhập kho",
+      "subtitle": "Tra cứu sổ cái nhập kho và hủy nhập kho phản ánh vào tồn kho nhập.",
+      "empty": "Không tìm thấy lịch sử xuất nhập nhập kho.",
+      "searchPlaceholder": "Tìm số giao dịch, số nhập kho, mặt hàng",
+      "typeIn": "Nhập kho",
+      "typeCancel": "Hủy nhập kho",
+      "statusDone": "Hoàn tất",
+      "statusCanceled": "Đã hủy",
+      "col": {
+        "transDate": "Ngày giao dịch",
+        "transNo": "Số giao dịch",
+        "arrivalNo": "Số nhập kho",
+        "warehouse": "Kho nhập",
+        "reference": "Tham chiếu",
+        "worker": "Người thao tác"
       }
     }
   },
@@ -3145,7 +3258,14 @@
       "warnZeroQty": "Nhãn này có số lượng còn lại bằng 0.",
       "warnInvalidStatus": "Nhãn này đang ở trạng thái không sử dụng được.",
       "executeFailed": "Thực hiện kitting thất bại.",
-      "executeSuccess": "Kitting đã hoàn thành."
+      "executeSuccess": "Kitting đã hoàn thành.",
+      "alreadyScanned": "Nhãn đã được quét.",
+      "optional": "Tùy chọn",
+      "requireOrderNo": "Nhập số lệnh sản xuất.",
+      "requireProcessCode": "Nhập mã công đoạn phụ.",
+      "requireQty": "Nhập số lượng phát hành.",
+      "requireSgLabel": "Quét ít nhất một nhãn truy xuất SG.",
+      "sgLabelLookupFailed": "Tra cứu nhãn SG thất bại."
     },
     "order": {
       "title": "Quản lý lệnh sản xuất",
@@ -3225,7 +3345,8 @@
       "preparedBy": "Người lập",
       "warehouseConfirm": "Kho xác nhận",
       "receivedBy": "Người nhận",
-      "noRawMaterial": "Không có nguyên vật liệu"
+      "noRawMaterial": "Không có nguyên vật liệu",
+      "exportFileName": "Lệnh sản xuất"
     },
     "result": {
       "title": "Kết quả sản xuất",
@@ -3503,7 +3624,8 @@
       "sampleCount": "Số mẫu",
       "startDate": "Ngày bắt đầu",
       "endDate": "Ngày kết thúc",
-      "inspectTypePlaceholder": "Kiểm tra ngoại quan, kích thước, v.v."
+      "inspectTypePlaceholder": "Kiểm tra ngoại quan, kích thước, v.v.",
+      "exportFileName": "Kiểm tra mẫu"
     },
     "resultSummary": {
       "title": "Tổng hợp thực tế sản xuất",
@@ -3654,7 +3776,10 @@
       "totalReceived": "Đã nhập",
       "totalInRepair": "Đang sửa",
       "totalCompleted": "Hoàn tất",
-      "scanBarcode": "Quét mã vạch"
+      "scanBarcode": "Quét mã vạch",
+      "statusCompleted": "Hoàn thành",
+      "statusInRepair": "Đang sửa",
+      "statusReceived": "Đã nhận"
     },
     "workOrderCtx": {
       "selectOrder": "Chọn lệnh sản xuất",
@@ -3670,6 +3795,45 @@
     "inputKiosk": {
       "title": "Nhập kết quả (Kiosk)",
       "description": "Nhập kết quả sản xuất tại kiosk thiết bị hiện trường"
+    },
+    "specSetup": {
+      "drawingNo": "Số bản vẽ",
+      "erpItemNo": "Mã ERP",
+      "customerPartNo": "Mã KH",
+      "initialRev": "Rev đầu",
+      "drawingHeader": "Tiêu đề bản vẽ",
+      "searchPlaceholder": "Tìm bản vẽ / ERP / hàng",
+      "approve": "Phê duyệt",
+      "createRev": "Tạo Rev",
+      "circuitSpecTitle": "Quy cách mạch",
+      "expandView": "Xem rộng",
+      "addCircuit": "Thêm mạch",
+      "removeCircuit": "Xóa mạch",
+      "reviseGuide": "Sao chép quy cách mạch của revision hiện tại để tạo revision DRAFT mới.",
+      "changeReason": "Lý do thay đổi",
+      "changeReasonPlaceholder": "Nhập lý do thay đổi",
+      "drawingNoItemRequired": "Số bản vẽ và mã hàng là bắt buộc.",
+      "savedDrawing": "Đã lưu bản vẽ sản phẩm.",
+      "createdDrawing": "Đã tạo bản vẽ sản phẩm.",
+      "saveFailed": "Lưu thất bại.",
+      "approvedRevision": "Đã phê duyệt revision.",
+      "createdRevision": "Đã tạo revision mới.",
+      "deleteConfirm": "Xóa bản vẽ sản phẩm đã chọn?",
+      "deletedDrawing": "Đã xóa bản vẽ sản phẩm.",
+      "unregistered": "(chưa đăng ký)",
+      "colConnection": "Kết nối",
+      "selectWire": "Chọn dây BOM",
+      "selectHousing": "Chọn vỏ/đầu nối",
+      "selectTerminal": "Chọn đầu cốt",
+      "connectionType": "Loại kết nối",
+      "connectionTypeAria": "Loại kết nối {{symbol}}",
+      "symbol": {
+        "STRAIGHT": "Thẳng",
+        "BOTH_CRIMP": "Bấm hai đầu",
+        "SPLICE": "Nối",
+        "BRIDGE": "Rẽ nhánh",
+        "ONE_SIDE": "Một phía"
+      }
     }
   },
   "inspection": {
@@ -3775,6 +3939,10 @@
       "commLog": "Nhật ký truyền thông",
       "commLogSubtitle": "Dữ liệu nhận/gửi gần đây",
       "realtime": "Thời gian thực"
+    },
+    "history": {
+      "scopeFull": "Toàn bộ",
+      "scopeSample": "Mẫu"
     }
   },
   "quality": {
@@ -3783,7 +3951,50 @@
       "subtitle": "Quản lý tiêu chuẩn AQL dùng để tính cỡ mẫu IQC và tiêu chí Ac/Re.",
       "standardSection": "Tiêu chuẩn AQL",
       "ruleSection": "Tiêu chí theo số lượng LOT",
-      "empty": "Chưa có tiêu chuẩn AQL."
+      "empty": "Chưa có tiêu chuẩn AQL.",
+      "addPolicy": "Thêm chính sách",
+      "addRule": "Thêm tiêu chí",
+      "addStandard": "Thêm chuẩn AQL",
+      "aqlCode": "Mã AQL",
+      "aqlName": "Tên AQL",
+      "aqlNamePlaceholder": "AQL kiểm tra thường 1.0",
+      "aqlValue": "Giá trị AQL",
+      "disable": "Vô hiệu hóa",
+      "disablePolicyMsg": "Vô hiệu hóa chính sách {{code}}?",
+      "disablePolicyTitle": "Vô hiệu hóa chính sách AQL",
+      "disableStandardMsg": "Vô hiệu hóa chuẩn {{code}}?",
+      "disableStandardTitle": "Vô hiệu hóa chuẩn AQL",
+      "editStandard": "Sửa chuẩn AQL",
+      "inspectionLevel": "Mức kiểm tra",
+      "policyCode": "Mã chính sách",
+      "policyName": "Tên chính sách",
+      "policySection": "Quản lý chính sách AQL",
+      "policySectionDesc": "Quản lý tổ hợp AQL Major/Minor áp dụng cho mặt hàng theo IQC_AQL_POLICIES.",
+      "registerStandard": "Đăng ký chuẩn AQL",
+      "remark": "Ghi chú",
+      "ruleEmpty": "Thêm tiêu chí theo số lượng LOT.",
+      "savePolicy": "Lưu chính sách",
+      "searchPlaceholder": "Tìm mã/tên AQL",
+      "selectOption": "Chọn",
+      "toastCreated": "Đã đăng ký chuẩn AQL.",
+      "toastPolicyCreated": "Đã đăng ký chính sách AQL.",
+      "toastPolicyUpdated": "Đã cập nhật chính sách AQL.",
+      "toastUpdated": "Đã cập nhật chuẩn AQL.",
+      "use": "Sử dụng",
+      "useYn": "Sử dụng",
+      "validateAqlCode": "Nhập mã AQL.",
+      "validateAqlName": "Nhập tên AQL.",
+      "validateLotOverlap": "Phạm vi số lượng LOT bị trùng.",
+      "validateLotRange": "Số lượng LOT From không thể lớn hơn To.",
+      "validateMajorAql": "Chọn chuẩn AQL Major.",
+      "validateMinorAql": "Chọn chuẩn AQL Minor.",
+      "validatePolicyCode": "Nhập mã chính sách.",
+      "validatePolicyName": "Nhập tên chính sách.",
+      "validateReAc": "Số Re phải lớn hơn Ac.",
+      "major": "Major",
+      "majorAql": "Major AQL",
+      "minor": "Minor",
+      "minorAql": "Minor AQL"
     },
     "defect": {
       "title": "Quản lý lỗi",
@@ -4003,7 +4214,8 @@
       "defectQtyShort": "SL lỗi",
       "workDetail": "Chi tiết công việc",
       "workTimeMin": "Thời gian (phút)",
-      "inspectHint": "Khi đạt (PASS), số lượng hàng tốt được phục hồi vào tồn kho sản phẩm tại kho công đoạn (WIP)."
+      "inspectHint": "Khi đạt (PASS), số lượng hàng tốt được phục hồi vào tồn kho sản phẩm tại kho công đoạn (WIP).",
+      "selectPartFirst": "Vui lòng chọn mặt hàng trước"
     },
     "change": {
       "title": "Quản lý thay đổi",
@@ -4199,7 +4411,22 @@
       "noMesData": "Không có dữ liệu đo lường trong khoảng thời gian đã chọn.",
       "measuredValues": "Giá trị đo",
       "dataSource": "Nguồn dữ liệu",
-      "sourceInspectItem": "Hạng mục kiểm tra nguồn"
+      "sourceInspectItem": "Hạng mục kiểm tra nguồn",
+      "dataSourceIqcHint": "Lấy giá trị đo từ kiểm tra đầu vào (SAMPLE_INSPECT_RESULTS).",
+      "dataSourceManualHint": "Chế độ nhập thủ công: nhập trực tiếp bằng nút Thêm dữ liệu đo.",
+      "dataSourceOqcHint": "Lấy giá trị đo theo mặt hàng từ kiểm tra xuất hàng (OQC_REQUESTS).",
+      "dataSourceProcessHint": "Lấy giá trị đo từ kiểm tra công đoạn (INSPECT_RESULTS).",
+      "foundCount": "Tìm thấy {{count}}",
+      "histBin": "Khoảng: {{bin}}",
+      "histFrequency": "Tần suất",
+      "histFrequencyValue": "{{count}}",
+      "importSourcesHint": "Tích hợp kiểm tra đầu vào · công đoạn · sản phẩm đầu",
+      "manualModeImportHint": "Chế độ nhập thủ công — đổi nguồn dữ liệu trong cài đặt biểu đồ",
+      "registerCount": "Đăng ký {{count}}",
+      "sourceFai": "Kiểm tra sản phẩm đầu",
+      "sourceInspectItemPlaceholder": "VD: Chiều cao bấm cốt",
+      "sourceIqc": "Kiểm tra đầu vào",
+      "sourceProcess": "Kiểm tra công đoạn"
     },
     "controlPlan": {
       "title": "Kế hoạch kiểm soát",
@@ -4413,7 +4640,9 @@
       "descPlaceholder": "Nhập mô tả kế hoạch",
       "sectionBasic": "Thông tin cơ bản",
       "sectionCycle": "Cài đặt chu kỳ",
-      "equipName": "Tên thiết bị"
+      "equipName": "Tên thiết bị",
+      "fieldInput": "Nhập {{field}}",
+      "fieldRequired": "{{field}} là bắt buộc"
     },
     "pmWorkOrder": {
       "woSchedule": "Tình hình Work Order",
@@ -4450,7 +4679,8 @@
       "woPlanned": "Kế hoạch",
       "woInProgress": "Đang thực hiện",
       "woCompleted": "Hoàn thành",
-      "woOverdue": "Quá hạn"
+      "woOverdue": "Quá hạn",
+      "weekdays": "CN,T2,T3,T4,T5,T6,T7"
     },
     "inspectCalendar": {
       "title": "Lịch kiểm tra hàng ngày",
@@ -4493,7 +4723,10 @@
       "legendAllPass": "Tất cả đạt",
       "legendInProgress": "Đang thực hiện",
       "legendFail": "Có không đạt",
-      "legendNotStarted": "Chưa bắt đầu"
+      "legendNotStarted": "Chưa bắt đầu",
+      "failCauseRequired": "Cần nhập {{label}}",
+      "itemResultRequired": "Cần nhập {{label}}",
+      "weekdays": "CN,T2,T3,T4,T5,T6,T7"
     },
     "periodicInspectCalendar": {
       "title": "Lịch kiểm tra định kỳ",
@@ -4529,7 +4762,35 @@
       "noItems": "Chưa đăng ký hạng mục kiểm tra",
       "savedOk": "Đã lưu kiểm tra hàng ngày (PASS)",
       "savedNg": "Đã lưu kiểm tra hàng ngày — NG · Yêu cầu bảo trì đã được đăng ký",
-      "saveError": "Lưu kiểm tra hàng ngày thất bại"
+      "saveError": "Lưu kiểm tra hàng ngày thất bại",
+      "badRemarkPlaceholder": "Nhập nội dung lỗi...",
+      "colCriteria": "Tiêu chí",
+      "colItem": "Hạng mục",
+      "colJudge": "Đánh giá",
+      "colMeasure": "Giá trị/Nhập",
+      "colPhoto": "Ảnh",
+      "colType": "Loại",
+      "defaultCriteria": "Bình thường",
+      "doneCount": "Xong {{done}}/{{total}}",
+      "failLabel": "Không đạt (NG)",
+      "fillAllItems": "Vui lòng nhập đầy đủ các hạng mục kiểm tra.",
+      "groupEtc": "Khác",
+      "itemCountSuffix": "{{count}} mục",
+      "ngCount": "· NG {{ng}}",
+      "overallFailDescription": "{{ngCount}}/{{total}} mục NG",
+      "overallJudgeArrow": "→ Tổng hợp",
+      "overallPassDescription": "Tất cả {{total}} mục OK",
+      "overallTitle": "Đánh giá tổng hợp",
+      "passLabel": "Đạt (PASS)",
+      "pendingLabel": "Chờ",
+      "saveButtonNg": "Lưu (NG)",
+      "saveButtonPass": "Lưu (PASS)",
+      "selectPlaceholder": "-- Chọn --",
+      "statusDoneNg": "Xong(NG)",
+      "statusDoneOk": "Xong(OK)",
+      "statusNone": "Chưa kiểm tra",
+      "typeMeasure": "Đo lường",
+      "typeVisual": "Đánh giá"
     },
     "periodicInspect": {
       "title": "Kiểm tra định kỳ",
@@ -4625,7 +4886,8 @@
       "currentInfo": "Thông tin hiện tại",
       "warningLabel": "Cảnh báo",
       "overdueLabel": "Vượt quá",
-      "retiredLabel": "Đã loại bỏ"
+      "retiredLabel": "Đã loại bỏ",
+      "fieldRequired": "{{field}} là bắt buộc"
     },
     "calibrationHistory": {
       "calNo": "Số hiệu chuẩn",
@@ -4911,7 +5173,20 @@
       "cancelReason": "Lý do hủy",
       "cancelReasonPlaceholder": "Nhập lý do hủy...",
       "confirmCancel": "Xác nhận hủy",
-      "statCanceled": "Đã hủy"
+      "statCanceled": "Đã hủy",
+      "availableBoxes": "Hộp khả dụng",
+      "confirmProductShip": "Xác nhận xuất sản phẩm",
+      "loadSelectedBoxes": "Xếp hộp đã chọn",
+      "noLoadableBoxes": "Không có hộp để xếp.",
+      "noPallets": "Chưa tạo pallet.",
+      "orderLabel": "Lệnh",
+      "palletComposition": "Cấu thành pallet",
+      "printPalletLabel": "In nhãn pallet",
+      "productShipScan": "Quét xuất sản phẩm",
+      "scanLabel": "Quét",
+      "scanPalletBarcode": "Quét mã vạch pallet",
+      "scheduledShip": "Dự kiến xuất hàng",
+      "shipLabel": "Xuất hàng"
     },
     "scan": {
       "title": "Xác minh quét xuất hàng",
@@ -5057,7 +5332,11 @@
       "usageMapSelectGuide": "Chọn vật tư tiêu hao từ danh sách bên trái để quản lý ánh xạ sử dụng sản phẩm/thiết bị bất cứ lúc nào.",
       "usageMapTitle": "Ánh xạ sử dụng vật tư tiêu hao",
       "usagePerUnit": "Lượng dùng trên đơn vị",
-      "usagePerUnitShort": "Lượng dùng"
+      "usagePerUnitShort": "Lượng dùng",
+      "codeRequired": "Hãy nhập mã vật tư tiêu hao.",
+      "nameRequired": "Hãy nhập tên vật tư tiêu hao.",
+      "namePlaceholder": "Khuôn ép đầu nối 110",
+      "locationPlaceholder": "Phòng khuôn-A1"
     },
     "receiving": {
       "title": "Nhập kho vật tư tiêu hao",
@@ -5198,7 +5477,27 @@
       "pending": "Chờ nhập",
       "qtyInput": "Số lượng",
       "searchPlaceholder": "Tìm mã, tên vật tư...",
-      "issueSuccess": "Đã tạo {{count}} UID vật tư tiêu hao."
+      "issueSuccess": "Đã tạo {{count}} UID vật tư tiêu hao.",
+      "defaultDesign": "Thiết kế mặc định",
+      "popupBlocked": "Trình duyệt đã chặn cửa sổ in. Vui lòng cho phép cửa sổ bật lên cho trang này.",
+      "preparingPrint": "Đang phát hành UID và chuẩn bị in nhãn.",
+      "issueError": "Đã xảy ra lỗi khi phát hành UID.",
+      "noIssuedUid": "Không có UID nào được phát hành. Hãy kiểm tra các mục đã chọn và số lượng phát hành.",
+      "issuedCallingDialog": "Đã phát hành {{count}}. Đang gọi hộp thoại in.",
+      "printScreenFailed": "Không thể chuẩn bị màn hình in nhãn.",
+      "issuedAndPrinted": "Đã phát hành {{count}} UID và gọi hộp thoại in.",
+      "sendingToAgent": "Đang chuẩn bị gửi nhãn {{conUid}} đến agent.",
+      "sentToAgent": "Đã gửi nhãn {{conUid}} đến agent.",
+      "agentPrintError": "Đã xảy ra lỗi khi in qua agent.",
+      "itemsSelected": "Đã chọn {{count}}",
+      "printingState": "Đang in",
+      "categoryFilter": "Bộ lọc danh mục",
+      "previewTitle": "Xem trước nhãn",
+      "previewHint": "Kiểm tra mã vạch và bố cục nhãn trước khi in.",
+      "preview": "Xem trước",
+      "reprint": "Phát hành lại",
+      "previewAria": "Xem trước nhãn {{conUid}}",
+      "reprintAria": "Phát hành lại nhãn {{conUid}}"
     },
     "search": {
       "title": "Tìm vật tư tiêu hao",
@@ -6700,7 +6999,8 @@
       "confirmDelete": "Sẽ xóa {{count}} bản nháp và lập lại. Tiếp tục?",
       "noDemand": "Không có đơn hàng chưa giao trong kỳ này.",
       "emptyGuide": "Thiết lập điều kiện rồi nhấn [Xem trước]."
-    }
+    },
+    "deleteConfirm": "Xóa '{{planNo}}'?"
   },
   "simulation": {
     "title": "Mô phỏng kế hoạch sản xuất",
@@ -6744,6 +7044,20 @@
       "dueMarker": "Hạn giao",
       "onTime": "Đúng hạn",
       "delay": "Trễ hạn"
+    },
+    "processCapaCol": "Công đoạn/CAPA",
+    "resultCol": "Kết quả",
+    "perDay": "{{value}}/ngày",
+    "daysNeeded": "{{days}} ngày",
+    "process": {
+      "PRC-CUT": "Cắt",
+      "PRC-STRIP": "Tuốt",
+      "PRC-CRIMP": "Bấm cốt",
+      "PRC-PRESUB": "Tiền lắp ráp",
+      "PRC-ASSY": "Lắp ráp",
+      "PRC-TAPE": "Quấn băng",
+      "PRC-TEST": "Kiểm tra",
+      "PRC-PACK": "Đóng gói"
     }
   },
   "processCapa": {
@@ -6952,7 +7266,11 @@
       "title": "Hướng dẫn sản xuất",
       "selectJobOrder": "Chọn lệnh SX để xem hướng dẫn",
       "noInstruction": "Không có hướng dẫn sản xuất",
-      "noInstructionHint": "Vui lòng đăng ký hướng dẫn cho mặt hàng/công đoạn này"
+      "noInstructionHint": "Vui lòng đăng ký hướng dẫn cho mặt hàng/công đoạn này",
+      "noPrevPage": "Không có trang trước",
+      "noNextPage": "Không có trang sau",
+      "prevPage": "Trước",
+      "nextPage": "Sau"
     },
     "routing": {
       "title": "Định tuyến",
@@ -6966,7 +7284,8 @@
       "defectTotal": "Tổng sản phẩm lỗi",
       "recentHistory": "Lịch sử sản xuất",
       "autoRefresh": "Tự động làm mới 10 giây",
-      "noHistory": "Không có lịch sử sản xuất"
+      "noHistory": "Không có lịch sử sản xuất",
+      "equipInterface": "Thiết bị"
     },
     "input": {
       "selfInspect": "Kiểm tra mẫu công đoạn",
@@ -7067,7 +7386,13 @@
       "inspectorRequired": "Người kiểm tra (bắt buộc)",
       "inspectTime": "Thời gian kiểm tra",
       "inspectorHint": "Vui lòng chọn nhân viên bảo trì",
-      "overallResult": "Kết quả tổng hợp"
+      "overallResult": "Kết quả tổng hợp",
+      "pendingCount": "Chưa xong {{count}}",
+      "workDate": "Ngày làm việc",
+      "validWindow": "Khoảng hợp lệ",
+      "answeredProgress": "{{answered}} / {{total}} mục",
+      "overallNgSummary": "{{ng}}/{{total}} mục NG",
+      "overallPassSummary": "Tất cả {{total}} mục đạt"
     },
     "workerInspect": {
       "check1": "Nguồn thiết bị và thiết bị an toàn hoạt động bình thường",
@@ -7118,7 +7443,10 @@
       "colType": "Loại/Người KT",
       "colJudge": "Kết quả",
       "colSample": "Mẫu",
-      "noHistory": "Không có lịch sử kiểm tra"
+      "noHistory": "Không có lịch sử kiểm tra",
+      "delegating": "Đang yêu cầu",
+      "blockBadge": "Chặn!",
+      "notifyBadge": "Khuyến nghị↑"
     },
     "defect": {
       "title": "Nhập lỗi",
@@ -7155,7 +7483,10 @@
     "unit": "Đơn vị",
     "standard": "Tiêu chuẩn/quy cách",
     "noSpec": "Chưa thiết lập quy cách (LSL/USL)",
-    "visualItem": "Mục đánh giá (không có quy cách)"
+    "visualItem": "Mục đánh giá (không có quy cách)",
+    "timingFirst": "Sản phẩm đầu",
+    "timingMid": "Sản phẩm giữa",
+    "timingLast": "Sản phẩm cuối"
   },
   "selfInspectHistory": {
     "title": "Lịch sử kiểm tra mẫu công đoạn",
@@ -7167,7 +7498,13 @@
     "status": "Kết quả",
     "createdAt": "Thời gian đăng ký",
     "resultList": "Lịch sử kiểm tra",
-    "selectHint": "Chọn lịch sử từ bên trái"
+    "selectHint": "Chọn lịch sử từ bên trái",
+    "timingFirst": "Sản phẩm đầu",
+    "timingMid": "Sản phẩm giữa",
+    "timingLast": "Sản phẩm cuối",
+    "sampleNo": "Số mẫu",
+    "measureValue": "Giá trị đo",
+    "remark": "Ghi chú"
   },
   "improvement": {
     "fabTooltip": "Gửi yêu cầu cải tiến",
@@ -7190,7 +7527,12 @@
     "noScreenshot": "Không có ảnh chụp",
     "capturing": "Đang chụp màn hình...",
     "empty": "Chưa có yêu cầu cải tiến nào",
-    "keywordPlaceholder": "Tìm mô tả hoặc trang"
+    "keywordPlaceholder": "Tìm mô tả hoặc trang",
+    "detailLoadError": "Tải chi tiết thất bại",
+    "statusChanged": "Trạng thái đã được thay đổi",
+    "statusChangeError": "Thay đổi trạng thái thất bại",
+    "startProcessing": "Bắt đầu xử lý",
+    "completeProcessing": "Hoàn tất xử lý"
   },
   "selfInspect": {
     "typeVisual": "Đánh giá",
