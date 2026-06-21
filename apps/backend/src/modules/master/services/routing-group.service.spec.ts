@@ -575,6 +575,35 @@ describe('RoutingGroupService', () => {
       });
     });
 
+    it('should bind each circuit option tenant placeholder occurrence separately', async () => {
+      mockGroupRepo.findOne.mockResolvedValue({ routingCode: 'RG01', itemCode: 'FG01' } as RoutingGroup);
+      mockBomRepo.find.mockResolvedValue([
+        { parentItemCode: 'FG01', childItemCode: 'MAT01', qtyPer: 1, useYn: 'Y' },
+        { parentItemCode: 'FG01', childItemCode: 'MAT02', qtyPer: 1, useYn: 'Y' },
+      ] as BomMaster[]);
+      mockMaterialRepo.find.mockResolvedValue([]);
+      mockPartRepo.find.mockResolvedValue([]);
+      mockCircuitRepo.query.mockResolvedValue([]);
+
+      await target.findMaterials('RG01', 10, 'C1', 'P1');
+
+      const [sql, params] = mockCircuitRepo.query.mock.calls[0] as [string, string[]];
+      const placeholderOccurrences = [...sql.matchAll(/:\d+/g)].length;
+
+      expect(placeholderOccurrences).toBe(params.length);
+      expect(params).toEqual([
+        'FG01',
+        'C1',
+        'C1',
+        'C1',
+        'P1',
+        'P1',
+        'P1',
+        'MAT01',
+        'MAT02',
+      ]);
+    });
+
     it('should reject material that is not in BOM for routing item', async () => {
       mockGroupRepo.findOne.mockResolvedValue({ routingCode: 'RG01', itemCode: 'FG01' } as RoutingGroup);
       mockProcessRepo.findOne.mockResolvedValue({ routingCode: 'RG01', seq: 10, company: 'COMP01', plant: 'PLANT01' } as RoutingProcess);

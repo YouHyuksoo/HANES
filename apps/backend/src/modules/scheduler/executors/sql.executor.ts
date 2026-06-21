@@ -166,14 +166,13 @@ export class SqlExecutor implements IJobExecutor {
     sanitizedSql: string,
     params: Record<string, unknown>,
   ): unknown[] {
-    const bindNames = new Set<string>();
+    const bindNames: string[] = [];
     for (const match of sanitizedSql.matchAll(/:(\d+)/g)) {
-      bindNames.add(match[1]);
+      bindNames.push(match[1]);
     }
-    const sorted = [...bindNames].sort((a, b) => Number(a) - Number(b));
     const missing: string[] = [];
     const result: unknown[] = [];
-    for (const name of sorted) {
+    for (const name of bindNames) {
       if (!Object.prototype.hasOwnProperty.call(params, name)) {
         missing.push(name);
         continue;

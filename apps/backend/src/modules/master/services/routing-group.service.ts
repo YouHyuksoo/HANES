@@ -57,19 +57,18 @@ export class RoutingGroupService {
   private async findCircuitOptions(itemCode: string, childCodes: string[], company?: string, plant?: string) {
     if (childCodes.length === 0) return [];
     const binds: unknown[] = [itemCode];
+    const bind = (value: unknown) => {
+      binds.push(value);
+      return `:${binds.length}`;
+    };
     let tenantFilter = '';
     if (company) {
-      binds.push(company);
-      tenantFilter += ` AND m.COMPANY = :${binds.length} AND r.COMPANY = :${binds.length} AND c.COMPANY = :${binds.length}`;
+      tenantFilter += ` AND m.COMPANY = ${bind(company)} AND r.COMPANY = ${bind(company)} AND c.COMPANY = ${bind(company)}`;
     }
     if (plant) {
-      binds.push(plant);
-      tenantFilter += ` AND m.PLANT_CD = :${binds.length} AND r.PLANT_CD = :${binds.length} AND c.PLANT_CD = :${binds.length}`;
+      tenantFilter += ` AND m.PLANT_CD = ${bind(plant)} AND r.PLANT_CD = ${bind(plant)} AND c.PLANT_CD = ${bind(plant)}`;
     }
-    const childPlaceholders = childCodes.map((code) => {
-      binds.push(code);
-      return `:${binds.length}`;
-    }).join(', ');
+    const childPlaceholders = childCodes.map((code) => bind(code)).join(', ');
 
     return this.circuitRepo.query(
       `SELECT c.CIRCUIT_ID AS "circuitId",

@@ -127,6 +127,32 @@ describe('SqlExecutor', () => {
     );
   });
 
+  it('positional bind가 반복되면 SQL 등장 횟수만큼 같은 값을 전달해야 한다', async () => {
+    await executor.execute({
+      ...baseJob,
+      execTarget: 'SELECT * FROM T WHERE A = :1 OR B = :1 OR C = :2',
+      execParams: JSON.stringify({ '1': 10, '2': 20 }),
+    });
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('A = :1 OR B = :1 OR C = :2'),
+      [10, 10, 20],
+    );
+  });
+
+  it('positional bind 배열은 숫자 정렬이 아니라 SQL 등장 순서를 따라야 한다', async () => {
+    await executor.execute({
+      ...baseJob,
+      execTarget: 'SELECT * FROM T WHERE B = :2 AND A = :1',
+      execParams: JSON.stringify({ '1': 10, '2': 20 }),
+    });
+
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('B = :2 AND A = :1'),
+      [20, 10],
+    );
+  });
+
   it('positional bind에 누락된 :N 값이 있으면 BadRequestException을 던져야 한다', async () => {
     await expect(
       executor.execute({
