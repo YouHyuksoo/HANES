@@ -16,7 +16,9 @@
         { "menuCode": "PUR_PO", "title": "PO관리", "path": "/material/po" },
         { "menuCode": "MAT_ARRIVAL", "title": "입하관리", "path": "/material/arrival" },
         { "menuCode": "QC_IQC", "title": "수입검사(IQC)", "path": "/material/iqc" },
-        { "menuCode": "MAT_RECEIVE", "title": "자재입고관리", "path": "/material/receive" }
+        { "menuCode": "MAT_RECEIVE", "title": "자재입고관리", "path": "/material/receive" },
+        { "menuCode": "MAT_REQUEST", "title": "출고요청관리", "path": "/material/request" },
+        { "menuCode": "MAT_ISSUE", "title": "자재출고관리", "path": "/material/issue" }
       ]
     },
     {
