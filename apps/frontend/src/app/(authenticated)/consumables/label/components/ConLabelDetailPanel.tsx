@@ -115,21 +115,21 @@ export default function ConLabelDetailPanel({ master, onClose, onReprint, onPrev
                       size="sm"
                       variant="secondary"
                       className="shrink-0 px-2"
-                      aria-label={`${inst.conUid} 라벨 미리보기`}
+                      aria-label={t("consumables.label.previewAria", "{{conUid}} 라벨 미리보기", { conUid: inst.conUid })}
                       onClick={() => onPreview(inst)}
                     >
                       <Eye className="w-3.5 h-3.5 mr-1" />
-                      미리보기
+                      {t("consumables.label.preview", "미리보기")}
                     </Button>
                     <Button
                       size="sm"
                       variant="secondary"
                       className="shrink-0 px-2"
-                      aria-label={`${inst.conUid} 라벨 재발행`}
+                      aria-label={t("consumables.label.reprintAria", "{{conUid}} 라벨 재발행", { conUid: inst.conUid })}
                       onClick={() => onReprint(inst)}
                     >
                       <Printer className="w-3.5 h-3.5 mr-1" />
-                      재발행
+                      {t("consumables.label.reprint", "재발행")}
                     </Button>
                   </div>
                 </div>

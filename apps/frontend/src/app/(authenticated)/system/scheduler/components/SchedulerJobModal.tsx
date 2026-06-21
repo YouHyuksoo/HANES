@@ -195,20 +195,20 @@ export default function SchedulerJobModal({ editData, onClose, onSave }: Props) 
     switch (form.execType) {
       case "SERVICE":
         return (
-          <Input label={t("scheduler.serviceMethod")} value={form.serviceMethod}
+          <Input label={t("system.scheduler.serviceMethod", "서비스.메서드")} value={form.serviceMethod}
             onChange={(e) => setField("serviceMethod", e.target.value)}
             placeholder="SchedulerService.cleanupLogs" fullWidth />
         );
       case "PROCEDURE":
         return (
-          <Input label={t("scheduler.packageProc")} value={form.packageProc}
+          <Input label={t("system.scheduler.packageProc", "패키지.프로시저")} value={form.packageProc}
             onChange={(e) => setField("packageProc", e.target.value)}
             placeholder="PKG_SCHEDULER.PROC_DAILY_CLOSE" fullWidth />
         );
       case "SQL":
         return (
           <div>
-            <label className="block text-xs font-medium text-text mb-1">{t("scheduler.sqlQuery")}</label>
+            <label className="block text-xs font-medium text-text mb-1">{t("system.scheduler.sqlQuery", "SQL 쿼리")}</label>
             <textarea value={form.sqlQuery}
               onChange={(e) => setField("sqlQuery", e.target.value)}
               className="w-full h-24 text-xs font-mono border border-border rounded-md p-2 bg-background text-text resize-none focus:ring-1 focus:ring-primary"
@@ -220,23 +220,23 @@ export default function SchedulerJobModal({ editData, onClose, onSave }: Props) 
         return (
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-3">
-              <Select label={t("scheduler.httpMethod")} options={HTTP_METHODS}
+              <Select label={t("system.scheduler.httpMethod", "HTTP 메서드")} options={HTTP_METHODS}
                 value={form.httpMethod} onChange={(v) => setField("httpMethod", v)} />
               <div className="col-span-2">
-                <Input label={t("scheduler.httpUrl")} value={form.httpUrl}
+                <Input label={t("system.scheduler.httpUrl", "URL")} value={form.httpUrl}
                   onChange={(e) => setField("httpUrl", e.target.value)}
                   placeholder="https://api.example.com/webhook" fullWidth />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-text mb-1">{t("scheduler.httpHeaders")}</label>
+              <label className="block text-xs font-medium text-text mb-1">{t("system.scheduler.httpHeaders", "헤더 (JSON)")}</label>
               <textarea value={form.httpHeaders}
                 onChange={(e) => setField("httpHeaders", e.target.value)}
                 className="w-full h-16 text-xs font-mono border border-border rounded-md p-2 bg-background text-text resize-none focus:ring-1 focus:ring-primary"
                 placeholder='{ "Authorization": "Bearer ..." }' />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text mb-1">{t("scheduler.httpBody")}</label>
+              <label className="block text-xs font-medium text-text mb-1">{t("system.scheduler.httpBody", "Body (JSON)")}</label>
               <textarea value={form.httpBody}
                 onChange={(e) => setField("httpBody", e.target.value)}
                 className="w-full h-16 text-xs font-mono border border-border rounded-md p-2 bg-background text-text resize-none focus:ring-1 focus:ring-primary"
@@ -247,10 +247,10 @@ export default function SchedulerJobModal({ editData, onClose, onSave }: Props) 
       case "SCRIPT":
         return (
           <div className="space-y-3">
-            <Input label={t("scheduler.scriptPath")} value={form.scriptPath}
+            <Input label={t("system.scheduler.scriptPath", "스크립트 경로")} value={form.scriptPath}
               onChange={(e) => setField("scriptPath", e.target.value)}
               placeholder="/opt/scripts/backup.sh" fullWidth />
-            <Input label={t("scheduler.scriptArgs")} value={form.scriptArgs}
+            <Input label={t("system.scheduler.scriptArgs", "실행 인자")} value={form.scriptArgs}
               onChange={(e) => setField("scriptArgs", e.target.value)}
               placeholder="--env production --verbose" fullWidth />
           </div>
@@ -264,7 +264,7 @@ export default function SchedulerJobModal({ editData, onClose, onSave }: Props) 
 
   return (
     <Modal isOpen onClose={onClose} size="lg"
-      title={isEdit ? t("scheduler.editJob") : t("scheduler.addJob")}
+      title={isEdit ? t("system.scheduler.editJob", "작업 수정") : t("system.scheduler.addJob", "작업 등록")}
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
@@ -277,25 +277,25 @@ export default function SchedulerJobModal({ editData, onClose, onSave }: Props) 
       <div className="space-y-4 text-xs">
         {/* 기본 정보 */}
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("scheduler.jobCode")} value={form.jobCode}
+          <Input label={t("system.scheduler.jobCode", "작업코드")} value={form.jobCode}
             onChange={(e) => setField("jobCode", e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))}
             readOnly={isEdit} placeholder="DAILY_CLEANUP" fullWidth />
-          <Input label={t("scheduler.jobName")} value={form.jobName}
+          <Input label={t("system.scheduler.jobName", "작업명")} value={form.jobName}
             onChange={(e) => setField("jobName", e.target.value)} fullWidth />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <ComCodeSelect groupCode="SCHED_GROUP" includeAll={false}
-            label={t("scheduler.jobGroup")} value={form.jobGroup}
+            label={t("system.scheduler.jobGroup", "작업그룹")} value={form.jobGroup}
             onChange={(v) => setField("jobGroup", v)} fullWidth />
           <ComCodeSelect groupCode="SCHED_EXEC_TYPE" includeAll={false}
-            label={t("scheduler.execType")} value={form.execType}
+            label={t("system.scheduler.execType", "실행유형")} value={form.execType}
             onChange={(v) => setField("execType", v)} fullWidth />
         </div>
 
         {/* 크론표현식 */}
         <div>
-          <Input label={t("scheduler.cronExpr")} value={form.cronExpr}
+          <Input label={t("system.scheduler.cronExpr", "크론표현식")} value={form.cronExpr}
             onChange={(e) => setField("cronExpr", e.target.value)}
             placeholder="0 0 2 * * *" fullWidth />
           {cronDesc && (
@@ -308,25 +308,25 @@ export default function SchedulerJobModal({ editData, onClose, onSave }: Props) 
             </p>
           )}
           <div className="mt-2 p-2.5 bg-background dark:bg-slate-800 rounded-md border border-border">
-            <p className="text-[11px] font-semibold text-text-muted mb-1.5">크론 표현식 가이드 (초 분 시 일 월 요일)</p>
+            <p className="text-[11px] font-semibold text-text-muted mb-1.5">{t("system.scheduler.cronGuide", "크론 표현식 가이드 (초 분 시 일 월 요일)")}</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] text-text-muted">
               <button type="button" onClick={() => setField("cronExpr", "0 */5 * * * *")} className="text-left hover:text-primary transition-colors">
-                <code className="text-primary">0 */5 * * * *</code> — 5분마다
+                <code className="text-primary">0 */5 * * * *</code> — {t("system.scheduler.cronEvery5Min", "5분마다")}
               </button>
               <button type="button" onClick={() => setField("cronExpr", "0 */10 * * * *")} className="text-left hover:text-primary transition-colors">
-                <code className="text-primary">0 */10 * * * *</code> — 10분마다
+                <code className="text-primary">0 */10 * * * *</code> — {t("system.scheduler.cronEvery10Min", "10분마다")}
               </button>
               <button type="button" onClick={() => setField("cronExpr", "0 */30 * * * *")} className="text-left hover:text-primary transition-colors">
-                <code className="text-primary">0 */30 * * * *</code> — 30분마다
+                <code className="text-primary">0 */30 * * * *</code> — {t("system.scheduler.cronEvery30Min", "30분마다")}
               </button>
               <button type="button" onClick={() => setField("cronExpr", "0 0 * * * *")} className="text-left hover:text-primary transition-colors">
-                <code className="text-primary">0 0 * * * *</code> — 매시 정각
+                <code className="text-primary">0 0 * * * *</code> — {t("system.scheduler.cronHourly", "매시 정각")}
               </button>
               <button type="button" onClick={() => setField("cronExpr", "0 0 2 * * *")} className="text-left hover:text-primary transition-colors">
-                <code className="text-primary">0 0 2 * * *</code> — 매일 새벽 2시
+                <code className="text-primary">0 0 2 * * *</code> — {t("system.scheduler.cronDaily2am", "매일 새벽 2시")}
               </button>
               <button type="button" onClick={() => setField("cronExpr", "0 0 9,18 * * 1-5")} className="text-left hover:text-primary transition-colors">
-                <code className="text-primary">0 0 9,18 * * 1-5</code> — 평일 9시/18시
+                <code className="text-primary">0 0 9,18 * * 1-5</code> — {t("system.scheduler.cronWeekday9And18", "평일 9시/18시")}
               </button>
             </div>
           </div>
@@ -335,25 +335,25 @@ export default function SchedulerJobModal({ editData, onClose, onSave }: Props) 
         {/* execType별 동적 폼 */}
         {form.execType && (
           <div className="border-t border-border pt-3">
-            <p className="text-xs font-semibold text-text mb-2">{t("scheduler.execTarget")}</p>
+            <p className="text-xs font-semibold text-text mb-2">{t("system.scheduler.execTarget", "실행대상")}</p>
             {execTypeForm}
           </div>
         )}
 
         {/* 기타 */}
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("scheduler.maxRetry")} type="number" value={String(form.maxRetry)}
+          <Input label={t("system.scheduler.maxRetry", "최대재시도")} type="number" value={String(form.maxRetry)}
             onChange={(e) => setField("maxRetry", Number(e.target.value) || 0)} fullWidth />
-          <Input label={t("scheduler.timeoutSec")} type="number" value={String(form.timeoutSec)}
+          <Input label={t("system.scheduler.timeoutSec", "타임아웃(초)")} type="number" value={String(form.timeoutSec)}
             onChange={(e) => setField("timeoutSec", Number(e.target.value) || 60)} fullWidth />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-text mb-1">{t("scheduler.description")}</label>
+          <label className="block text-xs font-medium text-text mb-1">{t("system.scheduler.description", "설명")}</label>
           <textarea value={form.description}
             onChange={(e) => setField("description", e.target.value)}
             className="w-full h-16 text-xs border border-border rounded-md p-2 bg-background text-text resize-none focus:ring-1 focus:ring-primary"
-            placeholder={t("scheduler.description")} />
+            placeholder={t("system.scheduler.description", "설명")} />
         </div>
       </div>
     </Modal>

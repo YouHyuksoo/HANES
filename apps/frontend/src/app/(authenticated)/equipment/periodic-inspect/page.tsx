@@ -79,13 +79,13 @@ export default function PeriodicInspectPage() {
     overallTitle: t("equipment.periodicInspect.overallTitle", { defaultValue: "종합 판정" }),
     overallFailDescription: (total: number, ngCount: number) =>
       t("equipment.periodicInspect.overallFailDescription", {
-        defaultValue: `${total}항목 중 ${ngCount}건 NG`,
+        defaultValue: "{{total}}항목 중 {{ngCount}}건 NG",
         total,
         ngCount,
       }),
     overallPassDescription: (total: number) =>
       t("equipment.periodicInspect.overallPassDescription", {
-        defaultValue: `전 ${total}항목 OK`,
+        defaultValue: "전 {{total}}항목 OK",
         total,
       }),
     failLabel: t("equipment.periodicInspect.failLabel", { defaultValue: "불합격 (NG)" }),

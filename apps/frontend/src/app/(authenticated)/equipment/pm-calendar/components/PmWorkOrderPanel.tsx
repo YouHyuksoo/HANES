@@ -83,7 +83,7 @@ export default function PmWorkOrderPanel({ date, data, loading, onExecute, onVie
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+    const weekdays = t("equipment.pmCalendar.weekdays", "일,월,화,수,목,금,토").split(",");
     return `${d.getMonth() + 1}/${d.getDate()}(${weekdays[d.getDay()]})`;
   };
 

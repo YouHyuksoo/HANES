@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { Calendar, History, RefreshCw, Search } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -46,24 +47,6 @@ const getOneMonthAgo = () => {
   return getTodayLocal(d);
 };
 
-const transTypeOptions = [
-  { value: "", label: "전체" },
-  { value: "ARRIVAL_IN", label: "입하" },
-  { value: "ARRIVAL_CANCEL", label: "입하취소" },
-];
-
-const statusOptions = [
-  { value: "", label: "전체" },
-  { value: "DONE", label: "완료" },
-  { value: "CANCELED", label: "취소" },
-];
-
-const getTransTypeLabel = (type: string) => {
-  if (type === "ARRIVAL_IN") return "입하";
-  if (type === "ARRIVAL_CANCEL") return "입하취소";
-  return type;
-};
-
 const getTransTypeClassName = (type: string) => {
   if (type === "ARRIVAL_CANCEL") {
     return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300";
@@ -97,6 +80,22 @@ const getSignedQty = (row: ArrivalTransactionRow) => {
 };
 
 export default function ArrivalTransactionPage() {
+  const { t } = useTranslation();
+  const transTypeOptions = useMemo(() => [
+    { value: "", label: t("common.all") },
+    { value: "ARRIVAL_IN", label: t("material.arrivalTransaction.typeIn", "입하") },
+    { value: "ARRIVAL_CANCEL", label: t("material.arrivalTransaction.typeCancel", "입하취소") },
+  ], [t]);
+  const statusOptions = useMemo(() => [
+    { value: "", label: t("common.all") },
+    { value: "DONE", label: t("material.arrivalTransaction.statusDone", "완료") },
+    { value: "CANCELED", label: t("material.arrivalTransaction.statusCanceled", "취소") },
+  ], [t]);
+  const getTransTypeLabel = useCallback((type: string) => {
+    if (type === "ARRIVAL_IN") return t("material.arrivalTransaction.typeIn", "입하");
+    if (type === "ARRIVAL_CANCEL") return t("material.arrivalTransaction.typeCancel", "입하취소");
+    return type;
+  }, [t]);
   const [rows, setRows] = useState<ArrivalTransactionRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -141,14 +140,14 @@ export default function ArrivalTransactionPage() {
     () => [
       {
         accessorKey: "transDate",
-        header: "거래일시",
+        header: t("material.arrivalTransaction.col.transDate", "거래일시"),
         size: 160,
         meta: { filterType: "date" as const },
         cell: ({ row }) => formatDateTime(row.original.transDate),
       },
       {
         accessorKey: "transNo",
-        header: "거래번호",
+        header: t("material.arrivalTransaction.col.transNo", "거래번호"),
         size: 170,
         meta: { filterType: "text" as const },
         cell: ({ getValue }) => (
@@ -157,7 +156,7 @@ export default function ArrivalTransactionPage() {
       },
       {
         accessorKey: "transType",
-        header: "유형",
+        header: t("common.type"),
         size: 110,
         meta: { filterType: "multi" as const },
         cell: ({ row }) => (
@@ -168,14 +167,14 @@ export default function ArrivalTransactionPage() {
       },
       {
         accessorKey: "arrivalNo",
-        header: "입하번호",
+        header: t("material.arrivalTransaction.col.arrivalNo", "입하번호"),
         size: 150,
         meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.arrivalNo || row.original.refId || "-",
       },
       {
         accessorKey: "itemCode",
-        header: "품목코드",
+        header: t("common.partCode"),
         size: 130,
         meta: { filterType: "text" as const },
         cell: ({ row }) => (
@@ -186,7 +185,7 @@ export default function ArrivalTransactionPage() {
       },
       {
         accessorKey: "itemName",
-        header: "품목명",
+        header: t("common.partName"),
         size: 180,
         meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.part?.itemName || row.original.itemName || "-",
@@ -204,7 +203,7 @@ export default function ArrivalTransactionPage() {
       },
       {
         accessorKey: "qty",
-        header: "수량",
+        header: t("common.quantity"),
         size: 100,
         meta: { filterType: "number" as const, align: "right" as const },
         cell: ({ row }) => {
@@ -220,14 +219,14 @@ export default function ArrivalTransactionPage() {
       },
       {
         accessorKey: "warehouseName",
-        header: "입하창고",
+        header: t("material.arrivalTransaction.col.warehouse", "입하창고"),
         size: 140,
         meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.toWarehouse?.warehouseName || row.original.warehouseName || row.original.warehouseCode || "-",
       },
       {
         accessorKey: "refType",
-        header: "참조",
+        header: t("material.arrivalTransaction.col.reference", "참조"),
         size: 150,
         meta: { filterType: "text" as const },
         cell: ({ row }) => {
@@ -237,31 +236,35 @@ export default function ArrivalTransactionPage() {
       },
       {
         accessorKey: "workerId",
-        header: "작업자",
+        header: t("material.arrivalTransaction.col.worker", "작업자"),
         size: 100,
         meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.workerId || "-",
       },
       {
         accessorKey: "status",
-        header: "상태",
+        header: t("common.status"),
         size: 90,
         meta: { filterType: "multi" as const },
         cell: ({ row }) => (
           <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusClassName(row.original.status)}`}>
-            {row.original.status === "DONE" ? "완료" : row.original.status === "CANCELED" ? "취소" : row.original.status}
+            {row.original.status === "DONE"
+              ? t("material.arrivalTransaction.statusDone", "완료")
+              : row.original.status === "CANCELED"
+                ? t("material.arrivalTransaction.statusCanceled", "취소")
+                : row.original.status}
           </span>
         ),
       },
       {
         accessorKey: "remark",
-        header: "비고",
+        header: t("common.remark"),
         size: 180,
         meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.remark || "-",
       },
     ],
-    [],
+    [t, getTransTypeLabel],
   );
 
   return (
@@ -270,15 +273,15 @@ export default function ArrivalTransactionPage() {
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <History className="w-7 h-7 text-primary" />
-            입하수불조회
+            {t("material.arrivalTransaction.title", "입하수불조회")}
           </h1>
           <p className="text-text-muted mt-1">
-            입하재고에 반영되는 입하 및 입하취소 원장을 조회합니다.
+            {t("material.arrivalTransaction.subtitle", "입하재고에 반영되는 입하 및 입하취소 원장을 조회합니다.")}
           </p>
         </div>
         <Button variant="secondary" size="sm" onClick={fetchRows}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-          새로고침
+          {t("common.refresh")}
         </Button>
       </div>
 
@@ -288,10 +291,10 @@ export default function ArrivalTransactionPage() {
             data={rows}
             columns={columns}
             isLoading={loading}
-            emptyMessage="조회된 입하수불 내역이 없습니다."
+            emptyMessage={t("material.arrivalTransaction.empty", "조회된 입하수불 내역이 없습니다.")}
             enableColumnFilter
             enableExport
-            exportFileName="입하수불조회"
+            exportFileName={t("material.arrivalTransaction.title", "입하수불조회")}
             toolbarLeft={
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -314,13 +317,13 @@ export default function ArrivalTransactionPage() {
                   options={transTypeOptions}
                   value={filters.transType}
                   onChange={(v) => setFilters((prev) => ({ ...prev, transType: v }))}
-                  placeholder="유형"
+                  placeholder={t("common.type")}
                 />
                 <Select
                   options={statusOptions}
                   value={filters.status}
                   onChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
-                  placeholder="상태"
+                  placeholder={t("common.status")}
                 />
                 <Input
                   value={filters.matUid}
@@ -332,7 +335,7 @@ export default function ArrivalTransactionPage() {
                   <Input
                     value={filters.search}
                     onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                    placeholder="거래번호, 입하번호, 품목 검색"
+                    placeholder={t("material.arrivalTransaction.searchPlaceholder", "거래번호, 입하번호, 품목 검색")}
                     leftIcon={<Search className="w-4 h-4" />}
                     fullWidth
                   />

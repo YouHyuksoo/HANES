@@ -11,7 +11,6 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTabStore, Tab, MAX_TABS } from "@/stores/tabStore";
@@ -20,6 +19,7 @@ import { useTabSync } from "@/hooks/useTabSync";
 import TabContextMenu from "./TabContextMenu";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
+import { navigateClientOnly } from "./clientNavigation";
 
 /** 부모 메뉴의 아이콘 컴포넌트를 찾아 반환 */
 function getParentIcon(parentId: string) {
@@ -30,7 +30,6 @@ function getParentIcon(parentId: string) {
 const SCROLL_AMOUNT = 200;
 
 export default function TabBar() {
-  const router = useRouter();
   const { t } = useTranslation();
   const { tabs, activeTabId, setActiveTab, removeTab, limitNoticeOpen, closeLimitNotice } = useTabStore();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -82,7 +81,7 @@ export default function TabBar() {
 
   const handleTabClick = (tab: Tab) => {
     setActiveTab(tab.id);
-    router.push(tab.path);
+    navigateClientOnly(tab.path);
   };
 
   const handleContextMenu = (e: React.MouseEvent, tab: Tab) => {
@@ -99,7 +98,7 @@ export default function TabBar() {
     if (wasActive) {
       const s = useTabStore.getState();
       const next = s.tabs.find((t) => t.id === s.activeTabId);
-      if (next) router.push(next.path);
+      if (next) navigateClientOnly(next.path);
     }
   };
 

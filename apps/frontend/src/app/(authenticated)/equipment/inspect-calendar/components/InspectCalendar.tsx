@@ -53,13 +53,12 @@ const STATUS_DOT: Record<string, string> = {
   OVERDUE: "bg-red-500",
 };
 
-const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
-
 export default function InspectCalendar({
   year, month, data, selectedDate, onSelectDate,
   onPrevMonth, onNextMonth, monthLabel, loading,
 }: InspectCalendarProps) {
   const { t } = useTranslation();
+  const WEEKDAYS_KO = t("equipment.inspectCalendar.weekdays", "일,월,화,수,목,금,토").split(",");
 
   const dataMap = useMemo(() => {
     const map = new Map<string, CalendarDaySummary>();

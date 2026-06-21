@@ -248,7 +248,7 @@ export default function ReworkFormPanel({ editData, onClose, onSave, animate = t
           {!routingLoading && !routingFetched && !form.itemCode && (
             <div className="flex items-center gap-2 px-3 py-3 rounded-lg border border-dashed border-border text-text-muted text-xs">
               <Search className="w-4 h-4 flex-shrink-0" />
-              <span>품목을 먼저 선택하세요</span>
+              <span>{t("quality.rework.selectPartFirst", "품목을 먼저 선택하세요")}</span>
             </div>
           )}
 

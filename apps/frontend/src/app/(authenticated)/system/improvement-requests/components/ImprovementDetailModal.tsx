@@ -46,10 +46,10 @@ export default function ImprovementDetailModal({ imprId, onClose, onStatusChange
 
   useEffect(() => {
     improvementRequestService.detail(imprId).then(setItem).catch(() => {
-      toast.error("상세 조회 실패");
+      toast.error(t("improvement.detailLoadError", "상세 조회 실패"));
       onClose();
     });
-  }, [imprId, onClose]);
+  }, [imprId, onClose, t]);
 
   const handleStatusChange = useCallback(async (newStatus: string) => {
     if (!item) return;
@@ -58,13 +58,13 @@ export default function ImprovementDetailModal({ imprId, onClose, onStatusChange
       const updated = await improvementRequestService.updateStatus(imprId, newStatus);
       setItem(updated);
       onStatusChanged();
-      toast.success("상태가 변경되었습니다");
+      toast.success(t("improvement.statusChanged", "상태가 변경되었습니다"));
     } catch {
-      toast.error("상태 변경 실패");
+      toast.error(t("improvement.statusChangeError", "상태 변경 실패"));
     } finally {
       setIsUpdating(false);
     }
-  }, [item, imprId, onStatusChanged]);
+  }, [item, imprId, onStatusChanged, t]);
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -73,7 +73,7 @@ export default function ImprovementDetailModal({ imprId, onClose, onStatusChange
         {/* 헤더 */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-surface flex-shrink-0">
           <h3 className="flex-1 text-sm font-bold text-text">
-            {t("improvement.managePage")} — 상세
+            {t("improvement.managePage")} — {t("common.detail", "상세")}
           </h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-surface-hover transition-colors">
             <X className="w-4 h-4 text-text-muted" />
@@ -83,7 +83,7 @@ export default function ImprovementDetailModal({ imprId, onClose, onStatusChange
         {/* 본문 */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {!item ? (
-            <p className="text-sm text-text-muted text-center py-8">로딩 중...</p>
+            <p className="text-sm text-text-muted text-center py-8">{t("common.loading", "로딩 중...")}</p>
           ) : (
             <>
               <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export default function ImprovementDetailModal({ imprId, onClose, onStatusChange
               disabled={isUpdating}
               className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50"
             >
-              {item.status === "PENDING" ? "처리 시작" : "완료 처리"}
+              {item.status === "PENDING" ? t("improvement.startProcessing", "처리 시작") : t("improvement.completeProcessing", "완료 처리")}
             </button>
           </div>
         )}

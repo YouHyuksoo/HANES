@@ -39,6 +39,7 @@ interface UseConLabelColumnsParams {
 
 /** 이미지 썸네일 — 클릭 시 전체화면 라이트박스. 로드 실패 시 placeholder로 fallback */
 function LabelImageCell({ src }: { src: string }) {
+  const { t } = useTranslation();
   const [zoomed, setZoomed] = useState(false);
   const [errored, setErrored] = useState(false);
 
@@ -80,7 +81,7 @@ function LabelImageCell({ src }: { src: string }) {
               onClick={() => setZoomed(false)}
               className="px-4 py-1.5 rounded-lg bg-white/15 text-white text-sm hover:bg-white/25 transition"
             >
-              닫기
+              {t("common.close", "닫기")}
             </button>
           </div>
         </div>

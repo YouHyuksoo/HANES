@@ -174,7 +174,7 @@ export default function IqcHistoryPage() {
             <button
               type="button"
               className="inline-flex h-8 w-8 items-center justify-center rounded text-text-muted hover:bg-surface hover:text-primary"
-              title="검사 상세보기"
+              title={t("material.iqcHistory.viewDetail", "검사 상세보기")}
               onClick={(e) => { e.stopPropagation(); setDetailRecord(record as IqcDetailRecord); }}
             >
               <Eye className="w-4 h-4" />
@@ -185,7 +185,7 @@ export default function IqcHistoryPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex h-8 w-8 items-center justify-center rounded text-blue-600 hover:bg-surface hover:text-blue-800"
-                title="검사성적서 열람"
+                title={t("material.iqcHistory.viewCert", "검사성적서 열람")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="w-4 h-4" />
@@ -196,7 +196,7 @@ export default function IqcHistoryPage() {
                 className={`inline-flex h-8 w-8 items-center justify-center rounded cursor-pointer hover:bg-surface ${
                   record.certFilePath ? "text-green-600" : "text-primary"
                 } ${uploadingKey === uploadKey ? "opacity-50 pointer-events-none" : ""}`}
-                title={record.certFilePath ? "검사성적서 재업로드" : "검사성적서 업로드"}
+                title={record.certFilePath ? t("material.iqcHistory.reuploadCert", "검사성적서 재업로드") : t("material.iqcHistory.uploadCert", "검사성적서 업로드")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <Upload className="w-4 h-4" />
@@ -234,7 +234,7 @@ export default function IqcHistoryPage() {
     },
     {
       accessorKey: "certFilePath",
-      header: "성적서",
+      header: t("material.iqcHistory.cert", "성적서"),
       size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
@@ -243,15 +243,15 @@ export default function IqcHistoryPage() {
           ? (
             <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
               className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-200 cursor-pointer">
-              첨부
+              {t("material.iqcHistory.attached", "첨부")}
             </a>
           )
-          : <span className="text-xs text-text-muted">미첨부</span>;
+          : <span className="text-xs text-text-muted">{t("material.iqcHistory.notAttached", "미첨부")}</span>;
       },
     },
     {
       accessorKey: "arrivalNo",
-      header: "입하번호",
+      header: t("material.iqcHistory.arrivalNo", "입하번호"),
       size: 140,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,

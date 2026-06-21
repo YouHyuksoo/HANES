@@ -154,10 +154,10 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
   const saveDisabledReason = useMemo(() => {
     if (saving) return t("common.saving");
     if (!equipId) return t("equipment.pmPlan.equipSelect");
-    if (!planCode.trim()) return `${t("equipment.pmPlan.planCode")}는 필수입니다`;
-    if (!planName.trim()) return `${t("equipment.pmPlan.planName")}은(는) 필수입니다`;
+    if (!planCode.trim()) return t("equipment.pmPlan.fieldRequired", "{{field}}은(는) 필수입니다", { field: t("equipment.pmPlan.planCode") });
+    if (!planName.trim()) return t("equipment.pmPlan.fieldRequired", "{{field}}은(는) 필수입니다", { field: t("equipment.pmPlan.planName") });
     if (!items.every((item) => item.itemName.trim() !== "")) {
-      return t("equipment.pmPlan.itemName") + "을(를) 입력하세요";
+      return t("equipment.pmPlan.fieldInput", "{{field}}을(를) 입력하세요", { field: t("equipment.pmPlan.itemName") });
     }
     return "";
   }, [saving, equipId, items, planCode, planName, t]);

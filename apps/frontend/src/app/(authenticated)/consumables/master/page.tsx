@@ -242,7 +242,7 @@ function ConsumableMasterPage() {
                   <Input placeholder={t("consumables.master.searchPlaceholder")}
                     value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                     leftIcon={<Search className="w-4 h-4" />} />
-                  <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix="분류" />
+                  <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix={t("consumables.life.categoryLabel", "분류")} />
                 </div>
               }
             

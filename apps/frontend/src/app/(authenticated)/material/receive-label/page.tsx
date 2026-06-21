@@ -134,7 +134,7 @@ function ReceiveLabelPage() {
       if (!printRef.current) { setPrinting(false); return; }
       const win = window.open("", "_blank");
       if (!win) { setPrinting(false); return; }
-      win.document.write(`<html><head><title>${t("material.receiveLabel.printTitle")}</title>
+      win.document.write(`<html><head><title>${t("material.receiveLabel.printTitle", "자재롯트 라벨 인쇄")}</title>
         <style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#fff}.label-grid{display:flex;flex-wrap:wrap;gap:0;padding:0}
         .material-arrival-label{width:${MATERIAL_ARRIVAL_LABEL_WIDTH_MM}mm!important;height:${MATERIAL_ARRIVAL_LABEL_HEIGHT_MM}mm!important;page-break-inside:avoid;break-inside:avoid}
         img{max-width:100%;max-height:100%}@page{size:${MATERIAL_ARRIVAL_LABEL_WIDTH_MM}mm ${MATERIAL_ARRIVAL_LABEL_HEIGHT_MM}mm;margin:0}</style>

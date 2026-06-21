@@ -50,8 +50,8 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
   const [retireConfirm, setRetireConfirm] = useState(false);
   const saveDisabledReason = useMemo(() => {
     if (saving) return t("common.saving");
-    if (!form.moldCode) return `${t("equipment.mold.moldCode")}는 필수입니다`;
-    if (!form.moldName) return `${t("equipment.mold.moldName")}은(는) 필수입니다`;
+    if (!form.moldCode) return t("equipment.mold.fieldRequired", "{{field}}은(는) 필수입니다", { field: t("equipment.mold.moldCode") });
+    if (!form.moldName) return t("equipment.mold.fieldRequired", "{{field}}은(는) 필수입니다", { field: t("equipment.mold.moldName") });
     return "";
   }, [form.moldCode, form.moldName, saving, t]);
 

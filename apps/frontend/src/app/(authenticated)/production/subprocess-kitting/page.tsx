@@ -58,7 +58,7 @@ export default function SubprocessKittingPage() {
 
     // prevent duplicate scan
     if (sgList.some((item) => item.sgBarcode === trimmed)) {
-      toast.error("이미 스캔된 라벨입니다.");
+      toast.error(t("production.kitting.alreadyScanned", "이미 스캔된 라벨입니다."));
       setSgInput("");
       return;
     }
@@ -91,7 +91,7 @@ export default function SubprocessKittingPage() {
       const message =
         error instanceof Error
           ? error.message
-          : (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "SG 라벨 조회에 실패했습니다.";
+          : (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("production.kitting.sgLabelLookupFailed", "SG 라벨 조회에 실패했습니다.");
       toast.error(message);
       setSgInput("");
     } finally {
@@ -118,19 +118,19 @@ export default function SubprocessKittingPage() {
 
   const executeKitting = async () => {
     if (!orderNo.trim()) {
-      toast.error("작업지시번호를 입력하세요.");
+      toast.error(t("production.kitting.requireOrderNo", "작업지시번호를 입력하세요."));
       return;
     }
     if (!processCode.trim()) {
-      toast.error("서브공정코드를 입력하세요.");
+      toast.error(t("production.kitting.requireProcessCode", "서브공정코드를 입력하세요."));
       return;
     }
     if (!qty || Number(qty) <= 0) {
-      toast.error("발행수량을 입력하세요.");
+      toast.error(t("production.kitting.requireQty", "발행수량을 입력하세요."));
       return;
     }
     if (sgList.length === 0) {
-      toast.error("SG 추적라벨을 하나 이상 스캔하세요.");
+      toast.error(t("production.kitting.requireSgLabel", "SG 추적라벨을 하나 이상 스캔하세요."));
       return;
     }
 
@@ -218,14 +218,14 @@ export default function SubprocessKittingPage() {
                 label={`${t("production.kitting.equipCode")} (${t("common.select")})`}
                 value={equipCode}
                 onChange={(e) => setEquipCode(e.target.value)}
-                placeholder="선택 사항"
+                placeholder={t("production.kitting.optional", "선택 사항")}
                 fullWidth
               />
               <Input
                 label={`${t("production.kitting.circuitNo")} (${t("common.select")})`}
                 value={circuitNo}
                 onChange={(e) => setCircuitNo(e.target.value)}
-                placeholder="선택 사항"
+                placeholder={t("production.kitting.optional", "선택 사항")}
                 fullWidth
               />
             </div>

@@ -191,7 +191,7 @@ export default function CustomerPoPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.orderNo || ""}'을(를) 삭제하시겠습니까?`}
+        message={`'${deleteTarget?.orderNo || ""}'${t("common.deleteConfirmSuffix", "을(를) 삭제하시겠습니까?")}`}
       />
     </div>
   );

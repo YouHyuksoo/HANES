@@ -10,11 +10,10 @@
  * 3. **비활성 메뉴**: opacity-40 + cursor-not-allowed, 클릭 무시
  * 4. **부모 메뉴**: 하위 중 하나라도 허용이면 펼침 가능
  */
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { MenuConfigItem } from "@/config/menuConfig";
 import { useTabStore } from "@/stores/tabStore";
+import { navigateClientOnly } from "./clientNavigation";
 
 interface SidebarMenuProps {
   items: MenuConfigItem[];
@@ -32,7 +31,6 @@ interface SidebarMenuProps {
 export default function SidebarMenu({
   items, collapsed, pathname, expandedMenus, onToggleMenu, isMenuActive, isMenuDisabled, onClose, t,
 }: SidebarMenuProps) {
-  const router = useRouter();
   const addTab = useTabStore((s) => s.addTab);
 
   const handleMenuClick = (
@@ -46,7 +44,7 @@ export default function SidebarMenu({
       e.preventDefault();
       return;
     }
-    router.push(menuItem.path);
+    navigateClientOnly(menuItem.path);
     onClose?.();
   };
 
@@ -76,12 +74,12 @@ export default function SidebarMenu({
                   {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
                 </span>
               ) : (
-                <Link
-                  href={item.path}
+                <button
+                  type="button"
                   onClick={(e) => handleMenuClick(e, item as { code: string; path: string; labelKey: string }, item.code)}
                   title={collapsed ? t(item.labelKey) : undefined}
                   className={`
-                    flex items-center gap-3 py-1.5 rounded-[var(--radius)]
+                    flex w-full items-center gap-3 py-1.5 rounded-[var(--radius)]
                     text-sm font-medium transition-colors duration-200
                     ${collapsed ? "justify-center px-0" : "px-3"}
                     ${pathname === item.path ? "bg-primary text-white" : "text-text hover:bg-background"}
@@ -89,7 +87,7 @@ export default function SidebarMenu({
                 >
                   {item.icon && <item.icon className="w-5 h-5 flex-shrink-0" />}
                   {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
-                </Link>
+                </button>
               )
             ) : (
               /* 하위 메뉴가 있는 경우 */
@@ -130,11 +128,11 @@ export default function SidebarMenu({
                               {t(child.labelKey)}
                             </span>
                           ) : (
-                            <Link
-                              href={child.path!}
+                            <button
+                              type="button"
                               onClick={(e) => handleMenuClick(e, child as { code: string; path: string; labelKey: string }, item.code)}
                               className={`
-                                block px-3 py-2 rounded-[var(--radius)] text-sm transition-colors duration-200
+                                block w-full px-3 py-2 rounded-[var(--radius)] text-left text-sm transition-colors duration-200
                                 ${pathname === child.path
                                   ? "bg-primary text-white"
                                   : "text-text-muted hover:text-text hover:bg-background"
@@ -142,7 +140,7 @@ export default function SidebarMenu({
                               `}
                             >
                               {t(child.labelKey)}
-                            </Link>
+                            </button>
                           )}
                         </li>
                       );

@@ -192,7 +192,7 @@ export default function PhysicalInvPage() {
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="실사현황"
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.physicalInv.title")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-0">

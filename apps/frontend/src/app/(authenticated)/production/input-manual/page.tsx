@@ -148,7 +148,7 @@ export default function InputManualPage() {
       } catch (e: unknown) {
         const msg =
           (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          '작업지시 할당에 실패했습니다.';
+          t('production.inputManual.assignJobOrderFailed', '작업지시 할당에 실패했습니다.');
         toast.error(msg);
       }
     }

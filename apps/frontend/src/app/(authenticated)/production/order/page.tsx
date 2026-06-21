@@ -447,7 +447,7 @@ export default function JobOrderPage() {
         </div>
 
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-          <DataGrid data={displayData} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="작업지시"
+          <DataGrid data={displayData} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("production.order.exportFileName", "작업지시")}
             onRowClick={handleRowClick}
             rowClassName={(row: JobOrderItem & { _depth: number }) => row.orderNo === selectedRow?.orderNo ? "bg-primary/5 dark:bg-primary/10" : ""}
             toolbarLeft={
@@ -459,7 +459,7 @@ export default function JobOrderPage() {
                 </div>
                 <div className="w-36 flex-shrink-0">
                   <ComCodeSelect groupCode="JOB_ORDER_STATUS" value={statusFilter}
-                    onChange={setStatusFilter} labelPrefix="상태" fullWidth />
+                    onChange={setStatusFilter} labelPrefix={t("common.status", "상태")} fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
                   <EquipSelect value={equipFilter} onChange={setEquipFilter}

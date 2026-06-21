@@ -148,7 +148,7 @@ function ConfigPage() {
       <Card>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-text-muted">로딩 중...</div>
+            <div className="text-center py-8 text-text-muted">{t('common.loading')}</div>
           ) : configs.length === 0 ? (
             <div className="text-center py-8 text-text-muted">{t('common.noData')}</div>
           ) : (

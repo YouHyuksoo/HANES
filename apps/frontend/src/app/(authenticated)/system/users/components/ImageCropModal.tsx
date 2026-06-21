@@ -104,12 +104,12 @@ export default function ImageCropModal({ isOpen, onClose, imageSrc, onCropComple
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t("system.users.photoCrop")}
+      title={t("system.users.photoCrop", "사진 크롭")}
       size="lg"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button onClick={handleConfirm}>{t("common.confirm")}</Button>
+          <Button variant="ghost" onClick={onClose}>{t("common.cancel", "취소")}</Button>
+          <Button onClick={handleConfirm}>{t("common.confirm", "확인")}</Button>
         </>
       }
     >
@@ -136,7 +136,7 @@ export default function ImageCropModal({ isOpen, onClose, imageSrc, onCropComple
           <button onClick={() => setZoom(Math.min(3, zoom + 0.1))} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
             <ZoomIn className="w-5 h-5" />
           </button>
-          <button onClick={() => setRotation((prev) => (prev + 90) % 360)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ml-4" title={t("system.users.rotate")}>
+          <button onClick={() => setRotation((prev) => (prev + 90) % 360)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 ml-4" title={t("system.users.rotate", "회전")}>
             <RotateCcw className="w-5 h-5" />
           </button>
         </div>

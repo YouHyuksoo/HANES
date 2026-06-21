@@ -280,7 +280,7 @@ export default function SimulationPage() {
                       <div className="font-medium text-text truncate">{p.itemName}</div>
                       <div className="text-text-muted text-[10px]">
                         <span className="font-mono">{p.planNo}</span> · {p.customerName} · {p.planQty.toLocaleString()}
-                        {p.dueDate && <span className="ml-1">· 납기 {p.dueDate.slice(5)}</span>}
+                        {p.dueDate && <span className="ml-1">· {t("simulation.dueDate", "납기")} {p.dueDate.slice(5)}</span>}
                       </div>
                     </div>
                     <div className="flex flex-col">

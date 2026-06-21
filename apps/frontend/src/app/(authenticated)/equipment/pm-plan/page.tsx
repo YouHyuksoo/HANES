@@ -275,7 +275,7 @@ export default function PmPlanPage() {
                   />
                 </div>
                 <div className="w-32">
-                  <ComCodeSelect groupCode="PM_TYPE" value={pmTypeFilter} onChange={setPmTypeFilter} labelPrefix="PM유형" fullWidth />
+                  <ComCodeSelect groupCode="PM_TYPE" value={pmTypeFilter} onChange={setPmTypeFilter} labelPrefix={t("equipment.pmPlan.pmType", "PM유형")} fullWidth />
                 </div>
                 <div className="flex items-center gap-1">
                   <input

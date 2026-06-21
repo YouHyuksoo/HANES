@@ -209,12 +209,12 @@ function ConsumableLabelPage() {
   useEffect(() => { fetchTemplate(); }, [fetchTemplate]);
 
   const templateOptions = useMemo(() => [
-    { value: DEFAULT_TEMPLATE_KEY, label: "기본 디자인" },
+    { value: DEFAULT_TEMPLATE_KEY, label: t("consumables.label.defaultDesign", "기본 디자인") },
     ...templates.map((tpl) => ({
       value: tpl.templateKey,
       label: `${tpl.templateName}${tpl.printMode ? ` / ${tpl.printMode}` : ""}`,
     })),
-  ], [templates]);
+  ], [templates, t]);
 
   const handleTemplateChange = useCallback((templateKey: string) => {
     setSelectedTemplateKey(templateKey);
@@ -231,11 +231,11 @@ function ConsumableLabelPage() {
   }, [templates]);
 
   const categoryFilterOptions = useMemo(() => [
-    { value: "", label: "전체 카테고리" },
+    { value: "", label: t("consumables.master.allCategories", "전체 카테고리") },
     ...Array.from(new Set(masters.map((m) => m.category).filter((category): category is string => Boolean(category))))
       .sort()
       .map((category) => ({ value: category, label: category })),
-  ], [masters]);
+  ], [masters, t]);
 
   const handleCategoryFilterChange = useCallback((value: string) => {
     setCategoryFilter(value);
@@ -293,30 +293,32 @@ function ConsumableLabelPage() {
 
     const printWin = window.open("", "_blank");
     if (!printWin) {
-      toast.error("브라우저가 출력창을 차단했습니다. 이 사이트의 팝업을 허용해 주세요.");
+      const popupBlockedMsg = t("consumables.label.popupBlocked", "브라우저가 출력창을 차단했습니다. 이 사이트의 팝업을 허용해 주세요.");
+      toast.error(popupBlockedMsg);
       setIssueStatus({
         type: "error",
-        message: "브라우저가 출력창을 차단했습니다. 이 사이트의 팝업을 허용해 주세요.",
+        message: popupBlockedMsg,
       });
       return;
     }
+    const preparingMsg = t("consumables.label.preparingPrint", "UID를 발행하고 라벨 출력 준비 중입니다.");
     printWin.document.write(`<html><head><title>${t("consumables.label.printTitle")}</title>
       <style>body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#334155}</style>
-      </head><body>UID를 발행하고 라벨 출력 준비 중입니다.</body></html>`);
+      </head><body>${preparingMsg}</body></html>`);
     printWin.document.close();
 
     clearCreatedUids();
-    const loadingToast = toast.loading("UID를 발행하고 라벨 출력 준비 중입니다.");
+    const loadingToast = toast.loading(preparingMsg);
     setIssueStatus({
       type: "loading",
-      message: "UID를 발행하고 라벨 출력 준비 중입니다.",
+      message: preparingMsg,
     });
 
     let created;
     try {
       created = await createConUids();
     } catch (err) {
-      const message = err instanceof Error && err.message ? err.message : "UID 발행 중 오류가 발생했습니다.";
+      const message = err instanceof Error && err.message ? err.message : t("consumables.label.issueError", "UID 발행 중 오류가 발생했습니다.");
       printWin.close();
       toast.error(message, { id: loadingToast });
       setIssueStatus({ type: "error", message });
@@ -324,11 +326,12 @@ function ConsumableLabelPage() {
     }
 
     if (created.length === 0) {
+      const noUidMsg = t("consumables.label.noIssuedUid", "발행된 UID가 없습니다. 선택 항목과 발행 수량을 확인하세요.");
       printWin.close();
-      toast.error("발행된 UID가 없습니다. 선택 항목과 발행 수량을 확인하세요.", { id: loadingToast });
+      toast.error(noUidMsg, { id: loadingToast });
       setIssueStatus({
         type: "error",
-        message: "발행된 UID가 없습니다. 선택 항목과 발행 수량을 확인하세요.",
+        message: noUidMsg,
       });
       return;
     }
@@ -350,16 +353,17 @@ function ConsumableLabelPage() {
     setPrinting(true);
     setIssueStatus({
       type: "loading",
-      message: `${conUids.length}건 발행 완료. 인쇄 다이얼로그를 호출하는 중입니다.`,
+      message: t("consumables.label.issuedCallingDialog", "{{count}}건 발행 완료. 인쇄 다이얼로그를 호출하는 중입니다.", { count: conUids.length }),
     });
     setTimeout(async () => {
       if (!printRef.current || printWin.closed) {
         setPrinting(false);
         if (!printWin.closed) printWin.close();
-        toast.error("라벨 출력 화면을 준비하지 못했습니다.", { id: loadingToast });
+        const prepFailMsg = t("consumables.label.printScreenFailed", "라벨 출력 화면을 준비하지 못했습니다.");
+        toast.error(prepFailMsg, { id: loadingToast });
         setIssueStatus({
           type: "error",
-          message: "라벨 출력 화면을 준비하지 못했습니다.",
+          message: prepFailMsg,
         });
         return;
       }
@@ -380,16 +384,17 @@ function ConsumableLabelPage() {
         await logBrowserPrint(conUids);
         setPrinting(false);
         setSelectedCodes(new Set());
-        toast.success(`${conUids.length}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.`, { id: loadingToast });
+        const issuedPrintedMsg = t("consumables.label.issuedAndPrinted", "{{count}}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.", { count: conUids.length });
+        toast.success(issuedPrintedMsg, { id: loadingToast });
         setIssueStatus({
           type: "success",
-          message: `${conUids.length}건 UID 발행 후 인쇄 다이얼로그를 호출했습니다.`,
+          message: issuedPrintedMsg,
         });
         clearCreatedUids();
         setActivePrintItems([]);
         fetchData();
       } catch (err) {
-        const message = err instanceof Error && err.message ? err.message : "라벨 출력 화면을 준비하지 못했습니다.";
+        const message = err instanceof Error && err.message ? err.message : t("consumables.label.printScreenFailed", "라벨 출력 화면을 준비하지 못했습니다.");
         setPrinting(false);
         setActivePrintItems([]);
         if (!printWin.closed) printWin.close();
@@ -434,10 +439,11 @@ function ConsumableLabelPage() {
       },
     }]);
     setPrinting(true);
-    const loadingToast = toast.loading(`${instance.conUid} 라벨을 agent로 전송 준비 중입니다.`);
+    const sendingMsg = t("consumables.label.sendingToAgent", "{{conUid}} 라벨을 agent로 전송 준비 중입니다.", { conUid: instance.conUid });
+    const loadingToast = toast.loading(sendingMsg);
     setIssueStatus({
       type: "loading",
-      message: `${instance.conUid} 라벨을 agent로 전송 준비 중입니다.`,
+      message: sendingMsg,
     });
 
     setTimeout(async () => {
@@ -445,10 +451,11 @@ function ConsumableLabelPage() {
       if (!(labelNode instanceof HTMLElement)) {
         setPrinting(false);
         setActivePrintItems([]);
-        toast.error("라벨 출력 화면을 준비하지 못했습니다.", { id: loadingToast });
+        const prepFailMsg = t("consumables.label.printScreenFailed", "라벨 출력 화면을 준비하지 못했습니다.");
+        toast.error(prepFailMsg, { id: loadingToast });
         setIssueStatus({
           type: "error",
-          message: "라벨 출력 화면을 준비하지 못했습니다.",
+          message: prepFailMsg,
         });
         return;
       }
@@ -465,20 +472,21 @@ function ConsumableLabelPage() {
         await logBrowserPrint([instance.conUid]);
         setPrinting(false);
         setActivePrintItems([]);
-        toast.success(`${instance.conUid} 라벨을 agent로 전송했습니다.`, { id: loadingToast });
+        const sentMsg = t("consumables.label.sentToAgent", "{{conUid}} 라벨을 agent로 전송했습니다.", { conUid: instance.conUid });
+        toast.success(sentMsg, { id: loadingToast });
         setIssueStatus({
           type: "success",
-          message: `${instance.conUid} 라벨을 agent로 전송했습니다.`,
+          message: sentMsg,
         });
       } catch (err) {
-        const message = err instanceof Error && err.message ? err.message : "agent 출력 중 오류가 발생했습니다.";
+        const message = err instanceof Error && err.message ? err.message : t("consumables.label.agentPrintError", "agent 출력 중 오류가 발생했습니다.");
         setPrinting(false);
         setActivePrintItems([]);
         toast.error(message, { id: loadingToast });
         setIssueStatus({ type: "error", message });
       }
     }, 500);
-  }, [detailMaster, labelDesign.labelHeight, labelDesign.labelWidth, logBrowserPrint]);
+  }, [detailMaster, labelDesign.labelHeight, labelDesign.labelWidth, logBrowserPrint, t]);
 
   return (
     <div className="flex h-full animate-fade-in">
@@ -506,7 +514,7 @@ function ConsumableLabelPage() {
               title={issueStatus?.message ?? ""}
             >
               <span className="truncate">
-                {issueStatus?.message ?? (selectedCodes.size > 0 ? `${selectedCodes.size}건 선택됨` : "")}
+                {issueStatus?.message ?? (selectedCodes.size > 0 ? t("consumables.label.itemsSelected", "{{count}}건 선택됨", { count: selectedCodes.size }) : "")}
               </span>
             </div>
             <Button variant="secondary" size="sm" onClick={fetchData}>
@@ -523,7 +531,7 @@ function ConsumableLabelPage() {
             <Button size="sm" onClick={handleBrowserPrint}
               disabled={selectedCodes.size === 0 || issuing || printing}>
               <Printer className="w-4 h-4 mr-1" />
-              {printing ? "출력중" : issuing ? t("consumables.label.issuing") : t("consumables.label.issueBtn")}
+              {printing ? t("consumables.label.printingState", "출력중") : issuing ? t("consumables.label.issuing") : t("consumables.label.issueBtn")}
             </Button>
           </div>
         </div>
@@ -542,7 +550,7 @@ function ConsumableLabelPage() {
                 </div>
                 <div className="w-44">
                   <Select
-                    aria-label="카테고리 필터"
+                    aria-label={t("consumables.label.categoryFilter", "카테고리 필터")}
                     options={categoryFilterOptions}
                     value={categoryFilter}
                     onChange={handleCategoryFilterChange}
@@ -570,7 +578,7 @@ function ConsumableLabelPage() {
       <Modal
         isOpen={!!previewPrintItem}
         onClose={() => setPreviewPrintItem(null)}
-        title="라벨 미리보기"
+        title={t("consumables.label.previewTitle", "라벨 미리보기")}
         size="md"
         footer={(
           <Button variant="secondary" onClick={() => setPreviewPrintItem(null)}>
@@ -582,7 +590,7 @@ function ConsumableLabelPage() {
           <div className="flex flex-col items-center gap-3">
             <div className="w-full text-xs text-text-muted">
               <span className="font-mono text-text">{previewPrintItem.key}</span>
-              <span className="ml-2">출력 전 바코드와 라벨 배치를 확인합니다.</span>
+              <span className="ml-2">{t("consumables.label.previewHint", "출력 전 바코드와 라벨 배치를 확인합니다.")}</span>
             </div>
             <div className="max-w-full overflow-auto rounded-md border border-border bg-white p-4">
               <LabelDesignRenderer design={labelDesign} data={previewPrintItem.data} unit="px" scale={10} />

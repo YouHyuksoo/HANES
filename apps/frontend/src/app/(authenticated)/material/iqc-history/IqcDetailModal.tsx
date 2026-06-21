@@ -4,6 +4,7 @@
  * IQC 이력 상세 모달 — 시리얼별 검사항목 측정값·판정 조회
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle } from "lucide-react";
 import { Modal, ComCodeBadge } from "@/components/ui";
 
@@ -83,6 +84,7 @@ const resultBadge = (result?: string) => {
 };
 
 export default function IqcDetailModal({ record, onClose }: Props) {
+  const { t } = useTranslation();
   const [selectedSerial, setSelectedSerial] = useState<string>("");
 
   const details: DetailsPayload | null = (() => {
@@ -110,7 +112,10 @@ export default function IqcDetailModal({ record, onClose }: Props) {
     ? record.sampleBarcode.split(",").map((b) => b.trim()).filter(Boolean)
     : [];
 
-  const title = `IQC 검사 상세 — ${record?.itemName ?? record?.itemCode ?? ""} (${formatDate(record?.inspectDate ?? "")})`;
+  const title = t("material.iqcHistory.detail.title", "IQC 검사 상세 — {{name}} ({{date}})", {
+    name: record?.itemName ?? record?.itemCode ?? "",
+    date: formatDate(record?.inspectDate ?? ""),
+  });
 
   return (
     <Modal isOpen={!!record} onClose={onClose} title={title} size="full">
@@ -118,12 +123,12 @@ export default function IqcDetailModal({ record, onClose }: Props) {
         <div className="flex flex-col gap-4">
           {/* 헤더 정보 */}
           <div className="grid grid-cols-3 gap-x-6 gap-y-1.5 text-sm px-1">
-            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">품목</span><span className="font-medium text-text">{record.itemName || record.itemCode || "-"}</span></div>
-            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">입하번호</span><span className="font-mono text-text">{record.arrivalNo || "-"}</span></div>
-            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">판정</span>{resultBadge(record.result)}</div>
-            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">검사유형</span><span className="text-text">{record.inspectType || "-"}</span></div>
-            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">검사자</span><span className="text-text">{record.inspectorName || "-"}</span></div>
-            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">비고</span><span className="text-text">{record.remark || "-"}</span></div>
+            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">{t("material.iqcHistory.detail.item", "품목")}</span><span className="font-medium text-text">{record.itemName || record.itemCode || "-"}</span></div>
+            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">{t("material.iqcHistory.arrivalNo", "입하번호")}</span><span className="font-mono text-text">{record.arrivalNo || "-"}</span></div>
+            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">{t("material.iqcHistory.detail.judge", "판정")}</span>{resultBadge(record.result)}</div>
+            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">{t("material.iqcHistory.inspectType", "검사유형")}</span><span className="text-text">{record.inspectType || "-"}</span></div>
+            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">{t("material.iqcHistory.inspector", "검사자")}</span><span className="text-text">{record.inspectorName || "-"}</span></div>
+            <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">{t("common.remark")}</span><span className="text-text">{record.remark || "-"}</span></div>
           </div>
 
           <div className="border-t border-border" />
@@ -131,21 +136,21 @@ export default function IqcDetailModal({ record, onClose }: Props) {
           {/* 검사항목별 판정 (검사항목별 AQL 모델) */}
           {itemResults.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-text-muted mb-2">검사항목별 판정 ({itemResults.length})</p>
+              <p className="text-xs font-semibold text-text-muted mb-2">{t("material.iqcHistory.detail.itemJudgeTitle", "검사항목별 판정")} ({itemResults.length})</p>
               <div className="border border-border rounded-lg overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-surface border-b border-border">
                     <tr>
-                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">검사항목</th>
-                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">불량등급</th>
-                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">검사유형</th>
-                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">요구/검사</th>
-                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">검사수준</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.inspectItem", "검사항목")}</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.defectGrade", "불량등급")}</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.inspectType", "검사유형")}</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.requiredInspected", "요구/검사")}</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.inspectLevel", "검사수준")}</th>
                       <th className="text-right px-2 py-1.5 font-medium text-text-muted">AQL</th>
-                      <th className="text-right px-2 py-1.5 font-medium text-text-muted">불량수</th>
+                      <th className="text-right px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.defectCount", "불량수")}</th>
                       <th className="text-center px-2 py-1.5 font-medium text-text-muted">Ac/Re</th>
-                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">판정</th>
-                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">사유</th>
+                      <th className="text-center px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.judge", "판정")}</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.reason", "사유")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -185,7 +190,7 @@ export default function IqcDetailModal({ record, onClose }: Props) {
               {/* 시리얼 목록 */}
               <div className="w-52 flex-shrink-0 flex flex-col border border-border rounded-lg overflow-hidden">
                 <div className="px-3 py-2 bg-surface border-b border-border text-xs font-semibold text-text-muted">
-                  시리얼 ({serials.length})
+                  {t("material.iqcHistory.detail.serial", "시리얼")} ({serials.length})
                 </div>
                 <div className="overflow-y-auto flex-1">
                   {serials.map((s, i) => (
@@ -221,12 +226,12 @@ export default function IqcDetailModal({ record, onClose }: Props) {
                           <thead className="sticky top-0 bg-surface border-b border-border">
                             <tr>
                               <th className="text-left px-2 py-1.5 font-medium text-text-muted">#</th>
-                              <th className="text-left px-2 py-1.5 font-medium text-text-muted">검사항목</th>
-                              <th className="text-left px-2 py-1.5 font-medium text-text-muted">규격</th>
-                              <th className="text-right px-2 py-1.5 font-medium text-text-muted">하한</th>
-                              <th className="text-right px-2 py-1.5 font-medium text-text-muted">상한</th>
-                              <th className="text-center px-2 py-1.5 font-medium text-text-muted">측정값</th>
-                              <th className="text-center px-2 py-1.5 font-medium text-text-muted">판정</th>
+                              <th className="text-left px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.inspectItem", "검사항목")}</th>
+                              <th className="text-left px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.spec", "규격")}</th>
+                              <th className="text-right px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.lsl", "하한")}</th>
+                              <th className="text-right px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.usl", "상한")}</th>
+                              <th className="text-center px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.measuredValue", "측정값")}</th>
+                              <th className="text-center px-2 py-1.5 font-medium text-text-muted">{t("material.iqcHistory.detail.judge", "판정")}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -252,13 +257,13 @@ export default function IqcDetailModal({ record, onClose }: Props) {
                       </div>
                     ) : (
                       <div className="flex-1 flex items-center justify-center text-sm text-text-muted">
-                        항목별 측정값 없음 (수동 판정)
+                        {t("material.iqcHistory.detail.noItemValues", "항목별 측정값 없음 (수동 판정)")}
                       </div>
                     )}
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-sm text-text-muted">
-                    시리얼을 선택하세요.
+                    {t("material.iqcHistory.detail.selectSerial", "시리얼을 선택하세요.")}
                   </div>
                 )}
               </div>
@@ -266,7 +271,7 @@ export default function IqcDetailModal({ record, onClose }: Props) {
           ) : barcodes.length > 0 ? (
             /* details 없고 sampleBarcode만 있는 경우 */
             <div>
-              <p className="text-xs font-semibold text-text-muted mb-2">스캔 시리얼 ({barcodes.length})</p>
+              <p className="text-xs font-semibold text-text-muted mb-2">{t("material.iqcHistory.detail.scanSerial", "스캔 시리얼")} ({barcodes.length})</p>
               <div className="flex flex-wrap gap-1.5">
                 {barcodes.map((b) => (
                   <span key={b} className="px-2 py-0.5 rounded bg-surface border border-border text-xs font-mono text-text">{b}</span>
@@ -274,7 +279,7 @@ export default function IqcDetailModal({ record, onClose }: Props) {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-text-muted text-center py-6">상세 검사 데이터가 없습니다.</p>
+            <p className="text-sm text-text-muted text-center py-6">{t("material.iqcHistory.detail.noData", "상세 검사 데이터가 없습니다.")}</p>
           )}
         </div>
       )}

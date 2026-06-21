@@ -64,22 +64,22 @@ export default function ReceivableTable({ data, isLoading, toolbarLeft }: Receiv
     },
     {
       id: 'certStatus',
-      header: '성적서',
+      header: t('material.receive.certStatus', '성적서'),
       size: 95,
       meta: { filterType: "text" as const },
       cell: ({ row }) => {
         if (!row.original.certRequired) {
-          return <span className="text-xs text-text-muted">불필요</span>;
+          return <span className="text-xs text-text-muted">{t('material.receive.certNotRequired', '불필요')}</span>;
         }
         if (row.original.certUploaded) {
-          return <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">첨부</span>;
+          return <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">{t('material.receive.certAttached', '첨부')}</span>;
         }
         return (
           <span
             className="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
             title={row.original.receivingBlockedReason || undefined}
           >
-            미첨부
+            {t('material.receive.certNotAttached', '미첨부')}
           </span>
         );
       },

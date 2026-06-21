@@ -424,7 +424,7 @@ export default function ReworkPage() {
                   <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" />
                 </div>
                 <ComCodeSelect groupCode="REWORK_STATUS" value={statusFilter}
-                  onChange={setStatusFilter} labelPrefix="상태" />
+                  onChange={setStatusFilter} labelPrefix={t("common.status")} />
                 <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("quality.rework.line")} />
               </div>
             }

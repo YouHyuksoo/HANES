@@ -215,7 +215,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
           </Button>
           <Button size="sm"
             disabled={chart.dataSource === "MANUAL"}
-            title={chart.dataSource === "MANUAL" ? "수동입력 모드 — 관리도 설정에서 데이터 소스를 변경하세요" : undefined}
+            title={chart.dataSource === "MANUAL" ? t("quality.spc.manualModeImportHint", "수동입력 모드 — 관리도 설정에서 데이터 소스를 변경하세요") : undefined}
             onClick={() => { setShowImport(!showImport); if (!showImport) handleFetchMes(); }}>
             <Download className="w-4 h-4 mr-1" />{t("quality.spc.importData", "데이터 가져오기")}
           </Button>
@@ -272,7 +272,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
               <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">
                 {t("quality.spc.importData", "데이터 가져오기")}
               </span>
-              <span className="text-[11px] text-text-muted">수입검사 · 공정검사 · 초물검사 통합</span>
+              <span className="text-[11px] text-text-muted">{t("quality.spc.importSourcesHint", "수입검사 · 공정검사 · 초물검사 통합")}</span>
             </div>
             <div className="flex gap-2 mb-2 items-end">
               <Input label={t("common.from", "시작일")} type="date" value={importFrom}
@@ -309,7 +309,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
                               m.source === 'IQC' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                               : m.source === 'PROCESS' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                               : 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
-                            }`}>{m.source === 'IQC' ? '수입검사' : m.source === 'PROCESS' ? '공정검사' : '초물검사'}</span>
+                            }`}>{m.source === 'IQC' ? t("quality.spc.sourceIqc", "수입검사") : m.source === 'PROCESS' ? t("quality.spc.sourceProcess", "공정검사") : t("quality.spc.sourceFai", "초물검사")}</span>
                           </td>
                           <td className="px-2 py-1">{m.date}</td>
                           <td className="px-2 py-1 font-mono">{(m.values ?? []).map(v => Number(v).toFixed(3)).join(", ")}</td>
@@ -319,7 +319,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
                   </table>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-text-muted">{importData.length}건 발견</span>
+                  <span className="text-xs text-text-muted">{t("quality.spc.foundCount", "{{count}}건 발견", { count: importData.length })}</span>
                   <div className="flex gap-2">
                     <Button size="sm" variant="ghost" onClick={() => setImportData([])}>
                       {t("common.reset", "초기화")}
@@ -328,7 +328,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
                       {t("common.cancel")}
                     </Button>
                     <Button size="sm" onClick={handleImportConfirm} disabled={importLoading}>
-                      {importLoading ? t("common.saving") : `${importData.length}건 등록`}
+                      {importLoading ? t("common.saving") : t("quality.spc.registerCount", "{{count}}건 등록", { count: importData.length })}
                     </Button>
                   </div>
                 </div>

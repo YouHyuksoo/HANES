@@ -170,7 +170,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
               <span className="text-xs text-slate-500">
                 {receivedQty.toLocaleString()} ÷ {formatQuantity(lotUnitQty)} →
               </span>
-              <span className="font-bold text-pink-600 text-lg">{expectedCount.toLocaleString()}개</span>
+              <span className="font-bold text-pink-600 text-lg">{t('material.arrival.confirm.serialCountUnit', '{{count}}개', { count: expectedCount })}</span>
             </div>
           </label>
         </div>

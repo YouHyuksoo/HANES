@@ -115,7 +115,7 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
         {Object.entries(PROCESS_COLORS).map(([code, color]) => (
           <span key={code} className="flex items-center gap-1">
             <span className={`inline-block w-3 h-3 rounded-sm ${color}`} />
-            <span className="text-text">{PROCESS_NAMES[code] ?? code}</span>
+            <span className="text-text">{PROCESS_NAMES[code] ? t(`simulation.process.${code}`, PROCESS_NAMES[code]) : code}</span>
           </span>
         ))}
         <span className="border-l border-border pl-3 flex items-center gap-1.5">
@@ -169,15 +169,15 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
           {/* 설비/공정 컬럼 */}
           <div className="w-32">
             <div className="h-12 border-b border-border bg-surface dark:bg-slate-800 px-2 flex items-center text-xs font-medium text-text">
-              공정/CAPA
+              {t("simulation.processCapaCol", "공정/CAPA")}
             </div>
             {plans.map((plan) => (
               <div key={plan.planNo}
                 className={`h-10 border-b border-border px-2 flex flex-col justify-center text-xs gap-0.5 transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}>
                 <span className="text-[10px] font-medium text-text">{plan.bottleneckProcess}</span>
                 <div className="flex items-center gap-1 text-[10px] text-text-muted">
-                  <span>{plan.dailyCapa.toLocaleString()}/일</span>
-                  <span>{plan.requiredDays}일소요</span>
+                  <span>{t("simulation.perDay", "{{value}}/일", { value: plan.dailyCapa.toLocaleString() })}</span>
+                  <span>{t("simulation.daysNeeded", "{{days}}일소요", { days: plan.requiredDays })}</span>
                 </div>
               </div>
             ))}
@@ -185,7 +185,7 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
           {/* 결과 컬럼 */}
           <div className="w-24 border-l border-border/50">
             <div className="h-12 border-b border-border bg-surface dark:bg-slate-800 px-2 flex items-center text-xs font-medium text-text">
-              결과
+              {t("simulation.resultCol", "결과")}
             </div>
             {plans.map((plan) => (
               <div key={plan.planNo}

@@ -62,10 +62,10 @@ export default function UserPage() {
   const panelAnimateRef = useRef(true);
 
   const roleLabel: Record<string, string> = useMemo(() => ({
-    ADMIN: t("system.users.roleAdmin"),
-    MANAGER: t("system.users.roleManager"),
-    OPERATOR: t("system.users.roleOperator"),
-    VIEWER: t("system.users.roleViewer"),
+    ADMIN: t("system.users.roleAdmin", "관리자"),
+    MANAGER: t("system.users.roleManager", "매니저"),
+    OPERATOR: t("system.users.roleOperator", "작업자"),
+    VIEWER: t("system.users.roleViewer", "조회자"),
   }), [t]);
 
   const fetchUsers = useCallback(async () => {
@@ -100,7 +100,7 @@ export default function UserPage() {
 
   const columns = useMemo<ColumnDef<User>[]>(() => [
     {
-      id: "actions", header: t("common.actions"), size: 80,
+      id: "actions", header: t("common.actions", "관리"), size: 80,
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
@@ -114,16 +114,16 @@ export default function UserPage() {
       ),
     },
     {
-      accessorKey: "photoUrl", header: t("system.users.photo"), size: 60,
+      accessorKey: "photoUrl", header: t("system.users.photo", "사진"), size: 60,
       meta: { filterType: "none" as const },
       cell: ({ getValue }) => <UserAvatar photoUrl={getValue() as string | null} />,
     },
-    { accessorKey: "email", header: t("system.users.email"), size: 200, meta: { filterType: "text" as const } },
-    { accessorKey: "name", header: t("system.users.name"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "empNo", header: t("system.users.empNo"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "dept", header: t("system.users.dept"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "email", header: t("system.users.email", "이메일"), size: 200, meta: { filterType: "text" as const } },
+    { accessorKey: "name", header: t("system.users.name", "이름"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "empNo", header: t("system.users.empNo", "사원번호"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "dept", header: t("system.users.dept", "부서"), size: 100, meta: { filterType: "text" as const } },
     {
-      accessorKey: "role", header: t("system.users.role"), size: 90,
+      accessorKey: "role", header: t("system.users.role", "역할"), size: 90,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const role = getValue() as string;
@@ -141,7 +141,7 @@ export default function UserPage() {
       },
     },
     {
-      accessorKey: "status", header: t("system.users.status"), size: 80,
+      accessorKey: "status", header: t("system.users.status", "상태"), size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const status = getValue() as string;
@@ -151,13 +151,13 @@ export default function UserPage() {
               ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
               : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
           }`}>
-            {status === "ACTIVE" ? t("system.users.statusActive") : t("system.users.statusInactive")}
+            {status === "ACTIVE" ? t("system.users.statusActive", "활성") : t("system.users.statusInactive", "비활성")}
           </span>
         );
       },
     },
     {
-      accessorKey: "lastLoginAt", header: t("system.users.lastLogin"), size: 150,
+      accessorKey: "lastLoginAt", header: t("system.users.lastLogin", "최근 로그인"), size: 150,
       meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
@@ -172,16 +172,16 @@ export default function UserPage() {
         <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
-              <Users className="w-7 h-7 text-primary" />{t("system.users.title")}
+              <Users className="w-7 h-7 text-primary" />{t("system.users.title", "사용자 관리")}
             </h1>
-            <p className="text-text-muted mt-1">{t("system.users.subtitle")}</p>
+            <p className="text-text-muted mt-1">{t("system.users.subtitle", "시스템 사용자를 관리합니다.")}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={fetchUsers}>
-              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh", "새로고침")}
             </Button>
             <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingUser(null); setIsPanelOpen(true); }}>
-              <Plus className="w-4 h-4 mr-1" />{t("system.users.addUser")}
+              <Plus className="w-4 h-4 mr-1" />{t("system.users.addUser", "사용자 추가")}
             </Button>
           </div>
         </div>
@@ -192,15 +192,15 @@ export default function UserPage() {
               data={users}
               columns={columns}
               isLoading={loading}
-              emptyMessage={t("system.users.emptyMessage")}
+              emptyMessage={t("system.users.emptyMessage", "등록된 사용자가 없습니다.")}
               enableColumnPinning
               enableColumnFilter
               enableExport
-              exportFileName={t("system.users.title")}
+              exportFileName={t("system.users.title", "사용자 관리")}
               onRowClick={(row) => { if (isPanelOpen) setEditingUser(row); }}
               toolbarLeft={
                 <Input
-                  placeholder={t("system.users.searchPlaceholder")}
+                  placeholder={t("system.users.searchPlaceholder", "이름/이메일 검색")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />}
@@ -226,9 +226,9 @@ export default function UserPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title={t("system.users.deleteUser")}
-        message={t("system.users.deleteConfirm", { name: deleteTarget?.name || deleteTarget?.email })}
-        confirmText={t("common.delete")}
+        title={t("system.users.deleteUser", "사용자 삭제")}
+        message={t("system.users.deleteConfirm", "{{name}} 사용자를 삭제하시겠습니까?", { name: deleteTarget?.name || deleteTarget?.email })}
+        confirmText={t("common.delete", "삭제")}
         variant="danger"
       />
     </div>

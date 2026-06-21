@@ -143,9 +143,9 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
   const saveDisabledReason = loading
     ? t("common.saving")
     : !form.consumableCode.trim()
-      ? "소모품 코드를 입력하세요."
+      ? t("consumables.master.codeRequired", "소모품 코드를 입력하세요.")
       : !form.consumableName.trim()
-        ? "소모품명을 입력하세요."
+        ? t("consumables.master.nameRequired", "소모품명을 입력하세요.")
         : "";
 
   return (
@@ -202,7 +202,7 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
             <div className="col-span-2">
               <Input
                 label={t("consumables.master.name")}
-                placeholder="110단자 압착금형"
+                placeholder={t("consumables.master.namePlaceholder", "110단자 압착금형")}
                 value={form.consumableName}
                 onChange={(e) => set("consumableName", e.target.value)}
                 fullWidth
@@ -252,7 +252,7 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
           <div className="grid grid-cols-2 gap-3">
             <Input
               label={t("consumables.master.location")}
-              placeholder="금형실-A1"
+              placeholder={t("consumables.master.locationPlaceholder", "금형실-A1")}
               value={form.location}
               onChange={(e) => set("location", e.target.value)}
               fullWidth

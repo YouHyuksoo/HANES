@@ -157,18 +157,18 @@ export default function AqlPage() {
   }, []);
 
   const validateForm = useCallback(() => {
-    if (!form.aqlCode.trim()) return "AQL 코드를 입력하세요.";
-    if (!form.aqlName.trim()) return "AQL 명칭을 입력하세요.";
+    if (!form.aqlCode.trim()) return t("quality.aql.validateAqlCode", "AQL 코드를 입력하세요.");
+    if (!form.aqlName.trim()) return t("quality.aql.validateAqlName", "AQL 명칭을 입력하세요.");
     const rules = [...(form.rules ?? [])].sort((a, b) => a.lotQtyFrom - b.lotQtyFrom);
     for (let index = 0; index < rules.length; index += 1) {
       const rule = rules[index];
-      if (rule.lotQtyFrom > rule.lotQtyTo) return "LOT 수량 From은 To보다 클 수 없습니다.";
-      if (rule.rejectQty <= rule.acceptQty) return "Re 수량은 Ac 수량보다 커야 합니다.";
+      if (rule.lotQtyFrom > rule.lotQtyTo) return t("quality.aql.validateLotRange", "LOT 수량 From은 To보다 클 수 없습니다.");
+      if (rule.rejectQty <= rule.acceptQty) return t("quality.aql.validateReAc", "Re 수량은 Ac 수량보다 커야 합니다.");
       const previous = rules[index - 1];
-      if (previous && rule.lotQtyFrom <= previous.lotQtyTo) return "LOT 수량 범위가 겹칩니다.";
+      if (previous && rule.lotQtyFrom <= previous.lotQtyTo) return t("quality.aql.validateLotOverlap", "LOT 수량 범위가 겹칩니다.");
     }
     return "";
-  }, [form]);
+  }, [form, t]);
 
   const handleSave = useCallback(async () => {
     const validation = validateForm();
@@ -192,13 +192,13 @@ export default function AqlPage() {
       } else {
         await api.post("/quality/aql", payload);
       }
-      toast.success(selected ? "AQL 기준이 수정되었습니다." : "AQL 기준이 등록되었습니다.");
+      toast.success(selected ? t("quality.aql.toastUpdated", "AQL 기준이 수정되었습니다.") : t("quality.aql.toastCreated", "AQL 기준이 등록되었습니다."));
       await fetchData();
       await loadDetail(payload as AqlStandard);
     } finally {
       setSaving(false);
     }
-  }, [fetchData, form, loadDetail, selected, validateForm]);
+  }, [fetchData, form, loadDetail, selected, validateForm, t]);
 
   const handleDelete = useCallback(async () => {
     if (!selected) return;
@@ -230,12 +230,12 @@ export default function AqlPage() {
   }, []);
 
   const validatePolicyForm = useCallback(() => {
-    if (!policyForm.policyCode.trim()) return "정책 코드를 입력하세요.";
-    if (!policyForm.policyName.trim()) return "정책명을 입력하세요.";
-    if (!policyForm.majorAqlCode) return "Major AQL 기준을 선택하세요.";
-    if (!policyForm.minorAqlCode) return "Minor AQL 기준을 선택하세요.";
+    if (!policyForm.policyCode.trim()) return t("quality.aql.validatePolicyCode", "정책 코드를 입력하세요.");
+    if (!policyForm.policyName.trim()) return t("quality.aql.validatePolicyName", "정책명을 입력하세요.");
+    if (!policyForm.majorAqlCode) return t("quality.aql.validateMajorAql", "Major AQL 기준을 선택하세요.");
+    if (!policyForm.minorAqlCode) return t("quality.aql.validateMinorAql", "Minor AQL 기준을 선택하세요.");
     return "";
-  }, [policyForm]);
+  }, [policyForm, t]);
 
   const handlePolicySave = useCallback(async () => {
     const validation = validatePolicyForm();
@@ -260,14 +260,14 @@ export default function AqlPage() {
       } else {
         await api.post("/quality/aql/policies", payload);
       }
-      toast.success(selectedPolicy ? "AQL 정책이 수정되었습니다." : "AQL 정책이 등록되었습니다.");
+      toast.success(selectedPolicy ? t("quality.aql.toastPolicyUpdated", "AQL 정책이 수정되었습니다.") : t("quality.aql.toastPolicyCreated", "AQL 정책이 등록되었습니다."));
       await fetchPolicies();
       setSelectedPolicy(payload as IqcAqlPolicy);
       setPolicyForm(payload as IqcAqlPolicy);
     } finally {
       setPolicySaving(false);
     }
-  }, [fetchPolicies, policyForm, selectedPolicy, validatePolicyForm]);
+  }, [fetchPolicies, policyForm, selectedPolicy, validatePolicyForm, t]);
 
   const handlePolicyDelete = useCallback(async () => {
     if (!selectedPolicy) return;
@@ -280,36 +280,36 @@ export default function AqlPage() {
   const columns = useMemo<ColumnDef<AqlStandard>[]>(() => [
     {
       accessorKey: "aqlCode",
-      header: () => <HelpHeader field="aqlCode" label="AQL 코드" />,
+      header: () => <HelpHeader field="aqlCode" label={t("quality.aql.aqlCode", "AQL 코드")} />,
       size: 120,
       cell: ({ getValue }) => <span className="font-mono font-semibold text-primary">{getValue() as string}</span>,
     },
-    { accessorKey: "aqlName", header: () => <HelpHeader field="aqlName" label="AQL 명칭" />, size: 160 },
-    { accessorKey: "inspectionLevel", header: () => <HelpHeader field="inspectionLevel" label="검사수준" />, size: 90 },
-    { accessorKey: "aqlValue", header: () => <HelpHeader field="aqlValue" label="AQL 값" />, size: 80, meta: { align: "right" as const } },
+    { accessorKey: "aqlName", header: () => <HelpHeader field="aqlName" label={t("quality.aql.aqlName", "AQL 명칭")} />, size: 160 },
+    { accessorKey: "inspectionLevel", header: () => <HelpHeader field="inspectionLevel" label={t("quality.aql.inspectionLevel", "검사수준")} />, size: 90 },
+    { accessorKey: "aqlValue", header: () => <HelpHeader field="aqlValue" label={t("quality.aql.aqlValue", "AQL 값")} />, size: 80, meta: { align: "right" as const } },
     {
       accessorKey: "useYn",
-      header: () => <HelpHeader field="useYn" label="사용" />,
+      header: () => <HelpHeader field="useYn" label={t("quality.aql.use", "사용")} />,
       size: 70,
       cell: ({ getValue }) => (
         <span className={getValue() === "Y" ? "text-emerald-600 font-semibold" : "text-text-muted"}>{getValue() as string}</span>
       ),
     },
-  ], []);
+  ], [t]);
 
   const policyColumns = useMemo<ColumnDef<IqcAqlPolicy>[]>(() => [
     {
       accessorKey: "policyCode",
-      header: () => <HelpHeader field="policyCode" label="정책 코드" />,
+      header: () => <HelpHeader field="policyCode" label={t("quality.aql.policyCode", "정책 코드")} />,
       size: 130,
       cell: ({ getValue }) => <span className="font-mono font-semibold text-primary">{getValue() as string}</span>,
     },
-    { accessorKey: "policyName", header: () => <HelpHeader field="policyName" label="정책명" />, size: 180 },
-    { accessorKey: "inspectionLevel", header: () => <HelpHeader field="policyInspectionLevel" label="검사수준" />, size: 70 },
-    { accessorKey: "majorAqlCode", header: () => <HelpHeader field="policyMajorAqlCode" label="Major" />, size: 110 },
-    { accessorKey: "minorAqlCode", header: () => <HelpHeader field="policyMinorAqlCode" label="Minor" />, size: 110 },
-    { accessorKey: "useYn", header: () => <HelpHeader field="policyUseYn" label="사용" />, size: 60 },
-  ], []);
+    { accessorKey: "policyName", header: () => <HelpHeader field="policyName" label={t("quality.aql.policyName", "정책명")} />, size: 180 },
+    { accessorKey: "inspectionLevel", header: () => <HelpHeader field="policyInspectionLevel" label={t("quality.aql.inspectionLevel", "검사수준")} />, size: 70 },
+    { accessorKey: "majorAqlCode", header: () => <HelpHeader field="policyMajorAqlCode" label={t("quality.aql.major", "Major")} />, size: 110 },
+    { accessorKey: "minorAqlCode", header: () => <HelpHeader field="policyMinorAqlCode" label={t("quality.aql.minor", "Minor")} />, size: 110 },
+    { accessorKey: "useYn", header: () => <HelpHeader field="policyUseYn" label={t("quality.aql.use", "사용")} />, size: 60 },
+  ], [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -326,15 +326,15 @@ export default function AqlPage() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
           <Button size="sm" onClick={handleNew}>
-            <Plus className="w-4 h-4" />AQL 기준 추가
+            <Plus className="w-4 h-4" />{t("quality.aql.addStandard", "AQL 기준 추가")}
           </Button>
           <span className="mx-1 h-5 w-px bg-border" aria-hidden />
           <Button variant="secondary" size="sm" onClick={addRule}>
-            <Plus className="w-4 h-4" />판정기준 추가
+            <Plus className="w-4 h-4" />{t("quality.aql.addRule", "판정기준 추가")}
           </Button>
           {selected && (
             <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="w-4 h-4" />사용중지
+              <Trash2 className="w-4 h-4" />{t("quality.aql.disable", "사용중지")}
             </Button>
           )}
           <Button size="sm" onClick={handleSave} isLoading={saving}>
@@ -348,58 +348,58 @@ export default function AqlPage() {
           <CardContent className="h-full p-3 overflow-hidden flex flex-col">
             <div className="mb-2 flex flex-wrap items-start justify-between gap-2 flex-shrink-0">
               <div>
-                <h2 className="text-sm font-semibold text-text">AQL 정책관리</h2>
-                <p className="mt-0.5 text-xs text-text-muted">IQC_AQL_POLICIES 기준으로 품목에 적용할 Major/Minor AQL 조합을 관리합니다.</p>
+                <h2 className="text-sm font-semibold text-text">{t("quality.aql.policySection", "AQL 정책관리")}</h2>
+                <p className="mt-0.5 text-xs text-text-muted">{t("quality.aql.policySectionDesc", "IQC_AQL_POLICIES 기준으로 품목에 적용할 Major/Minor AQL 조합을 관리합니다.")}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" size="sm" onClick={handlePolicyNew}>
-                  <Plus className="w-4 h-4" />정책 추가
+                  <Plus className="w-4 h-4" />{t("quality.aql.addPolicy", "정책 추가")}
                 </Button>
                 {selectedPolicy && (
                   <Button variant="danger" size="sm" onClick={() => setPolicyDeleteOpen(true)}>
-                    <Trash2 className="w-4 h-4" />사용중지
+                    <Trash2 className="w-4 h-4" />{t("quality.aql.disable", "사용중지")}
                   </Button>
                 )}
                 <Button size="sm" onClick={handlePolicySave} isLoading={policySaving}>
-                  <Save className="w-4 h-4" />정책 저장
+                  <Save className="w-4 h-4" />{t("quality.aql.savePolicy", "정책 저장")}
                 </Button>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2 flex-shrink-0">
-              <HelpField field="policyCode" label="정책 코드" required>
+              <HelpField field="policyCode" label={t("quality.aql.policyCode", "정책 코드")} required>
                 <Input value={policyForm.policyCode}
                   disabled={!!selectedPolicy}
                   onChange={(event) => setPolicyField("policyCode", event.target.value)}
                   placeholder="AQLP-II-1.0-2.5" className="!h-9" fullWidth />
               </HelpField>
-              <HelpField field="policyName" label="정책명" required>
+              <HelpField field="policyName" label={t("quality.aql.policyName", "정책명")} required>
                 <Input value={policyForm.policyName}
                   onChange={(event) => setPolicyField("policyName", event.target.value)}
                   placeholder="II Major 1.0 Minor 2.5" className="!h-9" fullWidth />
               </HelpField>
-              <HelpField field="policyInspectionLevel" label="검사수준">
+              <HelpField field="policyInspectionLevel" label={t("quality.aql.inspectionLevel", "검사수준")}>
                 <ComCodeSelect groupCode="AQL_INSP_LEVEL" includeAll={false}
                   value={policyForm.inspectionLevel ?? ""}
                   onChange={(value) => setPolicyField("inspectionLevel", value)} fullWidth />
               </HelpField>
-              <HelpField field="policyMajorAqlCode" label="Major AQL">
+              <HelpField field="policyMajorAqlCode" label={t("quality.aql.majorAql", "Major AQL")}>
                 <select
                   className="h-9 w-full rounded border border-border bg-surface px-3 text-sm text-text"
                   value={policyForm.majorAqlCode ?? ""}
                   onChange={(event) => setPolicyField("majorAqlCode", event.target.value)}
                 >
-                  <option value="">선택</option>
+                  <option value="">{t("quality.aql.selectOption", "선택")}</option>
                   {activeAqlOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </HelpField>
-              <HelpField field="policyMinorAqlCode" label="Minor AQL">
+              <HelpField field="policyMinorAqlCode" label={t("quality.aql.minorAql", "Minor AQL")}>
                 <select
                   className="h-9 w-full rounded border border-border bg-surface px-3 text-sm text-text"
                   value={policyForm.minorAqlCode ?? ""}
                   onChange={(event) => setPolicyField("minorAqlCode", event.target.value)}
                 >
-                  <option value="">선택</option>
+                  <option value="">{t("quality.aql.selectOption", "선택")}</option>
                   {activeAqlOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </HelpField>
@@ -433,12 +433,12 @@ export default function AqlPage() {
                 onRowClick={loadDetail}
                 enableColumnFilter
                 enableExport
-                exportFileName="AQL 기준관리"
+                exportFileName={t("quality.aql.title", "AQL 기준관리")}
                 toolbarLeft={
                   <Input
                     value={searchText}
                     onChange={(event) => setSearchText(event.target.value)}
-                    placeholder="AQL 코드/명칭 검색"
+                    placeholder={t("quality.aql.searchPlaceholder", "AQL 코드/명칭 검색")}
                     leftIcon={<Search className="w-4 h-4" />}
                     fullWidth
                   />
@@ -448,36 +448,36 @@ export default function AqlPage() {
             </div>
 
             <div className="mb-4">
-              <h2 className="text-sm font-semibold text-text">{selected ? "AQL 기준 수정" : "AQL 기준 등록"}</h2>
+              <h2 className="text-sm font-semibold text-text">{selected ? t("quality.aql.editStandard", "AQL 기준 수정") : t("quality.aql.registerStandard", "AQL 기준 등록")}</h2>
             </div>
 
             <div className="grid grid-cols-4 gap-3">
-              <HelpField field="aqlCode" label="AQL 코드" required>
+              <HelpField field="aqlCode" label={t("quality.aql.aqlCode", "AQL 코드")} required>
                 <Input value={form.aqlCode}
                   disabled={!!selected}
                   onChange={(event) => setField("aqlCode", event.target.value)}
                   placeholder="AQL-1.0" fullWidth />
               </HelpField>
-              <HelpField field="aqlName" label="AQL 명칭" required>
+              <HelpField field="aqlName" label={t("quality.aql.aqlName", "AQL 명칭")} required>
                 <Input value={form.aqlName}
                   onChange={(event) => setField("aqlName", event.target.value)}
-                  placeholder="일반검사 AQL 1.0" fullWidth />
+                  placeholder={t("quality.aql.aqlNamePlaceholder", "일반검사 AQL 1.0")} fullWidth />
               </HelpField>
-              <HelpField field="inspectionLevel" label="검사수준">
+              <HelpField field="inspectionLevel" label={t("quality.aql.inspectionLevel", "검사수준")}>
                 <ComCodeSelect groupCode="AQL_INSP_LEVEL" includeAll={false}
                   value={form.inspectionLevel ?? ""}
                   onChange={(value) => setField("inspectionLevel", value)} fullWidth />
               </HelpField>
-              <HelpField field="aqlValue" label="AQL 값">
+              <HelpField field="aqlValue" label={t("quality.aql.aqlValue", "AQL 값")}>
                 <ComCodeSelect groupCode="AQL_VALUE" includeAll={false}
                   value={form.aqlValue == null ? "" : String(form.aqlValue)}
                   onChange={(value) => setField("aqlValue", value === "" ? 0 : Number(value))} fullWidth />
               </HelpField>
-              <HelpField field="useYn" label="사용여부">
+              <HelpField field="useYn" label={t("quality.aql.useYn", "사용여부")}>
                 <ComCodeSelect groupCode="USE_YN" includeAll={false}
                   value={form.useYn} onChange={(value) => setField("useYn", value)} fullWidth />
               </HelpField>
-              <HelpField field="remark" label="비고" className="col-span-3">
+              <HelpField field="remark" label={t("quality.aql.remark", "비고")} className="col-span-3">
                 <Input value={form.remark ?? ""}
                   onChange={(event) => setField("remark", event.target.value)}
                   fullWidth />
@@ -505,14 +505,14 @@ export default function AqlPage() {
                   <div className="p-1"><Input type="number" min={0} value={rule.acceptQty} onChange={(event) => setRuleField(index, "acceptQty", toNumber(event.target.value, 0))} className="!h-8 !px-2" fullWidth /></div>
                   <div className="p-1"><Input type="number" min={0} value={rule.rejectQty} onChange={(event) => setRuleField(index, "rejectQty", toNumber(event.target.value, 0))} className="!h-8 !px-2" fullWidth /></div>
                   <div className="p-1 flex items-center justify-center">
-                    <button className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500" onClick={() => removeRule(index)} title="삭제">
+                    <button className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500" onClick={() => removeRule(index)} title={t("common.delete", "삭제")}>
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               ))}
               {(form.rules ?? []).length === 0 && (
-                <div className="p-6 text-sm text-text-muted text-center">LOT 수량별 판정기준을 추가하세요.</div>
+                <div className="p-6 text-sm text-text-muted text-center">{t("quality.aql.ruleEmpty", "LOT 수량별 판정기준을 추가하세요.")}</div>
               )}
             </div>
           </CardContent>
@@ -523,15 +523,15 @@ export default function AqlPage() {
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        title="AQL 기준 사용중지"
-        message={`${selected?.aqlCode ?? ""} 기준을 사용중지하시겠습니까?`}
+        title={t("quality.aql.disableStandardTitle", "AQL 기준 사용중지")}
+        message={t("quality.aql.disableStandardMsg", "{{code}} 기준을 사용중지하시겠습니까?", { code: selected?.aqlCode ?? "" })}
       />
       <ConfirmModal
         isOpen={policyDeleteOpen}
         onClose={() => setPolicyDeleteOpen(false)}
         onConfirm={handlePolicyDelete}
-        title="AQL 정책 사용중지"
-        message={`${selectedPolicy?.policyCode ?? ""} 정책을 사용중지하시겠습니까?`}
+        title={t("quality.aql.disablePolicyTitle", "AQL 정책 사용중지")}
+        message={t("quality.aql.disablePolicyMsg", "{{code}} 정책을 사용중지하시겠습니까?", { code: selectedPolicy?.policyCode ?? "" })}
       />
     </div>
   );

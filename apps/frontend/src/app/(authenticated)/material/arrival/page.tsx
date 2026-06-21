@@ -147,12 +147,12 @@ export default function ArrivalPage() {
   }, []);
 
   const templateOptions = useMemo(() => [
-    { value: DEFAULT_TEMPLATE_KEY, label: '기본 디자인' },
+    { value: DEFAULT_TEMPLATE_KEY, label: t('material.arrival.defaultDesign', '기본 디자인') },
     ...templates.map((tpl) => ({
       value: tpl.templateKey,
       label: `${tpl.templateName}${tpl.printMode ? ` / ${tpl.printMode}` : ''}`,
     })),
-  ], [templates]);
+  ], [templates, t]);
 
   const handleTemplateChange = useCallback((templateKey: string) => {
     setSelectedTemplateKey(templateKey);
@@ -212,7 +212,7 @@ export default function ArrivalPage() {
         <div className="flex items-center gap-2">
           <div className="w-72">
             <Select
-              aria-label="입하 라벨 템플릿"
+              aria-label={t('material.arrival.labelTemplate', '입하 라벨 템플릿')}
               options={templateOptions}
               value={selectedTemplateKey}
               onChange={handleTemplateChange}

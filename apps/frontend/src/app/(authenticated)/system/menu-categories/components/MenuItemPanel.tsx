@@ -99,14 +99,14 @@ export default function MenuItemPanel({ menuCode, tree, onChange }: Props) {
       <div className="flex gap-2 pt-2">
         {!targetCategory && (
           <p className="text-xs text-text-muted">
-            이동할 카테고리를 선택하세요.
+            {t('system.menuCategories.selectCategoryToMove', '이동할 카테고리를 선택하세요.')}
           </p>
         )}
         <button
           className="px-3 py-1.5 rounded-[var(--radius)] bg-primary text-white text-sm font-medium disabled:opacity-50"
           onClick={apply}
           disabled={!targetCategory}
-          title={targetCategory ? undefined : "이동할 카테고리를 선택하세요."}
+          title={targetCategory ? undefined : t('system.menuCategories.selectCategoryToMove', '이동할 카테고리를 선택하세요.')}
         >
           {t('menuCategoryAdmin.move')}
         </button>

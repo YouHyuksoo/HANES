@@ -85,6 +85,7 @@ interface TimingBtnProps {
 }
 
 function TimingBtn({ timing, label, done, disabled, disabledReason, notify, block, onClick }: TimingBtnProps) {
+  const { t } = useTranslation();
   const tone: Record<InspectTiming, string> = {
     FIRST: 'border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300',
     MID: 'border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300',
@@ -111,9 +112,9 @@ function TimingBtn({ timing, label, done, disabled, disabledReason, notify, bloc
       {done ? (
         <CheckCircle2 className="h-3 w-3" />
       ) : block ? (
-        <span className="text-[9px] font-bold">차단!</span>
+        <span className="text-[9px] font-bold">{t('kiosk.selfInspect.blockBadge', '차단!')}</span>
       ) : notify ? (
-        <span className="text-[9px] font-bold">권장↑</span>
+        <span className="text-[9px] font-bold">{t('kiosk.selfInspect.notifyBadge', '권장↑')}</span>
       ) : (
         <FlaskConical className="h-3 w-3 opacity-60" />
       )}

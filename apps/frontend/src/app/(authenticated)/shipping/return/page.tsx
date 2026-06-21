@@ -196,7 +196,7 @@ export default function ShipReturnPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.returnNo || ""}'을(를) 삭제하시겠습니까?`}
+        message={`'${deleteTarget?.returnNo || ""}'${t("common.deleteConfirmSuffix", "을(를) 삭제하시겠습니까?")}`}
       />
     </div>
   );

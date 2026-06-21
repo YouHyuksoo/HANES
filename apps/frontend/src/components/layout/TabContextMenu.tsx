@@ -10,9 +10,9 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useTabStore, Tab } from "@/stores/tabStore";
+import { navigateClientOnly } from "./clientNavigation";
 
 interface TabContextMenuProps {
   tab: Tab;
@@ -23,15 +23,14 @@ interface TabContextMenuProps {
 
 export default function TabContextMenu({ tab, x, y, onClose }: TabContextMenuProps) {
   const { t } = useTranslation();
-  const router = useRouter();
   const { removeTab, closeOtherTabs, closeAllTabs } = useTabStore();
 
   // keep-alive: 탭을 닫으면 라우트도 살아남은 활성 탭으로 이동해야 페이지가 사라진다.
   const gotoActiveTab = useCallback(() => {
     const s = useTabStore.getState();
     const active = s.tabs.find((t) => t.id === s.activeTabId);
-    if (active) router.push(active.path);
-  }, [router]);
+    if (active) navigateClientOnly(active.path);
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

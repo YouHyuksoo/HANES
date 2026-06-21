@@ -131,7 +131,7 @@ export default function WorkHistoryPanel() {
                         )}
                       </div>
                       {cond.equipInterfaceYn === 'Y' && (
-                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 rounded shrink-0">설비</span>
+                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 rounded shrink-0">{t('kiosk.history.equipInterface', '설비')}</span>
                       )}
                     </div>
                   </li>

@@ -93,7 +93,7 @@ export default function ReceivingPage() {
         </div>
         <Button size="sm" onClick={() => setScanOpen(true)}>
           <ScanLine className="w-4 h-4 mr-1" />
-          입고처리
+          {t('material.receive.scanReceive', '입고처리')}
         </Button>
       </div>
 

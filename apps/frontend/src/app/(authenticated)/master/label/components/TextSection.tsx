@@ -38,7 +38,7 @@ export function NumInput({ label, value, onChange, min = 0, max = 200, step = 1 
 
 export default function TextSection({ title, config, onChange }: TextSectionProps) {
   const { t } = useTranslation();
-  const fontOpts = FONT_OPTIONS.map((f) => ({ value: f.value, label: f.label }));
+  const fontOpts = FONT_OPTIONS.map((f) => ({ value: f.value, label: t(`master.label.fontFamily.${f.value}`, f.label) }));
   const aligns: { value: TextConfig["align"]; label: string }[] = [
     { value: "left", label: t("master.label.alignLeft") },
     { value: "center", label: t("master.label.alignCenter") },

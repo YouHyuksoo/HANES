@@ -97,8 +97,8 @@ export default function SpcHistogram({ allValues, usl, lsl, target }: Props) {
               border: `1px solid ${gridColor}`,
               color: dark ? "#e2e8f0" : "#1e293b",
             }}
-            formatter={(v: unknown) => [`${v}건`, "빈도"]}
-            labelFormatter={(l: unknown) => `구간: ${l}`}
+            formatter={(v: unknown) => [t("quality.spc.histFrequencyValue", "{{count}}건", { count: v as number }), t("quality.spc.histFrequency", "빈도")]}
+            labelFormatter={(l: unknown) => t("quality.spc.histBin", "구간: {{bin}}", { bin: l as string })}
           />
           {usl != null && (
             <ReferenceLine

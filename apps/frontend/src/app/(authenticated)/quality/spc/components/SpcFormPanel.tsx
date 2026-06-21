@@ -172,20 +172,20 @@ export default function SpcFormPanel({ editData, onClose, onSave }: Props) {
               <Input label={t("quality.spc.sourceInspectItem", "소스 검사항목")}
                 value={form.sourceInspectItem}
                 onChange={e => setField("sourceInspectItem", e.target.value)}
-                placeholder="예: 크림프 높이" fullWidth />
+                placeholder={t("quality.spc.sourceInspectItemPlaceholder", "예: 크림프 높이")} fullWidth />
             )}
           </div>
           {form.dataSource === "MANUAL" && (
-            <p className="text-[11px] text-text-muted mt-1">수동입력 모드: 측정데이터 추가 버튼으로 직접 입력합니다.</p>
+            <p className="text-[11px] text-text-muted mt-1">{t("quality.spc.dataSourceManualHint", "수동입력 모드: 측정데이터 추가 버튼으로 직접 입력합니다.")}</p>
           )}
           {form.dataSource === "IQC" && (
-            <p className="text-[11px] text-text-muted mt-1">수입검사(SAMPLE_INSPECT_RESULTS)에서 측정값을 가져옵니다.</p>
+            <p className="text-[11px] text-text-muted mt-1">{t("quality.spc.dataSourceIqcHint", "수입검사(SAMPLE_INSPECT_RESULTS)에서 측정값을 가져옵니다.")}</p>
           )}
           {form.dataSource === "PROCESS" && (
-            <p className="text-[11px] text-text-muted mt-1">공정검사(INSPECT_RESULTS)에서 측정값을 가져옵니다.</p>
+            <p className="text-[11px] text-text-muted mt-1">{t("quality.spc.dataSourceProcessHint", "공정검사(INSPECT_RESULTS)에서 측정값을 가져옵니다.")}</p>
           )}
           {form.dataSource === "OQC" && (
-            <p className="text-[11px] text-text-muted mt-1">출하검사(OQC_REQUESTS)에서 품목별 측정값을 가져옵니다.</p>
+            <p className="text-[11px] text-text-muted mt-1">{t("quality.spc.dataSourceOqcHint", "출하검사(OQC_REQUESTS)에서 품목별 측정값을 가져옵니다.")}</p>
           )}
         </div>
 

@@ -184,7 +184,7 @@ export default function SelfInspectItemRow({ rowIndex, item, result, onChange }:
       <td className="px-2 py-2 text-center">
         {isPass && <span className="text-xs font-bold text-green-600 dark:text-green-400">PASS</span>}
         {isFail && <span className="text-xs font-bold text-red-600 dark:text-red-400">FAIL</span>}
-        {isPending && <span className="text-xs font-bold text-orange-600 dark:text-orange-400">의뢰중</span>}
+        {isPending && <span className="text-xs font-bold text-orange-600 dark:text-orange-400">{t('kiosk.selfInspect.delegating', '의뢰중')}</span>}
       </td>
 
       {/* 비고 */}

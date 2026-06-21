@@ -89,13 +89,13 @@ function judgeItem(item: InspectItem, raw: string): "OK" | "NG" | null {
   return "OK";
 }
 
-function criteriaText(item: InspectItem): string {
+function criteriaText(item: InspectItem, normalLabel: string): string {
   const u = item.unit ? ` ${item.unit}` : "";
   if (item.lslValue !== null && item.uslValue !== null)
     return `${item.lslValue} ~ ${item.uslValue}${u}`;
   if (item.uslValue !== null) return `≤ ${item.uslValue}${u}`;
   if (item.lslValue !== null) return `≥ ${item.lslValue}${u}`;
-  return item.criteria ?? "정상";
+  return item.criteria ?? normalLabel;
 }
 
 function itemKey(item: InspectItem, index: number): string {
@@ -129,16 +129,18 @@ export default function InspectEntryPanel({
     savedOk: t("equipment.dailyInspect.savedOk"),
     savedNg: t("equipment.dailyInspect.savedNg"),
     saveError: t("equipment.dailyInspect.saveError"),
-    fillAllItems: "점검 항목을 모두 입력하세요.",
-    saveButtonPass: "저장 (PASS)",
-    saveButtonNg: "저장 (NG)",
-    overallTitle: "종합 판정",
-    overallFailDescription: (total, ngCount) => `${total}항목 중 ${ngCount}건 NG`,
-    overallPassDescription: (total) => `전 ${total}항목 OK`,
-    failLabel: "불합격 (NG)",
-    passLabel: "합격 (PASS)",
-    badRemarkPlaceholder: "불량 내용 입력...",
-    pendingLabel: "대기",
+    fillAllItems: t("equipment.dailyInspect.fillAllItems", "점검 항목을 모두 입력하세요."),
+    saveButtonPass: t("equipment.dailyInspect.saveButtonPass", "저장 (PASS)"),
+    saveButtonNg: t("equipment.dailyInspect.saveButtonNg", "저장 (NG)"),
+    overallTitle: t("equipment.dailyInspect.overallTitle", "종합 판정"),
+    overallFailDescription: (total, ngCount) =>
+      t("equipment.dailyInspect.overallFailDescription", "{{total}}항목 중 {{ngCount}}건 NG", { total, ngCount }),
+    overallPassDescription: (total) =>
+      t("equipment.dailyInspect.overallPassDescription", "전 {{total}}항목 OK", { total }),
+    failLabel: t("equipment.dailyInspect.failLabel", "불합격 (NG)"),
+    passLabel: t("equipment.dailyInspect.passLabel", "합격 (PASS)"),
+    badRemarkPlaceholder: t("equipment.dailyInspect.badRemarkPlaceholder", "불량 내용 입력..."),
+    pendingLabel: t("equipment.dailyInspect.pendingLabel", "대기"),
     ...labelsProp,
   }), [labelsProp, t]);
   const [items, setItems] = useState<InspectItem[]>([]);
@@ -328,7 +330,7 @@ export default function InspectEntryPanel({
             <div className="text-sm font-semibold">
               {labels.inspectEntry} - {equipCode} {equipName}
             </div>
-            <div className="text-xs text-text-muted mt-0.5">{itemCount}항목</div>
+            <div className="text-xs text-text-muted mt-0.5">{t("equipment.dailyInspect.itemCountSuffix", "{{count}}항목", { count: itemCount })}</div>
           </div>
           <button
             onClick={handleSave}
@@ -366,7 +368,7 @@ export default function InspectEntryPanel({
               onChange={(e) => setInspectorName(e.target.value)}
               className="w-full px-2 py-1 border border-primary rounded bg-background focus:outline-none text-xs"
             >
-              <option value="">-- 선택 --</option>
+              <option value="">{t("equipment.dailyInspect.selectPlaceholder", "-- 선택 --")}</option>
               {workers.map((w) => (
                 <option key={w.workerCode} value={w.workerName}>
                   {w.workerName} ({w.dept})
@@ -426,13 +428,13 @@ export default function InspectEntryPanel({
             <thead className="bg-surface sticky top-0">
               <tr className="border-b border-border text-text-muted">
                 <th className="w-8 px-2 py-2 text-center font-medium">No</th>
-                <th className="w-14 px-2 py-2 text-center font-medium">사진</th>
-                <th className="px-3 py-2 text-left font-medium">점검항목</th>
-                <th className="w-16 px-2 py-2 text-center font-medium">유형</th>
-                <th className="w-32 px-2 py-2 text-center font-medium">기준</th>
-                <th className="w-24 px-2 py-2 text-center font-medium">측정값/입력</th>
-                <th className="w-14 px-2 py-2 text-center font-medium">판정</th>
-                <th className="px-2 py-2 text-left font-medium">비고</th>
+                <th className="w-14 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colPhoto", "사진")}</th>
+                <th className="px-3 py-2 text-left font-medium">{t("equipment.dailyInspect.colItem", "점검항목")}</th>
+                <th className="w-16 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colType", "유형")}</th>
+                <th className="w-32 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colCriteria", "기준")}</th>
+                <th className="w-24 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colMeasure", "측정값/입력")}</th>
+                <th className="w-14 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colJudge", "판정")}</th>
+                <th className="px-2 py-2 text-left font-medium">{t("common.remark", "비고")}</th>
               </tr>
             </thead>
             <tbody>
@@ -460,11 +462,11 @@ export default function InspectEntryPanel({
                             : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
                         }`}
                       >
-                        {item.itemType === "MEASURE" ? "측정형" : "판정형"}
+                        {item.itemType === "MEASURE" ? t("equipment.dailyInspect.typeMeasure", "측정형") : t("equipment.dailyInspect.typeVisual", "판정형")}
                       </span>
                     </td>
                     <td className="px-2 py-2 text-center text-text-muted">
-                      {criteriaText(item)}
+                      {criteriaText(item, t("equipment.dailyInspect.defaultCriteria", "정상"))}
                     </td>
                     <td className="px-2 py-2 text-center">
                       {item.itemType === "MEASURE" ? (
@@ -548,7 +550,7 @@ export default function InspectEntryPanel({
             NG {ngCount}
           </span>
           <span className="text-text-muted">
-            → 종합판정{" "}
+            {t("equipment.dailyInspect.overallJudgeArrow", "→ 종합판정")}{" "}
             <strong
               className={
                 isNgOverall

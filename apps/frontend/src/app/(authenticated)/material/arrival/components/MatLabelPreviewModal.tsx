@@ -146,14 +146,14 @@ export default function MatLabelPreviewModal({
     if (printing || labelItems.length === 0) return;
     setActivePrintItems(labelItems);
     setPrinting(true);
-    const loadingToast = toast.loading(`${labelItems.length}개 입하 라벨을 agent로 전송 준비 중입니다.`);
+    const loadingToast = toast.loading(t("material.arrival.label.toastPreparing", "{{count}}개 입하 라벨을 agent로 전송 준비 중입니다.", { count: labelItems.length }));
 
     window.setTimeout(async () => {
       try {
         const labelNodes = Array.from(printRef.current?.children ?? [])
           .filter((node): node is HTMLElement => node instanceof HTMLElement);
         if (labelNodes.length !== labelItems.length) {
-          throw new Error("라벨 출력 화면을 준비하지 못했습니다.");
+          throw new Error(t("material.arrival.label.errorPrepareScreen", "라벨 출력 화면을 준비하지 못했습니다."));
         }
 
         for (let index = 0; index < labelItems.length; index += 1) {
@@ -172,16 +172,16 @@ export default function MatLabelPreviewModal({
           });
         }
 
-        toast.success(`${labelItems.length}개 입하 라벨을 agent로 전송했습니다.`, { id: loadingToast });
+        toast.success(t("material.arrival.label.toastSent", "{{count}}개 입하 라벨을 agent로 전송했습니다.", { count: labelItems.length }), { id: loadingToast });
       } catch (err) {
-        const message = err instanceof Error && err.message ? err.message : "agent 출력 중 오류가 발생했습니다.";
+        const message = err instanceof Error && err.message ? err.message : t("material.arrival.label.toastError", "agent 출력 중 오류가 발생했습니다.");
         toast.error(message, { id: loadingToast });
       } finally {
         setPrinting(false);
         setActivePrintItems([]);
       }
     }, 500);
-  }, [labelDesign.labelHeight, labelDesign.labelWidth, labelItems, printing]);
+  }, [labelDesign.labelHeight, labelDesign.labelWidth, labelItems, printing, t]);
 
   if (!data) return null;
 
@@ -190,7 +190,7 @@ export default function MatLabelPreviewModal({
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="w-80 max-w-full">
           <Select
-            aria-label="입하 라벨 템플릿"
+            aria-label={t('material.arrival.labelTemplate', '입하 라벨 템플릿')}
             options={templateOptions}
             value={selectedTemplateKey}
             onChange={handleTemplateChange}
@@ -199,7 +199,7 @@ export default function MatLabelPreviewModal({
         </div>
         <Button onClick={handlePrint} disabled={printing || labelItems.length === 0}>
           <Printer className="w-4 h-4 mr-1" />
-          {printing ? "출력중" : t('material.arrival.label.print')}
+          {printing ? t('material.arrival.label.printing', '출력중') : t('material.arrival.label.print')}
         </Button>
       </div>
       <div className="max-h-[60vh] overflow-auto rounded-md border border-border bg-white p-3">

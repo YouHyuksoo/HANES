@@ -40,12 +40,6 @@ const STATUS_BADGE: Record<string, string> = {
   "done-ng": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  none: "미점검",
-  "done-ok": "완료(OK)",
-  "done-ng": "완료(NG)",
-};
-
 export default function EquipListPanel({
   equipTargets,
   selectedEquipCode,
@@ -61,6 +55,12 @@ export default function EquipListPanel({
   const [statusFilter, setStatusFilter] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
+  const STATUS_LABEL: Record<string, string> = {
+    none: t("equipment.dailyInspect.statusNone", "미점검"),
+    "done-ok": t("equipment.dailyInspect.statusDoneOk", "완료(OK)"),
+    "done-ng": t("equipment.dailyInspect.statusDoneNg", "완료(NG)"),
+  };
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return equipTargets.filter(
@@ -75,12 +75,12 @@ export default function EquipListPanel({
   const grouped = useMemo(() => {
     const groups: Record<string, EquipTarget[]> = {};
     for (const equip of filtered) {
-      const key = equip.equipType || "기타";
+      const key = equip.equipType || t("equipment.dailyInspect.groupEtc", "기타");
       if (!groups[key]) groups[key] = [];
       groups[key].push(equip);
     }
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [filtered]);
+  }, [filtered, t]);
 
   useEffect(() => {
     if (search) {
@@ -120,9 +120,9 @@ export default function EquipListPanel({
           {title ?? t("equipment.dailyInspect.todayTargets")}
         </div>
         <div className="text-xs text-text-muted mt-0.5">
-          완료 {stats.done}/{stats.total}
+          {t("equipment.dailyInspect.doneCount", "완료 {{done}}/{{total}}", { done: stats.done, total: stats.total })}
           {stats.ng > 0 && (
-            <span className="ml-2 text-red-500 font-medium">· NG {stats.ng}건</span>
+            <span className="ml-2 text-red-500 font-medium">{t("equipment.dailyInspect.ngCount", "· NG {{ng}}건", { ng: stats.ng })}</span>
           )}
         </div>
       </div>
@@ -143,10 +143,10 @@ export default function EquipListPanel({
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-2 py-1.5 text-xs border border-border rounded-lg bg-background w-28 focus:outline-none"
         >
-          <option value="">전체</option>
-          <option value="none">미점검</option>
-          <option value="done-ok">완료(OK)</option>
-          <option value="done-ng">완료(NG)</option>
+          <option value="">{t("common.all", "전체")}</option>
+          <option value="none">{t("equipment.dailyInspect.statusNone", "미점검")}</option>
+          <option value="done-ok">{t("equipment.dailyInspect.statusDoneOk", "완료(OK)")}</option>
+          <option value="done-ng">{t("equipment.dailyInspect.statusDoneNg", "완료(NG)")}</option>
         </select>
       </div>
 

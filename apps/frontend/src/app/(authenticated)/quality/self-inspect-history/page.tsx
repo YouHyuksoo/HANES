@@ -123,7 +123,11 @@ export default function SelfInspectHistoryPage() {
       size: 60,
       cell: ({ getValue }) => {
         const v = getValue<string>();
-        return v === "FIRST" ? "초물" : v === "MID" ? "중물" : "종물";
+        return v === "FIRST"
+          ? t("selfInspectHistory.timingFirst", "초물")
+          : v === "MID"
+            ? t("selfInspectHistory.timingMid", "중물")
+            : t("selfInspectHistory.timingLast", "종물");
       },
     },
     {
@@ -144,20 +148,24 @@ export default function SelfInspectHistoryPage() {
   ];
 
   const detailColumns: ColumnDef<DetailRecord, unknown>[] = [
-    { accessorKey: "itemName", header: "항목명", size: 160 },
+    { accessorKey: "itemName", header: t("selfInspectHistory.itemName", "항목명"), size: 160 },
     {
       accessorKey: "timing",
-      header: "시점",
+      header: t("selfInspectHistory.timing", "시점"),
       size: 55,
       cell: ({ getValue }) => {
         const v = getValue<string>();
-        return v === "FIRST" ? "초물" : v === "MID" ? "중물" : "종물";
+        return v === "FIRST"
+          ? t("selfInspectHistory.timingFirst", "초물")
+          : v === "MID"
+            ? t("selfInspectHistory.timingMid", "중물")
+            : t("selfInspectHistory.timingLast", "종물");
       },
     },
-    { accessorKey: "sampleNo", header: "시료번호", size: 65 },
+    { accessorKey: "sampleNo", header: t("selfInspectHistory.sampleNo", "시료번호"), size: 65 },
     {
       accessorKey: "measureValue",
-      header: "측정값",
+      header: t("selfInspectHistory.measureValue", "측정값"),
       size: 80,
       cell: ({ getValue }) => {
         const v = getValue<number | null>();
@@ -166,11 +174,11 @@ export default function SelfInspectHistoryPage() {
     },
     {
       accessorKey: "status",
-      header: "결과",
+      header: t("selfInspectHistory.status", "결과"),
       size: 70,
       cell: ({ getValue }) => statusBadge(getValue<string>()),
     },
-    { accessorKey: "remark", header: "비고", size: 150 },
+    { accessorKey: "remark", header: t("selfInspectHistory.remark", "비고"), size: 150 },
   ];
 
   return (

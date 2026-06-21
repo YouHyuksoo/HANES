@@ -86,7 +86,7 @@ function DepartmentPage() {
     () => [
       {
         id: "actions",
-        header: t("common.actions"),
+        header: t("common.actions", "관리"),
         size: 100,
         meta: { align: "center" as const, filterType: "none" as const },
         cell: ({ row }) => (
@@ -114,26 +114,26 @@ function DepartmentPage() {
           </div>
         ),
       },
-      { accessorKey: "deptCode", header: t("system.department.deptCode"), size: 120, meta: { filterType: "text" as const } },
-      { accessorKey: "deptName", header: t("system.department.deptName"), size: 180, meta: { filterType: "text" as const } },
+      { accessorKey: "deptCode", header: t("system.department.deptCode", "부서코드"), size: 120, meta: { filterType: "text" as const } },
+      { accessorKey: "deptName", header: t("system.department.deptName", "부서명"), size: 180, meta: { filterType: "text" as const } },
       {
         accessorKey: "parentDeptCode",
-        header: t("system.department.parentDeptCode"),
+        header: t("system.department.parentDeptCode", "상위부서"),
         size: 120,
         meta: { filterType: "text" as const },
         cell: ({ getValue }) => getValue() || "-",
       },
-      { accessorKey: "sortOrder", header: t("system.department.sortOrder"), size: 80, meta: { filterType: "number" as const } },
+      { accessorKey: "sortOrder", header: t("system.department.sortOrder", "정렬순서"), size: 80, meta: { filterType: "number" as const } },
       {
         accessorKey: "managerName",
-        header: t("system.department.managerName"),
+        header: t("system.department.managerName", "부서장"),
         size: 120,
         meta: { filterType: "text" as const },
         cell: ({ getValue }) => getValue() || "-",
       },
       {
         accessorKey: "useYn",
-        header: t("system.department.useYn"),
+        header: t("system.department.useYn", "사용여부"),
         size: 80,
         meta: { filterType: "multi" as const },
         cell: ({ getValue }) => {
@@ -153,7 +153,7 @@ function DepartmentPage() {
       },
       {
         accessorKey: "remark",
-        header: t("system.department.remark"),
+        header: t("system.department.remark", "비고"),
         size: 200,
         meta: { filterType: "text" as const },
         cell: ({ getValue }) => getValue() || "-",
@@ -169,16 +169,16 @@ function DepartmentPage() {
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <Building className="w-7 h-7 text-primary" />
-              {t("system.department.title")}
+              {t("system.department.title", "부서 관리")}
             </h1>
-            <p className="text-text-muted mt-1">{t("system.department.subtitle")}</p>
+            <p className="text-text-muted mt-1">{t("system.department.subtitle", "조직의 부서 정보를 관리합니다.")}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={fetchData}>
-              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh")}
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh", "새로고침")}
             </Button>
             <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingDept(null); setIsPanelOpen(true); }}>
-              <Plus className="w-4 h-4 mr-1" /> {t("system.department.addDepartment")}
+              <Plus className="w-4 h-4 mr-1" /> {t("system.department.addDepartment", "부서 추가")}
             </Button>
           </div>
         </div>
@@ -189,13 +189,13 @@ function DepartmentPage() {
               data={departments}
               columns={columns}
               isLoading={loading}
-              emptyMessage={t("system.department.emptyMessage")}
+              emptyMessage={t("system.department.emptyMessage", "등록된 부서가 없습니다.")}
               enableExport
               enableColumnFilter
-              exportFileName={t("system.department.title")}
+              exportFileName={t("system.department.title", "부서 관리")}
               toolbarLeft={
                 <Input
-                  placeholder={t("system.department.searchPlaceholder")}
+                  placeholder={t("system.department.searchPlaceholder", "부서코드/부서명 검색")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />}
@@ -222,9 +222,9 @@ function DepartmentPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title={t("system.department.deleteDepartment")}
-        message={t("system.department.deleteConfirm", { name: deleteTarget?.deptName })}
-        confirmText={t("common.delete")}
+        title={t("system.department.deleteDepartment", "부서 삭제")}
+        message={t("system.department.deleteConfirm", "'{{name}}' 부서를 삭제하시겠습니까?", { name: deleteTarget?.deptName })}
+        confirmText={t("common.delete", "삭제")}
         variant="danger"
       />
     </div>

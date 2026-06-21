@@ -109,7 +109,7 @@ export default function DepartmentFormPanel({ editingDept, departments, onClose,
       onClose();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setFormError(error.response?.data?.message || t("common.saveFailed"));
+      setFormError(error.response?.data?.message || t("common.saveFailed", "저장에 실패했습니다."));
     } finally {
       setSaving(false);
     }
@@ -119,12 +119,12 @@ export default function DepartmentFormPanel({ editingDept, departments, onClose,
     <div className={`w-[420px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}>
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">
-          {isEdit ? t("system.department.editDepartment") : t("system.department.addDepartment")}
+          {isEdit ? t("system.department.editDepartment", "부서 수정") : t("system.department.addDepartment", "부서 추가")}
         </h2>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel", "취소")}</Button>
           <Button size="sm" onClick={handleSubmit} disabled={saving || !form.deptCode.trim() || !form.deptName.trim()}>
-            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+            {saving ? t("common.saving", "저장 중...") : (isEdit ? t("common.edit", "수정") : t("common.add", "추가"))}
           </Button>
         </div>
       </div>
@@ -140,7 +140,7 @@ export default function DepartmentFormPanel({ editingDept, departments, onClose,
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("system.department.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label={t("system.department.deptCode")}
+              label={t("system.department.deptCode", "부서코드")}
               value={form.deptCode}
               onChange={e => setField("deptCode", e.target.value)}
               disabled={isEdit}
@@ -148,34 +148,34 @@ export default function DepartmentFormPanel({ editingDept, departments, onClose,
               required
             />
             <Input
-              label={t("system.department.deptName")}
+              label={t("system.department.deptName", "부서명")}
               value={form.deptName}
               onChange={e => setField("deptName", e.target.value)}
               fullWidth
               required
             />
             <Select
-              label={t("system.department.parentDeptCode")}
+              label={t("system.department.parentDeptCode", "상위부서")}
               value={form.parentDeptCode}
               onChange={v => setField("parentDeptCode", v)}
               options={parentOptions}
               fullWidth
             />
             <Input
-              label={t("system.department.sortOrder")}
+              label={t("system.department.sortOrder", "정렬순서")}
               type="number"
               value={form.sortOrder}
               onChange={e => setField("sortOrder", e.target.value)}
               fullWidth
             />
             <Input
-              label={t("system.department.managerName")}
+              label={t("system.department.managerName", "부서장")}
               value={form.managerName}
               onChange={e => setField("managerName", e.target.value)}
               fullWidth
             />
             <Select
-              label={t("system.department.useYn")}
+              label={t("system.department.useYn", "사용여부")}
               value={form.useYn}
               onChange={v => setField("useYn", v)}
               options={useYnOptions}
@@ -186,7 +186,7 @@ export default function DepartmentFormPanel({ editingDept, departments, onClose,
 
         <div>
           <Input
-            label={t("system.department.remark")}
+            label={t("system.department.remark", "비고")}
             value={form.remark}
             onChange={e => setField("remark", e.target.value)}
             fullWidth

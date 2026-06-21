@@ -133,7 +133,7 @@ export default function InspectionHistoryPage() {
       size: 80,
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
-        return v === "FULL" ? "전수" : v === "SAMPLE" ? "샘플" : v || "-";
+        return v === "FULL" ? t("inspection.history.scopeFull", "전수") : v === "SAMPLE" ? t("inspection.history.scopeSample", "샘플") : v || "-";
       },
     },
   ], [t]);

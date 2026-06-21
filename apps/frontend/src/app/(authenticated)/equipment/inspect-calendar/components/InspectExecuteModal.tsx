@@ -109,9 +109,9 @@ export default function InspectExecuteModal({
     if (saving) return t("common.saving");
     if (!selectedWorkerId) return t("equipment.inspectCalendar.inspectorName");
     if (items.length === 0) return t("equipment.inspectCalendar.noInspection", "점검 항목이 없습니다");
-    if (items.some((i) => i.result === "")) return t("equipment.inspectCalendar.itemResult") + " 입력 필요";
+    if (items.some((i) => i.result === "")) return t("equipment.inspectCalendar.itemResultRequired", "{{label}} 입력 필요", { label: t("equipment.inspectCalendar.itemResult") });
     if (items.some((i) => i.result === "FAIL" && !i.remark.trim())) {
-      return t("equipment.inspectCalendar.failCausePlaceholder") + " 입력이 필요합니다";
+      return t("equipment.inspectCalendar.failCauseRequired", "{{label}} 입력이 필요합니다", { label: t("equipment.inspectCalendar.failCausePlaceholder") });
     }
     return "";
   }, [saving, selectedWorkerId, items, t]);

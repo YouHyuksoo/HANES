@@ -72,13 +72,13 @@ export default function SchedulerDashboardTab() {
 
       {/* 통계 카드 4개 */}
       <div className="grid grid-cols-4 gap-4 flex-shrink-0">
-        <StatCard label={t("scheduler.todayTotal")} value={data.todayTotal}
+        <StatCard label={t("system.scheduler.todayTotal", "오늘 실행")} value={data.todayTotal}
           icon={Activity} color="blue" />
-        <StatCard label={t("scheduler.todaySuccess")} value={data.todaySuccess}
+        <StatCard label={t("system.scheduler.todaySuccess", "성공")} value={data.todaySuccess}
           icon={CheckCircle} color="green" />
-        <StatCard label={t("scheduler.todayFail")} value={data.todayFail}
+        <StatCard label={t("system.scheduler.todayFail", "실패")} value={data.todayFail}
           icon={XCircle} color="red" />
-        <StatCard label={t("scheduler.successRate")}
+        <StatCard label={t("system.scheduler.successRate", "성공률")}
           value={`${data.successRate.toFixed(1)}%`}
           icon={TrendingUp} color="purple" />
       </div>
@@ -88,7 +88,7 @@ export default function SchedulerDashboardTab() {
         {/* 7일 추이 LineChart */}
         <Card>
           <CardContent>
-            <h3 className="text-sm font-semibold text-text mb-3">{t("scheduler.trendChart")}</h3>
+            <h3 className="text-sm font-semibold text-text mb-3">{t("system.scheduler.trendChart", "7일간 실행 추이")}</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={data.trend}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -96,9 +96,9 @@ export default function SchedulerDashboardTab() {
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip contentStyle={{ fontSize: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="success" name={t("scheduler.todaySuccess")}
+                <Line type="monotone" dataKey="success" name={t("system.scheduler.todaySuccess", "성공")}
                   stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="fail" name={t("scheduler.todayFail")}
+                <Line type="monotone" dataKey="fail" name={t("system.scheduler.todayFail", "실패")}
                   stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -108,7 +108,7 @@ export default function SchedulerDashboardTab() {
         {/* 작업별 BarChart */}
         <Card>
           <CardContent>
-            <h3 className="text-sm font-semibold text-text mb-3">{t("scheduler.ratioChart")}</h3>
+            <h3 className="text-sm font-semibold text-text mb-3">{t("system.scheduler.ratioChart", "작업별 성공/실패")}</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={data.jobStats}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -116,9 +116,9 @@ export default function SchedulerDashboardTab() {
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip contentStyle={{ fontSize: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="success" name={t("scheduler.todaySuccess")}
+                <Bar dataKey="success" name={t("system.scheduler.todaySuccess", "성공")}
                   stackId="a" fill="#22c55e" />
-                <Bar dataKey="fail" name={t("scheduler.todayFail")}
+                <Bar dataKey="fail" name={t("system.scheduler.todayFail", "실패")}
                   stackId="a" fill="#ef4444" />
               </BarChart>
             </ResponsiveContainer>
@@ -129,14 +129,14 @@ export default function SchedulerDashboardTab() {
       {/* 최근 실패 테이블 */}
       <Card className="flex-shrink-0">
         <CardContent>
-          <h3 className="text-sm font-semibold text-text mb-3">{t("scheduler.recentFails")}</h3>
+          <h3 className="text-sm font-semibold text-text mb-3">{t("system.scheduler.recentFails", "최근 실패")}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-border text-text-muted">
-                  <th className="text-left px-3 py-2">{t("scheduler.jobCode")}</th>
-                  <th className="text-left px-3 py-2">{t("scheduler.startTime")}</th>
-                  <th className="text-left px-3 py-2">{t("scheduler.errorMsg")}</th>
+                  <th className="text-left px-3 py-2">{t("system.scheduler.jobCode", "작업코드")}</th>
+                  <th className="text-left px-3 py-2">{t("system.scheduler.startTime", "시작시각")}</th>
+                  <th className="text-left px-3 py-2">{t("system.scheduler.errorMsg", "에러상세")}</th>
                 </tr>
               </thead>
               <tbody>

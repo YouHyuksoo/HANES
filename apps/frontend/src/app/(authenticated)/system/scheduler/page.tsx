@@ -24,9 +24,9 @@ export default function SchedulerPage() {
   const [activeTab, setActiveTab] = useState<TabValue>("jobs");
 
   const tabs: { key: TabValue; label: string; icon: React.ReactNode }[] = [
-    { key: "jobs", label: t("scheduler.jobs"), icon: <Timer className="w-4 h-4" /> },
-    { key: "logs", label: t("scheduler.logs"), icon: <List className="w-4 h-4" /> },
-    { key: "dashboard", label: t("scheduler.dashboard"), icon: <BarChart3 className="w-4 h-4" /> },
+    { key: "jobs", label: t("system.scheduler.jobs", "작업 관리"), icon: <Timer className="w-4 h-4" /> },
+    { key: "logs", label: t("system.scheduler.logs", "실행 이력"), icon: <List className="w-4 h-4" /> },
+    { key: "dashboard", label: t("system.scheduler.dashboard", "대시보드"), icon: <BarChart3 className="w-4 h-4" /> },
   ];
 
   return (
@@ -35,7 +35,7 @@ export default function SchedulerPage() {
       <div className="flex-shrink-0">
         <h1 className="text-xl font-bold text-text flex items-center gap-2">
           <Timer className="w-7 h-7 text-primary" />
-          {t("scheduler.title")}
+          {t("system.scheduler.title", "스케줄러 관리")}
         </h1>
       </div>
 

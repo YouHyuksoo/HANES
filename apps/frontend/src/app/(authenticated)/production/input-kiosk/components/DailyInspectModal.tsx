@@ -231,13 +231,13 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
               </div>
             </div>
             <div className="text-right text-xs space-y-1">
-              <p><span className="opacity-70">조업일</span> <span className="font-mono">{completedInspect?.workDate || '-'}</span></p>
+              <p><span className="opacity-70">{t('kiosk.prep.workDate', '조업일')}</span> <span className="font-mono">{completedInspect?.workDate || '-'}</span></p>
               {completedInspect?.windowStart && completedInspect?.windowEnd && (
-                <p><span className="opacity-70">유효구간</span> <span className="font-mono">{completedInspect.windowStart} ~ {completedInspect.windowEnd}</span></p>
+                <p><span className="opacity-70">{t('kiosk.prep.validWindow', '유효구간')}</span> <span className="font-mono">{completedInspect.windowStart} ~ {completedInspect.windowEnd}</span></p>
               )}
-              <p><span className="opacity-70">점검자</span> <span className="font-semibold">{completedInspect?.inspectorName || '-'}</span></p>
+              <p><span className="opacity-70">{t('kiosk.prep.inspector', '점검자')}</span> <span className="font-semibold">{completedInspect?.inspectorName || '-'}</span></p>
               <p>
-                <span className="opacity-70">종합판정</span>{' '}
+                <span className="opacity-70">{t('kiosk.prep.overallResult', '종합 판정')}</span>{' '}
                 <span className={`font-bold ${completedInspect?.overallResult === 'FAIL' ? 'text-red-600 dark:text-red-400' : ''}`}>
                   {completedInspect?.overallResult === 'FAIL' ? 'NG' : 'OK'}
                 </span>
@@ -357,7 +357,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
             {/* 진행 현황 */}
             {items.length > 0 && (
               <div className="w-48 shrink-0 p-2.5 border border-border rounded-lg flex flex-col justify-center gap-1.5">
-                <p className="text-[11px] font-medium text-text-muted">{answeredCount} / {items.length} 항목</p>
+                <p className="text-[11px] font-medium text-text-muted">{t('kiosk.prep.answeredProgress', '{{answered}} / {{total}} 항목', { answered: answeredCount, total: items.length })}</p>
                 <div className="flex h-2 rounded-full overflow-hidden bg-border">
                   {okCount > 0 && (
                     <div className="bg-green-500 transition-all" style={{ width: `${(okCount / items.length) * 100}%` }} />
@@ -369,7 +369,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                 <div className="flex justify-between text-[11px]">
                   <span className="text-green-600 dark:text-green-400 font-medium">OK {okCount}</span>
                   <span className="text-red-600 dark:text-red-400 font-medium">NG {ngCount}</span>
-                  <span className="text-text-muted">미완료 {items.length - answeredCount}</span>
+                  <span className="text-text-muted">{t('kiosk.prep.pendingCount', '미완료 {{count}}', { count: items.length - answeredCount })}</span>
                 </div>
               </div>
             )}
@@ -515,8 +515,8 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                 }`}>
                   {anyFail ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                   {anyFail
-                    ? `${items.length}개 항목 중 ${ngCount}건 NG`
-                    : `전 ${items.length}개 항목 합격`}
+                    ? t('kiosk.prep.overallNgSummary', '{{total}}개 항목 중 {{ng}}건 NG', { total: items.length, ng: ngCount })
+                    : t('kiosk.prep.overallPassSummary', '전 {{total}}개 항목 합격', { total: items.length })}
                 </div>
               )}
 

@@ -1,11 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('./SidebarMenu.tsx', import.meta.url), 'utf8');
+const tabBarSource = readFileSync(new URL('./TabBar.tsx', import.meta.url), 'utf8');
+const tabContextMenuSource = readFileSync(new URL('./TabContextMenu.tsx', import.meta.url), 'utf8');
+const navigationUrl = new URL('./clientNavigation.ts', import.meta.url);
+const navigationSource = existsSync(navigationUrl) ? readFileSync(navigationUrl, 'utf8') : '';
 
-test('sidebar menu click explicitly navigates after opening the app tab', () => {
-  assert.match(source, /useRouter/);
-  assert.match(source, /const\s+router\s*=\s*useRouter\(\)/);
-  assert.match(source, /addTab\(\{[\s\S]*path:\s*menuItem\.path[\s\S]*\}\);[\s\S]*router\.push\(menuItem\.path\)/);
+test('layout tab navigation avoids Next Link/router route fetches', () => {
+  assert.doesNotMatch(source, /next\/link/);
+  assert.doesNotMatch(source, /useRouter/);
+  assert.doesNotMatch(source, /router\.push/);
+  assert.doesNotMatch(source, /<Link/);
+  assert.match(source, /navigateClientOnly\(menuItem\.path\)/);
+
+  assert.doesNotMatch(tabBarSource, /useRouter/);
+  assert.doesNotMatch(tabBarSource, /router\.push/);
+  assert.match(tabBarSource, /navigateClientOnly\(tab\.path\)/);
+  assert.match(tabBarSource, /navigateClientOnly\(next\.path\)/);
+
+  assert.doesNotMatch(tabContextMenuSource, /useRouter/);
+  assert.doesNotMatch(tabContextMenuSource, /router\.push/);
+  assert.match(tabContextMenuSource, /navigateClientOnly\(active\.path\)/);
+
+  assert.match(navigationSource, /window\.history\.pushState\(null,\s*["']["'],\s*target\)/);
+  assert.doesNotMatch(navigationSource, /next\/navigation/);
 });

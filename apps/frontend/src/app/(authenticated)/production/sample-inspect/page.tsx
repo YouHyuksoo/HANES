@@ -167,7 +167,7 @@ export default function SampleInspectPage() {
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="샘플검사"
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("production.sampleInspect.exportFileName", "샘플검사")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-0">

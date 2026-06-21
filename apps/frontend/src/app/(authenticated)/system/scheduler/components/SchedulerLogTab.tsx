@@ -98,7 +98,7 @@ export default function SchedulerLogTab() {
   const columns = useMemo<ColumnDef<SchedulerLog>[]>(() => [
     { accessorKey: "logId", header: "ID", size: 70 },
     {
-      accessorKey: "jobCode", header: t("scheduler.jobCode"), size: 150,
+      accessorKey: "jobCode", header: t("system.scheduler.jobCode", "작업코드"), size: 150,
       meta: { filterType: "text" as const },
       cell: ({ row }) => (
         <span className="text-primary font-medium">
@@ -106,23 +106,23 @@ export default function SchedulerLogTab() {
         </span>
       ),
     },
-    { accessorKey: "startTime", header: t("scheduler.startTime"), size: 160,
+    { accessorKey: "startTime", header: t("system.scheduler.startTime", "시작시각"), size: 160,
       cell: ({ getValue }) => fmtDt(getValue() as string) },
-    { accessorKey: "endTime", header: t("scheduler.endTime"), size: 160,
+    { accessorKey: "endTime", header: t("system.scheduler.endTime", "종료시각"), size: 160,
       cell: ({ getValue }) => fmtDt(getValue() as string | null) },
-    { accessorKey: "durationMs", header: t("scheduler.duration"), size: 100,
+    { accessorKey: "durationMs", header: t("system.scheduler.duration", "소요시간"), size: 100,
       cell: ({ getValue }) => (
         <span className="font-mono text-xs">{fmtDuration(getValue() as number | null)}</span>
       ) },
     { accessorKey: "status", header: t("common.status"), size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="SCHED_STATUS" code={getValue() as string} /> },
-    { accessorKey: "affectedRows", header: t("scheduler.affectedRows"), size: 90,
+    { accessorKey: "affectedRows", header: t("system.scheduler.affectedRows", "처리건수"), size: 90,
       cell: ({ getValue }) => {
         const v = getValue() as number | null;
         return v != null ? v.toLocaleString() : "-";
       } },
-    { accessorKey: "retryCount", header: t("scheduler.retryCount"), size: 80,
+    { accessorKey: "retryCount", header: t("system.scheduler.retryCount", "재시도"), size: 80,
       cell: ({ getValue }) => getValue() as number },
   ], [t]);
 
@@ -136,7 +136,7 @@ export default function SchedulerLogTab() {
               onChange={(e) => setStartDate(e.target.value)} />
             <Input label={t("common.to", "종료일")} type="date" value={endDate}
               onChange={(e) => setEndDate(e.target.value)} />
-            <Select label={t("scheduler.jobCode")} options={[{ value: "", label: t("common.all", "전체") }, ...jobOptions]}
+            <Select label={t("system.scheduler.jobCode", "작업코드")} options={[{ value: "", label: t("common.all", "전체") }, ...jobOptions]}
               value={jobFilter} onChange={setJobFilter} />
             <ComCodeSelect groupCode="SCHED_STATUS" value={statusFilter}
               onChange={setStatusFilter} labelPrefix={t("common.status")} />
@@ -154,7 +154,7 @@ export default function SchedulerLogTab() {
           <DataGrid
             data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport
-            exportFileName={t("scheduler.logs")}
+            exportFileName={t("system.scheduler.logs", "실행 이력")}
             getRowId={(row) => String((row as SchedulerLog).logId)}
             onRowClick={(row) => {
               const r = row as SchedulerLog;

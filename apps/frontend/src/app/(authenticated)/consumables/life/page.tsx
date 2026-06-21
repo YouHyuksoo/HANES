@@ -286,10 +286,10 @@ export default function ConsumableLifePage() {
                 <Input placeholder={t("consumables.life.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-3.5 h-3.5" />} fullWidth />
               </div>
               <div className="w-28 flex-shrink-0">
-                <ComCodeSelect groupCode="CONSUMABLE_LIFE_STATUS" value={statusFilter} onChange={setStatusFilter} labelPrefix="상태" fullWidth />
+                <ComCodeSelect groupCode="CONSUMABLE_LIFE_STATUS" value={statusFilter} onChange={setStatusFilter} labelPrefix={t("common.status", "상태")} fullWidth />
               </div>
               <div className="w-28 flex-shrink-0">
-                <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix="분류" fullWidth />
+                <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix={t("consumables.life.categoryLabel", "분류")} fullWidth />
               </div>
             </div>
           }

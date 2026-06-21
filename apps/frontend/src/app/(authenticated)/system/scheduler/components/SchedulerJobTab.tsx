@@ -96,8 +96,8 @@ export default function SchedulerJobTab() {
   const handleRunNow = useCallback(() => {
     if (!selectedRow) return;
     setConfirmAction({
-      title: t("scheduler.runNow"),
-      message: t("scheduler.confirmRun"),
+      title: t("system.scheduler.runNow", "즉시실행"),
+      message: t("system.scheduler.confirmRun", "이 작업을 즉시 실행하시겠습니까?"),
       action: async () => {
         await api.post(`/scheduler/jobs/${selectedRow.jobCode}/run`);
         fetchData();
@@ -110,7 +110,7 @@ export default function SchedulerJobTab() {
     if (!selectedRow) return;
     setConfirmAction({
       title: t("common.delete"),
-      message: t("scheduler.confirmDelete"),
+      message: t("system.scheduler.confirmDelete", "이 작업을 삭제하시겠습니까?"),
       action: async () => {
         await api.delete(`/scheduler/jobs/${selectedRow.jobCode}`);
         setSelectedRow(null);
@@ -128,7 +128,7 @@ export default function SchedulerJobTab() {
     return (
       <div className="flex gap-2 flex-wrap">
         <Button size="sm" variant="secondary" onClick={handleRunNow}>
-          <Play className="w-4 h-4 mr-1" />{t("scheduler.runNow")}
+          <Play className="w-4 h-4 mr-1" />{t("system.scheduler.runNow", "즉시실행")}
         </Button>
         <Button size="sm" variant="danger" onClick={handleDelete}>
           <Trash2 className="w-4 h-4 mr-1" />{t("common.delete")}
@@ -155,7 +155,7 @@ export default function SchedulerJobTab() {
             setSelectedRow(row.original);
             setConfirmAction({
               title: t("common.delete"),
-              message: t("scheduler.confirmDelete"),
+              message: t("system.scheduler.confirmDelete", "이 작업을 삭제하시겠습니까?"),
               action: async () => {
                 await api.delete(`/scheduler/jobs/${row.original.jobCode}`);
                 setSelectedRow(null);
@@ -169,27 +169,27 @@ export default function SchedulerJobTab() {
       ),
     }] : []),
     {
-      accessorKey: "jobCode", header: t("scheduler.jobCode"), size: 150,
+      accessorKey: "jobCode", header: t("system.scheduler.jobCode", "작업코드"), size: 150,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (
         <span className="text-primary font-medium">{getValue() as string}</span>
       ),
     },
-    { accessorKey: "jobName", header: t("scheduler.jobName"), size: 180,
+    { accessorKey: "jobName", header: t("system.scheduler.jobName", "작업명"), size: 180,
       meta: { filterType: "text" as const } },
-    { accessorKey: "jobGroup", header: t("scheduler.jobGroup"), size: 120,
+    { accessorKey: "jobGroup", header: t("system.scheduler.jobGroup", "작업그룹"), size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="SCHED_GROUP" code={getValue() as string} /> },
-    { accessorKey: "execType", header: t("scheduler.execType"), size: 120,
+    { accessorKey: "execType", header: t("system.scheduler.execType", "실행유형"), size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="SCHED_EXEC_TYPE" code={getValue() as string} /> },
-    { accessorKey: "cronExpr", header: t("scheduler.cronExpr"), size: 140,
+    { accessorKey: "cronExpr", header: t("system.scheduler.cronExpr", "크론표현식"), size: 140,
       cell: ({ getValue }) => (
         <code className="font-mono text-xs bg-surface px-1.5 py-0.5 rounded">
           {getValue() as string}
         </code>
       ) },
-    { id: "cronDesc", header: t("scheduler.cronDesc"), size: 160,
+    { id: "cronDesc", header: t("system.scheduler.cronDesc", "실행주기"), size: 160,
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         try {
@@ -197,7 +197,7 @@ export default function SchedulerJobTab() {
         } catch { return <span className="text-xs text-text-muted">-</span>; }
       } },
     {
-      accessorKey: "isActive", header: t("scheduler.isActive"), size: 80,
+      accessorKey: "isActive", header: t("system.scheduler.isActive", "활성"), size: 80,
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <button
@@ -214,9 +214,9 @@ export default function SchedulerJobTab() {
         </button>
       ),
     },
-    { accessorKey: "lastRunAt", header: t("scheduler.lastRunAt"), size: 160,
+    { accessorKey: "lastRunAt", header: t("system.scheduler.lastRunAt", "마지막실행"), size: 160,
       cell: ({ getValue }) => fmtDt(getValue() as string | null) },
-    { accessorKey: "nextRunAt", header: t("scheduler.nextRunAt"), size: 160,
+    { accessorKey: "nextRunAt", header: t("system.scheduler.nextRunAt", "다음실행"), size: 160,
       cell: ({ getValue }) => fmtDt(getValue() as string | null) },
     { accessorKey: "lastStatus", header: t("common.status"), size: 100,
       meta: { filterType: "multi" as const },
@@ -230,7 +230,7 @@ export default function SchedulerJobTab() {
     <div className="flex-1 flex flex-col overflow-hidden gap-4">
       {/* 상단 헤더: 좌 타이틀 / 우 등록+새로고침 (표준 패턴) */}
       <div className="flex justify-between items-center flex-shrink-0">
-        <p className="text-sm text-text-muted">{t("scheduler.jobs")}</p>
+        <p className="text-sm text-text-muted">{t("system.scheduler.jobs", "작업 관리")}</p>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
@@ -263,7 +263,7 @@ export default function SchedulerJobTab() {
           <DataGrid
             data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport
-            exportFileName={t("scheduler.jobs")}
+            exportFileName={t("system.scheduler.jobs", "작업 관리")}
             getRowId={(row) => (row as SchedulerJob).jobCode}
             selectedRowId={selectedRow?.jobCode}
             onRowClick={(row) => {
@@ -279,9 +279,9 @@ export default function SchedulerJobTab() {
                     leftIcon={<SearchIcon className="w-4 h-4" />} fullWidth />
                 </div>
                 <ComCodeSelect groupCode="SCHED_GROUP" value={groupFilter}
-                  onChange={setGroupFilter} labelPrefix={t("scheduler.jobGroup")} />
+                  onChange={setGroupFilter} labelPrefix={t("system.scheduler.jobGroup", "작업그룹")} />
                 <ComCodeSelect groupCode="SCHED_EXEC_TYPE" value={typeFilter}
-                  onChange={setTypeFilter} labelPrefix={t("scheduler.execType")} />
+                  onChange={setTypeFilter} labelPrefix={t("system.scheduler.execType", "실행유형")} />
               </div>
             }
           

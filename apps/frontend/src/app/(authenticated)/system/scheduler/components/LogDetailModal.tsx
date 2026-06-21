@@ -46,12 +46,12 @@ export default function LogDetailModal({ log, onClose }: Props) {
         {/* 작업 정보 */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <span className="text-text-muted">{t("scheduler.jobCode")}</span>
+            <span className="text-text-muted">{t("system.scheduler.jobCode", "작업코드")}</span>
             <p className="font-medium text-text">{log.jobCode}</p>
           </div>
           {log.jobName && (
             <div>
-              <span className="text-text-muted">{t("scheduler.jobName")}</span>
+              <span className="text-text-muted">{t("system.scheduler.jobName", "작업명")}</span>
               <p className="font-medium text-text">{log.jobName}</p>
             </div>
           )}
@@ -68,15 +68,15 @@ export default function LogDetailModal({ log, onClose }: Props) {
         {/* 시간 */}
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <span className="text-text-muted">{t("scheduler.startTime")}</span>
+            <span className="text-text-muted">{t("system.scheduler.startTime", "시작시각")}</span>
             <p className="text-text">{fmtDt(log.startTime)}</p>
           </div>
           <div>
-            <span className="text-text-muted">{t("scheduler.endTime")}</span>
+            <span className="text-text-muted">{t("system.scheduler.endTime", "종료시각")}</span>
             <p className="text-text">{fmtDt(log.endTime)}</p>
           </div>
           <div>
-            <span className="text-text-muted">{t("scheduler.duration")}</span>
+            <span className="text-text-muted">{t("system.scheduler.duration", "소요시간")}</span>
             <p className="text-text font-mono">{fmtDuration(log.durationMs)}</p>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function LogDetailModal({ log, onClose }: Props) {
         {/* 결과 메시지 */}
         {log.resultMsg && (
           <div>
-            <span className="text-text-muted">{t("scheduler.resultMsg")}</span>
+            <span className="text-text-muted">{t("system.scheduler.resultMsg", "결과메시지")}</span>
             <p className="mt-1 text-text bg-surface rounded p-2">{log.resultMsg}</p>
           </div>
         )}
@@ -92,7 +92,7 @@ export default function LogDetailModal({ log, onClose }: Props) {
         {/* 에러 메시지 */}
         {log.errorMsg && (
           <div>
-            <span className="text-text-muted">{t("scheduler.errorMsg")}</span>
+            <span className="text-text-muted">{t("system.scheduler.errorMsg", "에러상세")}</span>
             <pre className="mt-1 max-h-48 overflow-y-auto text-[11px] font-mono whitespace-pre-wrap break-all bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded p-3">
               {log.errorMsg}
             </pre>

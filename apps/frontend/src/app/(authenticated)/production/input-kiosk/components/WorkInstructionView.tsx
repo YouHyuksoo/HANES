@@ -74,10 +74,10 @@ export default function WorkInstructionView() {
   const canGoNext = activeIdx < instructions.length - 1;
   const prevDisabledReason = canGoPrev
     ? ""
-    : t("common.disabled", { defaultValue: "이전 페이지가 없습니다" });
+    : t("kiosk.instruction.noPrevPage", "이전 페이지가 없습니다");
   const nextDisabledReason = canGoNext
     ? ""
-    : t("common.disabled", { defaultValue: "다음 페이지가 없습니다" });
+    : t("kiosk.instruction.noNextPage", "다음 페이지가 없습니다");
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -90,7 +90,7 @@ export default function WorkInstructionView() {
             <button
               onClick={() => setActiveIdx(i => Math.max(0, i - 1))}
               disabled={activeIdx === 0}
-              title={prevDisabledReason || "이전"}
+              title={prevDisabledReason || t('kiosk.instruction.prevPage', '이전')}
               className="p-0.5 text-text-muted hover:text-text disabled:opacity-30">
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -99,7 +99,7 @@ export default function WorkInstructionView() {
             </span>
             <button onClick={() => setActiveIdx(i => Math.min(instructions.length - 1, i + 1))}
               disabled={activeIdx === instructions.length - 1}
-              title={nextDisabledReason || "다음"}
+              title={nextDisabledReason || t('kiosk.instruction.nextPage', '다음')}
               className="p-0.5 text-text-muted hover:text-text disabled:opacity-30">
               <ChevronRight className="w-4 h-4" />
             </button>

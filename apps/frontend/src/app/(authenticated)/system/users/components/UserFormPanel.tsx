@@ -66,15 +66,15 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const roleOptions = useMemo(() => [
-    { value: "ADMIN", label: t("system.users.roleAdmin") },
-    { value: "MANAGER", label: t("system.users.roleManager") },
-    { value: "OPERATOR", label: t("system.users.roleOperator") },
-    { value: "VIEWER", label: t("system.users.roleViewer") },
+    { value: "ADMIN", label: t("system.users.roleAdmin", "관리자") },
+    { value: "MANAGER", label: t("system.users.roleManager", "매니저") },
+    { value: "OPERATOR", label: t("system.users.roleOperator", "작업자") },
+    { value: "VIEWER", label: t("system.users.roleViewer", "조회자") },
   ], [t]);
 
   const statusOptions = useMemo(() => [
-    { value: "ACTIVE", label: t("system.users.statusActive") },
-    { value: "INACTIVE", label: t("system.users.statusInactive") },
+    { value: "ACTIVE", label: t("system.users.statusActive", "활성") },
+    { value: "INACTIVE", label: t("system.users.statusInactive", "비활성") },
   ], [t]);
 
   useEffect(() => {
@@ -107,11 +107,11 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setFormError(t("system.users.photoTypeError"));
+      setFormError(t("system.users.photoTypeError", "이미지 파일만 업로드 가능합니다."));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setFormError(t("system.users.photoSizeError"));
+      setFormError(t("system.users.photoSizeError", "파일 크기는 5MB 이하여야 합니다."));
       return;
     }
     const reader = new FileReader();
@@ -184,7 +184,7 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
       onClose();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setFormError(error.response?.data?.message || t("common.saveFailed"));
+      setFormError(error.response?.data?.message || t("common.saveFailed", "저장에 실패했습니다."));
     } finally {
       setSaving(false);
     }
@@ -196,12 +196,12 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
         {/* 헤더 */}
         <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
           <h2 className="text-sm font-bold text-text">
-            {isEdit ? t("system.users.editUser") : t("system.users.addUser")}
+            {isEdit ? t("system.users.editUser", "사용자 수정") : t("system.users.addUser", "사용자 추가")}
           </h2>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+            <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel", "취소")}</Button>
             <Button size="sm" onClick={handleSubmit} disabled={saving || (!isEdit && !formEmail.trim())}>
-              {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+              {saving ? t("common.saving", "저장 중...") : (isEdit ? t("common.edit", "수정") : t("common.add", "추가"))}
             </Button>
           </div>
         </div>
@@ -233,19 +233,19 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
             <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
               <Camera className="w-3 h-3 mr-1" />
-              {previewUrl ? t("system.users.changePhoto") : t("system.users.addPhoto")}
+              {previewUrl ? t("system.users.changePhoto", "사진 변경") : t("system.users.addPhoto", "사진 등록")}
             </Button>
-            <p className="text-[10px] text-text-muted">{t("system.users.photoHint")}</p>
+            <p className="text-[10px] text-text-muted">{t("system.users.photoHint", "JPG, PNG (최대 5MB)")}</p>
           </div>
 
           {/* 계정정보 */}
           <div>
             <h3 className="text-xs font-semibold text-text-muted mb-2">{t("system.users.sectionAccount", "계정정보")}</h3>
             <div className="space-y-3">
-              <Input label={t("system.users.email")} type="email" value={formEmail}
+              <Input label={t("system.users.email", "이메일")} type="email" value={formEmail}
                 onChange={(e) => setFormEmail(e.target.value)} disabled={isEdit} fullWidth required />
-              <Input label={isEdit ? t("system.users.passwordEdit") : t("system.users.password")} type="password"
-                placeholder={isEdit ? t("system.users.passwordEditPlaceholder") : t("auth.passwordPlaceholder")}
+              <Input label={isEdit ? t("system.users.passwordEdit", "비밀번호 (변경 시에만 입력)") : t("system.users.password", "비밀번호")} type="password"
+                placeholder={isEdit ? t("system.users.passwordEditPlaceholder", "변경하지 않으면 비워두세요") : t("auth.passwordPlaceholder", "4자 이상")}
                 value={formPassword} onChange={(e) => setFormPassword(e.target.value)} fullWidth required={!isEdit} />
             </div>
           </div>
@@ -254,13 +254,13 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
           <div>
             <h3 className="text-xs font-semibold text-text-muted mb-2">{t("system.users.sectionBasic", "기본정보")}</h3>
             <div className="grid grid-cols-2 gap-3">
-              <Input label={t("system.users.name")} value={formName}
+              <Input label={t("system.users.name", "이름")} value={formName}
                 onChange={(e) => setFormName(e.target.value)} fullWidth />
-              <Input label={t("system.users.empNo")} value={formEmpNo}
+              <Input label={t("system.users.empNo", "사원번호")} value={formEmpNo}
                 onChange={(e) => setFormEmpNo(e.target.value)} fullWidth />
-              <DepartmentSelect label={t("system.users.dept")} value={formDept}
+              <DepartmentSelect label={t("system.users.dept", "부서")} value={formDept}
                 onChange={(v) => setFormDept(v)} fullWidth />
-              <Select label={t("system.users.role")} value={formRole}
+              <Select label={t("system.users.role", "역할")} value={formRole}
                 onChange={(v) => setFormRole(v)} options={roleOptions} fullWidth />
             </div>
           </div>
@@ -270,13 +270,13 @@ export default function UserFormPanel({ editingUser, onClose, onSave, animate = 
             <h3 className="text-xs font-semibold text-text-muted mb-2">{t("system.users.sectionExtra", "추가설정")}</h3>
             <div className="grid grid-cols-2 gap-3">
               {isEdit && (
-                <Select label={t("system.users.status")} value={formStatus}
+                <Select label={t("system.users.status", "상태")} value={formStatus}
                   onChange={(v) => setFormStatus(v)} options={statusOptions} fullWidth />
               )}
-              <Select label={t("system.users.pdaRole")} value={formPdaRoleCode}
+              <Select label={t("system.users.pdaRole", "PDA 역할")} value={formPdaRoleCode}
                 onChange={(v) => setFormPdaRoleCode(v)}
                 options={[
-                  { value: "", label: t("system.users.pdaRoleNone") },
+                  { value: "", label: t("system.users.pdaRoleNone", "미지정") },
                   ...pdaRoleOptions.map((r) => ({ value: r.code, label: r.name })),
                 ]}
                 fullWidth />

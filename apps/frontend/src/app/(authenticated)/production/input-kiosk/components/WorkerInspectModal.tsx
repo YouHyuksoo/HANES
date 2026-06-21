@@ -268,7 +268,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
               <div className="flex justify-between text-[11px]">
                 <span className="text-green-600 dark:text-green-400 font-medium">OK {okCount}</span>
                 <span className="text-red-600 dark:text-red-400 font-medium">NG {ngCount}</span>
-                <span className="text-text-muted">미완료 {pendingCount}</span>
+                <span className="text-text-muted">{t('kiosk.prep.pendingCount', '미완료 {{count}}', { count: pendingCount })}</span>
               </div>
             </div>
           )}

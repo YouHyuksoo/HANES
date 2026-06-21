@@ -144,7 +144,7 @@ export default function PoStatusPage() {
         const s = getValue() as string;
         const isReceived = s === "RECEIVED" || row.original.receiveRate >= 100;
         const statusClass = isReceived ? RECEIVED_STATUS_CLASS : poStatusMap[s]?.attr1 || "";
-        const statusLabel = isReceived ? poStatusMap.RECEIVED?.codeName || "입고완료" : poStatusMap[s]?.codeName || s;
+        const statusLabel = isReceived ? poStatusMap.RECEIVED?.codeName || t("material.poStatus.stats.received", "입고완료") : poStatusMap[s]?.codeName || s;
         return (
           <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusClass}`}>
             {statusLabel}
@@ -290,7 +290,7 @@ export default function PoStatusPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-text-muted">
                   <Package className="w-12 h-12 mb-3 opacity-40" />
-                  <p className="text-sm">PO를 선택하면 품목 입고현황이 표시됩니다</p>
+                  <p className="text-sm">{t("material.poStatus.selectPoHint", "PO를 선택하면 품목 입고현황이 표시됩니다")}</p>
                 </div>
               )}
             </CardContent>

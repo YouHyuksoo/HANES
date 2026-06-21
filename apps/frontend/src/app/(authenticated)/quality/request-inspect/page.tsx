@@ -107,7 +107,11 @@ export default function RequestInspectPage() {
       size: 60,
       cell: ({ getValue }) => {
         const v = getValue<string>();
-        return v === "FIRST" ? "초물" : v === "MID" ? "중물" : "종물";
+        return v === "FIRST"
+          ? t("requestInspect.timingFirst", "초물")
+          : v === "MID"
+            ? t("requestInspect.timingMid", "중물")
+            : t("requestInspect.timingLast", "종물");
       },
     },
     {
@@ -187,7 +191,11 @@ export default function RequestInspectPage() {
                       <div>
                         <span className="text-text-muted">{t("requestInspect.timing", "시점")}: </span>
                         <span className="text-text dark:text-gray-200">
-                          {selected.timing === "FIRST" ? "초물" : selected.timing === "MID" ? "중물" : "종물"}
+                          {selected.timing === "FIRST"
+                            ? t("requestInspect.timingFirst", "초물")
+                            : selected.timing === "MID"
+                              ? t("requestInspect.timingMid", "중물")
+                              : t("requestInspect.timingLast", "종물")}
                         </span>
                       </div>
                     </div>

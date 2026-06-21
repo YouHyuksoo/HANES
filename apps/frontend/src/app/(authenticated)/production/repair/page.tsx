@@ -178,7 +178,11 @@ export default function RepairPage() {
             IN_REPAIR: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
             COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
           };
-          const labelMap: Record<string, string> = { RECEIVED: "입고", IN_REPAIR: "수리중", COMPLETED: "완료" };
+          const labelMap: Record<string, string> = {
+            RECEIVED: t("production.repair.statusReceived", "입고"),
+            IN_REPAIR: t("production.repair.statusInRepair", "수리중"),
+            COMPLETED: t("production.repair.statusCompleted", "완료"),
+          };
           return (
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colorMap[v] ?? ""}`}>
               {labelMap[v] ?? v}

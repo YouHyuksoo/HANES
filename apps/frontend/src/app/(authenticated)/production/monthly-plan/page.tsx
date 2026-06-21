@@ -277,7 +277,7 @@ export default function MonthlyPlanPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         variant="danger"
-        message={`'${deleteTarget?.planNo || ""}'을(를) 삭제하시겠습니까?`}
+        message={t("monthlyPlan.deleteConfirm", "'{{planNo}}'을(를) 삭제하시겠습니까?", { planNo: deleteTarget?.planNo || "" })}
       />
 
       {/* ERP 인터페이스 — 기능 미구현(준비중) 안내 */}

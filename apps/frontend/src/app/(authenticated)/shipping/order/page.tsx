@@ -406,7 +406,7 @@ ORDER BY so.CREATED_AT DESC`}/>
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.shipOrderNo || ""}'을(를) 삭제하시겠습니까?`}
+        message={`'${deleteTarget?.shipOrderNo || ""}'${t("common.deleteConfirmSuffix", "을(를) 삭제하시겠습니까?")}`}
       />
       <PartSearchModal
         isOpen={isPartModalOpen}

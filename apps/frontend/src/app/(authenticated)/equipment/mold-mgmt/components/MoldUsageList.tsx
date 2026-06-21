@@ -72,7 +72,7 @@ export default function MoldUsageList({ mold }: Props) {
 
   const addDisabledReason = useMemo(() => {
     if (saving) return t("common.saving");
-    if (!form.shotCount) return `${t("equipment.mold.shotCount")}은(는) 필수입니다`;
+    if (!form.shotCount) return t("equipment.mold.fieldRequired", "{{field}}은(는) 필수입니다", { field: t("equipment.mold.shotCount") });
     return "";
   }, [saving, form.shotCount, t]);
 
