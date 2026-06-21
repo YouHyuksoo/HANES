@@ -22,6 +22,13 @@
       ]
     },
     {
+      "key": "production",
+      "title": "생산관리",
+      "items": [
+        { "menuCode": "PROD_INPUT_KIOSK", "title": "실적입력(키오스크)", "path": "/production/input-kiosk" }
+      ]
+    },
+    {
       "key": "quality",
       "title": "품질관리",
       "items": [
