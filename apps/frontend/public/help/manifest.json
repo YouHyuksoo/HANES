@@ -2,6 +2,14 @@
   "version": 1,
   "categories": [
     {
+      "key": "master",
+      "title": "기준정보",
+      "items": [
+        { "menuCode": "MST_PART", "title": "품목마스터", "path": "/master/part" },
+        { "menuCode": "MST_BOM", "title": "BOM관리", "path": "/master/bom" }
+      ]
+    },
+    {
       "key": "quality",
       "title": "품질관리",
       "items": [
