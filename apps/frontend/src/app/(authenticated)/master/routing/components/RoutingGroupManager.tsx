@@ -407,7 +407,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
 
   return (
     <div className="grid grid-cols-12 gap-4 h-full min-h-0">
-      <Card padding="none" className="col-span-5 flex flex-col min-h-0 min-w-0 rounded-lg">
+      <Card padding="none" className="col-span-4 flex flex-col min-h-0 min-w-0 rounded-lg">
         <CardContent className="flex flex-col min-h-0 h-full p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.routingGroupList")}</div>
@@ -441,7 +441,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
         </CardContent>
       </Card>
 
-      <div className="col-span-7 grid grid-rows-[minmax(0,1fr)_420px] gap-3 min-h-0 min-w-0 overflow-hidden">
+      <div className="col-span-8 grid grid-rows-[minmax(0,1fr)_260px] gap-3 min-h-0 min-w-0 overflow-hidden">
         <Card padding="none" className="flex flex-col min-h-0 min-w-0 rounded-lg">
           <CardContent className="flex-1 min-h-0 p-3 overflow-auto">
             {selectedGroup ? (
@@ -478,16 +478,16 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
 
         <Card padding="none" className="flex flex-col min-h-0 rounded-lg">
           <CardContent className="flex flex-col min-h-0 h-full p-0">
-            <div className="flex items-center justify-between border-b border-border dark:border-gray-700 px-4 py-2">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.processSequenceTitle")}</div>
+            <div className="flex items-center justify-between gap-2 border-b border-border dark:border-gray-700 px-4 py-2">
+              <div className="flex min-w-0 items-baseline gap-2">
+                <div className="shrink-0 text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.processSequenceTitle")}</div>
                 {selectedBomItem && (
-                  <div className="text-xs text-text-muted truncate">
-                    {selectedBomItem.breadcrumb} {routingInfo ? `- ${routingInfo.routingName}` : `- ${t("master.routing.routingNotRegistered", "라우팅 미등록")}`}
-                  </div>
+                  <span className="truncate text-xs text-text-muted">
+                    {routingInfo ? routingInfo.routingName : t("master.routing.routingNotRegistered", "라우팅 미등록")}
+                  </span>
                 )}
               </div>
-              <Button size="sm" onClick={openNewProcess} disabled={!selectedBomItem || !["FINISHED", "SEMI_PRODUCT", "FG", "WIP"].includes(selectedBomItem.itemType || "")}><Plus className="w-4 h-4 mr-1" />{t("master.routing.addProcess")}</Button>
+              <Button className="shrink-0" size="sm" onClick={openNewProcess} disabled={!selectedBomItem || !["FINISHED", "SEMI_PRODUCT", "FG", "WIP"].includes(selectedBomItem.itemType || "")}><Plus className="w-4 h-4 mr-1" />{t("master.routing.addProcess")}</Button>
             </div>
             <div className="flex-1 overflow-y-auto min-h-0">
           {loadingProcesses ? (
