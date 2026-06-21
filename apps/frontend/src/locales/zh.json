@@ -145,6 +145,16 @@
     "priority": "优先级",
     "searchPlaceholder": "搜索..."
   },
+  "help": {
+    "title": "帮助",
+    "tabUser": "用户",
+    "tabOperator": "运营",
+    "notReady": "该画面的帮助尚未准备。",
+    "viewAll": "查看全部帮助",
+    "indexSubtitle": "全部画面使用方法与运营指南",
+    "searchPlaceholder": "搜索帮助",
+    "selectItem": "请在左侧选择帮助项目。"
+  },
   "menu": {
     "dashboard": "仪表盘",
     "workflow": "工作流程",
@@ -311,6 +321,7 @@
     "production.wipMaterialTrans": "工序物料收发",
     "production.repair": "修理管理",
     "inspection": "检验管理",
+    "inspection.structure": "结构检查",
     "inspection.result": "通电检查管理",
     "inspection.terminalResult": "端子检查",
     "inspection.history": "通电检查记录",

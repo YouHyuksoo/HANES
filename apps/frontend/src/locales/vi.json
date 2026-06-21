@@ -145,6 +145,16 @@
     "priority": "Độ ưu tiên",
     "searchPlaceholder": "Tìm kiếm..."
   },
+  "help": {
+    "title": "Trợ giúp",
+    "tabUser": "Người dùng",
+    "tabOperator": "Vận hành",
+    "notReady": "Trợ giúp cho màn hình này chưa sẵn sàng.",
+    "viewAll": "Xem toàn bộ trợ giúp",
+    "indexSubtitle": "Hướng dẫn sử dụng và vận hành toàn bộ màn hình",
+    "searchPlaceholder": "Tìm trợ giúp",
+    "selectItem": "Hãy chọn mục trợ giúp ở bên trái."
+  },
   "menu": {
     "dashboard": "Bảng điều khiển",
     "workflow": "Quy trình",
@@ -311,6 +321,7 @@
     "production.wipMaterialTrans": "Xuất nhập vật tư công đoạn",
     "production.repair": "Quản lý sửa chữa",
     "inspection": "Quản lý kiểm tra",
+    "inspection.structure": "Kiểm tra cấu trúc",
     "inspection.result": "Quản lý KT thông điện",
     "inspection.terminalResult": "Kiểm tra terminal",
     "inspection.history": "Lịch sử KT thông điện",

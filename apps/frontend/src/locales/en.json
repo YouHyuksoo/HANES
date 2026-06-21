@@ -145,6 +145,16 @@
     "priority": "Priority",
     "searchPlaceholder": "Search..."
   },
+  "help": {
+    "title": "Help",
+    "tabUser": "User",
+    "tabOperator": "Operator",
+    "notReady": "Help for this screen is not ready yet.",
+    "viewAll": "View all help",
+    "indexSubtitle": "All screen guides and operations manual",
+    "searchPlaceholder": "Search help",
+    "selectItem": "Select a help item on the left."
+  },
   "menu": {
     "dashboard": "Dashboard",
     "workflow": "Workflow",
@@ -311,6 +321,7 @@
     "production.wipMaterialTrans": "WIP Material Transactions",
     "production.repair": "Repair Management",
     "inspection": "Inspection Management",
+    "inspection.structure": "Structure Inspect",
     "inspection.result": "Continuity Inspect",
     "inspection.terminalResult": "Terminal Inspect",
     "inspection.history": "Inspect History",
