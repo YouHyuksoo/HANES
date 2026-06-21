@@ -73,7 +73,7 @@ apps/frontend/public/help/
 
 ### 3.1 문서 frontmatter (AI 활용 메타데이터, 정본)
 
-각 `.md`는 상단에 YAML frontmatter를 둔다. 본문 렌더 시에는 `remark-frontmatter`로 frontmatter를 숨기고, 메타는 `gray-matter`로 파싱해 검색·AI 인덱싱·요약 표시에 사용한다.
+각 `.md`는 상단에 YAML frontmatter를 둔다. `help.ts`의 경량 파서 `parseHelpDoc(raw)`가 frontmatter를 분리해 `{ meta, body }`를 반환한다. 본문(`body`)만 `MarkdownRenderer`에 넘겨 렌더하고, `meta`는 검색·AI 인덱싱·요약 표시에 쓴다. 외부 의존성(gray-matter 등)은 브라우저 번들 이슈(Buffer 의존)가 있어 쓰지 않고, 우리가 정한 단순 스키마(스칼라 + 인라인 배열)만 지원하는 자체 파서를 둔다.
 
 ```markdown
 ---
@@ -197,7 +197,7 @@ frontmatter가 정본이므로, 향후 AI 도움말 어시스턴트는 다음을
 
 ## 8. 이번 1차 구현 범위
 
-- **틀 구축**: 의존성 설치(react-markdown/remark-gfm/rehype-raw), `MarkdownRenderer`, `useHelpDoc`, `useHelpManifest`, `HelpButton`(Header 연동), `HelpPanel`, `/help` 라우트, `manifest.json` 골격, 콘텐츠 템플릿.
+- **틀 구축**: 의존성 설치(react-markdown/remark-gfm/rehype-raw), `parseHelpDoc`(자체 frontmatter 파서), `MarkdownRenderer`(본문 렌더), `useHelpDoc`(meta+body 반환), `useHelpManifest`, `HelpButton`(Header 연동), `HelpPanel`, `/help` 라우트, `manifest.json` 골격, frontmatter 포함 콘텐츠 템플릿.
 - **예시 콘텐츠**: `QC_AQL`의 사용자/운영자 .md 1세트만 시작점으로 작성(틀 검증용).
 - **i18n**: 도움말 버튼 라벨/탭/패널 UI 문자열은 ko/en/zh/vi 4개 언어 추가(콘텐츠 본문은 ko).
 - **나머지 화면 콘텐츠**: 이후 사용자가 요청할 때 화면별로 하나씩 작성.

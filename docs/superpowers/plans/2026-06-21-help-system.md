@@ -139,8 +139,10 @@ git commit -m "feat(help): add react-markdown deps and MarkdownRenderer"
   - `type HelpManifestItem = { menuCode: string; title: string; path?: string }`
   - `type HelpManifestCategory = { key: string; title: string; items: HelpManifestItem[] }`
   - `type HelpManifest = { version: number; categories: HelpManifestCategory[] }`
+  - `type HelpMeta = { menuCode?: string; audience?: HelpTab; title?: string; summary?: string; tags?: string[]; keywords?: string[]; related?: string[] }`
   - `helpDocPath(tab: HelpTab, menuCode: string): string` → `/help/${tab}/${menuCode}.md`
   - `filterManifest(manifest: HelpManifest, query: string): HelpManifestCategory[]` → 제목 부분일치(대소문자 무시)로 카테고리/항목 필터, 빈 query면 원본 반환.
+  - `parseHelpDoc(raw: string): { meta: HelpMeta; body: string }` → 자체 frontmatter 파서. 최상단 `---\n...\n---\n` 블록을 분리해 메타(스칼라 + `[a, b]` 인라인 배열)와 본문을 반환. frontmatter 없으면 `{ meta: {}, body: raw }`.
 
 - [ ] **Step 1: 구조 테스트 작성 (실패할 테스트)**
 
@@ -157,7 +159,7 @@ const source = readFileSync(join(__dirname, "help.ts"), "utf8");
 
 test("help.ts exposes HelpTab/HelpManifest types", () => {
   assert.match(source, /export type HelpTab = "user" \| "operator"/);
-  assert.match(source, /export type HelpManifest = \{/);
+  assert.match(source, /export (?:type|interface) HelpManifest\b/);
 });
 
 test("helpDocPath builds /help/{tab}/{menuCode}.md", () => {
@@ -168,6 +170,11 @@ test("helpDocPath builds /help/{tab}/{menuCode}.md", () => {
 test("filterManifest filters by title case-insensitively", () => {
   assert.match(source, /export function filterManifest\(/);
   assert.match(source, /toLowerCase\(\)/);
+});
+
+test("parseHelpDoc splits frontmatter and body", () => {
+  assert.match(source, /export (?:type|interface) HelpMeta\b/);
+  assert.match(source, /export function parseHelpDoc\(raw: string\)/);
 });
 ```
 
@@ -217,7 +224,47 @@ export function filterManifest(manifest: HelpManifest, query: string): HelpManif
     }))
     .filter((cat) => cat.items.length > 0 || cat.title.toLowerCase().includes(q));
 }
+
+export interface HelpMeta {
+  menuCode?: string;
+  audience?: HelpTab;
+  title?: string;
+  summary?: string;
+  tags?: string[];
+  keywords?: string[];
+  related?: string[];
+}
+
+/**
+ * 경량 frontmatter 파서 — 최상단 `---\n...\n---\n` 블록을 분리.
+ * 외부 의존성 없음. 스칼라 값과 `[a, b, c]` 인라인 배열만 지원.
+ * frontmatter가 없으면 { meta: {}, body: raw } 반환.
+ */
+export function parseHelpDoc(raw: string): { meta: HelpMeta; body: string } {
+  const match = /^﻿?---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
+  if (!match) return { meta: {}, body: raw };
+  const [, fm, body] = match;
+  const meta: Record<string, unknown> = {};
+  for (const line of fm.split(/\r?\n/)) {
+    const m = /^([A-Za-z][\w]*)\s*:\s*(.*)$/.exec(line.trim());
+    if (!m) continue;
+    const [, key, rawVal] = m;
+    const val = rawVal.trim();
+    if (val.startsWith("[") && val.endsWith("]")) {
+      meta[key] = val
+        .slice(1, -1)
+        .split(",")
+        .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+        .filter(Boolean);
+    } else {
+      meta[key] = val.replace(/^["']|["']$/g, "");
+    }
+  }
+  return { meta: meta as HelpMeta, body: body ?? "" };
+}
 ```
+
+추가 구조 테스트(같은 파일에 이어서): 인라인 배열 파싱과 본문 분리를 동작으로 검증하려면 `node --test` 안에서 직접 import가 어려우므로(.ts), 동작 검증은 Task 5(useHelpDoc)와 통합 검증(Task 10)에서 확인한다. 구조 테스트는 위 시그니처 존재로 충분하다.
 
 - [ ] **Step 4: 테스트 실행 → 통과 확인**
 
@@ -269,6 +316,16 @@ Create `apps/frontend/public/help/manifest.json`:
 
 Create `apps/frontend/public/help/_templates/user.md`:
 ```markdown
+---
+menuCode:
+audience: user
+title:
+summary:
+tags: []
+keywords: []
+related: []
+---
+
 # {화면명}
 
 ## 화면 목적
@@ -297,6 +354,16 @@ Create `apps/frontend/public/help/_templates/user.md`:
 
 Create `apps/frontend/public/help/_templates/operator.md`:
 ```markdown
+---
+menuCode:
+audience: operator
+title:
+summary:
+tags: []
+keywords: []
+related: []
+---
+
 # {화면명} — 운영 가이드
 
 ## 시스템 목적·역할
@@ -324,6 +391,16 @@ Create `apps/frontend/public/help/_templates/operator.md`:
 
 Create `apps/frontend/public/help/user/QC_AQL.md`:
 ```markdown
+---
+menuCode: QC_AQL
+audience: user
+title: AQL 기준관리
+summary: 수입검사(IQC)에서 LOT 합·불을 판정하는 AQL 정책·기준을 등록·관리하는 화면
+tags: [품질, IQC, AQL, 수입검사]
+keywords: [합격품질한계, Major, Minor, 검사수준, 샘플링, Ac, Re, LOT]
+related: [MST_PART]
+---
+
 # AQL 기준관리
 
 ## 화면 목적
@@ -351,6 +428,16 @@ Create `apps/frontend/public/help/user/QC_AQL.md`:
 
 Create `apps/frontend/public/help/operator/QC_AQL.md`:
 ```markdown
+---
+menuCode: QC_AQL
+audience: operator
+title: AQL 기준관리 — 운영 가이드
+summary: AQL 정책/기준 운영 절차와 품목 연계, 트러블슈팅
+tags: [품질, IQC, AQL, 운영, 설정]
+keywords: [IQC_AQL_POLICIES, AQL_STANDARDS, 품목연계, 검사수준, 트러블슈팅]
+related: [MST_PART]
+---
+
 # AQL 기준관리 — 운영 가이드
 
 ## 시스템 목적·역할
@@ -441,9 +528,9 @@ git commit -m "feat(help): add helpStore for panel state"
 - Create: `apps/frontend/src/hooks/useHelpManifest.ts`
 
 **Interfaces:**
-- Consumes: `helpDocPath`, `HelpManifest`, `HelpTab` (Task 2).
+- Consumes: `helpDocPath`, `parseHelpDoc`, `HelpMeta`, `HelpManifest`, `HelpTab` (Task 2).
 - Produces:
-  - `useHelpDoc(menuCode: string | undefined, tab: HelpTab): { content: string | null; loading: boolean; notFound: boolean }`
+  - `useHelpDoc(menuCode: string | undefined, tab: HelpTab): { meta: HelpMeta | null; content: string | null; loading: boolean; notFound: boolean }` — `content`는 frontmatter가 제거된 본문(body), `meta`는 파싱된 frontmatter.
   - `useHelpManifest(): { manifest: HelpManifest | null; loading: boolean }`
 
 - [ ] **Step 1: useHelpDoc 작성**
@@ -453,17 +540,19 @@ Create `apps/frontend/src/hooks/useHelpDoc.ts`:
 "use client";
 
 import { useEffect, useState } from "react";
-import { helpDocPath, type HelpTab } from "@/lib/help";
+import { helpDocPath, parseHelpDoc, type HelpMeta, type HelpTab } from "@/lib/help";
 
-/** 도움말 .md를 fetch. menuCode 없거나 404면 notFound=true */
+/** 도움말 .md를 fetch + frontmatter 분리. menuCode 없거나 404면 notFound=true */
 export function useHelpDoc(menuCode: string | undefined, tab: HelpTab) {
   const [content, setContent] = useState<string | null>(null);
+  const [meta, setMeta] = useState<HelpMeta | null>(null);
   const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!menuCode) {
       setContent(null);
+      setMeta(null);
       setNotFound(true);
       setLoading(false);
       return;
@@ -480,11 +569,14 @@ export function useHelpDoc(menuCode: string | undefined, tab: HelpTab) {
         if (cancelled) return;
         // public 404가 HTML로 200 반환될 수 있어 방어
         if (text.trimStart().startsWith("<")) throw new Error("not found");
-        setContent(text);
+        const { meta: m, body } = parseHelpDoc(text);
+        setMeta(m);
+        setContent(body);
       })
       .catch(() => {
         if (cancelled) return;
         setContent(null);
+        setMeta(null);
         setNotFound(true);
       })
       .finally(() => {
@@ -495,7 +587,7 @@ export function useHelpDoc(menuCode: string | undefined, tab: HelpTab) {
     };
   }, [menuCode, tab]);
 
-  return { content, loading, notFound };
+  return { meta, content, loading, notFound };
 }
 ```
 
