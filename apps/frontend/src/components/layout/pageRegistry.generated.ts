@@ -537,16 +537,6 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
-    case "/production/input-machine": {
-      const mod = await import("./page-registries/production__input-machine.generated");
-      component = mod.getPageComponent();
-      break;
-    }
-    case "/production/input-manual": {
-      const mod = await import("./page-registries/production__input-manual.generated");
-      component = mod.getPageComponent();
-      break;
-    }
     case "/production/monthly-plan": {
       const mod = await import("./page-registries/production__monthly-plan.generated");
       component = mod.getPageComponent();

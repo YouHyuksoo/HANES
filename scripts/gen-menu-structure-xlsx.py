@@ -94,8 +94,6 @@ menus = [
         ("PROD_ORDER", "작업지시관리", "/production/order"),
         ("PROD_RESULT", "생산실적조회", "/production/result"),
         ("PROD_PROGRESS", "작업지시현황조회", "/production/progress"),
-        ("PROD_INPUT_MANUAL", "실적입력(수작업)", "/production/input-manual"),
-        ("PROD_INPUT_MACHINE", "실적입력(가공)", "/production/input-machine"),
         ("PROD_INPUT_INSPECT", "실적입력(단순검사)", "/production/input-inspect"),
         ("PROD_INPUT_EQUIP", "실적입력(검사장비)", "/production/input-equip"),
         ("PROD_RESULT_SUMMARY", "작업실적통합조회", "/production/result-summary"),
