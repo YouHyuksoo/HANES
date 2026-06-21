@@ -323,7 +323,7 @@
     "production.repair": "수리관리",
     "inspection": "검사관리",
     "inspection.structure": "구조검사",
-    "inspection.result": "통전검사관리",
+    "inspection.result": "통전검사",
     "inspection.terminalResult": "단자검사",
     "inspection.history": "검사이력",
     "inspection.protocol": "검사기프로토콜",

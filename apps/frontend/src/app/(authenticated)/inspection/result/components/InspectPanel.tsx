@@ -2,14 +2,13 @@
 
 /**
  * @file inspection/result/components/InspectPanel.tsx
- * @description 통전검사 우측 패널 - 검사 정보, 통계, PASS/FAIL 버튼, FG 라벨 이력
+ * @description 통전검사 우측 패널 - PASS/FAIL 버튼, FG 라벨 이력
  *
  * 초보자 가이드:
- * 1. 선택된 작업지시의 상세 정보 + 검사 통계를 상단에 표시
- * 2. PASS/FAIL 큰 버튼으로 1개씩 검사 등록
- * 3. PASS -> 즉시 API 호출 -> FG_BARCODE 생성, FAIL -> FailModal 열림
- * 4. 하단 DataGrid에 FG 바코드 발행 이력 표시
- * 5. FG_BARCODE_ISSUE_TIMING 설정에 따라 모드 분기:
+ * 1. PASS/FAIL 큰 버튼으로 1개씩 검사 등록
+ * 2. PASS -> 즉시 API 호출 -> FG_BARCODE 생성, FAIL -> FailModal 열림
+ * 3. 하단 DataGrid에 FG 바코드 발행 이력 표시
+ * 4. FG_BARCODE_ISSUE_TIMING 설정에 따라 모드 분기:
  *    - ON_INSPECT: 기존 방식 (검사 시 바코드 자동 생성)
  *    - ON_PRODUCTION / PRE_ISSUE: 바코드 스캔 후 검사 등록
  */
@@ -18,14 +17,14 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import toast from "react-hot-toast";
 import {
-  CheckCircle, XCircle, RefreshCw, Zap, ClipboardList, BarChart3, Package,
+  CheckCircle, XCircle, RefreshCw, Zap,
   ScanBarcode, AlertTriangle, Printer, Ban, RotateCcw,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
-import type { JobOrderRow, FgLabelRow, InspectStats } from "../types";
+import type { JobOrderRow, FgLabelRow } from "../types";
 import FailModal from "./FailModal";
 
 interface Props {
@@ -39,8 +38,6 @@ interface Props {
   unmountedConsumCount?: number;
 }
 
-const EMPTY_STATS: InspectStats = { total: 0, passed: 0, failed: 0, passRate: 0, planQty: 0, labelCount: 0 };
-
 export default function InspectPanel({
   order,
   inspectType = "CONTINUITY",
@@ -49,7 +46,6 @@ export default function InspectPanel({
   unmountedConsumCount = 0,
 }: Props) {
   const { t } = useTranslation();
-  const [stats, setStats] = useState<InspectStats>(EMPTY_STATS);
   const [labels, setLabels] = useState<FgLabelRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [inspecting, setInspecting] = useState(false);
@@ -67,15 +63,11 @@ export default function InspectPanel({
   const scanInputRef = useRef<HTMLInputElement>(null);
   const circuitInputRef = useRef<HTMLInputElement>(null);
 
-  /** 통계 + 라벨 목록 새로고침 */
+  /** 라벨 목록 새로고침 */
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsRes, labelsRes] = await Promise.all([
-        api.get(`/quality/continuity-inspect/stats/${order.orderNo}`, { params: { inspectType } }),
-        api.get(`/quality/continuity-inspect/fg-labels/${order.orderNo}`, { params: { inspectType } }),
-      ]);
-      setStats(statsRes.data?.data ?? EMPTY_STATS);
+      const labelsRes = await api.get(`/quality/continuity-inspect/fg-labels/${order.orderNo}`, { params: { inspectType } });
       setLabels(labelsRes.data?.data ?? []);
     } catch { /* 에러 무시 */ }
     finally { setLoading(false); }
@@ -272,27 +264,6 @@ export default function InspectPanel({
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-auto">
-      {/* 작업지시 정보 */}
-      <Card padding="sm"><CardContent>
-        <div className="flex items-center gap-2 mb-2">
-          <ClipboardList className="w-4 h-4 text-primary" />
-          <span className="font-semibold text-text">{order.orderNo}</span>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-sm text-text-muted">
-          <span>{order.itemCode}</span>
-          <span>{order.itemName ?? "-"}</span>
-          <span>{t("inspection.result.planQty")}: {order.planQty}</span>
-        </div>
-      </CardContent></Card>
-
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label={t("inspection.result.planQty")} value={order.planQty} icon={Package} color="blue" />
-        <StatCard label={t("inspection.result.inspected")} value={stats.total} icon={BarChart3} color="green" />
-        <StatCard label={t("inspection.result.pass")} value={stats.passed} icon={CheckCircle} color="green" />
-        <StatCard label={t("inspection.result.fail")} value={stats.failed} icon={XCircle} color="red" />
-      </div>
-
       {/* 바코드 스캔 입력 (ON_PRODUCTION / PRE_ISSUE 모드) */}
       {isScanMode && (
         <Card padding="sm" className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
