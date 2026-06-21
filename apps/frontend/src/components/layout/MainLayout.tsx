@@ -19,6 +19,7 @@ import TabKeepAlive from "./TabKeepAlive";
 import ConnectionCheckOverlay from "@/app/login/components/ConnectionCheckOverlay";
 import { api } from "@/services/api";
 import ImprovementFAB from "@/components/improvement/ImprovementFAB";
+import HelpPanel from "@/components/help/HelpPanel";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -107,6 +108,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       )}
 
       <ImprovementFAB />
+      <HelpPanel />
     </div>
   );
 }

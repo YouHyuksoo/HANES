@@ -23,6 +23,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LanguageSwitcher from "./LanguageSwitcher";
 import SerialIndicator from "./SerialIndicator";
+import HelpButton from "@/components/help/HelpButton";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -187,6 +188,9 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
 
         {/* 언어 전환 */}
         <LanguageSwitcher />
+
+        {/* 도움말 */}
+        <HelpButton />
 
         {/* 현재 회사 + 사업장 표시 */}
         {selectedCompany && (
