@@ -3927,7 +3927,13 @@
       "clickToSelectLine": "라인을 선택하세요",
       "clickToSelectProcess": "공정을 선택하세요",
       "clickToSelectEquip": "설비를 선택하세요",
-      "pleaseSelectEquipFirst": "라인, 공정, 설비를 먼저 선택해주세요"
+      "pleaseSelectEquipFirst": "라인, 공정, 설비를 먼저 선택해주세요",
+      "consumable": {
+        "0": "커팅블레이드 #A1",
+        "1": "프레스금형 #B2",
+        "2": "용접팁 #C3",
+        "3": "윤활유 (500ml)"
+      }
     },
     "inputInspect": {
       "title": "실적입력 (단순검사)",
@@ -4404,7 +4410,26 @@
       "major": "Major",
       "majorAql": "Major AQL",
       "minor": "Minor",
-      "minorAql": "Minor AQL"
+      "minorAql": "Minor AQL",
+      "fieldHelp": {
+        "policyCode": "품목마스터(ITEM_MASTERS.IQC_AQL_POLICY_CODE)가 참조하는 AQL 정책 코드입니다. 품목에는 검사수준·Major AQL·Minor AQL 값을 직접 저장하지 않고, 이 정책 코드만 저장해 검사 기준 조합을 일관되게 적용합니다.",
+        "policyName": "현장에서 정책을 식별하기 위한 표시명입니다. 고객사 기준, 차종/제품군 기준, 검사강도 기준처럼 운영자가 정책의 적용 대상을 이해할 수 있게 작성합니다.",
+        "policyInspectionLevel": "이 정책에 적용할 검사수준입니다. 품목별 개별 입력값이 아니라 정책 단위 기준이며, Major/Minor AQL 기준과 함께 IQC 샘플링 판정의 기본 조합을 구성합니다.",
+        "policyMajorAqlCode": "Major 등급 불량 판정에 사용할 AQL 기준 코드입니다. 선택값은 활성 AQL_STANDARDS.AQL_CODE이며, 해당 기준의 LOT 구간별 sampleSize/Ac/Re 규칙이 Major 판정에 적용됩니다.",
+        "policyMinorAqlCode": "Minor 등급 불량 판정에 사용할 AQL 기준 코드입니다. 선택값은 활성 AQL_STANDARDS.AQL_CODE이며, Major와 별도로 Minor 불량수에 대한 sampleSize/Ac/Re 규칙을 적용합니다.",
+        "policyUseYn": "AQL 정책의 사용 여부입니다. N이면 신규 품목 연결 선택 목록에서 제외됩니다. 이미 품목에 배정된 정책은 이 화면에서 사용중지할 수 없도록 차단합니다.",
+        "aqlCode": "AQL 샘플링 기준 자체를 식별하는 코드입니다. 품목이 직접 참조하는 값이 아니라, AQL 정책(IQC_AQL_POLICIES.MAJOR_AQL_CODE 또는 IQC_AQL_POLICIES.MINOR_AQL_CODE)에서 Major/Minor 판정 기준으로 참조합니다.",
+        "aqlName": "AQL 기준의 명칭입니다. 검사원·관리자가 목록에서 기준을 식별할 때 표시되는 이름입니다 (예: 일반검사 AQL 1.0).",
+        "inspectionLevel": "ISO 2859-1 검사수준입니다. 통상검사수준 I·II·III(II가 표준)과 특별검사수준 S-1~S-4가 있으며, 로트 크기와 함께 시료 코드문자(추출할 샘플 수량)를 결정합니다.",
+        "aqlValue": "합격품질수준(Acceptable Quality Limit) 값입니다. 로트를 합격으로 간주할 수 있는 최대 부적합 비율(%) 또는 100단위당 부적합수를 의미하며, 값이 작을수록 엄격한 기준입니다.",
+        "useYn": "이 AQL 기준의 사용 여부입니다. N이면 AQL 정책의 Major/Minor 기준 선택 목록에서 제외됩니다 (기존 이력은 그대로 유지).",
+        "remark": "AQL 기준에 대한 참고 메모입니다. 적용 근거, 고객 요구사항, 개정 이력 등을 자유롭게 기록합니다.",
+        "lotQtyFrom": "이 샘플링 규칙이 적용되는 로트(검사 단위) 수량 구간의 시작값입니다. 입고·검사 로트 수량이 From~To 범위에 들면 해당 행의 시료수·판정기준이 적용됩니다.",
+        "lotQtyTo": "샘플링 규칙이 적용되는 로트 수량 구간의 종료값입니다. 구간끼리 서로 겹칠 수 없으며, From보다 작을 수 없습니다.",
+        "sampleSize": "해당 로트 수량 구간에서 무작위로 추출해 검사할 시료(샘플) 개수입니다. ISO 2859-1 샘플 코드문자에 대응합니다.",
+        "acceptQty": "합격판정개수(Ac)입니다. 추출한 시료 중 발견된 부적합 수가 이 값 이하이면 로트를 합격 처리합니다.",
+        "rejectQty": "불합격판정개수(Re)입니다. 추출한 시료 중 발견된 부적합 수가 이 값 이상이면 로트를 불합격 처리합니다. 항상 Ac보다 커야 합니다 (보통 Ac+1)."
+      }
     },
     "defect": {
       "title": "불량관리",

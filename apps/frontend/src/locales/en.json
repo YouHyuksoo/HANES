@@ -3513,7 +3513,13 @@
       "clickToSelectLine": "Select a line",
       "clickToSelectProcess": "Select a process",
       "clickToSelectEquip": "Select equipment",
-      "pleaseSelectEquipFirst": "Please select line, process, and equipment first"
+      "pleaseSelectEquipFirst": "Please select line, process, and equipment first",
+      "consumable": {
+        "0": "Cutting Blade #A1",
+        "1": "Press Mold #B2",
+        "2": "Welding Tip #C3",
+        "3": "Lubricant (500ml)"
+      }
     },
     "inputInspect": {
       "title": "Input (Simple Inspect)",
@@ -3994,7 +4000,26 @@
       "major": "Major",
       "majorAql": "Major AQL",
       "minor": "Minor",
-      "minorAql": "Minor AQL"
+      "minorAql": "Minor AQL",
+      "fieldHelp": {
+        "policyCode": "AQL policy code referenced by ITEM_MASTERS.IQC_AQL_POLICY_CODE. Items store only this policy code, not individual inspection level or Major/Minor AQL values, ensuring consistent inspection criteria combinations.",
+        "policyName": "Display name for identifying the policy on the shop floor. Write it so operators can understand the policy scope, e.g. by customer, vehicle/model group, or inspection severity.",
+        "policyInspectionLevel": "Inspection level applied to this policy. This is a policy-level criterion, not per-item input, and forms the basis of IQC sampling judgment together with Major/Minor AQL criteria.",
+        "policyMajorAqlCode": "AQL standard code for Major defect judgment. Selectable from active AQL_STANDARDS.AQL_CODE. The selected standard provides LOT range-based sampleSize/Ac/Re rules for Major defect judgment.",
+        "policyMinorAqlCode": "AQL standard code for Minor defect judgment. Selectable from active AQL_STANDARDS.AQL_CODE. Applies sampleSize/Ac/Re rules for Minor defect counts separately from Major.",
+        "policyUseYn": "Whether this AQL policy is active. If N, excluded from new item assignment selection. Policies already assigned to items cannot be deactivated from this screen.",
+        "aqlCode": "Code identifying the AQL sampling standard itself. Not directly referenced by items, but referenced by AQL policies (IQC_AQL_POLICIES.MAJOR_AQL_CODE or MINOR_AQL_CODE) as the basis for Major/Minor judgment.",
+        "aqlName": "Name of the AQL standard. Displayed for inspectors and managers to identify the standard in lists (e.g. Normal Inspection AQL 1.0).",
+        "inspectionLevel": "ISO 2859-1 inspection level. General levels I, II, III (II is standard) and special levels S-1 through S-4. Together with lot size, determines the sample size code letter (quantity to sample).",
+        "aqlValue": "Acceptable Quality Limit value. The maximum nonconforming percentage (%) or nonconformities per 100 units for considering a lot acceptable. Smaller values indicate stricter criteria.",
+        "useYn": "Whether this AQL standard is active. If N, excluded from Major/Minor criterion selection in AQL policies (existing history remains unchanged).",
+        "remark": "Reference note for the AQL standard. Freely record the basis of application, customer requirements, revision history, etc.",
+        "lotQtyFrom": "Starting value of the lot quantity range to which this sampling rule applies. When the receipt/inspection lot quantity falls within the From~To range, the sample size and judgment criteria of this row apply.",
+        "lotQtyTo": "Ending value of the lot quantity range to which the sampling rule applies. Ranges cannot overlap and cannot be smaller than From.",
+        "sampleSize": "Number of samples to randomly extract and inspect for the given lot quantity range. Corresponds to the ISO 2859-1 sample size code letter.",
+        "acceptQty": "Acceptance number (Ac). If the number of nonconformities found in the samples is equal to or less than this value, the lot is accepted.",
+        "rejectQty": "Rejection number (Re). If the number of nonconformities found in the samples is equal to or greater than this value, the lot is rejected. Must always be greater than Ac (usually Ac+1)."
+      }
     },
     "defect": {
       "title": "Defect Management",

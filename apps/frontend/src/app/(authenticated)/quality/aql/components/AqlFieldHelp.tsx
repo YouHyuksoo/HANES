@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { HelpTooltip as SharedHelpTooltip } from "@/components/shared";
 
 /**
@@ -106,8 +107,9 @@ export type AqlFieldKey = keyof typeof AQL_FIELD_HELP;
  * AQL 필드 키로 도움말 메타데이터를 조회해 공통 HelpTooltip을 렌더한다.
  */
 export function HelpTooltip({ field }: { field: AqlFieldKey }) {
+  const { t } = useTranslation();
   const { db, description } = AQL_FIELD_HELP[field];
-  return <SharedHelpTooltip description={description} db={db} dataField={field} />;
+  return <SharedHelpTooltip description={t(`quality.aql.fieldHelp.${field}`, description)} db={db} dataField={field} />;
 }
 
 /**

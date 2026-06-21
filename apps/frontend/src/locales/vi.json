@@ -3513,7 +3513,13 @@
       "clickToSelectLine": "Chọn dây chuyền",
       "clickToSelectProcess": "Chọn công đoạn",
       "clickToSelectEquip": "Chọn thiết bị",
-      "pleaseSelectEquipFirst": "Vui lòng chọn dây chuyền, công đoạn và thiết bị trước"
+      "pleaseSelectEquipFirst": "Vui lòng chọn dây chuyền, công đoạn và thiết bị trước",
+      "consumable": {
+        "0": "Lưỡi cắt #A1",
+        "1": "Khuôn dập #B2",
+        "2": "Mỏ hàn #C3",
+        "3": "Dầu bôi trơn (500ml)"
+      }
     },
     "inputInspect": {
       "title": "Nhập thực tích (Kiểm tra đơn giản)",
@@ -3994,7 +4000,26 @@
       "major": "Major",
       "majorAql": "Major AQL",
       "minor": "Minor",
-      "minorAql": "Minor AQL"
+      "minorAql": "Minor AQL",
+      "fieldHelp": {
+        "policyCode": "Mã chính sách AQL được tham chiếu bởi ITEM_MASTERS.IQC_AQL_POLICY_CODE. Vật tư chỉ lưu mã chính sách này, không lưu riêng mức kiểm tra hay giá trị AQL Major/Minor, đảm bảo áp dụng tiêu chuẩn kiểm tra nhất quán.",
+        "policyName": "Tên hiển thị để nhận dạng chính sách tại hiện trường. Viết sao cho người vận hành hiểu được phạm vi áp dụng, ví dụ theo khách hàng, nhóm xe/sản phẩm, hoặc mức độ kiểm tra.",
+        "policyInspectionLevel": "Mức kiểm tra áp dụng cho chính sách này. Đây là tiêu chí cấp chính sách, không phải nhập riêng cho từng vật tư, cùng với tiêu chuẩn AQL Major/Minor tạo thành tổ hợp cơ bản cho phán quyết lấy mẫu IQC.",
+        "policyMajorAqlCode": "Mã tiêu chuẩn AQL dùng cho phán quyết khuyết tật Major. Có thể chọn từ AQL_STANDARDS.AQL_CODE đang hoạt động. Quy tắc sampleSize/Ac/Re theo khoảng LOT của tiêu chuẩn đó được áp dụng cho phán quyết Major.",
+        "policyMinorAqlCode": "Mã tiêu chuẩn AQL dùng cho phán quyết khuyết tật Minor. Có thể chọn từ AQL_STANDARDS.AQL_CODE đang hoạt động. Áp dụng quy tắc sampleSize/Ac/Re riêng cho số khuyết tật Minor, tách biệt với Major.",
+        "policyUseYn": "Trạng thái sử dụng của chính sách AQL. Nếu N, bị loại khỏi danh sách chọn khi gán cho vật tư mới. Chính sách đã gán cho vật tư không thể vô hiệu hóa từ màn hình này.",
+        "aqlCode": "Mã nhận dạng tiêu chuẩn lấy mẫu AQL. Không phải giá trị vật tư tham chiếu trực tiếp, mà được tham chiếu bởi chính sách AQL (IQC_AQL_POLICIES.MAJOR_AQL_CODE hoặc MINOR_AQL_CODE) làm tiêu chuẩn phán quyết Major/Minor.",
+        "aqlName": "Tên của tiêu chuẩn AQL. Hiển thị cho kiểm tra viên và quản lý nhận dạng tiêu chuẩn trong danh sách (vd: Kiểm tra thường AQL 1.0).",
+        "inspectionLevel": "Mức kiểm tra ISO 2859-1. Mức thông thường I·II·III (II là tiêu chuẩn) và mức đặc biệt S-1~S-4. Cùng với cỡ lô, quyết định mã ký tự cỡ mẫu (số lượng mẫu cần lấy).",
+        "aqlValue": "Giá trị Giới hạn Chất lượng Chấp nhận (AQL). Tỷ lệ không phù hợp tối đa (%) hoặc số không phù hợp trên 100 đơn vị để lô được coi là đạt. Giá trị càng nhỏ, tiêu chuẩn càng nghiêm ngặt.",
+        "useYn": "Trạng thái sử dụng của tiêu chuẩn AQL này. Nếu N, bị loại khỏi danh sách chọn tiêu chí Major/Minor trong chính sách AQL (lịch sử hiện có được giữ nguyên).",
+        "remark": "Ghi chú tham khảo cho tiêu chuẩn AQL. Tự do ghi lại căn cứ áp dụng, yêu cầu khách hàng, lịch sử sửa đổi, v.v.",
+        "lotQtyFrom": "Giá trị bắt đầu của khoảng số lượng lô mà quy tắc lấy mẫu này áp dụng. Khi số lượng lô nhập/kiểm tra nằm trong khoảng From~To, cỡ mẫu và tiêu chí phán quyết của hàng này được áp dụng.",
+        "lotQtyTo": "Giá trị kết thúc của khoảng số lượng lô mà quy tắc lấy mẫu áp dụng. Các khoảng không được chồng lấn và không được nhỏ hơn From.",
+        "sampleSize": "Số lượng mẫu được lấy ngẫu nhiên để kiểm tra trong khoảng số lượng lô tương ứng. Tương ứng với mã ký tự cỡ mẫu ISO 2859-1.",
+        "acceptQty": "Số chấp nhận (Ac). Nếu số không phù hợp tìm thấy trong mẫu nhỏ hơn hoặc bằng giá trị này, lô được chấp nhận.",
+        "rejectQty": "Số bác bỏ (Re). Nếu số không phù hợp tìm thấy trong mẫu lớn hơn hoặc bằng giá trị này, lô bị bác bỏ. Phải luôn lớn hơn Ac (thường là Ac+1)."
+      }
     },
     "defect": {
       "title": "Quản lý lỗi",

@@ -435,9 +435,10 @@ export default function InputMachinePage() {
           <div className="p-3 bg-background rounded-lg">
             <div className="flex items-center gap-2 mb-2"><Settings className="w-5 h-5 text-blue-500" /><span className="font-semibold text-text">{t('production.inputMachine.consumableCheck')}</span></div>
             <div className="grid grid-cols-2 gap-2">
-              {consumableParts.map(p => (
+              {consumableParts.map((p, i) => (
                 <label key={p} className="flex items-center gap-2 cursor-pointer text-sm text-text">
-                  <input type="checkbox" checked={checkedParts.includes(p)} onChange={() => togglePart(p)} className="rounded" />{p}
+                  <input type="checkbox" checked={checkedParts.includes(p)} onChange={() => togglePart(p)} className="rounded" />
+                  {t(`production.inputMachine.consumable.${i}`, p)}
                 </label>
               ))}
             </div>

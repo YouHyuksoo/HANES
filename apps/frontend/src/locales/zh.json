@@ -3513,7 +3513,13 @@
       "clickToSelectLine": "请选择产线",
       "clickToSelectProcess": "请选择工序",
       "clickToSelectEquip": "请选择设备",
-      "pleaseSelectEquipFirst": "请先选择产线、工序和设备"
+      "pleaseSelectEquipFirst": "请先选择产线、工序和设备",
+      "consumable": {
+        "0": "切割刀片 #A1",
+        "1": "冲压模具 #B2",
+        "2": "焊接嘴 #C3",
+        "3": "润滑油 (500ml)"
+      }
     },
     "inputInspect": {
       "title": "实绩录入 (简单检查)",
@@ -3994,7 +4000,26 @@
       "major": "主要",
       "majorAql": "主要 AQL",
       "minor": "次要",
-      "minorAql": "次要 AQL"
+      "minorAql": "次要 AQL",
+      "fieldHelp": {
+        "policyCode": "被物料主数据(ITEM_MASTERS.IQC_AQL_POLICY_CODE)引用的AQL策略代码。物料不直接存储检验水平/Major AQL/Minor AQL值，仅存储此策略代码以确保检验标准组合的一致性。",
+        "policyName": "现场识别策略的显示名称。应使操作员能够理解策略的应用范围，例如按客户、车型/产品组或检验严格度命名。",
+        "policyInspectionLevel": "应用于此策略的检验水平。这是策略级标准，不是单独的物料输入值，与Major/Minor AQL标准共同构成IQC抽样判断的基本组合。",
+        "policyMajorAqlCode": "用于Major等级不良判定的AQL标准代码。可选项为激活的AQL_STANDARDS.AQL_CODE，所选标准的LOT区间sampleSize/Ac/Re规则将应用于Major判定。",
+        "policyMinorAqlCode": "用于Minor等级不良判定的AQL标准代码。可选项为激活的AQL_STANDARDS.AQL_CODE，与Major分开，对Minor不良数应用sampleSize/Ac/Re规则。",
+        "policyUseYn": "AQL策略的使用与否。如果为N，则从新物料连接选择列表中排除。已分配给物料的策略在此画面中无法停用。",
+        "aqlCode": "标识AQL抽样标准本身的代码。不是物料直接引用的值，而是由AQL策略(IQC_AQL_POLICIES.MAJOR_AQL_CODE或MINOR_AQL_CODE)作为Major/Minor判定标准引用。",
+        "aqlName": "AQL标准的名称。检验员和管理员在列表中识别标准时显示的名称（例如：普通检验AQL 1.0）。",
+        "inspectionLevel": "ISO 2859-1检验水平。普通检验水平I·II·III(II为标准)和特殊检验水平S-1~S-4，与批量一起决定样本大小代码字母(抽取样本数量)。",
+        "aqlValue": "合格质量水平(AQL)值。可视为批次合格的最大不合格百分比(%)或每百单位不合格数。值越小，标准越严格。",
+        "useYn": "此AQL标准的使用与否。如果为N，则从AQL策略的Major/Minor标准选择列表中排除（现有历史记录保持不变）。",
+        "remark": "AQL标准的备注。可自由记录适用依据、客户要求、修订历史等。",
+        "lotQtyFrom": "此抽样规则适用的批量范围起始值。当入库/检验批量处于From~To范围内时，应用该行的样本数和判定标准。",
+        "lotQtyTo": "抽样规则适用的批量范围结束值。区间之间不能重叠，不能小于From值。",
+        "sampleSize": "在相应批量范围内随机抽取检验的样本数量。对应于ISO 2859-1样本大小代码字母。",
+        "acceptQty": "合格判定数(Ac)。抽取的样本中发现的不合格数小于或等于此值时，判定批次合格。",
+        "rejectQty": "不合格判定数(Re)。抽取的样本中发现的不合格数大于或等于此值时，判定批次不合格。必须始终大于Ac（通常为Ac+1）。"
+      }
     },
     "defect": {
       "title": "不良管理",
