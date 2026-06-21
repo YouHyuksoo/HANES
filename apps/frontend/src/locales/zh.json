@@ -319,6 +319,7 @@
     "production.wipMaterialTrans": "工序物料收发",
     "production.repair": "修理管理",
     "inspection": "检验管理",
+    "inspection.integrated": "综合检查",
     "inspection.structure": "结构检查",
     "inspection.result": "通电检查管理",
     "inspection.terminalResult": "端子检查",
@@ -3854,6 +3855,23 @@
       "commLog": "通信日志",
       "commLogSubtitle": "最近接收/发送数据",
       "realtime": "实时"
+    },
+    "integrated": {
+      "title": "综合检查",
+      "description": "电路/泄漏/耐压/结构综合检查",
+      "searchPlaceholder": "搜索工单号/物料...",
+      "selectOrder": "请选择要检查的工单",
+      "continuity": "通电检查",
+      "leak": "泄漏检查",
+      "hipot": "耐压检查",
+      "structure": "结构检查",
+      "overallPass": "综合合格",
+      "overallFail": "综合不合格",
+      "overallPassDesc": "所有检查步骤均合格。",
+      "overallFailDesc": "一个或多个检查步骤不合格。",
+      "submit": "提交综合检查",
+      "submitted": "综合检查已完成。",
+      "allRequired": "请选择所有检查步骤的判定"
     },
     "history": {
       "scopeFull": "全数",

@@ -319,6 +319,7 @@
     "production.wipMaterialTrans": "WIP Material Transactions",
     "production.repair": "Repair Management",
     "inspection": "Inspection Management",
+    "inspection.integrated": "Integrated Inspection",
     "inspection.structure": "Structure Inspect",
     "inspection.result": "Continuity Inspect",
     "inspection.terminalResult": "Terminal Inspect",
@@ -3854,6 +3855,23 @@
       "commLog": "Comm Log",
       "commLogSubtitle": "Recent received/sent data",
       "realtime": "Realtime"
+    },
+    "integrated": {
+      "title": "Integrated Inspection",
+      "description": "Combined continuity/leak/hipot/structure inspection",
+      "searchPlaceholder": "Search work order no./item...",
+      "selectOrder": "Select a work order to inspect",
+      "continuity": "Continuity Inspect",
+      "leak": "Leak Inspect",
+      "hipot": "Hipot Inspect",
+      "structure": "Structure Inspect",
+      "overallPass": "Overall Pass",
+      "overallFail": "Overall Fail",
+      "overallPassDesc": "All inspection steps passed.",
+      "overallFailDesc": "One or more inspection steps failed.",
+      "submit": "Submit Integrated Inspection",
+      "submitted": "Integrated inspection completed.",
+      "allRequired": "Select a result for every inspection step"
     },
     "history": {
       "scopeFull": "Full",

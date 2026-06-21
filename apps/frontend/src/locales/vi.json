@@ -319,6 +319,7 @@
     "production.wipMaterialTrans": "Xuất nhập vật tư công đoạn",
     "production.repair": "Quản lý sửa chữa",
     "inspection": "Quản lý kiểm tra",
+    "inspection.integrated": "Kiểm tra tích hợp",
     "inspection.structure": "Kiểm tra cấu trúc",
     "inspection.result": "Quản lý KT thông điện",
     "inspection.terminalResult": "Kiểm tra terminal",
@@ -3854,6 +3855,23 @@
       "commLog": "Nhật ký truyền thông",
       "commLogSubtitle": "Dữ liệu nhận/gửi gần đây",
       "realtime": "Thời gian thực"
+    },
+    "integrated": {
+      "title": "Kiểm tra tích hợp",
+      "description": "Kiểm tra tích hợp thông điện/rò rỉ/cao áp/cấu trúc",
+      "searchPlaceholder": "Tìm số lệnh SX/vật tư...",
+      "selectOrder": "Chọn lệnh sản xuất cần kiểm tra",
+      "continuity": "Kiểm tra thông điện",
+      "leak": "Kiểm tra rò rỉ",
+      "hipot": "Kiểm tra cao áp",
+      "structure": "Kiểm tra cấu trúc",
+      "overallPass": "Tổng thể đạt",
+      "overallFail": "Tổng thể không đạt",
+      "overallPassDesc": "Tất cả các bước kiểm tra đều đạt.",
+      "overallFailDesc": "Một hoặc nhiều bước kiểm tra không đạt.",
+      "submit": "Gửi kiểm tra tích hợp",
+      "submitted": "Đã hoàn tất kiểm tra tích hợp.",
+      "allRequired": "Chọn kết quả cho tất cả các bước kiểm tra"
     },
     "history": {
       "scopeFull": "Toàn bộ",
