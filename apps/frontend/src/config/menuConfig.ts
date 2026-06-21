@@ -188,6 +188,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "QC_IQC_HISTORY", labelKey: "menu.material.iqcHistory", path: "/material/iqc-history" },
       { code: "QC_CONCESSION", labelKey: "menu.material.concession", path: "/material/concession" },
       { code: "QC_DEFECT", labelKey: "menu.quality.defect", path: "/quality/defect" },
+      { code: "QC_DEFECT_CODE", labelKey: "menu.quality.defectCode", path: "/quality/defect-code" },
       { code: "QC_REWORK_INSPECT", labelKey: "menu.quality.reworkInspect", path: "/quality/rework-inspect" },
       { code: "QC_INSPECT", labelKey: "menu.quality.inspect", path: "/quality/inspect" },
       { code: "QC_REQUEST_INSPECT", labelKey: "menu.quality.requestInspect", path: "/quality/request-inspect" },

@@ -9,7 +9,6 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine, ListChecks, X } from "lucide-react";
 import { Button, Modal, ComCodeBadge } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
-import { useComCodeList } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 interface IqcInspectItem {
@@ -87,6 +86,12 @@ interface DefectRow {
   id: number;
   defectCode: string;
   qty: string;
+}
+
+interface DefectCodeOption {
+  defectCode: string;
+  defectName: string;
+  defectGrade: string | null;
 }
 
 interface IqcModalProps {
@@ -175,7 +180,7 @@ function getSerialResult(inspection: SerialInspection | undefined): "PASS" | "FA
 
 export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm, onSubmit }: IqcModalProps) {
   const { t } = useTranslation();
-  const defectCodes = useComCodeList('DEFECT_TYPE');
+  const [defectCodes, setDefectCodes] = useState<DefectCodeOption[]>([]);
   const [inspectItems, setInspectItems] = useState<IqcInspectItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [pendingSerials, setPendingSerials] = useState<PendingSerial[]>([]);
@@ -242,6 +247,13 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
 
     fetchItems();
   }, [isOpen, selectedItem]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    api.get("/quality/defect-codes/options")
+      .then((res) => setDefectCodes(res.data?.data ?? []))
+      .catch(() => setDefectCodes([]));
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !selectedItem) return;
@@ -693,7 +705,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
               )}
               <div className="space-y-1">
                 {defectRows.map((row) => {
-                  const selectedCode = defectCodes.find((code) => code.detailCode === row.defectCode);
+                  const selectedCode = defectCodes.find((code) => code.defectCode === row.defectCode);
                   const severity = String(selectedCode?.defectGrade ?? "").toUpperCase();
                   return (
                     <div key={row.id} className="grid grid-cols-[1fr_48px_36px_24px] gap-1">
@@ -704,8 +716,8 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                       >
                         <option value="">{t("material.iqc.selectDefectCode", "불량코드 선택")}</option>
                         {defectCodes.map((code) => (
-                          <option key={code.detailCode} value={code.detailCode}>
-                            {code.codeName} ({String(code.defectGrade ?? "-").toUpperCase()})
+                          <option key={code.defectCode} value={code.defectCode}>
+                            {code.defectName} ({String(code.defectGrade ?? "-").toUpperCase()})
                           </option>
                         ))}
                       </select>

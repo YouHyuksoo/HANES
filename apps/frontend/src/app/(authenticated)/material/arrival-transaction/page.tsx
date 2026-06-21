@@ -173,6 +173,13 @@ export default function ArrivalTransactionPage() {
         cell: ({ row }) => row.original.arrivalNo || row.original.refId || "-",
       },
       {
+        accessorKey: "vendorName",
+        header: t("material.arrivalTransaction.col.vendor", "공급사"),
+        size: 140,
+        meta: { filterType: "text" as const },
+        cell: ({ row }) => row.original.vendorName || "-",
+      },
+      {
         accessorKey: "itemCode",
         header: t("common.partCode"),
         size: 130,

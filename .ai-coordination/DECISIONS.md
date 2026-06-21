@@ -71,6 +71,15 @@ Status: Accepted
 Decision:
 - `ITEM_MASTERS`는 AQL 검사수준/Critical/Major/Minor 개별 값을 직접 보유하지 않고 `IQC_AQL_POLICY_CODE`만 보유한다.
 - AQL 정책 조합은 신규 `IQC_AQL_POLICIES` 기준정보에서 `INSPECTION_LEVEL`, `MAJOR_AQL_CODE`, `MINOR_AQL_CODE`, `CRITICAL_MODE`로 관리한다.
+## D-20260621-DEFECT-CODE-MASTER
+Status: Accepted
+Decision:
+- 불량코드는 `COM_CODES.DEFECT_TYPE`가 아니라 `DEFECT_CATEGORY_MASTERS`/`DEFECT_CODE_MASTERS`/`DEFECT_CODE_PRODUCT_TYPES` 전용 기준정보로 관리한다.
+- 분류는 3레벨이며 실제 불량코드는 3레벨 leaf category만 참조한다.
+- IQC AQL 불량코드 등급 조회와 IQC 모달 선택 목록은 전용 테이블/API를 사용한다.
+Reason:
+- 불량코드는 외관/기능/원자재/제품/공정/제품류 적용까지 관리해야 하므로 공통코드 단일 그룹으로는 운영 분류와 검증을 감당하기 어렵다.
+
 - `/master/part`는 `AQL 정책` 선택만 제공하고, `/quality/aql/resolve-iqc`는 품목의 정책 코드를 따라 sampling rule을 산출한다.
 - `IQC_PART_SPEC_ITEMS`의 검사수준/AQL은 품목 정책을 대체하는 것이 아니라 검사항목별 override 기준으로 유지한다.
 - 실제 IQC 검사 화면과 저장 판정은 검사항목별 판정 경로인 `resolveIqcPolicyByItem()`을 기준으로 맞춘다.

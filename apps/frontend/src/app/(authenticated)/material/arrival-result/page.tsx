@@ -26,6 +26,7 @@ import { PartnerSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
+import { getTodayLocal } from "@/utils/date";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
 import {
@@ -83,8 +84,8 @@ export default function ArrivalResultPage() {
   const { options: mfgPartnerOptions } = usePartnerOptions("MFG");
 
   // 필터
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
   const [itemCode, setItemCode] = useState("");
   const [arrivalNo, setArrivalNo] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -348,6 +349,17 @@ export default function ArrivalResultPage() {
     { accessorKey: "relNo", header: "R/N", size: 50, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center">{(getValue() as number) ?? "-"}</div> },
     { accessorKey: "arrivalDate", header: t("material.arrivalResult.col.arrivalDate", "입하일"), size: 105, meta: { filterType: "date" as const }, cell: ({ getValue }) => <div className="text-center">{fmtDate(getValue() as string)}</div> },
     { accessorKey: "createdAt", header: t("material.arrivalResult.col.createdAt", "등록일자"), size: 110, meta: { filterType: "date" as const }, cell: ({ getValue }) => <div className="text-center">{fmtDate(getValue() as string)}</div> },
+    {
+      accessorKey: "vendorName",
+      header: t("material.arrivalResult.supplier", "공급사"),
+      size: 140,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => (
+        <span className="text-slate-800 dark:text-slate-200" title={row.original.vendorId ?? ""}>
+          {row.original.vendorName ?? "-"}
+        </span>
+      ),
+    },
     {
       accessorKey: "itemCode",
       header: t("common.partCode"),

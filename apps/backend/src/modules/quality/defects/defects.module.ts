@@ -21,6 +21,7 @@ import { RepairLog } from '../../../entities/repair-log.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { ReworkOrder } from '../../../entities/rework-order.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
+import { DefectCodeMaster } from '../../../entities/defect-code-master.entity';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
       ProdResult,
       ReworkOrder,
       FgLabel,
+      DefectCodeMaster,
     ]),
   ],
   controllers: [DefectLogController],

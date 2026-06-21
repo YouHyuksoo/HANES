@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { Plus, RefreshCw, AlertTriangle, Search, ScanLine } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, ComCodeBadge, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeList } from "@/hooks/useComCode";
@@ -44,13 +44,21 @@ interface Defect {
   equipmentNo: string | null;
 }
 
+interface DefectCodeOption {
+  defectCode: string;
+  defectName: string;
+  defectGrade: string;
+  defectScope: string;
+}
+
 export default function DefectPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<Defect[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const defectTypeCodes = useComCodeList("DEFECT_TYPE");
+  const [defectCodeOptions, setDefectCodeOptions] = useState<DefectCodeOption[]>([]);
+  const [defectCodeLoading, setDefectCodeLoading] = useState(false);
   const statusCodes = useComCodeList("DEFECT_LOG_STATUS");
 
   const [searchText, setSearchText] = useState("");
@@ -62,6 +70,33 @@ export default function DefectPage() {
   const [selectedDefect, setSelectedDefect] = useState<Defect | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [form, setForm] = useState({ prdUid: "", workOrderNo: "", defectCode: "", qty: "", cause: "" });
+
+  const fetchDefectCodeOptions = useCallback(async () => {
+    setDefectCodeLoading(true);
+    try {
+      const res = await api.get("/quality/defect-codes/options", { params: { defectScope: "PRODUCT" } });
+      setDefectCodeOptions(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch {
+      setDefectCodeOptions([]);
+    } finally {
+      setDefectCodeLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchDefectCodeOptions(); }, [fetchDefectCodeOptions]);
+
+  const defectFilterOptions = useMemo(() => [
+    { value: "", label: `${t("quality.defect.type", "불량유형")}: ${t("common.all", "전체")}` },
+    ...defectCodeOptions.map((code) => ({
+      value: code.defectCode,
+      label: `${t("quality.defect.type", "불량유형")}: ${code.defectCode} - ${code.defectName}`,
+    })),
+  ], [defectCodeOptions, t]);
+
+  const defectFormOptions = useMemo(() => defectCodeOptions.map((code) => ({
+    value: code.defectCode,
+    label: `${code.defectCode} - ${code.defectName} (${code.defectGrade})`,
+  })), [defectCodeOptions]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -89,7 +124,7 @@ export default function DefectPage() {
     if (!canSave) return;
     setSaving(true);
     try {
-      const defectName = defectTypeCodes.find((c) => c.detailCode === form.defectCode)?.codeName;
+      const defectName = defectCodeOptions.find((c) => c.defectCode === form.defectCode)?.defectName;
       await api.post("/quality/defect-logs", {
         ...(form.prdUid.trim() && { prdUid: form.prdUid.trim() }),
         ...(form.workOrderNo.trim() && { workOrderNo: form.workOrderNo.trim() }),
@@ -107,7 +142,7 @@ export default function DefectPage() {
     } finally {
       setSaving(false);
     }
-  }, [form, canSave, defectTypeCodes, fetchData, t]);
+  }, [form, canSave, defectCodeOptions, fetchData, t]);
 
   const handleStatusChange = useCallback(async (newStatus: DefectStatus) => {
     if (!selectedDefect) return;
@@ -176,7 +211,7 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
                 <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-32" />
               </div>
               <div className="w-40 shrink-0">
-                <ComCodeSelect groupCode="DEFECT_TYPE" labelPrefix={t('quality.defect.type', '불량유형')} value={defectType} onChange={setDefectType} className="w-full" />
+                <Select options={defectFilterOptions} value={defectType} onChange={setDefectType} className="w-full" disabled={defectCodeLoading} />
               </div>
               <div className="w-36 shrink-0">
                 <ComCodeSelect groupCode="DEFECT_LOG_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} className="w-full" />
@@ -205,7 +240,15 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label={t("quality.defect.workOrderNoOptional")} placeholder="WO-XXXX" value={form.workOrderNo} onChange={(e) => setForm((p) => ({ ...p, workOrderNo: e.target.value }))} fullWidth />
-            <ComCodeSelect label={t("quality.defect.defectType")} groupCode="DEFECT_TYPE" includeAll={false} value={form.defectCode} onChange={(v) => setForm((p) => ({ ...p, defectCode: v }))} fullWidth />
+            <Select
+              label={t("quality.defect.defectType")}
+              options={defectFormOptions}
+              value={form.defectCode}
+              onChange={(v) => setForm((p) => ({ ...p, defectCode: v }))}
+              disabled={defectCodeLoading}
+              placeholder={t("quality.defect.defectType")}
+              fullWidth
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label={t("quality.defect.quantity")} type="number" min="1" placeholder="1" value={form.qty} onChange={(e) => setForm((p) => ({ ...p, qty: e.target.value }))} fullWidth />

@@ -39,6 +39,7 @@ import { PpapModule } from './ppap/ppap.module';
 import { FaiModule } from './fai/fai.module';
 import { ContinuityInspectModule } from './continuity-inspect/continuity-inspect.module';
 import { AqlModule } from './aql/aql.module';
+import { DefectCodesModule } from './defect-codes/defect-codes.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { AqlModule } from './aql/aql.module';
     FaiModule,
     ContinuityInspectModule,
     AqlModule,
+    DefectCodesModule,
   ],
   controllers: [],
   providers: [],
@@ -70,6 +72,7 @@ import { AqlModule } from './aql/aql.module';
     FaiModule,
     ContinuityInspectModule,
     AqlModule,
+    DefectCodesModule,
   ],
 })
 export class QualityModule {}

@@ -22,7 +22,7 @@ describe('AqlService', () => {
   let partnerRepo: ReturnType<typeof createRepoMock>;
   let iqcLogRepo: ReturnType<typeof createRepoMock>;
   let modeHistoryRepo: ReturnType<typeof createRepoMock>;
-  let comCodeRepo: ReturnType<typeof createRepoMock>;
+  let defectCodeRepo: ReturnType<typeof createRepoMock>;
   let specItemRepo: ReturnType<typeof createRepoMock>;
   let service: AqlService;
 
@@ -34,7 +34,7 @@ describe('AqlService', () => {
     partnerRepo = createRepoMock();
     iqcLogRepo = createRepoMock();
     modeHistoryRepo = createRepoMock();
-    comCodeRepo = createRepoMock();
+    defectCodeRepo = createRepoMock();
     specItemRepo = createRepoMock();
     service = new AqlService(
       standardRepo as any,
@@ -44,7 +44,7 @@ describe('AqlService', () => {
       partnerRepo as any,
       iqcLogRepo as any,
       modeHistoryRepo as any,
-      comCodeRepo as any,
+      defectCodeRepo as any,
       specItemRepo as any,
     );
   });
@@ -224,9 +224,9 @@ describe('AqlService', () => {
       useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue({ partnerCode: 'SUP-B', inspectionMode: 'NORMAL' });
-    comCodeRepo.find.mockResolvedValue([
-      { groupCode: 'DEFECT_TYPE', detailCode: 'D-MAJ', defectGrade: 'MAJOR', useYn: 'Y' },
-      { groupCode: 'DEFECT_TYPE', detailCode: 'D-MIN', defectGrade: 'MINOR', useYn: 'Y' },
+    defectCodeRepo.find.mockResolvedValue([
+      { defectCode: 'D-MAJ', defectGrade: 'MAJOR', useYn: 'Y' },
+      { defectCode: 'D-MIN', defectGrade: 'MINOR', useYn: 'Y' },
     ]);
     standardRepo.findOne
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
@@ -268,8 +268,8 @@ describe('AqlService', () => {
       useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue({ partnerCode: 'SUP-B', inspectionMode: 'NORMAL' });
-    comCodeRepo.find.mockResolvedValue([
-      { groupCode: 'DEFECT_TYPE', detailCode: 'D-CRI', defectGrade: 'CRITICAL', useYn: 'Y' },
+    defectCodeRepo.find.mockResolvedValue([
+      { defectCode: 'D-CRI', defectGrade: 'CRITICAL', useYn: 'Y' },
     ]);
     standardRepo.findOne
       .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
@@ -418,8 +418,8 @@ describe('AqlService', () => {
       useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue({ partnerCode: 'SUP-B', inspectionMode: 'NORMAL' });
-    comCodeRepo.find.mockResolvedValue([
-      { groupCode: 'DEFECT_TYPE', detailCode: 'D-NO-GRADE', defectGrade: null, useYn: 'Y' },
+    defectCodeRepo.find.mockResolvedValue([
+      { defectCode: 'D-NO-GRADE', defectGrade: null, useYn: 'Y' },
     ]);
 
     await expect(service.resolveIqcPolicy({

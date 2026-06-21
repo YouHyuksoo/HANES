@@ -23,7 +23,8 @@ test('IQC submit accepts structured serial details instead of only measurement r
 
 test('IQC modal records defect codes instead of direct severity count inputs', () => {
   assert.match(modalSource, /defectRows/);
-  assert.match(modalSource, /useComCodeList\('DEFECT_TYPE'\)/);
+  assert.match(modalSource, /\/quality\/defect-codes\/options/);
+  assert.doesNotMatch(modalSource, /useComCodeList\('DEFECT_TYPE'\)/);
   assert.match(modalSource, /defectCode/);
   assert.match(modalSource, /defectGrade/);
   assert.match(hookSource, /defects\?: Array<\{ defectCode: string; qty: number \}>/);

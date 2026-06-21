@@ -26,6 +26,7 @@ import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
+import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
 import {
   CreateDefectLogDto,
   UpdateDefectLogDto,
@@ -51,6 +52,8 @@ export class DefectLogService {
     private readonly reworkOrderRepository: Repository<ReworkOrder>,
     @InjectRepository(FgLabel)
     private readonly fgLabelRepository: Repository<FgLabel>,
+    @InjectRepository(DefectCodeMaster)
+    private readonly defectCodeRepository: Repository<DefectCodeMaster>,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -116,6 +119,25 @@ export class DefectLogService {
         `재작업(${linkedRework.reworkNo})이 연결된 불량은 직접 처리할 수 없습니다. 재작업부터 먼저 정리해 주세요.`,
       );
     }
+  }
+
+  private normalizeDefectCode(value: string) {
+    const defectCode = String(value ?? '').trim().toUpperCase();
+    if (!defectCode) {
+      throw new BadRequestException('불량코드는 필수입니다.');
+    }
+    return defectCode;
+  }
+
+  private async resolveActiveDefectCode(defectCodeValue: string, company?: string, plant?: string) {
+    const defectCode = this.normalizeDefectCode(defectCodeValue);
+    const master = await this.defectCodeRepository.findOne({
+      where: { defectCode, ...this.tenantWhere(company, plant), useYn: 'Y' },
+    });
+    if (!master) {
+      throw new BadRequestException(`등록되지 않았거나 사용 중지된 불량코드입니다: ${defectCode}`);
+    }
+    return master;
   }
 
   // =============================================
@@ -244,6 +266,8 @@ export class DefectLogService {
    * 불량로그 생성
    */
   async create(dto: CreateDefectLogDto, company?: string, plant?: string) {
+    const defectCodeMaster = await this.resolveActiveDefectCode(dto.defectCode, company, plant);
+
     // 대상 생산실적 식별 우선순위: prodResultNo > prdUid(제품 바코드) > workOrderNo
     let prodResultNo = dto.prodResultNo;
     if (!prodResultNo && dto.prdUid) {
@@ -302,8 +326,8 @@ export class DefectLogService {
     // 불량 등록 및 생산실적 불량수량 증가를 트랜잭션으로 처리
     const defectLog = this.defectLogRepository.create({
       prodResultNo,
-      defectCode: dto.defectCode,
-      defectName: dto.defectName,
+      defectCode: defectCodeMaster.defectCode,
+      defectName: defectCodeMaster.defectName,
       qty: dto.qty ?? 1,
       status: dto.status ?? 'WAIT',
       cause: dto.cause,
@@ -336,6 +360,9 @@ export class DefectLogService {
     const existing = await this.findById(id, company, plant);
     await this.ensureNoLinkedRework(existing);
     const pk = { occurAt: existing.occurAt, seq: existing.seq };
+    const defectCodeMaster = dto.defectCode !== undefined
+      ? await this.resolveActiveDefectCode(dto.defectCode, company, plant)
+      : null;
 
     // 수량 변경 시 생산실적 반영
     const qtyDiff = (dto.qty ?? existing.qty) - existing.qty;
@@ -344,8 +371,7 @@ export class DefectLogService {
       await this.defectLogRepository.update(
         pk,
         {
-          ...(dto.defectCode !== undefined && { defectCode: dto.defectCode }),
-          ...(dto.defectName !== undefined && { defectName: dto.defectName }),
+          ...(defectCodeMaster && { defectCode: defectCodeMaster.defectCode, defectName: defectCodeMaster.defectName }),
           ...(dto.qty !== undefined && { qty: dto.qty }),
           ...(dto.cause !== undefined && { cause: dto.cause }),
           ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
@@ -360,8 +386,7 @@ export class DefectLogService {
       await this.defectLogRepository.update(
         pk,
         {
-          ...(dto.defectCode !== undefined && { defectCode: dto.defectCode }),
-          ...(dto.defectName !== undefined && { defectName: dto.defectName }),
+          ...(defectCodeMaster && { defectCode: defectCodeMaster.defectCode, defectName: defectCodeMaster.defectName }),
           ...(dto.cause !== undefined && { cause: dto.cause }),
           ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
         }

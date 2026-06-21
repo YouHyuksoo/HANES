@@ -9,6 +9,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { AqlService } from '../../quality/aql/services/aql.service';
@@ -28,6 +29,7 @@ export interface PendingArrivalsResult {
     unit: string | null;
     inspectMethod: string | null;
     vendor: string;
+    vendorName: string | null;
     totalQty: number;
     serialCount: number;
     recvDate: Date | null;
@@ -327,12 +329,18 @@ export class IqcHistoryService {
         'part',
         'part.itemCode = lot.itemCode AND part.company = lot.company AND part.plant = lot.plant',
       )
+      .leftJoin(
+        PartnerMaster,
+        'partner',
+        'partner.partnerCode = lot.vendor AND partner.company = lot.company AND partner.plant = lot.plant',
+      )
       .select('lot.arrivalNo', 'arrivalNo')
       .addSelect('lot.itemCode', 'itemCode')
       .addSelect('part.itemName', 'itemName')
       .addSelect('part.unit', 'unit')
       .addSelect('part.inspectMethod', 'inspectMethod')
       .addSelect('lot.vendor', 'vendor')
+      .addSelect('partner.partnerName', 'vendorName')
       .addSelect('SUM(lot.initQty)', 'totalQty')
       .addSelect('COUNT(*)', 'serialCount')
       .addSelect('MIN(lot.recvDate)', 'recvDate')
@@ -351,6 +359,7 @@ export class IqcHistoryService {
     qb.groupBy('lot.arrivalNo')
       .addGroupBy('lot.itemCode')
       .addGroupBy('lot.vendor')
+      .addGroupBy('partner.partnerName')
       .addGroupBy('part.itemName')
       .addGroupBy('part.unit')
       .addGroupBy('part.inspectMethod')
@@ -367,6 +376,7 @@ export class IqcHistoryService {
       unit: string | null;
       inspectMethod: string | null;
       vendor: string;
+      vendorName: string | null;
       totalQty: string;
       serialCount: string;
       recvDate: Date | null;
@@ -381,6 +391,7 @@ export class IqcHistoryService {
         unit: r.unit ?? null,
         inspectMethod: r.inspectMethod ?? null,
         vendor: r.vendor,
+        vendorName: r.vendorName ?? null,
         totalQty: Number(r.totalQty) || 0,
         serialCount: Number(r.serialCount) || 0,
         recvDate: r.recvDate,

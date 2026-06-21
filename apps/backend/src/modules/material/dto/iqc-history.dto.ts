@@ -67,7 +67,7 @@ export class CreateIqcResultDto {
 }
 
 export class IqcDefectCodeQtyDto {
-  @ApiProperty({ description: '불량코드 (COM_CODES DEFECT_TYPE)' })
+  @ApiProperty({ description: '불량코드 (DEFECT_CODE_MASTERS.DEFECT_CODE)' })
   @IsString()
   @IsNotEmpty()
   defectCode: string;
@@ -156,7 +156,7 @@ export class CreateArrivalIqcResultDto {
   @Min(0)
   defectMinor?: number;
 
-  @ApiPropertyOptional({ description: '불량코드별 수량. 불량코드는 DEFECT_TYPE 공통코드 ATTR1에 CRITICAL/MAJOR/MINOR 등급이 필수다.', type: [IqcDefectCodeQtyDto] })
+  @ApiPropertyOptional({ description: '불량코드별 수량. 불량코드는 DEFECT_CODE_MASTERS에 CRITICAL/MAJOR/MINOR 등급이 필수다.', type: [IqcDefectCodeQtyDto] })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

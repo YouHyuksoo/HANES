@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { AqlStandard } from '../../../../entities/aql-standard.entity';
 import { AqlSamplingRule } from '../../../../entities/aql-sampling-rule.entity';
-import { ComCode } from '../../../../entities/com-code.entity';
+import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
 import { IqcAqlPolicy } from '../../../../entities/iqc-aql-policy.entity';
 import { IqcLog } from '../../../../entities/iqc-log.entity';
 import { PartMaster } from '../../../../entities/part-master.entity';
@@ -91,8 +91,8 @@ export class AqlService {
     private readonly iqcLogRepo: Repository<IqcLog>,
     @InjectRepository(VendorInspectionModeHistory)
     private readonly modeHistoryRepo: Repository<VendorInspectionModeHistory>,
-    @InjectRepository(ComCode)
-    private readonly comCodeRepo: Repository<ComCode>,
+    @InjectRepository(DefectCodeMaster)
+    private readonly defectCodeRepo: Repository<DefectCodeMaster>,
     @InjectRepository(IqcPartSpecItem)
     private readonly specItemRepo: Repository<IqcPartSpecItem>,
   ) {}
@@ -850,16 +850,15 @@ export class AqlService {
     if (effectiveDefects.length === 0) return counts;
 
     const defectCodeSet = [...new Set(effectiveDefects.map((defect) => defect.defectCode))];
-    const codes = await this.comCodeRepo.find({
+    const codes = await this.defectCodeRepo.find({
       where: {
-        groupCode: 'DEFECT_TYPE',
-        detailCode: In(defectCodeSet),
+        defectCode: In(defectCodeSet),
         useYn: 'Y',
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
       },
     });
-    const codeMap = new Map(codes.map((code) => [code.detailCode.toUpperCase(), code]));
+    const codeMap = new Map(codes.map((code) => [code.defectCode.toUpperCase(), code]));
 
     for (const defect of effectiveDefects) {
       const code = codeMap.get(defect.defectCode);

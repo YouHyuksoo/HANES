@@ -17,6 +17,7 @@ import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
+import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('DefectLogService', () => {
@@ -26,6 +27,7 @@ describe('DefectLogService', () => {
   let mockProdResultRepo: DeepMocked<Repository<ProdResult>>;
   let mockReworkOrderRepo: DeepMocked<Repository<ReworkOrder>>;
   let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
+  let mockDefectCodeRepo: DeepMocked<Repository<DefectCodeMaster>>;
 
   /** 테스트용 불량로그 팩토리 */
   const createDefectLog = (overrides: Partial<DefectLog> = {}): DefectLog =>
@@ -55,12 +57,33 @@ describe('DefectLogService', () => {
       ...overrides,
     }) as ProdResult;
 
+  const mockDefectQb = (options: { many?: any[]; count?: number; raw?: any[] } = {}) => {
+    const qb = {
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      clone: jest.fn(),
+      getMany: jest.fn().mockResolvedValue(options.many ?? []),
+      getCount: jest.fn().mockResolvedValue(options.count ?? 0),
+      getRawMany: jest.fn().mockResolvedValue(options.raw ?? []),
+    };
+    qb.clone.mockReturnValue(qb);
+    mockDefectLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+    return qb;
+  };
+
   beforeEach(async () => {
     mockDefectLogRepo = createMock<Repository<DefectLog>>();
     mockRepairLogRepo = createMock<Repository<RepairLog>>();
     mockProdResultRepo = createMock<Repository<ProdResult>>();
     mockReworkOrderRepo = createMock<Repository<ReworkOrder>>();
     mockFgLabelRepo = createMock<Repository<FgLabel>>();
+    mockDefectCodeRepo = createMock<Repository<DefectCodeMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -70,6 +93,7 @@ describe('DefectLogService', () => {
         { provide: getRepositoryToken(ProdResult), useValue: mockProdResultRepo },
         { provide: getRepositoryToken(ReworkOrder), useValue: mockReworkOrderRepo },
         { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
+        { provide: getRepositoryToken(DefectCodeMaster), useValue: mockDefectCodeRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -84,6 +108,11 @@ describe('DefectLogService', () => {
 
   beforeEach(() => {
     mockReworkOrderRepo.findOne.mockResolvedValue(null);
+    mockDefectCodeRepo.findOne.mockResolvedValue({
+      defectCode: 'DEF001',
+      defectName: '마스터 외관불량',
+      useYn: 'Y',
+    } as DefectCodeMaster);
   });
 
   // ─────────────────────────────────────────────
@@ -93,8 +122,7 @@ describe('DefectLogService', () => {
     it('should return paginated defect logs enriched with workOrderNo/operator/id', async () => {
       // Arrange
       const defects = [createDefectLog()];
-      mockDefectLogRepo.find.mockResolvedValue(defects);
-      mockDefectLogRepo.count.mockResolvedValue(1);
+      mockDefectQb({ many: defects, count: 1 });
       mockProdResultRepo.find.mockResolvedValue([
         { resultNo: 'PR260318-00001', orderNo: 'WO-1', workerId: 'W003', equipCode: 'EQ-1' } as any,
       ]);
@@ -120,20 +148,13 @@ describe('DefectLogService', () => {
 
     it('should apply search filter', async () => {
       // Arrange
-      mockDefectLogRepo.find.mockResolvedValue([]);
-      mockDefectLogRepo.count.mockResolvedValue(0);
+      const qb = mockDefectQb({ many: [], count: 0 });
 
       // Act
       await target.findAll({ search: '외관' } as any);
 
       // Assert
-      expect(mockDefectLogRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            defectName: expect.any(Object), // ILike('%외관%')
-          }),
-        }),
-      );
+      expect(qb.andWhere).toHaveBeenCalledWith('defect.defectName LIKE :search', { search: '%외관%' });
     });
   });
 
@@ -189,6 +210,45 @@ describe('DefectLogService', () => {
   // create
   // ─────────────────────────────────────────────
   describe('create', () => {
+    it('validates defectCode from DEFECT_CODE_MASTERS and derives defectName from the master', async () => {
+      const prodResult = createProdResult({ defectQty: 3, company: 'HANES', plant: 'P01' } as any);
+      mockProdResultRepo.findOne.mockResolvedValue(prodResult);
+      mockDefectCodeRepo.findOne.mockResolvedValue({
+        defectCode: 'DEF002',
+        defectName: '마스터 치수불량',
+        useYn: 'Y',
+      } as DefectCodeMaster);
+      mockDefectLogRepo.create.mockReturnValue(createDefectLog({ defectCode: 'DEF002', defectName: '마스터 치수불량' }));
+      mockDefectLogRepo.save.mockResolvedValue(createDefectLog({ defectCode: 'DEF002', defectName: '마스터 치수불량' }));
+      mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.create({
+        prodResultNo: 'PR260318-00001',
+        defectCode: 'def002',
+        defectName: '프론트 임의명',
+        qty: 2,
+      } as any, 'HANES', 'P01');
+
+      expect(mockDefectCodeRepo.findOne).toHaveBeenCalledWith({
+        where: { defectCode: 'DEF002', company: 'HANES', plant: 'P01', useYn: 'Y' },
+      });
+      expect(mockDefectLogRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defectCode: 'DEF002',
+          defectName: '마스터 치수불량',
+        }),
+      );
+    });
+
+    it('rejects defect log creation when defectCode is not registered in DEFECT_CODE_MASTERS', async () => {
+      mockDefectCodeRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        target.create({ prodResultNo: 'PR260318-00001', defectCode: 'NOPE' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDefectLogRepo.save).not.toHaveBeenCalled();
+    });
+
     it('should create defect log and update prodResult defectQty', async () => {
       // Arrange
       const prodResult = createProdResult({ defectQty: 3, company: 'HANES', plant: 'P01' } as any);
@@ -652,16 +712,7 @@ describe('DefectLogService', () => {
 
   describe('stats', () => {
     const mockStatsQb = (rows: any[]) => {
-      const qb = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        addGroupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue(rows),
-      };
-      mockDefectLogRepo.createQueryBuilder.mockReturnValue(qb as any);
-      return qb;
+      return mockDefectQb({ raw: rows });
     };
 
     it('should scope defect type stats by tenant', async () => {
@@ -669,7 +720,8 @@ describe('DefectLogService', () => {
 
       await target.getStatsByDefectType(undefined, undefined, 'HANES', 'P01');
 
-      expect(qb.where).toHaveBeenCalledWith({ company: 'HANES', plant: 'P01' });
+      expect(qb.andWhere).toHaveBeenCalledWith('defect.company = :company', { company: 'HANES' });
+      expect(qb.andWhere).toHaveBeenCalledWith('defect.plant = :plant', { plant: 'P01' });
     });
 
     it('should scope defect status stats by tenant', async () => {
@@ -677,19 +729,18 @@ describe('DefectLogService', () => {
 
       await target.getStatsByStatus(undefined, undefined, 'HANES', 'P01');
 
-      expect(qb.where).toHaveBeenCalledWith({ company: 'HANES', plant: 'P01' });
+      expect(qb.andWhere).toHaveBeenCalledWith('defect.company = :company', { company: 'HANES' });
+      expect(qb.andWhere).toHaveBeenCalledWith('defect.plant = :plant', { plant: 'P01' });
     });
 
     it('should scope daily defect trend by tenant', async () => {
-      mockDefectLogRepo.find.mockResolvedValue([]);
+      const qb = mockDefectQb({ many: [] });
 
       await target.getDailyDefectTrend(7, 'HANES', 'P01');
 
-      expect(mockDefectLogRepo.find).toHaveBeenCalledWith({
-        where: { occurAt: expect.any(Object), company: 'HANES', plant: 'P01' },
-        select: ['occurAt', 'qty', 'defectCode'],
-        order: { occurAt: 'ASC' },
-      });
+      expect(qb.andWhere).toHaveBeenCalledWith('defect.company = :company', { company: 'HANES' });
+      expect(qb.andWhere).toHaveBeenCalledWith('defect.plant = :plant', { plant: 'P01' });
+      expect(qb.orderBy).toHaveBeenCalledWith('defect.occurAt', 'ASC');
     });
   });
 });

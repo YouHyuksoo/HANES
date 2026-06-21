@@ -29,6 +29,47 @@ notes:
 
 ## Active Tasks
 
+## T-DEFECT-CODE-MASTER 불량코드 전용 마스터/3레벨 분류 관리
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- 불량코드를 `COM_CODES.DEFECT_TYPE`에서 전용 마스터 테이블로 분리
+- 3레벨 불량분류, 불량코드/불량명, 등급, 적용범위, 제품류별 적용 관리
+- 품질관리 메뉴에 `/quality/defect-code` 불량코드관리 페이지 추가
+- 기존 `/quality/defect` 불량등록관리 필터/등록과 백엔드 불량로그 저장 검증을 전용 불량코드 마스터로 연결
+files:
+- apps/backend/src/entities/defect-*-master.entity.ts
+- apps/backend/src/modules/quality/defect-codes/**
+- apps/backend/src/modules/quality/defects/**
+- apps/backend/src/migrations/2026-06-21_defect_code_masters.sql
+- apps/frontend/src/app/(authenticated)/quality/defect-code/**
+- apps/frontend/src/app/(authenticated)/quality/defect/**
+- apps/frontend/src/config/menuConfig.ts
+- apps/frontend/src/components/layout/page-registries/**
+- apps/frontend/src/locales/{ko,en,zh,vi}.json
+- apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
+- apps/backend/src/seeds/menu-config.json
+- docs/reports/db-schema-erd.md
+verification:
+- RED/GREEN backend defect-code service spec 4건 PASS
+- RED/GREEN frontend/연동 구조 테스트 19건 PASS
+- `aql.service.spec.ts` 포함 focused Jest 23건 PASS
+- frontend/backend `tsc --noEmit --pretty false` PASS
+- JSHANES migration 적용/재실행 PASS, 분류 18건/불량코드 12건/menu 배치 확인
+- `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py` PASS
+- 3002 `/quality/defect-code` HTTP 200, 3002 `/api/quality/defect-codes/options` 인증 게이트 401 확인
+- hermes 종료 확인 후 `/quality/defect` 전환 추가: RED/GREEN 구조 테스트 3건 PASS, `defect-log.service.spec.ts` 39건 PASS
+- `/quality/defect` HTTP 200, 전용 options API 인증 게이트 401 확인
+- `/quality/defect-code` 미번역/raw key/enum/레벨배지 보정: 구조 테스트 7건 PASS, locale JSON parse PASS, `git diff --check` PASS
+- `git diff --check` PASS
+review:
+- needs-review
+notes:
+- `/quality/defect/page.tsx`는 hermes 종료 확인 후 전용 불량코드 API로 전환했다.
+- 기존 `COM_CODES.DEFECT_TYPE`는 초기 마이그레이션 seed source로만 사용하고 신규 관리는 전용 테이블에서 수행한다.
+- 전체 frontend typecheck는 현재 다른 통합검사 변경(`apps/frontend/src/app/(authenticated)/inspection/integrated/**`)의 `IntegratedInspectPanel` prop 불일치로 실패한다.
+
 ## T-PRODUCTION-ORDER-EDIT-SYNC 생산지시 수정패널 선택행 동기화
 status: REVIEW
 owner: codex

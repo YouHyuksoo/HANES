@@ -1832,6 +1832,21 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 변경: 프론트 `WipStockView`는 행 클릭 시 `/production/wip-stock/labels`에 `itemCode`와 `row.itemType`을 함께 전달하고, 우측 그리드는 공통 컬럼 `구분`, `라벨바코드`, `상태`, `잔량`, `검사`, `작업지시`, `현재공정`, `장착설비`, `발행일시`로 표시한다.
 - 검증: 구조 테스트 RED 확인 후 GREEN. 관련 구조 테스트 9건 PASS, FE/BE tsc PASS. 3002 브라우저 fetch 실측에서 `SEMI_PRODUCT/HNS02C2ABCDE`는 `SG_LABELS` SQL과 `labelType=SG` 1건, `FINISHED` 요청은 `FG_LABELS` SQL을 사용하는 것 확인. 화면 우측 패널에 `라벨바코드`, `잔량` 컬럼 표시 및 console/page error 0 확인.
 
+# 2026-06-21 codex T-DEFECT-CODE-MASTER
+- 요청: 불량코드를 공통코드가 아니라 전용 테이블로 분리하고, 외관/기능/원자재/제품/제품류 등 많은 그룹을 3레벨로 분류해 관리하는 불량코드관리 화면과 메뉴 추가.
+- 변경: `DEFECT_CATEGORY_MASTERS`, `DEFECT_CODE_MASTERS`, `DEFECT_CODE_PRODUCT_TYPES` 엔티티/마이그레이션/API를 추가했다. 카테고리는 3레벨 tree, 불량코드는 leaf category 참조, 제품류 적용은 별도 mapping table로 분리했다.
+- 변경: `/quality/defect-code` 불량코드관리 페이지를 추가하고 품질관리 메뉴 `QC_DEFECT_CODE`로 연결했다. 좌측 3레벨 분류, 중앙 불량코드 목록, 우측 분류/코드 편집 폼으로 구성했다.
+- 변경: IQC 모달 불량코드 선택과 `AqlService` 불량등급 조회는 `COM_CODES.DEFECT_TYPE` 대신 `DEFECT_CODE_MASTERS` 기반 API/Repository를 사용한다.
+- DB 검증: JSHANES 마이그레이션 적용 및 재실행 PASS. category 18건, code 12건, product-type mapping 0건, 메뉴 `QC_DEFECT_CODE` 1건, `FK_DEFECT_CATEGORY_PARENT` ENABLED 확인. ERD 문서 재생성 완료.
+- 검증: backend defect-code spec 4건, AQL spec 19건, frontend/source/IQC 구조 테스트 19건, BE/FE tsc, 3002 `/quality/defect-code` HTTP 200, 3002 `/api/quality/defect-codes/options` 인증 게이트 401, `git diff --check` PASS.
+- 제한: `apps/frontend/src/app/(authenticated)/quality/defect/page.tsx`는 `T-QUALITY-DEFECT-FILTER-ONE-LINE` hermes lock 대상이라 수정하지 않았다.
+
+# 2026-06-21 codex T-DEFECT-CODE-MASTER 최종 연결
+- 추가 요청: hermes 세션 종료 확인 후 기존 `/quality/defect` 불량등록관리 화면도 전용 불량코드 마스터로 연결.
+- 변경: `/quality/defect` 필터와 등록 모달의 `DEFECT_TYPE` 공통코드 Select를 제거하고 `/quality/defect-codes/options` 기반 Select로 전환했다. 등록 payload의 `defectName`은 전용 불량코드 옵션에서 가져온다.
+- 변경: `DefectLogService.create/update`는 `DEFECT_CODE_MASTERS` 활성 코드만 허용하고, 프론트가 보낸 `defectName` 대신 마스터의 `DEFECT_NAME`으로 저장한다. 미등록/사용중지 코드는 `BadRequestException`으로 차단한다.
+- 검증: RED 확인 후 GREEN. `/quality/defect` 구조 테스트 3/3 PASS, `defect-log.service.spec.ts` 39/39 PASS, 기존 불량코드 구조 테스트 9/9 PASS, BE/FE tsc PASS, `git diff --check` PASS, 3002 `/quality/defect` HTTP 200, 3002 `/api/quality/defect-codes/options` 인증 게이트 401 확인.
+
 # 2026-06-20 20:02 codex T-MENU-OPEN-DELAY
 - 요청: 예전에는 메뉴 클릭 시 화면이 바로 열렸는데 지금은 30초 이상 기다려야 열리는 원인 확인.
 - 원인: `TabKeepAlive`가 레이아웃 런타임에서 `pageRegistry.generated.ts`를 import하고, 해당 registry가 authenticated `page.tsx` 163개를 `next/dynamic` 정적 목록으로 들고 있었다. Next dev 서버가 메뉴 하나를 열 때 전체 page loader를 on-demand compile 대상으로 잡아 지연이 발생했다.
@@ -1911,3 +1926,11 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 변경: `JobOrderFormPanel`의 `라인`/`공정` Select를 `grid grid-cols-2` 한 행으로 묶고, 공정 종속 필드인 `설비`는 아래 행에 유지했다.
 - 추가 변경: 사용자 추가 요청에 따라 `설비`를 드롭다운에서 버튼형 선택 목록으로 변경했다. `useEquipOptions(form.processCode || undefined)` 결과를 즉시 펼쳐 보여주며, 공정 미선택 시 전체 설비, 공정 선택 시 해당 공정 설비를 바로 클릭해 선택한다.
 - 검증: RED 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/production/order/production-order-edit-sync.structure.test.mjs"` 4/4 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/production/order` HTTP 200, 대상 파일 `git diff --check` PASS.
+
+# 2026-06-21 codex T-DEFECT-CODE-MASTER 불량코드관리 미번역 라벨 보정
+- 요청: `/quality/defect-code` 화면에서 영어키/DB 필드명이 번역 없이 보이는 항목 전부 처리.
+- 변경: 분류/불량코드 폼의 raw label(`levelNo`, `parentCategoryCode`, `defectGrade` 등)을 `quality.defectCode.*` 번역 키로 교체했다.
+- 변경: 목록과 Select 옵션에서 `CRITICAL`/`MAJOR`/`MINOR`, `COMMON`/`RAW_MATERIAL` 같은 enum 저장값을 직접 렌더링하지 않고 `formatDefectGrade()`/`formatDefectScope()`로 표시한다. 좌측 분류 배지 `L1/L2/L3`도 `levelBadge` 번역 키로 교체했다.
+- 변경: ko/en/zh/vi locale에 `/quality/defect-code` 전용 문구와 등급 표시 키를 추가했다.
+- 검증: RED 구조 테스트로 raw label/enum 노출 실패 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/quality/defect-code/defect-code-master.structure.test.mjs"` 7/7 PASS, locale JSON parse PASS, raw label/enum 검색 매칭 없음, `git diff --check` PASS.
+- 참고: 전체 frontend typecheck는 다른 통합검사 변경(`apps/frontend/src/app/(authenticated)/inspection/integrated/**`)의 `IntegratedInspectPanel` prop 불일치로 실패했다. 해당 파일들은 이번 보정 범위가 아니다.
