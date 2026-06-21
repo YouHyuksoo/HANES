@@ -1,39 +1,30 @@
 "use client";
 
-/**
- * @file src/app/(authenticated)/quality/inspect/page.tsx
- * @description 외관검사 페이지 - FG_BARCODE 스캔 → 외관검사 판정 등록
- *
- * 초보자 가이드:
- * 1. FG_BARCODE 스캔 → FG_LABELS에서 제품 정보 조회
- * 2. 합격/불합격 판정 → INSPECT_RESULTS 등록 + FG_LABELS.STATUS 업데이트
- * 3. 불합격 시 불량 체크리스트 (ComCode VISUAL_DEFECT)
- */
-
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Eye, RefreshCw, Search, CheckCircle, XCircle, ScanLine, Maximize2, Minimize2,
+  ScanLine, RefreshCw, Search, CheckCircle, XCircle, List, Maximize2, Minimize2,
 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-import InspectFormPanel from "./components/InspectFormPanel";
-import type { FgLabelInfo, VisualInspectRecord } from "./types";
+import StructureInspectPanel from "./components/StructureInspectPanel";
+import FgLabelSelectModal from "./components/FgLabelSelectModal";
+import type { FgLabelInfo, StructureInspectRecord } from "./types";
 
-export default function VisualInspectPage() {
+export default function StructureInspectPage() {
   const { t } = useTranslation();
-  const [inspectHistory, setInspectHistory] = useState<VisualInspectRecord[]>([]);
+  const [inspectHistory, setInspectHistory] = useState<StructureInspectRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [scanInput, setScanInput] = useState("");
   const [scannedLabel, setScannedLabel] = useState<FgLabelInfo | null>(null);
   const [scanError, setScanError] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
-  const panelAnimateRef = useRef(true);
 
   useEffect(() => {
     const handle = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -50,12 +41,11 @@ export default function VisualInspectPage() {
     }
   }, []);
 
-  /** 외관검사 이력 조회 */
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get("/quality/inspect-results", {
-        params: { inspectType: "VISUAL", limit: 500 },
+        params: { inspectType: "STRUCTURE", limit: 500 },
       });
       setInspectHistory(res.data?.data ?? []);
     } catch { setInspectHistory([]); }
@@ -64,28 +54,26 @@ export default function VisualInspectPage() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
-  /** 바코드 스캔 처리 */
-  const handleScan = useCallback(async () => {
-    const barcode = scanInput.trim();
-    if (!barcode) return;
+  const openInspectPanel = useCallback(async (barcode: string) => {
     setScanError("");
     try {
       const res = await api.get(`/quality/continuity-inspect/fg-label/${barcode}`);
       const label: FgLabelInfo = res.data?.data;
-      if (!label) {
-        setScanError(t("quality.inspect.barcodeNotFound", "바코드를 찾을 수 없습니다"));
-        return;
-      }
+      if (!label) return;
       setScannedLabel(label);
-      panelAnimateRef.current = !isPanelOpen;
       setIsPanelOpen(true);
-      setScanInput("");
     } catch {
       setScanError(t("quality.inspect.barcodeNotFound", "바코드를 찾을 수 없습니다"));
     }
-  }, [scanInput, isPanelOpen, t]);
+  }, [t]);
 
-  /** Enter 키로 스캔 */
+  const handleScan = useCallback(async () => {
+    const barcode = scanInput.trim();
+    if (!barcode) return;
+    setScanInput("");
+    await openInspectPanel(barcode);
+  }, [scanInput, openInspectPanel]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleScan();
   }, [handleScan]);
@@ -93,7 +81,6 @@ export default function VisualInspectPage() {
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);
     setScannedLabel(null);
-    panelAnimateRef.current = true;
     scanRef.current?.focus();
   }, []);
 
@@ -102,7 +89,19 @@ export default function VisualInspectPage() {
     scanRef.current?.focus();
   }, [fetchHistory]);
 
-  const columns = useMemo<ColumnDef<VisualInspectRecord>[]>(() => [
+  const handleSelectLabel = useCallback((barcode: string) => {
+    openInspectPanel(barcode);
+  }, [openInspectPanel]);
+
+  const columns = useMemo<ColumnDef<StructureInspectRecord>[]>(() => [
+    {
+      accessorKey: "inspectAt", header: t("inspection.result.issuedAt", "검사시간"),
+      size: 150,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v ? new Date(v).toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-";
+      },
+    },
     {
       accessorKey: "fgBarcode", header: t("inspection.result.fgBarcode", "FG 바코드"),
       size: 150, meta: { filterType: "text" as const },
@@ -122,20 +121,17 @@ export default function VisualInspectPage() {
       },
     },
     {
-      accessorKey: "errorCode", header: t("quality.inspect.mainDefectCode", "불량코드"),
-      size: 100, meta: { filterType: "text" as const },
+      accessorKey: "errorCode", header: t("inspection.structure.defectType", "불량유형"),
+      size: 120, meta: { filterType: "text" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
         return v ? <span className="text-red-500 font-mono text-xs">{v}</span> : <span className="text-text-muted">-</span>;
       },
     },
     {
-      accessorKey: "inspectAt", header: t("inspection.result.issuedAt", "검사시간"),
-      size: 150,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? new Date(v).toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-";
-      },
+      accessorKey: "errorDetail", header: t("quality.inspect.detailReason", "상세사유"),
+      size: 200, meta: { filterType: "text" as const },
+      cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span>,
     },
     {
       accessorKey: "inspectorId", header: t("quality.inspect.inspector", "검사원"),
@@ -146,13 +142,12 @@ export default function VisualInspectPage() {
   return (
     <div className="flex h-full animate-fade-in">
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
-        {/* 헤더 */}
         <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
-              <Eye className="w-7 h-7 text-primary" />{t("quality.inspect.title")}
+              <ScanLine className="w-7 h-7 text-primary" />{t("inspection.structure.title", "구조검사")}
             </h1>
-            <p className="text-text-muted mt-1">{t("quality.inspect.subtitle")}</p>
+            <p className="text-text-muted mt-1">{t("inspection.structure.description", "저전압 공정 DIM'S/부재자누락 검사")}</p>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={toggleMaximize} title={isFullscreen ? t("inspection.result.exitFullscreen") : t("inspection.result.fullscreen")} aria-label={isFullscreen ? t("inspection.result.exitFullscreen") : t("inspection.result.fullscreen")} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-text-muted transition-colors hover:border-primary hover:text-primary">
@@ -164,14 +159,13 @@ export default function VisualInspectPage() {
           </div>
         </div>
 
-        {/* 바코드 스캔 입력 */}
         <Card className="flex-shrink-0">
           <CardContent>
             <div className="flex items-center gap-3">
               <ScanLine className="w-6 h-6 text-primary flex-shrink-0" />
               <Input
                 ref={scanRef}
-                placeholder={t("quality.inspect.scanPlaceholder", "FG 바코드를 스캔하세요")}
+                placeholder={t("inspection.structure.scanPlaceholder", "FG 바코드를 스캔 또는 입력하세요")}
                 value={scanInput}
                 onChange={(e) => { setScanInput(e.target.value); setScanError(""); }}
                 onKeyDown={handleKeyDown}
@@ -179,7 +173,10 @@ export default function VisualInspectPage() {
                 fullWidth
                 autoFocus
               />
-              <Button size="sm" onClick={handleScan}>{t("quality.inspect.judgement", "판정")}</Button>
+              <Button size="sm" className="whitespace-nowrap" onClick={handleScan}>{t("quality.inspect.judgement", "판정")}</Button>
+              <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => setIsSelectModalOpen(true)}>
+                <List className="w-4 h-4 mr-1" />{t("common.select", "선택")}
+              </Button>
             </div>
             {scanError && (
               <p className="mt-2 text-sm text-red-500">{scanError}</p>
@@ -187,7 +184,6 @@ export default function VisualInspectPage() {
           </CardContent>
         </Card>
 
-        {/* 이력 DataGrid */}
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
           <CardContent className="h-full p-4">
             <DataGrid
@@ -196,19 +192,24 @@ export default function VisualInspectPage() {
               isLoading={loading}
               enableColumnFilter
               enableExport
-              exportFileName={t("quality.inspect.title")}
-            
-            sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+              exportFileName={t("inspection.structure.title", "구조검사")}
+
+            sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE INSPECT_TYPE = 'STRUCTURE'\n  AND COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
       </div>
 
-      {/* 우측: 검사 등록 패널 */}
-      <InspectFormPanel
+      <StructureInspectPanel
         fgLabel={scannedLabel}
         onClose={handlePanelClose}
         onSave={handlePanelSave}
-        animate={panelAnimateRef.current}
+        animate
+      />
+
+      <FgLabelSelectModal
+        isOpen={isSelectModalOpen}
+        onClose={() => setIsSelectModalOpen(false)}
+        onSelect={handleSelectLabel}
       />
     </div>
   );

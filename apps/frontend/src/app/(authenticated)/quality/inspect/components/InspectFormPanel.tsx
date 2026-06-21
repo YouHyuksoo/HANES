@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, ScanLine } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -21,7 +21,7 @@ import api from "@/services/api";
 import type { FgLabelInfo, DefectCheckItem } from "../types";
 
 interface Props {
-  fgLabel: FgLabelInfo;
+  fgLabel: FgLabelInfo | null;
   onClose: () => void;
   onSave: () => void;
   animate?: boolean;
@@ -30,7 +30,7 @@ interface Props {
 export default function InspectFormPanel({ fgLabel, onClose, onSave, animate = true }: Props) {
   const { t } = useTranslation();
   const defectOptions = useComCodeOptions("VISUAL_DEFECT");
-  const alreadyInspected = fgLabel.status !== "ISSUED";
+  const alreadyInspected = fgLabel ? fgLabel.status !== "ISSUED" : false;
 
   const [passYn, setPassYn] = useState<"Y" | "N">("Y");
   const [errorCode, setErrorCode] = useState("");
@@ -58,6 +58,7 @@ export default function InspectFormPanel({ fgLabel, onClose, onSave, animate = t
   };
 
   const handleSubmit = async () => {
+    if (!fgLabel) return;
     setSaving(true);
     try {
       // 외관검사: 검사결과 기록 + FG라벨 상태전이를 한 트랜잭션으로(원자적) 처리
@@ -78,85 +79,96 @@ export default function InspectFormPanel({ fgLabel, onClose, onSave, animate = t
     <div className={`w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}>
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-        <h2 className="text-sm font-bold text-text">{t("quality.inspect.registerInspect")}</h2>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          {!alreadyInspected && (
-            <Button size="sm" onClick={handleSubmit} disabled={saving}>
-              {saving ? t("common.saving") : t("common.save")}
-            </Button>
-          )}
-        </div>
+        <h2 className="text-sm font-bold text-text">{t("quality.inspect.title")}</h2>
+        {fgLabel && (
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+            {!alreadyInspected && (
+              <Button size="sm" onClick={handleSubmit} disabled={saving}>
+                {saving ? t("common.saving") : t("common.save")}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
-        {/* 라벨 정보 */}
-        <div>
-          <h3 className="text-xs font-semibold text-text-muted mb-2">{t("quality.inspect.inspectInfo")}</h3>
-          <div className="bg-surface rounded-lg p-3 space-y-1">
-            <div className="flex justify-between">
-              <span className="text-text-muted">FG Barcode</span>
-              <span className="font-mono font-bold text-primary">{fgLabel.fgBarcode}</span>
-            </div>
-            <InfoRow label={t("master.part.partCode", "품목코드")} value={fgLabel.itemCode} />
-            <InfoRow label={t("production.result.orderNo", "작업지시")} value={fgLabel.orderNo || "-"} />
-            <InfoRow label={t("production.result.equipCode", "설비")} value={fgLabel.equipCode || "-"} />
-            <InfoRow label={t("common.status", "상태")} value={fgLabel.status} />
+        {!fgLabel ? (
+          <div className="flex flex-col items-center justify-center h-full text-text-muted gap-3">
+            <ScanLine className="w-16 h-16 opacity-20" />
+            <p className="text-sm">{t("quality.inspect.scanPlaceholder", "FG 바코드를 스캔하세요")}</p>
           </div>
-        </div>
-
-        {/* 이미 검사 완료된 경우 */}
-        {alreadyInspected && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 text-center">
-            <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">
-              {t("quality.inspect.alreadyInspected")} ({fgLabel.status})
-            </p>
-          </div>
-        )}
-
-        {/* 판정 */}
-        {!alreadyInspected && (
+        ) : (
           <>
+            {/* 라벨 정보 */}
             <div>
-              <h3 className="text-xs font-semibold text-text-muted mb-2">{t("quality.inspect.judgement")}</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => setPassYn("Y")}
-                  className={`flex items-center justify-center gap-2 py-4 rounded-lg border-2 font-bold text-sm transition-all ${
-                    passYn === "Y" ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300" : "border-border bg-surface text-text-muted hover:border-green-300"
-                  }`}>
-                  <CheckCircle className="w-6 h-6" />{t("quality.inspect.pass")}
-                </button>
-                <button onClick={() => setPassYn("N")}
-                  className={`flex items-center justify-center gap-2 py-4 rounded-lg border-2 font-bold text-sm transition-all ${
-                    passYn === "N" ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300" : "border-border bg-surface text-text-muted hover:border-red-300"
-                  }`}>
-                  <XCircle className="w-6 h-6" />{t("quality.inspect.fail")}
-                </button>
+              <h3 className="text-xs font-semibold text-text-muted mb-2">{t("quality.inspect.inspectInfo")}</h3>
+              <div className="bg-surface rounded-lg p-3 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-text-muted">FG Barcode</span>
+                  <span className="font-mono font-bold text-primary">{fgLabel.fgBarcode}</span>
+                </div>
+                <InfoRow label={t("master.part.partCode", "품목코드")} value={fgLabel.itemCode} />
+                <InfoRow label={t("production.result.orderNo", "작업지시")} value={fgLabel.orderNo || "-"} />
+                <InfoRow label={t("production.result.equipCode", "설비")} value={fgLabel.equipCode || "-"} />
+                <InfoRow label={t("common.status", "상태")} value={fgLabel.status} />
               </div>
             </div>
 
-            {/* 불합격 시 체크리스트 */}
-            {passYn === "N" && (
-              <div>
-                <h3 className="text-xs font-semibold text-text-muted mb-2">{t("quality.inspect.defectChecklist")}</h3>
-                <div className="space-y-2">
-                  {checklist.map((item) => (
-                    <div key={item.code} className={`rounded-lg border p-3 transition-colors ${item.checked ? "border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-900/20" : "border-border bg-surface"}`}>
-                      <div className="flex items-center gap-3">
-                        <input type="checkbox" checked={item.checked} onChange={(e) => updateCheckItem(item.code, "checked", e.target.checked)} className="w-4 h-4 accent-red-500" />
-                        <span className={`flex-1 text-xs font-medium ${item.checked ? "text-text" : "text-text-muted"}`}>{item.name}</span>
-                        {item.checked && (
-                          <Input type="number" value={String(item.qty)} onChange={(e) => updateCheckItem(item.code, "qty", Number(e.target.value))} className="w-20" placeholder={t("quality.inspect.defectQty")} />
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 gap-3 mt-3">
-                  <ComCodeSelect groupCode="VISUAL_DEFECT" label={t("quality.inspect.mainDefectCode")} includeAll={false} value={errorCode} onChange={setErrorCode} fullWidth />
-                  <Input label={t("quality.inspect.detailReason")} value={errorDetail} onChange={(e) => setErrorDetail(e.target.value)} fullWidth />
-                </div>
+            {/* 이미 검사 완료된 경우 */}
+            {alreadyInspected && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 text-center">
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">
+                  {t("quality.inspect.alreadyInspected")} ({fgLabel.status})
+                </p>
               </div>
+            )}
+
+            {/* 판정 */}
+            {!alreadyInspected && (
+              <>
+                <div>
+                  <h3 className="text-xs font-semibold text-text-muted mb-2">{t("quality.inspect.judgement")}</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => setPassYn("Y")}
+                      className={`flex items-center justify-center gap-2 py-4 rounded-lg border-2 font-bold text-sm transition-all whitespace-nowrap ${
+                        passYn === "Y" ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300" : "border-border bg-surface text-text-muted hover:border-green-300"
+                      }`}>
+                      <CheckCircle className="w-6 h-6" />{t("quality.inspect.pass")}
+                    </button>
+                    <button onClick={() => setPassYn("N")}
+                      className={`flex items-center justify-center gap-2 py-4 rounded-lg border-2 font-bold text-sm transition-all whitespace-nowrap ${
+                        passYn === "N" ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300" : "border-border bg-surface text-text-muted hover:border-red-300"
+                      }`}>
+                      <XCircle className="w-6 h-6" />{t("quality.inspect.fail")}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 불합격 시 체크리스트 */}
+                {passYn === "N" && (
+                  <div>
+                    <h3 className="text-xs font-semibold text-text-muted mb-2">{t("quality.inspect.defectChecklist")}</h3>
+                    <div className="space-y-2">
+                      {checklist.map((item) => (
+                        <div key={item.code} className={`rounded-lg border p-3 transition-colors ${item.checked ? "border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-900/20" : "border-border bg-surface"}`}>
+                          <div className="flex items-center gap-3">
+                            <input type="checkbox" checked={item.checked} onChange={(e) => updateCheckItem(item.code, "checked", e.target.checked)} className="w-4 h-4 accent-red-500" />
+                            <span className={`flex-1 text-xs font-medium ${item.checked ? "text-text" : "text-text-muted"}`}>{item.name}</span>
+                            {item.checked && (
+                              <Input type="number" value={String(item.qty)} onChange={(e) => updateCheckItem(item.code, "qty", Number(e.target.value))} className="w-20" placeholder={t("quality.inspect.defectQty")} />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 mt-3">
+                      <ComCodeSelect groupCode="VISUAL_DEFECT" label={t("quality.inspect.mainDefectCode")} includeAll={false} value={errorCode} onChange={setErrorCode} fullWidth />
+                      <Input label={t("quality.inspect.detailReason")} value={errorDetail} onChange={(e) => setErrorDetail(e.target.value)} fullWidth />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

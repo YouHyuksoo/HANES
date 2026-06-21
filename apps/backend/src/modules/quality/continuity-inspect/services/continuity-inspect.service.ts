@@ -155,11 +155,11 @@ export class ContinuityInspectService {
     limit?: number;
     search?: string;
     status?: string;
-    dateFrom?: string;
-    dateTo?: string;
+    company?: string;
+    plant?: string;
   }) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 50;
+    const limit = query.limit ?? 100;
     const skip = (page - 1) * limit;
 
     const qb = this.fgLabelRepo.createQueryBuilder('fg')
@@ -173,12 +173,14 @@ export class ContinuityInspectService {
     if (query.status) {
       qb.andWhere('fg.status = :status', { status: query.status });
     }
-    if (query.dateFrom) {
-      qb.andWhere("fg.issuedAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom: query.dateFrom });
+    if (query.company) {
+      qb.andWhere('fg.company = :company', { company: query.company });
     }
-    if (query.dateTo) {
-      qb.andWhere("fg.issuedAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + 1", { dateTo: query.dateTo });
+    if (query.plant) {
+      qb.andWhere('fg.plant = :plant', { plant: query.plant });
     }
+
+    qb.andWhere('fg.status != :excludedStatus', { excludedStatus: 'STRUCTURE_PASS' });
 
     const [data, total] = await qb.getManyAndCount();
     return { data, total, page, limit };
@@ -955,6 +957,51 @@ export class ContinuityInspectService {
         `프로토콜을 찾을 수 없습니다: ${protocolId}`,
       );
     await this.equipProtocolRepo.remove(protocol);
+  }
+
+  /**
+   * 구조검사 — 저전압 공정 DIM'S/부재자누락 검사
+   * FG_BARCODE 스캔 → 검사결과 기록 + FG라벨 상태전이(원자적)
+   */
+  async structureInspect(
+    fgBarcode: string,
+    dto: { passYn: 'Y' | 'N'; errorCode?: string | null; errorDetail?: string | null; inspectData?: string | null; inspectorId?: string | null },
+    company?: string,
+    plant?: string,
+  ): Promise<{ inspectResult: InspectResult; fgLabel: FgLabel }> {
+    return this.tx.run(async (qr) => {
+      const label = await qr.manager.findOne(FgLabel, {
+        where: { fgBarcode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      });
+      if (!label) {
+        throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
+      }
+
+      const inspectResultNo = await this.seqGenerator.getNo('INSPECT_RESULT', qr);
+      const inspectResult = qr.manager.create(InspectResult, {
+        resultNo: inspectResultNo,
+        prodResultNo: null,
+        inspectType: 'STRUCTURE',
+        inspectScope: 'FULL',
+        passYn: dto.passYn,
+        errorCode: dto.passYn === 'N' ? dto.errorCode ?? null : null,
+        errorDetail: dto.passYn === 'N' ? dto.errorDetail ?? null : null,
+        inspectData: dto.passYn === 'N' ? dto.inspectData ?? null : null,
+        fgBarcode,
+        inspectorId: dto.inspectorId ?? null,
+        inspectAt: new Date(),
+        company: company ?? label.company,
+        plant: plant ?? label.plant,
+      });
+      const savedInspect = await qr.manager.save(InspectResult, inspectResult);
+
+      label.status = dto.passYn === 'Y' ? 'STRUCTURE_PASS' : 'STRUCTURE_FAIL';
+      label.inspectResultId = savedInspect.resultNo;
+      label.inspectPassYn = dto.passYn;
+      const savedLabel = await qr.manager.save(FgLabel, label);
+
+      return { inspectResult: savedInspect, fgLabel: savedLabel };
+    });
   }
 
   /**

@@ -46,7 +46,7 @@ export class CreateInspectResultDto {
   @ApiPropertyOptional({
     description: '검사 유형',
     example: 'CONTINUITY',
-    enum: ['CONTINUITY', 'VISUAL', 'DIMENSION', 'FUNCTION'],
+    enum: ['CONTINUITY', 'VISUAL', 'DIMENSION', 'FUNCTION', 'STRUCTURE'],
   })
   @IsOptional()
   @IsString()
@@ -120,7 +120,7 @@ export class InspectResultQueryDto extends PaginationQueryDto {
   @IsString()
   serialNo?: string;
 
-  @ApiPropertyOptional({ description: '검사 유형으로 필터링', enum: ['CONTINUITY', 'VISUAL', 'DIMENSION', 'FUNCTION'] })
+  @ApiPropertyOptional({ description: '검사 유형으로 필터링', enum: ['CONTINUITY', 'VISUAL', 'DIMENSION', 'FUNCTION', 'STRUCTURE'] })
   @IsOptional()
   @IsString()
   inspectType?: string;
@@ -203,7 +203,7 @@ export class BarcodeInspectDto {
   @ApiPropertyOptional({
     description: '검사 유형',
     example: 'VISUAL',
-    enum: ['CONTINUITY', 'VISUAL', 'DIMENSION', 'FUNCTION'],
+    enum: ['CONTINUITY', 'VISUAL', 'DIMENSION', 'FUNCTION', 'STRUCTURE'],
   })
   @IsOptional()
   @IsString()

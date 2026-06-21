@@ -115,6 +115,32 @@ export class ContinuityInspectController {
     return ResponseUtil.success(data, '외관검사가 등록되었습니다.');
   }
 
+  @Get('fg-labels')
+  @ApiOperation({ summary: 'Search FG labels' })
+  @ApiQuery({ name: 'search', required: false, description: '바코드/품목코드/지시번호 검색' })
+  @ApiQuery({ name: 'status', required: false, description: '라벨 상태 필터' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async findAllFgLabels(
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const data = await this.continuityInspectService.findAllFgLabels({
+      search,
+      status,
+      company,
+      plant,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+    return ResponseUtil.paged(data.data, data.total, data.page, data.limit);
+  }
+
   @Get('fg-labels/:orderNo')
   @ApiOperation({ summary: 'List FG labels by order' })
   @ApiParam({ name: 'orderNo' })
@@ -141,6 +167,33 @@ export class ContinuityInspectController {
     const result = await this.continuityInspectService.inspect(dto, company, plant);
     const message = dto.passYn === 'Y' ? `PASS: ${result.fgBarcode}` : 'FAIL recorded';
     return ResponseUtil.success(result, message);
+  }
+
+  @Post('structure-inspect/:fgBarcode')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '구조검사 — DIM\'S/부재자누락 검사 결과 등록' })
+  @ApiParam({ name: 'fgBarcode' })
+  @ApiResponse({ status: 201, description: 'Inspected' })
+  async structureInspect(
+    @Param('fgBarcode') fgBarcode: string,
+    @Body()
+    body: {
+      passYn: 'Y' | 'N';
+      errorCode?: string | null;
+      errorDetail?: string | null;
+      inspectData?: string | null;
+      inspectorId?: string | null;
+    },
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.structureInspect(
+      fgBarcode,
+      body,
+      company,
+      plant,
+    );
+    return ResponseUtil.success(data, '구조검사가 등록되었습니다.');
   }
 
   @Post('auto-inspect')
