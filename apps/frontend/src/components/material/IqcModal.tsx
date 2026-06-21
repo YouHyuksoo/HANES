@@ -53,6 +53,11 @@ interface PendingSerial {
   currentQty: number;
 }
 
+interface ScannedSerialSample {
+  scanKey: string;
+  matUid: string;
+}
+
 interface SerialInspection {
   result: "PASS" | "FAIL" | "";
   rows: MeasurementRow[];
@@ -174,7 +179,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [inspectItems, setInspectItems] = useState<IqcInspectItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [pendingSerials, setPendingSerials] = useState<PendingSerial[]>([]);
-  const [scannedSerials, setScannedSerials] = useState<string[]>([]);
+  const [scannedSerials, setScannedSerials] = useState<ScannedSerialSample[]>([]);
   const [selectedSerial, setSelectedSerial] = useState("");
   const [serialInspectionMap, setSerialInspectionMap] = useState<Record<string, SerialInspection>>({});
   const [serialScanValue, setSerialScanValue] = useState("");
@@ -187,6 +192,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [destructInputs, setDestructInputs] = useState<Record<number, { inspectedQty: string; defectQty: string }>>({});
   const serialScanInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scanSequenceRef = useRef(0);
 
   useEffect(() => {
     if (!isOpen || !selectedItem) {
@@ -195,6 +201,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       setScannedSerials([]);
       setSelectedSerial("");
       setSerialInspectionMap({});
+      scanSequenceRef.current = 0;
       setSerialScanValue("");
       setScanSerialError("");
       setSampleQty("");
@@ -287,9 +294,9 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     if (aqlItems.length === 0) return;
     setSerialInspectionMap((prev) => {
       const next = { ...prev };
-      for (const matUid of scannedSerials) {
-        if (!next[matUid] || next[matUid].rows.length === 0) {
-          next[matUid] = { result: "", rows: createMeasurementRows(aqlItems) };
+      for (const sample of scannedSerials) {
+        if (!next[sample.scanKey] || next[sample.scanKey].rows.length === 0) {
+          next[sample.scanKey] = { result: "", rows: createMeasurementRows(aqlItems) };
         }
       }
       return next;
@@ -324,46 +331,57 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     }
 
     setScanSerialError("");
-    setScannedSerials((prev) => prev.includes(matched.matUid) ? prev : [...prev, matched.matUid]);
+    scanSequenceRef.current += 1;
+    const sample = {
+      scanKey: `${matched.matUid}::${scanSequenceRef.current}`,
+      matUid: matched.matUid,
+    };
+    setScannedSerials((prev) => [...prev, sample]);
     setSerialInspectionMap((prev) => ({
       ...prev,
-      [matched.matUid]: prev[matched.matUid] ?? {
+      [sample.scanKey]: prev[sample.scanKey] ?? {
         result: "",
         rows: createMeasurementRows(aqlItems),
       },
     }));
-    setSelectedSerial(matched.matUid);
+    setSelectedSerial(sample.scanKey);
     setSerialScanValue("");
     window.setTimeout(() => serialScanInputRef.current?.focus(), 0);
   }, [findPendingSerial, aqlItems, serialScanValue, t]);
 
   const handleAddAllPending = useCallback(() => {
-    const unscanned = pendingSerials.filter((p) => !scannedSerials.includes(p.matUid));
-    if (unscanned.length === 0) return;
-    setScannedSerials((prev) => [...prev, ...unscanned.map((p) => p.matUid)]);
+    if (pendingSerials.length === 0) return;
+    const samples = pendingSerials.map((serial) => {
+      scanSequenceRef.current += 1;
+      return {
+        scanKey: `${serial.matUid}::${scanSequenceRef.current}`,
+        matUid: serial.matUid,
+      };
+    });
+    setScannedSerials((prev) => [...prev, ...samples]);
     setSerialInspectionMap((prev) => {
       const next = { ...prev };
-      for (const p of unscanned) {
-        if (!next[p.matUid]) next[p.matUid] = { result: "", rows: createMeasurementRows(aqlItems) };
+      for (const sample of samples) {
+        if (!next[sample.scanKey]) next[sample.scanKey] = { result: "", rows: createMeasurementRows(aqlItems) };
       }
       return next;
     });
-    setSelectedSerial(unscanned[0].matUid);
-  }, [pendingSerials, scannedSerials, aqlItems]);
+    setSelectedSerial(samples[0].scanKey);
+  }, [pendingSerials, aqlItems]);
 
-  const handleRemoveSerial = useCallback((matUid: string) => {
-    setScannedSerials((prev) => prev.filter((s) => s !== matUid));
+  const handleRemoveSerial = useCallback((scanKey: string) => {
+    setScannedSerials((prev) => prev.filter((sample) => sample.scanKey !== scanKey));
     setSerialInspectionMap((prev) => {
       const next = { ...prev };
-      delete next[matUid];
+      delete next[scanKey];
       return next;
     });
-    setSelectedSerial((prev) => (prev === matUid ? "" : prev));
+    setSelectedSerial((prev) => (prev === scanKey ? "" : prev));
   }, []);
 
-  const updateSerialMeasurement = useCallback((matUid: string, idx: number, value: string) => {
+  const updateSerialMeasurement = useCallback((scanKey: string, idx: number, value: string) => {
     setSerialInspectionMap((prev) => {
-      const inspection = prev[matUid];
+      const inspection = prev[scanKey];
       if (!inspection) return prev;
       const rows = [...inspection.rows];
       rows[idx] = {
@@ -371,33 +389,34 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
         measuredValue: value,
         judge: judgeValue(value, rows[idx].lsl, rows[idx].usl),
       };
-      return { ...prev, [matUid]: { ...inspection, rows } };
+      return { ...prev, [scanKey]: { ...inspection, rows } };
     });
   }, []);
 
-  const updateSerialJudge = useCallback((matUid: string, idx: number, judge: "PASS" | "FAIL") => {
+  const updateSerialJudge = useCallback((scanKey: string, idx: number, judge: "PASS" | "FAIL") => {
     setSerialInspectionMap((prev) => {
-      const inspection = prev[matUid];
+      const inspection = prev[scanKey];
       if (!inspection) return prev;
       const rows = [...inspection.rows];
       rows[idx] = { ...rows[idx], measuredValue: judge, judge };
-      return { ...prev, [matUid]: { ...inspection, rows } };
+      return { ...prev, [scanKey]: { ...inspection, rows } };
     });
   }, []);
 
-  const updateSerialSimpleResult = useCallback((matUid: string, result: "PASS" | "FAIL") => {
+  const updateSerialSimpleResult = useCallback((scanKey: string, result: "PASS" | "FAIL") => {
     setSerialInspectionMap((prev) => {
-      const inspection = prev[matUid] ?? { rows: [], result: "" };
-      return { ...prev, [matUid]: { ...inspection, result } };
+      const inspection = prev[scanKey] ?? { rows: [], result: "" };
+      return { ...prev, [scanKey]: { ...inspection, result } };
     });
   }, []);
 
   const serialInspectionPayload = useMemo(() => {
-    return scannedSerials.map((matUid) => {
-      const serial = pendingSerials.find((s) => s.matUid === matUid);
-      const inspection = serialInspectionMap[matUid];
+    return scannedSerials.map((sample, index) => {
+      const serial = pendingSerials.find((s) => s.matUid === sample.matUid);
+      const inspection = serialInspectionMap[sample.scanKey];
       return {
-        matUid,
+        matUid: sample.matUid,
+        sampleNo: index + 1,
         qty: serial?.currentQty ?? serial?.initQty ?? null,
         result: getSerialResult(inspection),
         items: (inspection?.rows ?? []).map((row) => ({
@@ -415,11 +434,14 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   }, [pendingSerials, scannedSerials, serialInspectionMap]);
 
   const selectedInspection = selectedSerial ? serialInspectionMap[selectedSerial] : undefined;
+  const selectedScannedSerial = selectedSerial
+    ? scannedSerials.find((sample) => sample.scanKey === selectedSerial)
+    : undefined;
   const selectedPendingSerial = selectedSerial
-    ? pendingSerials.find((serial) => serial.matUid === selectedSerial)
+    ? pendingSerials.find((serial) => serial.matUid === selectedScannedSerial?.matUid)
     : undefined;
   const hasInspectItems = inspectItems.length > 0;
-  const unscannedPending = pendingSerials.filter((p) => !scannedSerials.includes(p.matUid));
+  const unscannedPending = pendingSerials;
   const isIncomplete = serialInspectionPayload.some((serial) => !serial.result);
   const passCount = serialInspectionPayload.filter((serial) => serial.result === "PASS").length;
   const failCount = serialInspectionPayload.filter((serial) => serial.result === "FAIL").length;
@@ -477,7 +499,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     }, verdict, {
       sampleQty: sampleQty ? Number(sampleQty) : undefined,
       certFile: certFile ?? undefined,
-      sampleBarcode: buildSampleBarcode(scannedSerials),
+      sampleBarcode: buildSampleBarcode(scannedSerials.map((serial) => serial.matUid)),
       defects: effectiveDefectRows,
     });
   }, [anyDestructFail, anyFail, canSubmit, certFile, destructivePayload, effectiveDefectRows, onSubmit, sampleQty, scannedSerials, selectedItem, serialInspectionPayload, setForm]);
@@ -762,23 +784,23 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                   {t("material.iqc.scanFirst", "시리얼을 먼저 스캔하세요.")}
                 </div>
               ) : (
-                scannedSerials.map((matUid, idx) => {
-                  const result = getSerialResult(serialInspectionMap[matUid]);
+                scannedSerials.map((sample, idx) => {
+                  const result = getSerialResult(serialInspectionMap[sample.scanKey]);
                   return (
                     <div
-                      key={matUid}
+                      key={sample.scanKey}
                       className={`flex items-center gap-1 border-b border-border hover:bg-surface ${
-                        selectedSerial === matUid ? "bg-primary/10" : ""
+                        selectedSerial === sample.scanKey ? "bg-primary/10" : ""
                       }`}
                     >
                       <button
                         type="button"
-                        onClick={() => setSelectedSerial(matUid)}
+                        onClick={() => setSelectedSerial(sample.scanKey)}
                         className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2 text-left"
                       >
                         <div className="min-w-0">
                           <p className="text-xs text-text-muted">{idx + 1}</p>
-                          <p className="font-mono text-sm text-text truncate">{matUid}</p>
+                          <p className="font-mono text-sm text-text truncate">{sample.matUid}</p>
                         </div>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                           result === "PASS"
@@ -792,7 +814,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleRemoveSerial(matUid)}
+                        onClick={() => handleRemoveSerial(sample.scanKey)}
                         aria-label={t("material.iqc.removeSerial", "시리얼 제거")}
                         title={t("material.iqc.removeSerial", "시리얼 제거")}
                         className="mr-2 shrink-0 rounded p-1 text-text-muted transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/40"
@@ -817,7 +839,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                   <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-text-muted">{t("material.iqc.selectedSerial", "선택 시리얼")}</p>
-                      <p className="font-mono font-semibold text-text">{selectedSerial}</p>
+                      <p className="font-mono font-semibold text-text">{selectedScannedSerial?.matUid ?? selectedSerial}</p>
                     </div>
                     <p className="text-sm text-text-muted">
                       {t("material.iqc.qty", "수량")}: {(selectedPendingSerial?.currentQty ?? selectedPendingSerial?.initQty ?? 0).toLocaleString()}

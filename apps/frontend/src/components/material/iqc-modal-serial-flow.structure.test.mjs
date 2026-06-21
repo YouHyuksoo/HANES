@@ -45,6 +45,17 @@ test('IQC modal aligns defect-code entry with actual failed inspection evidence'
 test('IQC modal does not send every scanned serial into 500-byte SAMPLE_BARCODE', () => {
   assert.match(modalSource, /function\s+buildSampleBarcode/);
   assert.match(modalSource, /MAX_SAMPLE_BARCODE_BYTES\s*=\s*500/);
-  assert.match(modalSource, /sampleBarcode:\s*buildSampleBarcode\(scannedSerials\)/);
+  assert.match(modalSource, /sampleBarcode:\s*buildSampleBarcode\(scannedSerials\.map\(\(serial\)\s*=>\s*serial\.matUid\)\)/);
   assert.doesNotMatch(modalSource, /sampleBarcode:\s*scannedSerials\.join\(","\)/);
+});
+
+test('IQC modal allows repeated scans of the same material serial as separate samples', () => {
+  assert.match(modalSource, /interface\s+ScannedSerialSample/);
+  assert.match(modalSource, /scanKey:\s*string/);
+  assert.match(modalSource, /matUid:\s*string/);
+  assert.match(modalSource, /scanSequenceRef/);
+  assert.match(modalSource, /setScannedSerials\(\(prev\)\s*=>\s*\[\.\.\.prev,\s*sample\]\)/);
+  assert.match(modalSource, /serialInspectionMap\[sample\.scanKey\]/);
+  assert.match(modalSource, /serialInspectionPayload[\s\S]*matUid:\s*sample\.matUid/);
+  assert.doesNotMatch(modalSource, /prev\.includes\(matched\.matUid\)/);
 });
