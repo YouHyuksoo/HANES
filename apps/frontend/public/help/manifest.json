@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "key": "quality",
+      "title": "품질관리",
+      "items": [
+        { "menuCode": "QC_AQL", "title": "AQL 기준관리", "path": "/quality/aql" }
+      ]
+    }
+  ]
+}
