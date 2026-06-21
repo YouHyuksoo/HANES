@@ -10,7 +10,7 @@
  * 3. 라인, 설비유형, 상태 필터링 지원
  */
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -39,6 +39,10 @@ interface FormState {
   useYn: string;
 }
 
+interface EquipMasterTabProps {
+  onHeaderActionsChange?: (actions: ReactNode | null) => void;
+}
+
 const EMPTY_FORM: FormState = {
   equipCode: "",
   equipName: "",
@@ -55,7 +59,7 @@ const EMPTY_FORM: FormState = {
   useYn: "Y",
 };
 
-export default function EquipMasterTab() {
+export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTabProps) {
   const { t } = useTranslation();
   const [equipments, setEquipments] = useState<EquipMaster[]>([]);
   const [loading, setLoading] = useState(false);
@@ -95,11 +99,11 @@ export default function EquipMasterTab() {
     fetchEquipments();
   }, [fetchEquipments]);
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     setEditing(null);
     setForm(EMPTY_FORM);
     setPanelOpen(true);
-  };
+  }, []);
 
   const openEdit = (equip: EquipMaster) => {
     setEditing(equip);
@@ -162,6 +166,23 @@ export default function EquipMasterTab() {
       setDeleteTarget(null);
     }
   };
+
+  useEffect(() => {
+    if (!onHeaderActionsChange) return;
+    onHeaderActionsChange(
+      <>
+        <Button variant="secondary" size="sm" onClick={fetchEquipments}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+          {t("common.refresh", "새로고침")}
+        </Button>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-1" />
+          {t("master.equip.addEquip", "설비 추가")}
+        </Button>
+      </>,
+    );
+    return () => onHeaderActionsChange(null);
+  }, [fetchEquipments, loading, onHeaderActionsChange, openCreate, t]);
 
   const columns = useMemo<ColumnDef<EquipMaster>[]>(() => [
     {
@@ -233,17 +254,6 @@ export default function EquipMasterTab() {
   return (
     <div className="h-full flex overflow-hidden">
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="flex justify-end items-center mb-3 gap-2 flex-shrink-0">
-          <Button variant="secondary" size="sm" onClick={fetchEquipments}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-            {t("common.refresh", "새로고침")}
-          </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" />
-            {t("master.equip.addEquip", "설비 추가")}
-          </Button>
-        </div>
-
         <Card className="flex-1 min-h-0 overflow-hidden">
           <CardContent className="h-full">
             <DataGrid data={equipments} columns={columns} pageSize={10} isLoading={loading} enableColumnPinning enableColumnFilter enableExport exportFileName={t("master.equip.title", "설비관리")}

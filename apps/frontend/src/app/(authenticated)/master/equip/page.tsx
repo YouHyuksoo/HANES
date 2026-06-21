@@ -11,7 +11,7 @@
  * IQC 항목 페이지와 동일한 UI 패턴 적용
  */
 
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Monitor, Package } from "lucide-react";
 import EquipMasterTab from "./components/EquipMasterTab";
@@ -22,8 +22,13 @@ type TabValue = "masters" | "bom";
 export default function EquipPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabValue>("masters");
+  const [headerActions, setHeaderActions] = useState<ReactNode | null>(null);
 
-  const tabs: { key: TabValue; label: string; icon: React.ReactNode }[] = [
+  useEffect(() => {
+    if (activeTab !== "masters") setHeaderActions(null);
+  }, [activeTab]);
+
+  const tabs: { key: TabValue; label: string; icon: ReactNode }[] = [
     { 
       key: "masters", 
       label: t("master.equip.tabMasters", "설비 기본정보"),
@@ -39,14 +44,19 @@ export default function EquipPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex-shrink-0">
-        <h1 className="text-xl font-bold text-text flex items-center gap-2">
-          <Monitor className="w-7 h-7 text-primary" />
-          {t("master.equip.title", "설비 관리")}
-        </h1>
-        <p className="text-text-muted mt-1">
-          {t("master.equip.subtitle", "설비 마스터 및 BOM 관리")}
-        </p>
+      <div className="flex justify-between items-start gap-3 flex-shrink-0">
+        <div>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <Monitor className="w-7 h-7 text-primary" />
+            {t("master.equip.title", "설비 관리")}
+          </h1>
+          <p className="text-text-muted mt-1">
+            {t("master.equip.subtitle", "설비 마스터 및 BOM 관리")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {headerActions}
+        </div>
       </div>
 
       {/* 탭 네비게이션 */}
@@ -71,7 +81,7 @@ export default function EquipPage() {
 
       {/* 탭 컨텐츠 */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === "masters" && <EquipMasterTab />}
+        {activeTab === "masters" && <EquipMasterTab onHeaderActionsChange={setHeaderActions} />}
         {activeTab === "bom" && <EquipBomTab />}
       </div>
     </div>

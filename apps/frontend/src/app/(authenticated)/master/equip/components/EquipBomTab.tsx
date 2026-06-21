@@ -470,10 +470,10 @@ export default function EquipBomTab() {
 
         <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
           {/* 설비 목록 */}
-          <div className="col-span-4">
+          <div className="col-span-3">
             <Card className="h-[600px] flex flex-col">
-              <CardContent className="flex-1 flex flex-col min-h-0 p-4">
-                <h3 className="font-semibold mb-3 flex items-center gap-2 flex-shrink-0">
+              <CardContent className="flex-1 flex flex-col min-h-0 p-2">
+                <h3 className="px-1 text-sm font-semibold mb-2 flex items-center gap-1.5 flex-shrink-0">
                   <Wrench className="w-4 h-4" />
                   {t("master.equip.equipList", "설비 목록")}
                 </h3>
@@ -482,27 +482,23 @@ export default function EquipBomTab() {
                   value={equipSearch}
                   onChange={(e) => setEquipSearch(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />}
-                  className="mb-3 flex-shrink-0"
+                  className="mb-2 h-8 text-xs flex-shrink-0"
                   fullWidth
                 />
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-1">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5">
                   {filteredEquipments.map((equip) => (
                     <button
                       key={equip.equipCode}
                       onClick={() => setSelectedEquipId(equip.equipCode)}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      className={`grid h-8 w-full grid-cols-[88px_minmax(0,1fr)_16px] items-center gap-1 rounded border px-2 text-left text-xs transition-colors ${
                         selectedEquipId === equip.equipCode
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-primary/50 hover:bg-surface"
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">{equip.equipName}</div>
-                          <div className="text-xs text-text-muted">{equip.equipCode}</div>
-                        </div>
-                        <ChevronRight className={`w-4 h-4 ${selectedEquipId === equip.equipCode ? "text-primary" : "text-text-muted"}`} />
-                      </div>
+                      <span className="truncate font-mono text-[11px] text-text-muted">{equip.equipCode}</span>
+                      <span className="truncate font-medium text-text">{equip.equipName}</span>
+                      <ChevronRight className={`h-3.5 w-3.5 ${selectedEquipId === equip.equipCode ? "text-primary" : "text-text-muted"}`} />
                     </button>
                   ))}
                 </div>
@@ -511,7 +507,7 @@ export default function EquipBomTab() {
           </div>
 
           {/* BOM 목록 */}
-          <div className="col-span-8">
+          <div className="col-span-9">
             <Card className="h-[600px] flex flex-col">
               <CardContent className="flex-1 flex flex-col p-4">
                 <div className="flex items-center justify-between mb-3">

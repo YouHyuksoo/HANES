@@ -2,20 +2,20 @@
 
 /**
  * @file src/app/(authenticated)/inspection/history/page.tsx
- * @description 통전검사 이력조회 페이지 - INSPECT_RESULTS (inspectType=CONTINUITY) 조회
+ * @description 검사 이력조회 페이지 - INSPECT_RESULTS 전체 검사유형 조회
  *
  * 초보자 가이드:
- * 1. GET /quality/inspect-results?inspectType=CONTINUITY 로 검사이력 조회
- * 2. 합격/불합격 전체 이력 표시 + 날짜/판정 필터
- * 3. 합격건은 FG_BARCODE 연결 표시
+ * 1. GET /quality/inspect-results 로 전체 검사이력 조회
+ * 2. 검사유형/합격여부/날짜/시리얼 필터
+ * 3. 외관검사, 단자검사, 통전검사를 INSPECT_TYPE으로 구분 표시
  */
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Zap, RefreshCw, Search, CheckCircle, XCircle, TrendingUp, Activity,
+  Zap, RefreshCw, Search, CheckCircle, XCircle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -41,6 +41,7 @@ export default function InspectionHistoryPage() {
 
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -54,9 +55,9 @@ export default function InspectionHistoryPage() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = {
-        inspectType: "CONTINUITY",
         limit: 5000,
       };
+      if (typeFilter) params.inspectType = typeFilter;
       if (debouncedSearch) params.serialNo = debouncedSearch;
       if (resultFilter) params.passYn = resultFilter;
       if (dateFrom) params.startDate = dateFrom;
@@ -69,17 +70,21 @@ export default function InspectionHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, resultFilter, dateFrom, dateTo]);
+  }, [debouncedSearch, typeFilter, resultFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = useMemo(() => {
-    const total = data.length;
-    const passed = data.filter((r) => r.passYn === "Y").length;
-    const failed = total - passed;
-    const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : "0.0";
-    return { total, passed, failed, passRate };
-  }, [data]);
+  const inspectTypeLabel = useMemo<Record<string, string>>(() => ({
+    VISUAL: t("inspection.history.typeVisual", "외관검사"),
+    TERMINAL: t("inspection.history.typeTerminal", "단자검사"),
+    CONTINUITY: t("inspection.history.typeContinuity", "통전검사"),
+  }), [t]);
+
+  const inspectTypeClass = useMemo<Record<string, string>>(() => ({
+    VISUAL: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300",
+    TERMINAL: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
+    CONTINUITY: "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300",
+  }), []);
 
   const columns = useMemo<ColumnDef<InspectHistoryRow>[]>(() => [
     {
@@ -88,6 +93,19 @@ export default function InspectionHistoryPage() {
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? new Date(v).toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "-";
+      },
+    },
+    {
+      accessorKey: "inspectType", header: t("inspection.history.inspectType", "검사유형"),
+      size: 110, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = String(getValue() ?? "").toUpperCase();
+        if (!v) return <span className="text-text-muted">-</span>;
+        return (
+          <span className={`inline-flex h-6 items-center rounded border px-2 text-xs font-medium ${inspectTypeClass[v] ?? "border-border bg-surface text-text"}`}>
+            {inspectTypeLabel[v] ?? v}
+          </span>
+        );
       },
     },
     {
@@ -136,27 +154,20 @@ export default function InspectionHistoryPage() {
         return v === "FULL" ? t("inspection.history.scopeFull", "전수") : v === "SAMPLE" ? t("inspection.history.scopeSample", "샘플") : v || "-";
       },
     },
-  ], [t]);
+  ], [inspectTypeClass, inspectTypeLabel, t]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-3 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Zap className="w-7 h-7 text-primary" />{t("menu.inspection.history", "통전검사이력")}
+            <Zap className="w-7 h-7 text-primary" />{t("inspection.history.title", "검사이력")}
           </h1>
-          <p className="text-text-muted mt-1">{t("inspection.result.continuity", "통전검사")} {t("quality.inspect.subtitle", "이력 조회")}</p>
+          <p className="text-text-muted mt-1">{t("inspection.history.subtitle", "외관검사, 단자검사, 통전검사 이력 조회")}</p>
         </div>
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("quality.inspect.totalCount", "총 건수")} value={`${stats.total}`} icon={Activity} color="blue" />
-        <StatCard label={t("quality.inspect.pass", "합격")} value={`${stats.passed}`} icon={CheckCircle} color="green" />
-        <StatCard label={t("quality.inspect.fail", "불합격")} value={`${stats.failed}`} icon={XCircle} color="red" />
-        <StatCard label={t("quality.inspect.passRate", "합격률")} value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
@@ -167,7 +178,7 @@ export default function InspectionHistoryPage() {
             isLoading={loading}
             enableColumnFilter
             enableExport
-            exportFileName={t("menu.inspection.history", "통전검사이력")}
+            exportFileName={t("inspection.history.title", "검사이력")}
             toolbarLeft={
               <div className="flex gap-2 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">
@@ -180,11 +191,15 @@ export default function InspectionHistoryPage() {
                   <span className="text-text-muted">~</span>
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
                 </div>
+                <div className="w-44">
+                  <ComCodeSelect groupCode="INSPECT_TYPE" labelPrefix={t("inspection.history.inspectType", "검사유형")}
+                    value={typeFilter} onChange={setTypeFilter} fullWidth />
+                </div>
                 <ComCodeSelect groupCode="INSPECT_RESULT" labelPrefix={t('common.result', '결과')} value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
             }
           
-          sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={`SELECT RESULT_NO, PROD_RESULT_NO, INSPECT_TYPE, INSPECT_SCOPE, PASS_YN,\n       FG_BARCODE, ERROR_CODE, ERROR_DETAIL, INSPECT_AT, INSPECTOR_ID\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY INSPECT_AT DESC`}/>
         </CardContent>
       </Card>
     </div>
