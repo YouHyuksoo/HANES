@@ -25,6 +25,7 @@
 | 진입 구조 | **하이브리드** | 페이지 도움말 = 슬라이드 패널(작업 흐름 유지), 전체 도움말 = `/help` 라우트(목차·검색·넓은 화면) |
 | 버튼 위치 | **전역 Header 버튼 1개** | 모든 페이지(AQL 포함) 자동 커버, 현재 경로 자동 인식, 한 번만 구현 |
 | 사용자/운영자 | **단순 탭 구분(권한 무관)** | 누구나 두 탭 모두 열람. 구현 단순 |
+| 메타데이터 | **각 .md frontmatter(YAML) 정본** | tags/keywords/summary를 문서가 보유 → 추후 AI가 문서 단위로 검색·인용·인덱싱하기 견고. manifest는 목차 구조만 |
 | 다국어 | 1차 **ko 단일**, 경로에 lang 자리 확보 | 장문 도움말 4언어 동시 유지 부담 회피, 추후 확장 가능 |
 
 ## 3. 콘텐츠 저장 구조
@@ -66,8 +67,42 @@ apps/frontend/public/help/
 }
 ```
 
-- 목차/검색은 manifest를 소스로 한다. `menuConfig`와 별개로 두어 도움말 전용 그룹·순서·표시 제목을 자유롭게 관리한다.
+- 목차/순서는 manifest를 소스로 한다. `menuConfig`와 별개로 두어 도움말 전용 그룹·순서·표시 제목을 자유롭게 관리한다.
 - 특정 항목에 실제 .md 파일이 아직 없어도 manifest에 등재 가능 → 목차에는 보이되 본문은 "준비중" fallback.
+- 검색·AI 메타(tags/keywords/summary)는 manifest가 아니라 **각 문서 frontmatter**가 정본이다(아래 3.1).
+
+### 3.1 문서 frontmatter (AI 활용 메타데이터, 정본)
+
+각 `.md`는 상단에 YAML frontmatter를 둔다. 본문 렌더 시에는 `remark-frontmatter`로 frontmatter를 숨기고, 메타는 `gray-matter`로 파싱해 검색·AI 인덱싱·요약 표시에 사용한다.
+
+```markdown
+---
+menuCode: QC_AQL
+audience: user            # user | operator
+title: AQL 기준관리
+summary: 수입검사 AQL 정책·기준을 등록·관리하는 화면
+tags: [품질, IQC, AQL, 수입검사]
+keywords: [합격품질한계, Major, Minor, 검사수준, 샘플링, Ac, Re]
+related: [MST_PART]       # 관련 화면 메뉴코드
+---
+
+# AQL 기준관리
+... 본문 ...
+```
+
+필드 규약:
+- `menuCode`(필수), `audience`(필수: user|operator), `title`(필수)
+- `summary`(권장): 한 줄 요약. 목차/검색 결과/AI 컨텍스트에 사용
+- `tags`(권장): 분류 태그 배열. AI 분류·필터용
+- `keywords`(권장): 동의어·검색어 배열. 사용자가 다르게 부르는 용어를 포함해 검색·AI 매칭률을 높임
+- `related`(선택): 관련 화면 menuCode 배열
+
+### 3.2 AI 활용 구조 (향후)
+
+frontmatter가 정본이므로, 향후 AI 도움말 어시스턴트는 다음을 할 수 있다:
+- 모든 `.md` frontmatter를 수집해 `{menuCode, audience, title, summary, tags, keywords}` 인덱스를 생성(빌드 스크립트 또는 런타임).
+- 사용자 질문 → tags/keywords/summary 매칭으로 관련 문서 후보 선별 → 본문을 컨텍스트로 인용(RAG).
+- 이번 1차 범위에는 AI 어시스턴트 자체는 포함하지 않으나, **frontmatter 스키마를 지금 확정**해 콘텐츠를 그 형식으로 축적한다(나중에 재작성 불필요).
 
 ## 4. 페이지 ↔ 도움말 매핑
 
@@ -107,6 +142,8 @@ apps/frontend/public/help/
 설계 원칙: `MarkdownRenderer`와 `useHelpDoc`은 패널과 전체 페이지 양쪽에서 **공유**한다. 도움말 렌더/조회 로직은 한 곳에만 둔다.
 
 ## 7. 콘텐츠 템플릿 (화면별로 한 개씩 채울 표준 틀)
+
+모든 문서/템플릿은 3.1의 frontmatter로 시작한 뒤 아래 본문 구조를 따른다.
 
 ### 7.1 사용자용 (`user/{MENU_CODE}.md`)
 ```markdown
