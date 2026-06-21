@@ -59,6 +59,7 @@
 - flex 스크롤 영역에는 `min-h-0`를 명시한다.
 - 코드성 데이터 입력은 가능한 한 셀렉트나 콤보박스를 사용한다.
 - 공통 필터와 공통 입력 컴포넌트는 `components/shared/`를 우선 사용한다.
+- 화면 도움말 작성·수정은 `docs/standards/help-authoring-guide.md`를 따른다(`public/help/{user,operator}/{메뉴코드}.md` + frontmatter + manifest 등재).
 
 ## 공통 코드
 
