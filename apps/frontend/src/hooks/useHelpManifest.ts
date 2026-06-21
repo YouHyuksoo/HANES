@@ -21,6 +21,9 @@ export function useHelpManifest() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { manifest, loading };
