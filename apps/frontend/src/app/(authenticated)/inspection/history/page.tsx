@@ -34,6 +34,13 @@ interface InspectHistoryRow {
   inspectorId: string | null;
 }
 
+function formatLocalDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function InspectionHistoryPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<InspectHistoryRow[]>([]);
@@ -43,8 +50,8 @@ export default function InspectionHistoryPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(() => formatLocalDate());
+  const [dateTo, setDateTo] = useState(() => formatLocalDate());
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText), 300);

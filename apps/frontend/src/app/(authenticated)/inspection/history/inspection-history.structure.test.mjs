@@ -21,6 +21,12 @@ test('inspection history exposes inspection type as filter and grid column', () 
   assert.match(pageSource, /통전검사/);
 });
 
+test('inspection history defaults date range filters to today', () => {
+  assert.match(pageSource, /function\s+formatLocalDate/);
+  assert.match(pageSource, /const\s+\[dateFrom,\s*setDateFrom\]\s*=\s*useState\(\(\)\s*=>\s*formatLocalDate\(\)\)/);
+  assert.match(pageSource, /const\s+\[dateTo,\s*setDateTo\]\s*=\s*useState\(\(\)\s*=>\s*formatLocalDate\(\)\)/);
+});
+
 test('inspection history menu label is generic inspection history', () => {
   assert.equal(koLocale.menu['inspection.history'], '검사이력');
 });
