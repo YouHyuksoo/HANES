@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Loader2 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { PartSearchModal, LineSelect, ProcessSelect, EquipSelect } from "@/components/shared";
+import { PartSearchModal, LineSelect, ProcessSelect } from "@/components/shared";
 import { useEquipOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
@@ -76,7 +76,7 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
 
   const [form, setForm] = useState({ ...INIT_FORM });
 
-  /** 선택한 공정에 매핑된 설비 유무 — 없으면 설비 드롭다운 아래 안내 표시 */
+  /** 선택한 공정에 매핑된 설비 유무 — 없으면 설비 선택 영역 아래 안내 표시 */
   const { options: equipOptions, isLoading: equipLoading } = useEquipOptions(form.processCode || undefined);
   const noEquipForProcess = !!form.processCode && !equipLoading && equipOptions.length === 0;
 
@@ -242,13 +242,58 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
 
           {/* 라인 / 공정 / 설비 */}
           <div className="space-y-3">
-            <LineSelect label={t("production.order.line")} value={form.lineCode}
-              onChange={v => setField("lineCode", v)} fullWidth />
-            <ProcessSelect label={t("production.order.process")} value={form.processCode}
-              onChange={v => setField("processCode", v)} fullWidth />
+            <div className="grid grid-cols-2 gap-3">
+              <LineSelect label={t("production.order.line")} value={form.lineCode}
+                onChange={v => setField("lineCode", v)} fullWidth />
+              <ProcessSelect label={t("production.order.process")} value={form.processCode}
+                onChange={v => setField("processCode", v)} fullWidth />
+            </div>
             <div>
-              <EquipSelect label={t("production.order.equip")} value={form.equipCode}
-                onChange={v => setField("equipCode", v)} processCode={form.processCode || undefined} fullWidth />
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-sm font-medium text-text">{t("production.order.equip")}</span>
+                {equipLoading && (
+                  <span className="flex items-center gap-1 text-xs text-text-muted">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    {t("common.loading")}
+                  </span>
+                )}
+              </div>
+              <div className="grid max-h-36 grid-cols-2 gap-1.5 overflow-y-auto rounded-md border border-border bg-surface p-1.5">
+                <button
+                  type="button"
+                  onClick={() => setField("equipCode", "")}
+                  className={`min-h-8 rounded border px-2 py-1 text-left text-xs transition-colors ${
+                    !form.equipCode
+                      ? "border-primary bg-primary/10 text-primary font-semibold"
+                      : "border-border bg-background text-text-muted hover:border-primary/60 hover:bg-primary/5"
+                  }`}
+                >
+                  {t("common.notSelected", "미지정")}
+                </button>
+                {equipOptions.map((option) => {
+                  const selected = form.equipCode === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setField("equipCode", option.value)}
+                      title={option.label}
+                      className={`min-h-8 rounded border px-2 py-1 text-left text-xs transition-colors ${
+                        selected
+                          ? "border-primary bg-primary/10 text-primary font-semibold"
+                          : "border-border bg-background text-text hover:border-primary/60 hover:bg-primary/5"
+                      }`}
+                    >
+                      <span className="block truncate">{option.label}</span>
+                    </button>
+                  );
+                })}
+                {!equipLoading && equipOptions.length === 0 && (
+                  <div className="col-span-2 rounded border border-dashed border-border px-2 py-2 text-xs text-text-muted">
+                    {t("production.order.noEquipForProcess")}
+                  </div>
+                )}
+              </div>
               {noEquipForProcess && (
                 <p className="mt-1 text-xs text-amber-500 dark:text-amber-400">
                   {t("production.order.noEquipForProcess")}

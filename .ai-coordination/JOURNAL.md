@@ -1902,3 +1902,12 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 변경: `IqcHistoryService.createArrivalResult()`는 API 직접 호출에서도 `details`가 모두 PASS인데 불량코드만 있는 저장을 `BadRequestException`으로 차단한다. 검사항목 없는 수동 FAIL은 시리얼 result FAIL을 근거로 인정한다.
 - 변경: 서버 저장 시에도 `sampleBarcode`가 500바이트를 초과하면 `...(+N more)` 형태로 요약해 `IQC_LOGS.SAMPLE_BARCODE` 저장 실패를 방지한다.
 - 검증: RED 확인 후 GREEN. `node --test apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs` 5/5 PASS, `pnpm.cmd --filter @harness/backend exec jest src/modules/material/services/iqc-history.service.spec.ts --runInBand` 20/20 PASS, IQC 모달/이력 구조 테스트 15/15 PASS, FE/BE typecheck PASS, 대상 파일 `git diff --check` PASS.
+
+# 2026-06-21 codex T-PRODUCTION-ORDER-EDIT-SYNC 생산지시 수정패널 선택행 동기화
+- 요청: `/production/order`에서 우측 수정패널이 열린 상태로 좌측 그리드 행을 변경하면 수정패널 내용도 같이 변경되어야 함. 추가 요청으로 우측 폼의 라인/공정 필드를 한 행에 배치.
+- 원인: 좌측 행 클릭 핸들러는 `selectedRow`만 토글하고, 수정패널의 source인 `editingOrder`는 갱신하지 않아 패널 폼이 최초 수정 대상에 머물렀다.
+- 변경: `toJobOrderFormData(row)` helper를 추가해 행→수정폼 데이터 매핑을 단일화했다. `handleEdit()`와 열린 수정패널 상태의 `handleRowClick()`이 같은 helper를 사용한다.
+- 변경: 수정패널이 열린 수정 모드(`isPanelOpen && editingOrder`)에서 다른 행을 클릭하면 `editingOrder`를 새 행 데이터로 갱신하고, 재슬라이드 애니메이션은 끈다. 신규 생성 패널은 행 클릭으로 덮어쓰지 않는다.
+- 변경: `JobOrderFormPanel`의 `라인`/`공정` Select를 `grid grid-cols-2` 한 행으로 묶고, 공정 종속 필드인 `설비`는 아래 행에 유지했다.
+- 추가 변경: 사용자 추가 요청에 따라 `설비`를 드롭다운에서 버튼형 선택 목록으로 변경했다. `useEquipOptions(form.processCode || undefined)` 결과를 즉시 펼쳐 보여주며, 공정 미선택 시 전체 설비, 공정 선택 시 해당 공정 설비를 바로 클릭해 선택한다.
+- 검증: RED 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/production/order/production-order-edit-sync.structure.test.mjs"` 4/4 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/production/order` HTTP 200, 대상 파일 `git diff --check` PASS.

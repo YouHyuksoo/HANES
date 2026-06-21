@@ -29,6 +29,32 @@ notes:
 
 ## Active Tasks
 
+## T-PRODUCTION-ORDER-EDIT-SYNC 생산지시 수정패널 선택행 동기화
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/production/order` 우측 수정패널이 좌측 그리드 선택 변경을 즉시 반영
+- 우측 수정패널에서 라인/공정 필드를 한 행에 배치
+- 우측 수정패널에서 설비를 드롭다운이 아닌 즉시 보이는 버튼형 선택 목록으로 표시
+files:
+- apps/frontend/src/app/(authenticated)/production/order/page.tsx
+- apps/frontend/src/app/(authenticated)/production/order/components/JobOrderFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/production/order/production-order-edit-sync.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: 신규 구조 테스트가 행 클릭 시 `editingOrder` 동기화 부재로 실패 확인
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/production/order/production-order-edit-sync.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 3002 `/production/order` HTTP 200
+review:
+- needs-review
+notes:
+- 사용자가 수정패널 열린 상태에서 좌측 그리드 행 변경 시 패널 내용도 같이 변경되어야 한다고 요청했다.
+
 ## T-IQC-AQL-TRACEABILITY-FIX IQC AQL 추적성/불량코드 판정 보정
 status: REVIEW
 owner: codex

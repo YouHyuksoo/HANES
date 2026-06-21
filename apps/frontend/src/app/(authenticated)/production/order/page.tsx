@@ -47,6 +47,19 @@ function flattenTree(items: JobOrderItem[], depth = 0): (JobOrderItem & { _depth
 /** 액션 타입 정의 */
 type ActionType = "start" | "complete" | "hold" | "holdRelease" | "cancel";
 
+const toJobOrderFormData = (row: JobOrderItem): JobOrderFormData => ({
+  orderNo: row.orderNo,
+  itemCode: row.itemCode,
+  lineCode: row.lineCode ?? undefined,
+  processCode: row.processCode ?? undefined,
+  equipCode: row.equipCode ?? undefined,
+  custPoNo: row.custPoNo ?? undefined,
+  planQty: row.planQty,
+  planDate: row.planDate ? String(row.planDate).slice(0, 10) : undefined,
+  priority: row.priority,
+  remark: row.remark ?? undefined,
+});
+
 export default function JobOrderPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<JobOrderItem[]>([]);
@@ -205,18 +218,7 @@ export default function JobOrderPage() {
 
   const handleEdit = (row: JobOrderItem) => {
     panelAnimateRef.current = !isPanelOpen;
-    setEditingOrder({
-      orderNo: row.orderNo,
-      itemCode: row.itemCode,
-      lineCode: row.lineCode ?? undefined,
-      processCode: row.processCode ?? undefined,
-      equipCode: row.equipCode ?? undefined,
-      custPoNo: row.custPoNo ?? undefined,
-      planQty: row.planQty,
-      planDate: row.planDate ? String(row.planDate).slice(0, 10) : undefined,
-      priority: row.priority,
-      remark: row.remark ?? undefined,
-    });
+    setEditingOrder(toJobOrderFormData(row));
     setIsPanelOpen(true);
   };
 
@@ -239,7 +241,12 @@ export default function JobOrderPage() {
 
   /** 행 클릭 시 선택/해제 토글 */
   const handleRowClick = (row: JobOrderItem & { _depth: number }) => {
-    setSelectedRow(prev => prev?.orderNo === row.orderNo ? null : row);
+    const nextSelected = selectedRow?.orderNo === row.orderNo ? null : row;
+    setSelectedRow(nextSelected);
+    if (nextSelected && isPanelOpen && editingOrder) {
+      panelAnimateRef.current = false;
+      setEditingOrder(toJobOrderFormData(nextSelected));
+    }
   };
 
   const columns = useMemo<ColumnDef<JobOrderItem & { _depth: number }>[]>(() => [
