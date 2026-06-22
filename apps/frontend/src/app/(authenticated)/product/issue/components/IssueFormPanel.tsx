@@ -13,8 +13,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
-import { QtyInput } from "@/components/shared";
-import { useComCodeOptions } from "@/hooks/useComCode";
+import { QtyInput, ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface ProductStockItem {
@@ -56,8 +55,6 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
   const [partType, setPartType] = useState<"SEMI_PRODUCT" | "FINISHED">("SEMI_PRODUCT");
   const [form, setForm] = useState(INITIAL_FORM);
   const [stocks, setStocks] = useState<ProductStockItem[]>([]);
-
-  const issueTypeOptions = useComCodeOptions("ISSUE_TYPE");
 
   const tabs = [
     { key: "SEMI_PRODUCT" as const, label: t("productMgmt.receive.tabWip") },
@@ -192,8 +189,9 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
         )}
 
         {/* 출고계정 */}
-        <Select label={`${t("productMgmt.issue.modal.issueType")} *`}
-          options={issueTypeOptions} value={form.issueType}
+        <ComCodeSelect groupCode="ISSUE_TYPE" includeAll={false}
+          label={`${t("productMgmt.issue.modal.issueType")} *`}
+          value={form.issueType}
           onChange={(v) => setForm({ ...form, issueType: v })} fullWidth />
 
         {/* 비고 */}
