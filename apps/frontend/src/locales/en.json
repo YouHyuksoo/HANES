@@ -5056,6 +5056,8 @@
       "shipOrderNo": "Shipment Order No.",
       "customer": "Customer",
       "customerPlaceholder": "Enter customer name",
+      "customerPoNo": "Customer PO No.",
+      "customerPoNoPlaceholder": "Enter customer PO No.",
       "dueDate": "Due Date",
       "shipDate": "Ship Date",
       "itemCount": "Items",
@@ -7742,7 +7744,12 @@
       "inputPlaceholder": "Type a message (Enter to send, Shift+Enter for newline)",
       "send": "Send",
       "empty": "Response is empty.",
-      "error": "Failed to get a response."
+      "error": "Failed to get a response.",
+      "executed": "Executed successfully.",
+      "approveTitle": "Data change approval required",
+      "cancel": "Cancel",
+      "execute": "Execute",
+      "sqlLabel": "Executed SQL"
     }
   }
 }

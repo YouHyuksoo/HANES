@@ -21,3 +21,10 @@ export class AiChatDto {
   @Type(() => AiChatMessageDto)
   messages: AiChatMessageDto[];
 }
+
+/** 승인된 INSERT/UPDATE 실행 요청 */
+export class AiExecuteSqlDto {
+  @IsString()
+  @MaxLength(8000)
+  sql: string;
+}

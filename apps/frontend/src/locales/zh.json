@@ -5056,6 +5056,8 @@
       "shipOrderNo": "出货指示编号",
       "customer": "客户",
       "customerPlaceholder": "请输入客户名称",
+      "customerPoNo": "客户PO号",
+      "customerPoNoPlaceholder": "请输入客户PO号",
       "dueDate": "交货日期",
       "shipDate": "出货日期",
       "itemCount": "品目数",
@@ -7742,7 +7744,12 @@
       "inputPlaceholder": "输入消息（Enter 发送，Shift+Enter 换行）",
       "send": "发送",
       "empty": "响应为空。",
-      "error": "获取响应失败。"
+      "error": "获取响应失败。",
+      "executed": "执行完成。",
+      "approveTitle": "需要批准数据变更",
+      "cancel": "取消",
+      "execute": "执行",
+      "sqlLabel": "执行的 SQL"
     }
   }
 }

@@ -9,6 +9,12 @@ import { create } from "zustand";
 export interface AiChatMessage {
   role: "user" | "assistant";
   content: string;
+  /** 생성/실행된 SQL (조회·쓰기 공통) */
+  sql?: string;
+  /** INSERT/UPDATE 승인 대기 여부 */
+  requiresApproval?: boolean;
+  /** 실행 완료 여부 */
+  executed?: boolean;
 }
 
 interface AiChatState {

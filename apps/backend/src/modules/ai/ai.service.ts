@@ -49,8 +49,13 @@ export class AiService {
     };
   }
 
-  /** 일반 대화 채팅 */
-  async chat(messages: AiChatMessageDto[]): Promise<{ content: string }> {
+  /**
+   * Mistral 호출 코어 — 호출자가 전체 messages(system 포함)를 구성한다.
+   * 1단계 일반 대화와 2단계 text-to-SQL 파이프라인이 공통으로 사용한다.
+   */
+  async complete(
+    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+  ): Promise<string> {
     const apiKey = process.env.MISTRAL_API_KEY;
     if (!apiKey) {
       throw new BadRequestException(
@@ -69,17 +74,20 @@ export class AiService {
     const client = new Mistral({ apiKey });
 
     try {
-      const res = await client.chat.complete({
-        model,
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
-      });
+      const res = await client.chat.complete({ model, messages });
       const content = res.choices?.[0]?.message?.content;
-      return { content: typeof content === 'string' ? content : '' };
+      return typeof content === 'string' ? content : '';
     } catch (error: unknown) {
       this.logger.error(
         `Mistral 호출 실패: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new BadRequestException('AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     }
+  }
+
+  /** 일반 대화 채팅 (1단계 system 프롬프트 주입) */
+  async chat(messages: AiChatMessageDto[]): Promise<{ content: string }> {
+    const content = await this.complete([{ role: 'system', content: SYSTEM_PROMPT }, ...messages]);
+    return { content };
   }
 }

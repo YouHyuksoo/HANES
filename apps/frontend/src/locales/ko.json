@@ -5060,6 +5060,8 @@
       "shipOrderNo": "출하지시번호",
       "customer": "고객사",
       "customerPlaceholder": "고객사명 입력",
+      "customerPoNo": "고객 PO번호",
+      "customerPoNoPlaceholder": "고객 PO번호 입력",
       "dueDate": "납기일",
       "shipDate": "출하일",
       "itemCount": "품목수",
@@ -7746,7 +7748,12 @@
       "inputPlaceholder": "메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)",
       "send": "전송",
       "empty": "응답이 비어 있습니다.",
-      "error": "응답을 가져오지 못했습니다."
+      "error": "응답을 가져오지 못했습니다.",
+      "executed": "실행이 완료되었습니다.",
+      "approveTitle": "데이터 변경 승인 필요",
+      "cancel": "취소",
+      "execute": "실행",
+      "sqlLabel": "실행된 SQL"
     }
   }
 }

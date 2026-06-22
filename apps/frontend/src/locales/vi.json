@@ -5056,6 +5056,8 @@
       "shipOrderNo": "Mã lệnh xuất hàng",
       "customer": "Khách hàng",
       "customerPlaceholder": "Nhập tên khách hàng",
+      "customerPoNo": "Số PO khách hàng",
+      "customerPoNoPlaceholder": "Nhập số PO khách hàng",
       "dueDate": "Ngày giao hàng",
       "shipDate": "Ngày xuất hàng",
       "itemCount": "Số mục",
@@ -7742,7 +7744,12 @@
       "inputPlaceholder": "Nhập tin nhắn (Enter để gửi, Shift+Enter xuống dòng)",
       "send": "Gửi",
       "empty": "Phản hồi trống.",
-      "error": "Không lấy được phản hồi."
+      "error": "Không lấy được phản hồi.",
+      "executed": "Đã thực thi thành công.",
+      "approveTitle": "Cần phê duyệt thay đổi dữ liệu",
+      "cancel": "Hủy",
+      "execute": "Thực thi",
+      "sqlLabel": "SQL đã thực thi"
     }
   }
 }
