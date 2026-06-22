@@ -114,12 +114,27 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm flex flex-col gap-1">
             <span>{t('material.arrival.col.receivedQty')} *</span>
-            <Input
-              type="number" min={1} max={line.remainingQty}
-              value={receivedQty}
-              onChange={(e) => setReceivedQty(Math.min(Number(e.target.value) || 0, line.remainingQty))}
-              className="text-right font-semibold"
-            />
+            <div className="flex items-stretch gap-1">
+              <div className="flex-1">
+                <Input
+                  type="number" min={1} max={line.remainingQty}
+                  value={receivedQty}
+                  onChange={(e) => setReceivedQty(Math.min(Number(e.target.value) || 0, line.remainingQty))}
+                  className="text-right font-semibold"
+                  fullWidth
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="whitespace-nowrap"
+                onClick={() => setReceivedQty(line.remainingQty)}
+                disabled={line.remainingQty <= 0}
+              >
+                {t('material.arrival.fillRemaining', '잔량입하')}
+              </Button>
+            </div>
           </label>
 
           <label className="text-sm flex flex-col gap-1">
