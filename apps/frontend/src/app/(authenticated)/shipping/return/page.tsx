@@ -61,6 +61,7 @@ export default function ShipCancelPage() {
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
+    setPageError("");
     try {
       const res = await api.get("/shipping/orders/shipped");
       setOrders(res.data?.data ?? []);
@@ -73,6 +74,7 @@ export default function ShipCancelPage() {
 
   const fetchReturns = useCallback(async () => {
     setLoading(true);
+    setPageError("");
     try {
       const res = await api.get("/shipping/returns", { params: { limit: "5000" } });
       setReturns(res.data?.data ?? []);
@@ -92,6 +94,7 @@ export default function ShipCancelPage() {
     setSelectedOrderNo(orderNo);
     setDetailLoading(true);
     setDetail(null);
+    setPageError("");
     try {
       const res = await api.get(`/shipping/orders/${encodeURIComponent(orderNo)}/shipped-detail`);
       setDetail(res.data?.data ?? null);
