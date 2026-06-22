@@ -1,0 +1,38 @@
+{
+  "master.label.templateName": {
+    "fallback": "템플릿 이름",
+    "file": "app/(authenticated)/master/label/components/TemplateManager.tsx"
+  },
+  "shipping.pallet.shipOrderNotWaiting": {
+    "fallback": "팔레트 생성 대기중인 출하지시가 아닙니다.",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.pallet.shipOrderRequired": {
+    "fallback": "출하지시를 먼저 선택하세요.",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.pallet.waitingShipOrders": {
+    "fallback": "팔레트 대기중인 출하지시",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.pallet.waitingShipOrdersHint": {
+    "fallback": "팔레트가 아직 생성되지 않은 확정 출하지시만 표시됩니다.",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.pallet.noWaitingShipOrders": {
+    "fallback": "팔레트 생성 대기중인 출하지시가 없습니다.",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.pallet.scanShipOrderPlaceholder": {
+    "fallback": "출하지시번호 스캔",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.pallet.selectedShipOrder": {
+    "fallback": "선택된 출하지시",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.pallet.scanShipOrderHint": {
+    "fallback": "스캔 후 Enter를 누르면 대기 목록과 대조합니다.",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  }
+}

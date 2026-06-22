@@ -7790,6 +7790,7 @@
       "cancel": "Cancel",
       "execute": "Execute",
       "sqlLabel": "Executed SQL",
+      "sqlLabelGen": "Generated SQL (execution failed)",
       "resize": "Drag to resize"
     },
     "config": {

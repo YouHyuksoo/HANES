@@ -7790,6 +7790,7 @@
       "cancel": "Hủy",
       "execute": "Thực thi",
       "sqlLabel": "SQL đã thực thi",
+      "sqlLabelGen": "SQL đã tạo (thực thi thất bại)",
       "resize": "Kéo để thay đổi kích thước"
     },
     "config": {

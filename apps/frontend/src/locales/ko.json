@@ -7794,6 +7794,7 @@
       "cancel": "취소",
       "execute": "실행",
       "sqlLabel": "실행된 SQL",
+      "sqlLabelGen": "생성된 SQL (실행 실패)",
       "resize": "드래그하여 너비 조절"
     },
     "config": {

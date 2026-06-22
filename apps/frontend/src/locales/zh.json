@@ -7790,6 +7790,7 @@
       "cancel": "取消",
       "execute": "执行",
       "sqlLabel": "执行的 SQL",
+      "sqlLabelGen": "生成的 SQL（执行失败）",
       "resize": "拖动调整宽度"
     },
     "config": {
