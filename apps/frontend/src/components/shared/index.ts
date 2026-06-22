@@ -22,3 +22,5 @@ export type { OrderItem } from "./OrderSearchModal";
 export { default as InspectItemImage } from "./InspectItemImage";
 export { default as HelpTooltip } from "./HelpTooltip";
 export type { HelpTooltipProps } from "./HelpTooltip";
+export { default as QtyInput } from "./QtyInput";
+export type { QtyInputProps } from "./QtyInput";

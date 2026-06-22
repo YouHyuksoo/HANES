@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button, Input, Select } from '@/components/ui';
 import MfgPartnerSelect from '@/components/shared/MfgPartnerSelect';
+import { QtyInput } from '@/components/shared';
 import { useWarehouseOptions } from '@/hooks/useMasterOptions';
 import api from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
@@ -116,10 +117,10 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
             <span>{t('material.arrival.col.receivedQty')} *</span>
             <div className="flex items-stretch gap-1">
               <div className="flex-1">
-                <Input
-                  type="number" min={1} max={line.remainingQty}
+                <QtyInput
+                  maxValue={line.remainingQty}
                   value={receivedQty}
-                  onChange={(e) => setReceivedQty(Math.min(Number(e.target.value) || 0, line.remainingQty))}
+                  onChange={setReceivedQty}
                   className="text-right font-semibold"
                   fullWidth
                 />

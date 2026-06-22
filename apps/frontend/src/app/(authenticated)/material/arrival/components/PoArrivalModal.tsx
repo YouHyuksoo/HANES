@@ -19,6 +19,7 @@ import { useComCodeMap } from '@/hooks/useComCode';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowLeft } from 'lucide-react';
 import { Modal, Button, Input, Select } from '@/components/ui';
+import { QtyInput } from '@/components/shared';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useWarehouseOptions } from '@/hooks/useMasterOptions';
 import api from '@/services/api';
@@ -178,15 +179,10 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       size: 100,
       meta: { filterType: "none" as const },
       cell: ({ row }) => (
-        <Input
-          type="number"
-          min={0}
-          max={row.original.remainingQty}
+        <QtyInput
+          maxValue={row.original.remainingQty}
           value={inputs[row.original.id]?.receivedQty || 0}
-          onChange={(e) => {
-            const val = Math.min(Number(e.target.value) || 0, row.original.remainingQty);
-            updateInput(row.original.id, 'receivedQty', val);
-          }}
+          onChange={(val) => updateInput(row.original.id, 'receivedQty', val)}
           className="w-20"
         />
       ),

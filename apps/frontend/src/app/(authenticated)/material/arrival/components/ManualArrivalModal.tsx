@@ -15,7 +15,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Modal, Button, Input } from "@/components/ui";
-import { WarehouseSelect, PartnerSelect, PartSearchModal } from "@/components/shared";
+import { WarehouseSelect, PartnerSelect, PartSearchModal, QtyInput } from "@/components/shared";
 import type { PartItem } from "@/components/shared";
 import api from "@/services/api";
 
@@ -115,13 +115,11 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
               onChange={(v) => handleChange("warehouseCode", v)}
               fullWidth
             />
-            <Input
+            <QtyInput
               label={t("common.quantity")}
-              type="number"
-              min={1}
               placeholder="0"
-              value={form.qty}
-              onChange={(e) => handleChange("qty", e.target.value)}
+              value={Number(form.qty) || 0}
+              onChange={(n) => handleChange("qty", n ? String(n) : "")}
               fullWidth
             />
           </div>
