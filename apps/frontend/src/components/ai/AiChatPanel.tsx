@@ -39,6 +39,7 @@ export default function AiChatPanel() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [approvedIdx, setApprovedIdx] = useState<Set<number>>(new Set());
+  const [width, setWidth] = useState(440);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -106,10 +107,38 @@ export default function AiChatPanel() {
     [send],
   );
 
+  // 좌측 경계 드래그로 너비 조절
+  const startResize = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = width;
+      const onMove = (ev: MouseEvent) => {
+        const next = startW + (startX - ev.clientX);
+        setWidth(Math.min(Math.max(360, next), Math.round(window.innerWidth * 0.95)));
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.body.style.userSelect = "";
+      };
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [width],
+  );
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed right-0 top-[var(--header-height)] bottom-0 z-[55] flex w-[440px] max-w-[92vw] flex-col border-l border-border bg-background shadow-2xl animate-slide-in-right">
+    <div style={{ width }} className="fixed right-0 top-[var(--header-height)] bottom-0 z-[55] flex max-w-[95vw] flex-col border-l border-border bg-background shadow-2xl animate-slide-in-right">
+      {/* 좌측 리사이즈 핸들 (드래그하여 너비 조절) */}
+      <div
+        onMouseDown={startResize}
+        title={t("ai.chat.resize", "드래그하여 너비 조절")}
+        className="absolute left-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize hover:bg-primary/40"
+      />
       {/* 헤더 */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="flex items-center gap-2 text-base font-bold text-text">

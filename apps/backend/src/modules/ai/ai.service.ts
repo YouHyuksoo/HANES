@@ -124,14 +124,16 @@ export class AiService {
 
   /** 입력 키/provider/model로 즉석 연결 확인 (키 미입력 시 저장된 키 사용) */
   async test(provider: string, model: string, apiKey?: string): Promise<{ ok: boolean; message: string }> {
+    const source = apiKey?.trim() ? 'input' : 'config/.env';
+    const key = apiKey?.trim() || (await this.getApiKey(provider));
+    if (!key) return { ok: false, message: `API 키가 없습니다. (provider=${provider}, source=${source})` };
+    const m = model || PROVIDER_DEFAULT_MODEL[provider] || 'mistral-large-latest';
     try {
-      const key = apiKey?.trim() || (await this.getApiKey(provider));
-      if (!key) return { ok: false, message: 'API 키가 없습니다.' };
-      const m = model || PROVIDER_DEFAULT_MODEL[provider] || 'mistral-large-latest';
       const content = await this.callProvider(provider, m, key, [{ role: 'user', content: 'Reply with: OK' }]);
       return { ok: true, message: `연결 성공 (${provider}/${m}): ${content.slice(0, 60)}` };
     } catch (error: unknown) {
-      return { ok: false, message: error instanceof Error ? error.message.slice(0, 200) : '연결 실패' };
+      const msg = error instanceof Error ? error.message.slice(0, 160) : '연결 실패';
+      return { ok: false, message: `[${provider}/${m}, key=${source}/${key.length}자] ${msg}` };
     }
   }
 

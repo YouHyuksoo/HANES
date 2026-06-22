@@ -7763,7 +7763,8 @@
       "approveTitle": "Data change approval required",
       "cancel": "Cancel",
       "execute": "Execute",
-      "sqlLabel": "Executed SQL"
+      "sqlLabel": "Executed SQL",
+      "resize": "Drag to resize"
     },
     "config": {
       "provider": "Provider",

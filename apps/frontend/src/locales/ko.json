@@ -7767,7 +7767,8 @@
       "approveTitle": "데이터 변경 승인 필요",
       "cancel": "취소",
       "execute": "실행",
-      "sqlLabel": "실행된 SQL"
+      "sqlLabel": "실행된 SQL",
+      "resize": "드래그하여 너비 조절"
     },
     "config": {
       "provider": "AI 제공자",

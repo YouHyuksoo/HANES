@@ -7763,7 +7763,8 @@
       "approveTitle": "需要批准数据变更",
       "cancel": "取消",
       "execute": "执行",
-      "sqlLabel": "执行的 SQL"
+      "sqlLabel": "执行的 SQL",
+      "resize": "拖动调整宽度"
     },
     "config": {
       "provider": "提供商",

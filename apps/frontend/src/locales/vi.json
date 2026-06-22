@@ -7763,7 +7763,8 @@
       "approveTitle": "Cần phê duyệt thay đổi dữ liệu",
       "cancel": "Hủy",
       "execute": "Thực thi",
-      "sqlLabel": "SQL đã thực thi"
+      "sqlLabel": "SQL đã thực thi",
+      "resize": "Kéo để thay đổi kích thước"
     },
     "config": {
       "provider": "Nhà cung cấp",
