@@ -22,6 +22,8 @@ export interface DateRangeFilterProps {
   onFromChange: (v: string) => void;
   onToChange: (v: string) => void;
   presets?: boolean;
+  /** 범위 앞에 표시할 라벨(예: "발주일"). 생략 시 라벨 없음. */
+  label?: string;
   className?: string;
 }
 
@@ -31,6 +33,7 @@ export default function DateRangeFilter({
   onFromChange,
   onToChange,
   presets = true,
+  label,
   className = "",
 }: DateRangeFilterProps) {
   const { t } = useTranslation();
@@ -51,6 +54,9 @@ export default function DateRangeFilter({
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
+      {label && (
+        <span className="text-xs text-text-muted whitespace-nowrap mr-1">{label}</span>
+      )}
       <Input
         type="date"
         value={from}

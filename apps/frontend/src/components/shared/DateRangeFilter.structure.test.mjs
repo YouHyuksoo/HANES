@@ -18,6 +18,11 @@ test('DateRangeFilter renders two date inputs and a separator', () => {
   assert.match(src, /~/);
 });
 
+test('DateRangeFilter supports optional label rendered before the range', () => {
+  assert.match(src, /label\?: string/);
+  assert.match(src, /\{label &&/);
+});
+
 test('DateRangeFilter wires presets to range helpers', () => {
   assert.match(src, /getRecentDaysRange\(7\)/);
   assert.match(src, /getThisMonthRange\(\)/);
