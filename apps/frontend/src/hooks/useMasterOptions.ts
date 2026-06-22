@@ -190,10 +190,12 @@ export function usePartOptions(itemType?: string) {
 /**
  * 작업자 목록을 SelectOption[]으로 반환
  */
-export function useWorkerOptions() {
+export function useWorkerOptions(dept?: string) {
+  const query = new URLSearchParams({ limit: "100" });
+  if (dept) query.set("dept", dept);
   const { data, isLoading } = useApiQuery<PaginatedResponse<WorkerItem>>(
-    ["workers", "options"],
-    "/master/workers?limit=100",
+    ["workers", "options", dept ?? "all"],
+    `/master/workers?${query.toString()}`,
     { staleTime: 5 * 60 * 1000 },
   );
 

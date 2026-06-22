@@ -7,7 +7,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine, ListChecks, X } from "lucide-react";
-import { Button, Modal, ComCodeBadge } from "@/components/ui";
+import { Button, Modal, ComCodeBadge, Select } from "@/components/ui";
+import { useWorkerOptions } from "@/hooks/useMasterOptions";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import api from "@/services/api";
 
@@ -112,6 +113,9 @@ interface IqcModalProps {
   ) => void;
 }
 
+/** IQC 검사자 후보 부서 (작업자관리 WORKER_MASTERS.DEPT 기준) */
+const INSPECTOR_DEPT = "품질팀";
+
 const MAX_SAMPLE_BARCODE_BYTES = 500;
 
 function utf8Bytes(value: string) {
@@ -180,6 +184,11 @@ function getSerialResult(inspection: SerialInspection | undefined): "PASS" | "FA
 
 export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm, onSubmit }: IqcModalProps) {
   const { t } = useTranslation();
+  const { options: workerOptions } = useWorkerOptions(INSPECTOR_DEPT);
+  const inspectorOptions = useMemo(
+    () => workerOptions.map((o) => ({ value: o.label, label: o.label })),
+    [workerOptions],
+  );
   const [defectCodes, setDefectCodes] = useState<DefectCodeOption[]>([]);
   const [inspectItems, setInspectItems] = useState<IqcInspectItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
@@ -249,11 +258,13 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   }, [isOpen, selectedItem]);
 
   useEffect(() => {
-    if (!isOpen) return;
-    api.get("/quality/defect-codes/options")
+    if (!isOpen || !selectedItem) return;
+    api.get("/quality/defect-codes/options", {
+      params: selectedItem.defectModelGroup ? { productType: selectedItem.defectModelGroup } : undefined,
+    })
       .then((res) => setDefectCodes(res.data?.data ?? []))
       .catch(() => setDefectCodes([]));
-  }, [isOpen]);
+  }, [isOpen, selectedItem]);
 
   useEffect(() => {
     if (!isOpen || !selectedItem) return;
@@ -608,11 +619,12 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
             {/* 검사자 */}
             <label className="block">
               <span className="mb-1 block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.inspectorLabel")}</span>
-              <input
+              <Select
+                options={inspectorOptions}
                 value={form.inspector}
-                onChange={(e) => setForm((prev) => ({ ...prev, inspector: e.target.value }))}
+                onChange={(v) => setForm((prev) => ({ ...prev, inspector: v }))}
                 placeholder={t("material.iqc.inspectorPlaceholder")}
-                className="h-8 w-full rounded border border-border bg-surface px-2 text-xs text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                fullWidth
               />
             </label>
 
