@@ -2,9 +2,15 @@
 
 ## Last Update
 
-2026-06-21 (local)
+2026-06-22 (local)
 
 ## Latest
+
+- T-BOX-SHIP-CONFIRM 완료(커밋 1038f0e4 i18n · 27793ade page): `/shipping/confirm`을 팔레트 출하 → **박스별출하**로 재구성.
+  - 메뉴 라벨 shipping.confirm "출하작업"→"박스별출하"(4언어). 3-컬럼: 좌 CONFIRMED 출하지시 / 중 라인 진행률+출하가능 박스(fulfillment candidateBoxes, **읽기 전용**, 행클릭→시리얼) / 우 박스 시리얼(box-stock serials).
+  - 출하·취소는 **기존 고아 컴포넌트 `BoxScanShipModal` 재사용**(ship-box/cancel-ship-box). OrderFulfillmentModal.tsx 삭제, Shipment 목록 패널·cancel/reverse·ShipmentScanModal·/shipping/shipments 제거. **백엔드 변경 0**, 라우트/메뉴코드 SHIP_CONFIRM 유지.
+  - SDD 3 Task + 최종 리뷰 머지승인. tsc 0, i18n 누락 0(shipping.confirm/boxScan), 구조 테스트 `box-ship-page.structure.test.mjs`. **브라우저 UI E2E는 사용자 확인 권장**.
+  - **후속 주의**: ① 팔레트 출하 Shipment 생명주기 UI(배송완료/역분개/ERP동기화)가 confirm 제거로 거처 없음 → 별도 과제. ② OQC 미사용 시 candidateBoxes 후보 좁아질 수 있음(백엔드 정합화 별도). ③ confirm.* 미사용 잔존 키 정리 권장. 상세 JOURNAL 2026-06-22.
 
 - T-I18N-FULL-SWEEP 진행중(코드 미커밋, **하드코딩 전환 미완**): 전체 `(authenticated)` 화면 i18n 누락 점검.
   - **번역 키 누락은 100% 해결**: 모든 `t()` 정적 키가 ko/en/zh/vi 4파일에 존재(ko 미존재 0, 4언어 불일치 0, 키 수 동일 6641). master 그리드/폴백-only 키, 공통 컬럼 팩토리(`lib/table-utils/column-factories.tsx`의 `part.code`/`equip.code` 등 최상위 키) 누락 보강 포함.
