@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Search, RefreshCw, CalendarRange, Plus, Upload, Download, Edit2, Trash2, Wand2, Network } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
@@ -188,14 +189,7 @@ export default function MonthlyPlanPage() {
             onRowClick={(row) => { if (isPanelOpen) setEditingPlan(row as ProdPlanItem); }}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
-                <div className="w-36 flex-shrink-0">
-                  <Input type="date" value={startDate}
-                    onChange={e => setStartDate(e.target.value)} fullWidth />
-                </div>
-                <div className="w-36 flex-shrink-0">
-                  <Input type="date" value={endDate}
-                    onChange={e => setEndDate(e.target.value)} fullWidth />
-                </div>
+                <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <Input placeholder={t("monthlyPlan.searchPlaceholder")}
                     value={searchText} onChange={e => setSearchText(e.target.value)}

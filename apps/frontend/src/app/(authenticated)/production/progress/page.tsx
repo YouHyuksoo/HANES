@@ -11,12 +11,13 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, BarChart3, Calendar } from 'lucide-react';
+import { Search, RefreshCw, BarChart3 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { EquipSelect } from '@/components/shared';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import api from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
 
@@ -142,12 +143,7 @@ export default function ProgressPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t('production.progress.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={planDateFrom} onChange={e => setPlanDateFrom(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={planDateTo} onChange={e => setPlanDateTo(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} fullWidth />
-              </div>
+              <DateRangeFilter from={planDateFrom} to={planDateTo} onFromChange={setPlanDateFrom} onToChange={setPlanDateTo} className="flex-shrink-0" />
               <div className="w-36 flex-shrink-0">
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>

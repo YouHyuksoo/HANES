@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, BoxIcon } from 'lucide-react';
 import { Card, CardContent, Button, Input } from '@/components/ui';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import api from '@/services/api';
@@ -111,12 +112,7 @@ export default function PackResultPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t('production.packResult.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
-              </div>
+              <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM PACK_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

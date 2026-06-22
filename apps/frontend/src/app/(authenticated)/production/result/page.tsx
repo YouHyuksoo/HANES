@@ -19,6 +19,7 @@ import toast from 'react-hot-toast';
 import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal, Modal } from '@/components/ui';
 import { getTodayLocal } from '@/utils/date';
 import { QtyInput } from '@/components/shared';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
@@ -290,12 +291,7 @@ export default function ProdResultPage() {
                 <div className="w-32 flex-shrink-0">
                   <Select options={processTypeOptions} value={processTypeFilter} onChange={setProcessTypeFilter} fullWidth />
                 </div>
-                <div className="w-36 flex-shrink-0">
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} fullWidth />
-                </div>
-                <div className="w-36 flex-shrink-0">
-                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth />
-                </div>
+                <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
               </div>
             } 
             sqlQuery={`SELECT *\nFROM PROD_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

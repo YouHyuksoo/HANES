@@ -13,9 +13,10 @@
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { History, RefreshCw, Search, Calendar } from 'lucide-react';
+import { History, RefreshCw, Search } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 import EquipSelect from '@/components/shared/EquipSelect';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import api from '@/services/api';
@@ -199,12 +200,7 @@ export default function WipMaterialTransPage() {
           exportFileName={t('production.wipMaterialTrans.title')}
           toolbarLeft={
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <Calendar className="w-4 h-4 text-text-muted" />
-                <Input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} className="w-36" />
-                <span className="text-text-muted">~</span>
-                <Input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} className="w-36" />
-              </div>
+              <DateRangeFilter from={filters.dateFrom} to={filters.dateTo} onFromChange={(v) => setFilters(f => ({ ...f, dateFrom: v }))} onToChange={(v) => setFilters(f => ({ ...f, dateTo: v }))} className="flex-shrink-0" />
               <div className="w-48 flex-shrink-0">
                 <EquipSelect value={equipCode} onChange={setEquipCode} labelPrefix={t('production.wipMaterialTrans.equip')} fullWidth />
               </div>

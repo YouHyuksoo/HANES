@@ -33,6 +33,7 @@ import {
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeSelect, ProcessSelect, WorkerSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import RepairFormModal from "./components/RepairFormModal";
 import type { RepairOrderData } from "./components/RepairFormModal";
@@ -337,19 +338,7 @@ export default function RepairPage() {
                   labelPrefix={t("production.repair.sourceProcess")}
                   className="w-40"
                 />
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="px-2 py-1.5 text-sm border border-border-default dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-text-primary dark:text-slate-200"
-                />
-                <span className="text-text-muted">~</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="px-2 py-1.5 text-sm border border-border-default dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-text-primary dark:text-slate-200"
-                />
+                <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
               </div>
             }
           
