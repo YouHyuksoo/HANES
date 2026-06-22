@@ -36,23 +36,23 @@ export default function ConfigItemRow({ config, currentValue, isChanged, onValue
 
   return (
     <div
-      className={`flex items-center gap-4 py-3 px-3 rounded transition-colors ${
+      className={`flex items-center gap-3 py-2.5 px-3 rounded-lg border transition-colors ${
         isChanged
-          ? 'border-l-4 border-l-primary bg-primary/5 dark:bg-primary/10'
-          : 'border-l-4 border-l-transparent'
+          ? 'border-primary bg-primary/5 dark:bg-primary/10'
+          : 'border-border'
       }`}
     >
       {/* 라벨 + 설명 */}
-      <div className="flex-1 min-w-[200px]">
-        <div className="font-medium text-sm text-text">{config.label}</div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-sm text-text truncate">{config.label}</div>
         {config.description && (
-          <div className="text-xs text-text-muted mt-0.5">{config.description}</div>
+          <div className="text-xs text-text-muted mt-0.5 line-clamp-2">{config.description}</div>
         )}
-        <div className="text-xs text-text-muted/60 mt-0.5 font-mono">{config.configKey}</div>
+        <div className="text-xs text-text-muted/60 mt-0.5 font-mono truncate">{config.configKey}</div>
       </div>
 
       {/* 입력 UI */}
-      <div className="w-64 flex-shrink-0">
+      <div className="w-44 sm:w-52 flex-shrink-0">
         {config.configType === 'BOOLEAN' && (
           <button
             type="button"

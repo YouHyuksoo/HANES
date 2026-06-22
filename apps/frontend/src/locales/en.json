@@ -312,7 +312,7 @@
     "production.monthlyPlan": "Product Plan",
     "production.simulation": "Plan Simulation",
     "production.specificationSetup": "Product Drawing Management",
-    "production.kitting": "Sub-process Kitting",
+    "production.kitting": "Result Input (Sub-process)",
     "production.order": "Work Order Mgmt",
     "production.result": "Production Result Inquiry",
     "production.progress": "Order Progress Inquiry",
@@ -895,7 +895,8 @@
         "PRODUCTION": "Production",
         "QUALITY": "Quality",
         "SYSTEM": "System",
-        "AI": "AI"
+        "AI": "AI",
+        "AI_CATALOG": "AI Catalog"
       },
       "save": "Save Settings",
       "saveSuccess": "Settings saved successfully.",
@@ -3323,7 +3324,7 @@
     "specificationSetup": "Product Drawing Management",
     "specificationSetupDescription": "Manage harness drawing revisions and circuit-level manufacturing specifications by product.",
     "kitting": {
-      "title": "Sub-process Kitting",
+      "title": "Result Input (Sub-process)",
       "description": "Scan SG tracking labels to register sub-process kitting results for finished goods.",
       "orderNo": "Work Order No.",
       "processCode": "Sub-process Code",
@@ -7804,6 +7805,20 @@
       "keyConfigured": "API key is configured.",
       "keyMissing": "API key is not set.",
       "test": "Test Connection"
+    },
+    "catalog": {
+      "title": "AI Table Catalog",
+      "desc": "Table knowledge injected into AI queries. Adding descriptions and column relations (JOIN keys) improves text-to-SQL accuracy.",
+      "format": "Format: \"## TABLE — description\" / \"동의어: a, b\" (synonyms) / \"관계:\" then \"- COLUMN -> TARGET_TABLE.COLUMN\"",
+      "sync": "Sync with DB",
+      "saved": "Catalog saved.",
+      "saveFailed": "Failed to save.",
+      "saveChanged": "Save changes",
+      "loadFailed": "Failed to load catalog.",
+      "synced": "Sync done: added {{added}} / total {{total}}",
+      "missingWarn": "{{n}} table(s) not in DB (possibly deleted): {{list}}",
+      "syncFailed": "Sync failed.",
+      "empty": "Empty. Use 'Sync with DB' to populate tables."
     }
   }
 }

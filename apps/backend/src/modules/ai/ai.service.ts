@@ -20,6 +20,7 @@ const SYSTEM_PROMPT =
 const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
   mistral: 'mistral-large-latest',
   openai: 'gpt-4o-mini',
+  openrouter: 'openai/gpt-oss-120b:free',
 };
 
 type LlmMessage = { role: 'system' | 'user' | 'assistant'; content: string };
@@ -42,7 +43,14 @@ export class AiService {
   private async getApiKey(provider: string): Promise<string | undefined> {
     const cfg = await this.getConfigValue(`AI_${provider.toUpperCase()}_KEY`, '');
     if (cfg.trim()) return cfg.trim();
-    return provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.MISTRAL_API_KEY;
+    switch (provider) {
+      case 'openai':
+        return process.env.OPENAI_API_KEY;
+      case 'openrouter':
+        return process.env.OPENROUTER_API_KEY;
+      default:
+        return process.env.MISTRAL_API_KEY;
+    }
   }
 
   /** config 탭 표시용 상태 (키 원문은 반환하지 않는다) */
@@ -96,9 +104,14 @@ export class AiService {
   }
 
   private async callProvider(provider: string, model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
-    return provider === 'openai'
-      ? this.callOpenAI(model, apiKey, messages)
-      : this.callMistral(model, apiKey, messages);
+    switch (provider) {
+      case 'openai':
+        return this.callOpenAI(model, apiKey, messages);
+      case 'openrouter':
+        return this.callOpenRouter(model, apiKey, messages);
+      default:
+        return this.callMistral(model, apiKey, messages);
+    }
   }
 
   private async callMistral(model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
@@ -108,18 +121,46 @@ export class AiService {
     return typeof content === 'string' ? content : '';
   }
 
-  private async callOpenAI(model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  /** OpenAI 호환 Chat Completions 호출 (OpenAI / OpenRouter 공통) */
+  private async callOpenAICompatible(
+    url: string,
+    label: string,
+    model: string,
+    apiKey: string,
+    messages: LlmMessage[],
+    extraHeaders: Record<string, string> = {},
+  ): Promise<string> {
+    const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}`, ...extraHeaders },
       body: JSON.stringify({ model, messages }),
     });
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`OpenAI ${res.status}: ${body.slice(0, 200)}`);
+      throw new Error(`${label} ${res.status}: ${body.slice(0, 200)}`);
     }
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+      error?: { message?: string };
+    };
+    // OpenRouter는 HTTP 200으로도 본문에 error를 담아 줄 수 있다.
+    if (data.error?.message) throw new Error(`${label}: ${data.error.message}`);
     return data.choices?.[0]?.message?.content ?? '';
+  }
+
+  private async callOpenAI(model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
+    return this.callOpenAICompatible('https://api.openai.com/v1/chat/completions', 'OpenAI', model, apiKey, messages);
+  }
+
+  private async callOpenRouter(model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
+    return this.callOpenAICompatible(
+      'https://openrouter.ai/api/v1/chat/completions',
+      'OpenRouter',
+      model,
+      apiKey,
+      messages,
+      { 'HTTP-Referer': 'https://hswbs.haengsung.com', 'X-Title': 'HANES MES' },
+    );
   }
 
   /** 입력 키/provider/model로 즉석 연결 확인 (키 미입력 시 저장된 키 사용) */

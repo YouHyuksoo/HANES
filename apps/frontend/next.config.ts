@@ -49,6 +49,12 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
 
+  // rewrite 프록시 기본 타임아웃은 30초. AI 채팅의 text-to-SQL 파이프라인은
+  // LLM을 여러 번 직렬 호출해 30초를 넘길 수 있으므로 120초로 늘린다.
+  experimental: {
+    proxyTimeout: 120_000,
+  },
+
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003";
     return [

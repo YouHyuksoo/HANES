@@ -14,7 +14,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Settings, Package, Factory, ClipboardCheck, Cog,
-  Save, Plus, Trash2, RefreshCw, Sparkles,
+  Save, Plus, Trash2, RefreshCw, Sparkles, BookText,
 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from '@/components/ui';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
@@ -24,6 +24,7 @@ import type { SysConfigItem } from '@/stores/sysConfigStore';
 import ConfigItemRow from '@/components/system/ConfigItemRow';
 import AddConfigModal from '@/components/system/AddConfigModal';
 import AiConfigPanel from '@/components/system/AiConfigPanel';
+import AiCatalogPanel from '@/components/system/AiCatalogPanel';
 
 /** 그룹 탭 정의 */
 const CONFIG_GROUPS = [
@@ -33,6 +34,7 @@ const CONFIG_GROUPS = [
   { key: 'QUALITY', label: 'system.config.group.QUALITY', icon: ClipboardCheck },
   { key: 'SYSTEM', label: 'system.config.group.SYSTEM', icon: Cog },
   { key: 'AI', label: 'system.config.group.AI', icon: Sparkles },
+  { key: 'AI_CATALOG', label: 'system.config.group.AI_CATALOG', icon: BookText },
 ];
 
 const getConfigId = (config: SysConfigItem) => config.id ?? config.configKey;
@@ -64,8 +66,10 @@ function ConfigPage() {
     const raw = data?.data;
     if (!raw) return [];
     const list = (raw as ConfigListResponse)?.data ?? (Array.isArray(raw) ? raw : []);
-    return list as SysConfigItem[];
-  }, [data]);
+    const arr = list as SysConfigItem[];
+    // 전체 탭에서는 AI 그룹을 숨긴다 — AI 설정은 AI 탭 전용 패널에서만 관리.
+    return activeGroup === '' ? arr.filter((c) => c.configGroup !== 'AI') : arr;
+  }, [data, activeGroup]);
 
 
   const changedCount = Object.keys(changes).length;
@@ -108,21 +112,23 @@ function ConfigPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('system.config.description')}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setShowAddModal(true)}>
-            <Plus className="w-4 h-4 mr-1" />{t('system.config.addNew')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={changedCount === 0}
-            isLoading={isSaving}
-          >
-            <Save className="w-4 h-4 mr-1" />
-            {changedCount > 0
-              ? t('system.config.changedCount', { count: changedCount })
-              : t('system.config.save')}
-          </Button>
-        </div>
+        {activeGroup !== 'AI' && activeGroup !== 'AI_CATALOG' && (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setShowAddModal(true)}>
+              <Plus className="w-4 h-4 mr-1" />{t('system.config.addNew')}
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={changedCount === 0}
+              isLoading={isSaving}
+            >
+              <Save className="w-4 h-4 mr-1" />
+              {changedCount > 0
+                ? t('system.config.changedCount', { count: changedCount })
+                : t('system.config.save')}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 그룹 탭 */}
@@ -150,6 +156,8 @@ function ConfigPage() {
       {/* 설정 목록 (AI 탭은 전용 패널) */}
       {activeGroup === 'AI' ? (
         <AiConfigPanel />
+      ) : activeGroup === 'AI_CATALOG' ? (
+        <AiCatalogPanel />
       ) : (
         <Card>
           <CardContent>
@@ -158,7 +166,7 @@ function ConfigPage() {
             ) : configs.length === 0 ? (
               <div className="text-center py-8 text-text-muted">{t('common.noData')}</div>
             ) : (
-              <div className="divide-y divide-border">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 max-h-[calc(100vh-320px)] min-h-0 overflow-y-auto pr-1">
                 {configs.map((cfg) => (
                   <ConfigItemRow
                     key={getConfigId(cfg)}

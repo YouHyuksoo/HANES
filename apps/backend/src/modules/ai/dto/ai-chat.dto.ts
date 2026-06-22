@@ -72,6 +72,50 @@ export class AiExecuteSqlDto {
   sql: string;
 }
 
+/** AI 테이블 카탈로그 저장 요청 (md 원문) */
+export class AiCatalogSaveDto {
+  @IsString()
+  @MaxLength(500000)
+  content: string;
+}
+
+export class CatalogRelationDto {
+  @IsString()
+  @MaxLength(128)
+  column: string;
+
+  @IsString()
+  @MaxLength(256)
+  target: string;
+}
+
+export class CatalogTableDto {
+  @IsString()
+  @MaxLength(128)
+  name: string;
+
+  @IsString()
+  @MaxLength(2000)
+  description: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  synonyms: string[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CatalogRelationDto)
+  relations: CatalogRelationDto[];
+}
+
+/** AI 테이블 카탈로그 구조화 저장 요청 */
+export class AiCatalogTablesDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CatalogTableDto)
+  tables: CatalogTableDto[];
+}
+
 /** AI provider 연결 테스트 요청 */
 export class AiTestDto {
   @IsString()

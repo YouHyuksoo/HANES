@@ -202,8 +202,16 @@ export default function AiChatPanel() {
         </button>
       </div>
 
-      {activeTab === "tools" && <PageToolInspector />}
-      {activeTab === "log" && <PageToolExecutionLog />}
+      {activeTab === "tools" && (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <PageToolInspector />
+        </div>
+      )}
+      {activeTab === "log" && (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <PageToolExecutionLog />
+        </div>
+      )}
 
       {/* 메시지 목록 */}
       <div ref={scrollRef} className={`flex-1 space-y-3 overflow-y-auto p-4 ${activeTab === "chat" ? "" : "hidden"}`}>

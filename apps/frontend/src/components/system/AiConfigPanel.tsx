@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 const PROVIDER_OPTIONS = [
   { value: "mistral", label: "Mistral" },
   { value: "openai", label: "OpenAI" },
+  { value: "openrouter", label: "OpenRouter" },
 ];
 
 const MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
@@ -31,6 +32,12 @@ const MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
     { value: "gpt-4o-mini", label: "gpt-4o-mini" },
     { value: "gpt-4-turbo", label: "gpt-4-turbo" },
     { value: "gpt-3.5-turbo", label: "gpt-3.5-turbo" },
+  ],
+  openrouter: [
+    { value: "openai/gpt-oss-120b:free", label: "openai/gpt-oss-120b:free" },
+    { value: "meta-llama/llama-3.3-70b-instruct:free", label: "meta-llama/llama-3.3-70b-instruct:free" },
+    { value: "qwen/qwen3-coder:free", label: "qwen/qwen3-coder:free" },
+    { value: "deepseek/deepseek-chat-v3-0324", label: "deepseek/deepseek-chat-v3-0324 (유료)" },
   ],
 };
 

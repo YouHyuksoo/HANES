@@ -313,7 +313,7 @@
     "production.monthlyPlan": "제품생산계획",
     "production.simulation": "생산계획 시뮬레이션",
     "production.specificationSetup": "제품 도면관리",
-    "production.kitting": "서브공정 키팅",
+    "production.kitting": "실적입력(서브공정)",
     "production.order": "작업지시관리",
     "production.result": "생산실적조회",
     "production.progress": "작업지시현황조회",
@@ -321,7 +321,7 @@
     "production.inputInspect": "실적입력(단순검사)",
     "production.inputEquip": "실적입력(검사장비)",
     "production.sampleInspect": "샘플검사이력조회",
-    "production.resultSummary": "작업실적통합조회",
+    "production.resultSummary": "생산실적통합조회",
     "production.packResult": "포장실적조회",
     "production.wipStock": "반제품/제품재고조회",
     "production.wipSemiStock": "반제품재공조회",
@@ -895,7 +895,8 @@
         "PRODUCTION": "생산관리",
         "QUALITY": "품질관리",
         "SYSTEM": "시스템",
-        "AI": "AI"
+        "AI": "AI",
+        "AI_CATALOG": "AI 카탈로그"
       },
       "save": "설정 저장",
       "saveSuccess": "설정이 저장되었습니다.",
@@ -3733,7 +3734,7 @@
     "specificationSetup": "제품 도면관리",
     "specificationSetupDescription": "제품별 하네스 도면 Revision과 회로별 제작 사양을 관리합니다.",
     "kitting": {
-      "title": "서브공정 키팅",
+      "title": "실적입력(서브공정)",
       "description": "서브공정 SG 추적라벨을 스캔하여 완제품 키팅 실적을 등록합니다.",
       "orderNo": "작업지시번호",
       "processCode": "서브공정코드",
@@ -4040,7 +4041,7 @@
       "exportFileName": "샘플검사"
     },
     "resultSummary": {
-      "title": "작업실적 통합조회",
+      "title": "생산실적 통합조회",
       "description": "완제품별 계획/양품/불량/양품률을 통합 집계합니다",
       "partType": "품목유형",
       "planQty": "계획수량",
@@ -7808,6 +7809,20 @@
       "keyConfigured": "키가 설정되어 있습니다.",
       "keyMissing": "키가 설정되지 않았습니다.",
       "test": "연결 테스트"
+    },
+    "catalog": {
+      "title": "AI 테이블 카탈로그",
+      "desc": "AI 질의에 주입되는 테이블 지식입니다. 설명과 컬럼 관계(JOIN 키)를 작성하면 text-to-SQL 정확도가 올라갑니다.",
+      "format": "형식: \"## 테이블명 — 설명\" / \"동의어: a, b\" / \"관계:\" 아래 \"- 컬럼 -> 대상테이블.컬럼\"",
+      "sync": "DB와 동기화",
+      "saved": "카탈로그를 저장했습니다.",
+      "saveFailed": "저장에 실패했습니다.",
+      "saveChanged": "변경 저장",
+      "loadFailed": "카탈로그를 불러오지 못했습니다.",
+      "synced": "동기화 완료: 추가 {{added}}개 / 전체 {{total}}개",
+      "missingWarn": "DB에 없는 테이블 {{n}}개(삭제 의심): {{list}}",
+      "syncFailed": "동기화에 실패했습니다.",
+      "empty": "비어 있습니다. 'DB와 동기화'로 테이블을 채우세요."
     }
   }
 }

@@ -17,8 +17,20 @@ const EXCLUDED_TABLES = new Set([
   'ROLES',
   'ROLE_MENU_PERMISSIONS',
   'PDA_ROLES',
+  'PDA_ROLE_MENU',
   'PDA_ROLE_MENUS',
 ]);
+
+/** AI 카탈로그에 노출하지 않는 테이블 판별 (인증/권한·백업·메타) */
+export function isExcludedTable(table: string): boolean {
+  const upper = table.toUpperCase();
+  if (EXCLUDED_TABLES.has(upper)) return true;
+  if (upper.startsWith('BIN$')) return true; // Oracle 휴지통(recyclebin)
+  if (upper.startsWith('FLYWAY') || upper.startsWith('TYPEORM')) return true;
+  if (upper === 'MIGRATIONS') return true; // TypeORM 마이그레이션 메타
+  if (/_(BAK|BACKUP|OLD|TMP|TEMP)(_?\d+)?$/.test(upper)) return true; // 백업/임시(날짜 접미 포함)
+  return false;
+}
 
 export interface TableSummary {
   table: string;
@@ -39,39 +51,41 @@ export class SchemaInfoService {
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
+  /** 테이블 선택 카탈로그 캐시 (스키마는 거의 불변 → DB 반복 조회 제거) */
+  private catalogCache: { catalog: string; tables: string[]; at: number } | null = null;
+  private static readonly CATALOG_TTL_MS = 10 * 60 * 1000; // 10분
+
   private isExcluded(table: string): boolean {
-    const upper = table.toUpperCase();
-    if (EXCLUDED_TABLES.has(upper)) return true;
-    if (upper.startsWith('BIN$')) return true; // Oracle 휴지통(recyclebin)
-    if (upper.startsWith('FLYWAY') || upper.startsWith('TYPEORM')) return true;
-    if (upper === 'MIGRATIONS') return true; // TypeORM 마이그레이션 메타
-    if (/_(BAK|BACKUP|OLD|TMP|TEMP)(_?\d+)?$/.test(upper)) return true; // 백업/임시(날짜 접미 포함)
-    return false;
+    return isExcludedTable(table);
   }
 
-  /** 1단계 테이블 선택용 카탈로그: 테이블명 + 코멘트 + 컬럼명(코멘트 없는 테이블도 컬럼으로 추론 가능) */
+  /**
+   * 1단계 테이블 선택용 카탈로그: 테이블명 + 코멘트만.
+   * 컬럼 목록은 넣지 않는다(전체 ~68KB → 수 KB로 축소, LLM 토큰/지연 급감).
+   * 컬럼 상세는 2단계 getSchemaText(선택 테이블)에서만 제공한다.
+   * 코멘트 없는 테이블은 테이블명만 노출되므로, 식별 정확도를 위해 테이블 코멘트를 보강한다.
+   */
   async getSelectionCatalog(): Promise<{ catalog: string; tables: string[] }> {
-    const rows = await this.dataSource.query<{ table: string; tcmt: string; column: string; ccmt: string }[]>(
-      `SELECT c.TABLE_NAME AS "table", NVL(tc.COMMENTS,'') AS "tcmt",
-              c.COLUMN_NAME AS "column", NVL(cc.COMMENTS,'') AS "ccmt"
-       FROM USER_TAB_COLUMNS c
-       JOIN USER_TAB_COMMENTS tc ON tc.TABLE_NAME = c.TABLE_NAME AND tc.TABLE_TYPE = 'TABLE'
-       LEFT JOIN USER_COL_COMMENTS cc ON cc.TABLE_NAME = c.TABLE_NAME AND cc.COLUMN_NAME = c.COLUMN_NAME
-       ORDER BY c.TABLE_NAME, c.COLUMN_ID`,
+    const now = Date.now();
+    if (this.catalogCache && now - this.catalogCache.at < SchemaInfoService.CATALOG_TTL_MS) {
+      return { catalog: this.catalogCache.catalog, tables: this.catalogCache.tables };
+    }
+    const rows = await this.dataSource.query<{ table: string; tcmt: string }[]>(
+      `SELECT TABLE_NAME AS "table", NVL(COMMENTS,'') AS "tcmt"
+       FROM USER_TAB_COMMENTS
+       WHERE TABLE_TYPE = 'TABLE'
+       ORDER BY TABLE_NAME`,
     );
-    const byTable = new Map<string, { cmt: string; cols: string[] }>();
+    const tables: string[] = [];
+    const blocks: string[] = [];
     for (const r of rows) {
       if (this.isExcluded(r.table)) continue;
-      if (!byTable.has(r.table)) byTable.set(r.table, { cmt: r.tcmt, cols: [] });
-      // 1단계(테이블 식별)는 컬럼명만 — 토큰 절약. 한글 컬럼 코멘트는 2단계 SQL 생성에서 제공.
-      byTable.get(r.table)!.cols.push(r.column);
+      tables.push(r.table);
+      blocks.push(r.tcmt ? `${r.table}: ${r.tcmt}` : r.table);
     }
-    const blocks: string[] = [];
-    for (const [table, info] of byTable) {
-      const head = info.cmt ? `${table}: ${info.cmt}` : table;
-      blocks.push(`${head} [${info.cols.join(', ')}]`);
-    }
-    return { catalog: blocks.join('\n'), tables: [...byTable.keys()] };
+    const catalog = blocks.join('\n');
+    this.catalogCache = { catalog, tables, at: now };
+    return { catalog, tables };
   }
 
   /** 1단계: 전체 테이블 요약 (테이블명 + 코멘트) */
@@ -83,6 +97,26 @@ export class SchemaInfoService {
        ORDER BY t.TABLE_NAME`,
     );
     return rows.filter((r) => !this.isExcluded(r.table));
+  }
+
+  private allColsCache: { map: Record<string, string[]>; at: number } | null = null;
+
+  /** 전체 테이블의 컬럼명 맵 (관계 편집 드롭다운용, 10분 캐시) */
+  async getAllColumnsByTable(): Promise<Record<string, string[]>> {
+    const now = Date.now();
+    if (this.allColsCache && now - this.allColsCache.at < 10 * 60 * 1000) return this.allColsCache.map;
+    const rows = await this.dataSource.query<{ table: string; column: string }[]>(
+      `SELECT TABLE_NAME AS "table", COLUMN_NAME AS "column"
+       FROM USER_TAB_COLUMNS
+       ORDER BY TABLE_NAME, COLUMN_ID`,
+    );
+    const map: Record<string, string[]> = {};
+    for (const r of rows) {
+      if (this.isExcluded(r.table)) continue;
+      (map[r.table] ??= []).push(r.column);
+    }
+    this.allColsCache = { map, at: now };
+    return map;
   }
 
   /** 2단계: 선택 테이블의 컬럼 스키마 */

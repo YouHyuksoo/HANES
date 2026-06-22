@@ -9,6 +9,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AiService } from './ai.service';
+import { AiCatalogService } from './ai-catalog.service';
 import { SchemaInfoService } from './schema-info.service';
 import { SqlValidatorService } from './sql-validator.service';
 import { AiChatMessageDto, AiPageToolContextDto } from './dto/ai-chat.dto';
@@ -38,6 +39,7 @@ const SQL_GEN_PROMPT = `당신은 Oracle SQL 생성 AI입니다.
   JOIN된 테이블에는 동일 조건을 중복으로 넣지 마세요. JOIN ON 절에서 COMPANY/PLANT_CD를 연결했다면 그것으로 충분합니다.
 - 컬럼 의미는 각 컬럼 뒤 주석(-- 설명)으로 판단하고, 질문 속 단어를 의미가 맞는 컬럼에 매핑하세요.
   (예: "대표/사장"은 대표자명 컬럼, "회사/업체/거래처"는 회사명·거래처명 컬럼) 조건 컬럼을 임의로 고르지 마세요.
+- JOIN이 필요하면 '테이블 관계(JOIN 키)' 섹션에 제시된 키로 연결하세요. 관계 섹션에 없는 임의 컬럼으로 JOIN을 추측하지 마세요.
 - 이름·명칭 등 텍스트 검색은 정확일치(=) 대신 LIKE '%값%'를 사용하세요.
 - 검색값에서 한국어 조사(은/는/이/가/을/를/에/의/와/과/도)를 제거하고 핵심 단어만 사용하세요. 예: "정의선이" → "정의선".
 - 조회는 SELECT. 등록은 INSERT, 수정은 UPDATE(UPDATE는 WHERE 필수). DELETE/DDL 절대 금지.
@@ -74,6 +76,7 @@ export class AiSqlService {
 
   constructor(
     private readonly aiService: AiService,
+    private readonly catalog: AiCatalogService,
     private readonly schemaInfo: SchemaInfoService,
     private readonly validator: SqlValidatorService,
     @InjectDataSource() private readonly dataSource: DataSource,
@@ -94,9 +97,10 @@ export class AiSqlService {
     const tables = await this.selectTables(userMessage);
     if (tables.length === 0) return this.generalChat(messages, pageToolContext);
 
-    // [2단계] SQL 생성
+    // [2단계] SQL 생성 (스키마 + 카탈로그 관계(JOIN 키) 주입)
     const schemaText = await this.schemaInfo.getSchemaText(tables);
-    const rawSql = await this.generateSql(userMessage, schemaText);
+    const relations = await this.catalog.getRelationsText(tables);
+    const rawSql = await this.generateSql(userMessage, relations ? `${schemaText}\n\n${relations}` : schemaText);
     if (!rawSql) return this.generalChat(messages, pageToolContext);
 
     // [검증]
@@ -154,10 +158,12 @@ export class AiSqlService {
   }
 
   private async selectTables(userMessage: string): Promise<string[]> {
-    const { catalog, tables } = await this.schemaInfo.getSelectionCatalog();
+    // 카탈로그 파일(큐레이션) 우선, 없으면 DB 폴백
+    const { catalog, tables } =
+      (await this.catalog.getSelectionCatalog()) ?? (await this.schemaInfo.getSelectionCatalog());
     const res = await this.aiService.complete([
       { role: 'system', content: TABLE_SELECT_PROMPT },
-      { role: 'user', content: `## 테이블/컬럼 카탈로그 (형식: 테이블: 설명 [컬럼(설명), ...])\n${catalog}\n\n## 질문\n${userMessage}` },
+      { role: 'user', content: `## 테이블 카탈로그 (형식: 테이블명: 설명)\n${catalog}\n\n## 질문\n${userMessage}` },
     ]);
     const valid = new Set(tables.map((t) => t.toUpperCase()));
     try {

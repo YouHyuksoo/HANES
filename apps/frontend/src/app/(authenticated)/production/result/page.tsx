@@ -13,11 +13,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Search, RefreshCw,
-  Factory, Package, Clock, CheckCircle, XCircle,
+  Search, RefreshCw, Factory,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge, ConfirmModal, Modal } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal, Modal } from '@/components/ui';
+import { getTodayLocal } from '@/utils/date';
 import { QtyInput } from '@/components/shared';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -73,8 +73,8 @@ export default function ProdResultPage() {
 
   // 필터 상태
   const [processTypeFilter, setProcessTypeFilter] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(() => getTodayLocal());
+  const [endDate, setEndDate] = useState(() => getTodayLocal());
   const [searchText, setSearchText] = useState('');
 
   const fetchData = useCallback(async () => {
@@ -167,15 +167,6 @@ export default function ProdResultPage() {
   };
 
   /** 통계 */
-  const stats = useMemo(() => {
-    const totalGood = data.reduce((sum, r) => sum + r.goodQty, 0);
-    const totalDefect = data.reduce((sum, r) => sum + r.defectQty, 0);
-    const totalQty = data.reduce((sum, r) => sum + r.totalQty, 0);
-    const totalHours = data.reduce((sum, r) => sum + r.workHours, 0);
-    const avgDefectRate = totalQty > 0 ? ((totalDefect / totalQty) * 100).toFixed(2) : '0.00';
-    return { totalGood, totalDefect, totalQty, totalHours, avgDefectRate };
-  }, [data]);
-
   /** 컬럼 정의 */
   const columns = useMemo<ColumnDef<ProdResult>[]>(
     () => [
@@ -284,14 +275,6 @@ export default function ProdResultPage() {
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />{t('common.refresh')}
           </Button>
         </div>
-      </div>
-
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t('production.result.totalProduction')} value={stats.totalQty.toLocaleString()} icon={Package} color="blue" />
-        <StatCard label={t('production.result.goodQty')} value={stats.totalGood.toLocaleString()} icon={CheckCircle} color="green" />
-        <StatCard label={t('production.result.defectWithRate')} value={`${stats.totalDefect.toLocaleString()} (${stats.avgDefectRate}%)`} icon={XCircle} color="red" />
-        <StatCard label={t('production.result.totalWorkHours')} value={`${stats.totalHours}${t('common.hours')}`} icon={Clock} color="purple" />
       </div>
 
       {/* 메인 카드 */}

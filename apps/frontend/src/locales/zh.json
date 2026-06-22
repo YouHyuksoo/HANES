@@ -312,7 +312,7 @@
     "production.monthlyPlan": "产品生产计划",
     "production.simulation": "计划模拟",
     "production.specificationSetup": "产品图纸管理",
-    "production.kitting": "子工序配套",
+    "production.kitting": "实绩录入（子工序）",
     "production.order": "作业指示管理",
     "production.result": "生产实绩查询",
     "production.progress": "作业指示现况查询",
@@ -895,7 +895,8 @@
         "PRODUCTION": "生产管理",
         "QUALITY": "质量管理",
         "SYSTEM": "系统",
-        "AI": "AI"
+        "AI": "AI",
+        "AI_CATALOG": "AI 目录"
       },
       "save": "保存设置",
       "saveSuccess": "设置已保存。",
@@ -3323,7 +3324,7 @@
     "specificationSetup": "产品图纸管理",
     "specificationSetupDescription": "按产品管理线束图纸版本和回路级制造规格。",
     "kitting": {
-      "title": "子工序配套",
+      "title": "实绩录入（子工序）",
       "description": "扫描SG追踪标签，登记子工序配套实绩。",
       "orderNo": "作业指示编号",
       "processCode": "子工序代码",
@@ -7804,6 +7805,20 @@
       "keyConfigured": "已配置 API 密钥。",
       "keyMissing": "未配置 API 密钥。",
       "test": "测试连接"
+    },
+    "catalog": {
+      "title": "AI 表目录",
+      "desc": "注入到 AI 查询中的表知识。填写说明和列关系（JOIN 键）可提升 text-to-SQL 准确度。",
+      "format": "格式：\"## 表名 — 说明\" / \"동의어: a, b\"（同义词）/ \"관계:\" 下 \"- 列 -> 目标表.列\"",
+      "sync": "与数据库同步",
+      "saved": "目录已保存。",
+      "saveFailed": "保存失败。",
+      "saveChanged": "保存更改",
+      "loadFailed": "无法加载目录。",
+      "synced": "同步完成：新增 {{added}} / 共 {{total}}",
+      "missingWarn": "{{n}} 个表不在数据库中（疑似删除）：{{list}}",
+      "syncFailed": "同步失败。",
+      "empty": "为空。使用\"与数据库同步\"填充表。"
     }
   }
 }

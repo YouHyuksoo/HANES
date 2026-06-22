@@ -25,6 +25,8 @@
       "key": "production",
       "title": "생산관리",
       "items": [
+        { "menuCode": "PROD_MONTHLY_PLAN", "title": "제품생산계획", "path": "/production/monthly-plan" },
+        { "menuCode": "PROD_ORDER", "title": "작업지시 관리", "path": "/production/order" },
         { "menuCode": "PROD_INPUT_KIOSK", "title": "실적입력(키오스크)", "path": "/production/input-kiosk" }
       ]
     },
