@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { X, BookOpen, ExternalLink } from "lucide-react";
@@ -16,6 +16,29 @@ export default function HelpPanel() {
   const { isOpen, tab, closeHelp, setTab } = useHelpStore();
   const menuCode = findMenuCodeByPath(pathname);
   const { content, loading, notFound } = useHelpDoc(isOpen ? menuCode : undefined, tab);
+  const [width, setWidth] = useState(448);
+
+  // 좌측 경계 드래그로 너비 조절
+  const startResize = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = width;
+      const onMove = (ev: MouseEvent) => {
+        const next = startW + (startX - ev.clientX);
+        setWidth(Math.min(Math.max(360, next), Math.round(window.innerWidth * 0.95)));
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.body.style.userSelect = "";
+      };
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [width],
+  );
 
   // Escape로 닫기
   useEffect(() => {
@@ -32,7 +55,13 @@ export default function HelpPanel() {
   return (
     <>
       <div className="fixed inset-0 z-[9990] bg-black/40" onClick={closeHelp} aria-hidden />
-      <aside className="fixed right-0 top-0 z-[9991] flex h-screen w-full max-w-md flex-col border-l border-border bg-background shadow-2xl animate-slide-in-right">
+      <aside style={{ width }} className="fixed right-0 top-0 z-[9991] flex h-screen max-w-[95vw] flex-col border-l border-border bg-background shadow-2xl animate-slide-in-right">
+        {/* 좌측 리사이즈 핸들 (드래그하여 너비 조절) */}
+        <div
+          onMouseDown={startResize}
+          title={t("help.resize", "드래그하여 너비 조절")}
+          className="absolute left-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize hover:bg-primary/40"
+        />
         {/* 헤더 */}
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
           <BookOpen className="h-5 w-5 text-primary" />

@@ -12,9 +12,9 @@ test("help.ts exposes HelpTab/HelpManifest types", () => {
   assert.match(source, /export (?:type|interface) HelpManifest\b/);
 });
 
-test("helpDocPath builds /help/{tab}/{menuCode}.md", () => {
-  assert.match(source, /export function helpDocPath\(tab: HelpTab, menuCode: string\): string/);
-  assert.match(source, /`\/help\/\$\{tab\}\/\$\{menuCode\}\.md`/);
+test("helpDocPath builds /help/{tab}/{lang}/{menuCode}.md", () => {
+  assert.match(source, /export function helpDocPath\(tab: HelpTab, menuCode: string, lang\?: string\): string/);
+  assert.match(source, /`\/help\/\$\{tab\}\/\$\{l\}\/\$\{menuCode\}\.md`/);
 });
 
 test("filterManifest filters by title case-insensitively", () => {
