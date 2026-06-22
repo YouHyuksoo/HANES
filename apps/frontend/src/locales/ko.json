@@ -7822,7 +7822,21 @@
       "synced": "동기화 완료: 추가 {{added}}개 / 전체 {{total}}개",
       "missingWarn": "DB에 없는 테이블 {{n}}개(삭제 의심): {{list}}",
       "syncFailed": "동기화에 실패했습니다.",
-      "empty": "비어 있습니다. 'DB와 동기화'로 테이블을 채우세요."
+      "empty": "비어 있습니다. 'DB와 동기화'로 테이블을 채우세요.",
+      "structured": "구조화 편집",
+      "advanced": "고급(원문)",
+      "selectTable": "왼쪽에서 테이블을 선택하세요.",
+      "fieldDesc": "설명",
+      "fieldSynonyms": "동의어 (쉼표로 구분)",
+      "synonymsPh": "예: 품목, 자재, 아이템",
+      "fieldRelations": "관계 (JOIN 키)",
+      "addRelation": "관계 추가",
+      "noRelation": "관계 없음. '관계 추가'로 JOIN 키를 정의하세요.",
+      "column": "컬럼",
+      "targetTable": "대상 테이블",
+      "targetColumn": "대상 컬럼",
+      "backlinks": "백링크 (이 테이블을 참조하는 곳)",
+      "noBacklink": "참조하는 테이블 없음"
     }
   }
 }

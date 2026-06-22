@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { GitMerge, Play, RefreshCw, Scan, Trash2 } from "lucide-react";
-import { Button, Card, CardContent, Input, Modal } from "@/components/ui";
+import { GitMerge, Play, RefreshCw, Scan, Trash2, Search } from "lucide-react";
+import { Button, Card, CardContent, Input, Select, Modal, ComCodeBadge } from "@/components/ui";
 import { QtyInput } from "@/components/shared";
+import { useProcessOptions, useEquipOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
+import JobOrderSearchModal, { JobOrderPick } from "./components/JobOrderSearchModal";
 
 interface SgLabelInfo {
   sgBarcode: string;
@@ -32,10 +34,25 @@ export default function SubprocessKittingPage() {
 
   // form state
   const [orderNo, setOrderNo] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState<JobOrderPick | null>(null);
+  const [orderScan, setOrderScan] = useState("");
+  const [orderSearchOpen, setOrderSearchOpen] = useState(false);
   const [processCode, setProcessCode] = useState("");
   const [qty, setQty] = useState<number | "">("");
   const [equipCode, setEquipCode] = useState("");
   const [circuitNo, setCircuitNo] = useState("");
+
+  // 마스터 연동 옵션 (서브공정코드·설비)
+  const { options: rawProcessOptions } = useProcessOptions();
+  const { options: rawEquipOptions } = useEquipOptions(processCode || undefined);
+  const processOptions = useMemo(
+    () => [{ value: "", label: t("production.kitting.selectProcess", "서브공정 선택") }, ...rawProcessOptions],
+    [rawProcessOptions, t],
+  );
+  const equipOptions = useMemo(
+    () => [{ value: "", label: t("production.kitting.selectEquipOptional", "설비 선택 (선택)") }, ...rawEquipOptions],
+    [rawEquipOptions, t],
+  );
 
   // SG scan state
   const [sgInput, setSgInput] = useState("");
@@ -105,8 +122,40 @@ export default function SubprocessKittingPage() {
     setSgList((prev) => prev.filter((item) => item.sgBarcode !== sgBarcode));
   };
 
+  const selectOrder = useCallback((order: JobOrderPick) => {
+    setSelectedOrder(order);
+    setOrderNo(order.orderNo);
+    setOrderScan("");
+  }, []);
+
+  /** 작업지시번호 직접 스캔/입력 시 조회 */
+  const fetchOrderByNo = useCallback(async (no: string) => {
+    const trimmed = no.trim();
+    if (!trimmed) return;
+    try {
+      const res = await api.get("/production/job-orders", { params: { limit: 20, search: trimmed } });
+      const list: JobOrderPick[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const found = list.find((r) => r.orderNo === trimmed) ?? list[0];
+      if (found) {
+        selectOrder(found);
+      } else {
+        toast.error(t("production.kitting.orderNotFound", "작업지시를 찾을 수 없습니다."));
+      }
+    } catch {
+      toast.error(t("production.kitting.orderNotFound", "작업지시를 찾을 수 없습니다."));
+    }
+  }, [selectOrder, t]);
+
+  const clearOrder = () => {
+    setSelectedOrder(null);
+    setOrderNo("");
+    setOrderScan("");
+  };
+
   const resetForm = () => {
     setOrderNo("");
+    setSelectedOrder(null);
+    setOrderScan("");
     setProcessCode("");
     setQty("");
     setEquipCode("");
@@ -188,41 +237,83 @@ export default function SubprocessKittingPage() {
       </div>
 
       <div className="flex flex-col gap-4 min-h-0 flex-1 overflow-auto">
-        {/* Input Form */}
+        {/* 작업지시 선택 */}
         <Card padding="none" className="flex-shrink-0">
           <CardContent className="p-4">
-            <h2 className="font-bold text-text mb-3">{t("common.register")}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <Input
-                label={t("production.kitting.orderNo")}
-                value={orderNo}
-                onChange={(e) => setOrderNo(e.target.value)}
-                placeholder="W-20260001"
-                fullWidth
-              />
-              <Input
-                label={t("production.kitting.processCode")}
+            <h2 className="font-bold text-text mb-3">{t("production.kitting.orderNo", "작업지시")}</h2>
+            {selectedOrder ? (
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+                <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
+                  <div>
+                    <div className="text-[11px] text-text-muted">{t("production.kitting.orderNo", "작업지시번호")}</div>
+                    <div className="font-mono text-text">{selectedOrder.orderNo}</div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11px] text-text-muted">{t("common.partName", "품목")}</div>
+                    <div className="truncate text-text">{selectedOrder.itemCode}{selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-text-muted">{t("production.kitting.planQty", "계획수량")}</div>
+                    <div className="tabular-nums text-text">{(selectedOrder.planQty ?? 0).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-text-muted">{t("common.status", "상태")}</div>
+                    <div><ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedOrder.status} /></div>
+                  </div>
+                </div>
+                <Button variant="secondary" size="sm" onClick={clearOrder}>
+                  {t("common.change", "변경")}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    label={t("production.kitting.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
+                    value={orderScan}
+                    onChange={(e) => setOrderScan(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); fetchOrderByNo(orderScan); } }}
+                    placeholder="W-20260001"
+                    leftIcon={<Scan className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => setOrderSearchOpen(true)} leftIcon={<Search className="w-4 h-4" />} className="mb-0.5">
+                  {t("common.search", "검색")}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 키팅 정보 입력 */}
+        <Card padding="none" className="flex-shrink-0">
+          <CardContent className="p-4">
+            <h2 className="font-bold text-text mb-3">{t("production.kitting.kitInfo", "키팅 정보")}</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Select
+                label={t("production.kitting.processCode", "서브공정코드")}
+                options={processOptions}
                 value={processCode}
-                onChange={(e) => setProcessCode(e.target.value)}
-                placeholder="SUB-CRIMP"
+                onChange={(v) => { setProcessCode(v); setEquipCode(""); }}
                 fullWidth
               />
               <QtyInput
-                label={t("production.kitting.qty")}
+                label={t("production.kitting.qty", "발행수량")}
                 value={Number(qty) || 0}
                 onChange={(n) => setQty(n || "")}
                 placeholder="1"
                 fullWidth
               />
-              <Input
-                label={`${t("production.kitting.equipCode")} (${t("common.select")})`}
+              <Select
+                label={`${t("production.kitting.equipCode", "설비")} (${t("production.kitting.optional", "선택")})`}
+                options={equipOptions}
                 value={equipCode}
-                onChange={(e) => setEquipCode(e.target.value)}
-                placeholder={t("production.kitting.optional", "선택 사항")}
+                onChange={setEquipCode}
                 fullWidth
               />
               <Input
-                label={`${t("production.kitting.circuitNo")} (${t("common.select")})`}
+                label={`${t("production.kitting.circuitNo", "회로번호")} (${t("production.kitting.optional", "선택")})`}
                 value={circuitNo}
                 onChange={(e) => setCircuitNo(e.target.value)}
                 placeholder={t("production.kitting.optional", "선택 사항")}
@@ -329,6 +420,13 @@ export default function SubprocessKittingPage() {
           </Button>
         </div>
       </div>
+
+      {/* 작업지시 검색 모달 */}
+      <JobOrderSearchModal
+        isOpen={orderSearchOpen}
+        onClose={() => setOrderSearchOpen(false)}
+        onSelect={selectOrder}
+      />
 
       {/* Warn Modal */}
       <Modal

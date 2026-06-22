@@ -7818,7 +7818,21 @@
       "synced": "Đồng bộ xong: thêm {{added}} / tổng {{total}}",
       "missingWarn": "{{n}} bảng không có trong DB (nghi đã xóa): {{list}}",
       "syncFailed": "Đồng bộ thất bại.",
-      "empty": "Trống. Dùng 'Đồng bộ với DB' để điền bảng."
+      "empty": "Trống. Dùng 'Đồng bộ với DB' để điền bảng.",
+      "structured": "Cấu trúc",
+      "advanced": "Nâng cao (gốc)",
+      "selectTable": "Chọn một bảng ở bên trái.",
+      "fieldDesc": "Mô tả",
+      "fieldSynonyms": "Từ đồng nghĩa (phân cách bằng dấu phẩy)",
+      "synonymsPh": "vd: mặt hàng, vật tư",
+      "fieldRelations": "Quan hệ (khóa JOIN)",
+      "addRelation": "Thêm quan hệ",
+      "noRelation": "Chưa có quan hệ. Dùng 'Thêm quan hệ' để định nghĩa khóa JOIN.",
+      "column": "Cột",
+      "targetTable": "Bảng đích",
+      "targetColumn": "Cột đích",
+      "backlinks": "Liên kết ngược (được tham chiếu bởi)",
+      "noBacklink": "Không có bảng tham chiếu"
     }
   }
 }

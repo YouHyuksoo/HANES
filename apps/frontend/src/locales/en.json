@@ -7818,7 +7818,21 @@
       "synced": "Sync done: added {{added}} / total {{total}}",
       "missingWarn": "{{n}} table(s) not in DB (possibly deleted): {{list}}",
       "syncFailed": "Sync failed.",
-      "empty": "Empty. Use 'Sync with DB' to populate tables."
+      "empty": "Empty. Use 'Sync with DB' to populate tables.",
+      "structured": "Structured",
+      "advanced": "Advanced (raw)",
+      "selectTable": "Select a table on the left.",
+      "fieldDesc": "Description",
+      "fieldSynonyms": "Synonyms (comma separated)",
+      "synonymsPh": "e.g. item, material",
+      "fieldRelations": "Relations (JOIN keys)",
+      "addRelation": "Add relation",
+      "noRelation": "No relations. Use 'Add relation' to define JOIN keys.",
+      "column": "Column",
+      "targetTable": "Target table",
+      "targetColumn": "Target column",
+      "backlinks": "Backlinks (referenced by)",
+      "noBacklink": "No referencing tables"
     }
   }
 }

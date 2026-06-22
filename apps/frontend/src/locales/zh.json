@@ -7818,7 +7818,21 @@
       "synced": "同步完成：新增 {{added}} / 共 {{total}}",
       "missingWarn": "{{n}} 个表不在数据库中（疑似删除）：{{list}}",
       "syncFailed": "同步失败。",
-      "empty": "为空。使用\"与数据库同步\"填充表。"
+      "empty": "为空。使用\"与数据库同步\"填充表。",
+      "structured": "结构化编辑",
+      "advanced": "高级(原文)",
+      "selectTable": "请在左侧选择表。",
+      "fieldDesc": "说明",
+      "fieldSynonyms": "同义词（逗号分隔）",
+      "synonymsPh": "如：品目, 物料",
+      "fieldRelations": "关系（JOIN 键）",
+      "addRelation": "添加关系",
+      "noRelation": "无关系。使用\"添加关系\"定义 JOIN 键。",
+      "column": "列",
+      "targetTable": "目标表",
+      "targetColumn": "目标列",
+      "backlinks": "反向链接（被哪些表引用）",
+      "noBacklink": "无引用此表的表"
     }
   }
 }
