@@ -29,6 +29,9 @@ export class ShipmentOrder {
   @Column({ type: 'varchar2', name: 'CUSTOMER_NAME', length: 100, nullable: true })
   customerName: string | null;
 
+  @Column({ type: 'varchar2', name: 'CUSTOMER_PO_NO', length: 100, nullable: true })
+  customerPoNo: string | null;
+
   @Column({ name: 'DUE_DATE', type: 'date', nullable: true })
   dueDate: Date | null;
 

@@ -66,6 +66,12 @@ export class CreateShipOrderDto {
   @MaxLength(200)
   customerName?: string;
 
+  @ApiPropertyOptional({ description: '고객 PO번호 (수동 입력)', maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  customerPoNo?: string;
+
   @ApiPropertyOptional({ description: '납기일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsDateString()

@@ -36,6 +36,7 @@ interface ShipOrder {
   shipOrderNo: string;
   customerName: string;
   customerId: string;
+  customerPoNo?: string;
   dueDate: string;
   shipDate: string;
   status: string;
@@ -80,7 +81,7 @@ export default function ShipOrderPage() {
   const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
   const [isPartModalOpen, setIsPartModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShipOrder | null>(null);
-  const [form, setForm] = useState({ customerId: "", dueDate: "", shipDate: "", remark: "" });
+  const [form, setForm] = useState({ customerId: "", customerPoNo: "", dueDate: "", shipDate: "", remark: "" });
   const [orderItems, setOrderItems] = useState<ShipOrderLine[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<ShipOrder | null>(null);
   const [printTarget, setPrintTarget] = useState<ShipOrder | null>(null);
@@ -120,14 +121,14 @@ export default function ShipOrderPage() {
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
-    setForm({ customerId: "", dueDate: "", shipDate: "", remark: "" });
+    setForm({ customerId: "", customerPoNo: "", dueDate: "", shipDate: "", remark: "" });
     setOrderItems([]);
     setIsFormPanelOpen(true);
   }, []);
 
   const openEdit = useCallback((item: ShipOrder) => {
     setEditingItem(item);
-    setForm({ customerId: item.customerId || "", dueDate: item.dueDate, shipDate: item.shipDate, remark: item.remark || "" });
+    setForm({ customerId: item.customerId || "", customerPoNo: item.customerPoNo || "", dueDate: item.dueDate, shipDate: item.shipDate, remark: item.remark || "" });
     setOrderItems((item.items ?? []).map((line) => ({
       itemCode: line.itemCode,
       itemName: line.itemName,
@@ -182,6 +183,7 @@ export default function ShipOrderPage() {
     try {
       const payload = {
         customerId: form.customerId || undefined,
+        customerPoNo: form.customerPoNo || undefined,
         dueDate: form.dueDate || undefined,
         shipDate: form.shipDate,
         remark: form.remark || undefined,
@@ -270,6 +272,7 @@ export default function ShipOrderPage() {
     ) },
     { accessorKey: "shipOrderNo", header: t("shipping.shipOrder.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.shipOrder.customer"), size: 120, meta: { filterType: "text" as const } },
+    { accessorKey: "customerPoNo", header: t("shipping.shipOrder.customerPoNo", "고객 PO번호"), size: 140, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
     { accessorKey: "dueDate", header: t("shipping.shipOrder.dueDate"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "shipDate", header: t("shipping.shipOrder.shipDate"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "itemCount", header: t("shipping.shipOrder.itemCount"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
@@ -363,6 +366,9 @@ ORDER BY so.CREATED_AT DESC`}/>
                     value={shipOrderNoDisplay.shipOrderNo} disabled fullWidth />
                   <Select label={t("shipping.shipOrder.customer")} options={customerOptions}
                     value={form.customerId} onChange={v => setForm(p => ({ ...p, customerId: v }))} fullWidth />
+                  <Input label={t("shipping.shipOrder.customerPoNo", "고객 PO번호")}
+                    placeholder={t("shipping.shipOrder.customerPoNoPlaceholder", "고객 PO번호 입력")}
+                    value={form.customerPoNo} onChange={e => setForm(p => ({ ...p, customerPoNo: e.target.value }))} maxLength={100} fullWidth />
                   <Input label={t("shipping.shipOrder.dueDate")} type="date"
                     value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} fullWidth />
                   <Input label={t("shipping.shipOrder.shipDate")} type="date"
@@ -493,6 +499,10 @@ ORDER BY so.CREATED_AT DESC`}/>
               <div className="flex border-b border-gray-300 pb-1">
                 <span className="w-28 text-gray-500">{t("shipping.shipOrder.customer")}</span>
                 <span className="font-semibold">{printTarget.customerName || "-"}</span>
+              </div>
+              <div className="flex border-b border-gray-300 pb-1">
+                <span className="w-28 text-gray-500">{t("shipping.shipOrder.customerPoNo", "고객 PO번호")}</span>
+                <span className="font-semibold">{printTarget.customerPoNo || "-"}</span>
               </div>
               <div className="flex border-b border-gray-300 pb-1">
                 <span className="w-28 text-gray-500">{t("common.status")}</span>

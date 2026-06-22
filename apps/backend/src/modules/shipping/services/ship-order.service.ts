@@ -138,10 +138,11 @@ export class ShipOrderService {
 
   private buildShipmentOrderUpdate(
     dto: Omit<UpdateShipOrderDto, 'items' | 'status' | 'shipOrderNo'>,
-  ): Partial<Pick<ShipmentOrder, 'customerId' | 'customerName' | 'dueDate' | 'shipDate' | 'remark'>> {
+  ): Partial<Pick<ShipmentOrder, 'customerId' | 'customerName' | 'customerPoNo' | 'dueDate' | 'shipDate' | 'remark'>> {
     return {
       ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
       // customerName은 프론트 dto가 아니라 거래처마스터에서 해석한다(update()에서 처리)
+      ...(dto.customerPoNo !== undefined ? { customerPoNo: dto.customerPoNo } : {}),
       ...(dto.dueDate !== undefined ? { dueDate: parseDateStart(dto.dueDate) } : {}),
       ...(dto.shipDate !== undefined ? { shipDate: parseDateStart(this.assertRequiredShipDate(dto.shipDate)) } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
@@ -280,6 +281,7 @@ export class ShipOrderService {
         customerId: dto.customerId,
         // 고객명은 거래처마스터(customerId)에서 해석해 채운다(프론트 입력값 사용 안 함)
         customerName: await this.resolveCustomerName(dto.customerId, company, plant),
+        customerPoNo: dto.customerPoNo,
         dueDate: parseDateStart(dto.dueDate),
         shipDate: parseDateStart(dto.shipDate),
         remark: dto.remark,
