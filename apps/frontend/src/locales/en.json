@@ -152,7 +152,8 @@
     "selectedCount": "{{count}} selected",
     "addSelectedItems": "Add Selected Items",
     "useY": "Use",
-    "useN": "Not Used"
+    "useN": "Not Used",
+    "preparing": "Coming soon."
   },
   "help": {
     "title": "Help",
@@ -7722,5 +7723,11 @@
     "noItems": "No self-inspection items registered",
     "itemName": "Item Name",
     "standard": "Standard/Spec (optional)"
+  },
+  "fab": {
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen",
+    "aiChat": "AI Chat",
+    "menuTooltip": "Menu"
   }
 }

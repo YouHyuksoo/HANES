@@ -152,7 +152,8 @@
     "selectedCount": "已选 {{count}} 件",
     "addSelectedItems": "添加所选品目",
     "useY": "使用",
-    "useN": "不使用"
+    "useN": "不使用",
+    "preparing": "正在准备中。"
   },
   "help": {
     "title": "帮助",
@@ -7722,5 +7723,11 @@
     "noItems": "没有已登记的自主检查项目",
     "itemName": "项目名称",
     "standard": "基准/规格（可选）"
+  },
+  "fab": {
+    "fullscreen": "全屏",
+    "exitFullscreen": "退出全屏",
+    "aiChat": "AI 聊天",
+    "menuTooltip": "菜单"
   }
 }

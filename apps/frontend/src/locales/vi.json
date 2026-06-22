@@ -152,7 +152,8 @@
     "selectedCount": "Đã chọn {{count}}",
     "addSelectedItems": "Thêm hàng đã chọn",
     "useY": "Sử dụng",
-    "useN": "Không dùng"
+    "useN": "Không dùng",
+    "preparing": "Đang chuẩn bị."
   },
   "help": {
     "title": "Trợ giúp",
@@ -7722,5 +7723,11 @@
     "noItems": "Chưa có hạng mục tự kiểm tra",
     "itemName": "Tên hạng mục",
     "standard": "Tiêu chuẩn/Quy cách (tùy chọn)"
+  },
+  "fab": {
+    "fullscreen": "Toàn màn hình",
+    "exitFullscreen": "Thoát toàn màn hình",
+    "aiChat": "Trò chuyện AI",
+    "menuTooltip": "Menu"
   }
 }

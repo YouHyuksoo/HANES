@@ -1,6 +1,6 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-21 18:40:48
+- 작성일: 2026-06-22 10:37:25
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -8,10 +8,10 @@
 ## 1. 요약
 
 - 테이블 수: 166
-- 컬럼 수: 2757
+- 컬럼 수: 2758
 - PK 보유 테이블: 162
 - DB FK 수: 18
-- COM_CODES 그룹 수: 156
+- COM_CODES 그룹 수: 157
 
 ## 2. 모듈별 테이블
 
@@ -158,7 +158,7 @@
 - `CONTROL_PLAN_ITEMS`: - / PK: `CONTROL_PLAN_ID, SEQ`
 - `DEFECT_CATEGORY_MASTERS`: 불량코드 전용 3레벨 분류 마스터 / PK: `COMPANY, PLANT_CD, CATEGORY_CODE`
 - `DEFECT_CODE_MASTERS`: 불량코드 전용 마스터 / PK: `COMPANY, PLANT_CD, DEFECT_CODE`
-- `DEFECT_CODE_PRODUCT_TYPES`: 불량코드 제품류별 적용 매핑 / PK: `COMPANY, PLANT_CD, DEFECT_CODE, PRODUCT_TYPE`
+- `DEFECT_CODE_PRODUCT_TYPES`: 불량코드 모델구분별 적용 매핑 / PK: `COMPANY, PLANT_CD, DEFECT_CODE, PRODUCT_TYPE`
 - `DEFECT_LOGS`: 불량 이력 로그 / PK: `OCCUR_TIME, SEQ`
 - `FAI_ITEMS`: - / PK: `FAI_ID, SEQ`
 - `FAI_REQUESTS`: - / PK: `FAI_NO`
@@ -6116,7 +6116,7 @@ erDiagram
 
 ### `DEFECT_CODE_PRODUCT_TYPES`
 
-- 설명: 불량코드 제품류별 적용 매핑
+- 설명: 불량코드 모델구분별 적용 매핑
 - PK: `COMPANY, PLANT_CD, DEFECT_CODE, PRODUCT_TYPE`
 
 | 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
@@ -6124,7 +6124,7 @@ erDiagram
 | `COMPANY` | `VARCHAR2(50)` | `N` | PK<br>FK->DEFECT_CODE_MASTERS(COMPANY, PLANT_CD, DEFECT_CODE) | 테넌트 범위 컬럼 |  |
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK<br>FK->DEFECT_CODE_MASTERS(COMPANY, PLANT_CD, DEFECT_CODE) | 테넌트 범위 컬럼 |  |
 | `DEFECT_CODE` | `VARCHAR2(50)` | `N` | PK<br>FK->DEFECT_CODE_MASTERS(COMPANY, PLANT_CD, DEFECT_CODE) |  |  |
-| `PRODUCT_TYPE` | `VARCHAR2(50)` | `N` | PK | COM_CODES.PRODUCT_TYPE: HARNESS=하네스, MODEL=모델/판매코드, SUB_ASSY=서브조립, WIRE=전선/케이블, TERMINAL=터미널, CONNECTOR=커넥터, HOLDER=홀더, SEAL=씰/고무, SHIELD=쉴드/클램프, TAPE=테이프, TUBE=튜브, HOUSING=하우징, LABEL=라벨, CLIP=클립, ELECTRIC=전장부품, GROMMET=그로멧 |  |
+| `PRODUCT_TYPE` | `VARCHAR2(50)` | `N` | PK | COM_CODES.PRODUCT_TYPE: HARNESS=하네스, MODEL=모델/판매코드, SUB_ASSY=서브조립, WIRE=전선/케이블, TERMINAL=터미널, CONNECTOR=커넥터, HOLDER=홀더, SEAL=씰/고무, SHIELD=쉴드/클램프, TAPE=테이프, TUBE=튜브, HOUSING=하우징, LABEL=라벨, CLIP=클립, ELECTRIC=전장부품, GROMMET=그로멧 | 모델구분 코드: DEFECT_MODEL_GROUP |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
@@ -6927,6 +6927,7 @@ erDiagram
 | `COLOR` | `VARCHAR2(50)` | `Y` |  |  | 품목 색상 |
 | `MODEL_NAME` | `VARCHAR2(100)` | `Y` |  |  | 차종 |
 | `IQC_AQL_POLICY_CODE` | `VARCHAR2(50)` | `Y` |  |  | IQC AQL 정책 코드 |
+| `DEFECT_MODEL_GROUP` | `VARCHAR2(50)` | `Y` |  | COM_CODES.DEFECT_MODEL_GROUP: LV=저전압, HV=고전압 | 불량코드 모델구분: LV=저전압 HV=고전압 |
 
 ### `ITEM_MASTERS_CONSUMABLE_BAK_20260616`
 
