@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Save, Lock, Unlock } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import { Field, FieldInput } from "./WorkCalendarFieldHelp";
+import QtyInput from "@/components/shared/QtyInput";
 
 interface CalendarInfo {
   calendarId: string;
@@ -107,15 +108,9 @@ export default function CalendarFormPanel({
             </Field>
 
             {/* 기본교대수 */}
-            <FieldInput
-              field="defaultShiftCount"
-              label={t("master.workCalendar.shiftCount")}
-              type="number"
-              value={calendar.defaultShiftCount}
-              onChange={() => {}}
-              disabled={isConfirmed}
-              wrapperClassName="col-span-1"
-            />
+            <Field field="defaultShiftCount" label={t("master.workCalendar.shiftCount")} className="col-span-1">
+              <QtyInput value={calendar.defaultShiftCount} onChange={() => {}} maxValue={3} disabled={isConfirmed} />
+            </Field>
 
             {/* 상태 */}
             <Field field="status" label={t("master.workCalendar.status")} className="col-span-1">

@@ -354,10 +354,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <Field field="safetyStock" label={t("master.part.safetyStock")}>
               <QtyInput value={Number(form.safetyStock) || 0} onChange={(n) => setField("safetyStock", n)} fullWidth />
             </Field>
-            <FieldInput field="expiryDate" label={t("master.part.expiryDate", "유효기간(일)")} type="number"
-              value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
-            <FieldInput field="expiryExtDays" label={t("master.part.expiryExtDays", "유효기간 연장(일)")} type="number"
-              value={String(form.expiryExtDays)} onChange={e => setField("expiryExtDays", Number(e.target.value))} fullWidth />
+            <Field field="expiryDate" label={t("master.part.expiryDate", "유효기간(일)")}>
+              <QtyInput value={Number(form.expiryDate) || 0} onChange={(n) => setField("expiryDate", n)} fullWidth />
+            </Field>
+            <Field field="expiryExtDays" label={t("master.part.expiryExtDays", "유효기간 연장(일)")}>
+              <QtyInput value={Number(form.expiryExtDays) || 0} onChange={(n) => setField("expiryExtDays", n)} fullWidth />
+            </Field>
             <Field field="packUnit" label={t("master.part.palletUnit", "팔레트구성단위")}>
               <QtyInput value={Number(form.packUnit) || 0} onChange={(n) => setField("packUnit", n)} fullWidth />
             </Field>

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import type { WorkCalendarDay, ShiftPatternItem } from "./CalendarGrid";
 import { Field, FieldInput } from "./WorkCalendarFieldHelp";
+import QtyInput from "@/components/shared/QtyInput";
 
 interface DayEditModalProps {
   isOpen: boolean;
@@ -111,15 +112,9 @@ export default function DayEditModal({
         )}
 
         {/* 교대수 */}
-        <FieldInput
-          field="shiftCount"
-          label={t("master.workCalendar.shiftCount")}
-          type="number"
-          min={1}
-          max={3}
-          value={shiftCount}
-          onChange={(e) => setShiftCount(Number(e.target.value))}
-        />
+        <Field field="shiftCount" label={t("master.workCalendar.shiftCount")}>
+          <QtyInput value={shiftCount} onChange={(n) => setShiftCount(n)} maxValue={3} />
+        </Field>
 
         {/* 교대 선택 */}
         <Field field="shifts" label={t("master.workCalendar.shifts")}>
@@ -141,14 +136,9 @@ export default function DayEditModal({
         </Field>
 
         {/* 잔업시간 */}
-        <FieldInput
-          field="otMinutes"
-          label={t("master.workCalendar.otMinutes")}
-          type="number"
-          min={0}
-          value={otMinutes}
-          onChange={(e) => setOtMinutes(Number(e.target.value))}
-        />
+        <Field field="otMinutes" label={t("master.workCalendar.otMinutes")}>
+          <QtyInput value={otMinutes} onChange={(n) => setOtMinutes(n)} />
+        </Field>
 
         {/* 비고 */}
         <FieldInput
