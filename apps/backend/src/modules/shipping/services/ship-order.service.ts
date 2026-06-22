@@ -1011,7 +1011,7 @@ export class ShipOrderService {
     if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${shipOrderNo}`);
 
     const pallets = await this.palletRepository.find({
-      where: { shipOrderNo, ...this.tenantWhere(company, plant) },
+      where: { shipOrderNo, status: In(['LOADED', 'SHIPPED']), ...this.tenantWhere(company, plant) },
       order: { createdAt: 'ASC' },
     });
     const palletNos = pallets.map((p) => p.palletNo);
