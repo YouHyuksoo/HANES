@@ -5,37 +5,145 @@
       "key": "master",
       "title": "기준정보",
       "items": [
-        { "menuCode": "MST_PART", "title": "품목마스터", "path": "/master/part" },
-        { "menuCode": "MST_BOM", "title": "BOM관리", "path": "/master/bom" }
+        {
+          "menuCode": "MST_PART",
+          "title": "품목마스터",
+          "path": "/master/part"
+        },
+        {
+          "menuCode": "MST_BOM",
+          "title": "BOM관리",
+          "path": "/master/bom"
+        },
+        {
+          "menuCode": "MST_WAREHOUSE",
+          "title": "창고/로케이션 관리",
+          "path": "/master/warehouse"
+        }
       ]
     },
     {
       "key": "material",
       "title": "자재수불관리",
       "items": [
-        { "menuCode": "PUR_PO", "title": "PO관리", "path": "/material/po" },
-        { "menuCode": "MAT_ARRIVAL", "title": "입하관리", "path": "/material/arrival" },
-        { "menuCode": "QC_IQC", "title": "수입검사(IQC)", "path": "/material/iqc" },
-        { "menuCode": "MAT_RECEIVE", "title": "자재입고관리", "path": "/material/receive" },
-        { "menuCode": "MAT_REQUEST", "title": "출고요청관리", "path": "/material/request" },
-        { "menuCode": "MAT_ISSUE", "title": "자재출고관리", "path": "/material/issue" }
+        {
+          "menuCode": "PUR_PO",
+          "title": "PO관리",
+          "path": "/material/po"
+        },
+        {
+          "menuCode": "MAT_ARRIVAL",
+          "title": "입하관리",
+          "path": "/material/arrival"
+        },
+        {
+          "menuCode": "QC_IQC",
+          "title": "수입검사(IQC)",
+          "path": "/material/iqc"
+        },
+        {
+          "menuCode": "MAT_RECEIVE",
+          "title": "자재입고관리",
+          "path": "/material/receive"
+        },
+        {
+          "menuCode": "MAT_REQUEST",
+          "title": "출고요청관리",
+          "path": "/material/request"
+        },
+        {
+          "menuCode": "MAT_ISSUE",
+          "title": "자재출고관리",
+          "path": "/material/issue"
+        },
+        {
+          "menuCode": "MAT_LOT_SPLIT",
+          "title": "자재분할",
+          "path": "/material/lot-split"
+        },
+        {
+          "menuCode": "MAT_LOT_MERGE",
+          "title": "자재병합",
+          "path": "/material/lot-merge"
+        }
       ]
     },
     {
       "key": "production",
       "title": "생산관리",
       "items": [
-        { "menuCode": "PROD_MONTHLY_PLAN", "title": "제품생산계획", "path": "/production/monthly-plan" },
-        { "menuCode": "PROD_ORDER", "title": "작업지시 관리", "path": "/production/order" },
-        { "menuCode": "PROD_INPUT_KIOSK", "title": "실적입력(키오스크)", "path": "/production/input-kiosk" }
+        {
+          "menuCode": "PROD_MONTHLY_PLAN",
+          "title": "제품생산계획",
+          "path": "/production/monthly-plan"
+        },
+        {
+          "menuCode": "PROD_ORDER",
+          "title": "작업지시 관리",
+          "path": "/production/order"
+        },
+        {
+          "menuCode": "PROD_INPUT_KIOSK",
+          "title": "실적입력(키오스크)",
+          "path": "/production/input-kiosk"
+        }
       ]
     },
     {
       "key": "quality",
       "title": "품질관리",
       "items": [
-        { "menuCode": "QC_IQC_PART_SPEC", "title": "품목별 IQC 항목관리", "path": "/master/iqc-part-spec" },
-        { "menuCode": "QC_AQL", "title": "AQL 기준관리", "path": "/quality/aql" }
+        {
+          "menuCode": "QC_IQC_ITEM",
+          "title": "검사항목마스터",
+          "path": "/master/iqc-item"
+        },
+        {
+          "menuCode": "QC_IQC_PART_SPEC",
+          "title": "품목별 IQC 항목관리",
+          "path": "/master/iqc-part-spec"
+        },
+        {
+          "menuCode": "QC_AQL",
+          "title": "AQL 기준관리",
+          "path": "/quality/aql"
+        },
+        {
+          "menuCode": "QC_DEFECT_CODE",
+          "title": "불량코드관리",
+          "path": "/quality/defect-code"
+        },
+        {
+          "menuCode": "QC_REQUEST_INSPECT",
+          "title": "의뢰검사 입력",
+          "path": "/quality/request-inspect"
+        }
+      ]
+    },
+    {
+      "key": "consumables",
+      "title": "소모품관리",
+      "items": [
+        {
+          "menuCode": "CONS_MASTER",
+          "title": "소모품 마스터",
+          "path": "/consumables/master"
+        },
+        {
+          "menuCode": "CONS_LABEL",
+          "title": "소모품 라벨발행",
+          "path": "/consumables/label"
+        },
+        {
+          "menuCode": "CONS_RECEIVING",
+          "title": "소모품 입고",
+          "path": "/consumables/receiving"
+        },
+        {
+          "menuCode": "CONS_ISSUING",
+          "title": "소모품출고",
+          "path": "/consumables/issuing"
+        }
       ]
     }
   ]
