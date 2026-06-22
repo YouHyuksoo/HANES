@@ -17,7 +17,7 @@ import { useLocationOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import { Part } from "../types";
-import { FieldInput, FieldSelect, FieldYnRadio, Field } from "./PartFieldHelp";
+import { FieldComCodeSelect, FieldInput, FieldSelect, FieldYnRadio, Field } from "./PartFieldHelp";
 import { QtyInput } from "@/components/shared";
 
 interface Props {
@@ -56,7 +56,6 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
   );
 
   // 제품유형: 코드마스터(PRODUCT_TYPE) 기반 — 화면 하드코딩 금지
-  const productTypeOptions = useComCodeOptions("PRODUCT_TYPE");
   const rawIqcInspectMethodOptions = useComCodeOptions("IQC_INSPECT_METHOD", false);
   const iqcInspectMethodOptions = useMemo(
     () => [{ value: "", label: "-" }, ...rawIqcInspectMethodOptions],
@@ -185,8 +184,8 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
           value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
         <FieldSelect field="itemType" label={t("master.part.type")} options={partTypeOptions}
           value={form.itemType} onChange={v => setField("itemType", v)} fullWidth required />
-        <FieldSelect field="productType" label={t("master.part.productType", "제품유형")}
-          options={productTypeOptions}
+        <FieldComCodeSelect field="productType" groupCode="PRODUCT_TYPE" includeAll={false}
+          label={t("master.part.productType", "제품유형")}
           value={form.productType} onChange={v => setField("productType", v)} fullWidth />
         <FieldInput field="modelName" label={t("master.part.modelName", "차종")}
           value={form.modelName} onChange={e => setField("modelName", e.target.value)} fullWidth />

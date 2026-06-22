@@ -62,8 +62,6 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   ], [t]);
 
   // 제품유형: 코드마스터(PRODUCT_TYPE) 기반 — 화면 하드코딩 금지
-  const productTypeOptions = useComCodeOptions("PRODUCT_TYPE");
-  const defectModelGroupOptions = useComCodeOptions("DEFECT_MODEL_GROUP");
   const rawIqcInspectMethodOptions = useComCodeOptions("IQC_INSPECT_METHOD", false);
   const iqcInspectMethodOptions = useMemo(
     () => [{ value: "", label: "-" }, ...rawIqcInspectMethodOptions],
@@ -306,13 +304,13 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={form.itemType} 
               onChange={v => setField("itemType", v)}
               fullWidth required />
-            <FieldSelect field="productType" label={t("master.part.productType", "품목그룹")}
-              options={productTypeOptions}
+            <FieldComCodeSelect field="productType" groupCode="PRODUCT_TYPE" includeAll={false}
+              label={t("master.part.productType", "품목그룹")}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
             <FieldInput field="modelName" label={t("master.part.modelName", "차종")}
               value={form.modelName} onChange={e => setField("modelName", e.target.value)} fullWidth />
-            <FieldSelect field="defectModelGroup" label={t("master.part.defectModelGroup", "모델구분")}
-              options={defectModelGroupOptions}
+            <FieldComCodeSelect field="defectModelGroup" groupCode="DEFECT_MODEL_GROUP" includeAll={false}
+              label={t("master.part.defectModelGroup", "모델구분")}
               value={form.defectModelGroup} onChange={v => setField("defectModelGroup", v)} fullWidth />
             <FieldInput field="spec" label={t("master.part.spec")} wrapperClassName="col-span-2"
               value={form.spec} onChange={e => setField("spec", e.target.value)} fullWidth />
