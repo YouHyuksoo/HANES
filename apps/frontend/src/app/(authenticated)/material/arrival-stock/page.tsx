@@ -22,6 +22,7 @@ import {
   Layers,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -303,22 +304,13 @@ export default function ArrivalStockPage() {
                     fullWidth
                   />
                 </div>
-                <div className="w-36 flex-shrink-0">
-                  <Input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    fullWidth
-                  />
-                </div>
-                <div className="w-36 flex-shrink-0">
-                  <Input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    fullWidth
-                  />
-                </div>
+                <DateRangeFilter
+                  from={fromDate}
+                  to={toDate}
+                  onFromChange={setFromDate}
+                  onToChange={setToDate}
+                  className="flex-shrink-0"
+                />
               </div>
             }
           

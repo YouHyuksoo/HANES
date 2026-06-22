@@ -17,6 +17,7 @@ import { ClipboardCheck, Search, RefreshCw, XCircle, Upload, ExternalLink, Eye }
 import IqcDetailModal, { type IqcDetailRecord } from "./IqcDetailModal";
 import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useComCodeMap } from "@/hooks/useComCode";
@@ -357,13 +358,13 @@ export default function IqcHistoryPage() {
                 <ComCodeSelect groupCode="IQC_INSPECT_TYPE" labelPrefix={t("material.iqcHistory.inspectType")}
                   value={typeFilter} onChange={setTypeFilter} fullWidth />
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Input type="date"
-                  value={startDate} onChange={e => setStartDate(e.target.value)} className="w-36" />
-                <span className="text-text-muted text-sm">~</span>
-                <Input type="date"
-                  value={endDate} onChange={e => setEndDate(e.target.value)} className="w-36" />
-              </div>
+              <DateRangeFilter
+                from={startDate}
+                to={endDate}
+                onFromChange={setStartDate}
+                onToChange={setEndDate}
+                className="flex-shrink-0"
+              />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM IQC_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

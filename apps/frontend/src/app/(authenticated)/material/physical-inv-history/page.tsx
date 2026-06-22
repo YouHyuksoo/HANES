@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ClipboardCheck, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { WarehouseSelect } from "@/components/shared";
@@ -174,12 +175,13 @@ export default function PhysicalInvHistoryPage() {
               <div className="w-40 flex-shrink-0">
                 <WarehouseSelect includeAll labelPrefix={t("common.warehouse", "창고")} value={warehouseFilter} onChange={setWarehouseFilter} fullWidth />
               </div>
-              <div className="w-40 flex-shrink-0">
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} fullWidth />
-              </div>
-              <div className="w-40 flex-shrink-0">
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth />
-              </div>
+              <DateRangeFilter
+                from={startDate}
+                to={endDate}
+                onFromChange={setStartDate}
+                onToChange={setEndDate}
+                className="flex-shrink-0"
+              />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM MAT_PHYSICAL_INV_HIST\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

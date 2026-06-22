@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { RotateCcw, Search, RefreshCw, XCircle } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -201,14 +202,13 @@ export default function ReceiptCancelPage() {
                   value={searchText} onChange={e => setSearchText(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date"
-                  value={startDate} onChange={e => setStartDate(e.target.value)} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date"
-                  value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
-              </div>
+              <DateRangeFilter
+                from={startDate}
+                to={endDate}
+                onFromChange={setStartDate}
+                onToChange={setEndDate}
+                className="flex-shrink-0"
+              />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM MAT_RECEIPT_CANCELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

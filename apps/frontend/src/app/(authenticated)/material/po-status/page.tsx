@@ -16,6 +16,7 @@ import { useComCodeMap } from "@/hooks/useComCode";
 import { ClipboardList, Search, RefreshCw, Package } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -255,12 +256,14 @@ export default function PoStatusPage() {
               getRowId={(row) => row.poNo}
               toolbarLeft={
                 <div className="flex gap-3 flex-1 min-w-0 items-center flex-wrap">
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <span className="text-text-muted text-xs whitespace-nowrap">{t("material.po.orderDate", "발주일")}</span>
-                    <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="w-36" />
-                    <span className="text-text-muted text-sm">~</span>
-                    <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="w-36" />
-                  </div>
+                  <DateRangeFilter
+                    label={t("material.po.orderDate", "발주일")}
+                    from={fromDate}
+                    to={toDate}
+                    onFromChange={setFromDate}
+                    onToChange={setToDate}
+                    className="flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-[120px]">
                     <Input placeholder={t("material.poStatus.searchPlaceholder")}
                       value={searchText} onChange={e => setSearchText(e.target.value)}

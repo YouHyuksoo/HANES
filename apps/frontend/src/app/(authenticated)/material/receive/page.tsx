@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PackagePlus, RefreshCw, ScanLine, Search } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select } from '@/components/ui';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import api from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
 import ReceivableTable from './components/ReceivableTable';
@@ -106,21 +107,13 @@ export default function ReceivingPage() {
             toolbarLeft={
               <div className="flex gap-2 flex-1 min-w-0 items-center flex-wrap">
                 {/* 날짜 범위 */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    className="w-36"
-                  />
-                  <span className="text-text-muted text-sm">~</span>
-                  <Input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    className="w-36"
-                  />
-                </div>
+                <DateRangeFilter
+                  from={fromDate}
+                  to={toDate}
+                  onFromChange={setFromDate}
+                  onToChange={setToDate}
+                  className="flex-shrink-0"
+                />
                 {/* 공급업체 */}
                 <div className="w-44 flex-shrink-0">
                   <Select options={vendorOptions} value={vendorFilter} onChange={setVendorFilter} fullWidth />

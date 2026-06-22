@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClipboardList, RefreshCw, Search } from 'lucide-react';
 import { Button, Input, Select, Card, CardContent } from '@/components/ui';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import api from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
 import ReceivingHistoryTable from '../receive/components/ReceivingHistoryTable';
@@ -93,11 +94,13 @@ export default function ReceiveHistoryPage() {
             isLoading={loading}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0 items-center flex-wrap">
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="w-36" />
-                  <span className="text-text-muted text-sm">~</span>
-                  <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="w-36" />
-                </div>
+                <DateRangeFilter
+                  from={fromDate}
+                  to={toDate}
+                  onFromChange={setFromDate}
+                  onToChange={setToDate}
+                  className="flex-shrink-0"
+                />
                 <div className="w-44 flex-shrink-0">
                   <Select options={vendorOptions} value={vendorFilter} onChange={setVendorFilter} fullWidth />
                 </div>

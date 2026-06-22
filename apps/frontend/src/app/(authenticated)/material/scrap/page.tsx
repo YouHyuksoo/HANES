@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash, Search, RefreshCw, Plus, AlertTriangle } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
@@ -154,14 +155,13 @@ export default function ScrapPage() {
                   value={searchText} onChange={e => setSearchText(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date"
-                  value={startDate} onChange={e => setStartDate(e.target.value)} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date"
-                  value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
-              </div>
+              <DateRangeFilter
+                from={startDate}
+                to={endDate}
+                onFromChange={setStartDate}
+                onToChange={setEndDate}
+                className="flex-shrink-0"
+              />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM MAT_SCRAPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

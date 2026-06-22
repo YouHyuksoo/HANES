@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -195,12 +196,14 @@ export default function PoPage() {
                         leftIcon={<Search className="w-4 h-4" />} fullWidth />
                     </div>
                     {/* 발주일 구간 */}
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span className="text-xs text-text-muted whitespace-nowrap">{t("material.po.orderDate")}</span>
-                      <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="w-36" />
-                      <span className="text-text-muted">~</span>
-                      <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="w-36" />
-                    </div>
+                    <DateRangeFilter
+                      label={t("material.po.orderDate")}
+                      from={fromDate}
+                      to={toDate}
+                      onFromChange={setFromDate}
+                      onToChange={setToDate}
+                      className="flex-shrink-0"
+                    />
                     <div className="w-36 flex-shrink-0">
                       <ComCodeSelect groupCode="PO_STATUS"
                         value={statusFilter} onChange={setStatusFilter} fullWidth />
