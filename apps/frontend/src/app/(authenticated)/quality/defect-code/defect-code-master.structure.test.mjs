@@ -28,13 +28,20 @@ test('defect code master page uses the dedicated defect-code API and 3-level cat
   assert.match(page, /defectScope/);
 });
 
-test('defect category tree uses readable level badges and two-line node content', () => {
+test('defect code master uses a simple all-code grid with level selectors in the form', () => {
   const page = read('apps/frontend/src/app/(authenticated)/quality/defect-code/page.tsx');
-  assert.match(page, /data-testid="defect-category-tree"/);
+  assert.doesNotMatch(page, /data-testid="defect-category-tree"/);
   assert.doesNotMatch(page, /L\{node\.levelNo\}/);
-  assert.match(page, /quality\.defectCode\.levelBadge/);
-  assert.match(page, /font-mono text-\[11px\]/);
-  assert.match(page, /border-l-2/);
+  assert.doesNotMatch(page, /function CategoryNode/);
+  assert.match(page, /data-testid="defect-code-grid"/);
+  assert.match(page, /quality\.defectCode\.allCodes/);
+  assert.match(page, /selectedLevel1/);
+  assert.match(page, /selectedLevel2/);
+  assert.match(page, /selectedLevel3/);
+  assert.match(page, /quality\.defectCode\.level1/);
+  assert.match(page, /quality\.defectCode\.level2/);
+  assert.match(page, /quality\.defectCode\.level3/);
+  assert.doesNotMatch(page, /params\.categoryCode/);
 });
 
 test('defect code master form labels do not expose raw database field keys', () => {
@@ -79,8 +86,10 @@ test('defect code master translates enum values instead of rendering raw keys', 
 
   assert.doesNotMatch(page, /<td className="px-2 py-2">\{row\.defectGrade\}<\/td>/);
   assert.doesNotMatch(page, /<td className="px-2 py-2">\{row\.defectScope\}<\/td>/);
+  assert.doesNotMatch(page, /<td className="px-2 py-2">\{row\.useYn\}<\/td>/);
   assert.match(page, /formatDefectGrade\(row\.defectGrade\)/);
   assert.match(page, /formatDefectScope\(row\.defectScope\)/);
+  assert.match(page, /formatUseYn\(row\.useYn\)/);
 
   for (const key of ['gradeCritical', 'gradeMajor', 'gradeMinor']) {
     assert.match(page, new RegExp(`quality\\.defectCode\\.${key}`));

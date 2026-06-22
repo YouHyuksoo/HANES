@@ -58,81 +58,70 @@ function flattenCategories(nodes: DefectCategory[]): DefectCategory[] {
   return nodes.flatMap((node) => [node, ...flattenCategories(node.children ?? [])]);
 }
 
-function CategoryNode({
-  node,
-  selectedCode,
-  onSelect,
-}: {
-  node: DefectCategory;
-  selectedCode: string;
-  onSelect: (node: DefectCategory) => void;
-}) {
-  const { t } = useTranslation();
-  const isSelected = selectedCode === node.categoryCode;
-  const levelTone = node.levelNo === 1
-    ? "border-sky-400 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-    : node.levelNo === 2
-      ? "border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
-      : "border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300";
-
-  return (
-    <div className="relative" style={{ marginLeft: `${(node.levelNo - 1) * 14}px` }}>
-      {node.levelNo > 1 && <div className="absolute -left-2 top-0 h-full border-l-2 border-border/70" />}
-      <button
-        type="button"
-        onClick={() => onSelect(node)}
-        className={`mb-1 flex min-h-[54px] w-full items-start gap-2 rounded-md border px-2.5 py-2 text-left transition-colors ${
-          isSelected
-            ? "border-primary bg-primary/10 shadow-sm"
-            : "border-transparent text-text hover:border-border hover:bg-surface-hover"
-        }`}
-      >
-        <span className={`mt-0.5 inline-flex h-5 min-w-8 shrink-0 items-center justify-center rounded border px-1.5 text-[11px] font-semibold ${levelTone}`}>
-          {t("quality.defectCode.levelBadge", "{{level}}레벨", { level: node.levelNo })}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className={`block truncate text-sm leading-5 ${isSelected ? "font-semibold text-primary" : "font-medium text-text"}`}>
-            {node.categoryName}
-          </span>
-          <span className="mt-0.5 block truncate font-mono text-[11px] leading-4 text-text-muted">
-            {node.categoryCode}
-          </span>
-        </span>
-      </button>
-      {(node.children ?? []).map((child) => (
-        <CategoryNode key={child.categoryCode} node={child} selectedCode={selectedCode} onSelect={onSelect} />
-      ))}
-    </div>
-  );
-}
-
 export default function DefectCodeMasterPage() {
   const { t } = useTranslation();
   const [categories, setCategories] = useState<DefectCategory[]>([]);
   const [codes, setCodes] = useState<DefectCode[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<DefectCategory | null>(null);
   const [categoryForm, setCategoryForm] = useState<DefectCategory>(emptyCategory);
   const [selectedCode, setSelectedCode] = useState<DefectCode | null>(null);
   const [codeForm, setCodeForm] = useState<DefectCode>(emptyCode);
+  const [selectedLevel1, setSelectedLevel1] = useState("");
+  const [selectedLevel2, setSelectedLevel2] = useState("");
+  const [selectedLevel3, setSelectedLevel3] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const productTypeOptions = useComCodeOptions("PRODUCT_TYPE", false, true);
   const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
-  const leafCategoryOptions = useMemo(
+  const categoryByCode = useMemo(() => new Map(flatCategories.map((category) => [category.categoryCode, category])), [flatCategories]);
+
+  const level1Options = useMemo(
     () => flatCategories
-      .filter((category) => category.levelNo === 3 && category.useYn === "Y")
+      .filter((category) => category.levelNo === 1 && category.useYn === "Y")
       .map((category) => ({ value: category.categoryCode, label: `${category.categoryCode} - ${category.categoryName}` })),
     [flatCategories],
   );
 
-  const parentCategoryOptions = useMemo(
+  const level2Options = useMemo(
+    () => flatCategories
+      .filter((category) => category.levelNo === 2 && category.parentCategoryCode === selectedLevel1 && category.useYn === "Y")
+      .map((category) => ({ value: category.categoryCode, label: `${category.categoryCode} - ${category.categoryName}` })),
+    [flatCategories, selectedLevel1],
+  );
+
+  const level3Options = useMemo(
+    () => flatCategories
+      .filter((category) => category.levelNo === 3 && category.parentCategoryCode === selectedLevel2 && category.useYn === "Y")
+      .map((category) => ({ value: category.categoryCode, label: `${category.categoryCode} - ${category.categoryName}` })),
+    [flatCategories, selectedLevel2],
+  );
+
+  const categoryParentOptions = useMemo(
     () => flatCategories
       .filter((category) => category.levelNo === categoryForm.levelNo - 1 && category.useYn === "Y")
       .map((category) => ({ value: category.categoryCode, label: `${category.categoryCode} - ${category.categoryName}` })),
     [categoryForm.levelNo, flatCategories],
   );
+
+  const categoryPath = useCallback((categoryCode: string) => {
+    const path: string[] = [];
+    let current = categoryByCode.get(categoryCode);
+    while (current) {
+      path.unshift(current.categoryName);
+      current = current.parentCategoryCode ? categoryByCode.get(current.parentCategoryCode) : undefined;
+    }
+    return path.length ? path.join(" / ") : categoryCode;
+  }, [categoryByCode]);
+
+  const setSelectedCategoryPath = useCallback((categoryCode: string) => {
+    const level3 = categoryByCode.get(categoryCode);
+    const level2 = level3?.parentCategoryCode ? categoryByCode.get(level3.parentCategoryCode) : undefined;
+    const level1 = level2?.parentCategoryCode ? categoryByCode.get(level2.parentCategoryCode) : undefined;
+    setSelectedLevel1(level1?.categoryCode ?? "");
+    setSelectedLevel2(level2?.categoryCode ?? "");
+    setSelectedLevel3(level3?.categoryCode ?? "");
+  }, [categoryByCode]);
 
   const formatDefectGrade = useCallback((grade: DefectCode["defectGrade"]) => {
     const labels: Record<DefectCode["defectGrade"], string> = {
@@ -153,6 +142,10 @@ export default function DefectCodeMasterPage() {
     return labels[scope] ?? scope;
   }, [t]);
 
+  const formatUseYn = useCallback((useYn: string) => (
+    useYn === "Y" ? t("common.use", "사용") : t("common.inactive", "비활성")
+  ), [t]);
+
   const defectGradeOptions = useMemo(
     () => (["CRITICAL", "MAJOR", "MINOR"] as const).map((value) => ({ value, label: formatDefectGrade(value) })),
     [formatDefectGrade],
@@ -165,55 +158,41 @@ export default function DefectCodeMasterPage() {
 
   const fetchCategories = useCallback(async () => {
     const res = await api.get("/quality/defect-codes/categories");
-    const data = res.data?.data ?? [];
-    setCategories(data);
-    const flat = flattenCategories(data);
-    if (!selectedCategory && flat.length) {
-      setSelectedCategory(flat[0]);
-      setCategoryForm(flat[0]);
-    }
-  }, [selectedCategory]);
+    setCategories(res.data?.data ?? []);
+  }, []);
 
   const fetchCodes = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string> = { limit: "5000" };
       if (search.trim()) params.search = search.trim();
-      if (selectedCategory?.levelNo === 3) params.categoryCode = selectedCategory.categoryCode;
       const res = await api.get("/quality/defect-codes", { params });
       setCodes(res.data?.data ?? []);
     } finally {
       setLoading(false);
     }
-  }, [search, selectedCategory]);
+  }, [search]);
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
   useEffect(() => { fetchCodes(); }, [fetchCodes]);
 
-  const resetCategoryForm = useCallback((levelNo = 1, parentCategoryCode: string | null = null) => {
-    setSelectedCategory(null);
-    setCategoryForm({ ...emptyCategory, levelNo, parentCategoryCode });
-  }, []);
+  useEffect(() => {
+    setCodeForm((prev) => ({ ...prev, categoryCode: selectedLevel3 }));
+  }, [selectedLevel3]);
 
   const resetCodeForm = useCallback(() => {
     setSelectedCode(null);
-    setCodeForm({
-      ...emptyCode,
-      categoryCode: selectedCategory?.levelNo === 3 ? selectedCategory.categoryCode : "",
-    });
-  }, [selectedCategory]);
-
-  const handleCategorySelect = useCallback((category: DefectCategory) => {
-    setSelectedCategory(category);
-    setCategoryForm({ ...category });
-    setSelectedCode(null);
-    setCodeForm({ ...emptyCode, categoryCode: category.levelNo === 3 ? category.categoryCode : "" });
+    setCodeForm(emptyCode);
+    setSelectedLevel1("");
+    setSelectedLevel2("");
+    setSelectedLevel3("");
   }, []);
 
   const handleCodeSelect = useCallback((row: DefectCode) => {
     setSelectedCode(row);
     setCodeForm({ ...row, productTypes: row.productTypes ?? [] });
-  }, []);
+    setSelectedCategoryPath(row.categoryCode);
+  }, [setSelectedCategoryPath]);
 
   const saveCategory = useCallback(async () => {
     if (!categoryForm.categoryCode.trim() || !categoryForm.categoryName.trim()) {
@@ -222,24 +201,20 @@ export default function DefectCodeMasterPage() {
     }
     setSaving(true);
     try {
-      const payload = {
+      await api.post("/quality/defect-codes/categories", {
         ...categoryForm,
         categoryCode: categoryForm.categoryCode.trim().toUpperCase(),
         parentCategoryCode: categoryForm.levelNo === 1 ? null : categoryForm.parentCategoryCode,
-      };
-      if (selectedCategory) {
-        await api.put(`/quality/defect-codes/categories/${encodeURIComponent(selectedCategory.categoryCode)}`, payload);
-      } else {
-        await api.post("/quality/defect-codes/categories", payload);
-      }
+      });
+      setCategoryForm(emptyCategory);
       await fetchCategories();
     } finally {
       setSaving(false);
     }
-  }, [categoryForm, fetchCategories, selectedCategory, t]);
+  }, [categoryForm, fetchCategories, t]);
 
   const saveCode = useCallback(async () => {
-    if (!codeForm.defectCode.trim() || !codeForm.defectName.trim() || !codeForm.categoryCode) {
+    if (!codeForm.defectCode.trim() || !codeForm.defectName.trim() || !selectedLevel3) {
       toast.error(t("quality.defectCode.requiredCode", "불량코드, 불량명, 3레벨 분류를 입력하세요."));
       return;
     }
@@ -248,7 +223,7 @@ export default function DefectCodeMasterPage() {
       const payload = {
         ...codeForm,
         defectCode: codeForm.defectCode.trim().toUpperCase(),
-        categoryCode: codeForm.categoryCode.trim().toUpperCase(),
+        categoryCode: selectedLevel3,
       };
       if (selectedCode) {
         await api.put(`/quality/defect-codes/${encodeURIComponent(selectedCode.defectCode)}`, payload);
@@ -259,7 +234,7 @@ export default function DefectCodeMasterPage() {
     } finally {
       setSaving(false);
     }
-  }, [codeForm, fetchCodes, selectedCode, t]);
+  }, [codeForm, fetchCodes, selectedCode, selectedLevel3, t]);
 
   const setProductType = useCallback((productType: string, checked: boolean) => {
     setCodeForm((prev) => ({
@@ -290,41 +265,24 @@ export default function DefectCodeMasterPage() {
         </div>
       </div>
 
-      <div className="grid h-[calc(100vh-150px)] grid-cols-[340px_minmax(420px,1fr)_420px] gap-4">
+      <div className="grid h-[calc(100vh-150px)] grid-cols-[minmax(620px,1fr)_440px] gap-4">
         <Card padding="none" className="min-h-0 overflow-hidden">
           <CardContent className="flex h-full flex-col p-3">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-text">{t("quality.defectCode.category", "불량분류")}</h2>
-              <div className="flex gap-1">
-                <button className="rounded px-2 py-1 text-xs hover:bg-surface-hover" onClick={() => resetCategoryForm(1, null)}>L1</button>
-                <button className="rounded px-2 py-1 text-xs hover:bg-surface-hover" onClick={() => resetCategoryForm(2, selectedCategory?.categoryCode ?? null)}>L2</button>
-                <button className="rounded px-2 py-1 text-xs hover:bg-surface-hover" onClick={() => resetCategoryForm(3, selectedCategory?.categoryCode ?? null)}>L3</button>
-              </div>
-            </div>
-            <div data-testid="defect-category-tree" className="min-h-0 flex-1 overflow-auto pr-1">
-              {categories.map((node) => (
-                <CategoryNode key={node.categoryCode} node={node} selectedCode={selectedCategory?.categoryCode ?? ""} onSelect={handleCategorySelect} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card padding="none" className="min-h-0 overflow-hidden">
-          <CardContent className="flex h-full flex-col p-3">
-            <div className="mb-3 grid grid-cols-[1fr_150px_120px] gap-2">
+            <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-2">
+              <h2 className="text-sm font-semibold text-text">{t("quality.defectCode.allCodes", "등록된 불량 전체")}</h2>
               <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("quality.defectCode.search", "불량코드/불량명 검색")} fullWidth />
-              <ComCodeSelect groupCode="DEFECT_GRADE" value="" onChange={() => undefined} disabled includeAll />
               <Button variant="secondary" onClick={fetchCodes}>{t("common.search", "검색")}</Button>
             </div>
-            <div className="min-h-0 flex-1 overflow-auto rounded border border-border">
+            <div data-testid="defect-code-grid" className="min-h-0 flex-1 overflow-auto rounded border border-border">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-slate-200 text-xs text-text dark:bg-slate-800">
                   <tr>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.defectCode", "불량코드")}</th>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.defectName", "불량명")}</th>
-                    <th className="px-2 py-2 text-left">{t("quality.defectCode.category", "분류")}</th>
+                    <th className="px-2 py-2 text-left">{t("quality.defectCode.categoryPath", "분류")}</th>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.grade", "등급")}</th>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.scope", "적용범위")}</th>
+                    <th className="px-2 py-2 text-left">{t("quality.defectCode.useYn", "사용여부")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -336,13 +294,14 @@ export default function DefectCodeMasterPage() {
                     >
                       <td className="px-2 py-2 font-mono text-xs font-semibold text-primary">{row.defectCode}</td>
                       <td className="px-2 py-2">{row.defectName}</td>
-                      <td className="px-2 py-2 font-mono text-xs">{row.categoryCode}</td>
+                      <td className="px-2 py-2 text-xs text-text-muted">{categoryPath(row.categoryCode)}</td>
                       <td className="px-2 py-2">{formatDefectGrade(row.defectGrade)}</td>
                       <td className="px-2 py-2">{formatDefectScope(row.defectScope)}</td>
+                      <td className="px-2 py-2">{formatUseYn(row.useYn)}</td>
                     </tr>
                   ))}
                   {!codes.length && (
-                    <tr><td colSpan={5} className="px-2 py-10 text-center text-text-muted">{t("common.noData", "데이터가 없습니다.")}</td></tr>
+                    <tr><td colSpan={6} className="px-2 py-10 text-center text-text-muted">{t("common.noData", "데이터가 없습니다.")}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -350,24 +309,7 @@ export default function DefectCodeMasterPage() {
           </CardContent>
         </Card>
 
-        <div className="grid min-h-0 grid-rows-[auto_1fr] gap-4">
-          <Card padding="none" className="overflow-hidden">
-            <CardContent className="p-3">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-text">{selectedCategory ? t("quality.defectCode.editCategory", "분류 수정") : t("quality.defectCode.addCategory", "분류 추가")}</h2>
-                <Button size="sm" onClick={saveCategory} isLoading={saving}>
-                  <Save className="h-4 w-4" />{t("common.save")}
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Input label={t("quality.defectCode.level", "분류 레벨")} type="number" min={1} max={3} value={String(categoryForm.levelNo)} onChange={(event) => setCategoryForm((prev) => ({ ...prev, levelNo: Number(event.target.value) || 1, parentCategoryCode: null }))} fullWidth />
-                <Select label={t("quality.defectCode.parentCategory", "상위 분류")} value={categoryForm.parentCategoryCode ?? ""} onChange={(value) => setCategoryForm((prev) => ({ ...prev, parentCategoryCode: value || null }))} options={[{ value: "", label: "-" }, ...parentCategoryOptions]} disabled={categoryForm.levelNo === 1} fullWidth />
-                <Input label={t("quality.defectCode.categoryCode", "분류코드")} value={categoryForm.categoryCode} onChange={(event) => setCategoryForm((prev) => ({ ...prev, categoryCode: event.target.value.toUpperCase() }))} disabled={!!selectedCategory} required fullWidth />
-                <Input label={t("quality.defectCode.categoryName", "분류명")} value={categoryForm.categoryName} onChange={(event) => setCategoryForm((prev) => ({ ...prev, categoryName: event.target.value }))} required fullWidth />
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="grid min-h-0 grid-rows-[1fr_auto] gap-4">
           <Card padding="none" className="min-h-0 overflow-auto">
             <CardContent className="p-3">
               <div className="mb-3 flex items-center justify-between">
@@ -379,7 +321,9 @@ export default function DefectCodeMasterPage() {
               <div className="grid grid-cols-2 gap-2">
                 <Input label={t("quality.defectCode.defectCode", "불량코드")} value={codeForm.defectCode} onChange={(event) => setCodeForm((prev) => ({ ...prev, defectCode: event.target.value.toUpperCase() }))} disabled={!!selectedCode} required fullWidth />
                 <Input label={t("quality.defectCode.defectName", "불량명")} value={codeForm.defectName} onChange={(event) => setCodeForm((prev) => ({ ...prev, defectName: event.target.value }))} required fullWidth />
-                <Select label={t("quality.defectCode.categoryCode", "분류코드")} value={codeForm.categoryCode} onChange={(value) => setCodeForm((prev) => ({ ...prev, categoryCode: value }))} options={[{ value: "", label: t("quality.defectCode.selectCategory", "분류 선택") }, ...leafCategoryOptions]} required fullWidth />
+                <Select label={t("quality.defectCode.level1", "1레벨")} value={selectedLevel1} onChange={(value) => { setSelectedLevel1(value); setSelectedLevel2(""); setSelectedLevel3(""); }} options={[{ value: "", label: t("quality.defectCode.selectLevel1", "1레벨 선택") }, ...level1Options]} required fullWidth />
+                <Select label={t("quality.defectCode.level2", "2레벨")} value={selectedLevel2} onChange={(value) => { setSelectedLevel2(value); setSelectedLevel3(""); }} options={[{ value: "", label: t("quality.defectCode.selectLevel2", "2레벨 선택") }, ...level2Options]} disabled={!selectedLevel1} required fullWidth />
+                <Select label={t("quality.defectCode.level3", "3레벨")} value={selectedLevel3} onChange={setSelectedLevel3} options={[{ value: "", label: t("quality.defectCode.selectLevel3", "3레벨 선택") }, ...level3Options]} disabled={!selectedLevel2} required fullWidth />
                 <Select label={t("quality.defectCode.grade", "등급")} value={codeForm.defectGrade} onChange={(value) => setCodeForm((prev) => ({ ...prev, defectGrade: value as DefectCode["defectGrade"] }))} options={defectGradeOptions} required fullWidth />
                 <Select label={t("quality.defectCode.scope", "적용범위")} value={codeForm.defectScope} onChange={(value) => setCodeForm((prev) => ({ ...prev, defectScope: value as DefectCode["defectScope"] }))} options={defectScopeOptions} required fullWidth />
                 <ComCodeSelect groupCode="USE_YN" includeAll={false} label={t("quality.defectCode.useYn", "사용여부")} value={codeForm.useYn} onChange={(value) => setCodeForm((prev) => ({ ...prev, useYn: value }))} fullWidth />
@@ -401,6 +345,27 @@ export default function DefectCodeMasterPage() {
                     </label>
                   ))}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card padding="none" className="overflow-hidden">
+            <CardContent className="p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-text">{t("quality.defectCode.quickCategoryAdd", "분류 빠른 추가")}</h2>
+                <Button size="sm" variant="secondary" onClick={saveCategory} isLoading={saving}>
+                  <Save className="h-4 w-4" />{t("common.save")}
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Select label={t("quality.defectCode.level", "분류 레벨")} value={String(categoryForm.levelNo)} onChange={(value) => setCategoryForm((prev) => ({ ...prev, levelNo: Number(value) || 1, parentCategoryCode: null }))} options={[
+                  { value: "1", label: t("quality.defectCode.level1", "1레벨") },
+                  { value: "2", label: t("quality.defectCode.level2", "2레벨") },
+                  { value: "3", label: t("quality.defectCode.level3", "3레벨") },
+                ]} fullWidth />
+                <Select label={t("quality.defectCode.parentCategory", "상위 분류")} value={categoryForm.parentCategoryCode ?? ""} onChange={(value) => setCategoryForm((prev) => ({ ...prev, parentCategoryCode: value || null }))} options={[{ value: "", label: "-" }, ...categoryParentOptions]} disabled={categoryForm.levelNo === 1} fullWidth />
+                <Input label={t("quality.defectCode.categoryCode", "분류코드")} value={categoryForm.categoryCode} onChange={(event) => setCategoryForm((prev) => ({ ...prev, categoryCode: event.target.value.toUpperCase() }))} required fullWidth />
+                <Input label={t("quality.defectCode.categoryName", "분류명")} value={categoryForm.categoryName} onChange={(event) => setCategoryForm((prev) => ({ ...prev, categoryName: event.target.value }))} required fullWidth />
               </div>
             </CardContent>
           </Card>
