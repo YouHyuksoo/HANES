@@ -13,6 +13,8 @@ import { useTranslation } from "react-i18next";
 import { History, RefreshCw, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button, Card, CardContent, Input, Select } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import { getTodayLocal } from "@/utils/date";
 import type { SelectOption } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -46,7 +48,7 @@ interface DetailRecord {
 
 export default function SelfInspectHistoryPage() {
   const { t } = useTranslation();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayLocal();
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<HistoryRecord | null>(null);
@@ -201,17 +203,12 @@ export default function SelfInspectHistoryPage() {
 
       {/* 필터 영역 */}
       <div className="flex gap-2 flex-shrink-0 flex-wrap">
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="w-40 text-sm"
-        />
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="w-40 text-sm"
+        <DateRangeFilter
+          from={dateFrom}
+          to={dateTo}
+          onFromChange={setDateFrom}
+          onToChange={setDateTo}
+          className="flex-shrink-0"
         />
         <Input
           value={orderNo}

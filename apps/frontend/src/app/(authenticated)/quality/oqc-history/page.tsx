@@ -17,6 +17,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ClipboardCheck, Search, RefreshCw, CheckCircle, XCircle, FileText, BarChart3 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
@@ -180,12 +181,13 @@ export default function OqcHistoryPage() {
               <div className="w-32 flex-shrink-0">
                 <ComCodeSelect groupCode="INSPECT_RESULT" labelPrefix={t('common.result', '결과')} value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth />
-              </div>
+              <DateRangeFilter
+                from={startDate}
+                to={endDate}
+                onFromChange={setStartDate}
+                onToChange={setEndDate}
+                className="flex-shrink-0"
+              />
             </div>
           }
         

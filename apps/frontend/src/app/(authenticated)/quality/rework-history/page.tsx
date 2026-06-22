@@ -35,6 +35,7 @@ import {
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { LineSelect, ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
@@ -271,22 +272,13 @@ export default function ReworkHistoryPage() {
                   />
                 </div>
                 {/* 기간 */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-text-muted" />
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-36"
-                  />
-                  <span className="text-text-muted">~</span>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="w-36"
-                  />
-                </div>
+                <DateRangeFilter
+                  from={dateFrom}
+                  to={dateTo}
+                  onFromChange={setDateFrom}
+                  onToChange={setDateTo}
+                  className="flex-shrink-0"
+                />
                 {/* 상태 */}
                 <Select
                   options={statusOptions}

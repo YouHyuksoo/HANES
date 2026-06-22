@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import OqcRequestModal from "./components/OqcRequestModal";
@@ -204,12 +205,13 @@ export default function OqcPage() {
                   fullWidth
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-text-muted" />
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
-                <span className="text-text-muted">~</span>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
-              </div>
+              <DateRangeFilter
+                from={dateFrom}
+                to={dateTo}
+                onFromChange={setDateFrom}
+                onToChange={setDateTo}
+                className="flex-shrink-0"
+              />
               <ComCodeSelect groupCode="OQC_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
             </div>
           }

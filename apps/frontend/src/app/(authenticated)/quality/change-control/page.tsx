@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import ChangeFormPanel from "./components/ChangeFormPanel";
 
@@ -260,12 +261,13 @@ export default function ChangeControlPage() {
                     onChange={e => setSearchText(e.target.value)}
                     leftIcon={<SearchIcon className="w-4 h-4" />} fullWidth />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-text-muted" />
-                  <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36" />
-                  <span className="text-text-muted">~</span>
-                  <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" />
-                </div>
+                <DateRangeFilter
+                  from={dateFrom}
+                  to={dateTo}
+                  onFromChange={setDateFrom}
+                  onToChange={setDateTo}
+                  className="flex-shrink-0"
+                />
                 <ComCodeSelect groupCode="CHANGE_STATUS" value={statusFilter}
                   onChange={setStatusFilter} labelPrefix={t("common.status")} />
                 <ComCodeSelect groupCode="CHANGE_TYPE" value={typeFilter}

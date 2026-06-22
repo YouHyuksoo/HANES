@@ -17,6 +17,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Plus, RefreshCw, AlertTriangle, Search } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, ComCodeBadge, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeList } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -182,11 +183,13 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
                 <div className="min-w-[180px] flex-1">
                   <Input placeholder={t("quality.defect.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-32" />
-                  <span className="text-text-muted">~</span>
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-32" />
-                </div>
+                <DateRangeFilter
+                  from={dateFrom}
+                  to={dateTo}
+                  onFromChange={setDateFrom}
+                  onToChange={setDateTo}
+                  className="shrink-0"
+                />
                 <div className="w-40 shrink-0">
                   <Select options={defectFilterOptions} value={defectType} onChange={setDefectType} className="w-full" disabled={defectCodeLoading} />
                 </div>

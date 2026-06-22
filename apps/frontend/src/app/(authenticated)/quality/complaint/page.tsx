@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import ComplaintFormPanel from "./components/ComplaintFormPanel";
 
@@ -268,12 +269,13 @@ export default function ComplaintPage() {
                     onChange={e => setSearchText(e.target.value)}
                     leftIcon={<SearchIcon className="w-4 h-4" />} fullWidth />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-text-muted" />
-                  <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36" />
-                  <span className="text-text-muted">~</span>
-                  <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" />
-                </div>
+                <DateRangeFilter
+                  from={dateFrom}
+                  to={dateTo}
+                  onFromChange={setDateFrom}
+                  onToChange={setDateTo}
+                  className="flex-shrink-0"
+                />
                 <ComCodeSelect groupCode="COMPLAINT_STATUS" value={statusFilter}
                   onChange={setStatusFilter} labelPrefix={t("common.status")} />
                 <ComCodeSelect groupCode="COMPLAINT_TYPE" value={typeFilter}
