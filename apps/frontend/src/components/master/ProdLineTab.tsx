@@ -15,6 +15,7 @@ import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/compone
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { FieldInput } from "@/app/(authenticated)/master/prod-line/components/ProdLineFieldHelp";
 
 interface ProdLine {
   lineCode: string;
@@ -183,23 +184,22 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
         title={editingLine ? t("master.prodLine.editLine") : t("master.prodLine.addLine")} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t("master.prodLine.lineCode")} placeholder="P2001"
+          <FieldInput field="lineCode" label={t("master.prodLine.lineCode")} placeholder="P2001"
             value={formData.lineCode || ""} onChange={(e) => setFormData((p) => ({ ...p, lineCode: e.target.value }))}
-            disabled={!!editingLine} fullWidth />
-          <Input label={t("master.prodLine.lineName")} placeholder={t("master.prodLine.lineName")}
-            value={formData.lineName || ""} onChange={(e) => setFormData((p) => ({ ...p, lineName: e.target.value }))} fullWidth />
-          <Input label={t("master.prodLine.oper")} placeholder="#0100"
-            value={formData.oper || ""} onChange={(e) => setFormData((p) => ({ ...p, oper: e.target.value }))} fullWidth />
-          <Input label={t("master.prodLine.lineType")} placeholder="PACKING"
-            value={formData.lineType || ""} onChange={(e) => setFormData((p) => ({ ...p, lineType: e.target.value }))} fullWidth />
-          <Input label={t("master.prodLine.whLoc")} placeholder="LOC002"
-            value={formData.whLoc || ""} onChange={(e) => setFormData((p) => ({ ...p, whLoc: e.target.value }))} fullWidth />
-          <Input label={t("master.prodLine.erpCode")} placeholder="ERP Code"
-            value={formData.erpCode || ""} onChange={(e) => setFormData((p) => ({ ...p, erpCode: e.target.value }))} fullWidth />
-          <div className="col-span-2">
-            <Input label={t("master.prodLine.remark")} placeholder={t("master.prodLine.remark")}
-              value={formData.remark || ""} onChange={(e) => setFormData((p) => ({ ...p, remark: e.target.value }))} fullWidth />
-          </div>
+            disabled={!!editingLine} />
+          <FieldInput field="lineName" label={t("master.prodLine.lineName")} placeholder={t("master.prodLine.lineName")}
+            value={formData.lineName || ""} onChange={(e) => setFormData((p) => ({ ...p, lineName: e.target.value }))} />
+          <FieldInput field="oper" label={t("master.prodLine.oper")} placeholder="#0100"
+            value={formData.oper || ""} onChange={(e) => setFormData((p) => ({ ...p, oper: e.target.value }))} />
+          <FieldInput field="lineType" label={t("master.prodLine.lineType")} placeholder="PACKING"
+            value={formData.lineType || ""} onChange={(e) => setFormData((p) => ({ ...p, lineType: e.target.value }))} />
+          <FieldInput field="whLoc" label={t("master.prodLine.whLoc")} placeholder="LOC002"
+            value={formData.whLoc || ""} onChange={(e) => setFormData((p) => ({ ...p, whLoc: e.target.value }))} />
+          <FieldInput field="erpCode" label={t("master.prodLine.erpCode")} placeholder="ERP Code"
+            value={formData.erpCode || ""} onChange={(e) => setFormData((p) => ({ ...p, erpCode: e.target.value }))} />
+          <FieldInput field="remark" label={t("master.prodLine.remark")} placeholder={t("master.prodLine.remark")}
+            value={formData.remark || ""} onChange={(e) => setFormData((p) => ({ ...p, remark: e.target.value }))}
+            wrapperClassName="col-span-2" />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>

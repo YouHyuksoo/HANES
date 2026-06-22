@@ -114,7 +114,7 @@ export function ApplyConfirmModal({
                 <div key={item.id} className="flex justify-between text-sm border-b border-border pb-1">
                   <span className="text-text">{item.itemCode} — {item.itemName}</span>
                   <span className={diff > 0 ? "text-blue-600 dark:text-blue-400 font-medium" : "text-red-600 dark:text-red-400 font-medium"}>
-                    {item.qty} → {item.countedQty} ({diff > 0 ? "+" : ""}{diff})
+                    {item.qty.toLocaleString()} → {item.countedQty!.toLocaleString()} ({diff > 0 ? "+" : ""}{diff.toLocaleString()})
                   </span>
                 </div>
               );

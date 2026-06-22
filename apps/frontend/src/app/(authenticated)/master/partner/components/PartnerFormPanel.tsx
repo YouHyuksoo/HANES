@@ -12,9 +12,9 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
-import { Button, Input } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { Button } from "@/components/ui";
 import api from "@/services/api";
+import { FieldInput, FieldComCodeSelect, FieldYnRadio } from "./PartnerFieldHelp";
 
 interface Partner {
   partnerCode: string;
@@ -136,59 +136,44 @@ export default function PartnerFormPanel({ mode, editingPartner, onClose, onSave
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.partner.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.partner.partnerCode")}
+            <FieldInput field="partnerCode" label={t("master.partner.partnerCode")}
               value={form.partnerCode} onChange={e => setField("partnerCode", e.target.value)}
-              disabled={isEdit} fullWidth required />
-            <ComCodeSelect groupCode="PARTNER_TYPE" includeAll={false}
+              disabled={isEdit} required />
+            <FieldComCodeSelect field="partnerType" groupCode="PARTNER_TYPE" includeAll={false}
               label={t("master.partner.partnerType")}
-              value={form.partnerType} onChange={v => setField("partnerType", v)} fullWidth required />
-            <div className="col-span-2">
-              <Input label={t("master.partner.partnerName")}
-                value={form.partnerName} onChange={e => setField("partnerName", e.target.value)} fullWidth required />
-            </div>
-            <Input label={t("master.partner.bizNo")}
-              value={form.bizNo} onChange={e => setField("bizNo", e.target.value)} fullWidth />
-            <Input label={t("master.partner.ceoName")}
-              value={form.ceoName} onChange={e => setField("ceoName", e.target.value)} fullWidth />
+              value={form.partnerType} onChange={v => setField("partnerType", v)} required />
+            <FieldInput field="partnerName" label={t("master.partner.partnerName")}
+              wrapperClassName="col-span-2"
+              value={form.partnerName} onChange={e => setField("partnerName", e.target.value)} required />
+            <FieldInput field="bizNo" label={t("master.partner.bizNo")}
+              value={form.bizNo} onChange={e => setField("bizNo", e.target.value)} />
+            <FieldInput field="ceoName" label={t("master.partner.ceoName")}
+              value={form.ceoName} onChange={e => setField("ceoName", e.target.value)} />
           </div>
         </div>
 
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.partner.sectionContact", "연락처")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <Input label={t("master.partner.address")}
-                value={form.address} onChange={e => setField("address", e.target.value)} fullWidth />
-            </div>
-            <Input label={t("master.partner.tel")}
-              value={form.tel} onChange={e => setField("tel", e.target.value)} fullWidth />
-            <Input label={t("master.partner.fax")}
-              value={form.fax} onChange={e => setField("fax", e.target.value)} fullWidth />
-            <Input label={t("master.partner.email")}
-              value={form.email} onChange={e => setField("email", e.target.value)} fullWidth />
-            <Input label={t("master.partner.contactPerson")}
-              value={form.contactPerson} onChange={e => setField("contactPerson", e.target.value)} fullWidth />
+            <FieldInput field="address" label={t("master.partner.address")}
+              wrapperClassName="col-span-2"
+              value={form.address} onChange={e => setField("address", e.target.value)} />
+            <FieldInput field="tel" label={t("master.partner.tel")}
+              value={form.tel} onChange={e => setField("tel", e.target.value)} />
+            <FieldInput field="fax" label={t("master.partner.fax")}
+              value={form.fax} onChange={e => setField("fax", e.target.value)} />
+            <FieldInput field="email" label={t("master.partner.email")}
+              value={form.email} onChange={e => setField("email", e.target.value)} />
+            <FieldInput field="contactPerson" label={t("master.partner.contactPerson")}
+              value={form.contactPerson} onChange={e => setField("contactPerson", e.target.value)} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("common.remark")}
-            value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-text-muted">{t("common.useYn", "사용여부")}</label>
-            <div className="flex gap-3 h-[34px] items-center">
-              {[
-                { v: "Y", l: "Y", cls: "text-green-600 dark:text-green-400" },
-                { v: "N", l: "N", cls: "text-red-500 dark:text-red-400" },
-              ].map(opt => (
-                <label key={opt.v} className={`flex items-center gap-1.5 cursor-pointer text-xs ${form.useYn === opt.v ? opt.cls + " font-semibold" : "text-text-muted"}`}>
-                  <input type="radio" checked={form.useYn === opt.v} onChange={() => setField("useYn", opt.v)}
-                    className="w-3.5 h-3.5 accent-primary" />
-                  {opt.l}
-                </label>
-              ))}
-            </div>
-          </div>
+          <FieldInput field="remark" label={t("common.remark")}
+            value={form.remark} onChange={e => setField("remark", e.target.value)} />
+          <FieldYnRadio field="useYn" label={t("common.useYn", "사용여부")}
+            value={form.useYn} onChange={v => setField("useYn", v)} />
         </div>
       </div>
 

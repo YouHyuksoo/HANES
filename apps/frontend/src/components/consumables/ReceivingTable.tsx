@@ -75,7 +75,7 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
           const isReturn = row.original.logType === 'IN_RETURN';
           return (
             <span className={isReturn ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
-              {isReturn ? '-' : '+'}{row.original.qty}
+              {isReturn ? '-' : '+'}{(row.original.qty ?? 0).toLocaleString()}
             </span>
           );
         },

@@ -13,8 +13,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, FileImage, FileText, Trash2 } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { HelpTooltip } from "@/components/shared";
 import api from "@/services/api";
+import { WORK_INSTRUCTION_FIELD_HELP, FieldInput } from "./WorkInstructionFieldHelp";
 
 interface WorkInstruction {
   itemCode: string;
@@ -155,19 +157,18 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.workInstruction.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("common.partCode")} required
+            <FieldInput field="itemCode" label={t("common.partCode")} required
               value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
-              readOnly={isEdit} disabled={isEdit} fullWidth />
-            <Input label={t("master.workInstruction.processCode")} required
+              readOnly={isEdit} disabled={isEdit} />
+            <FieldInput field="processCode" label={t("master.workInstruction.processCode")} required
               value={form.processCode} onChange={e => setField("processCode", e.target.value)}
-              readOnly={isEdit} disabled={isEdit} fullWidth />
-            <div className="col-span-2">
-              <Input label={t("master.workInstruction.docTitle")} required
-                value={form.title} onChange={e => setField("title", e.target.value)} fullWidth />
-            </div>
-            <Input label={t("master.workInstruction.revision")}
+              readOnly={isEdit} disabled={isEdit} />
+            <FieldInput field="title" label={t("master.workInstruction.docTitle")} required
+              wrapperClassName="col-span-2"
+              value={form.title} onChange={e => setField("title", e.target.value)} />
+            <FieldInput field="revision" label={t("master.workInstruction.revision")}
               value={form.revision} onChange={e => setField("revision", e.target.value)}
-              readOnly={isEdit} disabled={isEdit} placeholder="A" fullWidth />
+              readOnly={isEdit} disabled={isEdit} placeholder="A" />
           </div>
         </div>
 
@@ -240,16 +241,22 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
 
           {/* URL 직접 입력 토글 */}
           {!form.imageUrl && (
-            <div className="mt-2">
-              <Input label={t("master.workInstruction.imageUrl", "또는 URL 직접 입력")}
-                value={form.imageUrl} onChange={e => setField("imageUrl", e.target.value)} fullWidth />
-            </div>
+            <FieldInput field="imageUrl" label={t("master.workInstruction.imageUrl", "또는 URL 직접 입력")}
+              wrapperClassName="mt-2"
+              value={form.imageUrl} onChange={e => setField("imageUrl", e.target.value)} />
           )}
         </div>
 
         {/* 내용 */}
         <div>
-          <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.workInstruction.content")}</h3>
+          <h3 className="flex items-center gap-1 text-xs font-semibold text-text-muted mb-2">
+            <span>{t("master.workInstruction.content")}</span>
+            <HelpTooltip
+              description={t("master.workInstruction.fieldHelp.content", WORK_INSTRUCTION_FIELD_HELP.content.description)}
+              db={WORK_INSTRUCTION_FIELD_HELP.content.db}
+              dataField="content"
+            />
+          </h3>
           <textarea
             className="w-full h-32 px-3 py-2 text-xs border border-gray-400 dark:border-gray-500 rounded-lg bg-background text-text resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
             placeholder={t("master.workInstruction.contentPlaceholder")}

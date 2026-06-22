@@ -183,11 +183,11 @@ export default function WorkHistoryPanel() {
                   )}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="flex items-center gap-0.5 text-xs text-green-600 dark:text-green-400 font-medium">
-                      <CheckCircle2 className="w-3 h-3" />{item.goodQty}
+                      <CheckCircle2 className="w-3 h-3" />{(item.goodQty ?? 0).toLocaleString()}
                     </span>
                     {item.defectQty > 0 && (
                       <span className="flex items-center gap-0.5 text-xs text-red-600 dark:text-red-400 font-medium">
-                        <XCircle className="w-3 h-3" />{item.defectQty}
+                        <XCircle className="w-3 h-3" />{(item.defectQty ?? 0).toLocaleString()}
                       </span>
                     )}
                   </div>

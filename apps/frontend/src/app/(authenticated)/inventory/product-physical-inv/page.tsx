@@ -213,8 +213,8 @@ export default function ProductPhysicalInvPage() {
                       ? "text-blue-600 dark:text-blue-400 font-medium"
                       : "text-red-600 dark:text-red-400 font-medium"
                   }>
-                    {item.qty} → {item.countedQty} ({(item.countedQty! - item.qty) > 0 ? "+" : ""}
-                    {item.countedQty! - item.qty})
+                    {item.qty.toLocaleString()} → {item.countedQty!.toLocaleString()} ({(item.countedQty! - item.qty) > 0 ? "+" : ""}
+                    {(item.countedQty! - item.qty).toLocaleString()})
                   </span>
                 </div>
               ))}

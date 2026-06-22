@@ -393,7 +393,7 @@ export default function EquipBomTab() {
         const isLow = item.stockQty <= item.safetyStock;
         return (
           <span className={`font-mono text-xs ${isLow ? "text-red-500 font-bold" : ""}`}>
-            {item.stockQty}
+            {(item.stockQty ?? 0).toLocaleString()}
           </span>
         );
       },
@@ -431,7 +431,7 @@ export default function EquipBomTab() {
     { accessorKey: "bomItem.spec", header: t("master.equip.spec", "규격"), size: 100 },
     {
       accessorKey: "quantity", header: t("master.equip.quantity", "수량"), size: 60,
-      cell: ({ getValue }) => <span className="font-mono">{getValue() as number}</span>,
+      cell: ({ getValue }) => <span className="font-mono">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: "installDate", header: t("master.equip.installDate", "설치일"), size: 100,

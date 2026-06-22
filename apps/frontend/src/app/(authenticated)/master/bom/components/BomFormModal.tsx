@@ -13,9 +13,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Button, Modal, Input } from "@/components/ui";
-import { ComCodeSelect, ProcessSelect } from "@/components/shared";
 import api from "@/services/api";
 import { BomTreeItem, getBomKey } from "../types";
+import { Field, FieldLabel, FieldInput, FieldComCodeSelect, FieldProcessSelect } from "./BomFieldHelp";
 
 interface BomFormModalProps {
   isOpen: boolean;
@@ -114,9 +114,12 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingItem ? t("master.bom.editBom") : t("master.bom.addBom")} size="lg">
       <div className="space-y-4">
-        <Input label={t("master.bom.parentPart")} value={parentItemCodeDisplay} disabled fullWidth />
+        <Field field="parentPart" label={t("master.bom.parentPart")}>
+          <Input value={parentItemCodeDisplay} disabled fullWidth />
+        </Field>
         <div className="relative">
-          <Input label={t("master.bom.childPartCode")} value={childSearch}
+          <FieldLabel field="childPartCode" label={t("master.bom.childPartCode")} required />
+          <Input value={childSearch}
             onChange={(e) => { setChildSearch(e.target.value); setSelectedChild(null); }}
             placeholder={t("master.bom.searchChildPlaceholder")}
             leftIcon={<Search className="w-4 h-4" />} fullWidth disabled={!!editingItem} required />
@@ -138,21 +141,21 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
           )}
         </div>
         <div className="grid grid-cols-3 gap-4">
-          <Input label={t("master.bom.qtyPer")} type="number" step="0.01" value={qtyPer} onChange={(e) => setQtyPer(e.target.value)} fullWidth required />
-          <Input label={t("master.bom.seq", "순서")} type="number" value={seq} onChange={(e) => setSeq(e.target.value)} fullWidth />
-          <Input label={t("master.bom.revision")} value={revision} onChange={(e) => setRevision(e.target.value)} fullWidth required />
+          <FieldInput field="qtyPer" label={t("master.bom.qtyPer")} type="number" step="0.01" value={qtyPer} onChange={(e) => setQtyPer(e.target.value)} required />
+          <FieldInput field="seq" label={t("master.bom.seq", "순서")} type="number" value={seq} onChange={(e) => setSeq(e.target.value)} />
+          <FieldInput field="revision" label={t("master.bom.revision")} value={revision} onChange={(e) => setRevision(e.target.value)} required />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <ProcessSelect label={t("master.bom.processCode", "공정코드")} value={processCode} onChange={(v) => setProcessCode(v)} fullWidth />
+          <FieldProcessSelect field="processCode" label={t("master.bom.processCode", "공정코드")} value={processCode} onChange={(v) => setProcessCode(v)} />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <ComCodeSelect groupCode="BOM_SIDE" includeAll={false}
-            label={t("master.bom.side", "사이드")} value={side} onChange={(v) => setSide(v)} fullWidth />
-          <Input label={t("master.bom.remark")} value={remark} onChange={(e) => setRemark(e.target.value)} fullWidth />
+          <FieldComCodeSelect field="side" groupCode="BOM_SIDE" includeAll={false}
+            label={t("master.bom.side", "사이드")} value={side} onChange={(v) => setSide(v)} />
+          <FieldInput field="remark" label={t("master.bom.remark")} value={remark} onChange={(e) => setRemark(e.target.value)} />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t("master.bom.validFrom")} type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} fullWidth />
-          <Input label={t("master.bom.validTo")} type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} fullWidth />
+          <FieldInput field="validFrom" label={t("master.bom.validFrom")} type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
+          <FieldInput field="validTo" label={t("master.bom.validTo")} type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-6">

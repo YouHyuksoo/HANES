@@ -6,6 +6,7 @@ import { Boxes, ChevronDown, ChevronRight, CircleDot, Edit2, Package, Plus, Refr
 import { Button, Card, CardContent, ConfirmModal, Input, Modal } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
+import { FieldInput, FieldLabel } from "./RoutingFieldHelp";
 import type { RoutingGroupItem, RoutingProcessItem, SelectedProcess } from "../types";
 
 interface Props {
@@ -567,13 +568,10 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
 
       <Modal isOpen={groupModalOpen} onClose={() => setGroupModalOpen(false)} title={editingGroup ? t("master.routing.editRouting") : t("master.routing.addRouting")} size="md">
         <div className="space-y-4">
-          <Input label={t("master.routing.routingCode")} value={groupForm.routingCode} disabled={!!editingGroup} onChange={(e) => setGroupForm((f) => ({ ...f, routingCode: e.target.value }))} fullWidth required />
-          <Input label={t("master.routing.routingName")} value={groupForm.routingName} onChange={(e) => setGroupForm((f) => ({ ...f, routingName: e.target.value }))} fullWidth required />
+          <FieldInput field="routingCode" label={t("master.routing.routingCode")} value={groupForm.routingCode} disabled={!!editingGroup} onChange={(e) => setGroupForm((f) => ({ ...f, routingCode: e.target.value }))} required />
+          <FieldInput field="routingName" label={t("master.routing.routingName")} value={groupForm.routingName} onChange={(e) => setGroupForm((f) => ({ ...f, routingName: e.target.value }))} required />
           <div>
-            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
-              {t("master.part.itemCode", { defaultValue: "품목" })}
-              <span className="text-red-500 ml-0.5">*</span>
-            </label>
+            <FieldLabel field="itemCode" label={t("master.part.itemCode", { defaultValue: "품목" })} required />
             <select
               value={groupForm.itemCode}
               onChange={(e) => setGroupForm((f) => ({ ...f, itemCode: e.target.value }))}
@@ -588,7 +586,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
               ))}
             </select>
           </div>
-          <Input label={t("common.description", { defaultValue: "설명" })} value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} fullWidth />
+          <FieldInput field="description" label={t("common.description", { defaultValue: "설명" })} value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setGroupModalOpen(false)}>{t("common.cancel")}</Button>
@@ -599,19 +597,16 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       <Modal isOpen={processModalOpen} onClose={() => setProcessModalOpen(false)} title={editingProcess ? t("master.routing.editProcess") : t("master.routing.addProcess")} size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <Input label={t("master.routing.seq")} type="number" step="10" value={processForm.seq} disabled={!!editingProcess} onChange={(e) => setProcessForm((f) => ({ ...f, seq: e.target.value }))} fullWidth />
+            <FieldInput field="seq" label={t("master.routing.seq")} type="number" step="10" value={processForm.seq} disabled={!!editingProcess} onChange={(e) => setProcessForm((f) => ({ ...f, seq: e.target.value }))} />
             <div>
-              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
-                {t("master.routing.processCode")}
-                <span className="text-red-500 ml-0.5">*</span>
-              </label>
+              <FieldLabel field="processCode" label={t("master.routing.processCode")} required />
               <select value={processForm.processCode} onChange={(e) => handleProcessSelect(e.target.value)} className={selectCls} required>
                 <option value="">-- {t("common.select")} --</option>
                 {processOptions.map((option) => <option key={option.processCode} value={option.processCode}>[{option.processCode}] {option.processName}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.processName")}</label>
+              <FieldLabel field="processName" label={t("master.routing.processName")} />
               <div
                 data-testid="routing-process-name-display"
                 className="flex h-10 items-center rounded-lg border border-border bg-surface px-3 text-sm text-text dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
@@ -622,13 +617,13 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.processType")}</label>
+              <FieldLabel field="processType" label={t("master.routing.processType")} />
               <div className="flex h-10 items-center rounded-lg border border-border bg-surface px-3 text-sm text-text dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
                 {selectedProcessTypeLabel}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.equipType")}</label>
+              <FieldLabel field="equipType" label={t("master.routing.equipType")} />
               <select value={processForm.equipType} onChange={(e) => setProcessForm((f) => ({ ...f, equipType: e.target.value }))} className={selectCls}>
                 <option value="">-- {t("common.select")} --</option>
                 {equipTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -636,12 +631,10 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <Input label={t("master.routing.stdTimeSec")} type="number" step="0.1" value={processForm.stdTime} onChange={(e) => setProcessForm((f) => ({ ...f, stdTime: e.target.value }))} fullWidth />
-            <Input label={t("master.routing.setupTimeSec")} type="number" step="0.1" value={processForm.setupTime} onChange={(e) => setProcessForm((f) => ({ ...f, setupTime: e.target.value }))} fullWidth />
+            <FieldInput field="stdTime" label={t("master.routing.stdTimeSec")} type="number" step="0.1" value={processForm.stdTime} onChange={(e) => setProcessForm((f) => ({ ...f, stdTime: e.target.value }))} />
+            <FieldInput field="setupTime" label={t("master.routing.setupTimeSec")} type="number" step="0.1" value={processForm.setupTime} onChange={(e) => setProcessForm((f) => ({ ...f, setupTime: e.target.value }))} />
             <div>
-              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
-                {t("master.routing.sampleInspect")}
-              </label>
+              <FieldLabel field="sampleInspectYn" label={t("master.routing.sampleInspect")} />
               <label className="flex items-center gap-2 h-10 cursor-pointer">
                 <input
                   type="checkbox"
@@ -658,9 +651,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-2">
-              {t("master.routing.labelIssue")}
-            </label>
+            <FieldLabel field="labelIssue" label={t("master.routing.labelIssue")} className="block text-sm font-medium text-text dark:text-gray-300 mb-2" />
             <div className="grid grid-cols-2 gap-3">
               <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 dark:border-gray-600 dark:bg-gray-800">
                 <input

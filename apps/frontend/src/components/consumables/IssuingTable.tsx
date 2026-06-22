@@ -70,7 +70,7 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
           const isReturn = row.original.logType === 'OUT_RETURN';
           return (
             <span className={isReturn ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-              {isReturn ? '+' : '-'}{row.original.qty}
+              {isReturn ? '+' : '-'}{(row.original.qty ?? 0).toLocaleString()}
             </span>
           );
         },

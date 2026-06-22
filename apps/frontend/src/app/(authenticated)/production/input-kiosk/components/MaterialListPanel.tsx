@@ -231,7 +231,7 @@ export default function MaterialListPanel({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-1">
                       <span className="text-[11px] font-bold text-text truncate leading-none">{item.childItemCode}</span>
-                      <span className="text-[11px] font-bold text-text tabular-nums shrink-0 leading-none">{item.qtyPer}</span>
+                      <span className="text-[11px] font-bold text-text tabular-nums shrink-0 leading-none">{(item.qtyPer ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="flex items-baseline justify-between gap-1 mt-0.5">
                       {isScanned ? (

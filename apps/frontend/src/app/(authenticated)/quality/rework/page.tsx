@@ -363,8 +363,8 @@ export default function ReworkPage() {
                       <td className="px-3 py-2 font-medium text-text">{proc.processCode}</td>
                       <td className="px-3 py-2 text-text">{proc.processName}</td>
                       <td className="px-3 py-2"><ComCodeBadge groupCode="REWORK_PROCESS_STATUS" code={proc.status} /></td>
-                      <td className="px-3 py-2 text-right font-mono text-text">{proc.planQty}</td>
-                      <td className="px-3 py-2 text-right font-mono text-text">{proc.resultQty}</td>
+                      <td className="px-3 py-2 text-right font-mono text-text">{(proc.planQty ?? 0).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right font-mono text-text">{(proc.resultQty ?? 0).toLocaleString()}</td>
                       <td className="px-3 py-2 text-text-muted">{proc.workerId || '-'}</td>
                       <td className="px-3 py-2 text-center">
                         <div className="flex gap-1 justify-center">

@@ -193,7 +193,14 @@ export default function RepairPage() {
       { accessorKey: "fgBarcode", header: t("production.repair.fgBarcode"), size: 130, meta: { filterType: "text" as const } },
       { accessorKey: "itemCode", header: t("production.repair.itemCode"), size: 120, meta: { filterType: "text" as const } },
       { accessorKey: "itemName", header: t("production.repair.itemName"), size: 150, meta: { filterType: "text" as const } },
-      { accessorKey: "qty", header: t("production.repair.qty"), size: 60, meta: { filterType: "number" as const } },
+      {
+        accessorKey: "qty", header: t("production.repair.qty"), size: 60,
+        meta: { filterType: "number" as const },
+        cell: ({ getValue }) => {
+          const v = getValue() as number;
+          return v != null ? v.toLocaleString() : "-";
+        },
+      },
       {
         accessorKey: "genuineType",
         header: t("production.repair.genuineType"),

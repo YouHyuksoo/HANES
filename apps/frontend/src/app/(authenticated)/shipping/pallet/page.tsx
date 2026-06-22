@@ -426,7 +426,7 @@ export default function PalletPage() {
     },
     { accessorKey: "shipOrderNo", header: t("shipping.pallet.shipOrderNo", "출하지시번호"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
     { accessorKey: "palletNo", header: t("shipping.pallet.palletNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "status", header: () => <PalletStatusHeader />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
     { accessorKey: "shipmentId", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
@@ -504,7 +504,7 @@ export default function PalletPage() {
                         <p className="text-xs text-text-muted">{box.itemCode}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-text">{box.qty}{t("common.count")}</span>
+                        <span className="text-sm font-medium text-text">{box.qty.toLocaleString()}{t("common.count")}</span>
                         {selectedPallet.status === "OPEN" && (
                           <button className="p-1 hover:bg-surface rounded" title={t("shipping.pallet.removeBox")} disabled={saving} onClick={() => setRemoveBoxTarget(box.boxNo)}>
                             <X className="w-4 h-4 text-danger" />
@@ -638,7 +638,7 @@ export default function PalletPage() {
                   <p className="font-mono text-sm text-text">{box.boxNo}</p>
                   <p className="text-xs text-text-muted">{box.itemCode}</p>
                 </div>
-                <span className="text-sm font-medium text-text">{box.qty}{t("common.count")}</span>
+                <span className="text-sm font-medium text-text">{box.qty.toLocaleString()}{t("common.count")}</span>
               </div>
             ))}
           </div>

@@ -136,7 +136,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
                     : <p className="text-xs text-red-500 italic">{t('kiosk.material.noLot')}</p>}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-bold text-text">{item.qtyPer}</p>
+                  <p className="text-xs font-bold text-text">{(item.qtyPer ?? 0).toLocaleString()}</p>
                   {scanned && <p className="text-xs text-green-600 dark:text-green-400">{scanned.initQty.toLocaleString()}</p>}
                 </div>
                 {scanned && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}

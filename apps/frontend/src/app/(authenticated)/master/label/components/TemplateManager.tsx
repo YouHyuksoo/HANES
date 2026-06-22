@@ -15,6 +15,7 @@ import { Save, FolderOpen, Trash2, Star } from "lucide-react";
 import { Button, ConfirmModal } from "@/components/ui";
 import { LabelDesign, LabelCategory } from "../types";
 import { useLabelTemplates, LabelTemplateItem } from "../hooks/useLabelTemplates";
+import { Field } from "./LabelFieldHelp";
 
 interface TemplateManagerProps {
   category: LabelCategory;
@@ -109,14 +110,16 @@ export default function TemplateManager({ category, design, onLoad, isDirty = fa
       {/* 새 저장 입력 */}
       {showSave && (
         <div className="space-y-2">
-          <input
-            ref={inputRef}
-            value={saveName}
-            onChange={(e) => setSaveName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            placeholder={t("master.label.templateNamePlaceholder", "템플릿 이름")}
-            className="w-full px-2 py-1.5 text-sm rounded border border-border bg-surface text-text focus:border-primary focus:outline-none"
-          />
+          <Field field="templateName" label={t("master.label.templateName", "템플릿 이름")} required>
+            <input
+              ref={inputRef}
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              placeholder={t("master.label.templateNamePlaceholder", "템플릿 이름")}
+              className="w-full px-2 py-1.5 text-sm rounded border border-border bg-surface text-text focus:border-primary focus:outline-none"
+            />
+          </Field>
           <div className="flex gap-2 justify-end">
             <Button size="sm" variant="secondary" onClick={handleCancelSave}>
               {t("common.cancel", "취소")}

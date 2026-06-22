@@ -12,7 +12,8 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
-import { Button, Input, Select } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { FieldInput, FieldSelect } from "./VendorBarcodeFieldHelp";
 import api from "@/services/api";
 
 interface VendorBarcodeMapping {
@@ -113,42 +114,37 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.vendorBarcode.sectionBarcode", "바코드 정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <Input label={t("master.vendorBarcode.vendorBarcode", "제조사 바코드")}
-                value={form.vendorBarcode} onChange={e => setField("vendorBarcode", e.target.value)} fullWidth required />
-            </div>
-            <Select label={t("master.vendorBarcode.matchType", "매칭 유형")}
+            <FieldInput field="vendorBarcode" label={t("master.vendorBarcode.vendorBarcode", "제조사 바코드")}
+              wrapperClassName="col-span-2"
+              value={form.vendorBarcode} onChange={e => setField("vendorBarcode", e.target.value)} required />
+            <FieldSelect field="matchType" label={t("master.vendorBarcode.matchType", "매칭 유형")}
               options={MATCH_TYPE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey, o.labelFallback) }))}
-              value={form.matchType} onChange={v => setField("matchType", v)} fullWidth />
-            <Select label={t("master.vendorBarcode.useYn", "사용여부")}
+              value={form.matchType} onChange={v => setField("matchType", v)} />
+            <FieldSelect field="useYn" label={t("master.vendorBarcode.useYn", "사용여부")}
               options={[{ value: "Y", label: "Y" }, { value: "N", label: "N" }]}
-              value={form.useYn} onChange={v => setField("useYn", v)} fullWidth />
+              value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>
 
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.vendorBarcode.sectionPart", "품목 매핑")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.vendorBarcode.partCode", "품번")}
-              value={form.itemCode} onChange={e => setField("itemCode", e.target.value)} fullWidth />
-            <Input label={t("master.vendorBarcode.partName", "품명")}
-              value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
-            <Input label={t("master.vendorBarcode.vendorCode", "제조사 코드")}
-              value={form.vendorCode} onChange={e => setField("vendorCode", e.target.value)} fullWidth />
-            <Input label={t("master.vendorBarcode.vendorName", "제조사명")}
-              value={form.vendorName} onChange={e => setField("vendorName", e.target.value)} fullWidth />
+            <FieldInput field="partCode" label={t("master.vendorBarcode.partCode", "품번")}
+              value={form.itemCode} onChange={e => setField("itemCode", e.target.value)} />
+            <FieldInput field="partName" label={t("master.vendorBarcode.partName", "품명")}
+              value={form.itemName} onChange={e => setField("itemName", e.target.value)} />
+            <FieldInput field="vendorCode" label={t("master.vendorBarcode.vendorCode", "제조사 코드")}
+              value={form.vendorCode} onChange={e => setField("vendorCode", e.target.value)} />
+            <FieldInput field="vendorName" label={t("master.vendorBarcode.vendorName", "제조사명")}
+              value={form.vendorName} onChange={e => setField("vendorName", e.target.value)} />
           </div>
         </div>
 
-        <div>
-          <Input label={t("master.vendorBarcode.mappingRule", "매핑 규칙")}
-            value={form.mappingRule} onChange={e => setField("mappingRule", e.target.value)} fullWidth />
-        </div>
+        <FieldInput field="mappingRule" label={t("master.vendorBarcode.mappingRule", "매핑 규칙")}
+          value={form.mappingRule} onChange={e => setField("mappingRule", e.target.value)} />
 
-        <div>
-          <Input label={t("common.remark")}
-            value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />
-        </div>
+        <FieldInput field="remark" label={t("common.remark")}
+          value={form.remark} onChange={e => setField("remark", e.target.value)} />
       </div>
 
     </div>

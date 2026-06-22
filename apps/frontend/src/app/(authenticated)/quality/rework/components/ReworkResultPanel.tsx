@@ -117,7 +117,7 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
           </div>
           <div>
             <span className="text-text-muted">{t("quality.rework.reworkQty")}:</span>{" "}
-            <span className="font-mono text-text">{target.planQty}</span>
+            <span className="font-mono text-text">{(target.planQty ?? 0).toLocaleString()}</span>
           </div>
         </div>
 

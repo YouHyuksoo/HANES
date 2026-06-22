@@ -303,7 +303,7 @@ function BomTreeRows({
                   </div>
                 ) : "-"}
               </td>
-              <td className="px-2 py-1.5 border-r border-border text-right font-mono whitespace-nowrap">{item.qtyPer} {item.unit}</td>
+              <td className="px-2 py-1.5 border-r border-border text-right font-mono whitespace-nowrap">{(item.qtyPer ?? 0).toLocaleString()} {item.unit}</td>
               <td className="px-2 py-1.5 border-r border-border text-center whitespace-nowrap">{item.revision}</td>
               <td className={`px-2 py-1.5 border-r border-border text-center whitespace-nowrap ${isSelected ? "text-white/80" : "text-text-muted"}`}>{item.side || "-"}</td>
               <td className="px-2 py-1.5 border-r border-border text-center font-mono whitespace-nowrap">{validFrom}</td>

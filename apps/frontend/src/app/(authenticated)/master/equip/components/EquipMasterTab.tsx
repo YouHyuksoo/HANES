@@ -22,6 +22,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { EquipMaster, EquipType, CommType, COMM_TYPE_COLORS, COMM_TYPE_LABELS } from "../types";
 import api from "@/services/api";
 import { ComCodeSelect, LineSelect } from '@/components/shared';
+import { FieldInput, FieldComCodeSelect, FieldLineSelect } from "./EquipFieldHelp";
 
 interface FormState {
   equipCode: string;
@@ -298,25 +299,21 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
             <div>
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equip.sectionBasic", "기본정보")}</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Input label={t("master.equip.equipCode", "설비코드")} value={form.equipCode} onChange={(e) => setForm({ ...form, equipCode: e.target.value })} fullWidth disabled={!!editing} required />
-                <Input label={t("master.equip.equipName", "설비명")} value={form.equipName} onChange={(e) => setForm({ ...form, equipName: e.target.value })} fullWidth required />
-                <ComCodeSelect groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "유형")} value={form.equipType} onChange={(v) => setForm({ ...form, equipType: v as EquipType })} fullWidth />
-                <ComCodeSelect groupCode="COMM_TYPE" includeAll={false} label={t("master.equip.commType", "통신방식")} value={form.commType} onChange={(v) => setForm({ ...form, commType: v as CommType })} fullWidth />
-                <div className="col-span-2">
-                  <LineSelect label={t("master.equip.line", "라인")} value={form.lineCode} onChange={(v) => setForm({ ...form, lineCode: v })} fullWidth />
-                </div>
+                <FieldInput field="equipCode" label={t("master.equip.equipCode", "설비코드")} value={form.equipCode} onChange={(e) => setForm({ ...form, equipCode: e.target.value })} disabled={!!editing} required />
+                <FieldInput field="equipName" label={t("master.equip.equipName", "설비명")} value={form.equipName} onChange={(e) => setForm({ ...form, equipName: e.target.value })} required />
+                <FieldComCodeSelect field="equipType" groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "유형")} value={form.equipType} onChange={(v) => setForm({ ...form, equipType: v as EquipType })} />
+                <FieldComCodeSelect field="commType" groupCode="COMM_TYPE" includeAll={false} label={t("master.equip.commType", "통신방식")} value={form.commType} onChange={(v) => setForm({ ...form, commType: v as CommType })} />
+                <FieldLineSelect field="lineCode" label={t("master.equip.line", "라인")} value={form.lineCode} onChange={(v) => setForm({ ...form, lineCode: v })} wrapperClassName="col-span-2" />
               </div>
             </div>
             {(form.commType === "TCP" || form.commType === "MQTT") && (
               <div>
                 <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equip.sectionComm", "통신설정")}</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input label={t("master.equip.ipAddress", "IP 주소")} value={form.ipAddress} onChange={(e) => setForm({ ...form, ipAddress: e.target.value })} fullWidth leftIcon={<Wifi className="w-4 h-4" />} />
-                  <Input label={t("master.equip.port", "포트")} value={form.port} onChange={(e) => setForm({ ...form, port: e.target.value })} fullWidth />
+                  <FieldInput field="ipAddress" label={t("master.equip.ipAddress", "IP 주소")} value={form.ipAddress} onChange={(e) => setForm({ ...form, ipAddress: e.target.value })} leftIcon={<Wifi className="w-4 h-4" />} />
+                  <FieldInput field="port" label={t("master.equip.port", "포트")} value={form.port} onChange={(e) => setForm({ ...form, port: e.target.value })} />
                   {form.commType === "MQTT" && (
-                    <div className="col-span-2">
-                      <Input label="MQTT Topic" value={form.mqttTopic} onChange={(e) => setForm({ ...form, mqttTopic: e.target.value })} fullWidth />
-                    </div>
+                    <FieldInput field="mqttTopic" label="MQTT Topic" value={form.mqttTopic} onChange={(e) => setForm({ ...form, mqttTopic: e.target.value })} wrapperClassName="col-span-2" />
                   )}
                 </div>
               </div>
@@ -325,16 +322,16 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
               <div>
                 <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equip.sectionComm", "통신설정")}</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input label={t("master.equip.serialPort", "시리얼 포트")} value={form.serialPort} onChange={(e) => setForm({ ...form, serialPort: e.target.value })} fullWidth leftIcon={<Settings className="w-4 h-4" />} />
-                  <Input label="Baud Rate" value={form.baudRate} onChange={(e) => setForm({ ...form, baudRate: e.target.value })} fullWidth />
+                  <FieldInput field="serialPort" label={t("master.equip.serialPort", "시리얼 포트")} value={form.serialPort} onChange={(e) => setForm({ ...form, serialPort: e.target.value })} leftIcon={<Settings className="w-4 h-4" />} />
+                  <FieldInput field="baudRate" label="Baud Rate" value={form.baudRate} onChange={(e) => setForm({ ...form, baudRate: e.target.value })} />
                 </div>
               </div>
             )}
             <div>
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equip.sectionMaker", "제조정보")}</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Input label={t("master.equip.maker", "제조사")} value={form.maker} onChange={(e) => setForm({ ...form, maker: e.target.value })} fullWidth />
-                <Input label={t("master.equip.model", "모델명")} value={form.modelName} onChange={(e) => setForm({ ...form, modelName: e.target.value })} fullWidth />
+                <FieldInput field="maker" label={t("master.equip.maker", "제조사")} value={form.maker} onChange={(e) => setForm({ ...form, maker: e.target.value })} />
+                <FieldInput field="modelName" label={t("master.equip.model", "모델명")} value={form.modelName} onChange={(e) => setForm({ ...form, modelName: e.target.value })} />
               </div>
             </div>
           </div>

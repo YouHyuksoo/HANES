@@ -233,13 +233,13 @@ export default function InspectionResultWorkflow({
                       <span className="text-text-muted truncate text-xs min-w-0">{o.itemName ?? o.itemCode}</span>
                       <span
                         className="flex items-center gap-1 text-xs shrink-0 tabular-nums"
-                        title={`${t("inspection.result.planQty")} ${o.planQty} / ${t("inspection.result.pass")} ${o.goodQty} / ${t("inspection.result.fail")} ${o.defectQty}`}
+                        title={`${t("inspection.result.planQty")} ${o.planQty?.toLocaleString() ?? "-"} / ${t("inspection.result.pass")} ${o.goodQty?.toLocaleString() ?? "-"} / ${t("inspection.result.fail")} ${o.defectQty?.toLocaleString() ?? "-"}`}
                       >
-                        <span className="text-text-muted">{o.planQty}</span>
+                        <span className="text-text-muted">{o.planQty?.toLocaleString() ?? "-"}</span>
                         <span className="text-text-muted/40">/</span>
-                        <span className="text-green-600 dark:text-green-400">{o.goodQty}</span>
+                        <span className="text-green-600 dark:text-green-400">{o.goodQty?.toLocaleString() ?? "-"}</span>
                         <span className="text-text-muted/40">/</span>
-                        <span className="text-red-600 dark:text-red-400">{o.defectQty}</span>
+                        <span className="text-red-600 dark:text-red-400">{o.defectQty?.toLocaleString() ?? "-"}</span>
                       </span>
                     </div>
                   </button>

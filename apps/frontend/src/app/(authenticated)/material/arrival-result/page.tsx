@@ -373,7 +373,7 @@ export default function ArrivalResultPage() {
     },
     { accessorKey: "itemName", header: t("common.partName"), size: 150, meta: { filterType: "text" as const } },
     { accessorKey: "qty", header: t("material.arrivalResult.col.qty", "입하수량"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-right">{((getValue() as number) ?? 0).toLocaleString()}</div> },
-    { accessorKey: "serialCount", header: t("material.arrivalResult.col.serialCount", "시리얼"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center font-semibold">{(getValue() as number) ?? 0}</div> },
+    { accessorKey: "serialCount", header: t("material.arrivalResult.col.serialCount", "시리얼"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center font-semibold">{((getValue() as number) ?? 0).toLocaleString()}</div> },
     {
       accessorKey: "poType",
       header: t("material.arrivalResult.col.poType", "구분"),

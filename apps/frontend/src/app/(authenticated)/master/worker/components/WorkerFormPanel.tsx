@@ -13,11 +13,16 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
-import { Button, Input, Select } from "@/components/ui";
-import { DepartmentSelect, ComCodeSelect } from "@/components/shared";
+import { Button } from "@/components/ui";
 import WorkerPhotoUpload from "@/components/worker/WorkerPhotoUpload";
 import api from "@/services/api";
 import { Worker } from "../types";
+import {
+  FieldInput,
+  FieldSelect,
+  FieldComCodeSelect,
+  FieldDepartmentSelect,
+} from "./WorkerFieldHelp";
 
 interface Props {
   editingWorker: Worker | null;
@@ -139,24 +144,24 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.worker.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.worker.workerCode", "작업자코드")}
+            <FieldInput field="workerCode" label={t("master.worker.workerCode", "작업자코드")}
               value={form.workerCode} onChange={e => setField("workerCode", e.target.value)}
-              disabled={isEdit} fullWidth required />
-            <Input label={t("master.worker.workerName", "작업자명")}
-              value={form.workerName} onChange={e => setField("workerName", e.target.value)} fullWidth required />
-            <Input label={t("master.worker.engName", "영문명")}
-              value={form.engName} onChange={e => setField("engName", e.target.value)} fullWidth />
-            <DepartmentSelect label={t("master.worker.dept", "부서")}
-              value={form.dept} onChange={v => setField("dept", v)} fullWidth />
-            <ComCodeSelect groupCode="JOB_POSITION" includeAll={false}
+              disabled={isEdit} required />
+            <FieldInput field="workerName" label={t("master.worker.workerName", "작업자명")}
+              value={form.workerName} onChange={e => setField("workerName", e.target.value)} required />
+            <FieldInput field="engName" label={t("master.worker.engName", "영문명")}
+              value={form.engName} onChange={e => setField("engName", e.target.value)} />
+            <FieldDepartmentSelect field="dept" label={t("master.worker.dept", "부서")}
+              value={form.dept} onChange={v => setField("dept", v)} />
+            <FieldComCodeSelect field="position" groupCode="JOB_POSITION" includeAll={false}
               label={t("master.worker.position", "직급")}
-              value={form.position} onChange={v => setField("position", v)} fullWidth />
-            <Input label={t("master.worker.phone", "전화번호")}
-              value={form.phone} onChange={e => setField("phone", e.target.value)} fullWidth />
-            <Input label={t("master.worker.email", "이메일")}
-              value={form.email} onChange={e => setField("email", e.target.value)} fullWidth />
-            <Input label={t("master.worker.qrCode", "QR코드")}
-              value={form.qrCode} onChange={e => setField("qrCode", e.target.value)} fullWidth />
+              value={form.position} onChange={v => setField("position", v)} />
+            <FieldInput field="phone" label={t("master.worker.phone", "전화번호")}
+              value={form.phone} onChange={e => setField("phone", e.target.value)} />
+            <FieldInput field="email" label={t("master.worker.email", "이메일")}
+              value={form.email} onChange={e => setField("email", e.target.value)} />
+            <FieldInput field="qrCode" label={t("master.worker.qrCode", "QR코드")}
+              value={form.qrCode} onChange={e => setField("qrCode", e.target.value)} />
           </div>
         </div>
 
@@ -164,22 +169,22 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.worker.sectionWork", "근무정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.worker.hireDate", "입사일")} type="date"
+            <FieldInput field="hireDate" label={t("master.worker.hireDate", "입사일")} type="date"
               value={form.hireDate?.slice(0, 10) ?? ""}
-              onChange={e => setField("hireDate", e.target.value)} fullWidth />
-            <Input label={t("master.worker.quitDate", "퇴사일")} type="date"
+              onChange={e => setField("hireDate", e.target.value)} />
+            <FieldInput field="quitDate" label={t("master.worker.quitDate", "퇴사일")} type="date"
               value={form.quitDate?.slice(0, 10) ?? ""}
-              onChange={e => setField("quitDate", e.target.value)} fullWidth />
-            <Select label={t("master.worker.use", "사용")}
+              onChange={e => setField("quitDate", e.target.value)} />
+            <FieldSelect field="useYn" label={t("master.worker.use", "사용")}
               options={[{ value: "Y", label: t("common.yes", "사용") }, { value: "N", label: t("common.no", "미사용") }]}
-              value={form.useYn} onChange={v => setField("useYn", v)} fullWidth />
+              value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>
 
         {/* 비고 */}
         <div>
-          <Input label={t("master.worker.remark", "비고")}
-            value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />
+          <FieldInput field="remark" label={t("master.worker.remark", "비고")}
+            value={form.remark} onChange={e => setField("remark", e.target.value)} />
         </div>
       </div>
 

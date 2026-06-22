@@ -12,9 +12,10 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Save } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Modal, ConfirmModal } from "@/components/ui";
 import api from "@/services/api";
 import type { ShiftPatternItem } from "./CalendarGrid";
+import { Field, FieldInput } from "./WorkCalendarFieldHelp";
 
 interface ShiftPatternTabProps {
   shifts: ShiftPatternItem[];
@@ -148,33 +149,44 @@ export default function ShiftPatternTab({ shifts, onRefresh }: ShiftPatternTabPr
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} size="md"
         title={isEdit ? t("master.workCalendar.editShift") : t("master.workCalendar.addShift")}>
         <div className="flex flex-col gap-3 p-1">
-          <div>
-            <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">{t("master.workCalendar.shiftCode")}</label>
-            <Input value={form.shiftCode} onChange={(e) => setF("shiftCode", e.target.value)} disabled={isEdit} fullWidth />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">{t("master.workCalendar.shiftName")}</label>
-            <Input value={form.shiftName} onChange={(e) => setF("shiftName", e.target.value)} fullWidth />
-          </div>
+          <FieldInput
+            field="shiftCode"
+            label={t("master.workCalendar.shiftCode")}
+            value={form.shiftCode}
+            onChange={(e) => setF("shiftCode", e.target.value)}
+            disabled={isEdit}
+          />
+          <FieldInput
+            field="shiftName"
+            label={t("master.workCalendar.shiftName")}
+            value={form.shiftName}
+            onChange={(e) => setF("shiftName", e.target.value)}
+          />
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">{t("master.workCalendar.startTime")}</label>
+            <Field field="startTime" label={t("master.workCalendar.startTime")}>
               <input type="time" value={form.startTime} onChange={(e) => setF("startTime", e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">{t("master.workCalendar.endTime")}</label>
+            </Field>
+            <Field field="endTime" label={t("master.workCalendar.endTime")}>
               <input type="time" value={form.endTime} onChange={(e) => setF("endTime", e.target.value)} className={inputCls} />
-            </div>
+            </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">{t("master.workCalendar.breakMin")}</label>
-              <Input type="number" min={0} value={form.breakMinutes} onChange={(e) => setF("breakMinutes", Number(e.target.value))} fullWidth />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">{t("master.workCalendar.workMin")}</label>
-              <Input type="number" min={0} value={form.workMinutes} onChange={(e) => setF("workMinutes", Number(e.target.value))} fullWidth />
-            </div>
+            <FieldInput
+              field="breakMinutes"
+              label={t("master.workCalendar.breakMin")}
+              type="number"
+              min={0}
+              value={form.breakMinutes}
+              onChange={(e) => setF("breakMinutes", Number(e.target.value))}
+            />
+            <FieldInput
+              field="workMinutes"
+              label={t("master.workCalendar.workMin")}
+              type="number"
+              min={0}
+              value={form.workMinutes}
+              onChange={(e) => setF("workMinutes", Number(e.target.value))}
+            />
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-border dark:border-gray-700">

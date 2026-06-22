@@ -131,7 +131,7 @@ export default function PrintActionBar({
       <Button size="sm" onClick={handlePrint} disabled={isPrintDisabled}>
         <Printer className="w-4 h-4 mr-1" />
         {isProcessing ? '...' : t('material.receiveLabel.printLabel')}
-        {selectedQty > 0 && ` (${selectedQty}${t('material.receiveLabel.sheets')})`}
+        {selectedQty > 0 && ` (${selectedQty.toLocaleString()}${t('material.receiveLabel.sheets')})`}
       </Button>
     </div>
   );

@@ -178,7 +178,7 @@ export default function PalletLabelModal({ isOpen, pallet, autoPrint = false, on
                   </tr>
                   <tr>
                     <th className="border border-black bg-gray-100 px-2 py-1 text-left">{t("shipping.pallet.boxCount", "박스수")}</th>
-                    <td className="border border-black px-2 py-1 font-bold">{pallet.boxCount}</td>
+                    <td className="border border-black px-2 py-1 font-bold">{(pallet.boxCount ?? 0).toLocaleString()}</td>
                     <th className="border border-black bg-gray-100 px-2 py-1 text-left w-[64px]">{t("common.totalQty", "총수량")}</th>
                     <td className="border border-black px-2 py-1 text-right font-bold">{(pallet.totalQty ?? 0).toLocaleString()}</td>
                   </tr>

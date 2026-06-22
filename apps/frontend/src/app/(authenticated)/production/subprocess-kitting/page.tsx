@@ -285,7 +285,7 @@ export default function SubprocessKittingPage() {
                         <td className="px-3 py-2 text-text-muted text-xs">{index + 1}</td>
                         <td className="px-3 py-2 font-mono text-xs">{item.sgBarcode}</td>
                         <td className="px-3 py-2 text-xs">{item.itemCode}</td>
-                        <td className="px-3 py-2 text-right text-xs">{item.remainQty}</td>
+                        <td className="px-3 py-2 text-right text-xs">{item.remainQty != null ? item.remainQty.toLocaleString() : "-"}</td>
                         <td className="px-3 py-2 text-center">
                           <span className="px-2 py-0.5 rounded text-xs border border-border text-text-muted">
                             {item.status}

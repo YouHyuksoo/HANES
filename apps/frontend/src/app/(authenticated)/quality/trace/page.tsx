@@ -153,7 +153,7 @@ function FourMSection({ data, activeTab, setActiveTab, t }: { data: FourMData; a
                     <td className="py-2 px-3 font-mono text-primary">{item.materialCode}</td>
                     <td className="py-2 px-3 text-text">{item.materialName}</td>
                     <td className="py-2 px-3 font-mono text-text-muted text-xs">{item.matUid}</td>
-                    <td className="py-2 px-3 text-right text-text">{item.usedQty} {item.unit}</td>
+                    <td className="py-2 px-3 text-right text-text">{(item.usedQty ?? 0).toLocaleString()} {item.unit}</td>
                     <td className="py-2 px-3 text-text">{item.supplier}</td>
                   </tr>
                 ))}

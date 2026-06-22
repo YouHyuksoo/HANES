@@ -12,9 +12,10 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Modal from "@/components/ui/Modal";
-import { Button, Input } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import type { WorkCalendarDay, ShiftPatternItem } from "./CalendarGrid";
+import { Field, FieldInput } from "./WorkCalendarFieldHelp";
 
 interface DayEditModalProps {
   isOpen: boolean;
@@ -89,45 +90,39 @@ export default function DayEditModal({
     <Modal isOpen={isOpen} onClose={onClose} title={`${t("master.workCalendar.editDay")} — ${selectedDate ?? ""}`} size="md">
       <div className="flex flex-col gap-4 p-1">
         {/* 근무유형 */}
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.dayType")}
-          </label>
+        <Field field="dayType" label={t("master.workCalendar.dayType")}>
           <select value={dayType} onChange={(e) => setDayType(e.target.value)} className={selectCls}>
             {dayTypeOptions.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-        </div>
+        </Field>
 
         {/* 휴무사유 (OFF일 때만) */}
         {dayType === "OFF" && (
-          <div>
-            <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-              {t("master.workCalendar.offReason")}
-            </label>
+          <Field field="offReason" label={t("master.workCalendar.offReason")}>
             <select value={offReason} onChange={(e) => setOffReason(e.target.value)} className={selectCls}>
               <option value="">-- {t("common.select")} --</option>
               {offReasonOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
-          </div>
+          </Field>
         )}
 
         {/* 교대수 */}
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.shiftCount")}
-          </label>
-          <Input type="number" min={1} max={3} value={shiftCount} onChange={(e) => setShiftCount(Number(e.target.value))} fullWidth />
-        </div>
+        <FieldInput
+          field="shiftCount"
+          label={t("master.workCalendar.shiftCount")}
+          type="number"
+          min={1}
+          max={3}
+          value={shiftCount}
+          onChange={(e) => setShiftCount(Number(e.target.value))}
+        />
 
         {/* 교대 선택 */}
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.shifts")}
-          </label>
+        <Field field="shifts" label={t("master.workCalendar.shifts")}>
           <div className="flex flex-wrap gap-2">
             {shiftPatterns.filter((s) => s.useYn === "Y").map((sp) => (
               <button
@@ -143,23 +138,25 @@ export default function DayEditModal({
               </button>
             ))}
           </div>
-        </div>
+        </Field>
 
         {/* 잔업시간 */}
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.otMinutes")}
-          </label>
-          <Input type="number" min={0} value={otMinutes} onChange={(e) => setOtMinutes(Number(e.target.value))} fullWidth />
-        </div>
+        <FieldInput
+          field="otMinutes"
+          label={t("master.workCalendar.otMinutes")}
+          type="number"
+          min={0}
+          value={otMinutes}
+          onChange={(e) => setOtMinutes(Number(e.target.value))}
+        />
 
         {/* 비고 */}
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.remark")}
-          </label>
-          <Input value={remark} onChange={(e) => setRemark(e.target.value)} fullWidth />
-        </div>
+        <FieldInput
+          field="remark"
+          label={t("master.workCalendar.remark")}
+          value={remark}
+          onChange={(e) => setRemark(e.target.value)}
+        />
       </div>
 
       {/* 버튼 */}

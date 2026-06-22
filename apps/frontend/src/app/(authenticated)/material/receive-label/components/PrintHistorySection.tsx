@@ -116,7 +116,7 @@ export default function PrintHistorySection({ category = 'mat_lot' }: PrintHisto
       header: t('material.receiveLabel.history.labelCount', { defaultValue: '매수' }),
       size: 80,
       meta: { align: 'right' as const },
-      cell: ({ getValue }) => (getValue() as number) ?? 0,
+      cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
     },
     {
       accessorKey: 'printerName',

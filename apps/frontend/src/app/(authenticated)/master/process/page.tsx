@@ -12,12 +12,12 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Workflow, RefreshCw } from "lucide-react";
-import { Button, Modal, Input, Select, ConfirmModal } from "@/components/ui";
-import ComCodeSelect from "@/components/shared/ComCodeSelect";
+import { Button, Modal, Select, ConfirmModal } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import ProcessList, { type Process } from "./components/ProcessList";
 import ProcessEquipGrid from "./components/ProcessEquipGrid";
+import { FieldComCodeSelect, FieldInput, FieldSelect } from "./components/ProcessFieldHelp";
 
 interface Equipment {
   equipCode: string;
@@ -305,7 +305,8 @@ export default function ProcessPage() {
         size="lg"
       >
         <div className="grid grid-cols-2 gap-4">
-          <Input
+          <FieldInput
+            field="processCode"
             label={t("master.process.processCode")}
             value={formData.processCode || ""}
             onChange={(e) =>
@@ -313,45 +314,44 @@ export default function ProcessPage() {
             }
             disabled={!!editingItem}
             required
-            fullWidth
           />
-          <Select
+          <FieldSelect
+            field="processType"
             label={t("master.process.processType")}
             options={processTypeOptions}
             value={formData.processType || ""}
             onChange={(v) => setFormData((p) => ({ ...p, processType: v }))}
             required
-            fullWidth
           />
-          <div className="col-span-2">
-            <Input
-              label={t("master.process.processName")}
-              value={formData.processName || ""}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, processName: e.target.value }))
-              }
-              required
-              fullWidth
-            />
-          </div>
-          <Select
+          <FieldInput
+            field="processName"
+            label={t("master.process.processName")}
+            value={formData.processName || ""}
+            onChange={(e) =>
+              setFormData((p) => ({ ...p, processName: e.target.value }))
+            }
+            required
+            wrapperClassName="col-span-2"
+          />
+          <FieldSelect
+            field="processCategory"
             label={t("master.process.processCategory")}
             options={processCategoryOptions}
             value={formData.processCategory || ""}
             onChange={(v) =>
               setFormData((p) => ({ ...p, processCategory: v }))
             }
-            fullWidth
           />
-          <ComCodeSelect
+          <FieldComCodeSelect
+            field="lineType"
             label={t("master.process.lineType", { defaultValue: "라인구분" })}
             groupCode="LINE_TYPE"
             includeAll={false}
             value={formData.lineType || ""}
             onChange={(v) => setFormData((p) => ({ ...p, lineType: v }))}
-            fullWidth
           />
-          <Input
+          <FieldInput
+            field="sortOrder"
             label={t("master.process.sortOrder")}
             type="number"
             value={formData.sortOrder?.toString() || "0"}
@@ -361,15 +361,14 @@ export default function ProcessPage() {
                 sortOrder: parseInt(e.target.value) || 0,
               }))
             }
-            fullWidth
           />
-          <Input
+          <FieldInput
+            field="remark"
             label={t("common.remark")}
             value={formData.remark || ""}
             onChange={(e) =>
               setFormData((p) => ({ ...p, remark: e.target.value }))
             }
-            fullWidth
           />
         </div>
         <div className="flex justify-end gap-2 pt-6">

@@ -174,6 +174,10 @@ export default function ProcessCapaPage() {
         header: t("processCapa.stdUph"),
         size: 100,
         meta: { align: "right" as const },
+        cell: ({ getValue }) => {
+          const v = getValue() as number | null | undefined;
+          return v != null ? Number(v).toLocaleString() : "-";
+        },
       },
       {
         accessorKey: "workerCnt",

@@ -114,7 +114,7 @@ export default function DefectInputModal({ isOpen, onClose }: DefectInputModalPr
             </span>
             {totalDefectQty > 0 && (
               <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full font-bold">
-                {t('kiosk.defect.totalQty')}: {totalDefectQty}
+                {t('kiosk.defect.totalQty')}: {totalDefectQty.toLocaleString()}
               </span>
             )}
           </div>
@@ -133,7 +133,7 @@ export default function DefectInputModal({ isOpen, onClose }: DefectInputModalPr
                   <AlertOctagon className="w-4 h-4 text-red-500 shrink-0" />
                   <span className="flex-1 text-sm font-medium text-text">{d.defectName}</span>
                   <span className="text-sm font-bold text-red-600 dark:text-red-400 tabular-nums shrink-0">
-                    {d.qty} {t('common.unit.ea')}
+                    {(d.qty ?? 0).toLocaleString()} {t('common.unit.ea')}
                   </span>
                   <button
                     onClick={() => removePendingDefect(d.defectCode)}

@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw, ArrowRightLeft } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
+import { FieldInput, FieldSelect } from "./WarehouseFieldHelp";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -167,10 +168,10 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("master.transferRule.editRule") : t("master.transferRule.addRule")} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Select label={t("master.transferRule.fromWarehouse")} options={warehouseOptions} value={form.fromWarehouseId} onChange={(v) => setForm(p => ({ ...p, fromWarehouseId: v }))} fullWidth />
-          <Select label={t("master.transferRule.toWarehouse")} options={warehouseOptions} value={form.toWarehouseId} onChange={(v) => setForm(p => ({ ...p, toWarehouseId: v }))} fullWidth />
-          <Select label={t("master.transferRule.allowYn")} options={[{ value: "Y", label: t("master.transferRule.allowed") }, { value: "N", label: t("master.transferRule.denied") }]} value={form.allowYn} onChange={(v) => setForm(p => ({ ...p, allowYn: v }))} fullWidth />
-          <Input label={t("common.remark")} value={form.remark} onChange={(e) => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
+          <FieldSelect field="fromWarehouse" label={t("master.transferRule.fromWarehouse")} options={warehouseOptions} value={form.fromWarehouseId} onChange={(v) => setForm(p => ({ ...p, fromWarehouseId: v }))} />
+          <FieldSelect field="toWarehouse" label={t("master.transferRule.toWarehouse")} options={warehouseOptions} value={form.toWarehouseId} onChange={(v) => setForm(p => ({ ...p, toWarehouseId: v }))} />
+          <FieldSelect field="allowYn" label={t("master.transferRule.allowYn")} options={[{ value: "Y", label: t("master.transferRule.allowed") }, { value: "N", label: t("master.transferRule.denied") }]} value={form.allowYn} onChange={(v) => setForm(p => ({ ...p, allowYn: v }))} />
+          <FieldInput field="ruleRemark" label={t("common.remark")} value={form.remark} onChange={(e) => setForm(p => ({ ...p, remark: e.target.value }))} />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>

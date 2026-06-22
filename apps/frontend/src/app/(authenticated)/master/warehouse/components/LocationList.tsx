@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
+import { FieldInput, FieldSelect } from "./WarehouseFieldHelp";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -224,18 +225,14 @@ export default function LocationList({ onHeaderActions }: Props) {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("inventory.location.editLocation") : t("inventory.location.addLocation")} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Select label={t("inventory.warehouse.warehouseName")} options={whOptions} value={form.warehouseCode} onChange={(v) => setForm((p) => ({ ...p, warehouseCode: v }))} disabled={!!editingItem} fullWidth required />
-          <Input label={t("inventory.location.locationCode")} value={form.locationCode} onChange={(e) => setForm((p) => ({ ...p, locationCode: e.target.value }))} disabled={!!editingItem} fullWidth required />
-          <div className="col-span-2">
-            <Input label={t("inventory.location.locationName")} value={form.locationName} onChange={(e) => setForm((p) => ({ ...p, locationName: e.target.value }))} fullWidth required />
-          </div>
-          <Input label={t("inventory.location.zone")} value={form.zone} onChange={(e) => setForm((p) => ({ ...p, zone: e.target.value }))} fullWidth />
-          <Input label={t("inventory.location.rowNo")} value={form.rowNo} onChange={(e) => setForm((p) => ({ ...p, rowNo: e.target.value }))} fullWidth />
-          <Input label={t("inventory.location.colNo")} value={form.colNo} onChange={(e) => setForm((p) => ({ ...p, colNo: e.target.value }))} fullWidth />
-          <Input label={t("inventory.location.levelNo")} value={form.levelNo} onChange={(e) => setForm((p) => ({ ...p, levelNo: e.target.value }))} fullWidth />
-          <div className="col-span-2">
-            <Input label={t("common.remark")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />
-          </div>
+          <FieldSelect field="locationWarehouse" label={t("inventory.warehouse.warehouseName")} options={whOptions} value={form.warehouseCode} onChange={(v) => setForm((p) => ({ ...p, warehouseCode: v }))} disabled={!!editingItem} required />
+          <FieldInput field="locationCode" label={t("inventory.location.locationCode")} value={form.locationCode} onChange={(e) => setForm((p) => ({ ...p, locationCode: e.target.value }))} disabled={!!editingItem} required />
+          <FieldInput field="locationName" label={t("inventory.location.locationName")} value={form.locationName} onChange={(e) => setForm((p) => ({ ...p, locationName: e.target.value }))} required wrapperClassName="col-span-2" />
+          <FieldInput field="zone" label={t("inventory.location.zone")} value={form.zone} onChange={(e) => setForm((p) => ({ ...p, zone: e.target.value }))} />
+          <FieldInput field="rowNo" label={t("inventory.location.rowNo")} value={form.rowNo} onChange={(e) => setForm((p) => ({ ...p, rowNo: e.target.value }))} />
+          <FieldInput field="colNo" label={t("inventory.location.colNo")} value={form.colNo} onChange={(e) => setForm((p) => ({ ...p, colNo: e.target.value }))} />
+          <FieldInput field="levelNo" label={t("inventory.location.levelNo")} value={form.levelNo} onChange={(e) => setForm((p) => ({ ...p, levelNo: e.target.value }))} />
+          <FieldInput field="locationRemark" label={t("common.remark")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} wrapperClassName="col-span-2" />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>

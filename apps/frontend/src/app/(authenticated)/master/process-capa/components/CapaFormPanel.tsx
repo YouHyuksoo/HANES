@@ -14,11 +14,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
-import { Button, Input, Select } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import PartSearchModal, {
   type PartItem,
 } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
+import { FieldInput, FieldSelect, FieldLabel } from "./ProcessCapaFieldHelp";
 
 /** 공정 CAPA 아이템 타입 (부모에서 전달) */
 interface ProcessCapaItem {
@@ -242,22 +243,19 @@ export default function CapaFormPanel({
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto min-h-0 px-5 py-3 space-y-4">
         {/* 공정 */}
-        <Select
+        <FieldSelect
+          field="processCode"
           label={t("processCapa.processCode")}
           options={processOptions}
           value={form.processCode}
           onChange={(v) => setField("processCode", v)}
           disabled={isEdit}
           required
-          fullWidth
         />
 
         {/* 품목 */}
         <div>
-          <label className="block text-xs font-medium text-text mb-1">
-            {t("processCapa.itemCode")}
-            <span className="text-red-500 ml-0.5">*</span>
-          </label>
+          <FieldLabel field="itemCode" label={t("processCapa.itemCode")} required />
           <div className="flex gap-2">
             <Input
               value={
@@ -282,82 +280,80 @@ export default function CapaFormPanel({
 
         {/* 택트타임 / UPH */}
         <div className="grid grid-cols-2 gap-3">
-          <Input
+          <FieldInput
+            field="stdTactTime"
             label={t("processCapa.stdTactTime")}
             type="number"
             value={form.stdTactTime.toString()}
             onChange={(e) =>
               setField("stdTactTime", parseFloat(e.target.value) || 0)
             }
-            fullWidth
           />
-          <Input
+          <FieldInput
+            field="stdUph"
             label={t("processCapa.stdUph")}
             type="number"
             value={form.stdUph.toString()}
             readOnly
-            fullWidth
           />
         </div>
 
         {/* 작업자 / 보드 / 설비 */}
         <div className="grid grid-cols-3 gap-3">
-          <Input
+          <FieldInput
+            field="workerCnt"
             label={t("processCapa.workerCnt")}
             type="number"
             value={form.workerCnt.toString()}
             onChange={(e) =>
               setField("workerCnt", parseInt(e.target.value) || 0)
             }
-            fullWidth
           />
-          <Input
+          <FieldInput
+            field="boardCnt"
             label={t("processCapa.boardCnt")}
             type="number"
             value={form.boardCnt.toString()}
             onChange={(e) =>
               setField("boardCnt", parseInt(e.target.value) || 0)
             }
-            fullWidth
           />
-          <Input
+          <FieldInput
+            field="equipCnt"
             label={t("processCapa.equipCnt")}
             type="number"
             value={form.equipCnt.toString()}
             onChange={(e) =>
               setField("equipCnt", parseInt(e.target.value) || 0)
             }
-            fullWidth
           />
         </div>
 
         {/* 전환시간 / 밸런싱 효율 */}
         <div className="grid grid-cols-2 gap-3">
-          <Input
+          <FieldInput
+            field="setupTime"
             label={t("processCapa.setupTime")}
             type="number"
             value={form.setupTime.toString()}
             onChange={(e) =>
               setField("setupTime", parseFloat(e.target.value) || 0)
             }
-            fullWidth
           />
-          <Input
+          <FieldInput
+            field="balanceEff"
             label={t("processCapa.balanceEff")}
             type="number"
             value={form.balanceEff.toString()}
             onChange={(e) =>
               setField("balanceEff", parseFloat(e.target.value) || 0)
             }
-            fullWidth
           />
         </div>
 
         {/* 일일 CAPA (미리보기) */}
         <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <label className="block text-xs font-medium text-text mb-1">
-            {t("processCapa.dailyCapa")}
-          </label>
+          <FieldLabel field="dailyCapa" label={t("processCapa.dailyCapa")} />
           <p className="text-lg font-bold text-primary">
             {dailyCapaPreview.toLocaleString()}
           </p>
@@ -372,18 +368,18 @@ export default function CapaFormPanel({
 
         {/* 사용여부 / 비고 */}
         <div className="grid grid-cols-2 gap-3">
-          <Select
+          <FieldSelect
+            field="useYn"
             label={t("common.active")}
             options={useYnOptions}
             value={form.useYn}
             onChange={(v) => setField("useYn", v)}
-            fullWidth
           />
-          <Input
+          <FieldInput
+            field="remark"
             label={t("common.remark")}
             value={form.remark}
             onChange={(e) => setField("remark", e.target.value)}
-            fullWidth
           />
         </div>
       </div>

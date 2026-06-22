@@ -196,7 +196,7 @@ export default function OqcInspectModal({ isOpen, onClose, requestId, onSuccess 
           </div>
           <div>
             <div className="text-xs text-text-muted">{t("quality.oqc.boxCount")}</div>
-            <div className="font-mono text-text">{detail.totalBoxCount}</div>
+            <div className="font-mono text-text">{(detail.totalBoxCount ?? 0).toLocaleString()}</div>
           </div>
           <div>
             <div className="text-xs text-text-muted">{t("quality.oqc.totalQty")}</div>

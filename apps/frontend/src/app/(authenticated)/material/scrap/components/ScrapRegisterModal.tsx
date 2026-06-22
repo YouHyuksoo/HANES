@@ -79,7 +79,7 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
     { value: "", label: t("common.select") },
     ...stocks.map(s => ({
       value: s.id,
-      label: `${s.itemCode} - ${s.itemName} (${s.matUid || "N/A"}) [${s.availableQty}]`,
+      label: `${s.itemCode} - ${s.itemName} (${s.matUid || "N/A"}) [${s.availableQty.toLocaleString()}]`,
     })),
   ], [t, stocks]);
 
@@ -140,7 +140,7 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <Input label={`${t("material.scrap.qty")} (${t("material.scrap.max")}: ${maxQty})`} type="number"
+          <Input label={`${t("material.scrap.qty")} (${t("material.scrap.max")}: ${maxQty.toLocaleString()})`} type="number"
             min={1} max={maxQty}
             value={form.qty} onChange={e => setForm(p => ({ ...p, qty: e.target.value }))}
             fullWidth />

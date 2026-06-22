@@ -99,8 +99,8 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
         <div className="p-3 bg-surface dark:bg-slate-800 rounded-lg grid grid-cols-2 gap-2 text-xs">
           <div><span className="text-text-muted">{t("quality.rework.reworkNo")}:</span> <span className="font-medium text-text">{target.reworkNo}</span></div>
           <div><span className="text-text-muted">{t("quality.rework.itemCode")}:</span> <span className="font-medium text-text">{target.itemCode}</span></div>
-          <div><span className="text-text-muted">{t("quality.rework.reworkQty")}:</span> <span className="font-mono text-text">{target.reworkQty}</span></div>
-          <div><span className="text-text-muted">{t("quality.rework.resultQty")}:</span> <span className="font-mono text-text">{target.resultQty}</span></div>
+          <div><span className="text-text-muted">{t("quality.rework.reworkQty")}:</span> <span className="font-mono text-text">{(target.reworkQty ?? 0).toLocaleString()}</span></div>
+          <div><span className="text-text-muted">{t("quality.rework.resultQty")}:</span> <span className="font-mono text-text">{(target.resultQty ?? 0).toLocaleString()}</span></div>
         </div>
 
         {/* 검사자/방법 */}

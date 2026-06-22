@@ -109,7 +109,7 @@ export default function OqcHistoryPage() {
     {
       accessorKey: "totalBoxCount", header: t("quality.oqc.boxCount"), size: 80,
       meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{getValue() as number}</span>,
+      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
       accessorKey: "totalQty", header: t("quality.oqc.totalQty"), size: 90,

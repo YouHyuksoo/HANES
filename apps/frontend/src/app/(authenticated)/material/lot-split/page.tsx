@@ -206,8 +206,8 @@ export default function LotSplitPage() {
             {splitForm.splitQty && Number(splitForm.splitQty) > 0 && Number(splitForm.splitQty) < selectedLot.qty && (
               <div className="text-sm text-text-muted">
                 {t("material.lotSplit.splitPreview", {
-                  a: Number(splitForm.splitQty),
-                  b: selectedLot.qty - Number(splitForm.splitQty),
+                  a: Number(splitForm.splitQty).toLocaleString(),
+                  b: (selectedLot.qty - Number(splitForm.splitQty)).toLocaleString(),
                 })}
               </div>
             )}

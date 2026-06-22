@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Save, Lock, Unlock } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
+import { Field, FieldInput } from "./WorkCalendarFieldHelp";
 
 interface CalendarInfo {
   calendarId: string;
@@ -76,26 +77,26 @@ export default function CalendarFormPanel({
         <CardContent>
           <div className="grid grid-cols-12 gap-4 items-end">
             {/* 캘린더 ID */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-                {t("master.workCalendar.calendarId")}
-              </label>
-              <Input value={calendar.calendarId} disabled fullWidth />
-            </div>
+            <FieldInput
+              field="calendarId"
+              label={t("master.workCalendar.calendarId")}
+              value={calendar.calendarId}
+              disabled
+              wrapperClassName="col-span-2"
+            />
 
             {/* 연도 */}
-            <div className="col-span-1">
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-                {t("master.workCalendar.year")}
-              </label>
-              <Input value={calendar.calendarYear} readOnly disabled fullWidth />
-            </div>
+            <FieldInput
+              field="calendarYear"
+              label={t("master.workCalendar.year")}
+              value={calendar.calendarYear}
+              readOnly
+              disabled
+              wrapperClassName="col-span-1"
+            />
 
             {/* 공정 */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-                {t("master.workCalendar.process")}
-              </label>
+            <Field field="processCd" label={t("master.workCalendar.process")} className="col-span-2">
               <Select
                 options={[{ value: "", label: `-- ${t("common.all")} --` }, ...processOptions]}
                 value={calendar.processCd ?? ""}
@@ -103,25 +104,25 @@ export default function CalendarFormPanel({
                 disabled={isConfirmed}
                 fullWidth
               />
-            </div>
+            </Field>
 
             {/* 기본교대수 */}
-            <div className="col-span-1">
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-                {t("master.workCalendar.shiftCount")}
-              </label>
-              <Input type="number" value={calendar.defaultShiftCount} onChange={() => {}} disabled={isConfirmed} fullWidth />
-            </div>
+            <FieldInput
+              field="defaultShiftCount"
+              label={t("master.workCalendar.shiftCount")}
+              type="number"
+              value={calendar.defaultShiftCount}
+              onChange={() => {}}
+              disabled={isConfirmed}
+              wrapperClassName="col-span-1"
+            />
 
             {/* 상태 */}
-            <div className="col-span-1">
-              <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-                {t("master.workCalendar.status")}
-              </label>
+            <Field field="status" label={t("master.workCalendar.status")} className="col-span-1">
               <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusColor}`}>
                 {calendar.status}
               </span>
-            </div>
+            </Field>
 
             {/* 액션 버튼 */}
             <div className="col-span-5 flex items-center gap-2 justify-end flex-wrap">

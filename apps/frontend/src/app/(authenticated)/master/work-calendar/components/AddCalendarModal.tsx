@@ -11,7 +11,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Modal from "@/components/ui/Modal";
-import { Button, Input } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { Field, FieldInput } from "./WorkCalendarFieldHelp";
 
 interface ProcessOption {
   processCode: string;
@@ -66,22 +67,20 @@ export default function AddCalendarModal({ isOpen, onClose, onSave, processes }:
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={t("master.workCalendar.addCalendar")} size="md">
       <div className="flex flex-col gap-3 p-1">
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.calendarId")}
-          </label>
-          <Input value={form.calendarId} onChange={(e) => setF("calendarId", e.target.value)} fullWidth />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.calendarYear")}
-          </label>
-          <Input value={form.calendarYear} onChange={(e) => setF("calendarYear", e.target.value)} maxLength={4} fullWidth />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.processCd")}
-          </label>
+        <FieldInput
+          field="calendarId"
+          label={t("master.workCalendar.calendarId")}
+          value={form.calendarId}
+          onChange={(e) => setF("calendarId", e.target.value)}
+        />
+        <FieldInput
+          field="calendarYear"
+          label={t("master.workCalendar.calendarYear")}
+          value={form.calendarYear}
+          onChange={(e) => setF("calendarYear", e.target.value)}
+          maxLength={4}
+        />
+        <Field field="processCd" label={t("master.workCalendar.processCd")}>
           <select value={form.processCd} onChange={(e) => setF("processCd", e.target.value)} className={selectCls}>
             <option value="">{t("master.workCalendar.allProcesses")}</option>
             {processes.map((p) => (
@@ -90,27 +89,30 @@ export default function AddCalendarModal({ isOpen, onClose, onSave, processes }:
               </option>
             ))}
           </select>
-        </div>
+        </Field>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-              {t("master.workCalendar.defaultShiftCount")}
-            </label>
-            <Input type="number" min={1} max={3} value={form.defaultShiftCount} onChange={(e) => setF("defaultShiftCount", Number(e.target.value))} fullWidth />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-              {t("master.workCalendar.defaultShifts")}
-            </label>
-            <Input value={form.defaultShifts} onChange={(e) => setF("defaultShifts", e.target.value)} fullWidth />
-          </div>
+          <FieldInput
+            field="defaultShiftCount"
+            label={t("master.workCalendar.defaultShiftCount")}
+            type="number"
+            min={1}
+            max={3}
+            value={form.defaultShiftCount}
+            onChange={(e) => setF("defaultShiftCount", Number(e.target.value))}
+          />
+          <FieldInput
+            field="defaultShifts"
+            label={t("master.workCalendar.defaultShifts")}
+            value={form.defaultShifts}
+            onChange={(e) => setF("defaultShifts", e.target.value)}
+          />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
-            {t("master.workCalendar.remark")}
-          </label>
-          <Input value={form.remark} onChange={(e) => setF("remark", e.target.value)} fullWidth />
-        </div>
+        <FieldInput
+          field="remark"
+          label={t("master.workCalendar.remark")}
+          value={form.remark}
+          onChange={(e) => setF("remark", e.target.value)}
+        />
       </div>
       <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-border dark:border-gray-700">
         <Button variant="secondary" onClick={handleClose}>{t("common.cancel")}</Button>

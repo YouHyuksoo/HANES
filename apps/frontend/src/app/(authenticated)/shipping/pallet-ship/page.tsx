@@ -387,7 +387,7 @@ export default function PalletShipPage() {
           <CardContent className="p-3">
             <div className="mb-2">
               <h2 className="text-sm font-semibold text-text">박스 구성</h2>
-              <p className="mt-0.5 text-xs text-text-muted">{selectedPallet ? `${selectedPallet.boxCount}박스 · ${selectedPallet.totalQty.toLocaleString()}개` : "팔레트를 선택하세요"}</p>
+              <p className="mt-0.5 text-xs text-text-muted">{selectedPallet ? `${selectedPallet.boxCount.toLocaleString()}박스 · ${selectedPallet.totalQty.toLocaleString()}개` : "팔레트를 선택하세요"}</p>
             </div>
             {!selectedPallet ? (
               <div className="text-center py-8 text-text-muted">
@@ -402,7 +402,7 @@ export default function PalletShipPage() {
                     <p className="text-xs text-text-muted mt-0.5"><BoxStatusBadge status={selectedPallet.status as BoxStatus} /></p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-text">{selectedPallet.boxCount}박스</p>
+                    <p className="text-sm font-medium text-text">{selectedPallet.boxCount.toLocaleString()}박스</p>
                     <p className="text-xs text-text-muted">{selectedPallet.totalQty.toLocaleString()}개</p>
                   </div>
                 </div>
@@ -478,7 +478,7 @@ export default function PalletShipPage() {
                         <span className="font-mono font-medium text-text">{palletNo}</span>
                         {pallet && (
                           <span className="text-text-muted text-xs">
-                            {pallet.boxCount}박스 / {pallet.totalQty.toLocaleString()}개
+                            {pallet.boxCount.toLocaleString()}박스 / {pallet.totalQty.toLocaleString()}개
                           </span>
                         )}
                       </div>

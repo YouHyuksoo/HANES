@@ -59,7 +59,7 @@ export default function DefectSummaryPanel({ onOpenDefect, disabled, disabledRea
               className="grid grid-cols-[1fr_36px] gap-1 border-b border-border/40 px-2 py-1 text-[11px] last:border-b-0"
             >
               <span className="truncate text-text">{d.defectName}</span>
-              <span className="text-right font-bold tabular-nums text-red-600 dark:text-red-400">{d.qty}</span>
+              <span className="text-right font-bold tabular-nums text-red-600 dark:text-red-400">{(d.qty ?? 0).toLocaleString()}</span>
             </div>
           ))
         )}

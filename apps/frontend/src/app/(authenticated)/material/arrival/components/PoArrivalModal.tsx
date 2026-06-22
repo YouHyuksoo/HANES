@@ -163,8 +163,8 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
   const itemColumns = useMemo<ColumnDef<PoItemForArrival>[]>(() => [
     { id: 'partCode', header: t('common.partCode'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemCode },
     { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemName },
-    { accessorKey: 'orderQty', header: t('material.arrival.col.orderQty'), size: 80, meta: { filterType: "number" as const } },
-    { accessorKey: 'receivedQty', header: t('material.arrival.col.receivedQty'), size: 80, meta: { filterType: "number" as const } },
+    { accessorKey: 'orderQty', header: t('material.arrival.col.orderQty'), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
+    { accessorKey: 'receivedQty', header: t('material.arrival.col.receivedQty'), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
     {
       accessorKey: 'remainingQty',
       header: t('material.arrival.col.remainingQty'),
