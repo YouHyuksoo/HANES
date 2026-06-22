@@ -37,6 +37,9 @@ export class PalletMaster {
   @Column({ name: 'CLOSE_TIME', type: 'timestamp', nullable: true })
   closeAt: Date | null;
 
+  @Column({ name: 'SHIPPED_TIME', type: 'timestamp', nullable: true })
+  shippedAt: Date | null;
+
   @Column({ type: 'varchar2', name: 'SHIPMENT_ID', length: 255, nullable: true })
   shipmentId: string | null;
 

@@ -11,16 +11,16 @@
  * 4. API:
  *    - GET  /shipping/pallets (palletNo/status 필터)
  *    - POST /shipping/pallets (팔레트번호 자동 채번)
- *    - POST /shipping/pallets/:id/boxes { boxIds }
- *    - DELETE /shipping/pallets/:id/boxes { boxIds }
- *    - POST /shipping/pallets/:id/close | /:id/reopen
+ *    - POST /shipping/pallets/:palletNo/boxes { boxIds }
+ *    - POST /shipping/pallets/:palletNo/boxes/remove { boxIds }
+ *    - POST /shipping/pallets/:palletNo/close | /:palletNo/reopen
  *    - GET  /shipping/pallets/barcode/:palletNo/boxes (포함 박스)
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Layers, Plus, Search, RefreshCw, Lock, LockOpen, Truck,
-  Package, CheckCircle, ArrowRight, X,
+  Package, CheckCircle, ArrowRight, X, ScanLine, Printer,
 } from "lucide-react";
 import { Card, CardHeader, CardContent, Button, ConfirmModal, Input, Modal, Select, StatCard } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -29,6 +29,9 @@ import { ColumnDef } from "@tanstack/react-table";
 import { PalletStatusBadge } from "@/components/shipping";
 import type { PalletStatus } from "@/components/shipping";
 import api from "@/services/api";
+import toast from "react-hot-toast";
+import PalletLabelModal from "./components/PalletLabelModal";
+import type { PalletLabelInfo } from "./components/PalletLabelModal";
 
 /** 팔레트 포함 박스 (GET /shipping/pallets/barcode/:no/boxes 응답) */
 interface PalletBox {
@@ -47,8 +50,8 @@ interface AvailableBox {
   oqcStatus: string | null;
 }
 
+/** palletNo가 PK이므로 별도 id 불필요 */
 interface Pallet {
-  id: string;
   palletNo: string;
   boxCount: number;
   totalQty: number;
@@ -56,6 +59,8 @@ interface Pallet {
   shipmentId: string | null;
   createdAt: string;
   closeAt: string | null;
+  shipOrderNo?: string | null;
+  shippedAt?: string | null;
 }
 
 export default function PalletPage() {
@@ -65,11 +70,14 @@ export default function PalletPage() {
     () => [{ value: "", label: t("common.allStatus") }, ...comCodeOptions],
     [t, comCodeOptions],
   );
+  const scanInputRef = useRef<HTMLInputElement>(null);
   const [data, setData] = useState<Pallet[]>([]);
   const [loading, setLoading] = useState(false);
+  const [boxesLoading, setBoxesLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+  const [scanText, setScanText] = useState("");
   const [selectedPallet, setSelectedPallet] = useState<Pallet | null>(null);
   const [palletBoxes, setPalletBoxes] = useState<PalletBox[]>([]);
   const [availableBoxes, setAvailableBoxes] = useState<AvailableBox[]>([]);
@@ -77,11 +85,15 @@ export default function PalletPage() {
   const [removeBoxTarget, setRemoveBoxTarget] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [scanBoxInput, setScanBoxInput] = useState("");
+  const scanBoxRef = useRef<HTMLInputElement>(null);
+  const [labelPallet, setLabelPallet] = useState<PalletLabelInfo | null>(null);
+  const [labelAutoPrint, setLabelAutoPrint] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = {};
       if (searchText) params.palletNo = searchText;
       if (statusFilter) params.status = statusFilter;
       const res = await api.get("/shipping/pallets", { params });
@@ -97,25 +109,39 @@ export default function PalletPage() {
 
   /** 선택 팔레트의 포함 박스 조회 */
   const fetchPalletBoxes = useCallback(async (palletNo: string) => {
+    setBoxesLoading(true);
     try {
       const res = await api.get(`/shipping/pallets/barcode/${encodeURIComponent(palletNo)}/boxes`);
       setPalletBoxes(res.data?.data?.boxes ?? []);
-    } catch {
+    } catch (e) {
       setPalletBoxes([]);
+      toast.error(t("common.loadError", "조회 중 오류가 발생했습니다."));
+    } finally {
+      setBoxesLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const selectPallet = useCallback((pallet: Pallet) => {
     setSelectedPallet(pallet);
     fetchPalletBoxes(pallet.palletNo);
   }, [fetchPalletBoxes]);
 
-  /** 적재 후보: 마감(CLOSED) + OQC 합격 + 팔레트 미할당 박스 */
+  /** 바코드 스캔 처리 */
+  const handleBarcodeScan = useCallback(() => {
+    const val = scanText.trim();
+    if (!val) return;
+    setSearchText(val);
+    setScanText("");
+    scanInputRef.current?.focus();
+  }, [scanText]);
+
+  /** 적재 후보: 마감(CLOSED) + OQC 합격(PASS) + 팔레트 미할당 박스 */
   const fetchAvailableBoxes = useCallback(async () => {
     try {
-      const res = await api.get("/shipping/boxes", { params: { status: "CLOSED", unassigned: "true", limit: "5000" } });
-      const boxes: AvailableBox[] = res.data?.data ?? [];
-      setAvailableBoxes(boxes.filter((b) => b.oqcStatus === "PASS"));
+      const res = await api.get("/shipping/boxes", {
+        params: { status: "CLOSED", unassigned: "true", oqcStatus: "PASS" },
+      });
+      setAvailableBoxes(res.data?.data ?? []);
     } catch {
       setAvailableBoxes([]);
     }
@@ -150,11 +176,34 @@ export default function PalletPage() {
     }
   }, [fetchData]);
 
+  /** 박스번호 스캔 → 유효성 검증 후 선택 목록에 추가 */
+  const handleScanBox = useCallback(async () => {
+    const boxNo = scanBoxInput.trim();
+    if (!boxNo || !selectedPallet) return;
+    try {
+      const res = await api.get("/shipping/boxes", {
+        params: { boxNo, status: "CLOSED", oqcStatus: "PASS", unassigned: "true" },
+      });
+      const boxes: AvailableBox[] = res.data?.data ?? [];
+      if (boxes.length === 0) {
+        toast.error(t("shipping.pallet.boxNotFound", "적재 가능한 박스를 찾을 수 없습니다."));
+      } else {
+        const box = boxes[0];
+        setSelectedBoxes((prev) => prev.includes(box.boxNo) ? prev : [...prev, box.boxNo]);
+        toast.success(`✓ ${box.boxNo}`, { duration: 1000 });
+      }
+    } catch {
+      toast.error(t("shipping.pallet.boxScanError", "박스 조회에 실패했습니다."));
+    }
+    setScanBoxInput("");
+    scanBoxRef.current?.focus();
+  }, [scanBoxInput, selectedPallet, t]);
+
   const handleAssignBoxes = useCallback(async () => {
     if (!selectedPallet || selectedBoxes.length === 0) return;
     setSaving(true);
     try {
-      const res = await api.post(`/shipping/pallets/${selectedPallet.id}/boxes`, { boxIds: selectedBoxes });
+      const res = await api.post(`/shipping/pallets/${selectedPallet.palletNo}/boxes`, { boxIds: selectedBoxes });
       setSelectedBoxes([]);
       setIsAssignModalOpen(false);
       syncAfterAction(res.data?.data);
@@ -169,7 +218,7 @@ export default function PalletPage() {
     if (!selectedPallet || !removeBoxTarget) return;
     setSaving(true);
     try {
-      const res = await api.delete(`/shipping/pallets/${selectedPallet.id}/boxes`, { data: { boxIds: [removeBoxTarget] } });
+      const res = await api.post(`/shipping/pallets/${selectedPallet.palletNo}/boxes/remove`, { boxIds: [removeBoxTarget] });
       setRemoveBoxTarget(null);
       syncAfterAction(res.data?.data);
     } catch (e) {
@@ -181,16 +230,37 @@ export default function PalletPage() {
 
   const handleClosePallet = useCallback(async (pallet: Pallet) => {
     try {
-      const res = await api.post(`/shipping/pallets/${pallet.id}/close`);
+      const res = await api.post(`/shipping/pallets/${pallet.palletNo}/close`);
       syncAfterAction(res.data?.data);
-    } catch (e) {
-      console.error("Close pallet failed:", e);
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || t("common.error"));
     }
-  }, [syncAfterAction]);
+  }, [syncAfterAction, t]);
+
+  /** 라벨 출력 */
+  const handleOpenLabel = useCallback(async (pallet: Pallet) => {
+    setLabelAutoPrint(false);
+    // 포함 박스 정보도 함께 조회
+    let boxes: PalletBox[] = [];
+    try {
+      const res = await api.get(`/shipping/pallets/barcode/${encodeURIComponent(pallet.palletNo)}/boxes`);
+      boxes = res.data?.data?.boxes ?? [];
+    } catch { /* 박스 목록은 옵셔널 */ }
+    setLabelPallet({
+      palletNo: pallet.palletNo,
+      boxCount: pallet.boxCount,
+      totalQty: pallet.totalQty,
+      status: pallet.status,
+      shipOrderNo: pallet.shipOrderNo,
+      createdAt: pallet.createdAt,
+      boxes,
+    });
+  }, []);
 
   const handleReopenPallet = useCallback(async (pallet: Pallet) => {
     try {
-      const res = await api.post(`/shipping/pallets/${pallet.id}/reopen`);
+      const res = await api.post(`/shipping/pallets/${pallet.palletNo}/reopen`);
       syncAfterAction(res.data?.data);
     } catch (e) {
       console.error("Reopen pallet failed:", e);
@@ -202,25 +272,29 @@ export default function PalletPage() {
 
   const columns = useMemo<ColumnDef<Pallet>[]>(() => [
     {
-      id: "actions", header: t("common.actions"), size: 120, meta: { align: "center" as const, filterType: "none" as const },
+      id: "actions", header: t("common.actions"), size: 130, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => {
         const pallet = row.original;
-        const canReopen = pallet.status === "CLOSED" && !pallet.shipmentId;
+        const isOpen = pallet.status === "OPEN";
         return (
           <div className="flex gap-1">
-            <button className="p-1 hover:bg-surface rounded" title={t("shipping.pallet.assignBox")} disabled={pallet.status !== "OPEN"} onClick={() => { selectPallet(pallet); setIsAssignModalOpen(true); fetchAvailableBoxes(); }}>
-              <Plus className={`w-4 h-4 ${pallet.status === "OPEN" ? "text-primary" : "text-text-muted opacity-50"}`} />
-            </button>
-            <button className="p-1 hover:bg-surface rounded" title={t("shipping.pallet.closePallet")} disabled={pallet.status !== "OPEN"} onClick={() => handleClosePallet(pallet)}>
-              <Lock className={`w-4 h-4 ${pallet.status === "OPEN" ? "text-primary" : "text-text-muted opacity-50"}`} />
-            </button>
-            <button className="p-1 hover:bg-surface rounded" title={t("shipping.pallet.reopenPallet")} disabled={!canReopen} onClick={() => handleReopenPallet(pallet)}>
-              <LockOpen className={`w-4 h-4 ${canReopen ? "text-primary" : "text-text-muted opacity-50"}`} />
-            </button>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.assignBox")} disabled={!isOpen} onClick={() => { selectPallet(pallet); setIsAssignModalOpen(true); fetchAvailableBoxes(); }}>
+              <Plus className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.closePallet")} disabled={!isOpen} onClick={() => handleClosePallet(pallet)}>
+              <Lock className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.reopenPallet")} disabled={pallet.status !== "CLOSED"} onClick={() => handleReopenPallet(pallet)}>
+              <LockOpen className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.printLabel", "라벨 출력")} onClick={() => handleOpenLabel(pallet)}>
+              <Printer className="w-4 h-4" />
+            </Button>
           </div>
         );
       },
     },
+    { accessorKey: "shipOrderNo", header: t("shipping.pallet.shipOrderNo", "출하지시번호"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
     { accessorKey: "palletNo", header: t("shipping.pallet.palletNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
@@ -269,10 +343,20 @@ export default function PalletPage() {
                   <div className="w-36 flex-shrink-0">
                     <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
+                  <div className="w-48 flex-shrink-0">
+                    <Input
+                      ref={scanInputRef}
+                      placeholder={t("shipping.pallet.barcodePlaceholder", "바코드 스캔")}
+                      value={scanText}
+                      onChange={(e) => setScanText(e.target.value)}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); handleBarcodeScan(); } }}
+                      leftIcon={<ScanLine className="w-4 h-4" />}
+                      fullWidth
+                    />
+                  </div>
                 </div>
               }
               onRowClick={selectPallet}
-
             sqlQuery={`SELECT *\nFROM PALLET_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent></Card>
         </div>
@@ -280,7 +364,12 @@ export default function PalletPage() {
           <CardHeader title={t("shipping.pallet.includedBoxes")} subtitle={selectedPallet ? selectedPallet.palletNo : t("shipping.pallet.selectPallet")} />
           <CardContent>
             {selectedPallet ? (
-              palletBoxes.length > 0 ? (
+              boxesLoading ? (
+                <div className="flex items-center justify-center py-8 text-text-muted">
+                  <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                  <span>{t("common.loading", "로딩 중")}</span>
+                </div>
+              ) : palletBoxes.length > 0 ? (
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {palletBoxes.map((box) => (
                     <div key={box.boxNo} className="flex items-center justify-between p-3 bg-background rounded-lg">
@@ -335,6 +424,15 @@ export default function PalletPage() {
               <p className="text-sm text-text-muted">{t("shipping.pallet.pallet")}: <span className="font-medium text-text">{selectedPallet.palletNo}</span></p>
             </div>
           )}
+          <Input
+            ref={scanBoxRef}
+            placeholder={t("shipping.pallet.scanBoxPlaceholder", "박스번호 스캔")}
+            value={scanBoxInput}
+            onChange={(e) => setScanBoxInput(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); handleScanBox(); } }}
+            leftIcon={<ScanLine className="w-4 h-4" />}
+            fullWidth
+          />
           <p className="text-sm text-text-muted">{t("shipping.pallet.selectBoxHint")}</p>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {availableBoxes.length === 0 && (
@@ -361,6 +459,12 @@ export default function PalletPage() {
           </div>
         </div>
       </Modal>
+      <PalletLabelModal
+        isOpen={!!labelPallet}
+        pallet={labelPallet}
+        autoPrint={labelAutoPrint}
+        onClose={() => { setLabelPallet(null); setLabelAutoPrint(false); }}
+      />
       <ConfirmModal
         isOpen={!!removeBoxTarget}
         onClose={() => setRemoveBoxTarget(null)}

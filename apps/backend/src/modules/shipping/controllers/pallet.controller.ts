@@ -15,11 +15,12 @@
  * - PUT    /:id                 : 팔레트 수정
  * - DELETE /:id                 : 팔레트 삭제
  * - POST   /:id/boxes           : 박스 추가
- * - DELETE /:id/boxes           : 박스 제거
+ * - POST   /:id/boxes/remove    : 박스 제거 (DELETE body 우회)
  * - POST   /:id/close           : 팔레트 닫기
  * - POST   /:id/reopen          : 팔레트 다시 열기
  * - POST   /:id/assign-shipment : 출하 할당
  * - POST   /:id/remove-shipment : 출하에서 제거
+ * - POST   /:id/mark-shipped    : 출하 확정
  * - GET    /:id/summary         : 팔레트 요약
  */
 
@@ -172,9 +173,9 @@ export class PalletController {
     return ResponseUtil.success(data, '박스가 추가되었습니다.');
   }
 
-  @Delete(':id/boxes')
+  @Post(':id/boxes/remove')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '박스 제거', description: 'OPEN 상태 팔레트에서 박스 제거' })
+  @ApiOperation({ summary: '박스 제거', description: 'OPEN 상태 팔레트에서 박스 제거 (DELETE body 우회)' })
   @ApiParam({ name: 'id', description: '팔레트 ID' })
   @ApiResponse({ status: 200, description: '제거 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
@@ -230,6 +231,17 @@ export class PalletController {
   ) {
     const data = await this.palletService.assignToShipment(id, dto, company, plant);
     return ResponseUtil.success(data, '팔레트가 출하에 할당되었습니다.');
+  }
+
+  @Post(':id/mark-shipped')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '팔레트 출하 확정', description: 'LOADED -> SHIPPED 상태로 변경' })
+  @ApiParam({ name: 'id', description: '팔레트 ID' })
+  @ApiResponse({ status: 200, description: '출하 확정 성공' })
+  @ApiResponse({ status: 400, description: '상태 변경 불가' })
+  async markAsShipped(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.markAsShipped(id, company, plant);
+    return ResponseUtil.success(data, '팔레트가 출하 확정되었습니다.');
   }
 
   @Post(':id/remove-shipment')

@@ -116,6 +116,11 @@ export class BoxQueryDto extends PaginationQueryDto {
   @IsOptional()
   @Type(() => Boolean)
   unassigned?: boolean;
+
+  @ApiPropertyOptional({ description: 'OQC 상태 필터', example: 'PASS' })
+  @IsOptional()
+  @IsString()
+  oqcStatus?: string;
 }
 
 /**

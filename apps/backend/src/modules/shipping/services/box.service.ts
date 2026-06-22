@@ -118,7 +118,7 @@ export class BoxService {
   }
 
   async findAll(query: BoxQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, search, boxNo, itemCode, palletId: palletNo, status, unassigned } = query;
+    const { page = 1, limit = 10, search, boxNo, itemCode, palletId: palletNo, status, unassigned, oqcStatus } = query;
     const skip = (page - 1) * limit;
 
     const baseWhere: Record<string, unknown> = {
@@ -129,6 +129,7 @@ export class BoxService {
       ...(palletNo && { palletNo }),
       ...(status && { status }),
       ...(unassigned && { palletNo: IsNull() }),
+      ...(oqcStatus && { oqcStatus }),
     };
     const where = search
       ? [

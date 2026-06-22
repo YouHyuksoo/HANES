@@ -63,10 +63,6 @@ export class PalletService {
     };
   }
 
-  private withClientId(pallet: PalletMaster) {
-    return { ...pallet, id: pallet.palletNo };
-  }
-
   /**
    * 팔레트 목록 조회
    */
@@ -100,7 +96,7 @@ export class PalletService {
       this.palletRepository.count({ where }),
     ]);
 
-    return { data: data.map((pallet) => this.withClientId(pallet)), total, page, limit };
+    return { data, total, page, limit };
   }
 
   /**
@@ -115,22 +111,14 @@ export class PalletService {
       throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${id}`);
     }
 
-    return this.withClientId(pallet);
+    return pallet;
   }
 
   /**
-   * 팔레트 단건 조회 (팔레트번호)
+   * 팔레트번호로 조회 (findById의 별칭)
    */
   async findByPalletNo(palletNo: string, company?: string, plant?: string) {
-    const pallet = await this.palletRepository.findOne({
-      where: { palletNo, ...this.tenantWhere(company, plant) },
-    });
-
-    if (!pallet) {
-      throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${palletNo}`);
-    }
-
-    return pallet;
+    return this.findById(palletNo, company, plant);
   }
 
   /**
@@ -277,7 +265,10 @@ export class PalletService {
     if (palletUnits.length > 0) {
       const packUnit = Math.min(...palletUnits);
       if (pallet.boxCount + dto.boxIds.length > packUnit) {
-        throw new BadRequestException(`팔레트구성단위(${packUnit})를 초과했습니다.`);
+        const available = packUnit - pallet.boxCount;
+        throw new BadRequestException(
+          `팔레트구성단위(${packUnit})를 초과했습니다. (현재 ${pallet.boxCount}개, 추가 요청 ${dto.boxIds.length}개, 최대 ${packUnit}개, 추가 가능 ${available}개)`
+        );
       }
     }
 
@@ -388,13 +379,36 @@ export class PalletService {
       throw new BadRequestException('빈 팔레트는 닫을 수 없습니다.');
     }
 
-    await this.palletRepository.update(
-      { palletNo: id, ...this.tenantWhere(company, plant) },
-      {
-        status: 'CLOSED',
-        closeAt: new Date(),
+    // packUnit 기준 검증: 품목 packUnit 중 최소값에 도달해야 마감 가능
+    const palletBoxes = await this.boxRepository.find({
+      where: { palletNo: id, ...this.tenantWhere(company, plant) },
+    });
+    const partItemCodes = [...new Set(palletBoxes.map(b => b.itemCode).filter(Boolean))];
+    const parts = partItemCodes.length > 0
+      ? await this.partRepository.find({ where: { itemCode: In(partItemCodes), ...this.tenantWhere(company, plant) } })
+      : [];
+    const palletUnits = parts
+      .map(p => p.packUnit ?? 0)
+      .filter(n => Number.isFinite(n) && n > 0);
+    if (palletUnits.length > 0) {
+      const packUnit = Math.min(...palletUnits);
+      if (pallet.boxCount < packUnit) {
+        throw new BadRequestException(
+          `팔레트구성단위(${packUnit})에 도달하지 않았습니다. (현재 ${pallet.boxCount}개, 최소 ${packUnit}개 필요)`
+        );
       }
-    );
+    }
+
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.update(
+        PalletMaster,
+        { palletNo: id, ...this.tenantWhere(company, plant) },
+        {
+          status: 'CLOSED',
+          closeAt: new Date(),
+        }
+      );
+    });
 
     return this.findById(id, company, plant);
   }
@@ -458,10 +472,14 @@ export class PalletService {
 
     if (shipment.shipOrderNo) {
       if (pallet.shipOrderNo !== shipment.shipOrderNo) {
-        throw new BadRequestException('출하지시가 다른 팔레트는 출하에 할당할 수 없습니다.');
+        throw new BadRequestException(
+          `출하지시가 다른 팔레트는 출하에 할당할 수 없습니다. (팔레트 출하지시: ${pallet.shipOrderNo ?? '없음'}, 출하 출하지시: ${shipment.shipOrderNo})`
+        );
       }
     } else if (pallet.shipOrderNo) {
-      throw new BadRequestException('출하지시에 귀속된 팔레트는 출하지시 작업 화면에서 출하 처리해야 합니다.');
+      throw new BadRequestException(
+        `출하지시(${pallet.shipOrderNo})에 귀속된 팔레트는 출하지시 작업 화면에서 출하 처리해야 합니다.`
+      );
     }
 
     // 트랜잭션으로 팔레트 할당 및 출하 집계 업데이트
@@ -556,6 +574,32 @@ export class PalletService {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,
           totalQty: parseInt(shipmentSummary?.totalQty) || 0,
+        }
+      );
+    });
+
+    return this.findById(id, company, plant);
+  }
+
+  // ===== 출하 확정 =====
+
+  /**
+   * 팔레트 출하 확정 (LOADED -> SHIPPED)
+   */
+  async markAsShipped(id: string, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
+
+    if (pallet.status !== 'LOADED') {
+      throw new BadRequestException(`현재 상태(${pallet.status})에서는 출하 확정할 수 없습니다. LOADED 상태여야 합니다.`);
+    }
+
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.update(
+        PalletMaster,
+        { palletNo: id, ...this.tenantWhere(company, plant) },
+        {
+          status: 'SHIPPED',
+          shippedAt: new Date(),
         }
       );
     });
