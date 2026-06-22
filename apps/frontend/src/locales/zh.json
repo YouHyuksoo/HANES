@@ -143,7 +143,16 @@
     "manager": "负责人",
     "none": "无",
     "priority": "优先级",
-    "searchPlaceholder": "搜索..."
+    "searchPlaceholder": "搜索...",
+    "manualEntry": "手动输入",
+    "manufacturer": "制造商",
+    "input": "输入",
+    "notSelected": "未指定",
+    "wait": "处理中",
+    "selectedCount": "已选 {{count}} 件",
+    "addSelectedItems": "添加所选品目",
+    "useY": "使用",
+    "useN": "不使用"
   },
   "help": {
     "title": "帮助",
@@ -658,7 +667,12 @@
       "adjPlus": "库存调整(+)",
       "adjMinus": "库存调整(-)",
       "scrap": "报废",
-      "part": "零件"
+      "part": "零件",
+      "lotSplitIn": "批次拆分(入)",
+      "lotSplitOut": "批次拆分(出)",
+      "miscIn": "其他入库",
+      "matMoveOut": "不可用移动(出)",
+      "matMoveIn": "不可用移动(入)"
     },
     "lot": {
       "title": "LOT管理",
@@ -1110,7 +1124,8 @@
         "storageLocation": "按品目固定的默认存储库位。",
         "imageUrl": "品目照片文件路径。",
         "remark": "品目管理参考事项。"
-      }
+      },
+      "defectModelGroup": "型号区分"
     },
     "bom": {
       "title": "BOM管理",
@@ -1920,7 +1935,8 @@
           "boxQty": "每箱数量",
           "palletNo": "托盘号"
         }
-      }
+      },
+      "srcPallet": "托盘"
     },
     "company": {
       "title": "公司管理",
@@ -2197,7 +2213,25 @@
       "defectQty": "不良数",
       "destructiveHint": "检验数 / 不良数 — 1件不良即FAIL",
       "removeSerial": "移除序列号",
-      "incompleteSerialJudge": "判定尚未完成。"
+      "incompleteSerialJudge": "判定尚未完成。",
+      "serialNotFound": "非待检验序列号：{{serial}}",
+      "serialScan": "扫描序列号",
+      "serialScanPlaceholder": "扫描序列号或输入后按 Enter",
+      "viewPending": "查询待检验序列号",
+      "pendingSerials": "待检验",
+      "addAll": "全部添加",
+      "noPending": "暂无待检验序列号。",
+      "basicSampleQty": "基本样本数",
+      "aqlSampleQty": "AQL 样本数量",
+      "defectCodes": "不良代码",
+      "selectDefectCode": "选择不良代码",
+      "addDefectCode": "添加不良代码",
+      "scannedSerials": "已扫描序列号",
+      "scanFirst": "请先扫描序列号。",
+      "pendingJudge": "待定",
+      "selectScannedSerial": "请在左侧选择已扫描的序列号。",
+      "selectedSerial": "选中序列号",
+      "noScannedSerials": "暂无已扫描的序列号。"
     },
     "receive": {
       "title": "物料入库管理",
@@ -2237,14 +2271,39 @@
       "scanLocation": "扫描库位条码",
       "noLocation": "所选仓库未登记库位。请直接扫描条码，或在仓库管理中登记库位。",
       "scan": {
-        "selectLocation": "请选择或扫描存储位置。"
+        "selectLocation": "请选择或扫描存储位置。",
+        "notReceivable": "非待入库对象：{{matUid}}",
+        "alreadyScanned": "已扫描的自有条码：{{matUid}}",
+        "selectWarehouse": "请选择入库仓库。",
+        "ownTitle": "扫描物料条码",
+        "vendorTitle": "扫描供应商条码",
+        "ownHint": "请先扫描自有粘贴条码(物料序列号)。",
+        "vendorHint": "请扫描要映射到物料 {{matUid}} 的供应商条码。",
+        "modalTitle": "扫描入库处理",
+        "ownPlaceholder": "自有粘贴条码",
+        "vendorPlaceholder": "供应商条码",
+        "scanRegister": "扫描登记",
+        "scannedMat": "已扫描物料条码",
+        "mappingList": "扫描映射列表",
+        "countCases": "{{count}}件",
+        "vendorBarcode": "供应商条码",
+        "ownBarcode": "自有粘贴条码",
+        "partNo": "品号",
+        "noMapping": "暂无已扫描的条码映射。",
+        "removeMapping": "删除扫描映射",
+        "footerNotice": "仅处理已扫描的映射入库，与待入库表格的选择无关。"
       },
       "warehouseLabel": "入库仓库",
       "locationLabel": "存储位置",
       "locationPlaceholder": "例：A-01-01",
       "remarkPlaceholder": "请输入备注",
       "confirmReceiving": "确认入库",
-      "confirmTitle": "入库确认"
+      "confirmTitle": "入库确认",
+      "certStatus": "检测报告",
+      "certNotRequired": "不需要",
+      "certAttached": "已附",
+      "certNotAttached": "未附",
+      "scanReceive": "入库处理"
     },
     "receiveHistory": {
       "title": "入库历史查询",
@@ -3406,7 +3465,13 @@
       "workerSearchPlaceholder": "搜索作业者姓名或代码",
       "selectedWorker": "已选作业者",
       "noWorkerSelected": "请选择作业者",
-      "equipCode": "设备"
+      "equipCode": "设备",
+      "cancelSuccess": "实绩已取消，库存已冲销。",
+      "deleteSuccess": "实绩已删除。",
+      "editSuccess": "实绩已修改。",
+      "cancelConfirm": "确定取消该实绩吗？已入库的产品库存将被冲销。",
+      "deleteConfirm": "确定永久删除该实绩吗？",
+      "editHint": "修改数量时，物料扣减与产品库存将自动重新同步。"
     },
     "progress": {
       "title": "作业进度查询",
@@ -3762,6 +3827,10 @@
         "BRIDGE": "分支",
         "ONE_SIDE": "单侧"
       }
+    },
+    "jobOrder": {
+      "orderNo": "工单号",
+      "orderQty": "指示数量"
     }
   },
   "inspection": {
@@ -3887,7 +3956,22 @@
     },
     "history": {
       "scopeFull": "全数",
-      "scopeSample": "抽样"
+      "scopeSample": "抽样",
+      "typeVisual": "外观检验",
+      "typeTerminal": "端子检验",
+      "typeContinuity": "导通检验",
+      "inspectType": "检验类型",
+      "title": "检验履历",
+      "subtitle": "查询外观检验、端子检验、导通检验履历"
+    },
+    "structure": {
+      "selectLabel": "选择FG标签",
+      "searchLabelPlaceholder": "搜索FG条码或品目代码...",
+      "title": "结构检验",
+      "scanPlaceholder": "请扫描或输入FG条码",
+      "defectChecklist": "不良项目",
+      "defectType": "不良类型",
+      "description": "低压工序 DIM"
     }
   },
   "quality": {
@@ -4002,7 +4086,8 @@
       "partNoPlaceholder": "请输入零件号",
       "equipmentNo": "设备编号",
       "remarkPlaceholder": "请输入不良详细内容",
-      "searchPlaceholder": "搜索作业指示、不良名称..."
+      "searchPlaceholder": "搜索作业指示、不良名称...",
+      "type": "不良类型"
     },
     "defectCode": {
       "title": "不良代码管理",
@@ -4073,7 +4158,9 @@
       "prodResult": "生产实绩",
       "inspectStatus": "检查状态",
       "scanPlaceholder": "请扫描FG条码",
-      "barcodeNotFound": "找不到条码"
+      "barcodeNotFound": "找不到条码",
+      "defectCode": "不良代码",
+      "inspectType": "检验类型"
     },
     "trace": {
       "title": "追溯查询",
@@ -4225,7 +4312,8 @@
       "workDetail": "作业内容",
       "workTimeMin": "作业时间(分)",
       "inspectHint": "判定合格(PASS)时，良品数量将恢复至工序仓库(WIP)产品库存。",
-      "selectPartFirst": "请先选择品目"
+      "selectPartFirst": "请先选择品目",
+      "inspectSuccess": "复检结果已登记。"
     },
     "change": {
       "title": "变更管理",
@@ -4954,7 +5042,9 @@
       "notConfirmed": "仅可出货已确认(CONFIRMED)的出货指示。",
       "orderNotFound": "未找到出货指示。",
       "duplicate": "该箱已扫描。",
-      "shipFailed": "出货处理失败。"
+      "shipFailed": "出货处理失败。",
+      "cancelFailed": "出货取消失败。",
+      "cancelBox": "取消出货"
     },
     "shipOrder": {
       "title": "出货指示登记",
@@ -4995,7 +5085,12 @@
       "excelDownload": "Excel下载",
       "statConfirmedWait": "待确认",
       "statTotalQty": "总出货数量",
-      "searchPlaceholder": "搜索出货指示编号、客户..."
+      "searchPlaceholder": "搜索出货指示编号、客户...",
+      "palletDetail": "托盘明细",
+      "selectRowForPallet": "请选择左侧行",
+      "selectRowForPalletDetail": "选择左侧出货履历行后，将显示托盘号与装箱构成。",
+      "noPalletDetail": "暂无已登记的托盘信息。",
+      "noPalletBoxes": "托盘未关联任何箱子。"
     },
     "return": {
       "title": "出货退货登记",
@@ -5105,7 +5200,12 @@
       "deleteBoxError": "删除空箱失败。",
       "deleteEmptyBox": "删除空箱",
       "deleteEmptyBoxConfirm": "确定删除此箱吗？仅删除未装产品的 OPEN 箱。",
-      "justAdded": "刚添加"
+      "justAdded": "刚添加",
+      "defaultLabel": "默认标签",
+      "boxDetail": "装箱构成",
+      "selectBox": "请选择箱子",
+      "palletNo": "托盘",
+      "selectBoxHint": "选择箱子后可查看其构成明细。"
     },
     "boxStock": {
       "title": "产品库存查询",
@@ -5152,7 +5252,18 @@
       "noLoadableBoxes": "没有可装载的箱子（已关闭 + OQC合格 + 未分配）",
       "pallet": "托盘",
       "selectBoxHint": "选择要装载的箱子",
-      "assign": "装载"
+      "assign": "装载",
+      "closeAt": "关闭",
+      "shippedAt": "出货",
+      "defaultLabel": "默认标签",
+      "palletLabel": "托盘标签",
+      "printLabel": "打印标签",
+      "boxList": "构成箱子",
+      "boxNotFound": "未找到可装载的箱子。",
+      "boxScanError": "箱子查询失败。",
+      "shipOrderNo": "出货指示号",
+      "barcodePlaceholder": "扫描条码",
+      "scanBoxPlaceholder": "扫描箱号"
     },
     "confirm": {
       "title": "出货确认",
@@ -5391,7 +5502,9 @@
       "scanFail": "入库失败",
       "scanConfirmedCount": "{{count}}件已确认",
       "pendingTitle": "待入库列表",
-      "labelPrintedAt": "标签打印日"
+      "labelPrintedAt": "标签打印日",
+      "returnScanHint": "退回入库模式",
+      "returnBtn": "确认退回"
     },
     "issuing": {
       "title": "耗材出库",
@@ -6674,7 +6787,15 @@
       "iqcInProgress": "检查中",
       "iqcNone": "免检",
       "iqcFailMsg": "IQC未合格，无法入库",
-      "iqcInProgressMsg": "IQC检查进行中，无法入库"
+      "iqcInProgressMsg": "IQC检查进行中，无法入库",
+      "workerRequired": "请先扫描作业员",
+      "changeWorker": "更换作业员",
+      "scanWorker": "扫描作业员",
+      "cannotReceive": "无法入库",
+      "workerNotFound": "未找到作业员",
+      "qtyMin": "入库数量必须大于等于1。",
+      "qtyOverRemaining": "入库数量({{qty}})超过剩余量({{remaining}})。",
+      "warehouseRequired": "请选择入库仓库。"
     },
     "issuing": {
       "title": "物料出库",
@@ -6849,7 +6970,8 @@
     "worker": {
       "switch": "切换操作员",
       "scanQr": "请扫描操作员二维码",
-      "switched": "操作员已切换"
+      "switched": "操作员已切换",
+      "notFound": "未找到作业员"
     },
     "network": {
       "offline": "请检查网络连接",
@@ -6857,7 +6979,8 @@
     },
     "server": {
       "error": "服务器连接失败，请稍后重试。",
-      "retry": "重试"
+      "retry": "重试",
+      "retrying": "正在重新检查服务器"
     }
   },
   "activityLog": {
@@ -7243,7 +7366,13 @@
       "notTarget": "非对象",
       "barcodePlaceholder": "条码信息（材料、消耗性设备部件、捆绑序列号等...）",
       "menuView": "返回菜单界面",
-      "workView": "作业全屏"
+      "workView": "作业全屏",
+      "selectEquipFirst": "请先选择设备。",
+      "dailyInspectRequired": "请先完成设备日常点检。",
+      "selectJobOrderFirst": "请先选择工单。",
+      "workerRequiredForInspect": "请至少添加一名作业员。",
+      "selectJobOrderHint": "选择工单后将显示生产实绩。",
+      "inputDisabled": "无法输入。"
     },
     "equip": {
       "modalTitle": "选择设备",
@@ -7288,7 +7417,8 @@
       "noPrevPage": "没有上一页",
       "noNextPage": "没有下一页",
       "prevPage": "上一页",
-      "nextPage": "下一页"
+      "nextPage": "下一页",
+      "openExternal": "无法播放时在新标签页打开"
     },
     "routing": {
       "title": "工艺路线",
@@ -7331,7 +7461,10 @@
       }
     },
     "jobOrder": {
-      "assignError": "作业指示分配失败"
+      "assignError": "作业指示分配失败",
+      "thisEquip": "当前设备",
+      "allEquips": "全部",
+      "otherEquipNote": "分配给其他设备的工单仅可查看，无法选择。"
     },
     "prep": {
       "allDone": "准备完成",
@@ -7410,7 +7543,22 @@
       "validWindow": "有效区间",
       "answeredProgress": "{{answered}} / {{total}} 项",
       "overallNgSummary": "{{total}} 项中 {{ng}} 项 NG",
-      "overallPassSummary": "全部 {{total}} 项合格"
+      "overallPassSummary": "全部 {{total}} 项合格",
+      "noDailyInspectItemsTitle": "该设备未分配设备日常点检项目。",
+      "dailyInspectAssignGuideTitle": "前置处理步骤",
+      "dailyInspectAssignStep1": "若没有点检项目，请先在基准信息 > 设备点检项目主数据(/master/equip-inspect-item)中登记点检类型为 DAILY 的项目。",
+      "dailyInspectAssignStep2": "在左侧菜单中前往 基准信息 > 设备点检项目(/master/equip-inspect) 画面。",
+      "dailyInspectAssignStep3": "在左侧设备列表中选择此一体机设备。",
+      "dailyInspectAssignStep4": "将点检类型选择为设备日常点检(DAILY)。",
+      "dailyInspectAssignStep5": "点击添加点检项目按钮，选择所需项目并保存。",
+      "dailyInspectAssignStep6": "关闭并重新打开此对话框即可看到已分配的项目。",
+      "selectJobOrderFirst": "请先选择工单。",
+      "noWorkerInspectItemsTitle": "该设备未分配作业员设备点检项目。",
+      "workerInspectAssignStep1": "在左侧菜单中前往 基准信息 > 设备点检项目(/master/equip-inspect) 画面。",
+      "workerInspectAssignStep2": "在左侧设备列表中选择此一体机设备。",
+      "workerInspectAssignStep3": "将点检类型选择为作业员设备点检(WORKER)。",
+      "workerInspectAssignStep4": "点击添加点检项目按钮，选择所需项目并保存。",
+      "workerInspectAssignStep5": "关闭并重新打开此对话框即可看到已分配的项目。"
     },
     "workerInspect": {
       "check1": "设备电源及安全装置是否正常",

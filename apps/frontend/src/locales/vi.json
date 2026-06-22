@@ -143,7 +143,16 @@
     "manager": "Người phụ trách",
     "none": "Không",
     "priority": "Độ ưu tiên",
-    "searchPlaceholder": "Tìm kiếm..."
+    "searchPlaceholder": "Tìm kiếm...",
+    "manualEntry": "Nhập thủ công",
+    "manufacturer": "Nhà sản xuất",
+    "input": "Nhập",
+    "notSelected": "Chưa chỉ định",
+    "wait": "Đang xử lý",
+    "selectedCount": "Đã chọn {{count}}",
+    "addSelectedItems": "Thêm hàng đã chọn",
+    "useY": "Sử dụng",
+    "useN": "Không dùng"
   },
   "help": {
     "title": "Trợ giúp",
@@ -658,7 +667,12 @@
       "adjPlus": "Điều chỉnh (+)",
       "adjMinus": "Điều chỉnh (-)",
       "scrap": "Phế phẩm",
-      "part": "Linh kiện"
+      "part": "Linh kiện",
+      "lotSplitIn": "Tách LOT (Nhập)",
+      "lotSplitOut": "Tách LOT (Xuất)",
+      "miscIn": "Nhập kho khác",
+      "matMoveOut": "Chuyển loại bỏ (Xuất)",
+      "matMoveIn": "Chuyển loại bỏ (Nhập)"
     },
     "lot": {
       "title": "Quản lý LOT",
@@ -1110,7 +1124,8 @@
         "storageLocation": "Vị trí lưu trữ mặc định cố định theo từng vật tư.",
         "imageUrl": "Đường dẫn tệp ảnh vật tư.",
         "remark": "Ghi chú quản lý vật tư."
-      }
+      },
+      "defectModelGroup": "Phân loại model"
     },
     "bom": {
       "title": "Quản lý BOM",
@@ -1920,7 +1935,8 @@
           "boxQty": "SL mỗi hộp",
           "palletNo": "Số pallet"
         }
-      }
+      },
+      "srcPallet": "Pallet"
     },
     "company": {
       "title": "Quản lý công ty",
@@ -2197,7 +2213,25 @@
       "defectQty": "Số lỗi",
       "destructiveHint": "Số kiểm / Số lỗi — 1 lỗi là FAIL",
       "removeSerial": "Xóa serial",
-      "incompleteSerialJudge": "Chưa hoàn tất phán định."
+      "incompleteSerialJudge": "Chưa hoàn tất phán định.",
+      "serialNotFound": "Không phải serial chờ kiểm tra: {{serial}}",
+      "serialScan": "Quét serial",
+      "serialScanPlaceholder": "Quét serial hoặc nhập rồi nhấn Enter",
+      "viewPending": "Xem serial chờ kiểm tra",
+      "pendingSerials": "Chờ kiểm tra",
+      "addAll": "Thêm tất cả",
+      "noPending": "Không có serial chờ kiểm tra.",
+      "basicSampleQty": "Số mẫu cơ bản",
+      "aqlSampleQty": "Số lượng mẫu AQL",
+      "defectCodes": "Mã lỗi",
+      "selectDefectCode": "Chọn mã lỗi",
+      "addDefectCode": "Thêm mã lỗi",
+      "scannedSerials": "Serial đã quét",
+      "scanFirst": "Vui lòng quét serial trước.",
+      "pendingJudge": "Chờ",
+      "selectScannedSerial": "Chọn serial đã quét ở bên trái.",
+      "selectedSerial": "Serial đã chọn",
+      "noScannedSerials": "Không có serial đã quét."
     },
     "receive": {
       "title": "Nhập kho vật tư",
@@ -2237,14 +2271,39 @@
       "scanLocation": "Quét mã vạch vị trí",
       "noLocation": "Kho đã chọn chưa có vị trí nào. Hãy quét mã vạch trực tiếp hoặc đăng ký vị trí trong Quản lý kho.",
       "scan": {
-        "selectLocation": "Vui lòng chọn hoặc quét vị trí lưu trữ."
+        "selectLocation": "Vui lòng chọn hoặc quét vị trí lưu trữ.",
+        "notReceivable": "Không phải đối tượng chờ nhập kho: {{matUid}}",
+        "alreadyScanned": "Mã vạch nội bộ đã quét: {{matUid}}",
+        "selectWarehouse": "Vui lòng chọn kho nhập.",
+        "ownTitle": "Quét mã vạch vật tư",
+        "vendorTitle": "Quét mã vạch nhà cung cấp",
+        "ownHint": "Quét mã vạch dán nội bộ (serial vật tư) trước.",
+        "vendorHint": "Quét mã vạch nhà cung cấp để ánh xạ với vật tư {{matUid}}.",
+        "modalTitle": "Xử lý nhập kho bằng quét",
+        "ownPlaceholder": "Mã vạch dán nội bộ",
+        "vendorPlaceholder": "Mã vạch nhà cung cấp",
+        "scanRegister": "Quét đăng ký",
+        "scannedMat": "Mã vạch vật tư đã quét",
+        "mappingList": "Danh sách ánh xạ quét",
+        "countCases": "{{count}} mục",
+        "vendorBarcode": "Mã vạch nhà cung cấp",
+        "ownBarcode": "Mã vạch dán nội bộ",
+        "partNo": "Mã hàng",
+        "noMapping": "Chưa có ánh xạ mã vạch đã quét.",
+        "removeMapping": "Xóa ánh xạ quét",
+        "footerNotice": "Chỉ các ánh xạ đã quét được nhập kho, không phụ thuộc lựa chọn trên lưới chờ."
       },
       "warehouseLabel": "Kho nhập",
       "locationLabel": "Vị trí lưu trữ",
       "locationPlaceholder": "VD: A-01-01",
       "remarkPlaceholder": "Nhập ghi chú",
       "confirmReceiving": "Xác nhận nhập kho",
-      "confirmTitle": "Xác nhận nhập kho"
+      "confirmTitle": "Xác nhận nhập kho",
+      "certStatus": "Phiếu kết quả",
+      "certNotRequired": "Không cần",
+      "certAttached": "Đã đính kèm",
+      "certNotAttached": "Chưa đính kèm",
+      "scanReceive": "Nhập kho"
     },
     "receiveHistory": {
       "title": "Tra cứu lịch sử nhập kho",
@@ -3406,7 +3465,13 @@
       "workerSearchPlaceholder": "Tìm tên hoặc mã công nhân",
       "selectedWorker": "Công nhân đã chọn",
       "noWorkerSelected": "Vui lòng chọn công nhân",
-      "equipCode": "Thiết bị"
+      "equipCode": "Thiết bị",
+      "cancelSuccess": "Kết quả đã được hủy và tồn kho đã đảo bút toán.",
+      "deleteSuccess": "Kết quả đã được xóa.",
+      "editSuccess": "Kết quả đã được cập nhật.",
+      "cancelConfirm": "Hủy kết quả này? Tồn kho thành phẩm đã nhập sẽ bị đảo bút toán.",
+      "deleteConfirm": "Xóa vĩnh viễn kết quả này?",
+      "editHint": "Khi thay đổi số lượng, việc trừ vật tư và tồn kho thành phẩm sẽ tự động đồng bộ lại."
     },
     "progress": {
       "title": "Theo dõi tiến độ lệnh sản xuất",
@@ -3762,6 +3827,10 @@
         "BRIDGE": "Rẽ nhánh",
         "ONE_SIDE": "Một phía"
       }
+    },
+    "jobOrder": {
+      "orderNo": "Số lệnh sản xuất",
+      "orderQty": "Số lượng chỉ thị"
     }
   },
   "inspection": {
@@ -3887,7 +3956,22 @@
     },
     "history": {
       "scopeFull": "Toàn bộ",
-      "scopeSample": "Mẫu"
+      "scopeSample": "Mẫu",
+      "typeVisual": "Kiểm tra ngoại quan",
+      "typeTerminal": "Kiểm tra đầu cốt",
+      "typeContinuity": "Kiểm tra thông mạch",
+      "inspectType": "Loại kiểm tra",
+      "title": "Lịch sử kiểm tra",
+      "subtitle": "Tra cứu lịch sử kiểm tra ngoại quan, đầu cốt, thông mạch"
+    },
+    "structure": {
+      "selectLabel": "Chọn nhãn FG",
+      "searchLabelPlaceholder": "Tìm mã vạch FG hoặc mã hàng...",
+      "title": "Kiểm tra kết cấu",
+      "scanPlaceholder": "Quét hoặc nhập mã vạch FG",
+      "defectChecklist": "Hạng mục lỗi",
+      "defectType": "Loại lỗi",
+      "description": "DIM công đoạn điện áp thấp"
     }
   },
   "quality": {
@@ -4002,7 +4086,8 @@
       "partNoPlaceholder": "Nhập mã linh kiện",
       "equipmentNo": "Mã thiết bị",
       "remarkPlaceholder": "Nhập chi tiết lỗi",
-      "searchPlaceholder": "Tìm lệnh SX, tên lỗi..."
+      "searchPlaceholder": "Tìm lệnh SX, tên lỗi...",
+      "type": "Loại lỗi"
     },
     "defectCode": {
       "title": "Quản lý mã lỗi",
@@ -4073,7 +4158,9 @@
       "prodResult": "Kết quả sản xuất",
       "inspectStatus": "Trạng thái KT",
       "scanPlaceholder": "Quét mã vạch FG",
-      "barcodeNotFound": "Không tìm thấy mã vạch"
+      "barcodeNotFound": "Không tìm thấy mã vạch",
+      "defectCode": "Mã lỗi",
+      "inspectType": "Loại kiểm tra"
     },
     "trace": {
       "title": "Truy vết",
@@ -4225,7 +4312,8 @@
       "workDetail": "Chi tiết công việc",
       "workTimeMin": "Thời gian (phút)",
       "inspectHint": "Khi đạt (PASS), số lượng hàng tốt được phục hồi vào tồn kho sản phẩm tại kho công đoạn (WIP).",
-      "selectPartFirst": "Vui lòng chọn mặt hàng trước"
+      "selectPartFirst": "Vui lòng chọn mặt hàng trước",
+      "inspectSuccess": "Kết quả tái kiểm tra đã được đăng ký."
     },
     "change": {
       "title": "Quản lý thay đổi",
@@ -4954,7 +5042,9 @@
       "notConfirmed": "Chỉ lệnh xuất hàng đã xác nhận (CONFIRMED) mới được xuất.",
       "orderNotFound": "Không tìm thấy lệnh xuất hàng.",
       "duplicate": "Thùng đã được quét.",
-      "shipFailed": "Xử lý xuất hàng thất bại."
+      "shipFailed": "Xử lý xuất hàng thất bại.",
+      "cancelFailed": "Hủy xuất hàng thất bại.",
+      "cancelBox": "Hủy xuất hàng"
     },
     "shipOrder": {
       "title": "Đăng ký lệnh xuất hàng",
@@ -4995,7 +5085,12 @@
       "excelDownload": "Tải Excel",
       "statConfirmedWait": "Chờ xác nhận",
       "statTotalQty": "Tổng SL xuất",
-      "searchPlaceholder": "Tìm mã lệnh, khách hàng..."
+      "searchPlaceholder": "Tìm mã lệnh, khách hàng...",
+      "palletDetail": "Chi tiết pallet",
+      "selectRowForPallet": "Chọn dòng bên trái",
+      "selectRowForPalletDetail": "Chọn dòng lịch sử xuất hàng bên trái để xem số pallet và cấu thành thùng.",
+      "noPalletDetail": "Không có thông tin pallet đã đăng ký.",
+      "noPalletBoxes": "Không có thùng nào liên kết với pallet."
     },
     "return": {
       "title": "Đăng ký trả hàng",
@@ -5105,7 +5200,12 @@
       "deleteBoxError": "Xóa hộp rỗng thất bại.",
       "deleteEmptyBox": "Xóa hộp rỗng",
       "deleteEmptyBoxConfirm": "Xóa hộp này? Chỉ xóa hộp OPEN chưa đựng sản phẩm.",
-      "justAdded": "Vừa thêm"
+      "justAdded": "Vừa thêm",
+      "defaultLabel": "Nhãn mặc định",
+      "boxDetail": "Cấu thành thùng",
+      "selectBox": "Chọn thùng",
+      "palletNo": "Pallet",
+      "selectBoxHint": "Chọn thùng để xem chi tiết cấu thành."
     },
     "boxStock": {
       "title": "Tra cứu tồn kho sản phẩm",
@@ -5152,7 +5252,18 @@
       "noLoadableBoxes": "Không có thùng có thể xếp (đã đóng + đạt OQC + chưa phân bổ)",
       "pallet": "Pallet",
       "selectBoxHint": "Chọn thùng để xếp",
-      "assign": "Xếp"
+      "assign": "Xếp",
+      "closeAt": "Đóng",
+      "shippedAt": "Xuất hàng",
+      "defaultLabel": "Nhãn mặc định",
+      "palletLabel": "Nhãn pallet",
+      "printLabel": "In nhãn",
+      "boxList": "Thùng cấu thành",
+      "boxNotFound": "Không tìm thấy thùng có thể xếp.",
+      "boxScanError": "Tra cứu thùng thất bại.",
+      "shipOrderNo": "Số lệnh xuất hàng",
+      "barcodePlaceholder": "Quét mã vạch",
+      "scanBoxPlaceholder": "Quét số thùng"
     },
     "confirm": {
       "title": "Xác nhận xuất hàng",
@@ -5391,7 +5502,9 @@
       "scanFail": "Thất bại",
       "scanConfirmedCount": "{{count}} đã xác nhận",
       "pendingTitle": "Danh sách chờ nhập",
-      "labelPrintedAt": "Ngày in nhãn"
+      "labelPrintedAt": "Ngày in nhãn",
+      "returnScanHint": "Chế độ nhập trả lại",
+      "returnBtn": "Xác nhận trả lại"
     },
     "issuing": {
       "title": "Xuất kho vật tư tiêu hao",
@@ -6674,7 +6787,15 @@
       "iqcInProgress": "Đang kiểm tra",
       "iqcNone": "Miễn kiểm",
       "iqcFailMsg": "IQC không đạt. Không thể nhập kho",
-      "iqcInProgressMsg": "Đang kiểm tra IQC. Không thể nhập kho"
+      "iqcInProgressMsg": "Đang kiểm tra IQC. Không thể nhập kho",
+      "workerRequired": "Vui lòng quét công nhân trước",
+      "changeWorker": "Đổi công nhân",
+      "scanWorker": "Quét công nhân",
+      "cannotReceive": "Không thể nhập kho",
+      "workerNotFound": "Không tìm thấy công nhân",
+      "qtyMin": "Số lượng nhập phải lớn hơn hoặc bằng 1.",
+      "qtyOverRemaining": "Số lượng nhập ({{qty}}) vượt quá số còn lại ({{remaining}}).",
+      "warehouseRequired": "Vui lòng chọn kho nhập."
     },
     "issuing": {
       "title": "Xuất kho",
@@ -6849,7 +6970,8 @@
     "worker": {
       "switch": "Chuyển công nhân",
       "scanQr": "Quét mã QR công nhân",
-      "switched": "Đã chuyển công nhân"
+      "switched": "Đã chuyển công nhân",
+      "notFound": "Không tìm thấy công nhân"
     },
     "network": {
       "offline": "Vui lòng kiểm tra kết nối mạng",
@@ -6857,7 +6979,8 @@
     },
     "server": {
       "error": "Kết nối máy chủ thất bại. Vui lòng thử lại sau.",
-      "retry": "Thử lại"
+      "retry": "Thử lại",
+      "retrying": "Đang kiểm tra lại máy chủ"
     }
   },
   "activityLog": {
@@ -7243,7 +7366,13 @@
       "notTarget": "Không áp dụng",
       "barcodePlaceholder": "Thông tin mã vạch (vật liệu, linh kiện tiêu hao, serial lô, v.v...)",
       "menuView": "Về màn hình menu",
-      "workView": "Toàn màn hình làm việc"
+      "workView": "Toàn màn hình làm việc",
+      "selectEquipFirst": "Vui lòng chọn thiết bị trước.",
+      "dailyInspectRequired": "Vui lòng hoàn tất kiểm tra thiết bị hằng ngày trước.",
+      "selectJobOrderFirst": "Vui lòng chọn lệnh sản xuất trước.",
+      "workerRequiredForInspect": "Vui lòng thêm ít nhất một công nhân.",
+      "selectJobOrderHint": "Chọn lệnh sản xuất để xem kết quả sản xuất.",
+      "inputDisabled": "Không thể nhập."
     },
     "equip": {
       "modalTitle": "Chọn thiết bị",
@@ -7288,7 +7417,8 @@
       "noPrevPage": "Không có trang trước",
       "noNextPage": "Không có trang sau",
       "prevPage": "Trước",
-      "nextPage": "Sau"
+      "nextPage": "Sau",
+      "openExternal": "Mở trong tab mới nếu không phát được"
     },
     "routing": {
       "title": "Định tuyến",
@@ -7331,7 +7461,10 @@
       }
     },
     "jobOrder": {
-      "assignError": "Gán lệnh sản xuất thất bại"
+      "assignError": "Gán lệnh sản xuất thất bại",
+      "thisEquip": "Thiết bị hiện tại",
+      "allEquips": "Tất cả",
+      "otherEquipNote": "Lệnh sản xuất được phân cho thiết bị khác chỉ xem được, không thể chọn."
     },
     "prep": {
       "allDone": "Sẵn sàng",
@@ -7410,7 +7543,22 @@
       "validWindow": "Khoảng hợp lệ",
       "answeredProgress": "{{answered}} / {{total}} mục",
       "overallNgSummary": "{{ng}}/{{total}} mục NG",
-      "overallPassSummary": "Tất cả {{total}} mục đạt"
+      "overallPassSummary": "Tất cả {{total}} mục đạt",
+      "noDailyInspectItemsTitle": "Chưa có hạng mục kiểm tra thiết bị hằng ngày được phân cho thiết bị này.",
+      "dailyInspectAssignGuideTitle": "Quy trình chuẩn bị",
+      "dailyInspectAssignStep1": "Nếu chưa có hạng mục kiểm tra, trước tiên đăng ký hạng mục loại DAILY tại Dữ liệu chuẩn > Master hạng mục kiểm tra thiết bị (/master/equip-inspect-item).",
+      "dailyInspectAssignStep2": "Từ menu bên trái, vào Dữ liệu chuẩn > Hạng mục kiểm tra thiết bị (/master/equip-inspect).",
+      "dailyInspectAssignStep3": "Chọn thiết bị kiosk này từ danh sách thiết bị bên trái.",
+      "dailyInspectAssignStep4": "Chọn loại kiểm tra là Kiểm tra thiết bị hằng ngày (DAILY).",
+      "dailyInspectAssignStep5": "Nhấn nút Thêm hạng mục kiểm tra, chọn các hạng mục cần thiết và lưu.",
+      "dailyInspectAssignStep6": "Đóng và mở lại hộp thoại này để xem các hạng mục đã phân.",
+      "selectJobOrderFirst": "Vui lòng chọn lệnh sản xuất trước.",
+      "noWorkerInspectItemsTitle": "Chưa có hạng mục kiểm tra thiết bị của công nhân được phân cho thiết bị này.",
+      "workerInspectAssignStep1": "Từ menu bên trái, vào Dữ liệu chuẩn > Hạng mục kiểm tra thiết bị (/master/equip-inspect).",
+      "workerInspectAssignStep2": "Chọn thiết bị kiosk này từ danh sách thiết bị bên trái.",
+      "workerInspectAssignStep3": "Chọn loại kiểm tra là Kiểm tra thiết bị của công nhân (WORKER).",
+      "workerInspectAssignStep4": "Nhấn nút Thêm hạng mục kiểm tra, chọn các hạng mục cần thiết và lưu.",
+      "workerInspectAssignStep5": "Đóng và mở lại hộp thoại này để xem các hạng mục đã phân."
     },
     "workerInspect": {
       "check1": "Nguồn thiết bị và thiết bị an toàn hoạt động bình thường",

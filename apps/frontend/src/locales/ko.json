@@ -143,7 +143,16 @@
     "manager": "담당자",
     "none": "없음",
     "priority": "우선순위",
-    "searchPlaceholder": "검색..."
+    "searchPlaceholder": "검색...",
+    "manualEntry": "수동입력",
+    "manufacturer": "제조사",
+    "input": "입력",
+    "notSelected": "미지정",
+    "wait": "처리 중",
+    "selectedCount": "선택 {{count}}건",
+    "addSelectedItems": "선택 품목 추가",
+    "useY": "사용",
+    "useN": "미사용"
   },
   "help": {
     "title": "도움말",
@@ -658,7 +667,12 @@
       "adjPlus": "재고조정(+)",
       "adjMinus": "재고조정(-)",
       "scrap": "폐기",
-      "part": "품목"
+      "part": "품목",
+      "lotSplitIn": "LOT분할(입)",
+      "lotSplitOut": "LOT분할(출)",
+      "miscIn": "기타입고",
+      "matMoveOut": "불용이동(출)",
+      "matMoveIn": "불용이동(입)"
     },
     "lot": {
       "title": "LOT 관리",
@@ -1520,7 +1534,8 @@
         "imageUrl": "품목 사진 파일 경로입니다.",
         "remark": "품목 관리 참고사항입니다."
       },
-      "tactTime": "택트타임(초)"
+      "tactTime": "택트타임(초)",
+      "defectModelGroup": "모델구분"
     },
     "bom": {
       "title": "BOM관리",
@@ -2330,7 +2345,8 @@
           "palletNo": "파렛트번호"
         }
       },
-      "catPart": "품목"
+      "catPart": "품목",
+      "srcPallet": "팔레트"
     },
     "company": {
       "title": "회사관리",
@@ -2607,7 +2623,25 @@
       "defectQty": "불량수",
       "destructiveHint": "검사수량 / 불량수 — 불량 1건이면 FAIL",
       "removeSerial": "시리얼 제거",
-      "incompleteSerialJudge": "판정이 끝나지 않았습니다."
+      "incompleteSerialJudge": "판정이 끝나지 않았습니다.",
+      "serialNotFound": "검사대기 시리얼이 아닙니다: {{serial}}",
+      "serialScan": "시리얼 스캔",
+      "serialScanPlaceholder": "시리얼을 스캔하거나 입력 후 Enter",
+      "viewPending": "검사대기 시리얼 조회",
+      "pendingSerials": "검사대기",
+      "addAll": "전체 추가",
+      "noPending": "검사대기 시리얼이 없습니다.",
+      "basicSampleQty": "기본시료수",
+      "aqlSampleQty": "AQL 샘플수량",
+      "defectCodes": "불량코드",
+      "selectDefectCode": "불량코드 선택",
+      "addDefectCode": "불량코드 추가",
+      "scannedSerials": "스캔한 시리얼",
+      "scanFirst": "시리얼을 먼저 스캔하세요.",
+      "pendingJudge": "대기",
+      "selectScannedSerial": "왼쪽에서 스캔한 시리얼을 선택하세요.",
+      "selectedSerial": "선택 시리얼",
+      "noScannedSerials": "스캔한 시리얼이 없습니다."
     },
     "receive": {
       "title": "자재입고관리",
@@ -2653,8 +2687,33 @@
       "scanLocation": "로케이션 바코드 스캔",
       "noLocation": "선택한 창고에 등록된 로케이션이 없습니다. 바코드로 직접 스캔하거나 창고관리에서 로케이션을 등록하세요.",
       "scan": {
-        "selectLocation": "적재위치를 선택하거나 스캔해 주세요."
-      }
+        "selectLocation": "적재위치를 선택하거나 스캔해 주세요.",
+        "notReceivable": "입고대기 대상이 아닙니다: {{matUid}}",
+        "alreadyScanned": "이미 스캔한 자체바코드입니다: {{matUid}}",
+        "selectWarehouse": "입고 창고를 선택해 주세요.",
+        "ownTitle": "자재 바코드 스캔",
+        "vendorTitle": "거래처 바코드 스캔",
+        "ownHint": "자체부착 바코드(자재 시리얼)를 먼저 스캔하세요.",
+        "vendorHint": "자재 {{matUid}}에 매핑할 거래처 바코드를 스캔하세요.",
+        "modalTitle": "스캔 입고처리",
+        "ownPlaceholder": "자체부착 바코드",
+        "vendorPlaceholder": "거래처 바코드",
+        "scanRegister": "스캔등록",
+        "scannedMat": "스캔된 자재 바코드",
+        "mappingList": "스캔 매핑 목록",
+        "countCases": "{{count}}건",
+        "vendorBarcode": "거래처 바코드",
+        "ownBarcode": "자체부착 바코드",
+        "partNo": "품번",
+        "noMapping": "스캔된 바코드 매핑이 없습니다.",
+        "removeMapping": "스캔 매핑 삭제",
+        "footerNotice": "입고대기 그리드 선택 없이 스캔된 매핑만 입고 처리됩니다."
+      },
+      "certStatus": "성적서",
+      "certNotRequired": "불필요",
+      "certAttached": "첨부",
+      "certNotAttached": "미첨부",
+      "scanReceive": "입고처리"
     },
     "receiveHistory": {
       "title": "입고이력조회",
@@ -3816,7 +3875,13 @@
       "workerSearchPlaceholder": "작업자명 또는 코드 검색",
       "selectedWorker": "선택된 작업자",
       "noWorkerSelected": "작업자를 선택하세요",
-      "equipCode": "설비"
+      "equipCode": "설비",
+      "cancelSuccess": "실적이 취소되고 재고가 역분개되었습니다.",
+      "deleteSuccess": "실적이 삭제되었습니다.",
+      "editSuccess": "실적이 수정되었습니다.",
+      "cancelConfirm": "실적을 취소하시겠습니까? 적재된 제품재고가 역분개됩니다.",
+      "deleteConfirm": "실적을 영구 삭제하시겠습니까?",
+      "editHint": "수량 변경 시 자재 차감과 제품재고가 자동 재동기화됩니다."
     },
     "progress": {
       "title": "작업지시 진행현황",
@@ -4172,6 +4237,10 @@
         "BRIDGE": "분기",
         "ONE_SIDE": "단측"
       }
+    },
+    "jobOrder": {
+      "orderNo": "작업지시번호",
+      "orderQty": "지시수량"
     }
   },
   "inspection": {
@@ -4301,7 +4370,22 @@
     },
     "history": {
       "scopeFull": "전수",
-      "scopeSample": "샘플"
+      "scopeSample": "샘플",
+      "typeVisual": "외관검사",
+      "typeTerminal": "단자검사",
+      "typeContinuity": "통전검사",
+      "inspectType": "검사유형",
+      "title": "검사이력",
+      "subtitle": "외관검사, 단자검사, 통전검사 이력 조회"
+    },
+    "structure": {
+      "selectLabel": "FG 라벨 선택",
+      "searchLabelPlaceholder": "FG 바코드 또는 품목코드 검색...",
+      "title": "구조검사",
+      "scanPlaceholder": "FG 바코드를 스캔 또는 입력하세요",
+      "defectChecklist": "불량항목",
+      "defectType": "불량유형",
+      "description": "저전압 공정 DIM"
     }
   },
   "quality": {
@@ -4416,7 +4500,8 @@
       "target": "불량 대상",
       "info": "불량 정보",
       "grade": "불량등급",
-      "scope": "불량범위"
+      "scope": "불량범위",
+      "type": "불량유형"
     },
     "defectCode": {
       "title": "불량코드관리",
@@ -4487,7 +4572,9 @@
       "registerInspect": "검사 등록",
       "inspectResult": "검사 결과",
       "prodResult": "생산실적",
-      "inspectStatus": "검사상태"
+      "inspectStatus": "검사상태",
+      "defectCode": "불량코드",
+      "inspectType": "검사유형"
     },
     "trace": {
       "title": "추적성조회",
@@ -4639,7 +4726,8 @@
       "workDetail": "작업내역",
       "workTimeMin": "작업시간(분)",
       "inspectHint": "합격(PASS) 시 양품 수량이 공정창고(WIP) 제품재고로 복원됩니다.",
-      "selectPartFirst": "품목을 먼저 선택하세요"
+      "selectPartFirst": "품목을 먼저 선택하세요",
+      "inspectSuccess": "재검사 결과가 등록되었습니다."
     },
     "change": {
       "title": "변경점관리",
@@ -4958,7 +5046,9 @@
       "notConfirmed": "확정(CONFIRMED) 상태의 출하지시만 출하할 수 있습니다.",
       "orderNotFound": "출하지시를 찾을 수 없습니다.",
       "duplicate": "이미 스캔한 박스입니다.",
-      "shipFailed": "출하 처리에 실패했습니다."
+      "shipFailed": "출하 처리에 실패했습니다.",
+      "cancelFailed": "출하 취소에 실패했습니다.",
+      "cancelBox": "출하 취소"
     },
     "shipOrder": {
       "title": "출하지시등록",
@@ -4999,7 +5089,12 @@
       "excelDownload": "엑셀 다운로드",
       "statConfirmedWait": "확정 대기",
       "statTotalQty": "총 출하수량",
-      "searchPlaceholder": "출하지시번호, 고객사 검색..."
+      "searchPlaceholder": "출하지시번호, 고객사 검색...",
+      "palletDetail": "팔레트 상세",
+      "selectRowForPallet": "좌측 행을 선택하세요",
+      "selectRowForPalletDetail": "좌측 출하이력 행을 선택하면 팔레트번호와 박스 구성이 표시됩니다.",
+      "noPalletDetail": "등록된 팔레트 정보가 없습니다.",
+      "noPalletBoxes": "팔레트에 연결된 박스가 없습니다."
     },
     "return": {
       "title": "출하반품등록",
@@ -5109,7 +5204,12 @@
       "deleteBoxError": "빈 박스 삭제에 실패했습니다.",
       "deleteEmptyBox": "빈 박스 삭제",
       "deleteEmptyBoxConfirm": "박스를 삭제하시겠습니까? 제품이 담기지 않은 OPEN 박스만 삭제됩니다.",
-      "justAdded": "방금 추가"
+      "justAdded": "방금 추가",
+      "defaultLabel": "기본 라벨",
+      "boxDetail": "박스 구성",
+      "selectBox": "박스를 선택하세요",
+      "palletNo": "팔레트",
+      "selectBoxHint": "박스를 선택하면 구성 내역을 확인할 수 있습니다."
     },
     "boxStock": {
       "title": "제품재고조회",
@@ -5156,7 +5256,18 @@
       "noLoadableBoxes": "적재 가능한 박스가 없습니다 (마감 + OQC 합격 + 미할당)",
       "pallet": "팔레트",
       "selectBoxHint": "적재할 박스를 선택하세요",
-      "assign": "적재"
+      "assign": "적재",
+      "closeAt": "마감",
+      "shippedAt": "출하",
+      "defaultLabel": "기본 라벨",
+      "palletLabel": "팔레트 라벨",
+      "printLabel": "라벨 출력",
+      "boxList": "구성 박스",
+      "boxNotFound": "적재 가능한 박스를 찾을 수 없습니다.",
+      "boxScanError": "박스 조회에 실패했습니다.",
+      "shipOrderNo": "출하지시번호",
+      "barcodePlaceholder": "바코드 스캔",
+      "scanBoxPlaceholder": "박스번호 스캔"
     },
     "confirm": {
       "title": "출하작업",
@@ -5395,7 +5506,9 @@
       "scanFail": "입고실패",
       "scanConfirmedCount": "{{count}}건 입고확정",
       "pendingTitle": "미입고 대기목록",
-      "labelPrintedAt": "라벨인쇄일"
+      "labelPrintedAt": "라벨인쇄일",
+      "returnScanHint": "반납입고 모드",
+      "returnBtn": "반납확정"
     },
     "issuing": {
       "title": "소모품출고",
@@ -6678,7 +6791,15 @@
       "iqcInProgress": "검사중",
       "iqcNone": "무검사",
       "iqcFailMsg": "IQC 미합격 자재입니다. 입고 불가",
-      "iqcInProgressMsg": "IQC 검사 진행 중입니다. 입고 불가"
+      "iqcInProgressMsg": "IQC 검사 진행 중입니다. 입고 불가",
+      "workerRequired": "작업자를 먼저 스캔해 주세요",
+      "changeWorker": "작업자 변경",
+      "scanWorker": "작업자 스캔",
+      "cannotReceive": "입고할 수 없습니다",
+      "workerNotFound": "작업자를 찾을 수 없습니다",
+      "qtyMin": "입고수량은 1 이상이어야 합니다.",
+      "qtyOverRemaining": "입고수량({{qty}})이 잔량({{remaining}})을 초과합니다.",
+      "warehouseRequired": "입고 창고를 선택해 주세요."
     },
     "issuing": {
       "title": "자재출고",
@@ -6853,7 +6974,8 @@
     "worker": {
       "switch": "작업자 전환",
       "scanQr": "작업자 QR을 스캔하세요",
-      "switched": "작업자가 전환되었습니다"
+      "switched": "작업자가 전환되었습니다",
+      "notFound": "작업자를 찾을 수 없습니다"
     },
     "network": {
       "offline": "네트워크 연결을 확인하세요",
@@ -6861,7 +6983,8 @@
     },
     "server": {
       "error": "서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.",
-      "retry": "다시 시도"
+      "retry": "다시 시도",
+      "retrying": "서버 재확인 중"
     }
   },
   "activityLog": {
@@ -7247,7 +7370,13 @@
       "notTarget": "대상 아님",
       "barcodePlaceholder": "바코드 정보 (자재, 소모성 설비부품, 묶음 시리얼 등...)",
       "menuView": "메뉴 화면으로",
-      "workView": "작업 전체화면"
+      "workView": "작업 전체화면",
+      "selectEquipFirst": "설비를 먼저 선택하세요.",
+      "dailyInspectRequired": "설비일일점검을 먼저 완료하세요.",
+      "selectJobOrderFirst": "작업지시를 먼저 선택하세요.",
+      "workerRequiredForInspect": "작업자를 1명 이상 추가하세요.",
+      "selectJobOrderHint": "작업지시를 선택하면 생산실적이 표시됩니다.",
+      "inputDisabled": "입력할 수 없습니다."
     },
     "equip": {
       "modalTitle": "설비 선택",
@@ -7292,7 +7421,8 @@
       "noPrevPage": "이전 페이지가 없습니다",
       "noNextPage": "다음 페이지가 없습니다",
       "prevPage": "이전",
-      "nextPage": "다음"
+      "nextPage": "다음",
+      "openExternal": "재생이 안 되면 새 탭에서 열기"
     },
     "routing": {
       "title": "라우팅",
@@ -7335,7 +7465,10 @@
       }
     },
     "jobOrder": {
-      "assignError": "작업지시 할당에 실패했습니다"
+      "assignError": "작업지시 할당에 실패했습니다",
+      "thisEquip": "현재 설비",
+      "allEquips": "전체",
+      "otherEquipNote": "다른 설비에 배당된 작업지시는 조회만 가능하며 선택할 수 없습니다."
     },
     "prep": {
       "allDone": "준비완료",
@@ -7414,7 +7547,22 @@
       "validWindow": "유효구간",
       "answeredProgress": "{{answered}} / {{total}} 항목",
       "overallNgSummary": "{{total}}개 항목 중 {{ng}}건 NG",
-      "overallPassSummary": "전 {{total}}개 항목 합격"
+      "overallPassSummary": "전 {{total}}개 항목 합격",
+      "noDailyInspectItemsTitle": "설비별로 배정된 설비일일점검 항목이 없습니다.",
+      "dailyInspectAssignGuideTitle": "사전 처리 절차",
+      "dailyInspectAssignStep1": "점검항목 자체가 없으면 기준정보 > 설비점검항목마스터(/master/equip-inspect-item)에서 점검유형 DAILY 항목을 먼저 등록합니다.",
+      "dailyInspectAssignStep2": "좌측 메뉴에서 기준정보 > 설비점검항목(/master/equip-inspect) 화면으로 이동합니다.",
+      "dailyInspectAssignStep3": "왼쪽 설비 목록에서 이 키오스크 설비를 선택합니다.",
+      "dailyInspectAssignStep4": "점검유형을 설비일일점검 또는 일상점검(DAILY)으로 선택합니다.",
+      "dailyInspectAssignStep5": "점검항목 추가 버튼을 눌러 필요한 항목을 선택하고 저장합니다.",
+      "dailyInspectAssignStep6": "이 모달을 닫았다가 다시 열면 배정된 항목이 표시됩니다.",
+      "selectJobOrderFirst": "작업지시를 먼저 선택하세요.",
+      "noWorkerInspectItemsTitle": "설비별로 배정된 작업자설비점검 항목이 없습니다.",
+      "workerInspectAssignStep1": "좌측 메뉴에서 기준정보 > 설비점검항목(/master/equip-inspect) 화면으로 이동합니다.",
+      "workerInspectAssignStep2": "왼쪽 설비 목록에서 이 키오스크 설비를 선택합니다.",
+      "workerInspectAssignStep3": "점검유형을 작업자점검 또는 작업자설비점검(WORKER)으로 선택합니다.",
+      "workerInspectAssignStep4": "점검항목 추가 버튼을 눌러 필요한 항목을 선택하고 저장합니다.",
+      "workerInspectAssignStep5": "이 모달을 닫았다가 다시 열면 배정된 항목이 표시됩니다."
     },
     "workerInspect": {
       "check1": "설비 전원 및 안전장치 정상 여부",

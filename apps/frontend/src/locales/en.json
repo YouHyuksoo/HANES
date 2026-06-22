@@ -143,7 +143,16 @@
     "manager": "Manager",
     "none": "None",
     "priority": "Priority",
-    "searchPlaceholder": "Search..."
+    "searchPlaceholder": "Search...",
+    "manualEntry": "Manual Entry",
+    "manufacturer": "Manufacturer",
+    "input": "Input",
+    "notSelected": "Not Set",
+    "wait": "Processing",
+    "selectedCount": "{{count}} selected",
+    "addSelectedItems": "Add Selected Items",
+    "useY": "Use",
+    "useN": "Not Used"
   },
   "help": {
     "title": "Help",
@@ -658,7 +667,12 @@
       "adjPlus": "Adjustment (+)",
       "adjMinus": "Adjustment (-)",
       "scrap": "Scrap",
-      "part": "Part"
+      "part": "Part",
+      "lotSplitIn": "LOT Split (In)",
+      "lotSplitOut": "LOT Split (Out)",
+      "miscIn": "Misc. Receipt",
+      "matMoveOut": "Reject Move (Out)",
+      "matMoveIn": "Reject Move (In)"
     },
     "lot": {
       "title": "LOT Management",
@@ -1110,7 +1124,8 @@
         "storageLocation": "Default storage location fixed per item.",
         "imageUrl": "File path of the item image.",
         "remark": "Notes for item management."
-      }
+      },
+      "defectModelGroup": "Model Group"
     },
     "bom": {
       "title": "BOM Management",
@@ -1920,7 +1935,8 @@
           "boxQty": "Qty per Box",
           "palletNo": "Pallet No."
         }
-      }
+      },
+      "srcPallet": "Pallet"
     },
     "company": {
       "title": "Company Master",
@@ -2197,7 +2213,25 @@
       "defectQty": "Defects",
       "destructiveHint": "Inspected Qty / Defects — 1 defect means FAIL",
       "removeSerial": "Remove serial",
-      "incompleteSerialJudge": "Judgment is not complete."
+      "incompleteSerialJudge": "Judgment is not complete.",
+      "serialNotFound": "Not a pending-inspection serial: {{serial}}",
+      "serialScan": "Scan Serial",
+      "serialScanPlaceholder": "Scan a serial or enter it and press Enter",
+      "viewPending": "View Pending Serials",
+      "pendingSerials": "Pending",
+      "addAll": "Add All",
+      "noPending": "No pending-inspection serials.",
+      "basicSampleQty": "Base Sample Qty",
+      "aqlSampleQty": "AQL Sample Qty",
+      "defectCodes": "Defect Codes",
+      "selectDefectCode": "Select Defect Code",
+      "addDefectCode": "Add Defect Code",
+      "scannedSerials": "Scanned Serials",
+      "scanFirst": "Please scan a serial first.",
+      "pendingJudge": "Pending",
+      "selectScannedSerial": "Select a scanned serial on the left.",
+      "selectedSerial": "Selected Serial",
+      "noScannedSerials": "No scanned serials."
     },
     "receive": {
       "title": "Material Receiving",
@@ -2237,14 +2271,39 @@
       "scanLocation": "Scan location barcode",
       "noLocation": "No locations are registered for the selected warehouse. Scan a barcode directly or register locations in Warehouse Management.",
       "scan": {
-        "selectLocation": "Please select or scan a storage location."
+        "selectLocation": "Please select or scan a storage location.",
+        "notReceivable": "Not a pending-receipt item: {{matUid}}",
+        "alreadyScanned": "Own barcode already scanned: {{matUid}}",
+        "selectWarehouse": "Please select a receiving warehouse.",
+        "ownTitle": "Scan Material Barcode",
+        "vendorTitle": "Scan Vendor Barcode",
+        "ownHint": "Scan the own-attached barcode (material serial) first.",
+        "vendorHint": "Scan the vendor barcode to map to material {{matUid}}.",
+        "modalTitle": "Scan Receipt",
+        "ownPlaceholder": "Own-attached barcode",
+        "vendorPlaceholder": "Vendor barcode",
+        "scanRegister": "Scan & Register",
+        "scannedMat": "Scanned material barcode",
+        "mappingList": "Scan Mapping List",
+        "countCases": "{{count}} case(s)",
+        "vendorBarcode": "Vendor Barcode",
+        "ownBarcode": "Own-attached Barcode",
+        "partNo": "Part No.",
+        "noMapping": "No scanned barcode mappings.",
+        "removeMapping": "Remove scan mapping",
+        "footerNotice": "Only scanned mappings are received, regardless of the pending grid selection."
       },
       "warehouseLabel": "Warehouse",
       "locationLabel": "Storage Location",
       "locationPlaceholder": "e.g. A-01-01",
       "remarkPlaceholder": "Enter remark",
       "confirmReceiving": "Confirm Receiving",
-      "confirmTitle": "Confirm Receiving"
+      "confirmTitle": "Confirm Receiving",
+      "certStatus": "Test Report",
+      "certNotRequired": "Not Required",
+      "certAttached": "Attached",
+      "certNotAttached": "Not Attached",
+      "scanReceive": "Receive"
     },
     "receiveHistory": {
       "title": "Receiving History",
@@ -3406,7 +3465,13 @@
       "workerSearchPlaceholder": "Search worker name or code",
       "selectedWorker": "Selected Worker",
       "noWorkerSelected": "Please select a worker",
-      "equipCode": "Equipment"
+      "equipCode": "Equipment",
+      "cancelSuccess": "The result was canceled and inventory was reversed.",
+      "deleteSuccess": "The result was deleted.",
+      "editSuccess": "The result was updated.",
+      "cancelConfirm": "Cancel this result? The loaded product inventory will be reversed.",
+      "deleteConfirm": "Permanently delete this result?",
+      "editHint": "Changing the quantity automatically re-syncs material deduction and product inventory."
     },
     "progress": {
       "title": "Work Order Progress",
@@ -3762,6 +3827,10 @@
         "BRIDGE": "Bridge",
         "ONE_SIDE": "One-Side"
       }
+    },
+    "jobOrder": {
+      "orderNo": "Work Order No.",
+      "orderQty": "Order Qty"
     }
   },
   "inspection": {
@@ -3887,7 +3956,22 @@
     },
     "history": {
       "scopeFull": "Full",
-      "scopeSample": "Sample"
+      "scopeSample": "Sample",
+      "typeVisual": "Visual Inspection",
+      "typeTerminal": "Terminal Inspection",
+      "typeContinuity": "Continuity Inspection",
+      "inspectType": "Inspection Type",
+      "title": "Inspection History",
+      "subtitle": "View visual, terminal, and continuity inspection history"
+    },
+    "structure": {
+      "selectLabel": "Select FG Label",
+      "searchLabelPlaceholder": "Search FG barcode or item code...",
+      "title": "Structure Inspection",
+      "scanPlaceholder": "Scan or enter FG barcode",
+      "defectChecklist": "Defect Items",
+      "defectType": "Defect Type",
+      "description": "Low-voltage process DIM"
     }
   },
   "quality": {
@@ -4002,7 +4086,8 @@
       "partNoPlaceholder": "Enter part no",
       "equipmentNo": "Equipment No.",
       "remarkPlaceholder": "Enter defect details",
-      "searchPlaceholder": "Search work order, defect name..."
+      "searchPlaceholder": "Search work order, defect name...",
+      "type": "Defect Type"
     },
     "defectCode": {
       "title": "Defect Code Management",
@@ -4073,7 +4158,9 @@
       "prodResult": "Production Result",
       "inspectStatus": "Inspect Status",
       "scanPlaceholder": "Scan the FG barcode",
-      "barcodeNotFound": "Barcode not found"
+      "barcodeNotFound": "Barcode not found",
+      "defectCode": "Defect Code",
+      "inspectType": "Inspection Type"
     },
     "trace": {
       "title": "Traceability",
@@ -4225,7 +4312,8 @@
       "workDetail": "Work Detail",
       "workTimeMin": "Work Time (min)",
       "inspectHint": "On PASS, good quantity is restored to WIP warehouse product stock.",
-      "selectPartFirst": "Please select an item first"
+      "selectPartFirst": "Please select an item first",
+      "inspectSuccess": "The re-inspection result was registered."
     },
     "change": {
       "title": "Change Control",
@@ -4954,7 +5042,9 @@
       "notConfirmed": "Only CONFIRMED ship orders can be shipped.",
       "orderNotFound": "Ship order not found.",
       "duplicate": "Box already scanned.",
-      "shipFailed": "Failed to ship the box."
+      "shipFailed": "Failed to ship the box.",
+      "cancelFailed": "Failed to cancel the shipment.",
+      "cancelBox": "Cancel Shipment"
     },
     "shipOrder": {
       "title": "Shipment Order",
@@ -4995,7 +5085,12 @@
       "excelDownload": "Excel Download",
       "statConfirmedWait": "Awaiting Confirmation",
       "statTotalQty": "Total Ship Qty",
-      "searchPlaceholder": "Search order no, customer..."
+      "searchPlaceholder": "Search order no, customer...",
+      "palletDetail": "Pallet Detail",
+      "selectRowForPallet": "Select a row on the left",
+      "selectRowForPalletDetail": "Select a shipment history row on the left to view the pallet number and box composition.",
+      "noPalletDetail": "No registered pallet information.",
+      "noPalletBoxes": "No boxes linked to the pallet."
     },
     "return": {
       "title": "Shipment Return",
@@ -5105,7 +5200,12 @@
       "deleteBoxError": "Failed to delete empty box.",
       "deleteEmptyBox": "Delete Empty Box",
       "deleteEmptyBoxConfirm": "Delete the box? Only OPEN boxes with no products will be deleted.",
-      "justAdded": "Just Added"
+      "justAdded": "Just Added",
+      "defaultLabel": "Default Label",
+      "boxDetail": "Box Composition",
+      "selectBox": "Select a box",
+      "palletNo": "Pallet",
+      "selectBoxHint": "Select a box to view its composition."
     },
     "boxStock": {
       "title": "Product Stock",
@@ -5152,7 +5252,18 @@
       "noLoadableBoxes": "No loadable boxes (closed + OQC passed + unassigned)",
       "pallet": "Pallet",
       "selectBoxHint": "Select boxes to load",
-      "assign": "Assign"
+      "assign": "Assign",
+      "closeAt": "Closed",
+      "shippedAt": "Shipped",
+      "defaultLabel": "Default Label",
+      "palletLabel": "Pallet Label",
+      "printLabel": "Print Label",
+      "boxList": "Boxes",
+      "boxNotFound": "No loadable box found.",
+      "boxScanError": "Failed to look up the box.",
+      "shipOrderNo": "Shipping Order No.",
+      "barcodePlaceholder": "Scan barcode",
+      "scanBoxPlaceholder": "Scan box number"
     },
     "confirm": {
       "title": "Shipping Work",
@@ -5391,7 +5502,9 @@
       "scanFail": "Failed",
       "scanConfirmedCount": "{{count}} confirmed",
       "pendingTitle": "Pending List",
-      "labelPrintedAt": "Label Printed"
+      "labelPrintedAt": "Label Printed",
+      "returnScanHint": "Return-receipt mode",
+      "returnBtn": "Confirm Return"
     },
     "issuing": {
       "title": "Consumable Issuing",
@@ -6674,7 +6787,15 @@
       "iqcInProgress": "In Progress",
       "iqcNone": "No Inspection",
       "iqcFailMsg": "IQC failed. Cannot receive",
-      "iqcInProgressMsg": "IQC inspection in progress. Cannot receive"
+      "iqcInProgressMsg": "IQC inspection in progress. Cannot receive",
+      "workerRequired": "Please scan a worker first",
+      "changeWorker": "Change Worker",
+      "scanWorker": "Scan Worker",
+      "cannotReceive": "Cannot receive",
+      "workerNotFound": "Worker not found",
+      "qtyMin": "The receipt quantity must be at least 1.",
+      "qtyOverRemaining": "The receipt quantity ({{qty}}) exceeds the remaining ({{remaining}}).",
+      "warehouseRequired": "Please select a receiving warehouse."
     },
     "issuing": {
       "title": "Issuing",
@@ -6849,7 +6970,8 @@
     "worker": {
       "switch": "Switch Worker",
       "scanQr": "Scan worker QR code",
-      "switched": "Worker switched"
+      "switched": "Worker switched",
+      "notFound": "Worker not found"
     },
     "network": {
       "offline": "Please check your network connection",
@@ -6857,7 +6979,8 @@
     },
     "server": {
       "error": "Server connection failed. Please try again later.",
-      "retry": "Retry"
+      "retry": "Retry",
+      "retrying": "Rechecking server"
     }
   },
   "activityLog": {
@@ -7243,7 +7366,13 @@
       "notTarget": "Not applicable",
       "barcodePlaceholder": "Barcode (material, consumable part, batch serial, etc.)",
       "menuView": "To menu view",
-      "workView": "Fullscreen work view"
+      "workView": "Fullscreen work view",
+      "selectEquipFirst": "Please select equipment first.",
+      "dailyInspectRequired": "Please complete the daily equipment inspection first.",
+      "selectJobOrderFirst": "Please select a work order first.",
+      "workerRequiredForInspect": "Please add at least one worker.",
+      "selectJobOrderHint": "Select a work order to view production results.",
+      "inputDisabled": "Input is disabled."
     },
     "equip": {
       "modalTitle": "Select Equipment",
@@ -7288,7 +7417,8 @@
       "noPrevPage": "No previous page",
       "noNextPage": "No next page",
       "prevPage": "Previous",
-      "nextPage": "Next"
+      "nextPage": "Next",
+      "openExternal": "Open in a new tab if it doesn't play"
     },
     "routing": {
       "title": "Routing",
@@ -7331,7 +7461,10 @@
       }
     },
     "jobOrder": {
-      "assignError": "Failed to assign job order"
+      "assignError": "Failed to assign job order",
+      "thisEquip": "This Equipment",
+      "allEquips": "All",
+      "otherEquipNote": "Work orders assigned to other equipment are view-only and cannot be selected."
     },
     "prep": {
       "allDone": "Ready",
@@ -7410,7 +7543,22 @@
       "validWindow": "Valid window",
       "answeredProgress": "{{answered}} / {{total}} items",
       "overallNgSummary": "{{ng}} of {{total}} items NG",
-      "overallPassSummary": "All {{total}} items passed"
+      "overallPassSummary": "All {{total}} items passed",
+      "noDailyInspectItemsTitle": "No daily equipment inspection items assigned for this equipment.",
+      "dailyInspectAssignGuideTitle": "Preparation Procedure",
+      "dailyInspectAssignStep1": "If no inspection items exist, first register DAILY-type items in Master Data > Equipment Inspection Item Master (/master/equip-inspect-item).",
+      "dailyInspectAssignStep2": "From the left menu, go to Master Data > Equipment Inspection Items (/master/equip-inspect).",
+      "dailyInspectAssignStep3": "Select this kiosk equipment from the equipment list on the left.",
+      "dailyInspectAssignStep4": "Set the inspection type to Daily Equipment Inspection (DAILY).",
+      "dailyInspectAssignStep5": "Click Add Inspection Item, select the needed items, and save.",
+      "dailyInspectAssignStep6": "Close and reopen this dialog to see the assigned items.",
+      "selectJobOrderFirst": "Please select a work order first.",
+      "noWorkerInspectItemsTitle": "No worker equipment inspection items assigned for this equipment.",
+      "workerInspectAssignStep1": "From the left menu, go to Master Data > Equipment Inspection Items (/master/equip-inspect).",
+      "workerInspectAssignStep2": "Select this kiosk equipment from the equipment list on the left.",
+      "workerInspectAssignStep3": "Set the inspection type to Worker Equipment Inspection (WORKER).",
+      "workerInspectAssignStep4": "Click Add Inspection Item, select the needed items, and save.",
+      "workerInspectAssignStep5": "Close and reopen this dialog to see the assigned items."
     },
     "workerInspect": {
       "check1": "Equipment power and safety devices normal",
