@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import { resolveBackendFileUrl } from "@/utils/file-url";
+import QtyInput from "@/components/shared/QtyInput";
 
 /** 라벨 발행 가능 마스터 항목 (API 응답) */
 export interface LabelableMaster {
@@ -180,11 +181,10 @@ export function useConLabelColumns({
         cell: ({ row }) => {
           const code = row.original.consumableCode;
           return (
-            <input
-              type="number"
-              min={1} max={99}
+            <QtyInput
               value={qtyMap.get(code) ?? 1}
-              onChange={(e) => setQty(code, Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
+              onChange={(n) => setQty(code, Math.max(1, Math.min(99, n || 1)))}
+              maxValue={99}
               className="w-16 px-2 py-1 text-center text-sm border border-border rounded bg-surface text-text"
               onClick={(e) => e.stopPropagation()}
             />
