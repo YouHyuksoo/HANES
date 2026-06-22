@@ -45,20 +45,20 @@
 
 - **헤더**: 타이틀 "박스별출하" + 설명, 우측에 새로고침 / "박스출하 스캔" 버튼(지시 선택 + 출하가능 박스 1개 이상일 때 활성).
 - **좌측 — 출하지시 목록**: `pallet-ship`의 카드 리스트 재사용. 항목당 지시번호 / 고객사 / 납기 / 잔여수량 표시. 클릭 시 선택 + fulfillment 로드.
-- **중앙 — 출하가능 박스**: `DataGrid`. 상단에 라인 진행 요약(품목별 지시/기출하/잔여). 컬럼: 출하가능 아이콘 / 박스번호(mono) / 품목 / 수량 / OQC상태 배지. 행 클릭 → 우측 상세 표시 + 스캔목록 추가(토글). 데이터 = `candidateBoxes`.
+- **중앙 — 출하가능 박스**: `DataGrid`(정보 표시 전용). 상단에 라인 진행 요약(품목별 지시/기출하/잔여). 컬럼: 박스번호(mono) / 품목 / 수량 / OQC상태. 행 클릭 → 우측 박스 시리얼 상세. **출하 자체는 전적으로 스캔 모달에서 수행**(이중 출하 경로 방지). 데이터 = `candidateBoxes`.
 - **우측 — 박스 상세**: 선택 박스의 시리얼 목록(`box-stock/{boxNo}/serials`). 미선택 시 안내 placeholder.
 
-### 5.2 출하 스캔 모달 (다건)
-- `pallet-ship`의 스캔 모달 패턴 미러링.
-- 입력: 박스 바코드 스캔/엔터 → `candidateBoxes` 대조 가드(미존재 / 중복 / 잔여수량 초과 안내) → 스캔목록 누적.
-- 중앙 그리드 행 클릭으로도 스캔목록에 추가 가능(스캐너 없는 환경 대비).
-- "출하확정 (N개)" → 박스별 `ship-box` 순차 호출.
-  - 각 박스는 독립 트랜잭션. 부분 실패 허용.
-  - 완료 후 `성공 M / 실패 K`(실패 박스번호·사유) 요약 표시, fulfillment·지시목록 갱신.
+### 5.2 출하 스캔 모달 — 기존 `BoxScanShipModal` 재사용 (중요)
+- `apps/frontend/src/components/shipping/BoxScanShipModal.tsx`가 **이미** 박스 스캔 출하 전 기능을 구현하고 있고 어떤 페이지에도 연결되지 않은 고아 컴포넌트다(구조 테스트만 존재). 새 모달을 만들지 않고 이를 재사용한다.
+  - props: `{ isOpen, onClose, onShipped?, initialShipOrderNo? }`.
+  - 동작: 박스 바코드 스캔/엔터 → `ship-box` 호출(서버가 CONFIRMED/CLOSED/OQC/팔레트미적재/수량초과 검증) → 성공 행 누적, 라인 진행률(`shippedQty/orderQty`) 실시간 갱신, 중복 스캔 가드, `workerId=로그인 사용자`.
+  - **출하취소 내장**: 누적 행마다 취소 버튼 → `cancel-ship-box`(같은 세션에서 스캔한 박스 대상).
+  - `onShipped` 콜백으로 부모(목록/fulfillment) 갱신.
+- 페이지는 "박스출하 스캔" 버튼으로 `initialShipOrderNo={선택지시}`와 함께 이 모달을 연다. 모달이 출하지시번호를 자동 로드하므로 페이지에서 별도 스캔 로직 불필요.
 
-### 5.3 출하취소 모달 (스캔 기반)
-- "출하취소" 진입 → 박스번호 입력/스캔 → `cancel-ship-box` 호출(서버가 SHIPPED 검증·재고 복원).
-- 성공 시 토스트/요약 후 fulfillment·지시목록 갱신.
+### 5.3 출하취소
+- 별도 취소 모달을 만들지 않는다. `BoxScanShipModal` 내 행별 취소 버튼이 같은 세션 출하 박스의 취소(`cancel-ship-box`)를 담당한다.
+- 세션을 벗어난(과거 출하된) 박스의 취소는 본 범위에서 다루지 않는다(§4-2 제약, §9 별도 과제).
 
 ### 5.4 상태/배지
 - `@/components/shipping`의 `BoxStatusBadge` 재사용(OPEN/CLOSED/SHIPPED). OQC 상태는 텍스트/배지로 표시(파스텔 배경 금지 — 텍스트·테두리 구분).
@@ -81,8 +81,9 @@ interface BoxSerial { seq; fgBarcode; itemCode; status; inspectPassYn; issuedAt;
 
 ## 8. i18n (ko/en/zh/vi 4파일 동시)
 
-- 메뉴 라벨 `menu.shipping.confirm`: "출하작업" → "박스별출하"(en: "Box Shipping", zh: "按箱出货", vi: "Xuất hàng theo thùng" — 구현 시 확정).
-- `shipping.confirm.*` 키 재정의/추가: 타이틀·설명·박스출하 스캔·출하확정·출하취소·가드 메시지 등. 제거되는 팔레트/Shipment 전용 키는 잔존해도 무방하나 신규 키는 4파일 동기화. 추가 검증은 `scripts/find_missing_i18n.js`.
+- 메뉴 라벨(평면키 `shipping.confirm`, ko.json L385 인근): "출하작업" → "박스별출하"(en: "Box Shipping", zh: "按箱出货", vi: "Xuất hàng theo thùng").
+- 페이지 키(중첩 `shipping.confirm.*`): 타이틀/설명을 박스출하용으로 갱신, "박스출하 스캔" 등 신규 키 추가(4파일 동기화).
+- 모달 키(`shipping.boxScan.*`): `BoxScanShipModal`은 `t(key, fallback)` 형태라 키가 없어도 동작하나, i18n 정책상 4파일에 정식 등재. 추가 검증은 `scripts/find_missing_i18n.js`.
 
 ## 9. 범위 밖 (별도 보고)
 
