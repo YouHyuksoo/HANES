@@ -16,7 +16,8 @@ import {
   Zap, RefreshCw, Search, CheckCircle, XCircle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, DateRangeFilter } from "@/components/shared";
+import { getTodayLocal } from "@/utils/date";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -34,13 +35,6 @@ interface InspectHistoryRow {
   inspectorId: string | null;
 }
 
-function formatLocalDate(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 export default function InspectionHistoryPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<InspectHistoryRow[]>([]);
@@ -50,8 +44,8 @@ export default function InspectionHistoryPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState(() => formatLocalDate());
-  const [dateTo, setDateTo] = useState(() => formatLocalDate());
+  const [dateFrom, setDateFrom] = useState(() => getTodayLocal());
+  const [dateTo, setDateTo] = useState(() => getTodayLocal());
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
@@ -193,11 +187,12 @@ export default function InspectionHistoryPage() {
                     value={searchText} onChange={(e) => setSearchText(e.target.value)}
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
-                <div className="flex items-center gap-1">
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
-                  <span className="text-text-muted">~</span>
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
-                </div>
+                <DateRangeFilter
+                  from={dateFrom}
+                  to={dateTo}
+                  onFromChange={setDateFrom}
+                  onToChange={setDateTo}
+                />
                 <div className="w-44">
                   <ComCodeSelect groupCode="INSPECT_TYPE" labelPrefix={t("inspection.history.inspectType", "검사유형")}
                     value={typeFilter} onChange={setTypeFilter} fullWidth />

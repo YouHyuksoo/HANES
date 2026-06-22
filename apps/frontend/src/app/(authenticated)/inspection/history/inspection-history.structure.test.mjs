@@ -21,10 +21,13 @@ test('inspection history exposes inspection type as filter and grid column', () 
   assert.match(pageSource, /통전검사/);
 });
 
-test('inspection history defaults date range filters to today', () => {
-  assert.match(pageSource, /function\s+formatLocalDate/);
-  assert.match(pageSource, /const\s+\[dateFrom,\s*setDateFrom\]\s*=\s*useState\(\(\)\s*=>\s*formatLocalDate\(\)\)/);
-  assert.match(pageSource, /const\s+\[dateTo,\s*setDateTo\]\s*=\s*useState\(\(\)\s*=>\s*formatLocalDate\(\)\)/);
+test('inspection history uses shared DateRangeFilter defaulting to today', () => {
+  assert.match(pageSource, /import \{ getTodayLocal \} from "@\/utils\/date"/);
+  assert.match(pageSource, /DateRangeFilter/);
+  assert.match(pageSource, /const\s+\[dateFrom,\s*setDateFrom\]\s*=\s*useState\(\(\)\s*=>\s*getTodayLocal\(\)\)/);
+  assert.match(pageSource, /const\s+\[dateTo,\s*setDateTo\]\s*=\s*useState\(\(\)\s*=>\s*getTodayLocal\(\)\)/);
+  // 로컬 중복 함수 제거됨
+  assert.doesNotMatch(pageSource, /function\s+formatLocalDate/);
 });
 
 test('inspection history menu label is generic inspection history', () => {
