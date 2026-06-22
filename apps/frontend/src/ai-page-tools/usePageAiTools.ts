@@ -5,9 +5,12 @@ import api from "@/services/api";
 import { FrontendToolExecutor } from "./types";
 import { usePageToolStore } from "./pageToolStore";
 
+/** 안정적 기본값 — 인자 미전달 시 매 렌더 새 객체가 생겨 useEffect 무한루프 나는 것 방지 */
+const EMPTY_EXECUTORS: Record<string, FrontendToolExecutor> = {};
+
 export function usePageAiTools(
   pageId: string,
-  frontendExecutors: Record<string, FrontendToolExecutor> = {},
+  frontendExecutors: Record<string, FrontendToolExecutor> = EMPTY_EXECUTORS,
 ) {
   const manifest = usePageToolStore((state) => state.manifest);
   const setActivePage = usePageToolStore((state) => state.setActivePage);

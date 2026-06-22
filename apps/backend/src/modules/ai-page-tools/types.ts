@@ -37,3 +37,11 @@ export interface AiPageToolCandidateResult<TCandidate = Record<string, unknown>>
     reason: AiPageToolConfirmationReason;
   };
 }
+
+/** write 도구 실행 결과 (등록/수정 등) */
+export interface AiPageToolWriteResult {
+  status: 'ok';
+  toolName: string;
+  summary: string;
+  result?: Record<string, unknown>;
+}

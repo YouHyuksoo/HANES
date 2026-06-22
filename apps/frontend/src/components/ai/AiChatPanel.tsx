@@ -91,6 +91,7 @@ export default function AiChatPanel() {
         sql: data.sql,
         requiresApproval: data.requiresApproval,
         executed: data.executed,
+        pageToolCall: data.pageToolCall,
       });
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -109,6 +110,25 @@ export default function AiChatPanel() {
         const res = await api.post("/ai/execute-sql", { sql });
         const data = res.data?.data ?? {};
         addMessage({ role: "assistant", content: data.content || t("ai.chat.executed", "실행이 완료되었습니다."), executed: true });
+      } catch (e: unknown) {
+        const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        addMessage({ role: "assistant", content: msg || t("ai.chat.error", "응답을 가져오지 못했습니다.") });
+      } finally {
+        setApprovedIdx((prev) => new Set(prev).add(idx));
+        setSending(false);
+      }
+    },
+    [sending, addMessage, t],
+  );
+
+  const executeTool = useCallback(
+    async (idx: number, call?: { pageId: string; toolName: string; input: Record<string, unknown> }) => {
+      if (!call || sending) return;
+      setSending(true);
+      try {
+        const res = await api.post(`/ai/page-tools/${call.pageId}/execute`, { toolName: call.toolName, input: call.input });
+        const data = res.data?.data ?? {};
+        addMessage({ role: "assistant", content: data.summary || t("ai.chat.executed", "실행이 완료되었습니다."), executed: true });
       } catch (e: unknown) {
         const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
         addMessage({ role: "assistant", content: msg || t("ai.chat.error", "응답을 가져오지 못했습니다.") });
@@ -254,6 +274,26 @@ export default function AiChatPanel() {
                       {t("ai.chat.cancel", "취소")}
                     </button>
                     <button type="button" onClick={() => approve(i, m.sql)} disabled={sending} className="flex items-center gap-1 rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50">
+                      <Play className="h-3 w-3" />
+                      {t("ai.chat.execute", "실행")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 페이지 도구 실행 승인 카드 */}
+              {m.role === "assistant" && m.pageToolCall && !approvedIdx.has(i) && (
+                <div className="mt-2 w-[92%] rounded-lg border border-amber-400 p-2.5 dark:border-amber-700">
+                  <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                    <Play className="h-3.5 w-3.5" />
+                    {t("ai.chat.toolApproveTitle", "작업 실행 승인 필요")}: {m.pageToolCall.label}
+                  </div>
+                  <pre className="mb-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-surface px-2 py-1.5 font-mono text-[11px] text-text">{JSON.stringify(m.pageToolCall.input, null, 2)}</pre>
+                  <div className="flex justify-end gap-2">
+                    <button type="button" onClick={() => setApprovedIdx((p) => new Set(p).add(i))} className="rounded px-2.5 py-1 text-xs text-text-muted hover:bg-surface">
+                      {t("ai.chat.cancel", "취소")}
+                    </button>
+                    <button type="button" onClick={() => executeTool(i, m.pageToolCall)} disabled={sending} className="flex items-center gap-1 rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50">
                       <Play className="h-3 w-3" />
                       {t("ai.chat.execute", "실행")}
                     </button>

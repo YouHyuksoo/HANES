@@ -6,6 +6,14 @@
  */
 import { create } from "zustand";
 
+/** 승인 후 실행할 페이지 도구 호출 제안(write 도구) */
+export interface AiPageToolCallProposal {
+  pageId: string;
+  toolName: string;
+  label: string;
+  input: Record<string, unknown>;
+}
+
 export interface AiChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -15,6 +23,8 @@ export interface AiChatMessage {
   requiresApproval?: boolean;
   /** 실행 완료 여부 */
   executed?: boolean;
+  /** 페이지 도구 실행 제안(승인 카드) */
+  pageToolCall?: AiPageToolCallProposal;
 }
 
 interface AiChatState {

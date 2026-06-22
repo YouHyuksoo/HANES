@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { AiPageToolsService } from './ai-page-tools.service';
+import { AiPageToolCandidateResult } from './types';
 
 describe('AiPageToolsService', () => {
   const createRepo = () => ({ find: jest.fn() });
@@ -31,13 +32,13 @@ describe('AiPageToolsService', () => {
     ]);
     const service = new AiPageToolsService(partRepo as never);
 
-    const result = await service.executeBackendTool(
+    const result = (await service.executeBackendTool(
       'production.order',
       'resolveItemCandidates',
       { query: 'HNS02' },
       '40',
       '1000',
-    );
+    )) as AiPageToolCandidateResult;
 
     expect(result.status).toBe('ok');
     expect(result.candidates).toHaveLength(1);
@@ -52,13 +53,13 @@ describe('AiPageToolsService', () => {
     ]);
     const service = new AiPageToolsService(partRepo as never);
 
-    const result = await service.executeBackendTool(
+    const result = (await service.executeBackendTool(
       'production.order',
       'resolveItemCandidates',
       { query: '메인 하네스' },
       '40',
       '1000',
-    );
+    )) as AiPageToolCandidateResult;
 
     expect(result.status).toBe('ok');
     expect(result.candidates).toHaveLength(1);
@@ -74,13 +75,13 @@ describe('AiPageToolsService', () => {
     ]);
     const service = new AiPageToolsService(partRepo as never);
 
-    const result = await service.executeBackendTool(
+    const result = (await service.executeBackendTool(
       'production.order',
       'resolveItemCandidates',
       { query: 'HNS' },
       '40',
       '1000',
-    );
+    )) as AiPageToolCandidateResult;
 
     expect(result.status).toBe('ok');
     expect(result.candidates).toHaveLength(2);

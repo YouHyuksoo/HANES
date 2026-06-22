@@ -12,7 +12,15 @@ import { AiService } from './ai.service';
 import { AiCatalogService } from './ai-catalog.service';
 import { SchemaInfoService } from './schema-info.service';
 import { SqlValidatorService } from './sql-validator.service';
+import { AiPageToolsService } from '../ai-page-tools/ai-page-tools.service';
 import { AiChatMessageDto, AiPageToolContextDto } from './dto/ai-chat.dto';
+
+export interface AiPageToolCallProposal {
+  pageId: string;
+  toolName: string;
+  label: string;
+  input: Record<string, unknown>;
+}
 
 export interface AiSqlResult {
   content: string;
@@ -20,7 +28,17 @@ export interface AiSqlResult {
   executed?: boolean;
   rowCount?: number;
   requiresApproval?: boolean;
+  /** 승인 후 실행할 페이지 도구 호출 제안(write 도구) */
+  pageToolCall?: AiPageToolCallProposal;
 }
+
+const TOOL_SELECT_PROMPT = `당신은 사용자의 등록/처리 요청을 "페이지 도구 호출"로 변환하는 AI입니다.
+규칙:
+- 아래 '도구 목록'에서 요청에 가장 맞는 도구 하나를 고르고, 그 도구의 inputSchema에 맞는 입력값을 추출합니다.
+- 반드시 JSON만 출력: {"toolName":"도구이름","input":{...}}. 맞는 도구가 없으면 {"toolName":null}.
+- inputSchema의 required 필드는 사용자 문구에서 추출하세요. 값을 알 수 없으면 그 필드를 생략합니다(빈 문자열 금지).
+- enum이 지정된 필드는 반드시 그 값 중 하나로 매핑하세요(설명의 매핑 규칙 참고).
+- 다른 설명 없이 JSON만 출력하세요.`;
 
 const TABLE_SELECT_PROMPT = `당신은 HANES MES 데이터베이스에서 사용자 질문에 답할 테이블을 고르는 도우미입니다.
 규칙:
@@ -79,6 +97,7 @@ export class AiSqlService {
     private readonly catalog: AiCatalogService,
     private readonly schemaInfo: SchemaInfoService,
     private readonly validator: SqlValidatorService,
+    private readonly pageTools: AiPageToolsService,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
@@ -90,6 +109,15 @@ export class AiSqlService {
     if (!userMessage.trim()) return { content: '질문을 입력해 주세요.' };
 
     if (pageToolContext && this.looksLikePageWorkflowRequest(userMessage)) {
+      // 등록/처리 요청 → 페이지의 write 도구로 매핑(있으면 승인 카드로 제안)
+      const call = await this.selectPageTool(userMessage, pageToolContext.pageId);
+      if (call) {
+        return {
+          content: '아래 작업을 검토하고, 실행하려면 승인해 주세요.',
+          pageToolCall: call,
+          requiresApproval: true,
+        };
+      }
       return this.generalChat(messages, pageToolContext);
     }
 
@@ -231,6 +259,44 @@ export class AiSqlService {
 
   private looksLikePageWorkflowRequest(userMessage: string): boolean {
     return PAGE_WORKFLOW_KEYWORDS.some((keyword) => userMessage.includes(keyword));
+  }
+
+  /** 사용자 요청 → 페이지의 backend write 도구 호출 매핑(LLM). 없으면 null */
+  private async selectPageTool(userMessage: string, pageId: string): Promise<AiPageToolCallProposal | null> {
+    let tools;
+    try {
+      tools = this.pageTools.getManifest(pageId).tools;
+    } catch {
+      return null;
+    }
+    const writable = tools.filter((t) => t.source === 'backend' && t.riskLevel === 'write');
+    if (writable.length === 0) return null;
+
+    const toolDocs = writable.map((t) => ({
+      name: t.name,
+      label: t.label,
+      description: t.description,
+      inputSchema: t.inputSchema ?? {},
+    }));
+    const res = await this.aiService.complete([
+      { role: 'system', content: TOOL_SELECT_PROMPT },
+      { role: 'user', content: `## 도구 목록\n${JSON.stringify(toolDocs)}\n\n## 요청\n${userMessage}` },
+    ]);
+    try {
+      const start = res.indexOf('{');
+      const end = res.lastIndexOf('}');
+      if (start === -1 || end === -1) return null;
+      const parsed = JSON.parse(res.slice(start, end + 1)) as {
+        toolName?: string | null;
+        input?: Record<string, unknown>;
+      };
+      if (!parsed.toolName) return null;
+      const tool = writable.find((t) => t.name === parsed.toolName);
+      if (!tool) return null;
+      return { pageId, toolName: tool.name, label: tool.label, input: parsed.input ?? {} };
+    } catch {
+      return null;
+    }
   }
 
   private formatPageToolContext(pageToolContext?: AiPageToolContextDto): string {

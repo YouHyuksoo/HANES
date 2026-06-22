@@ -16,6 +16,7 @@ import { Warehouse, ArrowRightLeft, MapPin } from 'lucide-react';
 import WarehouseList from './components/WarehouseList';
 import TransferRuleList from './components/TransferRuleList';
 import LocationList from './components/LocationList';
+import { usePageAiTools } from '@/ai-page-tools/usePageAiTools';
 
 type TabType = 'warehouse' | 'location' | 'transfer-rule';
 
@@ -23,6 +24,9 @@ export default function WarehousePage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('warehouse');
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
+
+  // AI 채팅 페이지 도구(창고 등록 write 도구) 등록 — createWarehouse는 backend 실행
+  usePageAiTools('master.warehouse');
 
   const tabs: { key: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { key: 'warehouse', label: t('inventory.warehouse.title'), icon: Warehouse },
