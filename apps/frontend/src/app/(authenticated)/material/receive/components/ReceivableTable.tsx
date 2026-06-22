@@ -29,7 +29,7 @@ export default function ReceivableTable({ data, isLoading, toolbarLeft }: Receiv
     { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.poNo || '-' },
     { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemCode || '-' },
     { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemName || '-' },
-    { id: 'vendor', header: t('material.arrival.col.vendor'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendor || '-' },
+    { id: 'vendor', header: t('material.arrival.col.vendor'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendorName || row.original.vendor || '-' },
     {
       id: 'recvDate',
       header: t('material.receive.col.recvDate'),

@@ -9,6 +9,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
+import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -52,6 +53,7 @@ describe('ProdPlanService', () => {
         { provide: getRepositoryToken(JobOrder), useValue: jobOrderRepo },
         { provide: getRepositoryToken(RoutingGroup), useValue: routingGroupRepo },
         { provide: getRepositoryToken(BomMaster), useValue: bomMasterRepo },
+        { provide: getRepositoryToken(RoutingProcess), useValue: createMock<Repository<RoutingProcess>>() },
         { provide: NumberingService, useValue: numbering },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },

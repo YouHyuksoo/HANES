@@ -20,6 +20,7 @@ import { IqcLog } from '../../../entities/iqc-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { parseDateStart } from '../../../shared/date.util';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ReceivingService', () => {
@@ -50,6 +51,7 @@ describe('ReceivingService', () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
+    mockPartnerMasterRepo.find.mockResolvedValue([]);
     mockPurchaseOrderRepo = createMock<Repository<PurchaseOrder>>();
     mockPurchaseOrderItemRepo = createMock<Repository<PurchaseOrderItem>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
@@ -587,7 +589,7 @@ describe('ReceivingService', () => {
     expect(manager.update).toHaveBeenCalledWith(
       MatLot,
       { matUid: 'MAT-001', company: 'CO', plant: 'P01' },
-      expect.objectContaining({ manufactureDate: new Date('2026-05-01') }),
+      expect.objectContaining({ manufactureDate: parseDateStart('2026-05-01') }),
     );
   });
 });

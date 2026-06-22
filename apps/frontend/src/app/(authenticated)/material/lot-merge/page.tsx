@@ -33,6 +33,7 @@ interface MergeableLot {
   arrivalNo?: string | null;
   expireDate?: string;
   vendor?: string;
+  vendorName?: string | null;
   mfgPartnerCode?: string | null;
 }
 
@@ -188,9 +189,9 @@ export default function LotMergePage() {
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-xs text-text-muted">{(getValue() as string) || "-"}</span>,
     },
-    { accessorKey: "vendor", header: t("material.lotMerge.vendor"), size: 100,
+    { accessorKey: "vendor", header: t("material.lotMerge.vendor"), size: 140,
       meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string) || "-",
+      cell: ({ row }) => row.original.vendorName || row.original.vendor || "-",
     },
   ], [t, scanned, addByBarcode]);
 

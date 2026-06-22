@@ -7,6 +7,7 @@ import { HoldService } from './hold.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('HoldService', () => {
@@ -14,11 +15,14 @@ describe('HoldService', () => {
   let matLotRepo: DeepMocked<Repository<MatLot>>;
   let matStockRepo: DeepMocked<Repository<MatStock>>;
   let partRepo: DeepMocked<Repository<PartMaster>>;
+  let partnerRepo: DeepMocked<Repository<PartnerMaster>>;
 
   beforeEach(async () => {
     matLotRepo = createMock<Repository<MatLot>>();
     matStockRepo = createMock<Repository<MatStock>>();
     partRepo = createMock<Repository<PartMaster>>();
+    partnerRepo = createMock<Repository<PartnerMaster>>();
+    partnerRepo.find.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -26,6 +30,7 @@ describe('HoldService', () => {
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
         { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: partnerRepo },
       ],
     })
       .setLogger(new MockLoggerService())

@@ -38,6 +38,8 @@ interface StockItem {
   reservedQty: number;
   availableQty: number;
   itemName?: string;
+  vendor?: string | null;
+  vendorName?: string | null;
   unit?: string;
   safetyStock?: number;
   expiryDays?: number;
@@ -196,6 +198,13 @@ function StockPage() {
         header: t("material.stock.columns.partName"),
         size: 140,
         meta: { filterType: "text" as const },
+      },
+      {
+        accessorKey: "vendorName",
+        header: t("material.arrivalResult.supplier", "공급사"),
+        size: 130,
+        meta: { filterType: "text" as const },
+        cell: ({ row }) => row.original.vendorName || "-",
       },
       {
         accessorKey: "matUid",

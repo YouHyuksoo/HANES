@@ -30,6 +30,8 @@ interface IqcHistoryItem {
   itemCode?: string;
   itemName?: string;
   unit?: string;
+  vendorCode?: string | null;
+  vendorName?: string | null;
   inspectType: string;
   result: string;
   status: string;
@@ -272,6 +274,11 @@ export default function IqcHistoryPage() {
     {
       accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "vendorName", header: t("material.arrivalResult.supplier", "공급사"), size: 140,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => row.original.vendorName || "-",
     },
     {
       accessorKey: "inspectType", header: t("material.iqcHistory.inspectType"), size: 100, meta: { filterType: "multi" as const },

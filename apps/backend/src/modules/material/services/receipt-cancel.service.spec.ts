@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * - findCancellable: 취소 가능한 입고 트랜잭션 목록 조회
- * - cancel: 원본 RECEIPT → 역분개 RECEIPT_CANCEL 트랜잭션 생성
+ * - cancel: 원본 RECEIVE → 역분개 RECEIPT_CANCEL 트랜잭션 생성
  * - 실행: `npx jest --testPathPattern="receipt-cancel.service.spec"`
  */
 import { Test, TestingModule } from '@nestjs/testing';
@@ -16,7 +16,9 @@ import { ReceiptCancelService } from './receipt-cancel.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -26,7 +28,9 @@ describe('ReceiptCancelService', () => {
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
-  let mockPoItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
+  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
+  let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
@@ -36,7 +40,15 @@ describe('ReceiptCancelService', () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
-    mockPoItemRepo = createMock<Repository<PurchaseOrderItem>>();
+    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
+    mockWarehouseRepo = createMock<Repository<Warehouse>>();
+
+    // enrichment 조회 기본값 (빈 배열)
+    mockMatLotRepo.find.mockResolvedValue([]);
+    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockPartnerMasterRepo.find.mockResolvedValue([]);
+    mockWarehouseRepo.find.mockResolvedValue([]);
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
@@ -56,7 +68,9 @@ describe('ReceiptCancelService', () => {
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
-        { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPoItemRepo },
+        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
+        { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },
@@ -96,7 +110,7 @@ describe('ReceiptCancelService', () => {
 
     it('이미 취소된 트랜잭션이면 BadRequestException', async () => {
       mockQueryRunner.manager.findOne.mockResolvedValueOnce({
-        transNo: 'TX-001', cancelRefId: 'CANCEL-001', transType: 'RECEIPT',
+        transNo: 'TX-001', cancelRefId: 'CANCEL-001', transType: 'RECEIVE',
       } as StockTransaction);
 
       await expect(
@@ -116,7 +130,7 @@ describe('ReceiptCancelService', () => {
 
     it('입고 창고 정보가 없으면 BadRequestException', async () => {
       mockQueryRunner.manager.findOne.mockResolvedValueOnce({
-        transNo: 'TX-001', cancelRefId: null, transType: 'RECEIPT',
+        transNo: 'TX-001', cancelRefId: null, transType: 'RECEIVE',
         toWarehouseId: null, itemCode: 'ITEM-001', matUid: null, qty: 10,
       } as StockTransaction);
 
@@ -128,7 +142,7 @@ describe('ReceiptCancelService', () => {
     it('재고 부족이면 BadRequestException', async () => {
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce({
-          transNo: 'TX-001', cancelRefId: null, transType: 'RECEIPT',
+          transNo: 'TX-001', cancelRefId: null, transType: 'RECEIVE',
           toWarehouseId: 'WH-01', itemCode: 'ITEM-001', matUid: null, qty: 100,
         } as StockTransaction)
         .mockResolvedValueOnce({ qty: 50, availableQty: 50 } as MatStock);
@@ -142,7 +156,7 @@ describe('ReceiptCancelService', () => {
       mockQueryRunner.manager.findOne.mockResolvedValueOnce({
         transNo: 'TX-001',
         cancelRefId: null,
-        transType: 'RECEIPT',
+        transType: 'RECEIVE',
         toWarehouseId: 'WH-01',
         itemCode: 'ITEM-001',
         matUid: null,
@@ -161,7 +175,7 @@ describe('ReceiptCancelService', () => {
 
     it('정상적으로 입고취소를 처리한다', async () => {
       const originalTx = {
-        transNo: 'TX-001', cancelRefId: null, transType: 'RECEIPT',
+        transNo: 'TX-001', cancelRefId: null, transType: 'RECEIVE',
         toWarehouseId: 'WH-01', itemCode: 'ITEM-001', matUid: null, qty: 10,
         refType: null, refId: null,
       } as StockTransaction;
@@ -187,7 +201,7 @@ describe('ReceiptCancelService', () => {
       const originalTx = {
         transNo: 'TX-001',
         cancelRefId: null,
-        transType: 'RECEIPT',
+        transType: 'RECEIVE',
         toWarehouseId: 'WH-01',
         itemCode: 'ITEM-001',
         matUid: 'MAT-001',
@@ -250,7 +264,7 @@ describe('ReceiptCancelService', () => {
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         StockTransaction,
         { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
-        { cancelRefId: 'CANCEL-001' },
+        { cancelRefId: 'CANCEL-001', status: 'CANCELED' },
       );
     });
 
@@ -258,7 +272,7 @@ describe('ReceiptCancelService', () => {
       mockQueryRunner.manager.findOne.mockResolvedValueOnce({
         transNo: 'TX-010',
         cancelRefId: null,
-        transType: 'RECEIPT',
+        transType: 'RECEIVE',
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
         qty: 10,

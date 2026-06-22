@@ -12,6 +12,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { AqlService } from '../../quality/aql/services/aql.service';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -28,6 +29,7 @@ describe('IqcHistoryService cancel policy', () => {
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
@@ -44,6 +46,8 @@ describe('IqcHistoryService cancel policy', () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
+    mockPartnerMasterRepo.find.mockResolvedValue([]);
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
@@ -88,6 +92,7 @@ describe('IqcHistoryService cancel policy', () => {
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: SysConfigService, useValue: mockSysConfigService },
         { provide: AqlService, useValue: mockAqlService },

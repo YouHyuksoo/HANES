@@ -14,6 +14,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In, Not, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
@@ -26,6 +27,8 @@ export class MatLotService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatIssue)
@@ -72,6 +75,17 @@ export class MatLotService {
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
+    // 공급사(vendor) 코드 → 업체명 매핑 (PARTNER_MASTERS IN 절 일괄 조회, company/plant 스코프)
+    const vendorCodes = Array.from(
+      new Set(data.map((lot) => lot.vendor).filter((v): v is string => Boolean(v))),
+    );
+    const partners = vendorCodes.length > 0
+      ? await this.partnerMasterRepository.find({
+        where: { partnerCode: In(vendorCodes), ...(company && { company }), ...(plant && { plant }) },
+      })
+      : [];
+    const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
+
     const flattenedData = data.map((lot) => {
       const part = partMap.get(lot.itemCode);
       return {
@@ -79,6 +93,7 @@ export class MatLotService {
         itemCode: lot.itemCode,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
+        vendorName: lot.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
       };
     });
 

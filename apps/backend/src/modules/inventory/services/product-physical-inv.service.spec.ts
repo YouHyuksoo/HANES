@@ -92,20 +92,21 @@ describe('ProductPhysicalInvService', () => {
 
       await target.findStocks({ page: 1, limit: 50 } as any, 'CO', 'P01');
 
+      // ProductStock는 warehouseCode+itemCode 키 기준. PartMaster/Warehouse만 조인한다 (MatLot 조인 제거됨).
       expect(qb.leftJoin).toHaveBeenCalledWith(
         PartMaster,
         'p',
         'p.itemCode = s.itemCode AND p.company = s.company AND p.plant = s.plant',
       );
       expect(qb.leftJoin).toHaveBeenCalledWith(
-        MatLot,
-        'l',
-        'l.matUid = s.prdUid AND l.company = s.company AND l.plant = s.plant',
-      );
-      expect(qb.leftJoin).toHaveBeenCalledWith(
         Warehouse,
         'w',
         'w.warehouseCode = s.warehouseCode AND w.company = s.company AND w.plant = s.plant',
+      );
+      expect(qb.leftJoin).not.toHaveBeenCalledWith(
+        MatLot,
+        expect.anything(),
+        expect.anything(),
       );
     });
   });
@@ -163,8 +164,9 @@ describe('ProductPhysicalInvService', () => {
       expect(r).toHaveLength(1);
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      // stockId는 warehouseCode::itemCode (2-part)로 분해되며 prdUid는 키에 포함되지 않는다.
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
+        where: { warehouseCode: 'WH', itemCode: 'IT', company: 'CO', plant: 'P01' },
       });
     });
 

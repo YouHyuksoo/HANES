@@ -7,6 +7,8 @@ import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { ReworkInspect } from '../../../../entities/rework-inspect.entity';
 import { ReworkProcess } from '../../../../entities/rework-process.entity';
 import { DefectLog } from '../../../../entities/defect-log.entity';
+import { PartMaster } from '../../../../entities/part-master.entity';
+import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ReworkService policy', () => {
@@ -27,6 +29,8 @@ describe('ReworkService policy', () => {
         { provide: getRepositoryToken(ReworkInspect), useValue: createMock<Repository<ReworkInspect>>() },
         { provide: getRepositoryToken(ReworkProcess), useValue: mockProcessRepo },
         { provide: getRepositoryToken(DefectLog), useValue: mockDefectLogRepo },
+        { provide: getRepositoryToken(PartMaster), useValue: createMock<Repository<PartMaster>>() },
+        { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
       ],
     })
       .setLogger(new MockLoggerService())

@@ -5,11 +5,13 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, Between, In, FindOptionsWhere } from 'typeorm';
+import { Repository, DataSource, IsNull, Between, In, Like, FindOptionsWhere } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
@@ -27,8 +29,12 @@ export class ReceiptCancelService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
-    @InjectRepository(PurchaseOrderItem)
-    private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
@@ -59,16 +65,24 @@ export class ReceiptCancelService {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<StockTransaction> = {
-      transType: 'RECEIPT',
+    const baseWhere: FindOptionsWhere<StockTransaction> = {
+      // 입고 트랜잭션은 STOCK_TRANSACTIONS에 transType='RECEIVE'로 기록된다(receiving.service).
+      transType: 'RECEIVE',
       cancelRefId: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
+      ...(fromDate && toDate ? { transDate: Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!) } : {}),
     };
 
-    if (fromDate && toDate) {
-      where.transDate = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
-    }
+    // 검색: 거래번호 / 품목코드 / 시리얼(LOT) 기준 OR (품목명은 enrich 전 단계라 코드 기준으로 한정)
+    const keyword = search?.trim();
+    const where: FindOptionsWhere<StockTransaction> | FindOptionsWhere<StockTransaction>[] = keyword
+      ? [
+          { ...baseWhere, transNo: Like(`%${keyword}%`) },
+          { ...baseWhere, itemCode: Like(`%${keyword}%`) },
+          { ...baseWhere, matUid: Like(`%${keyword}%`) },
+        ]
+      : baseWhere;
 
     const [data, total] = await Promise.all([
       this.stockTransactionRepository.find({
@@ -80,7 +94,46 @@ export class ReceiptCancelService {
       this.stockTransactionRepository.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // 표시용 enrichment (품목명/단위/창고명/공급사). raw 트랜잭션엔 코드만 있어 화면 컬럼이 비므로 보강한다.
+    const tenantWhere = this.tenantWhere(company, plant);
+    const itemCodes = [...new Set(data.map((t) => t.itemCode).filter(Boolean))];
+    const matUids = [...new Set(data.map((t) => t.matUid).filter((v): v is string => !!v))];
+    const warehouseCodes = [...new Set(data.map((t) => t.toWarehouseId).filter((v): v is string => !!v))];
+
+    const [parts, lots, warehouses] = await Promise.all([
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
+      warehouseCodes.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } }) : Promise.resolve([]),
+    ]);
+
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w.warehouseName]));
+
+    // 공급사 업체명 (MAT_LOTS.VENDOR → PARTNER_MASTERS.PARTNER_NAME)
+    const vendorCodes = [...new Set(lots.map((l) => l.vendor).filter((v): v is string => !!v))];
+    const partners = vendorCodes.length > 0
+      ? await this.partnerMasterRepository.find({ where: { partnerCode: In(vendorCodes), ...tenantWhere } })
+      : [];
+    const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
+
+    const enriched = data.map((tx) => {
+      const part = partMap.get(tx.itemCode);
+      const lot = tx.matUid ? lotMap.get(tx.matUid) : null;
+      const vendor = lot?.vendor ?? null;
+      return {
+        ...tx,
+        // 프론트가 취소 API 키로 사용하는 id (= 자연키 TRANS_NO). 누락 시 취소 동작 불가.
+        id: tx.transNo,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        warehouseName: tx.toWarehouseId ? (warehouseMap.get(tx.toWarehouseId) ?? tx.toWarehouseId) : null,
+        vendor,
+        vendorName: vendor ? (partnerMap.get(vendor) ?? vendor) : null,
+      };
+    });
+
+    return { data: enriched, total, page, limit };
   }
 
   async cancel(dto: CreateReceiptCancelDto, company?: string, plant?: string) {
@@ -99,7 +152,7 @@ export class ReceiptCancelService {
         throw new BadRequestException('이미 취소된 트랜잭션입니다.');
       }
 
-      if (originalTransaction.transType !== 'RECEIPT') {
+      if (originalTransaction.transType !== 'RECEIVE') {
         throw new BadRequestException('입고 트랜잭션만 취소할 수 있습니다.');
       }
 
@@ -131,23 +184,8 @@ export class ReceiptCancelService {
       );
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
-
-      // PO 품목 입고량 감소
-      if (originalTransaction.refId && originalTransaction.refType === 'PO') {
-        const refSeq = Number(originalTransaction.refId);
-        // refId를 seq로 해석 — 해당 품목의 PO 품목 조회
-        const poItem = !isNaN(refSeq)
-          ? await queryRunner.manager.findOne(PurchaseOrderItem, {
-              where: { seq: refSeq, ...txTenantWhere },
-            })
-          : null;
-
-        if (poItem) {
-          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq, ...txTenantWhere }, {
-            receivedQty: Math.max(0, poItem.receivedQty - qty),
-          });
-        }
-      }
+      // NOTE: PO 입고수량(PURCHASE_ORDER_ITEMS.receivedQty)은 입하(arrival) 단계에서만 가감한다.
+      //       입고(RECEIVE)는 PO receivedQty를 변경하지 않으므로 입고취소도 건드리지 않는다(이중 차감 방지).
 
       // 역분개 트랜잭션 생성
       const cancelTransNo = await this.numbering.nextInTx(queryRunner, 'CANCEL_TX');
@@ -169,9 +207,12 @@ export class ReceiptCancelService {
 
       const savedCancelTrans = await queryRunner.manager.save(cancelTransaction);
 
-      // 원본 트랜잭션에 취소 참조 설정
+      // 원본 트랜잭션에 취소 참조 설정 + 상태 CANCELED.
+      // status='CANCELED'로 바꿔야 receiving.service의 기입고수량 SUM(transType='RECEIVE' AND status='DONE')에서
+      // 제외되어 LOT의 잔여 입고수량이 정상 복구된다(미변경 시 취소해도 재입고가 막힘).
       await queryRunner.manager.update(StockTransaction, { transNo: originalTransaction.transNo, ...txTenantWhere }, {
         cancelRefId: savedCancelTrans.transNo,
+        status: 'CANCELED',
       });
 
       return {

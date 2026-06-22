@@ -211,6 +211,15 @@ export class ReceivingService {
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
+    // 공급사명 해소 (MAT_LOTS.VENDOR → PARTNER_MASTERS.PARTNER_NAME, IN 절 일괄 조회)
+    const vendorCodes = [...new Set(validLots.map((lot) => lot.vendor).filter(Boolean))] as string[];
+    const vendorPartners = vendorCodes.length > 0
+      ? await this.partnerMasterRepository.find({
+          where: { partnerCode: In(vendorCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        })
+      : [];
+    const vendorNameMap = new Map(vendorPartners.map((p) => [p.partnerCode, p.partnerName]));
+
     const arrivalNos = [...new Set(validLots.map((lot) => lot.arrivalNo).filter(Boolean))] as string[];
     const passedIqcLogs = arrivalNos.length > 0 && itemCodes.length > 0
       ? await this.iqcLogRepository.find({
@@ -270,6 +279,8 @@ export class ReceivingService {
 
         return {
           ...lot,
+          // 공급사명(VENDOR 코드 → PARTNER_NAME)
+          vendorName: lot.vendor ? (vendorNameMap.get(lot.vendor) ?? lot.vendor) : null,
           receivedQty,
           remainingQty,
           arrivalWarehouse: arrivalWarehouse || null,
@@ -617,10 +628,18 @@ export class ReceivingService {
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
-    // 제조사명 해소 (MAT_LOTS.MFG_PARTNER_CODE → PARTNER_MASTERS.PARTNER_NAME)
-    const mfgCodes = [...new Set(lots.map((l) => l.mfgPartnerCode).filter(Boolean))] as string[];
-    const partners = mfgCodes.length > 0
-      ? await this.partnerMasterRepository.find({ where: { partnerCode: In(mfgCodes), ...tenantWhere } })
+    // 제조사명/공급사명 해소 (PARTNER_CODE → PARTNER_NAME, 한 번에 IN 절 조회)
+    // - 제조사: MAT_LOTS.MFG_PARTNER_CODE
+    // - 공급사: MAT_LOTS.VENDOR
+    const partnerCodes = [
+      ...new Set(
+        lots
+          .flatMap((l) => [l.mfgPartnerCode, l.vendor])
+          .filter(Boolean) as string[],
+      ),
+    ];
+    const partners = partnerCodes.length > 0
+      ? await this.partnerMasterRepository.find({ where: { partnerCode: In(partnerCodes), ...tenantWhere } })
       : [];
     const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
 
@@ -643,6 +662,8 @@ export class ReceivingService {
         toWarehouse: warehouse ? { warehouseName: warehouse.warehouseName } : null,
         // 공급처(LOT 입고 거래처)
         vendor: lot?.vendor ?? null,
+        // 공급사명(VENDOR 코드 → PARTNER_NAME)
+        vendorName: lot?.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
         // 제조사(MFG 파트너명)
         manufacturer: lot?.mfgPartnerCode ? (partnerMap.get(lot.mfgPartnerCode) ?? lot.mfgPartnerCode) : null,
         // 양산/MRO 구분: 소모품(CONSUMABLE)=MRO, 그 외=양산(PROD)

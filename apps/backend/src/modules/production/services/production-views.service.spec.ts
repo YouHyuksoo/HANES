@@ -7,6 +7,8 @@ import { BoxMaster } from '../../../entities/box-master.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { ProductStock } from '../../../entities/product-stock.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
+import { SgLabel } from '../../../entities/sg-label.entity';
 import { ProductionViewsService } from './production-views.service';
 
 describe('ProductionViewsService', () => {
@@ -29,6 +31,8 @@ describe('ProductionViewsService', () => {
         { provide: getRepositoryToken(InspectResult), useValue: inspectRepo },
         { provide: getRepositoryToken(BoxMaster), useValue: boxRepo },
         { provide: getRepositoryToken(ProductStock), useValue: stockRepo },
+        { provide: getRepositoryToken(FgLabel), useValue: createMock<Repository<FgLabel>>() },
+        { provide: getRepositoryToken(SgLabel), useValue: createMock<Repository<SgLabel>>() },
       ],
     })
       .setLogger(new MockLoggerService())

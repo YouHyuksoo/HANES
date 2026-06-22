@@ -9,6 +9,7 @@ import { Repository, Like, In, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { HoldActionDto, ReleaseHoldDto, HoldQueryDto } from '../dto/hold.dto';
 
 @Injectable()
@@ -20,6 +21,8 @@ export class HoldService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -80,6 +83,17 @@ export class HoldService {
       : [];
     const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
 
+    // 공급사명 조회 (MAT_LOTS.VENDOR = PARTNER_MASTERS.PARTNER_CODE), 스코프 포함, IN 절 일괄
+    const vendorCodes = Array.from(
+      new Set(data.map((lot) => lot.vendor).filter((v): v is string => Boolean(v))),
+    );
+    const partners = vendorCodes.length > 0
+      ? await this.partnerMasterRepository.find({
+          where: { partnerCode: In(vendorCodes), ...this.tenantWhere(company, plant) },
+        })
+      : [];
+    const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
+
     const flattenedData = data.map((lot) => {
       const part = partMap.get(lot.itemCode);
       const stock = stockMap.get(lot.matUid);
@@ -89,6 +103,7 @@ export class HoldService {
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
         warehouseCode: stock?.warehouseCode ?? null,
+        vendorName: lot.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
       };
     });
 

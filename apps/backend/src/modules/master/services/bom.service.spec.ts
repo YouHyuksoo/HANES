@@ -121,7 +121,7 @@ describe('BomService', () => {
 
       expect(mockPartRepo.find).toHaveBeenCalledWith({
         where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
-        select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
+        select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'productType', 'spec', 'unit'],
       });
     });
   });
@@ -265,7 +265,7 @@ describe('BomService', () => {
 
       expect(mockPartRepo.find).toHaveBeenCalledWith({
         where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
-        select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
+        select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'productType', 'spec', 'unit'],
       });
     });
   });

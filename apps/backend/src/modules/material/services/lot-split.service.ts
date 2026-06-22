@@ -16,6 +16,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotSplitDto, LotSplitQueryDto } from '../dto/lot-split.dto';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -41,6 +42,8 @@ export class LotSplitService {
     private readonly matIssueRepository: Repository<MatIssue>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     private readonly tx: TransactionService,
@@ -105,6 +108,15 @@ export class LotSplitService {
       : [];
     const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
 
+    // 공급사(vendor) 코드 → 업체명 매핑 (IN 절 일괄 조회, N+1 회피)
+    const vendorCodes = Array.from(
+      new Set(data.map((lot) => lot.vendor).filter((v): v is string => !!v)),
+    );
+    const partners = vendorCodes.length > 0
+      ? await this.partnerMasterRepository.find({ where: { partnerCode: In(vendorCodes), ...tenantWhere } })
+      : [];
+    const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
+
     const flattenedData = data.map((lot) => {
       const part = partMap.get(lot.itemCode);
       const stock = stockMap.get(lot.matUid);
@@ -115,6 +127,7 @@ export class LotSplitService {
         unit: part?.unit ?? null,
         qty: stock?.qty ?? 0,
         warehouseCode: stock?.warehouseCode ?? null,
+        vendorName: lot.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
       };
     });
 

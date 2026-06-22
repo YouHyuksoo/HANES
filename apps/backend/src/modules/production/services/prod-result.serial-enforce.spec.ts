@@ -128,14 +128,15 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
 
       await (target as any).reverseProductStock(qr, 'PR-1', 'C1', 'P1');
 
+      // PRD_UID 비키화(78d46411): 재고 키는 품목+창고 기준, prdUid는 키에서 제외
       expect(manager.delete).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ warehouseCode: 'WIP_MAIN', itemCode: 'ITEM-1', prdUid: '*' }),
+        expect.objectContaining({ warehouseCode: 'WIP_MAIN', itemCode: 'ITEM-1' }),
       );
       // 빈 행은 update가 아니라 delete 되어야 한다
       expect(manager.update).not.toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ prdUid: '*' }),
+        expect.objectContaining({ warehouseCode: 'WIP_MAIN', itemCode: 'ITEM-1' }),
         expect.objectContaining({ qty: 0 }),
       );
     });
@@ -148,7 +149,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
       expect(manager.delete).not.toHaveBeenCalled();
       expect(manager.update).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ warehouseCode: 'WIP_MAIN', itemCode: 'ITEM-1', prdUid: '*' }),
+        expect.objectContaining({ warehouseCode: 'WIP_MAIN', itemCode: 'ITEM-1' }),
         expect.objectContaining({ qty: 50 }),
       );
     });
@@ -208,11 +209,12 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
         expect.objectContaining({ resultNo: 'PR-1' }),
         expect.objectContaining({ prdUid: 'WO-1-001' }),
       );
+      // PRD_UID 비키화(78d46411): 시리얼은 ProdResult에만 stamp, 재고 적재 payload에는 prdUid 미포함
       expect(prodInv.receiveStockInTx).toHaveBeenCalledWith(
         qr,
         expect.objectContaining({
           warehouseId: 'WIP_MAIN', itemCode: 'ITEM-1', itemType: 'SEMI_PRODUCT',
-          prdUid: 'WO-1-001', qty: 5, transType: 'WIP_IN', refType: 'PROD_RESULT', refId: 'PR-1',
+          qty: 5, transType: 'WIP_IN', refType: 'PROD_RESULT', refId: 'PR-1',
         }),
       );
     });

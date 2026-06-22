@@ -158,6 +158,16 @@ describe('PmPlanService', () => {
   });
 
   describe('generateWorkOrders', () => {
+    // generateWorkOrders 채번/존재여부 조회용 WO 쿼리빌더 (where/andWhere/getMany + getOne)
+    const woGenQueryBuilder = (existing: any[] = []) => ({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue(existing),
+      getOne: jest.fn().mockResolvedValue(null),
+    });
+
     it('matches existing work orders by tenant as well as plan and date', async () => {
       const plan = {
         planCode: 'PM-001',
@@ -167,23 +177,21 @@ describe('PmPlanService', () => {
         company: 'CO',
         plant: 'P01',
       } as PmPlan;
-      mockPlanRepo.find.mockResolvedValueOnce([plan] as any);
-      const qb = mockQueryBuilder([]);
-      qb.andWhere = jest.fn().mockReturnThis();
-      mockPlanRepo.createQueryBuilder.mockReturnValue(qb);
-      mockWoRepo.find.mockResolvedValue([
-        {
-          pmPlanCode: 'PM-001',
-          scheduledDate: new Date('2026-03-18T00:00:00Z'),
-          company: 'OTHER',
-          plant: 'P01',
-        },
-      ] as any);
-      mockWoRepo.createQueryBuilder.mockReturnValue({
-        where: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
-      } as any);
+      // 1st plan QB: TIME_BASED 도래 계획 → [plan], 2nd plan QB: USAGE_BASED → []
+      mockPlanRepo.createQueryBuilder
+        .mockReturnValueOnce(mockQueryBuilder([plan]))
+        .mockReturnValueOnce(mockQueryBuilder([]));
+      // 기존 WO는 다른 테넌트(OTHER)라 set 키가 달라 매칭되지 않음 → 생성 진행
+      mockWoRepo.createQueryBuilder.mockReturnValue(
+        woGenQueryBuilder([
+          {
+            pmPlanCode: 'PM-001',
+            scheduledDate: new Date('2026-03-18T00:00:00Z'),
+            company: 'OTHER',
+            plant: 'P01',
+          },
+        ]) as any,
+      );
       mockWoRepo.create.mockImplementation((value) => value as any);
       mockWoRepo.save.mockResolvedValue({} as any);
 
@@ -204,15 +212,11 @@ describe('PmPlanService', () => {
         company: 'CO',
         plant: 'P01',
       } as PmPlan;
-      mockPlanRepo.find.mockResolvedValueOnce([] as any);
-      const qb = mockQueryBuilder([plan]);
-      qb.andWhere = jest.fn().mockReturnThis();
-      mockPlanRepo.createQueryBuilder.mockReturnValueOnce(qb).mockReturnValueOnce({
-        where: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
-      } as any);
-      mockWoRepo.find.mockResolvedValue([] as any);
+      // 1st plan QB: TIME_BASED 도래 계획 없음 → [], 2nd plan QB: USAGE_BASED → [plan]
+      mockPlanRepo.createQueryBuilder
+        .mockReturnValueOnce(mockQueryBuilder([]))
+        .mockReturnValueOnce(mockQueryBuilder([plan]));
+      mockWoRepo.createQueryBuilder.mockReturnValue(woGenQueryBuilder([]) as any);
       mockWoRepo.create.mockImplementation((value) => value as any);
       mockWoRepo.save.mockResolvedValue({} as any);
 

@@ -56,12 +56,13 @@ describe('ProductHoldService', () => {
       mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'HOLD', company: 'CO', plant: 'P01' });
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'IT', itemName: 'Item' } as any);
 
-      const r = await target.hold({ stockId: 'WH::IT::LOT1', reason: 'QC hold' } as any, 'CO', 'P01', 'user');
+      // PRODUCT_STOCKS PRD_UID 비키화(커밋 78d46411): stockId는 2-part(wh::item), 키 조회에 prdUid 미포함
+      const r = await target.hold({ stockId: 'WH::IT', reason: 'QC hold' } as any, 'CO', 'P01', 'user');
       expect(r.status).toBe('HOLD');
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
+        where: { warehouseCode: 'WH', itemCode: 'IT', company: 'CO', plant: 'P01' },
       });
       expect(mockPartRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'IT', company: 'CO', plant: 'P01' },
@@ -110,12 +111,12 @@ describe('ProductHoldService', () => {
       mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'NORMAL', company: 'CO', plant: 'P01' });
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'IT', itemName: 'Item' } as any);
 
-      const r = await target.release({ stockId: 'WH::IT::LOT1', reason: 'Released' } as any, 'CO', 'P01', 'user');
+      const r = await target.release({ stockId: 'WH::IT', reason: 'Released' } as any, 'CO', 'P01', 'user');
       expect(r.status).toBe('NORMAL');
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
+        where: { warehouseCode: 'WH', itemCode: 'IT', company: 'CO', plant: 'P01' },
       });
       expect(mockPartRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'IT', company: 'CO', plant: 'P01' },
@@ -199,7 +200,7 @@ describe('ProductHoldService', () => {
 
       expect(result.data[0]).toEqual(
         expect.objectContaining({
-          id: 'FG-WH::ITEM-001::FG-001',
+          id: 'FG-WH::ITEM-001',
         }),
       );
     });

@@ -14,6 +14,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 
 describe('PhysicalInvService', () => {
   let service: PhysicalInvService;
@@ -237,7 +238,7 @@ describe('PhysicalInvService', () => {
 
       expect(countDetailRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({
-          sessionDate: new Date('2026-05-23'),
+          sessionDate: parseDateStart('2026-05-23'),
           seq: 1,
           locationCode: 'LOC-01',
           company: 'C1',

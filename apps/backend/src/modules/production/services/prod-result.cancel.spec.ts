@@ -13,8 +13,10 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { User } from '../../../entities/user.entity';
+import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
@@ -61,10 +63,12 @@ describe('ProdResultService cancel flow', () => {
         { provide: getRepositoryToken(ConsumableMaster), useValue: createMock<Repository<ConsumableMaster>>() },
         { provide: getRepositoryToken(MatIssue), useValue: mockMatIssueRepo },
         { provide: getRepositoryToken(User), useValue: createMock<Repository<User>>() },
+        { provide: getRepositoryToken(WorkerMaster), useValue: createMock<Repository<WorkerMaster>>() },
         { provide: getRepositoryToken(ShiftPattern), useValue: createMock<Repository<ShiftPattern>>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: AutoIssueService, useValue: createMock<AutoIssueService>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
+        { provide: WipMatStockService, useValue: createMock<WipMatStockService>() },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
         { provide: TransactionService, useValue: mockTx },

@@ -22,6 +22,7 @@ interface ShelfLifeItem {
   expiryStatus: string;
   daysUntilExpiry: number | null;
   vendor?: string;
+  vendorName?: string | null;
   status?: string;
 }
 
@@ -105,8 +106,9 @@ export default function ShelfLifePage() {
       cell: ({ row }) => <span>{(row.original.currentQty ?? 0).toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
-      accessorKey: "vendor", header: t("material.shelfLife.vendor"), size: 100,
+      accessorKey: "vendor", header: t("material.shelfLife.vendor"), size: 120,
       meta: { filterType: "text" as const },
+      cell: ({ row }) => <span>{row.original.vendorName || row.original.vendor || "-"}</span>,
     },
     {
       accessorKey: "expireDate", header: t("material.shelfLife.expireDate"), size: 110,

@@ -5,6 +5,7 @@ import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
@@ -36,6 +37,7 @@ import { ShelfLifeService } from '../services/shelf-life.service';
       MatLot,
       MatStock,
       PartMaster,
+      PartnerMaster,
       PhysicalInvCountDetail,
       PhysicalInvSession,
       StockTransaction,

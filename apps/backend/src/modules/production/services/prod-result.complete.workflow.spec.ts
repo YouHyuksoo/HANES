@@ -12,8 +12,10 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { User } from '../../../entities/user.entity';
+import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
@@ -55,9 +57,11 @@ describe('ProdResultService complete workflow', () => {
         { provide: getRepositoryToken(ConsumableMaster), useValue: createMock<Repository<ConsumableMaster>>() },
         { provide: getRepositoryToken(MatIssue), useValue: matIssueRepo },
         { provide: getRepositoryToken(User), useValue: createMock<Repository<User>>() },
+        { provide: getRepositoryToken(WorkerMaster), useValue: createMock<Repository<WorkerMaster>>() },
         { provide: DataSource, useValue: dataSource },
         { provide: AutoIssueService, useValue: createMock<AutoIssueService>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
+        { provide: WipMatStockService, useValue: createMock<WipMatStockService>() },
         { provide: NumberingService, useValue: createMock<NumberingService>() },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
         { provide: getRepositoryToken(ShiftPattern), useValue: createMock<Repository<ShiftPattern>>() },
@@ -91,17 +95,43 @@ describe('ProdResultService complete workflow', () => {
       .mockResolvedValueOnce({ resultNo: 'PR-100', status: 'DONE' } as any);
 
     matIssueRepo.find.mockResolvedValue([] as any);
-    queryRunner.manager.find.mockResolvedValueOnce([
-      {
-        consumableCode: 'MOLD-1',
-        currentCount: 2,
-        expectedLife: 100,
-        warningCount: 80,
-        status: 'NORMAL',
-        company: 'C1',
-        plant: 'P1',
-      },
-    ] as any);
+
+    const jobOrder = {
+      orderNo: 'JO-100',
+      itemCode: 'ITEM-100',
+      status: 'WAITING',
+      planQty: 10,
+      company: 'C1',
+      plant: 'P1',
+      part: { itemType: 'FINISHED' },
+    };
+
+    // 엔티티 기준 keyed mock — complete() 흐름에 금형 타수, 소모품 롯트(4-2),
+    // 양품/불량 자동 적재(adsorb), 작업지시 자동 완료까지 findOne/find 호출이 늘어나
+    // 순서 의존(mockResolvedValueOnce) 대신 엔티티 이름으로 분기한다.
+    queryRunner.manager.find.mockImplementation(async (entity: any) => {
+      if (entity === ConsumableMaster) {
+        return [
+          {
+            consumableCode: 'MOLD-1',
+            currentCount: 2,
+            expectedLife: 100,
+            warningCount: 80,
+            status: 'NORMAL',
+            company: 'C1',
+            plant: 'P1',
+          },
+        ] as any;
+      }
+      // ConsumableUsageMap(4-2), ProdResult(generateProductSerial) 등은 빈 배열
+      return [] as any;
+    });
+
+    queryRunner.manager.findOne.mockImplementation(async (entity: any) => {
+      if (entity === JobOrder) return jobOrder as any;
+      // ProductTransaction(멱등 가드)는 미적재 상태(null), ProdResult(prdUid 재확인)는 null
+      return null as any;
+    });
 
     const summaryQb = {
       select: jest.fn().mockReturnThis(),
@@ -111,23 +141,6 @@ describe('ProdResultService complete workflow', () => {
       getRawOne: jest.fn().mockResolvedValue({ totalGoodQty: '10', totalDefectQty: '1' }),
     };
 
-    queryRunner.manager.findOne
-      .mockResolvedValueOnce({
-        orderNo: 'JO-100',
-        itemCode: 'ITEM-100',
-        status: 'WAITING',
-        planQty: 10,
-        company: 'C1',
-        plant: 'P1',
-        part: { itemType: 'FINISHED' },
-      } as any)
-      .mockResolvedValueOnce({
-        orderNo: 'JO-100',
-        status: 'WAITING',
-        planQty: 10,
-        company: 'C1',
-        plant: 'P1',
-      } as any);
     queryRunner.manager.count.mockResolvedValue(0);
     queryRunner.manager.createQueryBuilder.mockReturnValue(summaryQb as any);
 

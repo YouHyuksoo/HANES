@@ -15,6 +15,7 @@ import { Repository } from 'typeorm';
 import { MatLotService } from './mat-lot.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -23,6 +24,7 @@ describe('MatLotService', () => {
   let target: MatLotService;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
 
@@ -57,14 +59,17 @@ describe('MatLotService', () => {
   beforeEach(async () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
+    mockPartnerMasterRepo.find.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MatLotService,
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(MatIssue), useValue: mockMatIssueRepo },
       ],

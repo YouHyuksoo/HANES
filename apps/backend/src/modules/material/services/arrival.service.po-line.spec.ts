@@ -23,6 +23,8 @@ import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity'
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
+import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
+import { MatArrivalTransaction } from '../../../entities/mat-arrival-transaction.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
@@ -66,6 +68,8 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
         { provide: getRepositoryToken(MatLot), useValue: createMock<Repository<MatLot>>() },
         { provide: getRepositoryToken(MatStock), useValue: createMock<Repository<MatStock>>() },
         { provide: getRepositoryToken(MatArrival), useValue: createMock<Repository<MatArrival>>() },
+        { provide: getRepositoryToken(MatArrivalStock), useValue: createMock<Repository<MatArrivalStock>>() },
+        { provide: getRepositoryToken(MatArrivalTransaction), useValue: createMock<Repository<MatArrivalTransaction>>() },
         { provide: getRepositoryToken(StockTransaction), useValue: createMock<Repository<StockTransaction>>() },
         { provide: getRepositoryToken(PartMaster), useValue: createMock<Repository<PartMaster>>() },
         { provide: getRepositoryToken(Warehouse), useValue: createMock<Repository<Warehouse>>() },
@@ -119,6 +123,9 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
       }
       if (entity === PartMaster) {
         return Promise.resolve({ itemCode: 'TMN-0001', lotUnitQty: cfg.lotUnitQty });
+      }
+      if (entity === Warehouse) {
+        return Promise.resolve({ warehouseCode: 'W01', warehouseType: 'RAW' });
       }
       return Promise.resolve(null);
     }) as any);

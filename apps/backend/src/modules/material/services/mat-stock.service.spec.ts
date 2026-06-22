@@ -16,6 +16,7 @@ import { MatStockService } from './mat-stock.service';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -26,6 +27,7 @@ describe('MatStockService', () => {
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockInvAdjLogRepo: DeepMocked<Repository<InvAdjLog>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockDataSource: DeepMocked<DataSource>;
@@ -50,6 +52,8 @@ describe('MatStockService', () => {
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
+    mockPartnerMasterRepo.find.mockResolvedValue([]);
     mockInvAdjLogRepo = createMock<Repository<InvAdjLog>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
     mockDataSource = createMock<DataSource>();
@@ -70,6 +74,7 @@ describe('MatStockService', () => {
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(InvAdjLog), useValue: mockInvAdjLogRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: DataSource, useValue: mockDataSource },

@@ -28,6 +28,7 @@ export interface PendingArrivalsResult {
     itemName: string | null;
     unit: string | null;
     inspectMethod: string | null;
+    defectModelGroup: string | null;
     vendor: string;
     vendorName: string | null;
     totalQty: number;
@@ -58,6 +59,8 @@ export class IqcHistoryService {
     private readonly warehouseRepository: Repository<Warehouse>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
     private readonly dataSource: DataSource,
     private readonly sysConfigService: SysConfigService,
     private readonly aqlService: AqlService,
@@ -213,6 +216,16 @@ export class IqcHistoryService {
       : [];
     const partMap = new Map(partsResult.map((p) => [p.itemCode, p]));
 
+    const vendorCodes = Array.from(
+      new Set(data.map((log) => log.vendorCode).filter((code): code is string => !!code)),
+    );
+    const partnersResult = vendorCodes.length > 0
+      ? await this.partnerMasterRepository.find({
+        where: { partnerCode: In(vendorCodes), ...(company && { company }), ...(plant && { plant }) },
+      })
+      : [];
+    const partnerMap = new Map(partnersResult.map((p) => [p.partnerCode, p.partnerName]));
+
     const flattenedData = data.map((log) => {
       const part = partMap.get(log.itemCode);
       return {
@@ -220,6 +233,8 @@ export class IqcHistoryService {
         itemCode: log.itemCode,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
+        vendorCode: log.vendorCode,
+        vendorName: log.vendorCode ? (partnerMap.get(log.vendorCode) ?? log.vendorCode) : null,
       };
     });
 
@@ -339,6 +354,7 @@ export class IqcHistoryService {
       .addSelect('part.itemName', 'itemName')
       .addSelect('part.unit', 'unit')
       .addSelect('part.inspectMethod', 'inspectMethod')
+      .addSelect('part.defectModelGroup', 'defectModelGroup')
       .addSelect('lot.vendor', 'vendor')
       .addSelect('partner.partnerName', 'vendorName')
       .addSelect('SUM(lot.initQty)', 'totalQty')
@@ -363,6 +379,7 @@ export class IqcHistoryService {
       .addGroupBy('part.itemName')
       .addGroupBy('part.unit')
       .addGroupBy('part.inspectMethod')
+      .addGroupBy('part.defectModelGroup')
       .orderBy('MIN(lot.createdAt)', 'DESC');
 
     const debugSql = {
@@ -375,6 +392,7 @@ export class IqcHistoryService {
       itemName: string | null;
       unit: string | null;
       inspectMethod: string | null;
+      defectModelGroup: string | null;
       vendor: string;
       vendorName: string | null;
       totalQty: string;
@@ -390,6 +408,7 @@ export class IqcHistoryService {
         itemName: r.itemName ?? null,
         unit: r.unit ?? null,
         inspectMethod: r.inspectMethod ?? null,
+        defectModelGroup: r.defectModelGroup ?? null,
         vendor: r.vendor,
         vendorName: r.vendorName ?? null,
         totalQty: Number(r.totalQty) || 0,

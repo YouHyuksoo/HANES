@@ -14,6 +14,7 @@ import { Repository, DataSource, In, FindOptionsWhere, IsNull } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stock.dto';
@@ -28,6 +29,8 @@ export class MatStockService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(InvAdjLog)
     private readonly invAdjLogRepository: Repository<InvAdjLog>,
     @InjectRepository(Warehouse)
@@ -102,6 +105,16 @@ export class MatStockService {
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w.warehouseName]));
 
+    // 공급사(업체명) 매핑: lots의 vendor 코드 = PARTNER_MASTERS.partnerCode
+    const vendorCodes = [...new Set(lots.map((l) => l.vendor).filter(Boolean))];
+    const partners =
+      vendorCodes.length > 0
+        ? await this.partnerMasterRepository.find({
+            where: { partnerCode: In(vendorCodes), ...tenantWhere },
+          })
+        : [];
+    const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
+
     // 안전재고 미달 필터링 및 중첩 객체 평면화
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -132,6 +145,8 @@ export class MatStockService {
         safetyStock: part?.safetyStock ?? null,
         expiryDays: part?.expiryDate || 0,
         matUid: stock.matUid,
+        vendor: lot?.vendor ?? null,
+        vendorName: lot?.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
         manufactureDate: lot?.manufactureDate || null,
         expireDate: lot?.expireDate || null,
         elapsedDays,

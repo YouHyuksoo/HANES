@@ -35,6 +35,7 @@ export interface ReceivableLot {
   expiryDays?: number;
   poNo?: string | null;
   vendor?: string | null;
+  vendorName?: string | null;
   iqcStatus: string;
   receivedQty: number;
   remainingQty: number;
@@ -58,8 +59,10 @@ export interface ReceivingRecord {
   part: PartInfo;
   lot?: LotInfo | null;
   toWarehouse?: WarehouseInfo | null;
-  /** 공급처(LOT 입고 거래처) */
+  /** 공급처(LOT 입고 거래처 코드) */
   vendor?: string | null;
+  /** 공급사명 */
+  vendorName?: string | null;
   /** 제조사명 */
   manufacturer?: string | null;
   /** 양산/MRO 구분: 'PROD'=양산, 'MRO'=소모품 */

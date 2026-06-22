@@ -1,5 +1,6 @@
 import { InterfaceController } from './interface.controller';
 import { InterfaceService } from '../services/interface.service';
+import { parseDateStart } from '../../../shared/date.util';
 
 describe('InterfaceController', () => {
   let controller: InterfaceController;
@@ -29,7 +30,8 @@ describe('InterfaceController', () => {
 
     await controller.findLogById('2026-05-23', '1', 'C1', 'P1');
 
-    expect(service.findLogById).toHaveBeenCalledWith(new Date('2026-05-23'), 1, 'C1', 'P1');
+    // 컨트롤러는 parseDateStart로 로컬 자정 Date를 만들어 전달한다 (UTC off-by-one 방지)
+    expect(service.findLogById).toHaveBeenCalledWith(parseDateStart('2026-05-23'), 1, 'C1', 'P1');
   });
 
   it('passes tenant to single retry', async () => {
@@ -37,7 +39,7 @@ describe('InterfaceController', () => {
 
     await controller.retryLog('2026-05-23', '1', 'C1', 'P1');
 
-    expect(service.retryLog).toHaveBeenCalledWith(new Date('2026-05-23'), 1, 'C1', 'P1');
+    expect(service.retryLog).toHaveBeenCalledWith(parseDateStart('2026-05-23'), 1, 'C1', 'P1');
   });
 
   it('passes tenant to bulk retry', async () => {
@@ -46,7 +48,7 @@ describe('InterfaceController', () => {
     await controller.bulkRetry({ logIds: [{ transDate: '2026-05-23', seq: 1 }] } as any, 'C1', 'P1');
 
     expect(service.bulkRetry).toHaveBeenCalledWith(
-      [{ transDate: new Date('2026-05-23'), seq: 1 }],
+      [{ transDate: parseDateStart('2026-05-23'), seq: 1 }],
       'C1',
       'P1',
     );

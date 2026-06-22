@@ -29,6 +29,7 @@ interface MatLotItem {
   currentQty?: number;
   unit?: string;
   vendor?: string;
+  vendorName?: string | null;
   recvDate?: string;
   iqcStatus: string;
   status: string;
@@ -134,8 +135,9 @@ export default function MatLotPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "vendor", header: t("material.lot.columns.vendor"), size: 100,
+      accessorKey: "vendor", header: t("material.lot.columns.vendor"), size: 120,
       meta: { filterType: "text" as const },
+      cell: ({ row }) => <span>{row.original.vendorName || row.original.vendor || "-"}</span>,
     },
     {
       accessorKey: "recvDate", header: t("material.lot.columns.recvDate"), size: 100,

@@ -29,6 +29,7 @@ interface HoldLot {
   unit: string;
   status: string;
   vendor: string;
+  vendorName?: string | null;
   warehouseName?: string;
 }
 
@@ -135,6 +136,7 @@ export default function HoldPage() {
     {
       accessorKey: "vendor", header: t("material.hold.vendor"), size: 100,
       meta: { filterType: "text" as const },
+      cell: ({ row }) => row.original.vendorName || row.original.vendor || "-",
     },
     {
       accessorKey: "status", header: t("common.status"), size: 80, meta: { filterType: "multi" as const },

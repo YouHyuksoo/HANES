@@ -44,11 +44,27 @@ describe('RoutingService', () => {
 
   // ─── findByKey ───
   describe('findByKey', () => {
+    // findByKey 는 PartMaster를 leftJoin한 쿼리빌더 + getRawAndEntities 로 itemName을 가져온다.
+    const findByKeyQb = (
+      entities: any[],
+      raw: any[],
+    ) => {
+      const qb: any = {
+        leftJoin: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawAndEntities: jest.fn().mockResolvedValue({ entities, raw }),
+      };
+      return qb;
+    };
+
     it('should return routing with itemName when found', async () => {
       // Arrange
       const routing = { itemCode: 'ITEM01', seq: 10, processCode: 'PROC01' } as ProcessMap;
-      mockRoutingRepo.findOne.mockResolvedValue(routing);
-      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', itemName: 'Part1' } as PartMaster);
+      mockRoutingRepo.createQueryBuilder.mockReturnValue(
+        findByKeyQb([routing], [{ part_itemName: 'Part1' }]),
+      );
 
       // Act
       const result = await target.findByKey('ITEM01', 10);
@@ -59,23 +75,21 @@ describe('RoutingService', () => {
 
     it('should find routing and part name within tenant only', async () => {
       const routing = { itemCode: 'ITEM01', seq: 10, processCode: 'PROC01', company: 'C1', plant: 'P1' } as ProcessMap;
-      mockRoutingRepo.findOne.mockResolvedValue(routing);
-      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', itemName: 'Part1' } as PartMaster);
+      const qb = findByKeyQb([routing], [{ part_itemName: 'Part1' }]);
+      mockRoutingRepo.createQueryBuilder.mockReturnValue(qb);
 
       await target.findByKey('ITEM01', 10, 'C1', 'P1');
 
-      expect(mockRoutingRepo.findOne).toHaveBeenCalledWith({
-        where: { itemCode: 'ITEM01', seq: 10, company: 'C1', plant: 'P1' },
-      });
-      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
-        where: { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
-        select: ['itemCode', 'itemName'],
-      });
+      // 라우팅 키 + 테넌트 조건이 쿼리빌더에 적용되었는지 확인
+      expect(qb.where).toHaveBeenCalledWith('routing.itemCode = :itemCode', { itemCode: 'ITEM01' });
+      expect(qb.andWhere).toHaveBeenCalledWith('routing.seq = :seq', { seq: 10 });
+      expect(qb.andWhere).toHaveBeenCalledWith('routing.company = :company', { company: 'C1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('routing.plant = :plant', { plant: 'P1' });
     });
 
     it('should throw NotFoundException when not found', async () => {
       // Arrange
-      mockRoutingRepo.findOne.mockResolvedValue(null);
+      mockRoutingRepo.createQueryBuilder.mockReturnValue(findByKeyQb([], []));
 
       // Act & Assert
       await expect(target.findByKey('ITEM01', 10)).rejects.toThrow(NotFoundException);

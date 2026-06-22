@@ -50,7 +50,7 @@ export default function ReceivingHistoryTable({ data, isLoading, toolbarLeft }: 
         );
       },
     },
-    { id: 'vendor', header: t('material.col.supplier', '공급처'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendor || '-' },
+    { id: 'vendor', header: t('material.col.supplier', '공급처'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendorName || row.original.vendor || '-' },
     { id: 'manufacturer', header: t('common.manufacturer', '제조사'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.manufacturer || '-' },
     {
       accessorKey: 'qty',

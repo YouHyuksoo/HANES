@@ -85,6 +85,12 @@ describe('ContinuityInspectService', () => {
   });
 
   it('inspect links the matching prod result in ON_INSPECT mode', async () => {
+    const producedQb = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ sum: '10' }),
+    };
     const manager = {
       findOne: jest
         .fn()
@@ -93,6 +99,8 @@ describe('ContinuityInspectService', () => {
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       increment: jest.fn().mockResolvedValue(undefined),
       update: jest.fn().mockResolvedValue(undefined),
+      createQueryBuilder: jest.fn().mockReturnValue(producedQb),
+      count: jest.fn().mockResolvedValue(0),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -114,10 +122,16 @@ describe('ContinuityInspectService', () => {
       JobOrder,
       expect.objectContaining({ where: expect.objectContaining({ orderNo: 'JO-001', company: 'C1', plant: 'P1' }) }),
     );
-    expect(manager.update).toHaveBeenCalledWith(
+    // 실적↔FG바코드 링크는 InspectResult.prodResultNo 로 추적한다.
+    // (prod-result.prdUid 는 실적 자신의 시리얼로 유지하며 fgBarcode 로 덮어쓰지 않는다.)
+    expect(manager.create).toHaveBeenCalledWith(
+      InspectResult,
+      expect.objectContaining({ prodResultNo: 'PR-001' }),
+    );
+    expect(manager.update).not.toHaveBeenCalledWith(
       ProdResult,
       { resultNo: 'PR-001' },
-      { prdUid: 'FG-001' },
+      expect.objectContaining({ prdUid: expect.anything() }),
     );
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
@@ -126,6 +140,12 @@ describe('ContinuityInspectService', () => {
   });
 
   it('inspect stores the requested inspect type for terminal inspection', async () => {
+    const producedQb = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ sum: '10' }),
+    };
     const manager = {
       findOne: jest
         .fn()
@@ -134,6 +154,8 @@ describe('ContinuityInspectService', () => {
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       increment: jest.fn().mockResolvedValue(undefined),
       update: jest.fn().mockResolvedValue(undefined),
+      createQueryBuilder: jest.fn().mockReturnValue(producedQb),
+      count: jest.fn().mockResolvedValue(0),
     };
     (mockQueryRunner as any).manager = manager;
 

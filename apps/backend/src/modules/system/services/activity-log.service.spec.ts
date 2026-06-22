@@ -89,10 +89,22 @@ describe('ActivityLogService', () => {
 
   // ─── findAll ───
   describe('findAll', () => {
+    // findAll 은 createQueryBuilder + getManyAndCount 패턴을 사용한다.
+    const findAllQb = (data: any[] = [], total = 0) => {
+      const qb: any = {
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([data, total]),
+      };
+      return qb;
+    };
+
     it('should return paginated results', async () => {
       // Arrange
       const logs = [{ activityType: 'LOGIN' }] as ActivityLog[];
-      mockRepo.findAndCount.mockResolvedValue([logs, 1]);
+      mockRepo.createQueryBuilder.mockReturnValue(findAllQb(logs, 1));
 
       // Act
       const result = await target.findAll({ page: 1, limit: 20 } as any);
@@ -103,7 +115,8 @@ describe('ActivityLogService', () => {
 
     it('should apply date range filter when both dates provided', async () => {
       // Arrange
-      mockRepo.findAndCount.mockResolvedValue([[], 0]);
+      const qb = findAllQb([], 0);
+      mockRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Act
       await target.findAll({
@@ -113,13 +126,24 @@ describe('ActivityLogService', () => {
         endDate: '2026-01-31',
       } as any, 'COMPANY', 'PLANT');
 
-      // Assert
-      expect(mockRepo.findAndCount).toHaveBeenCalled();
+      // Assert - 테넌트 + 시작/종료일 조건 적용
+      expect(qb.andWhere).toHaveBeenCalledWith('al.company = :company', { company: 'COMPANY' });
+      expect(qb.andWhere).toHaveBeenCalledWith('al.plant = :plant', { plant: 'PLANT' });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "al.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')",
+        { startDate: '2026-01-01' },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "al.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
+        { endDate: '2026-01-31' },
+      );
+      expect(qb.getManyAndCount).toHaveBeenCalled();
     });
 
     it('should apply only startDate filter', async () => {
       // Arrange
-      mockRepo.findAndCount.mockResolvedValue([[], 0]);
+      const qb = findAllQb([], 0);
+      mockRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Act
       await target.findAll({
@@ -129,12 +153,21 @@ describe('ActivityLogService', () => {
       } as any);
 
       // Assert
-      expect(mockRepo.findAndCount).toHaveBeenCalled();
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "al.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')",
+        { startDate: '2026-01-01' },
+      );
+      expect(qb.andWhere).not.toHaveBeenCalledWith(
+        "al.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
+        expect.anything(),
+      );
+      expect(qb.getManyAndCount).toHaveBeenCalled();
     });
 
     it('should apply only endDate filter', async () => {
       // Arrange
-      mockRepo.findAndCount.mockResolvedValue([[], 0]);
+      const qb = findAllQb([], 0);
+      mockRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Act
       await target.findAll({
@@ -144,7 +177,15 @@ describe('ActivityLogService', () => {
       } as any);
 
       // Assert
-      expect(mockRepo.findAndCount).toHaveBeenCalled();
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "al.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
+        { endDate: '2026-01-31' },
+      );
+      expect(qb.andWhere).not.toHaveBeenCalledWith(
+        "al.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')",
+        expect.anything(),
+      );
+      expect(qb.getManyAndCount).toHaveBeenCalled();
     });
   });
 });

@@ -1242,12 +1242,12 @@ export class ProdResultService {
             { status: 'CANCELED' },
           );
 
-          /* 역분개 거래유형은 원본 소비 거래유형 기준으로 분기한다.
-           * - PROD_CONSUME(공정 소비)  → PROD_CONSUME_CANCEL (공정창고 복원)
-           * - MAT_OUT(설비 미배정 fallback 소비) → MAT_IN (원자재창고 복원)
-           * 복원 대상 창고는 두 경우 모두 원본 fromWarehouseId(소비 창고)이다. */
-          const reverseTransType =
-            originalTx.transType === 'PROD_CONSUME' ? 'PROD_CONSUME_CANCEL' : 'MAT_IN';
+          /* 이 루프는 refType='MAT_ISSUE'인 StockTransaction만 역분개 대상으로 조회한다(위 find).
+           * 그 transType은 자재출고 경로상 MAT_OUT/WIP_IN 뿐이므로 역분개는 항상 MAT_IN(원본 소비창고 복원)이다.
+           * 복원 대상 창고는 원본 fromWarehouseId(소비 창고)다.
+           * 설비배정 소비(PROD_CONSUME)는 WIP_MAT_TRANSACTIONS 소속이라 여기 StockTransaction 조회엔 잡히지 않으며,
+           * 별도 WipMatStock 역분개 경로로 처리된다. */
+          const reverseTransType = 'MAT_IN';
 
           const reverseTransNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
           const reverseTx = qr.manager.create(StockTransaction, {

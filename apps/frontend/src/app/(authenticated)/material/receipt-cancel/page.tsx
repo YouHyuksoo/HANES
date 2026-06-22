@@ -26,6 +26,7 @@ interface ReceiptTransaction {
   itemCode: string;
   itemName: string;
   matUid: string;
+  vendorName?: string | null;
   warehouseName: string;
   qty: number;
   unit: string;
@@ -142,6 +143,11 @@ export default function ReceiptCancelPage() {
       accessorKey: "matUid", header: "LOT No.", size: 150,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "vendorName", header: t("material.arrivalResult.supplier", "공급사"), size: 140,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => row.original.vendorName || "-",
     },
     {
       accessorKey: "warehouseName", header: t("material.receiptCancel.warehouse"), size: 100,

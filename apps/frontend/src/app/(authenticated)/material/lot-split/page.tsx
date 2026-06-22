@@ -29,6 +29,7 @@ interface SplittableLot {
   qty: number;
   unit?: string;
   vendor?: string;
+  vendorName?: string | null;
   mfgPartnerCode?: string | null;
   status: string;
 }
@@ -150,6 +151,7 @@ export default function LotSplitPage() {
     {
       accessorKey: "vendor", header: t("material.lotSplit.vendor"), size: 100,
       meta: { filterType: "text" as const },
+      cell: ({ row }) => <span>{row.original.vendorName || row.original.vendor || "-"}</span>,
     },
   ], [t]);
 

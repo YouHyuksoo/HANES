@@ -78,9 +78,24 @@ describe('CustomerOrderService', () => {
   });
 
   describe('findAll', () => {
+    // findAll은 createQueryBuilder(getMany/getCount)로 목록을 조회한다.
+    const mockListQb = (orders: any[]) => {
+      const qb: any = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(orders),
+        getCount: jest.fn().mockResolvedValue(orders.length),
+        clone: jest.fn(),
+      };
+      qb.clone.mockReturnValue(qb);
+      mockOrderRepo.createQueryBuilder.mockReturnValue(qb as any);
+      return qb;
+    };
+
     it('화면 수정 URL에서 사용할 id로 orderNo를 함께 반환한다', async () => {
-      mockOrderRepo.find.mockResolvedValue([{ orderNo: 'CO-001', company: 'C1', plant: 'P1' }] as any);
-      mockOrderRepo.count.mockResolvedValue(1);
+      mockListQb([{ orderNo: 'CO-001', company: 'C1', plant: 'P1' }]);
       mockItemRepo.find.mockResolvedValue([]);
       mockPartRepo.find.mockResolvedValue([]);
 
@@ -90,8 +105,7 @@ describe('CustomerOrderService', () => {
     });
 
     it('should enrich listed order items with part names within tenant only', async () => {
-      mockOrderRepo.find.mockResolvedValue([{ orderNo: 'CO-001', company: 'C1', plant: 'P1' }] as any);
-      mockOrderRepo.count.mockResolvedValue(1);
+      mockListQb([{ orderNo: 'CO-001', company: 'C1', plant: 'P1' }]);
       mockItemRepo.find.mockResolvedValue([{ orderNo: 'CO-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' }] as any);
       mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part A' }] as any);
 

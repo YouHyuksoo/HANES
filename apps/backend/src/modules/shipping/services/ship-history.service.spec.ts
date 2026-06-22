@@ -44,10 +44,25 @@ describe('ShipHistoryService', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('findAll', () => {
+    // findAll 은 createQueryBuilder를 두 번(getMany / getCount) 생성한다.
+    const mockOrderListQb = (orders: any[], total: number) => {
+      mockShipmentOrderRepo.createQueryBuilder
+        .mockReturnValueOnce({
+          andWhere: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
+          skip: jest.fn().mockReturnThis(),
+          take: jest.fn().mockReturnThis(),
+          getMany: jest.fn().mockResolvedValue(orders),
+        } as any)
+        .mockReturnValueOnce({
+          andWhere: jest.fn().mockReturnThis(),
+          getCount: jest.fn().mockResolvedValue(total),
+        } as any);
+    };
+
     it('should return paginated ship history with items', async () => {
       const order = { shipOrderNo: 'SO-001' } as ShipmentOrder;
-      mockShipmentOrderRepo.find.mockResolvedValue([order]);
-      mockShipmentOrderRepo.count.mockResolvedValue(1);
+      mockOrderListQb([order], 1);
       mockShipmentOrderItemRepo.find.mockResolvedValue([]);
 
       const result = await target.findAll({ page: 1, limit: 10 } as any);
@@ -58,8 +73,7 @@ describe('ShipHistoryService', () => {
 
     it('should enrich shipment items with part names within tenant only', async () => {
       const order = { shipOrderNo: 'SO-001', company: 'C1', plant: 'P1' } as ShipmentOrder;
-      mockShipmentOrderRepo.find.mockResolvedValue([order]);
-      mockShipmentOrderRepo.count.mockResolvedValue(1);
+      mockOrderListQb([order], 1);
       mockShipmentOrderItemRepo.find.mockResolvedValue([
         { shipOrderNo: 'SO-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as ShipmentOrderItem,
       ]);
@@ -74,8 +88,7 @@ describe('ShipHistoryService', () => {
     });
 
     it('should return empty data when no orders', async () => {
-      mockShipmentOrderRepo.find.mockResolvedValue([]);
-      mockShipmentOrderRepo.count.mockResolvedValue(0);
+      mockOrderListQb([], 0);
 
       const result = await target.findAll({} as any);
 

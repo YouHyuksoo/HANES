@@ -212,30 +212,57 @@ describe('InspectResultService', () => {
   });
 
   describe('getPassRate', () => {
+    // getPassRate는 buildBase()로 매 호출 새 QueryBuilder를 만들어
+    // total/pass 각각 getCount()를 수행한다.
+    const mockCountQb = () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      return qb;
+    };
+
     it('should return pass rate', async () => {
-      mockInspectRepo.count.mockResolvedValueOnce(100).mockResolvedValueOnce(90);
+      const totalQb = mockCountQb();
+      totalQb.getCount.mockResolvedValue(100);
+      const passQb = mockCountQb();
+      passQb.getCount.mockResolvedValue(90);
+      mockInspectRepo.createQueryBuilder
+        .mockReturnValueOnce(totalQb as any)
+        .mockReturnValueOnce(passQb as any);
+
       const r = await target.getPassRate();
       expect(r.totalCount).toBe(100);
       expect(r.passCount).toBe(90);
       expect(r.passRate).toBe(90);
     });
     it('should return 0 passRate when no data', async () => {
-      mockInspectRepo.count.mockResolvedValue(0);
+      mockInspectRepo.createQueryBuilder
+        .mockReturnValueOnce(mockCountQb() as any)
+        .mockReturnValueOnce(mockCountQb() as any);
+
       const r = await target.getPassRate();
       expect(r.passRate).toBe(0);
     });
 
     it('should scope pass rate by tenant', async () => {
-      mockInspectRepo.count.mockResolvedValueOnce(100).mockResolvedValueOnce(90);
+      const totalQb = mockCountQb();
+      totalQb.getCount.mockResolvedValue(100);
+      const passQb = mockCountQb();
+      passQb.getCount.mockResolvedValue(90);
+      mockInspectRepo.createQueryBuilder
+        .mockReturnValueOnce(totalQb as any)
+        .mockReturnValueOnce(passQb as any);
 
       await target.getPassRate(undefined, undefined, undefined, 'C1', 'P1');
 
-      expect(mockInspectRepo.count).toHaveBeenNthCalledWith(1, {
-        where: { company: 'C1', plant: 'P1' },
-      });
-      expect(mockInspectRepo.count).toHaveBeenNthCalledWith(2, {
-        where: { company: 'C1', plant: 'P1', passYn: 'Y' },
-      });
+      // 두 QueryBuilder 모두 테넌트 스코프를 andWhere로 적용한다.
+      expect(totalQb.andWhere).toHaveBeenCalledWith('inspect.company = :company', { company: 'C1' });
+      expect(totalQb.andWhere).toHaveBeenCalledWith('inspect.plant = :plant', { plant: 'P1' });
+      expect(passQb.andWhere).toHaveBeenCalledWith('inspect.company = :company', { company: 'C1' });
+      expect(passQb.andWhere).toHaveBeenCalledWith('inspect.plant = :plant', { plant: 'P1' });
+      // pass QueryBuilder는 추가로 passYn 필터를 적용한다.
+      expect(passQb.andWhere).toHaveBeenCalledWith("inspect.passYn = 'Y'");
     });
   });
 
@@ -245,34 +272,42 @@ describe('InspectResultService', () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue(rows),
       };
-      mockInspectRepo.createQueryBuilder.mockReturnValue(qb as any);
       return qb;
     };
 
     it('should scope inspection type stats by tenant', async () => {
-      const qb = mockStatsQb([{ inspectType: 'OQC', totalCount: '1' }]);
+      const totalQb = mockStatsQb([{ inspectType: 'OQC', totalCount: '1' }]);
+      const passQb = mockStatsQb([{ inspectType: 'OQC', passCount: '1' }]);
       mockInspectRepo.createQueryBuilder
-        .mockReturnValueOnce(qb as any)
-        .mockReturnValueOnce(mockStatsQb([{ inspectType: 'OQC', passCount: '1' }]) as any);
+        .mockReturnValueOnce(totalQb as any)
+        .mockReturnValueOnce(passQb as any);
 
       await target.getStatsByType(undefined, undefined, 'C1', 'P1');
 
-      expect(qb.where).toHaveBeenCalledWith(expect.objectContaining({ company: 'C1', plant: 'P1' }));
+      // 테넌트 스코프는 andWhere로 적용된다.
+      expect(totalQb.andWhere).toHaveBeenCalledWith('inspect.company = :company', { company: 'C1' });
+      expect(totalQb.andWhere).toHaveBeenCalledWith('inspect.plant = :plant', { plant: 'P1' });
     });
 
     it('should scope daily pass rate trend by tenant', async () => {
-      mockInspectRepo.find.mockResolvedValue([]);
+      const qb = {
+        select: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockInspectRepo.createQueryBuilder.mockReturnValue(qb as any);
 
       await target.getDailyPassRateTrend(7, 'C1', 'P1');
 
-      expect(mockInspectRepo.find).toHaveBeenCalledWith({
-        where: { inspectAt: expect.any(Object), company: 'C1', plant: 'P1' },
-        select: ['inspectAt', 'passYn'],
-        order: { inspectAt: 'ASC' },
-      });
+      expect(qb.select).toHaveBeenCalledWith(['inspect.inspectAt', 'inspect.passYn']);
+      expect(qb.orderBy).toHaveBeenCalledWith('inspect.inspectAt', 'ASC');
+      expect(qb.andWhere).toHaveBeenCalledWith('inspect.company = :company', { company: 'C1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('inspect.plant = :plant', { plant: 'P1' });
     });
   });
 });

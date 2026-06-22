@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Raw, In, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { ShelfLifeQueryDto } from '../dto/shelf-life.dto';
 
 @Injectable()
@@ -17,6 +18,8 @@ export class ShelfLifeService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
   ) {}
 
   async findAll(query: ShelfLifeQueryDto, company?: string, plant?: string) {
@@ -48,6 +51,17 @@ export class ShelfLifeService {
       })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    // vendor(공급사) 코드 → 업체명 매핑 (IN 절 일괄 조회, company/plant 스코프)
+    const vendorCodes = Array.from(
+      new Set(data.map((lot) => lot.vendor).filter((v): v is string => Boolean(v))),
+    );
+    const partners = vendorCodes.length > 0
+      ? await this.partnerMasterRepository.find({
+        where: { partnerCode: In(vendorCodes), ...(company && { company }), ...(plant && { plant }) },
+      })
+      : [];
+    const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -82,6 +96,7 @@ export class ShelfLifeService {
         itemCode: lot.itemCode,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
+        vendorName: lot.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
         expiryStatus: status,
         daysUntilExpiry,
       };

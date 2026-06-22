@@ -205,37 +205,19 @@ export class ArrivalService {
     poItems.forEach((poItem) => this.assertSameTenant('PO 품목', { company: po.company, plant: po.plant }, poItem));
 
     // 잔량 검증 — poItemId는 "poNo-seq" 형식 또는 seq 번호
-    // G2: 입하잔량 = 발주수량 - 입하합계 + 반품합계 (반품 시 잔량 복원)
-    // 해당 PO 품목코드만 필터링하여 전체 스캔 방지
-    const poItemCodes = [...new Set(poItems.map((pi) => pi.itemCode).filter(Boolean))];
-    const returnTxs = poItemCodes.length > 0
-      ? await this.stockTransactionRepository.find({
-          where: {
-            refType: 'RETURN',
-            transType: 'MAT_IN_CANCEL',
-            itemCode: In(poItemCodes),
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
-          },
-        })
-      : [];
-    // PO품목/반품 Map 전처리 (O(n*m) → O(n) 개선)
+    // 입하잔량 = 발주수량 - 입하합계. 입하취소 시 receivedQty가 직접 감소되어 잔량이 복원된다.
+    // (별도 반품합계 보정은 두지 않는다 — STOCK_TRANSACTIONS에 RETURN/MAT_IN_CANCEL 기록 경로가 없어 항상 0이며,
+    //  receivedQty 직접 가감과 중복되면 이중 복원 위험.)
     const poItemBySeq = new Map(poItems.map((pi) => [pi.seq, pi]));
     const poItemByKey = new Map(poItems.map((pi) => [`${pi.poNo}-${pi.seq}`, pi]));
-    const returnQtyMap = new Map<string, number>();
-    for (const tx of returnTxs) {
-      const key = `${tx.itemCode}::${tx.refId}`;
-      returnQtyMap.set(key, (returnQtyMap.get(key) ?? 0) + Math.abs(tx.qty));
-    }
 
     for (const item of dto.items) {
       const poItem = poItemBySeq.get(Number(item.poItemId)) ?? poItemByKey.get(item.poItemId);
       if (!poItem) throw new BadRequestException(`PO 품목을 찾을 수 없습니다: ${item.poItemId}`);
-      const returnQty = returnQtyMap.get(`${poItem.itemCode}::${String(poItem.seq)}`) ?? 0;
-      const remaining = poItem.orderQty - poItem.receivedQty + returnQty;
+      const remaining = poItem.orderQty - poItem.receivedQty;
       if (item.receivedQty > remaining) {
         throw new BadRequestException(
-          `입하수량(${item.receivedQty})이 잔량(${remaining})을 초과합니다. (발주: ${poItem.orderQty}, 입하합계: ${poItem.receivedQty}, 반품합계: ${returnQty})`,
+          `입하수량(${item.receivedQty})이 잔량(${remaining})을 초과합니다. (발주: ${poItem.orderQty}, 입하합계: ${poItem.receivedQty})`,
         );
       }
     }

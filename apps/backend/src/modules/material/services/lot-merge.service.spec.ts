@@ -14,6 +14,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -25,6 +26,7 @@ describe('LotMergeService', () => {
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartnerRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockTx: DeepMocked<TransactionService>;
   let mockNumbering: DeepMocked<NumberingService>;
@@ -45,6 +47,8 @@ describe('LotMergeService', () => {
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartnerRepo = createMock<Repository<PartnerMaster>>();
+    mockPartnerRepo.find.mockResolvedValue([]);
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockTx = createMock<TransactionService>();
     mockNumbering = createMock<NumberingService>();
@@ -61,6 +65,7 @@ describe('LotMergeService', () => {
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(MatIssue), useValue: mockMatIssueRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: TransactionService, useValue: mockTx },
         { provide: NumberingService, useValue: mockNumbering },

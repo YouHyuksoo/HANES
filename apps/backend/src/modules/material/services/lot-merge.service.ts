@@ -17,6 +17,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -42,6 +43,8 @@ export class LotMergeService {
     private readonly matIssueRepository: Repository<MatIssue>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     private readonly tx: TransactionService,
@@ -367,15 +370,20 @@ export class LotMergeService {
     const tenantWhere = this.tenantWhere(company, plant);
     const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
     const matUids = lots.map((l) => l.matUid);
+    const vendorCodes = [...new Set(lots.map((l) => l.vendor).filter((v): v is string => Boolean(v)))];
 
-    const [parts, stocks] = await Promise.all([
+    const [parts, stocks, partners] = await Promise.all([
       itemCodes.length > 0
         ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere }, select: ['itemCode', 'itemName', 'unit'] })
         : Promise.resolve([]),
       this.matStockRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }),
+      vendorCodes.length > 0
+        ? this.partnerMasterRepository.find({ where: { partnerCode: In(vendorCodes), ...tenantWhere }, select: ['partnerCode', 'partnerName'] })
+        : Promise.resolve([]),
     ]);
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
+    const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
 
     return lots.map((lot) => {
       const part = partMap.get(lot.itemCode);
@@ -387,6 +395,7 @@ export class LotMergeService {
         unit: part?.unit ?? null,
         qty: stock?.qty ?? 0,
         warehouseCode: stock?.warehouseCode ?? null,
+        vendorName: lot.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
       };
     });
   }

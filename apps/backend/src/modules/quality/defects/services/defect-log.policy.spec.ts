@@ -8,6 +8,8 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
+import { FgLabel } from '../../../../entities/fg-label.entity';
+import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('DefectLogService policy', () => {
@@ -26,6 +28,8 @@ describe('DefectLogService policy', () => {
         { provide: getRepositoryToken(RepairLog), useValue: createMock<Repository<RepairLog>>() },
         { provide: getRepositoryToken(ProdResult), useValue: createMock<Repository<ProdResult>>() },
         { provide: getRepositoryToken(ReworkOrder), useValue: mockReworkOrderRepo },
+        { provide: getRepositoryToken(FgLabel), useValue: createMock<Repository<FgLabel>>() },
+        { provide: getRepositoryToken(DefectCodeMaster), useValue: createMock<Repository<DefectCodeMaster>>() },
       ],
     })
       .setLogger(new MockLoggerService())

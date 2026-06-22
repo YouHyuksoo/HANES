@@ -4,6 +4,7 @@ import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotMergeController } from '../controllers/lot-merge.controller';
 import { LotSplitController } from '../controllers/lot-split.controller';
@@ -19,6 +20,7 @@ import { MatLotService } from '../services/mat-lot.service';
       MatLot,
       MatStock,
       PartMaster,
+      PartnerMaster,
       StockTransaction,
     ]),
   ],
