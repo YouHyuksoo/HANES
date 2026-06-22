@@ -27,6 +27,8 @@ export interface IqcItem {
   unit: string;
   /** 검사구분 (FULL/SKIP) — part master 기준 */
   inspectMethod: string | null;
+  /** 불량코드 2레벨 모델구분 (DEFECT_MODEL_GROUP) */
+  defectModelGroup: string | null;
   arrivalDate: string;
   status: IqcStatus;
   inspector: string | null;
@@ -44,7 +46,6 @@ export interface IqcSubmitExtra {
   sampleQty?: number;
   certFile?: File;
   sampleBarcode?: string;
-  defects?: Array<{ defectCode: string; qty: number }>;
 }
 
 const INITIAL_RESULT_FORM: IqcResultForm = { result: '', inspector: '', remark: '' };
@@ -94,6 +95,7 @@ export function useIqcData() {
         serialCount: g.serialCount ?? 0,
         unit: g.unit || 'EA',
         inspectMethod: g.inspectMethod ?? null,
+        defectModelGroup: g.defectModelGroup ?? null,
         arrivalDate: g.recvDate || g.createdAt || '',
         status: mapToFrontendStatus(g.iqcStatus || 'PENDING'),
         inspector: null,
@@ -153,7 +155,6 @@ export function useIqcData() {
         details: details ? JSON.stringify(details) : undefined,
         sampleQty: extra?.sampleQty || undefined,
         sampleBarcode: extra?.sampleBarcode || undefined,
-        defects: extra?.defects,
         inspectClass: selectedItem.inspectMethod || undefined,
       });
 

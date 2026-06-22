@@ -19,3 +19,10 @@ test('IQC modal passes vendorCode rather than display supplierName to AQL previe
   assert.match(modalSource, /vendorCode: selectedItem\.vendorCode/);
   assert.doesNotMatch(modalSource, /vendorCode: selectedItem\.supplierName/);
 });
+
+test('IQC modal filters defect-code options by item defect model group', () => {
+  assert.match(hookSource, /defectModelGroup: string \| null/);
+  assert.match(hookSource, /defectModelGroup: g\.defectModelGroup \?\? null/);
+  assert.match(modalSource, /selectedItem\.defectModelGroup/);
+  assert.match(modalSource, /params:\s*selectedItem\.defectModelGroup\s*\?\s*\{\s*productType:\s*selectedItem\.defectModelGroup\s*\}\s*:\s*undefined/);
+});
