@@ -58,10 +58,12 @@ export default function ShipCancelPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [canceling, setCanceling] = useState(false);
   const [pageError, setPageError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     setPageError("");
+    setSuccessMsg("");
     try {
       const res = await api.get("/shipping/orders/shipped");
       setOrders(res.data?.data ?? []);
@@ -75,6 +77,7 @@ export default function ShipCancelPage() {
   const fetchReturns = useCallback(async () => {
     setLoading(true);
     setPageError("");
+    setSuccessMsg("");
     try {
       const res = await api.get("/shipping/returns", { params: { limit: "5000" } });
       setReturns(res.data?.data ?? []);
@@ -95,6 +98,7 @@ export default function ShipCancelPage() {
     setDetailLoading(true);
     setDetail(null);
     setPageError("");
+    setSuccessMsg("");
     try {
       const res = await api.get(`/shipping/orders/${encodeURIComponent(orderNo)}/shipped-detail`);
       setDetail(res.data?.data ?? null);
@@ -115,15 +119,17 @@ export default function ShipCancelPage() {
     setCanceling(true);
     setPageError("");
     try {
-      await api.post(`/shipping/orders/${encodeURIComponent(selectedOrderNo)}/cancel-shipment`, {
+      const res = await api.post(`/shipping/orders/${encodeURIComponent(selectedOrderNo)}/cancel-shipment`, {
         reason: cancelReason.trim(),
         workerId: userId,
       });
+      const d = res.data?.data;
       setCancelOpen(false);
       setCancelReason("");
       setSelectedOrderNo(null);
       setDetail(null);
       fetchOrders();
+      setSuccessMsg(`${t("shipping.return.cancelSuccess", "출하가 취소되었습니다.")} (${d?.returnNo ?? ""} · ${(d?.restoredQty ?? 0).toLocaleString()})`);
     } catch (e: unknown) {
       setPageError(errMsg(e, t("shipping.return.cancelFailed", "출하취소에 실패했습니다.")));
     } finally {
@@ -177,6 +183,13 @@ export default function ShipCancelPage() {
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex-shrink-0">
           <AlertTriangle className="w-4 h-4 shrink-0" /><span className="flex-1">{pageError}</span>
           <button onClick={() => setPageError("")}><XCircle className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary text-primary text-sm flex-shrink-0">
+          <Undo2 className="w-4 h-4 shrink-0" /><span className="flex-1">{successMsg}</span>
+          <button onClick={() => setSuccessMsg("")}><XCircle className="w-4 h-4" /></button>
         </div>
       )}
 

@@ -997,7 +997,19 @@ export class ShipOrderService {
     let returnNo!: string;
     await this.tx.run(async (qr) => {
       // 1) 팔레트출하분: SHIPPED→reverse 후 CANCELED 마감+팔레트 분리, PREPARING/LOADED→cancel
-      for (const s of activeShipments) {
+      //    트랜잭션 내에서 shipment를 잠금 재조회 + 상태/ERP 재검증(비잠금 사전조회의 동시성 창 제거)
+      for (const s0 of activeShipments) {
+        const s = await qr.manager.findOne(ShipmentLog, {
+          where: { shipNo: s0.shipNo, ...where },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!s) throw new BadRequestException(`출하건을 찾을 수 없습니다: ${s0.shipNo}`);
+        if (s.erpSyncYn === 'Y') {
+          throw new BadRequestException(`ERP 연동이 완료된 출하(${s.shipNo})가 포함되어 취소할 수 없습니다. ERP 연동분부터 정리해 주세요.`);
+        }
+        if (!['PREPARING', 'LOADED', 'SHIPPED'].includes(s.status)) {
+          throw new BadRequestException(`이미 처리된 출하입니다: ${s.shipNo} (현재 ${s.status})`);
+        }
         if (s.status === 'SHIPPED') {
           // 재고복원/라벨/팔레트 LOADED/박스 CLOSED/shippedQty 복원; 품목별 복원수량 맵 반환
           const reversedMap = await this.shipmentService.reverseShipmentInTx(qr, s, dto.reason, company, plant);
@@ -1037,8 +1049,8 @@ export class ShipOrderService {
         returnReason: dto.reason,
         status: 'COMPLETED',
         remark: `출하취소(shipments:${canceledShipments.join(',') || '-'} / boxes:${canceledBoxes.length})`,
-        company: company || null,
-        plant: plant || null,
+        company,
+        plant,
       });
       await qr.manager.save(ret);
 
@@ -1051,8 +1063,8 @@ export class ShipOrderService {
             itemCode,
             returnQty: qty,
             disposalType: 'RESTOCK',
-            company: company || null,
-            plant: plant || null,
+            company,
+            plant,
           }),
         );
       }
