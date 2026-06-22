@@ -36,3 +36,20 @@ test('shared index exports DateRangeFilter', () => {
   assert.match(index, /export \{ default as DateRangeFilter \} from ".\/DateRangeFilter"/);
   assert.match(index, /export type \{ DateRangeFilterProps \}/);
 });
+
+const dfSrc = readFileSync(new URL('./DateFilter.tsx', import.meta.url), 'utf8');
+
+test('DateFilter is a controlled single-date filter with today button', () => {
+  assert.match(dfSrc, /value: string/);
+  assert.match(dfSrc, /onChange: \(v: string\) => void/);
+  assert.match(dfSrc, /todayButton\?: boolean/);
+  const inputs = dfSrc.match(/type="date"/g) || [];
+  assert.equal(inputs.length, 1);
+  assert.match(dfSrc, /getTodayLocal\(\)/);
+  assert.match(dfSrc, /common\.dateFilter\.today/);
+});
+
+test('shared index exports DateFilter', () => {
+  assert.match(index, /export \{ default as DateFilter \} from ".\/DateFilter"/);
+  assert.match(index, /export type \{ DateFilterProps \}/);
+});

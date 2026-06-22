@@ -26,3 +26,5 @@ export { default as QtyInput } from "./QtyInput";
 export type { QtyInputProps } from "./QtyInput";
 export { default as DateRangeFilter } from "./DateRangeFilter";
 export type { DateRangeFilterProps } from "./DateRangeFilter";
+export { default as DateFilter } from "./DateFilter";
+export type { DateFilterProps } from "./DateFilter";
