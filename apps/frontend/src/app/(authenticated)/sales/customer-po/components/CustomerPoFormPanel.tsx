@@ -16,6 +16,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Plus, X } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
+import QtyInput from "@/components/shared/QtyInput";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
@@ -260,11 +261,9 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
                         <span className="ml-1 text-[10px] text-text-muted">({item.itemCode})</span>
                       </td>
                       <td className="px-2 py-1">
-                        <input
-                          type="number"
-                          min={0}
-                          value={item.orderQty || ""}
-                          onChange={(e) => updateItem(item.itemCode, "orderQty", Number(e.target.value))}
+                        <QtyInput
+                          value={item.orderQty || 0}
+                          onChange={(n) => updateItem(item.itemCode, "orderQty", n)}
                           className="w-full px-1.5 py-0.5 text-xs border border-gray-400 dark:border-gray-500 rounded text-right bg-background text-text"
                           placeholder="0"
                         />
