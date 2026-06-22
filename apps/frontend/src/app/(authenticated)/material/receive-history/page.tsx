@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { ClipboardList, RefreshCw, Search } from 'lucide-react';
 import { Button, Input, Select, Card, CardContent } from '@/components/ui';
 import DateRangeFilter from '@/components/shared/DateRangeFilter';
+import FilterBar from '@/components/shared/FilterBar';
 import api from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
 import ReceivingHistoryTable from '../receive/components/ReceivingHistoryTable';
@@ -93,7 +94,7 @@ export default function ReceiveHistoryPage() {
             data={filteredHistory}
             isLoading={loading}
             toolbarLeft={
-              <div className="flex gap-3 flex-1 min-w-0 items-center flex-wrap">
+              <FilterBar>
                 <DateRangeFilter
                   from={fromDate}
                   to={toDate}
@@ -122,7 +123,7 @@ export default function ReceiveHistoryPage() {
                     fullWidth
                   />
                 </div>
-              </div>
+              </FilterBar>
             }
           />
         </CardContent>

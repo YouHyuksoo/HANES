@@ -17,6 +17,7 @@ import { ClipboardList, Search, RefreshCw, Package } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import FilterBar from "@/components/shared/FilterBar";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -255,7 +256,7 @@ export default function PoStatusPage() {
               selectedRowId={selectedPo?.poNo}
               getRowId={(row) => row.poNo}
               toolbarLeft={
-                <div className="flex gap-3 flex-1 min-w-0 items-center flex-wrap">
+                <FilterBar>
                   <DateRangeFilter
                     label={t("material.po.orderDate", "발주일")}
                     from={fromDate}
@@ -273,7 +274,7 @@ export default function PoStatusPage() {
                     <ComCodeSelect groupCode="PO_STATUS" labelPrefix={t("common.status")}
                       value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
-                </div>
+                </FilterBar>
               }
               sqlQuery={`SELECT *\nFROM PO_HEADERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent></Card>
