@@ -14,9 +14,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, Trash2, ImageIcon, RefreshCw } from "lucide-react";
-import { Button, ConfirmModal, Input, Select } from "@/components/ui";
-import { QtyInput } from "@/components/shared";
-import { useComCodeOptions } from "@/hooks/useComCode";
+import { Button, ConfirmModal, Input } from "@/components/ui";
+import { ComCodeSelect, QtyInput } from "@/components/shared";
 import api from "@/services/api";
 
 export interface ConsumableItem {
@@ -72,7 +71,6 @@ const EMPTY: ConsumableFormValues = {
 export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, animate = true }: Props) {
   const { t } = useTranslation();
   const isEdit = !!item;
-  const categoryOptions = useComCodeOptions("CONSUMABLE_CATEGORY");
   const [form, setForm] = useState<ConsumableFormValues>(EMPTY);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -193,9 +191,10 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
               disabled={isEdit}
               fullWidth
             />
-            <Select
+            <ComCodeSelect
+              groupCode="CONSUMABLE_CATEGORY"
+              includeAll={false}
               label={t("consumables.master.category")}
-              options={categoryOptions}
               value={form.category}
               onChange={(v) => set("category", v)}
               fullWidth
