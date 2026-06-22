@@ -1,42 +1,24 @@
-﻿"use client";
+"use client";
 
 /**
  * @file src/app/(authenticated)/shipping/confirm/page.tsx
- * @description 출하확정 페이지 - 팔레트를 출하로 확정
+ * @description 박스별출하 - 출하지시 기준으로 박스를 스캔하여 박스 단위로 출하 확정
  *
- * 초보자 가이드:
- * 1. **출하**: 고객사로 제품을 발송하는 최종 단계
- * 2. **상태 흐름**: PREPARING -> LOADED -> SHIPPED -> DELIVERED
- * 3. LOADED→SHIPPED 전환 시 팔레트 바코드 스캔 검증 필수
- * 4. API: 전용 엔드포인트 (mark-loaded, mark-shipped, mark-delivered)
+ * 워크플로우:
+ * 1. 좌측에서 미출하 출하지시(CONFIRMED, 잔여>0)를 선택한다.
+ * 2. 중앙에 라인 진행률과 출하가능 박스(CLOSED+OQC PASS+팔레트 미적재)가 표시된다.
+ * 3. "박스출하 스캔" → BoxScanShipModal에서 박스 바코드를 스캔해 박스 단위로 즉시 출하한다.
+ *
+ * 팔레트 출하는 별도 화면(/shipping/pallet, /shipping/pallet-ship)을 사용한다.
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Truck, Search, RefreshCw, Upload, ArrowRight, XCircle, RotateCcw, ClipboardCheck } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
-import { useComCodeOptions } from '@/hooks/useComCode';
-import { usePartnerOptions } from '@/hooks/useMasterOptions';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
-import { ShipmentStatusBadge, ShipmentScanModal } from '@/components/shipping';
-import type { ShipmentStatus } from '@/components/shipping';
-import api from '@/services/api';
-import OrderFulfillmentModal from './OrderFulfillmentModal';
-
-interface Shipment {
-  id: string;
-  shipNo: string;
-  shipDate: string;
-  customer: string;
-  palletCount: number;
-  boxCount: number;
-  totalQty: number;
-  status: ShipmentStatus;
-  vehicleNo: string;
-  driverName: string;
-  destination: string;
-  createdAt: string;
-}
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Truck, RefreshCw, Package, ScanLine, AlertTriangle, XCircle } from "lucide-react";
+import { Card, CardContent, Button } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import { BoxScanShipModal } from "@/components/shipping";
+import api from "@/services/api";
 
 interface ShipOrderLineSummary {
   itemCode: string;
@@ -44,399 +26,277 @@ interface ShipOrderLineSummary {
   orderQty: number;
   shippedQty: number;
 }
-
 interface ShipOrderSummary {
   shipOrderNo: string;
-  customerName?: string;
-  shipDate?: string;
-  dueDate?: string;
+  customerName?: string | null;
+  shipDate?: string | null;
+  dueDate?: string | null;
   status: string;
   items: ShipOrderLineSummary[];
 }
+interface OrderLine {
+  itemCode: string;
+  itemName?: string;
+  orderQty: number;
+  shippedQty: number;
+  remainingQty: number;
+}
+interface CandidateBox {
+  boxNo: string;
+  itemCode: string;
+  qty: number;
+  oqcStatus?: string | null;
+}
+interface FulfillmentData {
+  order: { shipOrderNo: string; customerName?: string | null; shipDate?: string | null; dueDate?: string | null };
+  lines: OrderLine[];
+  candidateBoxes: CandidateBox[];
+}
+interface BoxSerial {
+  seq: number;
+  fgBarcode: string;
+  itemCode: string;
+  itemName?: string | null;
+  status?: string | null;
+  inspectPassYn?: string | null;
+  issuedAt?: string | null;
+  receivedAt?: string | null;
+}
 
-export default function ShipmentPage() {
+function errMsg(e: unknown, fallback: string): string {
+  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
+}
+
+export default function BoxShipPage() {
   const { t } = useTranslation();
-  const [data, setData] = useState<Shipment[]>([]);
-  const [shipOrders, setShipOrders] = useState<ShipOrderSummary[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingShipOrders, setLoadingShipOrders] = useState(false);
 
-  const comCodeOptions = useComCodeOptions('SHIPMENT_STATUS');
-  const statusOptions = useMemo(() => [
-    { value: '', label: t('common.allStatus') }, ...comCodeOptions
-  ], [t, comCodeOptions]);
-  const { options: customerOptions } = usePartnerOptions('CUSTOMER');
-  const customerFilterOptions = useMemo(() => [
-    { value: '', label: t('shipping.confirm.allCustomers', '전체 고객사') }, ...customerOptions
-  ], [t, customerOptions]);
+  const [orders, setOrders] = useState<ShipOrderSummary[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
+  const [fulfillment, setFulfillment] = useState<FulfillmentData | null>(null);
+  const [fulfillmentLoading, setFulfillmentLoading] = useState(false);
+  const [selectedBox, setSelectedBox] = useState<CandidateBox | null>(null);
+  const [serials, setSerials] = useState<BoxSerial[]>([]);
+  const [serialsLoading, setSerialsLoading] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [pageError, setPageError] = useState("");
 
-  const [statusFilter, setStatusFilter] = useState('');
-  const [customerFilter, setCustomerFilter] = useState('');
-  const [searchText, setSearchText] = useState('');
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
-  const [isFulfillmentOpen, setIsFulfillmentOpen] = useState(false);
-  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
-  const [selectedShipOrderNo, setSelectedShipOrderNo] = useState<string | null>(null);
-  const [scanTarget, setScanTarget] = useState<Shipment | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<Shipment | null>(null);
-  const [cancelRemark, setCancelRemark] = useState('');
-  const [cancelling, setCancelling] = useState(false);
-  const [reverseTarget, setReverseTarget] = useState<Shipment | null>(null);
-  const [reverseRemark, setReverseRemark] = useState('');
-  const [reversing, setReversing] = useState(false);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchOrders = useCallback(async () => {
+    setOrdersLoading(true);
     try {
-      const params: Record<string, string> = { limit: '5000' };
-      if (searchText) params.shipNo = searchText;
-      if (statusFilter) params.status = statusFilter;
-      if (customerFilter) params.customer = customerFilter;
-      const res = await api.get('/shipping/shipments', { params });
-      setData(res.data?.data ?? []);
-    } catch {
-      setData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchText, statusFilter, customerFilter]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const fetchShipOrders = useCallback(async () => {
-    setLoadingShipOrders(true);
-    try {
-      const res = await api.get('/shipping/orders', { params: { status: 'CONFIRMED', limit: '5000' } });
+      const res = await api.get("/shipping/orders", { params: { status: "CONFIRMED", limit: "200" } });
       const list: ShipOrderSummary[] = res.data?.data ?? [];
-      const unshipped = list.filter((order) =>
-        order.items?.some((item) => item.orderQty > item.shippedQty),
-      );
-      setShipOrders(unshipped);
-      setSelectedShipOrderNo((current) =>
-        current && unshipped.some((order) => order.shipOrderNo === current) ? current : null,
-      );
-    } catch {
-      setShipOrders([]);
-      setSelectedShipOrderNo(null);
+      const unshipped = list.filter((o) => o.items?.some((it) => it.orderQty > it.shippedQty));
+      setOrders(unshipped);
+      setSelectedOrderNo((cur) => (cur && unshipped.some((o) => o.shipOrderNo === cur) ? cur : null));
+    } catch (e: unknown) {
+      setPageError(errMsg(e, t("shipping.confirm.loadOrdersFailed", "출하지시 목록을 불러오지 못했습니다.")));
     } finally {
-      setLoadingShipOrders(false);
+      setOrdersLoading(false);
     }
-  }, []);
+  }, [t]);
 
-  useEffect(() => { fetchShipOrders(); }, [fetchShipOrders]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const handleRefresh = useCallback(() => {
-    fetchData();
-    fetchShipOrders();
-  }, [fetchData, fetchShipOrders]);
-
-  const openFulfillmentForOrder = useCallback((order: ShipOrderSummary) => {
-    setSelectedShipOrderNo(order.shipOrderNo);
-    setIsFulfillmentOpen(true);
-  }, []);
-
-  const handleFulfillmentChanged = useCallback(() => {
-    fetchData();
-    fetchShipOrders();
-  }, [fetchData, fetchShipOrders]);
-
-  const handleStatusChange = useCallback(async (shipment: Shipment) => {
-    if (shipment.status === 'DELIVERED') return;
-
-    // LOADED → SHIPPED: 바코드 스캔 검증 모달 표시
-    if (shipment.status === 'LOADED') {
-      setScanTarget(shipment);
-      setIsScanModalOpen(true);
-      return;
-    }
-
-    // PREPARING → LOADED, SHIPPED → DELIVERED: 전용 엔드포인트 사용
-    const endpointMap: Record<string, string> = {
-      PREPARING: 'mark-loaded',
-      SHIPPED: 'mark-delivered',
-    };
-    const endpoint = endpointMap[shipment.status];
-    if (!endpoint) return;
-
+  const fetchFulfillment = useCallback(async (orderNo: string) => {
+    setFulfillmentLoading(true);
+    setFulfillment(null);
+    setSelectedBox(null);
+    setSerials([]);
     try {
-      await api.post(`/shipping/shipments/${shipment.shipNo}/${endpoint}`);
-      fetchData();
-    } catch (e) {
-      console.error('Status change failed:', e);
-    }
-  }, [fetchData]);
-
-  /** 출하 취소 */
-  const handleCancelShipment = useCallback(async () => {
-    if (!cancelTarget || !cancelRemark.trim()) return;
-    setCancelling(true);
-    try {
-      await api.post(`/shipping/shipments/${cancelTarget.shipNo}/cancel`, {
-        remark: cancelRemark.trim(),
-      });
-      setCancelTarget(null);
-      setCancelRemark('');
-      fetchData();
-    } catch (e) {
-      console.error('Cancel shipment failed:', e);
+      const res = await api.get(`/shipping/orders/${encodeURIComponent(orderNo)}/fulfillment`);
+      setFulfillment(res.data?.data ?? null);
+    } catch (e: unknown) {
+      setPageError(errMsg(e, t("shipping.confirm.loadFulfillmentFailed", "출하정보를 불러오지 못했습니다.")));
     } finally {
-      setCancelling(false);
+      setFulfillmentLoading(false);
     }
-  }, [cancelTarget, cancelRemark, fetchData]);
+  }, [t]);
 
-  /** 출하 역분개 (SHIPPED → LOADED, 제품재고 복원). ERP 연동분은 서버에서 차단됨 */
-  const handleReverseShipment = useCallback(async () => {
-    if (!reverseTarget || !reverseRemark.trim()) return;
-    setReversing(true);
+  const selectOrder = useCallback((orderNo: string) => {
+    setSelectedOrderNo(orderNo);
+    fetchFulfillment(orderNo);
+  }, [fetchFulfillment]);
+
+  const fetchSerials = useCallback(async (box: CandidateBox) => {
+    setSelectedBox(box);
+    setSerialsLoading(true);
+    setSerials([]);
     try {
-      await api.post(`/shipping/shipments/${reverseTarget.shipNo}/reverse`, {
-        remark: reverseRemark.trim(),
-      });
-      setReverseTarget(null);
-      setReverseRemark('');
-      fetchData();
-    } catch (e) {
-      console.error('Reverse shipment failed:', e);
+      const res = await api.get(`/shipping/box-stock/${encodeURIComponent(box.boxNo)}/serials`);
+      setSerials(res.data?.data ?? []);
+    } catch (e: unknown) {
+      setPageError(errMsg(e, t("shipping.confirm.loadSerialsFailed", "박스 시리얼을 불러오지 못했습니다.")));
     } finally {
-      setReversing(false);
+      setSerialsLoading(false);
     }
-  }, [reverseTarget, reverseRemark, fetchData]);
+  }, [t]);
 
-  const shipOrderColumns = useMemo<ColumnDef<ShipOrderSummary>[]>(() => [
-    {
-      id: 'fulfillmentAction',
-      header: '',
-      size: 44,
-      meta: { align: 'center' as const, filterType: 'none' as const },
-      cell: ({ row }) => (
-        <button
-          type="button"
-          className="rounded p-1 text-primary hover:bg-surface"
-          title={t('shipping.confirm.startFulfillment', '출하작업')}
-          aria-label={t('shipping.confirm.startFulfillment', '출하작업')}
-          onClick={(e) => { e.stopPropagation(); openFulfillmentForOrder(row.original); }}
-        >
-          <ClipboardCheck className="h-4 w-4" />
-        </button>
-      ),
-    },
-    { accessorKey: 'shipOrderNo', header: t('shipping.shipOrder.shipOrderNo', '출하지시번호'), size: 150, meta: { filterType: 'text' as const } },
-    { accessorKey: 'customerName', header: t('shipping.confirm.customer'), size: 120, meta: { filterType: 'text' as const }, cell: ({ getValue }) => getValue() || '-' },
-    {
-      id: 'remainingQty',
-      header: t('shipping.confirm.remainingQty', '잔여수량'),
-      size: 90,
-      meta: { align: 'right' as const, filterType: 'number' as const },
-      cell: ({ row }) => {
-        const remaining = row.original.items.reduce((sum, item) => sum + Math.max(0, item.orderQty - item.shippedQty), 0);
-        return <span className="font-medium text-primary">{remaining.toLocaleString()}</span>;
-      },
-    },
-    { accessorKey: 'shipDate', header: t('shipping.confirm.shipDate'), size: 105, meta: { filterType: 'date' as const }, cell: ({ getValue }) => getValue() || '-' },
-  ], [t, openFulfillmentForOrder]);
+  const handleShipped = useCallback(() => {
+    fetchOrders();
+    if (selectedOrderNo) fetchFulfillment(selectedOrderNo);
+  }, [fetchOrders, fetchFulfillment, selectedOrderNo]);
 
-  const columns = useMemo<ColumnDef<Shipment>[]>(() => [
-    { accessorKey: 'shipNo', header: t('shipping.confirm.shipmentNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'shipDate', header: t('shipping.confirm.shipDate'), size: 100, meta: { filterType: 'date' as const } },
-    { accessorKey: 'customer', header: t('shipping.confirm.customer'), size: 120, meta: { filterType: 'text' as const } },
-    { accessorKey: 'palletCount', header: t('shipping.confirm.pallet'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: 'boxCount', header: t('shipping.confirm.box'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: 'totalQty', header: t('common.totalQty'), size: 100, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: 'status', header: t('common.status'), size: 100, meta: { filterType: 'multi' as const }, cell: ({ getValue }) => <ShipmentStatusBadge status={getValue() as ShipmentStatus} /> },
-    { accessorKey: 'vehicleNo', header: t('shipping.confirm.vehicleNo'), size: 100, meta: { filterType: 'text' as const } },
-    { id: 'actions', header: '', size: 130, meta: { filterType: 'none' as const }, cell: ({ row }) => {
-      const s = row.original;
-      const canCancel = s.status === 'PREPARING' || s.status === 'LOADED';
-      return (
-        <div className="flex gap-1">
-          <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.changeStatus')}
-            disabled={s.status === 'DELIVERED' || s.status === 'CANCELED'}
-            onClick={(e) => { e.stopPropagation(); handleStatusChange(s); }}>
-            <ArrowRight className={`w-4 h-4 ${s.status === 'DELIVERED' || s.status === 'CANCELED' ? 'text-text-muted opacity-50' : 'text-primary'}`} />
-          </button>
-          {canCancel && (
-            <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.cancelShipment')}
-              onClick={(e) => { e.stopPropagation(); setCancelTarget(s); }}>
-              <XCircle className="w-4 h-4 text-red-500" />
-            </button>
-          )}
-          {s.status === 'SHIPPED' && (
-            <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.reverseShipment', '출하 역분개')}
-              onClick={(e) => { e.stopPropagation(); setReverseTarget(s); }}>
-              <RotateCcw className="w-4 h-4 text-amber-500" />
-            </button>
-          )}
-          <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.syncERP')}
-            onClick={(e) => e.stopPropagation()}>
-            <Upload className="w-4 h-4 text-primary" />
-          </button>
-        </div>
-      );
-    } },
-  ], [t, handleStatusChange]);
+  const candidateColumns = useMemo<ColumnDef<CandidateBox>[]>(() => [
+    { accessorKey: "boxNo", header: t("shipping.confirm.boxNo", "박스번호"), size: 190, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono font-medium">{getValue() as string}</span> },
+    { accessorKey: "itemCode", header: t("shipping.confirm.item", "품목"), size: 160, meta: { filterType: "text" as const } },
+    { accessorKey: "qty", header: t("shipping.confirm.qty", "수량"), size: 90, meta: { align: "right" as const, filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
+    { accessorKey: "oqcStatus", header: "OQC", size: 80, meta: { align: "center" as const }, cell: ({ getValue }) => <span className="text-xs font-medium text-text">{(getValue() as string) ?? "-"}</span> },
+  ], [t]);
+
+  const candidateBoxes = fulfillment?.candidateBoxes ?? [];
+  const lines = fulfillment?.lines ?? [];
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      {/* header */}
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Truck className="w-7 h-7 text-primary" />{t('shipping.confirm.title')}</h1>
-          <p className="text-text-muted mt-1">{t('shipping.confirm.description')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Truck className="w-7 h-7 text-primary" />{t("shipping.confirm.title", "박스별출하")}</h1>
+          <p className="text-text-muted mt-1">{t("shipping.confirm.description", "출하지시 기준으로 박스를 스캔하여 박스 단위로 출하합니다.")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={handleRefresh}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
+          <Button variant="secondary" size="sm" onClick={handleShipped}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${ordersLoading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" disabled={!selectedOrderNo} onClick={() => setScanOpen(true)}>
+            <ScanLine className="w-4 h-4 mr-1" />{t("shipping.confirm.boxScanShip", "박스출하 스캔")}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-[minmax(340px,0.45fr)_minmax(0,1fr)] gap-4 flex-1 min-h-0">
-        <Card className="min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3 flex-shrink-0">
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-text">{t('shipping.confirm.unshippedOrders', '미출하 출하지시')}</h2>
-              <p className="text-xs text-text-muted mt-1">{t('shipping.confirm.unshippedOrdersHint', '작업 아이콘을 누르면 출하지시 기준 팔레트 작업을 시작합니다.')}</p>
-            </div>
-            <Button variant="secondary" size="sm" onClick={fetchShipOrders}>
-              <RefreshCw className={`w-4 h-4 ${loadingShipOrders ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
-          <div className="flex-1 min-h-0">
-            <DataGrid
-              data={shipOrders}
-              columns={shipOrderColumns}
-              isLoading={loadingShipOrders}
-              enableColumnFilter
-              enableExport
-              exportFileName={t('shipping.confirm.unshippedOrders', '미출하 출하지시')}
-              selectedRowId={selectedShipOrderNo ?? undefined}
-              getRowId={(row) => row.shipOrderNo}
-              emptyMessage={t('shipping.confirm.noUnshippedOrders', '미출하 출하지시가 없습니다.')}
-              sqlQuery={`SELECT so.SHIP_ORDER_NO, so.CUSTOMER_ID, so.SHIP_DATE, soi.ITEM_CODE, soi.ORDER_QTY, soi.SHIPPED_QTY\nFROM SHIPMENT_ORDERS so\nJOIN SHIPMENT_ORDER_ITEMS soi ON soi.SHIP_ORDER_ID = so.SHIP_ORDER_NO\nWHERE so.COMPANY = '40'\n  AND so.PLANT_CD = '1000'\n  AND so.STATUS = 'CONFIRMED'\n  AND soi.SHIPPED_QTY < soi.ORDER_QTY\nORDER BY so.CREATED_AT DESC`}
-            />
-          </div>
-        </CardContent></Card>
-
-        <Card className="min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-          <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
-            enableExport exportFileName={t('shipping.confirm.title')}
-            toolbarLeft={
-              <div className="flex gap-3 flex-1 min-w-0">
-                <div className="flex-1 min-w-0">
-                  <Input placeholder={t('shipping.confirm.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-                </div>
-                <div className="w-36 flex-shrink-0">
-                  <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
-                </div>
-                <div className="w-36 flex-shrink-0">
-                  <Select options={customerFilterOptions} value={customerFilter} onChange={setCustomerFilter} fullWidth />
-                </div>
-              </div>
-            }
-            onRowClick={(row) => { setSelectedShipment(row); setIsDetailModalOpen(true); }}
-            sqlQuery={`SELECT *\nFROM SHIPPING_CONFIRMS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-        </CardContent></Card>
-      </div>
-
-      {/* 상세 모달 */}
-      <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title={t('shipping.confirm.detail')} size="lg">
-        {selectedShipment && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div><p className="text-sm text-text-muted">{t('shipping.confirm.shipmentNo')}</p><p className="font-medium text-text">{selectedShipment.shipNo}</p></div>
-              <div><p className="text-sm text-text-muted">{t('shipping.confirm.shipDate')}</p><p className="font-medium text-text">{selectedShipment.shipDate}</p></div>
-              <div><p className="text-sm text-text-muted">{t('shipping.confirm.customer')}</p><p className="font-medium text-text">{selectedShipment.customer}</p></div>
-              <div><p className="text-sm text-text-muted">{t('common.status')}</p><ShipmentStatusBadge status={selectedShipment.status} /></div>
-              <div><p className="text-sm text-text-muted">{t('shipping.confirm.vehicleNo')}</p><p className="font-medium text-text">{selectedShipment.vehicleNo}</p></div>
-              <div><p className="text-sm text-text-muted">{t('shipping.confirm.driver')}</p><p className="font-medium text-text">{selectedShipment.driverName}</p></div>
-              <div className="col-span-2"><p className="text-sm text-text-muted">{t('shipping.confirm.destination')}</p><p className="font-medium text-text">{selectedShipment.destination}</p></div>
-            </div>
-            <div className="grid grid-cols-3 gap-4 p-4 bg-background rounded-lg">
-              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.palletCount}</p><p className="text-sm text-text-muted">{t('shipping.confirm.pallet')}</p></div>
-              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.boxCount}</p><p className="text-sm text-text-muted">{t('shipping.confirm.box')}</p></div>
-              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.totalQty.toLocaleString()}</p><p className="text-sm text-text-muted">{t('common.totalQty')}</p></div>
-            </div>
-            <div className="flex justify-end"><Button variant="secondary" onClick={() => setIsDetailModalOpen(false)}>{t('common.close')}</Button></div>
-          </div>
-        )}
-      </Modal>
-
-      {/* 출하 취소 모달 */}
-      <Modal isOpen={!!cancelTarget} onClose={() => { setCancelTarget(null); setCancelRemark(''); }} title={t('shipping.confirm.cancelShipment')} size="lg">
-        <div className="space-y-4">
-          {cancelTarget && (
-            <div className="p-3 bg-surface-secondary rounded-lg space-y-1 text-sm">
-              <p><span className="text-text-muted">{t('shipping.confirm.shipmentNo')}:</span> {cancelTarget.shipNo}</p>
-              <p><span className="text-text-muted">{t('shipping.confirm.customer')}:</span> {cancelTarget.customer}</p>
-              <p><span className="text-text-muted">{t('shipping.confirm.shipDate')}:</span> {cancelTarget.shipDate}</p>
-              <p><span className="text-text-muted">{t('shipping.confirm.pallet')}:</span> {cancelTarget.palletCount} / <span className="text-text-muted">{t('shipping.confirm.box')}:</span> {cancelTarget.boxCount}</p>
-            </div>
-          )}
-          <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-            <p className="text-sm text-red-700 dark:text-red-400">{t('shipping.confirm.cancelWarning')}</p>
-          </div>
-          <Input
-            label={t('shipping.confirm.cancelReason')}
-            placeholder={t('shipping.confirm.cancelReasonPlaceholder')}
-            value={cancelRemark}
-            onChange={(e) => setCancelRemark(e.target.value)}
-            fullWidth
-          />
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => { setCancelTarget(null); setCancelRemark(''); }}>{t('common.cancel')}</Button>
-            <Button variant="danger" onClick={handleCancelShipment} disabled={!cancelRemark.trim() || cancelling}>
-              {cancelling ? t('common.processing') : t('shipping.confirm.confirmCancel')}
-            </Button>
-          </div>
+      {pageError && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex-shrink-0">
+          <AlertTriangle className="w-4 h-4 shrink-0" /><span className="flex-1">{pageError}</span>
+          <button onClick={() => setPageError("")}><XCircle className="w-4 h-4" /></button>
         </div>
-      </Modal>
-
-      {/* 출하 역분개 모달 (SHIPPED → LOADED) */}
-      <Modal isOpen={!!reverseTarget} onClose={() => { setReverseTarget(null); setReverseRemark(''); }} title={t('shipping.confirm.reverseShipment', '출하 역분개')} size="lg">
-        <div className="space-y-4">
-          {reverseTarget && (
-            <div className="p-3 bg-surface-secondary rounded-lg space-y-1 text-sm">
-              <p><span className="text-text-muted">{t('shipping.confirm.shipmentNo')}:</span> {reverseTarget.shipNo}</p>
-              <p><span className="text-text-muted">{t('shipping.confirm.customer')}:</span> {reverseTarget.customer}</p>
-              <p><span className="text-text-muted">{t('shipping.confirm.shipDate')}:</span> {reverseTarget.shipDate}</p>
-            </div>
-          )}
-          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              {t('shipping.confirm.reverseWarning', '출하를 LOADED 상태로 되돌리고 제품재고를 복원합니다. ERP 연동된 출하는 역분개할 수 없습니다.')}
-            </p>
-          </div>
-          <Input
-            label={t('shipping.confirm.reverseReason', '역분개 사유')}
-            value={reverseRemark}
-            onChange={(e) => setReverseRemark(e.target.value)}
-            fullWidth
-          />
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => { setReverseTarget(null); setReverseRemark(''); }}>{t('common.cancel')}</Button>
-            <Button variant="danger" onClick={handleReverseShipment} disabled={!reverseRemark.trim() || reversing}>
-              {reversing ? t('common.processing') : t('shipping.confirm.reverseShipment', '출하 역분개')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* 바코드 스캔 검증 모달 (LOADED → SHIPPED) */}
-      {scanTarget && (
-        <ShipmentScanModal
-          isOpen={isScanModalOpen}
-          onClose={() => { setIsScanModalOpen(false); setScanTarget(null); }}
-          shipmentId={scanTarget.shipNo}
-          shipmentNo={scanTarget.shipNo}
-          onConfirm={fetchData}
-        />
       )}
 
-      <OrderFulfillmentModal
-        isOpen={isFulfillmentOpen}
-        shipOrderNo={selectedShipOrderNo}
-        onClose={() => setIsFulfillmentOpen(false)}
-        onChanged={handleFulfillmentChanged}
+      {/* body: three-column */}
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr_320px] gap-6 flex-1 min-h-0 overflow-hidden">
+        {/* left: order list */}
+        <Card className="overflow-hidden flex flex-col min-h-0" padding="none">
+          <CardContent className="h-full p-3 flex flex-col overflow-hidden">
+            <div className="mb-2 flex-shrink-0">
+              <h2 className="text-sm font-semibold text-text">{t("shipping.confirm.shipOrderList", "출하지시 목록")}</h2>
+              <p className="mt-0.5 text-xs text-text-muted">{ordersLoading ? t("common.loading", "로딩 중...") : `${orders.length}`}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {orders.length === 0 && !ordersLoading ? (
+                <div className="text-center py-8 text-text-muted text-sm">{t("shipping.confirm.noUnshippedOrders", "미출하 출하지시가 없습니다.")}</div>
+              ) : (
+                <div className="space-y-1">
+                  {orders.map((o) => {
+                    const remaining = o.items.reduce((s, it) => s + Math.max(0, it.orderQty - it.shippedQty), 0);
+                    return (
+                      <button
+                        key={o.shipOrderNo}
+                        type="button"
+                        onClick={() => selectOrder(o.shipOrderNo)}
+                        className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                          selectedOrderNo === o.shipOrderNo
+                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                            : "border-border hover:bg-background"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono font-semibold text-text text-sm truncate">{o.shipOrderNo}</span>
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium border border-primary text-primary bg-primary/5">{o.status}</span>
+                        </div>
+                        {o.customerName && <p className="text-xs text-text-muted mt-0.5 truncate">{o.customerName}</p>}
+                        {o.dueDate && <p className="text-xs text-text-muted mt-0.5">{String(o.dueDate).slice(0, 10)}</p>}
+                        <p className="text-xs text-text-muted mt-1 flex items-center gap-1.5">
+                          <Package className="w-3 h-3" />{t("shipping.confirm.qty", "수량")} {remaining.toLocaleString()}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* center: line progress + candidate boxes */}
+        <Card className="min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-3 flex flex-col gap-3">
+          <div className="flex-shrink-0">
+            <h2 className="text-sm font-semibold text-text">{t("shipping.confirm.candidateBoxes", "출하가능 박스")}</h2>
+            <p className="mt-0.5 text-xs text-text-muted">
+              {!selectedOrderNo ? t("shipping.confirm.selectOrder", "출하지시를 선택하세요") : fulfillmentLoading ? t("common.loading", "로딩 중...") : `${candidateBoxes.length}`}
+            </p>
+          </div>
+
+          {/* line progress */}
+          {selectedOrderNo && lines.length > 0 && (
+            <div className="flex-shrink-0 rounded-lg border border-border p-2 space-y-1">
+              <p className="text-xs font-semibold text-text-muted">{t("shipping.confirm.lineProgress", "품목 진행")}</p>
+              {lines.map((l) => (
+                <div key={l.itemCode} className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-text truncate">{l.itemCode}{l.itemName ? ` (${l.itemName})` : ""}</span>
+                  <span className={l.remainingQty === 0 ? "text-text-muted" : "text-primary font-medium"}>
+                    {l.shippedQty.toLocaleString()} / {l.orderQty.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!selectedOrderNo ? (
+            <div className="flex-1 flex items-center justify-center text-text-muted">
+              <Package className="w-12 h-12 opacity-50" />
+            </div>
+          ) : fulfillmentLoading ? (
+            <div className="flex-1 flex items-center justify-center text-text-muted">{t("common.loading", "로딩 중...")}</div>
+          ) : candidateBoxes.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-text-muted text-sm">{t("shipping.confirm.noCandidateBoxes", "출하가능한 박스가 없습니다.")}</div>
+          ) : (
+            <div className="flex-1 min-h-0">
+              <DataGrid
+                data={candidateBoxes}
+                columns={candidateColumns}
+                enableColumnFilter
+                enableExport
+                exportFileName={`박스출하_${selectedOrderNo}`}
+                onRowClick={(row) => fetchSerials(row)}
+              />
+            </div>
+          )}
+        </CardContent></Card>
+
+        {/* right: selected box serials */}
+        <Card padding="none">
+          <CardContent className="p-3 h-full flex flex-col min-h-0">
+            <div className="mb-2 flex-shrink-0">
+              <h2 className="text-sm font-semibold text-text">{t("shipping.confirm.boxDetail", "박스 상세")}</h2>
+              <p className="mt-0.5 text-xs text-text-muted">{selectedBox ? `${selectedBox.boxNo} · ${selectedBox.qty.toLocaleString()}` : ""}</p>
+            </div>
+            {!selectedBox ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-text-muted">
+                <Package className="w-12 h-12 mb-2 opacity-50" />
+                <p className="text-sm text-center">{t("shipping.confirm.selectBox", "박스를 선택하면 시리얼을 확인할 수 있습니다.")}</p>
+              </div>
+            ) : serialsLoading ? (
+              <div className="flex-1 flex items-center justify-center text-text-muted">{t("common.loading", "로딩 중...")}</div>
+            ) : (
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-1">
+                {serials.map((s) => (
+                  <div key={s.fgBarcode} className="flex items-center justify-between p-2 bg-background rounded text-sm">
+                    <span className="font-mono text-xs text-text truncate">{s.fgBarcode}</span>
+                    <span className="text-xs text-text-muted shrink-0">{s.status ?? "-"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* box scan ship modal (reused) */}
+      <BoxScanShipModal
+        isOpen={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onShipped={handleShipped}
+        initialShipOrderNo={selectedOrderNo ?? undefined}
       />
     </div>
   );
