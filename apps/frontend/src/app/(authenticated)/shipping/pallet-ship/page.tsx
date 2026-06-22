@@ -15,9 +15,9 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Package, Truck, RefreshCw, CheckCircle2, XCircle,
-  AlertTriangle, ScanLine, QrCode,
+  AlertTriangle, ScanLine, QrCode, Layers,
 } from "lucide-react";
-import { Card, CardHeader, CardContent, Button, Input, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { BoxStatusBadge } from "@/components/shipping";
@@ -33,6 +33,8 @@ interface ShipOrderSummary {
   dueDate: string | null;
   shipDate: string | null;
   status: string;
+  palletCount: number;
+  boxCount: number;
 }
 
 /** Fulfillment API 응답 중 라인 */
@@ -253,9 +255,13 @@ export default function PalletShipPage() {
       {/* body: three-column */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr_320px] gap-6 flex-1 min-h-0 overflow-hidden">
         {/* left: order list */}
-        <Card className="overflow-hidden flex flex-col min-h-0">
-          <CardHeader title="출하지시 목록" subtitle={ordersLoading ? "로딩 중..." : `${orders.length}건`} />
-          <CardContent className="flex-1 overflow-y-auto">
+        <Card className="overflow-hidden flex flex-col min-h-0" padding="none">
+          <CardContent className="h-full p-3 flex flex-col overflow-hidden">
+            <div className="mb-2 flex-shrink-0">
+              <h2 className="text-sm font-semibold text-text">출하지시 목록</h2>
+              <p className="mt-0.5 text-xs text-text-muted">{ordersLoading ? "로딩 중..." : `${orders.length}건`}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto">
             {orders.length === 0 && !ordersLoading ? (
               <div className="text-center py-8 text-text-muted text-sm">출하 대기 중인 지시가 없습니다.</div>
             ) : (
@@ -277,20 +283,26 @@ export default function PalletShipPage() {
                     </div>
                     {o.customerName && <p className="text-xs text-text-muted mt-0.5 truncate">{o.customerName}</p>}
                     {o.dueDate && <p className="text-xs text-text-muted mt-0.5">납기: {String(o.dueDate).slice(0, 10)}</p>}
+                    <p className="text-xs text-text-muted mt-1 flex items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1"><Layers className="w-3 h-3" />팔레트 {(o.palletCount ?? 0).toLocaleString()}</span>
+                      <span className="text-border">·</span>
+                      <span className="inline-flex items-center gap-1"><Package className="w-3 h-3" />박스 {(o.boxCount ?? 0).toLocaleString()}</span>
+                    </p>
                   </button>
                 ))}
               </div>
             )}
+            </div>
           </CardContent>
         </Card>
 
         {/* center: pallet grid */}
-        <Card className="min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4 flex flex-col gap-3">
+        <Card className="min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-3 flex flex-col gap-3">
           {/* header row */}
-          <div className="flex items-center justify-between flex-shrink-0">
+          <div className="flex flex-wrap items-start justify-between gap-2 flex-shrink-0">
             <div>
-              <h3 className="text-lg font-semibold text-text">{selectedOrderNo ? "팔레트 목록" : "팔레트 목록"}</h3>
-              <p className="text-sm text-text-muted mt-0.5">
+              <h2 className="text-sm font-semibold text-text">팔레트 목록</h2>
+              <p className="mt-0.5 text-xs text-text-muted">
                 {!selectedOrderNo ? "출하지시를 선택하세요" : fulfillmentLoading ? "로딩 중..." : fulfillment ? `${fulfillment.pallets.length}개` : ""}
               </p>
             </div>
@@ -324,12 +336,12 @@ export default function PalletShipPage() {
         </CardContent></Card>
 
         {/* right: selected pallet's box detail */}
-        <Card>
-          <CardHeader
-            title="박스 구성"
-            subtitle={selectedPallet ? `${selectedPallet.boxCount}박스 · ${selectedPallet.totalQty.toLocaleString()}개` : "팔레트를 선택하세요"}
-          />
-          <CardContent>
+        <Card padding="none">
+          <CardContent className="p-3">
+            <div className="mb-2">
+              <h2 className="text-sm font-semibold text-text">박스 구성</h2>
+              <p className="mt-0.5 text-xs text-text-muted">{selectedPallet ? `${selectedPallet.boxCount}박스 · ${selectedPallet.totalQty.toLocaleString()}개` : "팔레트를 선택하세요"}</p>
+            </div>
             {!selectedPallet ? (
               <div className="text-center py-8 text-text-muted">
                 <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
