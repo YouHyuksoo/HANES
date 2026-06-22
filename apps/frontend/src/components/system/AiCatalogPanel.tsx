@@ -177,10 +177,10 @@ export default function AiCatalogPanel() {
   const colsOf = (name: string) => (columnsMap[name] ?? []).map((c) => ({ value: c, label: c }));
 
   return (
-    <Card>
-      <CardContent>
+    <Card className="h-full overflow-hidden flex flex-col" padding="none">
+      <CardContent className="flex h-full min-h-0 flex-col p-4">
         {/* 헤더 */}
-        <div className="flex items-start justify-between gap-4 border-b border-border pb-3">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border pb-3">
           <div>
             <h3 className="text-base font-bold text-text">{t("ai.catalog.title", "AI 테이블 카탈로그")}</h3>
             <p className="mt-1 text-sm text-text-muted">
@@ -211,18 +211,18 @@ export default function AiCatalogPanel() {
         </div>
 
         {loading ? (
-          <div className="py-16 text-center text-text-muted">{t("common.loading", "불러오는 중...")}</div>
+          <div className="flex-1 py-16 text-center text-text-muted">{t("common.loading", "불러오는 중...")}</div>
         ) : advanced ? (
           <textarea
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             spellCheck={false}
-            className="mt-3 h-[62vh] min-h-0 w-full resize-y overflow-auto rounded border border-border bg-bg p-3 font-mono text-xs leading-relaxed text-text focus:border-primary focus:outline-none"
+            className="mt-3 min-h-0 w-full flex-1 resize-none overflow-auto rounded border border-border bg-bg p-3 font-mono text-xs leading-relaxed text-text focus:border-primary focus:outline-none"
           />
         ) : (
-          <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
+          <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
             {/* 좌: 테이블 목록 */}
-            <div className="flex h-[62vh] min-h-0 flex-col rounded border border-border">
+            <div className="flex min-h-0 flex-col rounded border border-border max-lg:h-72 lg:h-full lg:w-[280px] lg:shrink-0">
               <div className="border-b border-border p-2">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -251,7 +251,7 @@ export default function AiCatalogPanel() {
             </div>
 
             {/* 우: 선택 테이블 편집 */}
-            <div className="h-[62vh] min-h-0 overflow-y-auto rounded border border-border p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto rounded border border-border p-4">
               {!cur ? (
                 <div className="py-16 text-center text-text-muted">{t("ai.catalog.selectTable", "왼쪽에서 테이블을 선택하세요.")}</div>
               ) : (

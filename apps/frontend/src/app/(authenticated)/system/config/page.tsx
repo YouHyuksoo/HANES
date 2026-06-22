@@ -103,7 +103,7 @@ function ConfigPage() {
   }, [deleteTarget, invalidate, refetch, fetchConfigs]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -154,34 +154,36 @@ function ConfigPage() {
       </div>
 
       {/* 설정 목록 (AI 탭은 전용 패널) */}
-      {activeGroup === 'AI' ? (
-        <AiConfigPanel />
-      ) : activeGroup === 'AI_CATALOG' ? (
-        <AiCatalogPanel />
-      ) : (
-        <Card>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8 text-text-muted">{t('common.loading')}</div>
-            ) : configs.length === 0 ? (
-              <div className="text-center py-8 text-text-muted">{t('common.noData')}</div>
-            ) : (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 max-h-[calc(100vh-320px)] min-h-0 overflow-y-auto pr-1">
-                {configs.map((cfg) => (
-                  <ConfigItemRow
-                    key={getConfigId(cfg)}
-                    config={cfg}
-                    currentValue={changes[getConfigId(cfg)] ?? cfg.configValue}
-                    isChanged={getConfigId(cfg) in changes}
-                    onValueChange={(val) => handleValueChange(getConfigId(cfg), val)}
-                    onDelete={() => setDeleteTarget(getConfigId(cfg))}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {activeGroup === 'AI' ? (
+          <div className="h-full overflow-y-auto"><AiConfigPanel /></div>
+        ) : activeGroup === 'AI_CATALOG' ? (
+          <AiCatalogPanel />
+        ) : (
+          <Card className="h-full overflow-hidden" padding="none">
+            <CardContent className="h-full overflow-y-auto p-4">
+              {isLoading ? (
+                <div className="text-center py-8 text-text-muted">{t('common.loading')}</div>
+              ) : configs.length === 0 ? (
+                <div className="text-center py-8 text-text-muted">{t('common.noData')}</div>
+              ) : (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pr-1">
+                  {configs.map((cfg) => (
+                    <ConfigItemRow
+                      key={getConfigId(cfg)}
+                      config={cfg}
+                      currentValue={changes[getConfigId(cfg)] ?? cfg.configValue}
+                      isChanged={getConfigId(cfg) in changes}
+                      onValueChange={(val) => handleValueChange(getConfigId(cfg), val)}
+                      onDelete={() => setDeleteTarget(getConfigId(cfg))}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <AddConfigModal
         isOpen={showAddModal}
