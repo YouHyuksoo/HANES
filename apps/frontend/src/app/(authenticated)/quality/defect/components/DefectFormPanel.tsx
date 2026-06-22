@@ -15,6 +15,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ScanLine, AlertTriangle, Plus } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
+import QtyInput from "@/components/shared/QtyInput";
 import api from "@/services/api";
 import toast from "react-hot-toast";
 
@@ -217,13 +218,11 @@ export default function DefectFormPanel({
                 )}
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Input
+                  <QtyInput
                     label={t("quality.defect.quantity", "수량")}
-                    type="number"
-                    min="1"
                     placeholder="1"
-                    value={form.qty}
-                    onChange={(e) => setForm((p) => ({ ...p, qty: e.target.value }))}
+                    value={Number(form.qty) || 0}
+                    onChange={(n) => setForm((p) => ({ ...p, qty: String(n) }))}
                     fullWidth
                   />
                   <Input
