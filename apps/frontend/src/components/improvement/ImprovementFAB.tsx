@@ -102,23 +102,25 @@ export default function ImprovementFAB() {
         </button>
       ) : (
         /* Speed dial: 호버 시 액션 펼침 */
-        <div className="group fixed bottom-6 right-6 z-[50] flex flex-col items-end gap-3">
-          {actions.map((action, idx) => (
-            <button
-              key={action.key}
-              onClick={action.onClick}
-              title={action.label}
-              style={{ transitionDelay: `${idx * 40}ms` }}
-              className="flex items-center gap-2 opacity-0 translate-y-3 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
-            >
-              <span className="rounded-md bg-slate-900/90 px-2 py-1 text-xs font-medium text-white shadow whitespace-nowrap dark:bg-slate-700">
-                {action.label}
-              </span>
-              <span className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg ${action.color}`}>
-                <action.icon className="h-5 w-5" />
-              </span>
-            </button>
-          ))}
+        <div className="group fixed bottom-6 right-6 z-[50] flex flex-col items-end">
+          {/* 액션: 미호버 시 max-h-0으로 접어 공간/호버영역을 차지하지 않음 → 뒤 버튼 클릭 방해 방지 */}
+          <div className="flex max-h-0 flex-col items-end gap-2.5 overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover:mb-3 group-hover:max-h-72 group-hover:opacity-100">
+            {actions.map((action) => (
+              <button
+                key={action.key}
+                onClick={action.onClick}
+                title={action.label}
+                className="flex items-center gap-2"
+              >
+                <span className="rounded-md bg-slate-900/90 px-2 py-1 text-xs font-medium text-white shadow whitespace-nowrap dark:bg-slate-700">
+                  {action.label}
+                </span>
+                <span className={`flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg ${action.color}`}>
+                  <action.icon className="h-[18px] w-[18px]" />
+                </span>
+              </button>
+            ))}
+          </div>
 
           {/* 메인 FAB */}
           <button
