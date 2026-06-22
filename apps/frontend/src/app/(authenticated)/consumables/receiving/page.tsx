@@ -15,6 +15,7 @@ import {
   Plus, RefreshCw, Search, PackagePlus,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import ReceivingTable from "@/components/consumables/ReceivingTable";
 import ReceivingFormPanel from "@/components/consumables/ReceivingFormPanel";
 import BarcodeScanPanel from "@/components/consumables/BarcodeScanPanel";
@@ -89,22 +90,7 @@ export default function ReceivingPage() {
               data={data}
               toolbarLeft={
                 <div className="flex gap-3 flex-1 min-w-0">
-                  <div className="w-36 flex-shrink-0">
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      fullWidth
-                    />
-                  </div>
-                  <div className="w-36 flex-shrink-0">
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      fullWidth
-                    />
-                  </div>
+                  <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <Input
                       placeholder={t("consumables.receiving.searchPlaceholder")}

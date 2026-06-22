@@ -10,6 +10,7 @@ import {
   PackageMinus,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import IssuingTable from "@/components/consumables/IssuingTable";
 import IssueScanPanel from "@/components/consumables/IssueScanPanel";
 import { useIssuingData } from "@/hooks/consumables/useIssuingData";
@@ -54,22 +55,7 @@ export default function IssuingPage() {
               isLoading={isLoading}
               toolbarLeft={
                 <div className="flex gap-3 flex-1 min-w-0">
-                  <div className="w-44 flex-shrink-0">
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      fullWidth
-                    />
-                  </div>
-                  <div className="w-44 flex-shrink-0">
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      fullWidth
-                    />
-                  </div>
+                  <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <Input
                       placeholder={t("consumables.issuing.searchPlaceholder")}
