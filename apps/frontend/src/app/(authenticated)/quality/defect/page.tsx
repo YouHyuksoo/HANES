@@ -7,14 +7,14 @@
  * 초보자 가이드:
  * 1. **불량 목록**: 발생시간, 작업지시, 불량코드/명, 수량, 상태, 작업자 표시
  * 2. **필터**: 날짜, 불량유형, 상태(DEFECT_LOG_STATUS)
- * 3. **불량 등록**: 작업지시 + 불량유형 + 수량 + 원인 → 해당 작업지시의 최신 생산실적에 자동 연결
+ * 3. **불량 등록**: 우측 슬라이드 패널(검사불량 입력과 동일 패턴) — 작업지시/제품바코드 + 불량유형(등급/범위) + 수량 + 원인
  * 4. **상태 변경**: WAIT → REPAIR/REWORK → DONE/SCRAP
  * 5. API: GET/POST /quality/defect-logs, PATCH /quality/defect-logs/:id/status (id=발생시각|seq 복합식별자)
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { Plus, RefreshCw, AlertTriangle, Search, ScanLine } from "lucide-react";
+import { Plus, RefreshCw, AlertTriangle, Search } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, ComCodeBadge, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -22,6 +22,7 @@ import { useComCodeList } from "@/hooks/useComCode";
 import api from "@/services/api";
 import toast from "react-hot-toast";
 import type { DefectLogStatusValue } from "@harness/shared";
+import DefectFormPanel, { type DefectCodeOption } from "./components/DefectFormPanel";
 
 /** API 에러에서 사용자용 메시지 추출 */
 function errMessage(e: unknown, fallback: string): string {
@@ -44,18 +45,10 @@ interface Defect {
   equipmentNo: string | null;
 }
 
-interface DefectCodeOption {
-  defectCode: string;
-  defectName: string;
-  defectGrade: string;
-  defectScope: string;
-}
-
 export default function DefectPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<Defect[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const [defectCodeOptions, setDefectCodeOptions] = useState<DefectCodeOption[]>([]);
   const [defectCodeLoading, setDefectCodeLoading] = useState(false);
@@ -66,10 +59,10 @@ export default function DefectPage() {
   const [dateTo, setDateTo] = useState("");
   const [defectType, setDefectType] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedDefect, setSelectedDefect] = useState<Defect | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [form, setForm] = useState({ prdUid: "", workOrderNo: "", defectCode: "", qty: "", cause: "" });
+  const panelAnimateRef = useRef(true);
 
   const fetchDefectCodeOptions = useCallback(async () => {
     setDefectCodeLoading(true);
@@ -93,11 +86,6 @@ export default function DefectPage() {
     })),
   ], [defectCodeOptions, t]);
 
-  const defectFormOptions = useMemo(() => defectCodeOptions.map((code) => ({
-    value: code.defectCode,
-    label: `${code.defectCode} - ${code.defectName} (${code.defectGrade})`,
-  })), [defectCodeOptions]);
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -118,31 +106,19 @@ export default function DefectPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const canSave = (form.prdUid.trim() !== "" || form.workOrderNo.trim() !== "") && form.defectCode !== "";
+  const openPanel = useCallback(() => {
+    panelAnimateRef.current = !isPanelOpen;
+    setIsPanelOpen(true);
+  }, [isPanelOpen]);
 
-  const handleSave = useCallback(async () => {
-    if (!canSave) return;
-    setSaving(true);
-    try {
-      const defectName = defectCodeOptions.find((c) => c.defectCode === form.defectCode)?.defectName;
-      await api.post("/quality/defect-logs", {
-        ...(form.prdUid.trim() && { prdUid: form.prdUid.trim() }),
-        ...(form.workOrderNo.trim() && { workOrderNo: form.workOrderNo.trim() }),
-        defectCode: form.defectCode,
-        ...(defectName && { defectName }),
-        qty: Number(form.qty) || 1,
-        ...(form.cause.trim() && { cause: form.cause.trim() }),
-      });
-      setIsModalOpen(false);
-      setForm({ prdUid: "", workOrderNo: "", defectCode: "", qty: "", cause: "" });
-      toast.success(t("common.register"));
-      fetchData();
-    } catch (e) {
-      toast.error(errMessage(e, t("common.error")));
-    } finally {
-      setSaving(false);
-    }
-  }, [form, canSave, defectCodeOptions, fetchData, t]);
+  const handlePanelClose = useCallback(() => {
+    setIsPanelOpen(false);
+    panelAnimateRef.current = true;
+  }, []);
+
+  const handlePanelSave = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleStatusChange = useCallback(async (newStatus: DefectStatus) => {
     if (!selectedDefect) return;
@@ -176,93 +152,63 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
   ], [t]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      <div className="flex justify-between items-center flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><AlertTriangle className="w-7 h-7 text-primary" />{t("quality.defect.title")}</h1>
-          <p className="text-text-muted mt-1">{t("quality.defect.description")}</p>
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2"><AlertTriangle className="w-7 h-7 text-primary" />{t("quality.defect.title")}</h1>
+            <p className="text-text-muted mt-1">{t("quality.defect.description")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
+            </Button>
+            <Button size="sm" onClick={openPanel}>
+              <Plus className="w-4 h-4 mr-1" /> {t("quality.defect.register")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
-          </Button>
-          <Button size="sm" onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" /> {t("quality.defect.register")}
-          </Button>
-        </div>
+
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid
+            data={data}
+            columns={columns}
+            isLoading={loading}
+            enableColumnFilter
+            enableExport
+            exportFileName={t("quality.defect.title")}
+            toolbarLeft={
+              <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap">
+                <div className="min-w-[180px] flex-1">
+                  <Input placeholder={t("quality.defect.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-32" />
+                  <span className="text-text-muted">~</span>
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-32" />
+                </div>
+                <div className="w-40 shrink-0">
+                  <Select options={defectFilterOptions} value={defectType} onChange={setDefectType} className="w-full" disabled={defectCodeLoading} />
+                </div>
+                <div className="w-36 shrink-0">
+                  <ComCodeSelect groupCode="DEFECT_LOG_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} className="w-full" />
+                </div>
+              </div>
+            }
+
+          sqlQuery={`SELECT *\nFROM DEFECT_LOGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY OCCUR_TIME DESC`}/>
+        </CardContent></Card>
       </div>
 
-<Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid
-          data={data}
-          columns={columns}
-          isLoading={loading}
-          enableColumnFilter
-          enableExport
-          exportFileName={t("quality.defect.title")}
-          toolbarLeft={
-            <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap">
-              <div className="min-w-[180px] flex-1">
-                <Input placeholder={t("quality.defect.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-32" />
-                <span className="text-text-muted">~</span>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-32" />
-              </div>
-              <div className="w-40 shrink-0">
-                <Select options={defectFilterOptions} value={defectType} onChange={setDefectType} className="w-full" disabled={defectCodeLoading} />
-              </div>
-              <div className="w-36 shrink-0">
-                <ComCodeSelect groupCode="DEFECT_LOG_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} className="w-full" />
-              </div>
-            </div>
-          }
-
-        sqlQuery={`SELECT *\nFROM DEFECT_LOGS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY OCCUR_TIME DESC`}/>
-      </CardContent></Card>
-
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setForm({ prdUid: "", workOrderNo: "", defectCode: "", qty: "", cause: "" }); }} title={t("quality.defect.register")} size="lg">
-        <div className="space-y-4">
-          {/* 제품 바코드 스캔 (주 식별자) */}
-          <div>
-            <label className="block text-sm font-medium text-text mb-1">{t("quality.defect.productBarcode")}</label>
-            <Input
-              autoFocus
-              placeholder={t("quality.defect.productBarcodePlaceholder")}
-              value={form.prdUid}
-              onChange={(e) => setForm((p) => ({ ...p, prdUid: e.target.value }))}
-              onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
-              leftIcon={<ScanLine className="w-4 h-4" />}
-              className="font-mono"
-              fullWidth
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t("quality.defect.workOrderNoOptional")} placeholder="WO-XXXX" value={form.workOrderNo} onChange={(e) => setForm((p) => ({ ...p, workOrderNo: e.target.value }))} fullWidth />
-            <Select
-              label={t("quality.defect.defectType")}
-              options={defectFormOptions}
-              value={form.defectCode}
-              onChange={(v) => setForm((p) => ({ ...p, defectCode: v }))}
-              disabled={defectCodeLoading}
-              placeholder={t("quality.defect.defectType")}
-              fullWidth
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t("quality.defect.quantity")} type="number" min="1" placeholder="1" value={form.qty} onChange={(e) => setForm((p) => ({ ...p, qty: e.target.value }))} fullWidth />
-            <Input label={t("quality.defect.cause")} placeholder={t("quality.defect.causePlaceholder")} value={form.cause} onChange={(e) => setForm((p) => ({ ...p, cause: e.target.value }))} fullWidth />
-          </div>
-          <p className="text-xs text-text-muted bg-surface/50 border border-border/50 rounded p-2">
-            {t("quality.defect.registerHint")}
-          </p>
-          <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => { setIsModalOpen(false); setForm({ prdUid: "", workOrderNo: "", defectCode: "", qty: "", cause: "" }); }}>{t("common.cancel")}</Button>
-            <Button onClick={handleSave} disabled={saving || !canSave}>{saving ? t("common.saving") : t("common.register")}</Button>
-          </div>
-        </div>
-      </Modal>
+      {/* 우측: 불량 등록 패널 (검사불량 입력과 동일 패턴) */}
+      <DefectFormPanel
+        isOpen={isPanelOpen}
+        defectCodeOptions={defectCodeOptions}
+        defectCodeLoading={defectCodeLoading}
+        onClose={handlePanelClose}
+        onSave={handlePanelSave}
+        animate={panelAnimateRef.current}
+      />
 
       <Modal isOpen={isStatusModalOpen} onClose={() => { setIsStatusModalOpen(false); setSelectedDefect(null); }} title={t("quality.defect.changeStatus")} size="md">
         {selectedDefect && (
