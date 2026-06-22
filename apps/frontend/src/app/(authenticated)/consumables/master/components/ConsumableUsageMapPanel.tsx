@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { Button, ConfirmModal, Input, Select } from "@/components/ui";
 import type { SelectOption } from "@/components/ui/Select";
 import api from "@/services/api";
@@ -37,9 +37,10 @@ const EMPTY_FORM: UsageMapFormValues = {
 
 interface Props {
   item: ConsumableItem | null;
+  onClose?: () => void;
 }
 
-export default function ConsumableUsageMapPanel({ item }: Props) {
+export default function ConsumableUsageMapPanel({ item, onClose }: Props) {
   const { t } = useTranslation();
   const [usageMaps, setUsageMaps] = useState<UsageMapRow[]>([]);
   const [form, setForm] = useState<UsageMapFormValues>(EMPTY_FORM);
@@ -156,15 +157,27 @@ export default function ConsumableUsageMapPanel({ item }: Props) {
             {item ? `${item.consumableCode} - ${item.consumableName}` : t("consumables.master.usageMapSelectFirst", "소모품을 선택하세요.")}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={reloadUsageMaps}
-          disabled={!item || loading || saving}
-          className="p-1.5 rounded hover:bg-surface disabled:opacity-50"
-          title={t("common.refresh")}
-        >
-          <RefreshCw className={`w-4 h-4 text-text-muted ${loading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            onClick={reloadUsageMaps}
+            disabled={!item || loading || saving}
+            className="p-1.5 rounded hover:bg-surface disabled:opacity-50"
+            title={t("common.refresh")}
+          >
+            <RefreshCw className={`w-4 h-4 text-text-muted ${loading ? "animate-spin" : ""}`} />
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded hover:bg-surface"
+              title={t("common.close", "닫기")}
+            >
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4">

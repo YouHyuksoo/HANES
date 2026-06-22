@@ -64,10 +64,10 @@ function ConsumableMasterPage() {
       if (res.data.success) {
         const rows = res.data.data || [];
         setData(rows);
+        // 사용매핑 패널은 기본 감춤 — 사용자가 행을 선택했을 때만 표시한다(자동 첫 행 선택 안 함).
         setSelected((current) => {
-          if (!rows.length) return null;
-          if (!current) return rows[0];
-          return rows.find((row: ConsumableItem) => row.consumableCode === current.consumableCode) ?? rows[0];
+          if (!current) return null;
+          return rows.find((row: ConsumableItem) => row.consumableCode === current.consumableCode) ?? null;
         });
       }
     } catch {
@@ -263,7 +263,9 @@ function ConsumableMasterPage() {
         />
       )}
 
-      <ConsumableUsageMapPanel item={selected} />
+      {selected && (
+        <ConsumableUsageMapPanel item={selected} onClose={() => setSelected(null)} />
+      )}
 
       <ConfirmModal
         isOpen={!!deleteTarget}
