@@ -24,5 +24,8 @@ export type { SelectProps, SelectOption } from './Select';
 export { default as ComCodeBadge, ComCodeBadgeDirect } from './ComCodeBadge';
 export type { ComCodeBadgeProps } from './ComCodeBadge';
 
+export { default as Badge } from './Badge';
+export type { BadgeProps, BadgeVariant, BadgeSize } from './Badge';
+
 export { default as StatCard } from './StatCard';
 export type { StatCardProps } from './StatCard';
