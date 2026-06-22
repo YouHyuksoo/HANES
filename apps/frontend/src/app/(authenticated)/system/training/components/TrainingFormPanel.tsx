@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, ComCodeBadge, Modal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import QtyInput from "@/components/shared/QtyInput";
 import api from "@/services/api";
 
 /** 교육 계획 폼 데이터 */
@@ -155,9 +156,9 @@ export default function TrainingFormPanel({ isOpen, editData, onClose, onSave }:
             value={form.duration}
             onChange={e => setField("duration", e.target.value)}
             placeholder={t("system.training.hours")} fullWidth />
-          <Input label={t("system.training.maxParticipants")} type="number"
-            value={form.maxParticipants}
-            onChange={e => setField("maxParticipants", e.target.value)} fullWidth />
+          <QtyInput label={t("system.training.maxParticipants")}
+            value={Number(form.maxParticipants) || 0}
+            onChange={n => setField("maxParticipants", String(n))} fullWidth />
         </div>
 
         <div>
