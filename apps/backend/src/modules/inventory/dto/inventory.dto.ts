@@ -33,7 +33,7 @@ export class CreateWarehouseDto {
 
   @IsOptional()
   @IsString()
-  vendorId?: string;
+  vendorCode?: string;
 
   @IsOptional()
   isDefault?: boolean;

@@ -72,10 +72,10 @@ export class CreatePurchaseOrderDto {
   @MaxLength(50)
   poNo: string;
 
-  @ApiPropertyOptional({ description: '거래처 ID' })
+  @ApiPropertyOptional({ description: '거래처 코드' })
   @IsOptional()
   @IsString()
-  partnerId?: string;
+  partnerCode?: string;
 
   @ApiPropertyOptional({ description: '거래처명' })
   @IsOptional()

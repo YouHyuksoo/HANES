@@ -426,7 +426,7 @@ export class WipMatStockService {
       .addSelect('tx.CANCEL_REF_ID', 'cancelRefId')
       .addSelect('tx.STATUS', 'status')
       .addSelect('tx.REMARK', 'remark')
-      .addSelect('tx.WORKER_ID', 'workerId')
+      .addSelect('tx.WORKER_NO', 'workerId')
       .addSelect('tx.CREATED_AT', 'createdAt')
       .orderBy('tx.CREATED_AT', 'DESC')
       .addOrderBy('tx.TRANS_NO', 'DESC');

@@ -37,7 +37,7 @@ describe('PurchaseOrderService', () => {
   const createPo = (overrides: Partial<PurchaseOrder> = {}): PurchaseOrder =>
     ({
       poNo: 'PO-001',
-      partnerId: 'V-001',
+      partnerCode: 'V-001',
       partnerName: 'VENDOR-A',
       status: 'DRAFT',
       orderDate: new Date(),
@@ -239,7 +239,7 @@ describe('PurchaseOrderService', () => {
 
       await target.create({
         poNo: 'PO-001',
-        partnerId: 'V-001',
+        partnerCode: 'V-001',
         partnerName: 'VENDOR-A',
         items: [{ itemCode: 'ITEM-001', orderQty: 100 }],
       } as any);
@@ -262,7 +262,7 @@ describe('PurchaseOrderService', () => {
 
       const result = await target.create({
         poNo: 'PO-001',
-        partnerId: 'V-001',
+        partnerCode: 'V-001',
         partnerName: 'VENDOR-A',
         items: [{ itemCode: 'ITEM-MISSING', orderQty: 100 }],
       } as any);
@@ -291,7 +291,7 @@ describe('PurchaseOrderService', () => {
 
       await target.create({
         poNo: 'PO-001',
-        partnerId: 'V-001',
+        partnerCode: 'V-001',
         partnerName: 'VENDOR-A',
         items: [{ itemCode: 'ITEM-001', orderQty: 100 }],
       } as any, 'C1', 'P1');

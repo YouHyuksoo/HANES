@@ -118,3 +118,14 @@ Format:
 - T-MASTER-FIELD-HELP | 2026-06-22 | claude | 기준정보(MASTER) 13개 화면 폼에 part 패턴 필드별 `?` 도움말(*FieldHelp + HelpTooltip) 추가, 집계성 숫자(equip stockQty/quantity, process-capa stdUph, bom qtyPer) 천단위 포맷 적용, FE tsc PASS | evidence: JOURNAL 2026-06-22 claude
 - T-THOUSAND-FORMAT | 2026-06-22 | claude | 품목마스터 그리드 및 자재·재고·생산·제품/출하·품질·소모품·검사 도메인 트랜잭션 화면의 집계성 숫자(수량·재고·금액·생산량 등)에 천단위 콤마(toLocaleString) 일괄 적용, 비율·식별번호·코드성·측정값은 제외, FE tsc PASS·표시전용 무로직변경 | evidence: JOURNAL 2026-06-22 claude
 - T-SHIP-ORDER-CUSTOMER-PO | 2026-06-22 | claude | 출하지시(/shipping/order)에 고객 PO번호 수동입력 추가 — JSHANES SHIPMENT_ORDERS.CUSTOMER_PO_NO VARCHAR2(100) 컬럼 + 엔티티/DTO/service + 폼·그리드·출력물·i18n 4파일, FE/BE tsc PASS | evidence: JOURNAL 2026-06-22 claude
+- T-ER-VIEW-NODE-COLUMN-SCROLL | 2026-06-23 | codex | `/system/er-view` 테이블 노드 컬럼 스크롤, 확인문구 `실행`, 추정 관계 선 유형 선택, migration 경로 및 중복 FK/UK 실행 방어 보정 | evidence: JOURNAL 2026-06-23 01:12 Codex
+- T-BOX-ID-TO-BOX-NO | 2026-06-23 | codex | JSHANES `TRACE_LOGS.BOX_ID -> BOX_NO`, 20개 테이블 `WORKER_ID -> WORKER_NO`, entity/raw select/ER VIEW 추정관계/ERD 갱신 및 DB post-check 완료 | evidence: JOURNAL 2026-06-23 Codex
+- T-MASTER-TENANT-PK | 2026-06-23 | codex | backup 제외 `COMPANY/PLANT_CD` 보유 마스터 19개 테이블 PK를 `COMPANY, PLANT_CD, 업무키`로 정석화하고 관련 FK 7개를 composite FK로 재생성 | evidence: JOURNAL 2026-06-23 Codex
+- T-VENDOR-ID-TO-VENDOR-CODE | 2026-06-23 | codex | JSHANES `MAT_ARRIVALS`, `SUBCON_ORDERS`, `WAREHOUSES`의 `VENDOR_ID`를 `VENDOR_CODE`로 변경하고 entity/DTO/service/frontend/ERD 갱신 | evidence: JOURNAL 2026-06-23 Codex
+- T-PARTNER-ID-TO-PARTNER-CODE | 2026-06-23 | codex | JSHANES `PURCHASE_ORDERS.PARTNER_ID`를 `PARTNER_CODE`로 변경하고 구매발주/ERP/입하 소스와 ERD 갱신 | evidence: JOURNAL 2026-06-23 Codex
+- T-ER-VIEW-FK-NAME-RISK-DISPLAY | 2026-06-23 | codex | `/system/er-view` 물리 FK `constraintName`을 상세/edge에 표시하고 이미 존재 FK의 음수 리스크 점수 표시를 상태 사유로 보정 | evidence: JOURNAL 2026-06-23 Codex
+- T-ER-VIEW-MULTI-TABLE-SELECT | 2026-06-23 | codex | `/system/er-view` 좌측 테이블 checkbox 다중 선택과 선택 테이블 1-hop graph 프론트 병합 표시 추가 | evidence: JOURNAL 2026-06-23 Codex
+- T-ACTIVITY-LOGS-USERS-FK | 2026-06-23 | codex | JSHANES `ACTIVITY_LOGS.USER_EMAIL -> USERS.EMAIL` FK를 ENABLE VALIDATE로 생성하고 ER VIEW 추정 매핑/ERD 갱신 | evidence: JOURNAL 2026-06-23 Codex
+- T-ACTIVITY-LOGS-EMAIL-COLUMN | 2026-06-23 | codex | 사용자 정정에 따라 JSHANES `ACTIVITY_LOGS.USER_EMAIL`을 `EMAIL`로 rename하고 `ACTIVITY_LOGS.EMAIL -> USERS.EMAIL` FK로 재생성 | evidence: JOURNAL 2026-06-23 Codex
+- T-ACTIVITY-LOGS-NAME-COLUMN | 2026-06-23 | codex | JSHANES `ACTIVITY_LOGS.USER_NAME`을 `NAME`으로 rename하고 entity/ERD/live schema 갱신 | evidence: JOURNAL 2026-06-23 Codex
+- T-ER-VIEW-DROP-FK | 2026-06-23 | codex | `/system/er-view` 물리 FK 선택 시 `DROP_FK` dry-run/execute 및 `FK 제거 후보` 버튼 추가 | evidence: JOURNAL 2026-06-23 Codex

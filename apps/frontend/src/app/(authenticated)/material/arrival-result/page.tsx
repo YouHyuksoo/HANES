@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { ClipboardList, RefreshCw, Search, Printer, Pencil, Ban } from "lucide-react";
+import { ClipboardList, RefreshCw, Printer, Pencil, Ban } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select } from "@/components/ui";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
@@ -91,6 +91,14 @@ export default function ArrivalResultPage() {
   const [arrivalNo, setArrivalNo] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
+  // 텍스트 필터(품목코드/입하번호)는 디바운스 — 다른 화면처럼 입력 변경 시 자동 조회(별도 검색 버튼 없음)
+  const [debItemCode, setDebItemCode] = useState("");
+  const [debArrivalNo, setDebArrivalNo] = useState("");
+  useEffect(() => {
+    const tm = setTimeout(() => { setDebItemCode(itemCode); setDebArrivalNo(arrivalNo); }, 300);
+    return () => clearTimeout(tm);
+  }, [itemCode, arrivalNo]);
+
   // 좌측 목록
   const [rows, setRows] = useState<ArrivalResultRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -120,8 +128,8 @@ export default function ArrivalResultPage() {
           limit: 200,
           ...(fromDate && { fromDate }),
           ...(toDate && { toDate }),
-          ...(itemCode && { itemCode }),
-          ...(arrivalNo && { arrivalNo }),
+          ...(debItemCode && { itemCode: debItemCode }),
+          ...(debArrivalNo && { arrivalNo: debArrivalNo }),
           ...(statusFilter && { status: statusFilter }),
         },
       });
@@ -131,9 +139,10 @@ export default function ArrivalResultPage() {
     } finally {
       setLoading(false);
     }
-  }, [fromDate, toDate, itemCode, arrivalNo, statusFilter]);
+  }, [fromDate, toDate, debItemCode, debArrivalNo, statusFilter]);
 
-  useEffect(() => { fetchResults(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 필터(날짜·상태·디바운스된 텍스트) 변경 시 자동 조회 — 검색 버튼 불필요
+  useEffect(() => { fetchResults(); }, [fetchResults]);
 
   useEffect(() => {
     let cancelled = false;
@@ -435,9 +444,6 @@ export default function ArrivalResultPage() {
                   </div>
                   <Input placeholder={t("common.partCode")} value={itemCode} onChange={(e) => setItemCode(e.target.value)} className="w-32 flex-shrink-0" />
                   <Input placeholder={t("material.arrivalResult.col.arrivalNo", "입하번호")} value={arrivalNo} onChange={(e) => setArrivalNo(e.target.value)} className="w-36 flex-shrink-0" />
-                  <Button variant="secondary" size="sm" onClick={fetchResults}>
-                    <Search className="w-4 h-4 mr-1" />{t("common.search")}
-                  </Button>
                 </div>
               }
               onRowClick={(row) => loadSerials(row)}

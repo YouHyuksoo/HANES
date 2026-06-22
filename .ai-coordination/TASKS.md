@@ -29,6 +29,72 @@ notes:
 
 ## Active Tasks
 
+## T-ER-VIEW-TABLE-NODES ER VIEW 테이블형 그래프 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/system/er-view` 중앙 그래프를 단순 네트워크가 아닌 DB 테이블 표형 ERD로 보정
+files:
+- apps/backend/src/modules/system/services/er-view.service.ts
+- apps/backend/src/modules/system/services/er-view.service.spec.ts
+- apps/frontend/src/app/(authenticated)/system/er-view/page.tsx
+- apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs
+verification:
+- RED 확인: backend spec가 graph node의 `pkColumns`/`columns` 부재로 실패
+- RED 확인: frontend structure test가 `nodeTypes`/`TableNode`/PK/FK 표시 부재로 실패
+- GREEN: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: 3002 `/system/er-view` HTTP 200
+- PASS: Chrome Playwright 인증 세션에서 `MAT_LOTS` 선택 시 table node 4개, edge 3개, controls 3개, minimap 표시, body/html overflow 없음
+review:
+- needs-review
+notes:
+- 원인: backend graph node 응답이 table/comment만 제공하고 frontend가 ReactFlow 기본 노드에 테이블명만 렌더링했다.
+- 보정: backend graph node에 컬럼/PK/FK 후보 metadata를 포함하고, frontend는 `TableNode` custom node, arrow edge, fit/zoom/pan controls, overflow-hidden full-height 레이아웃으로 렌더링한다.
+
+## T-ER-VIEW-SCHEMA-GOVERNANCE ER VIEW 스키마 거버넌스 도구
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- `/system/er-view` 실시간 Oracle DB 스키마 시각화/관계 분석/리스크 분석
+- 물리 PK/FK/UK와 보수적 추정 관계 분리 표시
+- 관계별 수동 orphan scan, DEV 모드 orphan DELETE/제한 UPDATE, FK/UK `ENABLE VALIDATE` 실행
+- 실행 SQL 전체 표시, 구조화 action payload 기반 서버 SQL 생성, 파일 로그 및 migration/ERD 갱신
+files:
+- apps/backend/src/modules/system/controllers/er-view.controller.ts
+- apps/backend/src/modules/system/services/er-view.service.ts
+- apps/backend/src/modules/system/services/er-view.service.spec.ts
+- apps/backend/src/modules/system/system.module.ts
+- apps/frontend/src/app/(authenticated)/system/er-view/**
+- apps/frontend/src/config/menuConfig.ts
+- apps/frontend/src/locales/{ko,en,zh,vi}.json
+- apps/frontend/package.json
+- pnpm-lock.yaml
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: backend spec가 `er-view.service.ts` 부재로 실패, frontend structure test가 page/menu/controller/service 부재로 실패
+- GREEN: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+- GREEN: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `git diff --check`
+- PASS: 3002 `/system/er-view` HTTP 200
+- PASS: 3003 `/api/v1/system/er-view/summary` 인증 게이트 401 확인
+review:
+- needs-review
+notes:
+- 사용자 결정: 실시간 DB 기준, 3패널 UI, `@xyflow/react`, 조회/분석/실행 API 분리, VALIDATE 기본, DEV 기본 모드.
+- Oracle DDL은 transaction rollback이 아니므로 batch 실패 시 이번 batch에서 생성된 constraint만 역순 DROP으로 보상 처리한다.
+- 응답 래핑은 기존 API 패턴에 맞춰 프론트에서 `res.data?.data ?? res.data`로 처리한다.
+- 작업 중 발견된 무관 변경 `apps/frontend/src/app/(authenticated)/system/config/page.tsx`, `apps/frontend/src/components/system/AiCatalogPanel.tsx`, help 문서 4개는 되돌리지 않았다.
+
 ## T-DEFECT-CODE-MASTER 불량코드 전용 마스터/3레벨 분류 관리
 status: REVIEW
 owner: codex
@@ -1597,3 +1663,30 @@ notes:
 - `IqcModal`은 `/quality/aql/resolve-iqc-items`를 호출하고 항목별 AQL/파괴/고정 요약을 표시한다.
 - `useIqcData`는 표시명 `supplierName`과 실제 코드 `vendorCode`를 분리해 AQL preview에는 `vendorCode`를 전달한다.
 - `AqlService.resolvePartPolicy()`는 정책코드 미설정 시 `BadRequestException`으로 차단한다.
+
+## T-ER-VIEW-MENU-VISIBILITY ER VIEW 메뉴 노출 누락 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/system/er-view`가 사이드바 메뉴에 보이지 않는 원인 확인 및 메뉴 배치 소스 보정
+files:
+- apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
+- apps/backend/src/seeds/menu-config.json
+- apps/backend/src/migrations/2026-06-23_er_view_menu_seed.sql
+- apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs
+verification:
+- RED 확인: `node apps/backend/src/modules/menu-categories/utils/menu-code-validator.structure.test.mjs`가 `SYS_ER_VIEW` 누락으로 실패
+- JSHANES pre-check: `MENU_CATEGORY_ITEMS`/`ROLE_MENU_PERMISSIONS`의 `SYS_ER_VIEW` 행 0건 확인
+- JSHANES 적용: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-23_er_view_menu_seed.sql` PASS
+- JSHANES post-check: `SYS_ER_VIEW`가 `SYSTEM`, sort 95, `IS_ACTIVE='Y'`로 조회됨
+- `node apps/backend/src/modules/menu-categories/utils/menu-code-validator.structure.test.mjs` PASS
+- `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"` PASS
+- `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false` PASS
+- `node -e "JSON.parse(...menu-config.json...)"` PASS
+- `git diff --check` PASS
+review:
+- needs-review
+notes:
+- 사이드바는 `/menu-categories/tree` DB 트리와 `menuConfig.ts` leaf를 병합한다. `MENU_CATEGORY_ITEMS`에 배치되지 않은 leaf는 menuConfig에 있어도 렌더링에서 제외된다.
+- `SYS_ER_VIEW`는 기존 시스템 메뉴 패턴에 맞춰 ADMIN 전체허용 메뉴로 배치했다. `ROLE_MENU_PERMISSIONS`에는 추가하지 않았다.

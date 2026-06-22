@@ -53,7 +53,7 @@ export class MatReceiving {
   @Column({ name: 'RECEIVE_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   receiveDate: Date;
 
-  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })

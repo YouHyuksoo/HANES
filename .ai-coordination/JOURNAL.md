@@ -10,6 +10,85 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-23 01:12 Codex
+
+- 작업: `T-ER-VIEW-NODE-COLUMN-SCROLL` `/system/er-view` 테이블 노드 컬럼 스크롤, 확인 문구 단순화, 추정 관계 선 유형 선택, schema governance 실행 오류 방어 완료.
+- 원인:
+  - 테이블 노드가 `data.columns.slice(0, 12)`로 컬럼을 잘라 렌더링하고 컬럼 영역이 `overflow-hidden`이라 전체 컬럼을 볼 수 없었다.
+  - 실행 확인 문구가 constraint별 긴 문구라 사용성이 나빴다.
+  - 추정 관계 edge가 한 가지 선 모양이라 직선 겹침 시 구분이 어려웠다.
+  - migration 파일 생성 경로가 backend cwd에서 `apps/backend/apps/backend/src/migrations`로 중복 조립되어 `ENOENT`가 발생했다.
+  - 이미 존재하는 FK/UK 후보를 다시 실행할 수 있어 `ORA-02275`가 500으로 노출됐다.
+- 변경:
+  - `TableNode`가 모든 컬럼을 렌더링하고 `data-er-view-node-columns="true"` 영역을 `overflow-y-auto`로 전환했다.
+  - dry-run 확인 문구를 모든 action에서 공통 `실행`으로 단순화했다.
+  - 추정 관계 edge 유형 선택 셀렉터를 추가했다. 옵션은 `곡선`, `완만한 계단`, `계단`, `직선`이다.
+  - migration 경로를 repo root cwd와 `apps/backend` cwd 양쪽에서 올바르게 계산하도록 `backendMigrationsDir()`를 추가했다.
+  - `ADD_FK`/`ADD_UK` preview가 최신 snapshot을 강제 조회해 동일 FK/동일 PK/UK/동일 constraint name을 사전 차단한다.
+  - execute 중 Oracle `ORA-02275`/`ORA-02264`/`ORA-02261`은 500 대신 `BadRequestException`으로 변환한다.
+  - 물리 FK 관계 선택 시 상세 패널에 이미 적용된 관계 안내를 표시하고 `FK DDL 후보` 버튼을 비활성화한다.
+- 실측:
+  - JSHANES `CONSUMABLE_STOCKS -> CONSUMABLE_MASTERS` FK는 `FK_CONSUMABLE_S_CONSUMABLE_C`, `ENABLED/VALIDATED`, child columns `COMPANY,PLANT_CD,CONSUMABLE_CODE`, parent columns `COMPANY,PLANT_CD,CONSUMABLE_CODE`로 이미 존재함을 확인했다.
+  - JSHANES `UK_CONSUMABLE_M_CONSUMABLE_C`는 execute 500 이후에도 존재 여부를 확인했고, 이후 중복 제약 실행 방어를 추가했다.
+- 검증:
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"` 9/9.
+  - PASS: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand` 11/11.
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`.
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`.
+  - PASS: `git diff --check`.
+  - PASS: Chrome headless 3002 인증 세션에서 `ER VIEW` 진입, 추정 관계 선 유형 옵션/직선 선택 확인, `IQC_LOGS` 테이블 노드 컬럼 영역 `clientHeight 310`, `scrollHeight 1051`, `scrollTop 741`, `overflowY auto`, `canScroll true` 확인.
+- 상태: lock 제거. DDL 추가 실행은 하지 않았다. ER VIEW 관련 source/spec/page/test 파일들은 이전 작업부터 git 미추적 상태라 커밋 시 포함 범위 확인 필요.
+
+## 2026-06-23 00:54 Codex
+
+- 작업: `T-ER-VIEW-PARENT-UK-FLOW` `/system/er-view` 부모 PK/UK 없는 FK 후보 실행 흐름 보정 완료.
+- 사용자 에러: `POST /system/er-view/actions/dry-run`, `ADD_FK`, `IQC_LOGS(COMPANY, PLANT_CD, VENDOR_CODE) -> VENDOR_MASTERS(COMPANY, PLANT_CD, VENDOR_CODE)`가 `부모 PK/UK가 없어 FK를 생성할 수 없습니다` 400 반환.
+- 원인:
+  - JSHANES 실측 결과 `VENDOR_MASTERS` 키는 `PK_VENDOR_MASTERS(VENDOR_CODE)` 하나뿐이며, `(COMPANY, PLANT_CD, VENDOR_CODE)` PK/UK는 없었다.
+  - 해당 컬럼 조합은 중복 0건, NULL 0건이라 부모 UK dry-run 가능.
+  - `IQC_LOGS -> VENDOR_MASTERS` 동일 조합 orphan은 1건이라, 부모 UK를 만든 뒤에도 orphan 정리 전에는 FK `ENABLE VALIDATE`가 막히는 상태다.
+  - backend는 부모키 없는 `ADD_FK`를 올바르게 차단했지만, frontend가 `parentKeyReady=false` 관계에도 `FK DDL 후보` 버튼을 활성화해 사용자가 실행 가능한 작업처럼 보게 했다.
+- 변경:
+  - `/system/er-view/page.tsx`에 `ActionRequest`/`previewPayload`를 추가해 dry-run payload를 execute 시 그대로 재사용한다. `ADD_UK`도 실행 payload에 `tableName`/`columns`가 보존된다.
+  - 부모 PK/UK가 없는 관계에서는 안내문을 표시하고 `부모 UK 후보` 버튼을 제공하며 `FK DDL 후보` 버튼은 비활성화한다.
+  - backend `executeAction()`에서 `ADD_FK`/`ADD_UK` DDL 성공 후 schema snapshot cache를 무효화해, UK 생성 후 그래프 재조회가 최신 키 상태를 보게 했다.
+  - frontend 구조 테스트에 부모 UK 선행 흐름 검증을 추가했고, backend spec에 `ADD_UK` preview 및 DDL 후 cache 무효화 테스트를 추가했다.
+- 검증:
+  - JSHANES 키 실측: `PK_VENDOR_MASTERS(P)` columns `VENDOR_CODE`만 존재.
+  - JSHANES UK 후보 데이터 실측: `(COMPANY, PLANT_CD, VENDOR_CODE)` duplicate 0, NULL 0.
+  - JSHANES FK 후보 orphan 실측: `IQC_LOGS -> VENDOR_MASTERS` orphan 1.
+  - RED 확인: frontend structure test가 `ADD_UK`/`부모 UK 후보` 부재로 실패.
+  - GREEN: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"` 6/6 PASS.
+  - GREEN: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand` 7/7 PASS.
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`.
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`.
+  - PASS: `git diff --check`.
+  - PASS: Chrome Playwright 3002에서 `IQC_LOGS` 선택 시 부모키 없음 안내, `부모 UK 후보` 버튼, disabled `FK DDL 후보` 확인.
+  - PASS: Chrome Playwright dry-run API: `ADD_UK VENDOR_MASTERS(COMPANY, PLANT_CD, VENDOR_CODE)` 201 preview SQL 반환, 기존 `ADD_FK`는 부모키 없음 400 유지.
+- 상태: lock 제거. DDL 실행/DB 변경은 하지 않았다. ER VIEW 관련 source/spec/page/test 파일들은 이전 작업부터 git 미추적 상태라 커밋 시 포함 범위를 확인해야 한다.
+
+## 2026-06-23 00:44 Codex
+
+- 작업: `T-ER-VIEW-INTERACTION-FIX` `/system/er-view` ReactFlow 그래프 조작/하단 잘림 보정 완료.
+- 원인:
+  - `@xyflow/react/dist/style.css`가 전역으로 로드되지 않아 `.react-flow__viewport`/노드 레이어 배치가 깨졌고, 마우스 hit target이 테이블 노드가 아니라 SVG `rect`로 잡혔다.
+  - `ReactFlow`를 controlled `nodes`로 렌더링하면서 `onNodesChange`로 드래그 좌표를 상태에 반영하지 않아 노드 이동이 유지될 수 없는 구조였다.
+  - `panOnScroll`과 `zoomOnScroll`을 같이 둬 휠 확대/축소 기대와 충돌할 수 있었다.
+- 변경:
+  - `apps/frontend/src/app/globals.css`에 `@import "@xyflow/react/dist/style.css";` 추가.
+  - `apps/frontend/src/app/(authenticated)/system/er-view/page.tsx`에서 `useNodesState`/`onNodesChange`를 연결하고, `computedNodes`와 조작 상태 `nodes`를 분리했다.
+  - 노드 드래그 직후 `onNodeClick`이 테이블 선택/그래프 재로딩을 실행하지 않도록 `nodeDragRef` guard를 추가했다.
+  - 캔버스에 `data-er-view-canvas="true"`, ReactFlow `className="h-full w-full"`, `minZoom={0.05}`, `maxZoom={2.5}`, `nodesDraggable`, `nodesConnectable={false}`를 명시했다.
+  - 구조 테스트가 ReactFlow CSS import, node change handler, drag guard, zoom 설정을 검증하도록 보강했다.
+- 검증:
+  - RED 확인: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`가 `useNodesState` 부재로 실패.
+  - GREEN: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"` 5/5 PASS.
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`.
+  - PASS: `git diff --check`.
+  - PASS: Chrome Playwright 인증 세션 1440x900, `MAT_LOTS` 선택 시 table node 4개, edge 3개, controls 3개, minimap 표시. ReactFlow viewport position `absolute`, `elementFromPoint`가 테이블 헤더 DIV로 잡힘. 휠 줌 transform 변경, 노드 드래그 후 `MAT_LOTS` 좌표 변경, body/html overflow 없음.
+  - PASS: Chrome Playwright 1366x768, canvas bottom이 viewport 768에 맞고 body/html overflow 없음. 휠 줌아웃 transform 변경.
+- 상태: lock 제거. DB/백엔드 변경 없음. `apps/frontend/src/app/(authenticated)/system/er-view/page.tsx`와 구조 테스트는 이전 ER VIEW 작업부터 git 미추적 상태라 커밋 시 포함 범위 확인 필요.
+
 ## 2026-06-22 19:37 Codex
 
 - 작업: `T-AI-PAGE-TOOL-WORKFLOW` 구현 완료. `/production/order` 단일 실험이 아니라 HANES 전체 화면에 반복 적용할 AI Page Tool Workflow 표준으로 설계/계획/파일럿을 반영했다.
@@ -2174,3 +2253,360 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 계획 태스크: backend manifest, backend candidate resolution, frontend page tool state/inspector, AI panel tabs, page registration hook, `/production/order` draft applier, AI chat DTO compatibility, E2E verification 총 8개.
 - 검증: `git diff --check -- docs/superpowers/plans/2026-06-22-ai-page-tool-workflow.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` PASS.
 - 상태: 사용자 리뷰 대기. 구현은 아직 진행하지 않았다. 커밋하지 않았다.
+# 2026-06-22 - T-ER-VIEW-SCHEMA-GOVERNANCE ER VIEW 스키마 거버넌스 도구
+
+- owner: codex
+- status: REVIEW
+- 변경:
+  - 신규 백엔드 `ErViewController`/`ErViewService`를 추가해 `/api/v1/system/er-view/*` 조회/분석/실행 API를 분리했다.
+  - 실시간 Oracle `USER_*` data dictionary snapshot 기준으로 테이블/컬럼/PK/UK/FK를 조회하고, 보수적 추정 관계를 계산한다.
+  - `COMPANY`, `PLANT_CD`가 양쪽 테이블에 있으면 테넌트 포함 FK 후보를 우선 추천하고, 부모 PK/UK 준비 여부와 orphan count를 리스크에 반영한다.
+  - DDL은 `ENABLE VALIDATE` 기본이며, 클라이언트 raw SQL 대신 구조화 action payload만 받아 서버가 whitelist 기반 SQL을 생성한다.
+  - DEV 모드에서 FK/UK 실행 시 migration 파일 생성 및 `tools/generate_db_schema_doc.py` 실행 경로를 넣었다. 실행 로그는 `logs/schema-governance/actions-YYYY-MM.jsonl`에 남긴다.
+  - 신규 `/system/er-view` 페이지를 추가했다. 좌측 테이블 목록/중앙 `@xyflow/react` 관계 그래프/우측 상세 패널 3패널 구조이며 orphan scan, DDL 후보, 실행 SQL, 확인 문구를 표시한다.
+  - 시스템관리 메뉴 `SYS_ER_VIEW`, ko/en/zh/vi locale, page registry, `@xyflow/react` 의존성을 추가했다.
+- 검증:
+  - RED 확인: backend spec가 `er-view.service.ts` 부재로 실패, frontend structure test가 page/menu/controller/service 부재로 실패.
+  - GREEN: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - GREEN: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+  - PASS: 3002 `/system/er-view` HTTP 200
+  - PASS: 3003 `/api/v1/system/er-view/summary` 인증 게이트 401
+- 주의:
+  - Oracle DDL은 transaction rollback이 아니므로 batch 실패 시 이번 batch에서 생성한 constraint만 역순 DROP으로 보상하는 구조다.
+  - 실제 인증 세션으로 schema summary 데이터 렌더링과 orphan scan 실행은 아직 수행하지 않았다.
+  - 작업 중 발견된 무관 변경 `apps/frontend/src/app/(authenticated)/system/config/page.tsx`, `apps/frontend/src/components/system/AiCatalogPanel.tsx`, help 문서 4개는 되돌리지 않았다.
+
+# 2026-06-23 - T-ER-VIEW-MENU-VISIBILITY ER VIEW 메뉴 노출 누락 보정
+
+- owner: codex
+- status: REVIEW
+- 원인:
+  - `SYS_ER_VIEW`가 `apps/frontend/src/config/menuConfig.ts`에만 있고 백엔드 메뉴 코드 화이트리스트, seed JSON, JSHANES `MENU_CATEGORY_ITEMS` 배치에 빠져 있었다.
+  - 사이드바는 `/menu-categories/tree` DB 트리와 `menuConfig.ts` leaf를 병합하므로, DB 배치가 없으면 leaf가 렌더링되지 않는다.
+- 변경:
+  - `apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts`에 `SYS_ER_VIEW` 추가.
+  - `apps/backend/src/seeds/menu-config.json`의 `SYSTEM` child에 `SYS_ER_VIEW` 추가.
+  - `apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs`가 validator/seed 등록도 검증하도록 보강.
+  - `apps/backend/src/migrations/2026-06-23_er_view_menu_seed.sql` 추가 및 JSHANES 적용.
+- DB 적용:
+  - JSHANES `MENU_CATEGORY_ITEMS`: `SYS_ER_VIEW`, `SYSTEM`, sort 95, `IS_ACTIVE='Y'` 확인.
+  - 기존 시스템 메뉴 패턴에 맞춰 `ROLE_MENU_PERMISSIONS`는 추가하지 않았다. ADMIN은 전체허용으로 접근한다.
+- 검증:
+  - RED 확인: validator structure test가 `SYS_ER_VIEW` 누락으로 실패.
+  - GREEN: `node apps/backend/src/modules/menu-categories/utils/menu-code-validator.structure.test.mjs`
+  - GREEN: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `node -e "JSON.parse(...menu-config.json...)"`
+  - PASS: `git diff --check`
+
+# 2026-06-23 - T-ER-VIEW-TABLE-NODES ER VIEW 테이블형 그래프 보정
+
+- owner: codex
+- status: REVIEW
+- 원인:
+  - `/system/er-view` 중앙 그래프가 ReactFlow 기본 노드에 테이블명만 넣고 있어 DB 테이블 표형 ERD가 아니라 일반 네트워크 그래프처럼 보였다.
+  - backend `getGraph()` 응답도 node별 컬럼/PK/FK 후보 metadata를 제공하지 않았다.
+  - 페이지 루트/grid/canvas overflow가 닫혀 있지 않아 화면이 아래로 밀릴 수 있었다.
+- 변경:
+  - `ErViewService.getGraph()` node 응답에 `pkColumns`, `columns[]`, `isPk`, `isFkCandidate`, `dataType`, `nullable`을 추가했다.
+  - `/system/er-view/page.tsx`는 ReactFlow `nodeTypes`와 `TableNode` custom node를 사용해 테이블명/주석/컬럼행/PK/FK badge를 표시한다.
+  - edge는 `smoothstep` + `MarkerType.ArrowClosed`로 FK 방향을 보이게 했다.
+  - 페이지 루트, 3열 grid, graph panel을 `overflow-hidden`/`min-h-0` 구조로 고정하고 ReactFlow `Controls`, `MiniMap`, `panOnDrag`, `zoomOnScroll`, `fitView` 옵션을 명시했다.
+- 검증:
+  - RED 확인: backend spec가 graph node의 `pkColumns`/`columns` 부재로 실패.
+  - RED 확인: frontend structure test가 `nodeTypes`/`TableNode`/PK/FK 표시 부재로 실패.
+  - GREEN: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - GREEN: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: 3002 `/system/er-view` HTTP 200
+  - PASS: Chrome Playwright 인증 세션에서 `MAT_LOTS` 선택 시 table node 4개, edge 3개, controls 3개, minimap 표시, body/html overflow 없음
+
+# 2026-06-23 - T-BOX-ID-TO-BOX-NO TRACE_LOGS BOX_ID 및 WORKER_ID 표준 컬럼명 변경
+
+- owner: codex
+- status: DONE
+- 원인:
+  - 사용자가 `ADD_UK BOX_MASTERS(COMPANY, PLANT_CD, BOX_ID)` dry-run에서 `ORA-00904: "BOX_ID": 부적합한 식별자`를 보고했다.
+  - JSHANES 실측상 `BOX_ID` 물리 컬럼은 `TRACE_LOGS` 1개뿐이고, `BOX_MASTERS`는 이미 표준 `BOX_NO` PK를 사용한다.
+  - JSHANES 실측상 `WORKER_ID` 물리 컬럼은 20개 테이블에 존재했고, `WORKER_MASTERS`는 현재 `WORKER_CODE` PK를 사용한다.
+- 변경:
+  - JSHANES `TRACE_LOGS.BOX_ID`를 `BOX_NO`로 rename하는 idempotent migration `apps/backend/src/migrations/2026-06-23_trace_logs_box_id_to_box_no.sql`을 추가/적용했다.
+  - JSHANES 20개 테이블의 `WORKER_ID`를 `WORKER_NO`로 rename하는 idempotent migration `apps/backend/src/migrations/2026-06-23_worker_id_to_worker_no.sql`을 추가/적용했다.
+  - `REPAIR_ORDERS` 작업자 인덱스를 `IDX_REPAIR_ORDERS_WORKER_NO(WORKER_NO)`로 rename했다.
+  - 관련 TypeORM entity의 물리 컬럼 매핑을 `WORKER_NO`/`BOX_NO`로 변경했다. API property명 `workerId`는 호환을 위해 유지했다.
+  - `WipMatStockService.findTransactions()` raw select를 `tx.WORKER_NO`로 변경했다.
+  - `ErViewService`의 추정 관계를 `BOX_NO -> BOX_MASTERS.BOX_NO`, `WORKER_NO -> WORKER_MASTERS.WORKER_CODE`로 해석하도록 보정했다.
+  - `apps/backend/src/database/create-hanes-schema.sql`과 `docs/reports/db-schema-erd.md`를 현재 표준 컬럼명으로 갱신했다.
+- DB 검증:
+  - JSHANES 컬럼 집계: `BOX_NO` 4개, `WORKER_NO` 20개, `BOX_ID` 0개, `WORKER_ID` 0개.
+  - `TRACE_LOGS`: `BOX_NO`, `WORKER_NO` 확인.
+  - `USER_IND_COLUMNS`: `IDX_REPAIR_ORDERS_WORKER_NO`가 `WORKER_NO` 컬럼을 사용함을 확인.
+  - `ASSIGNED_WORKER_ID`는 PM 작업지시의 별도 의미 컬럼이라 유지했다.
+- 검증:
+  - PASS: `python C:/Users/hsyou/.codex/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-23_worker_id_to_worker_no.sql` 적용 및 재실행
+  - PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- wip-mat-stock.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+
+# 2026-06-23 - T-MASTER-TENANT-PK 마스터 테이블 tenant 복합 PK 정석화
+
+- owner: codex
+- status: DONE
+- 결정:
+  - 사용자 지시에 따라 우회 UK가 아니라 마스터 테이블 PK 자체를 `COMPANY, PLANT_CD, 업무키`로 변경했다.
+  - `D-20260623-MASTER-TENANT-PK`에 durable decision으로 기록했다.
+- DB 적용:
+  - 신규 migration `apps/backend/src/migrations/2026-06-23_master_tenant_composite_pk.sql` 추가 및 JSHANES 적용/재실행.
+  - backup 제외 `COMPANY`, `PLANT_CD` 보유 마스터 테이블 19개 중 tenant PK 적용 19개, 잔여 0개 확인.
+  - 주요 변경 PK:
+    - `PROCESS_MASTERS`: `COMPANY, PLANT_CD, PROCESS_CODE`
+    - `ITEM_MASTERS`: `COMPANY, PLANT_CD, ITEM_CODE`
+    - `EQUIP_MASTERS`: `COMPANY, PLANT_CD, EQUIP_CODE`
+    - `WORKER_MASTERS`: `COMPANY, PLANT_CD, WORKER_CODE`
+    - `VENDOR_MASTERS`: `COMPANY, PLANT_CD, VENDOR_CODE`
+    - `CONSUMABLE_MASTERS`: `COMPANY, PLANT_CD, CONSUMABLE_CODE`
+    - `BOX_MASTERS`: `COMPANY, PLANT_CD, BOX_NO`
+  - 기존 composite UK로 우회하던 `CONSUMABLE_MASTERS`, `EQUIP_MASTERS`, `ITEM_MASTERS`, `VENDOR_MASTERS` UK는 제거하고 동일 컬럼 PK로 승격했다.
+  - 관련 FK 7개를 tenant composite FK로 재생성했고 모두 `ENABLED/VALIDATED` 확인:
+    - `FK_BOX_MASTERS_ITEM_CODE`
+    - `FK_CONSUMABLE_L_CONSUMABLE_C`
+    - `FK_CONSUMABLE_S_CONSUMABLE_C`
+    - `FK_CONSUMABLE_L_EQUIP_CODE`
+    - `FK_CONSUMABLE_L_VENDOR_CODE`
+    - `FK_PROD_PLANS_ITEM`
+    - `FK_HARNESS_REV_MASTER`
+- 코드/문서 변경:
+  - 관련 마스터 entity의 `COMPANY`, `PLANT_CD`를 `@PrimaryColumn`으로 변경했다.
+  - `apps/backend/src/database/create-hanes-schema.sql` PK/FK 정의를 갱신했다.
+  - `docs/reports/db-schema-erd.md`를 JSHANES 기준으로 재생성했다.
+- 검증:
+  - PASS: JSHANES duplicate/null pre-check 0건.
+  - PASS: JSHANES composite orphan pre-check 0건.
+  - PASS: migration 적용 및 재실행.
+  - PASS: JSHANES post-check `MASTER_TABLES_WITH_TENANT_COLS=19`, `TENANT_PK_TABLES=19`, `REMAINING=0`.
+  - PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+  - PASS: `pnpm.cmd --filter @harness/backend build`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+- 주의:
+  - 전체 backend `tsc --noEmit`는 기존 `ai-page-tools.service.spec.ts` union type 오류로 실패하며, 이번 변경과 직접 관련 없는 기존 실패로 분리했다.
+  - 자식 테이블 전체의 TypeORM `@JoinColumn`을 모두 composite relation으로 바꾸는 작업은 후속 정리 대상이다. 이번 범위는 마스터 물리 PK/FK와 마스터 entity PK 정렬이다.
+
+# 2026-06-23 - T-VENDOR-ID-TO-VENDOR-CODE VENDOR_ID 컬럼 표준명 변경
+
+- owner: codex
+- status: DONE
+- 원인:
+  - 사용자 지시에 따라 DB 물리 컬럼 표준을 `VENDOR_ID`가 아니라 `VENDOR_CODE`로 정리했다.
+  - JSHANES 실측상 `VENDOR_ID` 물리 컬럼은 `MAT_ARRIVALS`, `SUBCON_ORDERS`, `WAREHOUSES` 3개에만 존재했다.
+- DB 적용:
+  - 신규 migration `apps/backend/src/migrations/2026-06-23_vendor_id_to_vendor_code.sql` 추가 및 JSHANES 적용/재실행.
+  - `MAT_ARRIVALS.VENDOR_ID -> VENDOR_CODE`
+  - `SUBCON_ORDERS.VENDOR_ID -> VENDOR_CODE`
+  - `WAREHOUSES.VENDOR_ID -> VENDOR_CODE`
+  - `IDX_MAT_ARRIVALS_VENDOR_ID -> IDX_MAT_ARRIVALS_VENDOR_CODE`
+  - 세 컬럼 주석을 `VENDOR_MASTERS.VENDOR_CODE` 기준으로 갱신했다.
+- 코드/문서 변경:
+  - `MatArrival`, `SubconOrder`, `Warehouse` entity의 물리 컬럼 매핑과 업무 속성명을 `vendorCode`로 변경했다.
+  - 입하/외주/창고 DTO, service, focused spec, 관련 프론트 타입/form을 `vendorCode`로 변경했다.
+  - `ErViewService`의 `VENDOR_ID -> VENDOR_CODE` 예외 매핑을 제거했다.
+  - `apps/backend/src/database/create-hanes-schema.sql`과 `docs/reports/db-schema-erd.md`를 현재 표준 컬럼명으로 갱신했다.
+- DB 검증:
+  - JSHANES `USER_TAB_COLUMNS`에서 `VENDOR_ID` row_count 0 확인.
+  - `MAT_ARRIVALS`, `SUBCON_ORDERS`, `WAREHOUSES` 모두 `VENDOR_CODE`로 확인.
+  - `USER_INDEXES`에서 `IDX_MAT_ARRIVALS_VENDOR_CODE` 확인.
+- 검증:
+  - PASS: `python C:/Users/hsyou/.codex/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-23_vendor_id_to_vendor_code.sql` 적용 및 재실행
+  - PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- arrival.service.spec.ts --runInBand`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- outsourcing.service.spec.ts --runInBand`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - PASS: `pnpm.cmd --filter @harness/backend build`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+
+# 2026-06-23 - T-PARTNER-ID-TO-PARTNER-CODE PARTNER_ID 컬럼 표준명 변경
+
+- owner: codex
+- status: DONE
+- 원인:
+  - 사용자 지시에 따라 DB 물리 컬럼 표준을 `PARTNER_ID`가 아니라 `PARTNER_CODE`로 정리했다.
+  - JSHANES 실측상 `PARTNER_ID` 물리 컬럼은 `PURCHASE_ORDERS` 1개뿐이었다.
+  - `create-hanes-schema.sql`에는 현재 JSHANES에 없는 `IQC_PART_LINKS.PARTNER_ID` 과거 정의도 남아 있어 생성 기준 파일에서 함께 정리했다.
+- DB 적용:
+  - 신규 migration `apps/backend/src/migrations/2026-06-23_partner_id_to_partner_code.sql` 추가 및 JSHANES 적용/재실행.
+  - `PURCHASE_ORDERS.PARTNER_ID -> PARTNER_CODE`
+  - `PURCHASE_ORDERS.PARTNER_CODE` 컬럼 주석을 `PARTNER_MASTERS.PARTNER_CODE` 기준으로 갱신했다.
+- 코드/문서 변경:
+  - `PurchaseOrder` entity의 물리 컬럼 매핑과 업무 속성명을 `partnerCode`로 변경했다.
+  - 구매발주 DTO/service/spec, ERP PO 수신 controller/service/spec, 입하 서비스의 PO 참조, 구매발주 프론트 패널, 입하 타입을 `partnerCode`로 변경했다.
+  - `ErViewService`의 `PARTNER_ID -> PARTNER_CODE` 예외 매핑을 제거했다.
+  - `apps/backend/src/database/create-hanes-schema.sql`, 보조 TypeORM migration, `docs/reports/db-schema-erd.md`를 현재 표준 컬럼명으로 갱신했다.
+- DB 검증:
+  - JSHANES `USER_TAB_COLUMNS`에서 `PARTNER_ID` row_count 0 확인.
+  - `PURCHASE_ORDERS.PARTNER_CODE`와 `PARTNER_MASTERS.PARTNER_CODE` 확인.
+- 검증:
+  - PASS: `python C:/Users/hsyou/.codex/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-23_partner_id_to_partner_code.sql` 적용 및 재실행
+  - PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- purchase-order.service.spec.ts --runInBand`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- erp-material.service.spec.ts --runInBand`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- arrival.service.spec.ts arrival.service.po-line.spec.ts --runInBand`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - PASS: `pnpm.cmd --filter @harness/backend build`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+- 주의:
+  - `arrival.service.spec.ts`/`arrival.service.po-line.spec.ts` 묶음은 PASS 후 기존 Jest open-handle 경고가 출력됐다. 테스트 실패는 아니다.
+
+# 2026-06-23 - T-ER-VIEW-FK-NAME-RISK-DISPLAY ER VIEW FK명/리스크 근거 표시 보정
+
+- owner: codex
+- status: DONE
+- 원인:
+  - 백엔드는 물리 FK 관계의 `constraintName`을 이미 내려주고 있었지만 `/system/er-view` 우측 상세 패널과 그래프 edge 라벨에서 FK명을 표시하지 않았다.
+  - `PHYSICAL_FK_EXISTS` 사유가 내부 정렬용 음수 보정값 `-100`으로 표시되어 이미 적용된 FK가 리스크 점수처럼 보였다.
+- 변경:
+  - 물리 FK 관계 상세에 `현재 FK명`을 별도 표시하고, 추정 관계에는 실행 전 확인용 `FK 후보명`을 표시했다.
+  - 물리 FK edge 라벨은 컬럼명 대신 실제 `constraintName`을 우선 표시한다.
+  - 물리 FK 리스크 사유를 `이미 FK 존재: 신규 생성 불필요`, score `0`, recommendation `신규 생성 불필요`로 정리했다.
+  - 우측 `상태/리스크 근거` 목록은 양수 리스크만 점수로 표시하고, 이미 존재/양호 같은 상태성 사유는 점수를 숨긴다.
+- 검증:
+  - PASS: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+
+# 2026-06-23 - T-ER-VIEW-MULTI-TABLE-SELECT ER VIEW 다중 테이블 선택 그래프
+
+- owner: codex
+- status: DONE
+- 변경:
+  - `/system/er-view` 좌측 테이블 목록을 단일 선택 버튼에서 checkbox 기반 다중 선택 목록으로 변경했다.
+  - `selectedTables` 배열의 첫 번째 값을 포커스 테이블로 두고, 새로 선택한 테이블 또는 그래프 노드 클릭 테이블을 포커스로 올린다.
+  - 선택된 각 테이블의 기존 `/system/er-view/graph?table=...&depth=1` 응답을 `Promise.all`로 조회한 뒤 node/edge/relationship을 `id` 기준으로 병합한다.
+  - 마지막 1개 선택은 해제되지 않게 막아 빈 그래프 상태를 방지한다.
+  - 중앙 그래프 헤더와 좌측 패널에 선택 개수와 포커스 테이블을 표시한다.
+- 검증:
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+  - PASS: 3002 `/system/er-view` HTTP 200
+
+# 2026-06-23 - T-ACTIVITY-LOGS-USERS-FK ACTIVITY_LOGS 사용자 FK 정합화
+
+- owner: codex
+- status: DONE
+- 원인:
+  - JSHANES 실측상 `ACTIVITY_LOGS`는 실제 저장 컬럼 `USER_EMAIL`과 표시용 `USER_NAME`을 가진다.
+  - `USERS`의 물리 PK는 `EMAIL` 단독이다.
+  - 기존 ER VIEW 추정 로직은 `_CODE/_ID/_NO`만 부모 후보로 처리해 `USER_EMAIL -> USERS.EMAIL` 관계를 만들지 못했다.
+  - `USER_NAME`은 표시용 컬럼이므로 FK 대상이 아니다.
+- DB 적용:
+  - 신규 migration `apps/backend/src/migrations/2026-06-23_activity_logs_user_email_fk.sql` 추가 및 JSHANES 적용/재실행.
+  - `FK_ACTIVITY_LOGS_USER_EMAIL`: `ACTIVITY_LOGS.USER_EMAIL -> USERS.EMAIL ENABLE VALIDATE`.
+- 코드/문서 변경:
+  - `ErViewService`에 `USER_EMAIL -> USERS` semantic mapping과 `USER_EMAIL -> EMAIL` parent column mapping을 추가했다.
+  - `USERS.EMAIL` 참조에서는 tenant 컬럼을 자동 조합하지 않도록 했다.
+  - `er-view.service.spec.ts`에 `ACTIVITY_LOGS.USER_EMAIL -> USERS.EMAIL` 회귀 테스트를 추가했다.
+  - `docs/reports/db-schema-erd.md`를 재생성했다.
+- DB 검증:
+  - JSHANES pre/post orphan `0`.
+  - `FK_ACTIVITY_LOGS_USER_EMAIL`이 `ENABLED/VALIDATED`이고 child `USER_EMAIL`, parent `EMAIL`로 조회됨.
+- 검증:
+  - PASS: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-23_activity_logs_user_email_fk.sql` 적용 및 재실행
+  - PASS: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+- 주의:
+  - 생성 ERD 문서에서 `USER_AUTHS.USER_EMAIL` 주석에 과거 표현 `USERS.ID`가 남아 있는 별도 문제를 발견했다. 이번 범위는 ACTIVITY_LOGS FK 정합화로 제한했다.
+  - 후속 사용자 정정에 따라 이 작업의 `ACTIVITY_LOGS.USER_EMAIL -> USERS.EMAIL` FK-only 접근은 `T-ACTIVITY-LOGS-EMAIL-COLUMN`에서 물리 컬럼 rename 방식으로 대체됐다.
+
+# 2026-06-23 - T-ACTIVITY-LOGS-EMAIL-COLUMN ACTIVITY_LOGS 사용자 컬럼명 마스터 정렬
+
+- owner: codex
+- status: DONE
+- 사용자 정정:
+  - FK만 다른 이름끼리 연결하는 것이 아니라, `ACTIVITY_LOGS`에 단독으로 쓰인 사용자 컬럼명 자체를 마스터 `USERS.EMAIL`에 맞춰야 한다.
+- DB 적용:
+  - 신규 migration `apps/backend/src/migrations/2026-06-23_activity_logs_user_email_to_email.sql` 추가 및 JSHANES 적용/재실행.
+  - 기존 `FK_ACTIVITY_LOGS_USER_EMAIL`을 drop.
+  - `ACTIVITY_LOGS.USER_EMAIL -> EMAIL` rename.
+  - 신규 `FK_ACTIVITY_LOGS_EMAIL`: `ACTIVITY_LOGS.EMAIL -> USERS.EMAIL ENABLE VALIDATE`.
+- 코드/문서 변경:
+  - `ActivityLog.userEmail` TypeORM property는 API/서비스 호환을 위해 유지하되 물리 컬럼 매핑을 `EMAIL`로 변경했다.
+  - `ErViewService` 추정 로직은 `ACTIVITY_LOGS.EMAIL -> USERS.EMAIL`을 표준 관계로 추정하도록 변경했다.
+  - `activity-log.service.spec.ts`와 `er-view.service.spec.ts` 회귀 테스트를 갱신/추가했다.
+  - `docs/reports/db-schema-erd.md`와 `apps/backend/src/database/create-hanes-schema.sql`을 라이브 DB 기준으로 갱신했다.
+- DB 검증:
+  - JSHANES `ACTIVITY_LOGS.USER_EMAIL` 컬럼 0건, `ACTIVITY_LOGS.EMAIL` 컬럼 1건.
+  - `FK_ACTIVITY_LOGS_EMAIL`이 child `EMAIL`, parent `USERS.EMAIL`, `ENABLED/VALIDATED`로 조회됨.
+  - orphan 0건.
+- 검증:
+  - PASS: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-23_activity_logs_user_email_to_email.sql` 적용 및 재실행
+  - PASS: `pnpm.cmd --filter @harness/backend test -- activity-log.service.spec.ts er-view.service.spec.ts --runInBand`
+  - PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+  - PASS: `python scripts/gen-live-schema.py JSHANES apps/backend/src/database/create-hanes-schema.sql`
+  - PASS: `git diff --check`
+- 주의:
+  - 전체 backend `tsc --noEmit`는 기존 `ai-page-tools.service.spec.ts`의 생성자 인자 오류로 실패한다. 이번 변경 파일 대상 테스트와 DB 검증은 통과했다.
+
+# 2026-06-23 - T-ACTIVITY-LOGS-NAME-COLUMN ACTIVITY_LOGS 사용자명 컬럼 표준화
+
+- owner: codex
+- status: DONE
+- 판단:
+  - JSHANES 실측상 `USERS` 마스터의 사용자명 컬럼은 `NAME`이고, `ACTIVITY_LOGS`에는 중복 표시명 컬럼 `USER_NAME`이 남아 있었다.
+  - `ACTIVITY_LOGS` 데이터는 0건이라 rename 데이터 리스크는 낮았다.
+  - 사용자 기준에 따라 마스터 컬럼명과 물리 컬럼명을 맞추는 것이 정석이므로 `ACTIVITY_LOGS.USER_NAME -> NAME`으로 rename했다.
+- DB 적용:
+  - 신규 migration `apps/backend/src/migrations/2026-06-23_activity_logs_user_name_to_name.sql` 추가 및 JSHANES 적용/재실행.
+  - post-check: `ACTIVITY_LOGS` 사용자 컬럼은 `EMAIL`, `NAME`만 존재하고 `USER_NAME`은 없음.
+- 코드/문서 변경:
+  - `ActivityLog.userName` property는 API/서비스 호환을 위해 유지하되 `@Column({ name: 'NAME' })`로 매핑했다.
+  - `activity-log.service.spec.ts`에 `ACTIVITY_LOGS.NAME` 매핑 회귀 테스트를 추가했다.
+  - `er-view.service.spec.ts`의 ACTIVITY_LOGS 컬럼 fixture를 `NAME` 기준으로 갱신했다.
+  - `docs/reports/db-schema-erd.md`, `apps/backend/src/database/create-hanes-schema.sql`을 JSHANES 라이브 DB 기준으로 재생성했다.
+- 검증:
+  - PASS: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-23_activity_logs_user_name_to_name.sql` 적용 및 재실행
+  - PASS: JSHANES column post-check `EMAIL`, `NAME`
+  - PASS: `pnpm.cmd --filter @harness/backend test -- activity-log.service.spec.ts er-view.service.spec.ts --runInBand`
+  - PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+  - PASS: `python scripts/gen-live-schema.py JSHANES apps/backend/src/database/create-hanes-schema.sql`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+
+# 2026-06-23 - T-ER-VIEW-DROP-FK ER VIEW FK 제거 액션 추가
+
+- owner: codex
+- status: DONE
+- 변경:
+  - `ErViewService` action type에 `DROP_FK`를 추가했다.
+  - dry-run은 `constraintName`과 `childTable`을 정규화하고, 최신 snapshot의 실제 물리 FK와 일치할 때만 `ALTER TABLE <child> DROP CONSTRAINT <fk>`를 생성한다.
+  - execute는 `DROP_FK`를 DDL 경로로 처리해 schema snapshot cache 무효화, DEV migration 파일 작성, ERD 재생성, action log 기록 흐름을 탄다.
+  - `/system/er-view` 상세 패널에서 물리 FK 관계 선택 시 `FK 제거 후보` 버튼을 표시하고 `DROP_FK` payload를 dry-run으로 보낸다.
+- 범위 제외:
+  - PK/UK 제거 기능은 추가하지 않았다.
+  - 실제 FK DROP DDL은 실행하지 않았다. 기능 구현과 dry-run/execute 경로 테스트만 수행했다.
+- 검증:
+  - RED 확인: `DROP_FK` 미지원으로 backend spec 실패, 프론트 구조 테스트가 `DROP_FK`/`FK 제거 후보` 부재로 실패.
+  - PASS: `pnpm.cmd --filter @harness/backend test -- er-view.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/system/er-view/er-view.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check`
+  - PASS: `http://localhost:3002/system/er-view` HTTP 200
+- 주의:
+  - 내장 브라우저 `iab`는 현재 세션에서 unavailable이고, repo Node module 경로에서 `playwright` import가 되지 않아 DOM 자동 확인은 수행하지 못했다. 구조 테스트와 HTTP 200으로 대체했다.

@@ -256,7 +256,7 @@ export class ArrivalService {
           poId: dto.poId,
           poItemId: item.poItemId,
           poNo: po.poNo,
-          vendorId: po.partnerId,
+          vendorCode: po.partnerCode,
           vendorName: po.partnerName,
           supUid: item.supUid || null,
           itemCode: item.itemCode,
@@ -284,7 +284,7 @@ export class ArrivalService {
           arrivalNo,
           arrivalSeq: arrival.seq,
           origin: matUid,
-          vendor: po.partnerId ?? '',
+          vendor: po.partnerCode ?? '',
           invoiceNo: item.invoiceNo || dto.invoiceNo || null,
           poNo: po.poNo,
           mfgPartnerCode: null,
@@ -357,7 +357,7 @@ export class ArrivalService {
         arrivalNo,
         seq: 1,
         invoiceNo: dto.invoiceNo,
-        vendorId: dto.vendorId,
+        vendorCode: dto.vendorCode,
         vendorName: dto.vendor,
         supUid: dto.supUid || null,
         itemCode: dto.itemCode,
@@ -385,7 +385,7 @@ export class ArrivalService {
         arrivalNo,
         arrivalSeq: 1,
         origin: matUid,
-        vendor: dto.vendorId ?? dto.vendor ?? '',
+        vendor: dto.vendorCode ?? dto.vendor ?? '',
         invoiceNo: dto.invoiceNo ?? null,
         poNo: null,
         mfgPartnerCode: null,
@@ -556,7 +556,7 @@ export class ArrivalService {
         warehouseName: warehouse?.warehouseName ?? null,
         arrivalNo: arrival?.arrivalNo,
         invoiceNo: arrival?.invoiceNo,
-        vendorId: arrival?.vendorId,
+        vendorCode: arrival?.vendorCode,
         vendorName: arrival?.vendorName,
         arrivalType: arrival?.arrivalType,
         // 중첩 객체 (프론트엔드 타입 호환)
@@ -605,7 +605,7 @@ export class ArrivalService {
     const grouped =
       `SELECT a."ARRIVAL_NO" AS "arrivalNo", a."PO_NO" AS "poNo", a."ITEM_CODE" AS "itemCode",` +
       ` MIN(a."SEQ") AS "seq", MIN(a."ARRIVAL_DATE") AS "arrivalDate", MAX(a."CREATED_AT") AS "createdAt", SUM(a."QTY") AS "qty",` +
-      ` MAX(a."IQC_STATUS") AS "iqcStatus", MAX(a."VENDOR_ID") AS "vendorId", MAX(a."VENDOR_NAME") AS "vendorName",` +
+      ` MAX(a."IQC_STATUS") AS "iqcStatus", MAX(a."VENDOR_CODE") AS "vendorCode", MAX(a."VENDOR_NAME") AS "vendorName",` +
       ` MAX(i."ITEM_NAME") AS "itemName", MAX(i."ITEM_TYPE") AS "itemType", MAX(NVL(i."IQC_FLAG",'N')) AS "iqcFlag",` +
       ` COUNT(CASE WHEN a."STATUS" <> 'CANCELED' THEN 1 END) AS "activeCount",` +
       ` (SELECT MIN(poi."LINE_NO") FROM "PURCHASE_ORDER_ITEMS" poi WHERE poi."PO_ID"=a."PO_NO" AND poi."ITEM_CODE"=a."ITEM_CODE" AND poi."COMPANY"=a."COMPANY" AND poi."PLANT_CD"=a."PLANT_CD") AS "lineNo",` +
@@ -667,7 +667,7 @@ export class ArrivalService {
         poType: r.itemType === 'CONSUMABLE' ? 'CM' : 'RM',
         status: derivedStatus,
         iqcStatus: r.iqcStatus ?? null,
-        vendorId: r.vendorId ?? null,
+        vendorCode: r.vendorCode ?? null,
         vendorName: r.vendorName ?? null,
         mfgPartnerCode: r.mfgPartnerCode ?? null,
         mfgPartnerName: r.mfgPartnerName ?? null,
@@ -1476,7 +1476,7 @@ export class ArrivalService {
           arrivalNo,
           arrivalSeq: i + 1,
           origin: serialNos[i],
-          vendor: po.partnerId ?? '',
+          vendor: po.partnerCode ?? '',
           invoiceNo: '',
           poNo: po.poNo,
           mfgPartnerCode: dto.mfgPartnerCode,
@@ -1514,7 +1514,7 @@ export class ArrivalService {
           poId: po.poNo,
           poItemId: `${po.poNo}#${poItem.seq}`,
           poNo: po.poNo,
-          vendorId: po.partnerId ?? '',
+          vendorCode: po.partnerCode ?? '',
           vendorName: po.partnerName ?? '',
           itemCode: lot.itemCode,
           qty: lot.initQty,

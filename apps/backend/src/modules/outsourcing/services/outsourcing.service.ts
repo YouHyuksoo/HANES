@@ -31,7 +31,6 @@ import {
 import { parseDateStart } from '../../../shared/date.util';
 
 type VendorStockSummary = {
-  vendorId: string;
   vendorCode: string;
   vendorName: string;
   deliveredQty: number;
@@ -122,7 +121,7 @@ export class OutsourcingService {
     }
 
     const subconOrders = await this.subconOrderRepository.find({
-      where: { vendorId: vendorCode, ...this.tenantWhere(company, plant) },
+      where: { vendorCode, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
       take: 10,
     });
@@ -200,7 +199,7 @@ export class OutsourcingService {
   // ============================================================================
 
   async findAllOrders(query: SubconOrderQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, vendorId, status, search, startDate, endDate } = query;
+    const { page = 1, limit = 10, vendorCode, status, search, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.subconOrderRepository
@@ -208,7 +207,7 @@ export class OutsourcingService {
       .leftJoinAndSelect(
         VendorMaster,
         'vm',
-        'vm.VENDOR_CODE = so.VENDOR_ID AND vm.COMPANY = so.COMPANY AND vm.PLANT_CD = so.PLANT_CD',
+        'vm.VENDOR_CODE = so.VENDOR_CODE AND vm.COMPANY = so.COMPANY AND vm.PLANT_CD = so.PLANT_CD',
       )
 
     if (company) {
@@ -217,8 +216,8 @@ export class OutsourcingService {
     if (plant) {
       queryBuilder.andWhere('so.plant = :plant', { plant });
     }
-    if (vendorId) {
-      queryBuilder.andWhere('so.vendorId = :vendorId', { vendorId });
+    if (vendorCode) {
+      queryBuilder.andWhere('so.vendorCode = :vendorCode', { vendorCode });
     }
 
     if (status) {
@@ -250,13 +249,13 @@ export class OutsourcingService {
     ]);
 
     // IN 배치 선조회 + GROUP BY 집계로 N+1 방지
-    const vendorIds = [...new Set(orders.map((o) => o.vendorId).filter(Boolean))] as const;
+    const vendorCodes = [...new Set(orders.map((o) => o.vendorCode).filter(Boolean))] as const;
     const orderNos = orders.map((o) => o.orderNo);
 
     const [vendors, deliveryCounts, receiveCounts] = await Promise.all([
-      vendorIds.length > 0
+      vendorCodes.length > 0
         ? this.vendorMasterRepository.find({
-            where: { vendorCode: In(vendorIds), ...this.tenantWhere(company, plant) },
+            where: { vendorCode: In(vendorCodes), ...this.tenantWhere(company, plant) },
             select: ['vendorCode', 'vendorName'],
           })
         : Promise.resolve([]),
@@ -290,7 +289,7 @@ export class OutsourcingService {
 
     const data = orders.map((order) => ({
       ...order,
-      vendor: vendorMap.get(order.vendorId) ?? null,
+      vendor: vendorMap.get(order.vendorCode) ?? null,
       _count: {
         deliveries: deliveryMap.get(order.orderNo) ?? 0,
         receives: receiveMap.get(order.orderNo) ?? 0,
@@ -310,7 +309,7 @@ export class OutsourcingService {
     }
 
     const vendor = await this.vendorMasterRepository.findOne({
-      where: { vendorCode: order.vendorId, ...this.tenantWhere(company, plant) },
+      where: { vendorCode: order.vendorCode, ...this.tenantWhere(company, plant) },
     });
 
     const deliveries = await this.subconDeliveryRepository.find({
@@ -332,7 +331,7 @@ export class OutsourcingService {
 
     const order = this.subconOrderRepository.create({
       orderNo,
-      vendorId: dto.vendorId,
+      vendorCode: dto.vendorCode,
       itemCode: dto.itemCode,
       itemName: dto.itemName,
       orderQty: dto.orderQty,
@@ -541,38 +540,37 @@ export class OutsourcingService {
 
     // 외주처별 재고 집계
     const stockByVendor = orders.reduce<Record<string, VendorStockSummary>>((acc, order) => {
-      const vendorId = order.vendorId;
-      if (!acc[vendorId]) {
-        acc[vendorId] = {
-          vendorId,
-          vendorCode: '',
+      const vendorCode = order.vendorCode;
+      if (!acc[vendorCode]) {
+        acc[vendorCode] = {
+          vendorCode,
           vendorName: '',
           deliveredQty: 0,
           receivedQty: 0,
           stockQty: 0,
         };
       }
-      acc[vendorId].deliveredQty += order.deliveredQty;
-      acc[vendorId].receivedQty += order.receivedQty;
-      acc[vendorId].stockQty += order.deliveredQty - order.receivedQty;
+      acc[vendorCode].deliveredQty += order.deliveredQty;
+      acc[vendorCode].receivedQty += order.receivedQty;
+      acc[vendorCode].stockQty += order.deliveredQty - order.receivedQty;
       return acc;
     }, {});
 
     // IN 배치 선조회로 N+1 방지
-    const vendorIdList = Object.keys(stockByVendor);
-    const vendorList = vendorIdList.length > 0
+    const vendorCodeList = Object.keys(stockByVendor);
+    const vendorList = vendorCodeList.length > 0
       ? await this.vendorMasterRepository.find({
-          where: { vendorCode: In(vendorIdList), ...this.tenantWhere(company, plant) },
+          where: { vendorCode: In(vendorCodeList), ...this.tenantWhere(company, plant) },
           select: ['vendorCode', 'vendorName'],
         })
       : [];
     const vendorLookup = new Map(vendorList.map((v) => [v.vendorCode, v] as const));
 
-    for (const vid of vendorIdList) {
-      const vendor = vendorLookup.get(vid);
+    for (const code of vendorCodeList) {
+      const vendor = vendorLookup.get(code);
       if (vendor) {
-        stockByVendor[vid].vendorCode = vendor.vendorCode;
-        stockByVendor[vid].vendorName = vendor.vendorName;
+        stockByVendor[code].vendorCode = vendor.vendorCode;
+        stockByVendor[code].vendorName = vendor.vendorName;
       }
     }
 

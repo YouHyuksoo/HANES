@@ -18,7 +18,7 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 interface ErpPoRequest {
   poNo: string;
   orderDate: string;
-  partnerId: string;
+  partnerCode: string;
   partnerName: string;
   items: {
     seq: number;

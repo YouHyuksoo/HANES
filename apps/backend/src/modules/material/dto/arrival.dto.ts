@@ -115,9 +115,9 @@ export class CreateManualArrivalDto {
   @IsDateString()
   manufactureDate?: string;
 
-  @ApiProperty({ description: '공급업체 ID' })
+  @ApiProperty({ description: '공급업체 코드' })
   @IsString()
-  vendorId: string;
+  vendorCode: string;
 
   @ApiProperty({ description: '공급업체명' })
   @IsString()

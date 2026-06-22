@@ -105,7 +105,7 @@ describe('OutsourcingService', () => {
         where: { vendorCode: 'V001', company: 'CO', plant: 'P01' },
       });
       expect(mockOrderRepo.find).toHaveBeenCalledWith({
-        where: { vendorId: 'V001', company: 'CO', plant: 'P01' },
+        where: { vendorCode: 'V001', company: 'CO', plant: 'P01' },
         order: { createdAt: 'DESC' },
         take: 10,
       });
@@ -178,7 +178,7 @@ describe('OutsourcingService', () => {
   describe('findOrderById', () => {
     it('should return order with vendor, deliveries, receives', async () => {
       // Arrange
-      const order = { orderNo: 'ORD001', vendorId: 'V001' } as SubconOrder;
+      const order = { orderNo: 'ORD001', vendorCode: 'V001' } as SubconOrder;
       mockOrderRepo.findOne.mockResolvedValue(order);
       mockVendorRepo.findOne.mockResolvedValue({ vendorCode: 'V001' } as VendorMaster);
       mockDeliveryRepo.find.mockResolvedValue([]);
@@ -191,7 +191,7 @@ describe('OutsourcingService', () => {
       expect(result.orderNo).toBe('ORD001');
     });
     it('should return order relationships within tenant', async () => {
-      const order = { orderNo: 'ORD001', vendorId: 'V001', company: 'CO', plant: 'P01' } as SubconOrder;
+      const order = { orderNo: 'ORD001', vendorCode: 'V001', company: 'CO', plant: 'P01' } as SubconOrder;
       mockOrderRepo.findOne.mockResolvedValue(order);
       mockVendorRepo.findOne.mockResolvedValue({ vendorCode: 'V001', company: 'CO', plant: 'P01' } as VendorMaster);
       mockDeliveryRepo.find.mockResolvedValue([]);
@@ -234,7 +234,7 @@ describe('OutsourcingService', () => {
 
       // Act
       const result = await target.createOrder({
-        vendorId: 'V001',
+        vendorCode: 'V001',
         itemCode: 'PART1',
         orderQty: 100,
       } as any);
@@ -247,7 +247,7 @@ describe('OutsourcingService', () => {
       mockOrderRepo.create.mockReturnValue({ orderNo: 'SCO20260318-0001' } as SubconOrder);
       mockOrderRepo.save.mockResolvedValue({ orderNo: 'SCO20260318-0001' } as SubconOrder);
 
-      await target.createOrder({ vendorId: 'V001', itemCode: 'PART1', orderQty: 100 } as any, 'CO', 'P01');
+      await target.createOrder({ vendorCode: 'V001', itemCode: 'PART1', orderQty: 100 } as any, 'CO', 'P01');
 
       expect(mockOrderRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ orderNo: 'SCO20260318-0001', company: 'CO', plant: 'P01' }),
@@ -260,7 +260,7 @@ describe('OutsourcingService', () => {
       mockOrderRepo.save.mockResolvedValue({ orderNo: 'SCO20260318-0001' } as SubconOrder);
 
       await target.createOrder({
-        vendorId: 'V001',
+        vendorCode: 'V001',
         itemCode: 'ITEM-001',
         itemName: 'Harness A',
         orderQty: 100,
@@ -283,7 +283,7 @@ describe('OutsourcingService', () => {
 
   describe('updateOrder', () => {
     it('should update ITEM_CODE through the itemCode entity property', async () => {
-      const order = { orderNo: 'ORD001', vendorId: 'V001' } as SubconOrder;
+      const order = { orderNo: 'ORD001', vendorCode: 'V001' } as SubconOrder;
       mockOrderRepo.findOne.mockResolvedValue(order);
       mockVendorRepo.findOne.mockResolvedValue({ vendorCode: 'V001' } as VendorMaster);
       mockDeliveryRepo.find.mockResolvedValue([]);
@@ -311,7 +311,7 @@ describe('OutsourcingService', () => {
       );
     });
     it('should update order within tenant', async () => {
-      const order = { orderNo: 'ORD001', vendorId: 'V001', company: 'CO', plant: 'P01' } as SubconOrder;
+      const order = { orderNo: 'ORD001', vendorCode: 'V001', company: 'CO', plant: 'P01' } as SubconOrder;
       mockOrderRepo.findOne.mockResolvedValue(order);
       mockVendorRepo.findOne.mockResolvedValue({ vendorCode: 'V001' } as VendorMaster);
       mockDeliveryRepo.find.mockResolvedValue([]);
@@ -330,7 +330,7 @@ describe('OutsourcingService', () => {
   describe('cancelOrder', () => {
     it('should cancel ORDERED order', async () => {
       // Arrange
-      const order = { orderNo: 'ORD001', status: 'ORDERED', vendorId: 'V001' } as SubconOrder;
+      const order = { orderNo: 'ORD001', status: 'ORDERED', vendorCode: 'V001' } as SubconOrder;
       mockOrderRepo.findOne.mockResolvedValue(order);
       mockVendorRepo.findOne.mockResolvedValue({ vendorCode: 'V001' } as VendorMaster);
       mockDeliveryRepo.find.mockResolvedValue([]);
@@ -346,7 +346,7 @@ describe('OutsourcingService', () => {
 
     it('should throw BadRequestException for non-ORDERED status', async () => {
       // Arrange
-      const order = { orderNo: 'ORD001', status: 'DELIVERED', vendorId: 'V001' } as SubconOrder;
+      const order = { orderNo: 'ORD001', status: 'DELIVERED', vendorCode: 'V001' } as SubconOrder;
       mockOrderRepo.findOne.mockResolvedValue(order);
       mockVendorRepo.findOne.mockResolvedValue({ vendorCode: 'V001' } as VendorMaster);
       mockDeliveryRepo.find.mockResolvedValue([]);

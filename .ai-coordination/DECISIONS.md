@@ -91,6 +91,16 @@ Reason:
 - 사용자가 2레벨은 제품류가 아니라 모델 구분(예: 저전압/고전압)이라고 정정했고, 다른 모델의 불량코드가 검사 화면에 섞이면 안 된다고 명시했다.
 - 품목별 모델구분을 품목마스터에 두어 검사 대상 품목 기준으로 불량코드 적용 범위를 안정적으로 제한할 수 있다.
 
+## D-20260623-MASTER-TENANT-PK
+Status: Accepted
+Decision:
+- `COMPANY`, `PLANT_CD`를 가진 non-backup 마스터 테이블은 PK 선두에 반드시 `COMPANY, PLANT_CD`를 포함한다.
+- 기존 단독 자연키 마스터 PK는 `COMPANY, PLANT_CD, 업무키` 복합 PK로 변경한다.
+- 마스터를 참조하는 FK도 가능한 경우 `COMPANY, PLANT_CD, 업무키` 조합으로 건다.
+Reason:
+- HANES는 멀티 회사/공장 MES 구조이며, 같은 업무코드가 회사/공장별로 독립될 수 있어 단독 코드 PK는 tenant 경계를 표현하지 못한다.
+- FK가 단독 코드만 참조하면 다른 회사/공장의 기준정보를 잘못 참조할 수 있으므로 물리 PK/FK 수준에서 tenant 경계를 강제한다.
+
 - `/master/part`는 `AQL 정책` 선택만 제공하고, `/quality/aql/resolve-iqc`는 품목의 정책 코드를 따라 sampling rule을 산출한다.
 - `IQC_PART_SPEC_ITEMS`의 검사수준/AQL은 품목 정책을 대체하는 것이 아니라 검사항목별 override 기준으로 유지한다.
 - 실제 IQC 검사 화면과 저장 판정은 검사항목별 판정 경로인 `resolveIqcPolicyByItem()`을 기준으로 맞춘다.

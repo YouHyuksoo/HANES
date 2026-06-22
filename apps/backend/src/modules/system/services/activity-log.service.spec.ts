@@ -9,7 +9,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { getMetadataArgsStorage, Repository } from 'typeorm';
 import { ActivityLogService } from './activity-log.service';
 import { ActivityLog } from '../../../entities/activity-log.entity';
 import { SysConfigService } from './sys-config.service';
@@ -39,6 +39,22 @@ describe('ActivityLogService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('maps user identity to ACTIVITY_LOGS.EMAIL physical column', () => {
+    const emailColumn = getMetadataArgsStorage().columns.find((column) => (
+      column.target === ActivityLog && column.propertyName === 'userEmail'
+    ));
+
+    expect(emailColumn?.options.name).toBe('EMAIL');
+  });
+
+  it('maps user display name to ACTIVITY_LOGS.NAME physical column', () => {
+    const nameColumn = getMetadataArgsStorage().columns.find((column) => (
+      column.target === ActivityLog && column.propertyName === 'userName'
+    ));
+
+    expect(nameColumn?.options.name).toBe('NAME');
   });
 
   // ─── logActivity ───

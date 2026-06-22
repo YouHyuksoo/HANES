@@ -112,7 +112,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
       if (entity === PurchaseOrder) {
         return Promise.resolve({
           poNo: 'PO-26-001',
-          partnerId: 'VND-001',
+          partnerCode: 'VND-001',
           partnerName: '한국단자공업',
           useType: 'PROD',
           status: 'CONFIRMED',

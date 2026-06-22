@@ -32,7 +32,7 @@ interface ItemRow {
 
 interface PoFormData {
   poNo: string;
-  partnerId: string;
+  partnerCode: string;
   orderDate: string;
   dueDate: string;
   remark: string;
@@ -40,7 +40,7 @@ interface PoFormData {
 
 export interface PurchaseOrder {
   poNo: string;
-  partnerId: string;
+  partnerCode: string;
   partnerName: string;
   orderDate: string;
   dueDate: string;
@@ -58,7 +58,7 @@ export interface PurchaseOrder {
 }
 
 const INIT_FORM: PoFormData = {
-  poNo: "", partnerId: "", orderDate: "", dueDate: "", remark: "",
+  poNo: "", partnerCode: "", orderDate: "", dueDate: "", remark: "",
 };
 
 interface CompactItemInputProps {
@@ -125,7 +125,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
     if (editData) {
       setForm({
         poNo: editData.poNo,
-        partnerId: editData.partnerId || "",
+        partnerCode: editData.partnerCode || "",
         orderDate: editData.orderDate?.slice(0, 10) || "",
         dueDate: editData.dueDate?.slice(0, 10) || "",
         remark: editData.remark || "",
@@ -195,7 +195,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
   const hasInvalidQty = !!invalidQtyItem;
 
   const handleSave = useCallback(async () => {
-    if (!form.poNo || !form.partnerId || items.length === 0) return;
+    if (!form.poNo || !form.partnerCode || items.length === 0) return;
     const badItem = items.find(
       (it) => !Number.isInteger(it.orderQty) || it.orderQty < 1,
     );
@@ -236,7 +236,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSave}
-            disabled={saving || !form.poNo || !form.partnerId || items.length === 0 || hasInvalidQty}>
+            disabled={saving || !form.poNo || !form.partnerCode || items.length === 0 || hasInvalidQty}>
             {saving ? t("common.saving") : isEdit ? t("common.edit") : t("common.register")}
           </Button>
         </div>
@@ -250,7 +250,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
             value={form.poNo} onChange={e => setField("poNo", e.target.value)}
             disabled={isEdit} fullWidth />
           <PartnerSelect label={t("material.po.partnerName")} partnerType="SUPPLIER"
-            value={form.partnerId} onChange={v => setField("partnerId", v)} fullWidth />
+            value={form.partnerCode} onChange={v => setField("partnerCode", v)} fullWidth />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Input label={t("material.po.orderDate")} type="date"

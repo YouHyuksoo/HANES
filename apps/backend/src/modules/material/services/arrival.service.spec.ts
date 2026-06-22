@@ -242,7 +242,7 @@ describe('ArrivalService', () => {
       mockPurchaseOrderRepo.findOne.mockResolvedValue({
         poNo: 'PO-001',
         status: 'CONFIRMED',
-        partnerId: 'V-001',
+        partnerCode: 'V-001',
         partnerName: 'Vendor',
         company: 'CO',
         plant: 'P01',
@@ -297,7 +297,7 @@ describe('ArrivalService', () => {
       mockPurchaseOrderRepo.findOne.mockResolvedValue({
         poNo: 'PO-001',
         status: 'CONFIRMED',
-        partnerId: 'V-001',
+        partnerCode: 'V-001',
         partnerName: 'Vendor',
         company: 'C1',
         plant: 'P1',
@@ -338,7 +338,7 @@ describe('ArrivalService', () => {
       mockPurchaseOrderRepo.findOne.mockResolvedValue({
         poNo: 'PO-001',
         status: 'CONFIRMED',
-        partnerId: 'V-001',
+        partnerCode: 'V-001',
         partnerName: 'Vendor',
         company: 'CO',
         plant: 'P01',
@@ -630,7 +630,7 @@ describe('ArrivalService', () => {
       ]);
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockMatArrivalRepo.find.mockResolvedValue([
-        { arrivalNo: 'ARR-002', seq: 1, itemCode: 'ITEM-001', vendorId: 'V-002', company: 'C1', plant: 'P1' } as MatArrival,
+        { arrivalNo: 'ARR-002', seq: 1, itemCode: 'ITEM-001', vendorCode: 'V-002', company: 'C1', plant: 'P1' } as MatArrival,
       ]);
 
       const result = await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
@@ -640,7 +640,7 @@ describe('ArrivalService', () => {
           expect.objectContaining({ arrivalNo: 'ARR-002', seq: 1, itemCode: 'ITEM-001', company: 'C1', plant: 'P1' }),
         ]),
       });
-      expect(result.data[0]).toEqual(expect.objectContaining({ arrivalNo: 'ARR-002', vendorId: 'V-002' }));
+      expect(result.data[0]).toEqual(expect.objectContaining({ arrivalNo: 'ARR-002', vendorCode: 'V-002' }));
     });
   });
 
@@ -987,7 +987,7 @@ describe('ArrivalService', () => {
           } as PurchaseOrderItem)
           .mockResolvedValueOnce({
             poNo: 'PO-001',
-            partnerId: 'V001',
+            partnerCode: 'V001',
             partnerName: 'Vendor',
           } as PurchaseOrder)
           .mockResolvedValueOnce({

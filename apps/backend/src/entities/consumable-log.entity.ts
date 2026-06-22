@@ -44,7 +44,7 @@ export class ConsumableLog {
   @Column({ name: 'QTY', type: 'int', default: 1 })
   qty: number;
 
-  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })

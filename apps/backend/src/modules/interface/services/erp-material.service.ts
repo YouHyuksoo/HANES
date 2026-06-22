@@ -23,7 +23,7 @@ import { parseDateStart } from '../../../shared/date.util';
 interface ErpPoData {
   poNo: string;
   orderDate: string;
-  partnerId: string;
+  partnerCode: string;
   partnerName: string;
   items: {
     seq: number;
@@ -93,14 +93,14 @@ export class ErpMaterialService {
         if (po) {
           await queryRunner.manager.update(PurchaseOrder, { poNo: data.poNo, ...tenantWhere }, {
             orderDate: parseDateStart(data.orderDate),
-            partnerId: data.partnerId,
+            partnerCode: data.partnerCode,
             partnerName: data.partnerName,
           });
         } else {
           po = queryRunner.manager.create(PurchaseOrder, {
             poNo: data.poNo,
             orderDate: parseDateStart(data.orderDate),
-            partnerId: data.partnerId,
+            partnerCode: data.partnerCode,
             partnerName: data.partnerName,
             status: 'CONFIRMED',
             company: data.company,

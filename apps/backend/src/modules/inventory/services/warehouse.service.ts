@@ -95,7 +95,7 @@ export class WarehouseService {
       plantCode: dto.plantCode || plant || null,
       lineCode: dto.lineCode || null,
       processCode: dto.processCode || null,
-      vendorId: dto.vendorId || null,
+      vendorCode: dto.vendorCode || null,
       isDefault: dto.isDefault ? 'Y' : 'N',
       useYn: 'Y',
       company: company || null,
@@ -206,8 +206,8 @@ export class WarehouseService {
   /**
    * 외주 창고 조회 또는 생성
    */
-  async getOrCreateSubconWarehouse(vendorId: string, vendorName: string, company?: string, plant?: string) {
-    const warehouseCode = `SUBCON_${vendorId}`;
+  async getOrCreateSubconWarehouse(vendorCode: string, vendorName: string, company?: string, plant?: string) {
+    const warehouseCode = `SUBCON_${vendorCode}`;
     const tenantWhere = this.tenantWhere(company, plant);
 
     let warehouse = await this.warehouseRepository.findOne({
@@ -220,7 +220,7 @@ export class WarehouseService {
         warehouseName: `${vendorName} 외주`,
         warehouseType: 'SUBCON',
         plantCode: plant || null,
-        vendorId,
+        vendorCode,
         useYn: 'Y',
         isDefault: 'N',
         company: company || null,

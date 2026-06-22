@@ -17,15 +17,15 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'SUBCON_ORDERS' })
-@Index(['vendorId'])
+@Index(['vendorCode'])
 @Index(['status'])
 @Index(['orderDate'])
 export class SubconOrder {
   @PrimaryColumn({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
-  @Column({ name: 'VENDOR_ID', length: 255 })
-  vendorId: string;
+  @Column({ name: 'VENDOR_CODE', length: 255 })
+  vendorCode: string;
 
   @Column({ name: 'ITEM_CODE', length: 255 })
   itemCode: string;

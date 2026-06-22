@@ -50,7 +50,7 @@ export class MatIssue {
   @Column({ name: 'ISSUE_TYPE', length: 20, default: 'PROD' })
   issueType: string;
 
-  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   /** G8: 불출자 사번 (바코드 스캔) */

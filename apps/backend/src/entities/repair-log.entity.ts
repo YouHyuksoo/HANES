@@ -29,7 +29,7 @@ export class RepairLog {
   @Column({ name: 'DEFECT_LOG_ID', length: 50 })
   defectLogId: string;
 
-  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ type: 'varchar2', name: 'REPAIR_ACTION', length: 500, nullable: true })

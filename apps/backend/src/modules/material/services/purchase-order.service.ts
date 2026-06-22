@@ -56,9 +56,9 @@ export class PurchaseOrderService {
   private buildPurchaseOrderUpdate(
     dto: Omit<UpdatePurchaseOrderDto, 'items' | 'poNo'>,
     totalAmount?: number,
-  ): Partial<Pick<PurchaseOrder, 'partnerId' | 'partnerName' | 'orderDate' | 'dueDate' | 'remark' | 'totalAmount'>> {
+  ): Partial<Pick<PurchaseOrder, 'partnerCode' | 'partnerName' | 'orderDate' | 'dueDate' | 'remark' | 'totalAmount'>> {
     return {
-      ...(dto.partnerId !== undefined ? { partnerId: dto.partnerId } : {}),
+      ...(dto.partnerCode !== undefined ? { partnerCode: dto.partnerCode } : {}),
       ...(dto.partnerName !== undefined ? { partnerName: dto.partnerName } : {}),
       ...(dto.orderDate !== undefined ? { orderDate: parseDateStart(dto.orderDate) } : {}),
       ...(dto.dueDate !== undefined ? { dueDate: parseDateStart(dto.dueDate) } : {}),
@@ -175,10 +175,10 @@ export class PurchaseOrderService {
     };
   }
 
-  private async resolvePartnerName(partnerId?: string, fallback?: string): Promise<string | null> {
-    if (!partnerId) return fallback ?? null;
+  private async resolvePartnerName(partnerCode?: string, fallback?: string): Promise<string | null> {
+    if (!partnerCode) return fallback ?? null;
     if (fallback) return fallback;
-    const partner = await this.partnerRepository.findOne({ where: { partnerCode: partnerId }, select: ['partnerName'] });
+    const partner = await this.partnerRepository.findOne({ where: { partnerCode }, select: ['partnerName'] });
     return partner?.partnerName ?? null;
   }
 
@@ -188,7 +188,7 @@ export class PurchaseOrderService {
     });
     if (existing) throw new ConflictException(`이미 존재하는 PO 번호입니다: ${dto.poNo}`);
 
-    const resolvedPartnerName = await this.resolvePartnerName(dto.partnerId, dto.partnerName);
+    const resolvedPartnerName = await this.resolvePartnerName(dto.partnerCode, dto.partnerName);
     const totalAmount = dto.items.reduce((sum, item) => {
       return sum + (item.orderQty * (item.unitPrice ?? 0));
     }, 0);
@@ -197,7 +197,7 @@ export class PurchaseOrderService {
       // PO 생성
       const po = queryRunner.manager.create(PurchaseOrder, {
         poNo: dto.poNo,
-        partnerId: dto.partnerId,
+        partnerCode: dto.partnerCode,
         partnerName: resolvedPartnerName,
         orderDate: dto.orderDate ? parseDateStart(dto.orderDate) : new Date(),
         dueDate: dto.dueDate ? parseDateStart(dto.dueDate) : null,
@@ -255,7 +255,7 @@ export class PurchaseOrderService {
     await this.findById(poNo, company, plant);
     const { items, poNo: _ignoredPoNo, ...poData } = dto;
 
-    const resolvedPartnerName = await this.resolvePartnerName(dto.partnerId, dto.partnerName);
+    const resolvedPartnerName = await this.resolvePartnerName(dto.partnerCode, dto.partnerName);
 
     await this.tx.run(async (queryRunner) => {
       if (items) {

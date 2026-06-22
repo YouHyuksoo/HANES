@@ -54,8 +54,8 @@ export class Warehouse {
   @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 
-  @Column({ type: 'varchar2', name: 'VENDOR_ID', length: 50, nullable: true })
-  vendorId: string | null;
+  @Column({ type: 'varchar2', name: 'VENDOR_CODE', length: 50, nullable: true })
+  vendorCode: string | null;
 
   @Column({ name: 'IS_DEFAULT', length: 1, default: "'N'" })
   isDefault: string;

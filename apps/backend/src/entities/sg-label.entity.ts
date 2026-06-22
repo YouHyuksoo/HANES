@@ -53,7 +53,7 @@ export class SgLabel {
   @Column({ name: 'STATUS', length: 20, default: 'IN_STOCK' })
   status: string;
 
-  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ name: 'ISSUED_AT', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

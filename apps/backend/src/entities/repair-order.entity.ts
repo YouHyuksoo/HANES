@@ -72,7 +72,7 @@ export class RepairOrder {
   @Column({ type: 'varchar2', name: 'DISPOSITION', length: 50, nullable: true })
   disposition: string | null;
 
-  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ name: 'RECEIVED_AT', type: 'timestamp', nullable: true })

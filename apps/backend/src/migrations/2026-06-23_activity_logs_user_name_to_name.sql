@@ -1,0 +1,25 @@
+DECLARE
+  v_user_name_cols NUMBER := 0;
+  v_name_cols NUMBER := 0;
+BEGIN
+  SELECT COUNT(*)
+    INTO v_user_name_cols
+    FROM USER_TAB_COLUMNS
+   WHERE TABLE_NAME = 'ACTIVITY_LOGS'
+     AND COLUMN_NAME = 'USER_NAME';
+
+  SELECT COUNT(*)
+    INTO v_name_cols
+    FROM USER_TAB_COLUMNS
+   WHERE TABLE_NAME = 'ACTIVITY_LOGS'
+     AND COLUMN_NAME = 'NAME';
+
+  IF v_user_name_cols = 1 AND v_name_cols = 1 THEN
+    RAISE_APPLICATION_ERROR(-20001, 'ACTIVITY_LOGS has both USER_NAME and NAME columns');
+  END IF;
+
+  IF v_user_name_cols = 1 AND v_name_cols = 0 THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE ACTIVITY_LOGS RENAME COLUMN USER_NAME TO NAME';
+  END IF;
+END;
+/

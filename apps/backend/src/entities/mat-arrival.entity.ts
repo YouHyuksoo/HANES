@@ -6,7 +6,7 @@
  * 1. **MAT_ARRIVALS**: PO/수동 입하 시 업무 이력을 기록하는 전용 테이블
  * 2. **arrivalNo**: 같은 배치의 입하 아이템은 동일한 입하번호를 가짐
  * 3. **invoiceNo**: 공급상 인보이스 번호 (거래 추적용)
- * 4. **vendorId/vendorName**: 공급상(거래처) 정보
+ * 4. **vendorCode/vendorName**: 공급상(거래처) 정보
  * 5. **StockTransaction과의 관계**: 입하 시 MatArrival + StockTransaction(MAT_IN) 모두 생성
  * 6. **복합 PK**: arrivalNo + seq (같은 입하번호의 여러 품목 행)
  */
@@ -24,7 +24,7 @@ import {
 @Index(['itemCode'])
 @Index(['arrivalDate'])
 @Index(['invoiceNo'])
-@Index(['vendorId'])
+@Index(['vendorCode'])
 export class MatArrival {
   @PrimaryColumn({ name: 'ARRIVAL_NO', length: 50 })
   arrivalNo: string;
@@ -44,8 +44,8 @@ export class MatArrival {
   @Column({ type: 'varchar2', name: 'PO_NO', length: 50, nullable: true })
   poNo: string | null;
 
-  @Column({ name: 'VENDOR_ID', length: 50 })
-  vendorId: string;
+  @Column({ name: 'VENDOR_CODE', length: 50 })
+  vendorCode: string;
 
   @Column({ name: 'VENDOR_NAME', length: 200 })
   vendorName: string;
@@ -65,7 +65,7 @@ export class MatArrival {
   @Column({ name: 'ARRIVAL_TYPE', length: 20, default: 'PO' })
   arrivalType: string;
 
-  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })

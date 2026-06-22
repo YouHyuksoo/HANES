@@ -65,7 +65,7 @@ describe('ErpMaterialService', () => {
     const result = await target.importPurchaseOrder({
       poNo: 'PO-1',
       orderDate: '2026-05-23',
-      partnerId: 'V-1',
+      partnerCode: 'V-1',
       partnerName: 'Vendor',
       items: [
         { seq: 1, itemCode: 'RM-1', itemName: 'Raw', orderQty: 10, unit: 'EA' },
@@ -93,7 +93,7 @@ describe('ErpMaterialService', () => {
     await target.importPurchaseOrder({
       poNo: 'PO-1',
       orderDate: '2026-05-23',
-      partnerId: 'V-1',
+      partnerCode: 'V-1',
       partnerName: 'Vendor',
       items: [
         { seq: 1, itemCode: 'RM-1', itemName: 'Raw', orderQty: 10, unit: 'EA' },
@@ -108,7 +108,7 @@ describe('ErpMaterialService', () => {
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       PurchaseOrder,
       { poNo: 'PO-1', company: 'C1', plant: 'P1' },
-      expect.objectContaining({ partnerId: 'V-1', partnerName: 'Vendor' }),
+      expect.objectContaining({ partnerCode: 'V-1', partnerName: 'Vendor' }),
     );
     expect(queryRunner.manager.find).toHaveBeenCalledWith(PurchaseOrderItem, {
       where: { poNo: 'PO-1', company: 'C1', plant: 'P1' },
@@ -130,7 +130,7 @@ describe('ErpMaterialService', () => {
     await target.importPurchaseOrder({
       poNo: 'PO-1',
       orderDate: '2026-05-23',
-      partnerId: 'V-1',
+      partnerCode: 'V-1',
       partnerName: 'Vendor',
       items: [
         { seq: 1, itemCode: 'RM-1', itemName: 'Raw', orderQty: 10, unit: 'EA' },
@@ -154,7 +154,7 @@ describe('ErpMaterialService', () => {
     await target.importPurchaseOrder({
       poNo: 'PO-1',
       orderDate: '2026-05-23',
-      partnerId: 'V-1',
+      partnerCode: 'V-1',
       partnerName: 'Vendor',
       items: [],
       company: 'C1',

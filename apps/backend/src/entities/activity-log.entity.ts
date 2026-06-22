@@ -27,10 +27,10 @@ export class ActivityLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ name: 'USER_EMAIL', length: 255 })
+  @Column({ name: 'EMAIL', length: 255 })
   userEmail: string;
 
-  @Column({ type: 'varchar2', name: 'USER_NAME', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'NAME', length: 255, nullable: true })
   userName: string | null;
 
   /** LOGIN | PAGE_ACCESS */

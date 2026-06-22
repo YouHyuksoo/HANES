@@ -63,7 +63,7 @@ export default function SubconOrderPage() {
   const [selectedOrder, setSelectedOrder] = useState<SubconOrder | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [form, setForm] = useState({ vendorId: "", itemCode: "", itemName: "", orderQty: "", dueDate: "", remark: "" });
+  const [form, setForm] = useState({ vendorCode: "", itemCode: "", itemName: "", orderQty: "", dueDate: "", remark: "" });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -87,7 +87,7 @@ export default function SubconOrderPage() {
     try {
       await api.post("/outsourcing/orders", form);
       setIsModalOpen(false);
-      setForm({ vendorId: "", itemCode: "", itemName: "", orderQty: "", dueDate: "", remark: "" });
+      setForm({ vendorCode: "", itemCode: "", itemName: "", orderQty: "", dueDate: "", remark: "" });
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);

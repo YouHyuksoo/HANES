@@ -23,7 +23,7 @@ import {
 
 @Entity({ name: 'TRACE_LOGS' })
 @Index(['palletId'])
-@Index(['boxId'])
+@Index(['boxNo'])
 @Index(['matUid'])
 @Index(['prdUid'])
 @Index(['matLotId'])
@@ -39,8 +39,8 @@ export class TraceLog {
   @Column({ type: 'varchar2', name: 'PALLET_ID', length: 255, nullable: true })
   palletId: string | null;
 
-  @Column({ type: 'varchar2', name: 'BOX_ID', length: 255, nullable: true })
-  boxId: string | null;
+  @Column({ type: 'varchar2', name: 'BOX_NO', length: 255, nullable: true })
+  boxNo: string | null;
 
   @Column({ type: 'varchar2', name: 'MAT_UID', length: 50, nullable: true })
   matUid: string | null;
@@ -54,7 +54,7 @@ export class TraceLog {
   @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 
-  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })

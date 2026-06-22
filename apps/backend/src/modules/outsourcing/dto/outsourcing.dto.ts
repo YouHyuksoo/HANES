@@ -111,9 +111,9 @@ export class VendorQueryDto extends PaginationQueryDto {
 // ============================================================================
 
 export class CreateSubconOrderDto {
-  @ApiProperty({ description: '외주처 ID' })
+  @ApiProperty({ description: '외주처 코드' })
   @IsString()
-  vendorId: string;
+  vendorCode: string;
 
   @ApiProperty({ description: '품목 코드' })
   @IsString()
@@ -160,10 +160,10 @@ export class UpdateSubconOrderDto extends PartialType(CreateSubconOrderDto) {
 export class SubconOrderQueryDto extends PaginationQueryDto {
 
 
-  @ApiPropertyOptional({ description: '외주처 ID' })
+  @ApiPropertyOptional({ description: '외주처 코드' })
   @IsOptional()
   @IsString()
-  vendorId?: string;
+  vendorCode?: string;
 
   @ApiPropertyOptional({ description: '상태' })
   @IsOptional()

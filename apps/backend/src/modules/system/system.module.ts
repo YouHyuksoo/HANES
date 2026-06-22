@@ -41,6 +41,8 @@ import { ImprRequestController } from './controllers/impr-request.controller';
 import { ImprRequestService } from './services/impr-request.service';
 import { TableSchemaController } from './controllers/table-schema.controller';
 import { TableSchemaService } from './services/table-schema.service';
+import { ErViewController } from './controllers/er-view.controller';
+import { ErViewService } from './services/er-view.service';
 
 @Module({
   imports: [
@@ -65,6 +67,7 @@ import { TableSchemaService } from './services/table-schema.service';
     PdaRoleController,
     ImprRequestController,
     TableSchemaController,
+    ErViewController,
   ],
   providers: [
     CommConfigService,
@@ -76,6 +79,7 @@ import { TableSchemaService } from './services/table-schema.service';
     PdaRoleService,
     ImprRequestService,
     TableSchemaService,
+    ErViewService,
   ],
   exports: [
     CommConfigService,

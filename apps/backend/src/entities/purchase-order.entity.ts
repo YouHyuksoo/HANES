@@ -23,8 +23,8 @@ export class PurchaseOrder {
   @PrimaryColumn({ name: 'PO_NO', length: 50 })
   poNo: string;
 
-  @Column({ type: 'varchar2', name: 'PARTNER_ID', length: 255, nullable: true })
-  partnerId: string | null;
+  @Column({ type: 'varchar2', name: 'PARTNER_CODE', length: 255, nullable: true })
+  partnerCode: string | null;
 
   @Column({ type: 'varchar2', name: 'PARTNER_NAME', length: 255, nullable: true })
   partnerName: string | null;

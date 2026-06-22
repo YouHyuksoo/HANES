@@ -63,7 +63,7 @@ export interface PoItemForArrival {
 export interface ReceivablePO {
   id: string;
   poNo: string;
-  partnerId?: string | null;
+  partnerCode?: string | null;
   partnerName?: string | null;
   orderDate?: string | null;
   dueDate?: string | null;

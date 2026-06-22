@@ -54,7 +54,7 @@ export class CompanyMaster {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
   company: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
