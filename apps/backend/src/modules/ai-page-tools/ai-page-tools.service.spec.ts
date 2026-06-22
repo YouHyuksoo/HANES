@@ -1,91 +1,54 @@
 import { BadRequestException } from '@nestjs/common';
 import { AiPageToolsService } from './ai-page-tools.service';
-import { AiPageToolCandidateResult } from './types';
+import { PageToolProvider } from './types';
 
-describe('AiPageToolsService', () => {
-  const createRepo = () => ({ find: jest.fn() });
+describe('AiPageToolsService (dispatcher)', () => {
+  const stubProvider = (): PageToolProvider => ({
+    pageId: 'demo.page',
+    manifest: {
+      pageId: 'demo.page',
+      route: '/demo',
+      title: '데모',
+      executionLevel: 'approval-required',
+      tools: [
+        { name: 'doWrite', label: '쓰기', description: '', riskLevel: 'write', source: 'backend' },
+        { name: 'frontTool', label: '프론트', description: '', riskLevel: 'draft', source: 'frontend' },
+      ],
+    },
+    execute: jest.fn().mockResolvedValue({ status: 'ok', toolName: 'doWrite', summary: '완료' }),
+  });
 
-  it('returns production.order manifest as draft-only', () => {
-    const service = new AiPageToolsService();
-
-    const manifest = service.getManifest('production.order');
-
-    expect(manifest.pageId).toBe('production.order');
-    expect(manifest.route).toBe('/production/order');
-    expect(manifest.executionLevel).toBe('draft-only');
-    expect(manifest.tools.map((tool) => tool.name)).toContain('resolveItemCandidates');
-    expect(manifest.tools.map((tool) => tool.name)).toContain('applyJobOrderDraft');
-    expect(manifest.tools.find((tool) => tool.name === 'applyJobOrderDraft')?.neverPersists).toBe(true);
+  it('returns the registered provider manifest', () => {
+    const service = new AiPageToolsService([stubProvider()]);
+    expect(service.getManifest('demo.page').pageId).toBe('demo.page');
   });
 
   it('rejects unknown page IDs', () => {
-    const service = new AiPageToolsService();
-
+    const service = new AiPageToolsService([stubProvider()]);
     expect(() => service.getManifest('unknown.page')).toThrow(BadRequestException);
     expect(() => service.getManifest('unknown.page')).toThrow('지원하지 않는 AI 페이지 도구입니다');
   });
 
-  it('marks exact itemCode single match as autoConfirmable', async () => {
-    const partRepo = createRepo();
-    partRepo.find.mockResolvedValue([
-      { itemCode: 'HNS02', itemName: '메인 하네스', itemType: 'FINISHED', modelName: '차종A' },
-    ]);
-    const service = new AiPageToolsService(partRepo as never);
-
-    const result = (await service.executeBackendTool(
-      'production.order',
-      'resolveItemCandidates',
-      { query: 'HNS02' },
-      '40',
-      '1000',
-    )) as AiPageToolCandidateResult;
-
-    expect(result.status).toBe('ok');
-    expect(result.candidates).toHaveLength(1);
-    expect(result.confirmation.required).toBe(false);
-    expect(result.confirmation.reason).toBe('none');
+  it('rejects unknown tool name', async () => {
+    const service = new AiPageToolsService([stubProvider()]);
+    await expect(service.executeBackendTool('demo.page', 'nope', {})).rejects.toThrow('사용할 수 없는 도구');
   });
 
-  it('requires confirmation for name-based single match', async () => {
-    const partRepo = createRepo();
-    partRepo.find.mockResolvedValue([
-      { itemCode: 'HNS02', itemName: '메인 하네스', itemType: 'FINISHED', modelName: '차종A' },
-    ]);
-    const service = new AiPageToolsService(partRepo as never);
-
-    const result = (await service.executeBackendTool(
-      'production.order',
-      'resolveItemCandidates',
-      { query: '메인 하네스' },
-      '40',
-      '1000',
-    )) as AiPageToolCandidateResult;
-
-    expect(result.status).toBe('ok');
-    expect(result.candidates).toHaveLength(1);
-    expect(result.confirmation.required).toBe(true);
-    expect(result.confirmation.reason).toBe('single_name_match');
+  it('rejects frontend-only tools on the backend', async () => {
+    const service = new AiPageToolsService([stubProvider()]);
+    await expect(service.executeBackendTool('demo.page', 'frontTool', {})).rejects.toThrow('프론트엔드 전용');
   });
 
-  it('requires user selection for multiple item candidates', async () => {
-    const partRepo = createRepo();
-    partRepo.find.mockResolvedValue([
-      { itemCode: 'HNS02', itemName: '메인 하네스', itemType: 'FINISHED', modelName: '차종A' },
-      { itemCode: 'HNS02C1ABCD', itemName: '서브 하네스', itemType: 'SEMI_PRODUCT', modelName: '차종A' },
-    ]);
-    const service = new AiPageToolsService(partRepo as never);
+  it('rejects unknown page for execution', async () => {
+    const service = new AiPageToolsService([stubProvider()]);
+    await expect(service.executeBackendTool('x.y', 'doWrite', {})).rejects.toThrow('구현되지 않은 페이지');
+  });
 
-    const result = (await service.executeBackendTool(
-      'production.order',
-      'resolveItemCandidates',
-      { query: 'HNS' },
-      '40',
-      '1000',
-    )) as AiPageToolCandidateResult;
-
-    expect(result.status).toBe('ok');
-    expect(result.candidates).toHaveLength(2);
-    expect(result.confirmation.required).toBe(true);
-    expect(result.confirmation.reason).toBe('multiple_candidates');
+  it('delegates to the provider with tenant context', async () => {
+    const provider = stubProvider();
+    const service = new AiPageToolsService([provider]);
+    const res = await service.executeBackendTool('demo.page', 'doWrite', { a: 1 }, '40', '1000');
+    expect((res as { summary: string }).summary).toBe('완료');
+    expect(provider.execute).toHaveBeenCalledWith('doWrite', { a: 1 }, { company: '40', plant: '1000' });
   });
 });
