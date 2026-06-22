@@ -5067,7 +5067,10 @@
       "printTitle": "Lệnh xuất hàng",
       "printDate": "Ngày in",
       "items": "Mặt hàng lệnh xuất hàng",
-      "noItems": "Vui lòng thêm mặt hàng."
+      "noItems": "Vui lòng thêm mặt hàng.",
+      "confirmNeedItems": "Cần có mặt hàng để xác nhận.",
+      "confirmOrder": "Xác nhận lệnh xuất hàng",
+      "confirmOrderMessage": "Xác nhận lệnh xuất hàng này? Sau khi xác nhận sẽ không thể sửa hoặc xóa."
     },
     "history": {
       "title": "Lịch sử xuất hàng",

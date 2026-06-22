@@ -5067,7 +5067,10 @@
       "printTitle": "出货指示书",
       "printDate": "打印日期",
       "items": "出货指示品目",
-      "noItems": "请添加品目。"
+      "noItems": "请添加品目。",
+      "confirmNeedItems": "需要有品目才能确认。",
+      "confirmOrder": "确认出货指示",
+      "confirmOrderMessage": "确认此出货指示吗？确认后将无法修改或删除。"
     },
     "history": {
       "title": "出货历史查询",

@@ -5067,7 +5067,10 @@
       "printTitle": "Shipment Order",
       "printDate": "Print Date",
       "items": "Shipping Order Items",
-      "noItems": "Please add items."
+      "noItems": "Please add items.",
+      "confirmNeedItems": "Items are required to confirm.",
+      "confirmOrder": "Confirm Shipping Order",
+      "confirmOrderMessage": "Confirm this shipping order? It cannot be edited or deleted after confirmation."
     },
     "history": {
       "title": "Shipment History",

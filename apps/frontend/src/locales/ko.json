@@ -5071,7 +5071,10 @@
       "printTitle": "출하지시서",
       "printDate": "출력일",
       "items": "출하지시 품목",
-      "noItems": "품목을 추가해 주세요."
+      "noItems": "품목을 추가해 주세요.",
+      "confirmNeedItems": "품목이 있어야 확정할 수 있습니다.",
+      "confirmOrder": "출하지시 확정",
+      "confirmOrderMessage": "출하지시를 확정하시겠습니까? 확정 후에는 수정·삭제할 수 없습니다."
     },
     "history": {
       "title": "출하이력조회",
