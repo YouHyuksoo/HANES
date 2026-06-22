@@ -12,6 +12,7 @@ import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { api } from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 
 interface TransactionData {
   id: string;
@@ -258,12 +259,13 @@ export default function TransactionPage() {
             exportFileName="거래내역"
             toolbarLeft={
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <Calendar className="w-4 h-4 text-text-muted" />
-                  <Input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} className="w-36" />
-                  <span className="text-text-muted">~</span>
-                  <Input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} className="w-36" />
-                </div>
+                <DateRangeFilter
+                  from={filters.dateFrom}
+                  to={filters.dateTo}
+                  onFromChange={(v) => setFilters({ ...filters, dateFrom: v })}
+                  onToChange={(v) => setFilters({ ...filters, dateTo: v })}
+                  className="flex-shrink-0"
+                />
                 <Select options={TRANS_TYPES} value={filters.transType} onChange={(v) => setFilters({ ...filters, transType: v })} placeholder={t('inventory.transaction.transType')} />
                 <div className="flex-1 min-w-0">
                   <Input
