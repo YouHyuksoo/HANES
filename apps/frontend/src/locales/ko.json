@@ -3766,6 +3766,7 @@
       "title": "작업지시 관리",
       "description": "생산 작업지시를 조회하고 상태를 관리합니다.",
       "orderNo": "작업지시번호",
+      "orderNoAuto": "저장 시 자동 생성",
       "orderDate": "지시일자",
       "partCode": "품목코드",
       "partName": "품목명",

@@ -3356,6 +3356,7 @@
       "title": "Work Order Management",
       "description": "View and manage production work orders.",
       "orderNo": "Work Order No.",
+      "orderNoAuto": "Auto-generated on save",
       "orderDate": "Order Date",
       "partCode": "Part Code",
       "partName": "Part Name",

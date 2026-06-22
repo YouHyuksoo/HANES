@@ -3356,6 +3356,7 @@
       "title": "Quản lý lệnh sản xuất",
       "description": "Xem và quản lý lệnh sản xuất.",
       "orderNo": "Mã lệnh",
+      "orderNoAuto": "Tự động tạo khi lưu",
       "orderDate": "Ngày lệnh",
       "partCode": "Mã linh kiện",
       "partName": "Tên linh kiện",

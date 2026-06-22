@@ -3356,6 +3356,7 @@
       "title": "作业指示管理",
       "description": "查看和管理生产作业指示。",
       "orderNo": "作业指示编号",
+      "orderNoAuto": "保存时自动生成",
       "orderDate": "指示日期",
       "partCode": "零件代码",
       "partName": "零件名称",
