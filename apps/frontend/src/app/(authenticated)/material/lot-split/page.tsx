@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Scissors, Search, RefreshCw, GitBranch } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -201,8 +202,8 @@ export default function LotSplitPage() {
                 <div><span className="text-text-muted">{t("material.lotSplit.currentQty")}:</span> <span className="font-semibold">{selectedLot.qty.toLocaleString()} {selectedLot.unit || ""}</span></div>
               </div>
             </div>
-            <Input label={t("material.lotSplit.splitQty")} type="number" placeholder="0"
-              value={splitForm.splitQty} onChange={e => setSplitForm(p => ({ ...p, splitQty: e.target.value }))} fullWidth />
+            <QtyInput label={t("material.lotSplit.splitQty")} placeholder="0"
+              value={Number(splitForm.splitQty) || 0} onChange={n => setSplitForm(p => ({ ...p, splitQty: n ? String(n) : "" }))} maxValue={selectedLot.qty} fullWidth />
             {splitForm.splitQty && Number(splitForm.splitQty) > 0 && Number(splitForm.splitQty) < selectedLot.qty && (
               <div className="text-sm text-text-muted">
                 {t("material.lotSplit.splitPreview", {

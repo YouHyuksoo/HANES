@@ -16,6 +16,7 @@ import {
   SlidersHorizontal, Search, RefreshCw, Plus, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
@@ -243,8 +244,8 @@ export default function AdjustmentPage() {
             )}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t("material.adjustment.afterQty")} type="number" placeholder="0"
-              value={form.afterQty} onChange={e => setForm(p => ({ ...p, afterQty: e.target.value }))} fullWidth />
+            <QtyInput label={t("material.adjustment.afterQty")} placeholder="0"
+              value={Number(form.afterQty) || 0} onChange={n => setForm(p => ({ ...p, afterQty: n ? String(n) : "" }))} fullWidth />
             <Input label={t("material.adjustment.reason")} placeholder={t("material.adjustment.reasonPlaceholder")}
               value={form.reason} onChange={e => setForm(p => ({ ...p, reason: e.target.value }))} fullWidth />
           </div>

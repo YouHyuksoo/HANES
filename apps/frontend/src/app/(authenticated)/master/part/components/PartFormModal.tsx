@@ -17,7 +17,8 @@ import { useLocationOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import { Part } from "../types";
-import { FieldInput, FieldSelect, FieldYnRadio } from "./PartFieldHelp";
+import { FieldInput, FieldSelect, FieldYnRadio, Field } from "./PartFieldHelp";
+import { QtyInput } from "@/components/shared";
 
 interface Props {
   isOpen: boolean;
@@ -211,24 +212,29 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
       {/* 수량 섹션 */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div>
-          <FieldInput field="boxQty" label={t("master.part.boxQty", "박스장입수량")} type="number" list="part-modal-box-qty-options"
-            value={String(form.boxQty)} onChange={e => setField("boxQty", Number(e.target.value))} fullWidth />
+          <Field field="boxQty" label={t("master.part.boxQty", "박스장입수량")}>
+            <QtyInput value={Number(form.boxQty) || 0} onChange={(n) => setField("boxQty", n)} fullWidth />
+          </Field>
           <datalist id="part-modal-box-qty-options">
             {PACKAGING_QTY_OPTIONS.map(qty => <option key={qty} value={qty} />)}
           </datalist>
         </div>
-        <FieldInput field="minPackQty" label={t("master.part.minPackQty", "최소불출단위수량(자재)")} type="number"
-          value={String(form.minPackQty)} onChange={e => setField("minPackQty", Number(e.target.value))} fullWidth />
-        <FieldInput field="lotUnitQty" label={t("master.part.lotUnitQty", "묶음단위수량(생산공정품)")} type="number"
-          value={String(form.lotUnitQty)} onChange={e => setField("lotUnitQty", Number(e.target.value))} fullWidth />
-        <FieldInput field="safetyStock" label={t("master.part.safetyStock")} type="number"
-          value={String(form.safetyStock)} onChange={e => setField("safetyStock", Number(e.target.value))} fullWidth />
+        <Field field="minPackQty" label={t("master.part.minPackQty", "최소불출단위수량(자재)")}>
+          <QtyInput value={Number(form.minPackQty) || 0} onChange={(n) => setField("minPackQty", n)} fullWidth />
+        </Field>
+        <Field field="lotUnitQty" label={t("master.part.lotUnitQty", "묶음단위수량(생산공정품)")}>
+          <QtyInput value={Number(form.lotUnitQty) || 0} onChange={(n) => setField("lotUnitQty", n)} fullWidth />
+        </Field>
+        <Field field="safetyStock" label={t("master.part.safetyStock")}>
+          <QtyInput value={Number(form.safetyStock) || 0} onChange={(n) => setField("safetyStock", n)} fullWidth />
+        </Field>
         <FieldInput field="expiryDate" label={t("master.part.expiryDate", "유효기간(일)")} type="number"
           value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
         <FieldInput field="expiryExtDays" label={t("master.part.expiryExtDays", "유효기간 연장(일)")} type="number"
           value={String(form.expiryExtDays)} onChange={e => setField("expiryExtDays", Number(e.target.value))} fullWidth />
-        <FieldInput field="packUnit" label={t("master.part.palletUnit", "팔레트구성단위")} type="number"
-          value={String(form.packUnit)} onChange={e => setField("packUnit", Number(e.target.value))} fullWidth />
+        <Field field="packUnit" label={t("master.part.palletUnit", "팔레트구성단위")}>
+          <QtyInput value={Number(form.packUnit) || 0} onChange={(n) => setField("packUnit", n)} fullWidth />
+        </Field>
         <FieldSelect field="storageLocation" label={t("master.part.storageLocation", "품목고정 적재로케이션")}
           options={locationOptions}
           value={form.storageLocation} onChange={v => setField("storageLocation", v)}

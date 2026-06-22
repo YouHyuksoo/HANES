@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge, ConfirmModal, Modal } from '@/components/ui';
+import { QtyInput } from '@/components/shared';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
@@ -355,10 +356,10 @@ export default function ProdResultPage() {
             {t('production.result.editHint', '수량 변경 시 자재 차감과 제품재고가 자동 재동기화됩니다.')}
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t('production.result.goodQty')} type="number" min={0}
-              value={editForm.goodQty} onChange={(e) => setEditForm(f => ({ ...f, goodQty: e.target.value }))} fullWidth />
-            <Input label={t('production.result.defectQty')} type="number" min={0}
-              value={editForm.defectQty} onChange={(e) => setEditForm(f => ({ ...f, defectQty: e.target.value }))} fullWidth />
+            <QtyInput label={t('production.result.goodQty')}
+              value={Number(editForm.goodQty) || 0} onChange={(n) => setEditForm(f => ({ ...f, goodQty: String(n) }))} fullWidth />
+            <QtyInput label={t('production.result.defectQty')}
+              value={Number(editForm.defectQty) || 0} onChange={(n) => setEditForm(f => ({ ...f, defectQty: String(n) }))} fullWidth />
           </div>
           <Input label={t('common.remark')} value={editForm.remark}
             onChange={(e) => setEditForm(f => ({ ...f, remark: e.target.value }))} fullWidth />

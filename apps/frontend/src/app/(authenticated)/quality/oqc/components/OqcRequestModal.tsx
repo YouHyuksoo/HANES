@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { Modal, Button, Input, Select } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -155,12 +156,11 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
             onChange={(e) => setCustomer(e.target.value)}
             fullWidth
           />
-          <Input
+          <QtyInput
             label={t("quality.oqc.sampleSize")}
-            type="number"
             placeholder={t("quality.oqc.sampleSizePlaceholder")}
-            value={sampleSize}
-            onChange={(e) => setSampleSize(e.target.value)}
+            value={Number(sampleSize) || 0}
+            onChange={(n) => setSampleSize(n ? String(n) : "")}
             fullWidth
           />
         </div>

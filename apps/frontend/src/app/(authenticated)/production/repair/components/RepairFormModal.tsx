@@ -20,6 +20,7 @@ import {
   ProcessSelect,
   WorkerSelect,
   PartSearchModal,
+  QtyInput,
 } from "@/components/shared";
 import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
@@ -246,7 +247,7 @@ export default function RepairFormModal({
               {itemName && <p className="text-xs text-text-muted mt-1">{itemName}</p>}
             </div>
 
-            <Input label={t("production.repair.qty")} type="number" value={qty} onChange={(e) => setQty(Number(e.target.value))} min={1} fullWidth />
+            <QtyInput label={t("production.repair.qty")} value={qty} onChange={(n) => setQty(n)} fullWidth />
             <Input label={t("production.repair.prdUid")} value={prdUid} onChange={(e) => setPrdUid(e.target.value)} fullWidth />
             <ProcessSelect label={t("production.repair.sourceProcess")} value={sourceProcess} onChange={setSourceProcess} fullWidth />
             <ProcessSelect label={t("production.repair.returnProcess")} value={returnProcess} onChange={setReturnProcess} fullWidth />

@@ -13,7 +13,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { WorkerSelect, ComCodeSelect } from "@/components/shared";
+import { WorkerSelect, ComCodeSelect, QtyInput } from "@/components/shared";
 import api from "@/services/api";
 
 export interface InspectTarget {
@@ -130,10 +130,10 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
 
         {/* 수량 */}
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("quality.rework.passQty")} type="number" value={String(form.passQty)}
-            onChange={e => setForm(p => ({ ...p, passQty: Number(e.target.value) }))} fullWidth />
-          <Input label={t("quality.rework.failQty")} type="number" value={String(form.failQty)}
-            onChange={e => setForm(p => ({ ...p, failQty: Number(e.target.value) }))} fullWidth />
+          <QtyInput label={t("quality.rework.passQty")} value={form.passQty}
+            onChange={(n) => setForm(p => ({ ...p, passQty: n }))} fullWidth />
+          <QtyInput label={t("quality.rework.failQty")} value={form.failQty}
+            onChange={(n) => setForm(p => ({ ...p, failQty: n }))} fullWidth />
         </div>
 
         {/* 불량상세 */}

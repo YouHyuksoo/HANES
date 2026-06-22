@@ -14,7 +14,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
-import { PartSearchModal } from "@/components/shared";
+import { PartSearchModal, QtyInput } from "@/components/shared";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 import { ProdPlanItem } from "./types";
@@ -178,12 +178,11 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
                 </button>
               </div>
             </div>
-            <Input
+            <QtyInput
               label={t("monthlyPlan.planQty")}
-              type="number"
               placeholder="1000"
-              value={String(form.planQty)}
-              onChange={e => setField("planQty", Number(e.target.value))}
+              value={Number(form.planQty) || 0}
+              onChange={n => setField("planQty", n)}
               fullWidth
             />
             <Input

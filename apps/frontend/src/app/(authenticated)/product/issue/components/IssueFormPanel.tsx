@@ -13,6 +13,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
@@ -179,10 +180,10 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
           onChange={(v) => setForm({ ...form, warehouseCode: v })} fullWidth />
 
         {/* 수량 + 가용수량 표시 */}
-        <Input label={t("productMgmt.issue.modal.qty")} type="number" min={1}
-          max={selectedStock?.availableQty || 99999}
-          value={String(form.qty)}
-          onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })} fullWidth />
+        <QtyInput label={t("productMgmt.issue.modal.qty")}
+          maxValue={selectedStock?.availableQty || 99999}
+          value={form.qty}
+          onChange={(n) => setForm({ ...form, qty: n })} fullWidth />
 
         {selectedStock && (
           <div className="text-sm text-text-muted">

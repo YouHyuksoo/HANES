@@ -12,7 +12,7 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/ui";
-import { WorkerSelect } from "@/components/shared";
+import { WorkerSelect, QtyInput } from "@/components/shared";
 import api from "@/services/api";
 
 export interface ResultTarget {
@@ -131,25 +131,22 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
 
         {/* 수량 3열 */}
         <div className="grid grid-cols-3 gap-3">
-          <Input
+          <QtyInput
             label={t("quality.rework.resultQty")}
-            type="number"
-            value={form.resultQty}
-            onChange={e => setField("resultQty", e.target.value)}
+            value={Number(form.resultQty) || 0}
+            onChange={(n) => setField("resultQty", n ? String(n) : "")}
             fullWidth
           />
-          <Input
+          <QtyInput
             label={t("quality.rework.goodQty")}
-            type="number"
-            value={form.goodQty}
-            onChange={e => setField("goodQty", e.target.value)}
+            value={Number(form.goodQty) || 0}
+            onChange={(n) => setField("goodQty", n ? String(n) : "")}
             fullWidth
           />
-          <Input
+          <QtyInput
             label={t("quality.rework.defectQtyShort")}
-            type="number"
-            value={form.defectQty}
-            onChange={e => setField("defectQty", e.target.value)}
+            value={Number(form.defectQty) || 0}
+            onChange={(n) => setField("defectQty", n ? String(n) : "")}
             fullWidth
           />
         </div>
@@ -169,11 +166,10 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
         </div>
 
         {/* 작업시간 */}
-        <Input
+        <QtyInput
           label={t("quality.rework.workTimeMin")}
-          type="number"
-          value={form.workTimeMin}
-          onChange={e => setField("workTimeMin", e.target.value)}
+          value={Number(form.workTimeMin) || 0}
+          onChange={(n) => setField("workTimeMin", n ? String(n) : "")}
           fullWidth
         />
 

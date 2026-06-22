@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/ui";
-import { ComCodeSelect, PartnerSelect, WorkerSelect } from "@/components/shared";
+import { ComCodeSelect, PartnerSelect, WorkerSelect, QtyInput } from "@/components/shared";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 
@@ -153,10 +153,10 @@ export default function ComplaintFormPanel({ editData, onClose, onSave }: Props)
 
         {/* 수량 / 비용 */}
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("quality.complaint.defectQty")} type="number" value={form.defectQty}
-            onChange={e => setField("defectQty", e.target.value)} fullWidth />
-          <Input label={t("quality.complaint.costAmount")} type="number" value={form.costAmount}
-            onChange={e => setField("costAmount", e.target.value)} fullWidth />
+          <QtyInput label={t("quality.complaint.defectQty")} value={Number(form.defectQty) || 0}
+            onChange={(n) => setField("defectQty", n ? String(n) : "")} fullWidth />
+          <QtyInput label={t("quality.complaint.costAmount")} value={Number(form.costAmount) || 0}
+            onChange={(n) => setField("costAmount", n ? String(n) : "")} fullWidth />
         </div>
 
         {/* 담당자 */}

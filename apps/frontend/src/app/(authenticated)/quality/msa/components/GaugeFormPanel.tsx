@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, QtyInput } from "@/components/shared";
 import api from "@/services/api";
 
 /** 폼 데이터 타입 */
@@ -154,9 +154,8 @@ export default function GaugeFormPanel({ editData, onClose, onSave }: Props) {
         </div>
 
         {/* 교정주기(개월) */}
-        <Input label={t("quality.msa.calibrationCycle")} type="number"
-          value={String(form.calibrationCycle)}
-          onChange={e => setField("calibrationCycle", parseInt(e.target.value) || 0)} fullWidth />
+        <QtyInput label={t("quality.msa.calibrationCycle")} value={form.calibrationCycle}
+          onChange={(n) => setField("calibrationCycle", n)} fullWidth />
 
         {/* 보관장소 / 담당자 */}
         <div className="grid grid-cols-2 gap-3">

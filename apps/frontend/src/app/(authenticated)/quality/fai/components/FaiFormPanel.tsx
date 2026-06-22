@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Search } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { LineSelect, ComCodeSelect, WorkerSelect } from "@/components/shared";
+import { LineSelect, ComCodeSelect, WorkerSelect, QtyInput } from "@/components/shared";
 import PartSearchModal from "@/components/shared/PartSearchModal";
 import type { PartItem } from "@/components/shared/PartSearchModal";
 import OrderSearchModal from "@/components/shared/OrderSearchModal";
@@ -158,8 +158,8 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
           </div>
         </div>
 
-        <Input label={t("quality.fai.sampleQty")} type="number" value={form.sampleQty}
-          onChange={(e) => setField("sampleQty", e.target.value)} fullWidth />
+        <QtyInput label={t("quality.fai.sampleQty")} value={Number(form.sampleQty) || 0}
+          onChange={(n) => setField("sampleQty", n ? String(n) : "")} fullWidth />
 
         <WorkerSelect label={t("quality.fai.inspectorCode")} value={form.inspectorCode}
           onChange={(v) => setField("inspectorCode", v)} fullWidth />

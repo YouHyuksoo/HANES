@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Search, Send, CheckCircle, Clock } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -184,7 +185,7 @@ export default function CustomsUsagePage() {
         <div className="space-y-4">
           <Input label={t("customs.entry.entryNo")} placeholder="IMP20250125001" value={form.lotEntryNo} onChange={(e) => setForm((p) => ({ ...p, lotEntryNo: e.target.value }))} fullWidth />
           <Input label={t("customs.stock.matUid")} placeholder="MAT250125-001" value={form.lotMatUid} onChange={(e) => setForm((p) => ({ ...p, lotMatUid: e.target.value }))} fullWidth />
-          <Input label={t("customs.usage.usageQty")} type="number" placeholder="100" value={form.usageQty} onChange={(e) => setForm((p) => ({ ...p, usageQty: e.target.value }))} fullWidth />
+          <QtyInput label={t("customs.usage.usageQty")} placeholder="100" value={Number(form.usageQty) || 0} onChange={(n) => setForm((p) => ({ ...p, usageQty: n ? String(n) : "" }))} fullWidth />
           <Input label={t("customs.usage.jobOrder")} placeholder="JO-2025-001" value={form.jobOrderNo} onChange={(e) => setForm((p) => ({ ...p, jobOrderNo: e.target.value }))} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />
         </div>

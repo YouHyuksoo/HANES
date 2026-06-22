@@ -16,7 +16,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
 import { Modal, Button, Input, Select } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, QtyInput } from "@/components/shared";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
@@ -140,10 +140,9 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <Input label={`${t("material.scrap.qty")} (${t("material.scrap.max")}: ${maxQty.toLocaleString()})`} type="number"
-            min={1} max={maxQty}
-            value={form.qty} onChange={e => setForm(p => ({ ...p, qty: e.target.value }))}
-            fullWidth />
+          <QtyInput label={`${t("material.scrap.qty")} (${t("material.scrap.max")}: ${maxQty.toLocaleString()})`}
+            value={Number(form.qty) || 0} onChange={n => setForm(p => ({ ...p, qty: n ? String(n) : "" }))}
+            maxValue={maxQty} fullWidth />
           <ComCodeSelect groupCode="SCRAP_REASON" includeAll={false}
             label={t("material.scrap.reason")}
             value={form.reason} onChange={v => setForm(p => ({ ...p, reason: v }))}

@@ -24,6 +24,7 @@ import {
   BomItemType, BOM_ITEM_TYPE_COLORS,
 } from "../types";
 import api from "@/services/api";
+import { QtyInput } from "@/components/shared";
 
 // ========================================
 // 타입 정의
@@ -581,8 +582,8 @@ export default function EquipBomTab() {
             <div>
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equip.sectionStock", "재고")}</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Input label={t("master.equip.stockQty", "현재재고")} type="number" value={itemForm.stockQty} onChange={(e) => setItemForm({ ...itemForm, stockQty: e.target.value })} fullWidth />
-                <Input label={t("master.equip.safetyStock", "안전재고")} type="number" value={itemForm.safetyStock} onChange={(e) => setItemForm({ ...itemForm, safetyStock: e.target.value })} fullWidth />
+                <QtyInput label={t("master.equip.stockQty", "현재재고")} value={Number(itemForm.stockQty) || 0} onChange={(n) => setItemForm({ ...itemForm, stockQty: n ? String(n) : "" })} fullWidth />
+                <QtyInput label={t("master.equip.safetyStock", "안전재고")} value={Number(itemForm.safetyStock) || 0} onChange={(n) => setItemForm({ ...itemForm, safetyStock: n ? String(n) : "" })} fullWidth />
               </div>
             </div>
           </div>
@@ -609,7 +610,7 @@ export default function EquipBomTab() {
                 <div className="col-span-2">
                   <Select label={t("master.equip.bomItem", "BOM 품목")} options={bomItems.filter(i => i.useYn === "Y").map(i => ({ value: i.bomItemCode, label: `${i.itemCode} - ${i.itemName}` }))} value={relForm.bomItemCode} onChange={(v) => setRelForm({ ...relForm, bomItemCode: v })} fullWidth disabled={!!editingRel} />
                 </div>
-                <Input label={t("master.equip.quantity", "수량")} type="number" value={relForm.quantity} onChange={(e) => setRelForm({ ...relForm, quantity: e.target.value })} fullWidth />
+                <QtyInput label={t("master.equip.quantity", "수량")} value={Number(relForm.quantity) || 0} onChange={(n) => setRelForm({ ...relForm, quantity: n ? String(n) : "" })} fullWidth />
                 <Input label={t("master.equip.installDate", "설치일")} type="date" value={relForm.installDate} onChange={(e) => setRelForm({ ...relForm, installDate: e.target.value })} fullWidth />
                 <Input label={t("master.equip.expireDate", "유효기한")} type="date" value={relForm.expireDate} onChange={(e) => setRelForm({ ...relForm, expireDate: e.target.value })} fullWidth />
                 <div className="col-span-2">

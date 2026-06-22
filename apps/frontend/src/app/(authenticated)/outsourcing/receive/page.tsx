@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Search, Package, CheckCircle, XCircle, Layers } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -163,10 +164,10 @@ export default function SubconReceivePage() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("outsourcing.receive.register")} size="lg">
         <div className="space-y-4">
           <Input label={t("outsourcing.order.orderNo")} placeholder="SCO20250127001" value={form.orderNo} onChange={(e) => setForm((p) => ({ ...p, orderNo: e.target.value }))} fullWidth />
-          <Input label={t("outsourcing.receive.receiveQty")} type="number" placeholder="50" value={form.qty} onChange={(e) => setForm((p) => ({ ...p, qty: e.target.value }))} fullWidth />
+          <QtyInput label={t("outsourcing.receive.receiveQty")} placeholder="50" value={Number(form.qty) || 0} onChange={(n) => setForm((p) => ({ ...p, qty: n ? String(n) : "" }))} fullWidth />
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t("outsourcing.receive.goodQty")} type="number" placeholder="48" value={form.goodQty} onChange={(e) => setForm((p) => ({ ...p, goodQty: e.target.value }))} fullWidth />
-            <Input label={t("outsourcing.receive.defectQty")} type="number" placeholder="2" value={form.defectQty} onChange={(e) => setForm((p) => ({ ...p, defectQty: e.target.value }))} fullWidth />
+            <QtyInput label={t("outsourcing.receive.goodQty")} placeholder="48" value={Number(form.goodQty) || 0} onChange={(n) => setForm((p) => ({ ...p, goodQty: n ? String(n) : "" }))} fullWidth />
+            <QtyInput label={t("outsourcing.receive.defectQty")} placeholder="2" value={Number(form.defectQty) || 0} onChange={(n) => setForm((p) => ({ ...p, defectQty: n ? String(n) : "" }))} fullWidth />
           </div>
           <Select label={t("outsourcing.receive.inspectResult")} options={[{ value: "PASS", label: t("outsourcing.receive.inspectPass") }, { value: "PARTIAL", label: t("outsourcing.receive.inspectPartial") }, { value: "FAIL", label: t("outsourcing.receive.inspectFail") }]} value={form.inspectResult} onChange={(v) => setForm((p) => ({ ...p, inspectResult: v }))} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />

@@ -14,6 +14,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import { Plus, Trash2 } from "lucide-react";
 import { useEquipOptions, useEquipBomOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -280,12 +281,10 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
                   onChange={setCycleType}
                   fullWidth
                 />
-                <Input
+                <QtyInput
                   label={t("equipment.pmPlan.cycleValue")}
-                  type="number"
-                  value={String(cycleValue)}
-                  onChange={(e) => setCycleValue(Number(e.target.value) || 1)}
-                  min={1}
+                  value={cycleValue}
+                  onChange={(n) => setCycleValue(n || 1)}
                   fullWidth
                 />
                 <Input

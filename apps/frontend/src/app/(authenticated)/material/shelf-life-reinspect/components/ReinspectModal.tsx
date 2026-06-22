@@ -14,6 +14,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, AlertCircle, FlaskConical } from "lucide-react";
 import { Button, Modal, Input } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import api from "@/services/api";
 
 export interface ReinspectTarget {
@@ -297,7 +298,7 @@ export default function ReinspectModal({ isOpen, onClose, target, onSubmitted }:
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-text-muted">{t("material.iqc.sampleQty", "시료수량")}</label>
-            <Input type="number" min={0} value={sampleQty} onChange={(e) => setSampleQty(e.target.value)} placeholder="0" fullWidth />
+            <QtyInput value={Number(sampleQty) || 0} onChange={n => setSampleQty(n ? String(n) : "")} placeholder="0" fullWidth />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-text-muted">{t("material.shelfLife.extendDays", "적용연장일(일)")}</label>

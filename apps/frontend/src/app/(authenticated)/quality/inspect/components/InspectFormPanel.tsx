@@ -15,7 +15,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, ScanLine } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, QtyInput } from "@/components/shared";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import type { FgLabelInfo, DefectCheckItem } from "../types";
@@ -156,7 +156,7 @@ export default function InspectFormPanel({ fgLabel, onClose, onSave, animate = t
                             <input type="checkbox" checked={item.checked} onChange={(e) => updateCheckItem(item.code, "checked", e.target.checked)} className="w-4 h-4 accent-red-500" />
                             <span className={`flex-1 text-xs font-medium ${item.checked ? "text-text" : "text-text-muted"}`}>{item.name}</span>
                             {item.checked && (
-                              <Input type="number" value={String(item.qty)} onChange={(e) => updateCheckItem(item.code, "qty", Number(e.target.value))} className="w-20" placeholder={t("quality.inspect.defectQty")} />
+                              <QtyInput value={item.qty} onChange={(n) => updateCheckItem(item.code, "qty", n)} className="w-20" placeholder={t("quality.inspect.defectQty")} />
                             )}
                           </div>
                         </div>

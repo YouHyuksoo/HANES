@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Search, Layers, AlertCircle } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { LineSelect, EquipSelect, WorkerSelect, ComCodeSelect } from "@/components/shared";
+import { LineSelect, EquipSelect, WorkerSelect, ComCodeSelect, QtyInput } from "@/components/shared";
 import PartSearchModal from "@/components/shared/PartSearchModal";
 import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
@@ -218,8 +218,8 @@ export default function ReworkFormPanel({ editData, onClose, onSave, animate = t
 
         {/* ── 수량 / 불량유형 ── */}
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("quality.rework.reworkQty")} type="number" value={form.reworkQty}
-            onChange={e => setField("reworkQty", e.target.value)} fullWidth />
+          <QtyInput label={t("quality.rework.reworkQty")} value={Number(form.reworkQty) || 0}
+            onChange={(n) => setField("reworkQty", n ? String(n) : "")} fullWidth />
           <ComCodeSelect groupCode="DEFECT_TYPE" includeAll={false}
             label={t("quality.rework.defectType")} value={form.defectType}
             onChange={v => setField("defectType", v)} fullWidth />

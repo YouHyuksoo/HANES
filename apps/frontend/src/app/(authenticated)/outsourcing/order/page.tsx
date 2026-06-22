@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Eye, RefreshCw, Search, FileText, Truck, Package, CheckCircle } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -180,7 +181,7 @@ export default function SubconOrderPage() {
         <div className="space-y-4">
           <Input label={t("common.partCode")} placeholder="WH-001" value={form.itemCode} onChange={(e) => setForm((p) => ({ ...p, itemCode: e.target.value }))} fullWidth />
           <Input label={t("common.partName")} placeholder="" value={form.itemName} onChange={(e) => setForm((p) => ({ ...p, itemName: e.target.value }))} fullWidth />
-          <Input label={t("outsourcing.order.orderQty")} type="number" placeholder="1000" value={form.orderQty} onChange={(e) => setForm((p) => ({ ...p, orderQty: e.target.value }))} fullWidth />
+          <QtyInput label={t("outsourcing.order.orderQty")} placeholder="1000" value={Number(form.orderQty) || 0} onChange={(n) => setForm((p) => ({ ...p, orderQty: n ? String(n) : "" }))} fullWidth />
           <Input label={t("outsourcing.order.dueDate")} type="date" value={form.dueDate} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />
         </div>

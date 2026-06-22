@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PackagePlus, Search, RefreshCw, Plus } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
 import { ColumnDef } from "@tanstack/react-table";
@@ -241,8 +241,8 @@ export default function MiscReceiptPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t("material.miscReceipt.qty")} type="number" placeholder="0"
-              value={form.qty} onChange={e => setForm(p => ({ ...p, qty: e.target.value }))} fullWidth />
+            <QtyInput label={t("material.miscReceipt.qty")} placeholder="0"
+              value={Number(form.qty) || 0} onChange={n => setForm(p => ({ ...p, qty: n ? String(n) : "" }))} fullWidth />
             <Input label={t("material.miscReceipt.remark")} placeholder={t("material.miscReceipt.remarkPlaceholder")}
               value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           </div>

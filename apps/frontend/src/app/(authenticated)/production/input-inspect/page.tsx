@@ -21,7 +21,7 @@ import { WorkerPhoto, type Worker } from '@/components/worker/WorkerSelector';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useInputInspectStore } from '@/stores/inputInspectStore';
-import { LineSelect, ProcessSelect } from '@/components/shared';
+import { LineSelect, ProcessSelect, QtyInput } from '@/components/shared';
 import { useLineOptions, useProcessOptions } from '@/hooks/useMasterOptions';
 
 interface InspectInput {
@@ -422,9 +422,9 @@ export default function InputInspectPage() {
 
           <Input label={t('production.inputInspect.matUid')} value={form.matUid} onChange={e => setForm(p => ({ ...p, matUid: e.target.value }))} fullWidth />
           <div className="grid grid-cols-3 gap-4">
-            <Input label={t('production.inputInspect.inspectQty')} type="number" value={form.inspectQty} onChange={e => setForm(p => ({ ...p, inspectQty: e.target.value }))} fullWidth />
-            <Input label={t('production.inputInspect.passQty')} type="number" value={form.passQty} onChange={e => setForm(p => ({ ...p, passQty: e.target.value }))} fullWidth />
-            <Input label={t('production.inputInspect.failQty')} type="number" value={form.failQty} onChange={e => setForm(p => ({ ...p, failQty: e.target.value }))} fullWidth />
+            <QtyInput label={t('production.inputInspect.inspectQty')} value={Number(form.inspectQty) || 0} onChange={n => setForm(p => ({ ...p, inspectQty: String(n) }))} fullWidth />
+            <QtyInput label={t('production.inputInspect.passQty')} value={Number(form.passQty) || 0} onChange={n => setForm(p => ({ ...p, passQty: String(n) }))} fullWidth />
+            <QtyInput label={t('production.inputInspect.failQty')} value={Number(form.failQty) || 0} onChange={n => setForm(p => ({ ...p, failQty: String(n) }))} fullWidth />
           </div>
           <Select label={t('production.inputInspect.judgment')} options={[{ value: 'Y', label: t('production.inputInspect.pass') }, { value: 'N', label: t('production.inputInspect.fail') }]} value={form.passYn} onChange={v => setForm(p => ({ ...p, passYn: v }))} fullWidth />
           <Input label={t('production.inputInspect.remark')} value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />

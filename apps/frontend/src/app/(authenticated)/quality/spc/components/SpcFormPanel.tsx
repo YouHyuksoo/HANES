@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Search } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { ProcessSelect, ComCodeSelect, PartSearchModal } from "@/components/shared";
+import { ProcessSelect, ComCodeSelect, PartSearchModal, QtyInput } from "@/components/shared";
 import type { PartItem } from "@/components/shared";
 import api from "@/services/api";
 
@@ -156,9 +156,8 @@ export default function SpcFormPanel({ editData, onClose, onSave }: Props) {
           <ComCodeSelect groupCode="SPC_CHART_TYPE" includeAll={false}
             label={t("quality.spc.chartType")} value={form.chartType}
             onChange={v => setField("chartType", v)} fullWidth />
-          <Input label={t("quality.spc.subgroupSize")} type="number"
-            value={String(form.subgroupSize)}
-            onChange={e => setField("subgroupSize", Number(e.target.value) || 1)} fullWidth />
+          <QtyInput label={t("quality.spc.subgroupSize")} value={form.subgroupSize}
+            onChange={(n) => setField("subgroupSize", n || 1)} fullWidth />
         </div>
 
         {/* 데이터 소스 */}

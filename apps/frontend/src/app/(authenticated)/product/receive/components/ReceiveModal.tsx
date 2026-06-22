@@ -13,6 +13,7 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Modal, Select } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import { usePartOptions, useWarehouseOptions } from "@/hooks/useMasterOptions";
 
 interface ReceiveModalProps {
@@ -142,12 +143,10 @@ export default function ReceiveModal({
               onChange={(v) => setForm({ ...form, warehouseCode: v })}
             />
           )}
-          <Input
+          <QtyInput
             label={t("productMgmt.receive.modal.qty")}
-            type="number"
-            min={1}
-            value={String(form.qty)}
-            onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
+            value={form.qty}
+            onChange={(n) => setForm({ ...form, qty: n })}
             fullWidth
           />
         </div>

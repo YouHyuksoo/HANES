@@ -15,6 +15,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, Trash2, ImageIcon, RefreshCw } from "lucide-react";
 import { Button, ConfirmModal, Input, Select } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
@@ -217,28 +218,25 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
             {t("consumables.master.sectionLifecycle", "수명 / 관리")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input
+            <QtyInput
               label={t("consumables.master.expectedLifeCount")}
-              type="number"
               placeholder="100000"
-              value={form.expectedLife?.toString() ?? ""}
-              onChange={(e) => set("expectedLife", e.target.value ? Number(e.target.value) : null)}
+              value={form.expectedLife ?? 0}
+              onChange={(n) => set("expectedLife", n || null)}
               fullWidth
             />
-            <Input
+            <QtyInput
               label={t("consumables.master.warningThreshold")}
-              type="number"
               placeholder="80000"
-              value={form.warningCount?.toString() ?? ""}
-              onChange={(e) => set("warningCount", e.target.value ? Number(e.target.value) : null)}
+              value={form.warningCount ?? 0}
+              onChange={(n) => set("warningCount", n || null)}
               fullWidth
             />
-            <Input
+            <QtyInput
               label={t("consumables.master.safetyStock", "안전재고")}
-              type="number"
               placeholder="1"
-              value={form.safetyStock.toString()}
-              onChange={(e) => set("safetyStock", Number(e.target.value) || 0)}
+              value={form.safetyStock}
+              onChange={(n) => set("safetyStock", n)}
               fullWidth
             />
           </div>

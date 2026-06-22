@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { Send } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { Button, Input, Select } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import api from "@/services/api";
 import { ProdPlanItem } from "./types";
 
@@ -183,12 +184,10 @@ export default function IssueJobOrderModal({
           <label className="block text-sm font-medium text-text mb-1">
             {t("monthlyPlan.issueQty")} <span className="text-red-500">*</span>
           </label>
-          <Input
-            type="number"
+          <QtyInput
             value={issueQty}
-            onChange={(e) => setIssueQty(Number(e.target.value))}
-            min={1}
-            max={remainQty}
+            onChange={(n) => setIssueQty(n)}
+            maxValue={remainQty}
             fullWidth
           />
           {issueQty > remainQty && (

@@ -19,7 +19,8 @@ import PartSearchModal, {
   type PartItem,
 } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
-import { FieldInput, FieldSelect, FieldLabel } from "./ProcessCapaFieldHelp";
+import { FieldInput, FieldSelect, FieldLabel, Field } from "./ProcessCapaFieldHelp";
+import { QtyInput } from "@/components/shared";
 
 /** 공정 CAPA 아이템 타입 (부모에서 전달) */
 interface ProcessCapaItem {
@@ -300,33 +301,15 @@ export default function CapaFormPanel({
 
         {/* 작업자 / 보드 / 설비 */}
         <div className="grid grid-cols-3 gap-3">
-          <FieldInput
-            field="workerCnt"
-            label={t("processCapa.workerCnt")}
-            type="number"
-            value={form.workerCnt.toString()}
-            onChange={(e) =>
-              setField("workerCnt", parseInt(e.target.value) || 0)
-            }
-          />
-          <FieldInput
-            field="boardCnt"
-            label={t("processCapa.boardCnt")}
-            type="number"
-            value={form.boardCnt.toString()}
-            onChange={(e) =>
-              setField("boardCnt", parseInt(e.target.value) || 0)
-            }
-          />
-          <FieldInput
-            field="equipCnt"
-            label={t("processCapa.equipCnt")}
-            type="number"
-            value={form.equipCnt.toString()}
-            onChange={(e) =>
-              setField("equipCnt", parseInt(e.target.value) || 0)
-            }
-          />
+          <Field field="workerCnt" label={t("processCapa.workerCnt")}>
+            <QtyInput value={form.workerCnt} onChange={(n) => setField("workerCnt", n)} fullWidth />
+          </Field>
+          <Field field="boardCnt" label={t("processCapa.boardCnt")}>
+            <QtyInput value={form.boardCnt} onChange={(n) => setField("boardCnt", n)} fullWidth />
+          </Field>
+          <Field field="equipCnt" label={t("processCapa.equipCnt")}>
+            <QtyInput value={form.equipCnt} onChange={(n) => setField("equipCnt", n)} fullWidth />
+          </Field>
         </div>
 
         {/* 전환시간 / 밸런싱 효율 */}

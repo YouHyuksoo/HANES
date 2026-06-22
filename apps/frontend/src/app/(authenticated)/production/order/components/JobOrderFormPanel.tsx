@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Loader2 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { PartSearchModal, LineSelect, ProcessSelect } from "@/components/shared";
+import { PartSearchModal, LineSelect, ProcessSelect, QtyInput } from "@/components/shared";
 import { useEquipOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
@@ -203,8 +203,8 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
                   </button>
                 </div>
               </div>
-              <Input label={t("production.order.planQty")} type="number" value={form.planQty}
-                onChange={e => setField("planQty", e.target.value)} fullWidth />
+              <QtyInput label={t("production.order.planQty")} value={Number(form.planQty) || 0}
+                onChange={n => setField("planQty", n ? String(n) : "")} fullWidth />
               <Input label={`${t("production.order.planDate")} *`} type="date" value={form.planDate}
                 onChange={e => setField("planDate", e.target.value)} fullWidth />
               <Input label={t("production.order.priority")} type="number" value={form.priority}

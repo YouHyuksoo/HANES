@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { ClipboardList, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { Button, Card, CardContent, ConfirmModal, Input } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
+import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { HelpField, HelpHeader } from "./components/AqlFieldHelp";
@@ -499,11 +500,11 @@ export default function AqlPage() {
               </div>
               {(form.rules ?? []).map((rule, index) => (
                 <div key={`${rule.lotQtyFrom}-${index}`} className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_36px] border-t border-border bg-surface/60">
-                  <div className="p-1"><Input type="number" min={1} value={rule.lotQtyFrom} onChange={(event) => setRuleField(index, "lotQtyFrom", toNumber(event.target.value, 1))} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1"><Input type="number" min={1} value={rule.lotQtyTo} onChange={(event) => setRuleField(index, "lotQtyTo", toNumber(event.target.value, 1))} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1"><Input type="number" min={0} value={rule.sampleSize} onChange={(event) => setRuleField(index, "sampleSize", toNumber(event.target.value, 0))} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1"><Input type="number" min={0} value={rule.acceptQty} onChange={(event) => setRuleField(index, "acceptQty", toNumber(event.target.value, 0))} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1"><Input type="number" min={0} value={rule.rejectQty} onChange={(event) => setRuleField(index, "rejectQty", toNumber(event.target.value, 0))} className="!h-8 !px-2" fullWidth /></div>
+                  <div className="p-1"><QtyInput value={rule.lotQtyFrom} onChange={(n) => setRuleField(index, "lotQtyFrom", n || 1)} className="!h-8 !px-2" fullWidth /></div>
+                  <div className="p-1"><QtyInput value={rule.lotQtyTo} onChange={(n) => setRuleField(index, "lotQtyTo", n || 1)} className="!h-8 !px-2" fullWidth /></div>
+                  <div className="p-1"><QtyInput value={rule.sampleSize} onChange={(n) => setRuleField(index, "sampleSize", n)} className="!h-8 !px-2" fullWidth /></div>
+                  <div className="p-1"><QtyInput value={rule.acceptQty} onChange={(n) => setRuleField(index, "acceptQty", n)} className="!h-8 !px-2" fullWidth /></div>
+                  <div className="p-1"><QtyInput value={rule.rejectQty} onChange={(n) => setRuleField(index, "rejectQty", n)} className="!h-8 !px-2" fullWidth /></div>
                   <div className="p-1 flex items-center justify-center">
                     <button className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500" onClick={() => removeRule(index)} title={t("common.delete", "삭제")}>
                       <Trash2 className="w-4 h-4" />

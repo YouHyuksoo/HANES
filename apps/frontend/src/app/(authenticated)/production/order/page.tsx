@@ -20,7 +20,7 @@ import {
   Barcode, Printer, Wrench,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
-import { ComCodeSelect, EquipSelect, ProcessSelect } from "@/components/shared";
+import { ComCodeSelect, EquipSelect, ProcessSelect, QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -594,9 +594,9 @@ export default function JobOrderPage() {
           <label className="block text-sm font-medium text-text">
             {t("production.order.preIssueQty")}
           </label>
-          <Input type="number" value={preIssueQty}
-            onChange={(e) => setPreIssueQty(Number(e.target.value))}
-            min={1} fullWidth />
+          <QtyInput value={preIssueQty}
+            onChange={(n) => setPreIssueQty(n)}
+            fullWidth />
         </div>
       </Modal>
     </div>

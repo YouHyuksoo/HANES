@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { GitMerge, Play, RefreshCw, Scan, Trash2 } from "lucide-react";
 import { Button, Card, CardContent, Input, Modal } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import api from "@/services/api";
 
 interface SgLabelInfo {
@@ -206,11 +207,10 @@ export default function SubprocessKittingPage() {
                 placeholder="SUB-CRIMP"
                 fullWidth
               />
-              <Input
+              <QtyInput
                 label={t("production.kitting.qty")}
-                type="number"
-                value={qty}
-                onChange={(e) => setQty(e.target.value === "" ? "" : Number(e.target.value))}
+                value={Number(qty) || 0}
+                onChange={(n) => setQty(n || "")}
                 placeholder="1"
                 fullWidth
               />

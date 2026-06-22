@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, History, X } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
 import { EquipSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
@@ -118,8 +119,8 @@ export default function MoldUsageList({ mold }: Props) {
             bg-surface dark:bg-slate-800">
             <Input label={t("equipment.mold.usageDate")} type="date" value={form.usageDate}
               onChange={e => setField("usageDate", e.target.value)} className="w-32" />
-            <Input label={t("equipment.mold.shotCount")} type="number" value={form.shotCount}
-              onChange={e => setField("shotCount", e.target.value)} className="w-24" />
+            <QtyInput label={t("equipment.mold.shotCount")} value={Number(form.shotCount) || 0}
+              onChange={(n) => setField("shotCount", n ? String(n) : "")} className="w-24" />
             <Input label={t("equipment.mold.orderNo")} value={form.orderNo}
               onChange={e => setField("orderNo", e.target.value)} className="w-32" />
             <div className="w-32">

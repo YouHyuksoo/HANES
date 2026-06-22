@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Trash2 } from "lucide-react";
 import { Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, QtyInput } from "@/components/shared";
 import PartSearchModal from "@/components/shared/PartSearchModal";
 import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
@@ -144,12 +144,12 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <Input label={t("equipment.mold.cavity")} type="number" value={form.cavity}
-            onChange={e => sf("cavity", e.target.value)} fullWidth />
-          <Input label={t("equipment.mold.guaranteedShots")} type="number" value={form.guaranteedShots}
-            onChange={e => sf("guaranteedShots", e.target.value)} fullWidth />
-          <Input label={t("equipment.mold.maintenanceCycle")} type="number" value={form.maintenanceCycle}
-            onChange={e => sf("maintenanceCycle", e.target.value)} fullWidth />
+          <QtyInput label={t("equipment.mold.cavity")} value={Number(form.cavity) || 0}
+            onChange={(n) => sf("cavity", n ? String(n) : "")} fullWidth />
+          <QtyInput label={t("equipment.mold.guaranteedShots")} value={Number(form.guaranteedShots) || 0}
+            onChange={(n) => sf("guaranteedShots", n ? String(n) : "")} fullWidth />
+          <QtyInput label={t("equipment.mold.maintenanceCycle")} value={Number(form.maintenanceCycle) || 0}
+            onChange={(n) => sf("maintenanceCycle", n ? String(n) : "")} fullWidth />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Input label={t("equipment.mold.location")} value={form.location}

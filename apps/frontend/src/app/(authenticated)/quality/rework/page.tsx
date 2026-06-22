@@ -22,7 +22,7 @@ import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal,
 import toast from "react-hot-toast";
 import { FileCheck } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { LineSelect, ComCodeSelect } from "@/components/shared";
+import { LineSelect, ComCodeSelect, QtyInput } from "@/components/shared";
 import api from "@/services/api";
 import ReworkFormPanel from "./components/ReworkFormPanel";
 import type { ReworkEditData } from "./components/ReworkFormPanel";
@@ -490,10 +490,10 @@ export default function ReworkPage() {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("quality.rework.passQty", "합격수량")} type="number" min={0}
-              value={inspectForm.passQty} onChange={(e) => setInspectForm(f => ({ ...f, passQty: e.target.value }))} fullWidth />
-            <Input label={t("quality.rework.failQty", "불합격수량")} type="number" min={0}
-              value={inspectForm.failQty} onChange={(e) => setInspectForm(f => ({ ...f, failQty: e.target.value }))} fullWidth />
+            <QtyInput label={t("quality.rework.passQty", "합격수량")}
+              value={Number(inspectForm.passQty) || 0} onChange={(n) => setInspectForm(f => ({ ...f, passQty: n ? String(n) : "" }))} fullWidth />
+            <QtyInput label={t("quality.rework.failQty", "불합격수량")}
+              value={Number(inspectForm.failQty) || 0} onChange={(n) => setInspectForm(f => ({ ...f, failQty: n ? String(n) : "" }))} fullWidth />
           </div>
           <Input label={t("quality.rework.inspectorCode", "검사자")} value={inspectForm.inspectorCode}
             onChange={(e) => setInspectForm(f => ({ ...f, inspectorCode: e.target.value }))} fullWidth />
