@@ -381,7 +381,7 @@
     "shipping.boxStock": "Tra cứu tồn kho sản phẩm",
     "shipping.pallet": "Quản lý xếp pallet",
     "shipping.palletShip": "Xuất pallet",
-    "shipping.confirm": "Xử lý xác nhận xuất hàng",
+    "shipping.confirm": "Xuất hàng theo thùng",
     "shipping.order": "Đăng ký lệnh xuất hàng",
     "shipping.history": "Lịch sử xuất hàng",
     "shipping.return": "Đăng ký hàng trả lại",
@@ -5275,9 +5275,9 @@
       "scanBoxPlaceholder": "Quét số thùng"
     },
     "confirm": {
-      "title": "Xác nhận xuất hàng",
+      "title": "Xuất hàng theo thùng",
       "subtitle": "Xác nhận xuất hàng.",
-      "description": "Xác nhận và quản lý xuất hàng.",
+      "description": "Xuất theo thùng: quét thùng theo lệnh xuất hàng.",
       "shipmentNo": "Mã xuất hàng",
       "shipDate": "Ngày xuất",
       "customer": "Khách hàng",
@@ -5324,7 +5324,21 @@
       "unshippedOrdersHint": "Nhấn biểu tượng thao tác để bắt đầu công việc pallet theo lệnh xuất hàng.",
       "noUnshippedOrders": "Không có lệnh xuất chưa giao.",
       "reverseWarning": "Đưa lô xuất về trạng thái LOADED và khôi phục tồn kho sản phẩm. Không thể đảo ngược lô xuất đã liên kết ERP.",
-      "reverseReason": "Lý do đảo ngược"
+      "reverseReason": "Lý do đảo ngược",
+      "boxNo": "Số thùng",
+      "item": "Mặt hàng",
+      "qty": "Số lượng",
+      "boxScanShip": "Quét thùng để xuất",
+      "shipOrderList": "Danh sách lệnh xuất",
+      "candidateBoxes": "Thùng có thể xuất",
+      "boxDetail": "Chi tiết thùng",
+      "lineProgress": "Tiến độ mặt hàng",
+      "selectOrder": "Chọn một lệnh xuất hàng",
+      "selectBox": "Chọn thùng để xem số sê-ri.",
+      "noCandidateBoxes": "Không có thùng nào để xuất.",
+      "loadOrdersFailed": "Không tải được danh sách lệnh xuất.",
+      "loadFulfillmentFailed": "Không tải được thông tin xuất hàng.",
+      "loadSerialsFailed": "Không tải được số sê-ri của thùng."
     },
     "scan": {
       "title": "Xác minh quét xuất hàng",

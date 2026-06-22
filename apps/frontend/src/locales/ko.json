@@ -382,7 +382,7 @@
     "shipping.boxStock": "제품재고조회",
     "shipping.pallet": "팔레트적재관리",
     "shipping.palletShip": "팔레트출하",
-    "shipping.confirm": "출하작업",
+    "shipping.confirm": "박스별출하",
     "shipping.order": "출하지시등록",
     "shipping.history": "출하이력조회",
     "shipping.return": "출하반품등록",
@@ -5279,9 +5279,9 @@
       "scanBoxPlaceholder": "박스번호 스캔"
     },
     "confirm": {
-      "title": "출하작업",
+      "title": "박스별출하",
       "subtitle": "출하지시 기준으로 팔레트를 구성하고 제품출하를 확정합니다.",
-      "description": "출하지시, 팔레트 구성, 라벨 발행, 팔레트 스캔 출하를 한 흐름으로 처리합니다.",
+      "description": "출하지시 기준으로 박스를 스캔하여 박스 단위로 출하합니다.",
       "shipmentNo": "출하번호",
       "shipDate": "출하일",
       "customer": "고객사",
@@ -5328,7 +5328,21 @@
       "unshippedOrdersHint": "작업 아이콘을 누르면 출하지시 기준 팔레트 작업을 시작합니다.",
       "noUnshippedOrders": "미출하 출하지시가 없습니다.",
       "reverseWarning": "출하를 LOADED 상태로 되돌리고 제품재고를 복원합니다. ERP 연동된 출하는 역분개할 수 없습니다.",
-      "reverseReason": "역분개 사유"
+      "reverseReason": "역분개 사유",
+      "boxNo": "박스번호",
+      "item": "품목",
+      "qty": "수량",
+      "boxScanShip": "박스출하 스캔",
+      "shipOrderList": "출하지시 목록",
+      "candidateBoxes": "출하가능 박스",
+      "boxDetail": "박스 상세",
+      "lineProgress": "품목 진행",
+      "selectOrder": "출하지시를 선택하세요",
+      "selectBox": "박스를 선택하면 시리얼을 확인할 수 있습니다.",
+      "noCandidateBoxes": "출하가능한 박스가 없습니다.",
+      "loadOrdersFailed": "출하지시 목록을 불러오지 못했습니다.",
+      "loadFulfillmentFailed": "출하정보를 불러오지 못했습니다.",
+      "loadSerialsFailed": "박스 시리얼을 불러오지 못했습니다."
     },
     "scan": {
       "title": "출하 스캔 검증",

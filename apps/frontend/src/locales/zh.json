@@ -381,7 +381,7 @@
     "shipping.boxStock": "产品库存查询",
     "shipping.pallet": "托盘装载管理",
     "shipping.palletShip": "托盘出货",
-    "shipping.confirm": "出货确认处理",
+    "shipping.confirm": "按箱出货",
     "shipping.order": "出货指示登记",
     "shipping.history": "出货历史查询",
     "shipping.return": "出货退货登记",
@@ -5275,9 +5275,9 @@
       "scanBoxPlaceholder": "扫描箱号"
     },
     "confirm": {
-      "title": "出货确认",
+      "title": "按箱出货",
       "subtitle": "确认出货。",
-      "description": "确认和管理出货。",
+      "description": "按出货指示扫描箱号，以箱为单位出货。",
       "shipmentNo": "出货编号",
       "shipDate": "出货日期",
       "customer": "客户",
@@ -5324,7 +5324,21 @@
       "unshippedOrdersHint": "点击作业图标，按出货指示开始托盘作业。",
       "noUnshippedOrders": "没有未出货的出货指示。",
       "reverseWarning": "将出货回退至LOADED状态并恢复产品库存。已与ERP联动的出货无法冲销。",
-      "reverseReason": "冲销原因"
+      "reverseReason": "冲销原因",
+      "boxNo": "箱号",
+      "item": "物料",
+      "qty": "数量",
+      "boxScanShip": "扫描箱号出货",
+      "shipOrderList": "出货指示列表",
+      "candidateBoxes": "可出货箱",
+      "boxDetail": "箱明细",
+      "lineProgress": "物料进度",
+      "selectOrder": "请选择出货指示",
+      "selectBox": "选择箱号可查看序列号。",
+      "noCandidateBoxes": "没有可出货的箱。",
+      "loadOrdersFailed": "无法加载出货指示列表。",
+      "loadFulfillmentFailed": "无法加载出货信息。",
+      "loadSerialsFailed": "无法加载箱序列号。"
     },
     "scan": {
       "title": "出货扫描验证",

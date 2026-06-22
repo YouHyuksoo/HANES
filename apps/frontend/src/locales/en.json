@@ -381,7 +381,7 @@
     "shipping.boxStock": "Product Stock",
     "shipping.pallet": "Pallet Load Mgmt",
     "shipping.palletShip": "Pallet Ship",
-    "shipping.confirm": "Shipping Work",
+    "shipping.confirm": "Box Shipping",
     "shipping.order": "Shipment Order",
     "shipping.history": "Shipment History",
     "shipping.return": "Shipment Return",
@@ -5275,9 +5275,9 @@
       "scanBoxPlaceholder": "Scan box number"
     },
     "confirm": {
-      "title": "Shipping Work",
+      "title": "Box Shipping",
       "subtitle": "Build pallets from shipping orders and confirm product shipment.",
-      "description": "Handle shipping order, pallet composition, label issue, and pallet scan shipment in one flow.",
+      "description": "Ship by box: scan boxes against a ship order.",
       "shipmentNo": "Shipment No.",
       "shipDate": "Ship Date",
       "customer": "Customer",
@@ -5324,7 +5324,21 @@
       "unshippedOrdersHint": "Click the action icon to start pallet work based on the shipping order.",
       "noUnshippedOrders": "No unshipped orders.",
       "reverseWarning": "Reverts the shipment to LOADED status and restores product stock. ERP-linked shipments cannot be reversed.",
-      "reverseReason": "Reversal Reason"
+      "reverseReason": "Reversal Reason",
+      "boxNo": "Box No",
+      "item": "Item",
+      "qty": "Qty",
+      "boxScanShip": "Scan Box to Ship",
+      "shipOrderList": "Ship Orders",
+      "candidateBoxes": "Shippable Boxes",
+      "boxDetail": "Box Detail",
+      "lineProgress": "Item Progress",
+      "selectOrder": "Select a ship order",
+      "selectBox": "Select a box to view its serials.",
+      "noCandidateBoxes": "No shippable boxes.",
+      "loadOrdersFailed": "Failed to load ship orders.",
+      "loadFulfillmentFailed": "Failed to load fulfillment info.",
+      "loadSerialsFailed": "Failed to load box serials."
     },
     "scan": {
       "title": "Shipment Scan Verification",
