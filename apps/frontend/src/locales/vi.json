@@ -7764,6 +7764,17 @@
       "cancel": "Hủy",
       "execute": "Thực thi",
       "sqlLabel": "SQL đã thực thi"
+    },
+    "config": {
+      "provider": "Nhà cung cấp",
+      "model": "Mô hình",
+      "enabled": "Bật trò chuyện AI",
+      "apiKey": "Khóa API",
+      "keySetPlaceholder": "Đã cấu hình — nhập khóa mới để thay đổi",
+      "keyEmptyPlaceholder": "Nhập khóa (để trống = dùng .env máy chủ)",
+      "keyConfigured": "Đã cấu hình khóa API.",
+      "keyMissing": "Chưa cấu hình khóa API.",
+      "test": "Kiểm tra kết nối"
     }
   }
 }

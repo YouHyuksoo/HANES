@@ -7764,6 +7764,17 @@
       "cancel": "取消",
       "execute": "执行",
       "sqlLabel": "执行的 SQL"
+    },
+    "config": {
+      "provider": "提供商",
+      "model": "模型",
+      "enabled": "启用 AI 聊天",
+      "apiKey": "API 密钥",
+      "keySetPlaceholder": "已配置 — 输入新密钥以更改",
+      "keyEmptyPlaceholder": "输入密钥（留空则使用服务器 .env）",
+      "keyConfigured": "已配置 API 密钥。",
+      "keyMissing": "未配置 API 密钥。",
+      "test": "测试连接"
     }
   }
 }

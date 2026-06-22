@@ -7764,6 +7764,17 @@
       "cancel": "Cancel",
       "execute": "Execute",
       "sqlLabel": "Executed SQL"
+    },
+    "config": {
+      "provider": "Provider",
+      "model": "Model",
+      "enabled": "Enable AI Chat",
+      "apiKey": "API Key",
+      "keySetPlaceholder": "Configured — enter a new key to change",
+      "keyEmptyPlaceholder": "Enter key (empty = use server .env)",
+      "keyConfigured": "API key is configured.",
+      "keyMissing": "API key is not set.",
+      "test": "Test Connection"
     }
   }
 }

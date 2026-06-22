@@ -8,7 +8,7 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { AiSqlService } from './ai-sql.service';
-import { AiChatDto, AiExecuteSqlDto } from './dto/ai-chat.dto';
+import { AiChatDto, AiExecuteSqlDto, AiTestDto } from './dto/ai-chat.dto';
 
 @Controller('ai')
 export class AiController {
@@ -30,5 +30,10 @@ export class AiController {
   @Post('execute-sql')
   executeSql(@Body() dto: AiExecuteSqlDto) {
     return this.aiSqlService.executeApproved(dto.sql);
+  }
+
+  @Post('test')
+  test(@Body() dto: AiTestDto) {
+    return this.aiService.test(dto.provider, dto.model ?? '', dto.apiKey);
   }
 }

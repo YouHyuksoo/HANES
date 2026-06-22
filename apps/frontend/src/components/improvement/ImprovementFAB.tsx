@@ -96,15 +96,15 @@ export default function ImprovementFAB() {
         <button
           onClick={deactivate}
           title={t("improvement.exitHint")}
-          className="fixed bottom-6 right-6 z-[50] w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 bg-orange-500 hover:bg-orange-600 scale-110 text-white"
+          className="fixed bottom-5 right-3 z-[50] w-9 h-9 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 bg-orange-500 hover:bg-orange-600 scale-110 text-white"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       ) : (
         /* Speed dial: 호버 시 액션 펼침 */
-        <div className="group fixed bottom-6 right-6 z-[50] flex flex-col items-end">
+        <div className="group fixed bottom-5 right-3 z-[50] flex flex-col items-end">
           {/* 액션: 미호버 시 max-h-0으로 접어 공간/호버영역을 차지하지 않음 → 뒤 버튼 클릭 방해 방지 */}
-          <div className="flex max-h-0 flex-col items-end gap-2.5 overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover:mb-3 group-hover:max-h-72 group-hover:opacity-100">
+          <div className="flex max-h-0 max-w-0 flex-col items-end gap-2.5 overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover:mb-3 group-hover:max-h-72 group-hover:max-w-xs group-hover:opacity-100">
             {actions.map((action) => (
               <button
                 key={action.key}
@@ -112,11 +112,11 @@ export default function ImprovementFAB() {
                 title={action.label}
                 className="flex items-center gap-2"
               >
-                <span className="rounded-md bg-slate-900/90 px-2 py-1 text-xs font-medium text-white shadow whitespace-nowrap dark:bg-slate-700">
+                <span className="rounded-md bg-slate-900/90 px-2 py-1 text-[11px] font-medium text-white shadow whitespace-nowrap dark:bg-slate-700">
                   {action.label}
                 </span>
-                <span className={`flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg ${action.color}`}>
-                  <action.icon className="h-[18px] w-[18px]" />
+                <span className={`flex h-8 w-8 items-center justify-center rounded-full text-white shadow-lg ${action.color}`}>
+                  <action.icon className="h-3.5 w-3.5" />
                 </span>
               </button>
             ))}
@@ -125,9 +125,9 @@ export default function ImprovementFAB() {
           {/* 메인 FAB */}
           <button
             title={t("fab.menuTooltip", "메뉴")}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-transform duration-200 hover:bg-blue-700 group-hover:rotate-45"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-transform duration-200 hover:bg-blue-700 group-hover:rotate-45"
           >
-            <Plus className="h-6 w-6" />
+            <Plus className="h-5 w-5" />
           </button>
         </div>
       )}

@@ -23,6 +23,7 @@ import { useSysConfigStore } from '@/stores/sysConfigStore';
 import type { SysConfigItem } from '@/stores/sysConfigStore';
 import ConfigItemRow from '@/components/system/ConfigItemRow';
 import AddConfigModal from '@/components/system/AddConfigModal';
+import AiConfigPanel from '@/components/system/AiConfigPanel';
 
 /** 그룹 탭 정의 */
 const CONFIG_GROUPS = [
@@ -66,13 +67,6 @@ function ConfigPage() {
     return list as SysConfigItem[];
   }, [data]);
 
-  // AI 탭 상태 (키 설정 여부·모델). 키 원문은 반환되지 않는다.
-  const { data: aiStatusData } = useApiQuery<{ enabled: boolean; provider: string; model: string; keyConfigured: boolean }>(
-    ['ai-status'],
-    '/ai/status',
-    { staleTime: 30_000 },
-  );
-  const aiStatus = aiStatusData?.data;
 
   const changedCount = Object.keys(changes).length;
 
@@ -153,44 +147,33 @@ function ConfigPage() {
         })}
       </div>
 
-      {/* AI 탭: 키 설정 상태 배너 */}
-      {activeGroup === 'AI' && aiStatus && (
-        <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
-            aiStatus.keyConfigured
-              ? 'border-green-500 text-green-700 dark:text-green-400'
-              : 'border-amber-500 text-amber-700 dark:text-amber-400'
-          }`}
-        >
-          {aiStatus.keyConfigured
-            ? t('system.config.aiKeyOk', 'Mistral API 키가 설정되어 있습니다. (provider: {{provider}}, model: {{model}})', { provider: aiStatus.provider, model: aiStatus.model })
-            : t('system.config.aiKeyMissing', 'MISTRAL_API_KEY가 설정되지 않았습니다. 서버 apps/backend/.env에 키를 추가한 뒤 백엔드를 재시작하세요.')}
-        </div>
+      {/* 설정 목록 (AI 탭은 전용 패널) */}
+      {activeGroup === 'AI' ? (
+        <AiConfigPanel />
+      ) : (
+        <Card>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8 text-text-muted">{t('common.loading')}</div>
+            ) : configs.length === 0 ? (
+              <div className="text-center py-8 text-text-muted">{t('common.noData')}</div>
+            ) : (
+              <div className="divide-y divide-border">
+                {configs.map((cfg) => (
+                  <ConfigItemRow
+                    key={getConfigId(cfg)}
+                    config={cfg}
+                    currentValue={changes[getConfigId(cfg)] ?? cfg.configValue}
+                    isChanged={getConfigId(cfg) in changes}
+                    onValueChange={(val) => handleValueChange(getConfigId(cfg), val)}
+                    onDelete={() => setDeleteTarget(getConfigId(cfg))}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
-
-      {/* 설정 목록 */}
-      <Card>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-text-muted">{t('common.loading')}</div>
-          ) : configs.length === 0 ? (
-            <div className="text-center py-8 text-text-muted">{t('common.noData')}</div>
-          ) : (
-            <div className="divide-y divide-border">
-              {configs.map((cfg) => (
-                <ConfigItemRow
-                  key={getConfigId(cfg)}
-                  config={cfg}
-                  currentValue={changes[getConfigId(cfg)] ?? cfg.configValue}
-                  isChanged={getConfigId(cfg) in changes}
-                  onValueChange={(val) => handleValueChange(getConfigId(cfg), val)}
-                  onDelete={() => setDeleteTarget(getConfigId(cfg))}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <AddConfigModal
         isOpen={showAddModal}

@@ -7768,6 +7768,17 @@
       "cancel": "취소",
       "execute": "실행",
       "sqlLabel": "실행된 SQL"
+    },
+    "config": {
+      "provider": "AI 제공자",
+      "model": "모델",
+      "enabled": "AI 채팅 활성화",
+      "apiKey": "API 키",
+      "keySetPlaceholder": "설정됨 — 변경하려면 새 키 입력",
+      "keyEmptyPlaceholder": "키 입력 (비우면 서버 .env 사용)",
+      "keyConfigured": "키가 설정되어 있습니다.",
+      "keyMissing": "키가 설정되지 않았습니다.",
+      "test": "연결 테스트"
     }
   }
 }
