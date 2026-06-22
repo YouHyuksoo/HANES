@@ -1,0 +1,5484 @@
+{
+  "status": "FAIL",
+  "reportDate": "2026-06-23-all-menu-sweep-1-rest",
+  "baseUrl": "http://localhost:3002",
+  "apiUrl": "http://localhost:3003/api/v1",
+  "health": {
+    "frontend": {
+      "ok": true,
+      "status": 200
+    },
+    "backend": {
+      "ok": true,
+      "status": 200
+    }
+  },
+  "menuOffset": 86,
+  "total": 70,
+  "pass": 0,
+  "fail": 70,
+  "indexPath": "C:\\Project\\HANES\\docs\\reports\\hanes-all-menu-scenario-qa-2026-06-23-all-menu-sweep-1-rest\\index.html",
+  "resultPath": "C:\\Project\\HANES\\docs\\reports\\hanes-all-menu-scenario-qa-2026-06-23-all-menu-sweep-1-rest\\all-menu-result.json",
+  "pages": [
+    {
+      "code": "QC_REWORK_INSPECT",
+      "labelKey": "menu.quality.reworkInspect",
+      "path": "/quality/rework-inspect",
+      "source": "menuConfig",
+      "slug": "qc-rework-inspect-quality-rework-inspect",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/rework-inspect",
+      "routeStatus": null,
+      "elapsedMs": 45851,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/rework-inspect",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/rework-inspect\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-rework-inspect-quality-rework-inspect.html",
+      "pageResult": "page-results/qc-rework-inspect-quality-rework-inspect.json"
+    },
+    {
+      "code": "QC_INSPECT",
+      "labelKey": "menu.quality.inspect",
+      "path": "/quality/inspect",
+      "source": "menuConfig",
+      "slug": "qc-inspect-quality-inspect",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/inspect",
+      "routeStatus": null,
+      "elapsedMs": 46490,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/inspect",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/inspect\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-inspect-quality-inspect.html",
+      "pageResult": "page-results/qc-inspect-quality-inspect.json"
+    },
+    {
+      "code": "QC_REQUEST_INSPECT",
+      "labelKey": "menu.quality.requestInspect",
+      "path": "/quality/request-inspect",
+      "source": "menuConfig",
+      "slug": "qc-request-inspect-quality-request-inspect",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/request-inspect",
+      "routeStatus": null,
+      "elapsedMs": 47307,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/request-inspect",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/request-inspect\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-request-inspect-quality-request-inspect.html",
+      "pageResult": "page-results/qc-request-inspect-quality-request-inspect.json"
+    },
+    {
+      "code": "QC_SELF_INSPECT_HISTORY",
+      "labelKey": "menu.quality.selfInspectHistory",
+      "path": "/quality/self-inspect-history",
+      "source": "menuConfig",
+      "slug": "qc-self-inspect-history-quality-self-inspect-history",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/self-inspect-history",
+      "routeStatus": null,
+      "elapsedMs": 45762,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/self-inspect-history",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/self-inspect-history\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-self-inspect-history-quality-self-inspect-history.html",
+      "pageResult": "page-results/qc-self-inspect-history-quality-self-inspect-history.json"
+    },
+    {
+      "code": "QC_SAMPLE_INSPECT",
+      "labelKey": "menu.production.sampleInspect",
+      "path": "/production/sample-inspect",
+      "source": "menuConfig",
+      "slug": "qc-sample-inspect-production-sample-inspect",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/production/sample-inspect",
+      "routeStatus": null,
+      "elapsedMs": 45751,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/production/sample-inspect",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/production/sample-inspect\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-sample-inspect-production-sample-inspect.html",
+      "pageResult": "page-results/qc-sample-inspect-production-sample-inspect.json"
+    },
+    {
+      "code": "QC_OQC",
+      "labelKey": "menu.quality.oqc",
+      "path": "/quality/oqc",
+      "source": "menuConfig",
+      "slug": "qc-oqc-quality-oqc",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/oqc",
+      "routeStatus": null,
+      "elapsedMs": 46400,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/oqc",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/oqc\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-oqc-quality-oqc.html",
+      "pageResult": "page-results/qc-oqc-quality-oqc.json"
+    },
+    {
+      "code": "QC_OQC_HISTORY",
+      "labelKey": "menu.quality.oqcHistory",
+      "path": "/quality/oqc-history",
+      "source": "menuConfig",
+      "slug": "qc-oqc-history-quality-oqc-history",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/oqc-history",
+      "routeStatus": null,
+      "elapsedMs": 46440,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/oqc-history",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/oqc-history\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-oqc-history-quality-oqc-history.html",
+      "pageResult": "page-results/qc-oqc-history-quality-oqc-history.json"
+    },
+    {
+      "code": "QC_TRACE",
+      "labelKey": "menu.quality.trace",
+      "path": "/quality/trace",
+      "source": "menuConfig",
+      "slug": "qc-trace-quality-trace",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/trace",
+      "routeStatus": null,
+      "elapsedMs": 46699,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/trace",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/trace\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-trace-quality-trace.html",
+      "pageResult": "page-results/qc-trace-quality-trace.json"
+    },
+    {
+      "code": "QC_CHANGE",
+      "labelKey": "menu.quality.changeControl",
+      "path": "/quality/change-control",
+      "source": "menuConfig",
+      "slug": "qc-change-quality-change-control",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/change-control",
+      "routeStatus": null,
+      "elapsedMs": 48414,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/change-control",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/change-control\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-change-quality-change-control.html",
+      "pageResult": "page-results/qc-change-quality-change-control.json"
+    },
+    {
+      "code": "QC_COMPLAINT",
+      "labelKey": "menu.quality.complaint",
+      "path": "/quality/complaint",
+      "source": "menuConfig",
+      "slug": "qc-complaint-quality-complaint",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/complaint",
+      "routeStatus": null,
+      "elapsedMs": 45906,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/complaint",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/complaint\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-complaint-quality-complaint.html",
+      "pageResult": "page-results/qc-complaint-quality-complaint.json"
+    },
+    {
+      "code": "QC_CAPA",
+      "labelKey": "menu.quality.capa",
+      "path": "/quality/capa",
+      "source": "menuConfig",
+      "slug": "qc-capa-quality-capa",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/capa",
+      "routeStatus": null,
+      "elapsedMs": 48684,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/capa",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/capa\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-capa-quality-capa.html",
+      "pageResult": "page-results/qc-capa-quality-capa.json"
+    },
+    {
+      "code": "QC_FAI",
+      "labelKey": "menu.quality.fai",
+      "path": "/quality/fai",
+      "source": "menuConfig",
+      "slug": "qc-fai-quality-fai",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/fai",
+      "routeStatus": null,
+      "elapsedMs": 46619,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/fai",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/fai\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-fai-quality-fai.html",
+      "pageResult": "page-results/qc-fai-quality-fai.json"
+    },
+    {
+      "code": "QC_PPAP",
+      "labelKey": "menu.quality.ppap",
+      "path": "/quality/ppap",
+      "source": "menuConfig",
+      "slug": "qc-ppap-quality-ppap",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/ppap",
+      "routeStatus": null,
+      "elapsedMs": 47364,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/ppap",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/ppap\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-ppap-quality-ppap.html",
+      "pageResult": "page-results/qc-ppap-quality-ppap.json"
+    },
+    {
+      "code": "QC_SPC",
+      "labelKey": "menu.quality.spc",
+      "path": "/quality/spc",
+      "source": "menuConfig",
+      "slug": "qc-spc-quality-spc",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/spc",
+      "routeStatus": null,
+      "elapsedMs": 46048,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/spc",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/spc\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-spc-quality-spc.html",
+      "pageResult": "page-results/qc-spc-quality-spc.json"
+    },
+    {
+      "code": "QC_CONTROL_PLAN",
+      "labelKey": "menu.quality.controlPlan",
+      "path": "/quality/control-plan",
+      "source": "menuConfig",
+      "slug": "qc-control-plan-quality-control-plan",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/control-plan",
+      "routeStatus": null,
+      "elapsedMs": 45786,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/control-plan",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/control-plan\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-control-plan-quality-control-plan.html",
+      "pageResult": "page-results/qc-control-plan-quality-control-plan.json"
+    },
+    {
+      "code": "QC_AUDIT",
+      "labelKey": "menu.quality.audit",
+      "path": "/quality/audit",
+      "source": "menuConfig",
+      "slug": "qc-audit-quality-audit",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/audit",
+      "routeStatus": null,
+      "elapsedMs": 46958,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/audit",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/audit\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/qc-audit-quality-audit.html",
+      "pageResult": "page-results/qc-audit-quality-audit.json"
+    },
+    {
+      "code": "SYS_TRAINING",
+      "labelKey": "menu.system.training",
+      "path": "/system/training",
+      "source": "menuConfig",
+      "slug": "sys-training-system-training",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/training",
+      "routeStatus": null,
+      "elapsedMs": 58934,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/training",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/training\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-training-system-training.html",
+      "pageResult": "page-results/sys-training-system-training.json"
+    },
+    {
+      "code": "EQ_MOLD_MGMT",
+      "labelKey": "menu.equipment.mold",
+      "path": "/equipment/mold-mgmt",
+      "source": "menuConfig",
+      "slug": "eq-mold-mgmt-equipment-mold-mgmt",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/mold-mgmt",
+      "routeStatus": null,
+      "elapsedMs": 47089,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/mold-mgmt",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/mold-mgmt\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/eq-mold-mgmt-equipment-mold-mgmt.html",
+      "pageResult": "page-results/eq-mold-mgmt-equipment-mold-mgmt.json"
+    },
+    {
+      "code": "EQUIP_INSPECT_ITEM_MASTER",
+      "labelKey": "menu.equipment.inspectItemMaster",
+      "path": "/master/equip-inspect-item",
+      "source": "menuConfig",
+      "slug": "equip-inspect-item-master-master-equip-inspect-item",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/master/equip-inspect-item",
+      "routeStatus": null,
+      "elapsedMs": 46865,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/master/equip-inspect-item",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/master/equip-inspect-item\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-inspect-item-master-master-equip-inspect-item.html",
+      "pageResult": "page-results/equip-inspect-item-master-master-equip-inspect-item.json"
+    },
+    {
+      "code": "EQUIP_INSPECT_ITEM",
+      "labelKey": "menu.master.equipInspect",
+      "path": "/master/equip-inspect",
+      "source": "menuConfig",
+      "slug": "equip-inspect-item-master-equip-inspect",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/master/equip-inspect",
+      "routeStatus": null,
+      "elapsedMs": 50784,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/master/equip-inspect",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/master/equip-inspect\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-inspect-item-master-equip-inspect.html",
+      "pageResult": "page-results/equip-inspect-item-master-equip-inspect.json"
+    },
+    {
+      "code": "EQUIP_INSPECT_CALENDAR",
+      "labelKey": "menu.equipment.dailyInspectCalendar",
+      "path": "/equipment/inspect-calendar",
+      "source": "menuConfig",
+      "slug": "equip-inspect-calendar-equipment-inspect-calendar",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/inspect-calendar",
+      "routeStatus": null,
+      "elapsedMs": 53978,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/inspect-calendar",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/inspect-calendar\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-inspect-calendar-equipment-inspect-calendar.html",
+      "pageResult": "page-results/equip-inspect-calendar-equipment-inspect-calendar.json"
+    },
+    {
+      "code": "EQUIP_DAILY",
+      "labelKey": "menu.equipment.dailyInspect",
+      "path": "/equipment/daily-inspect",
+      "source": "menuConfig",
+      "slug": "equip-daily-equipment-daily-inspect",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/daily-inspect",
+      "routeStatus": null,
+      "elapsedMs": 46085,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/daily-inspect",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/daily-inspect\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-daily-equipment-daily-inspect.html",
+      "pageResult": "page-results/equip-daily-equipment-daily-inspect.json"
+    },
+    {
+      "code": "EQUIP_PERIODIC_CALENDAR",
+      "labelKey": "menu.equipment.periodicInspectCalendar",
+      "path": "/equipment/periodic-inspect-calendar",
+      "source": "menuConfig",
+      "slug": "equip-periodic-calendar-equipment-periodic-inspect-calendar",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/periodic-inspect-calendar",
+      "routeStatus": null,
+      "elapsedMs": 48894,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/periodic-inspect-calendar",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/periodic-inspect-calendar\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-periodic-calendar-equipment-periodic-inspect-calendar.html",
+      "pageResult": "page-results/equip-periodic-calendar-equipment-periodic-inspect-calendar.json"
+    },
+    {
+      "code": "EQUIP_PERIODIC",
+      "labelKey": "menu.equipment.periodicInspect",
+      "path": "/equipment/periodic-inspect",
+      "source": "menuConfig",
+      "slug": "equip-periodic-equipment-periodic-inspect",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/periodic-inspect",
+      "routeStatus": null,
+      "elapsedMs": 46047,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/periodic-inspect",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/periodic-inspect\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-periodic-equipment-periodic-inspect.html",
+      "pageResult": "page-results/equip-periodic-equipment-periodic-inspect.json"
+    },
+    {
+      "code": "EQUIP_HISTORY",
+      "labelKey": "menu.equipment.inspectHistory",
+      "path": "/equipment/inspect-history",
+      "source": "menuConfig",
+      "slug": "equip-history-equipment-inspect-history",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/inspect-history",
+      "routeStatus": null,
+      "elapsedMs": 46142,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/inspect-history",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/inspect-history\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-history-equipment-inspect-history.html",
+      "pageResult": "page-results/equip-history-equipment-inspect-history.json"
+    },
+    {
+      "code": "EQUIP_PM_PLAN",
+      "labelKey": "menu.equipment.pmPlan",
+      "path": "/equipment/pm-plan",
+      "source": "menuConfig",
+      "slug": "equip-pm-plan-equipment-pm-plan",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/pm-plan",
+      "routeStatus": null,
+      "elapsedMs": 46832,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/pm-plan",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/pm-plan\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-pm-plan-equipment-pm-plan.html",
+      "pageResult": "page-results/equip-pm-plan-equipment-pm-plan.json"
+    },
+    {
+      "code": "EQUIP_PM_CALENDAR",
+      "labelKey": "menu.equipment.pmCalendar",
+      "path": "/equipment/pm-calendar",
+      "source": "menuConfig",
+      "slug": "equip-pm-calendar-equipment-pm-calendar",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/pm-calendar",
+      "routeStatus": null,
+      "elapsedMs": 46626,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/pm-calendar",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/pm-calendar\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-pm-calendar-equipment-pm-calendar.html",
+      "pageResult": "page-results/equip-pm-calendar-equipment-pm-calendar.json"
+    },
+    {
+      "code": "EQUIP_PM_RESULT",
+      "labelKey": "menu.equipment.pmResult",
+      "path": "/equipment/pm-result",
+      "source": "menuConfig",
+      "slug": "equip-pm-result-equipment-pm-result",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/pm-result",
+      "routeStatus": null,
+      "elapsedMs": 45926,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/pm-result",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/pm-result\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/equip-pm-result-equipment-pm-result.html",
+      "pageResult": "page-results/equip-pm-result-equipment-pm-result.json"
+    },
+    {
+      "code": "GAUGE_MASTER",
+      "labelKey": "menu.gauge.master",
+      "path": "/master/gauge",
+      "source": "menuConfig",
+      "slug": "gauge-master-master-gauge",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/master/gauge",
+      "routeStatus": null,
+      "elapsedMs": 47948,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/master/gauge",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/master/gauge\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/gauge-master-master-gauge.html",
+      "pageResult": "page-results/gauge-master-master-gauge.json"
+    },
+    {
+      "code": "GAUGE_CALIBRATION",
+      "labelKey": "menu.gauge.calibration",
+      "path": "/quality/msa",
+      "source": "menuConfig",
+      "slug": "gauge-calibration-quality-msa",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/quality/msa",
+      "routeStatus": null,
+      "elapsedMs": 48771,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/quality/msa",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/msa\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/gauge-calibration-quality-msa.html",
+      "pageResult": "page-results/gauge-calibration-quality-msa.json"
+    },
+    {
+      "code": "GAUGE_CALIBRATION_HISTORY",
+      "labelKey": "menu.gauge.calibrationHistory",
+      "path": "/equipment/calibration-history",
+      "source": "menuConfig",
+      "slug": "gauge-calibration-history-equipment-calibration-history",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/equipment/calibration-history",
+      "routeStatus": null,
+      "elapsedMs": 63406,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/equipment/calibration-history",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/calibration-history\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/gauge-calibration-history-equipment-calibration-history.html",
+      "pageResult": "page-results/gauge-calibration-history-equipment-calibration-history.json"
+    },
+    {
+      "code": "SHIP_PACK_RESULT",
+      "labelKey": "menu.production.packResult",
+      "path": "/production/pack-result",
+      "source": "menuConfig",
+      "slug": "ship-pack-result-production-pack-result",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/production/pack-result",
+      "routeStatus": null,
+      "elapsedMs": 46312,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/production/pack-result",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/production/pack-result\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-pack-result-production-pack-result.html",
+      "pageResult": "page-results/ship-pack-result-production-pack-result.json"
+    },
+    {
+      "code": "SHIP_PACK",
+      "labelKey": "menu.shipping.pack",
+      "path": "/shipping/pack",
+      "source": "menuConfig",
+      "slug": "ship-pack-shipping-pack",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/shipping/pack",
+      "routeStatus": null,
+      "elapsedMs": 48886,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/shipping/pack",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/shipping/pack\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-pack-shipping-pack.html",
+      "pageResult": "page-results/ship-pack-shipping-pack.json"
+    },
+    {
+      "code": "SHIP_ORDER",
+      "labelKey": "menu.shipping.order",
+      "path": "/shipping/order",
+      "source": "menuConfig",
+      "slug": "ship-order-shipping-order",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/shipping/order",
+      "routeStatus": null,
+      "elapsedMs": 48209,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/shipping/order",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/shipping/order\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-order-shipping-order.html",
+      "pageResult": "page-results/ship-order-shipping-order.json"
+    },
+    {
+      "code": "SHIP_BOX_STOCK",
+      "labelKey": "menu.shipping.boxStock",
+      "path": "/shipping/box-stock",
+      "source": "menuConfig",
+      "slug": "ship-box-stock-shipping-box-stock",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/shipping/box-stock",
+      "routeStatus": null,
+      "elapsedMs": 50702,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/shipping/box-stock",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/shipping/box-stock\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-box-stock-shipping-box-stock.html",
+      "pageResult": "page-results/ship-box-stock-shipping-box-stock.json"
+    },
+    {
+      "code": "SHIP_CONFIRM",
+      "labelKey": "menu.shipping.confirm",
+      "path": "/shipping/confirm",
+      "source": "menuConfig",
+      "slug": "ship-confirm-shipping-confirm",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/shipping/confirm",
+      "routeStatus": null,
+      "elapsedMs": 47290,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/shipping/confirm",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/shipping/confirm\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-confirm-shipping-confirm.html",
+      "pageResult": "page-results/ship-confirm-shipping-confirm.json"
+    },
+    {
+      "code": "SHIP_PALLET",
+      "labelKey": "menu.shipping.pallet",
+      "path": "/shipping/pallet",
+      "source": "menuConfig",
+      "slug": "ship-pallet-shipping-pallet",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/shipping/pallet",
+      "routeStatus": null,
+      "elapsedMs": 48212,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/shipping/pallet",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/shipping/pallet\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-pallet-shipping-pallet.html",
+      "pageResult": "page-results/ship-pallet-shipping-pallet.json"
+    },
+    {
+      "code": "SHIP_PALLET_SHIP",
+      "labelKey": "menu.shipping.palletShip",
+      "path": "/shipping/pallet-ship",
+      "source": "menuConfig",
+      "slug": "ship-pallet-ship-shipping-pallet-ship",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/shipping/pallet-ship",
+      "routeStatus": null,
+      "elapsedMs": 46152,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/shipping/pallet-ship",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/shipping/pallet-ship\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-pallet-ship-shipping-pallet-ship.html",
+      "pageResult": "page-results/ship-pallet-ship-shipping-pallet-ship.json"
+    },
+    {
+      "code": "SHIP_HISTORY",
+      "labelKey": "menu.shipping.history",
+      "path": "/shipping/history",
+      "source": "menuConfig",
+      "slug": "ship-history-shipping-history",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/shipping/history",
+      "routeStatus": null,
+      "elapsedMs": 50046,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/shipping/history",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/shipping/history\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-history-shipping-history.html",
+      "pageResult": "page-results/ship-history-shipping-history.json"
+    },
+    {
+      "code": "SHIP_RETURN",
+      "labelKey": "menu.shipping.return",
+      "path": "/shipping/return",
+      "source": "menuConfig",
+      "slug": "ship-return-shipping-return",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/shipping/return",
+      "routeStatus": null,
+      "elapsedMs": 46182,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/shipping/return",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/shipping/return\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/ship-return-shipping-return.html",
+      "pageResult": "page-results/ship-return-shipping-return.json"
+    },
+    {
+      "code": "SALES_CUST_PO",
+      "labelKey": "menu.sales.customerPo",
+      "path": "/sales/customer-po",
+      "source": "menuConfig",
+      "slug": "sales-cust-po-sales-customer-po",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/sales/customer-po",
+      "routeStatus": null,
+      "elapsedMs": 45973,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/sales/customer-po",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/sales/customer-po\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sales-cust-po-sales-customer-po.html",
+      "pageResult": "page-results/sales-cust-po-sales-customer-po.json"
+    },
+    {
+      "code": "SALES_CUST_PO_STATUS",
+      "labelKey": "menu.sales.customerPoStatus",
+      "path": "/sales/customer-po-status",
+      "source": "menuConfig",
+      "slug": "sales-cust-po-status-sales-customer-po-status",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/sales/customer-po-status",
+      "routeStatus": null,
+      "elapsedMs": 46972,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/sales/customer-po-status",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/sales/customer-po-status\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sales-cust-po-status-sales-customer-po-status.html",
+      "pageResult": "page-results/sales-cust-po-status-sales-customer-po-status.json"
+    },
+    {
+      "code": "CUST_ENTRY",
+      "labelKey": "menu.customs.entry",
+      "path": "/customs/entry",
+      "source": "menuConfig",
+      "slug": "cust-entry-customs-entry",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/customs/entry",
+      "routeStatus": null,
+      "elapsedMs": 48507,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/customs/entry",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/customs/entry\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cust-entry-customs-entry.html",
+      "pageResult": "page-results/cust-entry-customs-entry.json"
+    },
+    {
+      "code": "CUST_STOCK",
+      "labelKey": "menu.customs.stock",
+      "path": "/customs/stock",
+      "source": "menuConfig",
+      "slug": "cust-stock-customs-stock",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/customs/stock",
+      "routeStatus": null,
+      "elapsedMs": 46984,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/customs/stock",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/customs/stock\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cust-stock-customs-stock.html",
+      "pageResult": "page-results/cust-stock-customs-stock.json"
+    },
+    {
+      "code": "CUST_USAGE",
+      "labelKey": "menu.customs.usage",
+      "path": "/customs/usage",
+      "source": "menuConfig",
+      "slug": "cust-usage-customs-usage",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/customs/usage",
+      "routeStatus": null,
+      "elapsedMs": 59253,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/customs/usage",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/customs/usage\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cust-usage-customs-usage.html",
+      "pageResult": "page-results/cust-usage-customs-usage.json"
+    },
+    {
+      "code": "CONS_MASTER",
+      "labelKey": "menu.consumables.master",
+      "path": "/consumables/master",
+      "source": "menuConfig",
+      "slug": "cons-master-consumables-master",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/consumables/master",
+      "routeStatus": null,
+      "elapsedMs": 46854,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/consumables/master",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/consumables/master\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cons-master-consumables-master.html",
+      "pageResult": "page-results/cons-master-consumables-master.json"
+    },
+    {
+      "code": "CONS_LABEL",
+      "labelKey": "menu.consumables.label",
+      "path": "/consumables/label",
+      "source": "menuConfig",
+      "slug": "cons-label-consumables-label",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/consumables/label",
+      "routeStatus": null,
+      "elapsedMs": 47219,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/consumables/label",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/consumables/label\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cons-label-consumables-label.html",
+      "pageResult": "page-results/cons-label-consumables-label.json"
+    },
+    {
+      "code": "CONS_RECEIVING",
+      "labelKey": "menu.consumables.receiving",
+      "path": "/consumables/receiving",
+      "source": "menuConfig",
+      "slug": "cons-receiving-consumables-receiving",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/consumables/receiving",
+      "routeStatus": null,
+      "elapsedMs": 57192,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/consumables/receiving",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/consumables/receiving\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cons-receiving-consumables-receiving.html",
+      "pageResult": "page-results/cons-receiving-consumables-receiving.json"
+    },
+    {
+      "code": "CONS_ISSUING",
+      "labelKey": "menu.consumables.issuing",
+      "path": "/consumables/issuing",
+      "source": "menuConfig",
+      "slug": "cons-issuing-consumables-issuing",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/consumables/issuing",
+      "routeStatus": null,
+      "elapsedMs": 56265,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/consumables/issuing",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/consumables/issuing\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cons-issuing-consumables-issuing.html",
+      "pageResult": "page-results/cons-issuing-consumables-issuing.json"
+    },
+    {
+      "code": "CONS_STOCK",
+      "labelKey": "menu.consumables.stock",
+      "path": "/consumables/stock",
+      "source": "menuConfig",
+      "slug": "cons-stock-consumables-stock",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/consumables/stock",
+      "routeStatus": null,
+      "elapsedMs": 53034,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/consumables/stock",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/consumables/stock\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cons-stock-consumables-stock.html",
+      "pageResult": "page-results/cons-stock-consumables-stock.json"
+    },
+    {
+      "code": "CONS_LIFE",
+      "labelKey": "menu.consumables.life",
+      "path": "/consumables/life",
+      "source": "menuConfig",
+      "slug": "cons-life-consumables-life",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/consumables/life",
+      "routeStatus": null,
+      "elapsedMs": 46863,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/consumables/life",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/consumables/life\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cons-life-consumables-life.html",
+      "pageResult": "page-results/cons-life-consumables-life.json"
+    },
+    {
+      "code": "CONS_MOUNT",
+      "labelKey": "menu.consumables.mount",
+      "path": "/consumables/mount",
+      "source": "menuConfig",
+      "slug": "cons-mount-consumables-mount",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/consumables/mount",
+      "routeStatus": null,
+      "elapsedMs": 46541,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/consumables/mount",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/consumables/mount\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/cons-mount-consumables-mount.html",
+      "pageResult": "page-results/cons-mount-consumables-mount.json"
+    },
+    {
+      "code": "OUT_VENDOR",
+      "labelKey": "menu.outsourcing.vendor",
+      "path": "/outsourcing/vendor",
+      "source": "menuConfig",
+      "slug": "out-vendor-outsourcing-vendor",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/outsourcing/vendor",
+      "routeStatus": null,
+      "elapsedMs": 49685,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/outsourcing/vendor",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/outsourcing/vendor\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/out-vendor-outsourcing-vendor.html",
+      "pageResult": "page-results/out-vendor-outsourcing-vendor.json"
+    },
+    {
+      "code": "OUT_ORDER",
+      "labelKey": "menu.outsourcing.order",
+      "path": "/outsourcing/order",
+      "source": "menuConfig",
+      "slug": "out-order-outsourcing-order",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/outsourcing/order",
+      "routeStatus": null,
+      "elapsedMs": 46828,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/outsourcing/order",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/outsourcing/order\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/out-order-outsourcing-order.html",
+      "pageResult": "page-results/out-order-outsourcing-order.json"
+    },
+    {
+      "code": "OUT_RECEIVE",
+      "labelKey": "menu.outsourcing.receive",
+      "path": "/outsourcing/receive",
+      "source": "menuConfig",
+      "slug": "out-receive-outsourcing-receive",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/outsourcing/receive",
+      "routeStatus": null,
+      "elapsedMs": 48487,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/outsourcing/receive",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/outsourcing/receive\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/out-receive-outsourcing-receive.html",
+      "pageResult": "page-results/out-receive-outsourcing-receive.json"
+    },
+    {
+      "code": "IF_DASHBOARD",
+      "labelKey": "menu.interface.dashboard",
+      "path": "/interface/dashboard",
+      "source": "menuConfig",
+      "slug": "if-dashboard-interface-dashboard",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/interface/dashboard",
+      "routeStatus": null,
+      "elapsedMs": 47258,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/interface/dashboard",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/interface/dashboard\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/if-dashboard-interface-dashboard.html",
+      "pageResult": "page-results/if-dashboard-interface-dashboard.json"
+    },
+    {
+      "code": "IF_LOG",
+      "labelKey": "menu.interface.log",
+      "path": "/interface/log",
+      "source": "menuConfig",
+      "slug": "if-log-interface-log",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/interface/log",
+      "routeStatus": null,
+      "elapsedMs": 48607,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/interface/log",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/interface/log\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/if-log-interface-log.html",
+      "pageResult": "page-results/if-log-interface-log.json"
+    },
+    {
+      "code": "IF_MANUAL",
+      "labelKey": "menu.interface.manual",
+      "path": "/interface/manual",
+      "source": "menuConfig",
+      "slug": "if-manual-interface-manual",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/interface/manual",
+      "routeStatus": null,
+      "elapsedMs": 46114,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/interface/manual",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/interface/manual\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/if-manual-interface-manual.html",
+      "pageResult": "page-results/if-manual-interface-manual.json"
+    },
+    {
+      "code": "SYS_COMPANY",
+      "labelKey": "menu.master.company",
+      "path": "/master/company",
+      "source": "menuConfig",
+      "slug": "sys-company-master-company",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/master/company",
+      "routeStatus": null,
+      "elapsedMs": 46396,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/master/company",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/master/company\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-company-master-company.html",
+      "pageResult": "page-results/sys-company-master-company.json"
+    },
+    {
+      "code": "SYS_DEPT",
+      "labelKey": "menu.system.department",
+      "path": "/system/department",
+      "source": "menuConfig",
+      "slug": "sys-dept-system-department",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/department",
+      "routeStatus": null,
+      "elapsedMs": 47704,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/department",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/department\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-dept-system-department.html",
+      "pageResult": "page-results/sys-dept-system-department.json"
+    },
+    {
+      "code": "SYS_USER",
+      "labelKey": "menu.system.users",
+      "path": "/system/users",
+      "source": "menuConfig",
+      "slug": "sys-user-system-users",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/users",
+      "routeStatus": null,
+      "elapsedMs": 48621,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/users",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/users\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-user-system-users.html",
+      "pageResult": "page-results/sys-user-system-users.json"
+    },
+    {
+      "code": "SYS_ROLE",
+      "labelKey": "menu.system.roles",
+      "path": "/system/roles",
+      "source": "menuConfig",
+      "slug": "sys-role-system-roles",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/roles",
+      "routeStatus": null,
+      "elapsedMs": 46327,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/roles",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/roles\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-role-system-roles.html",
+      "pageResult": "page-results/sys-role-system-roles.json"
+    },
+    {
+      "code": "SYS_PDA_ROLE",
+      "labelKey": "menu.system.pdaRoles",
+      "path": "/system/pda-roles",
+      "source": "menuConfig",
+      "slug": "sys-pda-role-system-pda-roles",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/pda-roles",
+      "routeStatus": null,
+      "elapsedMs": 52105,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/pda-roles",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/pda-roles\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-pda-role-system-pda-roles.html",
+      "pageResult": "page-results/sys-pda-role-system-pda-roles.json"
+    },
+    {
+      "code": "SYS_COMM",
+      "labelKey": "menu.system.commConfig",
+      "path": "/system/comm-config",
+      "source": "menuConfig",
+      "slug": "sys-comm-system-comm-config",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/comm-config",
+      "routeStatus": null,
+      "elapsedMs": 50837,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/comm-config",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/comm-config\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-comm-system-comm-config.html",
+      "pageResult": "page-results/sys-comm-system-comm-config.json"
+    },
+    {
+      "code": "SYS_CONFIG",
+      "labelKey": "menu.system.config",
+      "path": "/system/config",
+      "source": "menuConfig",
+      "slug": "sys-config-system-config",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/config",
+      "routeStatus": null,
+      "elapsedMs": 48445,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/config",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/config\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-config-system-config.html",
+      "pageResult": "page-results/sys-config-system-config.json"
+    },
+    {
+      "code": "SYS_CODE",
+      "labelKey": "menu.master.code",
+      "path": "/master/code",
+      "source": "menuConfig",
+      "slug": "sys-code-master-code",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/master/code",
+      "routeStatus": null,
+      "elapsedMs": 48082,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/master/code",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/master/code\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-code-master-code.html",
+      "pageResult": "page-results/sys-code-master-code.json"
+    },
+    {
+      "code": "SYS_SCHEDULER",
+      "labelKey": "scheduler.title",
+      "path": "/system/scheduler",
+      "source": "menuConfig",
+      "slug": "sys-scheduler-system-scheduler",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/scheduler",
+      "routeStatus": null,
+      "elapsedMs": 55068,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/scheduler",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/scheduler\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-scheduler-system-scheduler.html",
+      "pageResult": "page-results/sys-scheduler-system-scheduler.json"
+    },
+    {
+      "code": "SYS_ER_VIEW",
+      "labelKey": "menu.system.erView",
+      "path": "/system/er-view",
+      "source": "menuConfig",
+      "slug": "sys-er-view-system-er-view",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/er-view",
+      "routeStatus": null,
+      "elapsedMs": 47922,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/er-view",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/er-view\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-er-view-system-er-view.html",
+      "pageResult": "page-results/sys-er-view-system-er-view.json"
+    },
+    {
+      "code": "SYS_MENU_CATEGORY",
+      "labelKey": "menu.system.menuCategory",
+      "path": "/system/menu-categories",
+      "source": "menuConfig",
+      "slug": "sys-menu-category-system-menu-categories",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/menu-categories",
+      "routeStatus": null,
+      "elapsedMs": 47204,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/menu-categories",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/menu-categories\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-menu-category-system-menu-categories.html",
+      "pageResult": "page-results/sys-menu-category-system-menu-categories.json"
+    },
+    {
+      "code": "SYS_IMPR_REQ",
+      "labelKey": "menu.system.improvementRequests",
+      "path": "/system/improvement-requests",
+      "source": "menuConfig",
+      "slug": "sys-impr-req-system-improvement-requests",
+      "title": "",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3002/system/improvement-requests",
+      "routeStatus": null,
+      "elapsedMs": 49815,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/companies/public/plants?company=40",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/system/improvement-requests",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [],
+      "metrics": {
+        "buttons": 0,
+        "inputs": 0,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": null,
+      "bodyPreview": "",
+      "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/improvement-requests\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "pageReport": "pages/sys-impr-req-system-improvement-requests.html",
+      "pageResult": "page-results/sys-impr-req-system-improvement-requests.json"
+    }
+  ]
+}

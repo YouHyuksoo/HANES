@@ -1,0 +1,285 @@
+{
+  "code": "SYS_DEPT",
+  "labelKey": "menu.system.department",
+  "path": "/system/department",
+  "source": "menuConfig",
+  "slug": "sys-dept-system-department",
+  "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+  "status": "PASS",
+  "routeUrl": "http://localhost:3012/system/department",
+  "routeStatus": 200,
+  "prewarm": {
+    "ok": true,
+    "status": 200,
+    "elapsedMs": 209
+  },
+  "elapsedMs": 3286,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/departments?limit=200",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/api/db-info",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [
+    {
+      "name": "화면 로드",
+      "handling": "GET /system/department",
+      "status": "실행",
+      "note": "HTTP 200"
+    },
+    {
+      "name": "라우트 prewarm",
+      "handling": "직접 HTTP 확인",
+      "status": "실행",
+      "note": "HTTP 200, 209ms"
+    },
+    {
+      "name": "초기 API 호출",
+      "handling": "브라우저 네트워크 수집",
+      "status": "실행",
+      "note": "10건"
+    },
+    {
+      "name": "🇰🇷",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리자",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "워크플로우",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "대시보드",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "기준정보",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "생산관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "품질관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "검사관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "제품수불관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "출하관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "모니터링",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "설비관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "소모품관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "인터페이스",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "부서관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "새로고침",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "부서 추가",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "전체화면 보기",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AI 채팅",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "개선요청 등록",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입력 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "2개"
+    },
+    {
+      "name": "선택 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "1개"
+    },
+    {
+      "name": "목록/그리드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "table 1, grid 0"
+    }
+  ],
+  "metrics": {
+    "buttons": 22,
+    "inputs": 2,
+    "selects": 1,
+    "tables": 1,
+    "grids": 0
+  },
+  "screenshot": "screenshots/sys-dept-system-department/01-load.png",
+  "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 부서관리 부서 관리 조직의 부서 정보를 관리합니다. 새로고침 부서 추가 관리 부서코드 부서명 상위부서 정렬순서 부서장 사용여부 비고 1000 관리팀 - 0 - 예 - 213100 임원 - 10 - 예 - 213200 경영지원팀 - 20 - 예 - 213210 해외지원 - 30 - 예 - 213220 전장팀 - 40 - 예 - 213300 영업팀 - 50 - 예 - 213400 개발팀 - 60 - 예 - 213410 공정기술팀 - 70 - 예 - 213420 기술연구소 - 80 - 예 - 213500 자재팀 - 90 - 예 - 213600 품질보증팀 - 100 - 예 - 213700 공장장 - 110 - 예 - 213710 자삽팀 - 120 - 예 - 213720 생산팀 - 130 - 예 - 213730 생산관리팀 - 140 - 예 - 213800 Controller본부 - 150 - 예 - 213900 EMM한국지사 - 160 - 예 - KS_구매부서코드 KS_구매부서명 - 1000 KS_구매부서장 예 KS_비고 KS_생산부서코드 KS_생산부서명 - 1100 KS_생산부서장 예 - KS_생산하위부서코드01 KS_생산하위부서명01 KS_생산부서코드 1110 KS_생산1팀팀장 예 KS_생산1팀비고 KS_생산하위부서코드02 KS_생산하위부서명02 KS_생산부서코드 1120 KS_생산2팀팀장 예 KS_ 생산하위부서비고 KS_품질부서코드 KS_품질부서명 - 1200 품질팀장 예 KS_품질 비고 KS_출하(영업)부서코드 KS_출하(영업)부서명 - 1300 영업팀장 예 영업팀장 비고 KS_MES부서코드 KS_MES부서명 - 1900 MES팀장 예 MES팀장비고 전체 24건 20건 50건 100건 200건 500건 전체화면 보기 AI 채팅 개선요청 등록",
+  "error": null,
+  "pageReport": "pages/sys-dept-system-department.html",
+  "pageResult": "page-results/sys-dept-system-department.json"
+}

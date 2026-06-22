@@ -500,6 +500,49 @@ export class OutsourcingService {
     });
   }
 
+  async findAllReceives(query: SubconOrderQueryDto, company?: string, plant?: string) {
+    const { page = 1, limit = 10, search } = query;
+    const skip = (page - 1) * limit;
+    const qb = this.subconReceiveRepository.createQueryBuilder('sr');
+    if (company) qb.andWhere('sr.company = :company', { company });
+    if (plant) qb.andWhere('sr.plant = :plant', { plant });
+    if (search) {
+      qb.andWhere('(sr.receiveNo LIKE :search OR sr.orderNo LIKE :search OR sr.matUid LIKE :search)', {
+        search: `%${search.toUpperCase()}%`,
+      });
+    }
+    qb.orderBy('sr.createdAt', 'DESC').skip(skip).take(limit);
+    const [receives, total] = await Promise.all([qb.getMany(), qb.clone().skip(0).take(undefined).getCount()]);
+    const orderNos = [...new Set(receives.map((receive) => receive.orderNo))];
+    const orders = orderNos.length
+      ? await this.subconOrderRepository.find({
+          where: { orderNo: In(orderNos), ...this.tenantWhere(company, plant) },
+          select: ['orderNo', 'vendorCode', 'itemCode'],
+        })
+      : [];
+    const orderMap = new Map(orders.map((order) => [order.orderNo, order]));
+    const vendorCodes = [...new Set(orders.map((order) => order.vendorCode).filter(Boolean))];
+    const vendors = vendorCodes.length
+      ? await this.vendorMasterRepository.find({
+          where: { vendorCode: In(vendorCodes), ...this.tenantWhere(company, plant) },
+          select: ['vendorCode', 'vendorName'],
+        })
+      : [];
+    const vendorMap = new Map(vendors.map((vendor) => [vendor.vendorCode, vendor.vendorName]));
+    const data = receives.map((receive) => {
+      const order = orderMap.get(receive.orderNo);
+      return {
+        ...receive,
+        id: receive.receiveNo,
+        vendorName: order ? vendorMap.get(order.vendorCode) ?? order.vendorCode : '',
+        itemCode: order?.itemCode ?? '',
+        itemName: '',
+        workerName: receive.workerId ?? '',
+      };
+    });
+    return { data, total, page, limit };
+  }
+
   // ============================================================================
   // 통계 및 대시보드
   // ============================================================================

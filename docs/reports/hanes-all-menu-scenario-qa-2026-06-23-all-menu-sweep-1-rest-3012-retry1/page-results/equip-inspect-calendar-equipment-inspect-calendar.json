@@ -1,0 +1,477 @@
+{
+  "code": "EQUIP_INSPECT_CALENDAR",
+  "labelKey": "menu.equipment.dailyInspectCalendar",
+  "path": "/equipment/inspect-calendar",
+  "source": "menuConfig",
+  "slug": "equip-inspect-calendar-equipment-inspect-calendar",
+  "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+  "status": "PASS",
+  "routeUrl": "http://localhost:3012/equipment/inspect-calendar",
+  "routeStatus": 200,
+  "elapsedMs": 3414,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/equipment/equips/metadata/processes",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/workers?limit=100",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/equipment/daily-inspect/calendar?year=2026&month=6",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/equipment/daily-inspect/calendar/day?date=2026-06-22",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [
+    {
+      "name": "화면 로드",
+      "handling": "GET /equipment/inspect-calendar",
+      "status": "실행",
+      "note": "HTTP 200"
+    },
+    {
+      "name": "초기 API 호출",
+      "handling": "브라우저 네트워크 수집",
+      "status": "실행",
+      "note": "14건"
+    },
+    {
+      "name": "🇰🇷",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리자",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "워크플로우",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "대시보드",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "기준정보",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "생산관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "품질관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "검사관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "제품수불관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "출하관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "모니터링",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "설비관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "소모품관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "인터페이스",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "일상점검 캘린더",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "당월 생성",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "차월 생성",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "1 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "2 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "3 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "4 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "5 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "6 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "7 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "8 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "9 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "10 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "11 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "12 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "13 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "14 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "15 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "16 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "17 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "18 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "19 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "20 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "21 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "22 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "23 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "24 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "25 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "26 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "27 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "28 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "29 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "30 0/12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "점검 실행",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "전체화면 보기",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AI 채팅",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "개선요청 등록",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입력 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "1개"
+    },
+    {
+      "name": "선택 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "1개"
+    }
+  ],
+  "metrics": {
+    "buttons": 53,
+    "inputs": 1,
+    "selects": 1,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": "screenshots/equip-inspect-calendar-equipment-inspect-calendar/01-load.png",
+  "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 일상점검 캘린더 일상점검 캘린더 월별 일상점검 현황을 캘린더로 관리합니다. 공정: 전체 공정: ATCUT - 자동절단 공정: ATCNS - 자동절단탈피 공정: STRPB - 양단탈피 공정: CRMPF - 전단압착 공정: CRMPR - 후단압착 공정: CRMPB - 양단압착 공정: SHDCT - 실드절단 공정: SACRP - 반자동압착 공정: MIDST - 중간탈피 공정: SJCRP - S/JOINT압착 공정: WELDR - 초음파융착 공정: TUBHT - 열수축 공정: ATAPE - 자동테이핑 공정: TWIST - 트위스트 공정: CRINS - 절압물검사 공정: SACMB - 반제품조합 공정: TAPNG - 테이핑 공정: PROTC - 프로텍트체결 공정: STINS - 구조검사 공정: CIINS - 회로검사 공정: FUSIN - 퓨즈삽입/토크체결 공정: VISIN - 비전검사 공정: RLYIN - 릴레이기능검사 공정: FINSH - 마무리 공정: ABAG - A/BAG제작 공정: CBLCT - 케이블절단 공정: SHDRM - 실드편조절단 공정: HEXCP - 육각압착 공정: TMCRP - 단자압착 공정: QCINS - QC검사 공정: ATAPG - 자동TAP'G 공정: TINSP - 단자검사 공정: AINSP - 통합검사 공정: OINSP - 육안검사 공정: SASSY - 서브작업 공정: MASSY - 조립 공정: MTASY - 자재장착 공정: AUXMT - 부자재부착 공정: TAPPN - 배판작업(테이핑) 공정: AUXIN - 부자재삽입 공정: GRMMT - 그로멧체결 당월 생성 차월 생성 6월 점검 스케줄 360 완료 0 불합격 0 미완료(지연) 22 2026년 6월 당월 전체합격 진행중 불합격있음 미시작 일 월 화 수 목 금 토 1 0/12 2 0/12 3 0/12 4 0/12 5 0/12 6 0/12 7 0/12 8 0/12 9 0/12 10 0/12 11 0/12 12 0/12 13 0/12 14 0/12 15 0/12 16 0/12 17 0/12 18 0/12 19 0/12 20 0/12 21 0/12 22 0/12 23 0/12 24 0/12 25 0/1",
+  "error": null,
+  "pageReport": "pages/equip-inspect-calendar-equipment-inspect-calendar.html",
+  "pageResult": "page-results/equip-inspect-calendar-equipment-inspect-calendar.json"
+}

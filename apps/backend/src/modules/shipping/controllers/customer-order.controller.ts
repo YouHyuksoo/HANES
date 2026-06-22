@@ -49,6 +49,14 @@ export class CustomerOrderController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
+  @Get('status')
+  @ApiOperation({ summary: '고객발주 출하 진행 현황 조회' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async findStatus(@Query() query: CustomerOrderQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.customerOrderService.findStatus(query, company, plant);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '고객발주 상세 조회' })
   @ApiParam({ name: 'id', description: '고객발주 ID' })

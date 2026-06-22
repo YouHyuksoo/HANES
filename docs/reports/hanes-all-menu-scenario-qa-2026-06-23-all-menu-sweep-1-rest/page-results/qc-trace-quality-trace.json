@@ -1,0 +1,78 @@
+{
+  "code": "QC_TRACE",
+  "labelKey": "menu.quality.trace",
+  "path": "/quality/trace",
+  "source": "menuConfig",
+  "slug": "qc-trace-quality-trace",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/quality/trace",
+  "routeStatus": null,
+  "elapsedMs": 46699,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public/plants?company=40",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/quality/trace",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/quality/trace\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/qc-trace-quality-trace.html",
+  "pageResult": "page-results/qc-trace-quality-trace.json"
+}

@@ -1,0 +1,443 @@
+{
+  "code": "SYS_MENU_CATEGORY",
+  "labelKey": "menu.system.menuCategory",
+  "path": "/system/menu-categories",
+  "source": "menuConfig",
+  "slug": "sys-menu-category-system-menu-categories",
+  "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+  "status": "PASS",
+  "routeUrl": "http://localhost:3012/system/menu-categories",
+  "routeStatus": 200,
+  "prewarm": {
+    "ok": true,
+    "status": 200,
+    "elapsedMs": 141
+  },
+  "elapsedMs": 3471,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/unassigned-menus",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/api/db-info",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [
+    {
+      "name": "화면 로드",
+      "handling": "GET /system/menu-categories",
+      "status": "실행",
+      "note": "HTTP 200"
+    },
+    {
+      "name": "라우트 prewarm",
+      "handling": "직접 HTTP 확인",
+      "status": "실행",
+      "note": "HTTP 200, 141ms"
+    },
+    {
+      "name": "초기 API 호출",
+      "handling": "브라우저 네트워크 수집",
+      "status": "실행",
+      "note": "12건"
+    },
+    {
+      "name": "🇰🇷",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리자",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "워크플로우",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "대시보드",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "기준정보",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "생산관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "품질관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "검사관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "제품수불관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "출하관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "모니터링",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "설비관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "소모품관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "인터페이스",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "메뉴 카테고리 관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "+ 카테고리 추가",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "⋮⋮",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "최상위(__ROOT__)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "워크플로우(WORKFLOW)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "대시보드(DASHBOARD)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "기준정보(MASTER)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "품목관리(MST_PART)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "BOM관리(MST_BOM)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "라우팅관리(MST_ROUTING)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "거래처관리(MST_PARTNER)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "생산라인관리(MST_PROD_LINE)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "공정관리(MST_PROCESS)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "작업자관리(MST_WORKER)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "검사항목마스터(QC_IQC_ITEM)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "품목별 IQC 항목관리(QC_IQC_PART_SPEC)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "창고관리(MST_WAREHOUSE)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "설비마스터(EQUIP_MASTER)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "작업지도서관리(MST_WORK_INST)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AQL 기준관리(QC_AQL)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재관리(MATERIAL)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "PO관리(PUR_PO)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "PO현황조회(PUR_PO_STATUS)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입하관리(MAT_ARRIVAL)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입하실적조회(MAT_ARRIVAL_RESULT)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입하수불조회(MAT_ARRIVAL_TRANSACTION)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "특채처리(QC_CONCESSION)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재입고관리(MAT_RECEIVE)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입고이력조회(MAT_RECEIVE_HISTORY)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "출고요청관리(MAT_REQUEST)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재출고관리(MAT_ISSUE)",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입력 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "1개"
+    },
+    {
+      "name": "선택 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "25개"
+    }
+  ],
+  "metrics": {
+    "buttons": 47,
+    "inputs": 1,
+    "selects": 25,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": "screenshots/sys-menu-category-system-menu-categories/01-load.png",
+  "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 메뉴 카테고리 관리 메뉴 카테고리 관리 + 카테고리 추가 ⋮⋮ 최상위(__ROOT__) ⋮⋮ 워크플로우(WORKFLOW) ⋮⋮ 대시보드(DASHBOARD) ⋮⋮ 기준정보(MASTER) ⋮⋮ 품목관리(MST_PART) ⋮⋮ BOM관리(MST_BOM) ⋮⋮ 라우팅관리(MST_ROUTING) ⋮⋮ 거래처관리(MST_PARTNER) ⋮⋮ 생산라인관리(MST_PROD_LINE) ⋮⋮ 공정관리(MST_PROCESS) ⋮⋮ 작업자관리(MST_WORKER) ⋮⋮ 검사항목마스터(QC_IQC_ITEM) ⋮⋮ 품목별 IQC 항목관리(QC_IQC_PART_SPEC) ⋮⋮ 창고관리(MST_WAREHOUSE) ⋮⋮ 설비마스터(EQUIP_MASTER) ⋮⋮ 작업지도서관리(MST_WORK_INST) ⋮⋮ AQL 기준관리(QC_AQL) ⋮⋮ 자재관리(MATERIAL) ⋮⋮ PO관리(PUR_PO) ⋮⋮ PO현황조회(PUR_PO_STATUS) ⋮⋮ 입하관리(MAT_ARRIVAL) ⋮⋮ 입하실적조회(MAT_ARRIVAL_RESULT) ⋮⋮ 입하수불조회(MAT_ARRIVAL_TRANSACTION) ⋮⋮ 특채처리(QC_CONCESSION) ⋮⋮ 자재입고관리(MAT_RECEIVE) ⋮⋮ 입고이력조회(MAT_RECEIVE_HISTORY) ⋮⋮ 출고요청관리(MAT_REQUEST) ⋮⋮ 자재출고관리(MAT_ISSUE) ⋮⋮ 기타출고관리(MAT_ISSUE_OTHER) ⋮⋮ 자재분할관리(MAT_LOT_SPLIT) ⋮⋮ 자재병합관리(MAT_LOT_MERGE) ⋮⋮ 자재폐기처리(MAT_SCRAP) ⋮⋮ 재고보정처리(MAT_ADJUSTMENT) ⋮⋮ 기타입고관리(MAT_MISC_RECEIPT) ⋮⋮ 자재입고취소(MAT_RECEIPT_CANCEL) ⋮⋮ 자재재고현황조회(INV_MAT_STOCK) ⋮⋮ 자재수불이력조회(INV_TRANSACTION) ⋮⋮ 자재재고실사관리(INV_MAT_PHYSICAL_INV) ⋮⋮ 자재재고실사반영(INV_MAT_PHYSICAL_INV_APPLY) ⋮⋮ 자재재고실사조회(INV_MAT_PHYSICAL_INV_HISTORY) ⋮⋮ 입하재고현황조회(INV_ARRIVAL_STOCK) ⋮⋮ 자재재고홀드관",
+  "error": null,
+  "pageReport": "pages/sys-menu-category-system-menu-categories.html",
+  "pageResult": "page-results/sys-menu-category-system-menu-categories.json"
+}

@@ -1,0 +1,78 @@
+{
+  "code": "SYS_SCHEDULER",
+  "labelKey": "scheduler.title",
+  "path": "/system/scheduler",
+  "source": "menuConfig",
+  "slug": "sys-scheduler-system-scheduler",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/system/scheduler",
+  "routeStatus": null,
+  "elapsedMs": 55068,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public/plants?company=40",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/system/scheduler",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/system/scheduler\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/sys-scheduler-system-scheduler.html",
+  "pageResult": "page-results/sys-scheduler-system-scheduler.json"
+}

@@ -1,0 +1,78 @@
+{
+  "code": "SALES_CUST_PO_STATUS",
+  "labelKey": "menu.sales.customerPoStatus",
+  "path": "/sales/customer-po-status",
+  "source": "menuConfig",
+  "slug": "sales-cust-po-status-sales-customer-po-status",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/sales/customer-po-status",
+  "routeStatus": null,
+  "elapsedMs": 46972,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public/plants?company=40",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/sales/customer-po-status",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/sales/customer-po-status\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/sales-cust-po-status-sales-customer-po-status.html",
+  "pageResult": "page-results/sales-cust-po-status-sales-customer-po-status.json"
+}

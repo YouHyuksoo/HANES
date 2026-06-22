@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>CONS_LABEL - HANES 전체 메뉴 QA</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #172033; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #d8dee9; padding: 8px; font-size: 13px; vertical-align: top; }
+    th { background: #f3f6fb; text-align: left; }
+    .pass { color: #047857; font-weight: 700; }
+    .fail { color: #be123c; font-weight: 700; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; overflow: auto; }
+    img { max-width: 100%; border: 1px solid #d8dee9; }
+  </style>
+</head>
+<body>
+  <h1>CONS_LABEL H
+HARNESS MES
+🇰🇷
+40 / 1000
+JSHNSMES @ 10.1.10.35
+시스템관리자</h1>
+  <p>Route: <code>/consumables/label</code></p>
+  <p>Status: <span class="pass">PASS</span> / HTTP 200</p>
+  <h2>기능/버튼 인벤토리</h2>
+  <table><thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead><tbody><tr><td>화면 로드</td><td>GET /consumables/label</td><td>실행</td><td>HTTP 200</td></tr>
+<tr><td>라우트 prewarm</td><td>직접 HTTP 확인</td><td>실행</td><td>HTTP 200, 197ms</td></tr>
+<tr><td>초기 API 호출</td><td>브라우저 네트워크 수집</td><td>실행</td><td>12건</td></tr>
+<tr><td>🇰🇷</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리자</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>워크플로우</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>대시보드</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>기준정보</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>생산관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>품질관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>검사관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>제품수불관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>출하관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>모니터링</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>설비관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>소모품관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>인터페이스</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>소모품 라벨발행</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>새로고침</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>UID 발행</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>전체화면 보기</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AI 채팅</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>개선요청 등록</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입력 필드</td><td>DOM 수집</td><td>목록화</td><td>77개</td></tr>
+<tr><td>선택 필드</td><td>DOM 수집</td><td>목록화</td><td>3개</td></tr>
+<tr><td>목록/그리드</td><td>DOM 수집</td><td>목록화</td><td>table 1, grid 0</td></tr></tbody></table>
+  <h2>API 호출</h2>
+  <table><thead><tr><th>Method</th><th>URL</th><th>Status</th><th>OK</th></tr></thead><tbody><tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/auth/me</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/configs/active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/menu-categories/tree</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/label-templates?category=jig</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/consumables/label/masters</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/com-codes/all-active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/consumables/stocks?search=APPCT-A&amp;limit=200</td><td>200</td><td>OK</td></tr></tbody></table>
+  <h2>오류</h2>
+  <pre>requestfailed: GET /api/db-info net::ERR_ABORTED
+requestfailed: GET https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2 net::ERR_ABORTED</pre>
+  <h2>화면 증거</h2>
+  <img src="../screenshots/cons-label-consumables-label/01-load.png" alt="screenshot" />
+  <h2>본문 미리보기</h2>
+  <pre>H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 소모품 라벨발행 소모품 라벨발행 소모품 UID를 발행하고 라벨을 인쇄합니다. 새로고침 전체 기본 디자인 consumable_label / BROWSER UID 발행 전체 카테고리 JIG MOLD TOOL 이미지 소모품코드 소모품명 카테고리 현재고 인스턴스 발행수량 APPCT-A 어플리케이터A 공구 1 0 APPCT-B 어플리케이터B 공구 1 0 APPCT-SE 어플리케이터SE 공구 0 0 CM-AP-040 040단자 압착금형 금형 5 0 CM-AP-060 060단자 압착금형 금형 3 0 CM-AP-090 090단자 압착금형 금형 3 0 CM-AP-110 110단자 압착금형 금형 3 0 CM-AP-187 187단자 압착금형 금형 3 0 CM-AP-250 250단자 압착금형 금형 3 0 CM-BL-F01 평블레이드 세트 (절단용) 공구 8 0 CM-BL-MC1 다선절단 블레이드 세트 공구 8 0 CM-BL-S01 탈피 블레이드 세트 (V타입) 공구 8 0 CM-BL-S02 탈피 블레이드 세트 (로터리) 공구 8 0 CM-BL-V01 V블레이드 세트 (절단용) 공구 8 0 CM-FL-A01 에어 필터 엘리먼트 공구 8 0 CM-FL-D01 집진 필터 백 공구 8 0 CM-IJ-I01 잉크젯 잉크 카트리지 공구 8 0 CM-IJ-N01 잉크젯 노즐 세트 공구 8 0 CM-JG-CT1 통전검사 치구 A타입 지그 5 0 CM-JG-CT2 통전검사 치구 B타입 지그 5 0 CM-JG-HV1 내전압검사 치구 지그 5 0 CM-JG-SL1 씰삽입 가이드 지그 지그 5 0 CM-JG-TW1 트위스트 고정 지그 지그 5 0 CM-PH-B01 써멀 프린트헤드 (Brady) 공구 8 0 CM-PH-Z01 써멀 프린트헤드 (Zebra) 공구 8 0 CM-ST-T01 납땜 인두팁 (자동납땜용) 공구 8 0 CM-UW-A01 초음파 앤빌 공구 8 0 CM-UW-H01 초음파 혼 (Sonotrode) 공구 8 0 CUTBL001 커터날1 공구 0 0 CUTBL002 커터날2 공구 0 0 CUTBL003 커터날3 공구 0 0 CUTBL004 커터날4 공구 0 0 CUTBL009 커터날9 공구 0 0</pre>
+</body>
+</html>

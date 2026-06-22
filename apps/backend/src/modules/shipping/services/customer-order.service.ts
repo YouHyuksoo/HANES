@@ -114,6 +114,43 @@ export class CustomerOrderService {
     return { data: resultData, total, page, limit };
   }
 
+  async findStatus(query: CustomerOrderQueryDto, company?: string, plant?: string) {
+    const { page = 1, limit = 5000, status } = query;
+    const source = await this.findAll({ ...query, page: 1, limit: Math.max(limit, 5000), status: undefined }, company, plant);
+    const now = new Date();
+    const rows = source.data.map((order) => {
+      const items = order.items ?? [];
+      const orderQty = items.reduce((sum, item) => sum + (Number(item.orderQty) || 0), 0);
+      const shippedQty = items.reduce((sum, item) => sum + (Number(item.shippedQty) || 0), 0);
+      const remainQty = Math.max(0, orderQty - shippedQty);
+      let derivedStatus = 'IN_PROGRESS';
+      if (orderQty > 0 && shippedQty >= orderQty) derivedStatus = 'COMPLETED';
+      else if (shippedQty > 0) derivedStatus = 'PARTIAL_SHIP';
+      else if (order.dueDate && new Date(order.dueDate) < now) derivedStatus = 'OVERDUE';
+
+      return {
+        id: order.orderNo,
+        orderNo: order.orderNo,
+        customerName: order.customerName,
+        orderDate: order.orderDate,
+        dueDate: order.dueDate,
+        orderQty,
+        shippedQty,
+        shipRate: orderQty > 0 ? Math.round((shippedQty / orderQty) * 100) : 0,
+        remainQty,
+        status: derivedStatus,
+      };
+    });
+    const filtered = status ? rows.filter((row) => row.status === status) : rows;
+    const start = (page - 1) * limit;
+    return {
+      data: filtered.slice(start, start + limit),
+      total: filtered.length,
+      page,
+      limit,
+    };
+  }
+
   /** 고객발주 단건 조회 */
   async findById(orderNo: string, company?: string, plant?: string) {
     const order = await this.customerOrderRepository.findOne({

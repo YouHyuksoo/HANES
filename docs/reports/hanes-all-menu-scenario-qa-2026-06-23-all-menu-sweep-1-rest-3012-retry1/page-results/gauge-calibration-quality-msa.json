@@ -1,0 +1,276 @@
+{
+  "code": "GAUGE_CALIBRATION",
+  "labelKey": "menu.gauge.calibration",
+  "path": "/quality/msa",
+  "source": "menuConfig",
+  "slug": "gauge-calibration-quality-msa",
+  "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+  "status": "PASS",
+  "routeUrl": "http://localhost:3012/quality/msa",
+  "routeStatus": 200,
+  "elapsedMs": 3259,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/quality/msa/gauges?limit=5000",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [
+    {
+      "name": "화면 로드",
+      "handling": "GET /quality/msa",
+      "status": "실행",
+      "note": "HTTP 200"
+    },
+    {
+      "name": "초기 API 호출",
+      "handling": "브라우저 네트워크 수집",
+      "status": "실행",
+      "note": "11건"
+    },
+    {
+      "name": "🇰🇷",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리자",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "워크플로우",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "대시보드",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "기준정보",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "생산관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "품질관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "검사관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "제품수불관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "출하관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "모니터링",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "설비관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "소모품관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "인터페이스",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "계측기 교정관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "교정만료임박",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "새로고침",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "전체화면 보기",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AI 채팅",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "개선요청 등록",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입력 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "1개"
+    },
+    {
+      "name": "선택 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "2개"
+    },
+    {
+      "name": "목록/그리드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "table 1, grid 0"
+    }
+  ],
+  "metrics": {
+    "buttons": 22,
+    "inputs": 1,
+    "selects": 2,
+    "tables": 1,
+    "grids": 0
+  },
+  "screenshot": "screenshots/gauge-calibration-quality-msa/01-load.png",
+  "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 계측기 교정관리 계측기 교정관리 계측기별 교정 이력을 관리하고 교정 만료를 추적합니다. 교정만료임박 새로고침 유형: 전체 유형: 캘리퍼스 유형: 마이크로미터 유형: 다이얼게이지 유형: 하이트게이지 유형: 핀게이지 유형: 링게이지 유형: 포스게이지 유형: 기타 상태: 전체 상태: 사용중 상태: 교정만료 상태: 폐기 계측기코드 계측기명 유형 교정주기 최종교정일 차기교정일 상태 보관위치 데이터가 없습니다. 전체화면 보기 AI 채팅 개선요청 등록",
+  "error": null,
+  "pageReport": "pages/gauge-calibration-quality-msa.html",
+  "pageResult": "page-results/gauge-calibration-quality-msa.json"
+}

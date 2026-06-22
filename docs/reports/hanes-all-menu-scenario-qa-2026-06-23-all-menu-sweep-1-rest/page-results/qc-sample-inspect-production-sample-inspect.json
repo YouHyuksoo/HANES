@@ -1,0 +1,78 @@
+{
+  "code": "QC_SAMPLE_INSPECT",
+  "labelKey": "menu.production.sampleInspect",
+  "path": "/production/sample-inspect",
+  "source": "menuConfig",
+  "slug": "qc-sample-inspect-production-sample-inspect",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/production/sample-inspect",
+  "routeStatus": null,
+  "elapsedMs": 45751,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public/plants?company=40",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/production/sample-inspect",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/production/sample-inspect\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/qc-sample-inspect-production-sample-inspect.html",
+  "pageResult": "page-results/qc-sample-inspect-production-sample-inspect.json"
+}

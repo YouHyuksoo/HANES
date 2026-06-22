@@ -1,0 +1,604 @@
+{
+  "code": "SYS_CODE",
+  "labelKey": "menu.master.code",
+  "path": "/master/code",
+  "source": "menuConfig",
+  "slug": "sys-code-master-code",
+  "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+  "status": "PASS",
+  "routeUrl": "http://localhost:3012/master/code",
+  "routeStatus": 200,
+  "prewarm": {
+    "ok": true,
+    "status": 200,
+    "elapsedMs": 164
+  },
+  "elapsedMs": 3439,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/com-codes/groups",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/com-codes/groups/ADJUST_ACCOUNT",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/api/db-info",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [
+    {
+      "name": "화면 로드",
+      "handling": "GET /master/code",
+      "status": "실행",
+      "note": "HTTP 200"
+    },
+    {
+      "name": "라우트 prewarm",
+      "handling": "직접 HTTP 확인",
+      "status": "실행",
+      "note": "HTTP 200, 164ms"
+    },
+    {
+      "name": "초기 API 호출",
+      "handling": "브라우저 네트워크 수집",
+      "status": "실행",
+      "note": "11건"
+    },
+    {
+      "name": "🇰🇷",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리자",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "워크플로우",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "대시보드",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "기준정보",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "생산관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "품질관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "검사관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "제품수불관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "출하관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "모니터링",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "설비관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "소모품관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "인터페이스",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "코드관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "새로고침",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "코드 추가",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "ADJUST_ACCOUNT 조정 계정 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "ADJ_REASON 재고조정 사유 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "APPROVAL_STATUS 승인 상태 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AQL_INSP_LEVEL AQL_INSP_LEVEL 7",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AQL_VALUE AQL_VALUE 26",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "ARRIVAL_PO_TYPE 입하 PO 유형 2",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "ARRIVAL_RESULT_STATUS 입하실적 상태 5",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AUDIT_RESULT 심사 결과 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AUDIT_STATUS 심사 상태 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AUDIT_TYPE 심사 유형 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "BAUD_RATE 보드레이트 5",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "BOM_SIDE BOM 사이드 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "BOM_TYPE BOM 유형 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "BOX_STATUS BOX 상태 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CAL_RESULT CAL_RESULT 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CAL_TYPE CAL_TYPE 2",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CAPA_ACTION_STATUS CAPA_ACTION_STATUS 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CAPA_SOURCE_TYPE CAPA_SOURCE_TYPE 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CAPA_STATUS CAPA_STATUS 6",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CAPA_TYPE CAPA_TYPE 2",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CHANGE_PRIORITY CHANGE_PRIORITY 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CHANGE_STATUS CHANGE_STATUS 8",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CHANGE_TYPE CHANGE_TYPE 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "COMM_TYPE 통신 유형 5",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "COMPLAINT_STATUS COMPLAINT_STATUS 5",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "COMPLAINT_TYPE COMPLAINT_TYPE 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "COMPLAINT_URGENCY COMPLAINT_URGENCY 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONNECTION_STATUS 연결 상태 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONSUMABLE_CATEGORY 소모품 카테고리 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONSUMABLE_LIFE_STATUS 소모품 수명 상태 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONSUMABLE_LOG_TYPE 소모품 이력 유형 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONSUMABLE_LOG_TYPE_GROUP 소모품 이력 그룹 2",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONSUMABLE_OPER_STATUS CONSUMABLE_OPER_STATUS 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONSUMABLE_STATUS 소모품 상태 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONTINUITY_DEFECT 통전검사 불량 유형 7",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CONTROL_METHOD 관리 방법 7",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CON_STOCK_STATUS 소모품 재고 상태 5",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CP_PHASE CP_PHASE 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CP_STATUS CP_STATUS 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CUSTOMS_ENTRY_STATUS 통관 입항 상태 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "CUSTOMS_LOT_STATUS 통관 LOT 상태 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DATA_BITS 데이터비트 2",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DAY_OFF_TYPE 휴무 유형 5",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_CAUSE 불량 원인 1",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_DISPOSITION 불량 처리 유형 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_GENUINE 진성불량 여부 2",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_GRADE DEFECT_GRADE 3",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_LOG_STATUS 불량 로그 상태 5",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_MODEL_GROUP DEFECT_MODEL_GROUP 2",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_POSITION 불량 위치 1",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_STATUS 불량 상태 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DEFECT_TYPE 불량 유형 12",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DOC_STATUS DOC_STATUS 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "DOC_TYPE DOC_TYPE 6",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "EQUIP_STATUS 설비 상태 4",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입력 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "2개"
+    },
+    {
+      "name": "선택 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "1개"
+    },
+    {
+      "name": "목록/그리드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "table 1, grid 0"
+    }
+  ],
+  "metrics": {
+    "buttons": 74,
+    "inputs": 2,
+    "selects": 1,
+    "tables": 1,
+    "grids": 0
+  },
+  "screenshot": "screenshots/sys-code-master-code/01-load.png",
+  "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 코드관리 코드관리 공통 코드를 관리합니다. 새로고침 코드 추가 그룹코드 157개 그룹 ADJUST_ACCOUNT 조정 계정 4 ADJ_REASON 재고조정 사유 4 APPROVAL_STATUS 승인 상태 3 AQL_INSP_LEVEL AQL_INSP_LEVEL 7 AQL_VALUE AQL_VALUE 26 ARRIVAL_PO_TYPE 입하 PO 유형 2 ARRIVAL_RESULT_STATUS 입하실적 상태 5 AUDIT_RESULT 심사 결과 4 AUDIT_STATUS 심사 상태 4 AUDIT_TYPE 심사 유형 4 BAUD_RATE 보드레이트 5 BOM_SIDE BOM 사이드 3 BOM_TYPE BOM 유형 3 BOX_STATUS BOX 상태 3 CAL_RESULT CAL_RESULT 3 CAL_TYPE CAL_TYPE 2 CAPA_ACTION_STATUS CAPA_ACTION_STATUS 3 CAPA_SOURCE_TYPE CAPA_SOURCE_TYPE 4 CAPA_STATUS CAPA_STATUS 6 CAPA_TYPE CAPA_TYPE 2 CHANGE_PRIORITY CHANGE_PRIORITY 3 CHANGE_STATUS CHANGE_STATUS 8 CHANGE_TYPE CHANGE_TYPE 4 COMM_TYPE 통신 유형 5 COMPLAINT_STATUS COMPLAINT_STATUS 5 COMPLAINT_TYPE COMPLAINT_TYPE 3 COMPLAINT_URGENCY COMPLAINT_URGENCY 4 CONNECTION_STATUS 연결 상태 3 CONSUMABLE_CATEGORY 소모품 카테고리 3 CONSUMABLE_LIFE_STATUS 소모품 수명 상태 3 CONSUMABLE_LOG_TYPE 소모품 이력 유형 4 CONSUMABLE_LOG_TYPE_GROUP 소모품 이력 그룹 2 CONSUMABLE_OPER_STATUS CONSUMABLE_OPER_STATUS 3 CONSUMABLE_STATUS 소모품 상태 3 CONTINUITY_DEFECT 통전검사 불량 유형 7 CONTROL_METHOD 관리 방법 7 CON_STOCK_STATUS 소모품 재",
+  "error": null,
+  "pageReport": "pages/sys-code-master-code.html",
+  "pageResult": "page-results/sys-code-master-code.json"
+}

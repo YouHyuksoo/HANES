@@ -107,6 +107,14 @@ export class CustomsController {
     return ResponseUtil.success(null, '수입신고가 삭제되었습니다.');
   }
 
+  @Get('stock')
+  @ApiOperation({ summary: '보세재고 목록 조회' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async findAllStock(@Query() query: CustomsEntryQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.customsService.findAllStock(query, company, plant);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
   // ===== 보세자재 LOT (복합 PK: entryNo + matUid) =====
 
   @Get('lots/entry/:entryId')

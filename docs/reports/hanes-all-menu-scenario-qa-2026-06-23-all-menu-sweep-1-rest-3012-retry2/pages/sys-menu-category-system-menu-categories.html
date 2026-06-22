@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>SYS_MENU_CATEGORY - HANES 전체 메뉴 QA</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #172033; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #d8dee9; padding: 8px; font-size: 13px; vertical-align: top; }
+    th { background: #f3f6fb; text-align: left; }
+    .pass { color: #047857; font-weight: 700; }
+    .fail { color: #be123c; font-weight: 700; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; overflow: auto; }
+    img { max-width: 100%; border: 1px solid #d8dee9; }
+  </style>
+</head>
+<body>
+  <h1>SYS_MENU_CATEGORY H
+HARNESS MES
+🇰🇷
+40 / 1000
+JSHNSMES @ 10.1.10.35
+시스템관리자</h1>
+  <p>Route: <code>/system/menu-categories</code></p>
+  <p>Status: <span class="pass">PASS</span> / HTTP 200</p>
+  <h2>기능/버튼 인벤토리</h2>
+  <table><thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead><tbody><tr><td>화면 로드</td><td>GET /system/menu-categories</td><td>실행</td><td>HTTP 200</td></tr>
+<tr><td>라우트 prewarm</td><td>직접 HTTP 확인</td><td>실행</td><td>HTTP 200, 141ms</td></tr>
+<tr><td>초기 API 호출</td><td>브라우저 네트워크 수집</td><td>실행</td><td>12건</td></tr>
+<tr><td>🇰🇷</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리자</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>워크플로우</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>대시보드</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>기준정보</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>생산관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>품질관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>검사관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>제품수불관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>출하관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>모니터링</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>설비관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>소모품관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>인터페이스</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>메뉴 카테고리 관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>+ 카테고리 추가</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>⋮⋮</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>최상위(__ROOT__)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>워크플로우(WORKFLOW)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>대시보드(DASHBOARD)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>기준정보(MASTER)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>품목관리(MST_PART)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>BOM관리(MST_BOM)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>라우팅관리(MST_ROUTING)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>거래처관리(MST_PARTNER)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>생산라인관리(MST_PROD_LINE)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>공정관리(MST_PROCESS)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>작업자관리(MST_WORKER)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>검사항목마스터(QC_IQC_ITEM)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>품목별 IQC 항목관리(QC_IQC_PART_SPEC)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>창고관리(MST_WAREHOUSE)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>설비마스터(EQUIP_MASTER)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>작업지도서관리(MST_WORK_INST)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AQL 기준관리(QC_AQL)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재관리(MATERIAL)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>PO관리(PUR_PO)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>PO현황조회(PUR_PO_STATUS)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입하관리(MAT_ARRIVAL)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입하실적조회(MAT_ARRIVAL_RESULT)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입하수불조회(MAT_ARRIVAL_TRANSACTION)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>특채처리(QC_CONCESSION)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재입고관리(MAT_RECEIVE)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입고이력조회(MAT_RECEIVE_HISTORY)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>출고요청관리(MAT_REQUEST)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재출고관리(MAT_ISSUE)</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입력 필드</td><td>DOM 수집</td><td>목록화</td><td>1개</td></tr>
+<tr><td>선택 필드</td><td>DOM 수집</td><td>목록화</td><td>25개</td></tr></tbody></table>
+  <h2>API 호출</h2>
+  <table><thead><tr><th>Method</th><th>URL</th><th>Status</th><th>OK</th></tr></thead><tbody><tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/auth/me</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/configs/active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/menu-categories/tree</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/menu-categories/tree</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/menu-categories/unassigned-menus</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/com-codes/all-active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/menu-categories/tree</td><td>200</td><td>OK</td></tr></tbody></table>
+  <h2>오류</h2>
+  <pre>requestfailed: GET /api/db-info net::ERR_ABORTED
+requestfailed: GET https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2 net::ERR_ABORTED</pre>
+  <h2>화면 증거</h2>
+  <img src="../screenshots/sys-menu-category-system-menu-categories/01-load.png" alt="screenshot" />
+  <h2>본문 미리보기</h2>
+  <pre>H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 메뉴 카테고리 관리 메뉴 카테고리 관리 + 카테고리 추가 ⋮⋮ 최상위(__ROOT__) ⋮⋮ 워크플로우(WORKFLOW) ⋮⋮ 대시보드(DASHBOARD) ⋮⋮ 기준정보(MASTER) ⋮⋮ 품목관리(MST_PART) ⋮⋮ BOM관리(MST_BOM) ⋮⋮ 라우팅관리(MST_ROUTING) ⋮⋮ 거래처관리(MST_PARTNER) ⋮⋮ 생산라인관리(MST_PROD_LINE) ⋮⋮ 공정관리(MST_PROCESS) ⋮⋮ 작업자관리(MST_WORKER) ⋮⋮ 검사항목마스터(QC_IQC_ITEM) ⋮⋮ 품목별 IQC 항목관리(QC_IQC_PART_SPEC) ⋮⋮ 창고관리(MST_WAREHOUSE) ⋮⋮ 설비마스터(EQUIP_MASTER) ⋮⋮ 작업지도서관리(MST_WORK_INST) ⋮⋮ AQL 기준관리(QC_AQL) ⋮⋮ 자재관리(MATERIAL) ⋮⋮ PO관리(PUR_PO) ⋮⋮ PO현황조회(PUR_PO_STATUS) ⋮⋮ 입하관리(MAT_ARRIVAL) ⋮⋮ 입하실적조회(MAT_ARRIVAL_RESULT) ⋮⋮ 입하수불조회(MAT_ARRIVAL_TRANSACTION) ⋮⋮ 특채처리(QC_CONCESSION) ⋮⋮ 자재입고관리(MAT_RECEIVE) ⋮⋮ 입고이력조회(MAT_RECEIVE_HISTORY) ⋮⋮ 출고요청관리(MAT_REQUEST) ⋮⋮ 자재출고관리(MAT_ISSUE) ⋮⋮ 기타출고관리(MAT_ISSUE_OTHER) ⋮⋮ 자재분할관리(MAT_LOT_SPLIT) ⋮⋮ 자재병합관리(MAT_LOT_MERGE) ⋮⋮ 자재폐기처리(MAT_SCRAP) ⋮⋮ 재고보정처리(MAT_ADJUSTMENT) ⋮⋮ 기타입고관리(MAT_MISC_RECEIPT) ⋮⋮ 자재입고취소(MAT_RECEIPT_CANCEL) ⋮⋮ 자재재고현황조회(INV_MAT_STOCK) ⋮⋮ 자재수불이력조회(INV_TRANSACTION) ⋮⋮ 자재재고실사관리(INV_MAT_PHYSICAL_INV) ⋮⋮ 자재재고실사반영(INV_MAT_PHYSICAL_INV_APPLY) ⋮⋮ 자재재고실사조회(INV_MAT_PHYSICAL_INV_HISTORY) ⋮⋮ 입하재고현황조회(INV_ARRIVAL_STOCK) ⋮⋮ 자재재고홀드관</pre>
+</body>
+</html>

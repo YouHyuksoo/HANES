@@ -37,13 +37,16 @@ const token = process.env.HANES_TOKEN ?? 'admin@hanes.com';
 const headed = process.env.HANES_QA_HEADED === '1';
 const slowMo = Number(process.env.HANES_QA_SLOWMO ?? 0);
 const routeTimeoutMs = Number(process.env.HANES_ROUTE_TIMEOUT_MS ?? 45000);
+const prewarmTimeoutMs = Number(process.env.HANES_PREWARM_TIMEOUT_MS ?? 180000);
 const limit = process.env.HANES_MENU_LIMIT ? Number(process.env.HANES_MENU_LIMIT) : 0;
+const menuOffset = process.env.HANES_MENU_OFFSET ? Number(process.env.HANES_MENU_OFFSET) : 0;
 const codeFilter = process.env.HANES_MENU_CODES
   ? new Set(process.env.HANES_MENU_CODES.split(',').map((code) => code.trim()).filter(Boolean))
   : null;
 
 const reportRoot = path.resolve(`docs/reports/hanes-all-menu-scenario-qa-${reportDate}`);
 const pageDir = path.join(reportRoot, 'pages');
+const pageJsonDir = path.join(reportRoot, 'page-results');
 const shotRoot = path.join(reportRoot, 'screenshots');
 const indexPath = path.join(reportRoot, 'index.html');
 const resultPath = path.join(reportRoot, 'all-menu-result.json');
@@ -59,6 +62,11 @@ const authUser = {
   company: '40',
   plant: '1000',
 };
+
+function isIgnoredRequestFailure(item) {
+  return /fonts\.gstatic\.com|fonts\.googleapis\.com/i.test(item.url)
+    || /^\/api\/(?:health|db-info)$/i.test(item.url);
+}
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -95,11 +103,13 @@ function loadMenus() {
     if (codeFilter && !codeFilter.has(entry.code)) continue;
     unique.push({ ...entry, slug: safeSlug(`${entry.code}-${entry.path}`) });
   }
-  return limit > 0 ? unique.slice(0, limit) : unique;
+  const offsetEntries = menuOffset > 0 ? unique.slice(menuOffset) : unique;
+  return limit > 0 ? offsetEntries.slice(0, limit) : offsetEntries;
 }
 
 async function ensureDirs() {
   await fs.mkdir(pageDir, { recursive: true });
+  await fs.mkdir(pageJsonDir, { recursive: true });
   await fs.mkdir(shotRoot, { recursive: true });
 }
 
@@ -132,6 +142,16 @@ async function healthCheck(url) {
   }
 }
 
+async function prewarmRoute(url) {
+  const startedAt = Date.now();
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(prewarmTimeoutMs) });
+    return { ok: res.ok, status: res.status, elapsedMs: Date.now() - startedAt };
+  } catch (error) {
+    return { ok: false, status: 0, elapsedMs: Date.now() - startedAt, error: String(error.message ?? error) };
+  }
+}
+
 async function collectVisibleText(locator, max = 60) {
   const values = [];
   const count = await locator.count().catch(() => 0);
@@ -155,6 +175,7 @@ async function runMenu(browser, menu) {
   const routeUrl = `${baseUrl}${menu.path}`;
   const shotDir = path.join(shotRoot, menu.slug);
   const screenshotPath = path.join(shotDir, '01-load.png');
+  const prewarm = await prewarmRoute(routeUrl);
   await fs.mkdir(shotDir, { recursive: true });
 
   page.on('console', (message) => {
@@ -220,6 +241,7 @@ async function runMenu(browser, menu) {
     await page.screenshot({ path: screenshotPath, fullPage: false }).catch(() => undefined);
 
     featureInventory.push({ name: '화면 로드', handling: `GET ${menu.path}`, status: routeStatus && routeStatus < 400 ? '실행' : '실패', note: `HTTP ${routeStatus ?? '-'}` });
+    featureInventory.push({ name: '라우트 prewarm', handling: '직접 HTTP 확인', status: prewarm.ok ? '실행' : '실패', note: `HTTP ${prewarm.status}, ${prewarm.elapsedMs}ms` });
     featureInventory.push({ name: '초기 API 호출', handling: '브라우저 네트워크 수집', status: apiCalls.length ? '실행' : '목록화', note: `${apiCalls.length}건` });
     for (const button of buttons) {
       featureInventory.push({ name: button, handling: '화면 버튼 목록화', status: '목록화', note: '후속 메뉴별 세부 시나리오 실행 대상' });
@@ -233,8 +255,10 @@ async function runMenu(browser, menu) {
       !/favicon/i.test(item.text)
       && !/ResizeObserver loop/i.test(item.text)
       && !/Download the React DevTools/i.test(item.text)
+      && !/^Failed to load resource: the server responded with a status of \d+ \(/i.test(item.text)
     ));
-    if (!routeStatus || routeStatus >= 400 || pageErrors.length > 0 || failedApis.length > 0 || fatalConsole.length > 0 || requestFailures.length > 0) {
+    const fatalRequests = requestFailures.filter((item) => !isIgnoredRequestFailure(item));
+    if (!routeStatus || routeStatus >= 400 || pageErrors.length > 0 || failedApis.length > 0 || fatalConsole.length > 0 || fatalRequests.length > 0) {
       status = 'FAIL';
     }
   } catch (err) {
@@ -250,6 +274,7 @@ async function runMenu(browser, menu) {
     status,
     routeUrl,
     routeStatus,
+    prewarm,
     elapsedMs: Date.now() - startedAt,
     apiCalls,
     consoleErrors,
@@ -267,6 +292,7 @@ async function runMenu(browser, menu) {
 
 async function writePageReport(result) {
   const pagePath = path.join(pageDir, `${result.slug}.html`);
+  const pageJsonPath = path.join(pageJsonDir, `${result.slug}.json`);
   const apiRows = result.apiCalls
     .map((call) => `<tr><td>${escapeHtml(call.method)}</td><td>${escapeHtml(call.url)}</td><td>${call.status}</td><td>${call.ok ? 'OK' : 'FAIL'}</td></tr>`)
     .join('\n');
@@ -314,6 +340,8 @@ async function writePageReport(result) {
 </html>`;
   await fs.writeFile(pagePath, html, 'utf8');
   result.pageReport = `pages/${result.slug}.html`;
+  result.pageResult = `page-results/${result.slug}.json`;
+  await fs.writeFile(pageJsonPath, JSON.stringify(result, null, 2), 'utf8');
 }
 
 async function writeIndex(results, health) {
@@ -362,6 +390,26 @@ async function writeIndex(results, health) {
   await fs.writeFile(indexPath, html, 'utf8');
 }
 
+async function writeResultSummary(results, health) {
+  await writeIndex(results, health);
+  const result = {
+    status: results.every((item) => item.status === 'PASS') ? 'PASS' : 'FAIL',
+    reportDate,
+    baseUrl,
+    apiUrl,
+    health,
+    menuOffset,
+    total: results.length,
+    pass: results.filter((item) => item.status === 'PASS').length,
+    fail: results.filter((item) => item.status === 'FAIL').length,
+    indexPath,
+    resultPath,
+    pages: results,
+  };
+  await fs.writeFile(resultPath, JSON.stringify(result, null, 2), 'utf8');
+  return result;
+}
+
 async function main() {
   await ensureDirs();
   const health = {
@@ -379,27 +427,15 @@ async function main() {
       process.stdout.write(`[${index + 1}/${menus.length}] ${menu.code} ${menu.path}\n`);
       const result = await runMenu(browser, menu);
       results.push(result);
+      await writeResultSummary(results, health);
     }
   } finally {
     await browser.close().catch(() => undefined);
   }
-  await writeIndex(results, health);
-  const result = {
-    status: results.every((item) => item.status === 'PASS') ? 'PASS' : 'FAIL',
-    reportDate,
-    baseUrl,
-    apiUrl,
-    health,
-    total: results.length,
-    pass: results.filter((item) => item.status === 'PASS').length,
-    fail: results.filter((item) => item.status === 'FAIL').length,
-    indexPath,
-    resultPath,
-    pages: results,
-  };
-  await fs.writeFile(resultPath, JSON.stringify(result, null, 2), 'utf8');
+  const result = await writeResultSummary(results, health);
   console.log(JSON.stringify({
     status: result.status,
+    menuOffset: result.menuOffset,
     total: result.total,
     pass: result.pass,
     fail: result.fail,

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>IF_MANUAL - HANES 전체 메뉴 QA</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #172033; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #d8dee9; padding: 8px; font-size: 13px; vertical-align: top; }
+    th { background: #f3f6fb; text-align: left; }
+    .pass { color: #047857; font-weight: 700; }
+    .fail { color: #be123c; font-weight: 700; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; overflow: auto; }
+    img { max-width: 100%; border: 1px solid #d8dee9; }
+  </style>
+</head>
+<body>
+  <h1>IF_MANUAL /interface/manual</h1>
+  <p>Route: <code>/interface/manual</code></p>
+  <p>Status: <span class="fail">FAIL</span> / HTTP -</p>
+  <h2>기능/버튼 인벤토리</h2>
+  <table><thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead><tbody></tbody></table>
+  <h2>API 호출</h2>
+  <table><thead><tr><th>Method</th><th>URL</th><th>Status</th><th>OK</th></tr></thead><tbody><tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/companies/public</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/companies/public/plants?company=40</td><td>200</td><td>OK</td></tr></tbody></table>
+  <h2>오류</h2>
+  <pre>runner: page.goto: Timeout 45000ms exceeded.
+Call log:
+[2m  - navigating to &quot;http://localhost:3002/interface/manual&quot;, waiting until &quot;domcontentloaded&quot;[22m
+
+requestfailed: GET /interface/manual net::ERR_ABORTED</pre>
+  <h2>화면 증거</h2>
+  <p>스크린샷 없음</p>
+  <h2>본문 미리보기</h2>
+  <pre></pre>
+</body>
+</html>

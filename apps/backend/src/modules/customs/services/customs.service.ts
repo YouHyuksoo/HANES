@@ -69,11 +69,6 @@ export class CustomsService {
 
     const queryBuilder = this.customsEntryRepository
       .createQueryBuilder('ce')
-      .leftJoinAndSelect(
-        'customs_lot',
-        'cl',
-        'cl.ENTRY_NO = ce.ENTRY_NO AND cl.COMPANY = ce.COMPANY AND cl.PLANT_CD = ce.PLANT_CD',
-      )
       .select([
         'ce.entryNo',
         'ce.blNo',
@@ -88,15 +83,6 @@ export class CustomsService {
         'ce.remark',
         'ce.createdAt',
         'ce.updatedAt',
-      ])
-      .addSelect([
-        'cl.ENTRY_NO AS cl_entryNo',
-        'cl.MAT_UID AS cl_matUid',
-        'cl.ITEM_CODE AS cl_itemCode',
-        'cl.QTY AS cl_qty',
-        'cl.USED_QTY AS cl_usedQty',
-        'cl.REMAIN_QTY AS cl_remainQty',
-        'cl.STATUS AS cl_status',
       ])
 
     if (company) {
@@ -180,6 +166,40 @@ export class CustomsService {
       customsLots: lotsByEntryNo.get(entry.entryNo) || [],
     }));
 
+    return { data, total, page, limit };
+  }
+
+  async findAllStock(query: CustomsEntryQueryDto, company?: string, plant?: string) {
+    const { page = 1, limit = 10, status, search } = query;
+    const skip = (page - 1) * limit;
+    const qb = this.customsLotRepository
+      .createQueryBuilder('cl')
+      .leftJoin(CustomsEntry, 'ce', 'ce.entryNo = cl.entryNo AND ce.company = cl.company AND ce.plant = cl.plant');
+
+    if (company) qb.andWhere('cl.company = :company', { company });
+    if (plant) qb.andWhere('cl.plant = :plant', { plant });
+    if (status) qb.andWhere('cl.status = :status', { status });
+    if (search) {
+      qb.andWhere('(cl.entryNo LIKE :search OR cl.matUid LIKE :search OR cl.itemCode LIKE :search)', {
+        search: `%${search.toUpperCase()}%`,
+      });
+    }
+
+    qb.orderBy('cl.createdAt', 'DESC').skip(skip).take(limit);
+    const [lots, total] = await Promise.all([qb.getMany(), qb.clone().skip(0).take(undefined).getCount()]);
+    const entryNos = [...new Set(lots.map((lot) => lot.entryNo))];
+    const entries = entryNos.length
+      ? await this.customsEntryRepository.find({
+          where: { entryNo: In(entryNos), ...this.tenantWhere(company, plant) },
+          select: ['entryNo', 'origin', 'declarationDate'],
+        })
+      : [];
+    const entryMap = new Map(entries.map((entry) => [entry.entryNo, entry]));
+    const data = lots.map((lot) => ({
+      ...lot,
+      origin: entryMap.get(lot.entryNo)?.origin ?? '',
+      declarationDate: entryMap.get(lot.entryNo)?.declarationDate ?? null,
+    }));
     return { data, total, page, limit };
   }
 

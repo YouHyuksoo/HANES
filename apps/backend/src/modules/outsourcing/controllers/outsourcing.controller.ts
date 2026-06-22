@@ -193,6 +193,14 @@ export class OutsourcingController {
     return ResponseUtil.success(data, '외주 입고가 등록되었습니다.');
   }
 
+  @Get('receives')
+  @ApiOperation({ summary: '외주 입고 목록 조회' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async findAllReceives(@Query() query: SubconOrderQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.outsourcingService.findAllReceives(query, company, plant);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
   @Get('receives/order/:orderId')
   @ApiOperation({ summary: '외주발주별 입고 이력' })
   @ApiParam({ name: 'orderId', description: '외주발주 ID' })

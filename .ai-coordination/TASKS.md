@@ -38,6 +38,16 @@ scope:
 - 실패 메뉴를 수정-재테스트 대상으로 분류하고 최종 HTML/JSON 리포트 작성
 files:
 - tools/hanes-all-menu-page-scenario-qa.mjs
+- apps/frontend/src/app/(authenticated)/material/receive-history/page.tsx
+- apps/frontend/src/app/(authenticated)/sales/customer-po-status/page.tsx
+- apps/frontend/src/app/(authenticated)/customs/stock/page.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/receive/page.tsx
+- apps/backend/src/modules/shipping/controllers/customer-order.controller.ts
+- apps/backend/src/modules/shipping/services/customer-order.service.ts
+- apps/backend/src/modules/customs/controllers/customs.controller.ts
+- apps/backend/src/modules/customs/services/customs.service.ts
+- apps/backend/src/modules/outsourcing/controllers/outsourcing.controller.ts
+- apps/backend/src/modules/outsourcing/services/outsourcing.service.ts
 - docs/reports/hanes-all-menu-scenario-qa-*/
 verification:
 - 전체 메뉴 러너 실행, 결과 JSON/HTML 링크 검증, 실패별 재테스트 증거

@@ -8,7 +8,7 @@
  * 1. **목적**: 고객발주 대비 출하 진행 현황을 모니터링
  * 2. **출하율**: (출하수량 / 수주수량) x 100
  * 3. **잔량**: 수주수량 - 출하수량
- * 4. API: GET /shipping/customer-order-status
+ * 4. API: GET /shipping/customer-orders/status
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -59,7 +59,7 @@ export default function CustomerPoStatusPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
-      const res = await api.get("/shipping/customer-order-status", { params });
+      const res = await api.get("/shipping/customer-orders/status", { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);

@@ -7,10 +7,20 @@ status: active
 owner: codex
 role: implementer/operator
 started: 2026-06-23 02:20 KST
-last_seen: 2026-06-23 02:20 KST
-expires: 2026-06-23 06:20 KST
+last_seen: 2026-06-23 04:38 KST
+expires: 2026-06-23 08:38 KST
 files:
 - tools/hanes-all-menu-page-scenario-qa.mjs
+- apps/frontend/src/app/(authenticated)/material/receive-history/page.tsx
+- apps/frontend/src/app/(authenticated)/sales/customer-po-status/page.tsx
+- apps/frontend/src/app/(authenticated)/customs/stock/page.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/receive/page.tsx
+- apps/backend/src/modules/shipping/controllers/customer-order.controller.ts
+- apps/backend/src/modules/shipping/services/customer-order.service.ts
+- apps/backend/src/modules/customs/controllers/customs.controller.ts
+- apps/backend/src/modules/customs/services/customs.service.ts
+- apps/backend/src/modules/outsourcing/controllers/outsourcing.controller.ts
+- apps/backend/src/modules/outsourcing/services/outsourcing.service.ts
 - docs/reports/hanes-all-menu-scenario-qa-*/
 - .ai-coordination/TASKS.md
 - .ai-coordination/LOCKS.md

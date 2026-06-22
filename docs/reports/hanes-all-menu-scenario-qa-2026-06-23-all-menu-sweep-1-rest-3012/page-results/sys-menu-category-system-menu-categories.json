@@ -1,0 +1,78 @@
+{
+  "code": "SYS_MENU_CATEGORY",
+  "labelKey": "menu.system.menuCategory",
+  "path": "/system/menu-categories",
+  "source": "menuConfig",
+  "slug": "sys-menu-category-system-menu-categories",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3012/system/menu-categories",
+  "routeStatus": null,
+  "elapsedMs": 48907,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public/plants?company=40",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/system/menu-categories",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3012/system/menu-categories\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/sys-menu-category-system-menu-categories.html",
+  "pageResult": "page-results/sys-menu-category-system-menu-categories.json"
+}

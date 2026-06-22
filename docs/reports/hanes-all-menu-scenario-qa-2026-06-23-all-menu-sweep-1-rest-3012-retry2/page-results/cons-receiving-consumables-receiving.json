@@ -1,0 +1,317 @@
+{
+  "code": "CONS_RECEIVING",
+  "labelKey": "menu.consumables.receiving",
+  "path": "/consumables/receiving",
+  "source": "menuConfig",
+  "slug": "cons-receiving-consumables-receiving",
+  "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+  "status": "PASS",
+  "routeUrl": "http://localhost:3012/consumables/receiving",
+  "routeStatus": 200,
+  "prewarm": {
+    "ok": true,
+    "status": 200,
+    "elapsedMs": 216
+  },
+  "elapsedMs": 3325,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/consumables/logs?logTypeGroup=RECEIVING&startDate=2026-06-23&endDate=2026-06-23&limit=5000",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/consumables/label/pending",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/inventory/warehouse-locations",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/api/db-info",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [
+    {
+      "name": "화면 로드",
+      "handling": "GET /consumables/receiving",
+      "status": "실행",
+      "note": "HTTP 200"
+    },
+    {
+      "name": "라우트 prewarm",
+      "handling": "직접 HTTP 확인",
+      "status": "실행",
+      "note": "HTTP 200, 216ms"
+    },
+    {
+      "name": "초기 API 호출",
+      "handling": "브라우저 네트워크 수집",
+      "status": "실행",
+      "note": "12건"
+    },
+    {
+      "name": "🇰🇷",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리자",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "워크플로우",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "대시보드",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "기준정보",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "자재관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "생산관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "품질관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "검사관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "제품수불관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "출하관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "모니터링",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "설비관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "소모품관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "인터페이스",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "시스템관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "소모품 입고관리",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "새로고침",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입고등록",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입고",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입고반품",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입고확정",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "전체화면 보기",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "AI 채팅",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "개선요청 등록",
+      "handling": "화면 버튼 목록화",
+      "status": "목록화",
+      "note": "후속 메뉴별 세부 시나리오 실행 대상"
+    },
+    {
+      "name": "입력 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "5개"
+    },
+    {
+      "name": "선택 필드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "2개"
+    },
+    {
+      "name": "목록/그리드",
+      "handling": "DOM 수집",
+      "status": "목록화",
+      "note": "table 1, grid 0"
+    }
+  ],
+  "metrics": {
+    "buttons": 25,
+    "inputs": 5,
+    "selects": 2,
+    "tables": 1,
+    "grids": 0
+  },
+  "screenshot": "screenshots/cons-receiving-consumables-receiving/01-load.png",
+  "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 소모품 입고관리 소모품입고 소모품 입고를 관리합니다. 새로고침 입고등록 입고 입고반품 보관위치 (선택) DEF-01 - 불량품 1번 DEF-02 - 불량품 2번 FG-A-01-01 - 완제품 A구역 1열 1단 FG-A-01-02 - 완제품 A구역 1열 2단 FG-A-02-01 - 완제품 A구역 2열 1단 FG-B-01-01 - 완제품 B구역 1열 1단 FGM-A-01 - 완제품메인 A-01 FGM-A-02 - 완제품메인 A-02 FGM-B-01 - 완제품메인 B-01 MAT-A-01-01 - 자재A 1열 1단 MAT-A-01-02 - 자재A 1열 2단 MAT-A-01-03 - 자재A 1열 3단 MAT-A-02-01 - 자재A 2열 1단 MAT-A-02-02 - 자재A 2열 2단 MAT-B-01-01 - 자재B 1열 1단 MAT-B-01-02 - 자재B 1열 2단 MAT-B-02-01 - 자재B 2열 1단 RM-A-01-01 - 원자재 A구역 1열 1단 RM-A-01-02 - 원자재 A구역 1열 2단 RM-A-02-01 - 원자재 A구역 2열 1단 RM-B-01-01 - 원자재 B구역 1열 1단 RM-SUB-01 - 원자재 서브 1번 RM-SUB-02 - 원자재 서브 2번 SCRAP-01 - 폐기 1번 SHIP-01 - 출하대기 1번 SHIP-02 - 출하대기 2번 SHIP-03 - 출하대기 3번 SUB-01 - 외주 1번 SUB-02 - 외주 2번 W001-A-01-01 - 원자재창고 A구역 1열 1단 W001-A-01-02 - 원자재창고 A구역 1열 2단 W001-A-02-01 - 원자재창고 A구역 2열 1단 W001-A-02-02 - 원자재창고 A구역 2열 2단 W001-B-01-01 - 원자재창고 B구역 1열 1단 W001-B-01-02 - 원자재창고 B구역 1열 2단 WIP-A-01 - 반제품 A-01 WIP-A-02 - 반제품 A-02 WIP-B-01 - 반제품 B-01 입고확정 ~ 전체 유형 입고 입고반품 일시 소모품코드 소모품명 UID 유형 수량 공급업체코드 공급업체명 단가 입고구분 비고 데이터가 없습니다. 전체화면 보기 AI 채팅 개선요청 등록",
+  "error": null,
+  "pageReport": "pages/cons-receiving-consumables-receiving.html",
+  "pageResult": "page-results/cons-receiving-consumables-receiving.json"
+}

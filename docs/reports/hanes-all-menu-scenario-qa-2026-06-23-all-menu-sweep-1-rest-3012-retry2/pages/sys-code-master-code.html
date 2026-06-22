@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>SYS_CODE - HANES 전체 메뉴 QA</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #172033; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #d8dee9; padding: 8px; font-size: 13px; vertical-align: top; }
+    th { background: #f3f6fb; text-align: left; }
+    .pass { color: #047857; font-weight: 700; }
+    .fail { color: #be123c; font-weight: 700; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; overflow: auto; }
+    img { max-width: 100%; border: 1px solid #d8dee9; }
+  </style>
+</head>
+<body>
+  <h1>SYS_CODE H
+HARNESS MES
+🇰🇷
+40 / 1000
+JSHNSMES @ 10.1.10.35
+시스템관리자</h1>
+  <p>Route: <code>/master/code</code></p>
+  <p>Status: <span class="pass">PASS</span> / HTTP 200</p>
+  <h2>기능/버튼 인벤토리</h2>
+  <table><thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead><tbody><tr><td>화면 로드</td><td>GET /master/code</td><td>실행</td><td>HTTP 200</td></tr>
+<tr><td>라우트 prewarm</td><td>직접 HTTP 확인</td><td>실행</td><td>HTTP 200, 164ms</td></tr>
+<tr><td>초기 API 호출</td><td>브라우저 네트워크 수집</td><td>실행</td><td>11건</td></tr>
+<tr><td>🇰🇷</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리자</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>워크플로우</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>대시보드</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>기준정보</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>생산관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>품질관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>검사관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>제품수불관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>출하관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>모니터링</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>설비관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>소모품관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>인터페이스</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>코드관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>새로고침</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>코드 추가</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>ADJUST_ACCOUNT 조정 계정 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>ADJ_REASON 재고조정 사유 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>APPROVAL_STATUS 승인 상태 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AQL_INSP_LEVEL AQL_INSP_LEVEL 7</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AQL_VALUE AQL_VALUE 26</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>ARRIVAL_PO_TYPE 입하 PO 유형 2</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>ARRIVAL_RESULT_STATUS 입하실적 상태 5</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AUDIT_RESULT 심사 결과 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AUDIT_STATUS 심사 상태 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AUDIT_TYPE 심사 유형 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>BAUD_RATE 보드레이트 5</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>BOM_SIDE BOM 사이드 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>BOM_TYPE BOM 유형 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>BOX_STATUS BOX 상태 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CAL_RESULT CAL_RESULT 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CAL_TYPE CAL_TYPE 2</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CAPA_ACTION_STATUS CAPA_ACTION_STATUS 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CAPA_SOURCE_TYPE CAPA_SOURCE_TYPE 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CAPA_STATUS CAPA_STATUS 6</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CAPA_TYPE CAPA_TYPE 2</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CHANGE_PRIORITY CHANGE_PRIORITY 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CHANGE_STATUS CHANGE_STATUS 8</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CHANGE_TYPE CHANGE_TYPE 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>COMM_TYPE 통신 유형 5</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>COMPLAINT_STATUS COMPLAINT_STATUS 5</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>COMPLAINT_TYPE COMPLAINT_TYPE 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>COMPLAINT_URGENCY COMPLAINT_URGENCY 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONNECTION_STATUS 연결 상태 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONSUMABLE_CATEGORY 소모품 카테고리 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONSUMABLE_LIFE_STATUS 소모품 수명 상태 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONSUMABLE_LOG_TYPE 소모품 이력 유형 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONSUMABLE_LOG_TYPE_GROUP 소모품 이력 그룹 2</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONSUMABLE_OPER_STATUS CONSUMABLE_OPER_STATUS 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONSUMABLE_STATUS 소모품 상태 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONTINUITY_DEFECT 통전검사 불량 유형 7</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CONTROL_METHOD 관리 방법 7</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CON_STOCK_STATUS 소모품 재고 상태 5</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CP_PHASE CP_PHASE 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CP_STATUS CP_STATUS 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CUSTOMS_ENTRY_STATUS 통관 입항 상태 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>CUSTOMS_LOT_STATUS 통관 LOT 상태 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DATA_BITS 데이터비트 2</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DAY_OFF_TYPE 휴무 유형 5</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_CAUSE 불량 원인 1</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_DISPOSITION 불량 처리 유형 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_GENUINE 진성불량 여부 2</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_GRADE DEFECT_GRADE 3</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_LOG_STATUS 불량 로그 상태 5</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_MODEL_GROUP DEFECT_MODEL_GROUP 2</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_POSITION 불량 위치 1</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_STATUS 불량 상태 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DEFECT_TYPE 불량 유형 12</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DOC_STATUS DOC_STATUS 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>DOC_TYPE DOC_TYPE 6</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>EQUIP_STATUS 설비 상태 4</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입력 필드</td><td>DOM 수집</td><td>목록화</td><td>2개</td></tr>
+<tr><td>선택 필드</td><td>DOM 수집</td><td>목록화</td><td>1개</td></tr>
+<tr><td>목록/그리드</td><td>DOM 수집</td><td>목록화</td><td>table 1, grid 0</td></tr></tbody></table>
+  <h2>API 호출</h2>
+  <table><thead><tr><th>Method</th><th>URL</th><th>Status</th><th>OK</th></tr></thead><tbody><tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/auth/me</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/configs/active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/menu-categories/tree</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/com-codes/groups</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/com-codes/all-active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/com-codes/groups/ADJUST_ACCOUNT</td><td>200</td><td>OK</td></tr></tbody></table>
+  <h2>오류</h2>
+  <pre>requestfailed: GET /api/db-info net::ERR_ABORTED
+requestfailed: GET https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2 net::ERR_ABORTED</pre>
+  <h2>화면 증거</h2>
+  <img src="../screenshots/sys-code-master-code/01-load.png" alt="screenshot" />
+  <h2>본문 미리보기</h2>
+  <pre>H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 코드관리 코드관리 공통 코드를 관리합니다. 새로고침 코드 추가 그룹코드 157개 그룹 ADJUST_ACCOUNT 조정 계정 4 ADJ_REASON 재고조정 사유 4 APPROVAL_STATUS 승인 상태 3 AQL_INSP_LEVEL AQL_INSP_LEVEL 7 AQL_VALUE AQL_VALUE 26 ARRIVAL_PO_TYPE 입하 PO 유형 2 ARRIVAL_RESULT_STATUS 입하실적 상태 5 AUDIT_RESULT 심사 결과 4 AUDIT_STATUS 심사 상태 4 AUDIT_TYPE 심사 유형 4 BAUD_RATE 보드레이트 5 BOM_SIDE BOM 사이드 3 BOM_TYPE BOM 유형 3 BOX_STATUS BOX 상태 3 CAL_RESULT CAL_RESULT 3 CAL_TYPE CAL_TYPE 2 CAPA_ACTION_STATUS CAPA_ACTION_STATUS 3 CAPA_SOURCE_TYPE CAPA_SOURCE_TYPE 4 CAPA_STATUS CAPA_STATUS 6 CAPA_TYPE CAPA_TYPE 2 CHANGE_PRIORITY CHANGE_PRIORITY 3 CHANGE_STATUS CHANGE_STATUS 8 CHANGE_TYPE CHANGE_TYPE 4 COMM_TYPE 통신 유형 5 COMPLAINT_STATUS COMPLAINT_STATUS 5 COMPLAINT_TYPE COMPLAINT_TYPE 3 COMPLAINT_URGENCY COMPLAINT_URGENCY 4 CONNECTION_STATUS 연결 상태 3 CONSUMABLE_CATEGORY 소모품 카테고리 3 CONSUMABLE_LIFE_STATUS 소모품 수명 상태 3 CONSUMABLE_LOG_TYPE 소모품 이력 유형 4 CONSUMABLE_LOG_TYPE_GROUP 소모품 이력 그룹 2 CONSUMABLE_OPER_STATUS CONSUMABLE_OPER_STATUS 3 CONSUMABLE_STATUS 소모품 상태 3 CONTINUITY_DEFECT 통전검사 불량 유형 7 CONTROL_METHOD 관리 방법 7 CON_STOCK_STATUS 소모품 재</pre>
+</body>
+</html>

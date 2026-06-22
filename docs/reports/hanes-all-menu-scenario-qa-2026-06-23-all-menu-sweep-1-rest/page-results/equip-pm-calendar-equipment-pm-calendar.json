@@ -1,0 +1,78 @@
+{
+  "code": "EQUIP_PM_CALENDAR",
+  "labelKey": "menu.equipment.pmCalendar",
+  "path": "/equipment/pm-calendar",
+  "source": "menuConfig",
+  "slug": "equip-pm-calendar-equipment-pm-calendar",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/equipment/pm-calendar",
+  "routeStatus": null,
+  "elapsedMs": 46626,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public/plants?company=40",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/equipment/pm-calendar",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/equipment/pm-calendar\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/equip-pm-calendar-equipment-pm-calendar.html",
+  "pageResult": "page-results/equip-pm-calendar-equipment-pm-calendar.json"
+}
