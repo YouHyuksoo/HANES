@@ -1,203 +1,267 @@
-﻿"use client";
+"use client";
 
 /**
  * @file src/app/(authenticated)/shipping/return/page.tsx
- * @description 출하반품등록 페이지 - 출하반품 CRUD 및 품목 관리
+ * @description 출하취소 - 출하지시 단위로 출하분(박스+팔레트)을 조회하고 출하를 취소
  *
- * 초보자 가이드:
- * 1. **출하반품**: 출하 후 고객사에서 반품된 품목을 등록/관리
- * 2. **상태 흐름**: DRAFT -> CONFIRMED -> COMPLETED
- * 3. API: GET/POST/PUT/DELETE /shipping/returns
+ * 워크플로우:
+ * 1. 좌측에서 출하분이 있는 출하지시(통합 이력) 선택. (출하이력 ↔ 취소이력 토글)
+ * 2. 우측에 팔레트(+박스) / 박스출하(팔레트번호 '*') 상세 표시.
+ * 3. "출하취소" → 사유 입력 후 선택 지시의 모든 출하분을 단일 트랜잭션으로 취소(재고복원).
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
-import {
-  Undo2, Plus, Search, RefreshCw, Edit2, Trash2,
-} from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Undo2, RefreshCw, Package, AlertTriangle, XCircle, Boxes, Layers } from "lucide-react";
+import { Card, CardContent, Button, Modal, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { usePartnerOptions } from "@/hooks/useMasterOptions";
+import { ColumnDef } from "@tanstack/react-table";
+import { useAuthStore } from "@/stores/authStore";
 import api from "@/services/api";
 
-interface ShipReturn {
-  returnNo: string;
+type ShipType = "BOX" | "PALLET" | "MIXED";
+interface ShippedOrder {
   shipOrderNo: string;
-  customerName: string;
-  customerId: string;
-  returnDate: string;
-  returnReason: string;
-  status: string;
-  itemCount: number;
-  totalQty: number;
-  remark: string;
+  customerName: string | null;
+  shipDate: string | null;
+  shippedQty: number;
+  shipType: ShipType;
+  palletCount: number;
+  boxCount: number;
+  hasErpSynced: boolean;
+}
+interface DetailBox { boxNo: string; itemCode: string; qty: number; }
+interface DetailPallet { palletNo: string; status: string; boxCount: number; totalQty: number; shipNo: string | null; boxes: DetailBox[]; }
+interface DetailLooseBox extends DetailBox { palletNo: string; shippedAt: string | null; }
+interface ShippedDetail {
+  order: { shipOrderNo: string; customerName: string | null; shipDate: string | null };
+  pallets: DetailPallet[];
+  boxShipped: DetailLooseBox[];
+}
+interface ReturnRow { returnNo: string; shipmentId: string | null; returnDate: string; returnReason: string; status: string; }
+
+function errMsg(e: unknown, fallback: string): string {
+  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
 }
 
-export default function ShipReturnPage() {
+export default function ShipCancelPage() {
   const { t } = useTranslation();
-  const { options: customerOptions } = usePartnerOptions("CUSTOMER");
-  const [data, setData] = useState<ShipReturn[]>([]);
+  const userId = useAuthStore((s) => s.user?.id);
+
+  const [view, setView] = useState<"history" | "cancel">("history");
+  const [orders, setOrders] = useState<ShippedOrder[]>([]);
+  const [returns, setReturns] = useState<ReturnRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<ShipReturn | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ShipReturn | null>(null);
-  const [form, setForm] = useState({ returnNo: "", shipOrderNo: "", customerId: "", returnDate: "", returnReason: "", remark: "" });
+  const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ShippedDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [canceling, setCanceling] = useState(false);
+  const [pageError, setPageError] = useState("");
 
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("common.allStatus") },
-    { value: "DRAFT", label: t("shipping.return.statusDraft") },
-    { value: "CONFIRMED", label: t("shipping.return.statusConfirmed") },
-    { value: "COMPLETED", label: t("shipping.return.statusCompleted") },
-  ], [t]);
-
-  const statusColors: Record<string, string> = {
-    DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-    CONFIRMED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-    COMPLETED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  };
-
-  const fetchData = useCallback(async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
-      if (searchText) params.search = searchText;
-      if (statusFilter) params.status = statusFilter;
-      const res = await api.get("/shipping/returns", { params });
-      setData(res.data?.data ?? []);
-    } catch {
-      setData([]);
+      const res = await api.get("/shipping/orders/shipped");
+      setOrders(res.data?.data ?? []);
+    } catch (e: unknown) {
+      setPageError(errMsg(e, t("shipping.return.loadHistoryFailed", "출하이력을 불러오지 못했습니다.")));
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter]);
+  }, [t]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const openCreate = useCallback(() => {
-    setEditingItem(null);
-    setForm({ returnNo: "", shipOrderNo: "", customerId: "", returnDate: "", returnReason: "", remark: "" });
-    setIsModalOpen(true);
-  }, []);
-
-  const openEdit = useCallback((item: ShipReturn) => {
-    setEditingItem(item);
-    setForm({ returnNo: item.returnNo, shipOrderNo: item.shipOrderNo, customerId: item.customerId || "", returnDate: item.returnDate, returnReason: item.returnReason, remark: item.remark || "" });
-    setIsModalOpen(true);
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    setSaving(true);
+  const fetchReturns = useCallback(async () => {
+    setLoading(true);
     try {
-      if (editingItem) {
-        await api.put(`/shipping/returns/${editingItem.returnNo}`, form);
-      } else {
-        await api.post("/shipping/returns", form);
-      }
-      setIsModalOpen(false);
-      fetchData();
-    } catch (e) {
-      console.error("Save failed:", e);
+      const res = await api.get("/shipping/returns", { params: { limit: "5000" } });
+      setReturns(res.data?.data ?? []);
+    } catch (e: unknown) {
+      setPageError(errMsg(e, t("shipping.return.loadHistoryFailed", "출하이력을 불러오지 못했습니다.")));
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }, [editingItem, form, fetchData]);
+  }, [t]);
 
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!deleteTarget) return;
+  useEffect(() => {
+    if (view === "history") fetchOrders();
+    else fetchReturns();
+  }, [view, fetchOrders, fetchReturns]);
+
+  const fetchDetail = useCallback(async (orderNo: string) => {
+    setSelectedOrderNo(orderNo);
+    setDetailLoading(true);
+    setDetail(null);
     try {
-      await api.delete(`/shipping/returns/${deleteTarget.returnNo}`);
-      fetchData();
-    } catch (e) {
-      console.error("Delete failed:", e);
+      const res = await api.get(`/shipping/orders/${encodeURIComponent(orderNo)}/shipped-detail`);
+      setDetail(res.data?.data ?? null);
+    } catch (e: unknown) {
+      setPageError(errMsg(e, t("shipping.return.loadDetailFailed", "출하 상세를 불러오지 못했습니다.")));
     } finally {
-      setDeleteTarget(null);
+      setDetailLoading(false);
     }
-  }, [deleteTarget, fetchData]);
+  }, [t]);
 
-  const columns = useMemo<ColumnDef<ShipReturn>[]>(() => [
-    { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
-      </div>
-    ) },
-    { accessorKey: "returnNo", header: t("shipping.return.returnNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "shipOrderNo", header: t("shipping.return.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "customerName", header: t("shipping.return.customer"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "returnDate", header: t("shipping.return.returnDate"), size: 100, meta: { filterType: "date" as const } },
-    { accessorKey: "returnReason", header: t("shipping.return.returnReason"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "totalQty", header: t("shipping.return.returnQty"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => {
-      const s = getValue() as string;
-      const label = statusOptions.find(o => o.value === s)?.label || s;
-      return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{label}</span>;
-    } },
-  ], [t, statusOptions, openEdit]);
+  const selectedOrder = useMemo(
+    () => orders.find((o) => o.shipOrderNo === selectedOrderNo) ?? null,
+    [orders, selectedOrderNo],
+  );
+
+  const doCancel = useCallback(async () => {
+    if (!selectedOrderNo || !cancelReason.trim()) return;
+    setCanceling(true);
+    setPageError("");
+    try {
+      await api.post(`/shipping/orders/${encodeURIComponent(selectedOrderNo)}/cancel-shipment`, {
+        reason: cancelReason.trim(),
+        workerId: userId,
+      });
+      setCancelOpen(false);
+      setCancelReason("");
+      setSelectedOrderNo(null);
+      setDetail(null);
+      fetchOrders();
+    } catch (e: unknown) {
+      setPageError(errMsg(e, t("shipping.return.cancelFailed", "출하취소에 실패했습니다.")));
+    } finally {
+      setCanceling(false);
+    }
+  }, [selectedOrderNo, cancelReason, userId, fetchOrders, t]);
+
+  const typeLabel = useCallback((tp: ShipType) =>
+    tp === "MIXED" ? t("shipping.return.typeMixed", "혼합")
+    : tp === "PALLET" ? t("shipping.return.typePallet", "팔레트")
+    : t("shipping.return.typeBox", "박스"), [t]);
+
+  const orderColumns = useMemo<ColumnDef<ShippedOrder>[]>(() => [
+    { accessorKey: "shipOrderNo", header: t("shipping.return.shipOrderNo", "출하지시번호"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono font-medium">{getValue() as string}</span> },
+    { accessorKey: "customerName", header: t("shipping.return.customer", "고객사"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
+    { accessorKey: "shipDate", header: t("shipping.return.shipDate", "출하일"), size: 100, meta: { filterType: "date" as const }, cell: ({ getValue }) => { const v = getValue() as string | null; return v ? String(v).slice(0, 10) : "-"; } },
+    { accessorKey: "shipType", header: t("shipping.return.shipType", "출하유형"), size: 90, meta: { align: "center" as const }, cell: ({ getValue }) => <span className="text-xs font-medium text-text">{typeLabel(getValue() as ShipType)}</span> },
+    { accessorKey: "shippedQty", header: t("shipping.return.shippedQty", "출하수량"), size: 90, meta: { align: "right" as const, filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
+    { accessorKey: "palletCount", header: t("shipping.return.palletCount", "팔레트수"), size: 80, meta: { align: "center" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
+    { accessorKey: "boxCount", header: t("shipping.return.boxCount", "박스수"), size: 80, meta: { align: "center" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
+    { accessorKey: "hasErpSynced", header: "ERP", size: 60, meta: { align: "center" as const }, cell: ({ getValue }) => (getValue() ? "Y" : "-") },
+  ], [t, typeLabel]);
+
+  const returnColumns = useMemo<ColumnDef<ReturnRow>[]>(() => [
+    { accessorKey: "returnNo", header: t("shipping.return.returnNo", "반품번호"), size: 160, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono">{getValue() as string}</span> },
+    { accessorKey: "shipmentId", header: t("shipping.return.shipOrderNo", "출하지시번호"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
+    { accessorKey: "returnDate", header: t("shipping.return.returnDate", "반품일"), size: 100, meta: { filterType: "date" as const }, cell: ({ getValue }) => { const v = getValue() as string | null; return v ? String(v).slice(0, 10) : "-"; } },
+    { accessorKey: "returnReason", header: t("shipping.return.cancelReason", "취소 사유"), size: 200, meta: { filterType: "text" as const } },
+    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "text" as const } },
+  ], [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Undo2 className="w-7 h-7 text-primary" />{t("shipping.return.title")}</h1>
-          <p className="text-text-muted mt-1">{t("shipping.return.subtitle")}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Undo2 className="w-7 h-7 text-primary" />{t("shipping.return.title", "출하취소")}</h1>
+          <p className="text-text-muted mt-1">{t("shipping.return.subtitle", "출하지시 단위로 출하분을 조회하고 출하를 취소합니다.")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
+          <div className="inline-flex rounded-lg border border-border overflow-hidden">
+            <button type="button" onClick={() => setView("history")} className={`px-3 py-1.5 text-sm ${view === "history" ? "bg-primary text-white" : "text-text-muted hover:bg-surface"}`}>{t("shipping.return.shipHistory", "출하이력")}</button>
+            <button type="button" onClick={() => setView("cancel")} className={`px-3 py-1.5 text-sm ${view === "cancel" ? "bg-primary text-white" : "text-text-muted hover:bg-surface"}`}>{t("shipping.return.cancelHistory", "취소이력")}</button>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => (view === "history" ? fetchOrders() : fetchReturns())}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
         </div>
       </div>
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
-          enableExport exportFileName={t("shipping.return.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("shipping.return.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
-              </div>
+
+      {pageError && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex-shrink-0">
+          <AlertTriangle className="w-4 h-4 shrink-0" /><span className="flex-1">{pageError}</span>
+          <button onClick={() => setPageError("")}><XCircle className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      {view === "cancel" ? (
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid data={returns} columns={returnColumns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("shipping.return.cancelHistory", "취소이력")} />
+        </CardContent></Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 flex-1 min-h-0 overflow-hidden">
+          {/* left: shipped orders */}
+          <Card className="min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-3 flex flex-col gap-2">
+            <h2 className="text-sm font-semibold text-text flex-shrink-0">{t("shipping.return.shipHistory", "출하이력")} <span className="text-text-muted font-normal">({orders.length})</span></h2>
+            <div className="flex-1 min-h-0">
+              <DataGrid data={orders} columns={orderColumns} isLoading={loading} enableColumnFilter enableExport
+                exportFileName={t("shipping.return.shipHistory", "출하이력")}
+                emptyMessage={t("shipping.return.noShippedOrders", "출하분이 있는 출하지시가 없습니다.")}
+                selectedRowId={selectedOrderNo ?? undefined}
+                getRowId={(row) => row.shipOrderNo}
+                onRowClick={(row) => fetchDetail(row.shipOrderNo)} />
             </div>
-          } 
-          sqlQuery={`SELECT *\nFROM SHIPPING_RETURNS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("shipping.return.editTitle") : t("shipping.return.addTitle")} size="lg">
+          </CardContent></Card>
+
+          {/* right: detail + cancel */}
+          <Card padding="none"><CardContent className="p-3 h-full flex flex-col min-h-0">
+            <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
+              <div>
+                <h2 className="text-sm font-semibold text-text">{t("shipping.return.shipDetail", "출하 상세")}</h2>
+                <p className="text-xs text-text-muted mt-0.5">{selectedOrderNo ?? t("shipping.return.selectOrder", "출하지시를 선택하세요")}</p>
+              </div>
+              <Button size="sm" variant="danger"
+                disabled={!detail || detailLoading || !!selectedOrder?.hasErpSynced}
+                onClick={() => { setCancelReason(""); setCancelOpen(true); }}>
+                <Undo2 className="w-4 h-4 mr-1" />{t("shipping.return.cancelShip", "출하취소")}
+              </Button>
+            </div>
+            {selectedOrder?.hasErpSynced && (
+              <div className="mb-2 px-2 py-1 rounded border border-amber-500 text-amber-600 text-xs flex-shrink-0">{t("shipping.return.erpBlocked", "ERP 연동이 완료된 출하가 포함되어 취소할 수 없습니다.")}</div>
+            )}
+            {!selectedOrderNo ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-text-muted"><Package className="w-12 h-12 mb-2 opacity-50" /><p className="text-sm">{t("shipping.return.selectOrder", "출하지시를 선택하세요")}</p></div>
+            ) : detailLoading ? (
+              <div className="flex-1 flex items-center justify-center text-text-muted">{t("common.loading", "로딩 중...")}</div>
+            ) : detail ? (
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-3">
+                {/* pallets */}
+                <div>
+                  <p className="text-xs font-semibold text-text-muted flex items-center gap-1 mb-1"><Layers className="w-3.5 h-3.5" />{t("shipping.return.palletSection", "팔레트")} ({detail.pallets.length})</p>
+                  {detail.pallets.length === 0 ? <p className="text-xs text-text-muted pl-1">-</p> : detail.pallets.map((p) => (
+                    <div key={p.palletNo} className="p-2 bg-background rounded mb-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-mono font-medium">{p.palletNo}</span>
+                        <span className="text-xs text-text-muted">{p.boxCount.toLocaleString()}box · {p.totalQty.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* box shipments (palletNo = *) */}
+                <div>
+                  <p className="text-xs font-semibold text-text-muted flex items-center gap-1 mb-1"><Boxes className="w-3.5 h-3.5" />{t("shipping.return.boxShippedSection", "박스출하")} ({detail.boxShipped.length})</p>
+                  {detail.boxShipped.length === 0 ? <p className="text-xs text-text-muted pl-1">-</p> : detail.boxShipped.map((b) => (
+                    <div key={b.boxNo} className="flex items-center justify-between p-2 bg-background rounded mb-1 text-sm">
+                      <span className="font-mono">{b.boxNo}</span>
+                      <span className="text-xs text-text-muted">{t("shipping.return.palletNo", "팔레트번호")}: <span className="font-mono">{b.palletNo}</span> · {b.qty.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </CardContent></Card>
+        </div>
+      )}
+
+      {/* cancel confirm modal */}
+      <Modal isOpen={cancelOpen} onClose={() => setCancelOpen(false)} title={t("shipping.return.cancelShip", "출하취소")} size="md">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t("shipping.return.returnNo")} placeholder="RT-YYYYMMDD-NNN"
-              value={form.returnNo} onChange={e => setForm(p => ({ ...p, returnNo: e.target.value }))} fullWidth />
-            <Input label={t("shipping.return.shipOrderNo")} placeholder="SO-YYYYMMDD-NNN"
-              value={form.shipOrderNo} onChange={e => setForm(p => ({ ...p, shipOrderNo: e.target.value }))} fullWidth />
-            <Input label={t("shipping.return.returnDate")} type="date"
-              value={form.returnDate} onChange={e => setForm(p => ({ ...p, returnDate: e.target.value }))} fullWidth />
-            <Select label={t("shipping.return.customer")} options={customerOptions}
-              value={form.customerId} onChange={v => setForm(p => ({ ...p, customerId: v }))} fullWidth />
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-sm text-amber-700 dark:text-amber-400">
+            {t("shipping.return.cancelConfirm", "선택한 출하지시의 모든 출하분을 취소하고 재고를 복원합니다. 진행할까요?")}
           </div>
-          <Input label={t("shipping.return.returnReason")} placeholder={t("shipping.return.returnReasonPlaceholder")}
-            value={form.returnReason} onChange={e => setForm(p => ({ ...p, returnReason: e.target.value }))} fullWidth />
-          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
-            value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
+          <Input label={t("shipping.return.cancelReason", "취소 사유")} placeholder={t("shipping.return.cancelReasonPlaceholder", "취소 사유를 입력하세요")}
+            value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} fullWidth />
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="secondary" onClick={() => setCancelOpen(false)}>{t("common.cancel")}</Button>
+            <Button variant="danger" onClick={doCancel} disabled={!cancelReason.trim() || canceling}>
+              {canceling ? t("common.processing", "처리 중...") : t("shipping.return.cancelShip", "출하취소")}
             </Button>
           </div>
         </div>
       </Modal>
-
-      <ConfirmModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
-        variant="danger"
-        message={`'${deleteTarget?.returnNo || ""}'${t("common.deleteConfirmSuffix", "을(를) 삭제하시겠습니까?")}`}
-      />
     </div>
   );
 }
