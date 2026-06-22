@@ -375,12 +375,10 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
                       </div>
                       <div className="w-14 shrink-0">
                         <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.sparePartQty", "수량")}</label>
-                        <input
-                          type="number"
-                          value={item.sparePartQty || ""}
-                          onChange={(e) => updateItem(idx, "sparePartQty", e.target.value ? Number(e.target.value) : 0)}
+                        <QtyInput
+                          value={item.sparePartQty || 0}
+                          onChange={(n) => updateItem(idx, "sparePartQty", n)}
                           className="w-full text-xs px-1.5 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text text-center focus:outline-none focus:ring-1 focus:ring-primary"
-                          min={0}
                         />
                       </div>
                       <div className="w-16 shrink-0">
