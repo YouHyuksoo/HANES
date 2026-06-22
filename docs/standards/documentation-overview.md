@@ -2,17 +2,20 @@
 
 ## 1️⃣ 문서 카테고리 구조
 
-프로젝트 루트 `docs/` 아래에 **5대 카테고리**를 운영하고 있습니다. 각 카테고리는 역할·성격에 따라 구분되며, 파일명은 **소문자‑kebab‑case** 로統一합니다.
+프로젝트 루트 `docs/` 아래에 **8개 카테고리**를 운영하고 있습니다. 각 카테고리는 역할·성격에 따라 구분되며, 파일명은 **소문자‑kebab‑case** 로統一합니다.
 
 | 카테고리 | 경로 | 주요 내용 |
 |---|---|---|
-| **design** | `docs/design/` | 시스템 아키텍처, 데이터 모델 ERD, 프론트엔드 라우팅, 백엔드 API 명세, 모듈 지도 등 설계·스펙 문서 |
-| **workflows** | `docs/workflows/` | 제조·품질·출하 등 도메인 업무 흐름, 메뉴 추가·변경 워크플로우 |
-| **standards** | `docs/standards/` | 코딩 규칙, DB 컬럼 도메인 사전, UI 화면 패턴, RBAC·다국어·인증 스펙, 디자인 가이드, 용어 사전 등 전체 표준 규정 |
-| **setup** | `docs/setup/` | 개발·배포 환경 설정, 프로젝트 부트스트랩 체크리스트, 기술 스택 소개 |
-| **reports** | `docs/reports/` | 아키텍처 분석, GAP 리포트, 성능·ERP 연동 검토 등 분석·보고서 |
+| **standards** | `docs/standards/` | 코딩 규칙, 아키텍처 원칙, DB 컬럼 도메인 사전, UI 화면 패턴, RBAC·다국어·인증 스펙, anti-patterns, 용어 사전 등 전체 표준 규정 |
+| **design** | `docs/design/` | 시스템 아키텍처, 데이터 모델 ERD, 프론트엔드 라우팅, 백엔드 API 명세, 모듈 지도 등 설계 문서 |
+| **workflows** | `docs/workflows/` | 자재/생산/품질/출하/설비 도메인별 상태 전이 및 업무 흐름, 메뉴 추가 가이드 |
+| **setup** | `docs/setup/` | 개발 환경 설정, AI 부트스트랩, 기술 스택, 프로젝트 체크리스트 |
+| **specs** | `docs/specs/` | 기능별 설계 명세 (live design docs, 신규 기능 개발 시最先 작성) |
+| **plans** | `docs/plans/` | 기능별 구현 계획 (spec → task 분해) |
+| **reports** | `docs/reports/` | DB 스키마 ERD (자동 생성) |
+| **presentation** | `docs/presentation/` | 고객 발표 PPT/HTML 자료 |
 
-> **NOTE**: 모든 문서는 `README.md` 대신 `readme.md` 로 명명합니다 (소문자 유지). 기존 중복·구버전 문서는 삭제·통합했으며, 파일 이동 시 `readme.md` 내 **목차**를 최신 상태로 유지합니다.
+> **NOTE**: 기존 `docs/superpowers/`는 `specs/`와 `plans/`로 분리·이관했습니다. 모든 문서는 `README.md` 대신 `readme.md`로 명명합니다.
 
 ## 2️⃣ 메뉴 구성 명세
 
@@ -66,13 +69,13 @@
 
 ---
 
-## 4️⃣ 향후 작업 제안 (Roadmap)
+## 4️⃣ 문서 Roadmap
 
-| 단계 | 작업 | 예상 완료 시점 |
+| 우선순위 | 작업 | 상태 |
 |---|---|---|
-| **Phase 1** | `navigation-spec.md` 에 **시각적 다이어그램** (Mermaid) 추가 – 메뉴 트리 시각화 | 2026‑06‑01 |
-| **Phase 2** | 메뉴 변경 프로세스 SOP 문서화 – 변경 승인 흐름, 리뷰 담당자 지정 | 2026‑06‑15 |
-| **Phase 3** | `docs/standards` 에 **API 계약 가이드** 자동화 스크립트(예: Swagger → markdown) 도입 | 2026‑07‑01 |
+| P1 | `docs/` 감사 — 깨진 링크 수정, 불필요 QA 아티팩트 정리, 구조 단순화 | ✅ 완료 (2026-06-23) |
+| P2 | `docs/specs/` 및 `docs/plans/` 유지보수 — 완료된 항목은 `ARCHIVE` 표기 | 진행 중 |
+| P3 | 스키마 변경 시 `docs/reports/db-schema-erd.md` 자동 재생성 | 자동화 완료 |
 
 ---
 

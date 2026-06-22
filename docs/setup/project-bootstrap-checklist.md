@@ -19,7 +19,7 @@ AI나 사람이 프로젝트를 구성할 때 빠뜨리기 쉬운 항목을 줄�
 - `apps/backend`, `apps/frontend` 구조를 사용할지 결정했는가
 - 공통 패키지(`shared`) 필요 여부를 결정했는가
 - 산출물 폴더를 `exports/`로 분리했는가
-- 기준 문서를 `docs/core`로 유지할지 결정했는가
+- 기준 문서를 `docs/` (standards/design/workflows/setup/specs/plans) 체계로 유지할지 결정했는가
 
 ## 3. 백엔드 부트스트랩
 
@@ -78,7 +78,7 @@ AI나 사람이 프로젝트를 구성할 때 빠뜨리기 쉬운 항목을 줄�
 
 ## 10. AI 주입 체크
 
-- [ai-project-bootstrap.md](C:/Project/HANES/docs/core/ai-project-bootstrap.md)를 먼저 읽혔는가
+- [ai-project-bootstrap.md](./ai-project-bootstrap.md)를 먼저 읽혔는가
 - 규격 문서 우선 순서대로 주입했는가
 - 현재 프로젝트 설명 문서와 규격 문서를 구분했는가
 - 안티패턴 문서를 마지막에 다시 읽혔는가

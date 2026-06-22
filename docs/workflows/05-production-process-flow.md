@@ -169,6 +169,6 @@ graph LR
 
 ## 함께 읽을 문서
 
-- [domain-workflows.md](C:/Project/HANES/docs/core/domain-workflows.md)
-- [backend-module-index.md](C:/Project/HANES/docs/core/backend-module-index.md)
-- [04-backend-api-endpoints.md](C:/Project/HANES/docs/core/04-backend-api-endpoints.md)
+- [domain-workflows.md](./domain-workflows.md)
+- [backend-module-index.md](../design/backend-module-index.md)
+- [04-backend-api-endpoints.md](../design/04-backend-api-endpoints.md)

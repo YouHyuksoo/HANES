@@ -53,6 +53,6 @@
 
 ## 관련 문서
 
-- 설계: [`docs/superpowers/specs/2026-05-18-menu-category-management-design.md`](../superpowers/specs/2026-05-18-menu-category-management-design.md)
-- 구현 계획: [`docs/superpowers/plans/2026-05-18-menu-category-management.md`](../superpowers/plans/2026-05-18-menu-category-management.md)
-- 네비게이션 스펙: [`docs/core/navigation-spec.md`](./navigation-spec.md)
+- 설계: [`../specs/2026-05-18-menu-category-management-design.md`](../specs/2026-05-18-menu-category-management-design.md)
+- 구현 계획: [`../plans/2026-05-18-menu-category-management.md`](../plans/2026-05-18-menu-category-management.md)
+- 네비게이션 스펙: [`../standards/navigation-spec.md`](../standards/navigation-spec.md)

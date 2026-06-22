@@ -15,62 +15,59 @@
 
 다음 규칙을 기준으로 프로젝트를 설계하고 구현하라.
 
-- 아키텍처 기준은 [architecture-principles.md](C:/Project/HANES/docs/core/architecture-principles.md)
-- 개발환경과 기술스택 기준은 [development-stack-guide.md](C:/Project/HANES/docs/core/development-stack-guide.md)
-- 구현 세부 규칙은 [implementation-rules.md](C:/Project/HANES/docs/core/implementation-rules.md)
-- 도메인 구조 템플릿은 [domain-blueprints.md](C:/Project/HANES/docs/core/domain-blueprints.md)
-- API 표면 규칙은 [api-contract-guide.md](C:/Project/HANES/docs/core/api-contract-guide.md)
-- 엔티티 설계 기준은 [entity-design-guide.md](C:/Project/HANES/docs/core/entity-design-guide.md)
-- UI 설계 기준은 [ui-screen-patterns.md](C:/Project/HANES/docs/core/ui-screen-patterns.md)
-- 네비게이션 기준은 [navigation-spec.md](C:/Project/HANES/docs/core/navigation-spec.md)
-- 테마 시스템 기준은 [theme-system-spec.md](C:/Project/HANES/docs/core/theme-system-spec.md)
-- 인증 기준은 [authentication-spec.md](C:/Project/HANES/docs/core/authentication-spec.md)
-- 다국어 기준은 [i18n-spec.md](C:/Project/HANES/docs/core/i18n-spec.md)
-- 금지 규칙은 [anti-patterns.md](C:/Project/HANES/docs/core/anti-patterns.md)
-- 상태 코드와 분류 코드가 있으면 [common-code-guide.md](C:/Project/HANES/docs/core/common-code-guide.md)를 추가로 따른다.
+- 아키텍처 기준은 [architecture-principles.md](../standards/architecture-principles.md)
+- 개발환경과 기술스택 기준은 [development-stack-guide.md](./development-stack-guide.md)
+- 구현 세부 규칙은 [implementation-rules.md](../standards/implementation-rules.md)
+- API 표면 규칙은 [api-contract-guide.md](../standards/api-contract-guide.md)
+- 엔티티 설계 기준은 [entity-design-guide.md](../standards/entity-design-guide.md)
+- UI 설계 기준은 [ui-screen-patterns.md](../standards/ui-screen-patterns.md)
+- 네비게이션 기준은 [navigation-spec.md](../standards/navigation-spec.md)
+- 테마 시스템 기준은 [theme-system-spec.md](../standards/theme-system-spec.md)
+- 인증 기준은 [authentication-spec.md](../standards/authentication-spec.md)
+- 다국어 기준은 [i18n-spec.md](../standards/i18n-spec.md)
+- 금지 규칙은 [anti-patterns.md](../standards/anti-patterns.md)
+- 상태 코드와 분류 코드가 있으면 [common-code-guide.md](../standards/common-code-guide.md)를 추가로 따른다.
 
 ## 권장 주입 순서
 
-1. [development-stack-guide.md](C:/Project/HANES/docs/core/development-stack-guide.md)
-2. [architecture-principles.md](C:/Project/HANES/docs/core/architecture-principles.md)
-3. [implementation-rules.md](C:/Project/HANES/docs/core/implementation-rules.md)
-4. [domain-blueprints.md](C:/Project/HANES/docs/core/domain-blueprints.md)
-5. [api-contract-guide.md](C:/Project/HANES/docs/core/api-contract-guide.md)
-6. [entity-design-guide.md](C:/Project/HANES/docs/core/entity-design-guide.md)
-7. [ui-screen-patterns.md](C:/Project/HANES/docs/core/ui-screen-patterns.md)
-8. [navigation-spec.md](C:/Project/HANES/docs/core/navigation-spec.md)
-9. [theme-system-spec.md](C:/Project/HANES/docs/core/theme-system-spec.md)
-10. [authentication-spec.md](C:/Project/HANES/docs/core/authentication-spec.md)
-11. [i18n-spec.md](C:/Project/HANES/docs/core/i18n-spec.md)
-12. [anti-patterns.md](C:/Project/HANES/docs/core/anti-patterns.md)
-13. 필요 시 [common-code-guide.md](C:/Project/HANES/docs/core/common-code-guide.md)
+1. [development-stack-guide.md](./development-stack-guide.md)
+2. [architecture-principles.md](../standards/architecture-principles.md)
+3. [implementation-rules.md](../standards/implementation-rules.md)
+4. [api-contract-guide.md](../standards/api-contract-guide.md)
+5. [entity-design-guide.md](../standards/entity-design-guide.md)
+6. [ui-screen-patterns.md](../standards/ui-screen-patterns.md)
+7. [navigation-spec.md](../standards/navigation-spec.md)
+8. [theme-system-spec.md](../standards/theme-system-spec.md)
+9. [authentication-spec.md](../standards/authentication-spec.md)
+10. [i18n-spec.md](../standards/i18n-spec.md)
+11. [anti-patterns.md](../standards/anti-patterns.md)
+12. 필요 시 [common-code-guide.md](../standards/common-code-guide.md)
 
 ## 목적별 최소 번들
 
 ### 설계만 먼저 할 때
 
-- [architecture-principles.md](C:/Project/HANES/docs/core/architecture-principles.md)
-- [development-stack-guide.md](C:/Project/HANES/docs/core/development-stack-guide.md)
-- [domain-blueprints.md](C:/Project/HANES/docs/core/domain-blueprints.md)
-- [entity-design-guide.md](C:/Project/HANES/docs/core/entity-design-guide.md)
-- [navigation-spec.md](C:/Project/HANES/docs/core/navigation-spec.md)
+- [architecture-principles.md](../standards/architecture-principles.md)
+- [development-stack-guide.md](./development-stack-guide.md)
+- [entity-design-guide.md](../standards/entity-design-guide.md)
+- [navigation-spec.md](../standards/navigation-spec.md)
 
 ### 백엔드 구현 중심일 때
 
-- [implementation-rules.md](C:/Project/HANES/docs/core/implementation-rules.md)
-- [development-stack-guide.md](C:/Project/HANES/docs/core/development-stack-guide.md)
-- [api-contract-guide.md](C:/Project/HANES/docs/core/api-contract-guide.md)
-- [authentication-spec.md](C:/Project/HANES/docs/core/authentication-spec.md)
-- [anti-patterns.md](C:/Project/HANES/docs/core/anti-patterns.md)
+- [implementation-rules.md](../standards/implementation-rules.md)
+- [development-stack-guide.md](./development-stack-guide.md)
+- [api-contract-guide.md](../standards/api-contract-guide.md)
+- [authentication-spec.md](../standards/authentication-spec.md)
+- [anti-patterns.md](../standards/anti-patterns.md)
 
 ### 화면 구현 중심일 때
 
-- [ui-screen-patterns.md](C:/Project/HANES/docs/core/ui-screen-patterns.md)
-- [navigation-spec.md](C:/Project/HANES/docs/core/navigation-spec.md)
-- [theme-system-spec.md](C:/Project/HANES/docs/core/theme-system-spec.md)
-- [i18n-spec.md](C:/Project/HANES/docs/core/i18n-spec.md)
-- [common-code-guide.md](C:/Project/HANES/docs/core/common-code-guide.md)
-- [anti-patterns.md](C:/Project/HANES/docs/core/anti-patterns.md)
+- [ui-screen-patterns.md](../standards/ui-screen-patterns.md)
+- [navigation-spec.md](../standards/navigation-spec.md)
+- [theme-system-spec.md](../standards/theme-system-spec.md)
+- [i18n-spec.md](../standards/i18n-spec.md)
+- [common-code-guide.md](../standards/common-code-guide.md)
+- [anti-patterns.md](../standards/anti-patterns.md)
 
 ## 주입 후 첫 질문 템플릿
 

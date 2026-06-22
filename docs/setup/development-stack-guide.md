@@ -58,8 +58,9 @@
 - `apps/backend`: NestJS API 서버
 - `apps/frontend`: Next.js 웹/PDA 프론트엔드
 - `packages/shared`: 공용 타입과 공용 유틸
-- `docs/core`: 기준 문서
-- `docs/tools`: 문서 생성 스크립트
+- `packages/config/eslint`: ESLint 공통 설정
+- `packages/config/typescript`: TypeScript 공통 tsconfig
+- `docs/standards`, `docs/design`, `docs/workflows`, `docs/setup`, `docs/specs`, `docs/plans`: 개발 문서
 - `exports`: 생성 산출물
 
 ## 패키지 매니저 및 모노레포 기준
@@ -187,8 +188,7 @@
 
 ## 문서 및 산출물 기준
 
-- 기준 문서는 `docs/core`
-- 문서 생성 도구는 `docs/tools`
+- 기준 문서는 `docs/` (standards, design, workflows, specs, plans 등)
 - 생성 산출물은 `exports`
 
 ## 다른 프로젝트에 재사용할 때 유지해야 할 것

@@ -1,7 +1,7 @@
 # 도움말(Help) 콘텐츠 작성 가이드
 
 - 대상: 화면 도움말을 작성·수정하는 사람(운영자, 기획, AI 세션)
-- 시스템 설계 근거: `docs/superpowers/specs/2026-06-21-help-system-design.md`
+- 시스템 설계 근거: `../specs/2026-06-21-help-system-design.md`
 - 모범 예시: `apps/frontend/public/help/user/QC_AQL.md`, `apps/frontend/public/help/operator/QC_AQL.md`
 - 작성 템플릿: `apps/frontend/public/help/_templates/user.md`, `operator.md`
 
@@ -14,8 +14,16 @@
 ```
 apps/frontend/public/help/
   manifest.json              # 전체 목차(카테고리/순서) — 항목 등재 필수
-  user/{MENU_CODE}.md        # 사용자 도움말
-  operator/{MENU_CODE}.md    # 운영자 도움말
+  user/
+    ko/{MENU_CODE}.md        # 사용자 도움말 (한국어)
+    en/{MENU_CODE}.md        # 사용자 도움말 (영어)
+    zh/{MENU_CODE}.md        # 사용자 도움말 (중국어)
+    vi/{MENU_CODE}.md        # 사용자 도움말 (베트남어)
+  operator/
+    ko/{MENU_CODE}.md        # 운영자 도움말 (한국어)
+    en/{MENU_CODE}.md        # 운영자 도움말 (영어)
+    zh/{MENU_CODE}.md        # 운영자 도움말 (중국어)
+    vi/{MENU_CODE}.md        # 운영자 도움말 (베트남어)
   images/{MENU_CODE}-*.png   # 도움말 이미지
   _templates/                # 작성 템플릿(참조용, 화면 도움말 아님)
 ```
@@ -123,8 +131,17 @@ related: [MST_PART]         # 선택. 관련 화면 메뉴코드(인라인 배�
 
 ## 8. 다국어 정책
 
-- 1차는 **ko 단일**로 작성한다(본문). 도움말 **UI 라벨**(버튼/탭/검색)은 `help.*` i18n 4개 언어로 이미 관리된다.
-- 추후 다국어 본문이 필요하면 `user/{lang}/{MENU_CODE}.md` 구조로 확장한다(현재는 미사용).
+- 도움말 파일은 언어별 서브폴더(`ko/`, `en/`, `zh/`, `vi/`)로 나누어 관리한다.
+- 현재 **ko만 실제 작성**되어 있으며, `en/zh/vi`는 빈 상태로 존재한다.
+- `useHelpDoc` 훅이 현재 언어로 fetch하고, 해당 언어 파일이 없으면 자동으로 `ko`로 fallback한다. (fallback 시 사용자에게 언어 전환 안내는 하지 않음 — 콘텐츠가 없으면 "준비 중" 표시)
+- 도움말 **UI 라벨**(버튼/탭/검색)은 `help.*` i18n 키로 4개 언어(co/ko/en/zh/vi) 이미 관리 중이다.
+- 신규 다국어 파일 작성 시 `{lang}/{MENU_CODE}.md` 경로에 저장하고, `manifest.json`은 변경할 필요가 없다(menuCode 기반이라 언어와 무관).
+- 다국어 작성 체크리스트:
+  1. [ ] `ko/`의 원본 파일을 기준으로 번역
+  2. [ ] `en/{MENU_CODE}.md`에 영문 frontmatter + 본문 저장
+  3. [ ] frontmatter의 `title`/`summary`/`tags`/`keywords`도 해당 언어로 번역
+  4. [ ] `zh/`, `vi/` 동일하게 진행
+  5. [ ] dev 서버에서 언어 전환 후 도움말이 정상 표시되는지 확인
 
 ## 9. 새 화면 도움말 추가 절차 (체크리스트)
 

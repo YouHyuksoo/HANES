@@ -91,11 +91,10 @@
 
 - `apps/backend`
 - `apps/frontend`
-- `docs/core`
-- `docs/tools`
+- `docs/standards`, `docs/design`, `docs/workflows`, `docs/setup`, `docs/specs`, `docs/plans`
 - `exports`
-
-필요하면 공용 타입과 유틸을 위한 `packages/shared` 또는 동등한 공통 패키지를 둔다.
+- `packages/shared` (공용 타입과 유틸)
+- `packages/config/eslint`, `packages/config/typescript` (공통 설정)
 
 ## 포트와 실행 기준
 
@@ -105,8 +104,7 @@
 
 ## 문서 및 산출물 기준
 
-- 기준 문서는 `docs/core`
-- 문서 생성 도구는 `docs/tools`
+- 기준 문서는 `docs/` (standards, design, workflows, specs, plans 등)
 - 생성 산출물은 `exports`
 
 ## 신규 프로젝트 적용 순서
