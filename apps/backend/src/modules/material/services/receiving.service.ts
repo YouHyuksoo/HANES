@@ -561,8 +561,16 @@ export class ReceivingService {
           await this.decreaseArrivalStock(queryRunner.manager, item.matUid, lot.itemCode, item.qty, lot.company, lot.plant);
         }
 
-        // 4. 입고 창고에 LOT 단위(matUid) 재고 증가
-        await this.upsertStock(queryRunner.manager, receiveWarehouseCode, lot.itemCode, item.matUid, item.qty, lot.company, lot.plant);
+        // 4. 입고 창고에 LOT 단위(matUid) 재고 증가 (+ 적재 로케이션)
+        //    수동 지정(item.locationCode) 우선, 미지정 시 품목마스터 STORAGE_LOCATION 자동 적용
+        let receiveLocationCode = item.locationCode?.trim() || null;
+        if (!receiveLocationCode) {
+          const locPart = await this.partMasterRepository.findOne({
+            where: { itemCode: lot.itemCode, ...this.tenantWhere(lot.company, lot.plant) },
+          });
+          receiveLocationCode = locPart?.storageLocation?.trim() || null;
+        }
+        await this.upsertStock(queryRunner.manager, receiveWarehouseCode, lot.itemCode, item.matUid, item.qty, lot.company, lot.plant, receiveLocationCode);
 
         results.push({ ...savedTx, receiveNo });
       }
@@ -838,8 +846,8 @@ export class ReceivingService {
     };
   }
 
-  /** MatStock upsert */
-  private async upsertStock(manager: EntityManager, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
+  /** MatStock upsert (locationCode 제공 시 적재 로케이션 갱신) */
+  private async upsertStock(manager: EntityManager, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string, locationCode?: string | null) {
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: matUid || null, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
@@ -854,7 +862,7 @@ export class ReceivingService {
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
-        { qty: newQty, availableQty: Math.max(0, newQty - existing.reservedQty) },
+        { qty: newQty, availableQty: Math.max(0, newQty - existing.reservedQty), ...(locationCode ? { locationCode } : {}) },
       );
     } else if (qtyDelta > 0) {
       const newStock = manager.create(MatStock, {
@@ -863,6 +871,7 @@ export class ReceivingService {
         matUid,
         qty: qtyDelta,
         availableQty: qtyDelta,
+        ...(locationCode ? { locationCode } : {}),
         company,
         plant,
       });

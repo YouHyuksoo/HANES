@@ -8,8 +8,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CheckCircle2, PackageCheck, ScanLine, Trash2, X } from 'lucide-react';
-import { Button, Input, Modal } from '@/components/ui';
+import { Button, Input, Modal, Select } from '@/components/ui';
 import WarehouseSelect from '@/components/shared/WarehouseSelect';
+import { useLocationOptions } from '@/hooks/useMasterOptions';
 import api from '@/services/api';
 import type { ReceivableLot, ReceiveScanPair } from './types';
 
@@ -31,8 +32,12 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
   const [pendingMatUid, setPendingMatUid] = useState('');
   const [pairs, setPairs] = useState<ReceiveScanPair[]>([]);
   const [warehouseCode, setWarehouseCode] = useState('');
+  const [autoLocation, setAutoLocation] = useState(true);
+  const [locationCode, setLocationCode] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const { options: locationOptions } = useLocationOptions(warehouseCode);
 
   const receivableByUid = useMemo(() => new Map(receivable.map((lot) => [lot.matUid, lot])), [receivable]);
   const scannedOwnBarcodes = useMemo(() => new Set(pairs.map((pair) => pair.matUid)), [pairs]);
@@ -44,6 +49,8 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
     setInput('');
     setPendingMatUid('');
     setPairs([]);
+    setAutoLocation(true);
+    setLocationCode('');
     setError('');
     setSaving(false);
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -119,6 +126,11 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
       setError(t('material.receive.scan.selectWarehouse', '입고 창고를 선택해 주세요.'));
       return;
     }
+    if (!autoLocation && !locationCode.trim()) {
+      setError(t('material.receive.scan.selectLocation', '적재위치를 선택하거나 스캔해 주세요.'));
+      return;
+    }
+    const manualLocation = !autoLocation ? locationCode.trim() : '';
     setSaving(true);
     setError('');
     try {
@@ -133,6 +145,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
               qty: lot?.remainingQty || 0,
               warehouseId: warehouseCode,
               vendorBarcode: pair.vendorBarcode,
+              ...(manualLocation ? { locationCode: manualLocation } : {}),
             };
           }),
       });
@@ -144,7 +157,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
       setSaving(false);
       focusInput();
     }
-  }, [focusInput, onClose, onSuccess, pairs, receivableByUid, warehouseCode, t]);
+  }, [focusInput, onClose, onSuccess, pairs, receivableByUid, warehouseCode, autoLocation, locationCode, t]);
 
   const phaseTitle = phase === 'own'
     ? t('material.receive.scan.ownTitle', '자재 바코드 스캔')
@@ -164,9 +177,56 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
             warehouseType="RAW"
             autoSelectDefault
             value={warehouseCode}
-            onChange={(v) => setWarehouseCode(v)}
+            onChange={(v) => { setWarehouseCode(v); setLocationCode(''); }}
             fullWidth
           />
+        </div>
+
+        {/* 적재위치: 자동(품목마스터 STORAGE_LOCATION) / 수동(선택·스캔) */}
+        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-sm font-medium text-text whitespace-nowrap">
+              {t('material.receive.locationLabel', '적재위치')}
+            </label>
+            <label className="flex items-center gap-2 text-sm text-text cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-primary"
+                checked={autoLocation}
+                onChange={(e) => { setAutoLocation(e.target.checked); setError(''); }}
+              />
+              {t('material.receive.autoLocation', '품목마스터 지정 위치 자동 사용')}
+            </label>
+          </div>
+          {autoLocation ? (
+            <p className="text-xs text-text-muted">
+              {t('material.receive.autoLocationHint', '각 품목마스터에 지정된 적재 로케이션으로 입고됩니다.')}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {locationOptions.length > 0 ? (
+                <Select
+                  options={locationOptions}
+                  value={locationCode}
+                  onChange={(v) => { setLocationCode(v); setError(''); }}
+                  placeholder={t('material.receive.selectLocation', '로케이션 선택')}
+                  fullWidth
+                />
+              ) : (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {t('material.receive.noLocation', '선택한 창고에 등록된 로케이션이 없습니다. 바코드로 직접 스캔하거나 창고관리에서 로케이션을 등록하세요.')}
+                </p>
+              )}
+              <Input
+                value={locationCode}
+                onChange={(e) => { setLocationCode(e.target.value); setError(''); }}
+                placeholder={t('material.receive.scanLocation', '로케이션 바코드 스캔')}
+                leftIcon={<ScanLine className="w-4 h-4" />}
+                className="font-mono"
+                fullWidth
+              />
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-[1fr_auto] gap-3 items-end">

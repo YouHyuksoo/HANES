@@ -53,6 +53,12 @@ export class ReceiveItemDto {
   @IsString()
   @MaxLength(500)
   remark?: string;
+
+  @ApiPropertyOptional({ description: '적재 로케이션 코드(수동 지정). 미지정 시 품목마스터 STORAGE_LOCATION 자동 적용' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  locationCode?: string;
 }
 
 /** 일괄 입고 등록 DTO */
