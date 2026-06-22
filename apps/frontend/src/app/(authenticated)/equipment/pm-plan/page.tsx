@@ -23,6 +23,7 @@ import {
 import { Card, CardContent } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import PmPlanPanel from "./components/PmPlanPanel";
 import api from "@/services/api";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -277,23 +278,7 @@ export default function PmPlanPage() {
                 <div className="w-32">
                   <ComCodeSelect groupCode="PM_TYPE" value={pmTypeFilter} onChange={setPmTypeFilter} labelPrefix={t("equipment.pmPlan.pmType", "PM유형")} fullWidth />
                 </div>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="date"
-                    value={dueDateFrom}
-                    onChange={(e) => setDueDateFrom(e.target.value)}
-                    className="h-9 px-2 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-text"
-                    title={t("equipment.pmPlan.dueDateFrom")}
-                  />
-                  <span className="text-text-muted text-xs">~</span>
-                  <input
-                    type="date"
-                    value={dueDateTo}
-                    onChange={(e) => setDueDateTo(e.target.value)}
-                    className="h-9 px-2 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-text"
-                    title={t("equipment.pmPlan.dueDateTo")}
-                  />
-                </div>
+                <DateRangeFilter from={dueDateFrom} to={dueDateTo} onFromChange={setDueDateFrom} onToChange={setDueDateTo} className="flex-shrink-0" />
               </div>
             }
           
