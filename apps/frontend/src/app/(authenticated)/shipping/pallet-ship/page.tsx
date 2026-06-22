@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Package, Truck, RefreshCw, CheckCircle2, XCircle,
-  AlertTriangle, ScanLine, QrCode, Layers,
+  AlertTriangle, ScanLine, QrCode, Layers, HelpCircle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -57,6 +57,11 @@ interface OrderPallet {
   boxes?: Array<{ boxNo: string; itemCode: string; qty: number }>;
 }
 
+interface OrderPalletRow extends OrderPallet {
+  shipmentNo: string | null;
+  shipmentNoText: string;
+}
+
 /** Fulfillment API 응답 */
 interface FulfillmentData {
   order: {
@@ -81,6 +86,31 @@ function canShip(p: OrderPallet): boolean {
   return p.status === "CLOSED" && !p.shipmentId;
 }
 
+const palletShipStatusHelpText = [
+  "상태전이: OPEN -> CLOSED -> SHIPPED",
+  "OPEN: 팔레트가 생성됐지만 아직 구성이 마감되지 않은 상태입니다. 팔레트출하 대상이 아닙니다.",
+  "CLOSED: 팔레트 구성이 완료되어 출하 스캔 가능한 상태입니다. 출하번호는 아직 생성되지 않았습니다.",
+  "LOADED: 일반 출하건에 적재된 상태입니다. 이 화면의 출하지시 팔레트출하는 보통 CLOSED에서 SHIPPED로 바로 처리됩니다.",
+  "SHIPPED: 팔레트 출하확정이 완료된 상태입니다. 출하번호가 표시되어야 하며 제품재고와 출하이력이 반영됩니다.",
+].join("\n");
+
+function PalletShipStatusHeader() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      <span>{t("common.status")}</span>
+      <span
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-primary"
+        title={palletShipStatusHelpText}
+        aria-label={palletShipStatusHelpText}
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+      </span>
+    </div>
+  );
+}
+
 /* ─── component ─── */
 
 export default function PalletShipPage() {
@@ -93,7 +123,7 @@ export default function PalletShipPage() {
   const [fulfillment, setFulfillment] = useState<FulfillmentData | null>(null);
   const [fulfillmentLoading, setFulfillmentLoading] = useState(false);
 
-  const [selectedPallet, setSelectedPallet] = useState<OrderPallet | null>(null);
+  const [selectedPallet, setSelectedPallet] = useState<OrderPalletRow | null>(null);
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const [scanInput, setScanInput] = useState("");
   const [scannedPallets, setScannedPallets] = useState<string[]>([]);
@@ -199,7 +229,7 @@ export default function PalletShipPage() {
   }, [selectedOrderNo, scannedPallets, fetchFulfillment]);
 
   /* columns for pallet grid */
-  const palletColumns = useMemo<ColumnDef<OrderPallet>[]>(() => [
+  const palletColumns = useMemo<ColumnDef<OrderPalletRow>[]>(() => [
     {
       id: "shippable", header: "", size: 36,
       cell: ({ row }) => {
@@ -211,7 +241,7 @@ export default function PalletShipPage() {
     },
     { accessorKey: "palletNo", header: "팔레트번호", size: 170, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono font-medium">{getValue() as string}</span> },
     {
-      accessorKey: "status", header: "상태", size: 100,
+      accessorKey: "status", header: () => <PalletShipStatusHeader />, size: 100,
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return <BoxStatusBadge status={s as BoxStatus} />;
@@ -219,12 +249,29 @@ export default function PalletShipPage() {
     },
     { accessorKey: "boxCount", header: "박스수", size: 80, meta: { align: "center" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: "totalQty", header: "총수량", size: 100, meta: { align: "center" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "shipmentId", header: "출하번호", size: 160, cell: ({ getValue }) => (getValue() ? <span className="font-mono text-xs">{getValue() as string}</span> : <span className="text-text-muted text-xs">-</span>) },
+    {
+      accessorKey: "shipmentNo", header: "출하번호", size: 160,
+      cell: ({ row, getValue }) => {
+        const value = getValue() as string | null | undefined;
+        return value
+          ? <span className="font-mono text-xs">{value}</span>
+          : <span className="text-text-muted text-xs">{row.original.shipmentNoText}</span>;
+      },
+    },
   ], []);
 
+  const palletRows = useMemo<OrderPalletRow[]>(() => {
+    const fallbackShipmentNo = fulfillment?.shipments.length === 1 ? fulfillment.shipments[0]?.shipNo ?? null : null;
+    return (fulfillment?.pallets ?? []).map((p) => ({
+      ...p,
+      shipmentNo: p.shipmentId ?? fallbackShipmentNo,
+      shipmentNoText: p.shipmentId ?? fallbackShipmentNo ?? (p.status === "SHIPPED" ? "확인필요" : "출하 전"),
+    }));
+  }, [fulfillment]);
+
   const shippableCount = useMemo(
-    () => fulfillment?.pallets.filter(canShip).length ?? 0,
-    [fulfillment],
+    () => palletRows.filter(canShip).length,
+    [palletRows],
   );
 
   return (
@@ -303,7 +350,7 @@ export default function PalletShipPage() {
             <div>
               <h2 className="text-sm font-semibold text-text">팔레트 목록</h2>
               <p className="mt-0.5 text-xs text-text-muted">
-                {!selectedOrderNo ? "출하지시를 선택하세요" : fulfillmentLoading ? "로딩 중..." : fulfillment ? `${fulfillment.pallets.length}개` : ""}
+                {!selectedOrderNo ? "출하지시를 선택하세요" : fulfillmentLoading ? "로딩 중..." : fulfillment ? `${palletRows.length}개` : ""}
               </p>
             </div>
             {fulfillment && (
@@ -322,7 +369,7 @@ export default function PalletShipPage() {
             <div className="flex-1 flex items-center justify-center text-text-muted">로딩 중...</div>
           ) : fulfillment ? (
             <DataGrid
-              data={fulfillment.pallets}
+              data={palletRows}
               columns={palletColumns}
               enableColumnFilter
               enableExport
