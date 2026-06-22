@@ -12,8 +12,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RefreshCw, FlaskConical, CheckCircle, XCircle, BarChart3, Plus } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import { Search, RefreshCw, FlaskConical, Plus } from "lucide-react";
+import { Card, CardContent, Button, Input, Select, ComCodeBadge } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -71,14 +72,6 @@ export default function SampleInspectPage() {
   }, [searchText, passFilter, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => {
-    const total = data.length;
-    const pass = data.filter(d => d.passYn === "Y").length;
-    const fail = data.filter(d => d.passYn === "N").length;
-    const passRate = total > 0 ? Math.round((pass / total) * 100) : 0;
-    return { total, pass, fail, passRate };
-  }, [data]);
 
   const columns = useMemo<ColumnDef<SampleInspectRow>[]>(() => [
     {
@@ -159,13 +152,6 @@ export default function SampleInspectPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
-        <StatCard label={t("production.sampleInspect.totalInspect")} value={stats.total} icon={FlaskConical} color="blue" />
-        <StatCard label={t("production.sampleInspect.pass")} value={stats.pass} icon={CheckCircle} color="green" />
-        <StatCard label={t("production.sampleInspect.fail")} value={stats.fail} icon={XCircle} color="red" />
-        <StatCard label={t("production.sampleInspect.passRate")} value={`${stats.passRate}%`} icon={BarChart3} color="purple" />
-      </div>
-
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("production.sampleInspect.exportFileName", "샘플검사")}
           toolbarLeft={
@@ -179,14 +165,7 @@ export default function SampleInspectPage() {
                 <Select options={passOptions}
                   value={passFilter} onChange={setPassFilter} fullWidth />
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date"
-                  value={startDate} onChange={e => setStartDate(e.target.value)} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date"
-                  value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
-              </div>
+              <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM SAMPLE_INSPECTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
