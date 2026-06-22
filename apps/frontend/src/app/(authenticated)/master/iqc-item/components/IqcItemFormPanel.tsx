@@ -7,8 +7,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Input, Select } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { Button } from "@/components/ui";
+import { FieldInput, FieldSelect, FieldComCodeSelect } from "./IqcItemFieldHelp";
 
 export interface IqcItemPool {
   inspItemCode: string;
@@ -73,7 +73,7 @@ export default function IqcItemFormPanel({
 
   return (
     <div
-      className={`w-[420px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}
+      className={`w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}
     >
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">
@@ -99,38 +99,37 @@ export default function IqcItemFormPanel({
             {t("master.iqcItem.sectionBasic", "기본정보")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input
+            <FieldInput
+              field="itemCode"
               label={t("master.iqcItem.itemCode", "항목코드")}
               value={form.itemCode}
               onChange={(e) => setField("itemCode", e.target.value)}
-              fullWidth
               disabled={isEdit}
               required
             />
-            <Select
+            <FieldSelect
+              field="judgeMethod"
               label={t("master.iqcItem.judgeMethod", "판정방법")}
               options={judgeOptions}
               value={form.judgeMethod}
               onChange={(v) => setField("judgeMethod", v as "VISUAL" | "MEASURE")}
-              fullWidth
             />
-            <div className="col-span-2">
-              <Input
-                label={t("master.iqcItem.inspectItem")}
-                value={form.itemName}
-                onChange={(e) => setField("itemName", e.target.value)}
-                required
-                fullWidth
-              />
-            </div>
-            <ComCodeSelect
+            <FieldInput
+              field="itemName"
+              label={t("master.iqcItem.inspectItem")}
+              value={form.itemName}
+              onChange={(e) => setField("itemName", e.target.value)}
+              required
+              wrapperClassName="col-span-2"
+            />
+            <FieldComCodeSelect
+              field="unit"
               groupCode="UNIT_TYPE"
               label={t("common.unit", "단위")}
               includeAll={false}
               showCode
               value={form.unit}
               onChange={(v) => setField("unit", v)}
-              fullWidth
             />
           </div>
         </div>

@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, RefreshCw, ClipboardCheck } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -160,7 +160,28 @@ export default function IqcItemTab() {
 
   return (
     <div className="flex h-full">
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        {/* 헤더: 타이틀(좌) + 액션 버튼(우) — 품목마스터 표준 */}
+        <div className="flex justify-between items-center flex-shrink-0">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <ClipboardCheck className="w-7 h-7 text-primary" />
+              {t("master.iqcItem.itemPool", "검사항목마스터")}
+            </h1>
+            <p className="text-text-muted mt-1">
+              {t("master.iqcItem.itemPoolSubtitle", "IQC 검사에 사용할 전역 검사항목을 등록하고 관리합니다.")} ({data.length}건)
+            </p>
+          </div>
+          <div className="flex gap-2 items-center">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1" />{t("master.iqcItem.addItem")}
+            </Button>
+          </div>
+        </div>
+
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
           <CardContent className="h-full p-4">
             <DataGrid
@@ -189,15 +210,9 @@ export default function IqcItemTab() {
                   <div className="w-36 flex-shrink-0">
                     <Select options={methodOptions} value={methodFilter} onChange={setMethodFilter} fullWidth />
                   </div>
-                  <Button variant="secondary" size="sm" onClick={fetchData} className="flex-shrink-0">
-                    <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-                  </Button>
-                  <Button size="sm" onClick={openCreate} className="flex-shrink-0">
-                    <Plus className="w-4 h-4 mr-1" />{t("master.iqcItem.addItem")}
-                  </Button>
                 </div>
               }
-            
+
             sqlQuery={`SELECT *\nFROM IQC_ITEM_POOL\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
