@@ -2,6 +2,21 @@
 
 ## Active Locks
 
+## T-AI-PAGE-TOOL-WORKFLOW AI 페이지 도구 구현 계획
+status: active
+owner: codex
+role: implementer
+started: 2026-06-22 KST
+last_seen: 2026-06-22 KST
+expires: 2026-06-22 KST
+files:
+- docs/superpowers/plans/2026-06-22-ai-page-tool-workflow.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+note: 승인된 AI Page Tool Workflow 설계의 구현 계획 작성. 코드 구현은 아직 진행하지 않음.
+
 ## T-DEFECT-REGISTER-PANEL 불량관리 수동등록 모달→우측 슬라이드 패널 전환
 status: active
 owner: claude
@@ -23,6 +38,26 @@ files:
 - apps/backend/src/modules/material/services/receiving.service.ts
 note: DB 변경 없음(MAT_STOCKS.LOCATION_CODE/ITEM_MASTERS.STORAGE_LOCATION 기존 컬럼 활용). 자동=품목마스터 storageLocation, 수동=작업자 선택/스캔. part-master는 codex 잠금이라 읽기만(필드명 확인).
 
+
+## T-SHIP-ORDER-CANCEL 출하반품 화면을 출하취소로 재구성
+status: active
+owner: claude
+role: implementer
+files:
+- apps/backend/src/migrations/2026-06-22_box_ship_order_no_and_return_seq.sql
+- apps/backend/src/entities/box-master.entity.ts
+- apps/backend/src/shared/numbering.service.ts
+- apps/backend/src/modules/shipping/services/ship-order.service.ts
+- apps/backend/src/modules/shipping/services/shipment.service.ts
+- apps/backend/src/modules/shipping/controllers/ship-order.controller.ts
+- apps/backend/src/modules/shipping/dto/cancel-shipment.dto.ts
+- apps/frontend/src/app/(authenticated)/shipping/return/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/return/ship-cancel-page.structure.test.mjs
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+note: /shipping/return을 출하취소로 재구성. BOX_MASTERS.SHIP_ORDER_NO/SHIPPED_AT 컬럼 추가(JSHANES DDL)+stamp, 취소/역분개 in-tx 헬퍼 추출, 출하지시 단위 단일 트랜잭션 취소+SHIPPING_RETURNS 취소이력. 계획: docs/superpowers/plans/2026-06-22-ship-order-cancel.md
 
 ## 운영 규칙
 

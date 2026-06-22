@@ -2140,3 +2140,16 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - i18n 4파일: shipping.shipOrder.customerPoNo/customerPoNoPlaceholder 추가(JSON 파싱 삽입, 무수정 재덤프 동일성 가드로 포맷 보존, BOM 없음·CRLF 유지, 각 +2줄). 화면은 t(key,fallback)로도 안전.
 - 검증: FE tsc PASS, BE tsc PASS. 구조 테스트 payload/required-fields/print/sql-preview/status-help 통과.
 - 선재 이슈(무관): ship-order-right-panel.structure.test.mjs는 grid-cols-[minmax(0,1fr)_minmax(420px,480px)] 패턴을 기대하나 현재 화면은 aside w-[480px] 패널 구현 → HEAD 원본에도 패턴 없음(내 변경 전부터 실패하던 stale 테스트). 패널 레이아웃 미수정, 스코프 밖이라 보류.
+
+# 2026-06-22 claude T-PROD-PLAN-MISC 제품생산계획 정보카드 제거·메뉴명 변경·7일치 시드
+- 정보카드 제거: /production/monthly-plan page.tsx 상단 StatCard 4개 + stats useMemo 집계 + StatCard/ProdPlanSummary import 제거. FE tsc PASS.
+- 메뉴명/타이틀 변경: 월간생산계획→제품생산계획. locales 4파일 menu."production.monthlyPlan" + monthlyPlan.title (ko/zh/vi 동일, en은 menu "Product Plan"/title "Product Production Plan"). JSON 파싱 삽입(포맷 보존, codex 동시 locales 작업분 보존). 폴더/키명(monthly-plan/monthlyPlan)·주석은 유지.
+- 7일치 생산계획 시드(JSHANES PROD_PLANS): 최상위 BOM 모델=HNS02(완제품 하네스, 유일) 확인. PP-202606-001~007, PLAN_MONTH 2026-06, HNS02 FINISHED, PLAN_QTY 100, STATUS DRAFT, REMARK 일자(2026-06-22~28 요일). 생산계획이 월단위 테이블(일자컬럼 없음)이라 7건으로 넣고 일자는 remark 표기. 7 rows. 채번 PP-YYYYMM-NNN 패턴 준수(기존 0건).
+## 2026-06-22 codex T-AI-PAGE-TOOL-WORKFLOW
+
+- 요청: `/production/order` 한 화면 실험이 아니라 HANES 전체 화면에 적용할 AI 업무 도구 표준과 소스 개발 절차로 설계.
+- 결정: 1차 실행 수준은 `draft-only`. AI는 저장/삭제/상태변경 API를 직접 호출하지 않고, 현재 페이지 도구 manifest를 보고 후보 조회와 초안 적용만 수행한다. 최종 저장은 사용자가 기존 화면 버튼으로 실행한다.
+- 설계 문서: `docs/superpowers/specs/2026-06-22-ai-page-tool-workflow-design.md`
+- 핵심 내용: 공통 `pageToolManifest`, 백엔드 후보 조회/검증 + 프론트 draft 적용 혼합 구조, 사람/AI가 같은 manifest를 보는 `도구보기`, AI 패널 `채팅|도구|실행로그` 탭, `/production/order` 파일럿 도구와 품목 후보 확정 정책.
+- 검증: `git diff --check -- docs/superpowers/specs/2026-06-22-ai-page-tool-workflow-design.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` PASS.
+- 상태: 사용자 리뷰 대기. 구현은 아직 진행하지 않았다. 커밋하지 않았다.
