@@ -174,6 +174,16 @@ export class NumberingService {
     return `SG${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
   }
 
+  /** 출하반품/취소이력 채번: RT + YYMMDD + '-' + 5자리(전역 시퀀스 SEQ_SHIP_RETURN). 날짜는 가독성용, 유일성은 시퀀스 보장. */
+  async nextReturnNo(qr?: QueryRunner, txDate: Date = new Date()): Promise<string> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows = await manager.query(
+      'SELECT SEQ_SHIP_RETURN.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+    return `RT${this.yyMMdd(txDate)}-${this.pad5(seq)}`;
+  }
+
   /** 생산 genealogy ID 채번: SEQ_PROD_GENEALOGY.NEXTVAL (PRODUCT_GENEALOGY.GENEALOGY_ID용). */
   async nextGenealogyId(qr?: QueryRunner): Promise<number> {
     const manager = qr?.manager ?? this.dataSource.manager;

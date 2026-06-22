@@ -21,6 +21,7 @@ import {
 @Index(['itemCode'])
 @Index(['palletNo'])
 @Index(['status'])
+@Index(['shipOrderNo'])
 export class BoxMaster {
   @PrimaryColumn({ name: 'BOX_NO', length: 50 })
   boxNo: string;
@@ -42,6 +43,12 @@ export class BoxMaster {
 
   @Column({ type: 'varchar2', name: 'OQC_STATUS', length: 50, nullable: true })
   oqcStatus: string | null;
+
+  @Column({ type: 'varchar2', name: 'SHIP_ORDER_NO', length: 50, nullable: true })
+  shipOrderNo: string | null;
+
+  @Column({ name: 'SHIPPED_AT', type: 'timestamp', nullable: true })
+  shippedAt: Date | null;
 
   @Column({ name: 'CLOSE_TIME', type: 'timestamp', nullable: true })
   closeAt: Date | null;
