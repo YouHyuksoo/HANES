@@ -3,7 +3,7 @@
  * @description 월간생산계획 관리 페이지 - 계획 등록/조회/엑셀 업로드
  *
  * 초보자 가이드:
- * 1. **레이아웃**: 좌측 메인(StatCards + DataGrid) + 우측 슬라이드 패널
+ * 1. **레이아웃**: 좌측 메인(DataGrid) + 우측 슬라이드 패널
  * 2. **필터**: 월 선택, 품목유형(FG/WIP), 상태, 검색
  * 3. **엑셀 업로드**: xlsx 라이브러리로 프론트 파싱 → JSON 전송
  * 4. **상태 워크플로우**: DRAFT → CONFIRMED → CLOSED
@@ -14,12 +14,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, RefreshCw, CalendarRange, Plus, Upload, Download, Edit2, Trash2, Wand2, Network } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ConfirmModal, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
-import { ProdPlanItem, ProdPlanSummary } from "./components/types";
+import { ProdPlanItem } from "./components/types";
 import { usePlanColumns } from "./components/PlanColumns";
 import PlanFormPanel from "./components/PlanFormPanel";
 import ExcelUploadModal from "./components/ExcelUploadModal";
@@ -80,23 +80,6 @@ export default function MonthlyPlanPage() {
   }, [startDate, endDate, searchText, statusFilter, itemTypeFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats: ProdPlanSummary = useMemo(() => {
-    const s: ProdPlanSummary = {
-      total: data.length, draft: 0, confirmed: 0, closed: 0,
-      fgCount: 0, wipCount: 0, fgPlanQty: 0, wipPlanQty: 0, totalPlanQty: 0, totalOrderQty: 0,
-    };
-    for (const p of data) {
-      if (p.status === "DRAFT") s.draft++;
-      else if (p.status === "CONFIRMED") s.confirmed++;
-      else if (p.status === "CLOSED") s.closed++;
-      if (p.itemType === "FINISHED") { s.fgCount++; s.fgPlanQty += p.planQty; }
-      else { s.wipCount++; s.wipPlanQty += p.planQty; }
-      s.totalPlanQty += p.planQty;
-      s.totalOrderQty += p.orderQty;
-    }
-    return s;
-  }, [data]);
 
   const handleConfirm = useCallback(async (item: ProdPlanItem) => {
     try {
@@ -192,13 +175,6 @@ export default function MonthlyPlanPage() {
               <Plus className="w-4 h-4 mr-1" />{t("monthlyPlan.addPlan")}
             </Button>
           </div>
-        </div>
-
-        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-          <StatCard label={t("monthlyPlan.stats.total")} value={stats.total} icon={CalendarRange} color="blue" />
-          <StatCard label={t("monthlyPlan.stats.draft")} value={stats.draft} icon={CalendarRange} color="yellow" />
-          <StatCard label={t("monthlyPlan.stats.confirmed")} value={stats.confirmed} icon={CalendarRange} color="green" />
-          <StatCard label={t("monthlyPlan.stats.closed")} value={stats.closed} icon={CalendarRange} color="purple" />
         </div>
 
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
