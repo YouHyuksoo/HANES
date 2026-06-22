@@ -2610,3 +2610,19 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: `http://localhost:3002/system/er-view` HTTP 200
 - 주의:
   - 내장 브라우저 `iab`는 현재 세션에서 unavailable이고, repo Node module 경로에서 `playwright` import가 되지 않아 DOM 자동 확인은 수행하지 못했다. 구조 테스트와 HTTP 200으로 대체했다.
+
+# 2026-06-23 - T-ALL-MENU-QA 전체 메뉴 QA 러너 1차 체크포인트
+
+- owner: codex
+- status: IN_PROGRESS
+- 변경:
+  - 전체 등록 메뉴를 `menuConfig.ts`에서 추출해 실제 브라우저로 route/API/console/request failure/화면 기능 목록을 수집하는 `tools/hanes-all-menu-page-scenario-qa.mjs`를 추가했다.
+  - 리포트는 `docs/reports/hanes-all-menu-scenario-qa-<date>/index.html`과 `all-menu-result.json`, 페이지 HTML, 로드 스크린샷으로 생성한다.
+  - 인증 localStorage 주입, API response 수집, 버튼/입력/select/grid/table 목록화, 메뉴 코드/건수 필터 환경변수를 지원한다.
+- 검증:
+  - PASS: 3002 frontend HTTP 200, 3003 `/api/v1/health` HTTP 200 확인
+  - PASS: `HANES_REPORT_DATE=2026-06-23-smoke HANES_MENU_LIMIT=3 node tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: smoke 결과 3/3 PASS (`/dashboard`, `/workflow`, `/equipment/status`)
+  - PASS: `git diff --check -- tools/hanes-all-menu-page-scenario-qa.mjs .ai-coordination/LOCKS.md .ai-coordination/TASKS.md`
+- 주의:
+  - 이번 커밋은 전체 메뉴 완료가 아니라 전체 메뉴 QA 자동화 기반과 3개 메뉴 스모크 산출물 체크포인트다. 전체 메뉴 상세 기능 실행/수정/재테스트는 계속 진행 대상이다.

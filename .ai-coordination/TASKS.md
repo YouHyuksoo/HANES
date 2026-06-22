@@ -29,6 +29,23 @@ notes:
 
 ## Active Tasks
 
+## T-ALL-MENU-QA 전체 메뉴 기능 QA 리포트
+status: IN_PROGRESS
+owner: codex
+role: implementer/operator
+scope:
+- 모든 등록 메뉴의 route/API/콘솔 오류/화면 기능 목록 수집
+- 실패 메뉴를 수정-재테스트 대상으로 분류하고 최종 HTML/JSON 리포트 작성
+files:
+- tools/hanes-all-menu-page-scenario-qa.mjs
+- docs/reports/hanes-all-menu-scenario-qa-*/
+verification:
+- 전체 메뉴 러너 실행, 결과 JSON/HTML 링크 검증, 실패별 재테스트 증거
+review:
+- needs-review
+notes:
+- 다른 AI active lock 파일은 수정하지 않는다. CRUD/업무처리 전체 실행은 메뉴별 세부 러너로 확장한다.
+
 ## T-ER-VIEW-TABLE-NODES ER VIEW 테이블형 그래프 보정
 status: REVIEW
 owner: codex

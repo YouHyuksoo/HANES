@@ -2,6 +2,22 @@
 
 ## Active Locks
 
+## T-ALL-MENU-QA 전체 메뉴 기능 QA 리포트
+status: active
+owner: codex
+role: implementer/operator
+started: 2026-06-23 02:20 KST
+last_seen: 2026-06-23 02:20 KST
+expires: 2026-06-23 06:20 KST
+files:
+- tools/hanes-all-menu-page-scenario-qa.mjs
+- docs/reports/hanes-all-menu-scenario-qa-*/
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+note: 전체 메뉴 인벤토리/스모크/기능목록 리포트를 생성하고 실패 메뉴를 후속 수정 대상으로 분류한다. 다른 active lock 파일은 수정하지 않는다.
+
 ## T-DEFECT-REGISTER-PANEL 불량관리 수동등록 모달→우측 슬라이드 패널 전환
 status: active
 owner: claude
