@@ -956,4 +956,87 @@ export class ShipOrderService {
   async cancelShipBox(shipOrderNo: string, dto: ShipBoxDto, company?: string, plant?: string) {
     return this.tx.run((qr) => this.cancelShipBoxInTx(qr, shipOrderNo, dto.boxNo, dto.workerId, company, plant));
   }
+
+  /** 좌측 출하이력: 출하분(SHIPPED 박스)이 있는 출하지시 단위 통합 목록 */
+  async findShippedOrders(company?: string, plant?: string) {
+    const rows: Array<{
+      SHIP_ORDER_NO: string; CUSTOMER_NAME: string | null; SHIP_DATE: Date | null;
+      SHIPPED_QTY: number; PALLET_BOXES: number; LOOSE_BOXES: number;
+      PALLET_COUNT: number; ERP_SYNCED: number;
+    }> = await this.boxRepository.manager.query(
+      `SELECT b.SHIP_ORDER_NO,
+              o.CUSTOMER_NAME,
+              o.SHIP_DATE,
+              SUM(b.QTY)                                              AS SHIPPED_QTY,
+              SUM(CASE WHEN b.PALLET_NO IS NOT NULL THEN 1 ELSE 0 END) AS PALLET_BOXES,
+              SUM(CASE WHEN b.PALLET_NO IS NULL THEN 1 ELSE 0 END)     AS LOOSE_BOXES,
+              COUNT(DISTINCT b.PALLET_NO)                             AS PALLET_COUNT,
+              NVL((SELECT MAX(CASE WHEN s.ERP_SYNC_YN = 'Y' THEN 1 ELSE 0 END)
+                     FROM SHIPMENT_LOGS s
+                    WHERE s.SHIP_ORDER_NO = b.SHIP_ORDER_NO
+                      AND s.COMPANY = b.COMPANY AND s.PLANT_CD = b.PLANT_CD), 0) AS ERP_SYNCED
+         FROM BOX_MASTERS b
+         JOIN SHIPMENT_ORDERS o
+           ON o.SHIP_ORDER_NO = b.SHIP_ORDER_NO
+          AND o.COMPANY = b.COMPANY AND o.PLANT_CD = b.PLANT_CD
+        WHERE b.STATUS = 'SHIPPED'
+          AND b.SHIP_ORDER_NO IS NOT NULL
+          AND b.COMPANY = :1 AND b.PLANT_CD = :2
+        GROUP BY b.SHIP_ORDER_NO, o.CUSTOMER_NAME, o.SHIP_DATE
+        ORDER BY o.SHIP_DATE DESC NULLS LAST, b.SHIP_ORDER_NO DESC`,
+      [company, plant],
+    );
+
+    const data = rows.map((r) => ({
+      shipOrderNo: r.SHIP_ORDER_NO,
+      customerName: r.CUSTOMER_NAME,
+      shipDate: r.SHIP_DATE,
+      shippedQty: Number(r.SHIPPED_QTY) || 0,
+      palletCount: Number(r.PALLET_COUNT) || 0,
+      boxCount: (Number(r.PALLET_BOXES) || 0) + (Number(r.LOOSE_BOXES) || 0),
+      shipType: Number(r.PALLET_BOXES) > 0 && Number(r.LOOSE_BOXES) > 0
+        ? 'MIXED'
+        : Number(r.PALLET_BOXES) > 0 ? 'PALLET' : 'BOX',
+      hasErpSynced: Number(r.ERP_SYNCED) === 1,
+    }));
+    return { data };
+  }
+
+  /** 우측 상세: 선택 출하지시의 팔레트(+박스) 및 박스출하(palletNo '*') */
+  async getShippedDetail(shipOrderNo: string, company?: string, plant?: string) {
+    const order = await this.shipOrderRepository.findOne({
+      where: { shipOrderNo, ...this.tenantWhere(company, plant) },
+      select: ['shipOrderNo', 'customerName', 'shipDate'],
+    });
+    if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${shipOrderNo}`);
+
+    const pallets = await this.palletRepository.find({
+      where: { shipOrderNo, ...this.tenantWhere(company, plant) },
+      order: { createdAt: 'ASC' },
+    });
+    const palletNos = pallets.map((p) => p.palletNo);
+    const palletBoxes = palletNos.length
+      ? await this.boxRepository.find({ where: { palletNo: In(palletNos), ...this.tenantWhere(company, plant) }, order: { createdAt: 'ASC' } })
+      : [];
+    const boxesByPallet = new Map<string, typeof palletBoxes>();
+    for (const b of palletBoxes) {
+      if (!b.palletNo) continue;
+      boxesByPallet.set(b.palletNo, [...(boxesByPallet.get(b.palletNo) ?? []), b]);
+    }
+
+    const looseBoxes = await this.boxRepository.find({
+      where: { shipOrderNo, palletNo: IsNull(), status: 'SHIPPED', ...this.tenantWhere(company, plant) },
+      order: { shippedAt: 'ASC' },
+    });
+
+    return {
+      order,
+      pallets: pallets.map((p) => ({
+        palletNo: p.palletNo, status: p.status, boxCount: p.boxCount, totalQty: p.totalQty,
+        shipNo: p.shipmentId ?? null, erpSyncYn: null,
+        boxes: (boxesByPallet.get(p.palletNo) ?? []).map((b) => ({ boxNo: b.boxNo, itemCode: b.itemCode, qty: b.qty })),
+      })),
+      boxShipped: looseBoxes.map((b) => ({ boxNo: b.boxNo, itemCode: b.itemCode, qty: b.qty, palletNo: '*', shippedAt: b.shippedAt })),
+    };
+  }
 }

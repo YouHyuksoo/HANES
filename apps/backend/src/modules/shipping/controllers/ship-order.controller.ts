@@ -56,11 +56,26 @@ export class ShipOrderController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
+  @Get('shipped')
+  @ApiOperation({ summary: '출하분이 있는 출하지시 통합 이력(박스+팔레트)' })
+  async findShipped(@Company() company: string, @Plant() plant: string) {
+    const result = await this.shipOrderService.findShippedOrders(company, plant);
+    return ResponseUtil.success(result.data);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '출하지시 상세 조회' })
   @ApiParam({ name: 'id', description: '출하지시 ID' })
   async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
     const data = await this.shipOrderService.findById(id, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Get(':id/shipped-detail')
+  @ApiOperation({ summary: '출하지시 출하 상세(팔레트/박스, 박스출하는 *)' })
+  @ApiParam({ name: 'id', description: '출하지시 번호' })
+  async getShippedDetail(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.getShippedDetail(id, company, plant);
     return ResponseUtil.success(data);
   }
 
