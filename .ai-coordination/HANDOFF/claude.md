@@ -6,6 +6,13 @@
 
 ## Latest
 
+- T-SHIP-ORDER-CANCEL 완료(커밋 d3cf1f63..f77b36fa): `/shipping/return`을 **출하취소** 화면으로 재구성. SDD 8 Task + 최종 리뷰(Critical 0).
+  - 좌:통합 출하이력(박스+팔레트, 박스출하 팔레트번호 `*`) / 우:팔레트·박스 상세 / **출하지시 단위 단일 트랜잭션 취소**(팔레트분 reverse→CANCELED+팔레트 detach, 박스분 cancel-ship-box) + SHIPPING_RETURNS 취소이력 자동기록(returnNo=SEQ_SHIP_RETURN, 팔레트+박스 복원수량 항목화 RESTOCK).
+  - BE: BOX_MASTERS.SHIP_ORDER_NO/SHIPPED_AT 컬럼(**JSHANES DDL 적용·검증 완료**, 마이그레이션 `apps/backend/src/migrations/2026-06-22_box_ship_order_no_and_return_seq.sql`) + 3개 출하경로(shipBox/shipOrderPallets/markAsShipped) stamp. 취소/역분개 `*InTx` 헬퍼 추출(동작 보존). cancelOrderShipment 트랜잭션 내 **pessimistic-lock으로 shipment 상태/ERP 재검증**(동시성 창 제거). 신규 API: GET /shipping/orders/shipped, GET /shipping/orders/:id/shipped-detail, POST /shipping/orders/:id/cancel-shipment.
+  - 검증: BE/FE tsc 0, shipping jest 103/103, 구조 테스트 1/1, i18n 4파일 동기화. **실DB 취소 E2E + pessimistic-lock Oracle FOR UPDATE 실DB 검증 권장**(jest는 QueryRunner mock). 미해결시 lock 옵션만 제거하고 재검증 로직 유지.
+  - 잔여 주의: cancelShipBox는 동일 itemCode 다중 라인 시 임의 라인 shippedQty 차감(기존 패턴). getShippedDetail 상세 팔레트는 LOADED/SHIPPED 표시(부분 reverse 후 표시 nuance).
+  - **LOCKS 정리 보류**: 본 작업 LOCKS 항목(T-SHIP-ORDER-CANCEL)은 codex가 LOCKS.md를 활성 잠금·미커밋 편집 중이라 제거하지 않음. codex가 LOCKS.md 릴리스 후 제거 필요. JOURNAL.md/TASKS.md도 codex 잠금이라 미기록(상세는 본 핸드오프·ARCHIVE 참조).
+
 - T-BOX-SHIP-CONFIRM 완료(커밋 1038f0e4 i18n · 27793ade page): `/shipping/confirm`을 팔레트 출하 → **박스별출하**로 재구성.
   - 메뉴 라벨 shipping.confirm "출하작업"→"박스별출하"(4언어). 3-컬럼: 좌 CONFIRMED 출하지시 / 중 라인 진행률+출하가능 박스(fulfillment candidateBoxes, **읽기 전용**, 행클릭→시리얼) / 우 박스 시리얼(box-stock serials).
   - 출하·취소는 **기존 고아 컴포넌트 `BoxScanShipModal` 재사용**(ship-box/cancel-ship-box). OrderFulfillmentModal.tsx 삭제, Shipment 목록 패널·cancel/reverse·ShipmentScanModal·/shipping/shipments 제거. **백엔드 변경 0**, 라우트/메뉴코드 SHIP_CONFIRM 유지.
