@@ -10,6 +10,19 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-22 Claude (box-ship-confirm: /shipping/confirm 박스별출하 재구성)
+
+- 배경: `/shipping/confirm`이 OrderFulfillmentModal로 팔레트 구성→팔레트 출하를 담당했으나, 팔레트 적재/출하는 `/shipping/pallet`·`/shipping/pallet-ship`에 이미 별도 존재해 역할 중복. 사용자 요청으로 confirm을 **박스 단위 출하** 전용으로 재구성.
+- 핵심 발견: `components/shipping/BoxScanShipModal.tsx`가 박스 스캔 출하+취소(ship-box/cancel-ship-box, 라인 진행률, workerId, 중복 가드)를 이미 완비한 채 **어느 페이지에도 연결 안 된 고아 컴포넌트**(구조 테스트만 존재). 새 모달을 만들지 않고 재사용 → 작업 경량화. 백엔드(ship-box/cancel-ship-box/fulfillment/box-stock serials) 변경 0.
+- 변경:
+  - i18n(커밋 1038f0e4): 메뉴 평면키 shipping.confirm "출하작업"→"박스별출하"(en Box Shipping/zh 按箱出货/vi Xuất hàng theo thùng), `shipping.confirm.*` 페이지 키 14개 추가(4파일). `shipping.boxScan.*`는 기존 존재 확인. BOM 없음, JSON valid 4/4.
+  - page(커밋 27793ade): 3-컬럼 — 좌 출하지시 목록(CONFIRMED·items.some(orderQty>shippedQty)), 중 라인 진행률+출하가능 박스 그리드(fulfillment candidateBoxes, **읽기 전용**: 행 클릭→우측 시리얼), 우 박스 시리얼(box-stock/{boxNo}/serials). 출하는 BoxScanShipModal(initialShipOrderNo)에서만 수행→onShipped로 orders+fulfillment 재조회. OrderFulfillmentModal.tsx 삭제, Shipment(SHIPMENT_LOGS) 목록 패널·cancel/reverse 모달·ShipmentScanModal·/shipping/shipments 호출 전면 제거. 구조 테스트 `box-ship-page.structure.test.mjs` 추가(positive: BoxScanShipModal/fulfillment/box-stock, negative: OrderFulfillmentModal/ShipmentScanModal/shipments).
+  - 라우트 `/shipping/confirm`·메뉴코드 `SHIP_CONFIRM`·menuConfig 미변경(RBAC 보존).
+- 방식: SDD(subagent-driven). Task1 i18n→리뷰 승인, Task2 page→리뷰 승인(Minor만), Task3 검증(컨트롤러). 최종 전체 리뷰(opus) **Ready to merge: Yes**(Critical/Important 0, Minor 3=비차단).
+- 검증: `pnpm --filter @harness/frontend exec tsc --noEmit` exit 0. i18n 누락 점검 — shipping.confirm/boxScan 누락 0(보고된 18건은 무관 ai.config/shipping.pallet/master.label). 구조 테스트 RED→GREEN. **브라우저 UI E2E는 사용자 직접 확인 권장**(dev :3002).
+- 범위 외(보고만): ① candidateBoxes는 항상 oqcStatus='PASS' 필터이나 ship-box는 OQC_ENABLED일 때만 PASS 강제 → OQC 미사용 시 후보 목록이 좁을 수 있음(백엔드 정합화 별도). ② BoxMaster에 shipOrderNo 컬럼 없음 → 세션 밖 출하 박스 취소는 미지원(모달 세션 내 행만 취소). ③ **팔레트 출하로 생성되는 Shipment 생명주기 UI(SHIPPED→DELIVERED/역분개/ERP동기화)가 confirm에서만 있었는데 제거됨 → 새 거처(history 등) 필요. 박스출하는 Shipment 미생성이라 무관. 별도 과제.** ④ confirm.* 네임스페이스에 팔레트/Shipment 시절 미사용 키 잔존(계획상 허용, 추후 i18n 정리 권장).
+- 설계 `docs/superpowers/specs/2026-06-22-box-shipping-confirm-design.md`, 계획 `docs/superpowers/plans/2026-06-22-box-shipping-confirm.md`.
+
 ## 2026-06-21 Claude (i18n 혼입 이력 메모 — 분리 보류)
 
 - 사실: 커밋 341f1c15(fix(ui))와 631fa09c(feat(part))의 locales 4파일에 **다른 세션의 미커밋 i18n 변경이 함께 혼입**됨(ko.json 기준 내 키 2줄=imageLoadFailed, 타 세션 키 ~121줄 등). 통째 커밋 방침(사용자 승인)에 따른 결과.
@@ -2090,3 +2103,40 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - pallet-ship: 패널 타이틀 표준(text-sm) 통일, 출하지시 목록에 구성 팔레트·박스 수 표시(ship-order.service findAll 집계). 커밋 1f7f2562.
 - pallet: 정보카드(StatCard) 제거, 좌측 그리드 표준 래핑(카드 꽉 채움+내부 스크롤), 패널 타이틀 통일. codex의 출하지시 스캔 작업과 같은 파일이라 codex 커밋(0c500d79 등)에 함께 포함됨.
 - 검증: FE/BE tsc PASS, 실DB 팔레트/박스 집계 일치 확인, 브라우저 확인.
+
+# 2026-06-22 claude T-MASTER-FIELD-HELP 기준정보 화면 필드별 ? 도움말 + 집계성 숫자 천단위 포맷
+- 요청: 품목관리(part)처럼 다른 기준정보 화면에도 입력 필드마다 ? 도움말을 전부 추가. 이어서 숫자컬럼 천단위 포맷도 적용.
+- 패턴: PartFieldHelp.tsx(필드키→{db, description} + FieldLabel/FieldInput/FieldSelect/FieldComCodeSelect/FieldYnRadio 래퍼) + 공통 HelpTooltip(? 아이콘, description+DB컬럼 표시) 복제. i18n은 t(`...fieldHelp.${field}`, description) 한글 fallback(locales 4파일 미수정).
+- 범위: 기준정보(MASTER) 메뉴 13개 화면(part 제외). 표준 입력폼만, 라벨 디자이너/캔버스·라우팅 행편집 그리드 등 특수 위젯 제외.
+- 변경(FE): 13개 화면에 *FieldHelp.tsx 신규 생성 + 폼 컴포넌트의 입력 라벨을 Field* 래퍼로 교체.
+  - bom, partner, equip(EquipMasterTab), process, prod-line(ProdLineTab), routing(그룹/헤더 표준필드만), work-calendar(Calendar/Add/DayEdit/ShiftPattern), worker, work-instruction, warehouse(Form/Location/TransferRule), vendor-barcode, process-capa, label(템플릿 기본정보만).
+  - DB 컬럼은 백엔드 엔티티 실측 매핑(예: WORKER_MASTERS.*, ROUTING_GROUPS/ROUTING_PROCESSES.*, BOM_MASTERS.*, PROCESS_CAPAS.*, LABEL_TEMPLATES.*).
+- 천단위 포맷(집계성 숫자만, 순번·연도·Rev·일수·카운트·코드성 제외):
+  - equip/EquipBomTab: stockQty(재고)·quantity(수량) toLocaleString 추가(unitPrice는 기존 적용).
+  - process-capa/page: stdUph(시간당생산량) cell 추가(dailyCapa는 기존 적용). workerCnt/boardCnt/equipCnt(소수 카운트)·stdTactTime(초)·balanceEff(%)는 제외.
+  - bom/BomTab: qtyPer(소요량) toLocaleString 추가.
+- 검증: frontend tsc --noEmit PASS(에러 0건). dev 서버 가동 중이라 prod build 미실행(CLAUDE.md 규칙).
+- 참고: part 화면은 사용자 지정 범위(13개) 밖이라 미변경. part 그리드 일부 수량 컬럼(boxQty/lotUnitQty/sampleQty/safetyStock)은 콤마 미적용 상태로 남아 있음(차후 필요 시 별도 처리).
+
+# 2026-06-22 claude T-THOUSAND-FORMAT 전역 트랜잭션 화면 집계성 숫자 천단위 포맷
+- 요청: 품목관리(part)도 맞추고, 입고·재고·출고·생산량 등 전체 화면의 집계성 숫자에 천단위 콤마 적용.
+- 기준: 집계성 숫자(수량·재고·입출고·생산량·금액·단가·합계·물리량)만 toLocaleString. 제외 = 순번/SEQ·연도·Rev·일수/분/초·%·비율·효율·통계지표(Cpk 등)·측정값·식별번호(LOT/시리얼/전표/PO)·코드성·한두자리 카운트. 표시 전용(로직/정렬/필터/합계/API/DTO/엔티티 무변경).
+- part(직접): 그리드 boxQty·lotUnitQty·sampleQty·packUnit 콤마 추가(minPackQty는 기존 적용).
+- 도메인 6개 병렬 에이전트:
+  - material: lot-split·physical-inv·scrap 등 수량 컬럼(이미 적용된 다수는 스킵).
+  - inventory: material-physical-inv(SessionModals)·product-physical-inv 등 장부/실사/차이 수량.
+  - production: repair·subprocess-kitting·input-kiosk(Defect/Material/WorkHistory 패널) 생산/투입 수량.
+  - product+shipping: confirm·pallet·pallet-ship 등 출하/박스/팔레트 수량.
+  - quality: oqc(box/sample)·rework·rework-inspect·trace(usedQty) 등 8파일 11개 위치. defect/는 잠금 준수 미수정.
+  - 기타(consumables/outsourcing/customs/sales/inspection): consumables Receiving/Issuing Table qty, inspection result workflow plan/good/defect qty. customs·outsourcing·sales는 이미 전부 적용돼 변경 0건.
+- 잠금 준수: material/receive/ReceiveScanModal.tsx(T-RECEIVE-LOCATION), quality/defect/**(T-DEFECT-REGISTER-PANEL) 미수정.
+- 검증: frontend tsc --noEmit PASS(에러 0건). git diff --check 통과(공백 오류 0), as any 도입 0, 추가는 전부 인라인 toLocaleString(?? 0 / != null 가드). dev 서버 가동 중이라 prod build 미실행(CLAUDE.md 규칙).
+
+# 2026-06-22 claude T-SHIP-ORDER-CUSTOMER-PO 출하지시 고객 PO번호 컬럼 추가
+- 요청: /shipping/order 출하지시에 고객 PO번호를 수동 입력해 생성하고 그리드에도 표시.
+- DB(JSHANES): pre-check USER_TAB_COLUMNS로 SHIPMENT_ORDERS 13컬럼 확인(CUSTOMER_PO_NO 없음) → ALTER TABLE SHIPMENT_ORDERS ADD CUSTOMER_PO_NO VARCHAR2(100) NULL. post-check 컬럼 확인. INVALID였던 IF_ITEM_MASTER(무관 프로시저)는 ALTER ... COMPILE로 VALID 복구.
+- BE: shipment-order.entity.ts customerPoNo(varchar2 100 nullable, type 명시) / ship-order.dto.ts CreateShipOrderDto.customerPoNo(@IsOptional @MaxLength 100) / ship-order.service.ts create insert + buildShipmentOrderUpdate Pick에 customerPoNo 추가. 목록/단건 응답은 ...order 전개라 자동 포함.
+- FE: shipping/order/page.tsx — ShipOrder 인터페이스·form state·openCreate/openEdit·handleSave payload·그리드 컬럼(고객명 다음, filter text)·우측 패널 입력칸(고객 선택 다음)·출하지시서 출력물에 고객 PO번호 추가.
+- i18n 4파일: shipping.shipOrder.customerPoNo/customerPoNoPlaceholder 추가(JSON 파싱 삽입, 무수정 재덤프 동일성 가드로 포맷 보존, BOM 없음·CRLF 유지, 각 +2줄). 화면은 t(key,fallback)로도 안전.
+- 검증: FE tsc PASS, BE tsc PASS. 구조 테스트 payload/required-fields/print/sql-preview/status-help 통과.
+- 선재 이슈(무관): ship-order-right-panel.structure.test.mjs는 grid-cols-[minmax(0,1fr)_minmax(420px,480px)] 패턴을 기대하나 현재 화면은 aside w-[480px] 패널 구현 → HEAD 원본에도 패턴 없음(내 변경 전부터 실패하던 stale 테스트). 패널 레이아웃 미수정, 스코프 밖이라 보류.
