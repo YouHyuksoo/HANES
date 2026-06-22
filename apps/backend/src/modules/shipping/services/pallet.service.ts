@@ -96,7 +96,7 @@ export class PalletService {
       this.palletRepository.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return { data: data.map((pallet) => ({ ...pallet, id: pallet.palletNo })), total, page, limit };
   }
 
   /**
@@ -125,6 +125,9 @@ export class PalletService {
    * 팔레트 생성
    */
   async create(dto: CreatePalletDto, company?: string, plant?: string) {
+    throw new BadRequestException(
+      '출하지시 없는 팔레트는 생성할 수 없습니다. 출하지시 기준 팔레트 생성 API를 사용해 주세요.',
+    );
     // 팔레트번호 미지정 시 자동 채번 (PLT+YYMMDD+4자리, SEQ_PALLET_NO_DAILY)
     const palletNo = dto.palletNo ?? await this.numbering.nextPalletNo();
 
@@ -211,6 +214,9 @@ export class PalletService {
    */
   async addBox(id: string, dto: AddBoxToPalletDto, company?: string, plant?: string) {
     const pallet = await this.findById(id, company, plant);
+    throw new BadRequestException(
+      `팔레트 구성은 출하지시 기준 API를 사용해야 합니다. 출하지시: ${pallet.shipOrderNo ?? '없음'}`,
+    );
 
     // OPEN 상태에서만 박스 추가 가능
     if (pallet.status !== 'OPEN') {
@@ -369,6 +375,9 @@ export class PalletService {
    */
   async closePallet(id: string, company?: string, plant?: string) {
     const pallet = await this.findById(id, company, plant);
+    if (!pallet.shipOrderNo) {
+      throw new BadRequestException('출하지시 없는 팔레트는 마감할 수 없습니다.');
+    }
 
     if (pallet.status !== 'OPEN') {
       throw new BadRequestException(`현재 상태(${pallet.status})에서는 팔레트를 닫을 수 없습니다. OPEN 상태여야 합니다.`);

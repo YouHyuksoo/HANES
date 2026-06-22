@@ -12,7 +12,7 @@ import { IsString, IsOptional, IsInt, IsDateString, Min, Max, IsIn } from 'class
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
-const SHIP_ORDER_STATUS = ['DRAFT', 'CONFIRMED', 'SHIPPING', 'SHIPPED'] as const;
+const SHIP_ORDER_STATUS = ['DRAFT', 'CONFIRMED', 'SHIPPING', 'SHIPPED', 'CLOSED'] as const;
 
 /** 출하이력 목록 조회 쿼리 DTO */
 export class ShipHistoryQueryDto extends PaginationQueryDto {

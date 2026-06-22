@@ -185,6 +185,25 @@ describe('ShipOrderService', () => {
   });
 
   describe('create', () => {
+    it('should reject creating an order without customer ship date', async () => {
+      mockNumbering.nextShipmentNo.mockResolvedValue('SO-AUTO-001');
+      mockOrderRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ shipOrderNo: 'SO-AUTO-001', status: 'DRAFT' } as any);
+      mockOrderRepo.create.mockImplementation((payload) => payload as any);
+      mockItemRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save
+        .mockImplementation(async (entity: any) => Array.isArray(entity) ? entity : entity);
+      mockItemRepo.find.mockResolvedValue([]);
+      mockPartRepo.findOne.mockResolvedValue(null);
+      mockPartnerRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.create({
+        customerId: 'CUST-1',
+        items: [{ itemCode: 'ITEM-1', orderQty: 1 }],
+      } as any, 'C1', 'P1')).rejects.toThrow('고객사 출하일');
+    });
+
     it('should generate shipOrderNo when creating an order', async () => {
       mockNumbering.nextShipmentNo.mockResolvedValue('SO-AUTO-001');
       mockOrderRepo.findOne
@@ -200,6 +219,7 @@ describe('ShipOrderService', () => {
 
       const result = await target.create({
         customerId: 'CUST-1',
+        shipDate: '2026-06-22',
         items: [{ itemCode: 'ITEM-1', orderQty: 1 }],
       } as any, 'C1', 'P1');
 
@@ -235,6 +255,7 @@ describe('ShipOrderService', () => {
         shipOrderNo: 'SO-001',
         customerId: 'CUST-1',
         customerName: 'Customer',
+        shipDate: '2026-06-22',
         items: [{ itemCode: 'ITEM-1', orderQty: 1 }],
       } as any);
 

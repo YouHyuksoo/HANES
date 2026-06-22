@@ -13,12 +13,76 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
-  History, Search, RefreshCw,
+  History, Search, RefreshCw, Package, Box, Loader2, HelpCircle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
+
+const formatDateInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const statusBadgeClassMap: Record<string, string> = {
+  DRAFT: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200",
+  CONFIRMED: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-200",
+  SHIPPING: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200",
+  SHIPPED: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200",
+  CLOSED: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/60 dark:text-violet-200",
+};
+
+const statusHelpTextMap: Record<string, string> = {
+  DRAFT: "출하지시 작성 중 상태입니다. 아직 출하 작업 대상이 아닙니다.",
+  CONFIRMED: "출하지시가 확정되어 박스 또는 팔레트 출하 작업을 진행할 수 있습니다.",
+  SHIPPING: "출하 작업이 진행 중인 상태입니다. 일부 물류 처리가 남아 있을 수 있습니다.",
+  SHIPPED: "출하 처리가 완료된 상태입니다. 출하 이력과 수불이 기록되었습니다.",
+  CLOSED: "출하지시 수량이 모두 처리되어 마감된 상태입니다.",
+};
+
+const shipHistoryStatusHelpText = [
+  "DRAFT: 출하지시 작성 중 상태입니다. 아직 출하 작업 대상이 아닙니다.",
+  "CONFIRMED: 출하지시가 확정되어 박스 또는 팔레트 출하 작업을 진행할 수 있습니다.",
+  "SHIPPING: 출하 작업이 진행 중인 상태입니다. 일부 물류 처리가 남아 있을 수 있습니다.",
+  "SHIPPED: 출하 처리가 완료된 상태입니다. 출하 이력과 수불이 기록되었습니다.",
+  "CLOSED: 출하지시 수량이 모두 처리되어 마감된 상태입니다.",
+].join("\n");
+
+function ShipHistoryStatusHeader() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      <span>{t("common.status")}</span>
+      <span
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-primary"
+        title={shipHistoryStatusHelpText}
+        aria-label={shipHistoryStatusHelpText}
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+      </span>
+    </div>
+  );
+}
+
+function ShipOrderStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
+  const color = statusBadgeClassMap[status] ?? "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200";
+  const label = t(`comCode.SHIP_ORDER_STATUS.${status}`, status);
+  const helpText = statusHelpTextMap[status] ?? "정의되지 않은 출하 상태입니다.";
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${color}`}
+      title={helpText}
+      aria-label={`${label}: ${helpText}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 interface ShipHistory {
   id: string;
@@ -30,16 +94,42 @@ interface ShipHistory {
   itemCount: number;
   totalQty: number;
   createdAt: string;
+  items?: { itemCode: string; orderQty?: number; shippedQty?: number }[];
+}
+
+interface OrderPalletBox {
+  boxNo: string;
+  itemCode: string;
+  qty: number;
+  status: string;
+}
+
+interface OrderPallet {
+  palletNo: string;
+  boxCount: number;
+  totalQty: number;
+  status: string;
+  closeAt?: string | null;
+  shippedAt?: string | null;
+  boxes: OrderPalletBox[];
+}
+
+interface PalletDetail {
+  pallets: OrderPallet[];
 }
 
 export default function ShipHistoryPage() {
   const { t } = useTranslation();
+  const today = formatDateInput(new Date());
   const [data, setData] = useState<ShipHistory[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState<ShipHistory | null>(null);
+  const [palletDetail, setPalletDetail] = useState<PalletDetail | null>(null);
+  const [palletLoading, setPalletLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
 
   const comCodeStatusOptions = useComCodeOptions("SHIP_ORDER_STATUS");
   const statusOptions = useMemo(() => [
@@ -54,16 +144,46 @@ export default function ShipHistoryPage() {
       if (statusFilter) params.status = statusFilter;
       if (dateFrom) params.shipDateFrom = dateFrom;
       if (dateTo) params.shipDateTo = dateTo;
-      const res = await api.get("/shipping/orders", { params });
-      setData(res.data?.data ?? []);
+      const res = await api.get("/shipping/history", { params });
+      const rows: ShipHistory[] = (res.data?.data ?? []).map((row: ShipHistory) => ({
+        ...row,
+        id: row.id ?? row.shipOrderNo,
+        itemCount: row.itemCount ?? row.items?.length ?? 0,
+        totalQty: row.totalQty ?? row.items?.reduce((sum, item) => sum + Number(item.orderQty ?? 0), 0) ?? 0,
+      }));
+      setData(rows);
+      setSelectedHistory((current) => {
+        if (current && !rows.some((row) => row.shipOrderNo === current.shipOrderNo)) {
+          setPalletDetail(null);
+          return null;
+        }
+        return current;
+      });
     } catch {
       setData([]);
+      setSelectedHistory(null);
+      setPalletDetail(null);
     } finally {
       setLoading(false);
     }
   }, [searchText, statusFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleSelectHistory = useCallback(async (row: ShipHistory) => {
+    setSelectedHistory(row);
+    setPalletLoading(true);
+    try {
+      const res = await api.get(`/shipping/orders/${encodeURIComponent(row.shipOrderNo)}/fulfillment`, {
+        suppressErrorModal: true,
+      });
+      setPalletDetail({ pallets: res.data?.data?.pallets ?? [] });
+    } catch {
+      setPalletDetail({ pallets: [] });
+    } finally {
+      setPalletLoading(false);
+    }
+  }, []);
 
   const columns = useMemo<ColumnDef<ShipHistory>[]>(() => [
     { accessorKey: "shipOrderNo", header: t("shipping.history.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
@@ -72,9 +192,18 @@ export default function ShipHistoryPage() {
     { accessorKey: "shipDate", header: t("shipping.history.shipDateCol"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "itemCount", header: t("shipping.history.itemCount"), size: 70, meta: { filterType: "number" as const } },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
+    { accessorKey: "status", header: () => <ShipHistoryStatusHeader />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ShipOrderStatusBadge status={getValue() as string} /> },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 100, meta: { filterType: "date" as const } },
   ], [t]);
+
+  const pallets = palletDetail?.pallets ?? [];
+  const palletTotals = useMemo(() => ({
+    palletCount: pallets.length,
+    boxCount: pallets.reduce((sum, pallet) => sum + Number(pallet.boxCount ?? pallet.boxes?.length ?? 0), 0),
+    totalQty: pallets.reduce((sum, pallet) => sum + Number(pallet.totalQty ?? 0), 0),
+  }), [pallets]);
+  const fmt = (value?: number | null) => Number(value ?? 0).toLocaleString();
+  const fmtDateTime = (value?: string | null) => value ? String(value).replace("T", " ").slice(0, 16) : "-";
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -87,27 +216,120 @@ export default function ShipHistoryPage() {
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
       </div>
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
-          enableExport exportFileName={t("shipping.history.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("shipping.history.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+      <div className="grid flex-1 min-h-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+            enableExport exportFileName={t("shipping.history.title")}
+            onRowClick={handleSelectHistory}
+            selectedRowId={selectedHistory?.id}
+            getRowId={(row) => row.id}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("shipping.history.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} fullWidth />
+                </div>
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+            }
+            sqlQuery={`SELECT *\nFROM SHIPPING_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        </CardContent></Card>
+
+        <aside className="min-h-0 overflow-hidden rounded-lg border border-border bg-surface">
+          <div className="flex h-full flex-col">
+            <div className="shrink-0 border-b border-border px-4 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-text">
+                  <Package className="h-4 w-4 text-primary" />
+                  {t("shipping.history.palletDetail", "팔레트 상세")}
+                </h2>
+                {palletLoading && <Loader2 className="h-4 w-4 animate-spin text-text-muted" />}
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} fullWidth />
-              </div>
+              <p className="mt-1 truncate font-mono text-xs text-text-muted">
+                {selectedHistory?.shipOrderNo ?? t("shipping.history.selectRowForPallet", "좌측 행을 선택하세요")}
+              </p>
             </div>
-          } 
-          sqlQuery={`SELECT *\nFROM SHIPPING_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
+
+            {!selectedHistory ? (
+              <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-text-muted">
+                {t("shipping.history.selectRowForPalletDetail", "좌측 출하이력 행을 선택하면 팔레트번호와 박스 구성이 표시됩니다.")}
+              </div>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <div className="mb-3 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded border border-border bg-background px-2 py-2">
+                    <p className="text-xs text-text-muted">{t("shipping.confirm.pallet", "팔레트")}</p>
+                    <p className="font-mono text-base font-semibold text-text">{fmt(palletTotals.palletCount)}</p>
+                  </div>
+                  <div className="rounded border border-border bg-background px-2 py-2">
+                    <p className="text-xs text-text-muted">{t("shipping.confirm.box", "박스")}</p>
+                    <p className="font-mono text-base font-semibold text-text">{fmt(palletTotals.boxCount)}</p>
+                  </div>
+                  <div className="rounded border border-border bg-background px-2 py-2">
+                    <p className="text-xs text-text-muted">{t("common.totalQty", "총수량")}</p>
+                    <p className="font-mono text-base font-semibold text-text">{fmt(palletTotals.totalQty)}</p>
+                  </div>
+                </div>
+
+                {pallets.length === 0 && !palletLoading ? (
+                  <div className="rounded border border-dashed border-border px-4 py-8 text-center text-sm text-text-muted">
+                    {t("shipping.history.noPalletDetail", "등록된 팔레트 정보가 없습니다.")}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pallets.map((pallet) => (
+                      <section key={pallet.palletNo} className="rounded border border-border bg-background">
+                        <div className="border-b border-border px-3 py-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="min-w-0 truncate font-mono text-sm font-semibold text-primary" title={pallet.palletNo}>
+                              {pallet.palletNo}
+                            </p>
+                            <span className="shrink-0 rounded border border-border px-2 py-0.5 text-xs text-text-muted">{pallet.status}</span>
+                          </div>
+                          <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-text-muted">
+                            <span>{t("shipping.confirm.box", "박스")} {fmt(pallet.boxCount)}</span>
+                            <span>{t("common.qty", "수량")} {fmt(pallet.totalQty)}</span>
+                            <span>{t("shipping.pallet.closeAt", "마감")} {fmtDateTime(pallet.closeAt)}</span>
+                            <span>{t("shipping.pallet.shippedAt", "출하")} {fmtDateTime(pallet.shippedAt)}</span>
+                          </div>
+                        </div>
+                        <div className="divide-y divide-border">
+                          {pallet.boxes.map((box) => (
+                            <div key={box.boxNo} className="grid grid-cols-[1fr_auto] gap-2 px-3 py-2 text-xs">
+                              <div className="min-w-0">
+                                <p className="flex items-center gap-1 truncate font-mono font-medium text-text" title={box.boxNo}>
+                                  <Box className="h-3 w-3 text-text-muted" /> {box.boxNo}
+                                </p>
+                                <p className="mt-0.5 truncate text-text-muted">{box.itemCode}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-mono font-semibold text-text">{fmt(box.qty)}</p>
+                                <p className="text-text-muted">{box.status}</p>
+                              </div>
+                            </div>
+                          ))}
+                          {pallet.boxes.length === 0 && (
+                            <div className="px-3 py-3 text-center text-xs text-text-muted">
+                              {t("shipping.history.noPalletBoxes", "팔레트에 연결된 박스가 없습니다.")}
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

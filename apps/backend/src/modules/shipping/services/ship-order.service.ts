@@ -97,6 +97,13 @@ export class ShipOrderService {
     return new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
   }
 
+  private assertRequiredShipDate(shipDate: string | null | undefined) {
+    if (typeof shipDate !== 'string' || shipDate.trim().length === 0) {
+      throw new BadRequestException('고객사 출하일은 필수입니다.');
+    }
+    return shipDate;
+  }
+
   private assertOrderLineMap(order: ShipmentOrder & { items?: ShipmentOrderItem[] }) {
     if (order.status !== 'CONFIRMED') {
       throw new BadRequestException(`확정(CONFIRMED) 상태의 출하지시만 작업할 수 있습니다. 현재: ${order.status}`);
@@ -136,7 +143,7 @@ export class ShipOrderService {
       ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
       // customerName은 프론트 dto가 아니라 거래처마스터에서 해석한다(update()에서 처리)
       ...(dto.dueDate !== undefined ? { dueDate: parseDateStart(dto.dueDate) } : {}),
-      ...(dto.shipDate !== undefined ? { shipDate: parseDateStart(dto.shipDate) } : {}),
+      ...(dto.shipDate !== undefined ? { shipDate: parseDateStart(this.assertRequiredShipDate(dto.shipDate)) } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
     };
   }
@@ -190,6 +197,21 @@ export class ShipOrderService {
     // 고객명은 거래처마스터에서 조인해 표시(저장값이 아니라 현재 이름)
     const custMap = await this.customerNameMap(data.map((o) => o.customerId), company, plant);
 
+    // 출하지시별 구성 팔레트수/박스수 집계 (PalletMaster.boxCount는 박스 할당 시 갱신되는 신뢰값)
+    const palletsForOrders = orderNos.length > 0
+      ? await this.palletRepository.find({
+          where: { shipOrderNo: In(orderNos), ...this.tenantWhere(company, plant) },
+          select: ['palletNo', 'shipOrderNo', 'boxCount'],
+        })
+      : [];
+    const palletCountMap = new Map<string, number>();
+    const boxCountMap = new Map<string, number>();
+    for (const p of palletsForOrders) {
+      const key = p.shipOrderNo ?? '';
+      palletCountMap.set(key, (palletCountMap.get(key) ?? 0) + 1);
+      boxCountMap.set(key, (boxCountMap.get(key) ?? 0) + (p.boxCount ?? 0));
+    }
+
     const resultData = data.map((order) => {
       const items = allItems
         .filter((i) => i.shipOrderNo === order.shipOrderNo)
@@ -197,7 +219,13 @@ export class ShipOrderService {
           ...item,
           itemName: partMap.get(item.itemCode),
         }));
-      return { ...order, customerName: custMap.get(order.customerId ?? '') ?? order.customerName, items };
+      return {
+        ...order,
+        customerName: custMap.get(order.customerId ?? '') ?? order.customerName,
+        items,
+        palletCount: palletCountMap.get(order.shipOrderNo) ?? 0,
+        boxCount: boxCountMap.get(order.shipOrderNo) ?? 0,
+      };
     });
 
     return { data: resultData, total, page, limit };
@@ -238,6 +266,7 @@ export class ShipOrderService {
 
   /** 출하지시 생성 */
   async create(dto: CreateShipOrderDto, company?: string, plant?: string) {
+    this.assertRequiredShipDate(dto.shipDate);
     let savedShipOrderNo!: string;
     await this.tx.run(async (queryRunner) => {
       const shipOrderNo = dto.shipOrderNo?.trim() || await this.numbering.nextShipmentNo(queryRunner);

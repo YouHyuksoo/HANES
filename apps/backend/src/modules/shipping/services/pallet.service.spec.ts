@@ -5,7 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { PalletService } from './pallet.service';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
@@ -70,17 +70,14 @@ describe('PalletService', () => {
   });
 
   describe('create', () => {
-    it('should create pallet', async () => {
-      mockPalletRepo.findOne.mockResolvedValue(null);
-      const saved = { palletNo: 'P-001', status: 'OPEN' } as any;
-      mockPalletRepo.create.mockReturnValue(saved);
-      mockPalletRepo.save.mockResolvedValue(saved);
-      const result = await target.create({ palletNo: 'P-001' } as any);
-      expect(result.status).toBe('OPEN');
+    it('should reject unbound pallet creation', async () => {
+      await expect(target.create({ palletNo: 'P-001' } as any)).rejects.toThrow('출하지시');
+      expect(mockPalletRepo.create).not.toHaveBeenCalled();
+      expect(mockPalletRepo.save).not.toHaveBeenCalled();
     });
-    it('should throw ConflictException', async () => {
-      mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001' } as any);
-      await expect(target.create({ palletNo: 'P-001' } as any)).rejects.toThrow(ConflictException);
+    it('should not run duplicate check for unbound pallet creation', async () => {
+      await expect(target.create({ palletNo: 'P-001' } as any)).rejects.toThrow(BadRequestException);
+      expect(mockPalletRepo.findOne).not.toHaveBeenCalled();
     });
   });
 
@@ -124,13 +121,18 @@ describe('PalletService', () => {
 
   describe('closePallet', () => {
     it('should close OPEN pallet with boxes', async () => {
-      mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN', boxCount: 3 } as any);
-      mockPalletRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN', boxCount: 3, shipOrderNo: 'SO-001' } as any);
+      mockBoxRepo.find.mockResolvedValue([] as any);
       await target.closePallet('P-001');
-      expect(mockPalletRepo.update).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockQr.manager.update).toHaveBeenCalledWith(
+        PalletMaster,
+        { palletNo: 'P-001' },
+        expect.objectContaining({ status: 'CLOSED' }),
+      );
     });
     it('should throw for empty pallet', async () => {
-      mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN', boxCount: 0 } as any);
+      mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN', boxCount: 0, shipOrderNo: 'SO-001' } as any);
       await expect(target.closePallet('P-001')).rejects.toThrow(BadRequestException);
     });
   });
@@ -165,19 +167,13 @@ describe('PalletService', () => {
       (mockQr.manager.createQueryBuilder as jest.Mock).mockReturnValue(qb);
     };
 
-    it('addBox uses TransactionService', async () => {
+    it('addBox rejects the general pallet API', async () => {
       mockPalletRepo.findOne
-        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'OPEN' } as any)
-        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'OPEN' } as any);
-      mockBoxRepo.find.mockResolvedValue([{ boxNo: 'BOX-001', status: 'CLOSED', oqcStatus: 'PASS' }] as any);
-      mockSummaryQb({ count: '1', totalQty: '2' });
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'OPEN', shipOrderNo: 'SO-001' } as any);
 
-      await target.addBox('P-001', { boxIds: ['BOX-001'] } as any);
-
-      expect(mockTx.run).toHaveBeenCalledTimes(1);
-      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
-      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
-      expect(mockQr.release).not.toHaveBeenCalled();
+      await expect(target.addBox('P-001', { boxIds: ['BOX-001'] } as any)).rejects.toThrow('출하지시');
+      expect(mockTx.run).not.toHaveBeenCalled();
+      expect(mockBoxRepo.find).not.toHaveBeenCalled();
     });
 
     it('removeBox uses TransactionService', async () => {

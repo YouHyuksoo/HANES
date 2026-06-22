@@ -71,10 +71,9 @@ export class CreateShipOrderDto {
   @IsDateString()
   dueDate?: string;
 
-  @ApiPropertyOptional({ description: '출하예정일 (YYYY-MM-DD)' })
-  @IsOptional()
+  @ApiProperty({ description: '고객사 출하일 (YYYY-MM-DD)' })
   @IsDateString()
-  shipDate?: string;
+  shipDate: string;
 
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()

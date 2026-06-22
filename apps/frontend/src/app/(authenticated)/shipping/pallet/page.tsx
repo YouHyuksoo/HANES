@@ -63,6 +63,22 @@ interface Pallet {
   shippedAt?: string | null;
 }
 
+interface ShipOrderLineSummary {
+  itemCode: string;
+  itemName?: string;
+  orderQty: number;
+  shippedQty: number;
+}
+
+interface ShipOrderSummary {
+  shipOrderNo: string;
+  customerName?: string;
+  shipDate?: string;
+  dueDate?: string;
+  status: string;
+  items: ShipOrderLineSummary[];
+}
+
 export default function PalletPage() {
   const { t } = useTranslation();
   const comCodeOptions = useComCodeOptions("PALLET_STATUS");
@@ -79,6 +95,9 @@ export default function PalletPage() {
   const [searchText, setSearchText] = useState("");
   const [scanText, setScanText] = useState("");
   const [selectedPallet, setSelectedPallet] = useState<Pallet | null>(null);
+  const [shipOrders, setShipOrders] = useState<ShipOrderSummary[]>([]);
+  const [selectedShipOrderNo, setSelectedShipOrderNo] = useState("");
+  const [loadingShipOrders, setLoadingShipOrders] = useState(false);
   const [palletBoxes, setPalletBoxes] = useState<PalletBox[]>([]);
   const [availableBoxes, setAvailableBoxes] = useState<AvailableBox[]>([]);
   const [selectedBoxes, setSelectedBoxes] = useState<string[]>([]);
@@ -106,6 +125,41 @@ export default function PalletPage() {
   }, [searchText, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const fetchShipOrders = useCallback(async () => {
+    setLoadingShipOrders(true);
+    try {
+      const res = await api.get("/shipping/orders", { params: { status: "CONFIRMED", limit: "5000" } });
+      const list: ShipOrderSummary[] = res.data?.data ?? [];
+      const unshipped = list.filter((order) =>
+        order.items?.some((item) => item.orderQty > item.shippedQty),
+      );
+      setShipOrders(unshipped);
+      setSelectedShipOrderNo((current) =>
+        current && unshipped.some((order) => order.shipOrderNo === current) ? current : "",
+      );
+    } catch {
+      setShipOrders([]);
+      setSelectedShipOrderNo("");
+    } finally {
+      setLoadingShipOrders(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchShipOrders(); }, [fetchShipOrders]);
+
+  const handleRefresh = useCallback(() => {
+    fetchData();
+    fetchShipOrders();
+  }, [fetchData, fetchShipOrders]);
+
+  const shipOrderOptions = useMemo(() => [
+    { value: "", label: t("shipping.pallet.selectShipOrder", "출하지시를 선택하세요") },
+    ...shipOrders.map((order) => ({
+      value: order.shipOrderNo,
+      label: `${order.shipOrderNo} · ${order.customerName ?? "-"} · ${order.shipDate ?? order.dueDate ?? "-"}`,
+    })),
+  ], [shipOrders, t]);
 
   /** 선택 팔레트의 포함 박스 조회 */
   const fetchPalletBoxes = useCallback(async (palletNo: string) => {
@@ -164,22 +218,32 @@ export default function PalletPage() {
   }, [fetchData, fetchPalletBoxes]);
 
   const handleCreate = useCallback(async () => {
+    if (!selectedShipOrderNo) {
+      toast.error(t("shipping.pallet.shipOrderRequired", "출하지시를 먼저 선택하세요."));
+      return;
+    }
     setSaving(true);
     try {
-      await api.post("/shipping/pallets", {});
+      await api.post(`/shipping/orders/${encodeURIComponent(selectedShipOrderNo)}/pallets`, {});
       setIsCreateModalOpen(false);
+      setSelectedShipOrderNo("");
       fetchData();
+      fetchShipOrders();
     } catch (e) {
       console.error("Create failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [fetchData]);
+  }, [fetchData, fetchShipOrders, selectedShipOrderNo, t]);
 
   /** 박스번호 스캔 → 유효성 검증 후 선택 목록에 추가 */
   const handleScanBox = useCallback(async () => {
     const boxNo = scanBoxInput.trim();
     if (!boxNo || !selectedPallet) return;
+    if (!selectedPallet.shipOrderNo) {
+      toast.error(t("shipping.pallet.shipOrderRequired", "출하지시가 없는 팔레트는 구성할 수 없습니다."));
+      return;
+    }
     try {
       const res = await api.get("/shipping/boxes", {
         params: { boxNo, status: "CLOSED", oqcStatus: "PASS", unassigned: "true" },
@@ -201,37 +265,52 @@ export default function PalletPage() {
 
   const handleAssignBoxes = useCallback(async () => {
     if (!selectedPallet || selectedBoxes.length === 0) return;
+    if (!selectedPallet.shipOrderNo) {
+      toast.error(t("shipping.pallet.shipOrderRequired", "출하지시가 없는 팔레트는 구성할 수 없습니다."));
+      return;
+    }
     setSaving(true);
     try {
-      const res = await api.post(`/shipping/pallets/${selectedPallet.palletNo}/boxes`, { boxIds: selectedBoxes });
+      await api.post(`/shipping/orders/${encodeURIComponent(selectedPallet.shipOrderNo)}/pallets/${selectedPallet.palletNo}/boxes`, { boxIds: selectedBoxes });
       setSelectedBoxes([]);
       setIsAssignModalOpen(false);
-      syncAfterAction(res.data?.data);
+      const refreshed = await api.get(`/shipping/pallets/pallet-no/${encodeURIComponent(selectedPallet.palletNo)}`);
+      syncAfterAction(refreshed.data?.data);
     } catch (e) {
       console.error("Assign failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [selectedPallet, selectedBoxes, syncAfterAction]);
+  }, [selectedPallet, selectedBoxes, syncAfterAction, t]);
 
   const handleRemoveBox = useCallback(async () => {
     if (!selectedPallet || !removeBoxTarget) return;
+    if (!selectedPallet.shipOrderNo) {
+      toast.error(t("shipping.pallet.shipOrderRequired", "출하지시가 없는 팔레트는 구성할 수 없습니다."));
+      return;
+    }
     setSaving(true);
     try {
-      const res = await api.post(`/shipping/pallets/${selectedPallet.palletNo}/boxes/remove`, { boxIds: [removeBoxTarget] });
+      await api.delete(`/shipping/orders/${encodeURIComponent(selectedPallet.shipOrderNo)}/pallets/${selectedPallet.palletNo}/boxes`, { data: { boxIds: [removeBoxTarget] } });
       setRemoveBoxTarget(null);
-      syncAfterAction(res.data?.data);
+      const refreshed = await api.get(`/shipping/pallets/pallet-no/${encodeURIComponent(selectedPallet.palletNo)}`);
+      syncAfterAction(refreshed.data?.data);
     } catch (e) {
       console.error("Remove box failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [selectedPallet, removeBoxTarget, syncAfterAction]);
+  }, [selectedPallet, removeBoxTarget, syncAfterAction, t]);
 
   const handleClosePallet = useCallback(async (pallet: Pallet) => {
+    if (!pallet.shipOrderNo) {
+      toast.error(t("shipping.pallet.shipOrderRequired", "출하지시가 없는 팔레트는 마감할 수 없습니다."));
+      return;
+    }
     try {
-      const res = await api.post(`/shipping/pallets/${pallet.palletNo}/close`);
-      syncAfterAction(res.data?.data);
+      await api.post(`/shipping/orders/${encodeURIComponent(pallet.shipOrderNo)}/pallets/${pallet.palletNo}/close`);
+      const refreshed = await api.get(`/shipping/pallets/pallet-no/${encodeURIComponent(pallet.palletNo)}`);
+      syncAfterAction(refreshed.data?.data);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(msg || t("common.error"));
@@ -278,10 +357,10 @@ export default function PalletPage() {
         const isOpen = pallet.status === "OPEN";
         return (
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.assignBox")} disabled={!isOpen} onClick={() => { selectPallet(pallet); setIsAssignModalOpen(true); fetchAvailableBoxes(); }}>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.assignBox")} disabled={!isOpen || !pallet.shipOrderNo} onClick={() => { selectPallet(pallet); setIsAssignModalOpen(true); fetchAvailableBoxes(); }}>
               <Plus className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.closePallet")} disabled={!isOpen} onClick={() => handleClosePallet(pallet)}>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.closePallet")} disabled={!isOpen || !pallet.shipOrderNo} onClick={() => handleClosePallet(pallet)}>
               <Lock className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm" title={t("shipping.pallet.reopenPallet")} disabled={pallet.status !== "CLOSED"} onClick={() => handleReopenPallet(pallet)}>
@@ -311,10 +390,10 @@ export default function PalletPage() {
           <p className="text-text-muted mt-1">{t("shipping.pallet.description")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
+          <Button variant="secondary" size="sm" onClick={handleRefresh}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pallet.createPallet")}</Button>
+          <Button size="sm" onClick={() => { fetchShipOrders(); setIsCreateModalOpen(true); }}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pallet.createPallet")}</Button>
         </div>
       </div>
 
@@ -406,11 +485,20 @@ export default function PalletPage() {
 
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t("shipping.pallet.createPallet")} size="lg">
         <div className="space-y-4">
-          <p className="text-text-muted">{t("shipping.pallet.createConfirm")}</p>
-          <p className="text-sm text-text-muted">{t("shipping.pallet.autoNumberHint")}</p>
+          <p className="text-text-muted">{t("shipping.pallet.createConfirm", "출하지시 기준으로 팔레트를 생성합니다.")}</p>
+          <Select
+            label={t("shipping.pallet.shipOrderNo", "출하지시번호")}
+            options={shipOrderOptions}
+            value={selectedShipOrderNo}
+            onChange={setSelectedShipOrderNo}
+            disabled={loadingShipOrders}
+            required
+            fullWidth
+          />
+          <p className="text-sm text-text-muted">{t("shipping.pallet.autoNumberHint", "팔레트번호는 자동으로 채번됩니다.")}</p>
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleCreate} disabled={saving}>
+            <Button onClick={handleCreate} disabled={saving || !selectedShipOrderNo}>
               {saving ? t("common.saving") : t("common.create")}
             </Button>
           </div>
