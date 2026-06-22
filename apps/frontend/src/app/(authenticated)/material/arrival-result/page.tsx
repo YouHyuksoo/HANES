@@ -23,6 +23,7 @@ import { Card, CardContent, Button, Input, Modal, Select } from "@/components/ui
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import { PartnerSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
@@ -51,7 +52,7 @@ interface ArrivalResultRow {
   poType: string;
   status: string;
   iqcStatus: string | null;
-  vendorId: string | null;
+  vendorCode: string | null;
   vendorName: string | null;
   mfgPartnerCode: string | null;
   mfgPartnerName: string | null;
@@ -355,7 +356,7 @@ export default function ArrivalResultPage() {
       size: 140,
       meta: { filterType: "text" as const },
       cell: ({ row }) => (
-        <span className="text-slate-800 dark:text-slate-200" title={row.original.vendorId ?? ""}>
+        <span className="text-slate-800 dark:text-slate-200" title={row.original.vendorCode ?? ""}>
           {row.original.vendorName ?? "-"}
         </span>
       ),
@@ -422,8 +423,13 @@ export default function ArrivalResultPage() {
               exportFileName="iqc006_arrival_results"
               toolbarLeft={
                 <div className="flex gap-2 flex-1 min-w-0 flex-wrap">
-                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-36 flex-shrink-0" />
-                  <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-36 flex-shrink-0" />
+                  <DateRangeFilter
+                    from={fromDate}
+                    to={toDate}
+                    onFromChange={setFromDate}
+                    onToChange={setToDate}
+                    className="flex-shrink-0"
+                  />
                   <div className="w-40 flex-shrink-0">
                     <ComCodeSelect groupCode="ARRIVAL_RESULT_STATUS" labelPrefix={t("common.status")} value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
