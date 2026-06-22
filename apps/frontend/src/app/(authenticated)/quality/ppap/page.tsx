@@ -18,7 +18,7 @@ import {
   Plus, RefreshCw, FileText, Clock, CheckCircle, Search as SearchIcon,
   Send, ShieldCheck, XCircle, Undo2, Pencil, Trash2, Eye, FileSearch, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal, Badge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -132,9 +132,7 @@ export default function PpapPage() {
     { accessorKey: "ppapLevel", header: t("quality.ppap.ppapLevel"), size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-          Level {getValue() as number}
-        </span>
+        <Badge variant="info">Level {getValue() as number}</Badge>
       ),
     },
     { accessorKey: "reason", header: t("quality.ppap.reason"), size: 120,

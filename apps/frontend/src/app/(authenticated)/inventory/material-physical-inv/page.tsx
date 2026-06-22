@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import {
   ClipboardList, Search, RefreshCw, CheckCircle, Calendar, Play, StopCircle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { Card, CardContent, Button, Input, Badge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { WarehouseSelect } from "@/components/shared";
@@ -165,9 +165,9 @@ export default function MaterialPhysicalInvPage() {
             </span>
           )}
           {!isInProgress && sessions.some(s => s.status === "COMPLETED") && (
-            <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+            <Badge variant="success" size="md">
               {t("material.physicalInv.sessionCompleted")} ({sessions.filter(s => s.status === "COMPLETED").length})
-            </span>
+            </Badge>
           )}
           {!isInProgress && (
             <Button size="sm" variant="secondary" onClick={() => setShowStartModal(true)}>
@@ -191,9 +191,9 @@ export default function MaterialPhysicalInvPage() {
           <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
           <span className="font-medium text-green-700 dark:text-green-400">{t("material.physicalInv.sessionCompleted")}:</span>
           {sessions.filter(s => s.status === "COMPLETED").map(s => (
-            <span key={`${s.sessionDate}-${s.seq}`} className="inline-flex items-center px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-xs font-medium text-green-700 dark:text-green-400">
+            <Badge key={`${s.sessionDate}-${s.seq}`} variant="success">
               {s.warehouseCode || t("common.all")} ({s.sessionDate})
-            </span>
+            </Badge>
           ))}
         </div>
       )}

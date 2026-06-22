@@ -20,7 +20,7 @@ import {
   List,
   Layers,
 } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { Card, CardContent, Button, Input, Badge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { WarehouseSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -71,23 +71,11 @@ function ShelfLifeBadge({
   if (remainingDays == null) return <span className="text-text-muted">-</span>;
 
   if (remainingDays <= 0) {
-    return (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
-        {labels.expired}
-      </span>
-    );
+    return <Badge variant="error">{labels.expired}</Badge>;
   } else if (remainingDays <= 30) {
-    return (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">
-        {labels.imminent}
-      </span>
-    );
+    return <Badge variant="warning">{labels.imminent}</Badge>;
   }
-  return (
-    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-      {labels.normal}
-    </span>
-  );
+  return <Badge variant="success">{labels.normal}</Badge>;
 }
 
 /** 안전재고 대비 상태 표시 */
@@ -103,23 +91,11 @@ function StockLevelBadge({
   if (!safetyStock || safetyStock <= 0) return null;
   const ratio = quantity / safetyStock;
   if (ratio < 1) {
-    return (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
-        {labels.shortage}
-      </span>
-    );
+    return <Badge variant="error">{labels.shortage}</Badge>;
   } else if (ratio < 1.5) {
-    return (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">
-        {labels.caution}
-      </span>
-    );
+    return <Badge variant="warning">{labels.caution}</Badge>;
   }
-  return (
-    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-      {labels.normal}
-    </span>
-  );
+  return <Badge variant="success">{labels.normal}</Badge>;
 }
 
 function MaterialStockPage() {

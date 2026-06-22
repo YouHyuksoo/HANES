@@ -17,6 +17,7 @@ import {
   CardContent,
   Button,
   ConfirmModal,
+  Badge,
 } from "@/components/ui";
 import { api } from "@/services/api";
 import PdaRoleFormModal from "./PdaRoleFormModal";
@@ -151,20 +152,12 @@ export default function PdaRolesPage() {
                     {role.description || "-"}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                      {role.menus?.length ?? 0}
-                    </span>
+                    <Badge variant="info">{role.menus?.length ?? 0}</Badge>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        role.isActive
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                      }`}
-                    >
+                    <Badge variant={role.isActive ? "success" : "error"}>
                       {role.isActive ? t("common.active") : t("common.inactive")}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">

@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Save, Trash2 } from "lucide-react";
-import { Card, CardContent, Button } from "@/components/ui";
+import { Card, CardContent, Button, Badge } from "@/components/ui";
 import api from "@/services/api";
 
 interface FaiItem {
@@ -145,8 +145,8 @@ export default function FaiItemList({ faiId, faiNo, editable }: Props) {
                   <td className="px-2 py-1.5"><Cell idx={idx} field="measuredValue" type="number" align="right" /></td>
                   <td className="px-2 py-1.5"><Cell idx={idx} field="unit" /></td>
                   <td className="px-2 py-1.5 text-center">
-                    {item.result === "OK" && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">OK</span>}
-                    {item.result === "NG" && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">NG</span>}
+                    {item.result === "OK" && <Badge variant="success">OK</Badge>}
+                    {item.result === "NG" && <Badge variant="error">NG</Badge>}
                     {!item.result && <span className="text-text-muted">-</span>}
                   </td>
                   {editable && (
