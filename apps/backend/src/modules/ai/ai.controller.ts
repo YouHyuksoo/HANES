@@ -24,7 +24,7 @@ export class AiController {
 
   @Post('chat')
   chat(@Body() dto: AiChatDto) {
-    return this.aiSqlService.process(dto.messages);
+    return this.aiSqlService.process(dto.messages, dto.pageToolContext);
   }
 
   @Post('execute-sql')

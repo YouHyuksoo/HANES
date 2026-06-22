@@ -17,13 +17,16 @@ import toast from "react-hot-toast";
 import {
   Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown,
   Edit2, Trash2, Play, CheckCircle2, PauseCircle, PlayCircle, XCircle,
-  Barcode, Printer,
+  Barcode, Printer, Wrench,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
 import { ComCodeSelect, EquipSelect, ProcessSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
+import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
+import { useAiChatStore } from "@/stores/aiChatStore";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
 import JobOrderFormPanel from "./components/JobOrderFormPanel";
 import type { JobOrderFormData } from "./components/JobOrderFormPanel";
@@ -31,6 +34,7 @@ import JobOrderPrintModal from "./components/JobOrderPrintModal";
 import type { ProductionJobOrderRow } from "@harness/shared";
 
 type JobOrderItem = ProductionJobOrderRow;
+type AiJobOrderDraft = Partial<JobOrderFormData> & { autoCreateChildren?: boolean };
 
 /** 트리 데이터를 평탄화 (들여쓰기 depth 포함) */
 function flattenTree(items: JobOrderItem[], depth = 0): (JobOrderItem & { _depth: number })[] {
@@ -62,6 +66,9 @@ const toJobOrderFormData = (row: JobOrderItem): JobOrderFormData => ({
 
 export default function JobOrderPage() {
   const { t } = useTranslation();
+  const openAiChat = useAiChatStore((s) => s.open);
+  const openToolsTab = usePageToolStore((s) => s.openToolsTab);
+  const addExecutionLog = usePageToolStore((s) => s.addExecutionLog);
   const [data, setData] = useState<JobOrderItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -84,6 +91,8 @@ export default function JobOrderPage() {
   // 패널 상태
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<JobOrderFormData | null>(null);
+  const [aiDraft, setAiDraft] = useState<AiJobOrderDraft | null>(null);
+  const [aiDraftVersion, setAiDraftVersion] = useState(0);
   const panelAnimateRef = useRef(true);
 
   // 삭제/액션 확인 모달
@@ -126,6 +135,26 @@ export default function JobOrderPage() {
   }, [viewMode, searchText, statusFilter, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const applyJobOrderDraft = useCallback((input: unknown) => {
+    const draft = input && typeof input === "object" ? input as AiJobOrderDraft : {};
+    setAiDraft(draft);
+    setAiDraftVersion((version) => version + 1);
+    setEditingOrder(null);
+    panelAnimateRef.current = true;
+    setIsPanelOpen(true);
+    addExecutionLog({
+      pageId: "production.order",
+      toolName: "applyJobOrderDraft",
+      input: draft,
+      status: "success",
+      summary: "AI 작업지시 초안을 입력 패널에 반영했습니다. 저장은 사용자가 직접 실행해야 합니다.",
+    });
+    return { accepted: true, mode: "draft-only" };
+  }, [addExecutionLog]);
+
+  const pageToolExecutors = useMemo(() => ({ applyJobOrderDraft }), [applyJobOrderDraft]);
+  usePageAiTools("production.order", pageToolExecutors);
 
   // QR 스캔 진입: URL ?orderNo= 가 있으면 해당 작업지시 자동 검색(목록 모드)
   const [scanOrderNo, setScanOrderNo] = useState<string | null>(null);
@@ -213,18 +242,21 @@ export default function JobOrderPage() {
   const handleCreate = () => {
     panelAnimateRef.current = true;
     setEditingOrder(null);
+    setAiDraft(null);
     setIsPanelOpen(true);
   };
 
   const handleEdit = (row: JobOrderItem) => {
     panelAnimateRef.current = !isPanelOpen;
     setEditingOrder(toJobOrderFormData(row));
+    setAiDraft(null);
     setIsPanelOpen(true);
   };
 
   const handlePanelClose = () => {
     setIsPanelOpen(false);
     setEditingOrder(null);
+    setAiDraft(null);
   };
 
   const handleDelete = async () => {
@@ -397,6 +429,16 @@ export default function JobOrderPage() {
             <p className="text-text-muted mt-1">{t("production.order.description")}</p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                openAiChat();
+                openToolsTab();
+              }}
+            >
+              <Wrench className="w-4 h-4 mr-1" />{t("production.order.toolView", "도구보기")}
+            </Button>
             <Button variant="secondary" size="sm" onClick={fetchData}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
@@ -493,8 +535,9 @@ export default function JobOrderPage() {
       {/* 우측: 패널 */}
       {isPanelOpen && (
         <JobOrderFormPanel
-          key={editingOrder?.orderNo ?? "__new__"}
+          key={editingOrder?.orderNo ?? (aiDraft ? `__ai_draft_${aiDraftVersion}` : "__new__")}
           editingOrder={editingOrder}
+          draftOrder={aiDraft ?? undefined}
           onClose={handlePanelClose}
           onSave={fetchData}
           animate={panelAnimateRef.current}

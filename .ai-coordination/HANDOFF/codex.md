@@ -4,6 +4,10 @@
 
 2026-06-22 KST
 
+## Current Review
+
+- `T-AI-PAGE-TOOL-WORKFLOW`: 구현 완료 후 active task/lock 제거. HANES 전체 화면에 반복 적용할 AI Page Tool Workflow 표준 문서와 `/production/order` draft-only 파일럿을 반영했다. 설계는 `docs/superpowers/specs/2026-06-22-ai-page-tool-workflow-design.md`, 계획은 `docs/superpowers/plans/2026-06-22-ai-page-tool-workflow.md`. 백엔드는 `AiPageToolsModule`로 manifest/read-only 후보조회 API를 제공하고, 프론트는 `usePageAiTools`, `PageToolInspector`, `PageToolExecutionLog`, AI 패널 `채팅|도구|실행로그`, `/production/order` `도구보기` 버튼과 `applyJobOrderDraft` 초안 반영 도구를 추가했다. AI 채팅은 `pageToolContext`를 받아 등록/생성류 요청을 SQL write가 아닌 도구 절차 안내로 보낸다. 작업지시 신규번호는 서버 자동채번과 맞춰 DTO/order form을 optional로 보정했다. 검증: AI page tool 구조 테스트, production order 구조 테스트, backend ai-page-tools spec, job-order service spec, FE/BE tsc PASS. 커밋하지 않았다.
+
 ## In Review
 
 - `T-SHIP-PALLET-SCAN-CREATE`: `/shipping/pallet` 팔레트 생성 모달을 출하지시번호 스캔 입력 중심으로 바꾸고, 좌측에 `팔레트 대기중인 출하지시` 목록을 표시한다. 대기 목록은 `CONFIRMED` + 미출하 잔량 + `palletCount === 0`만 남긴다. 백엔드 `ShipOrderService.createPalletForOrder()`는 같은 출하지시 기존 팔레트가 있으면 `BadRequestException`으로 재생성을 차단한다. 팔레트 그리드 상태 컬럼은 `PalletStatusHeader`의 `?` 도움말로 `OPEN -> CLOSED -> LOADED -> SHIPPED`, `CLOSED -> OPEN` 되돌림 조건과 각 상태 의미를 제공한다. 검증: 팔레트 구조 테스트 4건 PASS, `ship-order.service.spec.ts` + `pallet.service.spec.ts` 44/44 PASS, FE/BE tsc PASS, diff check PASS. Browser 플러그인 `iab` 없음 및 Playwright 인증 토큰 부재로 3002 DOM 실측은 못 했다. 커밋하지 않았다.

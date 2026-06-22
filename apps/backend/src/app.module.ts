@@ -43,6 +43,7 @@ import { SharedModule } from './shared/shared.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { GuardModule } from './common/modules/guard.module';
 import { AiModule } from './modules/ai/ai.module';
+import { AiPageToolsModule } from './modules/ai-page-tools/ai-page-tools.module';
 
 @Module({
   imports: [
@@ -108,6 +109,9 @@ import { AiModule } from './modules/ai/ai.module';
 
     // AI 채팅 (Mistral 연동)
     AiModule,
+
+    // AI 페이지 도구 표준 (manifest + read-only 후보 조회)
+    AiPageToolsModule,
 
     // 대시보드 (KPI, 최근 생산현황)
     DashboardModule,

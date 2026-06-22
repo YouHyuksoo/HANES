@@ -10,6 +10,25 @@ Use this heading format for every new entry:
 
 Use local time in 24-hour format.
 
+## 2026-06-22 19:37 Codex
+
+- 작업: `T-AI-PAGE-TOOL-WORKFLOW` 구현 완료. `/production/order` 단일 실험이 아니라 HANES 전체 화면에 반복 적용할 AI Page Tool Workflow 표준으로 설계/계획/파일럿을 반영했다.
+- 문서: `docs/superpowers/specs/2026-06-22-ai-page-tool-workflow-design.md`, `docs/superpowers/plans/2026-06-22-ai-page-tool-workflow.md`.
+- 백엔드: `AiPageToolsModule` 추가. `GET /ai/page-tools/:pageId`로 페이지 도구 manifest 제공, `POST /ai/page-tools/:pageId/execute`로 backend read-only 후보조회 도구 실행. `/production/order` manifest는 `draft-only`이며 품목/라인/공정/설비 후보조회와 `buildJobOrderDraft`/`applyJobOrderDraft` 도구를 노출한다.
+- 후보조회 정책: exact code 단일 매칭은 자동확정 가능, 명칭 단일 매칭과 복수 후보는 사용자 확인 필요로 응답한다. 저장/삭제/상태변경은 이번 범위에서 실행하지 않는다.
+- 프론트 공통: `usePageAiTools`, `pageToolStore`, `PageToolInspector`, `PageToolExecutionLog` 추가. AI 채팅 패널에 `채팅|도구|실행로그` 탭을 추가하고, 채팅 요청에 현재 페이지 도구 context를 전달한다.
+- `/production/order`: 상단 버튼 영역에 `도구보기` 버튼을 추가해 AI 채팅 패널의 도구 탭을 연다. `applyJobOrderDraft` 프론트 도구는 작업지시 입력 패널에 초안만 반영하고 API 저장 호출은 하지 않는다. 신규 작업지시번호는 서버 자동채번과 맞춰 빈 값/선택값으로 처리한다.
+- 백엔드 AI 채팅: `pageToolContext` DTO를 추가하고, 페이지 도구 컨텍스트가 있는 등록/생성/작성류 요청은 SQL INSERT/UPDATE 생성 대신 도구 절차 안내 경로로 보낸다. `CreateJobOrderDto.orderNo`는 서비스 자동채번 계약과 맞게 optional로 보정했다.
+- 검증 PASS:
+  - `node --test apps/frontend/src/components/ai/ai-page-tool-panel.structure.test.mjs`
+  - `node --test "apps/frontend/src/app/(authenticated)/production/order/ai-page-tools.structure.test.mjs"`
+  - `node --test "apps/frontend/src/app/(authenticated)/production/order/production-order-edit-sync.structure.test.mjs"`
+  - `pnpm.cmd --filter @harness/backend exec jest src/modules/ai-page-tools/ai-page-tools.service.spec.ts --runInBand`
+  - `pnpm.cmd --filter @harness/backend exec jest src/modules/production/services/job-order.service.spec.ts --runInBand`
+  - `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- 상태: active task/lock 제거. 커밋하지 않았다. 현재 worktree에는 다른 세션의 locale/shipping/coordination 변경이 함께 있으므로 커밋 시 파일 범위 분리 필요.
+
 ## 2026-06-22 Claude (box-ship-confirm: /shipping/confirm 박스별출하 재구성)
 
 - 배경: `/shipping/confirm`이 OrderFulfillmentModal로 팔레트 구성→팔레트 출하를 담당했으나, 팔레트 적재/출하는 `/shipping/pallet`·`/shipping/pallet-ship`에 이미 별도 존재해 역할 중복. 사용자 요청으로 confirm을 **박스 단위 출하** 전용으로 재구성.
@@ -2150,6 +2169,8 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 요청: `/production/order` 한 화면 실험이 아니라 HANES 전체 화면에 적용할 AI 업무 도구 표준과 소스 개발 절차로 설계.
 - 결정: 1차 실행 수준은 `draft-only`. AI는 저장/삭제/상태변경 API를 직접 호출하지 않고, 현재 페이지 도구 manifest를 보고 후보 조회와 초안 적용만 수행한다. 최종 저장은 사용자가 기존 화면 버튼으로 실행한다.
 - 설계 문서: `docs/superpowers/specs/2026-06-22-ai-page-tool-workflow-design.md`
+- 구현 계획: `docs/superpowers/plans/2026-06-22-ai-page-tool-workflow.md`
 - 핵심 내용: 공통 `pageToolManifest`, 백엔드 후보 조회/검증 + 프론트 draft 적용 혼합 구조, 사람/AI가 같은 manifest를 보는 `도구보기`, AI 패널 `채팅|도구|실행로그` 탭, `/production/order` 파일럿 도구와 품목 후보 확정 정책.
-- 검증: `git diff --check -- docs/superpowers/specs/2026-06-22-ai-page-tool-workflow-design.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` PASS.
+- 계획 태스크: backend manifest, backend candidate resolution, frontend page tool state/inspector, AI panel tabs, page registration hook, `/production/order` draft applier, AI chat DTO compatibility, E2E verification 총 8개.
+- 검증: `git diff --check -- docs/superpowers/plans/2026-06-22-ai-page-tool-workflow.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` PASS.
 - 상태: 사용자 리뷰 대기. 구현은 아직 진행하지 않았다. 커밋하지 않았다.

@@ -2,7 +2,7 @@
  * @file src/modules/ai/dto/ai-chat.dto.ts
  * @description AI 채팅 요청 DTO
  */
-import { IsArray, IsString, IsIn, ValidateNested, ArrayNotEmpty, MaxLength, IsOptional } from 'class-validator';
+import { IsArray, IsString, IsIn, ValidateNested, ArrayNotEmpty, MaxLength, IsOptional, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AiChatMessageDto {
@@ -14,12 +14,55 @@ export class AiChatMessageDto {
   content: string;
 }
 
+export class AiPageToolContextToolDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  label: string;
+
+  @IsString()
+  description: string;
+
+  @IsString()
+  riskLevel: string;
+
+  @IsString()
+  source: string;
+
+  @IsOptional()
+  @IsBoolean()
+  neverPersists?: boolean;
+
+  @IsOptional()
+  @IsString()
+  confirmationPolicy?: string;
+}
+
+export class AiPageToolContextDto {
+  @IsString()
+  pageId: string;
+
+  @IsString()
+  executionLevel: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AiPageToolContextToolDto)
+  tools: AiPageToolContextToolDto[];
+}
+
 export class AiChatDto {
   @IsArray()
   @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => AiChatMessageDto)
   messages: AiChatMessageDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AiPageToolContextDto)
+  pageToolContext?: AiPageToolContextDto;
 }
 
 /** 승인된 INSERT/UPDATE 실행 요청 */

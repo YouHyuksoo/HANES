@@ -11,7 +11,7 @@ import { DataSource } from 'typeorm';
 import { AiService } from './ai.service';
 import { SchemaInfoService } from './schema-info.service';
 import { SqlValidatorService } from './sql-validator.service';
-import { AiChatMessageDto } from './dto/ai-chat.dto';
+import { AiChatMessageDto, AiPageToolContextDto } from './dto/ai-chat.dto';
 
 export interface AiSqlResult {
   content: string;
@@ -25,12 +25,14 @@ const TABLE_SELECT_PROMPT = `당신은 HANES MES 데이터베이스에서 사용
 규칙:
 1. 아래 테이블 목록에서 질문에 답하는 데 필요한 테이블을 고릅니다(최대 6개).
 2. 회사·거래처·인물(대표/담당자/작업자/검사자)·품목·생산·재고·출하·품질·설비 등 MES에 저장된 정보를 묻는 질문이면, 일반 상식으로 답할 수 있어 보여도 반드시 관련 테이블을 선택하세요. (예: 사람 이름으로 소속·대표 여부를 묻는 질문은 회사·거래처 마스터의 대표자명 등으로 조회)
-3. 인사·잡담 등 데이터와 전혀 무관한 경우에만 빈 배열 []을 응답합니다.
-4. 반드시 JSON 배열로만 응답합니다. 예: ["PARTNER_MASTERS","COMPANY_MASTERS"]
+3. 같은 성격의 정보가 여러 테이블에 나뉘어 있을 수 있으면(예: 자사 정보와 거래처 정보, 자재와 제품) 코멘트를 보고 후보 테이블을 모두 선택하세요. 단어 하나(예: "회사")만 보고 한 테이블로 단정하지 마세요.
+4. 인사·잡담 등 데이터와 전혀 무관한 경우에만 빈 배열 []을 응답합니다.
+5. 반드시 JSON 배열로만 응답합니다. 예: ["PARTNER_MASTERS","COMPANY_MASTERS"]
 다른 설명 없이 JSON 배열만 출력하세요.`;
 
 const SQL_GEN_PROMPT = `당신은 Oracle SQL 생성 AI입니다.
 규칙:
+- 반드시 아래 '테이블 스키마'에 제시된 테이블·컬럼만 사용하세요. 목록에 없는 테이블/뷰/컬럼을 추측하거나 만들어내지 마세요. 필요한 데이터가 스키마에 없으면 NO_SQL로 응답하세요.
 - Oracle 문법. 식별자는 대문자(따옴표 없이).
 - 멀티테넌시 필터는 메인(FROM) 테이블에만 한 번 적용: WHERE <메인별칭>.COMPANY='40' AND <메인별칭>.PLANT_CD='1000'.
   JOIN된 테이블에는 동일 조건을 중복으로 넣지 마세요. JOIN ON 절에서 COMPANY/PLANT_CD를 연결했다면 그것으로 충분합니다.
@@ -54,6 +56,18 @@ const GENERAL_PROMPT =
   '회사·거래처·인물·품목·생산·재고 등 MES에 있을 법한 정보는 학습된 일반 지식으로 추측해 답하지 마세요. ' +
   'MES 데이터로 확인이 필요한 질문이면 "MES 데이터에서 확인이 필요합니다"라고 안내하세요.';
 
+const PAGE_WORKFLOW_KEYWORDS = [
+  '등록',
+  '생성',
+  '만들',
+  '작성',
+  '초안',
+  '반영',
+  '처리',
+  '실행',
+  '추가',
+];
+
 @Injectable()
 export class AiSqlService {
   private readonly logger = new Logger(AiSqlService.name);
@@ -65,18 +79,25 @@ export class AiSqlService {
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
-  async process(messages: AiChatMessageDto[]): Promise<AiSqlResult> {
+  async process(
+    messages: AiChatMessageDto[],
+    pageToolContext?: AiPageToolContextDto,
+  ): Promise<AiSqlResult> {
     const userMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
     if (!userMessage.trim()) return { content: '질문을 입력해 주세요.' };
 
+    if (pageToolContext && this.looksLikePageWorkflowRequest(userMessage)) {
+      return this.generalChat(messages, pageToolContext);
+    }
+
     // [1단계] 관련 테이블 선택 (없으면 일반 대화)
     const tables = await this.selectTables(userMessage);
-    if (tables.length === 0) return this.generalChat(messages);
+    if (tables.length === 0) return this.generalChat(messages, pageToolContext);
 
     // [2단계] SQL 생성
     const schemaText = await this.schemaInfo.getSchemaText(tables);
     const rawSql = await this.generateSql(userMessage, schemaText);
-    if (!rawSql) return this.generalChat(messages);
+    if (!rawSql) return this.generalChat(messages, pageToolContext);
 
     // [검증]
     const v = this.validator.validate(rawSql);
@@ -202,9 +223,34 @@ export class AiSqlService {
     ]);
   }
 
-  private async generalChat(messages: AiChatMessageDto[]): Promise<AiSqlResult> {
+  private looksLikePageWorkflowRequest(userMessage: string): boolean {
+    return PAGE_WORKFLOW_KEYWORDS.some((keyword) => userMessage.includes(keyword));
+  }
+
+  private formatPageToolContext(pageToolContext?: AiPageToolContextDto): string {
+    if (!pageToolContext) return '';
+    const tools = pageToolContext.tools
+      .map((tool) => {
+        const persistRule = tool.neverPersists ? '저장 안 함' : '저장 가능성 확인 필요';
+        return `- ${tool.name} (${tool.label}): ${tool.description} / 위험도=${tool.riskLevel} / 출처=${tool.source} / ${persistRule} / 확인=${tool.confirmationPolicy ?? '명시 없음'}`;
+      })
+      .join('\n');
+    return [
+      '현재 사용자가 보고 있는 페이지에는 아래 도구가 노출되어 있습니다.',
+      `pageId=${pageToolContext.pageId}, executionLevel=${pageToolContext.executionLevel}`,
+      tools,
+      '등록/생성/작성 요청은 DB SQL을 직접 만들지 말고, 이 도구 절차 기준으로 필요한 입력값을 확인하고 초안 반영 방식으로 안내하세요.',
+      '필수 정보가 부족하면 품목, 수량, 계획일, 라인/공정/설비 등 필요한 값을 먼저 질문하세요.',
+    ].join('\n');
+  }
+
+  private async generalChat(
+    messages: AiChatMessageDto[],
+    pageToolContext?: AiPageToolContextDto,
+  ): Promise<AiSqlResult> {
+    const pageToolPrompt = this.formatPageToolContext(pageToolContext);
     const content = await this.aiService.complete([
-      { role: 'system', content: GENERAL_PROMPT },
+      { role: 'system', content: pageToolPrompt ? `${GENERAL_PROMPT}\n\n${pageToolPrompt}` : GENERAL_PROMPT },
       ...messages,
     ]);
     return { content };

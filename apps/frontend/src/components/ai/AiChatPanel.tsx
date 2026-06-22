@@ -13,7 +13,10 @@ import { Sparkles, X, Send, LoaderCircle, Trash2, Database, Play } from "lucide-
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import api from "@/services/api";
+import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
 import { useAiChatStore } from "@/stores/aiChatStore";
+import PageToolExecutionLog from "./PageToolExecutionLog";
+import PageToolInspector from "./PageToolInspector";
 
 const MD_COMPONENTS = {
   table: ({ node: _n, ...p }: { node?: unknown }) => (
@@ -36,6 +39,11 @@ const MD_COMPONENTS = {
 export default function AiChatPanel() {
   const { t } = useTranslation();
   const { isOpen, messages, close, addMessage, clear } = useAiChatStore();
+  const activeTab = usePageToolStore((state) => state.activeTab);
+  const manifest = usePageToolStore((state) => state.manifest);
+  const openChatTab = usePageToolStore((state) => state.openChatTab);
+  const openToolsTab = usePageToolStore((state) => state.openToolsTab);
+  const openLogTab = usePageToolStore((state) => state.openLogTab);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [approvedIdx, setApprovedIdx] = useState<Set<number>>(new Set());
@@ -60,7 +68,22 @@ export default function AiChatPanel() {
     setSending(true);
     try {
       const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
-      const res = await api.post("/ai/chat", { messages: history });
+      const pageToolContext = manifest
+        ? {
+            pageId: manifest.pageId,
+            executionLevel: manifest.executionLevel,
+            tools: manifest.tools.map(({ name, label, description, riskLevel, source, neverPersists, confirmationPolicy }) => ({
+              name,
+              label,
+              description,
+              riskLevel,
+              source,
+              neverPersists,
+              confirmationPolicy,
+            })),
+          }
+        : undefined;
+      const res = await api.post("/ai/chat", { messages: history, pageToolContext });
       const data = res.data?.data ?? {};
       addMessage({
         role: "assistant",
@@ -76,7 +99,7 @@ export default function AiChatPanel() {
       setSending(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [input, sending, messages, addMessage, t]);
+  }, [input, sending, messages, addMessage, t, manifest]);
 
   const approve = useCallback(
     async (idx: number, sql?: string) => {
@@ -155,8 +178,35 @@ export default function AiChatPanel() {
         </div>
       </div>
 
+      <div className="flex gap-1 border-b border-border px-3 py-2">
+        <button
+          type="button"
+          onClick={openChatTab}
+          className={`rounded px-3 py-1.5 text-xs font-medium ${activeTab === "chat" ? "bg-primary text-white" : "text-text-muted hover:bg-surface hover:text-text"}`}
+        >
+          {t("ai.chat.tab.chat", "채팅")}
+        </button>
+        <button
+          type="button"
+          onClick={openToolsTab}
+          className={`rounded px-3 py-1.5 text-xs font-medium ${activeTab === "tools" ? "bg-primary text-white" : "text-text-muted hover:bg-surface hover:text-text"}`}
+        >
+          {t("ai.chat.tab.tools", "도구")}
+        </button>
+        <button
+          type="button"
+          onClick={openLogTab}
+          className={`rounded px-3 py-1.5 text-xs font-medium ${activeTab === "log" ? "bg-primary text-white" : "text-text-muted hover:bg-surface hover:text-text"}`}
+        >
+          {t("ai.chat.tab.log", "실행로그")}
+        </button>
+      </div>
+
+      {activeTab === "tools" && <PageToolInspector />}
+      {activeTab === "log" && <PageToolExecutionLog />}
+
       {/* 메시지 목록 */}
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div ref={scrollRef} className={`flex-1 space-y-3 overflow-y-auto p-4 ${activeTab === "chat" ? "" : "hidden"}`}>
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-text-muted">
             <Sparkles className="h-10 w-10 opacity-20" />
@@ -203,11 +253,13 @@ export default function AiChatPanel() {
                 </div>
               )}
 
-              {/* 실행된 SQL (조회) 접어보기 */}
-              {m.role === "assistant" && m.executed && m.sql && (
-                <details className="mt-1 w-[92%] text-[11px] text-text-muted">
-                  <summary className="cursor-pointer select-none">{t("ai.chat.sqlLabel", "실행된 SQL")}</summary>
-                  <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap rounded bg-surface px-2 py-1 font-mono">{m.sql}</pre>
+              {/* 실행된/생성된 SQL 접어보기 (실행 실패 시 자동 펼침) */}
+              {m.role === "assistant" && m.sql && !m.requiresApproval && (
+                <details open={!m.executed} className="mt-1 w-[92%] text-[11px] text-text-muted">
+                  <summary className="cursor-pointer select-none">
+                    {m.executed ? t("ai.chat.sqlLabel", "실행된 SQL") : t("ai.chat.sqlLabelGen", "생성된 SQL (실행 실패)")}
+                  </summary>
+                  <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-surface px-2 py-1 font-mono">{m.sql}</pre>
                 </details>
               )}
             </div>
@@ -224,7 +276,7 @@ export default function AiChatPanel() {
       </div>
 
       {/* 입력 */}
-      <div className="flex items-end gap-2 border-t border-border p-3">
+      <div className={`items-end gap-2 border-t border-border p-3 ${activeTab === "chat" ? "flex" : "hidden"}`}>
         <textarea
           ref={inputRef}
           value={input}

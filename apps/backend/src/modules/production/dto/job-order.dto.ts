@@ -35,10 +35,11 @@ export type JobOrderStatus = typeof JOB_ORDER_STATUS_VALUES[number];
  * 작업지시 생성 DTO
  */
 export class CreateJobOrderDto {
-  @ApiProperty({ description: '작업지시 번호', example: 'JO-20250126-001', maxLength: 50 })
+  @ApiPropertyOptional({ description: '작업지시 번호. 미입력 시 서버에서 자동 채번', example: 'JO-20250126-001', maxLength: 50 })
+  @IsOptional()
   @IsString()
   @MaxLength(50)
-  orderNo: string;
+  orderNo?: string;
 
   @ApiProperty({ description: '품목 ID', example: 'clxxx...' })
   @IsString()

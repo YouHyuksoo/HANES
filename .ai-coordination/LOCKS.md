@@ -2,21 +2,6 @@
 
 ## Active Locks
 
-## T-AI-PAGE-TOOL-WORKFLOW AI 페이지 도구 구현 계획
-status: active
-owner: codex
-role: implementer
-started: 2026-06-22 KST
-last_seen: 2026-06-22 KST
-expires: 2026-06-22 KST
-files:
-- docs/superpowers/plans/2026-06-22-ai-page-tool-workflow.md
-- .ai-coordination/TASKS.md
-- .ai-coordination/LOCKS.md
-- .ai-coordination/JOURNAL.md
-- .ai-coordination/HANDOFF/codex.md
-note: 승인된 AI Page Tool Workflow 설계의 구현 계획 작성. 코드 구현은 아직 진행하지 않음.
-
 ## T-DEFECT-REGISTER-PANEL 불량관리 수동등록 모달→우측 슬라이드 패널 전환
 status: active
 owner: claude

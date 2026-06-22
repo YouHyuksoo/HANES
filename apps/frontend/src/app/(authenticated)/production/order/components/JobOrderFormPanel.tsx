@@ -20,7 +20,7 @@ import { useEquipOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 export interface JobOrderFormData {
-  orderNo: string;
+  orderNo?: string;
   itemCode: string;
   lineCode?: string;
   processCode?: string;
@@ -40,6 +40,7 @@ interface RoutingInfo {
 
 interface Props {
   editingOrder: JobOrderFormData | null;
+  draftOrder?: Partial<JobOrderFormData> & { autoCreateChildren?: boolean };
   onClose: () => void;
   onSave: () => void;
   animate?: boolean;
@@ -59,20 +60,13 @@ const INIT_FORM = {
   autoCreateChildren: true,
 };
 
-export default function JobOrderFormPanel({ editingOrder, onClose, onSave, animate = true }: Props) {
+export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, onSave, animate = true }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingOrder;
   const [saving, setSaving] = useState(false);
   const [partSearchOpen, setPartSearchOpen] = useState(false);
   const [routingInfo, setRoutingInfo] = useState<RoutingInfo | null>(null);
   const [routingLoading, setRoutingLoading] = useState(false);
-
-  const generateOrderNo = useCallback(() => {
-    const d = new Date();
-    const prefix = `JO-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-    const seq = String(Math.floor(Math.random() * 999) + 1).padStart(3, "0");
-    return `${prefix}-${seq}`;
-  }, []);
 
   const [form, setForm] = useState({ ...INIT_FORM });
 
@@ -111,10 +105,27 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
       });
       fetchRouting(editingOrder.itemCode);
     } else {
-      setForm({ ...INIT_FORM, orderNo: generateOrderNo() });
-      setRoutingInfo(null);
+      setForm({
+        ...INIT_FORM,
+        orderNo: draftOrder?.orderNo || "",
+        itemCode: draftOrder?.itemCode || "",
+        planQty: draftOrder?.planQty != null ? String(draftOrder.planQty) : "",
+        planDate: draftOrder?.planDate ? String(draftOrder.planDate).slice(0, 10) : "",
+        lineCode: draftOrder?.lineCode || "",
+        processCode: draftOrder?.processCode || "",
+        equipCode: draftOrder?.equipCode || "",
+        custPoNo: draftOrder?.custPoNo || "",
+        priority: String(draftOrder?.priority ?? "5"),
+        remark: draftOrder?.remark || "",
+        autoCreateChildren: draftOrder?.autoCreateChildren ?? true,
+      });
+      if (draftOrder?.itemCode) {
+        fetchRouting(draftOrder.itemCode);
+      } else {
+        setRoutingInfo(null);
+      }
     }
-  }, [editingOrder, generateOrderNo, fetchRouting]);
+  }, [editingOrder, draftOrder, fetchRouting]);
 
   const setField = (key: string, value: string | boolean) => {
     setForm(prev => {
@@ -129,7 +140,7 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
     setSaving(true);
     try {
       const payload = {
-        orderNo: form.orderNo,
+        ...(form.orderNo.trim() ? { orderNo: form.orderNo.trim() } : {}),
         itemCode: form.itemCode,
         planQty: Number(form.planQty),
         planDate: form.planDate,
