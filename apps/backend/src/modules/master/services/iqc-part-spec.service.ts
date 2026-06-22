@@ -13,6 +13,7 @@ import { Repository } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { IqcPartSpec } from '../../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../../entities/iqc-part-spec-item.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import { UpsertIqcPartSpecDto } from '../dto/iqc-part-spec.dto';
 
 @Injectable()
@@ -90,6 +91,14 @@ export class IqcPartSpecService {
         spec.updatedBy = userId;
       }
       await queryRunner.manager.save(IqcPartSpec, spec);
+
+      // 품목마스터(ITEM_MASTERS.SAMPLE_QTY)가 기본시료수의 기준 —
+      // 품목별 IQC 기준에서 기본시료수를 저장하면 품목마스터 값도 동일하게 동기화한다.
+      await queryRunner.manager.update(
+        PartMaster,
+        { itemCode: dto.itemCode, ...tenantWhere },
+        { sampleQty: dto.sampleQty, updatedBy: userId },
+      );
 
       // 기존 검사항목 전체 삭제 후 재삽입
       await queryRunner.manager.delete(IqcPartSpecItem, { itemCode: dto.itemCode, ...tenantWhere });
