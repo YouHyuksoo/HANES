@@ -637,6 +637,54 @@ export class ShipmentService {
   }
 
   /**
+   * 출하 취소 트랜잭션 본문 헬퍼 (외부 트랜잭션 합성용)
+   * 호출자가 상태 검증(PREPARING/LOADED)을 완료한 뒤 호출한다.
+   */
+  async cancelInTx(qr: import('typeorm').QueryRunner, shipment: ShipmentLog, remark?: string, company?: string, plant?: string): Promise<void> {
+    const id = shipment.shipNo;
+
+    // 팔레트 상태 복원 (CLOSED로)
+    const pallets = await qr.manager.find(PalletMaster, {
+      where: { shipmentId: id, ...this.tenantWhere(company, plant) },
+      select: ['palletNo'],
+    });
+    const palletNos = pallets.map((p) => p.palletNo);
+
+    await qr.manager.update(
+      PalletMaster,
+      { shipmentId: id, ...this.tenantWhere(company, plant) },
+      {
+        shipmentId: null,
+        status: 'CLOSED',
+      }
+    );
+
+    // 박스 상태 명시적 복원 (CLOSED로)
+    if (palletNos.length > 0) {
+      await qr.manager.update(
+        BoxMaster,
+        { palletNo: In(palletNos), ...this.tenantWhere(company, plant) },
+        { status: 'CLOSED', shippedAt: null },
+      );
+    }
+
+    // 출하 상태 업데이트
+    const updateData: Partial<Pick<ShipmentLog, 'status' | 'palletCount' | 'boxCount' | 'totalQty' | 'remark'>> = {
+      status: 'CANCELED',
+      palletCount: 0,
+      boxCount: 0,
+      totalQty: 0,
+    };
+    if (remark) updateData.remark = remark;
+
+    await qr.manager.update(
+      ShipmentLog,
+      { shipNo: typeof id === 'string' ? id : String(id), ...this.tenantWhere(company, plant) },
+      updateData
+    );
+  }
+
+  /**
    * 출하 취소 (PREPARING/LOADED -> CANCELED)
    */
   async cancel(id: string, remark?: string, company?: string, plant?: string) {
@@ -646,50 +694,130 @@ export class ShipmentService {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 취소할 수 없습니다. PREPARING 또는 LOADED 상태여야 합니다.`);
     }
 
-    // 트랜잭션으로 출하 취소 및 팔레트/박스 상태 복원
-    await this.tx.run(async (queryRunner) => {
-      // 팔레트 상태 복원 (CLOSED로)
-      const pallets = await queryRunner.manager.find(PalletMaster, {
-        where: { shipmentId: id, ...this.tenantWhere(company, plant) },
-        select: ['palletNo'],
-      });
-      const palletNos = pallets.map((p) => p.palletNo);
-
-      await queryRunner.manager.update(
-        PalletMaster,
-        { shipmentId: id, ...this.tenantWhere(company, plant) },
-        {
-          shipmentId: null,
-          status: 'CLOSED',
-        }
-      );
-
-      // 박스 상태 명시적 복원 (CLOSED로)
-      if (palletNos.length > 0) {
-        await queryRunner.manager.update(
-          BoxMaster,
-          { palletNo: In(palletNos), ...this.tenantWhere(company, plant) },
-          { status: 'CLOSED', shippedAt: null },
-        );
-      }
-
-      // 출하 상태 업데이트
-      const updateData: Partial<Pick<ShipmentLog, 'status' | 'palletCount' | 'boxCount' | 'totalQty' | 'remark'>> = {
-        status: 'CANCELED',
-        palletCount: 0,
-        boxCount: 0,
-        totalQty: 0,
-      };
-      if (remark) updateData.remark = remark;
-
-      await queryRunner.manager.update(
-        ShipmentLog,
-        { shipNo: typeof id === 'string' ? id : String(id), ...this.tenantWhere(company, plant) },
-        updateData
-      );
-    });
+    await this.tx.run((qr) => this.cancelInTx(qr, shipment, remark, company, plant));
 
     return this.findById(id, company, plant);
+  }
+
+  /**
+   * 출하 역분개 트랜잭션 본문 헬퍼 (외부 트랜잭션 합성용)
+   * 호출자가 상태(SHIPPED) 및 ERP 검증을 완료한 뒤 호출한다.
+   * 사전 조회(팔레트, 박스, FG바코드, 재고트랜잭션)를 포함하며 qr.manager를 사용한다.
+   */
+  async reverseShipmentInTx(qr: import('typeorm').QueryRunner, shipment: ShipmentLog, remark?: string, company?: string, plant?: string): Promise<void> {
+    const id = shipment.shipNo;
+
+    // 팔레트/박스 조회
+    const pallets = await qr.manager.find(PalletMaster, {
+      where: { shipmentId: id, ...this.tenantWhere(company, plant) },
+      select: ['palletNo'],
+    });
+    const palletIds = pallets.map(p => p.palletNo);
+
+    // 박스에서 FG 바코드 수집
+    let allBoxes: BoxMaster[] = [];
+    const allFgBarcodes: string[] = [];
+    if (palletIds.length > 0) {
+      allBoxes = await qr.manager.find(BoxMaster, {
+        where: { palletNo: In(palletIds), ...this.tenantWhere(company, plant) },
+        select: ['boxNo', 'itemCode', 'qty', 'serialList'],
+      });
+      for (const box of allBoxes) {
+        if (box.serialList) {
+          try {
+            const serials: string[] = JSON.parse(box.serialList);
+            allFgBarcodes.push(...serials);
+          } catch { /* 파싱 실패 무시 */ }
+        }
+      }
+    }
+
+    // 제품 재고 역분개 대상 조회
+    const shipmentTransactions = await qr.manager.find(ProductTransaction, {
+      where: { refType: 'SHIPMENT', refId: id, status: 'DONE', ...this.tenantWhere(company, plant) },
+    });
+
+    // 1. 팔레트 상태 → LOADED
+    await qr.manager.update(
+      PalletMaster,
+      { shipmentId: id, ...this.tenantWhere(company, plant) },
+      { status: 'LOADED' },
+    );
+
+    // 2. 박스 상태 → CLOSED
+    if (palletIds.length > 0) {
+      await qr.manager.update(
+        BoxMaster,
+        { palletNo: In(palletIds), ...this.tenantWhere(company, plant) },
+        { status: 'CLOSED', shippedAt: null },
+      );
+    }
+
+    // 3. 출하 상태 → LOADED
+    await qr.manager.update(
+      ShipmentLog,
+      { shipNo: typeof id === 'string' ? id : String(id), ...this.tenantWhere(company, plant) },
+      {
+        status: 'LOADED',
+        shipAt: null,
+        remark: remark || `출하 역분개 처리`,
+      },
+    );
+
+    // 4. FG_LABEL 상태 → PACKED 복원 (SHIPPED → PACKED)
+    if (allFgBarcodes.length > 0) {
+      const batchSize = 500;
+      for (let i = 0; i < allFgBarcodes.length; i += batchSize) {
+        const batch = allFgBarcodes.slice(i, i + batchSize);
+        await qr.manager.update(
+          FgLabel,
+          { fgBarcode: In(batch), status: 'SHIPPED', ...this.tenantWhere(company, plant) },
+          { status: 'PACKED' },
+        );
+      }
+    }
+
+    // 5. 제품 재고 역분개 (FG_OUT → FG_OUT_CANCEL)
+    for (const trans of shipmentTransactions) {
+      await this.productInventoryService.cancelTransactionInTx(
+        qr,
+        trans,
+        {
+          transactionId: trans.transNo,
+          remark: remark || `출하 ${id} 역분개`,
+        },
+      );
+    }
+
+    // 6. 출하지시 shippedQty 복원 (shipOrderNo 연계 시)
+    if (shipment.shipOrderNo) {
+      const itemQtyMap = new Map<string, number>();
+      for (const box of allBoxes) {
+        const existingQty = itemQtyMap.get(box.itemCode) || 0;
+        itemQtyMap.set(box.itemCode, existingQty + box.qty);
+      }
+
+      for (const [itemCode, qty] of itemQtyMap) {
+        const line = await qr.manager.findOne(ShipmentOrderItem, {
+          where: { shipOrderNo: shipment.shipOrderNo, itemCode, ...this.tenantWhere(company, plant) },
+        });
+        if (line) {
+          const newShipped = Math.max(0, line.shippedQty - qty);
+          await qr.manager.update(
+            ShipmentOrderItem,
+            { shipOrderNo: shipment.shipOrderNo, seq: line.seq, ...this.tenantWhere(company, plant) },
+            { shippedQty: newShipped },
+          );
+        }
+      }
+
+      // 역분개 시에는 CONFIRMED로 되돌림
+      await qr.manager.update(
+        ShipmentOrder,
+        { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
+        { status: 'CONFIRMED' },
+      );
+    }
   }
 
   /**
@@ -711,120 +839,7 @@ export class ShipmentService {
       );
     }
 
-    // 팔레트/박스 조회
-    const pallets = await this.palletRepository.find({
-      where: { shipmentId: id, ...this.tenantWhere(company, plant) },
-      select: ['palletNo'],
-    });
-    const palletIds = pallets.map(p => p.palletNo);
-
-    // 박스에서 FG 바코드 수집
-    let allBoxes: BoxMaster[] = [];
-    const allFgBarcodes: string[] = [];
-    if (palletIds.length > 0) {
-      allBoxes = await this.boxRepository.find({
-        where: { palletNo: In(palletIds), ...this.tenantWhere(company, plant) },
-        select: ['boxNo', 'itemCode', 'qty', 'serialList'],
-      });
-      for (const box of allBoxes) {
-        if (box.serialList) {
-          try {
-            const serials: string[] = JSON.parse(box.serialList);
-            allFgBarcodes.push(...serials);
-          } catch { /* 파싱 실패 무시 */ }
-        }
-      }
-    }
-
-    // 제품 재고 역분개 대상 미리 조회
-    const shipmentTransactions = await this.dataSource.getRepository(ProductTransaction).find({
-      where: { refType: 'SHIPMENT', refId: id, status: 'DONE', ...this.tenantWhere(company, plant) },
-    });
-
-    // 상태 복원 + 재고 역분개를 단일 트랜잭션으로 처리
-    await this.tx.run(async (queryRunner) => {
-      // 1. 팔레트 상태 → LOADED
-      await queryRunner.manager.update(
-        PalletMaster,
-        { shipmentId: id, ...this.tenantWhere(company, plant) },
-        { status: 'LOADED' },
-      );
-
-      // 2. 박스 상태 → CLOSED
-      if (palletIds.length > 0) {
-        await queryRunner.manager.update(
-          BoxMaster,
-          { palletNo: In(palletIds), ...this.tenantWhere(company, plant) },
-          { status: 'CLOSED', shippedAt: null },
-        );
-      }
-
-      // 3. 출하 상태 → LOADED
-      await queryRunner.manager.update(
-        ShipmentLog,
-        { shipNo: typeof id === 'string' ? id : String(id), ...this.tenantWhere(company, plant) },
-        {
-          status: 'LOADED',
-          shipAt: null,
-          remark: remark || `출하 역분개 처리`,
-        },
-      );
-
-      // 4. FG_LABEL 상태 → PACKED 복원 (SHIPPED → PACKED)
-      if (allFgBarcodes.length > 0) {
-        const batchSize = 500;
-        for (let i = 0; i < allFgBarcodes.length; i += batchSize) {
-          const batch = allFgBarcodes.slice(i, i + batchSize);
-          await queryRunner.manager.update(
-            FgLabel,
-            { fgBarcode: In(batch), status: 'SHIPPED', ...this.tenantWhere(company, plant) },
-            { status: 'PACKED' },
-          );
-        }
-      }
-
-      // 5. 제품 재고 역분개 (FG_OUT → FG_OUT_CANCEL)
-      for (const trans of shipmentTransactions) {
-        await this.productInventoryService.cancelTransactionInTx(
-          queryRunner,
-          trans,
-          {
-            transactionId: trans.transNo,
-            remark: remark || `출하 ${id} 역분개`,
-          },
-        );
-      }
-
-      // 6. 출하지시 shippedQty 복원 (shipOrderNo 연계 시)
-      if (shipment.shipOrderNo) {
-        const itemQtyMap = new Map<string, number>();
-        for (const box of allBoxes) {
-          const existingQty = itemQtyMap.get(box.itemCode) || 0;
-          itemQtyMap.set(box.itemCode, existingQty + box.qty);
-        }
-
-        for (const [itemCode, qty] of itemQtyMap) {
-          const line = await queryRunner.manager.findOne(ShipmentOrderItem, {
-            where: { shipOrderNo: shipment.shipOrderNo, itemCode, ...this.tenantWhere(company, plant) },
-          });
-          if (line) {
-            const newShipped = Math.max(0, line.shippedQty - qty);
-            await queryRunner.manager.update(
-              ShipmentOrderItem,
-              { shipOrderNo: shipment.shipOrderNo, seq: line.seq, ...this.tenantWhere(company, plant) },
-              { shippedQty: newShipped },
-            );
-          }
-        }
-
-        // 역분개 시에는 CONFIRMED로 되돌림
-        await queryRunner.manager.update(
-          ShipmentOrder,
-          { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
-          { status: 'CONFIRMED' },
-        );
-      }
-    });
+    await this.tx.run((qr) => this.reverseShipmentInTx(qr, shipment, remark, company, plant));
 
     return this.findById(id, company, plant);
   }

@@ -869,78 +869,91 @@ export class ShipOrderService {
   }
 
   /**
+   * 출하지시 박스 출하 취소 트랜잭션 본문 헬퍼 (외부 트랜잭션 합성용).
+   * 출하 직전 상태로 되돌린다: 제품재고 복원 + 박스 CLOSED + FG_LABEL PACKED + 라인 shippedQty 차감 + 지시 CONFIRMED.
+   */
+  async cancelShipBoxInTx(
+    qr: import('typeorm').QueryRunner,
+    shipOrderNo: string,
+    boxNo: string,
+    workerId?: string,
+    company?: string,
+    plant?: string,
+  ): Promise<{ shipOrderNo: string; boxNo: string; itemCode: string; qty: number; lineShippedQty: number; lineOrderQty: number; orderStatus: string; canceled: boolean }> {
+    const where = this.tenantWhere(company, plant);
+
+    const order = await qr.manager.findOne(ShipmentOrder, { where: { shipOrderNo, ...where } });
+    if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${shipOrderNo}`);
+    if (!['CONFIRMED', 'CLOSED'].includes(order.status)) {
+      throw new BadRequestException(`출하 취소는 CONFIRMED/CLOSED 지시만 가능합니다. 현재: ${order.status}`);
+    }
+
+    const box = await qr.manager.findOne(BoxMaster, { where: { boxNo, ...where } });
+    if (!box) throw new NotFoundException(`박스를 찾을 수 없습니다: ${boxNo}`);
+    if (box.status !== 'SHIPPED') {
+      throw new BadRequestException(`출하된(SHIPPED) 박스만 출하 취소할 수 있습니다: ${boxNo}`);
+    }
+
+    const line = await qr.manager.findOne(ShipmentOrderItem, { where: { shipOrderNo, itemCode: box.itemCode, ...where } });
+    if (!line) throw new BadRequestException(`출하지시에 없는 품목입니다: ${box.itemCode}`);
+    if (line.shippedQty < box.qty) {
+      throw new BadRequestException(`출하 취소 수량이 기출하 수량보다 큽니다: 기출하 ${line.shippedQty}, 요청 ${box.qty}`);
+    }
+
+    const warehouse = await qr.manager.findOne(Warehouse, { where: { warehouseType: 'FG', isDefault: 'Y', ...where } });
+    if (!warehouse) throw new BadRequestException('FG 기본창고(IS_DEFAULT=Y)가 설정되어 있지 않습니다.');
+
+    const serials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
+    if (serials.length > 0 && serials.length !== box.qty) {
+      throw new BadRequestException(`박스 수량(${box.qty})과 시리얼 수량(${serials.length})이 일치하지 않습니다: ${boxNo}`);
+    }
+
+    const receiveBase = {
+      warehouseId: warehouse.warehouseCode,
+      itemCode: box.itemCode,
+      itemType: 'FINISHED' as const,
+      transType: 'FG_OUT_CANCEL' as const,
+      refType: 'SHIP_ORDER_CANCEL',
+      refId: shipOrderNo,
+      workerId,
+      remark: `출하지시 박스출하 취소:${boxNo}`,
+      company,
+      plant,
+    };
+
+    // 재고 복원 — 출하가 수량 기준 FIFO이므로 취소도 수량 집계('*')로 복원해 키 체계를 통일한다.
+    // 시리얼 단위 복원은 아래 FG_LABELS → PACKED 전이가 담당. (재출하는 수량 FIFO라 키 무관 정상)
+    await this.productInventory.receiveStockInTx(qr, {
+      ...receiveBase,
+      qty: box.qty,
+    });
+
+    await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED', shippedAt: null });
+    if (serials.length > 0) {
+      await qr.manager.update(FgLabel, { fgBarcode: In(serials), ...where }, { status: 'PACKED' });
+    }
+
+    const newShipped = line.shippedQty - box.qty;
+    await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });
+    await qr.manager.update(ShipmentOrder, { shipOrderNo, ...where }, { status: 'CONFIRMED' });
+
+    return {
+      shipOrderNo,
+      boxNo: box.boxNo,
+      itemCode: box.itemCode,
+      qty: box.qty,
+      lineShippedQty: newShipped,
+      lineOrderQty: line.orderQty,
+      orderStatus: 'CONFIRMED',
+      canceled: true,
+    };
+  }
+
+  /**
    * 출하지시 기반 박스 출하 취소.
    * 출하 직전 상태로 되돌린다: 제품재고 복원 + 박스 CLOSED + FG_LABEL PACKED + 라인 shippedQty 차감 + 지시 CONFIRMED.
    */
   async cancelShipBox(shipOrderNo: string, dto: ShipBoxDto, company?: string, plant?: string) {
-    return this.tx.run(async (qr) => {
-      const where = this.tenantWhere(company, plant);
-
-      const order = await qr.manager.findOne(ShipmentOrder, { where: { shipOrderNo, ...where } });
-      if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${shipOrderNo}`);
-      if (!['CONFIRMED', 'CLOSED'].includes(order.status)) {
-        throw new BadRequestException(`출하 취소는 CONFIRMED/CLOSED 지시만 가능합니다. 현재: ${order.status}`);
-      }
-
-      const box = await qr.manager.findOne(BoxMaster, { where: { boxNo: dto.boxNo, ...where } });
-      if (!box) throw new NotFoundException(`박스를 찾을 수 없습니다: ${dto.boxNo}`);
-      if (box.status !== 'SHIPPED') {
-        throw new BadRequestException(`출하된(SHIPPED) 박스만 출하 취소할 수 있습니다: ${dto.boxNo}`);
-      }
-
-      const line = await qr.manager.findOne(ShipmentOrderItem, { where: { shipOrderNo, itemCode: box.itemCode, ...where } });
-      if (!line) throw new BadRequestException(`출하지시에 없는 품목입니다: ${box.itemCode}`);
-      if (line.shippedQty < box.qty) {
-        throw new BadRequestException(`출하 취소 수량이 기출하 수량보다 큽니다: 기출하 ${line.shippedQty}, 요청 ${box.qty}`);
-      }
-
-      const warehouse = await qr.manager.findOne(Warehouse, { where: { warehouseType: 'FG', isDefault: 'Y', ...where } });
-      if (!warehouse) throw new BadRequestException('FG 기본창고(IS_DEFAULT=Y)가 설정되어 있지 않습니다.');
-
-      const serials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
-      if (serials.length > 0 && serials.length !== box.qty) {
-        throw new BadRequestException(`박스 수량(${box.qty})과 시리얼 수량(${serials.length})이 일치하지 않습니다: ${dto.boxNo}`);
-      }
-
-      const receiveBase = {
-        warehouseId: warehouse.warehouseCode,
-        itemCode: box.itemCode,
-        itemType: 'FINISHED' as const,
-        transType: 'FG_OUT_CANCEL' as const,
-        refType: 'SHIP_ORDER_CANCEL',
-        refId: shipOrderNo,
-        workerId: dto.workerId,
-        remark: `출하지시 박스출하 취소:${dto.boxNo}`,
-        company,
-        plant,
-      };
-
-      // 재고 복원 — 출하가 수량 기준 FIFO이므로 취소도 수량 집계('*')로 복원해 키 체계를 통일한다.
-      // 시리얼 단위 복원은 아래 FG_LABELS → PACKED 전이가 담당. (재출하는 수량 FIFO라 키 무관 정상)
-      await this.productInventory.receiveStockInTx(qr, {
-        ...receiveBase,
-        qty: box.qty,
-      });
-
-      await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED', shippedAt: null });
-      if (serials.length > 0) {
-        await qr.manager.update(FgLabel, { fgBarcode: In(serials), ...where }, { status: 'PACKED' });
-      }
-
-      const newShipped = line.shippedQty - box.qty;
-      await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });
-      await qr.manager.update(ShipmentOrder, { shipOrderNo, ...where }, { status: 'CONFIRMED' });
-
-      return {
-        shipOrderNo,
-        boxNo: box.boxNo,
-        itemCode: box.itemCode,
-        qty: box.qty,
-        lineShippedQty: newShipped,
-        lineOrderQty: line.orderQty,
-        orderStatus: 'CONFIRMED',
-        canceled: true,
-      };
-    });
+    return this.tx.run((qr) => this.cancelShipBoxInTx(qr, shipOrderNo, dto.boxNo, dto.workerId, company, plant));
   }
 }

@@ -9,6 +9,7 @@ import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -148,19 +149,22 @@ describe('ShipmentService', () => {
         shipNo: 'SHIP-001',
         status: 'LOADED',
       } as ShipmentLog);
-    mockPalletRepo.find.mockResolvedValue([{ palletNo: 'PALLET-001' } as PalletMaster]);
-    mockBoxRepo.find.mockResolvedValue([
-      { boxNo: 'BOX-001', itemCode: 'ITEM-001', qty: 2, serialList: JSON.stringify(['FG-001', 'FG-002']) } as BoxMaster,
-    ]);
-    mockDataSource.getRepository.mockReturnValue({
-      find: jest.fn().mockResolvedValue([
-        { transNo: 'PTX-001', refType: 'SHIPMENT', refId: 'SHIP-001', status: 'DONE' },
-        { transNo: 'PTX-002', refType: 'SHIPMENT', refId: 'SHIP-001', status: 'DONE' },
-      ]),
-    } as any);
+
+    const transactions = [
+      { transNo: 'PTX-001', refType: 'SHIPMENT', refId: 'SHIP-001', status: 'DONE' },
+      { transNo: 'PTX-002', refType: 'SHIPMENT', refId: 'SHIP-001', status: 'DONE' },
+    ];
 
     (mockQueryRunner as any).manager = {
       update: jest.fn().mockResolvedValue(undefined),
+      find: jest.fn().mockImplementation((entity: unknown) => {
+        if (entity === PalletMaster) return Promise.resolve([{ palletNo: 'PALLET-001' }]);
+        if (entity === BoxMaster) return Promise.resolve([
+          { boxNo: 'BOX-001', itemCode: 'ITEM-001', qty: 2, serialList: JSON.stringify(['FG-001', 'FG-002']) },
+        ]);
+        if (entity === ProductTransaction) return Promise.resolve(transactions);
+        return Promise.resolve([]);
+      }),
     };
 
     await target.reverseShipment('SHIP-001', 'rollback');
