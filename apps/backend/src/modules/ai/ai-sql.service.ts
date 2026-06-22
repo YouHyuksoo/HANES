@@ -21,11 +21,12 @@ export interface AiSqlResult {
   requiresApproval?: boolean;
 }
 
-const TABLE_SELECT_PROMPT = `당신은 사용자 질문에 필요한 DB 테이블을 고르는 도우미입니다.
+const TABLE_SELECT_PROMPT = `당신은 HANES MES 데이터베이스에서 사용자 질문에 답할 테이블을 고르는 도우미입니다.
 규칙:
-1. 아래 테이블 목록에서 질문에 필요한 테이블만 고릅니다(최대 6개).
-2. 반드시 JSON 배열로만 응답합니다. 예: ["PROD_RESULTS","JOB_ORDERS"]
-3. 데이터 조회/변경이 전혀 불필요한 일반 대화면 빈 배열 []을 응답합니다.
+1. 아래 테이블 목록에서 질문에 답하는 데 필요한 테이블을 고릅니다(최대 6개).
+2. 회사·거래처·인물(대표/담당자/작업자/검사자)·품목·생산·재고·출하·품질·설비 등 MES에 저장된 정보를 묻는 질문이면, 일반 상식으로 답할 수 있어 보여도 반드시 관련 테이블을 선택하세요. (예: 사람 이름으로 소속·대표 여부를 묻는 질문은 회사·거래처 마스터의 대표자명 등으로 조회)
+3. 인사·잡담 등 데이터와 전혀 무관한 경우에만 빈 배열 []을 응답합니다.
+4. 반드시 JSON 배열로만 응답합니다. 예: ["PARTNER_MASTERS","COMPANY_MASTERS"]
 다른 설명 없이 JSON 배열만 출력하세요.`;
 
 const SQL_GEN_PROMPT = `당신은 Oracle SQL 생성 AI입니다.
@@ -49,7 +50,9 @@ const ANALYSIS_PROMPT = `당신은 HANES MES 데이터 분석 AI입니다. 한�
 - 결과에 없는 데이터를 지어내지 마세요.`;
 
 const GENERAL_PROMPT =
-  '당신은 HANES MES(제조실행시스템) 운영을 돕는 AI 비서입니다. 한국어로 간결하고 정확하게 답합니다.';
+  '당신은 HANES MES(제조실행시스템) 운영을 돕는 AI 비서입니다. 한국어로 간결하고 정확하게 답합니다. ' +
+  '회사·거래처·인물·품목·생산·재고 등 MES에 있을 법한 정보는 학습된 일반 지식으로 추측해 답하지 마세요. ' +
+  'MES 데이터로 확인이 필요한 질문이면 "MES 데이터에서 확인이 필요합니다"라고 안내하세요.';
 
 @Injectable()
 export class AiSqlService {
@@ -130,13 +133,12 @@ export class AiSqlService {
   }
 
   private async selectTables(userMessage: string): Promise<string[]> {
-    const summaries = await this.schemaInfo.getTableSummaries();
-    const list = summaries.map((s) => (s.comment ? `${s.table}: ${s.comment}` : s.table)).join('\n');
+    const { catalog, tables } = await this.schemaInfo.getSelectionCatalog();
     const res = await this.aiService.complete([
       { role: 'system', content: TABLE_SELECT_PROMPT },
-      { role: 'user', content: `## 테이블 목록\n${list}\n\n## 질문\n${userMessage}` },
+      { role: 'user', content: `## 테이블/컬럼 카탈로그 (형식: 테이블: 설명 [컬럼(설명), ...])\n${catalog}\n\n## 질문\n${userMessage}` },
     ]);
-    const valid = new Set(summaries.map((s) => s.table.toUpperCase()));
+    const valid = new Set(tables.map((t) => t.toUpperCase()));
     try {
       const start = res.indexOf('[');
       const end = res.lastIndexOf(']');

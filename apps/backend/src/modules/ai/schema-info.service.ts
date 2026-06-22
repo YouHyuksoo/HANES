@@ -41,7 +41,37 @@ export class SchemaInfoService {
 
   private isExcluded(table: string): boolean {
     const upper = table.toUpperCase();
-    return EXCLUDED_TABLES.has(upper) || upper.startsWith('FLYWAY') || upper.startsWith('TYPEORM');
+    if (EXCLUDED_TABLES.has(upper)) return true;
+    if (upper.startsWith('BIN$')) return true; // Oracle 휴지통(recyclebin)
+    if (upper.startsWith('FLYWAY') || upper.startsWith('TYPEORM')) return true;
+    if (upper === 'MIGRATIONS') return true; // TypeORM 마이그레이션 메타
+    if (/_(BAK|BACKUP|OLD|TMP|TEMP)(_?\d+)?$/.test(upper)) return true; // 백업/임시(날짜 접미 포함)
+    return false;
+  }
+
+  /** 1단계 테이블 선택용 카탈로그: 테이블명 + 코멘트 + 컬럼명(코멘트 없는 테이블도 컬럼으로 추론 가능) */
+  async getSelectionCatalog(): Promise<{ catalog: string; tables: string[] }> {
+    const rows = await this.dataSource.query<{ table: string; tcmt: string; column: string; ccmt: string }[]>(
+      `SELECT c.TABLE_NAME AS "table", NVL(tc.COMMENTS,'') AS "tcmt",
+              c.COLUMN_NAME AS "column", NVL(cc.COMMENTS,'') AS "ccmt"
+       FROM USER_TAB_COLUMNS c
+       JOIN USER_TAB_COMMENTS tc ON tc.TABLE_NAME = c.TABLE_NAME AND tc.TABLE_TYPE = 'TABLE'
+       LEFT JOIN USER_COL_COMMENTS cc ON cc.TABLE_NAME = c.TABLE_NAME AND cc.COLUMN_NAME = c.COLUMN_NAME
+       ORDER BY c.TABLE_NAME, c.COLUMN_ID`,
+    );
+    const byTable = new Map<string, { cmt: string; cols: string[] }>();
+    for (const r of rows) {
+      if (this.isExcluded(r.table)) continue;
+      if (!byTable.has(r.table)) byTable.set(r.table, { cmt: r.tcmt, cols: [] });
+      // 1단계(테이블 식별)는 컬럼명만 — 토큰 절약. 한글 컬럼 코멘트는 2단계 SQL 생성에서 제공.
+      byTable.get(r.table)!.cols.push(r.column);
+    }
+    const blocks: string[] = [];
+    for (const [table, info] of byTable) {
+      const head = info.cmt ? `${table}: ${info.cmt}` : table;
+      blocks.push(`${head} [${info.cols.join(', ')}]`);
+    }
+    return { catalog: blocks.join('\n'), tables: [...byTable.keys()] };
   }
 
   /** 1단계: 전체 테이블 요약 (테이블명 + 코멘트) */
