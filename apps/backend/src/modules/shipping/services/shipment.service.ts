@@ -704,7 +704,7 @@ export class ShipmentService {
    * 호출자가 상태(SHIPPED) 및 ERP 검증을 완료한 뒤 호출한다.
    * 사전 조회(팔레트, 박스, FG바코드, 재고트랜잭션)를 포함하며 qr.manager를 사용한다.
    */
-  async reverseShipmentInTx(qr: import('typeorm').QueryRunner, shipment: ShipmentLog, remark?: string, company?: string, plant?: string): Promise<void> {
+  async reverseShipmentInTx(qr: import('typeorm').QueryRunner, shipment: ShipmentLog, remark?: string, company?: string, plant?: string): Promise<Map<string, number>> {
     const id = shipment.shipNo;
 
     // 팔레트/박스 조회
@@ -790,8 +790,8 @@ export class ShipmentService {
     }
 
     // 6. 출하지시 shippedQty 복원 (shipOrderNo 연계 시)
+    const itemQtyMap = new Map<string, number>();
     if (shipment.shipOrderNo) {
-      const itemQtyMap = new Map<string, number>();
       for (const box of allBoxes) {
         const existingQty = itemQtyMap.get(box.itemCode) || 0;
         itemQtyMap.set(box.itemCode, existingQty + box.qty);
@@ -818,6 +818,8 @@ export class ShipmentService {
         { status: 'CONFIRMED' },
       );
     }
+
+    return itemQtyMap;
   }
 
   /**

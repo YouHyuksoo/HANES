@@ -992,15 +992,18 @@ export class ShipOrderService {
 
     const canceledShipments: string[] = [];
     const canceledBoxes: string[] = [];
-    const itemQty = new Map<string, number>();
+    const totalByItem = new Map<string, number>();
 
     let returnNo!: string;
     await this.tx.run(async (qr) => {
       // 1) 팔레트출하분: SHIPPED→reverse 후 CANCELED 마감+팔레트 분리, PREPARING/LOADED→cancel
       for (const s of activeShipments) {
         if (s.status === 'SHIPPED') {
-          // 재고복원/라벨/팔레트 LOADED/박스 CLOSED/shippedQty 복원
-          await this.shipmentService.reverseShipmentInTx(qr, s, dto.reason, company, plant);
+          // 재고복원/라벨/팔레트 LOADED/박스 CLOSED/shippedQty 복원; 품목별 복원수량 맵 반환
+          const reversedMap = await this.shipmentService.reverseShipmentInTx(qr, s, dto.reason, company, plant);
+          for (const [code, q] of reversedMap) {
+            totalByItem.set(code, (totalByItem.get(code) ?? 0) + q);
+          }
           // 되돌린 후 출하 자체를 취소 마감 + 팔레트 분리(CLOSED)
           await qr.manager.update(
             PalletMaster,
@@ -1022,13 +1025,10 @@ export class ShipOrderService {
       for (const b of looseBoxes) {
         const res = await this.cancelShipBoxInTx(qr, shipOrderNo, b.boxNo, dto.workerId, company, plant);
         canceledBoxes.push(b.boxNo);
-        itemQty.set(res.itemCode, (itemQty.get(res.itemCode) ?? 0) + res.qty);
+        totalByItem.set(res.itemCode, (totalByItem.get(res.itemCode) ?? 0) + res.qty);
       }
 
-      // 3) 취소이력(SHIPPING_RETURNS) 자동 생성
-      //    YAGNI(1차): 품목별 수량은 박스출하분(itemQty)만 항목화하고,
-      //    팔레트출하분은 remark에 shipNo 목록으로 요약한다. 팔레트 박스별 품목수량 항목화는
-      //    reverseShipmentInTx가 itemQtyMap을 반환하도록 확장해야 하므로 본 작업 범위 밖.
+      // 3) 취소이력(SHIPPING_RETURNS) 자동 생성: 팔레트출하분 + 박스출하분 합산 항목화
       returnNo = await this.numbering.nextReturnNo(qr);
       const ret = qr.manager.create(ShipmentReturn, {
         returnNo,
@@ -1043,7 +1043,7 @@ export class ShipOrderService {
       await qr.manager.save(ret);
 
       let seq = 1;
-      for (const [itemCode, qty] of itemQty) {
+      for (const [itemCode, qty] of totalByItem) {
         await qr.manager.save(
           qr.manager.create(ShipmentReturnItem, {
             returnNo,
@@ -1058,7 +1058,7 @@ export class ShipOrderService {
       }
     });
 
-    const restoredQty = [...itemQty.values()].reduce((a, b) => a + b, 0);
+    const restoredQty = [...totalByItem.values()].reduce((a, b) => a + b, 0);
     return { shipOrderNo, canceledShipments, canceledBoxes, restoredQty, returnNo };
   }
 
