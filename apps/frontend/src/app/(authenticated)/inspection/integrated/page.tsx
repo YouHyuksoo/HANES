@@ -164,8 +164,7 @@ export default function IntegratedInspectPage() {
   ], [t]);
 
   return (
-    <div className="flex h-full animate-fade-in">
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+    <div className="flex flex-col h-full animate-fade-in overflow-hidden p-6 gap-4">
         <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -192,27 +191,60 @@ export default function IntegratedInspectPage() {
 
         <Card className="flex-shrink-0">
           <CardContent>
-            <div className="flex items-center gap-3">
-              <ScanLine className="w-6 h-6 text-primary flex-shrink-0" />
-              <Input
-                ref={scanRef}
-                placeholder={t("inspection.integrated.scanPlaceholder", "FG 바코드를 스캔 또는 입력하세요")}
-                value={scanInput}
-                onChange={(e) => { setScanInput(e.target.value); setScanError(""); }}
-                onKeyDown={handleKeyDown}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-                autoFocus
-              />
-              <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => setIsSelectModalOpen(true)}>
-                <List className="w-4 h-4 mr-1" />{t("common.select", "선택")}
-              </Button>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <ScanLine className="w-6 h-6 text-primary flex-shrink-0" />
+                <div className="w-64">
+                  <Input
+                    ref={scanRef}
+                    placeholder={t("inspection.integrated.scanPlaceholder", "FG 바코드를 스캔 또는 입력하세요")}
+                    value={scanInput}
+                    onChange={(e) => { setScanInput(e.target.value); setScanError(""); }}
+                    onKeyDown={handleKeyDown}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                    autoFocus
+                  />
+                </div>
+                <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => setIsSelectModalOpen(true)}>
+                  <List className="w-4 h-4 mr-1" />{t("common.select", "선택")}
+                </Button>
+              </div>
+
+              {scannedLabel && (
+                <div className="flex items-center gap-5 border-l border-border pl-4">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-text-muted">FG Barcode</span>
+                    <span className="font-mono font-bold text-primary text-sm">{scannedLabel.fgBarcode}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-text-muted">{t("master.part.partCode", "품목코드")}</span>
+                    <span className="text-sm font-medium text-text">{scannedLabel.itemCode}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-text-muted">{t("production.result.orderNo", "작업지시")}</span>
+                    <span className="text-sm font-medium text-text">{scannedLabel.orderNo || "-"}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-text-muted">{t("common.status", "상태")}</span>
+                    <span className="text-sm font-medium text-text">{scannedLabel.status}</span>
+                  </div>
+                </div>
+              )}
             </div>
             {scanError && (
               <p className="mt-2 text-sm text-red-500">{scanError}</p>
             )}
           </CardContent>
         </Card>
+
+        {isPanelOpen && (
+          <IntegratedInspectPanel
+            fgLabel={scannedLabel}
+            onClose={handlePanelClose}
+            onSave={handlePanelSave}
+          />
+        )}
 
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
           <CardContent className="h-full p-4">
@@ -227,14 +259,6 @@ export default function IntegratedInspectPage() {
             sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent>
         </Card>
-      </div>
-
-      <IntegratedInspectPanel
-        fgLabel={scannedLabel}
-        onClose={handlePanelClose}
-        onSave={handlePanelSave}
-        animate
-      />
 
       <FgLabelSelectModal
         isOpen={isSelectModalOpen}
