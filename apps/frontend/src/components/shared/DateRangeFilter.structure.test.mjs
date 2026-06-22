@@ -23,6 +23,16 @@ test('DateRangeFilter supports optional label rendered before the range', () => 
   assert.match(src, /\{label &&/);
 });
 
+test('DateRangeFilter collapses presets into a toggleable icon dropdown', () => {
+  // 프리셋은 옆으로 펼치지 않고 아이콘 버튼으로 접어 토글한다(공간 절약)
+  assert.match(src, /CalendarRange/);
+  assert.match(src, /useState\(false\)/);
+  assert.match(src, /setOpen\(\(o\) => !o\)/);
+  // 바깥 클릭 시 닫힘
+  assert.match(src, /addEventListener\("mousedown"/);
+  assert.match(src, /common\.dateFilter\.presets/);
+});
+
 test('DateRangeFilter wires presets to range helpers', () => {
   assert.match(src, /getRecentDaysRange\(7\)/);
   assert.match(src, /getThisMonthRange\(\)/);

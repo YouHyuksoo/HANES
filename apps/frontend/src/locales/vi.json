@@ -154,7 +154,12 @@
     "useY": "Sử dụng",
     "useN": "Không dùng",
     "preparing": "Đang chuẩn bị.",
-    "dateFilter": { "today": "Hôm nay", "recent7": "7 ngày gần đây", "thisMonth": "Tháng này" }
+    "dateFilter": {
+      "today": "Hôm nay",
+      "recent7": "7 ngày gần đây",
+      "thisMonth": "Tháng này",
+      "presets": "Chọn khoảng"
+    }
   },
   "help": {
     "title": "Trợ giúp",

@@ -154,7 +154,12 @@
     "useY": "使用",
     "useN": "不使用",
     "preparing": "正在准备中。",
-    "dateFilter": { "today": "今天", "recent7": "最近7天", "thisMonth": "本月" }
+    "dateFilter": {
+      "today": "今天",
+      "recent7": "最近7天",
+      "thisMonth": "本月",
+      "presets": "选择期间"
+    }
   },
   "help": {
     "title": "帮助",

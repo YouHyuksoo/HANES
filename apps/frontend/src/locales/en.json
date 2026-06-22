@@ -154,7 +154,12 @@
     "useY": "Use",
     "useN": "Not Used",
     "preparing": "Coming soon.",
-    "dateFilter": { "today": "Today", "recent7": "Last 7 Days", "thisMonth": "This Month" }
+    "dateFilter": {
+      "today": "Today",
+      "recent7": "Last 7 Days",
+      "thisMonth": "This Month",
+      "presets": "Select Range"
+    }
   },
   "help": {
     "title": "Help",

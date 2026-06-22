@@ -154,7 +154,12 @@
     "useY": "사용",
     "useN": "미사용",
     "preparing": "준비 중입니다.",
-    "dateFilter": { "today": "오늘", "recent7": "최근 7일", "thisMonth": "이번 달" }
+    "dateFilter": {
+      "today": "오늘",
+      "recent7": "최근 7일",
+      "thisMonth": "이번 달",
+      "presets": "기간 선택"
+    }
   },
   "help": {
     "title": "도움말",
