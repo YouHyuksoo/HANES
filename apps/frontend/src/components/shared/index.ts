@@ -28,3 +28,5 @@ export { default as DateRangeFilter } from "./DateRangeFilter";
 export type { DateRangeFilterProps } from "./DateRangeFilter";
 export { default as DateFilter } from "./DateFilter";
 export type { DateFilterProps } from "./DateFilter";
+export { default as FilterBar } from "./FilterBar";
+export type { FilterBarProps } from "./FilterBar";
