@@ -5110,6 +5110,7 @@
       "subtitle": "출하지시 단위로 출하분(박스·팔레트)을 조회하고 출하를 취소합니다.",
       "returnNo": "반품번호",
       "shipOrderNo": "출하지시번호",
+      "shipDate": "출하일",
       "customer": "고객사",
       "customerPlaceholder": "고객사명 입력",
       "returnDate": "반품일",

@@ -5106,6 +5106,7 @@
       "subtitle": "Xem nội dung đã xuất (thùng/pallet) theo lệnh xuất hàng và hủy xuất hàng.",
       "returnNo": "Mã trả hàng",
       "shipOrderNo": "Mã lệnh xuất hàng",
+      "shipDate": "Ngày xuất hàng",
       "customer": "Khách hàng",
       "customerPlaceholder": "Nhập tên khách hàng",
       "returnDate": "Ngày trả hàng",

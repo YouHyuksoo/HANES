@@ -5106,6 +5106,7 @@
       "subtitle": "Review shipped content (box/pallet) per ship order and cancel shipments.",
       "returnNo": "Return No.",
       "shipOrderNo": "Shipment Order No.",
+      "shipDate": "Ship Date",
       "customer": "Customer",
       "customerPlaceholder": "Enter customer name",
       "returnDate": "Return Date",

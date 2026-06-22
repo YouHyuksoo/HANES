@@ -5106,6 +5106,7 @@
       "subtitle": "按出货指示查看出货内容(箱/托盘)并取消出货。",
       "returnNo": "退货编号",
       "shipOrderNo": "出货指示编号",
+      "shipDate": "出货日",
       "customer": "客户",
       "customerPlaceholder": "请输入客户名称",
       "returnDate": "退货日期",
