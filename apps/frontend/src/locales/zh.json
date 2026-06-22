@@ -894,14 +894,17 @@
         "MATERIAL": "材料管理",
         "PRODUCTION": "生产管理",
         "QUALITY": "质量管理",
-        "SYSTEM": "系统"
+        "SYSTEM": "系统",
+        "AI": "AI"
       },
       "save": "保存设置",
       "saveSuccess": "设置已保存。",
       "addNew": "添加设置",
       "noChanges": "没有更改的设置。",
       "changedCount": "{{count}}项已更改",
-      "confirmDelete": "确定要删除此设置吗？"
+      "confirmDelete": "确定要删除此设置吗？",
+      "aiKeyOk": "已配置 Mistral API 密钥。(provider: {{provider}}, model: {{model}})",
+      "aiKeyMissing": "未设置 MISTRAL_API_KEY。请在服务器 apps/backend/.env 中添加密钥后重启后端。"
     },
     "document": {
       "title": "文档管理",
@@ -7729,5 +7732,17 @@
     "exitFullscreen": "退出全屏",
     "aiChat": "AI 聊天",
     "menuTooltip": "菜单"
+  },
+  "ai": {
+    "chat": {
+      "title": "AI 聊天",
+      "clear": "清空对话",
+      "placeholder": "随便问，我来协助 MES 运营。",
+      "thinking": "思考中...",
+      "inputPlaceholder": "输入消息（Enter 发送，Shift+Enter 换行）",
+      "send": "发送",
+      "empty": "响应为空。",
+      "error": "获取响应失败。"
+    }
   }
 }

@@ -42,6 +42,7 @@ import { MenuCategoriesModule } from './modules/menu-categories/menu-categories.
 import { SharedModule } from './shared/shared.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { GuardModule } from './common/modules/guard.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -104,6 +105,9 @@ import { GuardModule } from './common/modules/guard.module';
 
     // 시스템관리 (통신설정)
     SystemModule,
+
+    // AI 채팅 (Mistral 연동)
+    AiModule,
 
     // 대시보드 (KPI, 최근 생산현황)
     DashboardModule,

@@ -13,8 +13,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Wrench, X, LoaderCircle, Plus, MessageCircle, Maximize2, Minimize2 } from "lucide-react";
-import toast from "react-hot-toast";
 import { useImprovementRequestStore } from "@/stores/improvementRequestStore";
+import { useAiChatStore } from "@/stores/aiChatStore";
 import ImprovementOverlay from "./ImprovementOverlay";
 import ImprovementRequestModal from "./ImprovementRequestModal";
 
@@ -22,6 +22,7 @@ export default function ImprovementFAB() {
   const { t } = useTranslation();
   const { isActive, isCapturing, selectedElement, activate, deactivate } =
     useImprovementRequestStore();
+  const openAiChat = useAiChatStore((s) => s.open);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function ImprovementFAB() {
       key: "aichat",
       icon: MessageCircle,
       label: t("fab.aiChat", "AI 채팅"),
-      onClick: () => toast(t("common.preparing", "준비 중입니다.")),
+      onClick: openAiChat,
       color: "bg-violet-600 hover:bg-violet-700",
     },
     {

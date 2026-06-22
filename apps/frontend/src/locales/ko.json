@@ -894,14 +894,17 @@
         "MATERIAL": "자재관리",
         "PRODUCTION": "생산관리",
         "QUALITY": "품질관리",
-        "SYSTEM": "시스템"
+        "SYSTEM": "시스템",
+        "AI": "AI"
       },
       "save": "설정 저장",
       "saveSuccess": "설정이 저장되었습니다.",
       "addNew": "설정 추가",
       "noChanges": "변경된 설정이 없습니다.",
       "changedCount": "{{count}}개 항목 변경됨",
-      "confirmDelete": "이 설정을 삭제하시겠습니까?"
+      "confirmDelete": "이 설정을 삭제하시겠습니까?",
+      "aiKeyOk": "Mistral API 키가 설정되어 있습니다. (provider: {{provider}}, model: {{model}})",
+      "aiKeyMissing": "MISTRAL_API_KEY가 설정되지 않았습니다. 서버 apps/backend/.env에 키를 추가한 뒤 백엔드를 재시작하세요."
     },
     "document": {
       "title": "문서관리",
@@ -7733,5 +7736,17 @@
     "exitFullscreen": "전체화면 종료",
     "aiChat": "AI 채팅",
     "menuTooltip": "메뉴"
+  },
+  "ai": {
+    "chat": {
+      "title": "AI 채팅",
+      "clear": "대화 비우기",
+      "placeholder": "무엇이든 물어보세요. MES 운영을 도와드립니다.",
+      "thinking": "생각 중...",
+      "inputPlaceholder": "메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)",
+      "send": "전송",
+      "empty": "응답이 비어 있습니다.",
+      "error": "응답을 가져오지 못했습니다."
+    }
   }
 }

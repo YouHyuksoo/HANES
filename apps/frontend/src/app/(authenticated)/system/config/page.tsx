@@ -14,7 +14,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Settings, Package, Factory, ClipboardCheck, Cog,
-  Save, Plus, Trash2, RefreshCw,
+  Save, Plus, Trash2, RefreshCw, Sparkles,
 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from '@/components/ui';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
@@ -31,6 +31,7 @@ const CONFIG_GROUPS = [
   { key: 'PRODUCTION', label: 'system.config.group.PRODUCTION', icon: Factory },
   { key: 'QUALITY', label: 'system.config.group.QUALITY', icon: ClipboardCheck },
   { key: 'SYSTEM', label: 'system.config.group.SYSTEM', icon: Cog },
+  { key: 'AI', label: 'system.config.group.AI', icon: Sparkles },
 ];
 
 const getConfigId = (config: SysConfigItem) => config.id ?? config.configKey;
@@ -64,6 +65,14 @@ function ConfigPage() {
     const list = (raw as ConfigListResponse)?.data ?? (Array.isArray(raw) ? raw : []);
     return list as SysConfigItem[];
   }, [data]);
+
+  // AI 탭 상태 (키 설정 여부·모델). 키 원문은 반환되지 않는다.
+  const { data: aiStatusData } = useApiQuery<{ enabled: boolean; provider: string; model: string; keyConfigured: boolean }>(
+    ['ai-status'],
+    '/ai/status',
+    { staleTime: 30_000 },
+  );
+  const aiStatus = aiStatusData?.data;
 
   const changedCount = Object.keys(changes).length;
 
@@ -143,6 +152,21 @@ function ConfigPage() {
           );
         })}
       </div>
+
+      {/* AI 탭: 키 설정 상태 배너 */}
+      {activeGroup === 'AI' && aiStatus && (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            aiStatus.keyConfigured
+              ? 'border-green-500 text-green-700 dark:text-green-400'
+              : 'border-amber-500 text-amber-700 dark:text-amber-400'
+          }`}
+        >
+          {aiStatus.keyConfigured
+            ? t('system.config.aiKeyOk', 'Mistral API 키가 설정되어 있습니다. (provider: {{provider}}, model: {{model}})', { provider: aiStatus.provider, model: aiStatus.model })
+            : t('system.config.aiKeyMissing', 'MISTRAL_API_KEY가 설정되지 않았습니다. 서버 apps/backend/.env에 키를 추가한 뒤 백엔드를 재시작하세요.')}
+        </div>
+      )}
 
       {/* 설정 목록 */}
       <Card>

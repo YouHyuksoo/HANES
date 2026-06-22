@@ -894,14 +894,17 @@
         "MATERIAL": "Material",
         "PRODUCTION": "Production",
         "QUALITY": "Quality",
-        "SYSTEM": "System"
+        "SYSTEM": "System",
+        "AI": "AI"
       },
       "save": "Save Settings",
       "saveSuccess": "Settings saved successfully.",
       "addNew": "Add Setting",
       "noChanges": "No changes to save.",
       "changedCount": "{{count}} items changed",
-      "confirmDelete": "Delete this setting?"
+      "confirmDelete": "Delete this setting?",
+      "aiKeyOk": "Mistral API key is configured. (provider: {{provider}}, model: {{model}})",
+      "aiKeyMissing": "MISTRAL_API_KEY is not set. Add the key to apps/backend/.env on the server and restart the backend."
     },
     "document": {
       "title": "Document Control",
@@ -7729,5 +7732,17 @@
     "exitFullscreen": "Exit Fullscreen",
     "aiChat": "AI Chat",
     "menuTooltip": "Menu"
+  },
+  "ai": {
+    "chat": {
+      "title": "AI Chat",
+      "clear": "Clear conversation",
+      "placeholder": "Ask anything. I'll help with MES operations.",
+      "thinking": "Thinking...",
+      "inputPlaceholder": "Type a message (Enter to send, Shift+Enter for newline)",
+      "send": "Send",
+      "empty": "Response is empty.",
+      "error": "Failed to get a response."
+    }
   }
 }

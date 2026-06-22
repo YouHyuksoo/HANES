@@ -894,14 +894,17 @@
         "MATERIAL": "Vật tư",
         "PRODUCTION": "Sản xuất",
         "QUALITY": "Chất lượng",
-        "SYSTEM": "Hệ thống"
+        "SYSTEM": "Hệ thống",
+        "AI": "AI"
       },
       "save": "Lưu cài đặt",
       "saveSuccess": "Cài đặt đã được lưu.",
       "addNew": "Thêm cài đặt",
       "noChanges": "Không có thay đổi.",
       "changedCount": "{{count}} mục đã thay đổi",
-      "confirmDelete": "Xóa cài đặt này?"
+      "confirmDelete": "Xóa cài đặt này?",
+      "aiKeyOk": "Đã cấu hình khóa API Mistral. (provider: {{provider}}, model: {{model}})",
+      "aiKeyMissing": "Chưa đặt MISTRAL_API_KEY. Thêm khóa vào apps/backend/.env trên máy chủ rồi khởi động lại backend."
     },
     "document": {
       "title": "Quản lý tài liệu",
@@ -7729,5 +7732,17 @@
     "exitFullscreen": "Thoát toàn màn hình",
     "aiChat": "Trò chuyện AI",
     "menuTooltip": "Menu"
+  },
+  "ai": {
+    "chat": {
+      "title": "Trò chuyện AI",
+      "clear": "Xóa hội thoại",
+      "placeholder": "Hỏi bất cứ điều gì. Tôi sẽ hỗ trợ vận hành MES.",
+      "thinking": "Đang suy nghĩ...",
+      "inputPlaceholder": "Nhập tin nhắn (Enter để gửi, Shift+Enter xuống dòng)",
+      "send": "Gửi",
+      "empty": "Phản hồi trống.",
+      "error": "Không lấy được phản hồi."
+    }
   }
 }
