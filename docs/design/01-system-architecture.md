@@ -54,6 +54,7 @@ graph TD
 - `workflow`
 - `interface`
 - `product`
+- `help`
 
 ### PDA 그룹
 
@@ -93,6 +94,9 @@ graph TD
 - `system`
 - `workflow`
 - `dashboard`
+- `ai`
+- `ai-page-tools`
+- `menu-categories`
 
 ### 품질 하위 모듈
 
@@ -105,6 +109,8 @@ graph TD
 - `oqc`
 - `ppap`
 - `rework`
+- `aql`
+- `defect-codes`
 - `spc`
 
 ## 데이터 계층
@@ -127,7 +133,7 @@ graph TD
 - 외주/통관/소모품
 - 시스템/운영
 
-세부 전수 목록은 [02-data-model-erd.md](C:/Project/HANES/docs/core/02-data-model-erd.md)를 본다.
+세부 전수 목록은 [02-data-model-erd.md](./02-data-model-erd.md)를 본다.
 
 ## 요청 처리 흐름
 
@@ -149,8 +155,8 @@ graph TD
 ## 문서 사용 기준
 
 1. 이 문서는 시스템 상위 구조를 설명한다.
-2. 저장소의 실제 배치는 [module-map.md](C:/Project/HANES/docs/core/module-map.md)를 본다.
-3. 백엔드 모듈 전수는 [backend-module-index.md](C:/Project/HANES/docs/core/backend-module-index.md)를 본다.
-4. 프론트엔드 라우트 전수는 [03-frontend-routing.md](C:/Project/HANES/docs/core/03-frontend-routing.md)를 본다.
-5. API 인덱스는 [04-backend-api-endpoints.md](C:/Project/HANES/docs/core/04-backend-api-endpoints.md)를 본다.
-6. 상태 전이와 업무 흐름은 [domain-workflows.md](C:/Project/HANES/docs/core/domain-workflows.md)와 [05-production-process-flow.md](C:/Project/HANES/docs/core/05-production-process-flow.md)를 함께 본다.
+2. 저장소의 실제 배치는 [module-map.md](./module-map.md)를 본다.
+3. 백엔드 모듈 전수는 [backend-module-index.md](./backend-module-index.md)를 본다.
+4. 프론트엔드 라우트 전수는 [03-frontend-routing.md](./03-frontend-routing.md)를 본다.
+5. API 인덱스는 [04-backend-api-endpoints.md](./04-backend-api-endpoints.md)를 본다.
+6. 상태 전이와 업무 흐름은 [domain-workflows.md](../workflows/domain-workflows.md)와 [05-production-process-flow.md](../workflows/05-production-process-flow.md)를 함께 본다.

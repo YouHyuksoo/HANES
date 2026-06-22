@@ -64,6 +64,8 @@ graph TD
 - `prod-line`
 - `routing`
 - `vendor-barcode`
+- `equip-inspect-item`
+- `iqc-part-spec`
 - `warehouse`
 - `work-calendar`
 - `work-instruction`
@@ -94,11 +96,21 @@ graph TD
 - `shelf-life`
 - `stock`
 
+### `material` 추가 라우트
+
+- `arrival-result`
+- `arrival-transaction`
+- `concession`
+- `issue-other`
+- `physical-inv-history`
+- `shelf-life-history`
+- `shelf-life-reinspect`
+
 ### `inventory`
 
-- `material-stock`
-- `material-stock-history`
-- `material-stock-take`
+- `material-physical-inv`
+- `material-physical-inv-apply`
+- `material-physical-inv-history`
 - `product-hold`
 - `product-physical-inv`
 - `product-physical-inv-history`
@@ -107,9 +119,10 @@ graph TD
 
 ### `production`
 
+- `fg-stock`
 - `input-equip`
 - `input-inspect`
-- `input-material`
+- `input-kiosk`
 - `monthly-plan`
 - `order`
 - `pack-result`
@@ -119,6 +132,10 @@ graph TD
 - `result-summary`
 - `sample-inspect`
 - `simulation`
+- `specification-setup`
+- `subprocess-kitting`
+- `wip-material-stock`
+- `wip-material-trans`
 - `wip-stock`
 
 ### `quality`
@@ -139,13 +156,23 @@ graph TD
 - `rework-history`
 - `rework-inspect`
 - `spc`
+- `self-inspect-history`
 - `trace`
+
+### `quality` 추가 라우트
+
+- `aql`
+- `defect-code`
+- `request-inspect`
 
 ### `inspection`
 
 - `history`
+- `integrated`
 - `protocol`
 - `result`
+- `structure`
+- `terminal-result`
 
 ### `shipping`
 
@@ -157,21 +184,27 @@ graph TD
 - `pallet`
 - `return`
 
+### `shipping` 추가 라우트
+
+- `box-stock`
+- `customer-po-status`
+- `pallet-ship`
+
 ### `sales`
 
 - `customer-po`
-- `customer-po-summary`
+- `customer-po-status`
 
 ### `equipment`
 
-- `calibration`
+- `calibration-history`
 - `daily-inspect`
-- `inspect-config`
+- `inspect-calendar`
 - `inspect-history`
 - `mold`
 - `mold-mgmt`
+- `periodic-inspect-calendar`
 - `periodic-inspect`
-- `periodic-result`
 - `pm-calendar`
 - `pm-plan`
 - `pm-result`
@@ -183,7 +216,7 @@ graph TD
 - `outsourcing`: `order`, `receive`, `vendor`
 - `consumables`: `issuing`, `label`, `life`, `master`, `mount`, `receiving`, `stock`
 - `interface`: `dashboard`, `log`, `manual`
-- `system`: `comm-config`, `config`, `department`, `document`, `pda-roles`, `roles`, `scheduler`, `training`, `users`
+- `system`: `comm-config`, `config`, `department`, `document`, `er-view`, `improvement-requests`, `menu-categories`, `pda-roles`, `roles`, `screen-requirements`, `scheduler`, `training`, `users`
 - `workflow`: `components` 기반 요약 화면
 - `product`: `issue`, `issue-cancel`, `receipt-cancel`, `receive`
 
@@ -199,6 +232,7 @@ graph TD
 - `material/menu`
 - `material/receiving`
 - `product/inventory-count`
+- `product/receiving`
 - `shipping`
 
 ## 라우트 사용 주의사항
@@ -207,9 +241,10 @@ graph TD
 2. `(authenticated)` 내부 라우트는 업무 도메인 기준으로 유지한다.
 3. PDA는 스캔과 빠른 입력 흐름을 우선한다.
 4. 컴포넌트 하위 폴더는 라우트 자체가 아니라 화면 구현 보조 구조다.
+5. 이 문서의 기준 원본은 `apps/frontend/src/app` 폴더 구조다. 신규 화면 추가 시 이 문서도 함께 갱신한다.
 
 ## 함께 읽을 문서
 
-- [01-system-architecture.md](C:/Project/HANES/docs/core/01-system-architecture.md)
-- [ui-screen-patterns.md](C:/Project/HANES/docs/core/ui-screen-patterns.md)
-- [04-backend-api-endpoints.md](C:/Project/HANES/docs/core/04-backend-api-endpoints.md)
+- [01-system-architecture.md](./01-system-architecture.md)
+- [ui-screen-patterns.md](../standards/ui-screen-patterns.md)
+- [04-backend-api-endpoints.md](./04-backend-api-endpoints.md)

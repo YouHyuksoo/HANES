@@ -8,6 +8,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileJson2, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import TemplateManager from "./components/TemplateManager";
 import LabelObjectDesigner from "./components/LabelObjectDesigner";
 import LabelDesignRenderer from "./components/LabelDesignRenderer";
@@ -31,6 +32,7 @@ const sourceCategoryMap: Record<LabelSourceTable, LabelCategory> = {
 
 function LabelPage() {
   const { t } = useTranslation();
+  usePageAiTools("master.label");
   const initialDesign = useMemo(() => createDefaultLabelDesign("jig"), []);
   const [design, setDesign] = useState<LabelDesign>(initialDesign);
   // 미저장 변경 감지용 기준선(마지막 저장/불러오기 시점의 디자인 JSON)

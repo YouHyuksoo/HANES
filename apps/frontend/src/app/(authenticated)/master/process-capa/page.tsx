@@ -23,6 +23,7 @@ import {
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import CapaFormPanel from "./components/CapaFormPanel";
 
 /** 공정 CAPA 마스터 아이템 */
@@ -45,6 +46,9 @@ interface ProcessCapaItem {
 
 export default function ProcessCapaPage() {
   const { t } = useTranslation();
+
+  // AI 채팅 페이지 도구(공정 CAPA CRUD write 도구) 등록 — backend 실행
+  usePageAiTools("master.process-capa");
 
   /* -- 데이터 상태 -- */
   const [data, setData] = useState<ProcessCapaItem[]>([]);

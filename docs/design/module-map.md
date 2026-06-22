@@ -17,6 +17,12 @@ HANES는 Turborepo 기반 모노레포이며, 현재 문서 기준의 핵심 실
 - 경로: `apps/frontend`
 - 역할: Next.js App Router 기반 화면, 인증 후 업무 화면, PDA 화면
 
+### Shared Packages
+
+- `packages/shared`: TypeScript 타입, 유틸리티, 공통 상수
+- `packages/config/eslint`: ESLint 공통 설정
+- `packages/config/typescript`: TypeScript 공통 tsconfig
+
 ## 백엔드 도메인 맵
 
 ### 공통 기반
@@ -27,6 +33,9 @@ HANES는 Turborepo 기반 모노레포이며, 현재 문서 기준의 핵심 실
 - `num-rule`: 번호 채번 규칙
 - `workflow`: 워크플로우 요약 API
 - `dashboard`: 대시보드 집계
+- `ai`: AI 채팅, AI 테이블 카탈로그, SQL 생성/검증
+- `ai-page-tools`: AI Page Tool 워크플로우
+- `menu-categories`: 사이드바 메뉴 카테고리 관리
 
 ### 기준정보
 
@@ -49,6 +58,8 @@ HANES는 Turborepo 기반 모노레포이며, 현재 문서 기준의 핵심 실
 - `quality/oqc`: 출하검사
 - `quality/rework`: 재작업
 - `quality/fai`, `quality/ppap`, `quality/audit`, `quality/change-management`
+- `quality/aql`: AQL 기준 관리 및 자동 판정 엔진
+- `quality/defect-codes`: 불량코드 마스터
 
 ### 출하 및 대외 업무
 
@@ -79,15 +90,30 @@ HANES는 Turborepo 기반 모노레포이며, 현재 문서 기준의 핵심 실
 - `inventory`
 - `system`
 - `workflow`
+- `consumables`
+- `customs`
+- `dashboard`
+- `help`
+- `inspection`
+- `interface`
+- `outsourcing`
+- `product`
+- `sales`
 
 ### PDA 화면
 
 - 경로: `apps/frontend/src/app/pda`
 - 대표 그룹
+- `login`
+- `menu`
+- `settings`
 - `material/receiving`
 - `material/issuing`
 - `material/inventory-count`
+- `material/adjustment`
+- `material/menu`
 - `product/inventory-count`
+- `product/receiving`
 - `shipping`
 - `equip-inspect`
 
@@ -128,6 +154,6 @@ HANES는 Turborepo 기반 모노레포이며, 현재 문서 기준의 핵심 실
 
 ## 함께 읽을 문서
 
-- [backend-module-index.md](C:/Project/HANES/docs/core/backend-module-index.md)
-- [domain-workflows.md](C:/Project/HANES/docs/core/domain-workflows.md)
-- [04-backend-api-endpoints.md](C:/Project/HANES/docs/core/04-backend-api-endpoints.md)
+- [backend-module-index.md](./backend-module-index.md)
+- [domain-workflows.md](../workflows/domain-workflows.md)
+- [04-backend-api-endpoints.md](./04-backend-api-endpoints.md)

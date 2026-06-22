@@ -17,6 +17,7 @@ import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/compon
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import VendorBarcodeFormPanel, { type VendorBarcodeMapping } from "./components/VendorBarcodeFormPanel";
 
 const MATCH_TYPE_OPTIONS = [
@@ -33,6 +34,8 @@ const MATCH_TYPE_COLORS: Record<string, string> = {
 
 export default function VendorBarcodeMappingPage() {
   const { t } = useTranslation();
+  // AI 채팅 페이지 도구(제조사 바코드 매핑 CRUD write 도구) 등록 — backend 실행
+  usePageAiTools("master.vendor-barcode");
   const [data, setData] = useState<VendorBarcodeMapping[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");

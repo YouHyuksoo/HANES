@@ -17,11 +17,13 @@ import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import PartnerFormPanel, { type Partner } from "./components/PartnerFormPanel";
 
 type PanelMode = "create" | "edit";
 
 function PartnerPage() {
+  usePageAiTools("master.partner");
   const { t } = useTranslation();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(false);

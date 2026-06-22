@@ -22,6 +22,7 @@ import ShiftPatternTab from "./components/ShiftPatternTab";
 import AddCalendarModal from "./components/AddCalendarModal";
 import type { AddCalendarForm } from "./components/AddCalendarModal";
 import type { WorkCalendarDay, ShiftPatternItem } from "./components/CalendarGrid";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 
 interface CalendarItem {
   calendarId: string;
@@ -47,6 +48,7 @@ interface ProcessOption { processCode: string; processName: string }
 
 export default function WorkCalendarPage() {
   const { t } = useTranslation();
+  usePageAiTools("master.work-calendar");
 
   const [calendars, setCalendars] = useState<CalendarItem[]>([]);
   const [selectedId, setSelectedId] = useState("");

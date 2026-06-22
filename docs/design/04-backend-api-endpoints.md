@@ -23,6 +23,8 @@
 |---|---|
 | 인증/권한 | 로그인, 사용자, 역할, 메뉴 권한 |
 | 기준정보 | 공통코드, 품목, BOM, 공정, 작업자, 창고, 라벨 등 |
+| AI/AI Page Tools | AI 채팅, AI 테이블 카탈로그, Page Tool 워크플로우 |
+| 메뉴 카테고리 | 사이드바 메뉴 트리 관리 (카테고리 배치, leaf 코드 검증) |
 | 자재 | 입하, IQC, 입고, LOT, 자재출고, 실사, 재고 |
 | 완제품 재고 | 완제품 재고, 실사, 창고, 보류 |
 | 생산 | 계획, 작업지시, 실적, 자동출고, 시뮬레이션 |
@@ -54,10 +56,11 @@
 - `department.controller.ts`
 - `equip-bom.controller.ts`
 - `equip-inspect.controller.ts`
-- `iqc-group.controller.ts`
+- `equip-inspect-item-pool.controller.ts`
 - `iqc-item.controller.ts`
 - `iqc-item-pool.controller.ts`
-- `iqc-part-link.controller.ts`
+- `iqc-part-spec.controller.ts`
+- `iqc-template.controller.ts`
 - `label-template.controller.ts`
 - `model-suffix.controller.ts`
 - `part.controller.ts`
@@ -101,6 +104,8 @@
 - `receiving.controller.ts`
 - `scrap.controller.ts`
 - `shelf-life.controller.ts`
+- `shelf-life-reinspect.controller.ts`
+- `concession.controller.ts`
 - 대표 경로 접두사
 - `material/*`
 
@@ -109,8 +114,9 @@
 - 모듈: `inventory`
 - 주요 컨트롤러
 - `inventory.controller.ts`
+- `inventory-query.controller.ts`
 - `product-physical-inv.controller.ts`
-- `warehouse.controller.ts`
+- `warehouse-location.controller.ts`
 - `product-hold.controller.ts` 계열
 - 대표 경로 접두사
 - `inventory/*`
@@ -120,13 +126,18 @@
 - 모듈: `production`
 - 주요 컨트롤러
 - `job-order.controller.ts`
+- `job-material-lot.controller.ts`
+- `kiosk-consumable.controller.ts`
 - `prod-plan.controller.ts`
 - `prod-result.controller.ts`
 - `product-label.controller.ts`
+- `production-specification.controller.ts`
 - `production-views.controller.ts`
 - `repair.controller.ts`
 - `sample-inspect.controller.ts`
+- `self-inspect.controller.ts`
 - `simulation.controller.ts`
+- `subprocess-kitting.controller.ts`
 - 대표 경로 접두사
 - `production/*`
 
@@ -144,6 +155,8 @@
 - `quality/audit`: `audit.controller.ts`
 - `quality/change-management`: `capa.controller.ts`, `change-order.controller.ts`, `complaint.controller.ts`
 - `quality/continuity-inspect`: `continuity-inspect.controller.ts`
+- `quality/aql`: `aql.controller.ts`
+- `quality/defect-codes`: `defect-code.controller.ts`
 - 대표 경로 접두사
 - `quality/*`
 
@@ -154,6 +167,7 @@
 - `box.controller.ts`
 - `customer-order.controller.ts`
 - `pallet.controller.ts`
+- `box-stock.controller.ts`
 - `ship-history.controller.ts`
 - `ship-order.controller.ts`
 - `ship-return.controller.ts`
@@ -167,9 +181,12 @@
 - 주요 컨트롤러
 - `equip-master.controller.ts`
 - `daily-inspect.controller.ts`
+- `inspect-history.controller.ts`
+- `periodic-inspect.controller.ts`
 - `pm-plan.controller.ts`
 - `mold.controller.ts`
 - `consumable.controller.ts`
+- `sensor-monitor.controller.ts`
 - 대표 경로 접두사
 - `equipment/*`
 
@@ -177,15 +194,18 @@
 
 - `outsourcing`: `outsourcing.controller.ts`, `outsourcing/*`
 - `customs`: `customs.controller.ts`, `customs/*`
-- `consumables`: `consumables.controller.ts`, `consumables/*`
+- `consumables`: `consumables.controller.ts`, `consumable-label.controller.ts`, `consumable-stock.controller.ts`, `consumables/*`
 - `interface`: `interface.controller.ts`, `erp-material.controller.ts`, `interface/*`
 
 ### 운영
 
-- `system`: `activity-log.controller.ts`, `comm-config.controller.ts`, `document.controller.ts`, `training.controller.ts`
+- `system`: `activity-log.controller.ts`, `comm-config.controller.ts`, `document.controller.ts`, `er-view.controller.ts`, `impr-request.controller.ts`, `pda-role.controller.ts`, `sys-config.controller.ts`, `table-schema.controller.ts`, `training.controller.ts`
 - `scheduler`: `scheduler/*` 계열 컨트롤러와 실행기
 - `workflow`: `workflow.controller.ts`, `workflow/summary`
 - `dashboard`: `dashboard.controller.ts`, `dashboard/*`
+- `ai`: `ai.controller.ts`, `ai/*`
+- `ai-page-tools`: `ai-page-tools.controller.ts`, `ai-page-tools/*`
+- `menu-categories`: `menu-categories.controller.ts`, `menu-category-items.controller.ts`, `menu-categories/*`
 
 ## API 문서 사용 주의사항
 
@@ -195,6 +215,6 @@
 
 ## 함께 읽을 문서
 
-- [backend-module-index.md](C:/Project/HANES/docs/core/backend-module-index.md)
-- [api-contract-guide.md](C:/Project/HANES/docs/core/api-contract-guide.md)
-- [domain-workflows.md](C:/Project/HANES/docs/core/domain-workflows.md)
+- [backend-module-index.md](./backend-module-index.md)
+- [api-contract-guide.md](../standards/api-contract-guide.md)
+- [domain-workflows.md](../workflows/domain-workflows.md)

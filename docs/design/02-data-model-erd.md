@@ -21,6 +21,7 @@
 - `company-master.entity.ts`
 - `pda-role.entity.ts`
 - `pda-role-menu.entity.ts`
+- `user-auth.entity.ts`
 
 ### 기준정보
 
@@ -38,6 +39,14 @@
 - `work-calendar-day.entity.ts`
 - `shift-pattern.entity.ts`
 - `com-code.entity.ts` 계열
+- `menu-category.entity.ts`
+- `menu-category-item.entity.ts`
+- `model-suffix.entity.ts`
+- `plant.entity.ts`
+- `vendor-barcode-mapping.entity.ts`
+- `vendor-inspection-mode-history.entity.ts`
+- `warehouse-location.entity.ts`
+- `warehouse-transfer-rule.entity.ts`
 
 ### 자재 / 재고
 
@@ -55,6 +64,12 @@
 - `inv-adj-log.entity.ts`
 - `physical-inv-session.entity.ts`
 - `physical-inv-count-detail.entity.ts`
+- `mat-arrival-stock.entity.ts`
+- `mat-arrival-transaction.entity.ts`
+- `wip-mat-stock.entity.ts`
+- `wip-mat-transaction.entity.ts`
+- `job-material-lot.entity.ts`
+- `label-print-log.entity.ts`
 
 ### 생산
 
@@ -66,6 +81,14 @@
 - `product-stock.entity.ts`
 - `product-transaction.entity.ts`
 - `fg-label.entity.ts`
+- `sg-label.entity.ts`
+- `product-genealogy.entity.ts`
+- `process-equipment.entity.ts`
+- `process-map.entity.ts`
+- `process-quality-condition.entity.ts`
+- `routing-group.entity.ts`
+- `routing-material.entity.ts`
+- `routing-process.entity.ts`
 
 ### 품질
 
@@ -92,6 +115,24 @@
 - `change-order.entity.ts`
 - `customer-complaint.entity.ts`
 - `ppap-submission.entity.ts`
+- `iqc-aql-policy.entity.ts`
+- `iqc-item-master.entity.ts`
+- `iqc-item-pool.entity.ts`
+- `iqc-part-spec.entity.ts`
+- `iqc-part-spec-item.entity.ts`
+- `iqc-template.entity.ts`
+- `iqc-template-item.entity.ts`
+- `aql-sampling-rule.entity.ts`
+- `aql-standard.entity.ts`
+- `defect-category-master.entity.ts`
+- `defect-code-master.entity.ts`
+- `defect-code-product-type.entity.ts`
+- `self-inspect-item.entity.ts`
+- `self-inspect-result.entity.ts`
+- `impr-request.entity.ts`
+- `repair-log.entity.ts`
+- `repair-order.entity.ts`
+- `repair-used-part.entity.ts`
 
 ### 출하
 
@@ -122,6 +163,8 @@
 - `pm-work-order.entity.ts`
 - `pm-wo-result.entity.ts`
 - `inter-log.entity.ts`
+- `equip-condition-rule.entity.ts`
+- `equip-inspect-item-pool.entity.ts`
 
 ### 외주 / 통관 / 소모품
 
@@ -135,6 +178,7 @@
 - `consumable-stock.entity.ts`
 - `consumable-log.entity.ts`
 - `consumable-mount-log.entity.ts`
+- `consumable-usage-map.entity.ts`
 
 ### 시스템 / 운영
 
@@ -149,6 +193,10 @@
 - `training-result.entity.ts`
 - `num-rule-master.entity.ts`
 - `seq-rule.entity.ts`
+- `harness-circuit-spec.entity.ts`
+- `harness-drawing-master.entity.ts`
+- `harness-drawing-revision.entity.ts`
+- `sensor-data-log.entity.ts`
 
 ## 대표 관계 축
 
@@ -180,5 +228,5 @@ erDiagram
 1. 이 문서는 컬럼 사전이 아니다.
 2. 엔티티 군과 관계 축을 먼저 이해하는 용도로 사용한다.
 3. 컬럼 타입, 인덱스, FK 세부는 엔티티 파일을 직접 확인한다.
-4. 실제 업무 흐름은 [domain-workflows.md](C:/Project/HANES/docs/core/domain-workflows.md)와 [05-production-process-flow.md](C:/Project/HANES/docs/core/05-production-process-flow.md)를 함께 본다.
-5. 엔티티 설계 규칙 자체는 [entity-design-guide.md](C:/Project/HANES/docs/core/entity-design-guide.md)를 기준으로 본다.
+4. 실제 업무 흐름은 [domain-workflows.md](../workflows/domain-workflows.md)와 [05-production-process-flow.md](../workflows/05-production-process-flow.md)를 함께 본다.
+5. 엔티티 설계 규칙 자체는 [entity-design-guide.md](../standards/entity-design-guide.md)를 기준으로 본다.

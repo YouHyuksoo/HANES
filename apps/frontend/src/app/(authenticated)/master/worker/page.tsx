@@ -20,9 +20,11 @@ import { ColumnDef } from "@tanstack/react-table";
 import { WorkerAvatar } from "@/components/worker/WorkerSelector";
 import { Worker } from "./types";
 import { api } from "@/services/api";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import WorkerFormPanel from "./components/WorkerFormPanel";
 
 export default function WorkerPage() {
+  usePageAiTools("master.worker");
   const { t } = useTranslation();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(false);

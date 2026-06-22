@@ -13,11 +13,11 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Workflow, RefreshCw } from "lucide-react";
 import { Button, Modal, Select, ConfirmModal } from "@/components/ui";
-import { useComCodeOptions } from "@/hooks/useComCode";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import api from "@/services/api";
 import ProcessList, { type Process } from "./components/ProcessList";
 import ProcessEquipGrid from "./components/ProcessEquipGrid";
-import { FieldComCodeSelect, FieldInput, FieldSelect } from "./components/ProcessFieldHelp";
+import { FieldComCodeSelect, FieldInput } from "./components/ProcessFieldHelp";
 
 interface Equipment {
   equipCode: string;
@@ -32,6 +32,7 @@ interface Equipment {
 
 export default function ProcessPage() {
   const { t } = useTranslation();
+  usePageAiTools("master.process");
 
   /* ── 공정 목록 상태 ── */
   const [processes, setProcesses] = useState<Process[]>([]);
@@ -56,8 +57,6 @@ export default function ProcessPage() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignEquipCode, setAssignEquipCode] = useState("");
 
-  const processTypeOptions = useComCodeOptions("PROCESS_TYPE");
-  const processCategoryOptions = useComCodeOptions("PROCESS_CATEGORY");
 
   /* ── 공정 목록 조회 ── */
   const fetchProcesses = useCallback(async () => {
@@ -315,10 +314,11 @@ export default function ProcessPage() {
             disabled={!!editingItem}
             required
           />
-          <FieldSelect
+          <FieldComCodeSelect
             field="processType"
+            groupCode="PROCESS_TYPE"
+            includeAll={false}
             label={t("master.process.processType")}
-            options={processTypeOptions}
             value={formData.processType || ""}
             onChange={(v) => setFormData((p) => ({ ...p, processType: v }))}
             required
@@ -333,10 +333,11 @@ export default function ProcessPage() {
             required
             wrapperClassName="col-span-2"
           />
-          <FieldSelect
+          <FieldComCodeSelect
             field="processCategory"
+            groupCode="PROCESS_CATEGORY"
+            includeAll={false}
             label={t("master.process.processCategory")}
-            options={processCategoryOptions}
             value={formData.processCategory || ""}
             onChange={(v) =>
               setFormData((p) => ({ ...p, processCategory: v }))

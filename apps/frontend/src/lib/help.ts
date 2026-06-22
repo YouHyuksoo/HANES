@@ -17,9 +17,10 @@ export interface HelpManifest {
   categories: HelpManifestCategory[];
 }
 
-/** 도움말 Markdown 파일 경로 (public 기준 절대경로) */
-export function helpDocPath(tab: HelpTab, menuCode: string): string {
-  return `/help/${tab}/${menuCode}.md`;
+/** 도움말 Markdown 파일 경로 (public 기준 절대경로). lang 미지정 시 ko 사용 */
+export function helpDocPath(tab: HelpTab, menuCode: string, lang?: string): string {
+  const l = lang ?? "ko";
+  return `/help/${tab}/${l}/${menuCode}.md`;
 }
 
 /** 제목 부분일치(대소문자 무시)로 목차 필터. 빈 query면 원본 반환 */

@@ -19,10 +19,12 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import WorkInstructionFormPanel, { getWorkInstructionKey, type WorkInstruction } from "./components/WorkInstructionFormPanel";
 import WorkInstructionPreviewPanel from "./components/WorkInstructionPreviewPanel";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 
 type PanelMode = "none" | "preview" | "edit";
 
 export default function WorkInstructionPage() {
+  usePageAiTools("master.work-instruction");
   const { t } = useTranslation();
   const [data, setData] = useState<WorkInstruction[]>([]);
   const [loading, setLoading] = useState(false);

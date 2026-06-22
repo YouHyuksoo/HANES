@@ -12,10 +12,14 @@ import { useState, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { GitBranch } from "lucide-react";
 import ProdLineTab from "@/components/master/ProdLineTab";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 
 export default function ProdLinePage() {
   const { t } = useTranslation();
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
+
+  // AI 채팅 페이지 도구(생산라인 등록/수정/삭제 write 도구) 등록 — backend 실행
+  usePageAiTools("master.prod-line");
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

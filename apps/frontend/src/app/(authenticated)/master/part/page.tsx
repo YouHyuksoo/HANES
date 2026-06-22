@@ -21,6 +21,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { createPartColumns, createUnitColumn } from "@/lib/table-utils";
 import { Part, PART_TYPE_COLORS } from "./types";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 
 import PartFormPanel from "./components/PartFormPanel";
 
@@ -40,6 +41,7 @@ function PartImageThumb({ src, alt }: { src: string; alt: string }) {
 
 export default function PartPage() {
   const { t } = useTranslation();
+  usePageAiTools("master.part");
   const [parts, setParts] = useState<Part[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);

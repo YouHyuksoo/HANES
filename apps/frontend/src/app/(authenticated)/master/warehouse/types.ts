@@ -10,7 +10,7 @@ export interface WarehouseData {
   plantCode?: string;
   lineCode?: string;
   processCode?: string;
-  vendorId?: string;
+  vendorCode?: string;
   isDefault: boolean;
   useYn: string;
   createdAt: string;

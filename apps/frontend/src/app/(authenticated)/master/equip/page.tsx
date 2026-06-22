@@ -16,10 +16,12 @@ import { useTranslation } from "react-i18next";
 import { Monitor, Package } from "lucide-react";
 import EquipMasterTab from "./components/EquipMasterTab";
 import EquipBomTab from "./components/EquipBomTab";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 
 type TabValue = "masters" | "bom";
 
 export default function EquipPage() {
+  usePageAiTools("master.equip");
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabValue>("masters");
   const [headerActions, setHeaderActions] = useState<ReactNode | null>(null);

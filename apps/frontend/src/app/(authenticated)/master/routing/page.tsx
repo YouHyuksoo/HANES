@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, Route } from "lucide-react";
 import { Button, Card, CardContent } from "@/components/ui";
+import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import RoutingGroupManager from "./components/RoutingGroupManager";
 import QualityConditionEditor from "./components/QualityConditionEditor";
 import RoutingMaterialEditor from "./components/RoutingMaterialEditor";
@@ -11,6 +12,7 @@ import SelfInspectConfigEditor from "./components/SelfInspectConfigEditor";
 import type { SelectedProcess } from "./types";
 
 export default function RoutingPage() {
+  usePageAiTools("master.routing");
   const { t } = useTranslation();
   const [selectedProcess, setSelectedProcess] = useState<SelectedProcess | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<"conditions" | "materials" | "selfinspect">("conditions");

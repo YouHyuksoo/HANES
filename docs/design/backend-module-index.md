@@ -34,6 +34,9 @@
 | `system` | 시스템 설정, 문서, 교육, 활동 로그 | 다수 컨트롤러/서비스 조합 |
 | `workflow` | 워크플로우 요약 API | 단일 모듈 |
 | `dashboard` | 대시보드 집계 | 단일 모듈 |
+| `ai` | AI 채팅, AI 테이블 카탈로그 | 다수 서비스 조합 |
+| `ai-page-tools` | AI Page Tool 워크플로우 (도구 등록/초안 반영/실행 로그) | 단일 모듈 |
+| `menu-categories` | 사이드바 메뉴 카테고리 배치/관리 | 다수 컨트롤러/서비스 조합 |
 
 ## 도메인별 상세 인덱스
 
@@ -71,10 +74,11 @@
 - `department.controller.ts`
 - `equip-bom.controller.ts`
 - `equip-inspect.controller.ts`
-- `iqc-group.controller.ts`
+- `equip-inspect-item-pool.controller.ts`
 - `iqc-item.controller.ts`
 - `iqc-item-pool.controller.ts`
-- `iqc-part-link.controller.ts`
+- `iqc-part-spec.controller.ts`
+- `iqc-template.controller.ts`
 - `label-template.controller.ts`
 - `model-suffix.controller.ts`
 - `part.controller.ts`
@@ -98,10 +102,11 @@
 - `department.service.ts`
 - `equip-bom.service.ts`
 - `equip-inspect.service.ts`
-- `iqc-group.service.ts`
+- `equip-inspect-item-pool.service.ts` 계열
 - `iqc-item.service.ts`
 - `iqc-item-pool.service.ts`
-- `iqc-part-link.service.ts`
+- `iqc-part-spec.service.ts`
+- `iqc-template.service.ts`
 - `label-template.service.ts`
 - `model-suffix.service.ts`
 - `part.service.ts`
@@ -168,6 +173,8 @@
 - `scrap.service.ts`
 - `shelf-life.service.ts`
 - `shelf-life-reinspect.service.ts`
+- `concession.service.ts`
+- `shelf-life-reinspect.service.ts`
 - 대표 API 접두사
 - `material/*`
 
@@ -176,14 +183,18 @@
 - 역할: 완제품 재고, 완제품 실사, 창고, 제품 보류
 - 대표 컨트롤러
 - `inventory.controller.ts`
+- `inventory-query.controller.ts`
 - `product-physical-inv.controller.ts`
-- `warehouse.controller.ts`
+- `warehouse-location.controller.ts`
 - `product-hold.controller.ts` 계열
 - 대표 서비스
 - `inventory.service.ts`
+- `inventory-query.service.ts`
 - `product-inventory.service.ts`
 - `product-physical-inv.service.ts`
 - `warehouse.service.ts`
+- `warehouse-location.service.ts`
+- `wip-mat-stock.service.ts`
 - `product-hold.service.ts`
 - 대표 API 접두사
 - `inventory/*`
@@ -193,13 +204,18 @@
 - 역할: 생산계획, 작업지시, 생산실적, 자동출고, 시뮬레이션, 생산 조회
 - 주요 컨트롤러
 - `job-order.controller.ts`
+- `job-material-lot.controller.ts`
+- `kiosk-consumable.controller.ts`
 - `prod-plan.controller.ts`
 - `prod-result.controller.ts`
 - `product-label.controller.ts`
+- `production-specification.controller.ts`
 - `production-views.controller.ts`
 - `repair.controller.ts`
 - `sample-inspect.controller.ts`
+- `self-inspect.controller.ts`
 - `simulation.controller.ts`
+- `subprocess-kitting.controller.ts`
 - 주요 서비스
 - `auto-issue.service.ts`
 - `auto-plan.service.ts`
@@ -212,6 +228,11 @@
 - `sample-inspect.service.ts`
 - `simulation-data.service.ts`
 - `simulation.service.ts`
+- `job-material-lot.service.ts`
+- `kiosk-consumable.service.ts`
+- `production-specification.service.ts`
+- `self-inspect.service.ts`
+- `subprocess-kitting.service.ts`
 - `simulation-helper.ts`
 - 대표 API 접두사
 - `production/*`
@@ -229,6 +250,8 @@
 - `oqc`: 출하 검사
 - `ppap`: PPAP
 - `rework`: 재작업
+- `aql`: AQL 기준 관리 및 자동 판정 엔진
+- `defect-codes`: 불량코드 마스터 (category/code/product-type)
 - `spc`: SPC, MSA
 - 대표 API 접두사
 - `quality/*`
@@ -239,6 +262,7 @@
 - 주요 컨트롤러
 - `box.controller.ts`
 - `customer-order.controller.ts`
+- `box-stock.controller.ts`
 - `pallet.controller.ts`
 - `ship-history.controller.ts`
 - `ship-order.controller.ts`
@@ -261,15 +285,19 @@
 - 대표 컨트롤러
 - `equip-master.controller.ts`
 - `daily-inspect.controller.ts`
+- `inspect-history.controller.ts`
+- `periodic-inspect.controller.ts`
 - `pm-plan.controller.ts`
 - `mold.controller.ts`
 - `consumable.controller.ts`
+- `sensor-monitor.controller.ts`
 - 대표 서비스
 - `equip-master.service.ts`
 - `equip-inspect.service.ts`
 - `pm-plan.service.ts`
 - `mold.service.ts`
 - `consumable.service.ts`
+- `sensor-monitor.service.ts`
 - 대표 API 접두사
 - `equipment/*`
 
@@ -298,8 +326,11 @@
 - 역할: 일반 소모품 수불 및 재고
 - 대표 컨트롤러
 - `consumables.controller.ts`
+- `consumable-label.controller.ts`
+- `consumable-stock.controller.ts`
 - 대표 서비스
 - `consumables.service.ts`
+- `consumable-label.service.ts`
 - 대표 API 접두사
 - `consumables/*`
 
@@ -328,6 +359,8 @@
 - `scheduler-job.service.ts`
 - `scheduler-log.service.ts`
 - `scheduler-noti.service.ts`
+- `db-backup.service.ts`
+- `scheduler-runner.service.ts`
 - `sql.executor.ts`
 - 대표 API 접두사
 - `scheduler/*`
@@ -339,11 +372,25 @@
 - `activity-log.controller.ts`
 - `comm-config.controller.ts`
 - `document.controller.ts`
+- `activity-log.controller.ts`
+- `comm-config.controller.ts`
+- `document.controller.ts`
+- `er-view.controller.ts`
+- `impr-request.controller.ts`
+- `pda-role.controller.ts`
+- `sys-config.controller.ts`
+- `table-schema.controller.ts`
 - `training.controller.ts`
 - 대표 서비스
 - `activity-log.service.ts`
 - `comm-config.service.ts`
 - `document.service.ts`
+- `er-view.service.ts`
+- `impr-request.service.ts`
+- `pda-role.service.ts`
+- `serial-test.service.ts`
+- `sys-config.service.ts`
+- `table-schema.service.ts`
 - `training.service.ts`
 - 대표 API 접두사
 - `system/*`
@@ -356,6 +403,39 @@
 - `workflow.service.ts`
 - 대표 API 접두사
 - `workflow/summary`
+
+#### `ai`
+
+- 역할: AI 채팅, AI 테이블 카탈로그, SQL 생성/검증
+- 대표 서비스
+- `ai.service.ts`
+- `ai-catalog.service.ts`
+- `ai-sql.service.ts`
+- `schema-info.service.ts`
+- `sql-validator.service.ts`
+- 대표 API 접두사
+- `ai/*`
+
+### `ai-page-tools`
+
+- 역할: AI Page Tool — 화면별 도구 등록, 초안 반영, 실행 로그
+- 대표 파일
+- `ai-page-tools.controller.ts`
+- `ai-page-tools.service.ts`
+- 대표 API 접두사
+- `ai-page-tools/*`
+
+### `menu-categories`
+
+- 역할: 사이드바 메뉴 카테고리 배치/관리, leaf 코드 화이트리스트 검증
+- 대표 컨트롤러
+- `menu-categories.controller.ts`
+- `menu-category-items.controller.ts`
+- 대표 서비스
+- `menu-categories.service.ts`
+- `menu-category-items.service.ts`
+- 대표 API 접두사
+- `menu-categories/*`
 
 ### `dashboard`
 
@@ -375,7 +455,7 @@
 
 ## 함께 읽을 문서
 
-- [01-system-architecture.md](C:/Project/HANES/docs/core/01-system-architecture.md)
-- [module-map.md](C:/Project/HANES/docs/core/module-map.md)
-- [domain-workflows.md](C:/Project/HANES/docs/core/domain-workflows.md)
-- [04-backend-api-endpoints.md](C:/Project/HANES/docs/core/04-backend-api-endpoints.md)
+- [01-system-architecture.md](./01-system-architecture.md)
+- [module-map.md](./module-map.md)
+- [domain-workflows.md](../workflows/domain-workflows.md)
+- [04-backend-api-endpoints.md](./04-backend-api-endpoints.md)
