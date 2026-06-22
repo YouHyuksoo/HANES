@@ -1918,6 +1918,16 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 변경: 서버 저장 시에도 `sampleBarcode`가 500바이트를 초과하면 `...(+N more)` 형태로 요약해 `IQC_LOGS.SAMPLE_BARCODE` 저장 실패를 방지한다.
 - 검증: RED 확인 후 GREEN. `node --test apps/frontend/src/components/material/iqc-modal-serial-flow.structure.test.mjs` 5/5 PASS, `pnpm.cmd --filter @harness/backend exec jest src/modules/material/services/iqc-history.service.spec.ts --runInBand` 20/20 PASS, IQC 모달/이력 구조 테스트 15/15 PASS, FE/BE typecheck PASS, 대상 파일 `git diff --check` PASS.
 
+# 2026-06-22 codex T-DEFECT-CATEGORY-CLASSIFICATION 불량분류 기준 재정의
+- 요청: 불량코드 1/2/3레벨 기준이 모호하므로 1레벨은 `IQC/LQC/OQC`, 2레벨은 제품류별, 3레벨은 `기능/외관/기타`로 정리. 다른 모델/제품류 불량코드가 표시되지 않도록 제품류 매핑을 강제.
+- 변경: `2026-06-21_defect_code_masters.sql` 초기 seed와 신규 `2026-06-22_reclassify_defect_categories.sql`를 같은 기준으로 보정했다. 활성 분류는 `IQC/LQC/OQC -> PRODUCT_TYPE -> FUNCTION/APPEARANCE/ETC` 코드 패턴을 사용한다.
+- 변경: 기존 12개 불량코드는 `MATERIAL/MAT -> IQC_WIRE_ETC`, `WORK/ASM/WELD -> LQC_HARNESS_ETC`, `FUNC -> OQC_HARNESS_FUNCTION`, `APP/MARK/BURR/CRACK/DIM -> OQC_HARNESS_APPEARANCE`, `ETC -> OQC_HARNESS_ETC`로 재분류했다.
+- 변경: 불량코드 옵션 조회에서 제품류 매핑이 없는 코드를 공통처럼 노출하지 않도록 `productType` 필터를 엄격화했다. `/quality/defect-code` 등록 저장은 선택한 2레벨 코드에서 제품류를 파생해 `productTypes`로 저장한다.
+- 검증: RED/GREEN 구조/서비스 테스트 PASS. `node --test apps/backend/src/modules/quality/defect-codes/defect-code-source.structure.test.mjs` 3/3 PASS, `node --test "apps/frontend/src/app/(authenticated)/quality/defect-code/defect-code-master.structure.test.mjs"` 10/10 PASS, `pnpm.cmd --filter @harness/backend test -- src/modules/quality/defect-codes/services/defect-code.service.spec.ts --runInBand` 4/4 PASS.
+- 검증: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false` PASS, 대상 파일 `git diff --check` PASS.
+- DB 검증: JSHANES에 `2026-06-22_reclassify_defect_categories.sql` 적용 PASS. 활성 분류는 1레벨 3건, 2레벨 48건, 3레벨 144건. 기존 구분 18건은 `USE_YN='N'`. 제품류 매핑은 HARNESS 10건, WIRE 2건.
+- 참고: 3002/3003 dev server는 사용자 요청대로 재시작하지 않았다. 스키마 변경은 없어서 ERD는 갱신하지 않았다.
+
 # 2026-06-21 codex T-PRODUCTION-ORDER-EDIT-SYNC 생산지시 수정패널 선택행 동기화
 - 요청: `/production/order`에서 우측 수정패널이 열린 상태로 좌측 그리드 행을 변경하면 수정패널 내용도 같이 변경되어야 함. 추가 요청으로 우측 폼의 라인/공정 필드를 한 행에 배치.
 - 원인: 좌측 행 클릭 핸들러는 `selectedRow`만 토글하고, 수정패널의 source인 `editingOrder`는 갱신하지 않아 패널 폼이 최초 수정 대상에 머물렀다.
@@ -1934,3 +1944,80 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 변경: ko/en/zh/vi locale에 `/quality/defect-code` 전용 문구와 등급 표시 키를 추가했다.
 - 검증: RED 구조 테스트로 raw label/enum 노출 실패 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/quality/defect-code/defect-code-master.structure.test.mjs"` 7/7 PASS, locale JSON parse PASS, raw label/enum 검색 매칭 없음, `git diff --check` PASS.
 - 참고: 전체 frontend typecheck는 다른 통합검사 변경(`apps/frontend/src/app/(authenticated)/inspection/integrated/**`)의 `IntegratedInspectPanel` prop 불일치로 실패했다. 해당 파일들은 이번 보정 범위가 아니다.
+
+# 2026-06-21 codex T-DEFECT-CODE-MASTER 불량코드관리 화면 단순화
+- 요청: 사용자가 원한 것은 좌측에 등록된 불량 전체 그리드가 나오고, 등록 시 1/2/3레벨을 선택하는 간결한 구조였음. 기존 좌측 분류 트리 + 중간 코드목록 + 우측 폼은 복잡하다고 지적.
+- 변경: `/quality/defect-code`를 2컬럼으로 재구성했다. 좌측은 `등록된 불량 전체` 그리드이며 검색만 적용하고 분류 선택으로 목록을 필터링하지 않는다.
+- 변경: 우측 불량코드 등록/수정 폼에서 `1레벨 -> 2레벨 -> 3레벨` Select를 순차 선택하고, 선택된 3레벨 categoryCode로 저장한다. 기존 `CategoryNode` 트리와 `params.categoryCode` 조회 필터를 제거했다.
+- 변경: 분류 관리는 우측 하단 `분류 빠른 추가`로 축소했다. 목록의 등급/적용범위/사용여부는 raw 코드값 대신 번역 표시로 렌더링한다.
+- 검증: 구조 테스트 RED 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/quality/defect-code/defect-code-master.structure.test.mjs"` 7/7 PASS, locale JSON parse PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 트리/분류필터 잔재 검색 매칭 없음, `git diff --check` PASS.
+- 참고: 사용자 요청대로 3002/3003 dev server는 재시작하지 않았다.
+
+# 2026-06-22 codex T-DEFECT-CODE-GRID-LEVEL-COLUMNS 불량코드관리 그리드 레벨 컬럼 분리
+- 요청: `/quality/defect-code` 좌측 그리드에서 1/2/3레벨 분류를 구분해서 표시.
+- 변경: 기존 단일 `분류` 경로 컬럼을 `1레벨`, `2레벨`, `3레벨` 컬럼으로 분리했다. `categoryLevels()`가 3레벨 categoryCode에서 부모를 역추적해 각 레벨명을 채운다.
+- 검증: 구조 테스트 RED 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/quality/defect-code/defect-code-master.structure.test.mjs"` 8/8 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 대상 파일 `git diff --check` PASS.
+- 참고: 3002/3003 dev server는 재시작하지 않았다.
+
+# 2026-06-22 codex T-DEFECT-CODE-PAGE-HEIGHT 불량코드관리 화면 높이 overflow 보정
+- 요청: `/quality/defect-code` 화면 하단이 화면을 벗어남.
+- 원인: 본문 grid가 `h-[calc(100vh-150px)]` 고정 높이를 사용해 페이지 padding/header와 합쳐질 때 부모 화면 높이를 초과할 수 있었다.
+- 변경: 페이지 루트를 `flex flex-col`로 바꾸고 헤더는 `shrink-0`, 본문 grid는 `flex-1 min-h-0`로 변경해 남은 높이 안에서 좌측 그리드/우측 폼이 내부 스크롤되게 했다.
+- 검증: 구조 테스트 RED 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/quality/defect-code/defect-code-master.structure.test.mjs"` 9/9 PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 대상 파일 `git diff --check` PASS.
+- 참고: 3002/3003 dev server는 재시작하지 않았다.
+
+# 2026-06-21 claude T-VENDOR-NAME-MATERIAL 입하·입고·수불 화면 공급사 업체명 표시
+- 요청: `/material/iqc`, `/material/arrival-result`, `/material/arrival-transaction` 공급사 코드만 표시 지적 후, 입하·입고·수불 계열 전체 점검 요청.
+- 점검: material 17개 화면을 Explore 3개로 점검. 정상 3건(arrival/arrival-stock/receive-label), 코드만표시 7건, 컬럼없음 2건(iqc-history/stock), 개념부적절 1건(misc-receipt), 입고취소는 별도 enrichment 누락 의심.
+- 변경(BE): receiving/mat-lot/hold/shelf-life/lot-split/lot-merge/iqc-history/mat-stock 서비스 findAll에 PARTNER_MASTERS IN절 일괄조회(company/plant 스코프)로 vendorName 매핑 추가. lot.vendor(=PARTNER_CODE)→PARTNER_NAME. N+1 없음, as any 없음. 각 모듈 forFeature에 PartnerMaster 등록(lot/inventory-control/receiving).
+- 변경(FE): 코드만표시 7건은 vendor 컬럼 cell을 `vendorName || vendor || '-'`로, iqc-history/stock은 공급사 컬럼 신규 추가(헤더 기존 키 `material.arrivalResult.supplier` 재사용).
+- 선행 직접수정 3건: iqc(pending-arrivals PARTNER JOIN), arrival-result(그리드 공급사 컬럼+오늘날짜 기본), arrival-transaction(그리드 공급사 컬럼+i18n vendor 키 4파일).
+- 검증: BE/FE `tsc --noEmit` PASS, 모듈 forFeature PartnerMaster 등록 확인(DI 부팅 안전), DB 실측 vendor↔PARTNER_NAME 매칭 확인(VND-001=한국단자공업, SUPL001=(주)행성테크놀러지).
+- 미처리(범위밖, 한줄보고): 두 입고화면 공급사 필터/distinct는 여전히 vendor 코드 기준. 입고취소(receipt-cancel) raw StockTransaction enrichment 누락(공급사+품목명+창고명) 별도 사안. stock은 dev 재시작 후 화면 확인 필요.
+- 참고: locales(ko/en/zh/vi)는 codex 잠금 중이라 미수정, 기존 키 재사용. dev server 미재시작.
+
+# 2026-06-21 claude T-RECEIPT-CANCEL-FIX 입고취소 화면 enrichment+transType 버그 수정
+- 발견: `receipt-cancel.service.ts`가 (1) raw StockTransaction 반환으로 id/품목명/단위/창고명/공급사 누락(프론트 id 없으면 취소 동작 불가), (2) findCancellable/cancel이 transType='RECEIPT'로 필터하나 실제 입고는 'RECEIVE'(receiving.service:539, DB 실측 RECEIVE만 존재)라 화면이 항상 빈 목록+취소 불가.
+- 변경(BE): findCancellable에 PartMaster/Warehouse/MatLot+PartnerMaster IN절 enrichment 추가(id=transNo, itemName, unit, warehouseName, vendor/vendorName). transType 필터·cancel 체크 'RECEIPT'→'RECEIVE'. 역분개 transType('RECEIPT_CANCEL')은 이력 라벨이라 유지.
+- 변경(FE): receipt-cancel/page.tsx 공급사 컬럼 추가(헤더 기존 키 material.arrivalResult.supplier 재사용), 인터페이스 vendorName 추가.
+- 변경(test): spec providers에 PartMaster/PartnerMaster/Warehouse mock 추가, cancel 모킹 transType RECEIPT→RECEIVE.
+- 검증: BE tsc PASS, jest receipt-cancel.service.spec 10/10 PASS, DB 실측 enrichment 매칭 확인(TX20260619-00113=케이블B/MM/원자재창고/대한전선).
+- 미처리(범위밖): 원본 RECEIVE의 status가 취소 후에도 DONE 유지→receivedQty(SUM RECEIVE) 미감소 가능성. cancelRefId로 목록 제외는 정상. search 파라미터 백엔드 미사용. dev server 미재시작.
+
+# 2026-06-21 claude T-RECEIPT-CANCEL-FIX 후속(잔여 2건 처리)
+- 변경1(BE): cancel 시 원본 RECEIVE 트랜잭션 status='CANCELED' 설정 추가. receiving.service의 기입고수량 SUM(transType='RECEIVE' AND status='DONE')에서 제외→취소 후 LOT 잔여 입고수량/재입고 정상 복구. (역분개 RECEIPT_CANCEL 이력은 유지)
+- 변경2(BE): findCancellable에 search 적용(거래번호/품목코드/시리얼 LIKE OR, fromDate·toDate 포함 baseWhere). 기존 미사용 파라미터 활성화. 품목명 검색은 enrich 전이라 코드 기준 한정.
+- 변경(test): cancel 정상처리 원본 update 검증에 status:'CANCELED' 반영.
+- 검증: BE tsc PASS, jest receipt-cancel.service.spec 10/10 PASS.
+
+# 2026-06-21 claude T-DEADFILTER-AUDIT 상태 문자열 상수(기록≠조회) 죽은필터 전수점검
+- 동기: 입고취소 RECEIPT≠RECEIVE 버그와 동형(기록값과 조회값 리터럴 불일치)이 다른 곳에도 있는지 점검 요청.
+- 방법: StockTransaction/MatArrivalTransaction/MatArrival/MatReceiving/MatIssue/MatLot의 transType/status/refType 등 생성(W) vs 조회(R) 리터럴 집합 대조 + DB 실측.
+- 발견3: (1) receipt-cancel.service refType==='PO' PO receivedQty 차감(죽은필터, DB PO 0건, 게다가 PO수량은 입하단계 관리라 살리면 이중차감) (2) arrival.service:211-220 refType='RETURN'+MAT_IN_CANCEL 반품합계(죽은필터, DB 0건, RETURN/MAT_IN 기록경로 없음) (3) prod-result:1250 PROD_CONSUME 삼항(StockTx에선 미성립→항상 else MAT_IN, 영향 제한적).
+- 변경(BE): receipt-cancel.service.ts의 PO receivedQty 차감 블록 제거 + 미사용 PurchaseOrderItem import/주입 제거. spec 동기화. BE tsc PASS, spec 10/10 PASS.
+- 미처리(보고만): #2 arrival RETURN/MAT_IN_CANCEL(반품 미구현 placeholder 추정, 현재 무해), #3 prod-result PROD_CONSUME(역분개 라벨, 영향 제한적). 사용자 판단 대기.
+- 정상확인: status(DONE/CANCELED), MatArrival/MatReceiving/MatIssue/MatLot 상태값은 기록↔조회 일관. ARRIVAL_IN/WIP_IN/FG_IN 등은 별도 테이블 소속(오탐 아님).
+
+# 2026-06-21 claude T-DEADFILTER-AUDIT 후속(#2,#3 처리 + 죽은 spec 발견)
+- #2(BE): arrival.service.ts 입하잔량 검증의 RETURN/MAT_IN_CANCEL 반품합계(returnTxs/returnQtyMap) 제거 → remaining=orderQty-receivedQty. 입하취소가 receivedQty 직접 감소시켜 잔량 복원, 별도 반품보정은 항상 0인 데드코드+이중복원 위험이라 제거. poItemCodes 미사용 제거.
+- #3(BE): prod-result.service.ts 자재투입 역분개 삼항(transType==='PROD_CONSUME'?'PROD_CONSUME_CANCEL':'MAT_IN') → 'MAT_IN' 고정. 이 루프는 refType='MAT_ISSUE' StockTransaction만 조회하며 그 transType은 MAT_OUT/WIP_IN뿐(PROD_CONSUME는 WIP_MAT_TRANSACTIONS 소속, DB 0건)이라 PROD_CONSUME 가지는 도달불가. 동작 불변(항상 MAT_IN)+주석 명확화.
+- 검증: BE tsc PASS.
+- 발견(별개 기존이슈): arrival.service.po-line.spec(5) + prod-result.cancel.spec(5) = DI provider 누락으로 모듈 compile 단계에서 전체 실패. git stash로 변경 전 원본에서도 동일 10/10 실패 확인 → 내 변경 무관, 서비스 생성자에 의존성 추가(예: ArrivalService PartnerMaster) 후 spec providers 미동기화로 추정. 핵심 로직(입하 PO라인 검증, 생산실적 취소 역분개) 테스트가 죽어있어 검증 0 상태. 수정은 범위밖이라 미처리, 보고만.
+
+# 2026-06-22 claude T-DEADSPEC-REVIVE 죽은 백엔드 spec 31개 전수 복구
+- 동기: vendorName 작업서 PartnerMaster 주입 후 spec 미동기화로 깬 것 발견 → 백엔드 전체 죽은 spec 점검 요청.
+- 진단: 31개 suite 실패. (A)DI provider 누락 ~13서비스: 내가 깬 PartnerMaster 8 + 기존누락(arrival MatArrivalStock/MatArrivalTransaction, defect-log FgLabel/DefectCodeMaster, prod-plan RoutingProcess, prod-result WorkerMaster/WipMatStockService, production-views FgLabel/SgLabel, rework PartMaster/ProductInventoryService). (B)stale mock/기대값 ~18: 소스 리팩토링(N+1제거 QueryBuilder전환, parseDateStart timezone-safe, PRD_UID 비키화, ProductStock 2-part키) 미반영.
+- 조치: 5개 병렬 에이전트로 분담, 담당 spec만 수정(서비스/엔티티 불변). DI는 누락 provider createMock 보충, stale은 현재 동작에 맞춰 기대값 갱신(의미있는 expect 보존, 쿼리절 검증 강화). 실제 코드 버그 0건.
+- product-hold "코드버그 의심" 1건은 직접 검증: 엔티티PK+실DB PK+커밋78d46411 대조 결과 PRD_UID 비키화 정상동작 확정 → spec stale로 수정(2-part키). 메모리 project_product_stock_prduid_sentinel 갱신(PRD_UID 비키화/센티넬'*' 폐기).
+- 검증: 백엔드 전체 jest 176 suites / 1830 tests ALL GREEN. tsc PASS.
+- 교훈: DI 누락 spec은 compile 단계 실패라 핵심 로직 검증이 0이었음에도 방치됨(CI 미가동 의심). 사용자 원질문("왜 테스트서 안 드러났나")의 근본 원인 중 하나.
+
+# 2026-06-22 codex T-DEFECT-MODEL-GROUP-CLASSIFICATION 불량코드 2레벨 모델구분 보정
+- 요청: 불량코드 2레벨은 제품류가 아니라 모델 구분(예: 저전압/고전압)이며, 필요하면 품목마스터에 추가하라는 사용자 정정 반영.
+- 변경(DB): `DEFECT_MODEL_GROUP` 공통코드 `LV`=저전압, `HV`=고전압을 추가하고, `ITEM_MASTERS.DEFECT_MODEL_GROUP` 컬럼을 추가했다. 기존 JSHANES 품목 36건은 기본 `LV`로 백필했다.
+- 변경(분류): `/quality/defect-code` 분류 seed/reclass 기준을 1레벨 `IQC/LQC/OQC`, 2레벨 `DEFECT_MODEL_GROUP`, 3레벨 `FUNCTION/APPEARANCE/ETC`로 재정의했다. 이전에 생성된 제품류 기반 stage 하위 분류는 동적 cleanup으로 비활성화한다.
+- 변경(IQC): `GET /material/iqc-history/pending-arrivals`가 품목의 `defectModelGroup`를 반환하고, `useIqcData`/`IqcModal`이 `/quality/defect-codes/options`에 해당 값을 `productType` 파라미터로 전달해 다른 모델구분 불량코드가 섞이지 않게 했다.
+- 변경(문구): 내부 호환명 `PRODUCT_TYPE`/`productType`은 유지하되 DTO 설명과 DB comment는 `모델구분`으로 보정했다.
+- DB 검증(JSHANES): `COM_CODES.DEFECT_MODEL_GROUP` 2건(LV/HV), `ITEM_MASTERS.DEFECT_MODEL_GROUP` LV 36건, 활성 분류 1레벨 3건/2레벨 6건/3레벨 18건, HARNESS/WIRE/TERMINAL/CONNECTOR 기반 활성 분류 0건, 불량코드 매핑 `PRODUCT_TYPE=LV` 12건 확인.
+- 검증: `2026-06-22_item_defect_model_group.sql` 및 `2026-06-22_reclassify_defect_categories.sql` JSHANES 적용/재실행 PASS, `python tools/generate_db_schema_doc.py` PASS, backend/frontend typecheck PASS, 구조 테스트 26건 PASS, `defect-code.service.spec.ts` 4건 PASS, 대상 파일 `git diff --check` PASS.
+- 참고: 3002/3003 dev server는 사용자 요청대로 재시작하지 않았다.

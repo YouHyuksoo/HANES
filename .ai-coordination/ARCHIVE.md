@@ -104,3 +104,4 @@ Format:
 - T-CONSUMABLE-LABEL-ISSUE-FEEDBACK | 2026-06-17 | codex | `/consumables/label` UID 발행 시 발행중/출력중/완료/실패 toast와 화면 배너를 표시하고 발행 UID 결과를 화면에 남김, 실제 API 발행 후 DB cleanup 잔여 0건 확인 | evidence: JOURNAL 2026-06-17 Codex
 - T-CONSUMABLE-LABEL-503-FEEDBACK | 2026-06-17 | codex | `/consumables/label` UID 발행 API 503 실패 시 AxiosError overlay 대신 서버 메시지를 toast/화면 배너로 표시하도록 보정, 503 mock 브라우저 검증 및 테스트 UID cleanup 완료 | evidence: JOURNAL 2026-06-17 Codex
 - T-CONSUMABLE-LABEL-ACTUAL-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 클릭 즉시 인쇄창을 먼저 열고 UID 생성 후 라벨 HTML과 `window.print()`를 주입하도록 보정, 실제 API 발행 후 cleanup 완료 | evidence: JOURNAL 2026-06-17 Codex
+- T-VENDOR-NAME-MATERIAL | 2026-06-21 | claude | 입하·입고·수불 계열 8개 서비스+프론트에 PARTNER_MASTERS JOIN으로 공급사 업체명(vendorName) 표시, iqc-history/stock 공급사 컬럼 신규 추가, BE/FE tsc PASS·DI 등록 확인 | evidence: JOURNAL 2026-06-21 claude
