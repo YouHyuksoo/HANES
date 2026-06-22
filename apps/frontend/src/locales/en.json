@@ -153,7 +153,8 @@
     "addSelectedItems": "Add Selected Items",
     "useY": "Use",
     "useN": "Not Used",
-    "preparing": "Coming soon."
+    "preparing": "Coming soon.",
+    "dateFilter": { "today": "Today", "recent7": "Last 7 Days", "thisMonth": "This Month" }
   },
   "help": {
     "title": "Help",
@@ -417,6 +418,7 @@
     "system.pdaRoles": "PDA Role Management",
     "system.document": "Document Control",
     "system.training": "Training",
+    "system.erView": "ER VIEW",
     "system.menuCategory": "Menu Category Management",
     "root": "Root",
     "system.improvementRequests": "Improvement Requests",

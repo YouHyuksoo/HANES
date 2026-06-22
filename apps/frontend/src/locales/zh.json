@@ -153,7 +153,8 @@
     "addSelectedItems": "添加所选品目",
     "useY": "使用",
     "useN": "不使用",
-    "preparing": "正在准备中。"
+    "preparing": "正在准备中。",
+    "dateFilter": { "today": "今天", "recent7": "最近7天", "thisMonth": "本月" }
   },
   "help": {
     "title": "帮助",
@@ -417,6 +418,7 @@
     "system.pdaRoles": "PDA角色管理",
     "system.document": "文档管理",
     "system.training": "培训管理",
+    "system.erView": "ER VIEW",
     "system.menuCategory": "菜单类别管理",
     "root": "顶级",
     "system.improvementRequests": "改善申请管理",

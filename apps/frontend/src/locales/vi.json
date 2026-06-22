@@ -153,7 +153,8 @@
     "addSelectedItems": "Thêm hàng đã chọn",
     "useY": "Sử dụng",
     "useN": "Không dùng",
-    "preparing": "Đang chuẩn bị."
+    "preparing": "Đang chuẩn bị.",
+    "dateFilter": { "today": "Hôm nay", "recent7": "7 ngày gần đây", "thisMonth": "Tháng này" }
   },
   "help": {
     "title": "Trợ giúp",
@@ -417,6 +418,7 @@
     "system.pdaRoles": "Quản lý vai trò PDA",
     "system.document": "Quản lý tài liệu",
     "system.training": "Quản lý đào tạo",
+    "system.erView": "ER VIEW",
     "system.menuCategory": "Quản lý danh mục menu",
     "root": "Cấp cao nhất",
     "system.improvementRequests": "Quản lý yêu cầu cải tiến",
