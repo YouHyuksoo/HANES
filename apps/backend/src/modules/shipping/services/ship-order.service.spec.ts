@@ -421,7 +421,7 @@ describe('ShipOrderService.shipBox', () => {
       expect.anything(),
       expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 2, transType: 'FG_OUT', refType: 'SHIP_ORDER', refId: 'SO1' }),
     );
-    expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), { status: 'SHIPPED' });
+    expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), expect.objectContaining({ status: 'SHIPPED', shipOrderNo: 'SO1', shippedAt: expect.any(Date) }));
     expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'SHIPPED' });
     expect(res.lineShippedQty).toBe(2);
     expect(res.fullyShipped).toBe(false);
@@ -514,7 +514,7 @@ describe('ShipOrderService.shipBox', () => {
       expect.anything(),
       expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 2, transType: 'FG_OUT_CANCEL', refType: 'SHIP_ORDER_CANCEL', refId: 'SO1' }),
     );
-    expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), { status: 'CLOSED' });
+    expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), expect.objectContaining({ status: 'CLOSED', shippedAt: null }));
     expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'PACKED' });
     expect(managed.update).toHaveBeenCalledWith(ShipmentOrderItem, expect.objectContaining({ shipOrderNo: 'SO1', seq: 1 }), { shippedQty: 0 });
     expect(managed.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO1' }), { status: 'CONFIRMED' });

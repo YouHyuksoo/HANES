@@ -514,7 +514,7 @@ export class ShipmentService {
         await queryRunner.manager.update(
           BoxMaster,
           { palletNo: In(palletIds), ...this.tenantWhere(company, plant) },
-          { status: 'SHIPPED' }
+          { status: 'SHIPPED', shipOrderNo: shipment.shipOrderNo ?? null, shippedAt: new Date() },
         );
       }
 
@@ -669,7 +669,7 @@ export class ShipmentService {
         await queryRunner.manager.update(
           BoxMaster,
           { palletNo: In(palletNos), ...this.tenantWhere(company, plant) },
-          { status: 'CLOSED' },
+          { status: 'CLOSED', shippedAt: null },
         );
       }
 
@@ -755,7 +755,7 @@ export class ShipmentService {
         await queryRunner.manager.update(
           BoxMaster,
           { palletNo: In(palletIds), ...this.tenantWhere(company, plant) },
-          { status: 'CLOSED' },
+          { status: 'CLOSED', shippedAt: null },
         );
       }
 

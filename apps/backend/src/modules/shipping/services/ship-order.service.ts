@@ -726,7 +726,7 @@ export class ShipOrderService {
       await qr.manager.update(
         BoxMaster,
         { palletNo: In(dto.palletNos), ...this.tenantWhere(company, plant) },
-        { status: 'SHIPPED' },
+        { status: 'SHIPPED', shipOrderNo, shippedAt: new Date() },
       );
       if (fgBarcodes.length > 0) {
         await qr.manager.update(FgLabel, { fgBarcode: In(fgBarcodes), ...this.tenantWhere(company, plant) }, { status: 'SHIPPED' });
@@ -839,7 +839,7 @@ export class ShipOrderService {
         plant,
       });
 
-      await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'SHIPPED' });
+      await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'SHIPPED', shipOrderNo, shippedAt: new Date() });
       if (serials.length > 0) {
         await qr.manager.update(FgLabel, { fgBarcode: In(serials), ...where }, { status: 'SHIPPED' });
       }
@@ -922,7 +922,7 @@ export class ShipOrderService {
         qty: box.qty,
       });
 
-      await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED' });
+      await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED', shippedAt: null });
       if (serials.length > 0) {
         await qr.manager.update(FgLabel, { fgBarcode: In(serials), ...where }, { status: 'PACKED' });
       }
