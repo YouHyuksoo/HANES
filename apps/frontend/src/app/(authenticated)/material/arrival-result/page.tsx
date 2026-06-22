@@ -346,7 +346,7 @@ export default function ArrivalResultPage() {
     },
     { accessorKey: "poNo", header: t("material.arrival.col.poNo"), size: 115, meta: { filterType: "text" as const } },
     { accessorKey: "lineNo", header: "L/N", size: 50, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center">{(getValue() as number) ?? "-"}</div> },
-    { accessorKey: "relNo", header: "R/N", size: 50, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center">{(getValue() as number) ?? "-"}</div> },
+    { accessorKey: "relNo", header: "R/N", size: 50, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number | null; return <div className="text-center">{v != null ? `R${v}` : "-"}</div>; } },
     { accessorKey: "arrivalDate", header: t("material.arrivalResult.col.arrivalDate", "입하일"), size: 105, meta: { filterType: "date" as const }, cell: ({ getValue }) => <div className="text-center">{fmtDate(getValue() as string)}</div> },
     { accessorKey: "createdAt", header: t("material.arrivalResult.col.createdAt", "등록일자"), size: 110, meta: { filterType: "date" as const }, cell: ({ getValue }) => <div className="text-center">{fmtDate(getValue() as string)}</div> },
     {

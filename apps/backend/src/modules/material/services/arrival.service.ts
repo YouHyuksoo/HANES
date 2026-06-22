@@ -609,7 +609,7 @@ export class ArrivalService {
       ` MAX(i."ITEM_NAME") AS "itemName", MAX(i."ITEM_TYPE") AS "itemType", MAX(NVL(i."IQC_FLAG",'N')) AS "iqcFlag",` +
       ` COUNT(CASE WHEN a."STATUS" <> 'CANCELED' THEN 1 END) AS "activeCount",` +
       ` (SELECT MIN(poi."LINE_NO") FROM "PURCHASE_ORDER_ITEMS" poi WHERE poi."PO_ID"=a."PO_NO" AND poi."ITEM_CODE"=a."ITEM_CODE" AND poi."COMPANY"=a."COMPANY" AND poi."PLANT_CD"=a."PLANT_CD") AS "lineNo",` +
-      ` (SELECT MIN(poi."REL_NO") FROM "PURCHASE_ORDER_ITEMS" poi WHERE poi."PO_ID"=a."PO_NO" AND poi."ITEM_CODE"=a."ITEM_CODE" AND poi."COMPANY"=a."COMPANY" AND poi."PLANT_CD"=a."PLANT_CD") AS "relNo",` +
+      ` NVL((SELECT MIN(poi."REV_NO") FROM "PURCHASE_ORDER_ITEMS" poi WHERE poi."PO_ID"=a."PO_NO" AND poi."ITEM_CODE"=a."ITEM_CODE" AND poi."COMPANY"=a."COMPANY" AND poi."PLANT_CD"=a."PLANT_CD"), 1) AS "relNo",` +
       // 제조사: 입하 시리얼(MAT_LOTS)의 MFG_PARTNER_CODE 기준 (제조사 변경은 그룹 일괄 갱신이라 대표값 MAX 사용)
       ` (SELECT MAX(ml."MFG_PARTNER_CODE") FROM "MAT_LOTS" ml WHERE ml."ARRIVAL_NO"=a."ARRIVAL_NO" AND ml."ITEM_CODE"=a."ITEM_CODE" AND ml."COMPANY"=a."COMPANY" AND ml."PLANT_CD"=a."PLANT_CD") AS "mfgPartnerCode",` +
       ` (SELECT MAX(pm."PARTNER_NAME") FROM "MAT_LOTS" ml JOIN "PARTNER_MASTERS" pm ON pm."PARTNER_CODE"=ml."MFG_PARTNER_CODE" WHERE ml."ARRIVAL_NO"=a."ARRIVAL_NO" AND ml."ITEM_CODE"=a."ITEM_CODE" AND ml."COMPANY"=a."COMPANY" AND ml."PLANT_CD"=a."PLANT_CD") AS "mfgPartnerName",` +
