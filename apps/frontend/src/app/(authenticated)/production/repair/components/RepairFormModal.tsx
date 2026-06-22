@@ -299,11 +299,9 @@ export default function RepairFormModal({
                           />
                         </td>
                         <td className="px-3 py-1.5">
-                          <input
-                            type="number"
+                          <QtyInput
                             value={part.qty}
-                            onChange={(e) => handlePartFieldChange(idx, "qty", Number(e.target.value))}
-                            min={1}
+                            onChange={(n) => handlePartFieldChange(idx, "qty", n)}
                             className="w-full px-2 py-1 text-xs text-center border border-border-default dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-text-primary dark:text-slate-200"
                           />
                         </td>
