@@ -7,10 +7,10 @@
 export type BarcodeFormat = "qrcode" | "datamatrix" | "code39" | "code128";
 
 /** 라벨 카테고리 */
-export type LabelCategory = "equip" | "jig" | "worker" | "mat_lot" | "box";
+export type LabelCategory = "equip" | "jig" | "worker" | "mat_lot" | "box" | "pallet";
 
 /** 라벨 데이터 소스 */
-export type LabelSourceTable = "equipment" | "consumable" | "worker" | "mat_lot" | "box";
+export type LabelSourceTable = "equipment" | "consumable" | "worker" | "mat_lot" | "box" | "pallet";
 
 /** 사용자가 디자인별로 구성하는 출력 필드 */
 export interface LabelSourceField {
@@ -241,6 +241,7 @@ const categorySourceTable: Record<LabelCategory, LabelSourceTable> = {
   worker: "worker",
   mat_lot: "mat_lot",
   box: "box",
+  pallet: "pallet",
 };
 
 export function createDefaultLabelDesign(category: LabelCategory): LabelDesign {
@@ -268,6 +269,14 @@ export function createDefaultLabelDesign(category: LabelCategory): LabelDesign {
       code: "boxNo",
       name: "itemName",
       sub: "qty",
+    });
+  }
+  if (category === "pallet") {
+    return remapDesignSource(DEFAULT_DESIGN, "pallet", {
+      barcode: "palletNo",
+      code: "palletNo",
+      name: "boxCount",
+      sub: "totalQty",
     });
   }
   return remapDesignSource(DEFAULT_DESIGN, sourceTable, {

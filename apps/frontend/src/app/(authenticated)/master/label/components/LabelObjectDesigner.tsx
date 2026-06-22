@@ -71,6 +71,7 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
     worker: t("master.label.srcWorker", "작업자"),
     mat_lot: t("master.label.srcMatLot", "자재 LOT"),
     box: t("master.label.srcBox", "제품포장"),
+    pallet: t("master.label.srcPallet", "팔레트"),
   };
   const canvasRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(design.elements?.[0]?.id ?? null);

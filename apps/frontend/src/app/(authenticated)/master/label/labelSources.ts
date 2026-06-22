@@ -12,6 +12,7 @@ export const categorySourceTable: Record<LabelCategory, LabelSourceTable> = {
   worker: "worker",
   mat_lot: "mat_lot",
   box: "box",
+  pallet: "pallet",
 };
 
 export const labelSources: Record<LabelSourceTable, LabelSourceDefinition> = {
@@ -71,6 +72,21 @@ export const labelSources: Record<LabelSourceTable, LabelSourceDefinition> = {
       { key: "qty", label: "수량", sample: "20" },
       { key: "boxQty", label: "박스입수량", sample: "20" },
       { key: "palletNo", label: "파렛트번호", sample: "PLT-260617-001" },
+    ],
+  },
+  pallet: {
+    table: "pallet",
+    label: "팔레트",
+    fields: [
+      { key: "palletNo", label: "팔레트번호", sample: "PLT2606170001" },
+      { key: "boxCount", label: "박스수", sample: "12" },
+      { key: "totalQty", label: "총수량", sample: "240" },
+      { key: "status", label: "상태", sample: "CLOSED" },
+      { key: "shipOrderNo", label: "출하지시번호", sample: "SO-260617-001" },
+      { key: "customerName", label: "고객사", sample: "HANES" },
+      { key: "itemCode", label: "대표제품코드", sample: "HNS02C1ABCD" },
+      { key: "itemName", label: "대표제품명", sample: "하네스 완제품" },
+      { key: "createdAt", label: "생성일시", sample: "2026-06-17 09:30" },
     ],
   },
 };

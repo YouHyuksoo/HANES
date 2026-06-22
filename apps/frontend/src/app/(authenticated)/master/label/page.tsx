@@ -26,6 +26,7 @@ const sourceCategoryMap: Record<LabelSourceTable, LabelCategory> = {
   worker: "worker",
   mat_lot: "mat_lot",
   box: "box",
+  pallet: "pallet",
 };
 
 function LabelPage() {
