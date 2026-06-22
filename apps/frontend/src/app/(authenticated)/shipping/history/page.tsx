@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
@@ -231,12 +232,7 @@ export default function ShipHistoryPage() {
                 <div className="w-36 flex-shrink-0">
                   <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
                 </div>
-                <div className="w-36 flex-shrink-0">
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} fullWidth />
-                </div>
-                <div className="w-36 flex-shrink-0">
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} fullWidth />
-                </div>
+                <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} className="flex-shrink-0" />
               </div>
             }
             sqlQuery={`SELECT *\nFROM SHIPPING_HISTORIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
