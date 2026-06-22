@@ -105,3 +105,8 @@ Format:
 - T-CONSUMABLE-LABEL-503-FEEDBACK | 2026-06-17 | codex | `/consumables/label` UID 발행 API 503 실패 시 AxiosError overlay 대신 서버 메시지를 toast/화면 배너로 표시하도록 보정, 503 mock 브라우저 검증 및 테스트 UID cleanup 완료 | evidence: JOURNAL 2026-06-17 Codex
 - T-CONSUMABLE-LABEL-ACTUAL-PRINT | 2026-06-17 | codex | `/consumables/label` UID 발행 클릭 즉시 인쇄창을 먼저 열고 UID 생성 후 라벨 HTML과 `window.print()`를 주입하도록 보정, 실제 API 발행 후 cleanup 완료 | evidence: JOURNAL 2026-06-17 Codex
 - T-VENDOR-NAME-MATERIAL | 2026-06-21 | claude | 입하·입고·수불 계열 8개 서비스+프론트에 PARTNER_MASTERS JOIN으로 공급사 업체명(vendorName) 표시, iqc-history/stock 공급사 컬럼 신규 추가, BE/FE tsc PASS·DI 등록 확인 | evidence: JOURNAL 2026-06-21 claude
+- T-SHIP-HISTORY-PALLET-DETAIL | 2026-06-22 | codex | `/shipping/history` 우측 팔레트 상세 패널, 당일 기본 날짜 필터, 상태별 색상/도움말 배지, `CLOSED` 상태 필터 허용 추가 | evidence: JOURNAL 2026-06-22 codex
+- T-SHIP-ORDER-STATUS-HELP | 2026-06-22 | codex | `/shipping/order`/`/shipping/history` 상태 컬럼 `?` 도움말 추가 및 출하지시 고객사 출하일 누락 저장 차단 | evidence: JOURNAL 2026-06-22 codex
+- T-SHIP-PALLET-ORDER-REQUIRED | 2026-06-22 | codex | `/shipping/pallet` 일반 팔레트 생성/구성을 차단하고 출하지시 선택 기반 팔레트 생성/적재/마감으로 전환 | evidence: JOURNAL 2026-06-22 codex
+- T-SHIP-PALLET-SCAN-CREATE | 2026-06-22 | codex | `/shipping/pallet` 팔레트 생성 모달을 출하지시번호 스캔+대기목록으로 전환하고 출하지시별 팔레트 재생성 차단 및 상태전이 `?` 도움말 추가 | evidence: JOURNAL 2026-06-22 codex
+- T-SHIP-PALLET-SHIP-STATUS-HELP | 2026-06-22 | codex | `/shipping/pallet-ship` 중앙 팔레트 그리드 상태 컬럼 `?` 도움말 추가 및 출하번호 표시를 `shipmentId`/단일 fulfillment 출하번호 fallback/출하 전 안내로 보정 | evidence: JOURNAL 2026-06-22 codex

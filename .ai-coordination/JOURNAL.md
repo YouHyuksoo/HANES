@@ -2021,3 +2021,72 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - DB 검증(JSHANES): `COM_CODES.DEFECT_MODEL_GROUP` 2건(LV/HV), `ITEM_MASTERS.DEFECT_MODEL_GROUP` LV 36건, 활성 분류 1레벨 3건/2레벨 6건/3레벨 18건, HARNESS/WIRE/TERMINAL/CONNECTOR 기반 활성 분류 0건, 불량코드 매핑 `PRODUCT_TYPE=LV` 12건 확인.
 - 검증: `2026-06-22_item_defect_model_group.sql` 및 `2026-06-22_reclassify_defect_categories.sql` JSHANES 적용/재실행 PASS, `python tools/generate_db_schema_doc.py` PASS, backend/frontend typecheck PASS, 구조 테스트 26건 PASS, `defect-code.service.spec.ts` 4건 PASS, 대상 파일 `git diff --check` PASS.
 - 참고: 3002/3003 dev server는 사용자 요청대로 재시작하지 않았다.
+
+# 2026-06-22 codex T-MASTER-LABEL-PALLET-SOURCE 라벨디자인 팔레트 소스 추가
+- 요청: `/master/label` 라벨 디자인관리 소스테이블에 팔레트 라벨도 추가.
+- 변경: `LabelCategory`/`LabelSourceTable`에 `pallet`을 추가하고, `/master/label` 소스테이블 선택 목록에 `팔레트`를 표시하도록 `LabelObjectDesigner` 라벨 매핑을 추가했다.
+- 변경: 팔레트 라벨 소스 필드로 `palletNo`, `boxCount`, `totalQty`, `status`, `shipOrderNo`, `customerName`, `itemCode`, `itemName`, `createdAt` 샘플 필드를 추가했다. 기본 팔레트 디자인은 바코드/코드=`palletNo`, 이름=`boxCount`, 보조=`totalQty`를 사용한다.
+- 검증: RED 확인 후 `node --test apps/frontend/src/app/(authenticated)/master/label/master-label-pallet-source.structure.test.mjs apps/frontend/src/app/(authenticated)/master/label/master-label-design-only.structure.test.mjs` PASS, `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS, 3002 `/master/label` HTTP 200, 대상 파일 `git diff --check` PASS.
+- 참고: 기존 `master-label-bartender-designer.structure.test.mjs`는 팔레트와 무관한 오래된 `필드 추가/updateSourceField/deleteSourceField` 기대값으로 실패해 이번 focused 검증 범위에서 제외했다.
+
+# 2026-06-22 codex T-MASTER-LABEL-PALLET-BACKEND 라벨템플릿 팔레트 카테고리 백엔드 허용
+- 요청/증상: `/master/label-templates?category=pallet` 호출이 `category must be one of the following values: equip, jig, worker, part, mat_lot, box` 400으로 실패.
+- 원인: `/master/label` 프론트 소스/타입에는 `pallet`을 추가했지만, 백엔드 `LabelTemplateQueryDto`/`CreateLabelTemplateDto`의 `@IsIn` 허용 목록은 기존 6개 카테고리만 유지하고 있었다.
+- 변경: `LABEL_TEMPLATE_CATEGORIES` 상수를 추가해 `equip/jig/worker/part/mat_lot/box/pallet`을 단일 목록으로 관리하고, create/query DTO 검증과 Swagger enum이 같은 목록을 사용하게 했다.
+- 검증: RED 확인 후 `node --test apps/backend/src/modules/master/dto/label-template-pallet-category.structure.test.mjs` PASS, `pnpm.cmd --filter @harness/backend test -- src/modules/master/services/label-template.service.spec.ts --runInBand` 7/7 PASS, `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false` PASS. 3003 직접 호출은 인증 전 단계 401로 바뀌어 무인증 상태에서 카테고리 검증 400은 재현되지 않았다. 3002에 `/api/v1`을 직접 붙이면 프록시가 `/api/v1/v1`로 중복 전달되어 404가 난다.
+
+# 2026-06-22 codex T-SHIP-HISTORY-PALLET-DETAIL 출하이력 우측 팔레트 상세 표시
+- 요청: `/shipping/history` 우측에 상세 팔레트정보를 표시하고, 팔레트번호가 보여야 함. 추가 요청으로 기본 날짜 필터는 당일, 출하상태 배지는 상태별 색상과 도움말을 표시.
+- 변경(FE): `/shipping/history`를 좌측 출하이력 그리드 + 우측 팔레트 상세 패널로 구성했다. 행 선택 시 기존 `/shipping/orders/:shipOrderNo/fulfillment`를 호출해 팔레트번호, 상태, 박스수, 총수량, 마감/출하 시각, 하위 박스 목록을 표시한다.
+- 변경(FE): 날짜 필터 `from/to` 기본값을 현재일(`YYYY-MM-DD`)로 넣고, 목록 조회 API를 `shipDateFrom/shipDateTo`가 실제 동작하는 `/shipping/history`로 전환했다.
+- 변경(FE): 출하상태 배지는 화면 로컬 색상맵으로 `DRAFT/CONFIRMED/SHIPPING/SHIPPED/CLOSED`를 서로 다른 색상으로 표시하고, 상태 설명을 `title`/`aria-label` 도움말로 제공한다.
+- 변경(BE): 출하이력 DTO 상태 필터 허용 목록에 실제 마감 상태 `CLOSED`를 추가했다.
+- 검증: 신규 구조 테스트 RED 확인 후 GREEN, `node --test "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-pallet-detail.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-no-info-cards.structure.test.mjs"` PASS, `node --test apps/backend/src/modules/shipping/dto/ship-history-status.structure.test.mjs` PASS, FE/BE tsc PASS, 대상 파일 `git diff --check` PASS.
+- 브라우저 검증(3002): 기본 날짜 input이 `2026-06-22/2026-06-22`로 표시되고 `/api/shipping/history?limit=5000&shipDateFrom=2026-06-22&shipDateTo=2026-06-22` 200 확인. 날짜를 `2026-06-12`로 바꾼 뒤 `SO-RV-26061202215660` 선택 시 우측에 `PLT2606200001`, 박스 2건, 총수량 2 표시 확인. 상태 `확정` 배지에 파란색 클래스와 도움말 `출하지시가 확정되어 박스 또는 팔레트 출하 작업을 진행할 수 있습니다.` 확인.
+
+# 2026-06-22 codex T-SHIP-ORDER-STATUS-HELP 출하지시 상태 도움말/출하일 필수 보정
+- 요청: `/shipping/order` 그리드 상태 컬럼에 `?` 도움말 추가. 이어서 출하지시 등록 시 고객사 출하일 없이 저장되는 버그 지적 및 `/shipping/history`에도 상태 설명 추가 요청.
+- 원인: `/shipping/order` 프론트 저장 가능 조건이 품목 수량만 검사했고 `shipDate`가 비어 있으면 payload에서 `undefined`로 보냈다. 백엔드 `CreateShipOrderDto.shipDate`도 optional이라 API 직접 호출도 빈 출하일 저장을 허용했다.
+- 변경(FE): `/shipping/order` 상태 컬럼 header를 `ShipOrderStatusHeader`로 바꾸고 `HelpCircle` 아이콘에 `DRAFT/CONFIRMED/SHIPPING/SHIPPED/CLOSED` 설명을 `title`/`aria-label`로 제공했다. 고객사 출하일 input은 required로 표시하고, `canSave`에 `form.shipDate.trim().length > 0`를 포함했으며 payload는 선택된 `shipDate`를 그대로 보낸다.
+- 변경(BE): `CreateShipOrderDto.shipDate`를 필수 `@ApiProperty`/`@IsDateString` 계약으로 바꾸고, `ShipOrderService.create()`가 고객사 출하일 누락 시 `BadRequestException('고객사 출하일은 필수입니다.')`으로 차단한다. update도 `shipDate`가 들어온 경우 빈 문자열을 거부한다.
+- 변경(FE): `/shipping/history` 상태 컬럼 header도 `ShipHistoryStatusHeader`로 바꾸고 `HelpCircle` 아이콘에 같은 상태 설명을 `title`/`aria-label`로 제공했다. 기존 상태별 색상 배지와 배지 tooltip은 유지했다.
+- 검증: 신규 테스트 RED 확인 후 GREEN. `node --test` shipping order/history 구조 테스트 10건 PASS. `pnpm.cmd --filter @harness/backend exec jest src/modules/shipping/services/ship-order.service.spec.ts --runInBand` 25/25 PASS. frontend/backend `tsc --noEmit --pretty false` PASS. 대상 파일 `git diff --check` PASS.
+- 브라우저 검증(3002): `/shipping/order` 상태 헤더 도움말에 `CONFIRMED/CLOSED` 설명 포함 확인, 등록 패널의 고객사 출하일 date input `required=true` 확인. `/shipping/history` 상태 헤더 도움말에 `CONFIRMED/CLOSED` 설명 포함 확인.
+
+# 2026-06-22 codex T-SHIP-PALLET-ORDER-REQUIRED 팔레트 구성 출하지시 필수화
+- 요청: `/shipping/pallet`에서 출하지시 없이 팔레트 구성하면 안 된다는 사용자 정정.
+- 원인: `/shipping/pallet` 화면이 일반 `POST /shipping/pallets`로 출하지시 없는 팔레트를 생성하고, 박스 적재/마감도 일반 팔레트 API를 사용했다. 백엔드 `PalletService.create/addBox`도 출하지시 없이 팔레트를 만들거나 구성하는 흐름을 허용했다.
+- 변경(FE): 팔레트 생성 모달에서 `CONFIRMED` 상태이고 미출하 잔량이 있는 출하지시를 조회해 선택하도록 변경했다. 생성은 `POST /shipping/orders/:shipOrderNo/pallets`만 사용하고 일반 `/shipping/pallets` 생성 호출은 제거했다.
+- 변경(FE): 박스 적재/제거/마감은 출하지시번호가 있는 팔레트만 가능하게 버튼을 비활성화하고, 각각 `/shipping/orders/:shipOrderNo/pallets/:palletNo/boxes`, `DELETE /shipping/orders/:shipOrderNo/pallets/:palletNo/boxes`, `/close`를 사용하게 했다.
+- 변경(BE): 일반 `PalletService.create()`는 `BadRequestException`으로 차단한다. 일반 `PalletService.addBox()`는 출하지시 기준 API 사용을 안내하며 차단한다. 출하지시 없는 팔레트의 일반 마감도 차단한다. `findAll()`은 화면 row id 계약에 맞춰 `id=palletNo`를 포함해 반환한다.
+- 검증: 신규 구조 테스트 RED 확인 후 GREEN. `node --test apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-order-required.structure.test.mjs` PASS. `pnpm.cmd --filter @harness/backend exec jest src/modules/shipping/services/pallet.service.spec.ts --runInBand` 18/18 PASS. frontend/backend `tsc --noEmit --pretty false` PASS. 대상 파일 `git diff --check` PASS.
+- 브라우저 검증(3002): `/shipping/pallet` 팔레트 생성 모달에서 출하지시 선택 Select가 `required=true`이고, `/api/shipping/orders?status=CONFIRMED&limit=5000` 호출 확인. 일반 `/api/shipping/pallets` POST는 호출되지 않음 확인.
+
+# 2026-06-22 codex T-SHIP-PALLET-SCAN-CREATE 출하지시 스캔 기반 팔레트 생성/상태 도움말
+- 요청: `/shipping/pallet` 팔레트 생성 모달은 출하지시번호 스캔 방식이어야 하며, 이미 생성된 출하지시는 재생성하면 안 된다. 보조로 모달 좌측에 팔레트 생성 대기 출하지시 목록을 기본 표시한다. 추가로 팔레트 그리드 상태 컬럼에 `?` 도움말로 상태전이를 자세히 설명한다.
+- 원인: 기존 모달은 `CONFIRMED` + 미출하 잔량 출하지시를 드롭다운으로 보여줬고, 이미 `PALLET_MASTERS.SHIP_ORDER_NO`가 있는 출하지시를 제외하지 않았다. 백엔드 `createPalletForOrder()`도 동일 출하지시 기존 팔레트 존재 여부를 검사하지 않아 API 직접 호출로 재생성이 가능했다. 팔레트 상태 컬럼은 단순 텍스트 헤더라 `OPEN/CLOSED/LOADED/SHIPPED` 전이 설명이 없었다.
+- 변경(FE): 팔레트 생성 모달을 좌측 `팔레트 대기중인 출하지시` 목록 + 우측 출하지시번호 스캔 입력 구조로 바꿨다. Enter 스캔 시 대기 목록과 대조하고, 좌측 목록 클릭도 스캔 입력에 반영한다. 대기 목록은 `status=CONFIRMED`, 미출하 잔량 존재, `palletCount === 0`인 출하지시만 표시한다.
+- 변경(FE): 팔레트 상태 컬럼 header를 `PalletStatusHeader`로 바꾸고 `HelpCircle` 아이콘의 `title`/`aria-label`에 `OPEN -> CLOSED -> LOADED -> SHIPPED`, `CLOSED -> OPEN` 되돌림 조건, 각 상태 의미를 제공한다.
+- 변경(BE): `ShipOrderService.createPalletForOrder()`가 같은 출하지시에 기존 팔레트가 있으면 `BadRequestException('이미 팔레트가 생성된 출하지시입니다')`로 차단한다.
+- 검증: RED 확인 후 `node --test "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-status-help.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-order-required.structure.test.mjs"` PASS, `pnpm.cmd --filter @harness/backend exec jest src/modules/shipping/services/ship-order.service.spec.ts src/modules/shipping/services/pallet.service.spec.ts --runInBand` 44/44 PASS, frontend/backend `tsc --noEmit --pretty false` PASS, 대상 파일 `git diff --check` PASS.
+- 런타임 확인: Browser 플러그인 `iab`는 현재 사용 불가. 별도 Playwright는 실행됐지만 유효 인증 토큰이 없어 `/shipping/pallet` 진입 전 `/login`으로 리다이렉트되어 DOM 실측은 못 했다.
+
+# 2026-06-22 codex T-SHIP-PALLET-SHIP-STATUS-HELP 팔레트 출하 중앙 그리드 상태 도움말/출하번호 표시
+- 요청: `/shipping/pallet-ship` 중앙 패널 그리드의 상태 컬럼에 `?` 설명을 추가하고, 중앙 패널 그리드에 출하번호가 왜 안 나오는지 점검 후 수정.
+- 원인: 중앙 팔레트 그리드는 `shipmentId` 원값만 `출하번호`로 표시했다. 팔레트 출하 확정 전 `CLOSED` 팔레트는 아직 실제 출하 건이 생성되지 않아 `shipmentId`가 비어 있는 것이 정상인데, 화면에는 그 의미가 드러나지 않았다. 또한 fulfillment 응답에 단일 출하 건이 있을 때도 팔레트 행에서 fallback 표시를 하지 않았다.
+- 변경(FE): 중앙 그리드 상태 헤더를 `PalletShipStatusHeader`로 바꾸고 `HelpCircle` 아이콘 `title`/`aria-label`에 `OPEN -> CLOSED -> SHIPPED`, `OPEN/CLOSED/LOADED/SHIPPED` 의미를 제공했다.
+- 변경(FE): `OrderPalletRow`를 추가해 팔레트 행의 `shipmentNo`/`shipmentNoText`를 정규화했다. `pallet.shipmentId`를 우선 표시하고, fulfillment 출하 건이 1건이면 `shipNo`를 fallback으로 표시한다. 아직 출하 전이면 `출하 전`, 이미 출하 상태인데 번호가 없으면 `확인필요`로 표시한다.
+- 검증: 신규 구조 테스트 RED 확인 후 GREEN. `node --test "apps/frontend/src/app/(authenticated)/shipping/pallet-ship/shipping-pallet-ship-grid-help.structure.test.mjs"` PASS, 관련 shipping pallet 구조 테스트 6/6 PASS, frontend `tsc --noEmit --pretty false` PASS, 대상 파일 `git diff --check` PASS.
+- 브라우저 검증(3002): `/shipping/pallet-ship` 진입 후 첫 출하지시 선택 시 중앙 그리드에 `출하번호` 헤더와 상태 `?` 도움말 1개가 표시됨을 확인했다. 현재 데이터 `PLT2606200001`은 출하 전이라 출하번호 칸은 `출하 전`으로 표시되는 것이 정상이다.
+
+# 2026-06-22 claude T-IQC-DEFECT-CODE-REMOVE IQC 검사모달 불량코드 제거
+- 요청: IQC는 정해진 검사항목 절차로 합/불·측정값만 넣으면 되는데 불량코드를 왜 별도 입력하나 → 제거하고 검사항목 판정만으로 정리.
+- 근거: 검사항목 판정(시리얼·항목별 OK/NG·측정값)이 이미 불량 종류·등급(defectGrade)을 내포. 백엔드도 itemDefectCounts가 주 판정, defects는 보조(fallback)였음.
+- 변경(FE): IqcModal 불량코드 UI/state/handlers/defect-codes options API/defects 전송 + "불량시 불량코드 필수" 강제 로직 제거. useIqcData defects 전송 제거. codex의 defectModelGroup 필드는 보존(미사용화).
+- 백엔드 무변경: defects 미전송 시 검사항목 판정·AQL 등급으로만 합·불 산출.
+- 검증: FE tsc PASS, 브라우저(3002) 모달서 불량코드 섹션 제거 확인. 커밋 57d90264.
+
+# 2026-06-22 claude T-SHIP-PALLET-DESIGN shipping 팔레트 화면 디자인 정리
+- pallet-ship: 패널 타이틀 표준(text-sm) 통일, 출하지시 목록에 구성 팔레트·박스 수 표시(ship-order.service findAll 집계). 커밋 1f7f2562.
+- pallet: 정보카드(StatCard) 제거, 좌측 그리드 표준 래핑(카드 꽉 채움+내부 스크롤), 패널 타이틀 통일. codex의 출하지시 스캔 작업과 같은 파일이라 codex 커밋(0c500d79 등)에 함께 포함됨.
+- 검증: FE/BE tsc PASS, 실DB 팔레트/박스 집계 일치 확인, 브라우저 확인.

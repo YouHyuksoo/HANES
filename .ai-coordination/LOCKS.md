@@ -2,18 +2,6 @@
 
 ## Active Locks
 
-## T-MASTER-LABEL-PALLET-SOURCE 라벨디자인 팔레트 라벨 소스 추가
-status: active
-owner: codex
-role: implementer
-files:
-- apps/frontend/src/app/(authenticated)/master/label/labelSources.ts
-- apps/frontend/src/app/(authenticated)/master/label/master-label-design-only.structure.test.mjs
-- apps/frontend/src/app/(authenticated)/master/label/master-label-bartender-designer.structure.test.mjs
-- .ai-coordination/LOCKS.md
-- .ai-coordination/JOURNAL.md
-- .ai-coordination/HANDOFF/codex.md
-
 ## T-DEFECT-REGISTER-PANEL 불량관리 수동등록 모달→우측 슬라이드 패널 전환
 status: active
 owner: claude

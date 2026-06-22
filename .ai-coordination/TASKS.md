@@ -35,7 +35,7 @@ owner: codex
 role: implementer/operator
 scope:
 - 불량코드를 `COM_CODES.DEFECT_TYPE`에서 전용 마스터 테이블로 분리
-- 3레벨 불량분류, 불량코드/불량명, 등급, 적용범위, 제품류별 적용 관리
+- 3레벨 불량분류, 불량코드/불량명, 등급, 적용범위, 모델구분별 적용 관리
 - 품질관리 메뉴에 `/quality/defect-code` 불량코드관리 페이지 추가
 - 기존 `/quality/defect` 불량등록관리 필터/등록과 백엔드 불량로그 저장 검증을 전용 불량코드 마스터로 연결
 files:
@@ -61,14 +61,16 @@ verification:
 - 3002 `/quality/defect-code` HTTP 200, 3002 `/api/quality/defect-codes/options` 인증 게이트 401 확인
 - hermes 종료 확인 후 `/quality/defect` 전환 추가: RED/GREEN 구조 테스트 3건 PASS, `defect-log.service.spec.ts` 39건 PASS
 - `/quality/defect` HTTP 200, 전용 options API 인증 게이트 401 확인
-- `/quality/defect-code` 미번역/raw key/enum/레벨배지 보정: 구조 테스트 7건 PASS, locale JSON parse PASS, `git diff --check` PASS
+- `/quality/defect-code` 화면 단순화: 좌측 전체 불량코드 그리드, 우측 1/2/3레벨 선택 등록/수정 폼으로 재구성. 구조 테스트 7건 PASS, locale JSON parse PASS, FE typecheck PASS, `git diff --check` PASS
+- `/quality/defect-code` 분류 기준 재정의: 1레벨 `IQC/LQC/OQC`, 2레벨 `DEFECT_MODEL_GROUP`(`LV`=저전압, `HV`=고전압), 3레벨 `FUNCTION/APPEARANCE/ETC`로 JSHANES 재분류 적용 PASS. 품목마스터 `ITEM_MASTERS.DEFECT_MODEL_GROUP` 추가 및 IQC 불량코드 옵션 필터 연결 PASS.
 - `git diff --check` PASS
 review:
 - needs-review
 notes:
 - `/quality/defect/page.tsx`는 hermes 종료 확인 후 전용 불량코드 API로 전환했다.
 - 기존 `COM_CODES.DEFECT_TYPE`는 초기 마이그레이션 seed source로만 사용하고 신규 관리는 전용 테이블에서 수행한다.
-- 전체 frontend typecheck는 현재 다른 통합검사 변경(`apps/frontend/src/app/(authenticated)/inspection/integrated/**`)의 `IntegratedInspectPanel` prop 불일치로 실패한다.
+- 2레벨 모델구분 선택에서 내부 매핑 `productTypes`를 파생 저장한다. API/DB 호환 필드명은 `PRODUCT_TYPE`/`productType`로 남지만 의미는 `DEFECT_MODEL_GROUP`이며, 모델구분 매핑 없는 불량코드는 공통처럼 노출하지 않는다.
+- 3002/3003은 사용자 요청대로 재시작하지 않는다.
 
 ## T-PRODUCTION-ORDER-EDIT-SYNC 생산지시 수정패널 선택행 동기화
 status: REVIEW

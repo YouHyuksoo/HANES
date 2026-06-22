@@ -78,7 +78,18 @@ Decision:
 - 분류는 3레벨이며 실제 불량코드는 3레벨 leaf category만 참조한다.
 - IQC AQL 불량코드 등급 조회와 IQC 모달 선택 목록은 전용 테이블/API를 사용한다.
 Reason:
-- 불량코드는 외관/기능/원자재/제품/공정/제품류 적용까지 관리해야 하므로 공통코드 단일 그룹으로는 운영 분류와 검증을 감당하기 어렵다.
+- 불량코드는 외관/기능/원자재/제품/공정/모델구분별 적용까지 관리해야 하므로 공통코드 단일 그룹으로는 운영 분류와 검증을 감당하기 어렵다.
+
+## D-20260622-DEFECT-MODEL-GROUP
+Status: Accepted
+Decision:
+- 불량코드 분류 1레벨은 검사단계 `IQC/LQC/OQC`, 2레벨은 품목의 불량 모델구분 `DEFECT_MODEL_GROUP`, 3레벨은 불량유형 `FUNCTION/APPEARANCE/ETC`로 둔다.
+- `DEFECT_MODEL_GROUP` 기본 코드는 `LV`=저전압, `HV`=고전압이다.
+- 품목마스터는 `ITEM_MASTERS.DEFECT_MODEL_GROUP`을 보유하고, IQC 불량코드 옵션 조회는 선택 품목의 모델구분으로 필터링한다.
+- 기존 `DEFECT_CODE_PRODUCT_TYPES.PRODUCT_TYPE` 컬럼명과 API `productType` 파라미터는 호환을 위해 유지하되 의미는 모델구분 코드로 해석한다.
+Reason:
+- 사용자가 2레벨은 제품류가 아니라 모델 구분(예: 저전압/고전압)이라고 정정했고, 다른 모델의 불량코드가 검사 화면에 섞이면 안 된다고 명시했다.
+- 품목별 모델구분을 품목마스터에 두어 검사 대상 품목 기준으로 불량코드 적용 범위를 안정적으로 제한할 수 있다.
 
 - `/master/part`는 `AQL 정책` 선택만 제공하고, `/quality/aql/resolve-iqc`는 품목의 정책 코드를 따라 sampling rule을 산출한다.
 - `IQC_PART_SPEC_ITEMS`의 검사수준/AQL은 품목 정책을 대체하는 것이 아니라 검사항목별 override 기준으로 유지한다.
