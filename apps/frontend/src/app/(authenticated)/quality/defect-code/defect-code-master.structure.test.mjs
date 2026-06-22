@@ -44,6 +44,38 @@ test('defect code master uses a simple all-code grid with level selectors in the
   assert.doesNotMatch(page, /params\.categoryCode/);
 });
 
+test('defect code registration derives model group from selected level 2 category', () => {
+  const page = read('apps/frontend/src/app/(authenticated)/quality/defect-code/page.tsx');
+  assert.match(page, /modelGroupFromLevel2Code\(selectedLevel1,\s*selectedLevel2\)/);
+  assert.match(page, /const selectedModelGroup = modelGroupFromLevel2Code\(selectedLevel1,\s*selectedLevel2\)/);
+  assert.match(page, /productTypes:\s*selectedModelGroup \? \[selectedModelGroup\] : \[\]/);
+  assert.doesNotMatch(page, /productTypeOptions\.map/);
+  assert.doesNotMatch(page, /setProductType/);
+  assert.match(page, /모델구분/);
+  assert.doesNotMatch(page, /제품류별 불량코드/);
+});
+
+test('defect code grid separates category levels into three columns', () => {
+  const page = read('apps/frontend/src/app/(authenticated)/quality/defect-code/page.tsx');
+  assert.match(page, /categoryLevels\(row\.categoryCode\)/);
+  assert.match(page, /quality\.defectCode\.level1/);
+  assert.match(page, /quality\.defectCode\.level2/);
+  assert.match(page, /quality\.defectCode\.level3/);
+  assert.doesNotMatch(page, /quality\.defectCode\.categoryPath/);
+  assert.doesNotMatch(page, /categoryPath\(row\.categoryCode\)/);
+  assert.match(page, /\{levels\.level1\}/);
+  assert.match(page, /\{levels\.level2\}/);
+  assert.match(page, /\{levels\.level3\}/);
+});
+
+test('defect code page uses bounded flex height instead of viewport calc overflow', () => {
+  const page = read('apps/frontend/src/app/(authenticated)/quality/defect-code/page.tsx');
+  assert.doesNotMatch(page, /h-\[calc\(100vh-150px\)\]/);
+  assert.match(page, /className="h-full min-h-0 overflow-hidden p-6 animate-fade-in flex flex-col"/);
+  assert.match(page, /className="mb-4 flex shrink-0 items-center justify-between"/);
+  assert.match(page, /className="grid min-h-0 flex-1 grid-cols-\[minmax\(620px,1fr\)_440px\] gap-4"/);
+});
+
 test('defect code master form labels do not expose raw database field keys', () => {
   const page = read('apps/frontend/src/app/(authenticated)/quality/defect-code/page.tsx');
   for (const rawLabel of [

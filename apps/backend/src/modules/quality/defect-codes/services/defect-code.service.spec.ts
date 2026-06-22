@@ -40,17 +40,17 @@ describe('DefectCodeService', () => {
       categoryCode: 'APPEARANCE',
       defectGrade: 'MAJOR',
       defectScope: 'PRODUCT',
-      productTypes: ['FINISHED'],
+      productTypes: ['LV'],
       useYn: 'Y',
     }, '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
   });
 
-  it('creates a defect code with product type mappings under a level 3 category', async () => {
+  it('creates a defect code with model group mappings under a level 3 category', async () => {
     codeRepo.findOne.mockResolvedValue(null);
     categoryRepo.findOne.mockResolvedValue({
       company: '40',
       plant: '1000',
-      categoryCode: 'APP_PRODUCT_WIRE',
+      categoryCode: 'OQC_LV_APPEARANCE',
       levelNo: 3,
       useYn: 'Y',
     });
@@ -58,27 +58,27 @@ describe('DefectCodeService', () => {
     const result = await service.createCode({
       defectCode: 'OPEN',
       defectName: '단선',
-      categoryCode: 'APP_PRODUCT_WIRE',
+      categoryCode: 'OQC_LV_APPEARANCE',
       defectGrade: 'MAJOR',
       defectScope: 'PRODUCT',
-      productTypes: ['FINISHED', 'SEMI_PRODUCT'],
+      productTypes: ['LV', 'HV'],
       useYn: 'Y',
     }, '40', '1000', 'tester');
 
     expect(codeRepo.save).toHaveBeenCalledWith(expect.objectContaining({
       defectCode: 'OPEN',
       defectName: '단선',
-      categoryCode: 'APP_PRODUCT_WIRE',
+      categoryCode: 'OQC_LV_APPEARANCE',
       defectGrade: 'MAJOR',
       defectScope: 'PRODUCT',
       company: '40',
       plant: '1000',
     }));
     expect(productTypeRepo.save).toHaveBeenCalledWith([
-      expect.objectContaining({ defectCode: 'OPEN', productType: 'FINISHED' }),
-      expect.objectContaining({ defectCode: 'OPEN', productType: 'SEMI_PRODUCT' }),
+      expect.objectContaining({ defectCode: 'OPEN', productType: 'LV' }),
+      expect.objectContaining({ defectCode: 'OPEN', productType: 'HV' }),
     ]);
-    expect(result.productTypes).toEqual(['FINISHED', 'SEMI_PRODUCT']);
+    expect(result.productTypes).toEqual(['LV', 'HV']);
   });
 
   it('rejects duplicate defect code per tenant', async () => {
@@ -87,25 +87,25 @@ describe('DefectCodeService', () => {
     await expect(service.createCode({
       defectCode: 'OPEN',
       defectName: '단선',
-      categoryCode: 'APP_PRODUCT_WIRE',
+      categoryCode: 'OQC_LV_APPEARANCE',
       defectGrade: 'MAJOR',
       defectScope: 'PRODUCT',
     }, '40', '1000', 'tester')).rejects.toThrow(ConflictException);
   });
 
-  it('filters active defect code options by product type', async () => {
+  it('filters active defect code options by model group without leaking unmapped codes', async () => {
     codeRepo.find.mockResolvedValue([
-      { defectCode: 'OPEN', defectName: '단선', categoryCode: 'APP_PRODUCT_WIRE', defectGrade: 'MAJOR', defectScope: 'PRODUCT', useYn: 'Y' },
-      { defectCode: 'CRACK', defectName: '크랙', categoryCode: 'APP_RAW_WIRE', defectGrade: 'CRITICAL', defectScope: 'RAW_MATERIAL', useYn: 'Y' },
+      { defectCode: 'OPEN', defectName: '단선', categoryCode: 'OQC_LV_APPEARANCE', defectGrade: 'MAJOR', defectScope: 'PRODUCT', useYn: 'Y' },
+      { defectCode: 'CRACK', defectName: '크랙', categoryCode: 'OQC_HV_APPEARANCE', defectGrade: 'CRITICAL', defectScope: 'PRODUCT', useYn: 'Y' },
       { defectCode: 'COMMON', defectName: '공통불량', categoryCode: 'ETC_COMMON_ETC', defectGrade: 'MINOR', defectScope: 'COMMON', useYn: 'Y' },
     ]);
     productTypeRepo.find.mockResolvedValue([
-      { defectCode: 'OPEN', productType: 'FINISHED' },
-      { defectCode: 'CRACK', productType: 'RAW_MATERIAL' },
+      { defectCode: 'OPEN', productType: 'LV' },
+      { defectCode: 'CRACK', productType: 'HV' },
     ]);
 
-    const options = await service.findOptions({ productType: 'FINISHED' }, '40', '1000');
+    const options = await service.findOptions({ productType: 'LV' }, '40', '1000');
 
-    expect(options.map((row) => row.defectCode)).toEqual(['OPEN', 'COMMON']);
+    expect(options.map((row) => row.defectCode)).toEqual(['OPEN']);
   });
 });

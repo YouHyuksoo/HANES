@@ -86,7 +86,7 @@ export class CreateDefectCodeDto {
   @IsIn(['RAW_MATERIAL', 'PRODUCT', 'PROCESS', 'COMMON'])
   defectScope: DefectScope;
 
-  @ApiPropertyOptional({ description: '제품류별 적용 목록', type: [String] })
+  @ApiPropertyOptional({ description: '모델구분별 적용 목록', type: [String] })
   @IsOptional()
   @IsArray()
   @ArrayUnique()
@@ -139,7 +139,7 @@ export class DefectCodeQueryDto extends PaginationQueryDto {
   @IsIn(['RAW_MATERIAL', 'PRODUCT', 'PROCESS', 'COMMON'])
   defectScope?: DefectScope;
 
-  @ApiPropertyOptional({ description: '제품류' })
+  @ApiPropertyOptional({ description: '모델구분' })
   @IsOptional()
   @IsString()
   productType?: string;

@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { AlertTriangle, Plus, RefreshCw, Save } from "lucide-react";
 import { Button, Card, CardContent, Input, Select } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
-import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 interface DefectCategory {
@@ -58,6 +57,11 @@ function flattenCategories(nodes: DefectCategory[]): DefectCategory[] {
   return nodes.flatMap((node) => [node, ...flattenCategories(node.children ?? [])]);
 }
 
+function modelGroupFromLevel2Code(level1Code: string, level2Code: string) {
+  const prefix = `${level1Code}_`;
+  return level1Code && level2Code.startsWith(prefix) ? level2Code.slice(prefix.length) : "";
+}
+
 export default function DefectCodeMasterPage() {
   const { t } = useTranslation();
   const [categories, setCategories] = useState<DefectCategory[]>([]);
@@ -72,7 +76,6 @@ export default function DefectCodeMasterPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const productTypeOptions = useComCodeOptions("PRODUCT_TYPE", false, true);
   const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
   const categoryByCode = useMemo(() => new Map(flatCategories.map((category) => [category.categoryCode, category])), [flatCategories]);
 
@@ -104,14 +107,17 @@ export default function DefectCodeMasterPage() {
     [categoryForm.levelNo, flatCategories],
   );
 
-  const categoryPath = useCallback((categoryCode: string) => {
-    const path: string[] = [];
+  const categoryLevels = useCallback((categoryCode: string) => {
+    const levels = { level1: "", level2: "", level3: "" };
     let current = categoryByCode.get(categoryCode);
     while (current) {
-      path.unshift(current.categoryName);
+      if (current.levelNo === 1) levels.level1 = current.categoryName;
+      if (current.levelNo === 2) levels.level2 = current.categoryName;
+      if (current.levelNo === 3) levels.level3 = current.categoryName;
       current = current.parentCategoryCode ? categoryByCode.get(current.parentCategoryCode) : undefined;
     }
-    return path.length ? path.join(" / ") : categoryCode;
+    if (!levels.level3 && categoryCode) levels.level3 = categoryCode;
+    return levels;
   }, [categoryByCode]);
 
   const setSelectedCategoryPath = useCallback((categoryCode: string) => {
@@ -220,10 +226,12 @@ export default function DefectCodeMasterPage() {
     }
     setSaving(true);
     try {
+      const selectedModelGroup = modelGroupFromLevel2Code(selectedLevel1, selectedLevel2);
       const payload = {
         ...codeForm,
         defectCode: codeForm.defectCode.trim().toUpperCase(),
         categoryCode: selectedLevel3,
+        productTypes: selectedModelGroup ? [selectedModelGroup] : [],
       };
       if (selectedCode) {
         await api.put(`/quality/defect-codes/${encodeURIComponent(selectedCode.defectCode)}`, payload);
@@ -234,26 +242,17 @@ export default function DefectCodeMasterPage() {
     } finally {
       setSaving(false);
     }
-  }, [codeForm, fetchCodes, selectedCode, selectedLevel3, t]);
-
-  const setProductType = useCallback((productType: string, checked: boolean) => {
-    setCodeForm((prev) => ({
-      ...prev,
-      productTypes: checked
-        ? [...new Set([...prev.productTypes, productType])]
-        : prev.productTypes.filter((value) => value !== productType),
-    }));
-  }, []);
+  }, [codeForm, fetchCodes, selectedCode, selectedLevel1, selectedLevel2, selectedLevel3, t]);
 
   return (
-    <div className="h-full min-h-0 overflow-hidden p-6 animate-fade-in">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="h-full min-h-0 overflow-hidden p-6 animate-fade-in flex flex-col">
+      <div className="mb-4 flex shrink-0 items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-text">
             <AlertTriangle className="h-7 w-7 text-primary" />
             {t("quality.defectCode.title", "불량코드관리")}
           </h1>
-          <p className="mt-1 text-sm text-text-muted">{t("quality.defectCode.subtitle", "3레벨 분류와 제품류별 불량코드를 관리합니다.")}</p>
+          <p className="mt-1 text-sm text-text-muted">{t("quality.defectCode.subtitle", "검사단계, 모델구분, 불량유형으로 불량코드를 관리합니다.")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={() => { fetchCategories(); fetchCodes(); }}>
@@ -265,7 +264,7 @@ export default function DefectCodeMasterPage() {
         </div>
       </div>
 
-      <div className="grid h-[calc(100vh-150px)] grid-cols-[minmax(620px,1fr)_440px] gap-4">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(620px,1fr)_440px] gap-4">
         <Card padding="none" className="min-h-0 overflow-hidden">
           <CardContent className="flex h-full flex-col p-3">
             <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-2">
@@ -279,29 +278,36 @@ export default function DefectCodeMasterPage() {
                   <tr>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.defectCode", "불량코드")}</th>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.defectName", "불량명")}</th>
-                    <th className="px-2 py-2 text-left">{t("quality.defectCode.categoryPath", "분류")}</th>
+                    <th className="px-2 py-2 text-left">{t("quality.defectCode.level1", "1레벨")}</th>
+                    <th className="px-2 py-2 text-left">{t("quality.defectCode.level2", "2레벨")}</th>
+                    <th className="px-2 py-2 text-left">{t("quality.defectCode.level3", "3레벨")}</th>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.grade", "등급")}</th>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.scope", "적용범위")}</th>
                     <th className="px-2 py-2 text-left">{t("quality.defectCode.useYn", "사용여부")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {codes.map((row) => (
-                    <tr
-                      key={row.defectCode}
-                      onClick={() => handleCodeSelect(row)}
-                      className={`cursor-pointer border-t border-border hover:bg-surface-hover ${selectedCode?.defectCode === row.defectCode ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="px-2 py-2 font-mono text-xs font-semibold text-primary">{row.defectCode}</td>
-                      <td className="px-2 py-2">{row.defectName}</td>
-                      <td className="px-2 py-2 text-xs text-text-muted">{categoryPath(row.categoryCode)}</td>
-                      <td className="px-2 py-2">{formatDefectGrade(row.defectGrade)}</td>
-                      <td className="px-2 py-2">{formatDefectScope(row.defectScope)}</td>
-                      <td className="px-2 py-2">{formatUseYn(row.useYn)}</td>
-                    </tr>
-                  ))}
+                  {codes.map((row) => {
+                    const levels = categoryLevels(row.categoryCode);
+                    return (
+                      <tr
+                        key={row.defectCode}
+                        onClick={() => handleCodeSelect(row)}
+                        className={`cursor-pointer border-t border-border hover:bg-surface-hover ${selectedCode?.defectCode === row.defectCode ? "bg-primary/10" : ""}`}
+                      >
+                        <td className="px-2 py-2 font-mono text-xs font-semibold text-primary">{row.defectCode}</td>
+                        <td className="px-2 py-2">{row.defectName}</td>
+                        <td className="px-2 py-2 text-xs text-text-muted">{levels.level1}</td>
+                        <td className="px-2 py-2 text-xs text-text-muted">{levels.level2}</td>
+                        <td className="px-2 py-2 text-xs text-text-muted">{levels.level3}</td>
+                        <td className="px-2 py-2">{formatDefectGrade(row.defectGrade)}</td>
+                        <td className="px-2 py-2">{formatDefectScope(row.defectScope)}</td>
+                        <td className="px-2 py-2">{formatUseYn(row.useYn)}</td>
+                      </tr>
+                    );
+                  })}
                   {!codes.length && (
-                    <tr><td colSpan={6} className="px-2 py-10 text-center text-text-muted">{t("common.noData", "데이터가 없습니다.")}</td></tr>
+                    <tr><td colSpan={8} className="px-2 py-10 text-center text-text-muted">{t("common.noData", "데이터가 없습니다.")}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -329,21 +335,6 @@ export default function DefectCodeMasterPage() {
                 <ComCodeSelect groupCode="USE_YN" includeAll={false} label={t("quality.defectCode.useYn", "사용여부")} value={codeForm.useYn} onChange={(value) => setCodeForm((prev) => ({ ...prev, useYn: value }))} fullWidth />
                 <div className="col-span-2">
                   <Input label={t("quality.defectCode.description", "설명")} value={codeForm.description ?? ""} onChange={(event) => setCodeForm((prev) => ({ ...prev, description: event.target.value }))} fullWidth />
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="mb-2 text-xs font-semibold text-text">{t("quality.defectCode.productTypes", "제품류")}</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {productTypeOptions.map((option) => (
-                    <label key={option.value} className="flex h-8 items-center gap-2 rounded border border-border px-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={codeForm.productTypes.includes(option.value)}
-                        onChange={(event) => setProductType(option.value, event.target.checked)}
-                      />
-                      <span className="truncate">{option.label}</span>
-                    </label>
-                  ))}
                 </div>
               </div>
             </CardContent>

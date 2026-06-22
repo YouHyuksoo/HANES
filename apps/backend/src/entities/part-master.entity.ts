@@ -37,6 +37,9 @@ export class PartMaster {
   @Column({ type: 'varchar2', name: 'MODEL_NAME', length: 100, nullable: true })
   modelName: string | null;
 
+  @Column({ type: 'varchar2', name: 'DEFECT_MODEL_GROUP', length: 50, nullable: true })
+  defectModelGroup: string | null;
+
   @Column({ type: 'varchar2', name: 'SPEC', length: 255, nullable: true })
   spec: string | null;
 

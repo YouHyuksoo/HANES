@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
+const read = (path) => fs.readFileSync(path, 'utf8');
 const page = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/page.tsx', 'utf8');
 const types = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/types.ts', 'utf8');
 const panel = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx', 'utf8');
@@ -72,7 +73,7 @@ test('/master/part input labels expose help icons with db column names', () => {
 
   // 도움말 아이콘은 공통 HelpTooltip(포털 카드형)으로 렌더한다.
   assert.match(fieldHelp, /HelpTooltip/);
-  assert.match(fieldHelp, /description=\{help\.description\} db=\{help\.db\} dataField=\{field\}/);
+  assert.match(fieldHelp, /description=\{t\(`master\.part\.fieldHelp\.\$\{field\}`, help\.description\)\} db=\{help\.db\} dataField=\{field\}/);
 });
 
 test('/master/part removes unused tact time from the management screen', () => {
@@ -135,6 +136,32 @@ test('/master/part exposes vehicle model name from ITEM_MASTERS.MODEL_NAME', () 
   assert.match(fieldHelp, /modelName: \{ db: "ITEM_MASTERS\.MODEL_NAME", description: "차량 모델 또는 차종을 구분하는 품목 관리 특성입니다\." \}/);
   assert.match(partDto, /@ApiPropertyOptional\(\{ description: '차종', example: 'CN7' \}\)[\s\S]*?@MaxLength\(100\)[\s\S]*?modelName\?: string;/);
   assert.match(partEntity, /@Column\(\{ type: 'varchar2', name: 'MODEL_NAME', length: 100, nullable: true \}\)[\s\S]*?modelName: string \| null;/);
+});
+
+test('/master/part exposes defect model group from ITEM_MASTERS.DEFECT_MODEL_GROUP', () => {
+  const types = read('apps/frontend/src/app/(authenticated)/master/part/types.ts');
+  const page = read('apps/frontend/src/app/(authenticated)/master/part/page.tsx');
+  const panel = read('apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx');
+  const fieldHelp = read('apps/frontend/src/app/(authenticated)/master/part/components/PartFieldHelp.tsx');
+  const partDto = read('apps/backend/src/modules/master/dto/part.dto.ts');
+  const partEntity = read('apps/backend/src/entities/part-master.entity.ts');
+  const partService = read('apps/backend/src/modules/master/services/part.service.ts');
+  const migration = read('apps/backend/src/migrations/2026-06-22_item_defect_model_group.sql');
+
+  assert.match(types, /defectModelGroup\?: string \| null; \/\/ 불량 모델구분/);
+  assert.match(page, /useComCodeOptions\("DEFECT_MODEL_GROUP"\)/);
+  assert.match(page, /accessorKey: "defectModelGroup", header: t\("master\.part\.defectModelGroup", "모델구분"\)/);
+  assert.match(panel, /const defectModelGroupOptions = useComCodeOptions\("DEFECT_MODEL_GROUP"\)/);
+  assert.match(panel, /defectModelGroup: editingPart\?\.defectModelGroup \|\| ""/);
+  assert.match(panel, /defectModelGroup: form\.defectModelGroup \|\| undefined/);
+  assert.match(panel, /<FieldSelect field="defectModelGroup" label=\{t\("master\.part\.defectModelGroup", "모델구분"\)\}/);
+  assert.match(fieldHelp, /defectModelGroup: \{ db: "ITEM_MASTERS\.DEFECT_MODEL_GROUP", description: "불량코드 적용 범위를 저전압\/고전압 같은 모델군으로 구분하는 기준입니다\." \}/);
+  assert.match(partDto, /@ApiPropertyOptional\(\{ description: '불량 모델구분', example: 'LV' \}\)[\s\S]*?@MaxLength\(50\)[\s\S]*?defectModelGroup\?: string;/);
+  assert.match(partEntity, /@Column\(\{ type: 'varchar2', name: 'DEFECT_MODEL_GROUP', length: 50, nullable: true \}\)[\s\S]*?defectModelGroup: string \| null;/);
+  assert.match(partService, /defectModelGroup: dto\.defectModelGroup \?\? null/);
+  assert.match(partService, /dto\.defectModelGroup !== undefined \? \{ defectModelGroup: dto\.defectModelGroup \|\| null \} : \{\}/);
+  assert.match(migration, /ALTER TABLE ITEM_MASTERS ADD DEFECT_MODEL_GROUP VARCHAR2\(50\)/);
+  assert.match(migration, /GROUP_CODE = 'DEFECT_MODEL_GROUP'/);
 });
 
 test('/master/part does not manage wire cut or stripping dimensions as item master fields', () => {

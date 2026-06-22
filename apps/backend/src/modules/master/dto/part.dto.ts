@@ -50,6 +50,12 @@ export class CreatePartDto {
   @MaxLength(100)
   modelName?: string;
 
+  @ApiPropertyOptional({ description: '불량 모델구분', example: 'LV' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  defectModelGroup?: string;
+
   @ApiPropertyOptional({ description: '규격' })
   @IsOptional()
   @IsString()

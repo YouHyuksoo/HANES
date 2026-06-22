@@ -117,6 +117,12 @@ export default function PartPage() {
     productTypeOptions.forEach((o) => { map[o.value] = o.label; });
     return map;
   }, [productTypeOptions]);
+  const defectModelGroupOptions = useComCodeOptions("DEFECT_MODEL_GROUP");
+  const defectModelGroupLabels = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    defectModelGroupOptions.forEach((o) => { map[o.value] = o.label; });
+    return map;
+  }, [defectModelGroupOptions]);
 
   // 단위 공통코드 맵 (예: EA→개) — 단위 컬럼에 "코드 - 명칭" 표시용
   const unitMap = useComCodeMap("UNIT_TYPE");
@@ -170,6 +176,14 @@ export default function PartPage() {
       },
     },
     { accessorKey: "modelName", header: t("master.part.modelName", "차종"), size: 100, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    {
+      accessorKey: "defectModelGroup", header: t("master.part.defectModelGroup", "모델구분"), size: 80,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return <span className="text-xs">{defectModelGroupLabels[v] || v || "-"}</span>;
+      },
+    },
     { accessorKey: "spec", header: t("master.part.spec"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "rev", header: t("master.part.rev", "Rev"), size: 45 },
     { accessorKey: "markingText", header: t("master.part.markingText", "마킹문구"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
@@ -223,7 +237,7 @@ export default function PartPage() {
         );
       },
     },
-  ], [t, typeLabels, productTypeLabels, unitMap, iqcInspectMethodMap, isPanelOpen]);
+  ], [t, typeLabels, productTypeLabels, defectModelGroupLabels, unitMap, iqcInspectMethodMap, isPanelOpen]);
 
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);

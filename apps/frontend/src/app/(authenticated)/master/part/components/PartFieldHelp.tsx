@@ -16,6 +16,7 @@ export const PART_FIELD_HELP = {
   itemType: { db: "ITEM_MASTERS.ITEM_TYPE", description: "원자재, 반제품, 완제품 등 MES 흐름 분류입니다." },
   productType: { db: "ITEM_MASTERS.PRODUCT_TYPE", description: "품목군 또는 제품 계열을 나타내는 코드입니다." },
   modelName: { db: "ITEM_MASTERS.MODEL_NAME", description: "차량 모델 또는 차종을 구분하는 품목 관리 특성입니다." },
+  defectModelGroup: { db: "ITEM_MASTERS.DEFECT_MODEL_GROUP", description: "불량코드 적용 범위를 저전압/고전압 같은 모델군으로 구분하는 기준입니다." },
   spec: { db: "ITEM_MASTERS.SPEC", description: "품목 규격, 사양, 치수 등 보조 설명입니다." },
   color: { db: "ITEM_MASTERS.COLOR", description: "전선색 등 품목 색상 정보입니다." },
   unit: { db: "ITEM_MASTERS.UNIT", description: "수량을 해석하는 기본 단위입니다." },

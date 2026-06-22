@@ -15,6 +15,7 @@ export interface Part {
   itemNo?: string; // 품번 (Oracle PARTNO)
   custPartNo?: string; // 고객사 품번 (Oracle CUSTPARTNO)
   modelName?: string | null; // 차종
+  defectModelGroup?: string | null; // 불량 모델구분
   itemType: PartType;
   productType?: string; // 제품유형 코드 (Oracle PRODUCTTYPE)
   spec?: string;

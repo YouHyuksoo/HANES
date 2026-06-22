@@ -223,7 +223,7 @@ export class DefectCodeService {
       if (query.defectScope && row.defectScope !== query.defectScope) return false;
       if (query.productType) {
         const mapped = productMap.get(row.defectCode) ?? [];
-        if (mapped.length > 0 && !mapped.includes(query.productType)) return false;
+        if (!mapped.includes(query.productType)) return false;
       }
       if (query.search) {
         const keyword = query.search.toUpperCase();
@@ -252,7 +252,7 @@ export class DefectCodeService {
       .filter((row) => {
         if (!query.productType) return true;
         const mapped = productMap.get(row.defectCode) ?? [];
-        return mapped.length === 0 || mapped.includes(query.productType);
+        return mapped.includes(query.productType);
       })
       .map((row) => ({
         defectCode: row.defectCode,

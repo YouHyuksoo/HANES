@@ -97,6 +97,7 @@ export class PartService {
       itemType: dto.itemType,
       productType: dto.productType,
       modelName: dto.modelName ?? null,
+      defectModelGroup: dto.defectModelGroup ?? null,
       spec: dto.spec,
       rev: dto.rev,
       markingText: dto.markingText,
@@ -138,6 +139,7 @@ export class PartService {
       | 'itemType'
       | 'productType'
       | 'modelName'
+      | 'defectModelGroup'
       | 'spec'
       | 'rev'
       | 'markingText'
@@ -169,6 +171,7 @@ export class PartService {
       ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
       ...(dto.productType !== undefined ? { productType: dto.productType } : {}),
       ...(dto.modelName !== undefined ? { modelName: dto.modelName || null } : {}),
+      ...(dto.defectModelGroup !== undefined ? { defectModelGroup: dto.defectModelGroup || null } : {}),
       ...(dto.spec !== undefined ? { spec: dto.spec } : {}),
       ...(dto.rev !== undefined ? { rev: dto.rev } : {}),
       ...(dto.markingText !== undefined ? { markingText: dto.markingText } : {}),
