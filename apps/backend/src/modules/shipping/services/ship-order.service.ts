@@ -458,6 +458,16 @@ export class ShipOrderService {
     const order = await this.findById(shipOrderNo, company, plant) as ShipmentOrder & { items: ShipmentOrderItem[] };
     this.assertOrderLineMap(order);
 
+    const existingOrderPallets = await this.palletRepository.find({
+      where: { shipOrderNo, ...this.tenantWhere(company, plant) },
+      select: ['palletNo', 'shipOrderNo', 'status'],
+    });
+    if (existingOrderPallets.length > 0) {
+      throw new BadRequestException(
+        `이미 팔레트가 생성된 출하지시입니다: ${shipOrderNo}`,
+      );
+    }
+
     return this.tx.run(async (qr) => {
       const palletNo = dto.palletNo?.trim() || await this.numbering.nextPalletNo(qr);
       const existing = await this.palletRepository.findOne({

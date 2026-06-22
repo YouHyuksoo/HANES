@@ -19,10 +19,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Layers, Plus, Search, RefreshCw, Lock, LockOpen, Truck,
-  Package, CheckCircle, ArrowRight, X, ScanLine, Printer,
+  Layers, Plus, Search, RefreshCw, Lock, LockOpen,
+  Package, ArrowRight, X, ScanLine, Printer, HelpCircle,
 } from "lucide-react";
-import { Card, CardHeader, CardContent, Button, ConfirmModal, Input, Modal, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -76,7 +76,35 @@ interface ShipOrderSummary {
   shipDate?: string;
   dueDate?: string;
   status: string;
+  palletCount?: number;
+  boxCount?: number;
   items: ShipOrderLineSummary[];
+}
+
+const palletStatusHelpText = [
+  "상태전이: OPEN -> CLOSED -> LOADED -> SHIPPED",
+  "OPEN: 팔레트를 생성한 직후 상태입니다. 박스를 적재하거나 제거할 수 있습니다.",
+  "CLOSED: 팔레트 구성이 완료되어 라벨 발행/마감된 상태입니다. 출하 할당 또는 팔레트 출하 대기 상태입니다.",
+  "LOADED: 출하건에 적재된 상태입니다. 아직 최종 출하 확정 전입니다.",
+  "SHIPPED: 출하 확정이 완료된 상태입니다. 제품재고 차감과 출하 이력이 기록됩니다.",
+  "되돌림: CLOSED -> OPEN은 출하에 할당되지 않은 팔레트만 가능합니다. LOADED/SHIPPED는 일반 팔레트 구성 화면에서 되돌릴 수 없습니다.",
+].join("\n");
+
+function PalletStatusHeader() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      <span>{t("common.status")}</span>
+      <span
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-primary"
+        title={palletStatusHelpText}
+        aria-label={palletStatusHelpText}
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+      </span>
+    </div>
+  );
 }
 
 export default function PalletPage() {
@@ -87,6 +115,7 @@ export default function PalletPage() {
     [t, comCodeOptions],
   );
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const shipOrderScanInputRef = useRef<HTMLInputElement>(null);
   const [data, setData] = useState<Pallet[]>([]);
   const [loading, setLoading] = useState(false);
   const [boxesLoading, setBoxesLoading] = useState(false);
@@ -97,6 +126,7 @@ export default function PalletPage() {
   const [selectedPallet, setSelectedPallet] = useState<Pallet | null>(null);
   const [shipOrders, setShipOrders] = useState<ShipOrderSummary[]>([]);
   const [selectedShipOrderNo, setSelectedShipOrderNo] = useState("");
+  const [shipOrderScanText, setShipOrderScanText] = useState("");
   const [loadingShipOrders, setLoadingShipOrders] = useState(false);
   const [palletBoxes, setPalletBoxes] = useState<PalletBox[]>([]);
   const [availableBoxes, setAvailableBoxes] = useState<AvailableBox[]>([]);
@@ -132,6 +162,7 @@ export default function PalletPage() {
       const res = await api.get("/shipping/orders", { params: { status: "CONFIRMED", limit: "5000" } });
       const list: ShipOrderSummary[] = res.data?.data ?? [];
       const unshipped = list.filter((order) =>
+        order.palletCount === 0 &&
         order.items?.some((item) => item.orderQty > item.shippedQty),
       );
       setShipOrders(unshipped);
@@ -153,13 +184,36 @@ export default function PalletPage() {
     fetchShipOrders();
   }, [fetchData, fetchShipOrders]);
 
-  const shipOrderOptions = useMemo(() => [
-    { value: "", label: t("shipping.pallet.selectShipOrder", "출하지시를 선택하세요") },
-    ...shipOrders.map((order) => ({
-      value: order.shipOrderNo,
-      label: `${order.shipOrderNo} · ${order.customerName ?? "-"} · ${order.shipDate ?? order.dueDate ?? "-"}`,
-    })),
-  ], [shipOrders, t]);
+  useEffect(() => {
+    if (!isCreateModalOpen) return;
+    const timer = window.setTimeout(() => shipOrderScanInputRef.current?.focus(), 50);
+    return () => window.clearTimeout(timer);
+  }, [isCreateModalOpen]);
+
+  const selectedShipOrder = useMemo(
+    () => shipOrders.find((order) => order.shipOrderNo === selectedShipOrderNo) ?? null,
+    [selectedShipOrderNo, shipOrders],
+  );
+
+  const selectShipOrderForCreate = useCallback((shipOrderNo: string) => {
+    setSelectedShipOrderNo(shipOrderNo);
+    setShipOrderScanText(shipOrderNo);
+    shipOrderScanInputRef.current?.focus();
+  }, []);
+
+  const handleShipOrderScan = useCallback(() => {
+    const scanned = shipOrderScanText.trim();
+    if (!scanned) return;
+    const found = shipOrders.find((order) => order.shipOrderNo === scanned);
+    if (!found) {
+      setSelectedShipOrderNo("");
+      toast.error(t("shipping.pallet.shipOrderNotWaiting", "팔레트 생성 대기중인 출하지시가 아닙니다."));
+      shipOrderScanInputRef.current?.focus();
+      return;
+    }
+    setSelectedShipOrderNo(found.shipOrderNo);
+    setShipOrderScanText(found.shipOrderNo);
+  }, [shipOrderScanText, shipOrders, t]);
 
   /** 선택 팔레트의 포함 박스 조회 */
   const fetchPalletBoxes = useCallback(async (palletNo: string) => {
@@ -201,13 +255,6 @@ export default function PalletPage() {
     }
   }, []);
 
-  const stats = useMemo(() => ({
-    open: data.filter((p) => p.status === "OPEN").length,
-    closed: data.filter((p) => p.status === "CLOSED").length,
-    loaded: data.filter((p) => p.status === "LOADED").length,
-    shipped: data.filter((p) => p.status === "SHIPPED").length,
-  }), [data]);
-
   /** 액션 응답의 팔레트로 선택 상태를 동기화하고 목록·박스를 갱신 */
   const syncAfterAction = useCallback((pallet: Pallet | undefined) => {
     if (pallet) {
@@ -218,15 +265,19 @@ export default function PalletPage() {
   }, [fetchData, fetchPalletBoxes]);
 
   const handleCreate = useCallback(async () => {
-    if (!selectedShipOrderNo) {
+    const scanned = shipOrderScanText.trim();
+    const targetShipOrderNo = selectedShipOrderNo || scanned;
+    const found = shipOrders.find((order) => order.shipOrderNo === targetShipOrderNo);
+    if (!targetShipOrderNo || !found) {
       toast.error(t("shipping.pallet.shipOrderRequired", "출하지시를 먼저 선택하세요."));
       return;
     }
     setSaving(true);
     try {
-      await api.post(`/shipping/orders/${encodeURIComponent(selectedShipOrderNo)}/pallets`, {});
+      await api.post(`/shipping/orders/${encodeURIComponent(targetShipOrderNo)}/pallets`, {});
       setIsCreateModalOpen(false);
       setSelectedShipOrderNo("");
+      setShipOrderScanText("");
       fetchData();
       fetchShipOrders();
     } catch (e) {
@@ -234,7 +285,7 @@ export default function PalletPage() {
     } finally {
       setSaving(false);
     }
-  }, [fetchData, fetchShipOrders, selectedShipOrderNo, t]);
+  }, [fetchData, fetchShipOrders, selectedShipOrderNo, shipOrderScanText, shipOrders, t]);
 
   /** 박스번호 스캔 → 유효성 검증 후 선택 목록에 추가 */
   const handleScanBox = useCallback(async () => {
@@ -377,7 +428,7 @@ export default function PalletPage() {
     { accessorKey: "palletNo", header: t("shipping.pallet.palletNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
+    { accessorKey: "status", header: () => <PalletStatusHeader />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
     { accessorKey: "shipmentId", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
   ], [t, handleClosePallet, handleReopenPallet, fetchAvailableBoxes, selectPallet]);
@@ -393,20 +444,13 @@ export default function PalletPage() {
           <Button variant="secondary" size="sm" onClick={handleRefresh}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <Button size="sm" onClick={() => { fetchShipOrders(); setIsCreateModalOpen(true); }}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pallet.createPallet")}</Button>
+          <Button size="sm" onClick={() => { fetchShipOrders(); setSelectedShipOrderNo(""); setShipOrderScanText(""); setIsCreateModalOpen(true); }}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pallet.createPallet")}</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("shipping.pallet.statOpen")} value={stats.open} icon={Layers} color="blue" />
-        <StatCard label={t("shipping.pallet.statClosed")} value={stats.closed} icon={CheckCircle} color="green" />
-        <StatCard label={t("shipping.pallet.statLoaded")} value={stats.loaded} icon={Truck} color="orange" />
-        <StatCard label={t("shipping.pallet.statShipped")} value={stats.shipped} icon={Package} color="purple" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-auto">
-        <div className="lg:col-span-2">
-          <Card><CardContent>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden">
+        <div className="lg:col-span-2 min-h-0">
+          <Card className="h-full flex flex-col overflow-hidden" padding="none"><CardContent className="h-full p-4 flex flex-col min-h-0">
             <DataGrid
               data={data}
               columns={columns}
@@ -439,9 +483,12 @@ export default function PalletPage() {
             sqlQuery={`SELECT *\nFROM PALLET_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
           </CardContent></Card>
         </div>
-        <Card>
-          <CardHeader title={t("shipping.pallet.includedBoxes")} subtitle={selectedPallet ? selectedPallet.palletNo : t("shipping.pallet.selectPallet")} />
-          <CardContent>
+        <Card className="min-h-0 overflow-hidden flex flex-col" padding="none">
+          <CardContent className="h-full p-4 flex flex-col min-h-0 overflow-y-auto">
+            <div className="mb-2 flex-shrink-0">
+              <h2 className="text-sm font-semibold text-text">{t("shipping.pallet.includedBoxes")}</h2>
+              <p className="mt-0.5 text-xs text-text-muted">{selectedPallet ? selectedPallet.palletNo : t("shipping.pallet.selectPallet")}</p>
+            </div>
             {selectedPallet ? (
               boxesLoading ? (
                 <div className="flex items-center justify-center py-8 text-text-muted">
@@ -483,25 +530,84 @@ export default function PalletPage() {
         </Card>
       </div>
 
-      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t("shipping.pallet.createPallet")} size="lg">
-        <div className="space-y-4">
-          <p className="text-text-muted">{t("shipping.pallet.createConfirm", "출하지시 기준으로 팔레트를 생성합니다.")}</p>
-          <Select
-            label={t("shipping.pallet.shipOrderNo", "출하지시번호")}
-            options={shipOrderOptions}
-            value={selectedShipOrderNo}
-            onChange={setSelectedShipOrderNo}
-            disabled={loadingShipOrders}
-            required
-            fullWidth
-          />
-          <p className="text-sm text-text-muted">{t("shipping.pallet.autoNumberHint", "팔레트번호는 자동으로 채번됩니다.")}</p>
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleCreate} disabled={saving || !selectedShipOrderNo}>
-              {saving ? t("common.saving") : t("common.create")}
-            </Button>
-          </div>
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t("shipping.pallet.createPallet")} size="xl">
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] gap-4">
+          <section className="min-h-[320px] rounded-lg border border-border bg-background/60 overflow-hidden">
+            <div className="px-4 py-3 border-b border-border">
+              <h3 className="text-sm font-semibold text-text">{t("shipping.pallet.waitingShipOrders", "팔레트 대기중인 출하지시")}</h3>
+              <p className="mt-0.5 text-xs text-text-muted">{t("shipping.pallet.waitingShipOrdersHint", "팔레트가 아직 생성되지 않은 확정 출하지시만 표시됩니다.")}</p>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto p-2">
+              {loadingShipOrders ? (
+                <div className="flex items-center justify-center py-10 text-sm text-text-muted">
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  {t("common.loading", "로딩 중")}
+                </div>
+              ) : shipOrders.length === 0 ? (
+                <div className="py-10 text-center text-sm text-text-muted">
+                  {t("shipping.pallet.noWaitingShipOrders", "팔레트 생성 대기중인 출하지시가 없습니다.")}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {shipOrders.map((order) => (
+                    <button
+                      key={order.shipOrderNo}
+                      type="button"
+                      onClick={() => selectShipOrderForCreate(order.shipOrderNo)}
+                      className={`w-full rounded-md border px-3 py-2 text-left transition-colors ${
+                        selectedShipOrderNo === order.shipOrderNo
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-surface hover:bg-primary/5"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-sm font-semibold text-text">{order.shipOrderNo}</span>
+                        <span className="text-xs text-text-muted">{order.shipDate ?? order.dueDate ?? "-"}</span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between gap-2 text-xs text-text-muted">
+                        <span className="truncate">{order.customerName ?? "-"}</span>
+                        <span>{order.items?.length ?? 0}{t("common.count")}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <p className="text-sm text-text-muted">{t("shipping.pallet.createConfirm", "출하지시번호를 스캔하거나 좌측 대기 목록에서 선택해 팔레트를 생성합니다.")}</p>
+            <Input
+              ref={shipOrderScanInputRef}
+              label={t("shipping.pallet.shipOrderNo", "출하지시번호")}
+              placeholder={t("shipping.pallet.scanShipOrderPlaceholder", "출하지시번호 스캔")}
+              value={shipOrderScanText}
+              onChange={(e) => { setShipOrderScanText(e.target.value); setSelectedShipOrderNo(""); }}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); handleShipOrderScan(); } }}
+              leftIcon={<ScanLine className="w-4 h-4" />}
+              required
+              fullWidth
+            />
+            <div className="rounded-lg border border-border bg-background p-3 min-h-[96px]">
+              <p className="text-xs text-text-muted">{t("shipping.pallet.selectedShipOrder", "선택된 출하지시")}</p>
+              {selectedShipOrder ? (
+                <div className="mt-2 space-y-1">
+                  <p className="font-mono text-base font-semibold text-text">{selectedShipOrder.shipOrderNo}</p>
+                  <p className="text-sm text-text-muted">{selectedShipOrder.customerName ?? "-"}</p>
+                  <p className="text-xs text-text-muted">{selectedShipOrder.shipDate ?? selectedShipOrder.dueDate ?? "-"}</p>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-text-muted">{t("shipping.pallet.scanShipOrderHint", "스캔 후 Enter를 누르면 대기 목록과 대조합니다.")}</p>
+              )}
+            </div>
+            <p className="text-sm text-text-muted">{t("shipping.pallet.autoNumberHint", "팔레트번호는 자동으로 채번됩니다.")}</p>
+            <div className="flex justify-end gap-2 pt-4 border-t border-border">
+              <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={handleCreate} disabled={saving || (!selectedShipOrderNo && !shipOrderScanText.trim())}>
+                {saving ? t("common.saving") : t("common.create")}
+              </Button>
+            </div>
+          </section>
         </div>
       </Modal>
 

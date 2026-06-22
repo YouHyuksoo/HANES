@@ -284,6 +284,7 @@ describe('ShipOrderService', () => {
 
     it('출하지시에 귀속된 팔레트를 생성한다', async () => {
       mockNumbering.nextPalletNo.mockResolvedValue('PLT-001');
+      mockPalletRepo.find.mockResolvedValue([]);
       mockPalletRepo.findOne.mockResolvedValue(null);
       mockPalletRepo.create.mockImplementation((payload) => payload as any);
       mockQr.manager.save.mockImplementation(async (entity: any) => entity);
@@ -302,6 +303,20 @@ describe('ShipOrderService', () => {
         company: 'C1',
         plant: 'P1',
       }));
+    });
+
+    it('이미 팔레트가 생성된 출하지시는 팔레트를 재생성하지 않는다', async () => {
+      mockPalletRepo.find.mockResolvedValue([
+        { palletNo: 'PLT-EXIST', shipOrderNo: 'SO-001', status: 'OPEN' },
+      ] as any);
+
+      await expect(target.createPalletForOrder('SO-001', {}, 'C1', 'P1')).rejects.toThrow(
+        '이미 팔레트가 생성된 출하지시입니다',
+      );
+
+      expect(mockNumbering.nextPalletNo).not.toHaveBeenCalled();
+      expect(mockPalletRepo.create).not.toHaveBeenCalled();
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
 
     it('출하지시에 없는 품목 박스는 출하지시 팔레트에 적재하지 않는다', async () => {
