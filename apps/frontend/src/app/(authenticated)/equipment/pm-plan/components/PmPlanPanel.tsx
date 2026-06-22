@@ -14,7 +14,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
-import { QtyInput } from "@/components/shared";
+import { QtyInput, ComCodeSelect } from "@/components/shared";
 import { Plus, Trash2 } from "lucide-react";
 import { useEquipOptions, useEquipBomOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -58,8 +58,6 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
   const { t } = useTranslation();
   const isEdit = !!editingPlan;
   const { options: equipOptions } = useEquipOptions();
-  const pmTypeOpts = useComCodeOptions("PM_TYPE");
-  const cycleTypeOpts = useComCodeOptions("PM_CYCLE_TYPE");
   const itemTypeOpts = useComCodeOptions("PM_ITEM_TYPE");
 
   const [equipId, setEquipId] = useState("");
@@ -267,16 +265,18 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
             <div>
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("equipment.pmPlan.sectionCycle", "주기 설정")}</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Select
+                <ComCodeSelect
+                  groupCode="PM_TYPE"
+                  includeAll={false}
                   label={t("equipment.pmPlan.pmType")}
-                  options={pmTypeOpts}
                   value={pmType}
                   onChange={setPmType}
                   fullWidth
                 />
-                <Select
+                <ComCodeSelect
+                  groupCode="PM_CYCLE_TYPE"
+                  includeAll={false}
                   label={t("equipment.pmPlan.cycleType")}
-                  options={cycleTypeOpts}
                   value={cycleType}
                   onChange={setCycleType}
                   fullWidth

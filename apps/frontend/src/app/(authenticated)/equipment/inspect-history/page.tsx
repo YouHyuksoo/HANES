@@ -16,10 +16,10 @@ import { ColumnDef } from "@tanstack/react-table";
 import {
   ScrollText, Search, RefreshCw,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
-import { useComCodeOptions } from "@/hooks/useComCode";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import api from "@/services/api";
 
 interface InspectHistory {
@@ -72,23 +72,6 @@ export default function InspectHistoryPage() {
   const [dateFrom, setDateFrom] = useState(todayStr);
   const [dateTo, setDateTo] = useState(todayStr);
 
-  const comCodeTypeOptions = useComCodeOptions("INSPECT_CHECK_TYPE");
-  const typeOptions = useMemo(() => [
-    { value: "", label: `${t("equipment.inspectHistory.inspectType", "점검유형")}: ${t("common.all", "전체")}` },
-    ...comCodeTypeOptions.map(opt => ({ ...opt, label: `${t("equipment.inspectHistory.inspectType", "점검유형")}: ${opt.label}` })),
-  ], [t, comCodeTypeOptions]);
-
-  const comCodeResultOptions = useComCodeOptions("INSPECT_JUDGE");
-  const resultOptions = useMemo(() => [
-    { value: "", label: `${t("equipment.inspectHistory.result", "점검결과")}: ${t("common.all", "전체")}` },
-    ...comCodeResultOptions.map(opt => ({ ...opt, label: `${t("equipment.inspectHistory.result", "점검결과")}: ${opt.label}` })),
-  ], [t, comCodeResultOptions]);
-
-  const comCodeEquipTypeOptions = useComCodeOptions("EQUIP_TYPE");
-  const equipTypeOptions = useMemo(() => [
-    { value: "", label: `${t("equipment.inspectHistory.equipType", "설비유형")}: ${t("common.all", "전체")}` },
-    ...comCodeEquipTypeOptions.map(opt => ({ ...opt, label: `${t("equipment.inspectHistory.equipType", "설비유형")}: ${opt.label}` })),
-  ], [t, comCodeEquipTypeOptions]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -179,13 +162,13 @@ export default function InspectHistoryPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-32 flex-shrink-0">
-                <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
+                <ComCodeSelect groupCode="INSPECT_CHECK_TYPE" labelPrefix={t("equipment.inspectHistory.inspectType", "점검유형")} value={typeFilter} onChange={setTypeFilter} fullWidth />
               </div>
               <div className="w-32 flex-shrink-0">
-                <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth />
+                <ComCodeSelect groupCode="INSPECT_JUDGE" labelPrefix={t("equipment.inspectHistory.result", "점검결과")} value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
               <div className="w-32 flex-shrink-0">
-                <Select options={equipTypeOptions} value={equipTypeFilter} onChange={setEquipTypeFilter} fullWidth />
+                <ComCodeSelect groupCode="EQUIP_TYPE" labelPrefix={t("equipment.inspectHistory.equipType", "설비유형")} value={equipTypeFilter} onChange={setEquipTypeFilter} fullWidth />
               </div>
               <DateRangeFilter from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} className="flex-shrink-0" />
             </div>
