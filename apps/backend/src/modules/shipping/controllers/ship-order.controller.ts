@@ -41,6 +41,7 @@ import {
 } from '../dto/ship-order.dto';
 import { ShipBoxDto } from '../dto/ship-box.dto';
 import { AddBoxToPalletDto, RemoveBoxFromPalletDto } from '../dto/pallet.dto';
+import { CancelOrderShipmentDto } from '../dto/cancel-shipment.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('출하관리 - 출하지시')
@@ -204,5 +205,19 @@ export class ShipOrderController {
   async cancelShipBox(@Param('id') id: string, @Body() dto: ShipBoxDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.shipOrderService.cancelShipBox(id, dto, company, plant);
     return ResponseUtil.success(data, '박스 출하가 취소되었습니다.');
+  }
+
+  @Post(':id/cancel-shipment')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '출하지시 단위 출하취소(상태전이+재고복원+취소이력)' })
+  @ApiParam({ name: 'id', description: '출하지시 번호' })
+  async cancelOrderShipment(
+    @Param('id') id: string,
+    @Body() dto: CancelOrderShipmentDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.shipOrderService.cancelOrderShipment(id, dto, company, plant);
+    return ResponseUtil.success(data, '출하가 취소되었습니다.');
   }
 }

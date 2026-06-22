@@ -22,6 +22,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { ShipmentService } from './shipment.service';
 
 describe('ShipOrderService', () => {
   let target: ShipOrderService;
@@ -73,6 +74,7 @@ describe('ShipOrderService', () => {
         { provide: TransactionService, useValue: mockTx },
         { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
         { provide: NumberingService, useValue: mockNumbering },
+        { provide: ShipmentService, useValue: createMock<ShipmentService>() },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ShipOrderService>(ShipOrderService);
@@ -401,7 +403,8 @@ describe('ShipOrderService.shipBox', () => {
         { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed }) } },
         { provide: ProductInventoryService, useValue: { issueStockByItemFifoInTx: issueStockInTx, receiveStockInTx } },
         { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
-        { provide: NumberingService, useValue: { nextShipmentNo: jest.fn().mockResolvedValue('SO-TEST') } },
+        { provide: NumberingService, useValue: { nextShipmentNo: jest.fn().mockResolvedValue('SO-TEST'), nextReturnNo: jest.fn().mockResolvedValue('RT-TEST') } },
+        { provide: ShipmentService, useValue: { reverseShipmentInTx: jest.fn().mockResolvedValue(undefined), cancelInTx: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     service = moduleRef.get(ShipOrderService);

@@ -28,6 +28,8 @@ import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
+import { ShipmentReturn } from '../../../entities/shipment-return.entity';
+import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import {
   CreateShipOrderDto,
   UpdateShipOrderDto,
@@ -37,6 +39,8 @@ import {
 } from '../dto/ship-order.dto';
 import { ShipBoxDto } from '../dto/ship-box.dto';
 import { AddBoxToPalletDto, RemoveBoxFromPalletDto } from '../dto/pallet.dto';
+import { CancelOrderShipmentDto } from '../dto/cancel-shipment.dto';
+import { ShipmentService } from './shipment.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -64,6 +68,7 @@ export class ShipOrderService {
     private readonly tx: TransactionService,
     private readonly sysConfig: SysConfigService,
     private readonly numbering: NumberingService,
+    private readonly shipmentService: ShipmentService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -955,6 +960,106 @@ export class ShipOrderService {
    */
   async cancelShipBox(shipOrderNo: string, dto: ShipBoxDto, company?: string, plant?: string) {
     return this.tx.run((qr) => this.cancelShipBoxInTx(qr, shipOrderNo, dto.boxNo, dto.workerId, company, plant));
+  }
+
+  /**
+   * 출하지시 단위 출하취소: 팔레트출하분 reverse/cancel + 박스출하분 cancel-ship-box를
+   * 단일 트랜잭션으로 합성하고 SHIPPING_RETURNS에 취소이력을 기록한다.
+   * ERP 가드는 트랜잭션 진입 전 사전조회 시점에 검증한다(부분 부작용 방지).
+   */
+  async cancelOrderShipment(shipOrderNo: string, dto: CancelOrderShipmentDto, company?: string, plant?: string) {
+    const where = this.tenantWhere(company, plant);
+
+    // 사전 조회(검증용)
+    const shipments = await this.shipmentRepository.find({
+      where: { shipOrderNo, ...where },
+    });
+    const activeShipments = shipments.filter((s) => ['PREPARING', 'LOADED', 'SHIPPED'].includes(s.status));
+    const looseBoxes = await this.boxRepository.find({
+      where: { shipOrderNo, palletNo: IsNull(), status: 'SHIPPED', ...where },
+    });
+
+    if (activeShipments.length === 0 && looseBoxes.length === 0) {
+      throw new BadRequestException('취소할 출하분이 없습니다.');
+    }
+    // ERP 가드: 하나라도 연동완료면 전체 중단 (트랜잭션 진입 전 — 부분 부작용 방지)
+    const erpBlocked = activeShipments.find((s) => s.erpSyncYn === 'Y');
+    if (erpBlocked) {
+      throw new BadRequestException(
+        `ERP 연동이 완료된 출하(${erpBlocked.shipNo})가 포함되어 취소할 수 없습니다. ERP 연동분부터 정리해 주세요.`,
+      );
+    }
+
+    const canceledShipments: string[] = [];
+    const canceledBoxes: string[] = [];
+    const itemQty = new Map<string, number>();
+
+    let returnNo!: string;
+    await this.tx.run(async (qr) => {
+      // 1) 팔레트출하분: SHIPPED→reverse 후 CANCELED 마감+팔레트 분리, PREPARING/LOADED→cancel
+      for (const s of activeShipments) {
+        if (s.status === 'SHIPPED') {
+          // 재고복원/라벨/팔레트 LOADED/박스 CLOSED/shippedQty 복원
+          await this.shipmentService.reverseShipmentInTx(qr, s, dto.reason, company, plant);
+          // 되돌린 후 출하 자체를 취소 마감 + 팔레트 분리(CLOSED)
+          await qr.manager.update(
+            PalletMaster,
+            { shipmentId: s.shipNo, ...where },
+            { shipmentId: null, status: 'CLOSED' },
+          );
+          await qr.manager.update(
+            ShipmentLog,
+            { shipNo: s.shipNo, ...where },
+            { status: 'CANCELED', palletCount: 0, boxCount: 0, totalQty: 0, remark: `출하취소:${dto.reason}` },
+          );
+        } else {
+          await this.shipmentService.cancelInTx(qr, s, dto.reason, company, plant);
+        }
+        canceledShipments.push(s.shipNo);
+      }
+
+      // 2) 박스출하분: cancel-ship-box(재고복원/박스 CLOSED/라벨/shippedQty 복원)
+      for (const b of looseBoxes) {
+        const res = await this.cancelShipBoxInTx(qr, shipOrderNo, b.boxNo, dto.workerId, company, plant);
+        canceledBoxes.push(b.boxNo);
+        itemQty.set(res.itemCode, (itemQty.get(res.itemCode) ?? 0) + res.qty);
+      }
+
+      // 3) 취소이력(SHIPPING_RETURNS) 자동 생성
+      //    YAGNI(1차): 품목별 수량은 박스출하분(itemQty)만 항목화하고,
+      //    팔레트출하분은 remark에 shipNo 목록으로 요약한다. 팔레트 박스별 품목수량 항목화는
+      //    reverseShipmentInTx가 itemQtyMap을 반환하도록 확장해야 하므로 본 작업 범위 밖.
+      returnNo = await this.numbering.nextReturnNo(qr);
+      const ret = qr.manager.create(ShipmentReturn, {
+        returnNo,
+        shipmentId: shipOrderNo,
+        returnDate: new Date(),
+        returnReason: dto.reason,
+        status: 'COMPLETED',
+        remark: `출하취소(shipments:${canceledShipments.join(',') || '-'} / boxes:${canceledBoxes.length})`,
+        company: company || null,
+        plant: plant || null,
+      });
+      await qr.manager.save(ret);
+
+      let seq = 1;
+      for (const [itemCode, qty] of itemQty) {
+        await qr.manager.save(
+          qr.manager.create(ShipmentReturnItem, {
+            returnNo,
+            seq: seq++,
+            itemCode,
+            returnQty: qty,
+            disposalType: 'RESTOCK',
+            company: company || null,
+            plant: plant || null,
+          }),
+        );
+      }
+    });
+
+    const restoredQty = [...itemQty.values()].reduce((a, b) => a + b, 0);
+    return { shipOrderNo, canceledShipments, canceledBoxes, restoredQty, returnNo };
   }
 
   /** 좌측 출하이력: 출하분(SHIPPED 박스)이 있는 출하지시 단위 통합 목록 */
