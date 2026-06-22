@@ -11,6 +11,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { formatQty, parseQty } from "@/utils/qty";
 import toast from "react-hot-toast";
 import { Plus, Trash2, Search } from "lucide-react";
 import { Button, Input } from "@/components/ui";
@@ -65,6 +66,7 @@ interface CompactItemInputProps {
   value: string;
   onChange: (value: string) => void;
   type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   min?: number;
   step?: number;
   error?: string;
@@ -75,6 +77,7 @@ function CompactItemInput({
   value,
   onChange,
   type = "text",
+  inputMode,
   min,
   step,
   error,
@@ -86,6 +89,7 @@ function CompactItemInput({
       </span>
       <input
         type={type}
+        inputMode={inputMode}
         min={min}
         step={step}
         value={value}
@@ -292,12 +296,12 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
                       onChange={(value) => updateItem(idx, "lineNo", Number(value) || 1)} />
                     <CompactItemInput label={t("material.po.revNo", "릴리즈번호")} type="number" value={String(item.revNo)}
                       onChange={(value) => updateItem(idx, "revNo", Number(value) || 1)} />
-                    <CompactItemInput label={t("material.po.orderQty")} type="number" min={1} step={1}
-                      value={String(item.orderQty)}
+                    <CompactItemInput label={t("material.po.orderQty")} type="text" inputMode="numeric"
+                      value={formatQty(item.orderQty)}
                       error={(!Number.isInteger(item.orderQty) || item.orderQty < 1)
                         ? t("material.po.qtyMin", "1 이상")
                         : undefined}
-                      onChange={(value) => updateItem(idx, "orderQty", Math.trunc(Number(value)) || 0)} />
+                      onChange={(value) => updateItem(idx, "orderQty", Math.trunc(parseQty(value)) || 0)} />
                     <CompactItemInput label={t("common.remark")} value={item.remark}
                       onChange={(value) => updateItem(idx, "remark", value)} />
                   </div>

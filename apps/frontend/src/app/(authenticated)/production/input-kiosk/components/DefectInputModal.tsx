@@ -17,6 +17,7 @@ import { Modal, Button } from '@/components/ui';
 import { useKioskStore } from '@/stores/kioskStore';
 import { useComCodeList } from '@/hooks/useComCode';
 import toast from 'react-hot-toast';
+import { formatQty, parseQty } from '@/utils/qty';
 
 interface DefectInputModalProps {
   isOpen: boolean;
@@ -38,7 +39,7 @@ export default function DefectInputModal({ isOpen, onClose }: DefectInputModalPr
       toast.error(t('kiosk.defect.selectType'));
       return;
     }
-    const qtyNum = parseInt(qty, 10);
+    const qtyNum = parseQty(qty);
     if (!qtyNum || qtyNum < 1) {
       toast.error(t('kiosk.defect.qtyMin'));
       return;
@@ -88,9 +89,9 @@ export default function DefectInputModal({ isOpen, onClose }: DefectInputModalPr
 
             {/* 수량 */}
             <input
-              type="number"
-              min="1"
-              value={qty}
+              type="text"
+              inputMode="numeric"
+              value={qty === '' ? '' : formatQty(parseQty(qty))}
               onChange={e => setQty(e.target.value)}
               className="w-20 h-9 text-center text-sm font-bold bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-red-400"
             />

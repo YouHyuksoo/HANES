@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 import { Save, ChevronDown } from 'lucide-react';
 import api from '@/services/api';
 import { useKioskStore, buildSerialNo } from '@/stores/kioskStore';
+import { formatQty, parseQty } from '@/utils/qty';
 
 interface ProductionInputBarProps {
   onSaved: () => void;
@@ -77,24 +78,24 @@ export default function ProductionInputBar({
 
   const handleTotalChange = useCallback((val: string) => {
     setTotalQty(val);
-    const total = Number(val) || 0;
-    const defect = Number(defectQty) || 0;
+    const total = parseQty(val);
+    const defect = parseQty(defectQty);
     setGoodQty(String(Math.max(0, total - defect)));
   }, [defectQty]);
 
   const handleDefectChange = useCallback((val: string) => {
     setDefectQty(val);
-    const total = Number(totalQty) || 0;
-    const defect = Number(val) || 0;
+    const total = parseQty(totalQty);
+    const defect = parseQty(val);
     setGoodQty(String(Math.max(0, total - defect)));
   }, [totalQty]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSave) return;
-    const good = Number(goodQty) || 0;
+    const good = parseQty(goodQty);
     // pendingDefects 합계가 있으면 우선, 없으면 defectQty 직접 입력값 사용
     const pendingDefectTotal = pendingDefects.reduce((s, d) => s + d.qty, 0);
-    const defect = pendingDefectTotal > 0 ? pendingDefectTotal : (Number(defectQty) || 0);
+    const defect = pendingDefectTotal > 0 ? pendingDefectTotal : parseQty(defectQty);
     if (good + defect === 0) {
       toast.error(t('kiosk.input.qtyRequired'));
       return;
@@ -175,9 +176,9 @@ export default function ProductionInputBar({
             <div className="flex flex-col gap-1 min-w-0">
               <span className="text-[11px] text-text-muted text-center">{t('kiosk.input.totalQty')}</span>
               <input
-                type="number"
-                min="0"
-                value={totalQty}
+                type="text"
+                inputMode="numeric"
+                value={totalQty === '' ? '' : formatQty(parseQty(totalQty))}
                 onChange={e => handleTotalChange(e.target.value)}
                 placeholder="0"
                 className="h-8 w-full text-center text-base font-bold bg-surface border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
@@ -187,9 +188,9 @@ export default function ProductionInputBar({
             <div className="flex flex-col gap-1 min-w-0">
               <span className="text-[11px] text-green-600 dark:text-green-400 text-center">{t('kiosk.input.goodQty')}</span>
               <input
-                type="number"
-                min="0"
-                value={goodQty}
+                type="text"
+                inputMode="numeric"
+                value={goodQty === '' ? '' : formatQty(parseQty(goodQty))}
                 readOnly
                 placeholder="0"
                 className="h-8 w-full text-center text-base font-bold bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded focus:outline-none cursor-default"
@@ -205,9 +206,9 @@ export default function ProductionInputBar({
                 </div>
               ) : (
                 <input
-                  type="number"
-                  min="0"
-                  value={defectQty}
+                  type="text"
+                  inputMode="numeric"
+                  value={defectQty === '' ? '' : formatQty(parseQty(defectQty))}
                   onChange={e => handleDefectChange(e.target.value)}
                   placeholder="0"
                   className="h-8 w-full text-center text-base font-bold bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded focus:outline-none"

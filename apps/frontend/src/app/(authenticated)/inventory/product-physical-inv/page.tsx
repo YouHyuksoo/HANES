@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { formatQty, parseQty } from "@/utils/qty";
 import {
   ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle, CheckCircle,
 } from "lucide-react";
@@ -119,13 +120,14 @@ export default function ProductPhysicalInvPage() {
       meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <input
-          type="number"
+          type="text"
+          inputMode="numeric"
           className="w-full px-2 py-1 text-sm border border-border rounded bg-surface text-text text-right focus:outline-none focus:ring-1 focus:ring-primary"
-          value={row.original.countedQty ?? ""}
+          value={formatQty(row.original.countedQty)}
           placeholder="-"
           onChange={(e) => {
             const v = e.target.value;
-            updateCountedQty(row.original.id, v === "" ? null : Number(v));
+            updateCountedQty(row.original.id, v === "" ? null : parseQty(v));
           }}
         />
       ),

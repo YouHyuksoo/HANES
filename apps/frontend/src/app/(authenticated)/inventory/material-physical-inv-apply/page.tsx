@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { formatQty, parseQty } from "@/utils/qty";
 import {
   CheckSquare, Search, RefreshCw, Calendar, ClipboardCheck,
   Boxes, ListChecks, CheckCircle, AlertTriangle,
@@ -115,9 +116,9 @@ export default function MaterialPhysicalInvApplyPage() {
       cell: ({ row }) => <span>{row.original.qty.toLocaleString()} {row.original.unit || ""}</span> },
     { id: "countedQty", header: t("material.physicalInv.countedQty"), size: 120, meta: { filterType: "none" as const },
       cell: ({ row }) => (
-        <input type="number" value={row.original.countedQty ?? ""} placeholder="-"
+        <input type="text" inputMode="numeric" value={formatQty(row.original.countedQty)} placeholder="-"
           className="w-full px-2 py-1 text-sm border border-border rounded bg-surface text-text text-right focus:outline-none focus:ring-1 focus:ring-primary"
-          onChange={e => updateCountedQty(row.original.id, e.target.value === "" ? null : Number(e.target.value))} />
+          onChange={e => updateCountedQty(row.original.id, e.target.value === "" ? null : parseQty(e.target.value))} />
       ) },
     { id: "diffQty", header: t("material.physicalInv.diffQty"), size: 90, meta: { align: "right" as const },
       cell: ({ row }) => {
