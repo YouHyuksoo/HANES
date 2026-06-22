@@ -189,7 +189,8 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
             <h3 className="text-xs font-semibold text-text-muted mb-2">{t("production.order.sectionBasic")}</h3>
             <div className="grid grid-cols-2 gap-3">
               <Input label={t("production.order.orderNo")} value={form.orderNo}
-                onChange={e => setField("orderNo", e.target.value)} disabled={isEdit} fullWidth />
+                onChange={e => setField("orderNo", e.target.value)} disabled
+                placeholder={!isEdit ? t("production.order.orderNoAuto", "저장 시 자동 생성") : undefined} fullWidth />
               <div>
                 <label className="block text-xs font-medium text-text mb-1">{t("common.partName")}</label>
                 <div className="flex gap-1">
