@@ -370,6 +370,7 @@
     "shipping.pack": "包装管理",
     "shipping.boxStock": "产品库存查询",
     "shipping.pallet": "托盘装载管理",
+    "shipping.palletShip": "托盘出货",
     "shipping.confirm": "出货确认处理",
     "shipping.order": "出货指示登记",
     "shipping.history": "出货历史查询",
@@ -2085,6 +2086,7 @@
         "receivedDate": "到货日期"
       },
       "iqc005Title": "材料入库管理",
+      "fillRemaining": "剩余入库",
       "iqc005Description": "查询采购订单并登记物料入库。",
       "action": {
         "receive": "入库"
@@ -2229,6 +2231,14 @@
       "quantityLabel": "数量",
       "supplierLabel": "供应商",
       "iqcPassedLabel": "IQC合格日",
+      "autoLocation": "自动使用品目主数据指定库位",
+      "autoLocationHint": "按各品目主数据指定的存储库位入库。",
+      "selectLocation": "选择库位",
+      "scanLocation": "扫描库位条码",
+      "noLocation": "所选仓库未登记库位。请直接扫描条码，或在仓库管理中登记库位。",
+      "scan": {
+        "selectLocation": "请选择或扫描存储位置。"
+      },
       "warehouseLabel": "入库仓库",
       "locationLabel": "存储位置",
       "locationPlaceholder": "例：A-01-01",
@@ -3954,6 +3964,11 @@
       "title": "不良管理",
       "description": "管理不良发生现况，追踪修理状态。",
       "occurredAt": "发生时间",
+      "panelPlaceholder": "点击登记按钮录入新的不良",
+      "target": "不良对象",
+      "info": "不良信息",
+      "grade": "不良等级",
+      "scope": "不良范围",
       "workOrder": "作业指示",
       "workOrderNo": "作业指示编号",
       "defectCode": "不良代码",
@@ -5181,7 +5196,15 @@
       "scanLabel": "扫描",
       "scanPalletBarcode": "扫描托盘条码",
       "scheduledShip": "出货预定",
-      "shipLabel": "出货"
+      "shipLabel": "出货",
+      "startFulfillment": "出货作业",
+      "remainingQty": "剩余数量",
+      "reverseShipment": "出货冲销",
+      "unshippedOrders": "未出货指示",
+      "unshippedOrdersHint": "点击作业图标，按出货指示开始托盘作业。",
+      "noUnshippedOrders": "没有未出货的出货指示。",
+      "reverseWarning": "将出货回退至LOADED状态并恢复产品库存。已与ERP联动的出货无法冲销。",
+      "reverseReason": "冲销原因"
     },
     "scan": {
       "title": "出货扫描验证",

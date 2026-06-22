@@ -371,6 +371,7 @@
     "shipping.pack": "제품포장관리",
     "shipping.boxStock": "제품재고조회",
     "shipping.pallet": "팔레트적재관리",
+    "shipping.palletShip": "팔레트출하",
     "shipping.confirm": "출하작업",
     "shipping.order": "출하지시등록",
     "shipping.history": "출하이력조회",
@@ -2502,6 +2503,7 @@
       "modal": {
         "receiveTitle": "자재입하 등록"
       },
+      "fillRemaining": "잔량입하",
       "singleLot": "단일 LOT 발급",
       "serialUnitNote": "품목 마스터 LOT_UNIT_QTY 값. 수정 불가.",
       "confirm": {
@@ -2644,7 +2646,15 @@
       "locationPlaceholder": "예: A-01-01",
       "remarkPlaceholder": "비고 입력",
       "confirmReceiving": "입고확정",
-      "confirmTitle": "입고확정"
+      "confirmTitle": "입고확정",
+      "autoLocation": "품목마스터 지정 위치 자동 사용",
+      "autoLocationHint": "각 품목마스터에 지정된 적재 로케이션으로 입고됩니다.",
+      "selectLocation": "로케이션 선택",
+      "scanLocation": "로케이션 바코드 스캔",
+      "noLocation": "선택한 창고에 등록된 로케이션이 없습니다. 바코드로 직접 스캔하거나 창고관리에서 로케이션을 등록하세요.",
+      "scan": {
+        "selectLocation": "적재위치를 선택하거나 스캔해 주세요."
+      }
     },
     "receiveHistory": {
       "title": "입고이력조회",
@@ -4401,7 +4411,12 @@
       "partNoPlaceholder": "품번을 입력하세요",
       "equipmentNo": "설비번호",
       "remarkPlaceholder": "불량 상세 내용을 입력하세요",
-      "searchPlaceholder": "작업지시, 불량명 검색..."
+      "searchPlaceholder": "작업지시, 불량명 검색...",
+      "panelPlaceholder": "불량 등록 버튼을 눌러 신규 불량을 입력하세요",
+      "target": "불량 대상",
+      "info": "불량 정보",
+      "grade": "불량등급",
+      "scope": "불량범위"
     },
     "defectCode": {
       "title": "불량코드관리",
@@ -5185,7 +5200,15 @@
       "scanLabel": "스캔",
       "scanPalletBarcode": "팔레트 바코드 스캔",
       "scheduledShip": "출하예정",
-      "shipLabel": "출하"
+      "shipLabel": "출하",
+      "startFulfillment": "출하작업",
+      "remainingQty": "잔여수량",
+      "reverseShipment": "출하 역분개",
+      "unshippedOrders": "미출하 출하지시",
+      "unshippedOrdersHint": "작업 아이콘을 누르면 출하지시 기준 팔레트 작업을 시작합니다.",
+      "noUnshippedOrders": "미출하 출하지시가 없습니다.",
+      "reverseWarning": "출하를 LOADED 상태로 되돌리고 제품재고를 복원합니다. ERP 연동된 출하는 역분개할 수 없습니다.",
+      "reverseReason": "역분개 사유"
     },
     "scan": {
       "title": "출하 스캔 검증",

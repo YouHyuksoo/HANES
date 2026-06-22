@@ -370,6 +370,7 @@
     "shipping.pack": "Packing",
     "shipping.boxStock": "Product Stock",
     "shipping.pallet": "Pallet Load Mgmt",
+    "shipping.palletShip": "Pallet Ship",
     "shipping.confirm": "Shipping Work",
     "shipping.order": "Shipment Order",
     "shipping.history": "Shipment History",
@@ -2085,6 +2086,7 @@
         "receivedDate": "Receive Date"
       },
       "iqc005Title": "Material Receiving",
+      "fillRemaining": "Receive Remaining",
       "iqc005Description": "Search POs and register material receipts.",
       "action": {
         "receive": "Receive"
@@ -2229,6 +2231,14 @@
       "quantityLabel": "Quantity",
       "supplierLabel": "Supplier",
       "iqcPassedLabel": "IQC Passed Date",
+      "autoLocation": "Auto-use part master location",
+      "autoLocationHint": "Goods are received into the storage location designated in each part master.",
+      "selectLocation": "Select location",
+      "scanLocation": "Scan location barcode",
+      "noLocation": "No locations are registered for the selected warehouse. Scan a barcode directly or register locations in Warehouse Management.",
+      "scan": {
+        "selectLocation": "Please select or scan a storage location."
+      },
       "warehouseLabel": "Warehouse",
       "locationLabel": "Storage Location",
       "locationPlaceholder": "e.g. A-01-01",
@@ -3954,6 +3964,11 @@
       "title": "Defect Management",
       "description": "Manage defect status and track repairs.",
       "occurredAt": "Occurred At",
+      "panelPlaceholder": "Click the Register button to enter a new defect",
+      "target": "Defect Target",
+      "info": "Defect Info",
+      "grade": "Defect Grade",
+      "scope": "Defect Scope",
       "workOrder": "Work Order",
       "workOrderNo": "Work Order No.",
       "defectCode": "Defect Code",
@@ -5181,7 +5196,15 @@
       "scanLabel": "Scan",
       "scanPalletBarcode": "Scan Pallet Barcode",
       "scheduledShip": "Scheduled Shipment",
-      "shipLabel": "Shipment"
+      "shipLabel": "Shipment",
+      "startFulfillment": "Start Fulfillment",
+      "remainingQty": "Remaining Qty",
+      "reverseShipment": "Reverse Shipment",
+      "unshippedOrders": "Unshipped Orders",
+      "unshippedOrdersHint": "Click the action icon to start pallet work based on the shipping order.",
+      "noUnshippedOrders": "No unshipped orders.",
+      "reverseWarning": "Reverts the shipment to LOADED status and restores product stock. ERP-linked shipments cannot be reversed.",
+      "reverseReason": "Reversal Reason"
     },
     "scan": {
       "title": "Shipment Scan Verification",

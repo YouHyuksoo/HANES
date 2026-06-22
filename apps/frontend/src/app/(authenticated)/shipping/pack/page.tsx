@@ -19,7 +19,7 @@ import {
   Package, Plus, Search, RefreshCw, XCircle,
   AlertTriangle, Printer, Lock, LockOpen, Trash2,
 } from "lucide-react";
-import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
+import { Card, CardContent, CardHeader, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import PartSelect from "@/components/shared/PartSelect";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -54,6 +54,22 @@ function parseSerials(box: Box | null): string[] {
   } catch {
     return [];
   }
+}
+
+/** findBoxItems API 응답 */
+interface BoxItem {
+  seq: number;
+  fgBarcode: string;
+  itemCode: string;
+  itemName: string | null;
+  orderNo: string | null;
+  equipCode: string | null;
+  workerId: string | null;
+  lineCode: string | null;
+  status: string;
+  inspectPassYn: string | null;
+  issuedAt: string | null;
+  missingLabel: boolean;
 }
 
 function isEmptyBox(box: Box): boolean {
@@ -94,6 +110,8 @@ export default function PackPage() {
   // 박스 라벨 출력/재발행 모달
   const [labelBox, setLabelBox] = useState<Box | null>(null);
   const [labelAutoPrint, setLabelAutoPrint] = useState(false);
+  const [boxItems, setBoxItems] = useState<BoxItem[]>([]);
+  const [boxItemsLoading, setBoxItemsLoading] = useState(false);
   const serialInputRef = useRef<HTMLInputElement>(null);
 
   /** 라벨 재발행(수동) — 자동출력 없이 라벨 모달만 연다 */
@@ -349,6 +367,27 @@ export default function PackPage() {
   const modalPackUnit = selectedBox?.boxQty ?? null;
   const atLimit = modalPackUnit != null && modalSerials.length >= modalPackUnit;
 
+  const refreshBoxItems = useCallback(async (boxNo: string) => {
+    setBoxItemsLoading(true);
+    try {
+      const res = await api.get(`/shipping/boxes/${boxNo}/items`);
+      setBoxItems(res.data?.data ?? []);
+    } catch {
+      setBoxItems([]);
+    } finally {
+      setBoxItemsLoading(false);
+    }
+  }, []);
+
+  // selectedBox 변경 시 boxItems 조회
+  useEffect(() => {
+    if (selectedBox) {
+      refreshBoxItems(selectedBox.boxNo);
+    } else {
+      setBoxItems([]);
+    }
+  }, [selectedBox?.boxNo, refreshBoxItems]);
+
   useEffect(() => {
     if (isSerialModalOpen) {
       focusSerialInput();
@@ -377,27 +416,97 @@ export default function PackPage() {
         </div>
       )}
 
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid
-          data={data}
-          columns={columns}
-          isLoading={loading}
-          enableColumnFilter
-          enableExport
-          exportFileName={t("shipping.pack.title")}
-          rowClassName={(row) => row.boxNo === activePackingBoxNo ? "ring-2 ring-primary bg-primary/5" : ""}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("shipping.pack.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-auto">
+        <div className="lg:col-span-2">
+          <Card className="h-full min-h-0" padding="none"><CardContent className="h-full p-4">
+            <DataGrid
+              data={data}
+              columns={columns}
+              isLoading={loading}
+              enableColumnFilter
+              enableExport
+              exportFileName={t("shipping.pack.title")}
+              rowClassName={(row) => row.boxNo === activePackingBoxNo ? "ring-2 ring-primary bg-primary/5" : ""}
+              onRowClick={(row) => setSelectedBox(row)}
+              toolbarLeft={
+                <div className="flex gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <Input placeholder={t("shipping.pack.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                  </div>
+                  <div className="w-36 flex-shrink-0">
+                    <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                  </div>
+                </div>
+              }
+            sqlQuery={`SELECT *\nFROM BOX_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          </CardContent></Card>
+        </div>
+
+        {/* 우측: 선택 박스의 시리얼 구성 내역 */}
+        <Card>
+          <CardHeader title={t("shipping.pack.boxDetail", "박스 구성")} subtitle={selectedBox ? selectedBox.boxNo : t("shipping.pack.selectBox", "박스를 선택하세요")} />
+          <CardContent>
+            {selectedBox ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+                  <div>
+                    <p className="text-xs text-text-muted">{t("common.partName", "품목")}</p>
+                    <p className="text-sm font-medium text-text">{selectedBox.itemName ?? selectedBox.itemCode}</p>
+                    <p className="text-xs text-text-muted font-mono">{selectedBox.itemCode}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-text-muted">{t("shipping.pack.capacity", "용량")}</p>
+                    <p className="text-lg font-bold text-primary">
+                      {(selectedBox.qty ?? 0).toLocaleString()}{selectedBox.boxQty ? ` / ${selectedBox.boxQty.toLocaleString()}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="border-t border-border pt-2">
+                  <p className="text-xs font-semibold text-text-muted mb-2">
+                    {t("shipping.pack.serialList", "시리얼 목록")} ({boxItems.length})
+                  </p>
+                  {boxItemsLoading ? (
+                    <div className="text-center py-6 text-text-muted text-sm">{t("common.loading", "로딩 중...")}</div>
+                  ) : boxItems.length === 0 ? (
+                    <div className="text-center py-6 text-text-muted text-sm">{t("shipping.pack.noSerials", "담긴 시리얼이 없습니다.")}</div>
+                  ) : (
+                    <div className="space-y-1 max-h-[400px] overflow-y-auto">
+                      {boxItems.map((item, idx) => (
+                        <div key={item.fgBarcode} className="flex items-center justify-between py-1.5 px-2 bg-background rounded text-sm">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${item.inspectPassYn === "Y" ? "bg-green-500" : "bg-red-500"}`} />
+                            <span className="font-mono text-text truncate">{idx + 1}. {item.fgBarcode}</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`text-xs font-medium ${item.inspectPassYn === "Y" ? "text-green-600" : "text-red-600"}`}>
+                              {item.inspectPassYn === "Y" ? "합격" : "불합격"}
+                            </span>
+                            {selectedBox.status === "OPEN" && (
+                              <button title={t("shipping.pack.removeSerial")} onClick={() => setRemoveSerialTarget(item.fgBarcode)}>
+                                <XCircle className="w-4 h-4 text-text-muted hover:text-red-500 shrink-0" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-text-muted pt-2 border-t border-border">
+                  <span className={`inline-block w-2 h-2 rounded-full ${selectedBox.status === "OPEN" ? "bg-blue-500" : "bg-gray-400"}`} />
+                  <BoxStatusBadge status={selectedBox.status as BoxStatus} />
+                  {selectedBox.palletNo && <><span className="mx-1">·</span><span className="font-mono">{t("shipping.pack.palletNo", "팔레트")}: {selectedBox.palletNo}</span></>}
+                </div>
               </div>
-              <div className="w-36 flex-shrink-0">
-                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+            ) : (
+              <div className="text-center py-8 text-text-muted">
+                <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>{t("shipping.pack.selectBoxHint", "박스를 선택하면 구성 내역을 확인할 수 있습니다.")}</p>
               </div>
-            </div>
-          }
-        sqlQuery={`SELECT *\nFROM BOX_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* 박스 생성: 품목만 선택 (qty는 시리얼로 채움) */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t("shipping.pack.createBox")} size="lg">

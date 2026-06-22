@@ -250,6 +250,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "SHIP_BOX_STOCK", labelKey: "menu.shipping.boxStock", path: "/shipping/box-stock" },
       { code: "SHIP_CONFIRM", labelKey: "menu.shipping.confirm", path: "/shipping/confirm" },
       { code: "SHIP_PALLET", labelKey: "menu.shipping.pallet", path: "/shipping/pallet" },
+      { code: "SHIP_PALLET_SHIP", labelKey: "menu.shipping.palletShip", path: "/shipping/pallet-ship" },
       { code: "SHIP_HISTORY", labelKey: "menu.shipping.history", path: "/shipping/history" },
       { code: "SHIP_RETURN", labelKey: "menu.shipping.return", path: "/shipping/return" },
     ],

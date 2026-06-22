@@ -370,6 +370,7 @@
     "shipping.pack": "Quản lý đóng gói",
     "shipping.boxStock": "Tra cứu tồn kho sản phẩm",
     "shipping.pallet": "Quản lý xếp pallet",
+    "shipping.palletShip": "Xuất pallet",
     "shipping.confirm": "Xử lý xác nhận xuất hàng",
     "shipping.order": "Đăng ký lệnh xuất hàng",
     "shipping.history": "Lịch sử xuất hàng",
@@ -2085,6 +2086,7 @@
         "receivedDate": "Ngày nhập"
       },
       "iqc005Title": "Quản lý nhập kho vật tư",
+      "fillRemaining": "Nhập số còn lại",
       "iqc005Description": "Tìm PO và đăng ký nhập vật tư.",
       "action": {
         "receive": "Nhập kho"
@@ -2229,6 +2231,14 @@
       "quantityLabel": "Số lượng",
       "supplierLabel": "Nhà cung cấp",
       "iqcPassedLabel": "Ngày đạt IQC",
+      "autoLocation": "Tự động dùng vị trí theo dữ liệu vật tư",
+      "autoLocationHint": "Hàng được nhập vào vị trí lưu trữ được chỉ định trong từng dữ liệu vật tư.",
+      "selectLocation": "Chọn vị trí",
+      "scanLocation": "Quét mã vạch vị trí",
+      "noLocation": "Kho đã chọn chưa có vị trí nào. Hãy quét mã vạch trực tiếp hoặc đăng ký vị trí trong Quản lý kho.",
+      "scan": {
+        "selectLocation": "Vui lòng chọn hoặc quét vị trí lưu trữ."
+      },
       "warehouseLabel": "Kho nhập",
       "locationLabel": "Vị trí lưu trữ",
       "locationPlaceholder": "VD: A-01-01",
@@ -3954,6 +3964,11 @@
       "title": "Quản lý lỗi",
       "description": "Quản lý tình trạng lỗi và theo dõi sửa chữa.",
       "occurredAt": "Thời gian phát sinh",
+      "panelPlaceholder": "Nhấn nút Đăng ký để nhập lỗi mới",
+      "target": "Đối tượng lỗi",
+      "info": "Thông tin lỗi",
+      "grade": "Cấp độ lỗi",
+      "scope": "Phạm vi lỗi",
       "workOrder": "Lệnh sản xuất",
       "workOrderNo": "Mã lệnh",
       "defectCode": "Mã lỗi",
@@ -5181,7 +5196,15 @@
       "scanLabel": "Quét",
       "scanPalletBarcode": "Quét mã vạch pallet",
       "scheduledShip": "Dự kiến xuất hàng",
-      "shipLabel": "Xuất hàng"
+      "shipLabel": "Xuất hàng",
+      "startFulfillment": "Bắt đầu xuất hàng",
+      "remainingQty": "Số lượng còn lại",
+      "reverseShipment": "Đảo ngược xuất hàng",
+      "unshippedOrders": "Lệnh xuất chưa giao",
+      "unshippedOrdersHint": "Nhấn biểu tượng thao tác để bắt đầu công việc pallet theo lệnh xuất hàng.",
+      "noUnshippedOrders": "Không có lệnh xuất chưa giao.",
+      "reverseWarning": "Đưa lô xuất về trạng thái LOADED và khôi phục tồn kho sản phẩm. Không thể đảo ngược lô xuất đã liên kết ERP.",
+      "reverseReason": "Lý do đảo ngược"
     },
     "scan": {
       "title": "Xác minh quét xuất hàng",
