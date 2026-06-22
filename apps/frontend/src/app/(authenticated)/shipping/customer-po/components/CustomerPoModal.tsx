@@ -15,6 +15,7 @@ import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Plus, X } from "lucide-react";
 import { Modal, Button, Input, Select } from "@/components/ui";
+import QtyInput from "@/components/shared/QtyInput";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
@@ -209,11 +210,9 @@ export default function CustomerPoModal({ isOpen, onClose, editingItem }: Custom
                       <span className="ml-1 text-xs text-text-muted">({item.itemCode})</span>
                     </td>
                     <td className="px-3 py-1.5">
-                      <input
-                        type="number"
-                        min={0}
-                        value={item.orderQty || ""}
-                        onChange={(e) => updateItem(item.itemCode, "orderQty", Number(e.target.value))}
+                      <QtyInput
+                        value={item.orderQty || 0}
+                        onChange={(n) => updateItem(item.itemCode, "orderQty", n)}
                         className="w-full px-2 py-1 text-sm border border-border rounded text-right bg-surface text-text"
                         placeholder="0"
                       />

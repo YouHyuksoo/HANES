@@ -17,6 +17,7 @@ import {
   ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2, X, Printer, HelpCircle, CheckCircle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import QtyInput from "@/components/shared/QtyInput";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
@@ -410,12 +411,9 @@ ORDER BY so.CREATED_AT DESC`}/>
                           </button>
                         </div>
                         <div className="mt-3 grid grid-cols-[120px_minmax(0,1fr)] gap-2">
-                          <Input
-                            type="number"
-                            min={1}
-                            step={1}
-                            value={item.orderQty ? String(item.orderQty) : ""}
-                            onChange={(e) => updateOrderItem(item.itemCode, "orderQty", Math.trunc(Number(e.target.value)) || 0)}
+                          <QtyInput
+                            value={item.orderQty || 0}
+                            onChange={(n) => updateOrderItem(item.itemCode, "orderQty", n)}
                             fullWidth
                           />
                           <Input
