@@ -42,18 +42,21 @@ export class ContinuityInspectController {
   @ApiOperation({ summary: 'List continuity-inspectable job orders' })
   @ApiQuery({ name: 'lineCode', required: false })
   @ApiQuery({ name: 'planDate', required: false })
+  @ApiQuery({ name: 'finishedOnly', required: false, description: '완제품(FINISHED) 작업지시만 조회' })
   @ApiResponse({ status: 200, description: 'Success' })
   async findJobOrders(
     @Company() company: string,
     @Plant() plant: string,
     @Query('lineCode') lineCode?: string,
     @Query('planDate') planDate?: string,
+    @Query('finishedOnly') finishedOnly?: string,
   ) {
     const data = await this.continuityInspectService.findJobOrders({
       company,
       plant,
       lineCode,
       planDate,
+      finishedOnly: finishedOnly === 'true',
     });
     return ResponseUtil.success(data);
   }

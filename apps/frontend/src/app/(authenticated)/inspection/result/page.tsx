@@ -10,6 +10,7 @@ export default function ContinuityInspectPage() {
       searchPlaceholderKey="inspection.result.searchPlaceholder"
       selectOrderKey="inspection.result.selectOrder"
       inspectType="CONTINUITY"
+      finishedOnly
     />
   );
 }

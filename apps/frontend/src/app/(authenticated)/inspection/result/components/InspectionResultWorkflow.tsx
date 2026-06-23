@@ -35,6 +35,8 @@ interface Props {
   searchPlaceholderKey: string;
   selectOrderKey: string;
   inspectType: "CONTINUITY" | "TERMINAL";
+  /** 좌측 작업지시 목록을 완제품(FINISHED) 작업지시로만 제한 */
+  finishedOnly?: boolean;
 }
 
 export default function InspectionResultWorkflow({
@@ -43,6 +45,7 @@ export default function InspectionResultWorkflow({
   searchPlaceholderKey,
   selectOrderKey,
   inspectType,
+  finishedOnly = false,
 }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -137,14 +140,16 @@ export default function InspectionResultWorkflow({
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/quality/continuity-inspect/job-orders");
+      const res = await api.get("/quality/continuity-inspect/job-orders", {
+        params: finishedOnly ? { finishedOnly: "true" } : {},
+      });
       setOrders(res.data?.data ?? []);
     } catch {
       setOrders([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [finishedOnly]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 

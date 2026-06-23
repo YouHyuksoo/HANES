@@ -120,6 +120,7 @@ export class ContinuityInspectService {
     plant?: string;
     lineCode?: string;
     planDate?: string;
+    finishedOnly?: boolean;
   }) {
     const qb = this.jobOrderRepo
       .createQueryBuilder('jo')
@@ -127,6 +128,11 @@ export class ContinuityInspectService {
       .where('jo.status IN (:...statuses)', {
         statuses: ['RUNNING', 'IN_PROGRESS', 'WAITING'],
       });
+
+    // 완제품 검사(예: 통전검사)는 완제품(FINISHED) 작업지시만 대상으로 제한
+    if (query.finishedOnly) {
+      qb.andWhere('part.itemType = :finishedType', { finishedType: 'FINISHED' });
+    }
 
     if (query.company) {
       qb.andWhere('jo.company = :company', { company: query.company });
