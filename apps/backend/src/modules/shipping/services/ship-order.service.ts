@@ -1099,7 +1099,7 @@ export class ShipOrderService {
         WHERE b.STATUS = 'SHIPPED'
           AND b.SHIP_ORDER_NO IS NOT NULL
           AND b.COMPANY = :1 AND b.PLANT_CD = :2
-        GROUP BY b.SHIP_ORDER_NO, o.CUSTOMER_NAME, o.SHIP_DATE
+        GROUP BY b.SHIP_ORDER_NO, o.CUSTOMER_NAME, o.SHIP_DATE, b.COMPANY, b.PLANT_CD
         ORDER BY o.SHIP_DATE DESC NULLS LAST, b.SHIP_ORDER_NO DESC`,
       [company, plant],
     );
