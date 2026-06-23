@@ -150,8 +150,10 @@ export class SubprocessKittingService {
         }
       }
 
-      // 5. 제품 루프 — 제품 수량만큼 FG 발행 + SG 소비 + genealogy
+      // 5. 제품 루프 — 제품 수량만큼 FG 발행 + SG 소비 + genealogy.
+      //    genealogy는 row를 모았다가 루프 종료 후 ID 일괄 채번·일괄 저장(N+1 회피).
       const fgBarcodes: string[] = [];
+      const genealogyRows: Array<Partial<ProductGenealogy>> = [];
       for (let i = 0; i < dto.qty; i++) {
         // FG 발행
         const fg = await this.numbering.nextFgBarcode(qr);
@@ -184,8 +186,7 @@ export class SubprocessKittingService {
             sg.currentProcessCode = dto.processCode;
             await qr.manager.save(SgLabel, sg);
 
-            await qr.manager.save(ProductGenealogy, {
-              genealogyId: await this.numbering.nextGenealogyId(qr),
+            genealogyRows.push({
               parentType: 'FG',
               parentKey: fg,
               childType: 'SG',
@@ -211,8 +212,7 @@ export class SubprocessKittingService {
         // 실제 재고 차감은 FG 루프와 별개로 1회만 수행(아래 5-1).
         if (dto.matLots && dto.matLots.length > 0) {
           for (const lot of dto.matLots) {
-            await qr.manager.save(ProductGenealogy, {
-              genealogyId: await this.numbering.nextGenealogyId(qr),
+            genealogyRows.push({
               parentType: 'FG',
               parentKey: fg,
               childType: 'MAT_LOT',
@@ -226,6 +226,15 @@ export class SubprocessKittingService {
             });
           }
         }
+      }
+
+      // 5-2. genealogy ID 일괄 채번 후 일괄 저장.
+      const kitGenIds = await this.numbering.nextGenealogyIds(qr, genealogyRows.length);
+      genealogyRows.forEach((row, idx) => {
+        row.genealogyId = kitGenIds[idx];
+      });
+      if (genealogyRows.length > 0) {
+        await qr.manager.save(ProductGenealogy, genealogyRows);
       }
 
       // 6. 생산실적 1건
@@ -315,6 +324,13 @@ export class SubprocessKittingService {
       if (jobOrder.part?.itemType !== 'FINISHED') {
         throw new BadRequestException('완제품 작업지시만 라벨 발행 가능합니다.');
       }
+      // 작업지시 상태 가드 — 완료/취소/홀딩 작업지시에는 라벨 발행 불가
+      if (jobOrder.status === 'DONE' || jobOrder.status === 'CANCELED') {
+        throw new BadRequestException('완료되거나 취소된 작업지시에는 라벨을 발행할 수 없습니다.');
+      }
+      if (jobOrder.status === 'HOLD') {
+        throw new BadRequestException('홀딩된 작업지시에는 라벨을 발행할 수 없습니다.');
+      }
 
       // 2. FG 바코드 채번
       const fgBarcode = await this.numbering.nextFgBarcode(qr);
@@ -389,6 +405,13 @@ export class SubprocessKittingService {
       if (jobOrder.part?.itemType !== 'FINISHED') {
         throw new BadRequestException('완제품 작업지시만 조립 확정 가능합니다.');
       }
+      // 작업지시 상태 가드 — prod-result.service 등록 규칙과 동일
+      if (jobOrder.status === 'DONE' || jobOrder.status === 'CANCELED') {
+        throw new BadRequestException('완료되거나 취소된 작업지시에는 조립을 확정할 수 없습니다.');
+      }
+      if (jobOrder.status === 'HOLD') {
+        throw new BadRequestException('홀딩된 작업지시에는 조립을 확정할 수 없습니다.');
+      }
 
       const bomRows = await qr.manager.find(BomMaster, {
         where: { parentItemCode: jobOrder.itemCode, useYn: 'Y', ...tenantWhere },
@@ -442,15 +465,18 @@ export class SubprocessKittingService {
         }
       }
 
-      // 4. SG 1씩 소비 + genealogy(FG→SG, qty:1)
-      for (const sg of sgLabels) {
+      // 4. SG 1씩 소비 + genealogy(FG→SG, qty:1).
+      //    genealogy ID는 N+1 회피를 위해 일괄 채번 후 인덱스로 분배.
+      const sgGenIds = await this.numbering.nextGenealogyIds(qr, sgLabels.length);
+      for (let i = 0; i < sgLabels.length; i++) {
+        const sg = sgLabels[i];
         sg.remainQty -= 1;
         sg.status = sg.remainQty === 0 ? 'CONSUMED' : 'MOUNTED';
         sg.currentProcessCode = processCode;
         await qr.manager.save(SgLabel, sg);
 
         await qr.manager.save(ProductGenealogy, {
-          genealogyId: await this.numbering.nextGenealogyId(qr),
+          genealogyId: sgGenIds[i],
           parentType: 'FG',
           parentKey: fgBarcode,
           childType: 'SG',
@@ -464,9 +490,11 @@ export class SubprocessKittingService {
         });
       }
 
-      // 5. 설비 WIP 자재 BOM 소요량 차감 + genealogy(FG→MAT_LOT) per lot
-      //    제품 수량 1 고정이므로 qtyPer = 1개분 소요량
+      // 5. 설비 WIP 자재 BOM 소요량 차감 + genealogy(FG→MAT_LOT) per lot.
+      //    제품 수량 1 고정이므로 qtyPer = 1개분 소요량.
+      //    차감으로 확정된 LOT 목록을 먼저 모은 뒤 genealogy ID를 일괄 채번(N+1 회피).
       const resultNoForRef = await this.numbering.nextProdResultNo(qr);
+      const matGenRows: Array<{ matUid: string; itemCode: string; qty: number }> = [];
       for (const [itemCode, qtyPer] of rawQtyPerByItem) {
         const deductedLots = await this.wipMatStockService.deductStockInTx(qr, {
           equipCode,
@@ -481,22 +509,26 @@ export class SubprocessKittingService {
           company,
           plant,
         });
-
         for (const lot of deductedLots) {
-          await qr.manager.save(ProductGenealogy, {
-            genealogyId: await this.numbering.nextGenealogyId(qr),
-            parentType: 'FG',
-            parentKey: fgBarcode,
-            childType: 'MAT_LOT',
-            childKey: lot.matUid,
-            itemCode,
-            qty: lot.qty,
-            processCode,
-            circuitNo: circuitNo ?? null,
-            company,
-            plant,
-          });
+          matGenRows.push({ matUid: lot.matUid, itemCode, qty: lot.qty });
         }
+      }
+      const matGenIds = await this.numbering.nextGenealogyIds(qr, matGenRows.length);
+      for (let i = 0; i < matGenRows.length; i++) {
+        const row = matGenRows[i];
+        await qr.manager.save(ProductGenealogy, {
+          genealogyId: matGenIds[i],
+          parentType: 'FG',
+          parentKey: fgBarcode,
+          childType: 'MAT_LOT',
+          childKey: row.matUid,
+          itemCode: row.itemCode,
+          qty: row.qty,
+          processCode,
+          circuitNo: circuitNo ?? null,
+          company,
+          plant,
+        });
       }
 
       // 6. ProdResult 저장
@@ -515,6 +547,15 @@ export class SubprocessKittingService {
         company,
         plant,
       });
+
+      // 6-1. 실적이 최초 등록되면 작업지시를 RUNNING으로 승격(prod-result.service와 동일).
+      if (jobOrder.status === 'WAITING') {
+        await qr.manager.update(
+          JobOrder,
+          { orderNo, ...tenantWhere },
+          { status: 'RUNNING', startAt: now },
+        );
+      }
 
       // 7. FG WIP 재고 적재 (kit와 동일: productInventory.receiveStockInTx)
       await this.productInventory.receiveStockInTx(qr, {

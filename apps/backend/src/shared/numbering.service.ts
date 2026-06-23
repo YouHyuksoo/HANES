@@ -193,6 +193,23 @@ export class NumberingService {
     return Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
   }
 
+  /**
+   * 생산 genealogy ID 일괄 채번 — N개를 1회 round-trip으로 확보(N+1 제거).
+   * 시퀀스 NEXTVAL을 인라인 뷰(CONNECT BY LEVEL) 바깥에서 호출하는 Oracle 안전 idiom 사용
+   * (NEXTVAL을 CONNECT BY 절에 직접 두면 ORA-02287 발생 가능).
+   * @returns 길이 count의 순차 ID 배열 (count<=0이면 빈 배열)
+   */
+  async nextGenealogyIds(qr: QueryRunner | undefined, count: number): Promise<number[]> {
+    if (count <= 0) return [];
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const rows: Array<{ NEXT_SEQ?: number; next_seq?: number }> = await manager.query(
+      `SELECT SEQ_PROD_GENEALOGY.NEXTVAL AS "NEXT_SEQ"
+         FROM (SELECT LEVEL AS L FROM DUAL CONNECT BY LEVEL <= :1)`,
+      [count],
+    );
+    return rows.map((r) => Number(r.NEXT_SEQ ?? r.next_seq ?? 0));
+  }
+
   private yyMMdd(d: Date): string {
     const yy = String(d.getFullYear()).slice(-2);
     const mm = String(d.getMonth() + 1).padStart(2, '0');
