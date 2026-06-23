@@ -72,6 +72,11 @@
           "path": "/material/shelf-life-reinspect"
         },
         {
+          "menuCode": "MAT_SHELF_LIFE_HISTORY",
+          "title": "유수명자재 검사이력",
+          "path": "/material/shelf-life-history"
+        },
+        {
           "menuCode": "MAT_LOT_SPLIT",
           "title": "자재분할",
           "path": "/material/lot-split"
