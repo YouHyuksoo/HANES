@@ -150,6 +150,17 @@
           "path": "/consumables/issuing"
         }
       ]
+    },
+    {
+      "key": "shipping",
+      "title": "출하관리",
+      "items": [
+        {
+          "menuCode": "SHIP_PACK",
+          "title": "제품포장관리",
+          "path": "/shipping/pack"
+        }
+      ]
     }
   ]
 }
