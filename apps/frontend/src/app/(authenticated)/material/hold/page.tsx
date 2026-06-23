@@ -13,9 +13,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ShieldAlert, Search, RefreshCw, Lock, Unlock, AlertTriangle, CheckCircle,
+  ShieldAlert, Search, RefreshCw, Lock, Unlock,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, Modal, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, Modal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -70,12 +70,6 @@ export default function HoldPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = useMemo(() => ({
-    total: data.length,
-    holdCount: data.filter(d => d.status === "HOLD").length,
-    normalCount: data.filter(d => d.status === "NORMAL").length,
-  }), [data]);
-
   const handleAction = useCallback(async () => {
     if (!selectedLot?.matUid) return;
     setSaving(true);
@@ -99,7 +93,7 @@ export default function HoldPage() {
       cell: ({ row }) => {
         const isHold = row.original.status === "HOLD";
         return (
-          <Button size="sm" variant={isHold ? "secondary" : "primary"} onClick={() => {
+          <Button size="sm" className="!h-6 !px-2 !text-xs !gap-1 !rounded-md" variant={isHold ? "secondary" : "primary"} onClick={() => {
             setSelectedLot(row.original);
             setActionType(isHold ? "release" : "hold");
             setReason("");
@@ -148,7 +142,7 @@ export default function HoldPage() {
   ], [t]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-3 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -160,12 +154,6 @@ export default function HoldPage() {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
-        <StatCard label={t("material.hold.stats.total")} value={stats.total} icon={ShieldAlert} color="blue" />
-        <StatCard label={t("material.hold.stats.holdCount")} value={stats.holdCount} icon={AlertTriangle} color="red" />
-        <StatCard label={t("material.hold.stats.normalCount")} value={stats.normalCount} icon={CheckCircle} color="green" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

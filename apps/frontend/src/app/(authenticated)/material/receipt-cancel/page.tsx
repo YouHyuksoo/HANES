@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { RotateCcw, Search, RefreshCw, XCircle } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -72,12 +72,6 @@ export default function ReceiptCancelPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = useMemo(() => ({
-    total: data.length,
-    cancellable: data.filter(d => !d.cancelRefId && d.status !== "CANCELED").length,
-    canceled: data.filter(d => d.status === "CANCELED" || d.cancelRefId).length,
-  }), [data]);
-
   const handleCancel = useCallback(async () => {
     if (!selectedTx || !reason) return;
     setSaving(true);
@@ -103,7 +97,7 @@ export default function ReceiptCancelPage() {
       cell: ({ row }) => {
         if (row.original.status === "CANCELED" || row.original.cancelRefId) return null;
         return (
-          <Button size="sm" variant="secondary" onClick={() => {
+          <Button size="sm" className="!h-6 !px-2 !text-xs !gap-1 !rounded-md" variant="secondary" onClick={() => {
             setSelectedTx(row.original);
             setReason("");
             setIsModalOpen(true);
@@ -173,7 +167,7 @@ export default function ReceiptCancelPage() {
   ], [t]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-3 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -185,12 +179,6 @@ export default function ReceiptCancelPage() {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
-        <StatCard label={t("material.receiptCancel.stats.total")} value={stats.total} icon={RotateCcw} color="blue" />
-        <StatCard label={t("material.receiptCancel.stats.cancellable")} value={stats.cancellable} icon={XCircle} color="yellow" />
-        <StatCard label={t("material.receiptCancel.stats.canceled")} value={stats.canceled} icon={RotateCcw} color="red" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PackagePlus, Search, RefreshCw, Plus } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, Modal } from "@/components/ui";
 import { ComCodeSelect, QtyInput } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -85,11 +85,6 @@ export default function MiscReceiptPage() {
     } catch { setPartResults([]); }
   }, []);
 
-  const stats = useMemo(() => ({
-    total: data.length,
-    totalQty: data.reduce((s, d) => s + d.qty, 0),
-  }), [data]);
-
   const warehouseOptions = useMemo(() => [
     { value: "", label: t("common.select") }, ...warehouseOpts,
   ], [t, warehouseOpts]);
@@ -160,7 +155,7 @@ export default function MiscReceiptPage() {
   ], [t]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-3 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -177,11 +172,6 @@ export default function MiscReceiptPage() {
             <Plus className="w-4 h-4 mr-1" />{t("material.miscReceipt.register")}
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 flex-shrink-0">
-        <StatCard label={t("material.miscReceipt.stats.total")} value={stats.total} icon={PackagePlus} color="blue" />
-        <StatCard label={t("material.miscReceipt.stats.totalQty")} value={stats.totalQty.toLocaleString()} icon={PackagePlus} color="green" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
