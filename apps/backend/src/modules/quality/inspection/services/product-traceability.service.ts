@@ -331,11 +331,48 @@ export class ProductTraceabilityService {
     };
   }
 
-  // ─── Step 4: resolveSemiProducts 임시 스텁 (Task 4에서 구현) ──────────────
+  // ─── Step 4: resolveSemiProducts ─────────────────────────────────────────
 
+  /** 제품(FG)이 소비한 반제품(SG)을 genealogy로 찾아 각 SG의 생산이력·검사·투입자재까지 조립 */
   private async resolveSemiProducts(serial: string, company: string, plant: string): Promise<SemiProductTrace[]> {
-    // Task 4에서 구현 예정
-    void serial; void company; void plant;
-    return [];
+    const sgLinks = await this.genealogyRepo.find({
+      where: { parentType: 'FG', parentKey: serial, childType: 'SG', company, plant },
+    });
+    if (sgLinks.length === 0) return [];
+
+    const sgBarcodes = [...new Set(sgLinks.map((g) => g.childKey))];
+    const sgLabels = await this.sgLabelRepo.find({ where: { sgBarcode: In(sgBarcodes), company, plant } });
+    const sgMap = new Map(sgLabels.map((s) => [s.sgBarcode, s]));
+
+    const itemCodes = [...new Set(sgLabels.map((s) => s.itemCode))];
+    const parts = itemCodes.length
+      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    // 소비량: 동일 SG 여러 링크 합산
+    const consumedBySg = new Map<string, number>();
+    for (const g of sgLinks) consumedBySg.set(g.childKey, (consumedBySg.get(g.childKey) ?? 0) + g.qty);
+
+    const result: SemiProductTrace[] = [];
+    for (const sgBarcode of sgBarcodes) {
+      const sg = sgMap.get(sgBarcode);
+      const part = sg ? partMap.get(sg.itemCode) : undefined;
+      const processHistory = await this.resolveProcessHistory(sg?.orderNo ?? null, sgBarcode, company, plant);
+      const inspections = await this.resolveInspections(sgBarcode, company, plant);
+      const matCtx = await this.collectMaterialCtx(sg?.orderNo ?? null, 'SG', sgBarcode, company, plant);
+      const materials = await this.resolveMaterialTraces(matCtx, company, plant);
+
+      result.push({
+        sgBarcode,
+        itemCode: sg?.itemCode ?? '',
+        itemName: part?.itemName ?? '',
+        consumedQty: consumedBySg.get(sgBarcode) ?? 0,
+        status: sg?.status ?? '',
+        issueProcessCode: sg?.issueProcessCode ?? null,
+        processHistory, inspections, materials,
+      });
+    }
+    return result;
   }
 }
