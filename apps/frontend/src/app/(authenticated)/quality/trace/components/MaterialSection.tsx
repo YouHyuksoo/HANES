@@ -46,48 +46,66 @@ export default function MaterialSection({ materials, title }: { materials: Mater
               </span>
             </button>
             {expanded && (
-              <div className="px-4 pb-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <NestedRow
-                  label={t("quality.trace.po", "발주(PO)")}
-                  value={
-                    m.po
-                      ? `${m.po.poNo} / ${fmtDate(m.po.orderDate)} / ${m.po.partnerName ?? "-"}`
-                      : "-"
-                  }
-                />
-                <NestedRow
-                  label={t("quality.trace.arrival", "입하")}
-                  value={
-                    m.arrival
-                      ? `${m.arrival.arrivalNo} / ${fmtDate(m.arrival.arrivalDate)} / ${m.arrival.qty}`
-                      : "-"
-                  }
-                />
-                <NestedRow
-                  label={t("quality.trace.iqc", "수입검사(IQC)")}
-                  value={
-                    m.iqc
-                      ? `${m.iqc.result} / ${m.iqc.inspectType} / ${m.iqc.inspectorName ?? "-"}`
-                      : "-"
-                  }
-                />
-                <NestedRow
-                  label={t("quality.trace.receiving", "입고")}
-                  value={
-                    m.receiving
-                      ? `${m.receiving.receiveNo} / ${fmtDate(m.receiving.receiveDate)}`
-                      : "-"
-                  }
-                />
-                <NestedRow
-                  label={t("quality.trace.issue", "투입")}
-                  value={
-                    m.issue
-                      ? `${m.issue.orderNo ?? "-"} / ${m.issue.issueQty} / ${fmtDate(m.issue.issueDate)}`
-                      : "-"
-                  }
-                />
-              </div>
+              <>
+                <div className="px-4 pb-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <NestedRow
+                    label={t("quality.trace.po", "발주(PO)")}
+                    value={
+                      m.po
+                        ? `${m.po.poNo} / ${fmtDate(m.po.orderDate)} / ${m.po.partnerName ?? "-"}`
+                        : "-"
+                    }
+                  />
+                  <NestedRow
+                    label={t("quality.trace.arrival", "입하")}
+                    value={
+                      m.arrival
+                        ? `${m.arrival.arrivalNo} / ${fmtDate(m.arrival.arrivalDate)} / ${m.arrival.qty}`
+                        : "-"
+                    }
+                  />
+                  <NestedRow
+                    label={t("quality.trace.iqc", "수입검사(IQC)")}
+                    value={
+                      m.iqc
+                        ? `${m.iqc.result} / ${m.iqc.inspectType} / ${m.iqc.inspectorName ?? "-"}`
+                        : "-"
+                    }
+                  />
+                  <NestedRow
+                    label={t("quality.trace.receiving", "입고")}
+                    value={
+                      m.receiving
+                        ? `${m.receiving.receiveNo} / ${fmtDate(m.receiving.receiveDate)}`
+                        : "-"
+                    }
+                  />
+                  <NestedRow
+                    label={t("quality.trace.issue", "투입")}
+                    value={
+                      m.issue
+                        ? `${m.issue.orderNo ?? "-"} / ${m.issue.issueQty} / ${fmtDate(m.issue.issueDate)}`
+                        : "-"
+                    }
+                  />
+                </div>
+                {m.stockHistory && m.stockHistory.length > 0 && (
+                  <div className="mt-2 pt-2 mx-4 mb-3 border-t border-border">
+                    <div className="text-xs text-text-muted mb-1">{t("quality.trace.stockHistory", "입출고 수불이력")}</div>
+                    <div className="space-y-1">
+                      {m.stockHistory.map((s, i) => (
+                        <div key={`${i}-${s.transNo}`} className="flex items-center gap-3 text-xs">
+                          <span className="font-mono text-text-muted shrink-0">{s.transDate.slice(0, 10)}</span>
+                          <span className="font-medium text-text shrink-0">{s.transType}</span>
+                          <span className="text-text-muted">{s.qty.toLocaleString()}</span>
+                          <span className="text-text-muted truncate">{s.fromWarehouse ?? ""}{s.fromWarehouse && s.toWarehouse ? " → " : ""}{s.toWarehouse ?? ""}</span>
+                          {s.refId && <span className="ml-auto font-mono text-text-muted shrink-0">{s.refType ?? ""} {s.refId}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         );
