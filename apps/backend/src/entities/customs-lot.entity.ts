@@ -38,7 +38,11 @@ export class CustomsLot {
   itemCode: string;
 
   @ManyToOne(() => PartMaster)
-  @JoinColumn({ name: 'ITEM_CODE', referencedColumnName: 'itemCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
+  ])
   item: PartMaster;
 
   @Column({ name: 'QTY', type: 'int' })

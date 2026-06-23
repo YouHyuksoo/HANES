@@ -53,7 +53,11 @@ export class JobOrder {
   itemCode: string;
 
   @ManyToOne(() => PartMaster, { nullable: true })
-  @JoinColumn({ name: 'ITEM_CODE' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
+  ])
   part: PartMaster | null;
 
   @Column({ type: 'varchar2', name: 'LINE_CODE', length: 255, nullable: true })
@@ -64,7 +68,11 @@ export class JobOrder {
   routingCode: string | null;
 
   @ManyToOne(() => RoutingGroup, { nullable: true })
-  @JoinColumn({ name: 'ROUTING_CODE' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'ROUTING_CODE', referencedColumnName: 'routingCode' },
+  ])
   routing: RoutingGroup | null;
 
   /** 동시생성 그룹의 최상위 ORDER_NO. 최상위 자신은 null */

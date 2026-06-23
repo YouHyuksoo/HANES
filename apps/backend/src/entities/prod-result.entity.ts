@@ -47,14 +47,22 @@ export class ProdResult {
   equipCode: string | null;
 
   @ManyToOne(() => EquipMaster)
-  @JoinColumn({ name: 'EQUIP_CODE', referencedColumnName: 'equipCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'EQUIP_CODE', referencedColumnName: 'equipCode' },
+  ])
   equip: EquipMaster | null;
 
   @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
   workerId: string | null;
 
   @ManyToOne(() => WorkerMaster)
-  @JoinColumn({ name: 'WORKER_NO', referencedColumnName: 'workerCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'WORKER_NO', referencedColumnName: 'workerCode' },
+  ])
   worker: WorkerMaster | null;
 
   @Column({ type: 'varchar2', name: 'PRD_UID', length: 50, nullable: true })

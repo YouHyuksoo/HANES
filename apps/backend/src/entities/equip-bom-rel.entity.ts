@@ -65,7 +65,11 @@ export class EquipBomRel {
 
   // Relations
   @ManyToOne(() => EquipMaster, (equip) => equip.bomRels, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'EQUIP_CODE', referencedColumnName: 'equipCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'EQUIP_CODE', referencedColumnName: 'equipCode' },
+  ])
   equipment: EquipMaster;
 
   @ManyToOne(() => EquipBomItem, (item) => item.equipRels, { onDelete: 'CASCADE' })

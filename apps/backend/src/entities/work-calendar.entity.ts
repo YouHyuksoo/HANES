@@ -70,6 +70,10 @@ export class WorkCalendar {
   /* ── Relations ── */
 
   @ManyToOne(() => ProcessMaster, { nullable: true })
-  @JoinColumn({ name: 'PROCESS_CD', referencedColumnName: 'processCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'PROCESS_CD', referencedColumnName: 'processCode' },
+  ])
   process: ProcessMaster | null;
 }

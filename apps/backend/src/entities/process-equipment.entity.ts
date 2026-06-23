@@ -42,10 +42,18 @@ export class ProcessEquipment {
   updatedAt: Date;
 
   @ManyToOne(() => ProcessMaster, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'PROCESS_CODE', referencedColumnName: 'processCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'PROCESS_CODE', referencedColumnName: 'processCode' },
+  ])
   process: ProcessMaster;
 
   @ManyToOne(() => EquipMaster, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'EQUIP_CODE', referencedColumnName: 'equipCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'EQUIP_CODE', referencedColumnName: 'equipCode' },
+  ])
   equipment: EquipMaster;
 }

@@ -33,7 +33,11 @@ export class ProdPlan {
   itemCode: string;
 
   @ManyToOne(() => PartMaster, { nullable: true })
-  @JoinColumn({ name: 'ITEM_CODE' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
+  ])
   part: PartMaster | null;
 
   @Column({ name: 'ITEM_TYPE', length: 10 })

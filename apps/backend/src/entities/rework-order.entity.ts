@@ -75,7 +75,11 @@ export class ReworkOrder {
   lineCode: string;
 
   @ManyToOne(() => ProdLineMaster, { nullable: true })
-  @JoinColumn({ name: 'LINE_CODE', referencedColumnName: 'lineCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT', referencedColumnName: 'plant' },
+    { name: 'LINE_CODE', referencedColumnName: 'lineCode' },
+  ])
   line: ProdLineMaster;
 
   @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
