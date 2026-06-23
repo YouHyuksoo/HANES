@@ -26,9 +26,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (order: JobOrderPick) => void;
+  itemType?: string;
 }
 
-export default function JobOrderSearchModal({ isOpen, onClose, onSelect }: Props) {
+export default function JobOrderSearchModal({ isOpen, onClose, onSelect, itemType }: Props) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [rows, setRows] = useState<JobOrderPick[]>([]);
@@ -38,7 +39,11 @@ export default function JobOrderSearchModal({ isOpen, onClose, onSelect }: Props
     setLoading(true);
     try {
       const res = await api.get("/production/job-orders", {
-        params: { limit: 100, ...(search.trim() ? { search: search.trim() } : {}) },
+        params: {
+          limit: 100,
+          ...(search.trim() ? { search: search.trim() } : {}),
+          ...(itemType ? { itemType } : {}),
+        },
       });
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       setRows(list as JobOrderPick[]);
@@ -47,7 +52,7 @@ export default function JobOrderSearchModal({ isOpen, onClose, onSelect }: Props
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, itemType]);
 
   useEffect(() => {
     if (isOpen) {
