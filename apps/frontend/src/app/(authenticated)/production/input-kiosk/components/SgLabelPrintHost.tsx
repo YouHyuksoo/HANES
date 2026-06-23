@@ -45,9 +45,20 @@ interface PrintItem {
   data: Record<string, unknown>;
 }
 
+/** 실적 채번 전(발행 직후) 출력용 — 바코드 + 라벨 컨텍스트를 직접 전달 */
+export interface SgPrintRow {
+  sgBarcode: string;
+  itemCode?: string;
+  orderNo?: string;
+  initQty?: number;
+  issueProcessCode?: string;
+}
+
 export interface SgLabelPrintHandle {
   /** 생산실적에서 발행된 SG 라벨을 조회해 에이전트로 출력(발행분 없으면 무동작) */
   printByResultNo: (resultNo: string) => Promise<void>;
+  /** 실적 채번 전 발행된 SG 라벨을 바코드+컨텍스트로 직접 출력(빈 배열이면 무동작) */
+  printBySgBarcodes: (rows: SgPrintRow[]) => Promise<void>;
 }
 
 function loadSgLabelDesign(raw: string | LabelDesign | undefined): LabelDesign {
@@ -79,6 +90,39 @@ const SgLabelPrintHost = forwardRef<SgLabelPrintHandle>(function SgLabelPrintHos
     return () => { cancelled = true; };
   }, []);
 
+  // 오프스크린 렌더 → PNG → Print Agent 전송 코어(공통). 빈 배열이면 무동작.
+  const printItemsViaAgent = useCallback(
+    async (printItems: PrintItem[]) => {
+      if (printItems.length === 0) return;
+
+      setItems(printItems);
+      // LabelPrintRenderer가 오프스크린에 라벨 노드를 그릴 때까지 한 프레임 이상 대기
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 400));
+
+      try {
+        const nodes = Array.from(printRef.current?.children ?? [])
+          .filter((node): node is HTMLElement => node instanceof HTMLElement);
+        if (nodes.length !== printItems.length) {
+          throw new Error(t("kiosk.sgLabel.prepareFailed", "SG 라벨 출력 화면을 준비하지 못했습니다."));
+        }
+        await printLabelNodesViaAgent(
+          nodes.map((node, index) => ({ node, jobId: `SG-${printItems[index].key}` })),
+          design.labelWidth,
+          design.labelHeight,
+        );
+        toast.success(t("kiosk.sgLabel.printSent", "SG 라벨 {{count}}건을 프린터로 전송했습니다.", { count: printItems.length }));
+      } catch (error: unknown) {
+        const message = error instanceof Error && error.message
+          ? error.message
+          : t("kiosk.sgLabel.printError", "SG 라벨 출력 중 오류가 발생했습니다.");
+        toast.error(message);
+      } finally {
+        setItems([]);
+      }
+    },
+    [design.labelHeight, design.labelWidth, t],
+  );
+
   const printByResultNo = useCallback(async (resultNo: string) => {
     if (!resultNo) return;
     let labels: SgLabelRow[] = [];
@@ -91,45 +135,38 @@ const SgLabelPrintHost = forwardRef<SgLabelPrintHandle>(function SgLabelPrintHos
     }
     if (labels.length === 0) return;
 
-    const printItems: PrintItem[] = labels.map((sg) => ({
-      key: sg.sgBarcode,
-      data: {
-        sgBarcode: sg.sgBarcode,
-        itemCode: sg.itemCode,
-        orderNo: sg.orderNo,
-        initQty: sg.initQty,
-        issueProcessCode: sg.issueProcessCode,
-        issuedAt: sg.issuedAt,
-      },
-    }));
+    await printItemsViaAgent(
+      labels.map((sg) => ({
+        key: sg.sgBarcode,
+        data: {
+          sgBarcode: sg.sgBarcode,
+          itemCode: sg.itemCode,
+          orderNo: sg.orderNo,
+          initQty: sg.initQty,
+          issueProcessCode: sg.issueProcessCode,
+          issuedAt: sg.issuedAt,
+        },
+      })),
+    );
+  }, [printItemsViaAgent]);
 
-    setItems(printItems);
-    // LabelPrintRenderer가 오프스크린에 라벨 노드를 그릴 때까지 한 프레임 이상 대기
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 400));
+  const printBySgBarcodes = useCallback(async (rows: SgPrintRow[]) => {
+    if (!rows || rows.length === 0) return;
+    await printItemsViaAgent(
+      rows.map((row) => ({
+        key: row.sgBarcode,
+        data: {
+          sgBarcode: row.sgBarcode,
+          itemCode: row.itemCode,
+          orderNo: row.orderNo,
+          initQty: row.initQty,
+          issueProcessCode: row.issueProcessCode,
+        },
+      })),
+    );
+  }, [printItemsViaAgent]);
 
-    try {
-      const nodes = Array.from(printRef.current?.children ?? [])
-        .filter((node): node is HTMLElement => node instanceof HTMLElement);
-      if (nodes.length !== printItems.length) {
-        throw new Error(t("kiosk.sgLabel.prepareFailed", "SG 라벨 출력 화면을 준비하지 못했습니다."));
-      }
-      await printLabelNodesViaAgent(
-        nodes.map((node, index) => ({ node, jobId: `SG-${printItems[index].key}` })),
-        design.labelWidth,
-        design.labelHeight,
-      );
-      toast.success(t("kiosk.sgLabel.printSent", "SG 라벨 {{count}}건을 프린터로 전송했습니다.", { count: printItems.length }));
-    } catch (error: unknown) {
-      const message = error instanceof Error && error.message
-        ? error.message
-        : t("kiosk.sgLabel.printError", "SG 라벨 출력 중 오류가 발생했습니다.");
-      toast.error(message);
-    } finally {
-      setItems([]);
-    }
-  }, [design.labelHeight, design.labelWidth, t]);
-
-  useImperativeHandle(ref, () => ({ printByResultNo }), [printByResultNo]);
+  useImperativeHandle(ref, () => ({ printByResultNo, printBySgBarcodes }), [printByResultNo, printBySgBarcodes]);
 
   return <LabelPrintRenderer ref={printRef} items={items} design={design} visible={items.length > 0} />;
 });

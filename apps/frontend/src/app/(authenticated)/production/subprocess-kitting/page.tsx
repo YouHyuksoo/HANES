@@ -1,28 +1,54 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+/**
+ * @file production/subprocess-kitting/page.tsx
+ * @description 실적입력(서브공정) — 2영역 스캔 키팅.
+ *   키오스크 공정에서 부착되어 온 이전 공정 SG 라벨을 스캔해 회로별 새 SG(반제품 서브)를 만든다.
+ *   input-assembly의 거울상(완제품 FG가 아니라 한 단계 아래 반제품 SG를 만든다).
+ *   흐름: 작업지시·공정·설비·회로 선택 → (좌)설비 자재 장착 + (우)이전 공정 SG 스캔
+ *        → "키팅 실행"으로 새 SG 발행+자동출력 → 실물 새 SG 스캔으로 확정.
+ */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { CheckCircle, Package, Play, Printer, RefreshCw, Scan, Search } from "lucide-react";
-import { Button, Card, CardContent, Input, Select, Modal, ComCodeBadge } from "@/components/ui";
-import { QtyInput } from "@/components/shared";
+import { Package, RefreshCw, Scan, Search } from "lucide-react";
+import { Button, Card, CardContent, Input, Select } from "@/components/ui";
 import { useProcessOptions, useEquipOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 import JobOrderSearchModal, { JobOrderPick } from "./components/JobOrderSearchModal";
+import InputSgScanPanel from "./components/InputSgScanPanel";
+import SubKitActionBar from "./components/SubKitActionBar";
+import EquipMaterialMountPanel from "../input-assembly/components/EquipMaterialMountPanel";
 import SgLabelPrintHost, { type SgLabelPrintHandle } from "../input-kiosk/components/SgLabelPrintHost";
 
-interface SgLabelRow {
-  sgBarcode: string;
+interface AssemblyComponent {
   itemCode: string;
-  initQty: number;
-  remainQty: number;
-  status: string;
-  issuedAt: string;
+  itemName: string;
+  itemType: string;
+  qtyPer: number;
+  totalRequired: number;
 }
 
-interface SubmitResult {
-  resultNo: string;
-  sgLabels: SgLabelRow[];
+interface AssemblyRequirements {
+  orderNo: string;
+  itemCode: string;
+  itemName: string;
+  planQty: number;
+  components: AssemblyComponent[];
+}
+
+interface SgLabelInfo {
+  sgBarcode: string;
+  itemCode: string;
+  remainQty: number;
+  status: string;
+  orderNo?: string | null;
+}
+
+interface CircuitInfo {
+  circuitNo: string;
+  wireSpec: string | null;
+  colorName: string | null;
 }
 
 export default function SubprocessKittingPage() {
@@ -34,13 +60,14 @@ export default function SubprocessKittingPage() {
 
   const [processCode, setProcessCode] = useState("");
   const [equipCode, setEquipCode] = useState("");
-  const [goodQty, setGoodQty] = useState<number>(1);
-  const [bundleCount, setBundleCount] = useState<number>(1);
-  const [qtyPerBundle, setQtyPerBundle] = useState<number>(0);
+  const [circuitNo, setCircuitNo] = useState("");
+  const [circuits, setCircuits] = useState<CircuitInfo[]>([]);
 
-  const [executing, setExecuting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
-  const [resultModalOpen, setResultModalOpen] = useState(false);
+  const [requirements, setRequirements] = useState<AssemblyRequirements | null>(null);
+  const [sgList, setSgList] = useState<SgLabelInfo[]>([]);
+  const [issuedSg, setIssuedSg] = useState<string | null>(null);
+  const [issuing, setIssuing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const orderScanRef = useRef<HTMLInputElement>(null);
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
@@ -53,14 +80,64 @@ export default function SubprocessKittingPage() {
     [rawProcessOptions, t],
   );
   const equipOptions = useMemo(
-    () => [{ value: "", label: t("production.subprocess.selectEquipOptional", "설비 선택 (선택)") }, ...rawEquipOptions],
+    () => [{ value: "", label: t("production.inputAssembly.selectEquip", "설비 선택") }, ...rawEquipOptions],
     [rawEquipOptions, t],
   );
+  const circuitOptions = useMemo(
+    () => [
+      { value: "", label: t("production.subprocess.selectCircuit", "회로 선택") },
+      ...circuits.map((c) => ({
+        value: c.circuitNo,
+        label: [c.circuitNo, c.wireSpec, c.colorName].filter(Boolean).join(" · "),
+      })),
+    ],
+    [circuits, t],
+  );
+
+  // 작업지시 선택 시 BOM 요구사항 + 회로 목록 조회
+  useEffect(() => {
+    if (!selectedOrder) {
+      setRequirements(null);
+      setCircuits([]);
+      return;
+    }
+    let cancelled = false;
+    setSgList([]);
+    setIssuedSg(null);
+    api
+      .get(
+        `/production/subprocess-kitting/assembly-requirements/${encodeURIComponent(selectedOrder.orderNo)}`,
+      )
+      .then((res) => {
+        if (!cancelled) setRequirements(res.data?.data as AssemblyRequirements);
+      })
+      .catch(() => {
+        if (!cancelled)
+          toast.error(
+            t("production.inputAssembly.requirementsLoadFailed", "조립 요구사항 조회에 실패했습니다."),
+          );
+      });
+    api
+      .get(
+        `/production/subprocess-kitting/circuits-by-order/${encodeURIComponent(selectedOrder.orderNo)}`,
+      )
+      .then((res) => {
+        if (!cancelled) setCircuits(Array.isArray(res.data?.data) ? (res.data.data as CircuitInfo[]) : []);
+      })
+      .catch(() => {
+        if (!cancelled) setCircuits([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedOrder, t]);
 
   const selectOrder = useCallback((order: JobOrderPick) => {
     setSelectedOrder(order);
     setOrderScan("");
-    setGoodQty(order.planQty ?? 1);
+    setSgList([]);
+    setIssuedSg(null);
+    setCircuitNo("");
   }, []);
 
   const fetchOrderByNo = useCallback(
@@ -92,79 +169,134 @@ export default function SubprocessKittingPage() {
   const clearOrder = () => {
     setSelectedOrder(null);
     setOrderScan("");
-    setProcessCode("");
-    setEquipCode("");
-    setGoodQty(1);
-    setBundleCount(1);
-    setQtyPerBundle(0);
+    setRequirements(null);
+    setCircuits([]);
+    setCircuitNo("");
+    setSgList([]);
+    setIssuedSg(null);
     setTimeout(() => orderScanRef.current?.focus(), 50);
   };
 
-  const resetForm = () => {
-    clearOrder();
-    setSubmitResult(null);
+  const resetAll = () => {
+    setSelectedOrder(null);
+    setOrderScan("");
+    setProcessCode("");
+    setEquipCode("");
+    setCircuitNo("");
+    setRequirements(null);
+    setCircuits([]);
+    setSgList([]);
+    setIssuedSg(null);
+    setTimeout(() => orderScanRef.current?.focus(), 50);
   };
 
-  const executeSubmit = async () => {
+  const addSg = useCallback((data: SgLabelInfo) => {
+    setSgList((prev) => [...prev, data]);
+  }, []);
+
+  const removeSg = useCallback((sgBarcode: string) => {
+    setSgList((prev) => prev.filter((item) => item.sgBarcode !== sgBarcode));
+  }, []);
+
+  const canIssue =
+    !!selectedOrder && !!processCode && !!equipCode && sgList.length > 0 && !issuedSg;
+
+  const onIssue = useCallback(async () => {
     if (!selectedOrder) {
-      toast.error(t("production.subprocess.requireOrderNo", "작업지시를 선택하세요."));
+      toast.error(t("production.inputAssembly.requireOrder", "작업지시를 선택하세요."));
       return;
     }
     if (!processCode) {
       toast.error(t("production.subprocess.requireProcess", "공정을 선택하세요."));
       return;
     }
-    if (!goodQty || goodQty <= 0) {
-      toast.error(t("production.subprocess.requireQty", "양품 수량을 입력하세요."));
+    if (!equipCode) {
+      toast.error(t("production.inputAssembly.requireEquip", "설비를 선택하세요."));
+      return;
+    }
+    if (sgList.length === 0) {
+      toast.error(t("production.inputAssembly.requireScan", "SG 라벨을 스캔하세요."));
+      return;
+    }
+    if (circuits.length > 0 && !circuitNo) {
+      toast.error(t("production.subprocess.requireCircuit", "회로를 선택하세요."));
       return;
     }
 
-    setExecuting(true);
+    setIssuing(true);
     try {
-      const payload: Record<string, unknown> = {
+      const res = await api.post("/production/subprocess-kitting/issue-sg-label", {
         orderNo: selectedOrder.orderNo,
         processCode,
-        goodQty,
-      };
-      if (equipCode.trim()) payload.equipCode = equipCode.trim();
-      if (bundleCount > 0) payload.bundleCount = bundleCount;
-      if (qtyPerBundle > 0) payload.qtyPerBundle = qtyPerBundle;
+        equipCode,
+        circuitNo: circuitNo || undefined,
+      });
+      const data = res.data?.data as { sgBarcode: string };
+      setIssuedSg(data.sgBarcode);
+      toast.success(
+        t("production.subprocess.issueSuccess", "SG 라벨이 발행되었습니다. 실물 라벨을 스캔하세요."),
+      );
 
-      const res = await api.post("/production/prod-results", payload);
-      const resultNo: string = res.data?.data?.resultNo ?? "";
-
-      let sgLabels: SgLabelRow[] = [];
-      if (resultNo) {
-        try {
-          const sgRes = await api.get(
-            `/production/subprocess-kitting/sg-labels-by-result/${encodeURIComponent(resultNo)}`,
-          );
-          sgLabels = Array.isArray(sgRes.data?.data) ? (sgRes.data.data as SgLabelRow[]) : [];
-        } catch {
-          // SG 조회 실패해도 실적 등록은 성공으로 처리
-        }
-      }
-
-      setSubmitResult({ resultNo, sgLabels });
-      setResultModalOpen(true);
-      toast.success(t("production.subprocess.submitSuccess", "서브공정 실적이 등록되었습니다."));
-
-      // 발행공정이면 발행된 SG 라벨을 키오스크와 동일하게 Print Agent로 자동 출력(발행분 없으면 무동작).
-      if (resultNo && sgLabels.length > 0) {
-        void sgPrinterRef.current?.printByResultNo(resultNo);
-      }
+      // 발행 즉시 키오스크와 동일하게 Print Agent로 자동 출력(실적 채번 전이므로 바코드 직접 전달).
+      void sgPrinterRef.current?.printBySgBarcodes([
+        {
+          sgBarcode: data.sgBarcode,
+          itemCode: selectedOrder.itemCode,
+          orderNo: selectedOrder.orderNo,
+          initQty: 1,
+          issueProcessCode: processCode,
+        },
+      ]);
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        t("production.subprocess.submitFailed", "실적 등록에 실패했습니다.");
+        t("production.subprocess.issueFailed", "SG 라벨 발행에 실패했습니다.");
       toast.error(message);
     } finally {
-      setExecuting(false);
+      setIssuing(false);
     }
-  };
+  }, [circuitNo, circuits.length, equipCode, processCode, selectedOrder, sgList.length, t]);
+
+  const onConfirmScan = useCallback(
+    async (scanned: string) => {
+      if (issuedSg && scanned !== issuedSg) {
+        toast.error(t("production.subprocess.confirmMismatch", "발행된 라벨과 일치하지 않습니다."));
+        return;
+      }
+      if (!selectedOrder) return;
+
+      setConfirming(true);
+      try {
+        await api.post("/production/subprocess-kitting/confirm-subkit", {
+          newSgBarcode: scanned,
+          orderNo: selectedOrder.orderNo,
+          processCode,
+          equipCode,
+          inputSgBarcodes: sgList.map((s) => s.sgBarcode),
+          circuitNo: circuitNo || undefined,
+        });
+        toast.success(t("production.subprocess.confirmSuccess", "서브 키팅이 확정되었습니다."));
+        setSgList([]);
+        setIssuedSg(null);
+      } catch (error: unknown) {
+        const message =
+          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          t("production.subprocess.confirmFailed", "서브 키팅 확정에 실패했습니다.");
+        toast.error(message);
+      } finally {
+        setConfirming(false);
+      }
+    },
+    [circuitNo, equipCode, issuedSg, processCode, selectedOrder, sgList, t],
+  );
+
+  const onResetIssued = useCallback(() => {
+    setIssuedSg(null);
+  }, []);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-5 gap-4 animate-fade-in bg-background">
+    <div className="h-full flex flex-col overflow-hidden p-5 gap-3 animate-fade-in bg-background">
+      {/* 헤더 */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -173,155 +305,127 @@ export default function SubprocessKittingPage() {
           </h1>
           <p className="text-text-muted mt-1">
             {t(
-              "production.kitting.description",
-              "반제품 서브공정 실적을 등록하고 SG 추적라벨을 발행합니다.",
+              "production.subprocess.scanDescription",
+              "이전 공정 SG 라벨을 스캔하여 회로별 반제품 서브를 만듭니다.",
             )}
           </p>
         </div>
         <Button
           variant="secondary"
           size="sm"
-          onClick={resetForm}
+          onClick={resetAll}
           leftIcon={<RefreshCw className="w-4 h-4" />}
         >
           {t("common.reset")}
         </Button>
       </div>
 
-      <div className="flex flex-col gap-4 min-h-0 flex-1 overflow-auto">
-        {/* 작업지시 선택 */}
-        <Card padding="none" className="flex-shrink-0">
-          <CardContent className="p-4">
-            <h2 className="font-bold text-text mb-3">
-              {t("production.subprocess.orderSection", "작업지시 (반제품)")}
-            </h2>
-            {selectedOrder ? (
-              <div className="flex items-center justify-between gap-4 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
-                <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
-                  <div>
-                    <div className="text-[11px] text-text-muted">
-                      {t("production.subprocess.orderNo", "작업지시번호")}
-                    </div>
-                    <div className="font-mono text-text">{selectedOrder.orderNo}</div>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[11px] text-text-muted">{t("common.partName", "품목")}</div>
-                    <div className="truncate text-text">
+      {/* 상단 고정 바: 작업지시 + 공정 + 설비 + 회로 */}
+      <Card padding="none" className="flex-shrink-0">
+        <CardContent className="p-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+            <div className="flex-1 min-w-0">
+              {selectedOrder ? (
+                <div className="flex items-center justify-between gap-3 rounded border border-primary/40 bg-primary/5 px-3 py-2">
+                  <div className="min-w-0 text-sm">
+                    <span className="font-mono text-text">{selectedOrder.orderNo}</span>
+                    <span className="text-text-muted">
+                      {" · "}
                       {selectedOrder.itemCode}
                       {selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}
-                    </div>
+                    </span>
                   </div>
-                  <div>
-                    <div className="text-[11px] text-text-muted">
-                      {t("production.subprocess.planQty", "계획수량")}
-                    </div>
-                    <div className="tabular-nums text-text">
-                      {(selectedOrder.planQty ?? 0).toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-text-muted">{t("common.status", "상태")}</div>
-                    <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedOrder.status} />
-                  </div>
+                  <Button variant="secondary" size="sm" onClick={clearOrder}>
+                    {t("common.change", "변경")}
+                  </Button>
                 </div>
-                <Button variant="secondary" size="sm" onClick={clearOrder}>
-                  {t("common.change", "변경")}
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <Input
-                    ref={orderScanRef}
-                    label={t(
-                      "production.subprocess.orderScanLabel",
-                      "작업지시번호 스캔 또는 입력 후 Enter",
-                    )}
-                    value={orderScan}
-                    onChange={(e) => setOrderScan(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        fetchOrderByNo(orderScan);
-                      }
-                    }}
-                    placeholder="W-20260001"
-                    leftIcon={<Scan className="w-4 h-4" />}
-                    fullWidth
-                  />
+              ) : (
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Input
+                      ref={orderScanRef}
+                      label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
+                      value={orderScan}
+                      onChange={(e) => setOrderScan(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          fetchOrderByNo(orderScan);
+                        }
+                      }}
+                      placeholder="W-20260001"
+                      leftIcon={<Scan className="w-4 h-4" />}
+                      fullWidth
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setOrderSearchOpen(true)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    className="mb-0.5"
+                  >
+                    {t("common.search")}
+                  </Button>
                 </div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setOrderSearchOpen(true)}
-                  leftIcon={<Search className="w-4 h-4" />}
-                  className="mb-0.5"
-                >
-                  {t("common.search")}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </div>
 
-        {/* 실적 입력 폼 */}
-        <Card padding="none" className="flex-shrink-0">
-          <CardContent className="p-4">
-            <h2 className="font-bold text-text mb-3">
-              {t("production.subprocess.resultSection", "실적 입력")}
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="w-full lg:w-44">
               <Select
                 label={t("production.subprocess.process", "공정")}
                 options={processOptions}
                 value={processCode}
                 onChange={setProcessCode}
-                disabled={!selectedOrder}
                 fullWidth
               />
+            </div>
+            <div className="w-full lg:w-44">
               <Select
-                label={`${t("production.subprocess.equip", "설비")} (${t("production.subprocess.optional", "선택")})`}
+                label={t("production.inputAssembly.equip", "설비")}
                 options={equipOptions}
                 value={equipCode}
                 onChange={setEquipCode}
-                disabled={!selectedOrder}
-                fullWidth
-              />
-              <QtyInput
-                label={t("production.subprocess.goodQty", "양품 수량")}
-                value={goodQty}
-                onChange={setGoodQty}
-                disabled={!selectedOrder}
-                fullWidth
-              />
-              <QtyInput
-                label={t("production.subprocess.bundleCount", "묶음 수")}
-                value={bundleCount}
-                onChange={setBundleCount}
-                disabled={!selectedOrder}
-                fullWidth
-              />
-              <QtyInput
-                label={`${t("production.subprocess.qtyPerBundle", "묶음당 가닥")} (${t("production.subprocess.optional", "선택")})`}
-                value={qtyPerBundle}
-                onChange={setQtyPerBundle}
-                disabled={!selectedOrder}
                 fullWidth
               />
             </div>
-            <div className="flex justify-end mt-4">
-              <Button
-                size="lg"
-                onClick={executeSubmit}
-                isLoading={executing}
-                disabled={!selectedOrder || !processCode}
-                leftIcon={<Play className="w-5 h-5" />}
-              >
-                {t("production.subprocess.submit", "실적 등록")}
-              </Button>
+            <div className="w-full lg:w-52">
+              <Select
+                label={t("production.subprocess.circuit", "회로")}
+                options={circuitOptions}
+                value={circuitNo}
+                onChange={setCircuitNo}
+                disabled={circuits.length === 0}
+                fullWidth
+              />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 본문 2영역 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
+        <EquipMaterialMountPanel equipCode={equipCode} />
+        <InputSgScanPanel
+          orderNo={selectedOrder?.orderNo}
+          sgList={sgList}
+          components={requirements?.components ?? []}
+          onAdd={addSg}
+          onRemove={removeSg}
+        />
+      </div>
+
+      {/* 하단 액션 바 */}
+      <div className="flex-shrink-0">
+        <SubKitActionBar
+          canIssue={canIssue}
+          issuing={issuing}
+          issuedSg={issuedSg}
+          onIssue={onIssue}
+          confirming={confirming}
+          onConfirmScan={onConfirmScan}
+          onResetIssued={onResetIssued}
+        />
       </div>
 
       {/* 작업지시 검색 모달 — SEMI_PRODUCT 필터 */}
@@ -331,73 +435,6 @@ export default function SubprocessKittingPage() {
         onSelect={selectOrder}
         itemType="SEMI_PRODUCT"
       />
-
-      {/* 결과 모달 */}
-      <Modal
-        isOpen={resultModalOpen}
-        onClose={() => {
-          setResultModalOpen(false);
-          resetForm();
-        }}
-        title={t("production.subprocess.resultTitle", "서브공정 실적 등록 완료")}
-        size="lg"
-        footer={
-          <Button
-            onClick={() => {
-              setResultModalOpen(false);
-              resetForm();
-            }}
-          >
-            {t("common.confirm")}
-          </Button>
-        }
-      >
-        {submitResult && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="font-semibold text-text-muted">
-                {t("production.subprocess.resultNo", "실적번호")}:
-              </span>
-              <span className="font-mono text-text">{submitResult.resultNo}</span>
-            </div>
-            {submitResult.sgLabels.length > 0 ? (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-semibold text-text-muted">
-                    {t("production.subprocess.issuedSgLabels", "발행된 SG 추적라벨")} (
-                    {submitResult.sgLabels.length}건)
-                  </p>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void sgPrinterRef.current?.printByResultNo(submitResult.resultNo)}
-                    leftIcon={<Printer className="w-4 h-4" />}
-                  >
-                    {t("production.subprocess.reprintSgLabels", "라벨 재출력")}
-                  </Button>
-                </div>
-                <div className="border border-border rounded divide-y divide-border max-h-60 overflow-auto">
-                  {submitResult.sgLabels.map((sg, index) => (
-                    <div key={sg.sgBarcode} className="px-3 py-2 flex items-center gap-3">
-                      <span className="text-xs text-text-muted w-6 text-right">{index + 1}</span>
-                      <span className="font-mono text-sm text-text flex-1">{sg.sgBarcode}</span>
-                      <span className="text-xs text-text-muted">{sg.initQty}개</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-text-muted">
-                {t(
-                  "production.subprocess.noSgLabels",
-                  "이 공정에서는 SG 라벨이 발행되지 않습니다. ROUTING_PROCESSES의 ISSUE_SG_LABEL_YN='Y' 설정을 확인하세요.",
-                )}
-              </p>
-            )}
-          </div>
-        )}
-      </Modal>
 
       {/* SG(반제품) 라벨 자동 출력 호스트 — 키오스크와 동일, 오프스크린 렌더 후 Print Agent 전송 */}
       <SgLabelPrintHost ref={sgPrinterRef} />

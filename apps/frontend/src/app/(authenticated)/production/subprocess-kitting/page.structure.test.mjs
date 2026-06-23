@@ -9,24 +9,30 @@ const pagePath = join(
 );
 const source = readFileSync(pagePath, 'utf8');
 
-test('/production/subprocess-kitting: POST API path is present', () => {
-  assert.match(source, /\/production\/subprocess-kitting/);
+test('/production/subprocess-kitting: issue-sg-label POST API path is present', () => {
+  assert.match(source, /\/production\/subprocess-kitting\/issue-sg-label/);
 });
 
-test('/production/subprocess-kitting: GET sg-labels-by-result API path is present', () => {
-  assert.match(source, /\/production\/subprocess-kitting\/sg-labels-by-result\//);
+test('/production/subprocess-kitting: confirm-subkit POST API path is present', () => {
+  assert.match(source, /\/production\/subprocess-kitting\/confirm-subkit/);
 });
 
-test('/production/subprocess-kitting: issued SG label barcode is rendered', () => {
-  assert.match(source, /sgBarcode/);
+test('/production/subprocess-kitting: input SG scan uses sg-label lookup', () => {
+  // 입력 SG 스캔 검증은 InputSgScanPanel 컴포넌트가 담당 (GET .../sg-label/:barcode)
+  assert.match(source, /InputSgScanPanel/);
 });
 
-test('/production/subprocess-kitting: qty field is present', () => {
-  assert.match(source, /qty/);
+test('/production/subprocess-kitting: circuits-by-order is loaded for circuit select', () => {
+  assert.match(source, /\/production\/subprocess-kitting\/circuits-by-order\//);
 });
 
-test('/production/subprocess-kitting: execute submit button is present', () => {
-  assert.match(source, /executeSubmit/);
+test('/production/subprocess-kitting: two-step issue -> physical confirm scan flow', () => {
+  assert.match(source, /issuedSg/);
+  assert.match(source, /onConfirmScan/);
+});
+
+test('/production/subprocess-kitting: SEMI_PRODUCT job order filter', () => {
+  assert.match(source, /SEMI_PRODUCT/);
 });
 
 test('/production/subprocess-kitting: no alert/confirm/prompt usage', () => {
@@ -35,16 +41,7 @@ test('/production/subprocess-kitting: no alert/confirm/prompt usage', () => {
   assert.doesNotMatch(source, /\bprompt\s*\(/);
 });
 
-test('/production/subprocess-kitting: uses modal for warnings, not alert', () => {
-  assert.match(source, /warnModalOpen|Modal/);
-});
-
-test('/production/subprocess-kitting: prod-result POST sends goodQty payload', () => {
-  assert.match(source, /\/production\/prod-results/);
-  assert.match(source, /goodQty/);
-});
-
-test('/production/subprocess-kitting: issued SG labels auto-print via Print Agent host', () => {
+test('/production/subprocess-kitting: issued SG label auto-print via Print Agent host', () => {
   assert.match(source, /SgLabelPrintHost/);
-  assert.match(source, /sgPrinterRef\.current\?\.printByResultNo/);
+  assert.match(source, /sgPrinterRef\.current\?\.printBySgBarcodes/);
 });
