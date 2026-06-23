@@ -65,7 +65,8 @@ const authUser = {
 
 function isIgnoredRequestFailure(item) {
   return /fonts\.gstatic\.com|fonts\.googleapis\.com/i.test(item.url)
-    || /^\/api\/(?:health|db-info)$/i.test(item.url);
+    || /^\/api\/(?:health|db-info)$/i.test(item.url)
+    || /^\/api\/master\/companies\/public$/i.test(item.url);
 }
 
 function escapeHtml(value) {

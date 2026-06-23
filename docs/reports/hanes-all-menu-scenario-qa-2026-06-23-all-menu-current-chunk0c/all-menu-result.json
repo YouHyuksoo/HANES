@@ -1,0 +1,3167 @@
+{
+  "status": "FAIL",
+  "reportDate": "2026-06-23-all-menu-current-chunk0c",
+  "baseUrl": "http://localhost:3012",
+  "apiUrl": "http://localhost:3003/api/v1",
+  "health": {
+    "frontend": {
+      "ok": true,
+      "status": 200
+    },
+    "backend": {
+      "ok": true,
+      "status": 200
+    }
+  },
+  "menuOffset": 4,
+  "total": 10,
+  "pass": 9,
+  "fail": 1,
+  "indexPath": "C:\\Project\\HANES\\docs\\reports\\hanes-all-menu-scenario-qa-2026-06-23-all-menu-current-chunk0c\\index.html",
+  "resultPath": "C:\\Project\\HANES\\docs\\reports\\hanes-all-menu-scenario-qa-2026-06-23-all-menu-current-chunk0c\\all-menu-result.json",
+  "pages": [
+    {
+      "code": "MST_BOM",
+      "labelKey": "menu.master.bom",
+      "path": "/master/bom",
+      "source": "menuConfig",
+      "slug": "mst-bom-master-bom",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/bom",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 222
+      },
+      "elapsedMs": 4884,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.bom",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/boms/parents?effectiveDate=2026-06-23",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/boms/hierarchy/HNS02?depth=10&effectiveDate=2026-06-23",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/api/db-info",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/bom",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 222ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "12건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "BOM관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "폼 다운로드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "엑셀 업로드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "반제품",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "완제품",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체 펼치기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체 접기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "내보내기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "BOM 추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "3개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 2, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 30,
+        "inputs": 3,
+        "selects": 0,
+        "tables": 2,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-bom-master-bom/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 BOM관리 BOM관리 제품/반제품 BOM 구조를 선택하고, 선택된 BOM 행 기준으로 라우팅과 투입자재를 관리합니다. (1건) 폼 다운로드 엑셀 업로드 기준일자: 새로고침 제품/반제품 목록 전체 반제품 완제품 HNS02 완제품 하네스 HNS02 / 완제품 / BOM 3 BOM 자재 구조 HNS02 - 완제품 하네스 완제품 하네스 (36자재수) 전체 펼치기 전체 접기 내보내기 BOM 추가 Lv 자품목코드 자품목명 품목유형 투입공정 소요량 리비전 사이드 적용일 완료일 관리 0 HNS02 완제품 하네스(3) 완제품 - 1 EA A - - - 1 HNS02_FA HNS02_FA(2) 반제품 MASSY 조립 1 EA A - 2026-05-31 - 1 HSG0001 하우징 원자재 MASSY 조립 1 EA A - 2026-05-31 - 1 TP0001 절연테잎 원자재 MASSY 조립 300 MM A - 2026-05-31 - 전체화면 보기 AI 채팅 개선요청 등록",
+      "error": null,
+      "pageReport": "pages/mst-bom-master-bom.html",
+      "pageResult": "page-results/mst-bom-master-bom.json"
+    },
+    {
+      "code": "MST_PARTNER",
+      "labelKey": "menu.master.partner",
+      "path": "/master/partner",
+      "source": "menuConfig",
+      "slug": "mst-partner-master-partner",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/partner",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 278
+      },
+      "elapsedMs": 3993,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.partner",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/partners?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/api/db-info",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/partner",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 278ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "11건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "거래처관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "거래처 추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "선택 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "3개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 1, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 22,
+        "inputs": 2,
+        "selects": 3,
+        "tables": 1,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-partner-master-partner/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 거래처관리 거래처관리 공급상 및 고객 거래처 정보를 관리합니다. (15건) 새로고침 거래처 추가 거래처 유형: 전체 거래처 유형: 공급사 거래처 유형: 고객사 거래처 유형: 제조사 사용여부: 전체 사용여부: 사용 사용여부: 미사용 관리 거래처코드 거래처명 거래처 유형 사업자번호 대표자 전화번호 담당자 이메일 사용여부 AITEST20260610034653 AITEST 거래처 20260610034653 공급사 Y CUS-001 현대자동차 고객사 101-81-12345 정의선 02-3464-1114 강바이어 purchase@hyundai.com Y CUS-002 기아자동차 고객사 101-81-23456 송호성 02-3464-2234 윤구매 scm@kia.com Y CUST_KEVIN CUST_KEVIN 공급사 123456 KEVIN Y HS0001 유진플랫폼 공급사 Y M001 한성정밀 제조사 Y M002 비나마이크로 제조사 Y M003 ABC Industries 제조사 Y M004 대성하이텍 제조사 Y M005 KH Vietnam 제조사 Y SUPL001 (주)행성테크놀러지 공급사 Y VND-001 한국단자공업 공급사 123-45-67890 김대표 031-123-4567 이영업 sales@kterm.co.kr Y VND-002 대한전선 공급사 234-56-78901 박사장 041-234-5678 최영업 wire@daehan.co.kr Y VND-003 삼화부자재 공급사 345-67-89012 정대표 031-345-6789 한구매 info@samhwa.co.kr Y VND_KEVIN VND_KEVIN 공급사 123456 KEVIN Y 전체 15건 20건 50건 100건 200건 500건 전체화면 보기 AI 채팅 개선요청 등록",
+      "error": null,
+      "pageReport": "pages/mst-partner-master-partner.html",
+      "pageResult": "page-results/mst-partner-master-partner.json"
+    },
+    {
+      "code": "EQUIP_MASTER",
+      "labelKey": "menu.equipment.master",
+      "path": "/master/equip",
+      "source": "menuConfig",
+      "slug": "equip-master-master-equip",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/equip",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 188
+      },
+      "elapsedMs": 3397,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.equip",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/equipment/equips/metadata/lines",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/equipment/equips?limit=100",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/api/db-info",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/equip",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 188ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "12건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비마스터",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비 추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비 기본정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비 BOM 관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "1",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "2",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "3",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "4",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "5",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "선택 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "4개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 1, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 29,
+        "inputs": 2,
+        "selects": 4,
+        "tables": 1,
+        "grids": 0
+      },
+      "screenshot": "screenshots/equip-master-master-equip/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 설비마스터 설비마스터 설비 정보를 등록하고 관리합니다. 새로고침 설비 추가 설비 기본정보 설비 BOM 관리 유형: 전체 유형: 공통 유형: 자동압착기 유형: 단선절단기 유형: 다선절단기 유형: 트위스트기 유형: 솔더링기 유형: 하우징기 유형: 검사기 유형: 라벨프린터 유형: 검사설비 유형: 포장기 유형: 기타 라인 LINE-01 - 절단라인 LINE-02 - 압착라인 LINE-03 - 선조립라인A LINE-04 - 조립라인A LINE-05 - 검사포장라인 P2001 - 자동압착1 통신: 전체 통신: MQTT 통신: 시리얼 통신: TCP/IP 통신: OPC-UA 통신: Modbus 관리 설비코드 설비명 유형 공정 통신방식 IP/Port 제조사 모델 사용 EQ-AINSP-01 통합검사 설비 #1 TESTER 통합검사 AINSP - HANES-SIM SEED-AINSP-01 EQ-AINSP-02 통합검사 설비 #2 TESTER 통합검사 AINSP - HANES-SIM SEED-AINSP-02 EQ-ATCNS-01 자동절단탈피 설비 #1 OTHER 자동절단탈피 ATCNS - HANES-SIM SEED-ATCNS-01 EQ-ATCNS-02 자동절단탈피 설비 #2 OTHER 자동절단탈피 ATCNS - HANES-SIM SEED-ATCNS-02 EQ-ATCUT-01 자동절단 설비 #1 SINGLE_CUT 자동절단 ATCUT - HANES-SIM SEED-ATCUT-01 EQ-ATCUT-02 자동절단 설비 #2 SINGLE_CUT 자동절단 ATCUT - HANES-SIM SEED-ATCUT-02 EQ-AUXMT-01 부자재장착 설비 #1 HOUSING 부자재부착 AUXMT - HANES-SIM SEED-AUXMT-01 EQ-CRIMP-01 자동압착기 #1 AUTO_CRIMP 압착 PRC-CRIMP - JST CP-3500A EQ-CRIMP-02 자동압착기 #2 AUTO_CRIMP 압착 PRC-CRIMP - JST CP-3500A EQ-CRIMP-03 반자동압착기 #1 AUTO_CRIMP 압착 PRC-CRIMP - 한국정밀 HCP-200 전체 46건 1 2 3 4 5 10건 20건 ",
+      "error": null,
+      "pageReport": "pages/equip-master-master-equip.html",
+      "pageResult": "page-results/equip-master-master-equip.json"
+    },
+    {
+      "code": "MST_PROCESS",
+      "labelKey": "menu.master.process",
+      "path": "/master/process",
+      "source": "menuConfig",
+      "slug": "mst-process-master-process",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/process",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 199
+      },
+      "elapsedMs": 3933,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.process",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/processes?limit=5000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/processes/equipment-counts",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/equipment/equips?limit=10000&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/processes/PRC-CUT/equipments",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/process",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 199ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "15건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "공정관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "공정 추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "1개"
+        },
+        {
+          "name": "선택 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 2, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 19,
+        "inputs": 1,
+        "selects": 2,
+        "tables": 2,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-process-master-process/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 공정관리 공정마스터 공정 정보를 등록하고 관리합니다. 새로고침 공정 추가 공정코드 공정명 라인구분 공정유형 공정 대분류 설비 정렬순서 사용여부 PRC-CUT 절단 - 절단 전선 4 500 N PRC-STRIP 탈피 - 탈피 전선 2 510 N PRC-CRIMP 압착 - 압착 단자 2 520 N PRC-TEST 도통검사 - 검사 검사 2 530 N ATCUT 자동절단 저전압 절단 전선 3 1010 Y ATCNS 자동절단탈피 저전압 절단 전선 2 1020 Y STRPB 양단탈피 저전압 탈피 전선 3 1030 Y CRMPF 전단압착 저전압 압착 단자 2 1040 Y CRMPR 후단압착 저전압 압착 단자 2 1050 Y CRMPB 양단압착 저전압 압착 단자 3 1060 Y SHDCT 실드절단 저전압 절단 전선 0 1070 Y SACRP 반자동압착 저전압 압착 단자 0 1090 Y MIDST 중간탈피 저전압 탈피 전선 0 1100 Y SJCRP S/JOINT압착 저전압 압착 단자 0 1110 Y WELDR 초음파융착 저전압 융착 단자 2 1120 Y TUBHT 열수축 저전압 열처리 열처리 1 1130 Y ATAPE 자동테이핑 저전압 조립 조립 0 1140 Y TWIST 트위스트 저전압 조립 전선 0 1150 Y CRINS 절압물검사 저전압 검사 검사 0 1160 Y SACMB 반제품조합 저전압 조립 조립 0 1170 Y TAPNG 테이핑 저전압 조립 조립 0 1180 Y PROTC 프로텍트체결 저전압 조립 조립 0 1200 Y STINS 구조검사 저전압 검사 검사 0 1210 Y CIINS 회로검사 저전압 검사 검사 0 1220 Y FUSIN 퓨즈삽입/토크체결 저전압 조립 조립 0 1230 Y VISIN 비전검사 저전압 검사 검사 0 1240 Y RLYIN 릴레이기능검사 저전압 검사 검사 0 1250 Y FINSH 마무리 저전압 조립 조립 0 1260 Y ABAG A/BAG제작 저전압 조립 조립 0 1900 Y CBLCT 케이블절단 고전압 절단 전선 0 2010 Y SHDRM 실드편조절단 고전압 편조제거 전선 2 2020 Y HEXCP 육각압착 고전압 압착 단자 2 2040 ",
+      "error": null,
+      "pageReport": "pages/mst-process-master-process.html",
+      "pageResult": "page-results/mst-process-master-process.json"
+    },
+    {
+      "code": "MST_PROD_LINE",
+      "labelKey": "menu.master.prodLine",
+      "path": "/master/prod-line",
+      "source": "menuConfig",
+      "slug": "mst-prod-line-master-prod-line",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/prod-line",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 251088
+      },
+      "elapsedMs": 6262,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.prod-line",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/prod-lines?limit=5000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/api/db-info",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/prod-line",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 251088ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "9건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산라인관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "라인 추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "선택 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "1개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 1, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 22,
+        "inputs": 2,
+        "selects": 1,
+        "tables": 1,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-prod-line-master-prod-line/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 생산라인관리 생산라인관리 생산라인 정보를 등록하고 관리합니다. 새로고침 라인 추가 관리 라인코드 라인명 공정코드 라인유형 창고위치 ERP코드 비고 사용 LINE-01 절단라인 PRC-CUT CUTTING - 전선 자동절단/탈피 라인 LINE-02 압착라인 PRC-CRIMP CRIMPING - 단자 압착 전용 라인 LINE-03 선조립라인A PRC-PRESUB ASSEMBLY - 서브 하네스 선조립 라인 LINE-04 조립라인A PRC-ASSY ASSEMBLY - 메인 하네스 조립 라인 LINE-05 검사포장라인 PRC-TEST TESTING - 도통검사 및 포장 라인 P2001 자동압착1 - - - - 전체 6건 20건 50건 100건 200건 500건 전체화면 보기 AI 채팅 개선요청 등록",
+      "error": null,
+      "pageReport": "pages/mst-prod-line-master-prod-line.html",
+      "pageResult": "page-results/mst-prod-line-master-prod-line.json"
+    },
+    {
+      "code": "MST_ROUTING",
+      "labelKey": "menu.master.routing",
+      "path": "/master/routing",
+      "source": "menuConfig",
+      "slug": "mst-routing-master-routing",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/routing",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 232177
+      },
+      "elapsedMs": 7242,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/routing-groups?limit=5000&useYn=Y&itemType=FINISHED",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.routing",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/boms/hierarchy/HNS02?depth=10",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/routing-groups/by-item/HNS02",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/processes?limit=5000&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/parts?limit=5000&useYn=Y",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/routing",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 232177ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "14건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "라우팅관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "라우팅 추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "완제품 하네스[HNS02] FINISHED",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02_FA[HNS02_FA] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02_FB[HNS02_FB] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C1[HNS02C1] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C1A[HNS02C1A] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02-SCA[HNS02-SCA] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02-SCA_1[HNS02-SCA_1] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02-SCA_2[HNS02-SCA_2] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C1AB[HNS02C1AB] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C1ABC[HNS02C1ABC] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C1ABCD[HNS02C1ABCD] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C2[HNS02C2] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C2A[HNS02C2A] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C2AB[HNS02C2AB] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C2ABC[HNS02C2ABC] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C2ABCD[HNS02C2ABCD] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "HNS02C2ABCDE[HNS02C2ABCDE] SEMI_PRODUCT",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "공정추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 2, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 40,
+        "inputs": 2,
+        "selects": 0,
+        "tables": 2,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-routing-master-routing/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 라우팅관리 라우팅 정보 공정라우팅 정보를 관리합니다. 새로고침 라우팅 목록 라우팅 추가 HNS02 완제품 하네스 HNS02 - 완제품 하네스 RT-HNS02 HNS02 HNS02 - 완제품 하네스 F BOM 구조 [HNS02] 완제품 하네스[HNS02] FINISHED HNS02_FA[HNS02_FA] SEMI_PRODUCT HNS02_FB[HNS02_FB] SEMI_PRODUCT HNS02C1[HNS02C1] SEMI_PRODUCT HNS02C1A[HNS02C1A] SEMI_PRODUCT HNS02-SCA[HNS02-SCA] SEMI_PRODUCT HNS02-SCA_1[HNS02-SCA_1] SEMI_PRODUCT HNS02-SCA_2[HNS02-SCA_2] SEMI_PRODUCT HNS02C1AB[HNS02C1AB] SEMI_PRODUCT HNS02C1ABC[HNS02C1ABC] SEMI_PRODUCT HNS02C1ABCD[HNS02C1ABCD] SEMI_PRODUCT HNS02C2[HNS02C2] SEMI_PRODUCT HNS02C2A[HNS02C2A] SEMI_PRODUCT HNS02C2AB[HNS02C2AB] SEMI_PRODUCT HNS02C2ABC[HNS02C2ABC] SEMI_PRODUCT HNS02C2ABCD[HNS02C2ABCD] SEMI_PRODUCT HNS02C2ABCDE[HNS02C2ABCDE] SEMI_PRODUCT 라우팅 공정 순서 완제품 하네스 공정추가 순서 공정명 공정코드 공정생품검사 라벨발행 관리 선택한 품목의 라우팅에 등록된 공정이 없습니다. 좌측 품목 행을 선택하면 라우팅 트리를 열고 공정을 추가/수정할 수 있습니다. 전체화면 보기 AI 채팅 개선요청 등록",
+      "error": null,
+      "pageReport": "pages/mst-routing-master-routing.html",
+      "pageResult": "page-results/mst-routing-master-routing.json"
+    },
+    {
+      "code": "MST_WORK_CALENDAR",
+      "labelKey": "menu.master.workCalendar",
+      "path": "/master/work-calendar",
+      "source": "menuConfig",
+      "slug": "mst-work-calendar-master-work-calendar",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/work-calendar",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 225618
+      },
+      "elapsedMs": 5864,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.work-calendar",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/work-calendars?limit=1000",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/shift-patterns",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/processes?limit=1000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/work-calendar",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 225618ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "14건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산월력관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "월력관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "교대패턴",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "2026 WC-2026-VNHNS ACTIVE 전체 (공장기본)",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        }
+      ],
+      "metrics": {
+        "buttons": 25,
+        "inputs": 2,
+        "selects": 0,
+        "tables": 0,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-work-calendar-master-work-calendar/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 생산월력관리 생산월력관리 연간 작업일정을 등록하고 관리합니다. 새로고침 추가 월력관리 교대패턴 2026 WC-2026-VNHNS ACTIVE 전체 (공장기본) 좌측에서 캘린더를 선택하세요. 전체화면 보기 AI 채팅 개선요청 등록",
+      "error": null,
+      "pageReport": "pages/mst-work-calendar-master-work-calendar.html",
+      "pageResult": "page-results/mst-work-calendar-master-work-calendar.json"
+    },
+    {
+      "code": "MST_WORKER",
+      "labelKey": "menu.master.worker",
+      "path": "/master/worker",
+      "source": "menuConfig",
+      "slug": "mst-worker-master-worker",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/worker",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 255279
+      },
+      "elapsedMs": 9217,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.worker",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/workers?limit=200",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/worker",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 255279ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "8건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "작업자관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "작업자 추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "선택 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 1, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 22,
+        "inputs": 2,
+        "selects": 2,
+        "tables": 1,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-worker-master-worker/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 작업자관리 작업자관리 작업자 정보를 등록하고 관리합니다. 새로고침 작업자 추가 사용여부: 전체 사용여부: 사용 사용여부: 미사용 관리 사진 사번 이름 영문명 부서 직급 전화번호 사용 W010 오지훈 Oh Jihun 생산2팀 사원 010-0123-4567 예 W009 강태영 Kang Taeyoung 생산1팀 사원 010-9012-3456 예 W008 윤서연 Yun Seoyeon 품질팀 검사원 010-8901-2345 예 송 W007 송재호 Song Jaeho 품질팀 검사원 010-7890-1234 예 W006 한미라 Han Mira 생산2팀 사원 010-6789-0123 예 W005 최동현 Choi Donghyun 생산2팀 조장 010-5678-9012 예 W004 정수진 Jung Sujin 생산2팀 반장 010-4567-8901 예 박 W003 박민수 Park Minsu 생산1팀 사원 010-3456-7890 예 이 W002 이영희 Lee Younghee 생산1팀 조장 010-2345-6789 예 김 W001 김철수 Kim Cheolsu 생산1팀 반장 010-1234-5678 예 전체 10건 20건 50건 100건 200건 500건 전체화면 보기 AI 채팅 개선요청 등록",
+      "error": null,
+      "pageReport": "pages/mst-worker-master-worker.html",
+      "pageResult": "page-results/mst-worker-master-worker.json"
+    },
+    {
+      "code": "MST_WORK_INST",
+      "labelKey": "menu.master.workInstruction",
+      "path": "/master/work-instruction",
+      "source": "menuConfig",
+      "slug": "mst-work-inst-master-work-instruction",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "PASS",
+      "routeUrl": "http://localhost:3012/master/work-instruction",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 255476
+      },
+      "elapsedMs": 5754,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.work-instruction",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/work-instructions?limit=5000",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/api/db-info",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "method": "GET",
+          "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/work-instruction",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 255476ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "9건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "작업지도서관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "작업지도서 추가",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "선택 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "1개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 1, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 22,
+        "inputs": 2,
+        "selects": 1,
+        "tables": 1,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-work-inst-master-work-instruction/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 작업지도서관리 작업지도서 품목/공정별 작업 지침을 관리합니다. 새로고침 작업지도서 추가 관리 품목코드 품목명 공정코드 문서명 Rev 수정일 사용 FG-26061513082292 P13082292 CRUD 테스트 작업지도서 A 2026-06-15T13:08:36.824Z HNS02 MASSY HNS02 메인조립 작업지도서 A 2026-06-16T17:19:04.561Z HNS02 PRC-TEST 보조 하네스 도통검사 작업지도서 A 2026-06-09T11:17:23.773Z HNS02 SASSY HNS02 서브조립 작업지도서 A 2026-06-16T17:19:04.607Z HNS02-SCA CRMPB HNS02-SCA 양단압착 작업지도서 A 2026-06-16T17:19:04.639Z HNS02-SCA_1 STRPB HNS02-SCA_1 양단탈피 작업지도서 A 2026-06-16T17:19:04.686Z HNS02-SCA_2 ATCUT HNS02-SCA_2 자동절단 작업지도서 A 2026-06-16T17:19:04.717Z HNS02C1 WELDR HNS02C1 후단융착 작업지도서 A 2026-06-16T17:19:04.748Z HNS02C1A MTASY HNS02C1A 자재장착 작업지도서 A 2026-06-16T17:19:04.779Z HNS02C1AB CRMPF HNS02C1AB 전단압착 작업지도서 A 2026-06-16T17:19:04.826Z HNS02C1ABC STRPB HNS02C1ABC 양단탈피 작업지도서 A 2026-06-16T17:19:04.857Z HNS02C1ABCD ATCUT HNS02C1ABCD 자동절단 작업지도서 A 2026-06-16T17:19:04.889Z HNS02C2 TUBHT HNS02C2 튜브열처리 작업지도서 A 2026-06-16T17:19:04.920Z HNS02C2A CRMPR HNS02C2A 후단압착 작업지도서 A 2026-06-16T17:19:04.951Z HNS02C2AB HEXCP HNS02C2AB 육각압착 작업지도서 A 2026-06-16T17:19:04.982Z HNS02C2ABC MTASY HNS02C2ABC 자재장",
+      "error": null,
+      "pageReport": "pages/mst-work-inst-master-work-instruction.html",
+      "pageResult": "page-results/mst-work-inst-master-work-instruction.json"
+    },
+    {
+      "code": "MST_WAREHOUSE",
+      "labelKey": "menu.master.warehouse",
+      "path": "/master/warehouse",
+      "source": "menuConfig",
+      "slug": "mst-warehouse-master-warehouse",
+      "title": "H\nHARNESS MES\n🇰🇷\n40 / 1000\nJSHNSMES @ 10.1.10.35\n시스템관리자",
+      "status": "FAIL",
+      "routeUrl": "http://localhost:3012/master/warehouse",
+      "routeStatus": 200,
+      "prewarm": {
+        "ok": true,
+        "status": 200,
+        "elapsedMs": 231765
+      },
+      "elapsedMs": 7761,
+      "apiCalls": [
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/db-info",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/configs/active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/ai/page-tools/master.warehouse",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/auth/me",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/master/com-codes/all-active",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/menu-categories/tree",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "source": "ui-network",
+          "method": "GET",
+          "url": "/api/inventory/warehouses",
+          "status": 200,
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [
+        {
+          "method": "GET",
+          "url": "/api/master/companies/public",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "featureInventory": [
+        {
+          "name": "화면 로드",
+          "handling": "GET /master/warehouse",
+          "status": "실행",
+          "note": "HTTP 200"
+        },
+        {
+          "name": "라우트 prewarm",
+          "handling": "직접 HTTP 확인",
+          "status": "실행",
+          "note": "HTTP 200, 231765ms"
+        },
+        {
+          "name": "초기 API 호출",
+          "handling": "브라우저 네트워크 수집",
+          "status": "실행",
+          "note": "12건"
+        },
+        {
+          "name": "🇰🇷",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리자",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "워크플로우",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "대시보드",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "기준정보",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "자재관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "생산관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "품질관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "검사관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "제품수불관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "출하관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "모니터링",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "설비관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "소모품관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "인터페이스",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "시스템관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "창고관리",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "새로고침",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "신규 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "로케이션",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "창고이동규칙",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "전체화면 보기",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "AI 채팅",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "개선요청 등록",
+          "handling": "화면 버튼 목록화",
+          "status": "목록화",
+          "note": "후속 메뉴별 세부 시나리오 실행 대상"
+        },
+        {
+          "name": "입력 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "선택 필드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "2개"
+        },
+        {
+          "name": "목록/그리드",
+          "handling": "DOM 수집",
+          "status": "목록화",
+          "note": "table 1, grid 0"
+        }
+      ],
+      "metrics": {
+        "buttons": 24,
+        "inputs": 2,
+        "selects": 2,
+        "tables": 1,
+        "grids": 0
+      },
+      "screenshot": "screenshots/mst-warehouse-master-warehouse/01-load.png",
+      "bodyPreview": "H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 창고관리 창고관리 창고 마스터 정보를 관리합니다. 새로고침 신규 등록 창고관리 로케이션 창고이동규칙 창고유형: 전체 창고유형: 원자재 창고 창고유형: 반제품 창고 창고유형: 완제품 창고 창고유형: 공정재공 창고유형: 불량 창고 창고유형: 폐기 창고 창고유형: 외주처 창고코드 창고명 창고유형 라인 공정 기본 사용 DEFECT 불량품창고 불량 창고 - - Y FG_MAIN 완제품 메인창고 완제품 창고 - - Y FG_SHIP 출하대기창고 완제품 창고 - - Y RM_MAIN 원자재 메인창고 RM - - Y RM_SUB 원자재 서브창고 RM - - Y SCRAP 폐기창고 폐기 창고 - - Y SUBCON_MAIN 외주 메인창고 외주처 - - Y W001 원자재창고 원자재 창고 - - Y WH-DEFECT 불용창고 불량 창고 - - Y WH-FG 완제품창고 완제품 창고 - - Y WH-MAT-A 자재창고A 원자재 창고 - - Y WIP_MAIN 반제품 메인창고 반제품 창고 - - Y 전체 12건 20건 50건 100건 200건 500건 전체화면 보기 AI 채팅 개선요청 등록",
+      "error": null,
+      "pageReport": "pages/mst-warehouse-master-warehouse.html",
+      "pageResult": "page-results/mst-warehouse-master-warehouse.json"
+    }
+  ]
+}

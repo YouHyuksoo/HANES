@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>DASHBOARD - HANES 전체 메뉴 QA</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #172033; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #d8dee9; padding: 8px; font-size: 13px; vertical-align: top; }
+    th { background: #f3f6fb; text-align: left; }
+    .pass { color: #047857; font-weight: 700; }
+    .fail { color: #be123c; font-weight: 700; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; overflow: auto; }
+    img { max-width: 100%; border: 1px solid #d8dee9; }
+  </style>
+</head>
+<body>
+  <h1>DASHBOARD H
+HARNESS MES
+🇰🇷
+40 / 1000
+JSHNSMES @ 10.1.10.35
+시스템관리자</h1>
+  <p>Route: <code>/dashboard</code></p>
+  <p>Status: <span class="pass">PASS</span> / HTTP 200</p>
+  <h2>기능/버튼 인벤토리</h2>
+  <table><thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead><tbody><tr><td>화면 로드</td><td>GET /dashboard</td><td>실행</td><td>HTTP 200</td></tr>
+<tr><td>라우트 prewarm</td><td>직접 HTTP 확인</td><td>실행</td><td>HTTP 200, 194ms</td></tr>
+<tr><td>초기 API 호출</td><td>브라우저 네트워크 수집</td><td>실행</td><td>10건</td></tr>
+<tr><td>🇰🇷</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리자</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>워크플로우</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>대시보드</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>기준정보</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>생산관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>품질관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>검사관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>제품수불관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>출하관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>모니터링</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>설비관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>소모품관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>인터페이스</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>새로고침</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>더보기</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>전체화면 보기</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AI 채팅</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>개선요청 등록</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입력 필드</td><td>DOM 수집</td><td>목록화</td><td>1개</td></tr></tbody></table>
+  <h2>API 호출</h2>
+  <table><thead><tr><th>Method</th><th>URL</th><th>Status</th><th>OK</th></tr></thead><tbody><tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/auth/me</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/configs/active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/menu-categories/tree</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/com-codes/all-active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/dashboard/summary?date=2026-06-23</td><td>200</td><td>OK</td></tr></tbody></table>
+  <h2>오류</h2>
+  <pre>requestfailed: GET /api/db-info net::ERR_ABORTED
+requestfailed: GET https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2 net::ERR_ABORTED</pre>
+  <h2>화면 증거</h2>
+  <img src="../screenshots/dashboard-dashboard/01-load.png" alt="screenshot" />
+  <h2>본문 미리보기</h2>
+  <pre>H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 대시보드 실시간 생산 현황을 한눈에 확인하세요. 새로고침 설비 가동 현황 42 가동 0 정비중 0 정지 46 전체 오늘 작업지시 0 대기 0 진행 0 완료 0 전체 자재 알림 0 안전재고 미달 0 유효기한 임박 0 기한 초과 0 알림 합계 불량 현황 0 미처리 0 수리중 0 재작업 0 처리완료 일상점검 더보기 12 전체 0 완료 0 합격 0 불합격 진행률 0% EQ-AINSP-01 통합검사 설비 #1 미실시 EQ-AINSP-02 통합검사 설비 #2 미실시 EQ-ATCNS-01 자동절단탈피 설비 #1 미실시 EQ-ATCUT-01 자동절단 설비 #1 미실시 EQ-OINSP-01 외관검사 설비 #1 미실시 EQ-OINSP-02 외관검사 설비 #2 미실시 EQ-PRC-TEST-01 도통검사 설비 #1 미실시 EQ-PRC-TEST-02 도통검사 설비 #2 미실시 EQ-TEST-01 도통검사기 #1 미실시 EQ-TEST-02 도통검사기 #2 미실시 EQ-TINSP-01 단자검사 설비 #1 미실시 EQ-TINSP-02 단자검사 설비 #2 미실시 정기점검 더보기 10 전체 0 완료 0 합격 0 불합격 진행률 0% EQ-AINSP-01 통합검사 설비 #1 미실시 EQ-AINSP-02 통합검사 설비 #2 미실시 EQ-OINSP-01 외관검사 설비 #1 미실시 EQ-OINSP-02 외관검사 설비 #2 미실시 EQ-PRC-TEST-01 도통검사 설비 #1 미실시 EQ-PRC-TEST-02 도통검사 설비 #2 미실시 EQ-TEST-01 도통검사기 #1 미실시 EQ-TEST-02 도통검사기 #2 미실시 EQ-TINSP-01 단자검사 설비 #1 미실시 EQ-TINSP-02 단자검사 설비 #2 미실시 예방보전 더보기 0 전체 0 완료 0 합격 0 불합격 진행률 0% 오늘 점검 대상이 없습니다. 전체화면 보기 AI 채팅 개선요청 등록</pre>
+</body>
+</html>
