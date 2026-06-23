@@ -2,9 +2,19 @@
 
 ## Last Update
 
-2026-06-22 (local)
+2026-06-24 (local)
 
 ## Latest
+
+- T-ASSEMBLY(조립 실적입력 재설계) 완료(커밋 4657f328,8342ce45,410d70a0,3991fb63,84a0e336,8fba9994): `/production/input-assembly`를 **고정 스캔 2영역 + 2단계 커밋**으로 전면 재설계. 계획 `docs/superpowers/plans/2026-06-23-input-assembly-redesign.md`, SDD 5 Task + 최종 통합리뷰(Critical/Important 0).
+  - **흐름**: ① 반제품(SG) 세트 스캔(준비, 미커밋·리셋가능) → ② **조립 실행=FG 바코드 채번+라벨 1장 발행**(`POST /production/subprocess-kitting/issue-label {orderNo,equipCode}`, FgLabel status='ISSUED', 매핑/소비 없음) → ③ **실물 FG 라벨 스캔=확정**(`POST .../confirm {fgBarcode,orderNo,equipCode,processCode,sgBarcodes}`): genealogy(FG→SG, FG→MAT_LOT) + SG 1소비 + 설비 WIP 자재 BOM(qtyPer) 차감 + ProdResult(goodQty:1 DONE) + FG WIP 재고, **단일 트랜잭션**.
+  - **자재=설비 단위 장착**(WIP_MAT_STOCKS, 작업지시 무관, DB 저장, 명시 해제 전까지 유지, 보충 스캔). 신규 `POST/GET /production/equip-material/{mount,mounted,unmount}`(EquipMaterialService, WipMatStockService 재사용, unmount 복원량은 restoreInTx 반환 기준).
+  - **오투입 가드 양측 동일**: SG itemCode가 완제품 BOM의 SEMI_PRODUCT child가 아니면 거부(프론트 사전검증+백엔드 confirm 재검증). FG 라벨 중복확정은 genealogy 존재로 차단(별도 status 미추가).
+  - FE: page 전면재작성 + 신규 `EquipMaterialMountPanel`(좌)·`SgScanPanel`(우)·`AssemblyActionBar`(하단). 상단 고정바=작업지시(FINISHED 필터)+공정+설비(필수). 확정 후 sgList·issuedFg만 리셋(작업지시/공정/설비 유지). React19 `import type { JSX }`.
+  - i18n: `production.equipMaterial`(13)+`production.inputAssembly`(13) 신규 + scanSection 라벨갱신, ko/en/zh/vi 4파일. **주의: locale JSON에 기존 중복키(mount 2회 등) 존재 → JSON.parse 재직렬화 시 데이터소실. surgical 문자열편집(CRLF 보존)만 사용**(스크립트 scratchpad/apply_i18n_assembly.js).
+  - 검증: 프론트+백엔드 tsc 0. **브라우저 E2E는 미수행**(FINISHED 작업지시+BOM(SEMI/RAW)+SG재고+설비 MAT_LOT 등 시드 다량 필요 → 사용자 요청 시 진행). 추적 화면 FG 매핑 표시 확인도 시드 후 권장.
+  - **follow-up(defer, 기존 kit과 동일)**: I-1 confirm 루프 내 nextGenealogyId N+1(numbering 일괄채번 구조변경 필요); I-2 작업지시 status 미검증(itemType=FINISHED만). 비범위: 키오스크 자재모델 전환.
+  - **LOCKS/JOURNAL/ARCHIVE/TASKS 미기록**: codex/kimi가 해당 파일 active 미커밋 편집 중이라 충돌 회피(상세는 본 핸드오프). T-ASSEMBLY 잠금은 애초 미등록(해제 대상 없음). locale 4파일은 T-TRACE-FULL/T-SHIP-ORDER-CANCEL(claude) 잠금 하였으나 **순수 additive(신규 namespace + 자기 소유 키만)**라 무충돌, 세션 시작 시 locale clean 상태였어 미커밋 작업 미손상.
 
 - T-SHIP-ORDER-CANCEL 완료(커밋 d3cf1f63..f77b36fa): `/shipping/return`을 **출하취소** 화면으로 재구성. SDD 8 Task + 최종 리뷰(Critical 0).
   - 좌:통합 출하이력(박스+팔레트, 박스출하 팔레트번호 `*`) / 우:팔레트·박스 상세 / **출하지시 단위 단일 트랜잭션 취소**(팔레트분 reverse→CANCELED+팔레트 detach, 박스분 cancel-ship-box) + SHIPPING_RETURNS 취소이력 자동기록(returnNo=SEQ_SHIP_RETURN, 팔레트+박스 복원수량 항목화 RESTOCK).
