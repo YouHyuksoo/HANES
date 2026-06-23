@@ -117,7 +117,7 @@ export default function ComplaintFormPanel({ editData, onClose, onSave }: Props)
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSave} disabled={saving || !form.customerCode || !form.complaintType}>
-            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+            {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
       </div>

@@ -258,7 +258,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
           <div className="flex justify-end gap-2 pt-4 border-t border-border mt-4">
             <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
             <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? t('common.processing') : t('common.register')}
+              {submitting ? t('common.processing') : t('common.save', '저장')}
             </Button>
           </div>
         </div>

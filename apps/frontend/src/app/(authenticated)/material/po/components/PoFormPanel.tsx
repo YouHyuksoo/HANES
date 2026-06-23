@@ -237,7 +237,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSave}
             disabled={saving || !form.poNo || !form.partnerCode || items.length === 0 || hasInvalidQty}>
-            {saving ? t("common.saving") : isEdit ? t("common.edit") : t("common.register")}
+            {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
       </div>

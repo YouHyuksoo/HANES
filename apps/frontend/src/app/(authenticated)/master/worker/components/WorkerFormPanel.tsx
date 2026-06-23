@@ -125,7 +125,7 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSubmit} disabled={saving || !form.workerCode.trim() || !form.workerName.trim()}>
-            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+            {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
       </div>

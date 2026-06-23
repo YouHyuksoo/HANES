@@ -129,7 +129,7 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
           </Button>
           <Button size="sm" onClick={handleSave}
             disabled={saving || !form.itemCode || !form.sampleQty}>
-            {saving ? t("common.saving") : isEdit ? t("common.edit") : t("common.add")}
+            {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
       </div>

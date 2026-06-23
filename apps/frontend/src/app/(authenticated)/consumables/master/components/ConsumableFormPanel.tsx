@@ -165,7 +165,7 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
             disabled={isSaveDisabled}
             title={saveDisabledReason}
           >
-            {loading ? t("common.saving") : (isEdit ? t("common.edit") : t("common.register"))}
+            {loading ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
         {isSaveDisabled ? (

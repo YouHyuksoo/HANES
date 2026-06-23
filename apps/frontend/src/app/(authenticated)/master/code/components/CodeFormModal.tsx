@@ -164,9 +164,7 @@ export default function CodeFormModal({
         <Button onClick={handleSubmit} disabled={isSubmitting || !form.detailCode.trim() || !form.codeName.trim()}>
           {isSubmitting
             ? t("common.saving", { defaultValue: "저장중..." })
-            : isEdit
-            ? t("common.edit")
-            : t("common.add")}
+            : t("common.save", "저장")}
         </Button>
       </div>
     </Modal>

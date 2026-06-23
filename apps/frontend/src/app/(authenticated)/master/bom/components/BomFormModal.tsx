@@ -161,7 +161,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
         <Button onClick={handleSave} disabled={saving || !selectedChild}>
-          {saving ? t("common.loading") : editingItem ? t("common.edit") : t("common.add")}
+          {saving ? t("common.loading") : t("common.save", "저장")}
         </Button>
       </div>
     </Modal>

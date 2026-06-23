@@ -129,7 +129,7 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSubmit}
             disabled={saving || !form.itemCode.trim() || form.planQty <= 0}>
-            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+            {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
       </div>

@@ -377,11 +377,7 @@ export default function ProcessPage() {
             {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving
-              ? t("common.saving")
-              : editingItem
-                ? t("common.edit")
-                : t("common.add")}
+            {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
       </Modal>

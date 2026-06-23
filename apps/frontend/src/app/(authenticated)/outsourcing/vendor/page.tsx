@@ -183,7 +183,7 @@ export default function VendorPage() {
         </div>
         <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : selectedItem ? t("common.edit") : t("common.register")}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : t("common.save", "저장")}</Button>
         </div>
       </Modal>
     </div>

@@ -274,7 +274,7 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
       <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
         <Button onClick={handleSubmit} disabled={saving || !form.companyCode.trim() || !form.companyName.trim()}>
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          {saving ? t("common.saving") : t("common.save", "저장")}
         </Button>
       </div>
 

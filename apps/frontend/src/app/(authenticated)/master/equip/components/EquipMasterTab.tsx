@@ -10,11 +10,11 @@
  * 3. 라인, 설비유형, 상태 필터링 지원
  */
 
-import { useState, useMemo, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
-  Plus, Edit2, Trash2, Search, RefreshCw, Settings,
+  Plus, Edit2, Trash2, Search, RefreshCw, Settings, ImageIcon, Upload,
   Wifi, Monitor,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/components/ui";
@@ -24,12 +24,26 @@ import api from "@/services/api";
 import { ComCodeSelect, LineSelect } from '@/components/shared';
 import { FieldInput, FieldComCodeSelect, FieldLineSelect } from "./EquipFieldHelp";
 
+function EquipImageThumb({ src, alt }: { src: string; alt: string }) {
+  const [errored, setErrored] = useState(false);
+  if (errored) return <ImageIcon className="w-4 h-4 text-text-muted mx-auto" />;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setErrored(true)}
+      className="w-8 h-8 object-cover rounded border border-border bg-surface mx-auto"
+    />
+  );
+}
+
 interface FormState {
   equipCode: string;
   equipName: string;
   equipType: EquipType;
   lineCode: string;
   modelName: string;
+  imageUrl?: string | null;
   maker: string;
   commType: CommType;
   ipAddress: string;
@@ -73,6 +87,11 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<EquipMaster | null>(null);
   const [alertModal, setAlertModal] = useState({ open: false, title: '', message: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
 
   // API에서 설비 목록 조회
   const fetchEquipments = useCallback(async () => {
@@ -103,6 +122,9 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
   const openCreate = useCallback(() => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setSelectedImageFile(null);
+    setPreviewUrl(null);
+    setImageError(false);
     setPanelOpen(true);
   }, []);
 
@@ -114,6 +136,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
       equipType: equip.equipType,
       lineCode: equip.lineCode || "",
       modelName: equip.modelName || "",
+      imageUrl: equip.imageUrl || null,
       maker: equip.maker || "",
       commType: equip.commType,
       ipAddress: equip.ipAddress || "",
@@ -123,7 +146,43 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
       baudRate: "9600",
       useYn: equip.useYn,
     });
+    setSelectedImageFile(null);
+    setPreviewUrl(equip.imageUrl || null);
+    setImageError(false);
     setPanelOpen(true);
+  };
+
+  useEffect(() => {
+    if (previewUrl?.startsWith("blob:")) {
+      return () => URL.revokeObjectURL(previewUrl);
+    }
+    return undefined;
+  }, [previewUrl]);
+
+  const handleImageSelect = (file: File) => {
+    if (previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setImageError(false);
+  };
+
+  const handleImageClear = () => {
+    if (previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedImageFile(null);
+    setPreviewUrl(null);
+    setImageDeleteConfirmOpen(false);
+  };
+
+  const uploadImage = async (equipCode: string, file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    await api.post(`/equipment/equips/${encodeURIComponent(equipCode)}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   };
 
   const handleSave = async () => {
@@ -134,6 +193,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
         equipType: form.equipType,
         lineCode: form.lineCode || undefined,
         modelName: form.modelName || undefined,
+        imageUrl: form.imageUrl || undefined,
         maker: form.maker || undefined,
         commType: form.commType,
         ...(form.commType === "TCP" || form.commType === "MQTT" ? {
@@ -145,10 +205,20 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
 
       if (editing) {
         await api.put(`/equipment/equips/${editing.equipCode}`, body);
+        if (selectedImageFile) {
+          await uploadImage(editing.equipCode, selectedImageFile);
+        } else if (!previewUrl && editing.imageUrl) {
+          await api.delete(`/equipment/equips/${encodeURIComponent(editing.equipCode)}/image`);
+        }
       } else {
         await api.post("/equipment/equips", body);
+        if (selectedImageFile) {
+          await uploadImage(form.equipCode, selectedImageFile);
+        }
       }
       setPanelOpen(false);
+      setSelectedImageFile(null);
+      setPreviewUrl(null);
       fetchEquipments();
     } catch (e: any) {
       console.error("Save failed:", e);
@@ -201,6 +271,15 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
       ),
     },
     { accessorKey: "equipCode", header: t("master.equip.equipCode", "설비코드"), size: 100 },
+    {
+      accessorKey: "imageUrl",
+      header: t("master.equip.image", "사진"),
+      size: 55,
+      cell: ({ getValue, row }) => {
+        const imageUrl = getValue() as string | null | undefined;
+        return imageUrl ? <EquipImageThumb src={imageUrl} alt={row.original.equipName} /> : <ImageIcon className="w-4 h-4 text-text-muted mx-auto" />;
+      },
+    },
     { accessorKey: "equipName", header: t("master.equip.equipName", "설비명"), size: 150 },
     {
       accessorKey: "equipType", header: t("master.equip.type", "유형"), size: 80,
@@ -291,7 +370,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
                 {t("common.cancel", "취소")}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={!form.equipCode.trim() || !form.equipName.trim()}>
-                {editing ? t("common.edit", "수정") : t("common.add", "등록")}
+                {t("common.save", "저장")}
               </Button>
             </div>
           </div>
@@ -334,6 +413,63 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
                 <FieldInput field="modelName" label={t("master.equip.model", "모델명")} value={form.modelName} onChange={(e) => setForm({ ...form, modelName: e.target.value })} />
               </div>
             </div>
+            <div>
+              <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equip.sectionImage", "사진")}</h3>
+              {previewUrl ? (
+                <div className="relative group">
+                  {imageError ? (
+                    <div className="w-full h-44 rounded-lg border border-border bg-surface flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="w-8 h-8 text-text-muted" />
+                      <span className="text-xs text-text-muted">{t("master.equip.imageLoadFailed", "이미지를 불러올 수 없습니다")}</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={previewUrl}
+                      alt={form.equipName || form.equipCode}
+                      onError={() => setImageError(true)}
+                      className="w-full h-44 object-contain rounded-lg border border-border bg-surface"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setImageDeleteConfirmOpen(true)}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-28 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-colors"
+                >
+                  <ImageIcon className="w-8 h-8 text-text-muted" />
+                  <span className="text-xs text-text-muted">{t("master.equip.imageUploadHint", "클릭하여 설비 사진 선택")}</span>
+                </button>
+              )}
+              {previewUrl && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mt-2 w-full text-xs text-primary hover:text-primary/80 flex items-center justify-center gap-1"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {t("master.equip.imageChange", "사진 변경")}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageSelect(file);
+                  e.target.value = "";
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -352,6 +488,15 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
           <Button onClick={() => setAlertModal({ ...alertModal, open: false })}>{t("common.confirm")}</Button>
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={imageDeleteConfirmOpen}
+        onClose={() => setImageDeleteConfirmOpen(false)}
+        onConfirm={handleImageClear}
+        title={t("common.deleteConfirm", "삭제 확인")}
+        message={t("master.equip.imageDeleteConfirm", "설비 사진을 삭제하시겠습니까?")}
+        variant="danger"
+      />
     </div>
   );
 }

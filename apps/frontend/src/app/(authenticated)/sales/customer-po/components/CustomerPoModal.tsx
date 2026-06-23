@@ -245,7 +245,7 @@ export default function CustomerPoModal({ isOpen, onClose, editingItem }: Custom
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
           <Button variant="secondary" onClick={handleClose}>{t("common.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
-            {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
+            {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
       </div>

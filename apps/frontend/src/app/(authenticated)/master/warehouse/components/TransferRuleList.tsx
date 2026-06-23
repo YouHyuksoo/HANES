@@ -175,7 +175,7 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.add")}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : t("common.save", "저장")}</Button>
         </div>
       </Modal>
 

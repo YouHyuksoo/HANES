@@ -160,7 +160,7 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
             <Button onClick={handleSubmit} disabled={!isValid || submitting}>
-              {submitting ? t("common.processing") : t("common.register")}
+              {submitting ? t("common.processing") : t("common.save", "저장")}
             </Button>
           </div>
         </div>

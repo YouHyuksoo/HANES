@@ -167,7 +167,7 @@ export default function RoleFormModal({
             {t("common.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? t("common.saving") : isEdit ? t("common.edit") : t("common.add")}
+            {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
       </div>

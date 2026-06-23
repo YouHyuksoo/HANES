@@ -236,7 +236,7 @@ export default function CapaFormPanel({
               ? t("common.saving")
               : isEdit
                 ? t("common.edit")
-                : t("common.add")}
+                : t("common.save", "저장")}
           </Button>
         </div>
       </div>

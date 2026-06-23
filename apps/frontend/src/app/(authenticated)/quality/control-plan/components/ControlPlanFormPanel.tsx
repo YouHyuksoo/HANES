@@ -105,7 +105,7 @@ export default function ControlPlanFormPanel({ isOpen, editData, onClose, onSave
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.close", "닫기")}</Button>
           {(!isEdit || editData?.status === "DRAFT") && (
             <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode}>
-              {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+              {saving ? t("common.saving") : t("common.save", "저장")}
             </Button>
           )}
         </div>

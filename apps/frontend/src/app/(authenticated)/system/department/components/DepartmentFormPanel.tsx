@@ -119,7 +119,7 @@ export default function DepartmentFormPanel({ editingDept, departments, onClose,
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel", "취소")}</Button>
           <Button size="sm" onClick={handleSubmit} disabled={saving || !form.deptCode.trim() || !form.deptName.trim()}>
-            {saving ? t("common.saving", "저장 중...") : (isEdit ? t("common.edit", "수정") : t("common.add", "추가"))}
+            {saving ? t("common.saving", "저장 중...") : t("common.save", "저장")}
           </Button>
         </div>
       </div>

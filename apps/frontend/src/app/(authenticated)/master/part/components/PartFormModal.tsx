@@ -244,7 +244,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
         <Button onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()}>
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          {saving ? t("common.saving") : t("common.save", "저장")}
         </Button>
       </div>
     </Modal>
