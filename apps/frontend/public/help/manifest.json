@@ -19,6 +19,11 @@
           "menuCode": "MST_WAREHOUSE",
           "title": "창고/로케이션 관리",
           "path": "/master/warehouse"
+        },
+        {
+          "menuCode": "EQUIP_INSPECT_ITEM",
+          "title": "설비점검항목",
+          "path": "/master/equip-inspect"
         }
       ]
     },
