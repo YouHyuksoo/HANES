@@ -1949,7 +1949,8 @@
           "palletNo": "托盘号"
         }
       },
-      "srcPallet": "托盘"
+      "srcPallet": "托盘",
+      "srcSgLabel": "半成品 SG"
     },
     "company": {
       "title": "公司管理",
@@ -7601,6 +7602,11 @@
       "cancelAll": "取消投入",
       "cancelAllTitle": "取消物料投入",
       "cancelAllConfirm": "确认取消已投入的 {{count}} 项物料吗？"
+    },
+    "sgLabel": {
+      "prepareFailed": "无法准备 SG 标签打印画面。",
+      "printSent": "已将 {{count}} 个 SG 标签发送到打印机。",
+      "printError": "打印 SG 标签时发生错误。"
     },
     "instruction": {
       "title": "作业指导书",

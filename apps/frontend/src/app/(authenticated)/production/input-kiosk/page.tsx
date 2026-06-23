@@ -16,7 +16,7 @@
  *   - MID(중물): 패널 버튼 클릭 또는 진행률 60% 차단
  *   - LAST(종물): 패널 버튼 클릭
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useKioskStore, isAllInterlockDone, type InspectTiming } from '@/stores/kioskStore';
@@ -39,6 +39,7 @@ import MaterialScanModal from './components/MaterialScanModal';
 import ConsumableScanModal from './components/ConsumableScanModal';
 import DefectInputModal from './components/DefectInputModal';
 import SelfInspectModal from './components/SelfInspectModal';
+import SgLabelPrintHost, { type SgLabelPrintHandle } from './components/SgLabelPrintHost';
 import { normalizeEquipOptions, type EquipOption } from './utils/equipOptions';
 
 export default function InputKioskPage() {
@@ -187,6 +188,12 @@ export default function InputKioskPage() {
     setHistoryKey(k => k + 1);
   }, [savedResultCount, firstInspectDone, refreshProgress]);
 
+  // 실적 저장 성공 시: 라우팅 발행공정이면 백엔드가 발행한 SG 라벨을 조회해 Print Agent로 자동 출력.
+  const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
+  const handleResultSaved = useCallback((resultNo: string) => {
+    void sgPrinterRef.current?.printByResultNo(resultNo);
+  }, []);
+
   // 자주검사 모달 완료 처리
   const handleSelfInspectDone = useCallback(() => {
     if (selfInspectTiming === 'FIRST') setFirstInspectDone(true);
@@ -303,6 +310,7 @@ export default function InputKioskPage() {
             <div className="min-w-0 overflow-hidden">
               <ProductionInputBar
                 onSaved={handleSaved}
+                onResultSaved={handleResultSaved}
                 interlockDone={allInterlockDone && !hasPendingDelegate && !isMidBlock}
                 disabledReasons={submitDisabledReasons}
               />
@@ -377,6 +385,9 @@ export default function InputKioskPage() {
           onDone={handleSelfInspectDone}
         />
       )}
+
+      {/* SG(반제품) 라벨 자동 출력 호스트 — 오프스크린 렌더 후 Print Agent 전송 */}
+      <SgLabelPrintHost ref={sgPrinterRef} />
     </div>
   );
 }

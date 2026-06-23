@@ -1949,7 +1949,8 @@
           "palletNo": "Số pallet"
         }
       },
-      "srcPallet": "Pallet"
+      "srcPallet": "Pallet",
+      "srcSgLabel": "Bán thành phẩm SG"
     },
     "company": {
       "title": "Quản lý công ty",
@@ -7601,6 +7602,11 @@
       "cancelAll": "Hủy nhập",
       "cancelAllTitle": "Hủy nhập vật tư",
       "cancelAllConfirm": "Hủy toàn bộ {{count}} lô vật tư đã nhập?"
+    },
+    "sgLabel": {
+      "prepareFailed": "Không thể chuẩn bị màn hình in nhãn SG.",
+      "printSent": "Đã gửi {{count}} nhãn SG đến máy in.",
+      "printError": "Đã xảy ra lỗi khi in nhãn SG."
     },
     "instruction": {
       "title": "Hướng dẫn sản xuất",

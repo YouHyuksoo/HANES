@@ -1949,7 +1949,8 @@
           "palletNo": "Pallet No."
         }
       },
-      "srcPallet": "Pallet"
+      "srcPallet": "Pallet",
+      "srcSgLabel": "Semi-product SG"
     },
     "company": {
       "title": "Company Master",
@@ -7601,6 +7602,11 @@
       "cancelAll": "Cancel Input",
       "cancelAllTitle": "Cancel Material Input",
       "cancelAllConfirm": "Cancel all {{count}} input material lot(s)?"
+    },
+    "sgLabel": {
+      "prepareFailed": "Failed to prepare the SG label print view.",
+      "printSent": "Sent {{count}} SG label(s) to the printer.",
+      "printError": "An error occurred while printing SG labels."
     },
     "instruction": {
       "title": "Work Instruction",

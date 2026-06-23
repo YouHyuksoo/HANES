@@ -7,10 +7,10 @@
 export type BarcodeFormat = "qrcode" | "datamatrix" | "code39" | "code128";
 
 /** 라벨 카테고리 */
-export type LabelCategory = "equip" | "jig" | "worker" | "mat_lot" | "box" | "pallet";
+export type LabelCategory = "equip" | "jig" | "worker" | "mat_lot" | "box" | "pallet" | "sg";
 
 /** 라벨 데이터 소스 */
-export type LabelSourceTable = "equipment" | "consumable" | "worker" | "mat_lot" | "box" | "pallet";
+export type LabelSourceTable = "equipment" | "consumable" | "worker" | "mat_lot" | "box" | "pallet" | "sg_label";
 
 /** 사용자가 디자인별로 구성하는 출력 필드 */
 export interface LabelSourceField {
@@ -220,6 +220,104 @@ export const MAT_LOT_DEFAULT_DESIGN: LabelDesign = {
   ],
 };
 
+/** 반제품 SG 라벨 기본 디자인 */
+export const SG_LABEL_DEFAULT_DESIGN: LabelDesign = {
+  version: 2,
+  sourceTable: "sg_label",
+  labelWidth: 70,
+  labelHeight: 40,
+  barcode: { format: "qrcode", x: 12, y: 3, size: 18 },
+  codeText: { enabled: true, x: 50, y: 5, fontSize: 9, fontFamily: "monospace", bold: true, align: "center" },
+  nameText: { enabled: true, x: 50, y: 15, fontSize: 8, fontFamily: "sans-serif", bold: false, align: "center" },
+  subText: { enabled: true, x: 50, y: 25, fontSize: 7, fontFamily: "sans-serif", bold: false, align: "center" },
+  elements: [
+    {
+      id: "barcode-main",
+      type: "barcode",
+      x: 4,
+      y: 4,
+      width: 18,
+      height: 18,
+      sourceTable: "sg_label",
+      sourceField: "sgBarcode",
+      barcodeFormat: "qrcode",
+      zIndex: 10,
+    },
+    {
+      id: "text-code",
+      type: "text",
+      x: 25,
+      y: 5,
+      width: 42,
+      height: 6,
+      sourceTable: "sg_label",
+      sourceField: "sgBarcode",
+      fontSize: 2.8,
+      fontFamily: "monospace",
+      fontWeight: "bold",
+      textColor: "#111827",
+      zIndex: 20,
+    },
+    {
+      id: "text-name",
+      type: "text",
+      x: 25,
+      y: 14,
+      width: 42,
+      height: 6,
+      sourceTable: "sg_label",
+      sourceField: "itemCode",
+      fontSize: 3,
+      fontFamily: "sans-serif",
+      fontWeight: "bold",
+      textColor: "#374151",
+      zIndex: 21,
+    },
+    {
+      id: "text-lot",
+      type: "text",
+      x: 25,
+      y: 22,
+      width: 42,
+      height: 5,
+      sourceTable: "sg_label",
+      sourceField: "orderNo",
+      fontSize: 2.4,
+      fontFamily: "sans-serif",
+      textColor: "#475569",
+      zIndex: 22,
+    },
+    {
+      id: "text-qty",
+      type: "text",
+      x: 4,
+      y: 24,
+      width: 18,
+      height: 6,
+      sourceTable: "sg_label",
+      sourceField: "initQty",
+      fontSize: 3.2,
+      fontFamily: "monospace",
+      fontWeight: "bold",
+      align: "center",
+      textColor: "#111827",
+      zIndex: 23,
+    },
+    {
+      id: "border",
+      type: "box",
+      x: 1,
+      y: 1,
+      width: 68,
+      height: 38,
+      strokeColor: "#111827",
+      fillColor: "transparent",
+      lineWidth: 0.3,
+      zIndex: 1,
+    },
+  ],
+};
+
 /** 바코드 형식 옵션 */
 export const BARCODE_FORMATS: { value: BarcodeFormat; label: string }[] = [
   { value: "qrcode", label: "QR Code" },
@@ -242,10 +340,12 @@ const categorySourceTable: Record<LabelCategory, LabelSourceTable> = {
   mat_lot: "mat_lot",
   box: "box",
   pallet: "pallet",
+  sg: "sg_label",
 };
 
 export function createDefaultLabelDesign(category: LabelCategory): LabelDesign {
   if (category === "mat_lot") return MAT_LOT_DEFAULT_DESIGN;
+  if (category === "sg") return SG_LABEL_DEFAULT_DESIGN;
   const sourceTable = categorySourceTable[category];
   if (category === "jig") {
     return remapDesignSource(DEFAULT_DESIGN, "consumable", {

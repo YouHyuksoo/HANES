@@ -13,6 +13,7 @@ export const categorySourceTable: Record<LabelCategory, LabelSourceTable> = {
   mat_lot: "mat_lot",
   box: "box",
   pallet: "pallet",
+  sg: "sg_label",
 };
 
 export const labelSources: Record<LabelSourceTable, LabelSourceDefinition> = {
@@ -87,6 +88,18 @@ export const labelSources: Record<LabelSourceTable, LabelSourceDefinition> = {
       { key: "itemCode", label: "대표제품코드", sample: "HNS02C1ABCD" },
       { key: "itemName", label: "대표제품명", sample: "하네스 완제품" },
       { key: "createdAt", label: "생성일시", sample: "2026-06-17 09:30" },
+    ],
+  },
+  sg_label: {
+    table: "sg_label",
+    label: "반제품 SG",
+    fields: [
+      { key: "sgBarcode", label: "SG 바코드", sample: "SG26061700001" },
+      { key: "itemCode", label: "반제품코드", sample: "HNS02S1ABCD" },
+      { key: "initQty", label: "수량", sample: "20" },
+      { key: "orderNo", label: "작업지시번호", sample: "W26061700001" },
+      { key: "issueProcessCode", label: "발행공정", sample: "ASSY" },
+      { key: "issuedAt", label: "발행일시", sample: "2026-06-17 09:30" },
     ],
   },
 };

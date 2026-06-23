@@ -2359,7 +2359,8 @@
         }
       },
       "catPart": "품목",
-      "srcPallet": "팔레트"
+      "srcPallet": "팔레트",
+      "srcSgLabel": "반제품 SG"
     },
     "company": {
       "title": "회사관리",
@@ -7605,6 +7606,11 @@
       "cancelAll": "투입취소",
       "cancelAllTitle": "자재투입 취소",
       "cancelAllConfirm": "투입된 자재 {{count}}건을 모두 취소하시겠습니까?"
+    },
+    "sgLabel": {
+      "prepareFailed": "SG 라벨 출력 화면을 준비하지 못했습니다.",
+      "printSent": "SG 라벨 {{count}}건을 프린터로 전송했습니다.",
+      "printError": "SG 라벨 출력 중 오류가 발생했습니다."
     },
     "instruction": {
       "title": "작업지도서",

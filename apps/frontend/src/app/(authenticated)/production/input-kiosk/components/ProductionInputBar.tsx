@@ -20,6 +20,8 @@ import { formatQty, parseQty } from '@/utils/qty';
 
 interface ProductionInputBarProps {
   onSaved: () => void;
+  /** 실적 저장 성공 후 생성된 생산실적번호 전달 — SG 라벨 자동 출력 등 후처리에 사용 */
+  onResultSaved?: (resultNo: string) => void;
   /** 준비단계 인터락 모두 완료 여부 — false면 실적입력 비활성화 */
   interlockDone?: boolean;
   disabledReasons?: string[];
@@ -29,6 +31,7 @@ const LOT_OPTIONS = [1, 5, 10, 20, 50, 100];
 
 export default function ProductionInputBar({
   onSaved,
+  onResultSaved,
   interlockDone = true,
   disabledReasons = [],
 }: ProductionInputBarProps) {
@@ -103,7 +106,7 @@ export default function ProductionInputBar({
     setSaving(true);
     try {
       // 불량 상세는 생산실적 생성과 같은 트랜잭션에서 저장된다(별도 defect-logs 호출 시 defectQty 이중 카운트되던 결함 해소).
-      await api.post('/production/prod-results', {
+      const res = await api.post('/production/prod-results', {
         orderNo: selectedJobOrder!.orderNo,
         equipCode: selectedEquip!.equipCode,
         workerId: selectedWorkers[0].id,
@@ -127,6 +130,10 @@ export default function ProductionInputBar({
       setGoodQty('');
       setDefectQty('');
       onSaved();
+
+      // 발행공정이면 백엔드가 SG_LABELS를 발행한다 → 발행분을 조회해 라벨 출력(발행 없으면 무동작).
+      const savedResultNo = (res?.data?.data?.resultNo ?? '') as string;
+      if (savedResultNo) onResultSaved?.(savedResultNo);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? t('kiosk.input.saveError');
@@ -135,7 +142,7 @@ export default function ProductionInputBar({
       setSaving(false);
     }
   }, [canSave, goodQty, defectQty, pendingDefects, selectedJobOrder, selectedEquip,
-      selectedWorkers, serialNo, incrementSerial, clearPendingDefects, onSaved, t]);
+      selectedWorkers, serialNo, incrementSerial, clearPendingDefects, onSaved, onResultSaved, t]);
 
   return (
     <div className="h-full bg-card flex-shrink-0">
