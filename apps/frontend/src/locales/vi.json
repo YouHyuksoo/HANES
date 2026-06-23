@@ -5257,7 +5257,9 @@
       "boxDetail": "Cấu thành thùng",
       "selectBox": "Chọn thùng",
       "palletNo": "Pallet",
-      "selectBoxHint": "Chọn thùng để xem chi tiết cấu thành."
+      "selectBoxHint": "Chọn thùng để xem chi tiết cấu thành.",
+      "waitingTitle": "Chờ đóng gói",
+      "noWaiting": "Không có sản phẩm chờ"
     },
     "boxStock": {
       "title": "Tra cứu tồn kho sản phẩm",

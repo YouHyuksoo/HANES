@@ -45,6 +45,15 @@ interface Box {
   createdAt: string;
 }
 
+/** 포장 대기 FG 시리얼(검사합격·박스 미배정) */
+interface PackableSerial {
+  fgBarcode: string;
+  itemCode: string;
+  itemName: string | null;
+  orderNo: string | null;
+  issuedAt: string | null;
+}
+
 /** serialList(JSON 문자열) → 배열 */
 function parseSerials(box: Box | null): string[] {
   if (!box?.serialList) return [];
@@ -92,6 +101,7 @@ export default function PackPage() {
     [t, comCodeOptions],
   );
   const [data, setData] = useState<Box[]>([]);
+  const [packable, setPackable] = useState<PackableSerial[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
@@ -138,6 +148,11 @@ export default function PackPage() {
       const res = await api.get("/shipping/boxes", { params });
       const list: Box[] = res.data?.data ?? [];
       setData(list);
+      // 포장 대기 시리얼도 함께 갱신(박스 구성·마감 시 자동 반영)
+      try {
+        const pres = await api.get("/shipping/boxes/packable-serials");
+        setPackable(pres.data?.data ?? []);
+      } catch { setPackable([]); }
       return list;
     } catch (e) {
       setPageError(errMsg(e, t("shipping.pack.loadError")));
@@ -416,7 +431,49 @@ export default function PackPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0 overflow-auto">
+        {/* 좌측: 포장 대기 제품(검사합격·미포장) */}
+        <Card className="h-full min-h-0" padding="none">
+          <CardContent className="h-full p-3 flex flex-col min-h-0">
+            <div className="flex items-center justify-between mb-2 flex-shrink-0">
+              <h2 className="font-bold text-sm text-text flex items-center gap-1.5">
+                <Package className="w-4 h-4 text-primary" />
+                {t("shipping.pack.waitingTitle", "포장 대기")}
+              </h2>
+              <span className="text-xs text-text-muted">{packable.length}</span>
+            </div>
+            {packable.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-xs text-text-muted">
+                {t("shipping.pack.noWaiting", "포장 대기 제품 없음")}
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto min-h-0 space-y-3">
+                {Object.entries(
+                  packable.reduce<Record<string, PackableSerial[]>>((acc, p) => {
+                    (acc[p.itemCode] ??= []).push(p);
+                    return acc;
+                  }, {}),
+                ).map(([itemCode, serials]) => (
+                  <div key={itemCode}>
+                    <div className="flex items-center justify-between text-xs font-medium text-text border-b border-border pb-1 mb-1">
+                      <span className="truncate">{itemCode}{serials[0].itemName ? ` · ${serials[0].itemName}` : ""}</span>
+                      <span className="text-primary flex-shrink-0 ml-2">{serials.length}</span>
+                    </div>
+                    <ul className="space-y-0.5">
+                      {serials.map((s) => (
+                        <li key={s.fgBarcode} className="text-xs font-mono text-text-muted flex items-center justify-between gap-2">
+                          <span className="truncate">{s.fgBarcode}</span>
+                          {s.orderNo && <span className="text-text-muted/60 flex-shrink-0">{s.orderNo}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="lg:col-span-2">
           <Card className="h-full min-h-0" padding="none"><CardContent className="h-full p-4">
             <DataGrid

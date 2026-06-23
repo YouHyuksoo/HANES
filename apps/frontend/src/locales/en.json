@@ -5257,7 +5257,9 @@
       "boxDetail": "Box Composition",
       "selectBox": "Select a box",
       "palletNo": "Pallet",
-      "selectBoxHint": "Select a box to view its composition."
+      "selectBoxHint": "Select a box to view its composition.",
+      "waitingTitle": "Waiting to Pack",
+      "noWaiting": "No items waiting"
     },
     "boxStock": {
       "title": "Product Stock",

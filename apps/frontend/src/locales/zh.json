@@ -5257,7 +5257,9 @@
       "boxDetail": "装箱构成",
       "selectBox": "请选择箱子",
       "palletNo": "托盘",
-      "selectBoxHint": "选择箱子后可查看其构成明细。"
+      "selectBoxHint": "选择箱子后可查看其构成明细。",
+      "waitingTitle": "待包装",
+      "noWaiting": "无待包装产品"
     },
     "boxStock": {
       "title": "产品库存查询",

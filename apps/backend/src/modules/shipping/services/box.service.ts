@@ -197,6 +197,32 @@ export class BoxService {
     };
   }
 
+  /** 포장 대기 FG 시리얼: 검사합격(VISUAL_PASS)이고 박스 미배정(BOX_NO IS NULL) */
+  async findPackableSerials(company?: string, plant?: string, itemCode?: string) {
+    const labels = await this.fgLabelRepository.find({
+      where: {
+        status: 'VISUAL_PASS',
+        boxNo: IsNull(),
+        ...(itemCode ? { itemCode } : {}),
+        ...this.tenantWhere(company, plant),
+      },
+      order: { itemCode: 'ASC', issuedAt: 'ASC' },
+    });
+    if (labels.length === 0) return [];
+    const itemCodes = [...new Set(labels.map((l) => l.itemCode))];
+    const parts = await this.partRepository.find({
+      where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
+    });
+    const nameMap = new Map(parts.map((p) => [p.itemCode, p.itemName] as const));
+    return labels.map((l) => ({
+      fgBarcode: l.fgBarcode,
+      itemCode: l.itemCode,
+      itemName: nameMap.get(l.itemCode) ?? null,
+      orderNo: l.orderNo ?? null,
+      issuedAt: l.issuedAt ?? null,
+    }));
+  }
+
   async findBoxItems(boxNo: string, company?: string, plant?: string) {
     const box = await this.findById(boxNo, company, plant);
     const serials: string[] = box.serialList ? JSON.parse(box.serialList) : [];

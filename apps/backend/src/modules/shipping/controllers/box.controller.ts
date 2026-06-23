@@ -75,6 +75,18 @@ export class BoxController {
     return ResponseUtil.success(data);
   }
 
+  @Get('packable-serials')
+  @ApiOperation({ summary: '포장 대기 FG 시리얼 목록', description: '검사합격(VISUAL_PASS)이고 아직 박스에 담기지 않은 FG 라벨' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async findPackableSerials(
+    @Query('itemCode') itemCode: string | undefined,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.boxService.findPackableSerials(company, plant, itemCode);
+    return ResponseUtil.success(data);
+  }
+
   @Get('box-no/:boxNo')
   @ApiOperation({ summary: '박스번호로 조회' })
   @ApiParam({ name: 'boxNo', description: '박스 번호', example: 'BOX-20250126-001' })
