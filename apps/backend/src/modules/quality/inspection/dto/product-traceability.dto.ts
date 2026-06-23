@@ -26,7 +26,9 @@ export interface StockMove {
   transDate: string;
   qty: number;
   fromWarehouse: string | null;
+  fromWarehouseName: string | null;
   toWarehouse: string | null;
+  toWarehouseName: string | null;
   refType: string | null;
   refId: string | null;
   remark: string | null;
@@ -60,6 +62,12 @@ export interface SemiProductTrace {
   materials: MaterialTrace[];
 }
 
+export interface EquipInspectionItem {
+  name: string;
+  result: string;
+  remark: string | null;
+}
+
 export interface EquipInspection {
   equipCode: string;
   equipName: string;
@@ -69,6 +77,7 @@ export interface EquipInspection {
   inspectorName: string | null;
   overallResult: string;
   remark: string | null;
+  items: EquipInspectionItem[];
 }
 
 export interface EquipConsumable {

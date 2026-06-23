@@ -30,6 +30,7 @@ import { ConsumableMaster } from '../../../../entities/consumable-master.entity'
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairOrder } from '../../../../entities/repair-order.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
+import { Warehouse } from '../../../../entities/warehouse.entity';
 import {
   MaterialTrace,
   ProcessStep,
@@ -38,6 +39,7 @@ import {
   ProductTraceabilityDto,
   StockMove,
   EquipInspection,
+  EquipInspectionItem,
   EquipConsumable,
   DefectRecord,
   RepairRecord,
@@ -76,6 +78,7 @@ export class ProductTraceabilityService {
     @InjectRepository(DefectLog) private readonly defectLogRepo: Repository<DefectLog>,
     @InjectRepository(RepairOrder) private readonly repairOrderRepo: Repository<RepairOrder>,
     @InjectRepository(ReworkOrder) private readonly reworkOrderRepo: Repository<ReworkOrder>,
+    @InjectRepository(Warehouse) private readonly warehouseRepo: Repository<Warehouse>,
   ) {}
 
   private fmtDate(d: Date | null | undefined): string | null {
@@ -149,6 +152,12 @@ export class ProductTraceabilityService {
     const stockTx = matUids.length
       ? await this.stockTransactionRepo.find({ where: { matUid: In(matUids), company, plant }, order: { transDate: 'ASC' } })
       : [];
+    // 창고 코드 → 창고명 매핑 (수불 from/to 창고)
+    const whCodes = [...new Set(stockTx.flatMap((tx) => [tx.fromWarehouseId, tx.toWarehouseId]).filter((v): v is string => !!v))];
+    const warehouses = whCodes.length
+      ? await this.warehouseRepo.find({ where: { warehouseCode: In(whCodes), company, plant } })
+      : [];
+    const whNameMap = new Map(warehouses.map((w) => [w.warehouseCode, w.warehouseName]));
     const stockByMat = new Map<string, StockMove[]>();
     for (const tx of stockTx) {
       if (!tx.matUid) continue; // nullable matUid는 건너뜀
@@ -159,7 +168,9 @@ export class ProductTraceabilityService {
         transDate: this.fmtDate(tx.transDate) ?? '',
         qty: tx.qty,
         fromWarehouse: tx.fromWarehouseId ?? null,
+        fromWarehouseName: tx.fromWarehouseId ? (whNameMap.get(tx.fromWarehouseId) ?? null) : null,
         toWarehouse: tx.toWarehouseId ?? null,
+        toWarehouseName: tx.toWarehouseId ? (whNameMap.get(tx.toWarehouseId) ?? null) : null,
         refType: tx.refType ?? null,
         refId: tx.refId ?? null,
         remark: tx.remark ?? null,
@@ -402,7 +413,36 @@ export class ProductTraceabilityService {
       inspectorName: log.inspectorName ?? null,
       overallResult: log.overallResult,
       remark: log.remark ?? null,
+      items: this.parseInspectItems(log.details),
     }));
+  }
+
+  /**
+   * 설비점검 DETAILS(JSON) → 항목별 결과. 운영 형식({items:[{itemName,result,remark}]})과
+   * 단순 key-value({lubrication:"OK"}) 양쪽을 모두 지원한다.
+   */
+  private parseInspectItems(details: string | null): EquipInspectionItem[] {
+    if (!details) return [];
+    const toItem = (it: Record<string, unknown>): EquipInspectionItem => ({
+      name: String(it.itemName ?? it.name ?? it.itemCode ?? it.itemId ?? ''),
+      result: String(it.result ?? ''),
+      remark: it.remark != null && it.remark !== '' ? String(it.remark) : null,
+    });
+    try {
+      const d: unknown = JSON.parse(details);
+      if (d && typeof d === 'object' && Array.isArray((d as { items?: unknown }).items)) {
+        return (d as { items: unknown[] }).items.map((it) => toItem(it as Record<string, unknown>));
+      }
+      if (Array.isArray(d)) {
+        return d.map((it) => toItem(it as Record<string, unknown>));
+      }
+      if (d && typeof d === 'object') {
+        return Object.entries(d as Record<string, unknown>).map(([k, v]) => ({ name: k, result: String(v), remark: null }));
+      }
+    } catch {
+      // DETAILS 파싱 실패 — 항목 없음으로 처리
+    }
+    return [];
   }
 
   /**

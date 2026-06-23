@@ -48,6 +48,7 @@ import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { RepairOrder } from '../../../entities/repair-order.entity';
 import { ReworkOrder } from '../../../entities/rework-order.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
 import { SharedModule } from '../../../shared/shared.module';
 
 @Module({
@@ -82,6 +83,7 @@ import { SharedModule } from '../../../shared/shared.module';
       DefectLog,
       RepairOrder,
       ReworkOrder,
+      Warehouse,
     ]),
     SharedModule, // SeqGeneratorService 제공
   ],
