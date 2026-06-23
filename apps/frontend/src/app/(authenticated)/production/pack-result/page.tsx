@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/pack-result/page.tsx
@@ -44,16 +44,16 @@ export default function PackResultPage() {
   const [data, setData] = useState<PackResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [startDate, setStartDate] = useState(getTodayStr);
-  const [endDate, setEndDate] = useState(getTodayStr);
+  const [fromDate, setStartDate] = useState(getTodayStr);
+  const [toDate, setEndDate] = useState(getTodayStr);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
-      if (startDate) params.dateFrom = startDate;
-      if (endDate) params.dateTo = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get('/production/pack-result', { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -61,7 +61,7 @@ export default function PackResultPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, startDate, endDate]);
+  }, [searchText, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -112,7 +112,7 @@ export default function PackResultPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t('production.packResult.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
+              <DateRangeFilter from={fromDate} to={toDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM PACK_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

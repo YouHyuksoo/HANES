@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/inventory/dto/product-inventory.dto.ts
  * @description 제품(WIP/FG) 수불관리 전용 DTO
  *
@@ -168,11 +168,11 @@ export class ProductTransactionQueryDto extends PaginationQueryDto {
 
   @IsOptional()
   @IsString()
-  dateFrom?: string;
+  fromDate?: string;
 
   @IsOptional()
   @IsString()
-  dateTo?: string;
+  toDate?: string;
 
 
   @IsOptional()

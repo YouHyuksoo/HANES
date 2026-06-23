@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/production/dto/production-views.dto.ts
  * @description 생산관리 조회 전용 API (작업진행현황, 샘플검사이력, 포장실적, 반제품/제품재고) DTO
  *
@@ -69,12 +69,12 @@ export class SampleInspectQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '검사일 시작' })
   @IsOptional()
   @IsDateString()
-  dateFrom?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '검사일 종료' })
   @IsOptional()
   @IsDateString()
-  dateTo?: string;
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '검색어 (LOT번호, 품목코드)' })
   @IsOptional()
@@ -91,12 +91,12 @@ export class PackResultQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '포장일 시작' })
   @IsOptional()
   @IsDateString()
-  dateFrom?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '포장일 종료' })
   @IsOptional()
   @IsDateString()
-  dateTo?: string;
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '검색어 (박스번호, LOT번호)' })
   @IsOptional()

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/scheduler/dto/scheduler-log.dto.ts
  * @description 스케줄러 실행 로그 관련 DTO 정의
  *
@@ -48,10 +48,10 @@ export class SchedulerLogFilterDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일 (ISO 8601)', example: '2026-03-01' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일 (ISO 8601)', example: '2026-03-18' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }

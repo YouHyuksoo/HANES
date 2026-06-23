@@ -121,7 +121,7 @@ export class AutoPlanService {
     company: string,
     plant: string,
   ): Promise<OrderRow[]> {
-    const { month, startDate, endDate, customerId } = dto;
+    const { month, fromDate, toDate, customerId } = dto;
 
     const qb = this.orderItemRepo
       .createQueryBuilder('ci')
@@ -137,9 +137,9 @@ export class AutoPlanService {
       .andWhere('co.status IN (:...statuses)', { statuses: ['RECEIVED', 'CONFIRMED'] })
       .andWhere('(ci.orderQty - ci.shippedQty) > 0');
 
-    if (startDate && endDate) {
-      qb.andWhere("co.dueDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
-      qb.andWhere("co.dueDate <= TO_DATE(:endDate, 'YYYY-MM-DD')", { endDate });
+    if (fromDate && toDate) {
+      qb.andWhere("co.dueDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+      qb.andWhere("co.dueDate <= TO_DATE(:toDate, 'YYYY-MM-DD')", { toDate });
     } else {
       // 범위 조건으로 인덱스 활용 (TO_CHAR 대신)
       const [year, mon] = month.split('-').map(Number);

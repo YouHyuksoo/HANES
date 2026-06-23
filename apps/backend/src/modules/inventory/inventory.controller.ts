@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/inventory/inventory.controller.ts
  * @description 재고관리 컨트롤러 - 창고, 재고, 수불 API
  */
@@ -291,9 +291,20 @@ export class InventoryController {
     return ResponseUtil.success(rows);
   }
 
+  @Get('wip-mat-stocks/lots')
+  async getWipMatStockLots(
+    @Query('equipCode') equipCode: string,
+    @Query('itemCode') itemCode: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const rows = await this.wipMatStockService.findLotsByEquipItem(equipCode, itemCode, company!, plant!);
+    return ResponseUtil.success(rows);
+  }
+
   /**
    * 공정 수불(거래원장) 조회 (WIP_MAT_TRANSACTIONS)
-   * - 필터: equipCode, itemCode/search, transType, dateFrom~dateTo. 설비명/품목명 조인, 최신순.
+   * - 필터: equipCode, itemCode/search, transType, fromDate~toDate. 설비명/품목명 조인, 최신순.
    */
   @Get('wip-mat-transactions')
   async getWipMatTransactions(
@@ -301,13 +312,13 @@ export class InventoryController {
     @Query('itemCode') itemCode?: string,
     @Query('search') search?: string,
     @Query('transType') transType?: string,
-    @Query('dateFrom') dateFrom?: string,
-    @Query('dateTo') dateTo?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
     const rows = await this.wipMatStockService.findTransactions(
-      { equipCode, itemCode, search, transType, dateFrom, dateTo },
+      { equipCode, itemCode, search, transType, fromDate, toDate },
       company,
       plant,
     );

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/pages/inventory/TransactionPage.tsx
@@ -94,18 +94,18 @@ export default function TransactionPage() {
   // 필터 (날짜 기본값: 최근 1개월)
   const [filters, setFilters] = useState({
     transType: '',
-    dateFrom: getOneMonthAgo(),
-    dateTo: getToday(),
+    fromDate: getOneMonthAgo(),
+    toDate: getToday(),
   });
 
   const fetchTransactions = useCallback(async () => {
-    if (!filters.dateFrom || !filters.dateTo) return;
+    if (!filters.fromDate || !filters.toDate) return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filters.transType) params.append('transType', filters.transType);
-      params.append('dateFrom', filters.dateFrom);
-      params.append('dateTo', filters.dateTo);
+      params.append('fromDate', filters.fromDate);
+      params.append('toDate', filters.toDate);
 
       const res = await api.get(`/inventory/transactions?${params.toString()}`);
       const result = res.data?.data ?? res.data;
@@ -260,10 +260,10 @@ export default function TransactionPage() {
             toolbarLeft={
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <DateRangeFilter
-                  from={filters.dateFrom}
-                  to={filters.dateTo}
-                  onFromChange={(v) => setFilters({ ...filters, dateFrom: v })}
-                  onToChange={(v) => setFilters({ ...filters, dateTo: v })}
+                  from={filters.fromDate}
+                  to={filters.toDate}
+                  onFromChange={(v) => setFilters({ ...filters, fromDate: v })}
+                  onToChange={(v) => setFilters({ ...filters, toDate: v })}
                   className="flex-shrink-0"
                 />
                 <Select options={TRANS_TYPES} value={filters.transType} onChange={(v) => setFilters({ ...filters, transType: v })} placeholder={t('inventory.transaction.transType')} />

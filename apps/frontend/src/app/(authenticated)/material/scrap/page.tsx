@@ -41,8 +41,8 @@ export default function ScrapPage() {
   const [data, setData] = useState<ScrapRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState(() => getTodayLocal());
-  const [endDate, setEndDate] = useState(() => getTodayLocal());
+  const [fromDate, setStartDate] = useState(() => getTodayLocal());
+  const [toDate, setEndDate] = useState(() => getTodayLocal());
   const [showRegister, setShowRegister] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -50,8 +50,8 @@ export default function ScrapPage() {
     try {
       const params: Record<string, string> = { transType: "SCRAP", limit: "5000" };
       if (searchText) params.search = searchText;
-      if (startDate) params.dateFrom = startDate;
-      if (endDate) params.dateTo = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/inventory/transactions", { params });
       const raw = res.data?.data ?? [];
       setData(raw.map((r: any) => ({
@@ -71,7 +71,7 @@ export default function ScrapPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, startDate, endDate]);
+  }, [searchText, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -156,8 +156,8 @@ export default function ScrapPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <DateRangeFilter
-                from={startDate}
-                to={endDate}
+                from={fromDate}
+                to={toDate}
                 onFromChange={setStartDate}
                 onToChange={setEndDate}
                 className="flex-shrink-0"

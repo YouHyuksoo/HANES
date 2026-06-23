@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/product/receipt-cancel/page.tsx
@@ -48,8 +48,8 @@ export default function ProductReceiptCancelPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState(() => getTodayLocal());
-  const [endDate, setEndDate] = useState(() => getTodayLocal());
+  const [fromDate, setStartDate] = useState(() => getTodayLocal());
+  const [toDate, setEndDate] = useState(() => getTodayLocal());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<ProductReceiptTx | null>(null);
   const [reason, setReason] = useState("");
@@ -62,8 +62,8 @@ export default function ProductReceiptCancelPage() {
         transType: "WIP_IN,FG_IN,WIP_IN_CANCEL,FG_IN_CANCEL",
         limit: "5000",
       };
-      if (startDate) params.dateFrom = startDate;
-      if (endDate) params.dateTo = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/inventory/product/transactions", { params });
       const list = res.data?.data ?? res.data;
       setData(Array.isArray(list) ? list : []);
@@ -72,7 +72,7 @@ export default function ProductReceiptCancelPage() {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate]);
+  }, [fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -219,8 +219,8 @@ export default function ProductReceiptCancelPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <DateRangeFilter
-                from={startDate}
-                to={endDate}
+                from={fromDate}
+                to={toDate}
                 onFromChange={setStartDate}
                 onToChange={setEndDate}
                 className="flex-shrink-0"

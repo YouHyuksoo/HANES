@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ppap.service.ts
  * @description PPAP(Production Part Approval Process) 서비스 — IATF 16949 PPAP 승인
  *
@@ -243,8 +243,8 @@ export class PpapService {
       customerCode,
       reason,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.ppapRepo.createQueryBuilder('p');
@@ -263,10 +263,10 @@ export class PpapService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('p.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('p.createdAt BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

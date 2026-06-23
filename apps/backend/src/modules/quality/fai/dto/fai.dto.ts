@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file fai.dto.ts
  * @description 초물검사(FAI) DTO — 생성, 수정, 조회, 완료, 승인, 검사항목
  *
@@ -168,12 +168,12 @@ export class FaiQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }
 
 /**

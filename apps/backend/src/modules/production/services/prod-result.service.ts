@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/production/services/prod-result.service.ts
  * @description 생산실적 비즈니스 로직 서비스
  *
@@ -148,6 +148,7 @@ export class ProdResultService {
     const qb = this.prodResultRepository
       .createQueryBuilder('pr')
       .leftJoinAndSelect('pr.jobOrder', 'jobOrder')
+      .leftJoinAndSelect('jobOrder.part', 'part')
       .leftJoinAndSelect('pr.equip', 'equip')
       .leftJoinAndSelect('pr.worker', 'worker');
 
@@ -177,7 +178,26 @@ export class ProdResultService {
       qb.getCount(),
     ]);
 
-    return { data, total, page, limit };
+    const toKstDate = (d: Date | null): string => {
+      if (!d) return '';
+      const kst = new Date((d as unknown as Date).getTime() + 9 * 3600 * 1000);
+      return kst.toISOString().slice(0, 10);
+    };
+
+    const mapped = data.map((pr) => ({
+      ...pr,
+      itemCode: pr.jobOrder?.itemCode ?? '',
+      itemName: pr.jobOrder?.part?.itemName ?? '',
+      lineName: pr.jobOrder?.lineCode ?? '',
+      processType: pr.processCode ?? '',
+      equipName: pr.equip?.equipName ?? '',
+      workDate: toKstDate(pr.startAt as unknown as Date | null),
+      totalQty: (pr.goodQty ?? 0) + (pr.defectQty ?? 0),
+      workerName: pr.worker?.workerName ?? null,
+      workerDept: (pr.worker as any)?.dept ?? null,
+    }));
+
+    return { data: mapped, total, page, limit };
   }
 
   /**
@@ -1803,7 +1823,7 @@ export class ProdResultService {
   /**
    * 설비별 실적 집계
    */
-  async getSummaryByEquip(equipCode: string, dateFrom?: string, dateTo?: string, company?: string, plant?: string) {
+  async getSummaryByEquip(equipCode: string, fromDate?: string, toDate?: string, company?: string, plant?: string) {
     const queryBuilder = this.prodResultRepository
       .createQueryBuilder('pr')
       .select('SUM(pr.goodQty)', 'totalGoodQty')
@@ -1815,8 +1835,8 @@ export class ProdResultService {
     if (company) queryBuilder.andWhere('pr.company = :company', { company });
     if (plant) queryBuilder.andWhere('pr.plant = :plant', { plant });
 
-    if (dateFrom) queryBuilder.andWhere("pr.startAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
-    if (dateTo) queryBuilder.andWhere("pr.startAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo });
+    if (fromDate) queryBuilder.andWhere("pr.startAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    if (toDate) queryBuilder.andWhere("pr.startAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
 
     const summary = await queryBuilder.getRawOne();
 
@@ -1838,7 +1858,7 @@ export class ProdResultService {
   /**
    * 작업자별 실적 집계
    */
-  async getSummaryByWorker(workerId: string, dateFrom?: string, dateTo?: string, company?: string, plant?: string) {
+  async getSummaryByWorker(workerId: string, fromDate?: string, toDate?: string, company?: string, plant?: string) {
     const queryBuilder = this.prodResultRepository
       .createQueryBuilder('pr')
       .select('SUM(pr.goodQty)', 'totalGoodQty')
@@ -1850,8 +1870,8 @@ export class ProdResultService {
     if (company) queryBuilder.andWhere('pr.company = :company', { company });
     if (plant) queryBuilder.andWhere('pr.plant = :plant', { plant });
 
-    if (dateFrom) queryBuilder.andWhere("pr.startAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
-    if (dateTo) queryBuilder.andWhere("pr.startAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo });
+    if (fromDate) queryBuilder.andWhere("pr.startAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    if (toDate) queryBuilder.andWhere("pr.startAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
 
     const summary = await queryBuilder.getRawOne();
 
@@ -1873,13 +1893,13 @@ export class ProdResultService {
   /**
    * 일자별 실적 집계 (대시보드용)
    */
-  async getDailySummary(dateFrom: string, dateTo: string, company?: string, plant?: string) {
+  async getDailySummary(fromDate: string, toDate: string, company?: string, plant?: string) {
     const dailyQb = this.prodResultRepository
       .createQueryBuilder('pr')
       .select(['pr.startAt', 'pr.goodQty', 'pr.defectQty'])
       .where('pr.status != :canceled', { canceled: 'CANCELED' })
-      .andWhere("pr.startAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom })
-      .andWhere("pr.startAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo });
+      .andWhere("pr.startAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate })
+      .andWhere("pr.startAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
     if (company) dailyQb.andWhere('pr.company = :company', { company });
     if (plant) dailyQb.andWhere('pr.plant = :plant', { plant });
     const results = await dailyQb.getMany();
@@ -1917,10 +1937,10 @@ export class ProdResultService {
    * 완제품 기준 생산실적 통합 조회
    * - 품목별로 계획수량, 양품, 불량, 양품률을 집계
    */
-  async getSummaryByProduct(dateFrom?: string, dateTo?: string, search?: string, company?: string, plant?: string) {
+  async getSummaryByProduct(fromDate?: string, toDate?: string, search?: string, company?: string, plant?: string) {
     // 날짜 범위가 없으면 당일 기준 (전량 집계 방지)
-    const effectiveDateFrom = dateFrom || new Date().toISOString().substring(0, 10);
-    const effectiveDateTo = dateTo || effectiveDateFrom;
+    const effectiveDateFrom = fromDate || new Date().toISOString().substring(0, 10);
+    const effectiveDateTo = toDate || effectiveDateFrom;
 
     const qb = this.prodResultRepository
       .createQueryBuilder('pr')
@@ -1930,6 +1950,7 @@ export class ProdResultService {
         'p.itemCode AS "itemCode"',
         'p.itemName AS "itemName"',
         'p.itemType AS "itemType"',
+        'jo.lineCode AS "lineCode"',
         'SUM(jo.planQty) AS "totalPlanQty"',
         'SUM(pr.goodQty) AS "totalGoodQty"',
         'SUM(pr.defectQty) AS "totalDefectQty"',
@@ -1937,11 +1958,12 @@ export class ProdResultService {
         'COUNT(pr.resultNo) AS "resultCount"',
       ])
       .where('pr.status != :status', { status: 'CANCELED' })
-      .andWhere("pr.startAt >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom: effectiveDateFrom })
-      .andWhere("pr.startAt < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo: effectiveDateTo })
+      .andWhere("pr.startAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: effectiveDateFrom })
+      .andWhere("pr.startAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate: effectiveDateTo })
       .groupBy('p.itemCode')
       .addGroupBy('p.itemName')
       .addGroupBy('p.itemType')
+      .addGroupBy('jo.lineCode')
       .orderBy('"totalGoodQty"', 'DESC');
     if (company) qb.andWhere('pr.company = :company', { company });
     if (plant) qb.andWhere('pr.plant = :plant', { plant });
@@ -1963,6 +1985,7 @@ export class ProdResultService {
         itemCode: r.itemCode,
         itemName: r.itemName,
         itemType: r.itemType,
+        lineCode: r.lineCode ?? '',
         totalPlanQty,
         totalGoodQty,
         totalDefectQty,

@@ -22,7 +22,7 @@ describe('TraceService', () => {
     const fgLabelRepo = { findOne: jest.fn() };
     const prodResultRepo = { find: jest.fn() };
     const jobOrderRepo = { findOne: jest.fn() };
-    const inspectResultRepo = { find: jest.fn() };
+    const inspectResultRepo = { find: jest.fn().mockResolvedValue([]) };
     const matIssueRepo = { find: jest.fn() };
     const traceLogRepo = { createQueryBuilder: jest.fn(() => traceLogQb) };
     const partMasterRepo = { findOne: jest.fn(), find: jest.fn() };
@@ -31,6 +31,9 @@ describe('TraceService', () => {
     const processMasterRepo = { createQueryBuilder: jest.fn(() => processQb) };
     const matLotRepo = { find: jest.fn() };
     const controlPlanItemRepo = { createQueryBuilder: jest.fn(() => controlPlanQb) };
+    const partnerMasterRepo = { find: jest.fn().mockResolvedValue([]) };
+    const boxMasterRepo = { find: jest.fn(), findOne: jest.fn() };
+    const palletMasterRepo = { find: jest.fn(), findOne: jest.fn() };
 
     const service = new TraceService(
       fgLabelRepo as any,
@@ -45,6 +48,9 @@ describe('TraceService', () => {
       processMasterRepo as any,
       matLotRepo as any,
       controlPlanItemRepo as any,
+      partnerMasterRepo as any,
+      boxMasterRepo as any,
+      palletMasterRepo as any,
     );
 
     return {

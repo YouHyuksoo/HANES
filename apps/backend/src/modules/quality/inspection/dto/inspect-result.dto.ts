@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/quality/inspection/dto/inspect-result.dto.ts
  * @description 검사실적 관련 DTO 정의
  *
@@ -138,12 +138,12 @@ export class InspectResultQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '검사 시작 날짜 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '검사 종료 날짜 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }
 
 /**

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/inventory/dto/inventory.dto.ts
  * @description 재고관리 DTO - 창고, 재고, 수불 이력
  */
@@ -351,11 +351,11 @@ export class TransactionQueryDto {
 
   @IsOptional()
   @IsString()
-  dateFrom?: string;
+  fromDate?: string;
 
   @IsOptional()
   @IsString()
-  dateTo?: string;
+  toDate?: string;
 
   @IsOptional()
   @IsNumber()

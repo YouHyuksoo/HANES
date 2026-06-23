@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/outsourcing/dto/outsourcing.dto.ts
  * @description 외주관리 관련 DTO 정의
  */
@@ -178,12 +178,12 @@ export class SubconOrderQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }
 
 // ============================================================================

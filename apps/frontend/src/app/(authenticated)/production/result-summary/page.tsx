@@ -12,8 +12,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RefreshCw, BarChart3, Target, CheckCircle, XCircle } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import { Search, RefreshCw, BarChart3 } from "lucide-react";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -41,16 +41,16 @@ export default function ResultSummaryPage() {
   const [data, setData] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState(() => getTodayLocal());
-  const [endDate, setEndDate] = useState(() => getTodayLocal());
+  const [fromDate, setStartDate] = useState(() => getTodayLocal());
+  const [toDate, setEndDate] = useState(() => getTodayLocal());
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string> = {};
       if (searchText) params.search = searchText;
-      if (startDate) params.dateFrom = startDate;
-      if (endDate) params.dateTo = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/production/prod-results/summary/by-product", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -58,22 +58,9 @@ export default function ResultSummaryPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, startDate, endDate]);
+  }, [searchText, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const stats = useMemo(() => {
-    const totalPlan = data.reduce((s, d) => s + d.totalPlanQty, 0);
-    const totalGood = data.reduce((s, d) => s + d.totalGoodQty, 0);
-    const totalDefect = data.reduce((s, d) => s + d.totalDefectQty, 0);
-    const totalAll = totalGood + totalDefect;
-    return {
-      totalPlan,
-      totalGood,
-      totalDefect,
-      yieldRate: totalAll > 0 ? Math.round((totalGood / totalAll) * 1000) / 10 : 0,
-    };
-  }, [data]);
 
   const rateCell = (value: number, good: boolean) => {
     const cls = good
@@ -97,10 +84,13 @@ export default function ResultSummaryPage() {
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        const cls = v === "FG" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-          : v === "WIP" ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+        const cls = v === "FINISHED" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+          : v === "SEMI_PRODUCT" ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
           : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-        return <span className={`px-2 py-0.5 text-xs rounded-full ${cls}`}>{v || "-"}</span>;
+        const label = v === "FINISHED" ? t("production.order.itemTypeFG", "완제품")
+          : v === "SEMI_PRODUCT" ? t("production.order.itemTypeWIP", "반제품")
+          : v || "-";
+        return <span className={`px-2 py-0.5 text-xs rounded-full ${cls}`}>{label}</span>;
       },
     },
     {
@@ -165,13 +155,6 @@ export default function ResultSummaryPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
-        <StatCard label={t("production.resultSummary.stats.planTotal")} value={stats.totalPlan.toLocaleString()} icon={Target} color="blue" />
-        <StatCard label={t("production.resultSummary.stats.goodTotal")} value={stats.totalGood.toLocaleString()} icon={CheckCircle} color="green" />
-        <StatCard label={t("production.resultSummary.stats.defectTotal")} value={stats.totalDefect.toLocaleString()} icon={XCircle} color="red" />
-        <StatCard label={t("production.resultSummary.stats.yieldRate")} value={`${stats.yieldRate}%`} icon={BarChart3} color="purple" />
-      </div>
-
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("production.resultSummary.title")}
           toolbarLeft={
@@ -181,7 +164,7 @@ export default function ResultSummaryPage() {
                   value={searchText} onChange={e => setSearchText(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
+              <DateRangeFilter from={fromDate} to={toDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM PROD_RESULT_SUMMARIES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

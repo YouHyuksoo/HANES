@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file services/self-inspect.service.ts
  * @description 자주검사 서비스 — 검사항목 조회, 결과 저장, 의뢰검사 상태 관리
  *
@@ -259,14 +259,14 @@ export class SelfInspectService {
 
   /** 자주검사 이력 목록 조회 (페이지네이션) */
   async findHistory(query: {
-    dateFrom?: string;
-    dateTo?: string;
+    fromDate?: string;
+    toDate?: string;
     orderNo?: string;
     processCode?: string;
     page?: number;
     limit?: number;
   }, company: string, plant: string) {
-    const { dateFrom, dateTo, orderNo, processCode, page = 1, limit = 30 } = query;
+    const { fromDate, toDate, orderNo, processCode, page = 1, limit = 30 } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.resultRepo.createQueryBuilder('r')
@@ -275,8 +275,8 @@ export class SelfInspectService {
 
     if (orderNo) qb.andWhere('r.orderNo LIKE :ono', { ono: `%${orderNo}%` });
     if (processCode) qb.andWhere('r.processCode = :pc', { pc: processCode });
-    if (dateFrom) qb.andWhere("r.createdAt >= TO_DATE(:df, 'YYYY-MM-DD')", { df: dateFrom });
-    if (dateTo) qb.andWhere("r.createdAt < TO_DATE(:dt, 'YYYY-MM-DD') + 1", { dt: dateTo });
+    if (fromDate) qb.andWhere("r.createdAt >= TO_DATE(:df, 'YYYY-MM-DD')", { df: fromDate });
+    if (toDate) qb.andWhere("r.createdAt < TO_DATE(:dt, 'YYYY-MM-DD') + 1", { dt: toDate });
 
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
     return { data, total, page, limit };

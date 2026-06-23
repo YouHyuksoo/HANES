@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file complaint.dto.ts
  * @description 고객클�태 DTO — 생성, 수정, 조회, 조사, 대응, CAPA 연계
  *
@@ -135,12 +135,12 @@ export class ComplaintQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }
 
 /**

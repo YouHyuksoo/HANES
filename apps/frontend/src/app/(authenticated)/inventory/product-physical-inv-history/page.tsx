@@ -42,8 +42,8 @@ export default function ProductPhysicalInvHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => getTodayLocal());
-  const [endDate, setEndDate] = useState(() => getTodayLocal());
+  const [fromDate, setStartDate] = useState(() => getTodayLocal());
+  const [toDate, setEndDate] = useState(() => getTodayLocal());
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -51,8 +51,8 @@ export default function ProductPhysicalInvHistoryPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (warehouseFilter) params.warehouseCode = warehouseFilter;
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/inventory/product-physical-inv/history", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -60,7 +60,7 @@ export default function ProductPhysicalInvHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, warehouseFilter, startDate, endDate]);
+  }, [searchText, warehouseFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -174,8 +174,8 @@ export default function ProductPhysicalInvHistoryPage() {
                 <WarehouseSelect includeAll labelPrefix={t("common.warehouse", "창고")} value={warehouseFilter} onChange={setWarehouseFilter} fullWidth />
               </div>
               <DateRangeFilter
-                from={startDate}
-                to={endDate}
+                from={fromDate}
+                to={toDate}
                 onFromChange={setStartDate}
                 onToChange={setEndDate}
                 className="flex-shrink-0"

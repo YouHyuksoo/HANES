@@ -2,16 +2,14 @@
 
 /**
  * @file src/app/(authenticated)/production/wip-material-stock/page.tsx
- * @description 설비별 공정재고(WIP_MAT_STOCKS) 조회 전용 화면
+ * @description 설비별 공정재고(WIP_MAT_STOCKS) 조회
  *
- * 초보자 가이드:
- * 1. **목적**: 설비(EQUIP_CODE) 단위 공정재고 현황 조회 (원자재재고 MAT_STOCKS와 분리)
- * 2. API: GET /inventory/wip-mat-stocks?equipCode=&search=
- * 3. 응답 행: { equipCode, equipName, itemCode, matUid, qty, availableQty, reservedQty }
+ * 좌측: 설비+품목 집계 그리드 (행 선택)
+ * 우측: 선택된 설비+품목의 LOT별 상세 (qty > 0만 표시)
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Cpu } from 'lucide-react';
+import { Search, RefreshCw, Cpu, Package } from 'lucide-react';
 import { Card, CardContent, Button, Input } from '@/components/ui';
 import EquipSelect from '@/components/shared/EquipSelect';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -22,6 +20,14 @@ interface WipMatStockRow {
   equipCode: string;
   equipName: string | null;
   itemCode: string;
+  itemName: string | null;
+  qty: number;
+  availableQty: number;
+  reservedQty: number;
+  lotCount: number;
+}
+
+interface LotRow {
   matUid: string;
   qty: number;
   availableQty: number;
@@ -35,6 +41,10 @@ export default function WipMaterialStockPage() {
   const [searchText, setSearchText] = useState('');
   const [equipCode, setEquipCode] = useState('');
 
+  const [selectedRow, setSelectedRow] = useState<WipMatStockRow | null>(null);
+  const [lots, setLots] = useState<LotRow[]>([]);
+  const [lotsLoading, setLotsLoading] = useState(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -43,6 +53,8 @@ export default function WipMaterialStockPage() {
       if (equipCode) params.equipCode = equipCode;
       const res = await api.get('/inventory/wip-mat-stocks', { params });
       setData(res.data?.data ?? []);
+      setSelectedRow(null);
+      setLots([]);
     } catch {
       setData([]);
     } finally {
@@ -52,46 +64,96 @@ export default function WipMaterialStockPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const fetchLots = useCallback(async (row: WipMatStockRow) => {
+    setLotsLoading(true);
+    try {
+      const res = await api.get('/inventory/wip-mat-stocks/lots', {
+        params: { equipCode: row.equipCode, itemCode: row.itemCode },
+      });
+      setLots(res.data?.data ?? []);
+    } catch {
+      setLots([]);
+    } finally {
+      setLotsLoading(false);
+    }
+  }, []);
+
+  const handleRowClick = useCallback((row: WipMatStockRow) => {
+    setSelectedRow(row);
+    fetchLots(row);
+  }, [fetchLots]);
+
   const columns = useMemo<ColumnDef<WipMatStockRow>[]>(() => [
     {
-      accessorKey: 'equipName', header: t('production.wipMaterialStock.equipName'), size: 150,
+      accessorKey: 'equipCode',
+      header: t('production.wipMaterialStock.equipCode', '설비코드'),
+      size: 130,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{row.original.equipName ?? '-'}</span>
-          <span className="font-mono text-xs text-text-muted">{row.original.equipCode}</span>
-        </div>
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: 'equipName',
+      header: t('production.wipMaterialStock.equipName'),
+      size: 140,
+      meta: { filterType: 'text' as const },
+      cell: ({ getValue }) => <span className="font-medium">{(getValue() as string) || '-'}</span>,
+    },
+    {
+      accessorKey: 'itemCode',
+      header: t('production.wipMaterialStock.partCode'),
+      size: 110,
+      meta: { filterType: 'text' as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: 'itemName',
+      header: t('common.partName'),
+      size: 140,
+      meta: { filterType: 'text' as const },
+      cell: ({ getValue }) => <span className="text-sm">{(getValue() as string) || '-'}</span>,
+    },
+    {
+      accessorKey: 'qty',
+      header: t('production.wipMaterialStock.qty'),
+      size: 90,
+      meta: { filterType: 'number' as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as number;
+        return (
+          <span className={`font-medium text-right block ${v > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-text-muted'}`}>
+            {(v ?? 0).toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: 'availableQty',
+      header: t('production.wipMaterialStock.availableQty'),
+      size: 100,
+      meta: { filterType: 'number' as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as number;
+        return (
+          <span className={`text-right block ${v > 0 ? 'text-green-600 dark:text-green-400' : 'text-text-muted'}`}>
+            {(v ?? 0).toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: 'lotCount',
+      header: t('production.wipMaterialStock.lotCount', 'LOT 수'),
+      size: 70,
+      meta: { filterType: 'number' as const },
+      cell: ({ getValue }) => (
+        <span className="text-center block text-text-muted text-sm">{(getValue() as number) ?? 0}</span>
       ),
-    },
-    {
-      accessorKey: 'itemCode', header: t('production.wipMaterialStock.partCode'), size: 130,
-      meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: 'matUid', header: t('production.wipMaterialStock.lot'), size: 160,
-      meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: 'qty', header: t('production.wipMaterialStock.qty'), size: 100,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span className="font-medium text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span>,
-    },
-    {
-      accessorKey: 'availableQty', header: t('production.wipMaterialStock.availableQty'), size: 110,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span className="text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span>,
-    },
-    {
-      accessorKey: 'reservedQty', header: t('production.wipMaterialStock.reservedQty'), size: 110,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span className="text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
   ], [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      {/* 헤더 */}
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -99,28 +161,133 @@ export default function WipMaterialStockPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('production.wipMaterialStock.description')}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />{t('common.refresh')}
-          </Button>
-        </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />{t('common.refresh')}
+        </Button>
       </div>
 
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
-          enableExport exportFileName={t('production.wipMaterialStock.title')}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t('production.wipMaterialStock.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="w-56 flex-shrink-0">
-                <EquipSelect value={equipCode} onChange={setEquipCode} labelPrefix={t('production.wipMaterialStock.equipName')} fullWidth />
-              </div>
+      {/* 좌우 패널 */}
+      <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
+        {/* 좌측: 집계 그리드 */}
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-4">
+            <DataGrid
+              data={data}
+              columns={columns}
+              isLoading={loading}
+              enableColumnFilter
+              enableExport
+              exportFileName={t('production.wipMaterialStock.title')}
+              onRowClick={handleRowClick}
+              selectedRowId={selectedRow ? `${selectedRow.equipCode}__${selectedRow.itemCode}` : undefined}
+              getRowId={(row) => `${row.equipCode}__${row.itemCode}`}
+              toolbarLeft={
+                <div className="flex gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      placeholder={t('production.wipMaterialStock.searchPlaceholder')}
+                      value={searchText}
+                      onChange={e => setSearchText(e.target.value)}
+                      leftIcon={<Search className="w-4 h-4" />}
+                      fullWidth
+                    />
+                  </div>
+                  <div className="w-52 flex-shrink-0">
+                    <EquipSelect
+                      value={equipCode}
+                      onChange={setEquipCode}
+                      labelPrefix={t('production.wipMaterialStock.equipName')}
+                      fullWidth
+                    />
+                  </div>
+                </div>
+              }
+            />
+          </CardContent>
+        </Card>
+
+        {/* 우측: LOT 상세 패널 */}
+        <Card className="w-80 flex-shrink-0 min-h-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-4 flex flex-col gap-3">
+            {/* 패널 헤더 */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Package className="w-4 h-4 text-primary" />
+              <span className="font-semibold text-sm">LOT 재고 상세</span>
+              {selectedRow && (
+                <span className="text-xs text-text-muted ml-auto">qty &gt; 0</span>
+              )}
             </div>
-          }
-          sqlQuery={`SELECT s.EQUIP_CODE, e.EQUIP_NAME, s.ITEM_CODE, s.MAT_UID,\n       s.QTY, s.AVAILABLE_QTY, s.RESERVED_QTY\nFROM WIP_MAT_STOCKS s\nLEFT JOIN EQUIP_MASTERS e ON e.EQUIP_CODE = s.EQUIP_CODE\nWHERE s.COMPANY = '40'\n  AND s.PLANT_CD = '1000'\nORDER BY s.EQUIP_CODE, s.ITEM_CODE, s.MAT_UID`} />
-      </CardContent></Card>
+
+            {selectedRow ? (
+              <>
+                {/* 선택된 행 요약 */}
+                <div className="flex-shrink-0 rounded border border-border bg-surface-alt p-3 text-sm space-y-1">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-text-muted shrink-0">설비코드</span>
+                    <span className="font-mono text-xs text-right">{selectedRow.equipCode}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-text-muted shrink-0">설비명</span>
+                    <span className="font-medium text-xs truncate text-right">{selectedRow.equipName || '-'}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-text-muted shrink-0">품목코드</span>
+                    <span className="font-mono text-xs text-right">{selectedRow.itemCode}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-text-muted shrink-0">품목명</span>
+                    <span className="font-medium text-xs truncate text-right">{selectedRow.itemName || '-'}</span>
+                  </div>
+                  <div className="border-t border-border pt-1 mt-1 flex justify-between">
+                    <span className="text-text-muted">총재고</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">{selectedRow.qty.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* LOT 목록 */}
+                <div className="flex-1 min-h-0 overflow-auto">
+                  {lotsLoading ? (
+                    <div className="flex items-center justify-center h-20 text-text-muted text-sm">로딩 중...</div>
+                  ) : lots.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-20 text-text-muted text-sm gap-1">
+                      <Package className="w-6 h-6 opacity-30" />
+                      <span>재고 있는 LOT 없음</span>
+                    </div>
+                  ) : (
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-border bg-surface-alt sticky top-0">
+                          <th className="text-left px-2 py-2 font-medium text-text-muted text-xs">LOT No.</th>
+                          <th className="text-right px-2 py-2 font-medium text-text-muted text-xs">재고</th>
+                          <th className="text-right px-2 py-2 font-medium text-text-muted text-xs">가용</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lots.map((lot) => (
+                          <tr key={lot.matUid} className="border-b border-border/50 hover:bg-surface-alt/50">
+                            <td className="px-2 py-2 font-mono text-xs">{lot.matUid}</td>
+                            <td className="px-2 py-2 text-right font-medium text-blue-600 dark:text-blue-400">
+                              {lot.qty.toLocaleString()}
+                            </td>
+                            <td className="px-2 py-2 text-right text-green-600 dark:text-green-400">
+                              {lot.availableQty.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-text-muted gap-2">
+                <Cpu className="w-10 h-10 opacity-20" />
+                <span className="text-sm">행을 선택하면 LOT 상세를 표시합니다</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file controllers/self-inspect.controller.ts
  * @description 자주검사 API 컨트롤러
  *
@@ -193,15 +193,15 @@ export class SelfInspectController {
 
   @Get('history')
   @ApiOperation({ summary: '자주검사 이력 목록 조회' })
-  @ApiQuery({ name: 'dateFrom', required: false })
-  @ApiQuery({ name: 'dateTo', required: false })
+  @ApiQuery({ name: 'fromDate', required: false })
+  @ApiQuery({ name: 'toDate', required: false })
   @ApiQuery({ name: 'orderNo', required: false })
   @ApiQuery({ name: 'processCode', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async findHistory(
-    @Query('dateFrom') dateFrom?: string,
-    @Query('dateTo') dateTo?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Query('orderNo') orderNo?: string,
     @Query('processCode') processCode?: string,
     @Query('page') page?: string,
@@ -211,8 +211,8 @@ export class SelfInspectController {
   ) {
     const result = await this.svc.findHistory(
       {
-        dateFrom,
-        dateTo,
+        fromDate,
+        toDate,
         orderNo,
         processCode,
         page: page ? parseInt(page, 10) : 1,

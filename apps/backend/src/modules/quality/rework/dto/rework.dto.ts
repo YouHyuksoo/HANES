@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file rework.dto.ts
  * @description 재작업 지시 DTO -- 생성, 수정, 조회, 승인, 완료, 재검사 요청
  *
@@ -238,12 +238,12 @@ export class ReworkQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }
 
 /**

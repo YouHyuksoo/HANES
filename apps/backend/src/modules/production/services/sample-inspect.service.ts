@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/production/services/sample-inspect.service.ts
  * @description 반제품 샘플검사 입력/조회 서비스
  *
@@ -84,7 +84,7 @@ export class SampleInspectService {
 
   /** 샘플검사 이력 조회 (작업지시별 그룹핑) */
   async findHistory(query: SampleInspectHistoryQueryDto, company?: string, plant?: string) {
-    const { passYn, startDate, endDate, search, limit = 50 } = query;
+    const { passYn, fromDate, toDate, search, limit = 50 } = query;
 
     const qb = this.sampleInspectRepository
       .createQueryBuilder('si')
@@ -122,7 +122,7 @@ export class SampleInspectService {
       qb.andWhere('si.passYn = :passYn', { passYn });
     }
 
-    applyDateFilter(qb, 'si.inspectDate', startDate, endDate);
+    applyDateFilter(qb, 'si.inspectDate', fromDate, toDate);
 
     if (search) {
       qb.andWhere(

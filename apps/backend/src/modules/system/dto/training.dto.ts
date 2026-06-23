@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file training.dto.ts
  * @description 교육훈련 DTO — 계획 생성/수정, 결과 등록, 조회 필터
  *
@@ -156,10 +156,10 @@ export class TrainingQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }

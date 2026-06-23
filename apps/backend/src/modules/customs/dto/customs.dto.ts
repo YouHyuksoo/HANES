@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/customs/dto/customs.dto.ts
  * @description 보세관리 관련 DTO 정의
  */
@@ -100,12 +100,12 @@ export class CustomsEntryQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }
 
 // ============================================================================
@@ -204,10 +204,10 @@ export class UsageReportQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }

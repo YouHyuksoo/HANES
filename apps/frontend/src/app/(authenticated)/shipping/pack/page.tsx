@@ -17,7 +17,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Package, Plus, Search, RefreshCw, XCircle,
-  AlertTriangle, Printer, Lock, LockOpen, Trash2,
+  AlertTriangle, Printer, Lock, LockOpen, Trash2, ClipboardList,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import PartSelect from "@/components/shared/PartSelect";
@@ -108,6 +108,9 @@ export default function PackPage() {
   const [searchText, setSearchText] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
+  const [isPackableModalOpen, setIsPackableModalOpen] = useState(false);
+  const [packablePage, setPackablePage] = useState(1);
+  const PACKABLE_PAGE_SIZE = 50;
   const [selectedBox, setSelectedBox] = useState<Box | null>(null);
   const [createItemCode, setCreateItemCode] = useState("");
   const [serialInput, setSerialInput] = useState("");
@@ -295,74 +298,6 @@ export default function PackPage() {
   }, [deleteBoxTarget, fetchData, selectedBox?.boxNo, t]);
 
   const columns = useMemo<ColumnDef<Box>[]>(() => [
-    {
-      id: "actions", header: t("common.actions"), size: 150, meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => {
-        const box = row.original;
-        const iconBtn = "h-8 w-8 inline-flex items-center justify-center rounded border transition-colors disabled:opacity-30 disabled:cursor-not-allowed";
-        const isOpen = box.status === "OPEN";
-        const canReopen = box.status === "CLOSED" && !box.palletNo;
-        const canPrintLabel = (box.qty ?? 0) > 0;
-        const canDelete = canDeleteEmptyBox(box);
-        return (
-          <div className="grid grid-cols-4 gap-1 justify-items-center w-[148px] mx-auto">
-            <button
-              type="button"
-              className={`${iconBtn} border-primary/50 text-primary hover:bg-primary/10`}
-              title={t("shipping.pack.packProducts", "제품 담기")}
-              aria-label={t("shipping.pack.packProducts", "제품 담기")}
-              disabled={!isOpen}
-              onClick={() => openSerialModal(box)}
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-            {box.status === "CLOSED" ? (
-              <button
-                type="button"
-                className={`${iconBtn} border-amber-400/60 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10`}
-                title={t("shipping.pack.reopenBox")}
-                aria-label={t("shipping.pack.reopenBox")}
-                disabled={!canReopen}
-                onClick={() => handleReopenBox(box)}
-              >
-                <LockOpen className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className={`${iconBtn} border-border text-text hover:bg-surface`}
-                title={t("shipping.pack.closeBox")}
-                aria-label={t("shipping.pack.closeBox")}
-                disabled={!isOpen}
-                onClick={() => handleCloseBox(box)}
-              >
-                <Lock className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              type="button"
-              className={`${iconBtn} border-primary/50 text-primary hover:bg-primary/10`}
-              title={t("shipping.pack.reprintLabel", "라벨 재발행")}
-              aria-label={t("shipping.pack.reprintLabel", "라벨 재발행")}
-              disabled={!canPrintLabel}
-              onClick={() => openLabel(box)}
-            >
-              <Printer className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              className={`${iconBtn} border-red-400/60 text-red-600 dark:text-red-400 hover:bg-red-500/10`}
-              title={t("shipping.pack.deleteEmptyBox", "빈 박스 삭제")}
-              aria-label={t("shipping.pack.deleteEmptyBox", "빈 박스 삭제")}
-              disabled={!canDelete}
-              onClick={() => setDeleteBoxTarget(box)}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        );
-      },
-    },
     { accessorKey: "boxNo", header: t("shipping.pack.boxNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
@@ -375,7 +310,7 @@ export default function PackPage() {
     },
     { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
     { accessorKey: "closeAt", header: t("shipping.pack.closedAt"), size: 150, meta: { filterType: "date" as const }, cell: ({ getValue }) => (getValue() ? String(getValue()).replace("T", " ").slice(0, 16) : "-") },
-  ], [t, openSerialModal, handleCloseBox, handleReopenBox, openLabel]);
+  ], [t]);
 
   // 시리얼 모달 용량 계산
   const modalSerials = parseSerials(selectedBox);
@@ -420,6 +355,15 @@ export default function PackPage() {
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
+          <Button variant="secondary" size="sm" onClick={() => { setPackablePage(1); setIsPackableModalOpen(true); }}>
+            <ClipboardList className="w-4 h-4 mr-1" />
+            {t("shipping.pack.waitingTitle", "포장 대기")}
+            {packable.length > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary text-white text-xs font-bold leading-none">
+                {packable.length}
+              </span>
+            )}
+          </Button>
           <Button size="sm" onClick={() => { setCreateItemCode(""); setModalError(""); setIsCreateModalOpen(true); }}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pack.createBox")}</Button>
         </div>
       </div>
@@ -431,51 +375,23 @@ export default function PackPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0 overflow-auto">
-        {/* 좌측: 포장 대기 제품(검사합격·미포장) */}
-        <Card className="h-full min-h-0" padding="none">
-          <CardContent className="h-full p-3 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-2 flex-shrink-0">
-              <h2 className="font-bold text-sm text-text flex items-center gap-1.5">
-                <Package className="w-4 h-4 text-primary" />
-                {t("shipping.pack.waitingTitle", "포장 대기")}
-              </h2>
-              <span className="text-xs text-text-muted">{packable.length}</span>
-            </div>
-            {packable.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-xs text-text-muted">
-                {t("shipping.pack.noWaiting", "포장 대기 제품 없음")}
-              </div>
-            ) : (
-              <div className="flex-1 overflow-y-auto min-h-0 space-y-3">
-                {Object.entries(
-                  packable.reduce<Record<string, PackableSerial[]>>((acc, p) => {
-                    (acc[p.itemCode] ??= []).push(p);
-                    return acc;
-                  }, {}),
-                ).map(([itemCode, serials]) => (
-                  <div key={itemCode}>
-                    <div className="flex items-center justify-between text-xs font-medium text-text border-b border-border pb-1 mb-1">
-                      <span className="truncate">{itemCode}{serials[0].itemName ? ` · ${serials[0].itemName}` : ""}</span>
-                      <span className="text-primary flex-shrink-0 ml-2">{serials.length}</span>
-                    </div>
-                    <ul className="space-y-0.5">
-                      {serials.map((s) => (
-                        <li key={s.fgBarcode} className="text-xs font-mono text-text-muted flex items-center justify-between gap-2">
-                          <span className="truncate">{s.fgBarcode}</span>
-                          {s.orderNo && <span className="text-text-muted/60 flex-shrink-0">{s.orderNo}</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-auto">
         <div className="lg:col-span-2">
-          <Card className="h-full min-h-0" padding="none"><CardContent className="h-full p-4">
+          <Card className="h-full min-h-0" padding="none"><CardContent className="h-full p-4 flex flex-col min-h-0">
+            {/* 선택 행 공통 액션 툴바 */}
+            <div className="flex items-center gap-2 mb-3 flex-shrink-0 flex-wrap">
+              <span className="text-xs text-text-muted">
+                {selectedBox ? <>{t("shipping.pack.selectedBox", "선택")}: <span className="font-mono text-text">{selectedBox.boxNo}</span></> : t("shipping.pack.selectRowHint", "행을 선택하세요")}
+              </span>
+              <div className="flex gap-1 ml-auto flex-wrap">
+                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "OPEN"} onClick={() => selectedBox && openSerialModal(selectedBox)}><Plus className="w-4 h-4 mr-1" />{t("shipping.pack.packProducts", "제품 담기")}</Button>
+                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "OPEN"} onClick={() => selectedBox && handleCloseBox(selectedBox)}><Lock className="w-4 h-4 mr-1" />{t("shipping.pack.closeBox")}</Button>
+                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "CLOSED" || !!selectedBox.palletNo} onClick={() => selectedBox && handleReopenBox(selectedBox)}><LockOpen className="w-4 h-4 mr-1" />{t("shipping.pack.reopenBox")}</Button>
+                <Button size="sm" variant="secondary" disabled={!selectedBox || (selectedBox.qty ?? 0) <= 0} onClick={() => selectedBox && openLabel(selectedBox)}><Printer className="w-4 h-4 mr-1" />{t("shipping.pack.reprintLabel", "라벨 재발행")}</Button>
+                <Button size="sm" variant="danger" disabled={!selectedBox || !canDeleteEmptyBox(selectedBox)} onClick={() => selectedBox && setDeleteBoxTarget(selectedBox)}><Trash2 className="w-4 h-4 mr-1" />{t("shipping.pack.deleteEmptyBox", "빈 박스 삭제")}</Button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0">
             <DataGrid
               data={data}
               columns={columns}
@@ -483,7 +399,7 @@ export default function PackPage() {
               enableColumnFilter
               enableExport
               exportFileName={t("shipping.pack.title")}
-              rowClassName={(row) => row.boxNo === activePackingBoxNo ? "ring-2 ring-primary bg-primary/5" : ""}
+              rowClassName={(row) => row.boxNo === activePackingBoxNo ? "ring-2 ring-primary bg-primary/5" : (row.boxNo === selectedBox?.boxNo ? "bg-primary/5" : "")}
               onRowClick={(row) => setSelectedBox(row)}
               toolbarLeft={
                 <div className="flex gap-3 flex-1 min-w-0">
@@ -496,6 +412,7 @@ export default function PackPage() {
                 </div>
               }
             sqlQuery={`SELECT *\nFROM BOX_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+            </div>
           </CardContent></Card>
         </div>
 
@@ -564,6 +481,81 @@ export default function PackPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 포장 대기 시리얼 목록 모달 (페이지네이션) */}
+      {isPackableModalOpen && (() => {
+        const totalPages = Math.max(1, Math.ceil(packable.length / PACKABLE_PAGE_SIZE));
+        const pageItems = packable.slice((packablePage - 1) * PACKABLE_PAGE_SIZE, packablePage * PACKABLE_PAGE_SIZE);
+        const grouped = pageItems.reduce<Record<string, PackableSerial[]>>((acc, p) => {
+          (acc[p.itemCode] ??= []).push(p);
+          return acc;
+        }, {});
+        return (
+          <Modal
+            isOpen
+            onClose={() => setIsPackableModalOpen(false)}
+            title={t("shipping.pack.waitingTitle", "포장 대기")}
+            size="lg"
+          >
+            <div className="space-y-3">
+              {/* 요약 + 페이지 정보 */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-text-muted">
+                  {t("shipping.pack.waitingDesc", "검사 합격 후 미배정 FG 시리얼")}
+                  <span className="ml-2 font-semibold text-text">{t("common.total", "총")} {packable.length}{t("common.countUnit", "건")}</span>
+                </span>
+                {totalPages > 1 && (
+                  <span className="text-xs text-text-muted">{packablePage} / {totalPages} 페이지</span>
+                )}
+              </div>
+
+              {packable.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-text-muted gap-2">
+                  <Package className="w-10 h-10 opacity-30" />
+                  <span className="text-sm">{t("shipping.pack.noWaiting", "포장 대기 제품 없음")}</span>
+                </div>
+              ) : (
+                <div className="max-h-[55vh] overflow-y-auto space-y-3 pr-1">
+                  {Object.entries(grouped).map(([itemCode, serials]) => (
+                    <div key={itemCode} className="border border-border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="font-mono text-sm font-semibold text-text">{itemCode}</span>
+                          {serials[0].itemName && <span className="ml-2 text-sm text-text-muted">{serials[0].itemName}</span>}
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold">{serials.length}</span>
+                      </div>
+                      <ul className="space-y-0.5">
+                        {serials.map((s) => (
+                          <li key={s.fgBarcode} className="flex items-baseline gap-3 text-xs py-1 border-b border-border/40 last:border-0">
+                            <span className="font-mono text-text w-44 shrink-0">{s.fgBarcode}</span>
+                            {s.orderNo && <span className="text-text-muted truncate">{s.orderNo}</span>}
+                            {s.issuedAt && <span className="text-text-muted/60 shrink-0 ml-auto">{String(s.issuedAt).slice(0, 10)}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 페이지네이션 + 닫기 */}
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                {totalPages > 1 ? (
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="secondary" disabled={packablePage <= 1} onClick={() => setPackablePage(1)}>«</Button>
+                    <Button size="sm" variant="secondary" disabled={packablePage <= 1} onClick={() => setPackablePage(p => p - 1)}>‹</Button>
+                    <span className="px-3 text-sm text-text-muted">{packablePage} / {totalPages}</span>
+                    <Button size="sm" variant="secondary" disabled={packablePage >= totalPages} onClick={() => setPackablePage(p => p + 1)}>›</Button>
+                    <Button size="sm" variant="secondary" disabled={packablePage >= totalPages} onClick={() => setPackablePage(totalPages)}>»</Button>
+                  </div>
+                ) : <div />}
+                <Button variant="secondary" onClick={() => setIsPackableModalOpen(false)}>{t("common.close")}</Button>
+              </div>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {/* 박스 생성: 품목만 선택 (qty는 시리얼로 채움) */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t("shipping.pack.createBox")} size="lg">

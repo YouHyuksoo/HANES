@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/interface/dto/interface.dto.ts
  * @description ERP 인터페이스 관련 DTO 정의
  */
@@ -41,12 +41,12 @@ export class InterLogQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '정렬 (예: createdAt:desc)' })
   @IsOptional()

@@ -19,8 +19,8 @@ import {
   Edit2, Trash2, Play, CheckCircle2, PauseCircle, PlayCircle, XCircle,
   Barcode, Printer, Wrench,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
-import { ComCodeSelect, EquipSelect, ProcessSelect, QtyInput } from "@/components/shared";
+import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
+import { ComCodeSelect, EquipSelect, QtyInput } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -75,7 +75,7 @@ export default function JobOrderPage() {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [equipFilter, setEquipFilter] = useState("");
-  const [processFilter, setProcessFilter] = useState("");
+  const [itemTypeFilter, setItemTypeFilter] = useState("");
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -171,9 +171,9 @@ export default function JobOrderPage() {
   const displayData = useMemo(() => {
     let rows = viewMode === "tree" ? flattenTree(data) : data.map(d => ({ ...d, _depth: 0 }));
     if (equipFilter) rows = rows.filter(r => (r.equipCode ?? "") === equipFilter);
-    if (processFilter) rows = rows.filter(r => (r.processCode ?? "") === processFilter);
+    if (itemTypeFilter) rows = rows.filter(r => (r.part?.itemType ?? "") === itemTypeFilter);
     return rows;
-  }, [viewMode, data, equipFilter, processFilter]);
+  }, [viewMode, data, equipFilter, itemTypeFilter]);
 
   const getProgress = (row: JobOrderItem) => {
     if (row.planQty === 0) return 0;
@@ -359,10 +359,13 @@ export default function JobOrderPage() {
       cell: ({ getValue }) => {
         const v = getValue() as string;
         if (!v) return "-";
-        const cls = v === "FG" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-          : v === "WIP" ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+        const cls = v === "FINISHED" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+          : v === "SEMI_PRODUCT" ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
           : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-        return <span className={`px-2 py-0.5 text-xs rounded-full ${cls}`}>{v}</span>;
+        const label = v === "FINISHED" ? t("production.order.itemTypeFG", "완제품")
+          : v === "SEMI_PRODUCT" ? t("production.order.itemTypeWIP", "반제품")
+          : v;
+        return <span className={`px-2 py-0.5 text-xs rounded-full ${cls}`}>{label}</span>;
       },
     },
     {
@@ -515,9 +518,17 @@ export default function JobOrderPage() {
                   <EquipSelect value={equipFilter} onChange={setEquipFilter}
                     labelPrefix={t("production.order.equip")} fullWidth />
                 </div>
-                <div className="w-40 flex-shrink-0">
-                  <ProcessSelect value={processFilter} onChange={setProcessFilter}
-                    labelPrefix={t("production.order.process")} fullWidth />
+                <div className="w-36 flex-shrink-0">
+                  <Select
+                    value={itemTypeFilter}
+                    onChange={setItemTypeFilter}
+                    options={[
+                      { value: "", label: `${t("common.partType", "품목유형")}: ${t("common.all", "전체")}` },
+                      { value: "FINISHED", label: t("production.order.itemTypeFG", "완제품") },
+                      { value: "SEMI_PRODUCT", label: t("production.order.itemTypeWIP", "반제품") },
+                    ]}
+                    fullWidth
+                  />
                 </div>
                 <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
               </div>

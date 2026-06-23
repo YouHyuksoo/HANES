@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file modules/system/dto/activity-log.dto.ts
  * @description 활동 로그 DTO - 생성/조회 요청 규격
  *
@@ -36,7 +36,7 @@ export class CreateActivityLogDto {
 /**
  * 활동 로그 조회 쿼리 DTO
  * - PaginationQueryDto에서 page, limit 상속
- * - startDate/endDate는 서비스에서 별도 처리하므로 유지
+ * - fromDate/endDate는 서비스에서 별도 처리하므로 유지
  */
 export class ActivityLogQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '사용자 ID 필터' })
@@ -52,10 +52,10 @@ export class ActivityLogQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작 날짜 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료 날짜 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  endDate?: string;
+  toDate?: string;
 }

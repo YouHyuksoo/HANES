@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/quality/inspection/services/inspect-result.service.ts
  * @description 검사실적 비즈니스 로직 서비스
  *
@@ -77,14 +77,14 @@ export class InspectResultService {
 
   private applyInspectAtRange(
     qb: ReturnType<Repository<InspectResult>['createQueryBuilder']>,
-    startDate?: string,
-    endDate?: string,
+    fromDate?: string,
+    toDate?: string,
   ) {
-    if (startDate) {
-      qb.andWhere("inspect.inspectAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
+    if (fromDate) {
+      qb.andWhere("inspect.inspectAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
     }
-    if (endDate) {
-      qb.andWhere("inspect.inspectAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { endDate });
+    if (toDate) {
+      qb.andWhere("inspect.inspectAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
     }
   }
 
@@ -124,8 +124,8 @@ export class InspectResultService {
       inspectType,
       inspectScope,
       passYn,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -138,7 +138,7 @@ export class InspectResultService {
     if (inspectType) qb.andWhere('inspect.inspectType = :inspectType', { inspectType });
     if (inspectScope) qb.andWhere('inspect.inspectScope = :inspectScope', { inspectScope });
     if (passYn) qb.andWhere('inspect.passYn = :passYn', { passYn });
-    this.applyInspectAtRange(qb, startDate, endDate);
+    this.applyInspectAtRange(qb, fromDate, toDate);
 
     const [data, total] = await qb
       .orderBy('inspect.inspectAt', 'DESC')
@@ -431,13 +431,13 @@ export class InspectResultService {
 
   /**
    * 합격률 통계 조회
-   * @param startDate 시작 날짜
-   * @param endDate 종료 날짜
+   * @param fromDate 시작 날짜
+   * @param toDate 종료 날짜
    * @param inspectType 검사 유형 (선택)
    */
   async getPassRate(
-    startDate?: string,
-    endDate?: string,
+    fromDate?: string,
+    toDate?: string,
     inspectType?: string,
     company?: string,
     plant?: string,
@@ -447,7 +447,7 @@ export class InspectResultService {
       if (company) qb.andWhere('inspect.company = :company', { company });
       if (plant) qb.andWhere('inspect.plant = :plant', { plant });
       if (inspectType) qb.andWhere('inspect.inspectType = :inspectType', { inspectType });
-      this.applyInspectAtRange(qb, startDate, endDate);
+      this.applyInspectAtRange(qb, fromDate, toDate);
       return qb;
     };
 
@@ -469,12 +469,12 @@ export class InspectResultService {
 
   /**
    * 검사 유형별 통계 조회
-   * @param startDate 시작 날짜
-   * @param endDate 종료 날짜
+   * @param fromDate 시작 날짜
+   * @param toDate 종료 날짜
    */
   async getStatsByType(
-    startDate?: string,
-    endDate?: string,
+    fromDate?: string,
+    toDate?: string,
     company?: string,
     plant?: string,
   ): Promise<InspectTypeStatsDto[]> {
@@ -483,7 +483,7 @@ export class InspectResultService {
       qb.andWhere('inspect.inspectType IS NOT NULL');
       if (company) qb.andWhere('inspect.company = :company', { company });
       if (plant) qb.andWhere('inspect.plant = :plant', { plant });
-      this.applyInspectAtRange(qb, startDate, endDate);
+      this.applyInspectAtRange(qb, fromDate, toDate);
       return qb;
     };
 

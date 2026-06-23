@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/inventory/dto/product-physical-inv.dto.ts
  * @description 제품 재고실사 관련 DTO
  *
@@ -138,10 +138,10 @@ export class ProductPhysicalInvHistoryQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  endDate?: string;
+  toDate?: string;
 }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file msa.dto.ts
  * @description MSA(측정시스템분석) DTO — 계측기 마스터 및 교정 이력
  *
@@ -251,10 +251,10 @@ export class CalibrationFilterDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }

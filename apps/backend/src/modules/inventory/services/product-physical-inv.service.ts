@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, FindOptionsWhere, In } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
@@ -107,7 +107,7 @@ export class ProductPhysicalInvService {
   }
 
   async findHistory(query: ProductPhysicalInvHistoryQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, search, startDate, endDate } = query;
+    const { page = 1, limit = 50, search, fromDate, toDate } = query;
     const warehouseCode = query.warehouseCode ?? query.warehouseId;
 
     const qb = this.invAdjLogRepository
@@ -137,11 +137,11 @@ export class ProductPhysicalInvService {
     if (company) qb.andWhere('log.company = :company', { company });
     if (plant) qb.andWhere('log.plant = :plant', { plant });
     if (warehouseCode) qb.andWhere('log.warehouseCode = :warehouseCode', { warehouseCode });
-    if (startDate) qb.andWhere('log.createdAt >= :startDate', { startDate: new Date(startDate) });
-    if (endDate) {
-      const end = new Date(endDate);
+    if (fromDate) qb.andWhere('log.createdAt >= :fromDate', { fromDate: new Date(fromDate) });
+    if (toDate) {
+      const end = new Date(toDate);
       end.setDate(end.getDate() + 1);
-      qb.andWhere('log.createdAt < :endDate', { endDate: end });
+      qb.andWhere('log.createdAt < :toDate', { toDate: end });
     }
     if (search) {
       qb.andWhere(

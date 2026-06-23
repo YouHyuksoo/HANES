@@ -96,14 +96,14 @@ export class DefectLogService {
   private applyOccurAtRangeToQb(
     qb: SelectQueryBuilder<DefectLog>,
     alias: string,
-    startDate?: string,
-    endDate?: string,
+    fromDate?: string,
+    toDate?: string,
   ) {
-    if (startDate) {
-      qb.andWhere(`${alias}.occurAt >= TO_DATE(:startDate, 'YYYY-MM-DD')`, { startDate });
+    if (fromDate) {
+      qb.andWhere(`${alias}.occurAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')`, { fromDate });
     }
-    if (endDate) {
-      qb.andWhere(`${alias}.occurAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY`, { endDate });
+    if (toDate) {
+      qb.andWhere(`${alias}.occurAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY`, { toDate });
     }
   }
 
@@ -154,8 +154,8 @@ export class DefectLogService {
       prodResultNo,
       defectCode,
       status,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
       search,
     } = query;
     const skip = (page - 1) * limit;
@@ -167,7 +167,7 @@ export class DefectLogService {
     if (defectCode) qb.andWhere('defect.defectCode = :defectCode', { defectCode });
     if (status) qb.andWhere('defect.status = :status', { status });
     if (search) qb.andWhere('defect.defectName LIKE :search', { search: `%${search}%` });
-    this.applyOccurAtRangeToQb(qb, 'defect', startDate, endDate);
+    this.applyOccurAtRangeToQb(qb, 'defect', fromDate, toDate);
 
     const [data, total] = await Promise.all([
       qb.clone().orderBy('defect.occurAt', 'DESC').skip(skip).take(limit).getMany(),
@@ -536,8 +536,8 @@ export class DefectLogService {
    * 불량 유형별 통계
    */
   async getStatsByDefectType(
-    startDate?: string,
-    endDate?: string,
+    fromDate?: string,
+    toDate?: string,
     company?: string,
     plant?: string,
   ): Promise<DefectTypeStatsDto[]> {
@@ -549,7 +549,7 @@ export class DefectLogService {
       .addSelect('SUM(defect.qty)', 'totalQty');
     if (company) qb.andWhere('defect.company = :company', { company });
     if (plant) qb.andWhere('defect.plant = :plant', { plant });
-    this.applyOccurAtRangeToQb(qb, 'defect', startDate, endDate);
+    this.applyOccurAtRangeToQb(qb, 'defect', fromDate, toDate);
 
     // TypeORM의 groupBy 사용
     const grouped = await qb
@@ -574,8 +574,8 @@ export class DefectLogService {
    * 불량 상태별 통계
    */
   async getStatsByStatus(
-    startDate?: string,
-    endDate?: string,
+    fromDate?: string,
+    toDate?: string,
     company?: string,
     plant?: string,
   ): Promise<DefectStatusStatsDto[]> {
@@ -586,7 +586,7 @@ export class DefectLogService {
       .addSelect('SUM(defect.qty)', 'totalQty');
     if (company) qb.andWhere('defect.company = :company', { company });
     if (plant) qb.andWhere('defect.plant = :plant', { plant });
-    this.applyOccurAtRangeToQb(qb, 'defect', startDate, endDate);
+    this.applyOccurAtRangeToQb(qb, 'defect', fromDate, toDate);
 
     const grouped = await qb
       .groupBy('defect.status')

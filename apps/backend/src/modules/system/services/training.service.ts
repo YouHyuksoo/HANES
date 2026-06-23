@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file training.service.ts
  * @description 교육훈련 서비스 — IATF 16949 7.2 적격성(교육훈련)
  *
@@ -88,8 +88,8 @@ export class TrainingService {
       status,
       trainingType,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.planRepo.createQueryBuilder('t');
@@ -106,10 +106,10 @@ export class TrainingService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('t.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('t.createdAt BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

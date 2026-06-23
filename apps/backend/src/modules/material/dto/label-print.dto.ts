@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file dto/label-print.dto.ts
  * @description 라벨 인쇄 관련 DTO
  *
@@ -109,12 +109,12 @@ export class PrintLogQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일' })
   @IsOptional()
   @IsString()
-  dateFrom?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일' })
   @IsOptional()
   @IsString()
-  dateTo?: string;
+  toDate?: string;
 
 
 }

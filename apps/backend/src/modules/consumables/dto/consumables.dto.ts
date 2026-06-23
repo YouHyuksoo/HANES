@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/consumables/dto/consumables.dto.ts
  * @description 소모품관리 관련 DTO 정의
  */
@@ -208,12 +208,12 @@ export class ConsumableLogQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }
 
 // ============================================================================

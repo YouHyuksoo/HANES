@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file control-plan.dto.ts
  * @description 관리계획서(Control Plan) DTO — 생성, 수정, 항목, 조회 필터
  *
@@ -193,10 +193,10 @@ export class ControlPlanFilterDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }

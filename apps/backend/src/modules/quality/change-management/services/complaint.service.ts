@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file complaint.service.ts
  * @description 고객클레임 관리 서비스 — IATF 16949 10.2.6 고객 불만 처리
  *
@@ -109,8 +109,8 @@ export class ComplaintService {
       urgency,
       customerCode,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.complaintRepo.createQueryBuilder('c');
@@ -128,8 +128,8 @@ export class ComplaintService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate) qb.andWhere("c.complaintDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
-    if (endDate) qb.andWhere("c.complaintDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate });
+    if (fromDate) qb.andWhere("c.complaintDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    if (toDate) qb.andWhere("c.complaintDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
 
     qb.orderBy('c.createdAt', 'DESC');
     const total = await qb.getCount();

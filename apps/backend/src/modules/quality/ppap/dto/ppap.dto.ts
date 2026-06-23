@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ppap.dto.ts
  * @description PPAP 제출 DTO — 생성, 수정, 조회 필터
  *
@@ -230,10 +230,10 @@ export class PpapFilterDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }

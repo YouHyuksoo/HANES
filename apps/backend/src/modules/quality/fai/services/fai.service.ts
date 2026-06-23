@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file fai.service.ts
  * @description 초물검사(FAI) 서비스 — IATF 16949 8.3.4.4 신규/변경 품목 첫 생산품 검증
  *
@@ -107,8 +107,8 @@ export class FaiService {
       status,
       triggerType,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.faiRepo.createQueryBuilder('f');
@@ -124,10 +124,10 @@ export class FaiService {
         { s: `%${upper}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('f.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('f.createdAt BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/wip-material-trans/page.tsx
@@ -7,7 +7,7 @@
  * 초보자 가이드:
  * 1. **목적**: 설비(EQUIP_CODE) 단위 공정재고의 입고/소비/취소 거래 이력 조회.
  *    (원자재 수불 STOCK_TRANSACTIONS와 완전 분리된 공정 전용 원장)
- * 2. API: GET /inventory/wip-mat-transactions?equipCode=&transType=&search=&dateFrom=&dateTo=
+ * 2. API: GET /inventory/wip-mat-transactions?equipCode=&transType=&search=&fromDate=&toDate=
  * 3. 거래유형: WIP_IN(공정입고), WIP_IN_CANCEL(공정입고취소),
  *             PROD_CONSUME(생산소비), PROD_CONSUME_CANCEL(생산소비취소)
  */
@@ -61,8 +61,8 @@ export default function WipMaterialTransPage() {
   const [equipCode, setEquipCode] = useState('');
   const [filters, setFilters] = useState({
     transType: '',
-    dateFrom: getToday(),
-    dateTo: getToday(),
+    fromDate: getToday(),
+    toDate: getToday(),
   });
 
   const TRANS_TYPES = useMemo(() => [
@@ -79,12 +79,12 @@ export default function WipMaterialTransPage() {
   );
 
   const fetchData = useCallback(async () => {
-    if (!filters.dateFrom || !filters.dateTo) return;
+    if (!filters.fromDate || !filters.toDate) return;
     setLoading(true);
     try {
       const params: Record<string, string> = {
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
+        fromDate: filters.fromDate,
+        toDate: filters.toDate,
       };
       if (filters.transType) params.transType = filters.transType;
       if (equipCode) params.equipCode = equipCode;
@@ -119,24 +119,24 @@ export default function WipMaterialTransPage() {
       ),
     },
     {
-      accessorKey: 'equipName', header: t('production.wipMaterialTrans.equip'), size: 150,
+      accessorKey: 'equipCode', header: t('common.equipCode', '설비코드'), size: 110,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{row.original.equipName ?? '-'}</span>
-          <span className="font-mono text-xs text-text-muted">{row.original.equipCode}</span>
-        </div>
-      ),
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || '-'}</span>,
     },
     {
-      accessorKey: 'itemCode', header: t('production.wipMaterialTrans.item'), size: 160,
+      accessorKey: 'equipName', header: t('common.equipName', '설비명'), size: 140,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-mono text-sm">{row.original.itemCode}</span>
-          <span className="text-xs text-text-muted">{row.original.itemName ?? '-'}</span>
-        </div>
-      ),
+      cell: ({ getValue }) => (getValue() as string | null) ?? '-',
+    },
+    {
+      accessorKey: 'itemCode', header: t('common.partCode'), size: 120,
+      meta: { filterType: 'text' as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || '-'}</span>,
+    },
+    {
+      accessorKey: 'itemName', header: t('common.partName'), size: 150,
+      meta: { filterType: 'text' as const },
+      cell: ({ getValue }) => (getValue() as string | null) ?? '-',
     },
     {
       accessorKey: 'matUid', header: t('production.wipMaterialTrans.lot'), size: 160,
@@ -158,12 +158,7 @@ export default function WipMaterialTransPage() {
       cell: ({ row }) => {
         const { refType, refId } = row.original;
         if (!refType && !refId) return '-';
-        return (
-          <div className="flex flex-col">
-            <span className="text-xs text-text-muted">{refType ?? '-'}</span>
-            <span className="font-mono text-xs">{refId ?? '-'}</span>
-          </div>
-        );
+        return <span className="font-mono text-xs">{[refType, refId].filter(Boolean).join(' / ')}</span>;
       },
     },
     {
@@ -200,7 +195,7 @@ export default function WipMaterialTransPage() {
           exportFileName={t('production.wipMaterialTrans.title')}
           toolbarLeft={
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <DateRangeFilter from={filters.dateFrom} to={filters.dateTo} onFromChange={(v) => setFilters(f => ({ ...f, dateFrom: v }))} onToChange={(v) => setFilters(f => ({ ...f, dateTo: v }))} className="flex-shrink-0" />
+              <DateRangeFilter from={filters.fromDate} to={filters.toDate} onFromChange={(v) => setFilters(f => ({ ...f, fromDate: v }))} onToChange={(v) => setFilters(f => ({ ...f, toDate: v }))} className="flex-shrink-0" />
               <div className="w-48 flex-shrink-0">
                 <EquipSelect value={equipCode} onChange={setEquipCode} labelPrefix={t('production.wipMaterialTrans.equip')} fullWidth />
               </div>

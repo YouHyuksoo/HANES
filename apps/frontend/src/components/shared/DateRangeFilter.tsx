@@ -43,6 +43,14 @@ export default function DateRangeFilter({
   const [open, setOpen] = useState(false);
   const presetRef = useRef<HTMLDivElement>(null);
 
+  // 부모가 빈 문자열로 초기화한 경우 마운트 시 당일로 보정
+  useEffect(() => {
+    const today = getTodayLocal();
+    if (!from) onFromChange(today);
+    if (!to) onToChange(today);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 드롭다운 바깥 클릭 시 닫기
   useEffect(() => {
     if (!open) return;

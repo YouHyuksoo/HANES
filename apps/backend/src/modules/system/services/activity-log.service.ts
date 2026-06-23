@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file modules/system/services/activity-log.service.ts
  * @description 사용자 활동 로그 서비스 - 로그인/페이지 접속 기록 저장 및 조회
  *
@@ -88,11 +88,11 @@ export class ActivityLogService {
     if (query.activityType) qb.andWhere('al.activityType = :activityType', { activityType: query.activityType });
 
     // 날짜 필터 (TIMESTAMP 컬럼 — Oracle INTERVAL 패턴)
-    if (query.startDate) {
-      qb.andWhere("al.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate: query.startDate });
+    if (query.fromDate) {
+      qb.andWhere("al.createdAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: query.fromDate });
     }
-    if (query.endDate) {
-      qb.andWhere("al.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { endDate: query.endDate });
+    if (query.toDate) {
+      qb.andWhere("al.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate: query.toDate });
     }
 
     const [data, total] = await qb.getManyAndCount();

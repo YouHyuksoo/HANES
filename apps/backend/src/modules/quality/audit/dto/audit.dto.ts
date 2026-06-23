@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file audit.dto.ts
  * @description 납품업체심사 DTO — 심사 계획 생성/수정, 발견사항 등록, 조회 필터
  *
@@ -140,10 +140,10 @@ export class AuditQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }

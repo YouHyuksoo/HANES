@@ -62,8 +62,8 @@ export default function ReworkHistoryPage() {
 
   /* --- 필터 상태 --- */
   const [searchText, setSearchText] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [fromDate, setDateFrom] = useState("");
+  const [toDate, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [lineFilter, setLineFilter] = useState("");
   const [defectTypeFilter, setDefectTypeFilter] = useState("");
@@ -84,8 +84,8 @@ export default function ReworkHistoryPage() {
       if (statusFilter) params.status = statusFilter;
       if (lineFilter) params.lineCode = lineFilter;
       if (defectTypeFilter) params.defectType = defectTypeFilter;
-      if (dateFrom) params.startDate = dateFrom;
-      if (dateTo) params.endDate = dateTo;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/quality/reworks", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -93,7 +93,7 @@ export default function ReworkHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter, lineFilter, defectTypeFilter, dateFrom, dateTo]);
+  }, [searchText, statusFilter, lineFilter, defectTypeFilter, fromDate, toDate]);
 
   useEffect(() => {
     fetchData();
@@ -273,8 +273,8 @@ export default function ReworkHistoryPage() {
                 </div>
                 {/* 기간 */}
                 <DateRangeFilter
-                  from={dateFrom}
-                  to={dateTo}
+                  from={fromDate}
+                  to={toDate}
                   onFromChange={setDateFrom}
                   onToChange={setDateTo}
                   className="flex-shrink-0"

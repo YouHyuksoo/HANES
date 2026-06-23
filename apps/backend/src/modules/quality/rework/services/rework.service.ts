@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/quality/rework/services/rework.service.ts
  * @description 재작업 관리 서비스 — 2단계 승인, 재작업 실적, 재검사 연동
  *
@@ -116,8 +116,8 @@ export class ReworkService {
       defectType,
       lineCode,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.reworkRepo.createQueryBuilder('r');
@@ -134,10 +134,10 @@ export class ReworkService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('r.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('r.createdAt BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

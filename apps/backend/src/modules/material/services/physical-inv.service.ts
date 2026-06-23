@@ -248,7 +248,7 @@ export class PhysicalInvService {
   }
 
   async findHistory(query: PhysicalInvHistoryQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, search, warehouseCode, startDate, endDate } = query;
+    const { page = 1, limit = 50, search, warehouseCode, fromDate, toDate } = query;
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
@@ -279,11 +279,11 @@ export class PhysicalInvService {
     if (warehouseCode) {
       qb.andWhere('log.warehouseCode = :warehouseCode', { warehouseCode });
     }
-    if (startDate) {
-      qb.andWhere("log.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
+    if (fromDate) {
+      qb.andWhere("log.createdAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
     }
-    if (endDate) {
-      qb.andWhere("log.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate });
+    if (toDate) {
+      qb.andWhere("log.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
     if (search) {
       const upper = search.toUpperCase();

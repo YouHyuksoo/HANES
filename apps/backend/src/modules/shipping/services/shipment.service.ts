@@ -969,13 +969,13 @@ export class ShipmentService {
   /**
    * 고객사별 출하 통계
    */
-  async getCustomerStats(startDate: string, endDate: string, company?: string, plant?: string) {
+  async getCustomerStats(fromDate: string, toDate: string, company?: string, plant?: string) {
     const qb = this.shipmentRepository
       .createQueryBuilder('s')
       .select(['s.customer', 's.palletCount', 's.boxCount', 's.totalQty'])
       .where('s.status IN (:...statuses)', { statuses: ['SHIPPED', 'DELIVERED'] })
-      .andWhere("s.shipDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate })
-      .andWhere("s.shipDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate });
+      .andWhere("s.shipDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate })
+      .andWhere("s.shipDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     if (company) qb.andWhere('s.company = :company', { company });
     if (plant) qb.andWhere('s.plant = :plant', { plant });
 
@@ -1010,7 +1010,7 @@ export class ShipmentService {
     });
 
     return {
-      period: { startDate, endDate },
+      period: { fromDate, toDate },
       customerStats: Array.from(customerStats.values()).sort((a, b) => b.totalQty - a.totalQty),
     };
   }

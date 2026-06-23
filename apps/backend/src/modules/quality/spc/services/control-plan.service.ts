@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file control-plan.service.ts
  * @description 관리계획서(Control Plan) 서비스 — IATF 16949 8.5.1.1
  *
@@ -113,8 +113,8 @@ export class ControlPlanService {
       phase,
       itemCode,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.planRepo.createQueryBuilder('cp');
@@ -130,10 +130,10 @@ export class ControlPlanService {
         { s: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('cp.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('cp.createdAt BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

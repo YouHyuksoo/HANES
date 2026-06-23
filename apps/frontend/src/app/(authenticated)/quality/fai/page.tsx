@@ -38,8 +38,8 @@ export default function FaiPage() {
   const [loading, setLoading] = useState(false);
   const [selectedRow, setSelectedRow] = useState<FaiRequest | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [fromDate, setDateFrom] = useState("");
+  const [toDate, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [triggerFilter, setTriggerFilter] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -53,13 +53,13 @@ export default function FaiPage() {
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
       if (triggerFilter) params.triggerType = triggerFilter;
-      if (dateFrom) params.startDate = dateFrom;
-      if (dateTo) params.endDate = dateTo;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/quality/fai", { params });
       setData(res.data?.data ?? []);
     } catch { setData([]); }
     finally { setLoading(false); }
-  }, [searchText, statusFilter, triggerFilter, dateFrom, dateTo]);
+  }, [searchText, statusFilter, triggerFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -202,8 +202,8 @@ export default function FaiPage() {
                     leftIcon={<SearchIcon className="w-4 h-4" />} fullWidth />
                 </div>
                 <DateRangeFilter
-                  from={dateFrom}
-                  to={dateTo}
+                  from={fromDate}
+                  to={toDate}
                   onFromChange={setDateFrom}
                   onToChange={setDateTo}
                   className="flex-shrink-0"

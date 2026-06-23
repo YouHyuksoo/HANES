@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file document.service.ts
  * @description 문서관리 서비스 — IATF 16949 7.5 문서화된 정보
  *
@@ -108,8 +108,8 @@ export class DocumentService {
       docType,
       category,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.docRepo.createQueryBuilder('d');
@@ -126,10 +126,10 @@ export class DocumentService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate)
-      qb.andWhere("d.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
-    if (endDate)
-      qb.andWhere("d.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { endDate });
+    if (fromDate)
+      qb.andWhere("d.createdAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    if (toDate)
+      qb.andWhere("d.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
 
     qb.orderBy('d.createdAt', 'DESC');
     const total = await qb.getCount();

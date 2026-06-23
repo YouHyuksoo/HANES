@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file capa.service.ts
  * @description CAPA 시정/예방조치 서비스 — IATF 16949 10.2 근본원인 분석 및 조치 관리
  *
@@ -125,8 +125,8 @@ export class CapaService {
       sourceType,
       priority,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.capaRepo.createQueryBuilder('c');
@@ -144,10 +144,10 @@ export class CapaService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('c.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('c.createdAt BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

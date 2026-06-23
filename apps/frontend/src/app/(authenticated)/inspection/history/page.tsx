@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/inspection/history/page.tsx
@@ -44,8 +44,8 @@ export default function InspectionHistoryPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState(() => getTodayLocal());
-  const [dateTo, setDateTo] = useState(() => getTodayLocal());
+  const [fromDate, setDateFrom] = useState(() => getTodayLocal());
+  const [toDate, setDateTo] = useState(() => getTodayLocal());
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
@@ -61,8 +61,8 @@ export default function InspectionHistoryPage() {
       if (typeFilter) params.inspectType = typeFilter;
       if (debouncedSearch) params.serialNo = debouncedSearch;
       if (resultFilter) params.passYn = resultFilter;
-      if (dateFrom) params.startDate = dateFrom;
-      if (dateTo) params.endDate = dateTo;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
 
       const res = await api.get("/quality/inspect-results", { params });
       setData(res.data?.data ?? []);
@@ -71,7 +71,7 @@ export default function InspectionHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, typeFilter, resultFilter, dateFrom, dateTo]);
+  }, [debouncedSearch, typeFilter, resultFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -188,8 +188,8 @@ export default function InspectionHistoryPage() {
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <DateRangeFilter
-                  from={dateFrom}
-                  to={dateTo}
+                  from={fromDate}
+                  to={toDate}
                   onFromChange={setDateFrom}
                   onToChange={setDateTo}
                 />

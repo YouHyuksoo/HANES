@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/interface/services/interface.service.ts
  * @description ERP 인터페이스 비즈니스 로직 서비스
  */
@@ -87,7 +87,7 @@ export class InterfaceService {
   }
 
   async findAllLogs(query: InterLogQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, direction, messageType, status, startDate, endDate } = query;
+    const { page = 1, limit = 10, direction, messageType, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {
@@ -96,8 +96,8 @@ export class InterfaceService {
       ...(direction && { direction }),
       ...(messageType && { messageType }),
       ...(status && { status }),
-      ...(startDate && endDate && {
-        createdAt: Between(parseDateStart(startDate)!, parseDateEnd(endDate)!),
+      ...(fromDate && toDate && {
+        createdAt: Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!),
       }),
     };
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/app/(authenticated)/production/monthly-plan/page.tsx
  * @description 월간생산계획 관리 페이지 - 계획 등록/조회/엑셀 업로드
  *
@@ -37,11 +37,11 @@ export default function MonthlyPlanPage() {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [itemTypeFilter, setItemTypeFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => {
+  const [fromDate, setStartDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-01-01`;
   });
-  const [endDate, setEndDate] = useState(() => {
+  const [toDate, setEndDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-12-31`;
   });
@@ -64,8 +64,8 @@ export default function MonthlyPlanPage() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { limit: 5000 };
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
       if (itemTypeFilter) params.itemType = itemTypeFilter;
@@ -78,7 +78,7 @@ export default function MonthlyPlanPage() {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, searchText, statusFilter, itemTypeFilter]);
+  }, [fromDate, toDate, searchText, statusFilter, itemTypeFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -160,7 +160,7 @@ export default function MonthlyPlanPage() {
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
             <Button variant="secondary" size="sm"
-              onClick={() => downloadProdPlanTemplate(t, startDate?.slice(0, 7) || new Date().toISOString().slice(0, 7))}>
+              onClick={() => downloadProdPlanTemplate(t, fromDate?.slice(0, 7) || new Date().toISOString().slice(0, 7))}>
               <Download className="w-4 h-4 mr-1" />{t("monthlyPlan.excel.downloadTemplate")}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setShowExcel(true)}>
@@ -189,7 +189,7 @@ export default function MonthlyPlanPage() {
             onRowClick={(row) => { if (isPanelOpen) setEditingPlan(row as ProdPlanItem); }}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
-                <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
+                <DateRangeFilter from={fromDate} to={toDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <Input placeholder={t("monthlyPlan.searchPlaceholder")}
                     value={searchText} onChange={e => setSearchText(e.target.value)}
@@ -215,7 +215,7 @@ export default function MonthlyPlanPage() {
         <PlanFormPanel
           key={editingPlan?.planNo ?? "__new__"}
           editingPlan={editingPlan}
-          defaultMonth={startDate?.slice(0, 7) || new Date().toISOString().slice(0, 7)}
+          defaultMonth={fromDate?.slice(0, 7) || new Date().toISOString().slice(0, 7)}
           onClose={handlePanelClose}
           onSave={fetchData}
           animate={panelAnimateRef.current}
@@ -226,7 +226,7 @@ export default function MonthlyPlanPage() {
         isOpen={showExcel}
         onClose={() => setShowExcel(false)}
         onUploaded={fetchData}
-        planMonth={startDate?.slice(0, 7) || new Date().toISOString().slice(0, 7)}
+        planMonth={fromDate?.slice(0, 7) || new Date().toISOString().slice(0, 7)}
       />
 
       <AutoGenerateModal

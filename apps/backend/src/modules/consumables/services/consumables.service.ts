@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/consumables/services/consumables.service.ts
  * @description 소모품관리 서비스 (TypeORM)
  *
@@ -460,8 +460,8 @@ ${tenantSql}
       consumableId,
       logType,
       logTypeGroup,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query || {};
     const skip = (page - 1) * limit;
 
@@ -483,10 +483,10 @@ ${tenantSql}
       }
     }
 
-    if (startDate && endDate) {
-      where.createdAt = Between(parseDateStart(startDate)!, parseDateEnd(endDate)!);
-    } else if (startDate) {
-      where.createdAt = Between(parseDateStart(startDate)!, new Date());
+    if (fromDate && toDate) {
+      where.createdAt = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
+    } else if (fromDate) {
+      where.createdAt = Between(parseDateStart(fromDate)!, new Date());
     }
 
     const raw = await this.consumableLogRepository.find({

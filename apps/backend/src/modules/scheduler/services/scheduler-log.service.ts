@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/scheduler/services/scheduler-log.service.ts
  * @description 스케줄러 실행 로그 서비스 - 작업 실행 이력 CRUD 및 통계를 관리한다.
  *
@@ -128,7 +128,7 @@ export class SchedulerLogService {
     company: string,
     plant: string,
   ) {
-    const { page = 1, limit = 50, jobCode, status, startDate, endDate } = filter;
+    const { page = 1, limit = 50, jobCode, status, fromDate, toDate } = filter;
 
     const qb = this.logRepo.createQueryBuilder('l');
     qb.where('l.company = :company', { company });
@@ -136,11 +136,11 @@ export class SchedulerLogService {
 
     if (jobCode) qb.andWhere('l.jobCode = :jobCode', { jobCode });
     if (status) qb.andWhere('l.status = :status', { status });
-    if (startDate) {
-      qb.andWhere('l.startTime >= TO_DATE(:startDate, \'YYYY-MM-DD\')', { startDate });
+    if (fromDate) {
+      qb.andWhere('l.startTime >= TO_DATE(:fromDate, \'YYYY-MM-DD\')', { fromDate });
     }
-    if (endDate) {
-      qb.andWhere('l.startTime < TO_DATE(:endDate, \'YYYY-MM-DD\') + 1', { endDate });
+    if (toDate) {
+      qb.andWhere('l.startTime < TO_DATE(:toDate, \'YYYY-MM-DD\') + 1', { toDate });
     }
 
     qb.orderBy('l.startTime', 'DESC');

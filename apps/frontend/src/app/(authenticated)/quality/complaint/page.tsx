@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file quality/complaint/page.tsx
@@ -46,8 +46,8 @@ export default function ComplaintPage() {
 
   /* -- 필터 상태 -- */
   const [searchText, setSearchText] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [fromDate, setDateFrom] = useState("");
+  const [toDate, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [urgencyFilter, setUrgencyFilter] = useState("");
@@ -68,8 +68,8 @@ export default function ComplaintPage() {
       if (statusFilter) params.status = statusFilter;
       if (typeFilter) params.complaintType = typeFilter;
       if (urgencyFilter) params.urgency = urgencyFilter;
-      if (dateFrom) params.startDate = dateFrom;
-      if (dateTo) params.endDate = dateTo;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/quality/complaints", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -77,7 +77,7 @@ export default function ComplaintPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter, typeFilter, urgencyFilter, dateFrom, dateTo]);
+  }, [searchText, statusFilter, typeFilter, urgencyFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -270,8 +270,8 @@ export default function ComplaintPage() {
                     leftIcon={<SearchIcon className="w-4 h-4" />} fullWidth />
                 </div>
                 <DateRangeFilter
-                  from={dateFrom}
-                  to={dateTo}
+                  from={fromDate}
+                  to={toDate}
                   onFromChange={setDateFrom}
                   onToChange={setDateTo}
                   className="flex-shrink-0"

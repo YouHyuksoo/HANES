@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file wip-mat-stock.service.spec.ts
  * @description WipMatStockService 단위 테스트 - 공정재고 가산/차감/복원/조회
  *
@@ -306,13 +306,13 @@ describe('WipMatStockService', () => {
       expect(qb.orderBy).toHaveBeenCalledWith('tx.CREATED_AT', 'DESC');
     });
 
-    it('필터(equipCode/transType/search/dateFrom/dateTo)를 적용한다', async () => {
+    it('필터(equipCode/transType/search/fromDate/toDate)를 적용한다', async () => {
       const qb: any = makeQb();
       qb.getRawMany.mockResolvedValue([]);
       mockTxRepo.createQueryBuilder.mockReturnValue(qb);
 
       await target.findTransactions(
-        { equipCode, transType: 'WIP_IN', search: 'RM', dateFrom: '2026-06-16', dateTo: '2026-06-16' },
+        { equipCode, transType: 'WIP_IN', search: 'RM', fromDate: '2026-06-16', toDate: '2026-06-16' },
         company,
         plant,
       );
@@ -324,12 +324,12 @@ describe('WipMatStockService', () => {
         { kw: '%RM%' },
       );
       expect(qb.andWhere).toHaveBeenCalledWith(
-        'tx.CREATED_AT >= TO_TIMESTAMP(:dateFrom, :dateFmt)',
-        expect.objectContaining({ dateFrom: '2026-06-16 00:00:00' }),
+        'tx.CREATED_AT >= TO_TIMESTAMP(:fromDate, :dateFmt)',
+        expect.objectContaining({ fromDate: '2026-06-16 00:00:00' }),
       );
       expect(qb.andWhere).toHaveBeenCalledWith(
-        'tx.CREATED_AT <= TO_TIMESTAMP(:dateTo, :dateFmt)',
-        expect.objectContaining({ dateTo: '2026-06-16 23:59:59' }),
+        'tx.CREATED_AT <= TO_TIMESTAMP(:toDate, :dateFmt)',
+        expect.objectContaining({ toDate: '2026-06-16 23:59:59' }),
       );
     });
   });

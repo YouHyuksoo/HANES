@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/shipping/controllers/shipment.controller.ts
  * @description 출하 CRUD 및 상태 관리 API 컨트롤러
  *
@@ -97,16 +97,16 @@ export class ShipmentController {
 
   @Get('stats/customer')
   @ApiOperation({ summary: '고객사별 출하 통계', description: '기간 내 고객사별 출하 집계' })
-  @ApiQuery({ name: 'startDate', required: true, description: '시작일 (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: true, description: '종료일 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'fromDate', required: true, description: '시작일 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'toDate', required: true, description: '종료일 (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getCustomerStats(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
+    @Query('fromDate') fromDate: string,
+    @Query('toDate') toDate: string,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const data = await this.shipmentService.getCustomerStats(startDate, endDate, company, plant);
+    const data = await this.shipmentService.getCustomerStats(fromDate, toDate, company, plant);
     return ResponseUtil.success(data);
   }
 

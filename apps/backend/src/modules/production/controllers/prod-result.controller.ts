@@ -138,66 +138,66 @@ export class ProdResultController {
   @Get('summary/equip/:equipCode')
   @ApiOperation({ summary: 'Summary by equipment' })
   @ApiParam({ name: 'equipCode', description: 'Equipment code' })
-  @ApiQuery({ name: 'dateFrom', required: false, description: 'YYYY-MM-DD' })
-  @ApiQuery({ name: 'dateTo', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'fromDate', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'toDate', required: false, description: 'YYYY-MM-DD' })
   @ApiResponse({ status: 200, description: 'Success' })
   async getSummaryByEquip(
     @Param('equipCode') equipCode: string,
-    @Query('dateFrom') dateFrom?: string,
-    @Query('dateTo') dateTo?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.prodResultService.getSummaryByEquip(equipCode, dateFrom, dateTo, company, plant);
+    const data = await this.prodResultService.getSummaryByEquip(equipCode, fromDate, toDate, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('summary/worker/:workerId')
   @ApiOperation({ summary: 'Summary by worker' })
   @ApiParam({ name: 'workerId', description: 'Worker id' })
-  @ApiQuery({ name: 'dateFrom', required: false, description: 'YYYY-MM-DD' })
-  @ApiQuery({ name: 'dateTo', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'fromDate', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'toDate', required: false, description: 'YYYY-MM-DD' })
   @ApiResponse({ status: 200, description: 'Success' })
   async getSummaryByWorker(
     @Param('workerId') workerId: string,
-    @Query('dateFrom') dateFrom?: string,
-    @Query('dateTo') dateTo?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.prodResultService.getSummaryByWorker(workerId, dateFrom, dateTo, company, plant);
+    const data = await this.prodResultService.getSummaryByWorker(workerId, fromDate, toDate, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('summary/daily')
   @ApiOperation({ summary: 'Daily summary' })
-  @ApiQuery({ name: 'dateFrom', required: true, description: 'YYYY-MM-DD' })
-  @ApiQuery({ name: 'dateTo', required: true, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'fromDate', required: true, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'toDate', required: true, description: 'YYYY-MM-DD' })
   @ApiResponse({ status: 200, description: 'Success' })
   async getDailySummary(
-    @Query('dateFrom') dateFrom: string,
-    @Query('dateTo') dateTo: string,
+    @Query('fromDate') fromDate: string,
+    @Query('toDate') toDate: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.prodResultService.getDailySummary(dateFrom, dateTo, company, plant);
+    const data = await this.prodResultService.getDailySummary(fromDate, toDate, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('summary/by-product')
   @ApiOperation({ summary: 'Summary by product' })
-  @ApiQuery({ name: 'dateFrom', required: false, description: 'YYYY-MM-DD' })
-  @ApiQuery({ name: 'dateTo', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'fromDate', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'toDate', required: false, description: 'YYYY-MM-DD' })
   @ApiQuery({ name: 'search', required: false, description: 'Search keyword' })
   @ApiResponse({ status: 200, description: 'Success' })
   async getSummaryByProduct(
-    @Query('dateFrom') dateFrom?: string,
-    @Query('dateTo') dateTo?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Query('search') search?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.prodResultService.getSummaryByProduct(dateFrom, dateTo, search, company, plant);
+    const data = await this.prodResultService.getSummaryByProduct(fromDate, toDate, search, company, plant);
     return ResponseUtil.success(data);
   }
 }

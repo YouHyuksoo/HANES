@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/equipment/services/consumable.service.ts
  * @description 소모품(금형/지그/공구) 비즈니스 로직 서비스 (TypeORM)
  *
@@ -527,8 +527,8 @@ export class ConsumableService {
       limit = 20,
       consumableId,
       logType,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -557,11 +557,11 @@ export class ConsumableService {
     if (logType) {
       queryBuilder.andWhere('log.logType = :logType', { logType });
     }
-    if (startDate) {
-      queryBuilder.andWhere("log.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
+    if (fromDate) {
+      queryBuilder.andWhere("log.createdAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
     }
-    if (endDate) {
-      queryBuilder.andWhere("log.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { endDate });
+    if (toDate) {
+      queryBuilder.andWhere("log.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
     }
 
     const [logs, total] = await Promise.all([
@@ -886,8 +886,8 @@ export class ConsumableService {
       .createQueryBuilder('c')
       .where('c.useYn = :yn', { yn: 'Y' })
       .andWhere('c.nextReplaceAt IS NOT NULL')
-      .andWhere("c.nextReplaceAt >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate: startDateStr })
-      .andWhere("c.nextReplaceAt < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate: endDateStr });
+      .andWhere("c.nextReplaceAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: startDateStr })
+      .andWhere("c.nextReplaceAt < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate: endDateStr });
 
     if (category) {
       qb.andWhere('c.category = :category', { category });

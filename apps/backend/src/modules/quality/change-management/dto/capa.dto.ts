@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file capa.dto.ts
  * @description CAPA 시정/예방조치 DTO — 생성, 수정, 조회, 상태 전이 요청
  *
@@ -179,12 +179,12 @@ export class CapaQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }
 
 /**

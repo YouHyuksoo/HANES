@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/outsourcing/services/outsourcing.service.ts
  * @description 외주관리 비즈니스 로직 서비스 - TypeORM Repository 패턴
  */
@@ -199,7 +199,7 @@ export class OutsourcingService {
   // ============================================================================
 
   async findAllOrders(query: SubconOrderQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, vendorCode, status, search, startDate, endDate } = query;
+    const { page = 1, limit = 10, vendorCode, status, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.subconOrderRepository
@@ -232,11 +232,11 @@ export class OutsourcingService {
       );
     }
 
-    if (startDate) {
-      queryBuilder.andWhere("so.orderDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
+    if (fromDate) {
+      queryBuilder.andWhere("so.orderDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
     }
-    if (endDate) {
-      queryBuilder.andWhere("so.orderDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1", { endDate });
+    if (toDate) {
+      queryBuilder.andWhere("so.orderDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
 
     const [orders, total] = await Promise.all([

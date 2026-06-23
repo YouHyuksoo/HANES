@@ -527,6 +527,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/production/input-assembly": {
+      const mod = await import("./page-registries/production__input-assembly.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/production/input-equip": {
       const mod = await import("./page-registries/production__input-equip.generated");
       component = mod.getPageComponent();
@@ -594,11 +599,6 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/production/subprocess-kitting": {
       const mod = await import("./page-registries/production__subprocess-kitting.generated");
-      component = mod.getPageComponent();
-      break;
-    }
-    case "/production/input-assembly": {
-      const mod = await import("./page-registries/production__input-assembly.generated");
       component = mod.getPageComponent();
       break;
     }

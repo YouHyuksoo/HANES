@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/production/sample-inspect/page.tsx
@@ -46,8 +46,8 @@ export default function SampleInspectPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [passFilter, setPassFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => getTodayLocal());
-  const [endDate, setEndDate] = useState(() => getTodayLocal());
+  const [fromDate, setStartDate] = useState(() => getTodayLocal());
+  const [toDate, setEndDate] = useState(() => getTodayLocal());
   const [showInput, setShowInput] = useState(false);
 
   const passOptions = useMemo(() => [
@@ -60,8 +60,8 @@ export default function SampleInspectPage() {
       const params: Record<string, string> = {};
       if (searchText) params.search = searchText;
       if (passFilter) params.passYn = passFilter;
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/production/sample-inspect-input", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -69,7 +69,7 @@ export default function SampleInspectPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, passFilter, startDate, endDate]);
+  }, [searchText, passFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -165,7 +165,7 @@ export default function SampleInspectPage() {
                 <Select options={passOptions}
                   value={passFilter} onChange={setPassFilter} fullWidth />
               </div>
-              <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
+              <DateRangeFilter from={fromDate} to={toDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM SAMPLE_INSPECTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

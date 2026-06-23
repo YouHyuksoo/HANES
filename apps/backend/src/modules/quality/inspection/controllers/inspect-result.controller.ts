@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/quality/inspection/controllers/inspect-result.controller.ts
  * @description 검사실적 CRUD API 컨트롤러
  *
@@ -60,33 +60,33 @@ export class InspectResultController {
 
   @Get('stats/pass-rate')
   @ApiOperation({ summary: '합격률 통계 조회', description: '기간 및 검사유형별 합격률 통계' })
-  @ApiQuery({ name: 'startDate', required: false, description: '시작 날짜 (ISO 8601)' })
-  @ApiQuery({ name: 'endDate', required: false, description: '종료 날짜 (ISO 8601)' })
+  @ApiQuery({ name: 'fromDate', required: false, description: '시작 날짜 (ISO 8601)' })
+  @ApiQuery({ name: 'toDate', required: false, description: '종료 날짜 (ISO 8601)' })
   @ApiQuery({ name: 'inspectType', required: false, description: '검사 유형' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getPassRate(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Query('inspectType') inspectType?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.inspectResultService.getPassRate(startDate, endDate, inspectType, company, plant);
+    const data = await this.inspectResultService.getPassRate(fromDate, toDate, inspectType, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('stats/by-type')
   @ApiOperation({ summary: '검사 유형별 통계', description: '검사 유형별 합격률 통계' })
-  @ApiQuery({ name: 'startDate', required: false, description: '시작 날짜 (ISO 8601)' })
-  @ApiQuery({ name: 'endDate', required: false, description: '종료 날짜 (ISO 8601)' })
+  @ApiQuery({ name: 'fromDate', required: false, description: '시작 날짜 (ISO 8601)' })
+  @ApiQuery({ name: 'toDate', required: false, description: '종료 날짜 (ISO 8601)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStatsByType(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.inspectResultService.getStatsByType(startDate, endDate, company, plant);
+    const data = await this.inspectResultService.getStatsByType(fromDate, toDate, company, plant);
     return ResponseUtil.success(data);
   }
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/inventory/services/product-inventory.service.ts
  * @description 제품(WIP/FG) 수불관리 서비스 - PRODUCT_STOCKS/PRODUCT_TRANSACTIONS 테이블 사용
  *
@@ -873,11 +873,11 @@ export class ProductInventoryService {
         { warehouseId: query.warehouseId },
       );
     }
-    if (query.dateFrom) {
-      qb.andWhere("trans.transDate >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom: query.dateFrom });
+    if (query.fromDate) {
+      qb.andWhere("trans.transDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: query.fromDate });
     }
-    if (query.dateTo) {
-      qb.andWhere("trans.transDate < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo: query.dateTo });
+    if (query.toDate) {
+      qb.andWhere("trans.transDate < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate: query.toDate });
     }
 
     const transactions = await qb

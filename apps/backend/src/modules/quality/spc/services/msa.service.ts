@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file msa.service.ts
  * @description MSA(측정시스템분석) 서비스 — IATF 16949 7.1.5
  *
@@ -238,8 +238,8 @@ export class MsaService {
       gaugeId,
       calibrationType,
       result,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.calRepo
@@ -253,10 +253,10 @@ export class MsaService {
       qb.andWhere('c.calibrationType = :calibrationType', { calibrationType });
     }
     if (result) qb.andWhere('c.result = :result', { result });
-    if (startDate && endDate) {
-      qb.andWhere('c.calibrationDate BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('c.calibrationDate BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

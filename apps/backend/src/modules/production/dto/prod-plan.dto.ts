@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/production/dto/prod-plan.dto.ts
  * @description 월간생산계획 관련 DTO 정의
  *
@@ -165,12 +165,12 @@ export class ProdPlanQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  endDate?: string;
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '통합 검색 (계획번호/품목코드/품목명)' })
   @IsOptional()
@@ -246,12 +246,12 @@ export class AutoGeneratePlanDto {
   @ApiPropertyOptional({ description: '납기 시작일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '납기 종료일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  endDate?: string;
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '고객 필터' })
   @IsOptional()

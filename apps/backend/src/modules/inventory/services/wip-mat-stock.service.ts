@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/inventory/services/wip-mat-stock.service.ts
  * @description 공정재고 단일 책임 서비스 - WIP_MAT_STOCKS / WIP_MAT_TRANSACTIONS 전담
  *
@@ -90,15 +90,17 @@ export interface RestoredLot {
   cancelRefId: string;
 }
 
-/** findByEquip 조회 결과 행 */
+/** findByEquip 조회 결과 행 (설비+품목 집계) */
 export interface WipStockRow {
   equipCode: string;
   equipName: string | null;
   itemCode: string;
+  itemName: string | null;
   matUid: string;
   qty: number;
   availableQty: number;
   reservedQty: number;
+  lotCount: number;
 }
 
 /** findTransactions 조회 파라미터 */
@@ -107,8 +109,8 @@ export interface WipTransactionQuery {
   itemCode?: string;
   search?: string;
   transType?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 /** findTransactions 조회 결과 행 */
@@ -353,39 +355,76 @@ export class WipMatStockService {
   ): Promise<WipStockRow[]> {
     const qb = this.wipStockRepo
       .createQueryBuilder('s')
-      .leftJoin('EQUIP_MASTERS', 'e', 'e.EQUIP_CODE = s.EQUIP_CODE')
+      .leftJoin('EQUIP_MASTERS', 'e', 'e.EQUIP_CODE = s.EQUIP_CODE AND e.COMPANY = s.COMPANY AND e.PLANT_CD = s.PLANT_CD')
+      .leftJoin('ITEM_MASTERS', 'im', 'im.ITEM_CODE = s.ITEM_CODE')
       .where('s.COMPANY = :company', { company })
       .andWhere('s.PLANT_CD = :plant', { plant })
       .select('s.EQUIP_CODE', 'equipCode')
       .addSelect('e.EQUIP_NAME', 'equipName')
       .addSelect('s.ITEM_CODE', 'itemCode')
-      .addSelect('s.MAT_UID', 'matUid')
-      .addSelect('s.QTY', 'qty')
-      .addSelect('s.AVAILABLE_QTY', 'availableQty')
-      .addSelect('s.RESERVED_QTY', 'reservedQty')
+      .addSelect('im.ITEM_NAME', 'itemName')
+      .addSelect('SUM(s.QTY)', 'qty')
+      .addSelect('SUM(s.AVAILABLE_QTY)', 'availableQty')
+      .addSelect('SUM(s.RESERVED_QTY)', 'reservedQty')
+      .addSelect('COUNT(DISTINCT s.MAT_UID)', 'lotCount')
+      .groupBy('s.EQUIP_CODE')
+      .addGroupBy('e.EQUIP_NAME')
+      .addGroupBy('s.ITEM_CODE')
+      .addGroupBy('im.ITEM_NAME')
       .orderBy('s.EQUIP_CODE', 'ASC')
-      .addOrderBy('s.ITEM_CODE', 'ASC')
-      .addOrderBy('s.MAT_UID', 'ASC');
+      .addOrderBy('s.ITEM_CODE', 'ASC');
 
     if (equipCode) {
       qb.andWhere('s.EQUIP_CODE = :equipCode', { equipCode });
     }
     if (search) {
       qb.andWhere(
-        '(s.ITEM_CODE LIKE :kw OR s.MAT_UID LIKE :kw OR e.EQUIP_NAME LIKE :kw)',
+        '(s.ITEM_CODE LIKE :kw OR im.ITEM_NAME LIKE :kw OR e.EQUIP_NAME LIKE :kw)',
         { kw: `%${search}%` },
       );
     }
 
     const raw = await qb.getRawMany<{
       equipCode: string; equipName: string | null; itemCode: string;
-      matUid: string; qty: number; availableQty: number; reservedQty: number;
+      itemName: string | null; qty: number; availableQty: number;
+      reservedQty: number; lotCount: number;
     }>();
 
     return raw.map((r) => ({
       equipCode: r.equipCode,
       equipName: r.equipName ?? null,
       itemCode: r.itemCode,
+      itemName: r.itemName ?? null,
+      matUid: '',
+      qty: Number(r.qty ?? 0),
+      availableQty: Number(r.availableQty ?? 0),
+      reservedQty: Number(r.reservedQty ?? 0),
+      lotCount: Number(r.lotCount ?? 0),
+    }));
+  }
+
+  /** 특정 설비+품목의 LOT별 재고 상세 (qty > 0인 행만) */
+  async findLotsByEquipItem(
+    equipCode: string,
+    itemCode: string,
+    company: string,
+    plant: string,
+  ): Promise<{ matUid: string; qty: number; availableQty: number; reservedQty: number }[]> {
+    const raw = await this.wipStockRepo
+      .createQueryBuilder('s')
+      .where('s.COMPANY = :company', { company })
+      .andWhere('s.PLANT_CD = :plant', { plant })
+      .andWhere('s.EQUIP_CODE = :equipCode', { equipCode })
+      .andWhere('s.ITEM_CODE = :itemCode', { itemCode })
+      .andWhere('s.QTY > 0')
+      .select('s.MAT_UID', 'matUid')
+      .addSelect('s.QTY', 'qty')
+      .addSelect('s.AVAILABLE_QTY', 'availableQty')
+      .addSelect('s.RESERVED_QTY', 'reservedQty')
+      .orderBy('s.MAT_UID', 'ASC')
+      .getRawMany<{ matUid: string; qty: number; availableQty: number; reservedQty: number }>();
+
+    return raw.map((r) => ({
       matUid: r.matUid,
       qty: Number(r.qty ?? 0),
       availableQty: Number(r.availableQty ?? 0),
@@ -397,7 +436,7 @@ export class WipMatStockService {
    * 공정 수불(거래원장) 조회 — WIP_MAT_TRANSACTIONS.
    * - 설비명(EQUIP_MASTERS)·품목명(ITEM_MASTERS) 조인 포함. 최신순(CREATED_AT DESC) 정렬.
    * - 필터: equipCode, itemCode, transType, search(품목코드/품목명/LOT/설비명 부분일치),
-   *   dateFrom/dateTo(CREATED_AT 기준, dateTo는 해당일 종료까지 포함).
+   *   fromDate/toDate(CREATED_AT 기준, dateTo는 해당일 종료까지 포함).
    * - 멀티테넌시(company/plant) 필수.
    */
   async findTransactions(
@@ -446,15 +485,15 @@ export class WipMatStockService {
         { kw: `%${params.search}%` },
       );
     }
-    if (params.dateFrom) {
-      qb.andWhere('tx.CREATED_AT >= TO_TIMESTAMP(:dateFrom, :dateFmt)', {
-        dateFrom: `${params.dateFrom} 00:00:00`,
+    if (params.fromDate) {
+      qb.andWhere('tx.CREATED_AT >= TO_TIMESTAMP(:fromDate, :dateFmt)', {
+        fromDate: `${params.fromDate} 00:00:00`,
         dateFmt: 'YYYY-MM-DD HH24:MI:SS',
       });
     }
-    if (params.dateTo) {
-      qb.andWhere('tx.CREATED_AT <= TO_TIMESTAMP(:dateTo, :dateFmt)', {
-        dateTo: `${params.dateTo} 23:59:59`,
+    if (params.toDate) {
+      qb.andWhere('tx.CREATED_AT <= TO_TIMESTAMP(:toDate, :dateFmt)', {
+        toDate: `${params.toDate} 23:59:59`,
         dateFmt: 'YYYY-MM-DD HH24:MI:SS',
       });
     }

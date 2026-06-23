@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/quality/defects/dto/defect-log.dto.ts
  * @description 불량로그 및 수리이력 관련 DTO 정의
  *
@@ -152,12 +152,12 @@ export class DefectLogQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '발생 시작 날짜 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '발생 종료 날짜 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '검색어 (불량명, 원인)' })
   @IsOptional()

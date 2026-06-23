@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file change-order.service.ts
  * @description 4M 변경점관리 서비스 — IATF 16949 8.5.6 변경 관리
  *
@@ -113,8 +113,8 @@ export class ChangeOrderService {
       changeType,
       priority,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.changeRepo.createQueryBuilder('c');
@@ -131,10 +131,10 @@ export class ChangeOrderService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('c.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('c.createdAt BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

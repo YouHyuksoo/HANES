@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/inventory/services/inventory-query.service.ts
  * @description 재고 조회 서비스 — 현재고, 수불이력, LOT 조회
  *
@@ -152,11 +152,11 @@ export class InventoryQueryService {
         { warehouseId: query.warehouseCode },
       );
     }
-    if (query.dateFrom) {
-      qb.andWhere("trans.transDate >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom: query.dateFrom });
+    if (query.fromDate) {
+      qb.andWhere("trans.transDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: query.fromDate });
     }
-    if (query.dateTo) {
-      qb.andWhere("trans.transDate < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo: query.dateTo });
+    if (query.toDate) {
+      qb.andWhere("trans.transDate < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate: query.toDate });
     }
 
     const transactions = await qb

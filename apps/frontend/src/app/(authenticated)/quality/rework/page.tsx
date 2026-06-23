@@ -15,10 +15,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
-  Plus, RefreshCw, ClipboardList, Clock, Play, CheckCircle, Search as SearchIcon,
-  Calendar, Send, ShieldCheck, Factory, Eye, Layers, FileSearch, X,
+  Plus, RefreshCw, ClipboardList, Play, CheckCircle, Search as SearchIcon,
+  Send, ShieldCheck, Factory, Eye, Layers, FileSearch, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
 import toast from "react-hot-toast";
 import { FileCheck } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -65,8 +65,8 @@ export default function ReworkPage() {
 
   /* ── 필터 상태 ── */
   const [searchText, setSearchText] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [fromDate, setDateFrom] = useState("");
+  const [toDate, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [lineFilter, setLineFilter] = useState("");
 
@@ -91,8 +91,8 @@ export default function ReworkPage() {
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
       if (lineFilter) params.lineCode = lineFilter;
-      if (dateFrom) params.startDate = dateFrom;
-      if (dateTo) params.endDate = dateTo;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/quality/reworks", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -100,7 +100,7 @@ export default function ReworkPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter, lineFilter, dateFrom, dateTo]);
+  }, [searchText, statusFilter, lineFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -114,16 +114,6 @@ export default function ReworkPage() {
       setProcesses([]);
     }
   }, [selectedRow]);
-
-  /* ── 통계 ── */
-  const stats = useMemo(() => {
-    const total = data.length;
-    const pending = data.filter(d => ["QC_PENDING", "PROD_PENDING"].includes(d.status)).length;
-    const inProgress = data.filter(d => d.status === "IN_PROGRESS").length;
-    const done = data.filter(d => ["PASS", "FAIL", "SCRAP"].includes(d.status)).length;
-    const inspectPending = data.filter(d => d.status === "INSPECT_PENDING").length;
-    return { total, pending, inProgress, done, inspectPending };
-  }, [data]);
 
   /* ── 상태 전환 API ── */
   const patchAction = useCallback(async (reworkNo: string, endpoint: string, body?: object) => {
@@ -313,15 +303,6 @@ export default function ReworkPage() {
           </div>
         </div>
 
-        {/* 통계 카드 */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 flex-shrink-0">
-          <StatCard label={t("quality.rework.statsTotal")} value={stats.total} icon={ClipboardList} color="blue" />
-          <StatCard label={t("quality.rework.statsPending")} value={stats.pending} icon={Clock} color="yellow" />
-          <StatCard label={t("quality.rework.statsInProgress")} value={stats.inProgress} icon={Play} color="orange" />
-          <StatCard label={t("quality.rework.statsDone")} value={stats.done} icon={CheckCircle} color="green" />
-          <StatCard label={t("quality.rework.statsInspectPending")} value={stats.inspectPending} icon={SearchIcon} color="purple" />
-        </div>
-
         {/* 액션 버튼 */}
         {actionButtons && (
           <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
@@ -419,8 +400,8 @@ export default function ReworkPage() {
                     leftIcon={<SearchIcon className="w-4 h-4" />} fullWidth />
                 </div>
                 <DateRangeFilter
-                  from={dateFrom}
-                  to={dateTo}
+                  from={fromDate}
+                  to={toDate}
                   onFromChange={setDateFrom}
                   onToChange={setDateTo}
                   className="flex-shrink-0"

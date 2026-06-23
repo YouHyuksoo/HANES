@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file document.dto.ts
  * @description 문서관리 DTO — 문서 생성/수정, 조회 필터
  *
@@ -107,10 +107,10 @@ export class DocumentQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '조회 시작일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '조회 종료일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 }

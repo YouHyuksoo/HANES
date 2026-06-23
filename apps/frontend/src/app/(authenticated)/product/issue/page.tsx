@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/product/issue/page.tsx
@@ -52,8 +52,8 @@ export default function ProductIssuePage() {
   const [data, setData] = useState<ProductIssueTx[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState(() => getTodayLocal());
-  const [endDate, setEndDate] = useState(() => getTodayLocal());
+  const [fromDate, setStartDate] = useState(() => getTodayLocal());
+  const [toDate, setEndDate] = useState(() => getTodayLocal());
 
   /* 우측 패널 */
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -67,8 +67,8 @@ export default function ProductIssuePage() {
         transType: "WIP_OUT,FG_OUT,WIP_OUT_CANCEL,FG_OUT_CANCEL",
         limit: "5000",
       };
-      if (startDate) params.dateFrom = startDate;
-      if (endDate) params.dateTo = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/inventory/product/transactions", { params });
       const list = res.data?.data ?? res.data;
       setData(Array.isArray(list) ? list : []);
@@ -77,7 +77,7 @@ export default function ProductIssuePage() {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate]);
+  }, [fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -229,8 +229,8 @@ export default function ProductIssuePage() {
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <DateRangeFilter
-                  from={startDate}
-                  to={endDate}
+                  from={fromDate}
+                  to={toDate}
                   onFromChange={setStartDate}
                   onToChange={setEndDate}
                   className="flex-shrink-0"

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/material/dto/physical-inv.dto.ts
  * @description 재고실사 관련 DTO — 실사 항목, 조회 필터, 세션(개시/완료) DTO
  *
@@ -165,10 +165,10 @@ export class PhysicalInvHistoryQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '시작일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '종료일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  endDate?: string;
+  toDate?: string;
 }

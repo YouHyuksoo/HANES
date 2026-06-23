@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/quality/defects/controllers/defect-log.controller.ts
  * @description 불량로그 CRUD API 컨트롤러
  *
@@ -73,31 +73,31 @@ export class DefectLogController {
 
   @Get('stats/by-type')
   @ApiOperation({ summary: '불량 유형별 통계', description: '불량 코드별 발생 건수 및 비율' })
-  @ApiQuery({ name: 'startDate', required: false, description: '시작 날짜 (ISO 8601)' })
-  @ApiQuery({ name: 'endDate', required: false, description: '종료 날짜 (ISO 8601)' })
+  @ApiQuery({ name: 'fromDate', required: false, description: '시작 날짜 (ISO 8601)' })
+  @ApiQuery({ name: 'toDate', required: false, description: '종료 날짜 (ISO 8601)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStatsByType(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.defectLogService.getStatsByDefectType(startDate, endDate, company, plant);
+    const data = await this.defectLogService.getStatsByDefectType(fromDate, toDate, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('stats/by-status')
   @ApiOperation({ summary: '불량 상태별 통계', description: '상태별 불량 건수' })
-  @ApiQuery({ name: 'startDate', required: false, description: '시작 날짜 (ISO 8601)' })
-  @ApiQuery({ name: 'endDate', required: false, description: '종료 날짜 (ISO 8601)' })
+  @ApiQuery({ name: 'fromDate', required: false, description: '시작 날짜 (ISO 8601)' })
+  @ApiQuery({ name: 'toDate', required: false, description: '종료 날짜 (ISO 8601)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStatsByStatus(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
     @Company() company?: string,
     @Plant() plant?: string,
   ) {
-    const data = await this.defectLogService.getStatsByStatus(startDate, endDate, company, plant);
+    const data = await this.defectLogService.getStatsByStatus(fromDate, toDate, company, plant);
     return ResponseUtil.success(data);
   }
 

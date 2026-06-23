@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/production/services/prod-plan.service.ts
  * @description 월간생산계획 비즈니스 로직 서비스
  *
@@ -69,7 +69,7 @@ export class ProdPlanService {
 
   /** 목록 조회 (필터, 페이징, part join) */
   async findAll(query: ProdPlanQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, planMonth, itemType, status, search, startDate, endDate } = query;
+    const { page = 1, limit = 50, planMonth, itemType, status, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.planRepo
@@ -79,8 +79,8 @@ export class ProdPlanService {
     if (company) qb.andWhere('pp.company = :company', { company });
     if (plant) qb.andWhere('pp.plant = :plant', { plant });
     if (planMonth) qb.andWhere('pp.planMonth = :planMonth', { planMonth });
-    if (startDate) qb.andWhere('pp.planMonth >= :startMonth', { startMonth: startDate.slice(0, 7) });
-    if (endDate) qb.andWhere('pp.planMonth <= :endMonth', { endMonth: endDate.slice(0, 7) });
+    if (fromDate) qb.andWhere('pp.planMonth >= :startMonth', { startMonth: fromDate.slice(0, 7) });
+    if (toDate) qb.andWhere('pp.planMonth <= :endMonth', { endMonth: toDate.slice(0, 7) });
     if (itemType) qb.andWhere('pp.itemType = :itemType', { itemType });
     if (status) qb.andWhere('pp.status = :status', { status });
     if (search) {

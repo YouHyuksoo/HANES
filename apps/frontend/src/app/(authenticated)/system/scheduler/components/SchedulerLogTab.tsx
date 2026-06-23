@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file system/scheduler/components/SchedulerLogTab.tsx
@@ -50,8 +50,8 @@ export default function SchedulerLogTab() {
   /* 필터 */
   const today = getTodayLocal();
   const weekAgo = getTodayLocal(new Date(Date.now() - 7 * 86400_000));
-  const [startDate, setStartDate] = useState(weekAgo);
-  const [endDate, setEndDate] = useState(today);
+  const [fromDate, setStartDate] = useState(weekAgo);
+  const [toDate, setEndDate] = useState(today);
   const [jobFilter, setJobFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [jobOptions, setJobOptions] = useState<JobOption[]>([]);
@@ -71,8 +71,8 @@ export default function SchedulerLogTab() {
     setLoading(true);
     try {
       const params: Record<string, string> = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       if (jobFilter) params.jobCode = jobFilter;
       if (statusFilter) params.status = statusFilter;
       const res = await api.get("/scheduler/logs", { params });
@@ -82,7 +82,7 @@ export default function SchedulerLogTab() {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, jobFilter, statusFilter]);
+  }, [fromDate, toDate, jobFilter, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -132,9 +132,9 @@ export default function SchedulerLogTab() {
       <Card className="flex-shrink-0">
         <CardContent>
           <div className="flex gap-3 items-end flex-wrap">
-            <Input label={t("common.from", "시작일")} type="date" value={startDate}
+            <Input label={t("common.from", "시작일")} type="date" value={fromDate}
               onChange={(e) => setStartDate(e.target.value)} />
-            <Input label={t("common.to", "종료일")} type="date" value={endDate}
+            <Input label={t("common.to", "종료일")} type="date" value={toDate}
               onChange={(e) => setEndDate(e.target.value)} />
             <Select label={t("system.scheduler.jobCode", "작업코드")} options={[{ value: "", label: t("common.all", "전체") }, ...jobOptions]}
               value={jobFilter} onChange={setJobFilter} />

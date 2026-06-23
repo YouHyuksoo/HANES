@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/production/dto/sample-inspect.dto.ts
  * @description 반제품 샘플검사 입력/조회 DTO
  *
@@ -93,12 +93,12 @@ export class SampleInspectHistoryQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '검사일 시작' })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  fromDate?: string;
 
   @ApiPropertyOptional({ description: '검사일 종료' })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '검색어 (작업지시번호, 품목코드, 품목명, 검사자)' })
   @IsOptional()

@@ -250,7 +250,7 @@ export default function ConsumableMountPage() {
               </div>
             }
           
-          sqlQuery={`SELECT *\nFROM CON_MOUNTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={`SELECT *\nFROM CONSUMABLE_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND CATEGORY = :category\n  AND (CONSUMABLE_CODE LIKE '%' || UPPER(:search) || '%'\n       OR NAME LIKE '%' || :search || '%')\nORDER BY CONSUMABLE_CODE ASC\nOFFSET 0 ROWS FETCH NEXT 5000 ROWS ONLY`}/>
         </CardContent>
       </Card>
 

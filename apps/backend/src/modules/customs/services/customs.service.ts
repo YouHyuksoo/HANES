@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/customs/services/customs.service.ts
  * @description 보세관리 비즈니스 로직 서비스 - TypeORM Repository 패턴
  *
@@ -64,7 +64,7 @@ export class CustomsService {
   // ============================================================================
 
   async findAllEntries(query: CustomsEntryQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, status, search, startDate, endDate } = query;
+    const { page = 1, limit = 10, status, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.customsEntryRepository
@@ -103,10 +103,10 @@ export class CustomsService {
       );
     }
 
-    if (startDate && endDate) {
+    if (fromDate && toDate) {
       queryBuilder.andWhere(
-        "ce.declarationDate >= TO_DATE(:startDate, 'YYYY-MM-DD') AND ce.declarationDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1",
-        { startDate, endDate },
+        "ce.declarationDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND ce.declarationDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
+        { fromDate, toDate },
       );
     }
 
@@ -134,10 +134,10 @@ export class CustomsService {
       );
     }
 
-    if (startDate && endDate) {
+    if (fromDate && toDate) {
       countQuery.andWhere(
-        "ce.declarationDate >= TO_DATE(:startDate, 'YYYY-MM-DD') AND ce.declarationDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1",
-        { startDate, endDate },
+        "ce.declarationDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND ce.declarationDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
+        { fromDate, toDate },
       );
     }
 
@@ -389,7 +389,7 @@ export class CustomsService {
   // ============================================================================
 
   async findAllUsageReports(query: UsageReportQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, status, startDate, endDate } = query;
+    const { page = 1, limit = 10, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.customsUsageReportRepository
@@ -416,10 +416,10 @@ export class CustomsService {
       queryBuilder.andWhere('cur.status = :status', { status });
     }
 
-    if (startDate && endDate) {
+    if (fromDate && toDate) {
       queryBuilder.andWhere(
-        "cur.usageDate >= TO_DATE(:startDate, 'YYYY-MM-DD') AND cur.usageDate < TO_DATE(:endDate, 'YYYY-MM-DD') + 1",
-        { startDate, endDate },
+        "cur.usageDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND cur.usageDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
+        { fromDate, toDate },
       );
     }
 

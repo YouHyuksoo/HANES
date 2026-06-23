@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/quality/defect/page.tsx
@@ -11,7 +11,7 @@
  * 4. **상태 변경**: WAIT → REPAIR/REWORK → DONE/SCRAP
  * 5. API: GET/POST /quality/defect-logs, PATCH /quality/defect-logs/:id/status (id=발생시각|seq 복합식별자)
  */
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { Plus, RefreshCw, AlertTriangle, Search } from "lucide-react";
@@ -22,6 +22,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeList } from "@/hooks/useComCode";
 import api from "@/services/api";
 import toast from "react-hot-toast";
+import { getTodayLocal } from "@/utils/date";
 import type { DefectLogStatusValue } from "@harness/shared";
 import DefectFormPanel, { type DefectCodeOption } from "./components/DefectFormPanel";
 
@@ -56,19 +57,20 @@ export default function DefectPage() {
   const statusCodes = useComCodeList("DEFECT_LOG_STATUS");
 
   const [searchText, setSearchText] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [fromDate, setDateFrom] = useState(() => getTodayLocal());
+  const [toDate, setDateTo] = useState(() => getTodayLocal());
   const [defectType, setDefectType] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedDefect, setSelectedDefect] = useState<Defect | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const panelAnimateRef = useRef(true);
+  const [deletingDefect, setDeletingDefect] = useState<Defect | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const fetchDefectCodeOptions = useCallback(async () => {
     setDefectCodeLoading(true);
     try {
-      const res = await api.get("/quality/defect-codes/options", { params: { defectScope: "PRODUCT" } });
+      const res = await api.get("/quality/defect-codes/options", { params: { defectScope: "PROCESS" } });
       setDefectCodeOptions(Array.isArray(res.data?.data) ? res.data.data : []);
     } catch {
       setDefectCodeOptions([]);
@@ -94,8 +96,8 @@ export default function DefectPage() {
       if (searchText) params.search = searchText;
       if (defectType) params.defectCode = defectType;
       if (statusFilter) params.status = statusFilter;
-      if (dateFrom) params.startDate = dateFrom;
-      if (dateTo) params.endDate = dateTo;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/quality/defect-logs", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -103,23 +105,31 @@ export default function DefectPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, defectType, statusFilter, dateFrom, dateTo]);
+  }, [searchText, defectType, statusFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const openPanel = useCallback(() => {
-    panelAnimateRef.current = !isPanelOpen;
-    setIsPanelOpen(true);
-  }, [isPanelOpen]);
+  const openPanel = useCallback(() => { setIsPanelOpen(true); }, []);
 
-  const handlePanelClose = useCallback(() => {
-    setIsPanelOpen(false);
-    panelAnimateRef.current = true;
-  }, []);
+  const handlePanelClose = useCallback(() => { setIsPanelOpen(false); }, []);
 
   const handlePanelSave = useCallback(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleDelete = useCallback(async () => {
+    if (!deletingDefect) return;
+    try {
+      await api.delete(`/quality/defect-logs/${encodeURIComponent(deletingDefect.id)}`);
+      toast.success(t("quality.defect.deleteSuccess", "불량 등록이 취소되었습니다."));
+      fetchData();
+    } catch (e) {
+      toast.error(errMessage(e, t("common.error")));
+    } finally {
+      setIsDeleteModalOpen(false);
+      setDeletingDefect(null);
+    }
+  }, [deletingDefect, fetchData, t]);
 
   const handleStatusChange = useCallback(async (newStatus: DefectStatus) => {
     if (!selectedDefect) return;
@@ -135,11 +145,16 @@ export default function DefectPage() {
 
 const columns = useMemo<ColumnDef<Defect>[]>(() => [
     {
-      id: "actions", header: t("common.manage"), size: 100, meta: { align: "center" as const, filterType: "none" as const },
+      id: "actions", header: t("common.manage"), size: 150, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
-        <button className="p-1 hover:bg-surface rounded text-xs text-primary" onClick={() => { setSelectedDefect(row.original); setIsStatusModalOpen(true); }}>
-          {t("quality.defect.changeStatus")}
-        </button>
+        <div className="flex items-center justify-center gap-1">
+          <Button size="sm" variant="secondary" onClick={() => { setSelectedDefect(row.original); setIsStatusModalOpen(true); }}>
+            {t("quality.defect.changeStatus")}
+          </Button>
+          <Button size="sm" variant="danger" onClick={() => { setDeletingDefect(row.original); setIsDeleteModalOpen(true); }}>
+            {t("quality.defect.cancelRegistration", "등록취소")}
+          </Button>
+        </div>
       ),
     },
     { accessorKey: "occurAt", header: t("quality.defect.occurredAt"), size: 150, meta: { filterType: "date" as const }, cell: ({ getValue }) => { const v = getValue() as string; return v ? new Date(v).toLocaleString() : "-"; } },
@@ -184,8 +199,8 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
                   <Input placeholder={t("quality.defect.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <DateRangeFilter
-                  from={dateFrom}
-                  to={dateTo}
+                  from={fromDate}
+                  to={toDate}
                   onFromChange={setDateFrom}
                   onToChange={setDateTo}
                   className="shrink-0"
@@ -203,14 +218,13 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
         </CardContent></Card>
       </div>
 
-      {/* 우측: 불량 등록 패널 (검사불량 입력과 동일 패턴) */}
+      {/* 우측: 불량 등록 패널 — 너비 트랜지션으로 열고 닫음 */}
       <DefectFormPanel
         isOpen={isPanelOpen}
         defectCodeOptions={defectCodeOptions}
         defectCodeLoading={defectCodeLoading}
         onClose={handlePanelClose}
         onSave={handlePanelSave}
-        animate={panelAnimateRef.current}
       />
 
       <Modal isOpen={isStatusModalOpen} onClose={() => { setIsStatusModalOpen(false); setSelectedDefect(null); }} title={t("quality.defect.changeStatus")} size="md">
@@ -231,6 +245,42 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
                   {s.codeName}
                 </Button>
               ))}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal isOpen={isDeleteModalOpen} onClose={() => { setIsDeleteModalOpen(false); setDeletingDefect(null); }} title={t("quality.defect.cancelRegistration", "등록취소")} size="md">
+        {deletingDefect && (
+          <div className="space-y-4">
+            <p className="text-sm text-text">
+              {t("quality.defect.deleteConfirm", "아래 불량 기록을 취소(삭제)합니다. 이 작업은 되돌릴 수 없습니다.")}
+            </p>
+            <div className="rounded-lg bg-surface p-3 text-sm space-y-1">
+              <div className="flex justify-between">
+                <span className="text-text-muted">{t("quality.defect.occurredAt", "발생시각")}</span>
+                <span>{deletingDefect.occurAt ? new Date(deletingDefect.occurAt).toLocaleString() : "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">{t("quality.defect.defectCode", "불량코드")}</span>
+                <span className="font-mono">{deletingDefect.defectCode}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">{t("quality.defect.defectName", "불량명")}</span>
+                <span>{deletingDefect.defectName || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">{t("quality.defect.quantity", "수량")}</span>
+                <span className="font-mono">{deletingDefect.qty}</span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => { setIsDeleteModalOpen(false); setDeletingDefect(null); }}>
+                {t("common.cancel", "취소")}
+              </Button>
+              <Button variant="danger" onClick={handleDelete}>
+                {t("quality.defect.confirmDelete", "등록 취소 확인")}
+              </Button>
             </div>
           </div>
         )}

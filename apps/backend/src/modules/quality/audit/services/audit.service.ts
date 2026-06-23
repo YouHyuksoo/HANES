@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file audit.service.ts
  * @description 납품업체심사 서비스
  *
@@ -109,8 +109,8 @@ export class AuditService {
       status,
       auditType,
       search,
-      startDate,
-      endDate,
+      fromDate,
+      toDate,
     } = query;
 
     const qb = this.auditRepo.createQueryBuilder('a');
@@ -126,10 +126,10 @@ export class AuditService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (startDate && endDate) {
-      qb.andWhere('a.createdAt BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate: `${endDate}T23:59:59`,
+    if (fromDate && toDate) {
+      qb.andWhere('a.createdAt BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(`${fromDate}T00:00:00`),
+        toDate: new Date(`${toDate}T23:59:59`),
       });
     }
 

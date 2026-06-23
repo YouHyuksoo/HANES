@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * @file src/app/(authenticated)/quality/self-inspect-history/page.tsx
@@ -53,8 +53,8 @@ export default function SelfInspectHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<HistoryRecord | null>(null);
   const [detail, setDetail] = useState<DetailRecord[]>([]);
-  const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo] = useState(today);
+  const [fromDate, setDateFrom] = useState(today);
+  const [toDate, setDateTo] = useState(today);
   const [orderNo, setOrderNo] = useState("");
   const [processCode, setProcessCode] = useState("");
   const [processOptions, setProcessOptions] = useState<SelectOption[]>([]);
@@ -72,8 +72,8 @@ export default function SelfInspectHistoryPage() {
     try {
       const res = await api.get("/production/self-inspect/history", {
         params: {
-          dateFrom: dateFrom || undefined,
-          dateTo: dateTo || undefined,
+          fromDate: fromDate || undefined,
+          toDate: toDate || undefined,
           orderNo: orderNo || undefined,
           processCode: processCode || undefined,
           limit: 200,
@@ -87,7 +87,7 @@ export default function SelfInspectHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, orderNo, processCode, t]);
+  }, [fromDate, toDate, orderNo, processCode, t]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
@@ -204,8 +204,8 @@ export default function SelfInspectHistoryPage() {
       {/* 필터 영역 */}
       <div className="flex gap-2 flex-shrink-0 flex-wrap">
         <DateRangeFilter
-          from={dateFrom}
-          to={dateTo}
+          from={fromDate}
+          to={toDate}
           onFromChange={setDateFrom}
           onToChange={setDateTo}
           className="flex-shrink-0"

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file src/modules/production/services/production-views.service.ts
  * @description 생산관리 조회 전용 서비스 - 작업진행현황, 샘플검사이력, 포장실적, 반제품/제품재고
  *
@@ -107,7 +107,7 @@ export class ProductionViewsService {
    * 샘플검사이력 조회
    */
   async getSampleInspect(query: SampleInspectQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, passYn, dateFrom, dateTo, search } = query;
+    const { page = 1, limit = 10, passYn, fromDate, toDate, search } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.inspectResultRepository
@@ -130,11 +130,11 @@ export class ProductionViewsService {
       queryBuilder.andWhere('ir.passYn = :passYn', { passYn });
     }
 
-    if (dateFrom) {
-      queryBuilder.andWhere("ir.inspectDate >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
+    if (fromDate) {
+      queryBuilder.andWhere("ir.inspectDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
     }
-    if (dateTo) {
-      queryBuilder.andWhere("ir.inspectDate < TO_DATE(:dateTo, 'YYYY-MM-DD') + 1", { dateTo });
+    if (toDate) {
+      queryBuilder.andWhere("ir.inspectDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
 
     if (search) {
@@ -153,7 +153,7 @@ export class ProductionViewsService {
    * 포장실적 조회 — BoxMaster + ItemMaster JOIN
    */
   async getPackResult(query: PackResultQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, dateFrom, dateTo, search } = query;
+    const { page = 1, limit = 50, fromDate, toDate, search } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.boxMasterRepository
@@ -183,11 +183,11 @@ export class ProductionViewsService {
       );
     }
 
-    if (dateFrom) {
-      qb.andWhere("bm.CREATED_AT >= TO_DATE(:dateFrom, 'YYYY-MM-DD')", { dateFrom });
+    if (fromDate) {
+      qb.andWhere("bm.CREATED_AT >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
     }
-    if (dateTo) {
-      qb.andWhere("bm.CREATED_AT < TO_DATE(:dateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { dateTo });
+    if (toDate) {
+      qb.andWhere("bm.CREATED_AT < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
     }
 
     qb.orderBy('bm.CREATED_AT', 'DESC');
