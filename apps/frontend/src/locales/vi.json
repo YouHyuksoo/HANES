@@ -3394,6 +3394,28 @@
       "issuedSgLabels": "Nhãn theo dõi SG đã phát",
       "noSgLabels": "Không phát nhãn SG cho công đoạn này. (Kiểm tra ISSUE_SG_LABEL_YN='Y')"
     },
+    "inputAssembly": {
+      "title": "Nhập Thực Tích Lắp Ráp",
+      "description": "Quét nhãn SG để lắp ráp thành phẩm.",
+      "orderSection": "Lệnh SX (Thành phẩm)",
+      "bomSection": "Yêu cầu lắp ráp",
+      "scanSection": "Quét nhãn SG",
+      "scanPlaceholder": "Quét hoặc nhập mã SG rồi Enter",
+      "scannedList": "Nhãn SG đã quét",
+      "execute": "Thực hiện lắp ráp",
+      "executeSuccess": "Lắp ráp hoàn thành.",
+      "executeFailed": "Thực hiện lắp ráp thất bại.",
+      "requireOrder": "Vui lòng chọn lệnh SX.",
+      "requireScan": "Vui lòng quét nhãn SG.",
+      "scanNotFound": "Không tìm thấy nhãn SG.",
+      "scanDuplicate": "Nhãn đã được quét.",
+      "fgLabelsTitle": "Nhãn FG đã phát",
+      "equip": "Thiết bị",
+      "circuitNo": "Số mạch",
+      "qtyPer": "SL/Đơn vị",
+      "totalRequired": "Tổng cần",
+      "noComponents": "Không có yêu cầu lắp ráp."
+    },
     "order": {
       "title": "Quản lý lệnh sản xuất",
       "description": "Xem và quản lý lệnh sản xuất.",

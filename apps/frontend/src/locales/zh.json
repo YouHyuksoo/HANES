@@ -3394,6 +3394,28 @@
       "issuedSgLabels": "已发行SG追踪标签",
       "noSgLabels": "此工序未发行SG标签。（请确认ROUTING_PROCESSES ISSUE_SG_LABEL_YN='Y'）"
     },
+    "inputAssembly": {
+      "title": "组装实绩输入",
+      "description": "扫描SG标签进行成品组装。",
+      "orderSection": "工单（成品）",
+      "bomSection": "组装需求",
+      "scanSection": "SG标签扫描",
+      "scanPlaceholder": "扫描或输入SG条码后按Enter",
+      "scannedList": "已扫描SG标签",
+      "execute": "执行组装",
+      "executeSuccess": "组装完成。",
+      "executeFailed": "组装执行失败。",
+      "requireOrder": "请选择工单。",
+      "requireScan": "请扫描SG标签。",
+      "scanNotFound": "找不到SG标签。",
+      "scanDuplicate": "该标签已扫描。",
+      "fgLabelsTitle": "已发行FG标签",
+      "equip": "设备",
+      "circuitNo": "线路编号",
+      "qtyPer": "单位数量",
+      "totalRequired": "总需求",
+      "noComponents": "没有组装需求。"
+    },
     "order": {
       "title": "作业指示管理",
       "description": "查看和管理生产作业指示。",

@@ -3394,6 +3394,28 @@
       "issuedSgLabels": "Issued SG Tracking Labels",
       "noSgLabels": "No SG labels issued for this process. (Check ROUTING_PROCESSES ISSUE_SG_LABEL_YN='Y')"
     },
+    "inputAssembly": {
+      "title": "Assembly Input",
+      "description": "Scan SG labels to assemble finished goods.",
+      "orderSection": "Job Order (Finished)",
+      "bomSection": "Assembly Requirements",
+      "scanSection": "SG Label Scan",
+      "scanPlaceholder": "Scan or enter SG barcode + Enter",
+      "scannedList": "Scanned SG Labels",
+      "execute": "Execute Assembly",
+      "executeSuccess": "Assembly completed.",
+      "executeFailed": "Assembly execution failed.",
+      "requireOrder": "Please select an order.",
+      "requireScan": "Please scan SG labels.",
+      "scanNotFound": "SG label not found.",
+      "scanDuplicate": "Label already scanned.",
+      "fgLabelsTitle": "Issued FG Labels",
+      "equip": "Equipment",
+      "circuitNo": "Circuit No.",
+      "qtyPer": "Qty/Unit",
+      "totalRequired": "Total Required",
+      "noComponents": "No assembly requirements."
+    },
     "order": {
       "title": "Work Order Management",
       "description": "View and manage production work orders.",
