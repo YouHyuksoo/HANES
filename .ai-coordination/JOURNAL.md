@@ -8,6 +8,108 @@ Use this heading format for every new entry:
 ## YYYY-MM-DD HH:mm Agent
 ```
 
+## 2026-06-23 Claude (Phase 3 STATUS→ComCodeSelect)
+
+- 작업: `T-INLINE-SELECT-CLEANUP` Phase 3 — STATUS/유형 inline 하드코딩을 ComCodeSelect로 치환.
+- 방법: COM_CODES 156개 그룹 코드집합을 DB 덤프해 inline 코드값과 1:1 대조 + comCode.* i18n 키 4 locale 완비 확인한 것만 치환(locale 미수정).
+- 1차(4): customs/stock→CUSTOMS_LOT_STATUS(필터), customs/entry→CUSTOMS_ENTRY_STATUS, outsourcing/vendor→VENDOR_TYPE, outsourcing/receive→SUBCON_INSPECT_RESULT. 미사용 Select import 제거.
+- 2차(2): master/part PartFormPanel·PartFormModal itemType→FieldComCodeSelect groupCode="ITEM_TYPE"(옆 productType과 동일 패턴으로 일관화, partTypeOptions useMemo 제거).
+- 검증: tsc --noEmit 0 에러(각 배치별).
+- 보류(구조적): warehouse(WAREHOUSE_TYPES가 getTypeLabel 라벨매핑 병용→useComCodeLabel 리팩토링 필요), iqc-history(resultOptions 미사용 의혹), PRINT_MODE(comCode 키 4 locale 누락+locale 잠금), consumables issuing/receiving(CONSUMABLE_LOG_TYPE 부분집합), Phase 2 기준정보 spread(빈값 허용 케이스별 확인). inspection/protocol·simulation·specification-setup은 매칭 그룹 없음/시스템 enum.
+
+## 2026-06-23 20:46 Kimi
+
+- 작업: `T-CONS-MOUNT-SQL-PREVIEW` `/consumables/mount` DataGrid SQL 미리보기 실제 조회 구조 반영.
+- 변경:
+  - `apps/frontend/src/app/(authenticated)/consumables/mount/page.tsx`의 `DataGrid.sqlQuery`를 `CON_MOUNTS` 가짜 테이블에서 `CONSUMABLE_MASTERS` 실제 테이블 기준으로 교체.
+  - 실제 `GET /equipment/consumables`는 `ConsumableService.findAll()` → `CONSUMABLE_MASTERS`를 `CONSUMABLE_CODE ASC`로 조회하며, `COMPANY`/`PLANT_CD`, `CATEGORY`, 검색어(`CONSUMABLE_CODE`, `NAME`) 조건을 동적으로 추가한다.
+  - 페이지가 요청하는 `limit=5000`과 `OFFSET/FETCH` 구문을 SQL에 반영.
+- 검증:
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`.
+  - PASS: `git diff --check`.
+- 발견 사항(범위 밖):
+  - 프론트 `/consumables/mount`는 `operStatus` 필터를 `params.operStatus`로 전송하지만, 백엔드 `ConsumableQueryDto`/`ConsumableService.findAll()`은 `status` 필터만 수신/사용한다. 따라서 현재 화면의 운영상태(WAREHOUSE/MOUNTED/REPAIR) 필터는 실제로 적용되지 않음. 이는 별도 버그 수정 작업이 필요함.
+
+## 2026-06-23 21:20 Kimi
+
+- 작업: `T-CONS-MOUNT-HELP-LOCALE` `/consumables/mount` 도움말 작성 및 다국어 처리 완료.
+- 변경:
+  - `apps/frontend/public/help/user/{ko,en,zh,vi}/CONS_MOUNT.md` 신규 작성(사용자 도움말).
+  - `apps/frontend/public/help/operator/{ko,en,zh,vi}/CONS_MOUNT.md` 신규 작성(운영자 도움말).
+  - `apps/frontend/public/help/manifest.json`에 `CONS_MOUNT` 항목 등록.
+  - `apps/frontend/src/locales/{ko,en,zh,vi}.json`에 `consumables.mount.*` 키 25개 추가.
+  - `apps/frontend/src/app/(authenticated)/consumables/mount/consumables-mount-help-locale.structure.test.mjs` 신규 작성.
+- 검증:
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/consumables/mount/consumables-mount-help-locale.structure.test.mjs"` 4/4 PASS.
+  - PASS: `node --test apps/frontend/src/config/menu-locale-coverage.structure.test.mjs` 1/1 PASS.
+  - PASS: `node -e`로 ko/en/zh/vi locale JSON parse 및 `parseHelpDoc` 8개 파일 frontmatter 파싱 확인.
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`.
+  - PASS: `git diff --check`.
+  - PASS: `Invoke-WebRequest http://localhost:3002/consumables/mount` HTTP 200.
+  - PASS: `Invoke-WebRequest http://localhost:3002/help/user/ko/CONS_MOUNT.md` 정상 반환.
+- 남은 위험:
+  - `/consumables/mount` 페이지 상단 DataGrid `sqlQuery` 샘플 SQL은 하드코딩 상태(기존 다른 화면과 동일). 실제 조회 SQL은 별도 개선 작업 필요.
+  - 도움말 본문 번역(en/zh/vi)은 AI 번역으로 작성되어 현장 용어와 미세 차이가 있을 수 있음.
+
+## 2026-06-23 20:57 Kimi
+
+- 작업: `T-CONS-MOUNT-HELP-LOCALE` 중국어(간체) 운영자 도움말 번역.
+- 변경: `apps/frontend/public/help/operator/zh/CONS_MOUNT.md` 신규 작성(한국어 원문 `apps/frontend/public/help/operator/ko/CONS_MOUNT.md` 기준 번역).
+- 번역 규칙 준수:
+  - frontmatter `title`, `summary`, `tags`, `keywords`는 중국어(간체)로 번역.
+  - `menuCode`, `audience`, `related`는 원문 유지.
+  - DB 테이블/컬럼명, API 경로, 코드값, 메뉴 경로, 시퀀스명, 멀티테넌트 스코프 등 기술 식별자는 원문 유지.
+  - 마크다운 테이블 파이프 정렬 및 구조 보존.
+- 검증:
+  - 출력 파일 첫 줄 `---` 확인.
+  - UTF-8 BOM 없음 확인.
+  - frontmatter 파싱 정상 확인.
+  - Chinese characters: 804, word-like tokens: 414.
+- 남은 작업: ko/en/vi 사용자/운영자 도움말 중 일부, locale JSON, manifest 갱신은 동일 lock 내 후속 작업으로 남음.
+
+## 2026-06-23 20:46 Kimi
+
+- 작업: `T-CONS-MOUNT-HELP-LOCALE` 영문 도움말 번역.
+- 변경: `apps/frontend/public/help/user/en/CONS_MOUNT.md` 신규 작성(한국어 원문 `apps/frontend/public/help/user/ko/CONS_MOUNT.md` 기준 번역).
+- 번역 규칙 준수:
+  - frontmatter `title`, `summary`, `tags`, `keywords`는 영어로 번역.
+  - `menuCode`, `audience`, `related`는 원문 유지.
+  - DB 테이블/컬럼명, API 경로, 코드값, 메뉴 경로, 시퀀스명 등 기술 식별자는 원문 유지.
+  - 마크다운 테이블 파이프 정렬 및 구조 보존.
+- 검증:
+  - 출력 파일 첫 줄 `---` 확인.
+  - frontmatter 파싱 정상 확인.
+  - word count: 848.
+- 남은 작업: zh/vi 사용자/운영자 도움말 및 locale JSON, manifest 갱신은 동일 lock 내 후속 작업으로 남음.
+
+## 2026-06-23 Claude
+
+- 작업: `T-INLINE-SELECT-CLEANUP` Phase 1 — 페이지 inline Y/N(useYn) 드롭다운을 `UseYnSelect`로 통일.
+- 변경: `UseYnSelect`에 `includeAll` prop + `useUseYnOptions` 훅 추가(하위호환 — 기존 필터 3곳 "사용여부: 전체…" 유지). 폼 useYn inline 6곳 치환(worker·vendor-barcode는 FieldSelect 유지하며 `options={useUseYnOptions(false)}`, equip-inspect-item·consumable-usage-map·department·code는 직접 `UseYnSelect`/훅). CodeFormModal 미사용 `Select` import 제거.
+- 검증: `tsc --noEmit` 0 에러. locales 미수정(기존 common.useY/useN/all 재사용 → ship-order/kimi lock 회피).
+- 제외(의미 다른 Y/N): transferRule(허용/거부)·part(IQC 대상/비대상)·input-inspect·sample-inspect(합격/불합격 판정)은 useYn 아니라 미치환.
+- 후속: Phase 2(기준정보 inline map→EquipSelect/WorkerSelect 등), Phase 3(STATUS inline→ComCodeSelect, 공통코드 등록 확인 선행). 별건 보고: `FieldSelect`가 8개 FieldHelp.tsx에 중복 정의됨(이번 범위 외).
+
+## 2026-06-23 17:09 Codex
+
+- 작업: `T-ALL-MENU-QA` 전체 메뉴 기능 QA 리포트 완료.
+- 결과: `menuConfig.ts` 등록 메뉴 157개를 실제 브라우저로 순회해 최종 `PASS 157 / FAIL 0 / MISSING 0`까지 정리했다.
+- 중간 보정:
+  - `INSP_RESULT`의 실패는 Turbopack HMR 콘솔 노이즈와 `/login?_rsc` aborted request를 러너에서 불필요하게 실패로 잡은 것이었다.
+  - `PROD_WIP_STOCK`, `PROD_REPAIR`, `INSP_HISTORY`, `QC_IQC`, `QC_CONCESSION`, `QC_DEFECT`, `QC_DEFECT_CODE`, `PROD_INPUT_ASSEMBLY`는 최신 PASS 리포트로 재검증했다.
+- 산출물:
+  - [누적 요약](../docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/index.html)
+  - [INSP_RESULT 재검증](../docs/reports/hanes-all-menu-scenario-qa-2026-06-23-insp-result-rerun/index.html)
+  - [QC_IQC 최종 재검증](../docs/reports/hanes-all-menu-scenario-qa-2026-06-23-qc-iqc-final/index.html)
+- 검증:
+  - PASS: `node tools/hanes-all-menu-page-scenario-qa.mjs` 여러 배치 및 단건 재실행
+  - PASS: `node tools/hanes-all-menu-report-aggregate.mjs`
+  - PASS: 최신 집계 `totalMenus=157`, `pass=157`, `fail=0`, `missing=0`
+
+## 2026-06-23 Task-8 claude
+
+T-TRACE-FULL Task 8 완료: quality.trace 네임스페이스에 13개 신규 키(statusCol/inspections/noInspections/packaging/semiProducts/noSemiProducts/semiMaterials/noMaterials/po/arrival/iqc/receiving/issue)를 ko/en/zh/vi 4파일에 additive 추가. 기존 키 보존. JSON BOM 없음, 유효성 OK. commit: 5553b50d.
+
 Use local time in 24-hour format.
 
 ## 2026-06-23 01:12 Codex
