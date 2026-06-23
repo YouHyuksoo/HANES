@@ -2,7 +2,7 @@
 
 /**
  * @file components/JobOrderSearchModal.tsx
- * @description 작업지시 검색·선택 모달 — 서브공정 키팅에서 완제품 작업지시를 검색/선택한다.
+ * @description 작업지시 검색·선택 모달 — itemType 필터를 지원한다 (SEMI_PRODUCT / FINISHED 등).
  *   선택 시 품목·계획수량·상태를 부모로 전달해 자동 표시한다.
  */
 
@@ -59,8 +59,7 @@ export default function JobOrderSearchModal({ isOpen, onClose, onSelect, itemTyp
       setSearch("");
       fetchOrders();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, fetchOrders]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t("production.kitting.selectOrder", "작업지시 선택")} size="xl">
