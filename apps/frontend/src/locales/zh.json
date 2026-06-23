@@ -4252,7 +4252,20 @@
       "resultCol": "结果",
       "enterSerialOrLot": "请输入序列号或LOT编号",
       "canCheckHistory": "可以查看产品的全部制造历史和4M信息。",
-      "noResultsDesc": "没有搜索结果"
+      "noResultsDesc": "没有搜索结果",
+      "statusCol": "状态",
+      "inspections": "检查记录",
+      "noInspections": "无检查记录",
+      "packaging": "包装·入库·出货",
+      "semiProducts": "投入半成品",
+      "noSemiProducts": "无投入半成品",
+      "semiMaterials": "半成品投入材料",
+      "noMaterials": "无投入材料",
+      "po": "采购订单(PO)",
+      "arrival": "到货",
+      "iqc": "进料检验(IQC)",
+      "receiving": "入库",
+      "issue": "投入"
     },
     "oqc": {
       "title": "出货检查(OQC)",

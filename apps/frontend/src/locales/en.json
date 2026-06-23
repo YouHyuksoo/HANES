@@ -4252,7 +4252,20 @@
       "resultCol": "Result",
       "enterSerialOrLot": "Enter serial or LOT number",
       "canCheckHistory": "You can check the full manufacturing history and 4M info.",
-      "noResultsDesc": "No results found"
+      "noResultsDesc": "No results found",
+      "statusCol": "Status",
+      "inspections": "Inspection Records",
+      "noInspections": "No inspection records",
+      "packaging": "Packaging · Receiving · Shipment",
+      "semiProducts": "Input Semi-Products",
+      "noSemiProducts": "No input semi-products",
+      "semiMaterials": "Semi-Product Input Materials",
+      "noMaterials": "No input materials",
+      "po": "Purchase Order (PO)",
+      "arrival": "Arrival",
+      "iqc": "Incoming Quality Control (IQC)",
+      "receiving": "Receiving",
+      "issue": "Issue"
     },
     "oqc": {
       "title": "OQC Inspection",

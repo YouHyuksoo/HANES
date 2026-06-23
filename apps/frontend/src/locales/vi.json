@@ -4252,7 +4252,20 @@
       "resultCol": "Kết quả",
       "enterSerialOrLot": "Nhập số serial hoặc số LOT",
       "canCheckHistory": "Bạn có thể xem toàn bộ lịch sử sản xuất và thông tin 4M.",
-      "noResultsDesc": "Không có kết quả"
+      "noResultsDesc": "Không có kết quả",
+      "statusCol": "Trạng thái",
+      "inspections": "Hồ sơ kiểm tra",
+      "noInspections": "Không có hồ sơ kiểm tra",
+      "packaging": "Đóng gói · Nhập kho · Xuất hàng",
+      "semiProducts": "Bán thành phẩm đầu vào",
+      "noSemiProducts": "Không có bán thành phẩm đầu vào",
+      "semiMaterials": "Vật tư đầu vào bán thành phẩm",
+      "noMaterials": "Không có vật tư đầu vào",
+      "po": "Đơn đặt hàng (PO)",
+      "arrival": "Nhập hàng",
+      "iqc": "Kiểm tra đầu vào (IQC)",
+      "receiving": "Nhập kho",
+      "issue": "Xuất dùng"
     },
     "oqc": {
       "title": "Kiểm tra xuất hàng (OQC)",
