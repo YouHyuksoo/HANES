@@ -22,12 +22,25 @@ import { EquipMaster } from '../../../../entities/equip-master.entity';
 import { WorkerMaster } from '../../../../entities/worker-master.entity';
 import { ProcessMaster } from '../../../../entities/process-master.entity';
 import { PartnerMaster } from '../../../../entities/partner-master.entity';
+import { ShipmentOrder } from '../../../../entities/shipment-order.entity';
+import { StockTransaction } from '../../../../entities/stock-transaction.entity';
+import { EquipInspectLog } from '../../../../entities/equip-inspect-log.entity';
+import { ConsumableMountLog } from '../../../../entities/consumable-mount-log.entity';
+import { ConsumableMaster } from '../../../../entities/consumable-master.entity';
+import { DefectLog } from '../../../../entities/defect-log.entity';
+import { RepairOrder } from '../../../../entities/repair-order.entity';
+import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import {
   MaterialTrace,
   ProcessStep,
   InspectionRecord,
   SemiProductTrace,
   ProductTraceabilityDto,
+  StockMove,
+  EquipInspection,
+  EquipConsumable,
+  DefectRecord,
+  RepairRecord,
 } from '../dto/product-traceability.dto';
 
 @Injectable()
@@ -55,6 +68,14 @@ export class ProductTraceabilityService {
     @InjectRepository(WorkerMaster) private readonly workerMasterRepo: Repository<WorkerMaster>,
     @InjectRepository(ProcessMaster) private readonly processMasterRepo: Repository<ProcessMaster>,
     @InjectRepository(PartnerMaster) private readonly partnerMasterRepo: Repository<PartnerMaster>,
+    @InjectRepository(ShipmentOrder) private readonly shipmentOrderRepo: Repository<ShipmentOrder>,
+    @InjectRepository(StockTransaction) private readonly stockTransactionRepo: Repository<StockTransaction>,
+    @InjectRepository(EquipInspectLog) private readonly equipInspectLogRepo: Repository<EquipInspectLog>,
+    @InjectRepository(ConsumableMountLog) private readonly consumableMountLogRepo: Repository<ConsumableMountLog>,
+    @InjectRepository(ConsumableMaster) private readonly consumableMasterRepo: Repository<ConsumableMaster>,
+    @InjectRepository(DefectLog) private readonly defectLogRepo: Repository<DefectLog>,
+    @InjectRepository(RepairOrder) private readonly repairOrderRepo: Repository<RepairOrder>,
+    @InjectRepository(ReworkOrder) private readonly reworkOrderRepo: Repository<ReworkOrder>,
   ) {}
 
   private fmtDate(d: Date | null | undefined): string | null {
@@ -124,6 +145,28 @@ export class ProductTraceabilityService {
     const recvMap = new Map<string, MatReceiving>();
     for (const r of receivings) if (!recvMap.has(r.matUid)) recvMap.set(r.matUid, r);
 
+    // 수불이력: matUids 일괄 조회 → matUid별 그룹 Map
+    const stockTx = matUids.length
+      ? await this.stockTransactionRepo.find({ where: { matUid: In(matUids), company, plant }, order: { transDate: 'ASC' } })
+      : [];
+    const stockByMat = new Map<string, StockMove[]>();
+    for (const tx of stockTx) {
+      if (!tx.matUid) continue; // nullable matUid는 건너뜀
+      const arr = stockByMat.get(tx.matUid) ?? [];
+      arr.push({
+        transNo: tx.transNo,
+        transType: tx.transType,
+        transDate: this.fmtDate(tx.transDate) ?? '',
+        qty: tx.qty,
+        fromWarehouse: tx.fromWarehouseId ?? null,
+        toWarehouse: tx.toWarehouseId ?? null,
+        refType: tx.refType ?? null,
+        refId: tx.refId ?? null,
+        remark: tx.remark ?? null,
+      });
+      stockByMat.set(tx.matUid, arr);
+    }
+
     const result: MaterialTrace[] = [];
     for (const matUid of matUids) {
       const lot = lotMap.get(matUid);
@@ -149,6 +192,7 @@ export class ProductTraceabilityService {
         iqc: iqc ? { result: iqc.result, inspectType: iqc.inspectType, inspectorName: iqc.inspectorName, inspectDate: this.fmtDate(iqc.inspectDate), certFilePath: iqc.certFilePath } : null,
         receiving: recv ? { receiveNo: recv.receiveNo, receiveDate: this.fmtDate(recv.receiveDate) } : null,
         issue: { orderNo: ctx.orderNo, issueQty: ctx.issueQty, issueDate: this.fmtDate(ctx.issueDate) },
+        stockHistory: stockByMat.get(matUid) ?? [],
       });
     }
     return result;
@@ -297,6 +341,166 @@ export class ProductTraceabilityService {
     return ctx;
   }
 
+  // ─── 신규 헬퍼 ──────────────────────────────────────────────────────────────
+
+  /**
+   * 설비점검 이력 조회 (WORKER 점검: orderNos 기준 / DAILY 점검: equipCodes + productionDate 기준)
+   */
+  private async resolveEquipInspections(
+    orderNos: string[],
+    equipCodes: string[],
+    productionDate: string | null,
+    company: string,
+    plant: string,
+  ): Promise<EquipInspection[]> {
+    if (orderNos.length === 0 && equipCodes.length === 0) return [];
+
+    // WORKER 점검: 작업지시 기준
+    const workerLogs = orderNos.length
+      ? await this.equipInspectLogRepo.find({
+          where: { orderNo: In(orderNos), inspectType: 'WORKER', company, plant },
+        })
+      : [];
+
+    // DAILY 점검: 설비 기준, productionDate 있으면 workDate 메모리 필터
+    let dailyLogs = equipCodes.length
+      ? await this.equipInspectLogRepo.find({
+          where: { equipCode: In(equipCodes), inspectType: 'DAILY', company, plant },
+        })
+      : [];
+    if (productionDate) {
+      dailyLogs = dailyLogs.filter((log) => {
+        if (!log.workDate) return false;
+        const wd = log.workDate instanceof Date ? log.workDate.toISOString().slice(0, 10) : String(log.workDate).slice(0, 10);
+        return wd === productionDate.slice(0, 10);
+      });
+    }
+
+    const allLogs = [...workerLogs, ...dailyLogs];
+    if (allLogs.length === 0) return [];
+
+    // EquipMaster 일괄 조회 → equipCode → equipName Map
+    const allEquipCodes = [...new Set(allLogs.map((l) => l.equipCode).filter(Boolean))];
+    const equipRows = allEquipCodes.length
+      ? await this.equipMasterRepo.find({ where: { equipCode: In(allEquipCodes), company, plant } })
+      : [];
+    const equipNameMap = new Map(equipRows.map((e) => [e.equipCode, e.equipName]));
+
+    // inspectAt ASC 정렬
+    allLogs.sort((a, b) => {
+      const at = a.inspectAt?.getTime() ?? 0;
+      const bt = b.inspectAt?.getTime() ?? 0;
+      return at - bt;
+    });
+
+    return allLogs.map((log) => ({
+      equipCode: log.equipCode,
+      equipName: equipNameMap.get(log.equipCode) ?? log.equipCode,
+      inspectType: log.inspectType,
+      inspectDate: this.fmtDate(log.inspectDate),
+      inspectAt: this.fmtDate(log.inspectAt),
+      inspectorName: log.inspectorName ?? null,
+      overallResult: log.overallResult,
+      remark: log.remark ?? null,
+    }));
+  }
+
+  /**
+   * 설비 장착 소모품 이력 조회
+   */
+  private async resolveEquipConsumables(
+    equipCodes: string[],
+    company: string,
+    plant: string,
+  ): Promise<EquipConsumable[]> {
+    if (equipCodes.length === 0) return [];
+
+    const logs = await this.consumableMountLogRepo.find({
+      where: { equipCode: In(equipCodes), company, plant },
+      order: { mountDate: 'DESC', seq: 'DESC' },
+    });
+    if (logs.length === 0) return [];
+
+    // ConsumableMaster 일괄 조회 → code→name Map
+    const consumableCodes = [...new Set(logs.map((l) => l.consumableCode).filter(Boolean))];
+    const masters = consumableCodes.length
+      ? await this.consumableMasterRepo.find({ where: { consumableCode: In(consumableCodes), company, plant } })
+      : [];
+    const nameMap = new Map(masters.map((m) => [m.consumableCode, m.consumableName]));
+
+    return logs.map((log) => ({
+      consumableCode: log.consumableCode,
+      consumableName: nameMap.get(log.consumableCode) ?? log.consumableCode,
+      equipCode: log.equipCode,
+      action: log.action,
+      mountAt: this.fmtDate(log.mountDate) ?? this.fmtDate(log.createdAt),
+      workerId: log.workerId ?? null,
+      remark: log.remark ?? null,
+    }));
+  }
+
+  /**
+   * 불량/수리 이력 조회 (DefectLog + RepairOrder + ReworkOrder)
+   */
+  private async resolveDefectsAndRepairs(
+    prodResultNos: string[],
+    serial: string,
+    prdUid: string,
+    company: string,
+    plant: string,
+  ): Promise<{ defects: DefectRecord[]; repairs: RepairRecord[] }> {
+    // 불량 이력
+    const defectRows = prodResultNos.length
+      ? await this.defectLogRepo.find({ where: { prodResultNo: In(prodResultNos), company, plant } })
+      : [];
+    const defects: DefectRecord[] = defectRows.map((d) => ({
+      defectCode: d.defectCode,
+      defectName: d.defectName ?? d.defectCode,
+      qty: d.qty,
+      status: d.status,
+      cause: d.cause ?? null,
+      occurAt: this.fmtDate(d.occurAt),
+    }));
+
+    // 수리 이력: RepairOrder (fgBarcode 또는 prdUid 기준)
+    const repairConditions: object[] = [{ fgBarcode: serial, company, plant }];
+    if (prdUid) repairConditions.push({ prdUid, company, plant });
+    const repairRows = await this.repairOrderRepo.find({ where: repairConditions });
+
+    const repairRecords: RepairRecord[] = repairRows.map((r) => {
+      const repairDateStr = r.repairDate instanceof Date ? r.repairDate.toISOString().slice(0, 10) : String(r.repairDate).slice(0, 10);
+      return {
+        source: 'REPAIR' as const,
+        refNo: `${repairDateStr}-${r.seq}`,
+        status: r.status,
+        result: r.repairResult ?? null,
+        defectType: r.defectType ?? null,
+        workerId: r.workerId ?? null,
+        startAt: this.fmtDate(r.receivedAt),
+        endAt: this.fmtDate(r.completedAt),
+        remark: r.remark ?? null,
+      };
+    });
+
+    // 재작업 이력: ReworkOrder (prdUid 기준)
+    const reworkRows = prdUid
+      ? await this.reworkOrderRepo.find({ where: { prdUid, company, plant } })
+      : [];
+    const reworkRecords: RepairRecord[] = reworkRows.map((r) => ({
+      source: 'REWORK' as const,
+      refNo: r.reworkNo,
+      status: r.status,
+      result: r.status ?? null,
+      defectType: r.defectType ?? null,
+      workerId: r.workerId ?? null,
+      startAt: this.fmtDate(r.startAt),
+      endAt: this.fmtDate(r.endAt),
+      remark: r.remark ?? null,
+    }));
+
+    return { defects, repairs: [...repairRecords, ...reworkRecords] };
+  }
+
   // ─── Step 3: getBySerial 메인 (제품 섹션 ①②③④⑤) ─────────────────────────
 
   async getBySerial(serial: string, company: string, plant: string): Promise<ProductTraceabilityDto | null> {
@@ -313,6 +517,12 @@ export class ProductTraceabilityService {
     const box = fg.boxNo ? await this.boxMasterRepo.findOne({ where: { boxNo: fg.boxNo, company, plant } }) : null;
     const pallet = box?.palletNo ? await this.palletMasterRepo.findOne({ where: { palletNo: box.palletNo, company, plant } }) : null;
 
+    // 출하지시 조회
+    const shipOrderNo = box?.shipOrderNo ?? pallet?.shipOrderNo ?? null;
+    const shipOrder = shipOrderNo
+      ? await this.shipmentOrderRepo.findOne({ where: { shipOrderNo, company, plant } })
+      : null;
+
     // 직접투입 자재
     const matCtx = await this.collectMaterialCtx(fg.orderNo, 'FG', serial, company, plant);
     const materials = await this.resolveMaterialTraces(matCtx, company, plant);
@@ -322,6 +532,21 @@ export class ProductTraceabilityService {
 
     // jobOrder.planDate 존재 확인: job-order.entity.ts 실측 결과 planDate: Date | null 존재함
     const productionDate = this.fmtDate(jobOrder?.planDate ?? null) ?? this.fmtDate(fg.issuedAt);
+
+    // 제품 생산에 사용된 작업지시 + 설비 코드 수집
+    const prodResults = fg.orderNo
+      ? await this.prodResultRepo.find({ where: { orderNo: fg.orderNo, company, plant } })
+      : [];
+    const prdUid = prodResults.find((p) => p.prdUid)?.prdUid ?? '';
+    const prodOrderNos = [...new Set([fg.orderNo, ...prodResults.map((p) => p.orderNo)].filter((v): v is string => !!v))];
+    const prodEquipCodes = [...new Set([fg.equipCode, ...prodResults.map((p) => p.equipCode)].filter((v): v is string => !!v))];
+    const prodResultNos = prodResults.map((p) => p.resultNo);
+
+    const [equipInspections, equipConsumables, defectRepair] = await Promise.all([
+      this.resolveEquipInspections(prodOrderNos, prodEquipCodes, productionDate, company, plant),
+      this.resolveEquipConsumables(prodEquipCodes, company, plant),
+      this.resolveDefectsAndRepairs(prodResultNos, serial, prdUid, company, plant),
+    ]);
 
     return {
       product: {
@@ -335,8 +560,15 @@ export class ProductTraceabilityService {
         boxNo: fg.boxNo ?? null, boxPackedAt: this.fmtDate(box?.closeAt),
         palletNo: box?.palletNo ?? null, palletPackedAt: this.fmtDate(pallet?.closeAt),
         shippedAt: this.fmtDate(box?.shippedAt ?? pallet?.shippedAt),
+        shipOrderNo: shipOrderNo,
+        customerPoNo: shipOrder?.customerPoNo ?? null,
+        customerName: shipOrder?.customerName ?? null,
       },
       materials, semiProducts,
+      equipInspections,
+      equipConsumables,
+      defects: defectRepair.defects,
+      repairs: defectRepair.repairs,
     };
   }
 

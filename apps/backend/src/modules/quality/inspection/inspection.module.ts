@@ -40,6 +40,14 @@ import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
+import { ShipmentOrder } from '../../../entities/shipment-order.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
+import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entity';
+import { ConsumableMaster } from '../../../entities/consumable-master.entity';
+import { DefectLog } from '../../../entities/defect-log.entity';
+import { RepairOrder } from '../../../entities/repair-order.entity';
+import { ReworkOrder } from '../../../entities/rework-order.entity';
 import { SharedModule } from '../../../shared/shared.module';
 
 @Module({
@@ -66,6 +74,14 @@ import { SharedModule } from '../../../shared/shared.module';
       MatArrival,
       IqcLog,
       MatReceiving,
+      ShipmentOrder,
+      StockTransaction,
+      EquipInspectLog,
+      ConsumableMountLog,
+      ConsumableMaster,
+      DefectLog,
+      RepairOrder,
+      ReworkOrder,
     ]),
     SharedModule, // SeqGeneratorService 제공
   ],
