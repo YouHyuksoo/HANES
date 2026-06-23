@@ -4291,7 +4291,8 @@
       "arrival": "到货",
       "iqc": "进料检验(IQC)",
       "receiving": "入库",
-      "issue": "投入"
+      "issue": "投入",
+      "materials": "投入物料"
     },
     "oqc": {
       "title": "出货检查(OQC)",

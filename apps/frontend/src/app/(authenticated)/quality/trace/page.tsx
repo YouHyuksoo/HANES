@@ -82,88 +82,90 @@ export default function TracePage() {
       {/* 결과 섹션 */}
       {data && (
         <>
-          {/* ① 기본정보 */}
-          <Card>
-            <CardHeader title={t("quality.trace.productInfo")} />
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <Field label={t("quality.trace.serialNo")} value={data.product.serialNo} mono />
-                <Field label={t("quality.trace.partNo")} value={data.product.itemNo} />
-                <Field label={t("quality.trace.partName")} value={data.product.itemName} />
-                <Field label={t("quality.trace.workOrderNo")} value={data.product.orderNo ?? "-"} />
-                <Field label={t("quality.trace.statusCol")} value={data.product.status} />
-                <Field label={t("quality.trace.productionDate")} value={fmt(data.product.productionDate)} />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* ② 공정 생산이력 */}
-          <Card>
-            <CardHeader title={t("quality.trace.processTimeline")} />
-            <CardContent>
-              <ul className="space-y-2">
-                {data.processHistory.map((s, i) => (
-                  <li
-                    key={`${i}-${s.timestamp}-${s.process}`}
-                    className="flex items-center gap-3 text-sm border-b border-border last:border-0 py-2"
-                  >
-                    <span className="font-mono text-text-muted">
-                      {s.timestamp.slice(0, 19).replace("T", " ")}
-                    </span>
-                    <span className="font-medium text-text">{s.processName}</span>
-                    <span className="text-text-muted">
-                      {s.equipmentName} / {s.operator}
-                    </span>
-                    <span className="ml-auto">{badge(s.result)}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          {/* ③ 검사 기록 */}
-          <Card>
-            <CardHeader title={t("quality.trace.inspections")} />
-            <CardContent>
-              {data.inspections.length === 0 ? (
-                <div className="text-sm text-text-muted">
-                  {t("quality.trace.noInspections", "검사 기록 없음")}
+          {/* 상단: ① 기본정보 + ④ 포장·출하 (2열) */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader title={t("quality.trace.productInfo")} />
+              <CardContent>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
+                  <Field label={t("quality.trace.serialNo")} value={data.product.serialNo} mono />
+                  <Field label={t("quality.trace.partNo")} value={data.product.itemNo} />
+                  <Field label={t("quality.trace.partName")} value={data.product.itemName} />
+                  <Field label={t("quality.trace.workOrderNo")} value={data.product.orderNo ?? "-"} mono />
+                  <Field label={t("quality.trace.statusCol")} value={data.product.status} />
+                  <Field label={t("quality.trace.productionDate")} value={fmt(data.product.productionDate)} />
                 </div>
-              ) : (
-                <ul className="space-y-2">
-                  {data.inspections.map((ir, i) => (
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader title={t("quality.trace.packaging")} />
+              <CardContent>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
+                  <Field label={t("quality.trace.boxNo")} value={data.packaging.boxNo ?? "-"} mono />
+                  <Field label={t("quality.trace.boxPackedAt")} value={fmt(data.packaging.boxPackedAt)} />
+                  <Field label={t("quality.trace.palletNo")} value={data.packaging.palletNo ?? "-"} mono />
+                  <Field label={t("quality.trace.palletPackedAt")} value={fmt(data.packaging.palletPackedAt)} />
+                  <Field label={t("quality.trace.shippedAt")} value={fmt(data.packaging.shippedAt)} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ② 공정 생산이력 + ③ 검사 기록 (2열) */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader title={t("quality.trace.processTimeline")} />
+              <CardContent>
+                <ul className="divide-y divide-border">
+                  {data.processHistory.map((s, i) => (
                     <li
-                      key={`${i}-${ir.inspectAt}-${ir.inspectType}`}
-                      className="flex items-center gap-3 text-sm border-b border-border last:border-0 py-2"
+                      key={`${i}-${s.timestamp}-${s.process}`}
+                      className="flex items-center gap-3 text-sm py-1.5"
                     >
-                      <span className="font-mono text-text-muted">
-                        {ir.inspectAt.slice(0, 19).replace("T", " ")}
+                      <span className="font-mono text-xs text-text-muted shrink-0">
+                        {s.timestamp.slice(5, 16).replace("T", " ")}
                       </span>
-                      <span className="font-medium text-text">{ir.inspectType}</span>
-                      <span className="text-text-muted">{ir.inspectorId}</span>
-                      <span className="ml-auto">{badge(ir.result)}</span>
+                      <span className="font-medium text-text">{s.processName}</span>
+                      <span className="text-xs text-text-muted truncate">
+                        {s.equipmentName} / {s.operator}
+                      </span>
+                      <span className="ml-auto shrink-0">{badge(s.result)}</span>
                     </li>
                   ))}
                 </ul>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* ④ 포장·입고·출하 */}
-          <Card>
-            <CardHeader title={t("quality.trace.packaging")} />
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                <Field label={t("quality.trace.boxNo")} value={data.packaging.boxNo ?? "-"} mono />
-                <Field label={t("quality.trace.boxPackedAt")} value={fmt(data.packaging.boxPackedAt)} />
-                <Field label={t("quality.trace.palletNo")} value={data.packaging.palletNo ?? "-"} mono />
-                <Field label={t("quality.trace.palletPackedAt")} value={fmt(data.packaging.palletPackedAt)} />
-                <Field label={t("quality.trace.shippedAt")} value={fmt(data.packaging.shippedAt)} />
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader title={t("quality.trace.inspections")} />
+              <CardContent>
+                {data.inspections.length === 0 ? (
+                  <div className="text-sm text-text-muted py-1.5">
+                    {t("quality.trace.noInspections", "검사 기록 없음")}
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {data.inspections.map((ir, i) => (
+                      <li
+                        key={`${i}-${ir.inspectAt}-${ir.inspectType}`}
+                        className="flex items-center gap-3 text-sm py-1.5"
+                      >
+                        <span className="font-mono text-xs text-text-muted shrink-0">
+                          {ir.inspectAt.slice(5, 16).replace("T", " ")}
+                        </span>
+                        <span className="font-medium text-text">{ir.inspectType}</span>
+                        <span className="text-xs text-text-muted truncate">{ir.inspectorId}</span>
+                        <span className="ml-auto shrink-0">{badge(ir.result)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* ⑤ 투입 자재 */}
+          {/* ⑤ 투입 자재 (전체폭 — PO/IQC 중첩 정보량 많음) */}
           <Card>
             <CardHeader title={t("quality.trace.materials")} />
             <CardContent>
@@ -171,7 +173,7 @@ export default function TracePage() {
             </CardContent>
           </Card>
 
-          {/* ⑥ 투입 반제품 */}
+          {/* ⑥ 투입 반제품 (전체폭) */}
           <Card>
             <CardHeader title={t("quality.trace.semiProducts")} />
             <CardContent>
@@ -194,9 +196,9 @@ function Field({
   mono?: boolean;
 }) {
   return (
-    <div>
-      <div className="text-sm text-text-muted mb-1">{label}</div>
-      <div className={mono ? "font-mono text-text" : "text-text"}>{value}</div>
+    <div className="min-w-0">
+      <div className="text-xs text-text-muted mb-0.5">{label}</div>
+      <div className={`text-sm truncate ${mono ? "font-mono text-text" : "text-text"}`}>{value}</div>
     </div>
   );
 }

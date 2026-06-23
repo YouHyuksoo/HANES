@@ -4291,7 +4291,8 @@
       "arrival": "Nhập hàng",
       "iqc": "Kiểm tra đầu vào (IQC)",
       "receiving": "Nhập kho",
-      "issue": "Xuất dùng"
+      "issue": "Xuất dùng",
+      "materials": "Vật tư đầu vào"
     },
     "oqc": {
       "title": "Kiểm tra xuất hàng (OQC)",

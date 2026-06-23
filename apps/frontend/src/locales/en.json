@@ -4291,7 +4291,8 @@
       "arrival": "Arrival",
       "iqc": "Incoming Quality Control (IQC)",
       "receiving": "Receiving",
-      "issue": "Issue"
+      "issue": "Issue",
+      "materials": "Input Materials"
     },
     "oqc": {
       "title": "OQC Inspection",
