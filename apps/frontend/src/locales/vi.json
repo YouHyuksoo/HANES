@@ -3395,7 +3395,8 @@
       "resultTitle": "Hoàn thành đăng ký thực tích",
       "resultNo": "Số thực tích",
       "issuedSgLabels": "Nhãn theo dõi SG đã phát",
-      "noSgLabels": "Không phát nhãn SG cho công đoạn này. (Kiểm tra ISSUE_SG_LABEL_YN='Y')"
+      "noSgLabels": "Không phát nhãn SG cho công đoạn này. (Kiểm tra ISSUE_SG_LABEL_YN='Y')",
+      "reprintSgLabels": "In lại nhãn"
     },
     "inputAssembly": {
       "title": "Nhập Thực Tích Lắp Ráp",

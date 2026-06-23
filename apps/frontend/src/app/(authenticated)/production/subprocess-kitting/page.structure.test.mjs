@@ -13,20 +13,20 @@ test('/production/subprocess-kitting: POST API path is present', () => {
   assert.match(source, /\/production\/subprocess-kitting/);
 });
 
-test('/production/subprocess-kitting: GET sg-label API path is present', () => {
-  assert.match(source, /\/production\/subprocess-kitting\/sg-label\//);
+test('/production/subprocess-kitting: GET sg-labels-by-result API path is present', () => {
+  assert.match(source, /\/production\/subprocess-kitting\/sg-labels-by-result\//);
 });
 
-test('/production/subprocess-kitting: SG scan input is present', () => {
-  assert.match(source, /sgBarcode|sgInput|sg-label/);
+test('/production/subprocess-kitting: issued SG label barcode is rendered', () => {
+  assert.match(source, /sgBarcode/);
 });
 
 test('/production/subprocess-kitting: qty field is present', () => {
   assert.match(source, /qty/);
 });
 
-test('/production/subprocess-kitting: execute kitting button is present', () => {
-  assert.match(source, /executeKitting|kitting\.execute/);
+test('/production/subprocess-kitting: execute submit button is present', () => {
+  assert.match(source, /executeSubmit/);
 });
 
 test('/production/subprocess-kitting: no alert/confirm/prompt usage', () => {
@@ -39,10 +39,12 @@ test('/production/subprocess-kitting: uses modal for warnings, not alert', () =>
   assert.match(source, /warnModalOpen|Modal/);
 });
 
-test('/production/subprocess-kitting: sgBarcodes array is sent in POST payload', () => {
-  assert.match(source, /sgBarcodes/);
+test('/production/subprocess-kitting: prod-result POST sends goodQty payload', () => {
+  assert.match(source, /\/production\/prod-results/);
+  assert.match(source, /goodQty/);
 });
 
-test('/production/subprocess-kitting: fgBarcodes result is displayed', () => {
-  assert.match(source, /fgBarcodes/);
+test('/production/subprocess-kitting: issued SG labels auto-print via Print Agent host', () => {
+  assert.match(source, /SgLabelPrintHost/);
+  assert.match(source, /sgPrinterRef\.current\?\.printByResultNo/);
 });

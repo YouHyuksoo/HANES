@@ -3805,7 +3805,8 @@
       "resultTitle": "서브공정 실적 등록 완료",
       "resultNo": "실적번호",
       "issuedSgLabels": "발행된 SG 추적라벨",
-      "noSgLabels": "이 공정에서는 SG 라벨이 발행되지 않습니다. (ROUTING_PROCESSES ISSUE_SG_LABEL_YN='Y' 확인 필요)"
+      "noSgLabels": "이 공정에서는 SG 라벨이 발행되지 않습니다. (ROUTING_PROCESSES ISSUE_SG_LABEL_YN='Y' 확인 필요)",
+      "reprintSgLabels": "라벨 재출력"
     },
     "inputAssembly": {
       "title": "실적입력(조립)",

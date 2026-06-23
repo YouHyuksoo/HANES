@@ -3395,7 +3395,8 @@
       "resultTitle": "子工序实绩登记完成",
       "resultNo": "实绩编号",
       "issuedSgLabels": "已发行SG追踪标签",
-      "noSgLabels": "此工序未发行SG标签。（请确认ROUTING_PROCESSES ISSUE_SG_LABEL_YN='Y'）"
+      "noSgLabels": "此工序未发行SG标签。（请确认ROUTING_PROCESSES ISSUE_SG_LABEL_YN='Y'）",
+      "reprintSgLabels": "重新打印标签"
     },
     "inputAssembly": {
       "title": "组装实绩输入",

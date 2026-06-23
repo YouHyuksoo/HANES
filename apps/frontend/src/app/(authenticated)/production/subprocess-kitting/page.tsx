@@ -3,12 +3,13 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { CheckCircle, Package, Play, RefreshCw, Scan, Search } from "lucide-react";
+import { CheckCircle, Package, Play, Printer, RefreshCw, Scan, Search } from "lucide-react";
 import { Button, Card, CardContent, Input, Select, Modal, ComCodeBadge } from "@/components/ui";
 import { QtyInput } from "@/components/shared";
 import { useProcessOptions, useEquipOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 import JobOrderSearchModal, { JobOrderPick } from "./components/JobOrderSearchModal";
+import SgLabelPrintHost, { type SgLabelPrintHandle } from "../input-kiosk/components/SgLabelPrintHost";
 
 interface SgLabelRow {
   sgBarcode: string;
@@ -42,6 +43,7 @@ export default function SubprocessKittingPage() {
   const [resultModalOpen, setResultModalOpen] = useState(false);
 
   const orderScanRef = useRef<HTMLInputElement>(null);
+  const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
 
   const { options: rawProcessOptions } = useProcessOptions();
   const { options: rawEquipOptions } = useEquipOptions(processCode || undefined);
@@ -146,6 +148,11 @@ export default function SubprocessKittingPage() {
       setSubmitResult({ resultNo, sgLabels });
       setResultModalOpen(true);
       toast.success(t("production.subprocess.submitSuccess", "서브공정 실적이 등록되었습니다."));
+
+      // 발행공정이면 발행된 SG 라벨을 키오스크와 동일하게 Print Agent로 자동 출력(발행분 없으면 무동작).
+      if (resultNo && sgLabels.length > 0) {
+        void sgPrinterRef.current?.printByResultNo(resultNo);
+      }
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -356,10 +363,20 @@ export default function SubprocessKittingPage() {
             </div>
             {submitResult.sgLabels.length > 0 ? (
               <div>
-                <p className="text-sm font-semibold text-text-muted mb-2">
-                  {t("production.subprocess.issuedSgLabels", "발행된 SG 추적라벨")} (
-                  {submitResult.sgLabels.length}건)
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-text-muted">
+                    {t("production.subprocess.issuedSgLabels", "발행된 SG 추적라벨")} (
+                    {submitResult.sgLabels.length}건)
+                  </p>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void sgPrinterRef.current?.printByResultNo(submitResult.resultNo)}
+                    leftIcon={<Printer className="w-4 h-4" />}
+                  >
+                    {t("production.subprocess.reprintSgLabels", "라벨 재출력")}
+                  </Button>
+                </div>
                 <div className="border border-border rounded divide-y divide-border max-h-60 overflow-auto">
                   {submitResult.sgLabels.map((sg, index) => (
                     <div key={sg.sgBarcode} className="px-3 py-2 flex items-center gap-3">
@@ -381,6 +398,9 @@ export default function SubprocessKittingPage() {
           </div>
         )}
       </Modal>
+
+      {/* SG(반제품) 라벨 자동 출력 호스트 — 키오스크와 동일, 오프스크린 렌더 후 Print Agent 전송 */}
+      <SgLabelPrintHost ref={sgPrinterRef} />
     </div>
   );
 }

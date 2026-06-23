@@ -3395,7 +3395,8 @@
       "resultTitle": "Sub-process Result Registered",
       "resultNo": "Result No.",
       "issuedSgLabels": "Issued SG Tracking Labels",
-      "noSgLabels": "No SG labels issued for this process. (Check ROUTING_PROCESSES ISSUE_SG_LABEL_YN='Y')"
+      "noSgLabels": "No SG labels issued for this process. (Check ROUTING_PROCESSES ISSUE_SG_LABEL_YN='Y')",
+      "reprintSgLabels": "Reprint Labels"
     },
     "inputAssembly": {
       "title": "Assembly Input",
