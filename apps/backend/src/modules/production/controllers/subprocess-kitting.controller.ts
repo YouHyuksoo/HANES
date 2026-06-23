@@ -46,6 +46,18 @@ export class SubprocessKittingController {
     return ResponseUtil.success(data);
   }
 
+  @Get('assembly-requirements/:orderNo')
+  @ApiOperation({ summary: '조립 요구사항 조회 — 완제품 BOM의 SEMI_PRODUCT 자식 컴포넌트 목록' })
+  @ApiParam({ name: 'orderNo', description: '완제품 작업지시번호' })
+  async getAssemblyRequirements(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.service.getAssemblyRequirements(orderNo, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Get('sg-label/:sgBarcode')
   @ApiOperation({ summary: 'SG 라벨 조회' })
   @ApiParam({ name: 'sgBarcode', description: '반제품 묶음 라벨 바코드' })

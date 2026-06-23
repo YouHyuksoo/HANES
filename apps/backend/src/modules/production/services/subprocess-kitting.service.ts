@@ -390,6 +390,70 @@ export class SubprocessKittingService {
     });
   }
 
+  /** 조립 요구사항 조회 — 완제품 작업지시의 BOM에서 SEMI_PRODUCT 자식 컴포넌트 목록 반환 */
+  async getAssemblyRequirements(
+    orderNo: string,
+    company: string,
+    plant: string,
+  ): Promise<{
+    orderNo: string;
+    itemCode: string;
+    itemName: string;
+    planQty: number;
+    components: Array<{
+      itemCode: string;
+      itemName: string;
+      itemType: string;
+      qtyPer: number;
+      totalRequired: number;
+    }>;
+  }> {
+    const tenantWhere = { company, plant };
+
+    const jobOrder = await this.jobOrderRepository.findOne({
+      where: { orderNo, ...tenantWhere },
+      relations: ['part'],
+    });
+    if (!jobOrder) {
+      throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
+    }
+
+    const bomRows = await this.bomMasterRepository.find({
+      where: { parentItemCode: jobOrder.itemCode, useYn: 'Y', ...tenantWhere },
+    });
+
+    const childCodes = [...new Set(bomRows.map((b) => b.childItemCode))];
+    const childParts =
+      childCodes.length > 0
+        ? await this.partMasterRepository.find({
+            where: { itemCode: In(childCodes), ...tenantWhere },
+            select: ['itemCode', 'itemName', 'itemType'],
+          })
+        : [];
+    const partMap = new Map(childParts.map((p) => [p.itemCode, p]));
+
+    const components = bomRows
+      .filter((b) => partMap.get(b.childItemCode)?.itemType === 'SEMI_PRODUCT')
+      .map((b) => {
+        const part = partMap.get(b.childItemCode);
+        return {
+          itemCode: b.childItemCode,
+          itemName: part?.itemName ?? b.childItemCode,
+          itemType: 'SEMI_PRODUCT',
+          qtyPer: Number(b.qtyPer),
+          totalRequired: Number(jobOrder.planQty) * Number(b.qtyPer),
+        };
+      });
+
+    return {
+      orderNo,
+      itemCode: jobOrder.itemCode,
+      itemName: jobOrder.part?.itemName ?? jobOrder.itemCode,
+      planQty: Number(jobOrder.planQty),
+      components,
+    };
+  }
+
   /** SG 라벨 단건 조회 (tenant). 없으면 NotFound. */
   async getSgLabel(
     sgBarcode: string,
