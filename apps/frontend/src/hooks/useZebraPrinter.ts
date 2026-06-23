@@ -83,7 +83,7 @@ function parsePrinter(data: Record<string, unknown>): ZebraPrinter {
 }
 
 /** Zebra Browser Print 에이전트 연동 훅 */
-export function useZebraPrinter(): UseZebraPrinterReturn {
+export function useZebraPrinter(enabled = true): UseZebraPrinterReturn {
   const [isAgentAvailable, setIsAgentAvailable] = useState(false);
   const [printers, setPrinters] = useState<ZebraPrinter[]>([]);
   const [selectedPrinter, setSelectedPrinter] = useState<ZebraPrinter | null>(null);
@@ -95,6 +95,12 @@ export function useZebraPrinter(): UseZebraPrinterReturn {
 
   /** 에이전트 상태 확인 및 프린터 목록 조회 */
   const checkStatus = useCallback(async () => {
+    if (!enabled) {
+      setIsAgentAvailable(false);
+      setPrinters([]);
+      return;
+    }
+
     try {
       setError(null);
 
@@ -142,7 +148,7 @@ export function useZebraPrinter(): UseZebraPrinterReturn {
       setIsAgentAvailable(false);
       setPrinters([]);
     }
-  }, []);
+  }, [enabled]);
 
   /** ZPL 데이터를 선택된 프린터로 전송 */
   const sendZpl = useCallback(
@@ -182,8 +188,13 @@ export function useZebraPrinter(): UseZebraPrinterReturn {
 
   // 마운트 시 에이전트 상태 확인
   useEffect(() => {
-    checkStatus();
-  }, [checkStatus]);
+    if (enabled) {
+      checkStatus();
+      return;
+    }
+    setIsAgentAvailable(false);
+    setPrinters([]);
+  }, [enabled, checkStatus]);
 
   return {
     isAgentAvailable,

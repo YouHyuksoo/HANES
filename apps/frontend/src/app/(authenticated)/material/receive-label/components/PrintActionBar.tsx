@@ -48,7 +48,8 @@ export default function PrintActionBar({
   const { t } = useTranslation();
   const [printMethod, setPrintMethod] = useState<PrintMethod>('BROWSER');
   const [zplPrinting, setZplPrinting] = useState(false);
-  const { isAgentAvailable, printers, selectedPrinter, setSelectedPrinter, sendZpl, error: zebraError } = useZebraPrinter();
+  const isZplUsbMode = printMethod === 'ZPL_USB';
+  const { isAgentAvailable, printers, selectedPrinter, setSelectedPrinter, sendZpl, error: zebraError } = useZebraPrinter(isZplUsbMode);
 
   /** 출력 방식 옵션 (템플릿 모드에 따라 필터링) */
   const printMethodOptions = useMemo(() => {
@@ -92,7 +93,7 @@ export default function PrintActionBar({
   }, [printMethod, onBrowserPrint, handleZplPrint]);
 
   const isPrintDisabled = selectedCount === 0 || printing || zplPrinting
-    || (printMethod === 'ZPL_USB' && (!isAgentAvailable || !selectedPrinter));
+    || (isZplUsbMode && (!isAgentAvailable || !selectedPrinter));
   const isProcessing = printing || zplPrinting;
 
   return (
@@ -104,7 +105,7 @@ export default function PrintActionBar({
       )}
 
       {/* ZPL USB: 프린터 선택 + 에이전트 상태 */}
-      {printMethod === 'ZPL_USB' && (
+      {isZplUsbMode && (
         <>
           <Select options={printerOptions} value={selectedPrinter?.uid ?? ''}
             onChange={(uid) => setSelectedPrinter(printers.find((p) => p.uid === uid) ?? null)}

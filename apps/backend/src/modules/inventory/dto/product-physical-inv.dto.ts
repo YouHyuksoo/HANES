@@ -55,6 +55,49 @@ export class CreateProductPhysicalInvDto {
   createdBy?: string;
 }
 
+/** PDA: 제품 바코드 스캔 실사 +1 요청 */
+export class ScanProductCountDto {
+  @ApiProperty({ description: '실사 세션 ID (PhysicalInvSession.seq)' })
+  @IsInt()
+  sessionId: number;
+
+  @ApiProperty({ description: '제품 시리얼 바코드 (FG_LABELS.FG_BARCODE)' })
+  @IsString()
+  barcode: string;
+
+  @ApiPropertyOptional({ description: '스캔 사용자 ID' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  countedBy?: string;
+}
+
+/** PDA/PC: 제품 실사 세션 개시 요청 */
+export class StartProductPhysicalInvSessionDto {
+  @ApiProperty({ description: '실사 기준월 (YYYY-MM)', example: '2026-06' })
+  @IsString()
+  @MaxLength(7)
+  countMonth: string;
+
+  @ApiPropertyOptional({ description: '창고 코드 (null이면 전체 창고)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  warehouseCode?: string;
+
+  @ApiPropertyOptional({ description: '개시자' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  startedBy?: string;
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+}
+
 export class ProductPhysicalInvQueryDto extends PaginationQueryDto {
 
 

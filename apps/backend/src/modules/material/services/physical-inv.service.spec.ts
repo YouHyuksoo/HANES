@@ -241,8 +241,6 @@ describe('PhysicalInvService', () => {
           sessionDate: parseDateStart('2026-05-23'),
           seq: 1,
           locationCode: 'LOC-01',
-          company: 'C1',
-          plant: 'P1',
         }),
       });
     });
@@ -500,8 +498,6 @@ describe('PhysicalInvService', () => {
           expect.objectContaining({
             sessionDate: new Date('2026-05-23'),
             seq: 1,
-            company: 'C1',
-            plant: 'P1',
           }),
         ],
       });

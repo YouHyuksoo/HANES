@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { formatQty, parseQty } from "@/utils/qty";
 import {
-  ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle, CheckCircle,
+  ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle, CheckCircle, PlayCircle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -43,6 +43,44 @@ export default function ProductPhysicalInvPage() {
   const [searchText, setSearchText] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+
+  interface ActiveSession {
+    sessionId: number;
+    sessionNo: string;
+    warehouseName: string;
+    countMonth: string;
+    status: string;
+  }
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
+  const [startingSession, setStartingSession] = useState(false);
+
+  const fetchActiveSession = useCallback(async () => {
+    try {
+      const res = await api.get("/inventory/product-physical-inv/active", { suppressErrorModal: true });
+      setActiveSession(res.data?.data ?? null);
+    } catch {
+      setActiveSession(null);
+    }
+  }, []);
+
+  useEffect(() => { fetchActiveSession(); }, [fetchActiveSession]);
+
+  const handleStartSession = useCallback(async () => {
+    setStartingSession(true);
+    try {
+      const now = new Date();
+      const countMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      await api.post("/inventory/product-physical-inv/session/start", {
+        countMonth,
+        ...(warehouseFilter ? { warehouseCode: warehouseFilter } : {}),
+      });
+      await fetchActiveSession();
+    } catch (e) {
+      console.error("Start session failed:", e);
+    } finally {
+      setStartingSession(false);
+    }
+  }, [warehouseFilter, fetchActiveSession]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -166,7 +204,18 @@ export default function ProductPhysicalInvPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("inventory.productPhysicalInv.subtitle")}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {activeSession ? (
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-primary text-primary">
+              <PlayCircle className="w-4 h-4" />
+              {t("inventory.productPhysicalInv.inProgress", "실사 진행 중")}: {activeSession.sessionNo} / {activeSession.warehouseName}
+            </span>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={handleStartSession} disabled={startingSession}>
+              <PlayCircle className="w-4 h-4 mr-1" />
+              {startingSession ? t("common.saving", "처리 중...") : t("inventory.productPhysicalInv.startSession", "실사 개시")}
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>

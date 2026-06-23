@@ -3,7 +3,7 @@
  * @description 제품 재고실사 훅 - PC 개시 연동 버전
  *
  * 초보자 가이드:
- * 1. 마운트 시 GET /api/v1/inventory/products/physical-inv/active → 진행 중 실사 세션 조회
+ * 1. 마운트 시 GET /inventory/product-physical-inv/active → 진행 중 실사 세션 조회
  * 2. 세션 없으면 noActiveInv = true (PC에서 실사 개시 필요)
  * 3. handleScanProduct(barcode): 제품 바코드 스캔 → POST /count → 해당 아이템 +1
  * 4. countItems: 품목별 시스템수량 vs 실사수량 배열
@@ -82,7 +82,8 @@ export function useProductInvCount(): UseProductInvCountReturn {
     (async () => {
       try {
         const { data } = await api.get<ProductPhysicalInvSession>(
-          "/inventory/products/physical-inv/active",
+          "/inventory/product-physical-inv/active",
+          { suppressErrorModal: true },
         );
         if (!cancelled) {
           setSession(data);
@@ -114,7 +115,7 @@ export function useProductInvCount(): UseProductInvCountReturn {
           itemName: string;
           countedQty: number;
           items: ProductCountItem[];
-        }>("/inventory/products/physical-inv/count", {
+        }>("/inventory/product-physical-inv/count", {
           sessionId: session.sessionId,
           barcode,
         });

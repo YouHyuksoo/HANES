@@ -376,8 +376,6 @@ export class PhysicalInvService {
         sessionDate: parseDateStart(sessionDate)!,
         seq,
         locationCode,
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
       },
     });
     const detailMap = new Map(
@@ -559,8 +557,6 @@ export class PhysicalInvService {
         where: sessions.map(s => ({
           sessionDate: s.sessionDate,
           seq: s.seq,
-          ...(s.company ? { company: s.company } : tenantWhere.company ? { company: tenantWhere.company } : {}),
-          ...(s.plant ? { plant: s.plant } : tenantWhere.plant ? { plant: tenantWhere.plant } : {}),
         })),
       });
       for (const d of allDetails) {
