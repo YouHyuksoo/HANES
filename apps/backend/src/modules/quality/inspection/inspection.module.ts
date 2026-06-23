@@ -34,6 +34,12 @@ import { ControlPlanItem } from '../../../entities/control-plan-item.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
+import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
+import { SgLabel } from '../../../entities/sg-label.entity';
+import { PurchaseOrder } from '../../../entities/purchase-order.entity';
+import { MatArrival } from '../../../entities/mat-arrival.entity';
+import { IqcLog } from '../../../entities/iqc-log.entity';
+import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { SharedModule } from '../../../shared/shared.module';
 
 @Module({
@@ -54,6 +60,12 @@ import { SharedModule } from '../../../shared/shared.module';
       PartnerMaster,
       BoxMaster,
       PalletMaster,
+      ProductGenealogy,
+      SgLabel,
+      PurchaseOrder,
+      MatArrival,
+      IqcLog,
+      MatReceiving,
     ]),
     SharedModule, // SeqGeneratorService 제공
   ],

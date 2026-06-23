@@ -127,6 +127,11 @@
           "menuCode": "QC_INSPECT",
           "title": "외관검사",
           "path": "/quality/inspect"
+        },
+        {
+          "menuCode": "QC_REWORK_INSPECT",
+          "title": "재작업검사",
+          "path": "/quality/rework-inspect"
         }
       ]
     },
