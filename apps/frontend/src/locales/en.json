@@ -319,6 +319,7 @@
     "production.simulation": "Plan Simulation",
     "production.specificationSetup": "Product Drawing Management",
     "production.kitting": "Result Input (Sub-process)",
+    "production.inputAssembly": "Assembly Input",
     "production.order": "Work Order Mgmt",
     "production.result": "Production Result Inquiry",
     "production.progress": "Order Progress Inquiry",

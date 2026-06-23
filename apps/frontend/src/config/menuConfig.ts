@@ -147,6 +147,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_SIMULATION", labelKey: "menu.production.simulation", path: "/production/simulation" },
       { code: "PROD_SPEC_SETUP", labelKey: "menu.production.specificationSetup", path: "/production/specification-setup" },
       { code: "PROD_KITTING", labelKey: "menu.production.kitting", path: "/production/subprocess-kitting" },
+      { code: "PROD_INPUT_ASSEMBLY", labelKey: "menu.production.inputAssembly", path: "/production/input-assembly" },
       { code: "PROD_ORDER", labelKey: "menu.production.order", path: "/production/order" },
       { code: "PROD_RESULT", labelKey: "menu.production.result", path: "/production/result" },
       { code: "PROD_PROGRESS", labelKey: "menu.production.progress", path: "/production/progress" },

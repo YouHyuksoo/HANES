@@ -320,6 +320,7 @@
     "production.simulation": "생산계획 시뮬레이션",
     "production.specificationSetup": "제품 도면관리",
     "production.kitting": "실적입력(서브공정)",
+    "production.inputAssembly": "실적입력(조립)",
     "production.order": "작업지시관리",
     "production.result": "생산실적조회",
     "production.progress": "작업지시현황조회",

@@ -319,6 +319,7 @@
     "production.simulation": "Mô phỏng kế hoạch",
     "production.specificationSetup": "Quản lý bản vẽ sản phẩm",
     "production.kitting": "Nhập kết quả (công đoạn phụ)",
+    "production.inputAssembly": "Nhập Thực Tích Lắp Ráp",
     "production.order": "Quản lý lệnh sản xuất",
     "production.result": "Tra cứu kết quả sản xuất",
     "production.progress": "Tra cứu tình trạng lệnh SX",

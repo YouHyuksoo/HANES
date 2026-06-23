@@ -319,6 +319,7 @@
     "production.simulation": "计划模拟",
     "production.specificationSetup": "产品图纸管理",
     "production.kitting": "实绩录入（子工序）",
+    "production.inputAssembly": "组装实绩输入",
     "production.order": "作业指示管理",
     "production.result": "生产实绩查询",
     "production.progress": "作业指示现况查询",
