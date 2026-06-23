@@ -8,7 +8,7 @@
  * 3. 결과가 없으면 data: null 반환 (404 아님)
  *
  * @dependencies
- * - TraceService: 추적성 데이터 종합 조회
+ * - ProductTraceabilityService: 제품+반제품+자재 PO/IQC 종합 추적
  * - JwtAuthGuard: JWT 인증
  * - Company, Plant: 멀티테넌시 데코레이터
  */
@@ -27,13 +27,13 @@ import {
   ApiResponse,
   ApiQuery,
 } from '@nestjs/swagger';
-import { TraceService } from '../services/trace.service';
+import { ProductTraceabilityService } from '../services/product-traceability.service';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 
 @ApiTags('품질관리 - 추적성 조회')
 @Controller('quality/trace')
 export class TraceController {
-  constructor(private readonly traceService: TraceService) {}
+  constructor(private readonly traceabilityService: ProductTraceabilityService) {}
 
   /**
    * 시리얼번호로 추적성 데이터 조회
@@ -42,6 +42,7 @@ export class TraceController {
    * @param plant - 공장코드 (JWT에서 자동 추출)
    */
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '추적성 조회',
     description: '시리얼번호(FG바코드)로 4M 이력 및 공정 타임라인 종합 조회',
@@ -53,7 +54,7 @@ export class TraceController {
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const data = await this.traceService.findBySerial(serial, company, plant);
+    const data = await this.traceabilityService.getBySerial(serial, company, plant);
     return ResponseUtil.success(data);
   }
 }

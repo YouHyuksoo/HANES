@@ -18,7 +18,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { InspectResultController } from './controllers/inspect-result.controller';
 import { TraceController } from './controllers/trace.controller';
 import { InspectResultService } from './services/inspect-result.service';
-import { TraceService } from './services/trace.service';
+import { ProductTraceabilityService } from './services/product-traceability.service';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { TraceLog } from '../../../entities/trace-log.entity';
@@ -70,7 +70,7 @@ import { SharedModule } from '../../../shared/shared.module';
     SharedModule, // SeqGeneratorService 제공
   ],
   controllers: [InspectResultController, TraceController],
-  providers: [InspectResultService, TraceService],
-  exports: [InspectResultService, TraceService],
+  providers: [InspectResultService, ProductTraceabilityService],
+  exports: [InspectResultService, ProductTraceabilityService],
 })
 export class InspectionModule {}
