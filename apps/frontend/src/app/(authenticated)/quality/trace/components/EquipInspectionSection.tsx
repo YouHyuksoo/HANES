@@ -34,18 +34,37 @@ export default function EquipInspectionSection({ inspections }: { inspections: E
     );
   }
 
+  function itemColor(result: string): string {
+    const r = result.toUpperCase();
+    if (r === "PASS" || r === "OK") return "text-green-600";
+    if (r === "FAIL" || r === "NG") return "text-red-600";
+    return "text-text";
+  }
+
   return (
     <ul className="divide-y divide-border">
       {inspections.map((insp, i) => (
-        <li key={`${i}-${insp.equipCode}-${insp.inspectAt ?? insp.inspectDate}`} className="flex items-center gap-3 text-sm py-1.5">
-          <span className="font-mono text-xs text-text-muted shrink-0">
-            {(insp.inspectAt ?? insp.inspectDate ?? "").slice(0, 16).replace("T", " ")}
-          </span>
-          <span className="font-medium text-text">{typeLabel(insp.inspectType)}</span>
-          <span className="text-xs text-text-muted truncate">
-            {insp.equipName} / {insp.inspectorName ?? "-"}
-          </span>
-          <span className="ml-auto shrink-0">{resultBadge(insp.overallResult)}</span>
+        <li key={`${i}-${insp.equipCode}-${insp.inspectAt ?? insp.inspectDate}`} className="py-1.5">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="font-mono text-xs text-text-muted shrink-0">
+              {(insp.inspectAt ?? insp.inspectDate ?? "").slice(0, 16).replace("T", " ")}
+            </span>
+            <span className="font-medium text-text">{typeLabel(insp.inspectType)}</span>
+            <span className="text-xs text-text-muted truncate">
+              {insp.equipName} / {insp.inspectorName ?? "-"}
+            </span>
+            <span className="ml-auto shrink-0">{resultBadge(insp.overallResult)}</span>
+          </div>
+          {insp.items.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 pl-1">
+              {insp.items.map((it, j) => (
+                <span key={`${j}-${it.name}`} className="text-xs text-text-muted">
+                  {it.name} <span className={itemColor(it.result)}>{it.result}</span>
+                  {it.remark ? <span className="text-text-muted"> ({it.remark})</span> : null}
+                </span>
+              ))}
+            </div>
+          )}
         </li>
       ))}
     </ul>

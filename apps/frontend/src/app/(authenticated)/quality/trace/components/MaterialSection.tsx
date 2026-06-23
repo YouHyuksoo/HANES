@@ -98,7 +98,7 @@ export default function MaterialSection({ materials, title }: { materials: Mater
                           <span className="font-mono text-text-muted shrink-0">{s.transDate.slice(0, 10)}</span>
                           <span className="font-medium text-text shrink-0">{s.transType}</span>
                           <span className="text-text-muted">{s.qty.toLocaleString()}</span>
-                          <span className="text-text-muted truncate">{s.fromWarehouse ?? ""}{s.fromWarehouse && s.toWarehouse ? " → " : ""}{s.toWarehouse ?? ""}</span>
+                          <span className="text-text-muted truncate">{s.fromWarehouse ? (s.fromWarehouseName ?? s.fromWarehouse) : ""}{s.fromWarehouse && s.toWarehouse ? " → " : ""}{s.toWarehouse ? (s.toWarehouseName ?? s.toWarehouse) : ""}</span>
                           {s.refId && <span className="ml-auto font-mono text-text-muted shrink-0">{s.refType ?? ""} {s.refId}</span>}
                         </div>
                       ))}
