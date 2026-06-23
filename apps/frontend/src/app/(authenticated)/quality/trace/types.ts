@@ -20,6 +20,18 @@ export interface InspectionRecord {
   errorDetail: string | null;
 }
 
+export interface StockMove {
+  transNo: string;
+  transType: string;
+  transDate: string;
+  qty: number;
+  fromWarehouse: string | null;
+  toWarehouse: string | null;
+  refType: string | null;
+  refId: string | null;
+  remark: string | null;
+}
+
 export interface MaterialTrace {
   matUid: string;
   itemCode: string;
@@ -33,6 +45,7 @@ export interface MaterialTrace {
   iqc: { result: string; inspectType: string; inspectorName: string | null; inspectDate: string | null; certFilePath: string | null } | null;
   receiving: { receiveNo: string; receiveDate: string | null } | null;
   issue: { orderNo: string | null; issueQty: number; issueDate: string | null } | null;
+  stockHistory: StockMove[];
 }
 
 export interface SemiProductTrace {
@@ -45,6 +58,48 @@ export interface SemiProductTrace {
   processHistory: ProcessStep[];
   inspections: InspectionRecord[];
   materials: MaterialTrace[];
+}
+
+export interface EquipInspection {
+  equipCode: string;
+  equipName: string;
+  inspectType: string;
+  inspectDate: string | null;
+  inspectAt: string | null;
+  inspectorName: string | null;
+  overallResult: string;
+  remark: string | null;
+}
+
+export interface EquipConsumable {
+  consumableCode: string;
+  consumableName: string;
+  equipCode: string;
+  action: string;
+  mountAt: string | null;
+  workerId: string | null;
+  remark: string | null;
+}
+
+export interface DefectRecord {
+  defectCode: string;
+  defectName: string;
+  qty: number;
+  status: string;
+  cause: string | null;
+  occurAt: string | null;
+}
+
+export interface RepairRecord {
+  source: 'REPAIR' | 'REWORK';
+  refNo: string;
+  status: string;
+  result: string | null;
+  defectType: string | null;
+  workerId: string | null;
+  startAt: string | null;
+  endAt: string | null;
+  remark: string | null;
 }
 
 export interface ProductTraceabilityDto {
@@ -66,7 +121,14 @@ export interface ProductTraceabilityDto {
     palletNo: string | null;
     palletPackedAt: string | null;
     shippedAt: string | null;
+    shipOrderNo: string | null;
+    customerPoNo: string | null;
+    customerName: string | null;
   };
   materials: MaterialTrace[];
   semiProducts: SemiProductTrace[];
+  equipInspections: EquipInspection[];
+  equipConsumables: EquipConsumable[];
+  defects: DefectRecord[];
+  repairs: RepairRecord[];
 }

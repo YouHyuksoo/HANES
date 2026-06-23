@@ -12,6 +12,9 @@ import api from "@/services/api";
 import type { ProductTraceabilityDto } from "./types";
 import MaterialSection from "./components/MaterialSection";
 import SemiProductSection from "./components/SemiProductSection";
+import EquipInspectionSection from "./components/EquipInspectionSection";
+import EquipConsumableSection from "./components/EquipConsumableSection";
+import DefectRepairSection from "./components/DefectRepairSection";
 
 export default function TracePage() {
   const { t } = useTranslation();
@@ -107,6 +110,9 @@ export default function TracePage() {
                   <Field label={t("quality.trace.palletNo")} value={data.packaging.palletNo ?? "-"} mono />
                   <Field label={t("quality.trace.palletPackedAt")} value={fmt(data.packaging.palletPackedAt)} />
                   <Field label={t("quality.trace.shippedAt")} value={fmt(data.packaging.shippedAt)} />
+                  <Field label={t("quality.trace.shipOrderNo", "출하지시번호")} value={data.packaging.shipOrderNo ?? "-"} mono />
+                  <Field label={t("quality.trace.customerPoNo", "고객PO번호")} value={data.packaging.customerPoNo ?? "-"} mono />
+                  <Field label={t("quality.trace.customerName", "고객명")} value={data.packaging.customerName ?? "-"} />
                 </div>
               </CardContent>
             </Card>
@@ -178,6 +184,30 @@ export default function TracePage() {
             <CardHeader title={t("quality.trace.semiProducts")} />
             <CardContent>
               <SemiProductSection semiProducts={data.semiProducts} />
+            </CardContent>
+          </Card>
+
+          {/* ⑦ 설비점검 + ⑧ 소모품 (2열) */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader title={t("quality.trace.equipInspections", "설비점검 내역")} />
+              <CardContent>
+                <EquipInspectionSection inspections={data.equipInspections} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader title={t("quality.trace.equipConsumables", "설비 장착 소모품")} />
+              <CardContent>
+                <EquipConsumableSection consumables={data.equipConsumables} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ⑨ 불량·수리 (전체폭) */}
+          <Card>
+            <CardHeader title={t("quality.trace.defectRepair", "불량·수리 이력")} />
+            <CardContent>
+              <DefectRepairSection defects={data.defects} repairs={data.repairs} />
             </CardContent>
           </Card>
         </>

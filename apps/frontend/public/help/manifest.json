@@ -101,6 +101,11 @@
           "menuCode": "PROD_INPUT_KIOSK",
           "title": "실적입력(키오스크)",
           "path": "/production/input-kiosk"
+        },
+        {
+          "menuCode": "PROD_RESULT_SUMMARY",
+          "title": "작업실적 통합 조회",
+          "path": "/production/result-summary"
         }
       ]
     },
