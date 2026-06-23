@@ -102,7 +102,7 @@ export class CalibrationLog {
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
 
-  @Column({ name: 'PLANT', length: 20 })
+  @Column({ name: 'PLANT_CD', length: 20 })
   plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })

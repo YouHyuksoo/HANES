@@ -28,7 +28,11 @@ export class ReworkOrder {
   itemCode: string;
 
   @ManyToOne(() => PartMaster)
-  @JoinColumn({ name: 'ITEM_CODE', referencedColumnName: 'itemCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
+  ])
   item: PartMaster;
 
   @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 200, nullable: true })
@@ -77,7 +81,7 @@ export class ReworkOrder {
   @ManyToOne(() => ProdLineMaster, { nullable: true })
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
-    { name: 'PLANT', referencedColumnName: 'plant' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'LINE_CODE', referencedColumnName: 'lineCode' },
   ])
   line: ProdLineMaster;
@@ -86,7 +90,11 @@ export class ReworkOrder {
   equipCode: string;
 
   @ManyToOne(() => EquipMaster, { nullable: true })
-  @JoinColumn({ name: 'EQUIP_CODE', referencedColumnName: 'equipCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'EQUIP_CODE', referencedColumnName: 'equipCode' },
+  ])
   equip: EquipMaster;
 
   @Column({ name: 'START_AT', type: 'timestamp', nullable: true })
@@ -116,7 +124,7 @@ export class ReworkOrder {
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
 
-  @Column({ name: 'PLANT', length: 20 })
+  @Column({ name: 'PLANT_CD', length: 20 })
   plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })

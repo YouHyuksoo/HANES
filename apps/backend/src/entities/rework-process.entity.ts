@@ -28,7 +28,11 @@ export class ReworkProcess {
   processCode: string;
 
   @ManyToOne(() => ProcessMaster)
-  @JoinColumn({ name: 'PROCESS_CODE', referencedColumnName: 'processCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'PROCESS_CODE', referencedColumnName: 'processCode' },
+  ])
   process: ProcessMaster;
 
   @Column({ name: 'PROCESS_NAME', length: 200 })
@@ -67,7 +71,7 @@ export class ReworkProcess {
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
 
-  @Column({ name: 'PLANT', length: 20 })
+  @Column({ name: 'PLANT_CD', length: 20 })
   plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })

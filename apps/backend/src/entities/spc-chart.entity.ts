@@ -33,14 +33,22 @@ export class SpcChart {
   itemCode: string;
 
   @ManyToOne(() => PartMaster)
-  @JoinColumn({ name: 'ITEM_CODE', referencedColumnName: 'itemCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
+  ])
   item: PartMaster;
 
   @Column({ name: 'PROCESS_CODE', length: 50 })
   processCode: string;
 
   @ManyToOne(() => ProcessMaster)
-  @JoinColumn({ name: 'PROCESS_CODE', referencedColumnName: 'processCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'PROCESS_CODE', referencedColumnName: 'processCode' },
+  ])
   process: ProcessMaster;
 
   @Column({ name: 'CHARACTERISTIC_NAME', length: 200 })
@@ -84,7 +92,7 @@ export class SpcChart {
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
 
-  @Column({ name: 'PLANT', length: 20 })
+  @Column({ name: 'PLANT_CD', length: 20 })
   plant: string;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
