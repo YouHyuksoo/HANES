@@ -11,9 +11,9 @@
   "prewarm": {
     "ok": true,
     "status": 200,
-    "elapsedMs": 189
+    "elapsedMs": 126573
   },
-  "elapsedMs": 3698,
+  "elapsedMs": 4547,
   "apiCalls": [
     {
       "source": "ui-network",
@@ -60,20 +60,6 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/system/configs/active",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
-      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
       "url": "/api/inventory/product/transactions?transType=WIP_OUT,FG_OUT,WIP_OUT_CANCEL,FG_OUT_CANCEL&limit=5000&dateFrom=2026-06-23&dateTo=2026-06-23",
       "status": 200,
       "ok": true
@@ -82,6 +68,20 @@
       "source": "ui-network",
       "method": "GET",
       "url": "/api/master/com-codes/all-active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
       "status": 200,
       "ok": true
     },
@@ -113,7 +113,7 @@
       "name": "라우트 prewarm",
       "handling": "직접 HTTP 확인",
       "status": "실행",
-      "note": "HTTP 200, 189ms"
+      "note": "HTTP 200, 126573ms"
     },
     {
       "name": "초기 API 호출",

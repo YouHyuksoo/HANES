@@ -11,10 +11,17 @@
   "prewarm": {
     "ok": true,
     "status": 200,
-    "elapsedMs": 174
+    "elapsedMs": 64149
   },
-  "elapsedMs": 6205,
+  "elapsedMs": 3207,
   "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
     {
       "source": "ui-network",
       "method": "GET",
@@ -25,7 +32,14 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
       "status": 200,
       "ok": true
     },
@@ -46,7 +60,7 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/inventory/warehouses",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
       "status": 200,
       "ok": true
     },
@@ -54,6 +68,13 @@
       "source": "ui-network",
       "method": "GET",
       "url": "/api/menu-categories/tree",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/inventory/warehouses",
       "status": 200,
       "ok": true
     },
@@ -77,12 +98,7 @@
   "requestFailures": [
     {
       "method": "GET",
-      "url": "/api/health",
-      "failure": "net::ERR_ABORTED"
-    },
-    {
-      "method": "GET",
-      "url": "/api/health",
+      "url": "/api/db-info",
       "failure": "net::ERR_ABORTED"
     },
     {
@@ -102,13 +118,13 @@
       "name": "라우트 prewarm",
       "handling": "직접 HTTP 확인",
       "status": "실행",
-      "note": "HTTP 200, 174ms"
+      "note": "HTTP 200, 64149ms"
     },
     {
       "name": "초기 API 호출",
       "handling": "브라우저 네트워크 수집",
       "status": "실행",
-      "note": "8건"
+      "note": "11건"
     },
     {
       "name": "🇰🇷",

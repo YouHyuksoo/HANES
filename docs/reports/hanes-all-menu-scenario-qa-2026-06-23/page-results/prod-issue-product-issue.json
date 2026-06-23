@@ -11,9 +11,9 @@
   "prewarm": {
     "ok": true,
     "status": 200,
-    "elapsedMs": 198
+    "elapsedMs": 103505
   },
-  "elapsedMs": 3759,
+  "elapsedMs": 3230,
   "apiCalls": [
     {
       "source": "ui-network",
@@ -60,7 +60,21 @@
     {
       "source": "ui-network",
       "method": "GET",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
       "url": "/api/system/configs/active",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/menu-categories/tree",
       "status": 200,
       "ok": true
     },
@@ -74,21 +88,7 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
       "url": "/api/master/com-codes/all-active",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
-      "url": "/api/menu-categories/tree",
       "status": 200,
       "ok": true
     }
@@ -113,7 +113,7 @@
       "name": "라우트 prewarm",
       "handling": "직접 HTTP 확인",
       "status": "실행",
-      "note": "HTTP 200, 198ms"
+      "note": "HTTP 200, 103505ms"
     },
     {
       "name": "초기 API 호출",

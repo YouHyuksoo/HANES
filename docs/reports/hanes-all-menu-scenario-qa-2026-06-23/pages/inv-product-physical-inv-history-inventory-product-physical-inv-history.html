@@ -25,8 +25,8 @@ JSHNSMES @ 10.1.10.35
   <p>Status: <span class="pass">PASS</span> / HTTP 200</p>
   <h2>기능/버튼 인벤토리</h2>
   <table><thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead><tbody><tr><td>화면 로드</td><td>GET /inventory/product-physical-inv-history</td><td>실행</td><td>HTTP 200</td></tr>
-<tr><td>라우트 prewarm</td><td>직접 HTTP 확인</td><td>실행</td><td>HTTP 200, 174ms</td></tr>
-<tr><td>초기 API 호출</td><td>브라우저 네트워크 수집</td><td>실행</td><td>8건</td></tr>
+<tr><td>라우트 prewarm</td><td>직접 HTTP 확인</td><td>실행</td><td>HTTP 200, 64149ms</td></tr>
+<tr><td>초기 API 호출</td><td>브라우저 네트워크 수집</td><td>실행</td><td>11건</td></tr>
 <tr><td>🇰🇷</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
 <tr><td>시스템관리자</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
 <tr><td>워크플로우</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
@@ -52,17 +52,19 @@ JSHNSMES @ 10.1.10.35
 <tr><td>선택 필드</td><td>DOM 수집</td><td>목록화</td><td>1개</td></tr>
 <tr><td>목록/그리드</td><td>DOM 수집</td><td>목록화</td><td>table 1, grid 0</td></tr></tbody></table>
   <h2>API 호출</h2>
-  <table><thead><tr><th>Method</th><th>URL</th><th>Status</th><th>OK</th></tr></thead><tbody><tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
-<tr><td>GET</td><td>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</td><td>200</td><td>OK</td></tr>
+  <table><thead><tr><th>Method</th><th>URL</th><th>Status</th><th>OK</th></tr></thead><tbody><tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
 <tr><td>GET</td><td>/api/auth/me</td><td>200</td><td>OK</td></tr>
 <tr><td>GET</td><td>/api/system/configs/active</td><td>200</td><td>OK</td></tr>
-<tr><td>GET</td><td>/api/inventory/warehouses</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</td><td>200</td><td>OK</td></tr>
 <tr><td>GET</td><td>/api/menu-categories/tree</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/inventory/warehouses</td><td>200</td><td>OK</td></tr>
 <tr><td>GET</td><td>/api/inventory/product-physical-inv/history?limit=5000&amp;startDate=2026-06-23&amp;endDate=2026-06-23</td><td>200</td><td>OK</td></tr>
 <tr><td>GET</td><td>/api/master/com-codes/all-active</td><td>200</td><td>OK</td></tr></tbody></table>
   <h2>오류</h2>
-  <pre>requestfailed: GET /api/health net::ERR_ABORTED
-requestfailed: GET /api/health net::ERR_ABORTED
+  <pre>requestfailed: GET /api/db-info net::ERR_ABORTED
 requestfailed: GET https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2 net::ERR_ABORTED</pre>
   <h2>화면 증거</h2>
   <img src="../screenshots/inv-product-physical-inv-history-inventory-product-physical-inv-history/01-load.png" alt="screenshot" />

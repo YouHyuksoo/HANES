@@ -11,9 +11,9 @@
   "prewarm": {
     "ok": true,
     "status": 200,
-    "elapsedMs": 56382
+    "elapsedMs": 96899
   },
-  "elapsedMs": 4690,
+  "elapsedMs": 3124,
   "apiCalls": [
     {
       "source": "ui-network",
@@ -53,7 +53,21 @@
     {
       "source": "ui-network",
       "method": "GET",
+      "url": "/api/auth/me",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
       "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/system/configs/active",
       "status": 200,
       "ok": true
     },
@@ -74,28 +88,20 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/auth/me",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
       "url": "/api/master/com-codes/all-active",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
-      "url": "/api/system/configs/active",
       "status": 200,
       "ok": true
     }
   ],
   "consoleErrors": [],
   "pageErrors": [],
-  "requestFailures": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
   "featureInventory": [
     {
       "name": "화면 로드",
@@ -107,7 +113,7 @@
       "name": "라우트 prewarm",
       "handling": "직접 HTTP 확인",
       "status": "실행",
-      "note": "HTTP 200, 56382ms"
+      "note": "HTTP 200, 96899ms"
     },
     {
       "name": "초기 API 호출",

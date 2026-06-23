@@ -11,9 +11,9 @@
   "prewarm": {
     "ok": true,
     "status": 200,
-    "elapsedMs": 2732
+    "elapsedMs": 96416
   },
-  "elapsedMs": 4519,
+  "elapsedMs": 3360,
   "apiCalls": [
     {
       "source": "ui-network",
@@ -40,20 +40,6 @@
       "source": "ui-network",
       "method": "GET",
       "url": "/api/db-info",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
-      "url": "/api/master/companies/public",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
-      "url": "/api/master/companies/public/plants?company=40",
       "status": 200,
       "ok": true
     },
@@ -95,6 +81,13 @@
     {
       "source": "ui-network",
       "method": "GET",
+      "url": "/api/inventory/warehouses?warehouseType=FG",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
       "url": "/api/master/parts?limit=100&itemType=FINISHED",
       "status": 200,
       "ok": true
@@ -109,13 +102,6 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/inventory/warehouses?warehouseType=FG",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
       "url": "/api/master/com-codes/all-active",
       "status": 200,
       "ok": true
@@ -123,7 +109,13 @@
   ],
   "consoleErrors": [],
   "pageErrors": [],
-  "requestFailures": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
   "featureInventory": [
     {
       "name": "화면 로드",
@@ -135,13 +127,13 @@
       "name": "라우트 prewarm",
       "handling": "직접 HTTP 확인",
       "status": "실행",
-      "note": "HTTP 200, 2732ms"
+      "note": "HTTP 200, 96416ms"
     },
     {
       "name": "초기 API 호출",
       "handling": "브라우저 네트워크 수집",
       "status": "실행",
-      "note": "15건"
+      "note": "13건"
     },
     {
       "name": "🇰🇷",

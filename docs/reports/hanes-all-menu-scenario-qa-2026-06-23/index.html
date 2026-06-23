@@ -17,14 +17,96 @@
   <h1>HANES 전체 메뉴 QA</h1>
   <p>일자: 2026-06-23</p>
   <p>Frontend: http://localhost:3002 (200) / Backend: http://localhost:3003/api/v1 (200)</p>
-  <p>요약: 총 3개, PASS 3개, FAIL 0개</p>
+  <p>요약: 총 85개, PASS 61개, FAIL 24개</p>
   
   <p>주의: 이 리포트는 전체 메뉴 1차 스윕입니다. 버튼/입력 기능은 목록화하고, CRUD/업무처리 실행은 실패 및 우선순위 메뉴부터 후속 세부 시나리오로 확장합니다.</p>
   <table>
     <thead><tr><th>메뉴</th><th>Route</th><th>Status</th><th>HTTP</th><th>API</th><th>오류</th><th>버튼</th></tr></thead>
-    <tbody><tr><td><a href="pages/mst-bom-master-bom.html">MST_BOM</a></td><td><code>/master/bom</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>1</td><td>30</td></tr>
-<tr><td><a href="pages/mst-partner-master-partner.html">MST_PARTNER</a></td><td><code>/master/partner</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>0</td><td>22</td></tr>
-<tr><td><a href="pages/equip-master-master-equip.html">EQUIP_MASTER</a></td><td><code>/master/equip</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>1</td><td>29</td></tr></tbody>
+    <tbody><tr><td><a href="pages/dashboard-dashboard.html">DASHBOARD</a></td><td><code>/dashboard</code></td><td class="pass">PASS</td><td>200</td><td>10</td><td>2</td><td>21</td></tr>
+<tr><td><a href="pages/workflow-workflow.html">WORKFLOW</a></td><td><code>/workflow</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>58</td></tr>
+<tr><td><a href="pages/mon-equip-status-equipment-status.html">MON_EQUIP_STATUS</a></td><td><code>/equipment/status</code></td><td class="fail">FAIL</td><td>200</td><td>13</td><td>15</td><td>30</td></tr>
+<tr><td><a href="pages/mst-part-master-part.html">MST_PART</a></td><td><code>/master/part</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/mst-bom-master-bom.html">MST_BOM</a></td><td><code>/master/bom</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/mst-partner-master-partner.html">MST_PARTNER</a></td><td><code>/master/partner</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/equip-master-master-equip.html">EQUIP_MASTER</a></td><td><code>/master/equip</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/mst-process-master-process.html">MST_PROCESS</a></td><td><code>/master/process</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/mst-prod-line-master-prod-line.html">MST_PROD_LINE</a></td><td><code>/master/prod-line</code></td><td class="fail">FAIL</td><td>200</td><td>10</td><td>2</td><td>22</td></tr>
+<tr><td><a href="pages/mst-routing-master-routing.html">MST_ROUTING</a></td><td><code>/master/routing</code></td><td class="pass">PASS</td><td>200</td><td>16</td><td>1</td><td>40</td></tr>
+<tr><td><a href="pages/mst-work-calendar-master-work-calendar.html">MST_WORK_CALENDAR</a></td><td><code>/master/work-calendar</code></td><td class="pass">PASS</td><td>200</td><td>14</td><td>1</td><td>25</td></tr>
+<tr><td><a href="pages/mst-worker-master-worker.html">MST_WORKER</a></td><td><code>/master/worker</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/mst-work-inst-master-work-instruction.html">MST_WORK_INST</a></td><td><code>/master/work-instruction</code></td><td class="pass">PASS</td><td>200</td><td>10</td><td>2</td><td>22</td></tr>
+<tr><td><a href="pages/mst-warehouse-master-warehouse.html">MST_WAREHOUSE</a></td><td><code>/master/warehouse</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>24</td></tr>
+<tr><td><a href="pages/mst-label-master-label.html">MST_LABEL</a></td><td><code>/master/label</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>34</td></tr>
+<tr><td><a href="pages/mst-vendor-barcode-master-vendor-barcode.html">MST_VENDOR_BARCODE</a></td><td><code>/master/vendor-barcode</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>2</td><td>22</td></tr>
+<tr><td><a href="pages/mst-process-capa-master-process-capa.html">MST_PROCESS_CAPA</a></td><td><code>/master/process-capa</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/sys-document-system-document.html">SYS_DOCUMENT</a></td><td><code>/system/document</code></td><td class="pass">PASS</td><td>200</td><td>10</td><td>2</td><td>22</td></tr>
+<tr><td><a href="pages/mat-arrival-material-arrival.html">MAT_ARRIVAL</a></td><td><code>/material/arrival</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>2</td><td>24</td></tr>
+<tr><td><a href="pages/mat-arrival-result-material-arrival-result.html">MAT_ARRIVAL_RESULT</a></td><td><code>/material/arrival-result</code></td><td class="fail">FAIL</td><td>200</td><td>14</td><td>15</td><td>30</td></tr>
+<tr><td><a href="pages/mat-arrival-transaction-material-arrival-transaction.html">MAT_ARRIVAL_TRANSACTION</a></td><td><code>/material/arrival-transaction</code></td><td class="pass">PASS</td><td>200</td><td>10</td><td>2</td><td>21</td></tr>
+<tr><td><a href="pages/mat-receive-label-material-receive-label.html">MAT_RECEIVE_LABEL</a></td><td><code>/material/receive-label</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>2</td><td>23</td></tr>
+<tr><td><a href="pages/mat-receive-material-receive.html">MAT_RECEIVE</a></td><td><code>/material/receive</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/mat-receive-history-material-receive-history.html">MAT_RECEIVE_HISTORY</a></td><td><code>/material/receive-history</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/mat-request-material-request.html">MAT_REQUEST</a></td><td><code>/material/request</code></td><td class="pass">PASS</td><td>200</td><td>14</td><td>0</td><td>38</td></tr>
+<tr><td><a href="pages/mat-issue-material-issue.html">MAT_ISSUE</a></td><td><code>/material/issue</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>23</td></tr>
+<tr><td><a href="pages/mat-issue-other-material-issue-other.html">MAT_ISSUE_OTHER</a></td><td><code>/material/issue-other</code></td><td class="pass">PASS</td><td>200</td><td>10</td><td>1</td><td>23</td></tr>
+<tr><td><a href="pages/mat-lot-material-lot.html">MAT_LOT</a></td><td><code>/material/lot</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/mat-lot-split-material-lot-split.html">MAT_LOT_SPLIT</a></td><td><code>/material/lot-split</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/mat-lot-merge-material-lot-merge.html">MAT_LOT_MERGE</a></td><td><code>/material/lot-merge</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/mat-shelf-life-material-shelf-life.html">MAT_SHELF_LIFE</a></td><td><code>/material/shelf-life</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/mat-shelf-life-reinspect-material-shelf-life-reinspect.html">MAT_SHELF_LIFE_REINSPECT</a></td><td><code>/material/shelf-life-reinspect</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/mat-shelf-life-history-material-shelf-life-history.html">MAT_SHELF_LIFE_HISTORY</a></td><td><code>/material/shelf-life-history</code></td><td class="pass">PASS</td><td>200</td><td>14</td><td>0</td><td>21</td></tr>
+<tr><td><a href="pages/mat-scrap-material-scrap.html">MAT_SCRAP</a></td><td><code>/material/scrap</code></td><td class="fail">FAIL</td><td>-</td><td>6</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/mat-adjustment-material-adjustment.html">MAT_ADJUSTMENT</a></td><td><code>/material/adjustment</code></td><td class="fail">FAIL</td><td>-</td><td>6</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/mat-misc-receipt-material-misc-receipt.html">MAT_MISC_RECEIPT</a></td><td><code>/material/misc-receipt</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/mat-receipt-cancel-material-receipt-cancel.html">MAT_RECEIPT_CANCEL</a></td><td><code>/material/receipt-cancel</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/inv-mat-stock-inventory-material-stock.html">INV_MAT_STOCK</a></td><td><code>/inventory/material-stock</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/inv-transaction-inventory-transaction.html">INV_TRANSACTION</a></td><td><code>/inventory/transaction</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/inv-mat-physical-inv-inventory-material-physical-inv.html">INV_MAT_PHYSICAL_INV</a></td><td><code>/inventory/material-physical-inv</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/inv-mat-physical-inv-apply-inventory-material-physical-inv-apply.html">INV_MAT_PHYSICAL_INV_APPLY</a></td><td><code>/inventory/material-physical-inv-apply</code></td><td class="fail">FAIL</td><td>200</td><td>10</td><td>2</td><td>22</td></tr>
+<tr><td><a href="pages/inv-mat-physical-inv-history-inventory-material-physical-inv-history.html">INV_MAT_PHYSICAL_INV_HISTORY</a></td><td><code>/inventory/material-physical-inv-history</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/inv-arrival-stock-material-arrival-stock.html">INV_ARRIVAL_STOCK</a></td><td><code>/material/arrival-stock</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/mat-hold-material-hold.html">MAT_HOLD</a></td><td><code>/material/hold</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/inv-product-stock-inventory-stock.html">INV_PRODUCT_STOCK</a></td><td><code>/inventory/stock</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/inv-product-physical-inv-inventory-product-physical-inv.html">INV_PRODUCT_PHYSICAL_INV</a></td><td><code>/inventory/product-physical-inv</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>1</td><td>23</td></tr>
+<tr><td><a href="pages/inv-product-physical-inv-history-inventory-product-physical-inv-history.html">INV_PRODUCT_PHYSICAL_INV_HISTORY</a></td><td><code>/inventory/product-physical-inv-history</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>2</td><td>21</td></tr>
+<tr><td><a href="pages/prod-hold-inventory-product-hold.html">PROD_HOLD</a></td><td><code>/inventory/product-hold</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/prod-receive-product-receive.html">PROD_RECEIVE</a></td><td><code>/product/receive</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>1</td><td>25</td></tr>
+<tr><td><a href="pages/prod-receipt-cancel-product-receipt-cancel.html">PROD_RECEIPT_CANCEL</a></td><td><code>/product/receipt-cancel</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/prod-issue-product-issue.html">PROD_ISSUE</a></td><td><code>/product/issue</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/prod-issue-cancel-product-issue-cancel.html">PROD_ISSUE_CANCEL</a></td><td><code>/product/issue-cancel</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/pur-po-material-po.html">PUR_PO</a></td><td><code>/material/po</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/pur-po-status-material-po-status.html">PUR_PO_STATUS</a></td><td><code>/material/po-status</code></td><td class="fail">FAIL</td><td>-</td><td>6</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/prod-monthly-plan-production-monthly-plan.html">PROD_MONTHLY_PLAN</a></td><td><code>/production/monthly-plan</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>0</td><td>27</td></tr>
+<tr><td><a href="pages/prod-simulation-production-simulation.html">PROD_SIMULATION</a></td><td><code>/production/simulation</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/prod-spec-setup-production-specification-setup.html">PROD_SPEC_SETUP</a></td><td><code>/production/specification-setup</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>28</td></tr>
+<tr><td><a href="pages/prod-kitting-production-subprocess-kitting.html">PROD_KITTING</a></td><td><code>/production/subprocess-kitting</code></td><td class="fail">FAIL</td><td>200</td><td>13</td><td>15</td><td>32</td></tr>
+<tr><td><a href="pages/prod-order-production-order.html">PROD_ORDER</a></td><td><code>/production/order</code></td><td class="pass">PASS</td><td>200</td><td>10</td><td>2</td><td>30</td></tr>
+<tr><td><a href="pages/prod-result-production-result.html">PROD_RESULT</a></td><td><code>/production/result</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>0</td><td>21</td></tr>
+<tr><td><a href="pages/prod-progress-production-progress.html">PROD_PROGRESS</a></td><td><code>/production/progress</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/prod-input-kiosk-production-input-kiosk.html">PROD_INPUT_KIOSK</a></td><td><code>/production/input-kiosk</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>31</td></tr>
+<tr><td><a href="pages/prod-input-inspect-production-input-inspect.html">PROD_INPUT_INSPECT</a></td><td><code>/production/input-inspect</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>0</td><td>24</td></tr>
+<tr><td><a href="pages/prod-input-equip-production-input-equip.html">PROD_INPUT_EQUIP</a></td><td><code>/production/input-equip</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>0</td><td>24</td></tr>
+<tr><td><a href="pages/prod-result-summary-production-result-summary.html">PROD_RESULT_SUMMARY</a></td><td><code>/production/result-summary</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>0</td><td>21</td></tr>
+<tr><td><a href="pages/prod-wip-stock-production-wip-stock.html">PROD_WIP_STOCK</a></td><td><code>/production/wip-stock</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/prod-fg-stock-production-fg-stock.html">PROD_FG_STOCK</a></td><td><code>/production/fg-stock</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/prod-wip-mat-stock-production-wip-material-stock.html">PROD_WIP_MAT_STOCK</a></td><td><code>/production/wip-material-stock</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/prod-wip-mat-trans-production-wip-material-trans.html">PROD_WIP_MAT_TRANS</a></td><td><code>/production/wip-material-trans</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/qc-rework-quality-rework.html">QC_REWORK</a></td><td><code>/quality/rework</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/qc-rework-history-quality-rework-history.html">QC_REWORK_HISTORY</a></td><td><code>/quality/rework-history</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/prod-repair-production-repair.html">PROD_REPAIR</a></td><td><code>/production/repair</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/insp-integrated-inspection-integrated.html">INSP_INTEGRATED</a></td><td><code>/inspection/integrated</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/insp-structure-inspection-structure.html">INSP_STRUCTURE</a></td><td><code>/inspection/structure</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/insp-result-inspection-result.html">INSP_RESULT</a></td><td><code>/inspection/result</code></td><td class="fail">FAIL</td><td>-</td><td>0</td><td>1</td><td>0</td></tr>
+<tr><td><a href="pages/insp-terminal-result-inspection-terminal-result.html">INSP_TERMINAL_RESULT</a></td><td><code>/inspection/terminal-result</code></td><td class="fail">FAIL</td><td>200</td><td>10</td><td>2</td><td>38</td></tr>
+<tr><td><a href="pages/insp-history-inspection-history.html">INSP_HISTORY</a></td><td><code>/inspection/history</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>23</td></tr>
+<tr><td><a href="pages/insp-protocol-inspection-protocol.html">INSP_PROTOCOL</a></td><td><code>/inspection/protocol</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/qc-iqc-item-master-iqc-item.html">QC_IQC_ITEM</a></td><td><code>/master/iqc-item</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>0</td><td>22</td></tr>
+<tr><td><a href="pages/qc-iqc-part-spec-master-iqc-part-spec.html">QC_IQC_PART_SPEC</a></td><td><code>/master/iqc-part-spec</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>1</td><td>38</td></tr>
+<tr><td><a href="pages/qc-aql-quality-aql.html">QC_AQL</a></td><td><code>/quality/aql</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>0</td><td>26</td></tr>
+<tr><td><a href="pages/qc-iqc-material-iqc.html">QC_IQC</a></td><td><code>/material/iqc</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>22</td></tr>
+<tr><td><a href="pages/qc-iqc-history-material-iqc-history.html">QC_IQC_HISTORY</a></td><td><code>/material/iqc-history</code></td><td class="pass">PASS</td><td>200</td><td>11</td><td>1</td><td>21</td></tr>
+<tr><td><a href="pages/qc-concession-material-concession.html">QC_CONCESSION</a></td><td><code>/material/concession</code></td><td class="pass">PASS</td><td>200</td><td>13</td><td>0</td><td>21</td></tr>
+<tr><td><a href="pages/qc-defect-quality-defect.html">QC_DEFECT</a></td><td><code>/quality/defect</code></td><td class="pass">PASS</td><td>200</td><td>12</td><td>1</td><td>22</td></tr></tbody>
   </table>
 </body>
 </html>

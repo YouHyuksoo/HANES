@@ -9,12 +9,11 @@
   "routeUrl": "http://localhost:3002/material/po",
   "routeStatus": 200,
   "prewarm": {
-    "ok": false,
-    "status": 0,
-    "elapsedMs": 120004,
-    "error": "The operation was aborted due to timeout"
+    "ok": true,
+    "status": 200,
+    "elapsedMs": 749
   },
-  "elapsedMs": 66396,
+  "elapsedMs": 4440,
   "apiCalls": [
     {
       "source": "ui-network",
@@ -47,20 +46,6 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/master/companies/public",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
-      "url": "/api/master/companies/public/plants?company=40",
-      "status": 200,
-      "ok": true
-    },
-    {
-      "source": "ui-network",
-      "method": "GET",
       "url": "/api/db-info",
       "status": 200,
       "ok": true
@@ -82,14 +67,14 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/material/purchase-orders?limit=5000&fromDate=2026-06-23&toDate=2026-06-23",
+      "url": "/api/master/com-codes/all-active",
       "status": 200,
       "ok": true
     },
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/master/com-codes/all-active",
+      "url": "/api/material/purchase-orders?limit=5000&fromDate=2026-06-23&toDate=2026-06-23",
       "status": 200,
       "ok": true
     },
@@ -110,7 +95,13 @@
   ],
   "consoleErrors": [],
   "pageErrors": [],
-  "requestFailures": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
   "featureInventory": [
     {
       "name": "화면 로드",
@@ -121,14 +112,14 @@
     {
       "name": "라우트 prewarm",
       "handling": "직접 HTTP 확인",
-      "status": "실패",
-      "note": "HTTP 0, 120004ms"
+      "status": "실행",
+      "note": "HTTP 200, 749ms"
     },
     {
       "name": "초기 API 호출",
       "handling": "브라우저 네트워크 수집",
       "status": "실행",
-      "note": "13건"
+      "note": "11건"
     },
     {
       "name": "🇰🇷",

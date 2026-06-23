@@ -11,10 +11,24 @@
   "prewarm": {
     "ok": true,
     "status": 200,
-    "elapsedMs": 171
+    "elapsedMs": 85230
   },
-  "elapsedMs": 4090,
+  "elapsedMs": 3325,
   "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
     {
       "source": "ui-network",
       "method": "GET",
@@ -39,14 +53,14 @@
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
+      "url": "/api/auth/me",
       "status": 200,
       "ok": true
     },
     {
       "source": "ui-network",
       "method": "GET",
-      "url": "/api/auth/me",
+      "url": "/api/system/comm-configs?commType=SERIAL&useYn=Y",
       "status": 200,
       "ok": true
     },
@@ -84,11 +98,6 @@
   "requestFailures": [
     {
       "method": "GET",
-      "url": "/api/health",
-      "failure": "net::ERR_ABORTED"
-    },
-    {
-      "method": "GET",
       "url": "https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2",
       "failure": "net::ERR_ABORTED"
     }
@@ -104,13 +113,13 @@
       "name": "라우트 prewarm",
       "handling": "직접 HTTP 확인",
       "status": "실행",
-      "note": "HTTP 200, 171ms"
+      "note": "HTTP 200, 85230ms"
     },
     {
       "name": "초기 API 호출",
       "handling": "브라우저 네트워크 수집",
       "status": "실행",
-      "note": "9건"
+      "note": "11건"
     },
     {
       "name": "🇰🇷",
