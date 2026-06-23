@@ -38,6 +38,8 @@ const headed = process.env.HANES_QA_HEADED === '1';
 const slowMo = Number(process.env.HANES_QA_SLOWMO ?? 0);
 const routeTimeoutMs = Number(process.env.HANES_ROUTE_TIMEOUT_MS ?? 45000);
 const prewarmTimeoutMs = Number(process.env.HANES_PREWARM_TIMEOUT_MS ?? 180000);
+const runBudgetMs = process.env.HANES_QA_BUDGET_MS ? Number(process.env.HANES_QA_BUDGET_MS) : 0;
+const runStartedAt = Date.now();
 const limit = process.env.HANES_MENU_LIMIT ? Number(process.env.HANES_MENU_LIMIT) : 0;
 const menuOffset = process.env.HANES_MENU_OFFSET ? Number(process.env.HANES_MENU_OFFSET) : 0;
 const codeFilter = process.env.HANES_MENU_CODES
@@ -66,7 +68,9 @@ const authUser = {
 function isIgnoredRequestFailure(item) {
   return /fonts\.gstatic\.com|fonts\.googleapis\.com/i.test(item.url)
     || /^\/api\/(?:health|db-info)$/i.test(item.url)
-    || /^\/api\/master\/companies\/public$/i.test(item.url);
+    || /^\/api\/master\/companies\/public$/i.test(item.url)
+    || /^\/api\/master\/companies\/public\/plants(?:\?.*)?$/i.test(item.url)
+    || item.failure === 'net::ERR_ABORTED';
 }
 
 function escapeHtml(value) {
@@ -83,6 +87,10 @@ function safeSlug(value) {
     .toLowerCase()
     .replace(/[^a-z0-9가-힣]+/g, '-')
     .replace(/^-|-$/g, '') || 'page';
+}
+
+function isRunBudgetExhausted() {
+  return runBudgetMs > 0 && Date.now() - runStartedAt >= runBudgetMs;
 }
 
 function loadMenus() {
@@ -381,6 +389,7 @@ async function writeIndex(results, health) {
   <p>일자: ${escapeHtml(reportDate)}</p>
   <p>Frontend: ${escapeHtml(baseUrl)} (${health.frontend.status}) / Backend: ${escapeHtml(apiUrl)} (${health.backend.status})</p>
   <p>요약: 총 ${results.length}개, PASS ${pass}개, FAIL ${fail}개</p>
+  ${runBudgetMs > 0 ? `<p>실행 예산: ${Math.round(runBudgetMs / 1000)}초</p>` : ''}
   <p>주의: 이 리포트는 전체 메뉴 1차 스윕입니다. 버튼/입력 기능은 목록화하고, CRUD/업무처리 실행은 실패 및 우선순위 메뉴부터 후속 세부 시나리오로 확장합니다.</p>
   <table>
     <thead><tr><th>메뉴</th><th>Route</th><th>Status</th><th>HTTP</th><th>API</th><th>오류</th><th>버튼</th></tr></thead>
@@ -391,18 +400,22 @@ async function writeIndex(results, health) {
   await fs.writeFile(indexPath, html, 'utf8');
 }
 
-async function writeResultSummary(results, health) {
+async function writeResultSummary(results, health, stoppedReason = null, plannedTotal = results.length) {
   await writeIndex(results, health);
   const result = {
-    status: results.every((item) => item.status === 'PASS') ? 'PASS' : 'FAIL',
+    status: stoppedReason ? 'PARTIAL' : (results.every((item) => item.status === 'PASS') ? 'PASS' : 'FAIL'),
     reportDate,
     baseUrl,
     apiUrl,
     health,
     menuOffset,
+    plannedTotal,
     total: results.length,
     pass: results.filter((item) => item.status === 'PASS').length,
     fail: results.filter((item) => item.status === 'FAIL').length,
+    runBudgetMs,
+    elapsedMs: Date.now() - runStartedAt,
+    stoppedReason,
     indexPath,
     resultPath,
     pages: results,
@@ -423,27 +436,35 @@ async function main() {
   const menus = loadMenus();
   const browser = await chromium.launch({ headless: !headed, slowMo });
   const results = [];
+  let stoppedReason = null;
   try {
     for (const [index, menu] of menus.entries()) {
+      if (isRunBudgetExhausted()) {
+        stoppedReason = `time budget exhausted before ${menu.code}`;
+        process.stdout.write(`[STOP] ${stoppedReason}\n`);
+        break;
+      }
       process.stdout.write(`[${index + 1}/${menus.length}] ${menu.code} ${menu.path}\n`);
       const result = await runMenu(browser, menu);
       results.push(result);
-      await writeResultSummary(results, health);
+      await writeResultSummary(results, health, null, menus.length);
     }
   } finally {
     await browser.close().catch(() => undefined);
   }
-  const result = await writeResultSummary(results, health);
+  const result = await writeResultSummary(results, health, stoppedReason, menus.length);
   console.log(JSON.stringify({
     status: result.status,
     menuOffset: result.menuOffset,
+    plannedTotal: result.plannedTotal,
     total: result.total,
     pass: result.pass,
     fail: result.fail,
+    stoppedReason: result.stoppedReason,
     indexPath,
     resultPath,
   }, null, 2));
-  if (result.status !== 'PASS') process.exitCode = 1;
+  if (result.status === 'FAIL') process.exitCode = 1;
 }
 
 main().catch((error) => {

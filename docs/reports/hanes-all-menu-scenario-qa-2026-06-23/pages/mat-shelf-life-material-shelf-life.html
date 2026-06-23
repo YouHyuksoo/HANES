@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>MAT_SHELF_LIFE - HANES 전체 메뉴 QA</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #172033; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #d8dee9; padding: 8px; font-size: 13px; vertical-align: top; }
+    th { background: #f3f6fb; text-align: left; }
+    .pass { color: #047857; font-weight: 700; }
+    .fail { color: #be123c; font-weight: 700; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; overflow: auto; }
+    img { max-width: 100%; border: 1px solid #d8dee9; }
+  </style>
+</head>
+<body>
+  <h1>MAT_SHELF_LIFE H
+HARNESS MES
+🇰🇷
+40 / 1000
+JSHNSMES @ 10.1.10.35
+시스템관리자</h1>
+  <p>Route: <code>/material/shelf-life</code></p>
+  <p>Status: <span class="pass">PASS</span> / HTTP 200</p>
+  <h2>기능/버튼 인벤토리</h2>
+  <table><thead><tr><th>기능/버튼</th><th>처리 방식</th><th>상태</th><th>비고</th></tr></thead><tbody><tr><td>화면 로드</td><td>GET /material/shelf-life</td><td>실행</td><td>HTTP 200</td></tr>
+<tr><td>라우트 prewarm</td><td>직접 HTTP 확인</td><td>실행</td><td>HTTP 200, 105079ms</td></tr>
+<tr><td>초기 API 호출</td><td>브라우저 네트워크 수집</td><td>실행</td><td>12건</td></tr>
+<tr><td>🇰🇷</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리자</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>워크플로우</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>대시보드</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>기준정보</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>생산관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>품질관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>검사관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>제품수불관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>출하관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>모니터링</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>설비관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>소모품관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>인터페이스</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>시스템관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>자재유수명관리</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>새로고침</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>전체화면 보기</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>AI 채팅</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>개선요청 등록</td><td>화면 버튼 목록화</td><td>목록화</td><td>후속 메뉴별 세부 시나리오 실행 대상</td></tr>
+<tr><td>입력 필드</td><td>DOM 수집</td><td>목록화</td><td>2개</td></tr>
+<tr><td>선택 필드</td><td>DOM 수집</td><td>목록화</td><td>2개</td></tr>
+<tr><td>목록/그리드</td><td>DOM 수집</td><td>목록화</td><td>table 1, grid 0</td></tr></tbody></table>
+  <h2>API 호출</h2>
+  <table><thead><tr><th>Method</th><th>URL</th><th>Status</th><th>OK</th></tr></thead><tbody><tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/health</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/db-info</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/auth/me</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/configs/active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/system/comm-configs?commType=SERIAL&amp;useYn=Y</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/menu-categories/tree</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/parts?limit=100</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/master/com-codes/all-active</td><td>200</td><td>OK</td></tr>
+<tr><td>GET</td><td>/api/material/shelf-life?limit=5000</td><td>200</td><td>OK</td></tr></tbody></table>
+  <h2>오류</h2>
+  <pre>requestfailed: GET https://fonts.gstatic.com/s/outfit/v15/QGYvz_MVcBeNP4NJtEtq.woff2 net::ERR_ABORTED</pre>
+  <h2>화면 증거</h2>
+  <img src="../screenshots/mat-shelf-life-material-shelf-life/01-load.png" alt="screenshot" />
+  <h2>본문 미리보기</h2>
+  <pre>H HARNESS MES 🇰🇷 40 / 1000 JSHNSMES @ 10.1.10.35 시스템관리자 워크플로우 대시보드 기준정보 자재관리 생산관리 품질관리 검사관리 제품수불관리 출하관리 모니터링 설비관리 소모품관리 인터페이스 시스템관리 대시보드 자재유수명관리 유수명자재 유효기한이 있는 자재 현황을 조회합니다. 새로고침 품목명: 전체 품목명: CBL-A - 케이블A 품목명: CBL-B - 케이블B 품목명: CBL-SE - 케이블 SE 품목명: CNTR001 - 커넥터 품목명: CSH001 - 클램프쉴드 품목명: HLD-01 - 홀더 품목명: HNS02 - 완제품 하네스 품목명: HNS02-SCA - HNS02-SCA 품목명: HNS02-SCA_1 - HNS02-SCA_1 품목명: HNS02-SCA_2 - HNS02-SCA_2 품목명: HNS02C1 - HNS02C1 품목명: HNS02C1A - HNS02C1A 품목명: HNS02C1AB - HNS02C1AB 품목명: HNS02C1ABC - HNS02C1ABC 품목명: HNS02C1ABCD - HNS02C1ABCD 품목명: HNS02C1ABCDE - HNS02C1ABCDE 품목명: HNS02C2 - HNS02C2 품목명: HNS02C2A - HNS02C2A 품목명: HNS02C2AB - HNS02C2AB 품목명: HNS02C2ABC - HNS02C2ABC 품목명: HNS02C2ABCD - HNS02C2ABCD 품목명: HNS02C2ABCDE - HNS02C2ABCDE 품목명: HNS02_FA - HNS02_FA 품목명: HNS02_FB - HNS02_FB 품목명: HSG0001 - 하우징 품목명: NFT-A - 노이즈필터A 품목명: PHDL001 - 플라스틱홀더 품목명: RSL-A - 고무씰A 품목명: RSL-B - 고무씰B 품목명: RSL-T - 고무씰T 품목명: TMN-A - 터미널A 품목명: TMN-B - 터미널B 품목명: TMN-C - 터미널C 품목명: TMN-SE1 - 터미널SE1 품목명: TP0001 - 절연테잎 품목명: TUB-A - 수축튜브A 만료임박 + 만료됨 만료됨 만료임박 LOT No. 품목코드 품목명 현재수량 공급처 만료일 잔여일수 상태 데이터가 없습니다. 전체화면 보기 AI 채팅 개선요청 등록</pre>
+</body>
+</html>

@@ -1,0 +1,84 @@
+{
+  "code": "MAT_SCRAP",
+  "labelKey": "menu.material.scrap",
+  "path": "/material/scrap",
+  "source": "menuConfig",
+  "slug": "mat-scrap-material-scrap",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/material/scrap",
+  "routeStatus": null,
+  "prewarm": {
+    "ok": false,
+    "status": 0,
+    "elapsedMs": 180004,
+    "error": "The operation was aborted due to timeout"
+  },
+  "elapsedMs": 45726,
+  "apiCalls": [
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/db-info",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "source": "ui-network",
+      "method": "GET",
+      "url": "/api/master/companies/public/plants?company=40",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/material/scrap",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/material/scrap\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/mat-scrap-material-scrap.html",
+  "pageResult": "page-results/mat-scrap-material-scrap.json"
+}

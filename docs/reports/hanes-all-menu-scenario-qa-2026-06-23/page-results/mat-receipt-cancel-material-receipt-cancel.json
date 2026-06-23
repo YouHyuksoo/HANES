@@ -1,0 +1,41 @@
+{
+  "code": "MAT_RECEIPT_CANCEL",
+  "labelKey": "menu.material.receiptCancel",
+  "path": "/material/receipt-cancel",
+  "source": "menuConfig",
+  "slug": "mat-receipt-cancel-material-receipt-cancel",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/material/receipt-cancel",
+  "routeStatus": null,
+  "prewarm": {
+    "ok": false,
+    "status": 0,
+    "elapsedMs": 3,
+    "error": "fetch failed"
+  },
+  "elapsedMs": 2387,
+  "apiCalls": [],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/login",
+      "failure": "net::ERR_CONNECTION_REFUSED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3002/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/login\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/mat-receipt-cancel-material-receipt-cancel.html",
+  "pageResult": "page-results/mat-receipt-cancel-material-receipt-cancel.json"
+}

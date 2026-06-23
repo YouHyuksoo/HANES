@@ -1,0 +1,41 @@
+{
+  "code": "PUR_PO_STATUS",
+  "labelKey": "menu.purchasing.poStatus",
+  "path": "/material/po-status",
+  "source": "menuConfig",
+  "slug": "pur-po-status-material-po-status",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/material/po-status",
+  "routeStatus": null,
+  "prewarm": {
+    "ok": false,
+    "status": 0,
+    "elapsedMs": 78920,
+    "error": "fetch failed"
+  },
+  "elapsedMs": 2381,
+  "apiCalls": [],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/login",
+      "failure": "net::ERR_CONNECTION_REFUSED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3002/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/login\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/pur-po-status-material-po-status.html",
+  "pageResult": "page-results/pur-po-status-material-po-status.json"
+}

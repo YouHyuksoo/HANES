@@ -1,0 +1,41 @@
+{
+  "code": "MAT_MISC_RECEIPT",
+  "labelKey": "menu.material.miscReceipt",
+  "path": "/material/misc-receipt",
+  "source": "menuConfig",
+  "slug": "mat-misc-receipt-material-misc-receipt",
+  "title": "",
+  "status": "FAIL",
+  "routeUrl": "http://localhost:3002/material/misc-receipt",
+  "routeStatus": null,
+  "prewarm": {
+    "ok": false,
+    "status": 0,
+    "elapsedMs": 3464,
+    "error": "fetch failed"
+  },
+  "elapsedMs": 2369,
+  "apiCalls": [],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "/login",
+      "failure": "net::ERR_CONNECTION_REFUSED"
+    }
+  ],
+  "featureInventory": [],
+  "metrics": {
+    "buttons": 0,
+    "inputs": 0,
+    "selects": 0,
+    "tables": 0,
+    "grids": 0
+  },
+  "screenshot": null,
+  "bodyPreview": "",
+  "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3002/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3002/login\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "pageReport": "pages/mat-misc-receipt-material-misc-receipt.html",
+  "pageResult": "page-results/mat-misc-receipt-material-misc-receipt.json"
+}
