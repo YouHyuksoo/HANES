@@ -1,7 +1,43 @@
 {
+  "inventory.productPhysicalInv.inProgress": {
+    "fallback": "실사 진행 중",
+    "file": "app/(authenticated)/inventory/product-physical-inv/page.tsx"
+  },
+  "inventory.productPhysicalInv.startSession": {
+    "fallback": "실사 개시",
+    "file": "app/(authenticated)/inventory/product-physical-inv/page.tsx"
+  },
   "master.label.templateName": {
     "fallback": "템플릿 이름",
     "file": "app/(authenticated)/master/label/components/TemplateManager.tsx"
+  },
+  "common.itemCode": {
+    "fallback": "품번",
+    "file": "app/(authenticated)/production/input-assembly/page.tsx"
+  },
+  "common.itemName": {
+    "fallback": "품명",
+    "file": "app/(authenticated)/production/input-assembly/page.tsx"
+  },
+  "production.order.toolView": {
+    "fallback": "도구보기",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.wipMaterialStock.lotCount": {
+    "fallback": "LOT 수",
+    "file": "app/(authenticated)/production/wip-material-stock/page.tsx"
+  },
+  "quality.defect.defectCodePlaceholder": {
+    "fallback": "공정 불량 코드 선택",
+    "file": "app/(authenticated)/quality/defect/components/DefectFormPanel.tsx"
+  },
+  "shipping.pack.waitingDesc": {
+    "fallback": "검사 합격 후 미배정 FG 시리얼",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "common.countUnit": {
+    "fallback": "건",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
   },
   "shipping.pallet.shipOrderNotWaiting": {
     "fallback": "팔레트 생성 대기중인 출하지시가 아닙니다.",
@@ -34,5 +70,25 @@
   "shipping.pallet.scanShipOrderHint": {
     "fallback": "스캔 후 Enter를 누르면 대기 목록과 대조합니다.",
     "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "ai.chat.tab.chat": {
+    "fallback": "채팅",
+    "file": "components/ai/AiChatPanel.tsx"
+  },
+  "ai.chat.tab.tools": {
+    "fallback": "도구",
+    "file": "components/ai/AiChatPanel.tsx"
+  },
+  "ai.chat.tab.log": {
+    "fallback": "실행로그",
+    "file": "components/ai/AiChatPanel.tsx"
+  },
+  "ai.chat.toolApproveTitle": {
+    "fallback": "작업 실행 승인 필요",
+    "file": "components/ai/AiChatPanel.tsx"
+  },
+  "help.resize": {
+    "fallback": "드래그하여 너비 조절",
+    "file": "components/help/HelpPanel.tsx"
   }
 }

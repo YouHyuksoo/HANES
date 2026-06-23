@@ -47,6 +47,7 @@
 - 공통 코드 배지: `apps/frontend/src/components/ui/ComCodeBadge.tsx`
 - 공통 코드 셀렉트: `apps/frontend/src/components/shared/ComCodeSelect.tsx`
 - 공통 코드 훅: `apps/frontend/src/hooks/useComCode.ts`
+- 품목마스터 기준 화면 표준: `docs/standards/master-part-page-standard.md`
 
 ## 나쁜 예시
 

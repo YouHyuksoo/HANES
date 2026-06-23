@@ -21,9 +21,50 @@
           "path": "/master/warehouse"
         },
         {
+          "menuCode": "MST_WORK_INST",
+          "title": "작업지도서 관리",
+          "path": "/master/work-instruction"
+        },
+        {
+          "menuCode": "EQUIP_INSPECT_ITEM_MASTER",
+          "title": "점검항목 마스터",
+          "path": "/master/equip-inspect-item"
+        },
+        {
           "menuCode": "EQUIP_INSPECT_ITEM",
-          "title": "설비점검항목",
+          "title": "설비별 점검항목",
           "path": "/master/equip-inspect"
+        }
+      ]
+    },
+    {
+      "key": "equipment",
+      "title": "설비관리",
+      "items": [
+        {
+          "menuCode": "EQUIP_INSPECT_CALENDAR",
+          "title": "일상점검 캘린더",
+          "path": "/equipment/inspect-calendar"
+        },
+        {
+          "menuCode": "EQUIP_DAILY",
+          "title": "일상점검 결과",
+          "path": "/equipment/daily-inspect"
+        },
+        {
+          "menuCode": "EQUIP_PERIODIC_CALENDAR",
+          "title": "정기점검 캘린더",
+          "path": "/equipment/periodic-inspect-calendar"
+        },
+        {
+          "menuCode": "EQUIP_PERIODIC",
+          "title": "정기점검 결과",
+          "path": "/equipment/periodic-inspect"
+        },
+        {
+          "menuCode": "EQUIP_HISTORY",
+          "title": "점검이력 조회",
+          "path": "/equipment/inspect-history"
         }
       ]
     },
@@ -85,6 +126,21 @@
           "menuCode": "MAT_LOT_MERGE",
           "title": "자재병합",
           "path": "/material/lot-merge"
+        },
+        {
+          "menuCode": "MAT_ADJUSTMENT",
+          "title": "재고보정",
+          "path": "/material/adjustment"
+        },
+        {
+          "menuCode": "MAT_RECEIPT_CANCEL",
+          "title": "자재입고취소",
+          "path": "/material/receipt-cancel"
+        },
+        {
+          "menuCode": "MAT_HOLD",
+          "title": "자재재고홀드관리",
+          "path": "/material/hold"
         }
       ]
     },
@@ -111,6 +167,11 @@
           "menuCode": "PROD_RESULT_SUMMARY",
           "title": "작업실적 통합 조회",
           "path": "/production/result-summary"
+        },
+        {
+          "menuCode": "PROD_WIP_MAT_TRANS",
+          "title": "원자재공정수불",
+          "path": "/production/wip-material-trans"
         }
       ]
     },
@@ -199,6 +260,11 @@
           "menuCode": "CONS_ISSUING",
           "title": "소모품출고",
           "path": "/consumables/issuing"
+        },
+        {
+          "menuCode": "CONS_MOUNT",
+          "title": "소모품 장착관리",
+          "path": "/consumables/mount"
         }
       ]
     },
@@ -217,10 +283,41 @@
           "path": "/shipping/pallet"
         },
         {
+          "menuCode": "SHIP_PALLET_SHIP",
+          "title": "팔레트출하",
+          "path": "/shipping/pallet-ship"
+        },
+        {
           "menuCode": "SHIP_PACK",
           "title": "제품포장관리",
           "path": "/shipping/pack"
         }
+      ]
+    },
+    {
+      "key": "inventory",
+    "title": "재고관리",
+    "items": [
+      {
+        "menuCode": "INV_MAT_STOCK",
+        "title": "자재재고현황조회",
+        "path": "/inventory/material-stock"
+      },
+      {
+        "menuCode": "INV_TRANSACTION",
+        "title": "자재수불이력조회",
+        "path": "/inventory/transaction"
+      },
+      {
+        "menuCode": "INV_MAT_PHYSICAL_INV",
+        "title": "자재재고실사 관리",
+        "path": "/inventory/material-physical-inv"
+      },
+      {
+        "menuCode": "INV_MAT_PHYSICAL_INV_APPLY",
+        "title": "자재재고실사 반영",
+        "path": "/inventory/material-physical-inv-apply"
+      }
       ]
     }
   ]
