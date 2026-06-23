@@ -122,6 +122,22 @@
           "menuCode": "QC_REQUEST_INSPECT",
           "title": "의뢰검사 입력",
           "path": "/quality/request-inspect"
+        },
+        {
+          "menuCode": "QC_INSPECT",
+          "title": "외관검사",
+          "path": "/quality/inspect"
+        }
+      ]
+    },
+    {
+      "key": "inspection",
+      "title": "검사관리",
+      "items": [
+        {
+          "menuCode": "INSP_RESULT",
+          "title": "통전검사",
+          "path": "/inspection/result"
         }
       ]
     },
