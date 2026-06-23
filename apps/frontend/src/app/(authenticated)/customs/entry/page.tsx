@@ -12,7 +12,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Eye, RefreshCw, FileText, Search, CheckCircle, Package, Layers } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -184,7 +185,7 @@ export default function CustomsEntryPage() {
           <Input label={t("customs.entry.currency")} placeholder="USD" value={form.currency} onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))} fullWidth />
           <Input label={t("customs.entry.declarationDate")} type="date" value={form.declarationDate} onChange={(e) => setForm((p) => ({ ...p, declarationDate: e.target.value }))} fullWidth />
           <Input label={t("customs.entry.clearanceDate")} type="date" value={form.clearanceDate} onChange={(e) => setForm((p) => ({ ...p, clearanceDate: e.target.value }))} fullWidth />
-          <Select label={t("common.status")} options={[{ value: "PENDING", label: t("customs.entry.statusPending") }, { value: "CLEARED", label: t("customs.entry.statusCleared") }, { value: "RELEASED", label: t("customs.entry.statusReleased") }]} value={form.status} onChange={(v) => setForm((p) => ({ ...p, status: v }))} fullWidth />
+          <ComCodeSelect groupCode="CUSTOMS_ENTRY_STATUS" includeAll={false} label={t("common.status")} value={form.status} onChange={(v) => setForm((p) => ({ ...p, status: v }))} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>

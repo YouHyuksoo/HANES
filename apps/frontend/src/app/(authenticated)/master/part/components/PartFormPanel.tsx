@@ -49,13 +49,6 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     [rawLocationOptions, t],
   );
 
-  const partTypeOptions = useMemo(() => [
-    { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
-    { value: "SEMI_PRODUCT", label: t("inventory.stock.wip", "반제품") },
-    { value: "FINISHED", label: t("inventory.stock.fg", "완제품") },
-    { value: "CONSUMABLE", label: t("inventory.stock.consumable", "소모품") },
-  ], [t]);
-
   const iqcOptions = useMemo(() => [
     { value: "Y", label: t("master.part.iqcTarget", "Y (대상)") },
     { value: "N", label: t("master.part.iqcNotTarget", "N (비대상)") },
@@ -300,8 +293,8 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <FieldInput field="markingText" label={t("master.part.markingText", "마킹문구")} wrapperClassName="col-span-2"
               value={form.markingText} maxLength={100}
               onChange={e => setField("markingText", e.target.value)} fullWidth />
-            <FieldSelect field="itemType" label={t("master.part.type")} options={partTypeOptions}
-              value={form.itemType} 
+            <FieldComCodeSelect field="itemType" groupCode="ITEM_TYPE" includeAll={false} label={t("master.part.type")}
+              value={form.itemType}
               onChange={v => setField("itemType", v)}
               fullWidth required />
             <FieldComCodeSelect field="productType" groupCode="PRODUCT_TYPE" includeAll={false}

@@ -10,7 +10,9 @@
 import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Check, Search, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
+import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { WarehouseData, WAREHOUSE_TYPE_COLORS } from "../types";
@@ -31,26 +33,11 @@ export default function WarehouseList({ onHeaderActions }: Props) {
   const [filterType, setFilterType] = useState("");
   const [searchText, setSearchText] = useState("");
 
-  const WAREHOUSE_TYPES = useMemo(() => [
-    { value: "", label: t("inventory.warehouse.warehouseType") },
-    { value: "RAW", label: t("inventory.warehouse.rawWarehouse") },
-    { value: "WIP", label: t("inventory.warehouse.wipWarehouse") },
-    { value: "FG", label: t("inventory.warehouse.fgWarehouse") },
-    { value: "FLOOR", label: t("inventory.warehouse.floorWarehouse") },
-    { value: "DEFECT", label: t("inventory.warehouse.defectWarehouse") },
-    { value: "SCRAP", label: t("inventory.warehouse.scrapWarehouse") },
-    { value: "SUBCON", label: t("inventory.warehouse.subconWarehouse") },
-  ], [t]);
-
-  const warehouseFilterOptions = useMemo(() => [
-    { value: "", label: t("inventory.warehouse.warehouseType") + ": " + t("common.all") },
-    ...WAREHOUSE_TYPES.filter(wt => wt.value).map(wt => ({
-      value: wt.value,
-      label: t("inventory.warehouse.warehouseType") + ": " + wt.label,
-    })),
-  ], [t, WAREHOUSE_TYPES]);
-
-  const getTypeLabel = (type: string) => WAREHOUSE_TYPES.find(wt => wt.value === type)?.label || type;
+  const typeOptions = useComCodeOptions("WAREHOUSE_TYPE_DTO", false);
+  const getTypeLabel = useCallback(
+    (type: string) => typeOptions.find(o => o.value === type)?.label || type,
+    [typeOptions],
+  );
 
   const [formData, setFormData] = useState({
     warehouseCode: "", warehouseName: "", warehouseType: "RAW",
@@ -167,7 +154,7 @@ export default function WarehouseList({ onHeaderActions }: Props) {
       const v = getValue() as string;
       return <span className={`px-2 py-1 rounded text-xs ${v === "Y" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}>{v}</span>;
     }},
-  ], [t]);
+  ], [t, getTypeLabel]);
 
   return (
     <div className="h-full flex flex-col">
@@ -185,7 +172,7 @@ export default function WarehouseList({ onHeaderActions }: Props) {
                 <Input placeholder={t("inventory.warehouse.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-40 flex-shrink-0">
-                <Select options={warehouseFilterOptions} value={filterType} onChange={(v) => setFilterType(v)} fullWidth />
+                <ComCodeSelect groupCode="WAREHOUSE_TYPE_DTO" labelPrefix={t("inventory.warehouse.warehouseType")} value={filterType} onChange={(v) => setFilterType(v)} fullWidth />
               </div>
             </div>
           }
@@ -195,7 +182,7 @@ export default function WarehouseList({ onHeaderActions }: Props) {
 
       <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))} onConfirm={confirmModal.onConfirm} title={confirmModal.title} message={confirmModal.message} variant="danger" />
 
-      <WarehouseForm isOpen={modalOpen} isEdit={!!editingWarehouse} formData={formData} typeOptions={WAREHOUSE_TYPES.filter(wt => wt.value !== "")} onClose={() => setModalOpen(false)} onChange={setFormData} onSave={handleSave} />
+      <WarehouseForm isOpen={modalOpen} isEdit={!!editingWarehouse} formData={formData} typeOptions={typeOptions} onClose={() => setModalOpen(false)} onChange={setFormData} onSave={handleSave} />
     </div>
   );
 }

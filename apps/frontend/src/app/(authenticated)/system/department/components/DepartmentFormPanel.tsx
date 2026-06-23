@@ -14,6 +14,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
 import { api } from "@/services/api";
+import { useUseYnOptions } from "@/components/shared";
 
 interface Department {
   deptCode: string;
@@ -67,13 +68,7 @@ export default function DepartmentFormPanel({ editingDept, departments, onClose,
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
-  const useYnOptions = useMemo(
-    () => [
-      { value: "Y", label: t("common.yes", "사용") },
-      { value: "N", label: t("common.no", "미사용") },
-    ],
-    [t]
-  );
+  const useYnOptions = useUseYnOptions(false);
 
   const parentOptions = useMemo(() => {
     const opts = [{ value: "", label: t("common.none", "없음") }];

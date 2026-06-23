@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { Button, ConfirmModal, Input, Select } from "@/components/ui";
 import type { SelectOption } from "@/components/ui/Select";
+import { UseYnSelect } from "@/components/shared";
 import api from "@/services/api";
 import type { ConsumableItem } from "./ConsumableFormPanel";
 
@@ -214,12 +215,9 @@ export default function ConsumableUsageMapPanel({ item, onClose }: Props) {
                   onChange={(event) => set("usagePerUnit", Number(event.target.value) || 0)}
                   fullWidth
                 />
-                <Select
+                <UseYnSelect
+                  includeAll={false}
                   label={t("common.useYn", "사용여부")}
-                  options={[
-                    { value: "Y", label: t("common.use", "사용") },
-                    { value: "N", label: t("common.notUse", "미사용") },
-                  ]}
                   value={form.useYn}
                   onChange={(value) => set("useYn", value)}
                   fullWidth

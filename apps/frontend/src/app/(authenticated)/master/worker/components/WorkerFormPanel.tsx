@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui";
 import WorkerPhotoUpload from "@/components/worker/WorkerPhotoUpload";
 import api from "@/services/api";
+import { useUseYnOptions } from "@/components/shared";
 import { Worker } from "../types";
 import {
   FieldInput,
@@ -34,6 +35,7 @@ interface Props {
 export default function WorkerFormPanel({ editingWorker, onClose, onSave, animate = true }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingWorker;
+  const useYnOptions = useUseYnOptions(false);
 
   const [form, setForm] = useState({
     workerCode: editingWorker?.workerCode ?? "",
@@ -176,7 +178,7 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
               value={form.quitDate?.slice(0, 10) ?? ""}
               onChange={e => setField("quitDate", e.target.value)} />
             <FieldSelect field="useYn" label={t("master.worker.use", "사용")}
-              options={[{ value: "Y", label: t("common.yes", "사용") }, { value: "N", label: t("common.no", "미사용") }]}
+              options={useYnOptions}
               value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>

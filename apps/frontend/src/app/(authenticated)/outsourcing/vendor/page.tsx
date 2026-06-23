@@ -12,7 +12,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, RefreshCw, Search, Building2 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -171,7 +172,7 @@ export default function VendorPage() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedItem ? t("outsourcing.vendor.editVendor") : t("outsourcing.vendor.register")} size="lg">
         <div className="grid grid-cols-2 gap-4">
           <Input label={t("outsourcing.vendor.vendorCode")} placeholder="VND-001" value={form.vendorCode} onChange={(e) => setForm((p) => ({ ...p, vendorCode: e.target.value }))} fullWidth />
-          <Select label={t("outsourcing.vendor.type")} options={[{ value: "SUBCON", label: t("outsourcing.vendor.typeSubcon") }, { value: "SUPPLIER", label: t("outsourcing.vendor.typeSupplier") }]} value={form.vendorType} onChange={(v) => setForm((p) => ({ ...p, vendorType: v }))} fullWidth />
+          <ComCodeSelect groupCode="VENDOR_TYPE" includeAll={false} label={t("outsourcing.vendor.type")} value={form.vendorType} onChange={(v) => setForm((p) => ({ ...p, vendorType: v }))} fullWidth />
           <Input label={t("outsourcing.vendor.vendorName")} placeholder="" value={form.vendorName} onChange={(e) => setForm((p) => ({ ...p, vendorName: e.target.value }))} fullWidth className="col-span-2" />
           <Input label={t("outsourcing.vendor.bizNo")} placeholder="123-45-67890" value={form.bizNo} onChange={(e) => setForm((p) => ({ ...p, bizNo: e.target.value }))} fullWidth />
           <Input label={t("outsourcing.vendor.ceoName")} value={form.ceoName} onChange={(e) => setForm((p) => ({ ...p, ceoName: e.target.value }))} fullWidth />

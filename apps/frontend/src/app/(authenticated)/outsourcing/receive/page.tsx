@@ -12,8 +12,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Search, Package, CheckCircle, XCircle, Layers } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
-import { QtyInput } from "@/components/shared";
+import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
+import { QtyInput, ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -169,7 +169,7 @@ export default function SubconReceivePage() {
             <QtyInput label={t("outsourcing.receive.goodQty")} placeholder="48" value={Number(form.goodQty) || 0} onChange={(n) => setForm((p) => ({ ...p, goodQty: n ? String(n) : "" }))} fullWidth />
             <QtyInput label={t("outsourcing.receive.defectQty")} placeholder="2" value={Number(form.defectQty) || 0} onChange={(n) => setForm((p) => ({ ...p, defectQty: n ? String(n) : "" }))} fullWidth />
           </div>
-          <Select label={t("outsourcing.receive.inspectResult")} options={[{ value: "PASS", label: t("outsourcing.receive.inspectPass") }, { value: "PARTIAL", label: t("outsourcing.receive.inspectPartial") }, { value: "FAIL", label: t("outsourcing.receive.inspectFail") }]} value={form.inspectResult} onChange={(v) => setForm((p) => ({ ...p, inspectResult: v }))} fullWidth />
+          <ComCodeSelect groupCode="SUBCON_INSPECT_RESULT" includeAll={false} label={t("outsourcing.receive.inspectResult")} value={form.inspectResult} onChange={(v) => setForm((p) => ({ ...p, inspectResult: v }))} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">

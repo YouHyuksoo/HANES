@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ClipboardList, Plus, Edit2, Trash2, Search, RefreshCw, ImageIcon, Upload } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal, ComCodeBadge } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -477,7 +477,7 @@ export default function EquipInspectItemPage() {
                   value={form.itemType} onChange={v => setField("itemType", v as ItemType)} fullWidth />
                 <Select label={t("master.equipInspect.cycle")} options={cycleOptions}
                   value={form.cycle} onChange={v => setField("cycle", v)} fullWidth />
-                <Select label={t("common.useYn", "사용")} options={[{ value: "Y", label: "Y" }, { value: "N", label: "N" }]}
+                <UseYnSelect includeAll={false} label={t("common.useYn", "사용")}
                   value={form.useYn} onChange={v => setField("useYn", v)} fullWidth />
               </div>
             </div>

@@ -10,7 +10,8 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, Input, Select, Button } from "@/components/ui";
+import { Modal, Input, Button } from "@/components/ui";
+import { UseYnSelect } from "@/components/shared";
 import type { ComCodeDetail, ComCodeFormData, INITIAL_FORM } from "../types";
 
 interface CodeFormModalProps {
@@ -125,14 +126,11 @@ export default function CodeFormModal({
           onChange={(e) => handleChange("sortOrder", parseInt(e.target.value) || 1)}
           fullWidth
         />
-        <Select
+        <UseYnSelect
+          includeAll={false}
           label={t("master.code.useYn")}
           value={form.useYn}
           onChange={(val) => handleChange("useYn", val)}
-          options={[
-            { value: "Y", label: t("master.code.inUse") },
-            { value: "N", label: t("master.code.notInUse") },
-          ]}
           fullWidth
         />
         <div className="col-span-2">

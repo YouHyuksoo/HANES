@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button } from "@/components/ui";
 import { FieldInput, FieldSelect } from "./VendorBarcodeFieldHelp";
+import { useUseYnOptions } from "@/components/shared";
 import api from "@/services/api";
 
 interface VendorBarcodeMapping {
@@ -46,6 +47,7 @@ export type { VendorBarcodeMapping };
 export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, animate = true }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingItem;
+  const useYnOptions = useUseYnOptions(false);
 
   const [form, setForm] = useState({
     vendorBarcode: editingItem?.vendorBarcode || "",
@@ -121,7 +123,7 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
               options={MATCH_TYPE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey, o.labelFallback) }))}
               value={form.matchType} onChange={v => setField("matchType", v)} />
             <FieldSelect field="useYn" label={t("master.vendorBarcode.useYn", "사용여부")}
-              options={[{ value: "Y", label: "Y" }, { value: "N", label: "N" }]}
+              options={useYnOptions}
               value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>

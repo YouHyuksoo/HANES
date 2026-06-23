@@ -12,7 +12,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, Search, Package } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -123,7 +124,7 @@ export default function CustomsStockPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("customs.stock.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Select options={[{ value: "", label: t("common.allStatus") }, { value: "BONDED", label: t("customs.stock.statusBonded") }, { value: "PARTIAL", label: t("customs.stock.statusPartial") }, { value: "RELEASED", label: t("customs.stock.statusReleased") }]} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
+              <ComCodeSelect groupCode="CUSTOMS_LOT_STATUS" value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
             </div>
           }
         

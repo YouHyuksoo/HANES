@@ -37,13 +37,6 @@ type IqcAqlPolicyOption = {
 export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingPart;
-  const partTypeOptions = useMemo(() => [
-    { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
-    { value: "SEMI_PRODUCT", label: t("inventory.stock.wip", "반제품") },
-    { value: "FINISHED", label: t("inventory.stock.fg", "완제품") },
-    { value: "CONSUMABLE", label: t("inventory.stock.consumable", "소모품") },
-  ], [t]);
-
   const iqcOptions = [
     { value: "Y", label: t("master.part.iqcTarget", "Y (대상)") },
     { value: "N", label: t("master.part.iqcNotTarget", "N (비대상)") },
@@ -182,7 +175,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
           onChange={e => setField("markingText", e.target.value)} fullWidth />
         <FieldInput field="itemName" label={t("master.part.partName")} required wrapperClassName="col-span-2"
           value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
-        <FieldSelect field="itemType" label={t("master.part.type")} options={partTypeOptions}
+        <FieldComCodeSelect field="itemType" groupCode="ITEM_TYPE" includeAll={false} label={t("master.part.type")}
           value={form.itemType} onChange={v => setField("itemType", v)} fullWidth required />
         <FieldComCodeSelect field="productType" groupCode="PRODUCT_TYPE" includeAll={false}
           label={t("master.part.productType", "제품유형")}
