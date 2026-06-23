@@ -125,6 +125,13 @@ export default function InputAssemblyPage() {
         return;
       }
 
+      if (/^FG\d/i.test(trimmed)) {
+        setWarnMessage(t("production.inputAssembly.scanIsFgLabel", "완제품(FG) 바코드입니다. 반제품(SG) 라벨을 스캔하세요."));
+        setWarnModalOpen(true);
+        setSgInput("");
+        return;
+      }
+
       setSgLoading(true);
       try {
         const res = await api.get(
@@ -181,6 +188,10 @@ export default function InputAssemblyPage() {
     async (no: string) => {
       const trimmed = no.trim();
       if (!trimmed) return;
+      if (/^(FG|SG)\d/i.test(trimmed)) {
+        toast.error(t("production.subprocess.scanIsLabel", "바코드 라벨입니다. 작업지시번호를 입력하거나 검색 버튼을 이용하세요."));
+        return;
+      }
       try {
         const res = await api.get("/production/job-orders", {
           params: { limit: 20, search: trimmed, itemType: "FINISHED" },
