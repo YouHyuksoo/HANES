@@ -1,0 +1,143 @@
+// apps/backend/src/modules/quality/inspection/services/product-traceability.service.ts
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In } from 'typeorm';
+import { FgLabel } from '../../../../entities/fg-label.entity';
+import { SgLabel } from '../../../../entities/sg-label.entity';
+import { ProductGenealogy } from '../../../../entities/product-genealogy.entity';
+import { ProdResult } from '../../../../entities/prod-result.entity';
+import { JobOrder } from '../../../../entities/job-order.entity';
+import { InspectResult } from '../../../../entities/inspect-result.entity';
+import { TraceLog } from '../../../../entities/trace-log.entity';
+import { MatIssue } from '../../../../entities/mat-issue.entity';
+import { MatLot } from '../../../../entities/mat-lot.entity';
+import { PurchaseOrder } from '../../../../entities/purchase-order.entity';
+import { MatArrival } from '../../../../entities/mat-arrival.entity';
+import { IqcLog } from '../../../../entities/iqc-log.entity';
+import { MatReceiving } from '../../../../entities/mat-receiving.entity';
+import { PartMaster } from '../../../../entities/part-master.entity';
+import { BoxMaster } from '../../../../entities/box-master.entity';
+import { PalletMaster } from '../../../../entities/pallet-master.entity';
+import { EquipMaster } from '../../../../entities/equip-master.entity';
+import { WorkerMaster } from '../../../../entities/worker-master.entity';
+import { ProcessMaster } from '../../../../entities/process-master.entity';
+import {
+  MaterialTrace,
+} from '../dto/product-traceability.dto';
+
+@Injectable()
+export class ProductTraceabilityService {
+  private readonly logger = new Logger(ProductTraceabilityService.name);
+
+  constructor(
+    @InjectRepository(FgLabel) private readonly fgLabelRepo: Repository<FgLabel>,
+    @InjectRepository(SgLabel) private readonly sgLabelRepo: Repository<SgLabel>,
+    @InjectRepository(ProductGenealogy) private readonly genealogyRepo: Repository<ProductGenealogy>,
+    @InjectRepository(ProdResult) private readonly prodResultRepo: Repository<ProdResult>,
+    @InjectRepository(JobOrder) private readonly jobOrderRepo: Repository<JobOrder>,
+    @InjectRepository(InspectResult) private readonly inspectResultRepo: Repository<InspectResult>,
+    @InjectRepository(TraceLog) private readonly traceLogRepo: Repository<TraceLog>,
+    @InjectRepository(MatIssue) private readonly matIssueRepo: Repository<MatIssue>,
+    @InjectRepository(MatLot) private readonly matLotRepo: Repository<MatLot>,
+    @InjectRepository(PurchaseOrder) private readonly poRepo: Repository<PurchaseOrder>,
+    @InjectRepository(MatArrival) private readonly arrivalRepo: Repository<MatArrival>,
+    @InjectRepository(IqcLog) private readonly iqcRepo: Repository<IqcLog>,
+    @InjectRepository(MatReceiving) private readonly receivingRepo: Repository<MatReceiving>,
+    @InjectRepository(PartMaster) private readonly partMasterRepo: Repository<PartMaster>,
+    @InjectRepository(BoxMaster) private readonly boxMasterRepo: Repository<BoxMaster>,
+    @InjectRepository(PalletMaster) private readonly palletMasterRepo: Repository<PalletMaster>,
+    @InjectRepository(EquipMaster) private readonly equipMasterRepo: Repository<EquipMaster>,
+    @InjectRepository(WorkerMaster) private readonly workerMasterRepo: Repository<WorkerMaster>,
+    @InjectRepository(ProcessMaster) private readonly processMasterRepo: Repository<ProcessMaster>,
+  ) {}
+
+  private fmtDate(d: Date | null | undefined): string | null {
+    return d instanceof Date ? d.toISOString() : null;
+  }
+
+  /**
+   * 자재 LOT 집합을 PO→입하→IQC→입고까지 역추적해 MaterialTrace[]로 조립한다.
+   * @param matUidToCtx matUid → { usedQty, orderNo(투입 작업지시) }
+   */
+  private async resolveMaterialTraces(
+    matUidToCtx: Map<string, { usedQty: number; orderNo: string | null; issueQty: number; issueDate: Date | null }>,
+    company: string,
+    plant: string,
+  ): Promise<MaterialTrace[]> {
+    const matUids = [...matUidToCtx.keys()];
+    if (matUids.length === 0) return [];
+
+    const lots = await this.matLotRepo.find({ where: { matUid: In(matUids), company, plant } });
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
+
+    const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
+    const parts = itemCodes.length
+      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    const poNos = [...new Set(lots.map((l) => l.poNo).filter((v): v is string => !!v))];
+    const pos = poNos.length
+      ? await this.poRepo.find({ where: { poNo: In(poNos), company, plant } })
+      : [];
+    const poMap = new Map(pos.map((p) => [p.poNo, p]));
+
+    const arrivalNos = [...new Set(lots.map((l) => l.arrivalNo).filter((v): v is string => !!v))];
+    const arrivals = arrivalNos.length
+      ? await this.arrivalRepo.find({ where: { arrivalNo: In(arrivalNos), company, plant } })
+      : [];
+    // arrivalNo+seq 매칭: lot.arrivalSeq 우선, 없으면 첫 행
+    const arrivalMap = new Map<string, MatArrival>();
+    for (const a of arrivals) arrivalMap.set(`${a.arrivalNo}#${a.seq}`, a);
+    const arrivalFirst = new Map<string, MatArrival>();
+    for (const a of arrivals) if (!arrivalFirst.has(a.arrivalNo)) arrivalFirst.set(a.arrivalNo, a);
+
+    // IQC: matUid 우선, 없으면 arrivalNo
+    const iqcByMat = new Map<string, IqcLog>();
+    const iqcByArrival = new Map<string, IqcLog>();
+    const iqcs = await this.iqcRepo.find({
+      where: [
+        { matUid: In(matUids), company, plant },
+        ...(arrivalNos.length ? [{ arrivalNo: In(arrivalNos), company, plant }] : []),
+      ],
+      order: { inspectDate: 'DESC' },
+    });
+    for (const q of iqcs) {
+      if (q.matUid && !iqcByMat.has(q.matUid)) iqcByMat.set(q.matUid, q);
+      if (q.arrivalNo && !iqcByArrival.has(q.arrivalNo)) iqcByArrival.set(q.arrivalNo, q);
+    }
+
+    const receivings = await this.receivingRepo.find({ where: { matUid: In(matUids), company, plant }, order: { receiveDate: 'ASC' } });
+    const recvMap = new Map<string, MatReceiving>();
+    for (const r of receivings) if (!recvMap.has(r.matUid)) recvMap.set(r.matUid, r);
+
+    const result: MaterialTrace[] = [];
+    for (const matUid of matUids) {
+      const lot = lotMap.get(matUid);
+      const ctx = matUidToCtx.get(matUid)!;
+      const part = lot ? partMap.get(lot.itemCode) : undefined;
+      const po = lot?.poNo ? poMap.get(lot.poNo) : undefined;
+      const arrival = lot?.arrivalNo
+        ? (lot.arrivalSeq != null ? arrivalMap.get(`${lot.arrivalNo}#${lot.arrivalSeq}`) : undefined) ?? arrivalFirst.get(lot.arrivalNo)
+        : undefined;
+      const iqc = iqcByMat.get(matUid) ?? (lot?.arrivalNo ? iqcByArrival.get(lot.arrivalNo) : undefined);
+      const recv = recvMap.get(matUid);
+
+      result.push({
+        matUid,
+        itemCode: lot?.itemCode ?? '',
+        itemName: part?.itemName ?? '',
+        usedQty: ctx.usedQty,
+        unit: part?.unit ?? 'EA',
+        vendorCode: lot?.vendor ?? null,
+        vendorName: lot?.vendor ?? null,
+        po: po ? { poNo: po.poNo, orderDate: this.fmtDate(po.orderDate), partnerName: po.partnerName } : null,
+        arrival: arrival ? { arrivalNo: arrival.arrivalNo, arrivalDate: this.fmtDate(arrival.arrivalDate), qty: arrival.qty } : null,
+        iqc: iqc ? { result: iqc.result, inspectType: iqc.inspectType, inspectorName: iqc.inspectorName, inspectDate: this.fmtDate(iqc.inspectDate), certFilePath: iqc.certFilePath } : null,
+        receiving: recv ? { receiveNo: recv.receiveNo, receiveDate: this.fmtDate(recv.receiveDate) } : null,
+        issue: { orderNo: ctx.orderNo, issueQty: ctx.issueQty, issueDate: this.fmtDate(ctx.issueDate) },
+      });
+    }
+    return result;
+  }
+}
