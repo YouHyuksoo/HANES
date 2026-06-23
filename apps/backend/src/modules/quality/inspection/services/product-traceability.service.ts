@@ -176,19 +176,15 @@ export class ProductTraceabilityService {
   /** TRACE_LOGS 우선, 없으면 PROD_RESULTS + INSPECT_RESULTS(시리얼 격리)로 공정 타임라인 */
   private async resolveProcessHistory(orderNo: string | null, serial: string, company: string, plant: string): Promise<ProcessStep[]> {
     const traceLogs = await this.traceLogRepo.find({ where: { serialNo: serial, company, plant }, order: { traceTime: 'ASC', seq: 'ASC' } });
-    const prodResults = orderNo
-      ? await this.prodResultRepo.find({ where: { orderNo, company, plant }, order: { startAt: 'ASC' } })
-      : [];
-
-    const procCodes = new Set<string>();
-    const equipCodes = new Set<string>();
-    const workerIds = new Set<string>();
-    for (const t of traceLogs) { if (t.processCode) procCodes.add(t.processCode); if (t.equipCode) equipCodes.add(t.equipCode); if (t.workerId) workerIds.add(t.workerId); }
-    for (const p of prodResults) { if (p.processCode) procCodes.add(p.processCode); if (p.equipCode) equipCodes.add(p.equipCode); if (p.workerId) workerIds.add(p.workerId); }
-    const { procMap, equipMap, workerMap } = await this.loadMasters([...procCodes], [...equipCodes], [...workerIds], company, plant);
-
     const steps: ProcessStep[] = [];
+
+    // TRACE_LOGS가 있으면 그 경로만 사용 — PROD_RESULTS는 조회하지 않는다(불필요한 왕복 제거).
     if (traceLogs.length > 0) {
+      const procCodes = new Set<string>();
+      const equipCodes = new Set<string>();
+      const workerIds = new Set<string>();
+      for (const t of traceLogs) { if (t.processCode) procCodes.add(t.processCode); if (t.equipCode) equipCodes.add(t.equipCode); if (t.workerId) workerIds.add(t.workerId); }
+      const { procMap, equipMap, workerMap } = await this.loadMasters([...procCodes], [...equipCodes], [...workerIds], company, plant);
       for (const t of traceLogs) {
         steps.push({
           process: t.processCode ?? '',
@@ -203,6 +199,16 @@ export class ProductTraceabilityService {
       }
       return steps;
     }
+
+    // TRACE_LOGS 없음 → PROD_RESULTS + INSPECT_RESULTS(시리얼 격리) fallback
+    const prodResults = orderNo
+      ? await this.prodResultRepo.find({ where: { orderNo, company, plant }, order: { startAt: 'ASC' } })
+      : [];
+    const procCodes = new Set<string>();
+    const equipCodes = new Set<string>();
+    const workerIds = new Set<string>();
+    for (const p of prodResults) { if (p.processCode) procCodes.add(p.processCode); if (p.equipCode) equipCodes.add(p.equipCode); if (p.workerId) workerIds.add(p.workerId); }
+    const { procMap, equipMap, workerMap } = await this.loadMasters([...procCodes], [...equipCodes], [...workerIds], company, plant);
 
     const resultNos = prodResults.map((p) => p.resultNo);
     const insp = resultNos.length
