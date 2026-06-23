@@ -81,13 +81,19 @@ export function useProductInvCount(): UseProductInvCountReturn {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await api.get<ProductPhysicalInvSession>(
+        const { data } = await api.get<{ data: ProductPhysicalInvSession | null }>(
           "/inventory/product-physical-inv/active",
           { suppressErrorModal: true },
         );
+        const sessionData = data?.data ?? null;
         if (!cancelled) {
-          setSession(data);
-          setNoActiveInv(false);
+          if (sessionData) {
+            setSession(sessionData);
+            setNoActiveInv(false);
+          } else {
+            setSession(null);
+            setNoActiveInv(true);
+          }
         }
       } catch {
         if (!cancelled) {
@@ -110,36 +116,39 @@ export function useProductInvCount(): UseProductInvCountReturn {
       setIsScanning(true);
       setError(null);
       try {
-        const { data } = await api.post<{
-          itemCode: string;
-          itemName: string;
-          countedQty: number;
-          items: ProductCountItem[];
+        const { data: res } = await api.post<{
+          data: {
+            itemCode: string;
+            itemName: string;
+            countedQty: number;
+            items: ProductCountItem[];
+          };
         }>("/inventory/product-physical-inv/count", {
           sessionId: session.sessionId,
           barcode,
         });
+        const result = res?.data ?? (res as unknown as { itemCode: string; itemName: string; countedQty: number; items?: ProductCountItem[] });
         // 서버 응답에서 갱신된 품목 목록 반영
-        if (data.items) {
-          setCountItems(data.items);
+        if (result.items) {
+          setCountItems(result.items);
         } else {
           // 서버가 items 반환 안 하면 로컬에서 낙관적 업데이트
           setCountItems((prev) => {
-            const exists = prev.some((item) => item.itemCode === data.itemCode);
+            const exists = prev.some((item) => item.itemCode === result.itemCode);
             if (exists) {
               return prev.map((item) =>
-                item.itemCode === data.itemCode
-                  ? { ...item, countedQty: data.countedQty }
+                item.itemCode === result.itemCode
+                  ? { ...item, countedQty: result.countedQty }
                   : item,
               );
             }
             return [
               ...prev,
               {
-                itemCode: data.itemCode,
-                itemName: data.itemName,
+                itemCode: result.itemCode,
+                itemName: result.itemName,
                 systemQty: 0,
-                countedQty: data.countedQty,
+                countedQty: result.countedQty,
               },
             ];
           });
@@ -147,9 +156,9 @@ export function useProductInvCount(): UseProductInvCountReturn {
         setHistory((prev) => [
           {
             barcode,
-            itemCode: data.itemCode,
-            itemName: data.itemName,
-            countedQty: data.countedQty,
+            itemCode: result.itemCode,
+            itemName: result.itemName,
+            countedQty: result.countedQty,
             timestamp: new Date().toLocaleTimeString(),
           },
           ...prev,

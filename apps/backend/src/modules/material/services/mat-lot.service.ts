@@ -126,13 +126,18 @@ export class MatLotService {
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
 
-    const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null;
+    const [part, stock] = await Promise.all([
+      lot.itemCode ? this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null,
+      this.matStockRepository.findOne({ where: { matUid, ...tenantWhere }, order: { warehouseCode: 'ASC' } }),
+    ]);
 
     return {
       ...lot,
       itemCode: lot.itemCode,
       itemName: part?.itemName ?? null,
       unit: part?.unit ?? null,
+      warehouseCode: stock?.warehouseCode ?? null,
+      qty: stock?.qty ?? lot.currentQty,
     };
   }
 

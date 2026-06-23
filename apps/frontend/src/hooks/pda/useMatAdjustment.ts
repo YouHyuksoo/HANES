@@ -22,7 +22,7 @@ export interface MatLotAdjustData {
   itemName: string;
   qty: number;
   unit: string;
-  warehouse: string;
+  warehouseCode: string | null;
 }
 
 /** 조정 이력 항목 */
@@ -87,10 +87,11 @@ export function useMatAdjustment(): UseMatAdjustmentReturn {
     setError(null);
     setScannedLot(null);
     try {
-      const { data } = await api.get<MatLotAdjustData>(
+      const { data } = await api.get<{ data: MatLotAdjustData }>(
         `/material/lots/by-uid/${encodeURIComponent(matUid)}`,
       );
-      setScannedLot(data);
+      const lotData = data?.data ?? (data as unknown as MatLotAdjustData);
+      setScannedLot(lotData);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -111,11 +112,14 @@ export function useMatAdjustment(): UseMatAdjustmentReturn {
       setIsAdjusting(true);
       setError(null);
       try {
+        const afterQty = (scannedLot.qty ?? 0) + adjustQty;
+        const reason = reasonText.trim() || reasonCode;
         await api.post("/material/adjustment/pending", {
+          warehouseCode: scannedLot.warehouseCode,
+          itemCode: scannedLot.itemCode,
           matUid: scannedLot.matUid,
-          adjustQty,
-          reasonCode,
-          reasonText: reasonText || undefined,
+          afterQty,
+          reason,
         });
         setHistory((prev) => [
           {
