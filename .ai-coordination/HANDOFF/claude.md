@@ -2,9 +2,17 @@
 
 ## Last Update
 
-2026-06-24 (local)
+2026-06-24 (local) — T-KIOSK-SG-LABEL-PRINT 완료
 
 ## Latest
+
+- T-KIOSK-SG-LABEL-PRINT(키오스크 SG 라벨 발행공정 자동 출력) 완료: 키오스크 실적저장 시 라우팅 `ISSUE_SG_LABEL_YN='Y'` 발행공정이면 백엔드가 발행한 `SG_LABELS`를 **HANES Print Agent(Go, PNG, `printAgentPng`)로 모달 없이 자동 출력**.
+  - **흐름**: `ProductionInputBar` 실적저장 성공 → `onResultSaved(resultNo)` 상위 전달 → `page.tsx` `handleResultSaved` → `SgLabelPrintHost.printByResultNo` → `GET /production/subprocess-kitting/sg-labels-by-result/:resultNo`(발행분 0건이면 무동작) → 오프스크린 `LabelPrintRenderer` 렌더 → `printLabelNodesViaAgent`(신규 `services/label-print.ts`, MatLabelPreviewModal 검증로직 추출: SVG foreignObject→canvas→PNG base64→`printAgentPng`). **백엔드 SG 발행(`issueSgLabelInTx`)은 기존 동작 그대로**, 출력만 추가.
+  - **SG 라벨 디자인 출처**: 사용자 선택대로 `master/label`에 **'sg'(반제품 SG) 카테고리 신규**(하드코딩 인라인 대신 기존 확장형 라벨템플릿 체계에 편입). BE dto `LABEL_TEMPLATE_CATEGORIES`에 `'sg'` 추가, FE `types.ts`(LabelCategory/LabelSourceTable/`SG_LABEL_DEFAULT_DESIGN` 70×40mm + createDefaultLabelDesign 분기), `labelSources.ts`(sg_label 소스/필드), `page.tsx`(sourceCategoryMap), `LabelObjectDesigner.tsx`(소스 라벨). 키오스크 호스트는 `GET /master/label-templates?category=sg`로 템플릿 로드(없으면 `createDefaultLabelDesign("sg")` 폴백).
+  - i18n: `master.label.srcSgLabel` + `kiosk.sgLabel.{prepareFailed,printSent,printError}` ko/en/zh/vi 4파일 surgical 편집(BOM 없음·JSON 유효 검증). 검증: FE+BE tsc **0/0**, 신규 구조테스트 `kiosk-sg-label-print.structure.test.mjs` **pass**, 기존 pallet-category 테스트 **pass**.
+  - **번들**: 백엔드 기본 bundleCount=1 → 실적 1건당 SG 라벨 1장(키오스크는 bundleCount 미전송). 번들 UI 미추가(기본값 수용).
+  - **systemic check(비범위 보고)**: `production/subprocess-kitting` 페이지는 발행된 SG를 **표시만** 하고 에이전트 출력 미연동. 이번 요청은 키오스크 한정이라 미확장 — 동일 패턴 적용 필요 시 사용자 확인 후 진행 권장.
+  - **LOCKS/JOURNAL/ARCHIVE/TASKS 미기록**: 세션 시작 시점 git status상 codex가 `LOCKS.md`/`JOURNAL.md`/`ARCHIVE.md`/`TASKS.md`를 active 잠금·미커밋 편집 중 → 직전 claude 세션 관례대로 충돌 회피(내 LOCKS 항목 `T-KIOSK-SG-LABEL-PRINT` 제거 및 JOURNAL/ARCHIVE 기록 보류, 상세는 본 핸드오프). codex가 LOCKS.md 릴리스 후 해당 잠금 제거 필요.
 
 - T-ASSEMBLY(조립 실적입력 재설계) 완료(커밋 4657f328,8342ce45,410d70a0,3991fb63,84a0e336,8fba9994): `/production/input-assembly`를 **고정 스캔 2영역 + 2단계 커밋**으로 전면 재설계. 계획 `docs/superpowers/plans/2026-06-23-input-assembly-redesign.md`, SDD 5 Task + 최종 통합리뷰(Critical/Important 0).
   - **흐름**: ① 반제품(SG) 세트 스캔(준비, 미커밋·리셋가능) → ② **조립 실행=FG 바코드 채번+라벨 1장 발행**(`POST /production/subprocess-kitting/issue-label {orderNo,equipCode}`, FgLabel status='ISSUED', 매핑/소비 없음) → ③ **실물 FG 라벨 스캔=확정**(`POST .../confirm {fgBarcode,orderNo,equipCode,processCode,sgBarcodes}`): genealogy(FG→SG, FG→MAT_LOT) + SG 1소비 + 설비 WIP 자재 BOM(qtyPer) 차감 + ProdResult(goodQty:1 DONE) + FG WIP 재고, **단일 트랜잭션**.
