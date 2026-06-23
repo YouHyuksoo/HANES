@@ -466,17 +466,24 @@ export class ProductTraceabilityService {
     const masters = consumableCodes.length
       ? await this.consumableMasterRepo.find({ where: { consumableCode: In(consumableCodes), company, plant } })
       : [];
-    const nameMap = new Map(masters.map((m) => [m.consumableCode, m.consumableName]));
+    const masterMap = new Map(masters.map((m) => [m.consumableCode, m]));
 
-    return logs.map((log) => ({
-      consumableCode: log.consumableCode,
-      consumableName: nameMap.get(log.consumableCode) ?? log.consumableCode,
-      equipCode: log.equipCode,
-      action: log.action,
-      mountAt: this.fmtDate(log.mountDate) ?? this.fmtDate(log.createdAt),
-      workerId: log.workerId ?? null,
-      remark: log.remark ?? null,
-    }));
+    return logs.map((log) => {
+      const m = masterMap.get(log.consumableCode);
+      return {
+        consumableCode: log.consumableCode,
+        consumableName: m?.consumableName ?? log.consumableCode,
+        equipCode: log.equipCode,
+        action: log.action,
+        mountAt: this.fmtDate(log.mountDate) ?? this.fmtDate(log.createdAt),
+        workerId: log.workerId ?? null,
+        remark: log.remark ?? null,
+        expectedLife: m?.expectedLife ?? null,
+        currentCount: m?.currentCount ?? null,
+        warningCount: m?.warningCount ?? null,
+        lifeStatus: m?.status ?? null,
+      };
+    });
   }
 
   /**

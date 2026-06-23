@@ -88,6 +88,10 @@ export interface EquipConsumable {
   mountAt: string | null;
   workerId: string | null;
   remark: string | null;
+  expectedLife: number | null;
+  currentCount: number | null;
+  warningCount: number | null;
+  lifeStatus: string | null;
 }
 
 export interface DefectRecord {
