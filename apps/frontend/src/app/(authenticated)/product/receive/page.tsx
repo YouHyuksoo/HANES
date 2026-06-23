@@ -212,7 +212,7 @@ export default function ProductReceivePage() {
                   </div>
                 </div>
               }
-              sqlQuery={`SELECT *\nFROM PROD_RECEIVES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
+              sqlQuery={`SELECT *\nFROM PRODUCT_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND TRANS_TYPE IN ('FG_IN', 'FG_IN_CANCEL', 'WIP_IN', 'WIP_IN_CANCEL')\nORDER BY TRANS_DATE DESC`}
             />
           </CardContent>
         </Card>

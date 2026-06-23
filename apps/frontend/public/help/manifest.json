@@ -177,6 +177,16 @@
       "title": "출하관리",
       "items": [
         {
+          "menuCode": "SHIP_ORDER",
+          "title": "출하지시등록",
+          "path": "/shipping/order"
+        },
+        {
+          "menuCode": "SHIP_PALLET",
+          "title": "팔레트적재",
+          "path": "/shipping/pallet"
+        },
+        {
           "menuCode": "SHIP_PACK",
           "title": "제품포장관리",
           "path": "/shipping/pack"
