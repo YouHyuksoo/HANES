@@ -13,7 +13,7 @@ import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
-import { KitDto } from '../dto/subprocess-kitting.dto';
+import { KitDto, IssueLabelDto, ConfirmAssemblyDto } from '../dto/subprocess-kitting.dto';
 import { SubprocessKittingService } from '../services/subprocess-kitting.service';
 
 @ApiTags('생산관리 - 서브공정 키팅')
@@ -32,6 +32,43 @@ export class SubprocessKittingController {
   ) {
     const data = await this.service.kit(dto, company, plant, req.user?.id ?? 'system');
     return ResponseUtil.success(data, '서브공정 키팅이 완료되었습니다.');
+  }
+
+  @Post('issue-label')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '조립 라벨 발행 — FG 바코드 채번 + ISSUED 저장(SG·자재·실적·재고 미반영)' })
+  async issueLabel(
+    @Body() dto: IssueLabelDto,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.service.issueLabel(
+      dto.orderNo,
+      dto.equipCode,
+      company,
+      plant,
+      req.user?.id ?? 'system',
+    );
+    return ResponseUtil.success(data, '조립 라벨이 발행되었습니다.');
+  }
+
+  @Post('confirm')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '조립 확정 — 실물 FG 라벨 스캔으로 genealogy+소비+실적+재고 단일 트랜잭션 확정' })
+  async confirm(
+    @Body() dto: ConfirmAssemblyDto,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.service.confirmAssembly(
+      dto,
+      company,
+      plant,
+      req.user?.id ?? 'system',
+    );
+    return ResponseUtil.success(data, '조립이 확정되었습니다.');
   }
 
   @Get('sg-labels-by-result/:resultNo')

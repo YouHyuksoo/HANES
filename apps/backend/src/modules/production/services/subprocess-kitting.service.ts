@@ -26,7 +26,7 @@ import { SgLabel } from '../../../entities/sg-label.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
-import { KitDto } from '../dto/subprocess-kitting.dto';
+import { KitDto, ConfirmAssemblyDto } from '../dto/subprocess-kitting.dto';
 import { In } from 'typeorm';
 
 /** 제품 WIP 공정창고 코드 — 생산실적 자동 적재(adsorbProductStockInTx)와 동일하게 WIP_MAIN 사용 */
@@ -287,6 +287,257 @@ export class SubprocessKittingService {
       );
 
       return { resultNo, fgBarcodes };
+    });
+  }
+
+  /**
+   * 조립 라벨 발행 (② FG 채번 + ISSUED 저장).
+   * SG·자재·실적·재고는 미반영. return { fgBarcode }.
+   */
+  async issueLabel(
+    orderNo: string,
+    equipCode: string,
+    company: string,
+    plant: string,
+    workerId?: string,
+  ): Promise<{ fgBarcode: string }> {
+    const tenantWhere = { company, plant };
+
+    return this.tx.run(async (qr) => {
+      // 1. 작업지시 조회 + 완제품 검증
+      const jobOrder = await qr.manager.findOne(JobOrder, {
+        where: { orderNo, ...tenantWhere },
+        relations: ['part'],
+      });
+      if (!jobOrder) {
+        throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
+      }
+      if (jobOrder.part?.itemType !== 'FINISHED') {
+        throw new BadRequestException('완제품 작업지시만 라벨 발행 가능합니다.');
+      }
+
+      // 2. FG 바코드 채번
+      const fgBarcode = await this.numbering.nextFgBarcode(qr);
+
+      // 3. FgLabel status='ISSUED' 저장 (SG·자재·실적·재고 미반영)
+      await qr.manager.save(FgLabel, {
+        fgBarcode,
+        itemCode: jobOrder.itemCode,
+        orderNo,
+        status: 'ISSUED',
+        equipCode,
+        workerId: workerId ?? null,
+        inspectPassYn: null,
+        company,
+        plant,
+      });
+
+      this.logger.log(`조립 라벨 발행: ${fgBarcode} (orderNo=${orderNo}, equip=${equipCode})`);
+      return { fgBarcode };
+    });
+  }
+
+  /**
+   * 조립 확정 (③ 실물 FG 라벨 스캔 → 단일 트랜잭션).
+   * genealogy(FG→SG, FG→MAT_LOT) + SG 소비 + 설비 WIP 자재 BOM 차감 + ProdResult + FG WIP 재고.
+   * return { resultNo, fgBarcode }.
+   */
+  async confirmAssembly(
+    dto: ConfirmAssemblyDto,
+    company: string,
+    plant: string,
+    workerId?: string,
+  ): Promise<{ resultNo: string; fgBarcode: string }> {
+    const tenantWhere = { company, plant };
+    const { fgBarcode, orderNo, equipCode, processCode, circuitNo } = dto;
+
+    return this.tx.run(async (qr) => {
+      // 1. FgLabel 조회 — status='ISSUED' + orderNo 일치 확인
+      const fgLabel = await qr.manager.findOne(FgLabel, {
+        where: { fgBarcode, ...tenantWhere },
+      });
+      if (!fgLabel) {
+        throw new BadRequestException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
+      }
+      if (fgLabel.status !== 'ISSUED') {
+        throw new BadRequestException(
+          `FG 라벨 상태가 ISSUED가 아닙니다: ${fgBarcode} (${fgLabel.status})`,
+        );
+      }
+      if (fgLabel.orderNo !== orderNo) {
+        throw new BadRequestException(
+          `FG 라벨의 작업지시가 일치하지 않습니다: ${fgBarcode} (라벨=${fgLabel.orderNo ?? '-'}, 요청=${orderNo})`,
+        );
+      }
+
+      // 중복 확정 방지: 이미 genealogy가 있으면 거부
+      const existingGenealogy = await qr.manager.findOne(ProductGenealogy, {
+        where: { parentType: 'FG', parentKey: fgBarcode, company, plant },
+      });
+      if (existingGenealogy) {
+        throw new BadRequestException(`이미 확정된 FG 라벨입니다: ${fgBarcode}`);
+      }
+
+      // 2. 작업지시 + 완제품 BOM 조회 (kit 패턴)
+      const jobOrder = await qr.manager.findOne(JobOrder, {
+        where: { orderNo, ...tenantWhere },
+        relations: ['part'],
+      });
+      if (!jobOrder) {
+        throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
+      }
+      if (jobOrder.part?.itemType !== 'FINISHED') {
+        throw new BadRequestException('완제품 작업지시만 조립 확정 가능합니다.');
+      }
+
+      const bomRows = await qr.manager.find(BomMaster, {
+        where: { parentItemCode: jobOrder.itemCode, useYn: 'Y', ...tenantWhere },
+      });
+      if (bomRows.length === 0) {
+        throw new BadRequestException(`완제품 BOM이 없습니다: ${jobOrder.itemCode}`);
+      }
+
+      const childCodes = [...new Set(bomRows.map((b) => b.childItemCode))];
+      const childParts = await qr.manager.find(PartMaster, {
+        where: { itemCode: In(childCodes), ...tenantWhere },
+        select: ['itemCode', 'itemType'],
+      });
+      const semiCodeSet = new Set(
+        childParts.filter((p) => p.itemType === 'SEMI_PRODUCT').map((p) => p.itemCode),
+      );
+      const rawCodeSet = new Set(
+        childParts.filter((p) => p.itemType === 'RAW_MATERIAL').map((p) => p.itemCode),
+      );
+      // rawCodeSet qtyPer 매핑
+      const rawQtyPerByItem = new Map<string, number>();
+      for (const b of bomRows) {
+        if (rawCodeSet.has(b.childItemCode)) {
+          rawQtyPerByItem.set(b.childItemCode, Number(b.qtyPer));
+        }
+      }
+
+      // 3. 스캔된 SG 검증 (오투입 포함)
+      const sgBarcodes = [...new Set(dto.sgBarcodes)];
+      const sgLabels = await qr.manager.find(SgLabel, {
+        where: { sgBarcode: In(sgBarcodes), ...tenantWhere },
+      });
+      const foundSet = new Set(sgLabels.map((s) => s.sgBarcode));
+      const missing = sgBarcodes.filter((b) => !foundSet.has(b));
+      if (missing.length > 0) {
+        throw new BadRequestException(`존재하지 않는 SG 라벨: ${missing.join(', ')}`);
+      }
+      for (const sg of sgLabels) {
+        if (!['IN_STOCK', 'MOUNTED'].includes(sg.status)) {
+          throw new BadRequestException(
+            `사용할 수 없는 SG 라벨 상태입니다: ${sg.sgBarcode} (${sg.status})`,
+          );
+        }
+        if (sg.remainQty <= 0) {
+          throw new BadRequestException(`잔량이 없는 SG 라벨입니다: ${sg.sgBarcode}`);
+        }
+        if (!semiCodeSet.has(sg.itemCode)) {
+          throw new BadRequestException(
+            `BOM에 없는 반제품 SG 라벨입니다(오투입): ${sg.sgBarcode} (${sg.itemCode})`,
+          );
+        }
+      }
+
+      // 4. SG 1씩 소비 + genealogy(FG→SG, qty:1)
+      for (const sg of sgLabels) {
+        sg.remainQty -= 1;
+        sg.status = sg.remainQty === 0 ? 'CONSUMED' : 'MOUNTED';
+        sg.currentProcessCode = processCode;
+        await qr.manager.save(SgLabel, sg);
+
+        await qr.manager.save(ProductGenealogy, {
+          genealogyId: await this.numbering.nextGenealogyId(qr),
+          parentType: 'FG',
+          parentKey: fgBarcode,
+          childType: 'SG',
+          childKey: sg.sgBarcode,
+          itemCode: sg.itemCode,
+          qty: 1,
+          processCode,
+          circuitNo: circuitNo ?? null,
+          company,
+          plant,
+        });
+      }
+
+      // 5. 설비 WIP 자재 BOM 소요량 차감 + genealogy(FG→MAT_LOT) per lot
+      //    제품 수량 1 고정이므로 qtyPer = 1개분 소요량
+      const resultNoForRef = await this.numbering.nextProdResultNo(qr);
+      for (const [itemCode, qtyPer] of rawQtyPerByItem) {
+        const deductedLots = await this.wipMatStockService.deductStockInTx(qr, {
+          equipCode,
+          itemCode,
+          qty: qtyPer,
+          transType: 'PROD_CONSUME',
+          refType: 'ASSEMBLY',
+          refId: resultNoForRef,
+          orderNo,
+          stockPolicy: 'BLOCK',
+          workerId: workerId ?? null,
+          company,
+          plant,
+        });
+
+        for (const lot of deductedLots) {
+          await qr.manager.save(ProductGenealogy, {
+            genealogyId: await this.numbering.nextGenealogyId(qr),
+            parentType: 'FG',
+            parentKey: fgBarcode,
+            childType: 'MAT_LOT',
+            childKey: lot.matUid,
+            itemCode,
+            qty: lot.qty,
+            processCode,
+            circuitNo: circuitNo ?? null,
+            company,
+            plant,
+          });
+        }
+      }
+
+      // 6. ProdResult 저장
+      const now = new Date();
+      await qr.manager.save(ProdResult, {
+        resultNo: resultNoForRef,
+        orderNo,
+        processCode,
+        goodQty: 1,
+        defectQty: 0,
+        status: 'DONE',
+        startAt: now,
+        endAt: now,
+        equipCode,
+        workerId: workerId ?? null,
+        company,
+        plant,
+      });
+
+      // 7. FG WIP 재고 적재 (kit와 동일: productInventory.receiveStockInTx)
+      await this.productInventory.receiveStockInTx(qr, {
+        warehouseId: WIP_WAREHOUSE,
+        itemCode: jobOrder.itemCode,
+        itemType: 'FINISHED',
+        qty: 1,
+        transType: 'WIP_IN',
+        orderNo,
+        processCode,
+        refType: 'ASSEMBLY',
+        refId: resultNoForRef,
+        workerId: workerId ?? undefined,
+        remark: '조립 확정 WIP 적재',
+        company,
+        plant,
+      });
+
+      this.logger.log(
+        `조립 확정: ${fgBarcode} → ${WIP_WAREHOUSE} (실적 #${resultNoForRef})`,
+      );
+
+      return { resultNo: resultNoForRef, fgBarcode };
     });
   }
 
