@@ -149,6 +149,11 @@
           "path": "/quality/defect"
         },
         {
+          "menuCode": "QC_REWORK",
+          "title": "재작업 지시 관리",
+          "path": "/quality/rework"
+        },
+        {
           "menuCode": "QC_REWORK_INSPECT",
           "title": "재작업검사",
           "path": "/quality/rework-inspect"
