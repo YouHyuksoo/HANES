@@ -23,6 +23,10 @@ import { WorkerMaster } from '../../../../entities/worker-master.entity';
 import { ProcessMaster } from '../../../../entities/process-master.entity';
 import {
   MaterialTrace,
+  ProcessStep,
+  InspectionRecord,
+  SemiProductTrace,
+  ProductTraceabilityDto,
 } from '../dto/product-traceability.dto';
 
 @Injectable()
@@ -139,5 +143,193 @@ export class ProductTraceabilityService {
       });
     }
     return result;
+  }
+
+  // ─── Step 1: 마스터 캐시 + 헬퍼 ────────────────────────────────────────────
+
+  private async loadMasters(processCodes: string[], equipCodes: string[], workerIds: string[], company: string, plant: string) {
+    const procMap = new Map<string, string>();
+    if (processCodes.length) {
+      const rows = await this.processMasterRepo.find({ where: { processCode: In(processCodes), company, plant } });
+      for (const p of rows) procMap.set(p.processCode, p.processName);
+    }
+    const equipMap = new Map<string, string>();
+    if (equipCodes.length) {
+      const rows = await this.equipMasterRepo.find({ where: { equipCode: In(equipCodes), company, plant } });
+      for (const e of rows) equipMap.set(e.equipCode, e.equipName);
+    }
+    const workerMap = new Map<string, string>();
+    if (workerIds.length) {
+      const rows = await this.workerMasterRepo.find({ where: { workerCode: In(workerIds), company, plant } });
+      for (const w of rows) workerMap.set(w.workerCode, w.workerName);
+    }
+    return { procMap, equipMap, workerMap };
+  }
+
+  private mapEventResult(eventType: string | null): 'PASS' | 'FAIL' | 'WORK' {
+    const u = (eventType ?? '').toUpperCase();
+    if (u.includes('PASS') || u.includes('OK') || u.includes('ACCEPT')) return 'PASS';
+    if (u.includes('FAIL') || u.includes('NG') || u.includes('REJECT')) return 'FAIL';
+    return 'WORK';
+  }
+
+  /** TRACE_LOGS 우선, 없으면 PROD_RESULTS + INSPECT_RESULTS(시리얼 격리)로 공정 타임라인 */
+  private async resolveProcessHistory(orderNo: string | null, serial: string, company: string, plant: string): Promise<ProcessStep[]> {
+    const traceLogs = await this.traceLogRepo.find({ where: { serialNo: serial, company, plant }, order: { traceTime: 'ASC', seq: 'ASC' } });
+    const prodResults = orderNo
+      ? await this.prodResultRepo.find({ where: { orderNo, company, plant }, order: { startAt: 'ASC' } })
+      : [];
+
+    const procCodes = new Set<string>();
+    const equipCodes = new Set<string>();
+    const workerIds = new Set<string>();
+    for (const t of traceLogs) { if (t.processCode) procCodes.add(t.processCode); if (t.equipCode) equipCodes.add(t.equipCode); if (t.workerId) workerIds.add(t.workerId); }
+    for (const p of prodResults) { if (p.processCode) procCodes.add(p.processCode); if (p.equipCode) equipCodes.add(p.equipCode); if (p.workerId) workerIds.add(p.workerId); }
+    const { procMap, equipMap, workerMap } = await this.loadMasters([...procCodes], [...equipCodes], [...workerIds], company, plant);
+
+    const steps: ProcessStep[] = [];
+    if (traceLogs.length > 0) {
+      for (const t of traceLogs) {
+        steps.push({
+          process: t.processCode ?? '',
+          processName: t.processCode ? (procMap.get(t.processCode) ?? t.processCode) : '',
+          equipmentNo: t.equipCode ?? '',
+          equipmentName: t.equipCode ? (equipMap.get(t.equipCode) ?? t.equipCode) : '',
+          operator: t.workerId ? (workerMap.get(t.workerId) ?? t.workerId) : '',
+          timestamp: this.fmtDate(t.traceTime) ?? '',
+          result: this.mapEventResult(t.eventType),
+          goodQty: null, defectQty: null, detail: t.eventData ?? null,
+        });
+      }
+      return steps;
+    }
+
+    const resultNos = prodResults.map((p) => p.resultNo);
+    const insp = resultNos.length
+      ? await this.inspectResultRepo.find({ where: { prodResultNo: In(resultNos), company, plant }, order: { inspectAt: 'ASC' } })
+      : [];
+    const inspByResult = new Map<string, InspectResult[]>();
+    for (const ir of insp) {
+      if (ir.fgBarcode !== serial && ir.serialNo !== serial) continue; // 시리얼 격리
+      const k = ir.prodResultNo ?? '';
+      let bucket = inspByResult.get(k);
+      if (!bucket) {
+        bucket = [];
+        inspByResult.set(k, bucket);
+      }
+      bucket.push(ir);
+    }
+    for (const p of prodResults) {
+      const procName = p.processCode ? (procMap.get(p.processCode) ?? p.processCode) : '';
+      const equipName = p.equipCode ? (equipMap.get(p.equipCode) ?? p.equipCode) : '';
+      steps.push({
+        process: p.processCode ?? '', processName: procName,
+        equipmentNo: p.equipCode ?? '', equipmentName: equipName,
+        operator: p.workerId ? (workerMap.get(p.workerId) ?? p.workerId) : '',
+        timestamp: this.fmtDate(p.startAt ?? p.createdAt) ?? '',
+        result: 'WORK', goodQty: p.goodQty, defectQty: p.defectQty, detail: p.remark ?? null,
+      });
+      for (const ir of inspByResult.get(p.resultNo) ?? []) {
+        steps.push({
+          process: p.processCode ?? '', processName: `${procName} ${ir.inspectType ?? '검사'}`,
+          equipmentNo: ir.equipCode ?? p.equipCode ?? '', equipmentName: equipName,
+          operator: ir.inspectorId ?? '',
+          timestamp: this.fmtDate(ir.inspectAt) ?? '',
+          result: ir.passYn === 'Y' ? 'PASS' : 'FAIL', goodQty: null, defectQty: null, detail: ir.errorDetail ?? null,
+        });
+      }
+    }
+    return steps;
+  }
+
+  // ─── Step 2: resolveInspections + collectMaterialCtx ───────────────────────
+
+  /** 바코드(FG/SG) 격리된 검사 기록 — 통전/외관 등 */
+  private async resolveInspections(barcode: string, company: string, plant: string): Promise<InspectionRecord[]> {
+    const rows = await this.inspectResultRepo.find({
+      where: [
+        { fgBarcode: barcode, company, plant },
+        { serialNo: barcode, company, plant },
+      ],
+      order: { inspectAt: 'ASC' },
+    });
+    return rows.map((ir) => ({
+      inspectType: ir.inspectType ?? '',
+      result: ir.passYn === 'Y' ? 'PASS' : ('FAIL' as const),
+      inspectorId: ir.inspectorId ?? '',
+      inspectAt: this.fmtDate(ir.inspectAt) ?? '',
+      equipCode: ir.equipCode ?? null,
+      errorDetail: ir.errorDetail ?? null,
+    }));
+  }
+
+  /** genealogy(parent→MAT_LOT) + MAT_ISSUES(orderNo) 합집합으로 투입 자재 matUid 컨텍스트 수집 */
+  private async collectMaterialCtx(orderNo: string | null, parentType: 'FG' | 'SG', parentKey: string, company: string, plant: string) {
+    const ctx = new Map<string, { usedQty: number; orderNo: string | null; issueQty: number; issueDate: Date | null }>();
+
+    const gens = await this.genealogyRepo.find({ where: { parentType, parentKey, childType: 'MAT_LOT', company, plant } });
+    for (const g of gens) {
+      ctx.set(g.childKey, { usedQty: g.qty, orderNo, issueQty: g.qty, issueDate: null });
+    }
+    if (orderNo) {
+      const issues = await this.matIssueRepo.find({ where: { orderNo, company, plant }, order: { issueDate: 'ASC' } });
+      for (const mi of issues) {
+        const prev = ctx.get(mi.matUid);
+        if (prev) { prev.issueQty = mi.issueQty; prev.issueDate = mi.issueDate; if (!prev.usedQty) prev.usedQty = mi.issueQty; }
+        else ctx.set(mi.matUid, { usedQty: mi.issueQty, orderNo, issueQty: mi.issueQty, issueDate: mi.issueDate });
+      }
+    }
+    return ctx;
+  }
+
+  // ─── Step 3: getBySerial 메인 (제품 섹션 ①②③④⑤) ─────────────────────────
+
+  async getBySerial(serial: string, company: string, plant: string): Promise<ProductTraceabilityDto | null> {
+    const fg = await this.fgLabelRepo.findOne({ where: { fgBarcode: serial, company, plant } });
+    if (!fg) { this.logger.debug(`FgLabel not found: ${serial}`); return null; }
+
+    const part = await this.partMasterRepo.findOne({ where: { itemCode: fg.itemCode, company, plant } });
+    const jobOrder = fg.orderNo ? await this.jobOrderRepo.findOne({ where: { orderNo: fg.orderNo, company, plant } }) : null;
+
+    const processHistory = await this.resolveProcessHistory(fg.orderNo, serial, company, plant);
+    const inspections = await this.resolveInspections(serial, company, plant);
+
+    // 포장/출하
+    const box = fg.boxNo ? await this.boxMasterRepo.findOne({ where: { boxNo: fg.boxNo, company, plant } }) : null;
+    const pallet = box?.palletNo ? await this.palletMasterRepo.findOne({ where: { palletNo: box.palletNo, company, plant } }) : null;
+
+    // 직접투입 자재
+    const matCtx = await this.collectMaterialCtx(fg.orderNo, 'FG', serial, company, plant);
+    const materials = await this.resolveMaterialTraces(matCtx, company, plant);
+
+    // 반제품 (Task 4)
+    const semiProducts = await this.resolveSemiProducts(serial, company, plant);
+
+    // jobOrder.planDate 존재 확인: job-order.entity.ts 실측 결과 planDate: Date | null 존재함
+    const productionDate = this.fmtDate(jobOrder?.planDate ?? null) ?? this.fmtDate(fg.issuedAt);
+
+    return {
+      product: {
+        serialNo: fg.fgBarcode, itemCode: fg.itemCode,
+        itemNo: part?.itemNo ?? fg.itemCode, itemName: part?.itemName ?? '',
+        orderNo: fg.orderNo, status: fg.status, issuedAt: this.fmtDate(fg.issuedAt),
+        productionDate,
+      },
+      processHistory, inspections,
+      packaging: {
+        boxNo: fg.boxNo ?? null, boxPackedAt: this.fmtDate(box?.closeAt),
+        palletNo: box?.palletNo ?? null, palletPackedAt: this.fmtDate(pallet?.closeAt),
+        shippedAt: this.fmtDate(box?.shippedAt ?? pallet?.shippedAt),
+      },
+      materials, semiProducts,
+    };
+  }
+
+  // ─── Step 4: resolveSemiProducts 임시 스텁 (Task 4에서 구현) ──────────────
+
+  private async resolveSemiProducts(serial: string, company: string, plant: string): Promise<SemiProductTrace[]> {
+    // Task 4에서 구현 예정
+    void serial; void company; void plant;
+    return [];
   }
 }
