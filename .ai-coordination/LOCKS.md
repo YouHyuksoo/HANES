@@ -74,6 +74,24 @@ files:
 - apps/frontend/src/locales/vi.json
 note: /shipping/return을 출하취소로 재구성. BOX_MASTERS.SHIP_ORDER_NO/SHIPPED_AT 컬럼 추가(JSHANES DDL)+stamp, 취소/역분개 in-tx 헬퍼 추출, 출하지시 단위 단일 트랜잭션 취소+SHIPPING_RETURNS 취소이력. 계획: docs/superpowers/plans/2026-06-22-ship-order-cancel.md
 
+## T-TRACE-FULL 추적성 종합 조회 신규 구축
+status: active
+owner: claude
+role: implementer
+files:
+- apps/backend/src/modules/quality/inspection/dto/product-traceability.dto.ts
+- apps/backend/src/modules/quality/inspection/services/product-traceability.service.ts
+- apps/backend/src/modules/quality/inspection/controllers/trace.controller.ts
+- apps/frontend/src/app/(authenticated)/quality/trace/page.tsx
+- apps/frontend/src/app/(authenticated)/quality/trace/types.ts
+- apps/frontend/src/app/(authenticated)/quality/trace/components/MaterialSection.tsx
+- apps/frontend/src/app/(authenticated)/quality/trace/components/SemiProductSection.tsx
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+note: 제품 시리얼 기준 섹션형 종합 추적(제품→반제품 SG→원자재 PO/IQC). 신규 ProductTraceabilityService, 기존 trace.service.ts는 보존. quality/inspection 모듈 파일(forFeature 엔티티 추가)도 수정 예정. 계획: docs/superpowers/plans/2026-06-23-product-traceability.md
+
 ## 운영 규칙
 
 - `LOCKS.md`에는 현재 수정 중이거나 인계 판단이 필요한 `active`/`stale` 잠금만 둔다.
