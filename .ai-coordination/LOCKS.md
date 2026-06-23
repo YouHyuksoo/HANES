@@ -7,8 +7,8 @@ status: active
 owner: codex
 role: implementer/operator
 started: 2026-06-23 02:20 KST
-last_seen: 2026-06-23 04:38 KST
-expires: 2026-06-23 08:38 KST
+last_seen: 2026-06-23 09:37 KST
+expires: 2026-06-23 13:37 KST
 files:
 - tools/hanes-all-menu-page-scenario-qa.mjs
 - apps/frontend/src/app/(authenticated)/material/receive-history/page.tsx
