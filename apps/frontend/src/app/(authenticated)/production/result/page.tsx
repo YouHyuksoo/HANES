@@ -23,6 +23,7 @@ import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
+import { useEquipOptions } from '@/hooks/useMasterOptions';
 import { WorkerAvatar } from '@/components/worker/WorkerSelector';
 import { getWorkerDisplayName } from '@/components/worker/workerAvatar';
 import api from '@/services/api';
@@ -72,8 +73,16 @@ export default function ProdResultPage() {
     ...comCodeProcessOptions.filter(o => ['CUT','CRIMP','ASSY','INSP','PACK'].includes(o.value))
   ], [t, comCodeProcessOptions]);
 
+  /** 설비 필터 */
+  const { options: rawEquipOptions } = useEquipOptions();
+  const equipOptions = useMemo(() => [
+    { value: '', label: t('production.result.equipAll', '전체 설비') },
+    ...rawEquipOptions,
+  ], [rawEquipOptions, t]);
+
   // 필터 상태
   const [processTypeFilter, setProcessTypeFilter] = useState('');
+  const [equipFilter, setEquipFilter] = useState('');
   const [startDate, setStartDate] = useState(() => getTodayLocal());
   const [endDate, setEndDate] = useState(() => getTodayLocal());
   const [searchText, setSearchText] = useState('');
@@ -84,6 +93,7 @@ export default function ProdResultPage() {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
       if (processTypeFilter) params.processCode = processTypeFilter;
+      if (equipFilter) params.equipCode = equipFilter;
       if (startDate) params.startTimeFrom = startDate;
       if (endDate) params.startTimeTo = endDate;
       const res = await api.get('/production/prod-results', { params });
@@ -98,7 +108,7 @@ export default function ProdResultPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, processTypeFilter, startDate, endDate]);
+  }, [searchText, processTypeFilter, equipFilter, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -291,9 +301,12 @@ export default function ProdResultPage() {
                 <div className="w-32 flex-shrink-0">
                   <Select options={processTypeOptions} value={processTypeFilter} onChange={setProcessTypeFilter} fullWidth />
                 </div>
+                <div className="w-44 flex-shrink-0">
+                  <Select options={equipOptions} value={equipFilter} onChange={setEquipFilter} fullWidth />
+                </div>
                 <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
               </div>
-            } 
+            }
             sqlQuery={`SELECT *\nFROM PROD_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
         </CardContent>
       </Card>
