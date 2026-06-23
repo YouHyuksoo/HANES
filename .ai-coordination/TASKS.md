@@ -38,6 +38,10 @@ scope:
 - 실패 메뉴를 수정-재테스트 대상으로 분류하고 최종 HTML/JSON 리포트 작성
 files:
 - tools/hanes-all-menu-page-scenario-qa.mjs
+- tools/hanes-all-menu-report-aggregate.mjs
+- apps/frontend/src/hooks/useZebraPrinter.ts
+- apps/frontend/src/app/(authenticated)/material/receive-label/components/PrintActionBar.tsx
+- apps/frontend/src/app/(authenticated)/material/receive-label/receive-label-zebra-lazy.structure.test.mjs
 - apps/frontend/src/app/(authenticated)/material/receive-history/page.tsx
 - apps/frontend/src/app/(authenticated)/sales/customer-po-status/page.tsx
 - apps/frontend/src/app/(authenticated)/customs/stock/page.tsx
@@ -55,6 +59,7 @@ review:
 - needs-review
 notes:
 - 다른 AI active lock 파일은 수정하지 않는다. CRUD/업무처리 전체 실행은 메뉴별 세부 러너로 확장한다.
+- `/shipping/return`은 `T-SHIP-ORDER-CANCEL` active lock 범위라 직접 수정하지 않는다.
 
 ## T-ER-VIEW-TABLE-NODES ER VIEW 테이블형 그래프 보정
 status: REVIEW

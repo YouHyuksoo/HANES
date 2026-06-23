@@ -213,6 +213,8 @@
 
 ## Current Known Issues
 
+- `T-ALL-MENU-QA` 진행 중. 전체 자동 스윕은 Next dev cold compile 때문에 장시간 소요되어 타임박스 방식으로 전환했다. `tools/hanes-all-menu-page-scenario-qa.mjs`에 `HANES_QA_BUDGET_MS`가 있으며, 예산 초과 시 현재까지 결과를 `PARTIAL`로 저장한다. 현재 frontend는 3002, backend는 3003 health 200으로 복구했다. `/material/receive-label`은 기본 `BROWSER` 출력 상태에서 선택하지 않은 `ZPL_USB`용 `localhost:9100` Zebra 체크가 즉시 발생하던 문제를 `useZebraPrinter(enabled)`로 보정했고, 단건 QA 재테스트 PASS. 추가 미실행 청크 02~04 총 15개도 PASS.
+- `tools/hanes-all-menu-report-aggregate.mjs`를 추가했다. 현재 누적 요약은 `docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/index.html` 및 `all-menu-summary.json`. menuConfig 기준 156개 중 PASS 107, FAIL 1, MISSING 48이다. 유일 FAIL은 `SHIP_RETURN /shipping/return`의 `GET /api/shipping/orders/shipped` 500이며 `T-SHIP-ORDER-CANCEL` active lock 범위라 수정하지 않았다. 다음 미실행 시작 후보는 `INV_TRANSACTION`, `INV_MAT_PHYSICAL_INV`, `INV_MAT_PHYSICAL_INV_APPLY`, `INV_MAT_PHYSICAL_INV_HISTORY`, `INV_ARRIVAL_STOCK`이다.
 - 현재 PC의 agent 프린터 목록에는 `OneNote(데스크톱) - 보호됨`, `Microsoft Print to PDF`만 잡히며 Zebra 실출력 검증은 미완료. 트레이 아이콘 메뉴는 코드/빌드/API 실행 경로까지 확인했고 실제 우클릭 메뉴 육안 검증은 남아 있음.
 - agent 설정 파일은 `C:\Users\hsyou\AppData\Roaming\HANES\print-agent\config.json`이며 현재 기본 프린터는 `Microsoft Print to PDF`로 저장돼 있다.
 - `T-CONSUMABLE-LABEL-REPRINT`는 웹 팝업 인쇄 흐름과 print-log API까지 검증했다. 실제 Zebra 물리 출력은 프린터 부재로 미검증.

@@ -7,10 +7,14 @@ status: active
 owner: codex
 role: implementer/operator
 started: 2026-06-23 02:20 KST
-last_seen: 2026-06-23 09:37 KST
-expires: 2026-06-23 13:37 KST
+last_seen: 2026-06-23 11:04 KST
+expires: 2026-06-23 15:04 KST
 files:
 - tools/hanes-all-menu-page-scenario-qa.mjs
+- tools/hanes-all-menu-report-aggregate.mjs
+- apps/frontend/src/hooks/useZebraPrinter.ts
+- apps/frontend/src/app/(authenticated)/material/receive-label/components/PrintActionBar.tsx
+- apps/frontend/src/app/(authenticated)/material/receive-label/receive-label-zebra-lazy.structure.test.mjs
 - apps/frontend/src/app/(authenticated)/material/receive-history/page.tsx
 - apps/frontend/src/app/(authenticated)/sales/customer-po-status/page.tsx
 - apps/frontend/src/app/(authenticated)/customs/stock/page.tsx

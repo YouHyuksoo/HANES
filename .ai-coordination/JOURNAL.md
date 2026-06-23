@@ -2626,3 +2626,120 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: `git diff --check -- tools/hanes-all-menu-page-scenario-qa.mjs .ai-coordination/LOCKS.md .ai-coordination/TASKS.md`
 - 주의:
   - 이번 커밋은 전체 메뉴 완료가 아니라 전체 메뉴 QA 자동화 기반과 3개 메뉴 스모크 산출물 체크포인트다. 전체 메뉴 상세 기능 실행/수정/재테스트는 계속 진행 대상이다.
+
+# 2026-06-23 - T-ALL-MENU-QA 타임박스 실행 방식 보정
+
+- owner: codex
+- status: IN_PROGRESS
+- 변경:
+  - `tools/hanes-all-menu-page-scenario-qa.mjs`에 `HANES_QA_BUDGET_MS`를 추가했다.
+  - 실행 예산이 소진되면 다음 메뉴 진입 전에 중단하고 현재까지 결과를 `PARTIAL` 상태로 `all-menu-result.json`과 `index.html`에 저장한다.
+  - 리포트 JSON에는 `plannedTotal`, `runBudgetMs`, `elapsedMs`, `stoppedReason`을 남긴다.
+- 검증:
+  - PASS: `node --check tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: `git diff --check -- .ai-coordination/LOCKS.md tools/hanes-all-menu-page-scenario-qa.mjs`
+- 현재 런타임 상태:
+  - 3003 backend health는 200으로 확인됐다.
+  - 3002/3012 frontend는 중단된 Next dev/build 산출물 영향으로 500 상태다.
+  - frontend 로그 원인: `.next/server/app/.../app-build-manifest.json` 및 `.next/static/development/_buildManifest.js.tmp.*` ENOENT.
+- 다음 조치:
+  - generated `.next`를 정리하고 frontend dev 서버를 한 개만 재시작한 뒤, `HANES_QA_BUDGET_MS=600000` 같은 10분 예산으로 chunk 실행을 재개한다.
+  - `/shipping/return`의 `GET /api/v1/shipping/orders/shipped` 500은 `T-SHIP-ORDER-CANCEL` active lock 범위라 직접 수정하지 않았다.
+
+# 2026-06-23 - T-ALL-MENU-QA frontend 런타임 복구 및 타임박스 검증
+
+- owner: codex
+- status: IN_PROGRESS
+- 조치:
+  - 중복으로 떠 있던 3002/3012 Next dev 프로세스를 종료했다.
+  - 깨진 generated artifact `apps/frontend/.next`를 삭제했다.
+  - Turbopack manifest ENOENT 재발을 피하기 위해 `pnpm.cmd --filter @harness/frontend exec next dev -p 3002`로 frontend dev 서버를 1개만 재시작했다.
+- 검증:
+  - PASS: `http://localhost:3002/dashboard` HTTP 200
+  - PASS: `http://localhost:3003/api/v1/health` HTTP 200
+  - PASS: `HANES_QA_BUDGET_MS=1`, `HANES_MENU_LIMIT=5` 실행 시 `PARTIAL`, `stoppedReason=time budget exhausted before DASHBOARD` 저장
+  - PASS: `HANES_MENU_CODES=DASHBOARD`, `HANES_QA_BUDGET_MS=60000` 실행 시 1/1 PASS
+  - PASS: `node --check tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: `git diff --check`
+- 산출물:
+  - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-budget-partial-verify/all-menu-result.json`
+  - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-dashboard-smoke-after-recovery/all-menu-result.json`
+- 주의:
+  - 전체 목표는 아직 완료가 아니다. 현재 변경은 장시간 실행을 피하기 위한 타임박스/부분 저장 기반과 런타임 복구다.
+
+# 2026-06-23 - T-ALL-MENU-QA 누적 리포트 집계
+
+- owner: codex
+- status: IN_PROGRESS
+- 변경:
+  - `tools/hanes-all-menu-report-aggregate.mjs`를 추가했다.
+  - `docs/reports/hanes-all-menu-scenario-qa-*/all-menu-result.json`들을 읽어 `menuConfig.ts` 기준 전체 메뉴 156개의 최신 PASS/FAIL/MISSING 상태를 집계한다.
+  - 집계 HTML/JSON은 `docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/`에 생성한다.
+- 현재 집계:
+  - 전체 메뉴: 156
+  - PASS: 89
+  - FAIL: 1
+  - MISSING: 66
+  - FAIL: `SHIP_RETURN /shipping/return` - `GET /api/shipping/orders/shipped` 500
+- 검증:
+  - PASS: `node --check tools/hanes-all-menu-report-aggregate.mjs`
+  - PASS: `node --check tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: aggregate 생성 명령은 실패/미실행이 남아 exit 1을 반환하지만 JSON/HTML 생성은 정상 완료
+- 산출물:
+  - `docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/index.html`
+  - `docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/all-menu-summary.json`
+- 다음 조치:
+  - 미실행 66개를 작은 chunk와 `HANES_QA_BUDGET_MS`로 이어서 실행한다.
+  - `SHIP_RETURN`은 `T-SHIP-ORDER-CANCEL` active lock 해소 후 수정/재테스트한다.
+
+# 2026-06-23 - T-ALL-MENU-QA receive-label 및 미실행 청크 재검증
+
+- owner: codex
+- status: IN_PROGRESS
+- 원인/변경:
+  - `/material/receive-label` 실패 원인은 기본 출력 방식이 `BROWSER`인데도 `PrintActionBar` 렌더 시 `useZebraPrinter()`가 즉시 실행되어 선택하지 않은 `ZPL_USB`용 `http://localhost:9100/available` 요청이 발생한 것이다.
+  - `useZebraPrinter(enabled = true)` disabled mode를 추가하고, `PrintActionBar`는 `printMethod === 'ZPL_USB'`일 때만 Zebra Browser Print 상태를 조회하도록 보정했다.
+  - 회귀 방지 구조 테스트 `receive-label-zebra-lazy.structure.test.mjs`를 추가했다.
+- 실행/재테스트:
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/material/receive-label/receive-label-zebra-lazy.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 3003 backend 재기동 후 `/api/v1/health` HTTP 200
+  - PASS: `HANES_MENU_CODES=MAT_RECEIVE_LABEL HANES_REPORT_DATE=2026-06-23-mat-receive-label-zebra-lazy-retry node tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: `HANES_MENU_CODES=MAT_RECEIVE_HISTORY,MAT_REQUEST,MAT_ISSUE,MAT_ISSUE_OTHER,MAT_LOT HANES_REPORT_DATE=2026-06-23-missing-chunk-02 node tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: `node --check tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: `node --check tools/hanes-all-menu-report-aggregate.mjs`
+  - PASS: `git diff --check -- tools/hanes-all-menu-page-scenario-qa.mjs tools/hanes-all-menu-report-aggregate.mjs apps/frontend/src/hooks/useZebraPrinter.ts apps/frontend/src/app/(authenticated)/material/receive-label/components/PrintActionBar.tsx apps/frontend/src/app/(authenticated)/material/receive-label/receive-label-zebra-lazy.structure.test.mjs`
+- 현재 집계:
+  - 전체 메뉴: 156
+  - PASS: 97
+  - FAIL: 1
+  - MISSING: 58
+  - 유일 FAIL: `SHIP_RETURN /shipping/return` - `GET /api/shipping/orders/shipped` 500, `T-SHIP-ORDER-CANCEL` active lock 범위라 직접 수정하지 않음.
+- 산출물:
+  - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-mat-receive-label-zebra-lazy-retry/`
+  - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-missing-chunk-02/`
+  - `docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/`
+
+# 2026-06-23 - T-ALL-MENU-QA 미실행 청크 03/04 실행
+
+- owner: codex
+- status: IN_PROGRESS
+- 실행:
+  - PASS: `HANES_MENU_CODES=MAT_LOT_SPLIT,MAT_LOT_MERGE,MAT_SHELF_LIFE,MAT_SHELF_LIFE_REINSPECT,MAT_SHELF_LIFE_HISTORY HANES_REPORT_DATE=2026-06-23-missing-chunk-03 node tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: `HANES_MENU_CODES=MAT_SCRAP,MAT_ADJUSTMENT,MAT_MISC_RECEIPT,MAT_RECEIPT_CANCEL,INV_MAT_STOCK HANES_REPORT_DATE=2026-06-23-missing-chunk-04 node tools/hanes-all-menu-page-scenario-qa.mjs`
+- 현재 집계:
+  - 전체 메뉴: 156
+  - PASS: 107
+  - FAIL: 1
+  - MISSING: 48
+  - 유일 FAIL: `SHIP_RETURN /shipping/return` - `GET /api/shipping/orders/shipped` 500, `T-SHIP-ORDER-CANCEL` active lock 범위라 직접 수정하지 않음.
+- 다음 미실행 시작 후보:
+  - `INV_TRANSACTION`, `INV_MAT_PHYSICAL_INV`, `INV_MAT_PHYSICAL_INV_APPLY`, `INV_MAT_PHYSICAL_INV_HISTORY`, `INV_ARRIVAL_STOCK`
+- 검증:
+  - PASS: `node --check tools/hanes-all-menu-page-scenario-qa.mjs`
+  - PASS: `node --check tools/hanes-all-menu-report-aggregate.mjs`
+  - PASS: `git diff --check -- tools/hanes-all-menu-page-scenario-qa.mjs tools/hanes-all-menu-report-aggregate.mjs apps/frontend/src/hooks/useZebraPrinter.ts apps/frontend/src/app/(authenticated)/material/receive-label/components/PrintActionBar.tsx apps/frontend/src/app/(authenticated)/material/receive-label/receive-label-zebra-lazy.structure.test.mjs .ai-coordination/LOCKS.md .ai-coordination/TASKS.md .ai-coordination/JOURNAL.md .ai-coordination/HANDOFF/codex.md`
+- 산출물:
+  - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-missing-chunk-03/`
+  - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-missing-chunk-04/`
+  - `docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/`
