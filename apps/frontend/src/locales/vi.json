@@ -4199,6 +4199,13 @@
       "partName": "Tên sản phẩm",
       "workOrderNo": "Mã lệnh",
       "productionDate": "Ngày sản xuất",
+      "boxNo": "Số hộp",
+      "boxPackedAt": "Ngày đóng hộp",
+      "palletNo": "Số pallet",
+      "palletPackedAt": "Ngày cấu thành pallet",
+      "shippedAt": "Ngày xuất hàng",
+      "continuityInspResult": "KT thông mạch",
+      "visualInspResult": "KT ngoại quan",
       "processTimeline": "Dòng thời gian công đoạn",
       "processTimelineSubtitle": "Lịch sử theo công đoạn sản xuất",
       "totalProcesses": "Tổng {{count}} công đoạn",
@@ -5259,7 +5266,9 @@
       "palletNo": "Pallet",
       "selectBoxHint": "Chọn thùng để xem chi tiết cấu thành.",
       "waitingTitle": "Chờ đóng gói",
-      "noWaiting": "Không có sản phẩm chờ"
+      "noWaiting": "Không có sản phẩm chờ",
+      "selectedBox": "Đã chọn",
+      "selectRowHint": "Chọn một dòng"
     },
     "boxStock": {
       "title": "Tra cứu tồn kho sản phẩm",

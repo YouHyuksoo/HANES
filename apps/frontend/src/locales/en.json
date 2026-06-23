@@ -4199,6 +4199,13 @@
       "partName": "Part Name",
       "workOrderNo": "Work Order No.",
       "productionDate": "Production Date",
+      "boxNo": "Box No.",
+      "boxPackedAt": "Box Packed Date",
+      "palletNo": "Pallet No.",
+      "palletPackedAt": "Pallet Packed Date",
+      "shippedAt": "Shipped Date",
+      "continuityInspResult": "Continuity Insp.",
+      "visualInspResult": "Visual Insp.",
       "processTimeline": "Process Timeline",
       "processTimelineSubtitle": "History by manufacturing process",
       "totalProcesses": "Total {{count}} processes",
@@ -5259,7 +5266,9 @@
       "palletNo": "Pallet",
       "selectBoxHint": "Select a box to view its composition.",
       "waitingTitle": "Waiting to Pack",
-      "noWaiting": "No items waiting"
+      "noWaiting": "No items waiting",
+      "selectedBox": "Selected",
+      "selectRowHint": "Select a row"
     },
     "boxStock": {
       "title": "Product Stock",

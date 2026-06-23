@@ -4199,6 +4199,13 @@
       "partName": "品名",
       "workOrderNo": "作业指示编号",
       "productionDate": "生产日期",
+      "boxNo": "箱号",
+      "boxPackedAt": "装箱日期",
+      "palletNo": "托盘号",
+      "palletPackedAt": "托盘组成日期",
+      "shippedAt": "出货日期",
+      "continuityInspResult": "通电检查",
+      "visualInspResult": "外观检查",
       "processTimeline": "工序时间线",
       "processTimelineSubtitle": "按制造工序的历史",
       "totalProcesses": "共{{count}}个工序",
@@ -5259,7 +5266,9 @@
       "palletNo": "托盘",
       "selectBoxHint": "选择箱子后可查看其构成明细。",
       "waitingTitle": "待包装",
-      "noWaiting": "无待包装产品"
+      "noWaiting": "无待包装产品",
+      "selectedBox": "已选",
+      "selectRowHint": "请选择行"
     },
     "boxStock": {
       "title": "产品库存查询",

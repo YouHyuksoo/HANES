@@ -25,6 +25,9 @@ import { ProcessMaster } from '../../../../entities/process-master.entity';
 import { MatLot } from '../../../../entities/mat-lot.entity';
 import { ControlPlanItem } from '../../../../entities/control-plan-item.entity';
 import { ControlPlan } from '../../../../entities/control-plan.entity';
+import { PartnerMaster } from '../../../../entities/partner-master.entity';
+import { BoxMaster } from '../../../../entities/box-master.entity';
+import { PalletMaster } from '../../../../entities/pallet-master.entity';
 
 /** 타임라인 항목 */
 export interface TimelineItem {
@@ -55,6 +58,13 @@ export interface TraceRecord {
   itemName: string;
   workOrderNo: string;
   productionDate: string;
+  boxNo: string | null;
+  boxPackedAt: string | null;
+  palletNo: string | null;
+  palletPackedAt: string | null;
+  shippedAt: string | null;
+  continuityInspResult: 'PASS' | 'FAIL' | null;
+  visualInspResult: 'PASS' | 'FAIL' | null;
   timeline: TimelineItem[];
   fourM: FourMData;
 }
@@ -88,6 +98,12 @@ export class TraceService {
     private readonly matLotRepo: Repository<MatLot>,
     @InjectRepository(ControlPlanItem)
     private readonly controlPlanItemRepo: Repository<ControlPlanItem>,
+    @InjectRepository(PartnerMaster)
+    private readonly partnerMasterRepo: Repository<PartnerMaster>,
+    @InjectRepository(BoxMaster)
+    private readonly boxMasterRepo: Repository<BoxMaster>,
+    @InjectRepository(PalletMaster)
+    private readonly palletMasterRepo: Repository<PalletMaster>,
   ) {}
 
   /**
@@ -270,7 +286,11 @@ export class TraceService {
           detail: pr.remark ?? undefined,
         });
 
-        const inspResults = inspByResult.get(pr.resultNo) ?? [];
+        // 한 생산실적(PROD_RESULT_ID)에는 같은 작업지시의 여러 제품 검사결과가 묶여 있으므로
+        // 현재 추적 중인 시리얼(FG_BARCODE/SERIAL_NO)에 해당하는 검사만 타임라인에 펼친다.
+        const inspResults = (inspByResult.get(pr.resultNo) ?? []).filter(
+          (ir) => ir.fgBarcode === serial || ir.serialNo === serial,
+        );
         for (const ir of inspResults) {
           stepCounter++;
           timeline.push({
@@ -341,16 +361,24 @@ export class TraceService {
         : [];
       const matPartMap = new Map(matParts.map((p) => [p.itemCode, p]));
 
+      // 공급처 코드 → 거래처명 해석 (없으면 코드 그대로 표시)
+      const vendorCodes = [...new Set(allMatLots.map((l) => l.vendor).filter(Boolean))];
+      const vendors = vendorCodes.length > 0
+        ? await this.partnerMasterRepo.find({ where: { partnerCode: In(vendorCodes), company, plant } })
+        : [];
+      const vendorNameMap = new Map(vendors.map((v) => [v.partnerCode, v.partnerName]));
+
       for (const mi of matIssues) {
         const matLot = matLotMap.get(mi.matUid);
         const matPart = matLot ? matPartMap.get(matLot.itemCode) : null;
+        const vendorCode = matLot?.vendor ?? '';
         materialData.push({
           materialCode: matPart?.itemCode ?? matLot?.itemCode ?? '',
           materialName: matPart?.itemName ?? '',
           matUid: mi.matUid,
           usedQty: mi.issueQty,
           unit: matPart?.unit ?? 'EA',
-          supplier: matLot?.vendor ?? '',
+          supplier: vendorCode ? (vendorNameMap.get(vendorCode) ?? vendorCode) : '',
         });
       }
     }
@@ -395,7 +423,10 @@ export class TraceService {
     }
 
     for (const pr of prodResults) {
-      const inspResults = methodInspByResult.get(pr.resultNo) ?? [];
+      // 타임라인과 동일하게 현재 추적 시리얼의 검사결과만 Method에 반영한다.
+      const inspResults = (methodInspByResult.get(pr.resultNo) ?? []).filter(
+        (ir) => ir.fgBarcode === serial || ir.serialNo === serial,
+      );
       for (const ir of inspResults) {
         if (ir.inspectData) {
           try {
@@ -424,6 +455,29 @@ export class TraceService {
       ?? (prodResults.length > 0 ? prodResults[0].startAt : null)
       ?? fgLabel.issuedAt;
 
+    // 박스 / 팔레트 / 출하 정보
+    const boxMaster = fgLabel.boxNo
+      ? await this.boxMasterRepo.findOne({ where: { boxNo: fgLabel.boxNo, company, plant } })
+      : null;
+    const palletMaster = boxMaster?.palletNo
+      ? await this.palletMasterRepo.findOne({ where: { palletNo: boxMaster.palletNo, company, plant } })
+      : null;
+
+    // 통전검사 / 외관검사 결과 (fgBarcode 기준)
+    const fgInspResults = await this.inspectResultRepo.find({
+      where: { fgBarcode: fgLabel.fgBarcode, company, plant },
+      order: { inspectAt: 'DESC' },
+    });
+    const toPassFail = (r: typeof fgInspResults[0] | undefined): 'PASS' | 'FAIL' | null => {
+      if (!r) return null;
+      return r.passYn === 'Y' ? 'PASS' : 'FAIL';
+    };
+    const continuityInspResult = toPassFail(fgInspResults.find((r) => r.inspectType === 'CONTINUITY'));
+    const visualInspResult = toPassFail(fgInspResults.find((r) => r.inspectType === 'VISUAL'));
+
+    const formatTs = (d: Date | null | undefined): string | null =>
+      d instanceof Date ? d.toISOString().split('T')[0] : null;
+
     return {
       serialNo: fgLabel.fgBarcode,
       matUid: prdUid ? '' : fgLabel.itemCode,
@@ -432,6 +486,13 @@ export class TraceService {
       itemName: partMaster?.itemName ?? '',
       workOrderNo: fgLabel.orderNo ?? '',
       productionDate: productionDate instanceof Date ? productionDate.toISOString().split('T')[0] : String(productionDate ?? ''),
+      boxNo: fgLabel.boxNo ?? null,
+      boxPackedAt: formatTs(boxMaster?.closeAt),
+      palletNo: boxMaster?.palletNo ?? null,
+      palletPackedAt: formatTs(palletMaster?.closeAt),
+      shippedAt: formatTs(boxMaster?.shippedAt ?? palletMaster?.shippedAt),
+      continuityInspResult,
+      visualInspResult,
       timeline,
       fourM: {
         man: manData,

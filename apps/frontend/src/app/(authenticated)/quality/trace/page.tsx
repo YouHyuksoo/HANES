@@ -24,6 +24,13 @@ interface TraceRecord {
   itemName: string;
   workOrderNo: string;
   productionDate: string;
+  boxNo: string | null;
+  boxPackedAt: string | null;
+  palletNo: string | null;
+  palletPackedAt: string | null;
+  shippedAt: string | null;
+  continuityInspResult: "PASS" | "FAIL" | null;
+  visualInspResult: "PASS" | "FAIL" | null;
   timeline: TimelineItem[];
   fourM: FourMData;
 }
@@ -217,7 +224,7 @@ export default function TracePage() {
   }, [searchValue]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+    <div className="h-full flex flex-col overflow-y-auto p-6 gap-4 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><History className="w-7 h-7 text-primary" />{t("quality.trace.title")}</h1>
@@ -248,18 +255,22 @@ export default function TracePage() {
 
       {traceData && (
         <>
-          <Card>
-            <CardHeader title={t("quality.trace.productInfo")} subtitle={t("quality.trace.productInfoSubtitle")} />
+          <Card padding="sm">
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.serialNo")}</div><div className="font-mono font-semibold text-primary">{traceData.serialNo}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.matUid")}</div><div className="font-mono text-text">{traceData.matUid}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.prdUid")}</div><div className="font-mono text-text">{traceData.prdUid}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.partNo")}</div><div className="text-text">{traceData.itemNo}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.partName")}</div><div className="text-text">{traceData.itemName}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.workOrderNo")}</div><div className="text-text">{traceData.workOrderNo}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.productionDate")}</div><div className="text-text">{traceData.productionDate}</div></div>
-              </div>
+              <div className="flex items-center gap-1 text-xs font-semibold text-text-muted mb-2 uppercase tracking-wide"><Package className="w-3.5 h-3.5" />{t("quality.trace.productInfo")}</div>
+              <dl className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2">
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.partNo")}</dt><dd className="text-text text-sm">{traceData.itemNo}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.partName")}</dt><dd className="text-text text-sm">{traceData.itemName}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.workOrderNo")}</dt><dd className="text-text text-sm">{traceData.workOrderNo}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.productionDate")}</dt><dd className="text-text text-sm">{traceData.productionDate}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.boxNo")}</dt><dd className="font-mono text-text text-sm">{traceData.boxNo ?? "-"}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.boxPackedAt")}</dt><dd className="text-text text-sm">{traceData.boxPackedAt ?? "-"}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.palletNo")}</dt><dd className="font-mono text-text text-sm">{traceData.palletNo ?? "-"}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.palletPackedAt")}</dt><dd className="text-text text-sm">{traceData.palletPackedAt ?? "-"}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.shippedAt")}</dt><dd className="text-text text-sm">{traceData.shippedAt ?? "-"}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.continuityInspResult")}</dt><dd className="mt-0.5">{traceData.continuityInspResult ? <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-semibold ${traceData.continuityInspResult === "PASS" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>{traceData.continuityInspResult}</span> : <span className="text-text-muted text-sm">-</span>}</dd></div>
+                <div><dt className="text-xs text-text-muted">{t("quality.trace.visualInspResult")}</dt><dd className="mt-0.5">{traceData.visualInspResult ? <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-semibold ${traceData.visualInspResult === "PASS" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>{traceData.visualInspResult}</span> : <span className="text-text-muted text-sm">-</span>}</dd></div>
+              </dl>
             </CardContent>
           </Card>
 

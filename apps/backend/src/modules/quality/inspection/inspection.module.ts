@@ -31,6 +31,9 @@ import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ControlPlanItem } from '../../../entities/control-plan-item.entity';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
+import { BoxMaster } from '../../../entities/box-master.entity';
+import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { SharedModule } from '../../../shared/shared.module';
 
 @Module({
@@ -48,6 +51,9 @@ import { SharedModule } from '../../../shared/shared.module';
       ProcessMaster,
       MatLot,
       ControlPlanItem,
+      PartnerMaster,
+      BoxMaster,
+      PalletMaster,
     ]),
     SharedModule, // SeqGeneratorService 제공
   ],

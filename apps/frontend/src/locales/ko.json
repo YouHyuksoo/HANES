@@ -4613,6 +4613,13 @@
       "partName": "품명",
       "workOrderNo": "작업지시번호",
       "productionDate": "생산일자",
+      "boxNo": "박스번호",
+      "boxPackedAt": "박스구성일자",
+      "palletNo": "팔레트번호",
+      "palletPackedAt": "팔레트구성일자",
+      "shippedAt": "출하일자",
+      "continuityInspResult": "통전검사 합불",
+      "visualInspResult": "외관검사 합불",
       "processTimeline": "공정 타임라인",
       "processTimelineSubtitle": "제조 공정별 이력",
       "totalProcesses": "총 {{count}}개 공정",
@@ -5263,7 +5270,9 @@
       "palletNo": "팔레트",
       "selectBoxHint": "박스를 선택하면 구성 내역을 확인할 수 있습니다.",
       "waitingTitle": "포장 대기",
-      "noWaiting": "포장 대기 제품 없음"
+      "noWaiting": "포장 대기 제품 없음",
+      "selectedBox": "선택",
+      "selectRowHint": "행을 선택하세요"
     },
     "boxStock": {
       "title": "제품재고조회",
