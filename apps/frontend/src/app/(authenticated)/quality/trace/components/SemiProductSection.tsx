@@ -51,7 +51,7 @@ export default function SemiProductSection({ semiProducts }: { semiProducts: Sem
                   </div>
                   <ul className="text-sm space-y-1">
                     {sp.processHistory.map((s, i) => (
-                      <li key={i} className="flex gap-2 text-text-muted">
+                      <li key={`${i}-${s.timestamp}-${s.process}`} className="flex gap-2 text-text-muted">
                         <span className="font-mono">
                           {s.timestamp.slice(0, 19).replace("T", " ")}
                         </span>

@@ -104,7 +104,7 @@ export default function TracePage() {
               <ul className="space-y-2">
                 {data.processHistory.map((s, i) => (
                   <li
-                    key={i}
+                    key={`${i}-${s.timestamp}-${s.process}`}
                     className="flex items-center gap-3 text-sm border-b border-border last:border-0 py-2"
                   >
                     <span className="font-mono text-text-muted">
@@ -133,7 +133,7 @@ export default function TracePage() {
                 <ul className="space-y-2">
                   {data.inspections.map((ir, i) => (
                     <li
-                      key={i}
+                      key={`${i}-${ir.inspectAt}-${ir.inspectType}`}
                       className="flex items-center gap-3 text-sm border-b border-border last:border-0 py-2"
                     >
                       <span className="font-mono text-text-muted">
