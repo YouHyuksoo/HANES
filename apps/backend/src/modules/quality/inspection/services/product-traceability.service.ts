@@ -354,25 +354,28 @@ export class ProductTraceabilityService {
     const consumedBySg = new Map<string, number>();
     for (const g of sgLinks) consumedBySg.set(g.childKey, (consumedBySg.get(g.childKey) ?? 0) + g.qty);
 
-    const result: SemiProductTrace[] = [];
-    for (const sgBarcode of sgBarcodes) {
-      const sg = sgMap.get(sgBarcode);
-      const part = sg ? partMap.get(sg.itemCode) : undefined;
-      const processHistory = await this.resolveProcessHistory(sg?.orderNo ?? null, sgBarcode, company, plant);
-      const inspections = await this.resolveInspections(sgBarcode, company, plant);
-      const matCtx = await this.collectMaterialCtx(sg?.orderNo ?? null, 'SG', sgBarcode, company, plant);
-      const materials = await this.resolveMaterialTraces(matCtx, company, plant);
+    // SG별 추적은 서로 독립적이므로 병렬 실행한다(순차 await로 인한 O(N) 직렬 왕복 회피).
+    return Promise.all(
+      sgBarcodes.map(async (sgBarcode) => {
+        const sg = sgMap.get(sgBarcode);
+        const part = sg ? partMap.get(sg.itemCode) : undefined;
+        const [processHistory, inspections, matCtx] = await Promise.all([
+          this.resolveProcessHistory(sg?.orderNo ?? null, sgBarcode, company, plant),
+          this.resolveInspections(sgBarcode, company, plant),
+          this.collectMaterialCtx(sg?.orderNo ?? null, 'SG', sgBarcode, company, plant),
+        ]);
+        const materials = await this.resolveMaterialTraces(matCtx, company, plant);
 
-      result.push({
-        sgBarcode,
-        itemCode: sg?.itemCode ?? '',
-        itemName: part?.itemName ?? '',
-        consumedQty: consumedBySg.get(sgBarcode) ?? 0,
-        status: sg?.status ?? '',
-        issueProcessCode: sg?.issueProcessCode ?? null,
-        processHistory, inspections, materials,
-      });
-    }
-    return result;
+        return {
+          sgBarcode,
+          itemCode: sg?.itemCode ?? '',
+          itemName: part?.itemName ?? '',
+          consumedQty: consumedBySg.get(sgBarcode) ?? 0,
+          status: sg?.status ?? '',
+          issueProcessCode: sg?.issueProcessCode ?? null,
+          processHistory, inspections, materials,
+        };
+      }),
+    );
   }
 }
