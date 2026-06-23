@@ -98,7 +98,7 @@ export class EquipMaterialService {
       });
 
       // 4. MAT_LOTS 잔량 0으로 이동
-      await qr.manager.update(MatLot, { matUid }, { currentQty: 0 });
+      await qr.manager.update(MatLot, { matUid, company, plant }, { currentQty: 0 });
 
       // 5. 품목명 조회(Best-effort)
       const part = await this.partMasterRepo.findOne({
@@ -182,10 +182,8 @@ export class EquipMaterialService {
         );
       }
 
-      const restoreQty = stock.availableQty ?? stock.qty ?? 0;
-
-      // 3. WIP 역분개(DEDUCT_BACK)
-      await this.wipMatStockService.restoreInTx(qr, {
+      // 3. WIP 역분개(DEDUCT_BACK) — 실제 복원량은 반환값 합계 기준(스냅샷 아님)
+      const restored = await this.wipMatStockService.restoreInTx(qr, {
         mode: 'DEDUCT_BACK',
         refType: 'EQUIP_MOUNT',
         refId: matUid,
@@ -194,11 +192,12 @@ export class EquipMaterialService {
         company,
         plant,
       });
+      const restoreQty = restored.reduce((sum, r) => sum + r.qty, 0);
 
-      // 4. MAT_LOTS 잔량 복원
+      // 4. MAT_LOTS 잔량 복원 (실제 WIP 역분개량만큼)
       const lot = await qr.manager.findOne(MatLot, { where: { matUid, company, plant } });
       if (lot) {
-        await qr.manager.update(MatLot, { matUid }, {
+        await qr.manager.update(MatLot, { matUid, company, plant }, {
           currentQty: (lot.currentQty ?? 0) + restoreQty,
         });
       } else {
