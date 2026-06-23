@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { MaterialTrace } from "../types";
 
-export default function MaterialSection({ materials }: { materials: MaterialTrace[] }) {
+export default function MaterialSection({ materials, title }: { materials: MaterialTrace[]; title?: string }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState<Set<string>>(new Set());
   const toggle = (id: string) =>
@@ -17,12 +17,14 @@ export default function MaterialSection({ materials }: { materials: MaterialTrac
   if (materials.length === 0)
     return (
       <div className="text-sm text-text-muted py-4">
+        {title && <div className="text-sm font-medium text-text mb-2">{title}</div>}
         {t("quality.trace.noMaterials", "투입 자재 없음")}
       </div>
     );
 
   return (
     <div className="space-y-2">
+      {title && <div className="text-sm font-medium text-text mb-1">{title}</div>}
       {materials.map((m) => {
         const id = m.matUid;
         const expanded = open.has(id);
