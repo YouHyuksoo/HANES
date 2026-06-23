@@ -34,6 +34,18 @@ export class SubprocessKittingController {
     return ResponseUtil.success(data, '서브공정 키팅이 완료되었습니다.');
   }
 
+  @Get('sg-labels-by-result/:resultNo')
+  @ApiOperation({ summary: '생산실적별 SG 라벨 목록 조회' })
+  @ApiParam({ name: 'resultNo', description: '생산실적번호' })
+  async getSgLabelsByResult(
+    @Param('resultNo') resultNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.service.getSgLabelsByResult(resultNo, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Get('sg-label/:sgBarcode')
   @ApiOperation({ summary: 'SG 라벨 조회' })
   @ApiParam({ name: 'sgBarcode', description: '반제품 묶음 라벨 바코드' })

@@ -135,6 +135,7 @@ export class JobOrderService {
     const {
       page = 1, limit = 50, search, orderNo, itemCode,
       lineCode, equipCode, status, statuses, planDateFrom, planDateTo, erpSyncYn,
+      itemType,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -166,6 +167,7 @@ export class JobOrderService {
       qb.andWhere('jo.status = :status', { status });
     }
     if (erpSyncYn) qb.andWhere('jo.erpSyncYn = :erpSyncYn', { erpSyncYn });
+    if (itemType) qb.andWhere('part.itemType = :itemType', { itemType });
     // 계획일 필터: 범위 내 작업지시 + 계획일 미지정(NULL) 작업지시는 항상 노출
     // (NULL은 범위 비교에서 제외되어 즉시지시/계획일 미입력 건이 숨겨지던 문제 해소)
     if (planDateFrom || planDateTo) {

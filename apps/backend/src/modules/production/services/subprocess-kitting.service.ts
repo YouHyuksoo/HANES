@@ -39,6 +39,12 @@ export class SubprocessKittingService {
   constructor(
     @InjectRepository(SgLabel)
     private readonly sgLabelRepository: Repository<SgLabel>,
+    @InjectRepository(JobOrder)
+    private readonly jobOrderRepository: Repository<JobOrder>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(BomMaster)
+    private readonly bomMasterRepository: Repository<BomMaster>,
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
     private readonly productInventory: ProductInventoryService,
@@ -370,6 +376,18 @@ export class SubprocessKittingService {
         });
       }
     }
+  }
+
+  /** 생산실적별 SG 라벨 목록 조회 — 서브공정 실적 등록 후 발행된 라벨 확인용 */
+  async getSgLabelsByResult(
+    resultNo: string,
+    company: string,
+    plant: string,
+  ): Promise<SgLabel[]> {
+    return this.sgLabelRepository.find({
+      where: { resultNo, company, plant },
+      order: { issuedAt: 'ASC' },
+    });
   }
 
   /** SG 라벨 단건 조회 (tenant). 없으면 NotFound. */

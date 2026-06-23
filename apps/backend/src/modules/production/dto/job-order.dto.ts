@@ -214,6 +214,11 @@ export class JobOrderQueryDto extends PaginationQueryDto {
   @IsString()
   @IsIn([...USE_YN_VALUES])
   erpSyncYn?: string;
+
+  @ApiPropertyOptional({ description: '품목유형 필터 (SEMI_PRODUCT | FINISHED | RAW_MATERIAL)' })
+  @IsOptional()
+  @IsString()
+  itemType?: string;
 }
 
 /**
