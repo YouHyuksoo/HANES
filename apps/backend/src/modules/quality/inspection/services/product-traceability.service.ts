@@ -21,6 +21,7 @@ import { PalletMaster } from '../../../../entities/pallet-master.entity';
 import { EquipMaster } from '../../../../entities/equip-master.entity';
 import { WorkerMaster } from '../../../../entities/worker-master.entity';
 import { ProcessMaster } from '../../../../entities/process-master.entity';
+import { PartnerMaster } from '../../../../entities/partner-master.entity';
 import {
   MaterialTrace,
   ProcessStep,
@@ -53,6 +54,7 @@ export class ProductTraceabilityService {
     @InjectRepository(EquipMaster) private readonly equipMasterRepo: Repository<EquipMaster>,
     @InjectRepository(WorkerMaster) private readonly workerMasterRepo: Repository<WorkerMaster>,
     @InjectRepository(ProcessMaster) private readonly processMasterRepo: Repository<ProcessMaster>,
+    @InjectRepository(PartnerMaster) private readonly partnerMasterRepo: Repository<PartnerMaster>,
   ) {}
 
   private fmtDate(d: Date | null | undefined): string | null {
@@ -79,6 +81,13 @@ export class ProductTraceabilityService {
       ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    // 공급사 코드 → 거래처명 매핑 (vendor는 PARTNER_MASTERS.partnerCode)
+    const vendorCodes = [...new Set(lots.map((l) => l.vendor).filter(Boolean))];
+    const partners = vendorCodes.length
+      ? await this.partnerMasterRepo.find({ where: { partnerCode: In(vendorCodes), company, plant } })
+      : [];
+    const partnerNameMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
 
     const poNos = [...new Set(lots.map((l) => l.poNo).filter((v): v is string => !!v))];
     const pos = poNos.length
@@ -134,7 +143,7 @@ export class ProductTraceabilityService {
         usedQty: ctx.usedQty,
         unit: part?.unit ?? 'EA',
         vendorCode: lot?.vendor ?? null,
-        vendorName: lot?.vendor ?? null,
+        vendorName: lot?.vendor ? (partnerNameMap.get(lot.vendor) ?? lot.vendor) : null,
         po: po ? { poNo: po.poNo, orderDate: this.fmtDate(po.orderDate), partnerName: po.partnerName } : null,
         arrival: arrival ? { arrivalNo: arrival.arrivalNo, arrivalDate: this.fmtDate(arrival.arrivalDate), qty: arrival.qty } : null,
         iqc: iqc ? { result: iqc.result, inspectType: iqc.inspectType, inspectorName: iqc.inspectorName, inspectDate: this.fmtDate(iqc.inspectDate), certFilePath: iqc.certFilePath } : null,
