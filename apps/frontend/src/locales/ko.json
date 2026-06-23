@@ -3824,7 +3824,10 @@
       "circuitNo": "회로번호",
       "qtyPer": "단위당 수량",
       "totalRequired": "총 필요",
-      "noComponents": "조립 요구사항이 없습니다."
+      "noComponents": "조립 요구사항이 없습니다.",
+      "requirementsLoadFailed": "조립 요구사항 조회에 실패했습니다.",
+      "fulfilled": "충족",
+      "notFulfilled": "미충족"
     },
     "order": {
       "title": "작업지시 관리",

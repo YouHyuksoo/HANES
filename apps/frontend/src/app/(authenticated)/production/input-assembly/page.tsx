@@ -100,7 +100,7 @@ export default function InputAssemblyPage() {
       .catch(() => {
         if (!cancelled)
           toast.error(
-            t("production.inputAssembly.executeFailed", "조립 실행에 실패했습니다."),
+            t("production.inputAssembly.requirementsLoadFailed", "조립 요구사항 조회에 실패했습니다."),
           );
       })
       .finally(() => {
@@ -397,7 +397,7 @@ export default function InputAssemblyPage() {
                           {t("production.inputAssembly.scannedList", "스캔된 SG 라벨")}
                         </th>
                         <th className="px-3 py-2 text-center font-semibold">
-                          {t("production.kitting.result", "충족")}
+                          {t("production.inputAssembly.fulfilled", "충족")}
                         </th>
                       </tr>
                     </thead>
@@ -428,7 +428,7 @@ export default function InputAssemblyPage() {
                                 <CheckCircle className="w-4 h-4 text-green-500 inline-block" />
                               ) : (
                                 <span className="text-xs text-orange-500">
-                                  {t("production.kitting.warnZeroQty", "미충족")}
+                                  {t("production.inputAssembly.notFulfilled", "미충족")}
                                 </span>
                               )}
                             </td>
@@ -524,7 +524,7 @@ export default function InputAssemblyPage() {
                         <td className="px-3 py-2 text-center">
                           <button
                             type="button"
-                            className="p-1 rounded hover:bg-red-100 text-red-500"
+                            className="p-1 rounded hover:bg-red-500/10 text-red-500"
                             onClick={() => removeSg(item.sgBarcode)}
                             title={t("common.delete")}
                           >

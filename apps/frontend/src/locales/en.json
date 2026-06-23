@@ -3414,7 +3414,10 @@
       "circuitNo": "Circuit No.",
       "qtyPer": "Qty/Unit",
       "totalRequired": "Total Required",
-      "noComponents": "No assembly requirements."
+      "noComponents": "No assembly requirements.",
+      "requirementsLoadFailed": "Failed to load assembly requirements.",
+      "fulfilled": "Fulfilled",
+      "notFulfilled": "Not Fulfilled"
     },
     "order": {
       "title": "Work Order Management",

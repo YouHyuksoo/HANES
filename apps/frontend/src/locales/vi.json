@@ -3414,7 +3414,10 @@
       "circuitNo": "Số mạch",
       "qtyPer": "SL/Đơn vị",
       "totalRequired": "Tổng cần",
-      "noComponents": "Không có yêu cầu lắp ráp."
+      "noComponents": "Không có yêu cầu lắp ráp.",
+      "requirementsLoadFailed": "Tải yêu cầu lắp ráp thất bại.",
+      "fulfilled": "Đã đủ",
+      "notFulfilled": "Chưa đủ"
     },
     "order": {
       "title": "Quản lý lệnh sản xuất",

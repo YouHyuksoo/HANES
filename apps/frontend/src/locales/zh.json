@@ -3414,7 +3414,10 @@
       "circuitNo": "线路编号",
       "qtyPer": "单位数量",
       "totalRequired": "总需求",
-      "noComponents": "没有组装需求。"
+      "noComponents": "没有组装需求。",
+      "requirementsLoadFailed": "组装需求加载失败。",
+      "fulfilled": "已充足",
+      "notFulfilled": "未充足"
     },
     "order": {
       "title": "作业指示管理",
