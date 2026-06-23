@@ -8,6 +8,12 @@ Format:
 - T-000 | YYYY-MM-DD | owner | short result | evidence: JOURNAL heading or commit
 ```
 
+- T-CONS-MOUNT-SQL-PREVIEW | 2026-06-23 | kimi | `/consumables/mount` DataGrid `sqlQuery`를 `CONSUMABLE_MASTERS` 실제 조회 SQL로 교체 (`COMPANY`/`PLANT_CD`, `CATEGORY`, `CONSUMABLE_CODE`/`NAME` 검색, `ORDER BY CONSUMABLE_CODE ASC`, `OFFSET/FETCH`) | evidence: JOURNAL 2026-06-23 20:46 Kimi
+
+- T-ALL-MENU-QA | 2026-06-23 | codex | 전체 등록 메뉴 157개 브라우저 QA PASS 157/157, 실패/미실행 0, HTML/JSON 누적 리포트 갱신 | evidence: JOURNAL 2026-06-23 17:09 Codex
+
+- T-TRACE-FULL Task-8 | 2026-06-23 | claude | i18n 4파일 13개 신규 키 등재 완료(BOM 없음, JSON 유효) | commit 5553b50d
+
 ## Completed
 
 - T-QTYINPUT-EXPAND | 2026-06-22 | claude | 수량/금액 입력 필드 천단위 표시 공통 컴포넌트 `QtyInput`(components/shared, text+toLocaleString) 신설 후 전사 확대 — material/arrival 3모달(dce1e303) + 10개 도메인 37파일/64필드(0eb95cb2). 소수(단가·택트·효율·qtyPer·측정값)·비율·우선순위·순번·날짜·식별번호·raw input은 제외. 이전 T-THOUSAND-FORMAT은 표시컬럼만·입력칸 누락분 보완. FE tsc 0. 잔여: raw input 수량셀·소수 수량 | evidence: 커밋 dce1e303·0eb95cb2, memory feedback_qty_input_thousand_separator

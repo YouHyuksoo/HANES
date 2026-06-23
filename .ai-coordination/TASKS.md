@@ -29,6 +29,28 @@ notes:
 
 ## Active Tasks
 
+## T-MASTER-PART-PAGE-STANDARD 품목마스터 페이지 표준 문서화
+status: IN_PROGRESS
+owner: codex
+role: implementer
+scope:
+- docs/standards/master-part-page-standard.md
+- docs/standards/ui-screen-patterns.md
+files:
+- docs/standards/master-part-page-standard.md
+- docs/standards/ui-screen-patterns.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- `playwright-cli`로 `http://localhost:3002/master/part` 실제 화면 확인
+- `git diff --check`
+review:
+- needs-review
+notes:
+- `/master/part`를 유지보수 기준 화면으로 삼아 목록/배지/상단 액션/우측 패널 규칙을 문서화한다.
+
 ## T-ALL-MENU-QA 전체 메뉴 기능 QA 리포트
 status: IN_PROGRESS
 owner: codex
@@ -58,7 +80,7 @@ verification:
 review:
 - needs-review
 notes:
-- 다른 AI active lock 파일은 수정하지 않는다. CRUD/업무처리 전체 실행은 메뉴별 세부 러너로 확장한다.
+- 다른 AI active lock 파일은 수정하지 않는다. CRUD/업무처리 전체 실행은 메뉴 별 세부 러너로 확장한다.
 - `/shipping/return`은 `T-SHIP-ORDER-CANCEL` active lock 범위라 직접 수정하지 않는다.
 
 ## T-ER-VIEW-TABLE-NODES ER VIEW 테이블형 그래프 보정
@@ -1722,3 +1744,30 @@ review:
 notes:
 - 사이드바는 `/menu-categories/tree` DB 트리와 `menuConfig.ts` leaf를 병합한다. `MENU_CATEGORY_ITEMS`에 배치되지 않은 leaf는 menuConfig에 있어도 렌더링에서 제외된다.
 - `SYS_ER_VIEW`는 기존 시스템 메뉴 패턴에 맞춰 ADMIN 전체허용 메뉴로 배치했다. `ROLE_MENU_PERMISSIONS`에는 추가하지 않았다.
+
+## T-CONS-MOUNT-HELP-LOCALE `/consumables/mount` 도움말 및 다국어 처리
+status: REVIEW
+owner: kimi
+role: implementer
+scope:
+- `/consumables/mount` 화면 도움말 작성 및 등록
+- `consumables.mount.*` locale 키 누락 보정 (ko/en/zh/vi)
+- `public/help/manifest.json` CONS_MOUNT 등록
+files:
+- apps/frontend/public/help/user/{ko,en,zh,vi}/CONS_MOUNT.md
+- apps/frontend/public/help/operator/{ko,en,zh,vi}/CONS_MOUNT.md
+- apps/frontend/public/help/manifest.json
+- apps/frontend/src/locales/{ko,en,zh,vi}.json
+- apps/frontend/src/app/(authenticated)/consumables/mount/consumables-mount-help-locale.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+verification:
+- `node --test apps/frontend/src/app/(authenticated)/consumables/mount/consumables-mount-help-locale.structure.test.mjs` PASS
+- `node -e "for (const l of ['ko','en','zh','vi']) JSON.parse(fs.readFileSync('apps/frontend/src/locales/'+l+'.json','utf8'))"` PASS
+- `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false` PASS
+- 3002 `/consumables/mount` HTTP 200 및 도움말 패널 표시 확인
+review:
+- needs-review
+notes:
+- 화면에 사용 중인 `consumables.mount.*` 키가 4개 언어 locale에 모두 없어 도움말과 함께 보정한다.

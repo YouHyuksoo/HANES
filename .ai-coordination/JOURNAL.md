@@ -2845,3 +2845,4 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-missing-chunk-03/`
   - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-missing-chunk-04/`
   - `docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/`
+- `T-MASTER-PART-PAGE-STANDARD` 완료. `/master/part`를 기준 화면으로 삼아 품목마스터 유지보수 표준 문서를 추가했다. 상단 액션 배치, 12px 배지, 아이콘 중심 행 액션, 우측 슬라이드 패널, 필드별 DB 컬럼 툴팁, 유지보수 체크리스트를 정리했고 `docs/standards/ui-screen-patterns.md`에 연결했다. 검증: `playwright-cli`로 `/master/part` 실제 화면 확인, `git diff --check` PASS. 커밋하지 않았다.

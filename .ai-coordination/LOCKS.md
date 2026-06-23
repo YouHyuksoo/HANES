@@ -2,6 +2,22 @@
 
 ## Active Locks
 
+## T-MASTER-PART-PAGE-STANDARD 품목마스터 페이지 표준 문서화
+status: active
+owner: codex
+role: implementer
+started: 2026-06-23 15:34 KST
+last_seen: 2026-06-23 15:34 KST
+expires: 2026-06-23 19:34 KST
+files:
+- docs/standards/master-part-page-standard.md
+- docs/standards/ui-screen-patterns.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+note: `/master/part` 화면을 표준 레이아웃/컨트롤 규칙의 기준 문서로 정리한다.
+
 ## T-ALL-MENU-QA 전체 메뉴 기능 QA 리포트
 status: active
 owner: codex
