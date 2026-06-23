@@ -1,7 +1,7 @@
 // apps/backend/src/modules/quality/inspection/services/product-traceability.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { SgLabel } from '../../../../entities/sg-label.entity';
 import { ProductGenealogy } from '../../../../entities/product-genealogy.entity';
@@ -463,7 +463,7 @@ export class ProductTraceabilityService {
     }));
 
     // 수리 이력: RepairOrder (fgBarcode 또는 prdUid 기준)
-    const repairConditions: object[] = [{ fgBarcode: serial, company, plant }];
+    const repairConditions: FindOptionsWhere<RepairOrder>[] = [{ fgBarcode: serial, company, plant }];
     if (prdUid) repairConditions.push({ prdUid, company, plant });
     const repairRows = await this.repairOrderRepo.find({ where: repairConditions });
 
