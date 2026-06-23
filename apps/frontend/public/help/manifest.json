@@ -62,6 +62,11 @@
           "path": "/material/issue"
         },
         {
+          "menuCode": "MAT_ISSUE_OTHER",
+          "title": "기타출고관리",
+          "path": "/material/issue-other"
+        },
+        {
           "menuCode": "MAT_LOT_SPLIT",
           "title": "자재분할",
           "path": "/material/lot-split"
