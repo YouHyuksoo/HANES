@@ -11,10 +11,12 @@
  * - 기존 로그가 있으면 details JSON 파싱해 입력값 자동 채움
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { ClipboardEdit, AlertTriangle } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { InspectItemImage } from "@/components/shared";
 
@@ -78,6 +80,172 @@ interface InspectEntryLabels {
   passLabel: string;
   badRemarkPlaceholder: string;
   pendingLabel: string;
+}
+
+/* ── 인라인 편집 DataGrid (별도 컴포넌트로 분리 → 포커스 손실 방지) ── */
+interface InspectDataGridProps {
+  items: InspectItem[];
+  results: Record<string, ItemResult>;
+  updateResult: (key: string, patch: Partial<ItemResult>) => void;
+  labels: InspectEntryLabels;
+}
+
+function InspectDataGrid({ items, results, updateResult, labels }: InspectDataGridProps) {
+  const { t } = useTranslation();
+  const columns = useMemo<ColumnDef<InspectItem>[]>(() => [
+    {
+      id: "seq",
+      header: "No",
+      size: 44,
+      meta: { align: "center" as const },
+      cell: ({ row }) => <span className="text-text-muted">{row.index + 1}</span>,
+    },
+    {
+      id: "image",
+      header: t("equipment.dailyInspect.colPhoto", "사진"),
+      size: 56,
+      meta: { align: "center" as const },
+      enableColumnFilter: false,
+      cell: ({ row }) => (
+        <InspectItemImage imageUrl={row.original.imageUrl} alt={row.original.itemName} size={36} />
+      ),
+    },
+    {
+      accessorKey: "itemName",
+      header: t("equipment.dailyInspect.colItem", "점검항목"),
+      size: 180,
+      cell: ({ getValue }) => <span className="font-medium text-xs">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: "itemType",
+      header: t("equipment.dailyInspect.colType", "유형"),
+      size: 72,
+      meta: { align: "center" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+            v === "MEASURE"
+              ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+              : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
+          }`}>
+            {v === "MEASURE" ? t("equipment.dailyInspect.typeMeasure", "측정형") : t("equipment.dailyInspect.typeVisual", "판정형")}
+          </span>
+        );
+      },
+    },
+    {
+      id: "criteria",
+      header: t("equipment.dailyInspect.colCriteria", "기준"),
+      size: 130,
+      meta: { align: "center" as const },
+      cell: ({ row }) => (
+        <span className="text-text-muted text-xs">
+          {criteriaText(row.original, t("equipment.dailyInspect.defaultCriteria", "정상"))}
+        </span>
+      ),
+    },
+    {
+      id: "input",
+      header: t("equipment.dailyInspect.colMeasure", "측정값/입력"),
+      size: 120,
+      meta: { align: "center" as const },
+      enableColumnFilter: false,
+      cell: ({ row }) => {
+        const item = row.original;
+        const key = itemKey(item, row.index);
+        const r = results[key];
+        const isNg = r?.result === "NG";
+        if (item.itemType === "MEASURE") {
+          return (
+            <input
+              type="number"
+              step="any"
+              value={r?.value ?? ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                updateResult(key, { value: v, result: v ? judgeItem(item, v) : null });
+              }}
+              className={`w-24 px-2 py-1 text-xs text-right border rounded bg-white dark:bg-slate-800 focus:outline-none focus:border-primary ${
+                isNg ? "border-red-400 text-red-600 dark:text-red-400 font-bold" : "border-border"
+              }`}
+            />
+          );
+        }
+        return (
+          <select
+            value={r?.result ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              updateResult(key, { result: v === "OK" || v === "NG" ? v : null });
+            }}
+            className={`w-24 px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 focus:outline-none focus:border-primary ${
+              isNg ? "border-red-400 text-red-600 dark:text-red-400 font-bold" : "border-border"
+            }`}
+          >
+            <option value="">--</option>
+            <option value="OK">OK</option>
+            <option value="NG">NG</option>
+          </select>
+        );
+      },
+    },
+    {
+      id: "judge",
+      header: t("equipment.dailyInspect.colJudge", "판정"),
+      size: 60,
+      meta: { align: "center" as const },
+      enableColumnFilter: false,
+      cell: ({ row }) => {
+        const key = itemKey(row.original, row.index);
+        const result = results[key]?.result;
+        if (!result) return <span className="text-text-muted text-xs">-</span>;
+        return (
+          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+            result === "OK"
+              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+          }`}>
+            {result}
+          </span>
+        );
+      },
+    },
+    {
+      id: "remark",
+      header: t("common.remark", "비고"),
+      size: 160,
+      enableColumnFilter: false,
+      cell: ({ row }) => {
+        const key = itemKey(row.original, row.index);
+        const isNg = results[key]?.result === "NG";
+        return (
+          <input
+            type="text"
+            value={results[key]?.remark ?? ""}
+            onChange={(e) => updateResult(key, { remark: e.target.value })}
+            placeholder={isNg ? labels.badRemarkPlaceholder : ""}
+            className="w-full px-2 py-0.5 text-xs border border-border rounded bg-white dark:bg-slate-800 focus:outline-none focus:border-primary"
+          />
+        );
+      },
+    },
+  ], [items, results, updateResult, labels, t]);
+
+  return (
+    <DataGrid
+      data={items}
+      columns={columns}
+      isLoading={false}
+      rowClassName={(row, index) => {
+        const key = itemKey(row, index);
+        const result = results[key]?.result;
+        if (result === "NG") return "bg-red-50 dark:bg-red-950/20";
+        if (result === "OK") return "bg-green-50/40 dark:bg-green-950/10";
+        return "";
+      }}
+    />
+  );
 }
 
 function judgeItem(item: InspectItem, raw: string): "OK" | "NG" | null {
@@ -239,6 +407,9 @@ export default function InspectEntryPanel({
     return () => ctrl.abort();
   }, [apiBasePath, equipCode, existingInspected, inspectDate, inspectType]);
 
+  const resultsRef = useRef(results);
+  resultsRef.current = results;
+
   const updateResult = useCallback((key: string, patch: Partial<ItemResult>) => {
     setResults((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   }, []);
@@ -325,44 +496,42 @@ export default function InspectEntryPanel({
     <div className="bg-surface border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
       {/* 헤더 */}
       <div className="p-3 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-semibold">
-              {labels.inspectEntry} - {equipCode} {equipName}
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold truncate">
+              {labels.inspectEntry} — {equipCode} {equipName}
             </div>
-            <div className="text-xs text-text-muted mt-0.5">{t("equipment.dailyInspect.itemCountSuffix", "{{count}}항목", { count: itemCount })}</div>
+            <div className="text-xs text-text-muted mt-0.5">
+              {t("equipment.dailyInspect.itemCountSuffix", "{{count}}항목", { count: itemCount })}
+            </div>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={!allFilled || !inspectorName || saving}
-            title={saving ? t("common.saving") : saveDisabledReason || t("common.save")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
-              isNgOverall
-                ? "bg-red-600 hover:bg-red-700 text-white"
-                : "bg-primary hover:bg-primary/90 text-white"
-            }`}
-          >
-            {saving ? t("common.saving") : isNgOverall ? labels.saveButtonNg : labels.saveButtonPass}
-          </button>
-          {saveDisabledReason ? (
-            <p className="text-[11px] text-text-muted mt-2" title={saveDisabledReason}>
-              {saveDisabledReason}
-            </p>
-          ) : null}
+          <div className="flex flex-col items-end shrink-0 gap-1">
+            <button
+              onClick={handleSave}
+              disabled={!allFilled || !inspectorName || saving}
+              title={saving ? t("common.saving") : saveDisabledReason || t("common.save")}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${
+                isNgOverall
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : "bg-primary hover:bg-primary/90 text-white"
+              }`}
+            >
+              {saving ? t("common.saving") : isNgOverall ? labels.saveButtonNg : labels.saveButtonPass}
+            </button>
+            {saveDisabledReason && (
+              <p className="text-[10px] text-text-muted">{saveDisabledReason}</p>
+            )}
+          </div>
         </div>
 
         {/* 점검일자 / 점검자 / 시작시각 */}
         <div className="mt-2.5 grid grid-cols-3 gap-3 text-xs">
           <div>
-            <div className="text-text-muted mb-1">
-              {labels.inspectDate}
-            </div>
+            <div className="text-text-muted mb-1">{labels.inspectDate}</div>
             <div className="font-mono font-medium">{inspectDate}</div>
           </div>
           <div>
-            <div className="font-bold mb-1 text-primary">
-              {labels.inspectorRequired}
-            </div>
+            <div className="font-bold mb-1 text-primary">{labels.inspectorRequired}</div>
             <select
               value={inspectorName}
               onChange={(e) => setInspectorName(e.target.value)}
@@ -377,9 +546,7 @@ export default function InspectEntryPanel({
             </select>
           </div>
           <div>
-            <div className="text-text-muted mb-1">
-              {labels.startTime}
-            </div>
+            <div className="text-text-muted mb-1">{labels.startTime}</div>
             <div className="font-mono font-medium">{startTime}</div>
           </div>
         </div>
@@ -414,8 +581,8 @@ export default function InspectEntryPanel({
         </div>
       )}
 
-      {/* 항목 테이블 */}
-      <div className="flex-1 overflow-auto p-3">
+      {/* 항목 DataGrid */}
+      <div className="flex-1 min-h-0 p-3">
         {loading ? (
           <div className="py-8 text-center text-text-muted text-sm">{t("common.loading")}</div>
         ) : items.length === 0 ? (
@@ -424,119 +591,12 @@ export default function InspectEntryPanel({
             <p className="text-sm">{labels.noItems}</p>
           </div>
         ) : (
-          <table className="w-full text-xs border border-border rounded-lg overflow-hidden border-collapse">
-            <thead className="bg-surface sticky top-0">
-              <tr className="border-b border-border text-text-muted">
-                <th className="w-8 px-2 py-2 text-center font-medium">No</th>
-                <th className="w-14 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colPhoto", "사진")}</th>
-                <th className="px-3 py-2 text-left font-medium">{t("equipment.dailyInspect.colItem", "점검항목")}</th>
-                <th className="w-16 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colType", "유형")}</th>
-                <th className="w-32 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colCriteria", "기준")}</th>
-                <th className="w-24 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colMeasure", "측정값/입력")}</th>
-                <th className="w-14 px-2 py-2 text-center font-medium">{t("equipment.dailyInspect.colJudge", "판정")}</th>
-                <th className="px-2 py-2 text-left font-medium">{t("common.remark", "비고")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, idx) => {
-                const key = itemKey(item, idx);
-                const r = results[key];
-                const isRowNg = r?.result === "NG";
-                return (
-                  <tr
-                    key={key}
-                    className={`border-b border-border ${
-                      isRowNg ? "bg-red-50 dark:bg-red-950/20" : ""
-                    }`}
-                  >
-                    <td className="px-2 py-2 text-center text-text-muted">{idx + 1}</td>
-                    <td className="px-2 py-2 text-center">
-                      <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} size={40} />
-                    </td>
-                    <td className="px-3 py-2 font-medium">{item.itemName}</td>
-                    <td className="px-2 py-2 text-center">
-                      <span
-                        className={`px-1.5 py-0.5 rounded font-medium ${
-                          item.itemType === "MEASURE"
-                            ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                            : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                        }`}
-                      >
-                        {item.itemType === "MEASURE" ? t("equipment.dailyInspect.typeMeasure", "측정형") : t("equipment.dailyInspect.typeVisual", "판정형")}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-center text-text-muted">
-                      {criteriaText(item, t("equipment.dailyInspect.defaultCriteria", "정상"))}
-                    </td>
-                    <td className="px-2 py-2 text-center">
-                      {item.itemType === "MEASURE" ? (
-                        <input
-                          type="number"
-                          step="any"
-                          value={r?.value ?? ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            updateResult(key, {
-                              value: v,
-                              result: v ? judgeItem(item, v) : null,
-                            });
-                          }}
-                          className={`w-20 px-2 py-1 text-right border rounded bg-white dark:bg-slate-800 focus:outline-none ${
-                            isRowNg
-                              ? "border-red-500 text-red-600 dark:text-red-400 font-bold"
-                              : "border-border"
-                          }`}
-                        />
-                      ) : (
-                        <select
-                          value={r?.result ?? ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            updateResult(key, {
-                              result: v === "OK" || v === "NG" ? v : null,
-                            });
-                          }}
-                          className={`w-20 px-2 py-1 border rounded bg-white dark:bg-slate-800 focus:outline-none ${
-                            isRowNg
-                              ? "border-red-500 text-red-600 dark:text-red-400 font-bold"
-                              : "border-border"
-                          }`}
-                        >
-                          <option value="">--</option>
-                          <option value="OK">OK</option>
-                          <option value="NG">NG</option>
-                        </select>
-                      )}
-                    </td>
-                    <td className="px-2 py-2 text-center">
-                      {r?.result ? (
-                        <span
-                          className={`px-1.5 py-0.5 rounded font-medium ${
-                            r.result === "OK"
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                          }`}
-                        >
-                          {r.result}
-                        </span>
-                      ) : (
-                        <span className="text-text-muted">-</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-2">
-                      <input
-                        type="text"
-                        value={r?.remark ?? ""}
-                        onChange={(e) => updateResult(key, { remark: e.target.value })}
-                        placeholder={isRowNg ? labels.badRemarkPlaceholder : ""}
-                        className="w-full px-2 py-1 border border-border rounded bg-white dark:bg-slate-800 focus:outline-none"
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <InspectDataGrid
+            items={items}
+            results={results}
+            updateResult={updateResult}
+            labels={labels}
+          />
         )}
       </div>
 

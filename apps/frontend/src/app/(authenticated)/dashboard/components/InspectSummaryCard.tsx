@@ -12,7 +12,7 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   CheckCircle, XCircle, AlertTriangle, Clock,
   ChevronRight,
@@ -31,6 +31,7 @@ interface Props {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   iconColor: string;
+  gradient?: string;
   items: InspectItem[];
   total: number;
   completed: number;
@@ -48,32 +49,29 @@ const resultConfig: Record<string, { icon: typeof CheckCircle; color: string; bg
 };
 
 export default function InspectSummaryCard({
-  title, icon: Icon, iconColor, items, total, completed, pass, fail,
+  title, icon: Icon, iconColor, gradient, items, total, completed, pass, fail,
   loading, linkPath,
 }: Props) {
   const { t } = useTranslation();
-  const router = useRouter();
 
   const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  return (
-    <Card className="flex flex-col h-full">
+  const card = (
+    <Card className="flex flex-col h-full" style={gradient ? { border: "none" } : undefined}>
       <CardContent>
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-md ${iconColor}`}>
-              <Icon className="w-4 h-4 text-white" />
-            </div>
+            <Icon className={`w-4 h-4 ${iconColor}`} />
             <h3 className="text-sm font-bold text-text">{title}</h3>
           </div>
-          <button
-            onClick={() => router.push(linkPath)}
+          <Link
+            href={linkPath}
             className="flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 font-medium"
           >
             {t("common.viewMore", "더보기")}
             <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          </Link>
         </div>
 
         {/* Summary Stats */}
@@ -151,4 +149,13 @@ export default function InspectSummaryCard({
       </CardContent>
     </Card>
   );
+
+  if (gradient) {
+    return (
+      <div className={`p-[1.5px] rounded-2xl ${gradient}`}>
+        {card}
+      </div>
+    );
+  }
+  return card;
 }

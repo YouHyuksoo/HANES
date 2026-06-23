@@ -197,7 +197,7 @@ export default function PeriodicInspectPage() {
         </div>
       </div>
 
-      <div className="flex-1 grid gap-3 min-h-0" style={{ gridTemplateColumns: "5fr 14fr" }}>
+      <div className="flex-1 grid gap-3 min-h-0" style={{ gridTemplateColumns: "7fr 12fr" }}>
         <EquipListPanel
           equipTargets={equipTargets}
           selectedEquipCode={selectedEquipCode}

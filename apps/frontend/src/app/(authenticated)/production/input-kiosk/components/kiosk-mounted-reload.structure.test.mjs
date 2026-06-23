@@ -5,9 +5,13 @@ import { readFileSync } from 'node:fs';
 const materialListSource = readFileSync(new URL('./MaterialListPanel.tsx', import.meta.url), 'utf8');
 const consumableScanSource = readFileSync(new URL('./ConsumableScanModal.tsx', import.meta.url), 'utf8');
 
-test('material panel reloads scanned material lots from the job-order DB table', () => {
-  assert.match(materialListSource, /\/production\/job-orders\/\$\{selectedJobOrder\.orderNo\}\/material-lots/);
-  assert.match(materialListSource, /addScannedMaterialLot\(\{\s*itemCode:\s*l\.itemCode,\s*seq:\s*l\.seq,\s*matUid:\s*l\.matUid,\s*initQty:\s*l\.initQty\s*\}\)/);
+test('material panel reloads mounted materials from equipment WIP using the selected kiosk equipment', () => {
+  // 자재는 작업지시(material-lots)가 아니라 설비(equip-material/mounted) 귀속으로 조회한다
+  assert.match(materialListSource, /\/production\/equip-material\/mounted/);
+  assert.match(materialListSource, /params:\s*\{\s*equipCode:\s*selectedEquip\.equipCode\s*,?\s*\}/);
+  assert.match(materialListSource, /\[selectedEquip\?\.equipCode,\s*materialMountRefreshSeq\]/);
+  // 구 모델(작업지시 material-lots 재적재)이 남아있지 않아야 한다
+  assert.doesNotMatch(materialListSource, /addScannedMaterialLot/);
 });
 
 test('material panel reloads mounted consumables from DB using the selected kiosk equipment', () => {

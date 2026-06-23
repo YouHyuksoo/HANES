@@ -71,23 +71,24 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
 
   if (!equip) {
     return (
-      <div className="flex items-center justify-center h-64 text-text-muted">
+      <div className="flex items-center justify-center h-full text-text-muted">
         {t("master.equipInspect.selectEquipPrompt", "좌측에서 설비를 선택하세요")}
       </div>
     );
   }
 
   return (
-    <>
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-text">{equip.equipCode}</p>
-          <p className="text-sm text-text-muted">{equip.equipName}</p>
-          <span className="px-2 py-0.5 text-xs rounded-full bg-surface text-text-muted">
+    <div className="flex flex-col h-full min-h-0">
+      {/* 헤더 */}
+      <div className="flex justify-between items-center mb-3 flex-shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-sm font-medium text-text shrink-0">{equip.equipCode}</p>
+          <p className="text-sm text-text-muted truncate">{equip.equipName}</p>
+          <span className="px-2 py-0.5 text-xs rounded-full bg-surface text-text-muted shrink-0">
             {items.length}{t("master.equipInspect.itemCount", "개 항목")}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0 ml-2">
           <Button variant="secondary" size="sm" onClick={onRefresh}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
@@ -97,17 +98,20 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
         </div>
       </div>
 
-      {items.length === 0 && !loading ? (
-        <div className="flex flex-col items-center justify-center h-48 text-text-muted border border-dashed border-border rounded-lg">
-          <AlertCircle className="w-8 h-8 mb-2 text-orange-400" />
-          <p className="text-sm font-medium">{t("master.equipInspect.noItems", "등록된 점검항목이 없습니다")}</p>
-          <p className="text-xs mt-1">{t("master.equipInspect.addItemGuide", "상단 버튼으로 점검항목을 추가하세요")}</p>
-        </div>
-      ) : (
-        <DataGrid data={items} columns={columns} isLoading={loading} enableColumnFilter
-          enableExport exportFileName={`${equip.equipCode}_inspect_items`}
-          sqlQuery={`SELECT *\nFROM EQUIP_INSPECT_ITEM_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      )}
+      {/* 본문 */}
+      <div className="flex-1 min-h-0">
+        {items.length === 0 && !loading ? (
+          <div className="flex flex-col items-center justify-center h-48 text-text-muted border border-dashed border-border rounded-lg">
+            <AlertCircle className="w-8 h-8 mb-2 text-orange-400" />
+            <p className="text-sm font-medium">{t("master.equipInspect.noItems", "등록된 점검항목이 없습니다")}</p>
+            <p className="text-xs mt-1">{t("master.equipInspect.addItemGuide", "상단 버튼으로 점검항목을 추가하세요")}</p>
+          </div>
+        ) : (
+          <DataGrid data={items} columns={columns} isLoading={loading} enableColumnFilter
+            enableExport exportFileName={`${equip.equipCode}_inspect_items`}
+            sqlQuery={`SELECT *\nFROM EQUIP_INSPECT_ITEM_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        )}
+      </div>
 
       <ConfirmModal
         isOpen={!!deleteTarget}
@@ -117,6 +121,6 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
         message={t("common.confirmDelete")}
         variant="danger"
       />
-    </>
+    </div>
   );
 }

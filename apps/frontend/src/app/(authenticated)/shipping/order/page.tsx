@@ -449,7 +449,7 @@ ORDER BY so.CREATED_AT DESC`}/>
                   </Button>
                 )}
                 <Button onClick={handleSave} disabled={!canSave || saving}>
-                  {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
+                  {saving ? t("common.saving") : t("common.save", "저장")}
                 </Button>
               </div>
             </div>

@@ -26,8 +26,10 @@ import { SgLabel } from '../../../entities/sg-label.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
-import { KitDto, ConfirmAssemblyDto } from '../dto/subprocess-kitting.dto';
+import { KitDto, ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.dto';
 import { In } from 'typeorm';
+import { ProductionSpecificationService } from './production-specification.service';
+import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 
 /** 제품 WIP 공정창고 코드 — 생산실적 자동 적재(adsorbProductStockInTx)와 동일하게 WIP_MAIN 사용 */
 const WIP_WAREHOUSE = 'WIP_MAIN';
@@ -50,6 +52,7 @@ export class SubprocessKittingService {
     private readonly productInventory: ProductInventoryService,
     private readonly wipMatStockService: WipMatStockService,
     private readonly autoIssueService: AutoIssueService,
+    private readonly productionSpec: ProductionSpecificationService,
   ) {}
 
   /**

@@ -8,6 +8,8 @@ Format:
 - T-000 | YYYY-MM-DD | owner | short result | evidence: JOURNAL heading or commit
 ```
 
+- T-KIOSK-MAT-MOUNT | 2026-06-24 | claude | 키오스크 자재 입력을 작업지시 기준→설비 기준 장착(WIP_MAT_STOCKS, EquipMaterialService.mount 재사용)으로 전환, mount 시점 BOM 오장착 가드, 이력 전량 보존. tsc 0/0 · 구조테스트 3 pass | evidence: JOURNAL 2026-06-24 Claude
+
 - T-CONS-MOUNT-SQL-PREVIEW | 2026-06-23 | kimi | `/consumables/mount` DataGrid `sqlQuery`를 `CONSUMABLE_MASTERS` 실제 조회 SQL로 교체 (`COMPANY`/`PLANT_CD`, `CATEGORY`, `CONSUMABLE_CODE`/`NAME` 검색, `ORDER BY CONSUMABLE_CODE ASC`, `OFFSET/FETCH`) | evidence: JOURNAL 2026-06-23 20:46 Kimi
 
 - T-ALL-MENU-QA | 2026-06-23 | codex | 전체 등록 메뉴 157개 브라우저 QA PASS 157/157, 실패/미실행 0, HTML/JSON 누적 리포트 갱신 | evidence: JOURNAL 2026-06-23 17:09 Codex
@@ -134,4 +136,5 @@ Format:
 - T-ACTIVITY-LOGS-USERS-FK | 2026-06-23 | codex | JSHANES `ACTIVITY_LOGS.USER_EMAIL -> USERS.EMAIL` FK를 ENABLE VALIDATE로 생성하고 ER VIEW 추정 매핑/ERD 갱신 | evidence: JOURNAL 2026-06-23 Codex
 - T-ACTIVITY-LOGS-EMAIL-COLUMN | 2026-06-23 | codex | 사용자 정정에 따라 JSHANES `ACTIVITY_LOGS.USER_EMAIL`을 `EMAIL`로 rename하고 `ACTIVITY_LOGS.EMAIL -> USERS.EMAIL` FK로 재생성 | evidence: JOURNAL 2026-06-23 Codex
 - T-ACTIVITY-LOGS-NAME-COLUMN | 2026-06-23 | codex | JSHANES `ACTIVITY_LOGS.USER_NAME`을 `NAME`으로 rename하고 entity/ERD/live schema 갱신 | evidence: JOURNAL 2026-06-23 Codex
+- T-MASTER-EQUIP-IMAGE-UPLOAD | 2026-06-24 | codex | 설비마스터 IMAGE_URL 추가, 사진 업로드/삭제 API와 우측 패널 UI를 품목마스터 패턴으로 일치시킴 | evidence: JOURNAL 2026-06-24 Codex
 - T-ER-VIEW-DROP-FK | 2026-06-23 | codex | `/system/er-view` 물리 FK 선택 시 `DROP_FK` dry-run/execute 및 `FK 제거 후보` 버튼 추가 | evidence: JOURNAL 2026-06-23 Codex

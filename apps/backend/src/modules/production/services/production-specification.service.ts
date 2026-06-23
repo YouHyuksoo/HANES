@@ -173,6 +173,34 @@ export class ProductionSpecificationService {
     return { ...master, revisions, revision };
   }
 
+  /**
+   * 품목코드 기준 회로 목록 조회 — 해당 품목의 도면에서 유효 Revision(APPROVED 우선, 없으면 최신)의 회로를 반환.
+   * 서브공정 키팅의 회로 선택 칸 데이터 소스. 도면/Revision/회로가 없으면 빈 배열.
+   */
+  async findCircuitsByItemCode(
+    itemCode: string,
+    company?: string,
+    plant?: string,
+  ): Promise<HarnessCircuitSpec[]> {
+    const master = await this.masterRepo.findOne({
+      where: { itemCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
+      order: { updatedAt: 'DESC' },
+    });
+    if (!master) return [];
+
+    const revisions = await this.revisionRepo.find({
+      where: { drawingId: master.drawingId, ...this.tenantWhere(company, plant) },
+      order: { createdAt: 'DESC' },
+    });
+    const target = revisions.find((r) => r.status === 'APPROVED') ?? revisions[0];
+    if (!target) return [];
+
+    return this.circuitRepo.find({
+      where: { revisionId: target.revisionId, ...this.tenantWhere(company, plant) },
+      order: { sortOrder: 'ASC' },
+    });
+  }
+
   async findRevision(revisionId: number, company?: string, plant?: string) {
     const revision = await this.revisionRepo.findOne({
       where: { revisionId, ...this.tenantWhere(company, plant) },

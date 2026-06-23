@@ -20,6 +20,7 @@ export const EQUIP_FIELD_HELP = {
   baudRate: { db: "EQUIP_MASTERS.COMM_CONFIG (baudRate)", description: "시리얼 통신 속도(통신 보율)입니다." },
   maker: { db: "EQUIP_MASTERS.MAKER", description: "설비를 제작한 제조사입니다." },
   modelName: { db: "EQUIP_MASTERS.MODEL_NAME", description: "설비의 모델명입니다." },
+  imageUrl: { db: "EQUIP_MASTERS.IMAGE_URL", description: "설비 사진 파일 경로입니다." },
 } as const;
 
 export type EquipFieldKey = keyof typeof EQUIP_FIELD_HELP;

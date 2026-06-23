@@ -106,6 +106,8 @@ import { SubprocessKittingController } from './controllers/subprocess-kitting.co
 import { SubprocessKittingService } from './services/subprocess-kitting.service';
 import { EquipMaterialController } from './controllers/equip-material.controller';
 import { EquipMaterialService } from './services/equip-material.service';
+import { KioskMaterialController } from './controllers/kiosk-material.controller';
+import { KioskMaterialService } from './services/kiosk-material.service';
 
 @Module({
   imports: [
@@ -128,6 +130,7 @@ import { EquipMaterialService } from './services/equip-material.service';
     ProductionSpecificationController,
     SubprocessKittingController,
     EquipMaterialController,
+    KioskMaterialController,
   ],
   providers: [
     JobOrderService,
@@ -147,6 +150,7 @@ import { EquipMaterialService } from './services/equip-material.service';
     ProductionSpecificationService,
     SubprocessKittingService,
     EquipMaterialService,
+    KioskMaterialService,
   ],
   exports: [
     JobOrderService,

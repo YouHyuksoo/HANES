@@ -11,7 +11,7 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle, Clock, PlayCircle, Pencil } from "lucide-react";
+import { CheckCircle, XCircle, Clock, PlayCircle, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui";
 
 export interface DayScheduleItem {
@@ -42,11 +42,13 @@ interface DaySchedulePanelProps {
   data: DayScheduleEquip[];
   loading: boolean;
   onExecuteInspect: (equip: DayScheduleEquip) => void;
+  onAddInspect?: () => void;
   inspectTitleKey?: string;
 }
 
 export default function DaySchedulePanel({
-  date, data, loading, onExecuteInspect, inspectTitleKey = "equipment.inspectCalendar.inspectTitle",
+  date, data, loading, onExecuteInspect, onAddInspect,
+  inspectTitleKey = "equipment.inspectCalendar.inspectTitle",
 }: DaySchedulePanelProps) {
   const { t } = useTranslation();
 
@@ -76,9 +78,17 @@ export default function DaySchedulePanel({
 
   return (
     <div className="bg-surface border border-border rounded-lg p-4 h-full overflow-y-auto max-h-[calc(100vh-300px)]">
-      <h3 className="text-base font-bold text-text mb-3">
-        {formatDate(date)} {t(inspectTitleKey)}
-      </h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-bold text-text">
+          {formatDate(date)} {t(inspectTitleKey)}
+        </h3>
+        {onAddInspect && (
+          <Button size="sm" variant="secondary" onClick={onAddInspect}>
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            {t("equipment.inspectCalendar.addInspect", "점검 추가")}
+          </Button>
+        )}
+      </div>
 
       {data.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-text-muted">

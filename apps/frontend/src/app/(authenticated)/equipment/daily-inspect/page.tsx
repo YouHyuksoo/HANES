@@ -134,7 +134,7 @@ export default function DailyInspectPage() {
         </div>
       </div>
 
-      <div className="flex-1 grid gap-3 min-h-0" style={{ gridTemplateColumns: "5fr 7fr" }}>
+      <div className="flex-1 grid gap-3 min-h-0" style={{ gridTemplateColumns: "6fr 7fr" }}>
         <EquipListPanel
           equipTargets={equipTargets}
           selectedEquipCode={selectedEquipCode}

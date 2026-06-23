@@ -37,6 +37,9 @@ export class EquipMaster {
   @Column({ type: 'varchar2', name: 'MODEL_NAME', length: 100, nullable: true })
   modelName: string | null;
 
+  @Column({ type: 'varchar2', name: 'IMAGE_URL', length: 500, nullable: true })
+  imageUrl: string | null;
+
   @Column({ type: 'varchar2', name: 'MAKER', length: 100, nullable: true })
   maker: string | null;
 

@@ -108,6 +108,42 @@ files:
 - apps/frontend/src/locales/vi.json
 note: 제품 시리얼 기준 섹션형 종합 추적(제품→반제품 SG→원자재 PO/IQC). 신규 ProductTraceabilityService, 기존 trace.service.ts는 보존. quality/inspection 모듈 파일(forFeature 엔티티 추가)도 수정 예정. 계획: docs/superpowers/plans/2026-06-23-product-traceability.md
 
+## T-KIOSK-SG-LABEL-PRINT 키오스크 SG 라벨 발행공정 자동 출력(Print Agent)
+status: active
+owner: claude
+role: implementer
+files:
+- apps/backend/src/modules/master/dto/label-template.dto.ts
+- apps/frontend/src/app/(authenticated)/master/label/types.ts
+- apps/frontend/src/app/(authenticated)/master/label/labelSources.ts
+- apps/frontend/src/app/(authenticated)/master/label/page.tsx
+- apps/frontend/src/app/(authenticated)/master/label/components/LabelObjectDesigner.tsx
+- apps/frontend/src/services/label-print.ts
+- apps/frontend/src/app/(authenticated)/production/input-kiosk/components/SgLabelPrintHost.tsx
+- apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ProductionInputBar.tsx
+- apps/frontend/src/app/(authenticated)/production/input-kiosk/page.tsx
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+note: master/label에 'sg'(반제품 SG) 라벨 카테고리 신규 + 키오스크 실적저장 시 라우팅 ISSUE_SG_LABEL_YN='Y' 공정이면 발행된 SG_LABELS를 HANES Print Agent(PNG, printAgentPng)로 모달 없이 자동 출력. 백엔드 SG 발행(issueSgLabelInTx)은 기존 동작 그대로. locales는 본 세션 Phase1에서 수정 중인 자기 파일 이어서 편집.
+
+## T-SUBKIT-SCAN-REDESIGN 서브공정 키팅 2영역 스캔 재설계(input-assembly 거울상)
+status: active
+owner: claude
+role: implementer
+files:
+- apps/backend/src/modules/production/dto/subprocess-kitting.dto.ts
+- apps/backend/src/modules/production/services/subprocess-kitting.service.ts
+- apps/backend/src/modules/production/services/production-specification.service.ts
+- apps/backend/src/modules/production/controllers/subprocess-kitting.controller.ts
+- apps/frontend/src/app/(authenticated)/production/subprocess-kitting/page.tsx
+- apps/frontend/src/app/(authenticated)/production/subprocess-kitting/components/InputSgScanPanel.tsx
+- apps/frontend/src/app/(authenticated)/production/subprocess-kitting/components/SubKitActionBar.tsx
+- apps/frontend/src/app/(authenticated)/production/subprocess-kitting/page.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/input-kiosk/components/SgLabelPrintHost.tsx
+note: 이전공정 SG 스캔→소비→회로별 새 SG 발행(ISSUED)→실물 스캔 확정(SG←SG genealogy). issueSgLabel/confirmSubKit 신규(confirmAssembly 대칭). 회로목록은 production-specification.service에 findCircuitsByItemCode 추가. locales(ko/en/zh/vi)는 타 세션 미커밋 변경 공존 → 부분 스테이징. 계획: ~/.claude/plans/binary-toasting-karp.md
+
 ## 운영 규칙
 
 - `LOCKS.md`에는 현재 수정 중이거나 인계 판단이 필요한 `active`/`stale` 잠금만 둔다.

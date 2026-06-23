@@ -2,14 +2,16 @@
 
 /**
  * @file components/MaterialScanModal.tsx
- * @description 자재 바코드 스캔 확인 모달 (롯트 기반)
+ * @description 자재 바코드 스캔 확인 모달 (설비 장착 기반)
  *
  * 초보자 가이드:
- * - BOM 자재 목록을 표시하고 바코드 스캔으로 롯트 등록
- * - 스캔된 matUid → POST /production/job-orders/:no/material-lots/scan
- * - 모든 자재 롯트 등록 완료 시 materialScanDone 인터락 해제
+ * - BOM 자재 목록을 표시하고 바코드(matUid) 스캔으로 설비에 장착한다.
+ * - 스캔된 matUid → POST /production/job-orders/:no/material-mounts/scan (BOM 오장착 검증)
+ *   → 자재가 설비(equipCode)에 귀속 장착(WIP_MAT_STOCKS)되어 작업지시가 바뀌어도 유지된다.
+ * - 장착 현황은 GET /production/equip-material/mounted?equipCode 로 조회.
+ * - BOM 요구 품목이 모두 설비에 장착되면 materialScanDone 인터락 해제.
  */
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Package, CheckCircle2, ScanLine } from 'lucide-react';
@@ -17,7 +19,7 @@ import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
 import { useScanInputFocus } from '@/hooks/useScanInputFocus';
-import { filterBomMaterials, type BomItem } from './MaterialListPanel';
+import { filterBomMaterials, type BomItem, type MountedMaterial } from './MaterialListPanel';
 
 interface MaterialScanModalProps {
   isOpen: boolean;
@@ -28,10 +30,11 @@ interface MaterialScanModalProps {
 export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialScanModalProps) {
   const { t } = useTranslation();
   const {
-    selectedJobOrder, scannedMaterialLots,
-    addScannedMaterialLot, setInterlock,
+    selectedEquip, selectedJobOrder,
+    materialMountRefreshSeq, bumpMaterialMountRefresh, setInterlock,
   } = useKioskStore();
   const [bomItems, setBomItems] = useState<BomItem[]>([]);
+  const [mounted, setMounted] = useState<MountedMaterial[]>([]);
   const [scanInput, setScanInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   // 모달 열린 동안 스캔 입력창 항상 포커스 유지
@@ -45,14 +48,41 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [isOpen, selectedJobOrder?.itemCode]);
 
-  const scannedMap = new Map(scannedMaterialLots.map(l => [`${l.itemCode}::${l.seq}`, l]));
-  const allScanned = bomItems.length > 0 && bomItems.every(b => scannedMap.has(`${b.childItemCode}::${b.seq}`));
-  const unscannedCount = bomItems.filter(b => !scannedMap.has(`${b.childItemCode}::${b.seq}`)).length;
+  // 설비 장착 자재 — 스캔/해제(materialMountRefreshSeq) 후 재조회
+  useEffect(() => {
+    if (!isOpen || !selectedEquip?.equipCode) { setMounted([]); return; }
+    api.get('/production/equip-material/mounted', {
+      params: { equipCode: selectedEquip.equipCode },
+    })
+      .then(res => setMounted(res.data?.data ?? []))
+      .catch(() => setMounted([]));
+  }, [isOpen, selectedEquip?.equipCode, materialMountRefreshSeq]);
+
+  // 품목코드별 장착 자재(가용 잔량>0) 매핑 — BOM 라인 커버리지 판정
+  const mountedByItem = useMemo(() => {
+    const map = new Map<string, MountedMaterial[]>();
+    for (const m of mounted) {
+      if ((m.availableQty ?? 0) <= 0) continue;
+      const list = map.get(m.itemCode) ?? [];
+      list.push(m);
+      map.set(m.itemCode, list);
+    }
+    return map;
+  }, [mounted]);
+
+  const allScanned = bomItems.length > 0 && bomItems.every(b => mountedByItem.has(b.childItemCode));
+  const unscannedCount = bomItems.filter(b => !mountedByItem.has(b.childItemCode)).length;
   const completeDisabledReason = allScanned
     ? ''
     : bomItems.length === 0
       ? t('kiosk.prep.noBomItems')
       : t('kiosk.material.remaining', { count: unscannedCount });
+
+  // BOM 요구 품목이 모두 장착되면 인터락 자동 해제
+  useEffect(() => {
+    if (bomItems.length === 0) return;
+    setInterlock('materialScanDone', bomItems.every(b => mountedByItem.has(b.childItemCode)));
+  }, [bomItems, mountedByItem, setInterlock]);
 
   const handleScan = useCallback(async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -61,24 +91,12 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
     setScanInput('');
 
     try {
-      const res = await api.post(
-        `/production/job-orders/${selectedJobOrder.orderNo}/material-lots/scan`,
-        {
-          matUid,
-          bomItems: bomItems.map(b => ({ itemCode: b.childItemCode, seq: b.seq })),
-        },
+      await api.post(
+        `/production/job-orders/${selectedJobOrder.orderNo}/material-mounts/scan`,
+        { matUid, equipCode: selectedEquip?.equipCode },
       );
-      const lot = res.data?.data as { itemCode: string; seq: number; matUid: string; initQty: number };
-      addScannedMaterialLot({ itemCode: lot.itemCode, seq: lot.seq, matUid: lot.matUid, initQty: lot.initQty });
+      bumpMaterialMountRefresh();
       toast.success(t('kiosk.material.scanOk'));
-
-      const currentLots = useKioskStore.getState().scannedMaterialLots;
-      const doneAll = bomItems.every(b =>
-        currentLots.some(l => l.itemCode === b.childItemCode && l.seq === b.seq)
-      );
-      if (doneAll) {
-        setInterlock('materialScanDone', true);
-      }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '';
       if (msg.includes('오장착')) {
@@ -88,7 +106,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
       }
     }
     setTimeout(() => inputRef.current?.focus(), 50);
-  }, [scanInput, selectedJobOrder, bomItems, addScannedMaterialLot, setInterlock, t]);
+  }, [scanInput, selectedJobOrder, selectedEquip, bumpMaterialMountRefresh, t]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.materialScan')} size="lg">
@@ -117,13 +135,17 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
         {/* BOM 항목 목록 */}
         <ul className="space-y-1.5 max-h-64 overflow-y-auto">
           {bomItems.map(item => {
-            const scanned = scannedMap.get(`${item.childItemCode}::${item.seq}`);
+            const coveredMounts = mountedByItem.get(item.childItemCode) ?? [];
+            const isMounted = coveredMounts.length > 0;
+            const availableQty = coveredMounts.reduce((s, m) => s + (m.availableQty ?? 0), 0);
+            const firstUid = coveredMounts[0]?.matUid;
+            const extra = coveredMounts.length - 1;
             return (
               <li
                 key={`${item.childItemCode}-${item.seq}`}
                 className={[
                   'flex items-center gap-2 px-3 py-2 rounded border-2',
-                  scanned
+                  isMounted
                     ? 'border-green-500 bg-card'
                     : 'border-red-400 bg-card',
                 ].join(' ')}
@@ -131,15 +153,15 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
                 <Package className="w-4 h-4 text-text-muted shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-text">{item.childItemCode}</p>
-                  {scanned
-                    ? <p className="text-xs text-green-600 dark:text-green-400">{scanned.matUid}</p>
+                  {isMounted
+                    ? <p className="text-xs text-green-600 dark:text-green-400 truncate">{firstUid}{extra > 0 ? t('kiosk.material.andMore', { count: extra }) : ''}</p>
                     : <p className="text-xs text-red-500 italic">{t('kiosk.material.noLot')}</p>}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-bold text-text">{(item.qtyPer ?? 0).toLocaleString()}</p>
-                  {scanned && <p className="text-xs text-green-600 dark:text-green-400">{scanned.initQty.toLocaleString()}</p>}
+                  {isMounted && <p className="text-xs text-green-600 dark:text-green-400">{availableQty.toLocaleString()}</p>}
                 </div>
-                {scanned && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}
+                {isMounted && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}
               </li>
             );
           })}

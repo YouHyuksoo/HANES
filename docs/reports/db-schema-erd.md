@@ -1,6 +1,6 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-23 03:32:29
+- 작성일: 2026-06-24 01:57:40
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -8,7 +8,7 @@
 ## 1. 요약
 
 - 테이블 수: 166
-- 컬럼 수: 2762
+- 컬럼 수: 2763
 - PK 보유 테이블: 162
 - DB FK 수: 27
 - COM_CODES 그룹 수: 157
@@ -267,7 +267,7 @@ erDiagram
     VARCHAR2_20 STATUS NOT_NULL
     VARCHAR2_500 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     VARCHAR2_50 CREATED_BY
     VARCHAR2_30 AUDIT_ID PK NOT_NULL
     string more_columns
@@ -522,7 +522,7 @@ erDiagram
     TIMESTAMP_6 APPROVED_AT
     VARCHAR2_1000 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     string more_columns
   }
   CONTROL_PLAN_ITEMS {
@@ -1429,7 +1429,7 @@ erDiagram
     VARCHAR2_50 WORKER_CODE
     VARCHAR2_500 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     VARCHAR2_50 CREATED_BY
     TIMESTAMP_6 CREATED_AT NOT_NULL
     NUMBER_5 SEQ PK NOT_NULL
@@ -1947,7 +1947,7 @@ erDiagram
     TIMESTAMP_6 END_AT
     VARCHAR2_1000 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     VARCHAR2_50 CREATED_BY
     VARCHAR2_50 REWORK_ORDER_ID PK NOT_NULL
     VARCHAR2_50 PROCESS_CODE PK NOT_NULL
@@ -2298,7 +2298,7 @@ erDiagram
     NUMBER_1 OUT_OF_CONTROL NOT_NULL
     VARCHAR2_500 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     NUMBER_5 SEQ PK NOT_NULL
     VARCHAR2_30 CHART_ID PK NOT_NULL
     string more_columns
@@ -2421,7 +2421,7 @@ erDiagram
     VARCHAR2_20 STATUS NOT_NULL
     VARCHAR2_2000 DESCRIPTION
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     string more_columns
   }
   TRAINING_RESULTS {
@@ -2434,7 +2434,7 @@ erDiagram
     TIMESTAMP_6 VALID_UNTIL
     VARCHAR2_500 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     VARCHAR2_50 CREATED_BY
     TIMESTAMP_6 CREATED_AT NOT_NULL
     VARCHAR2_50 PLAN_NO PK NOT_NULL
@@ -3172,7 +3172,7 @@ erDiagram
     VARCHAR2_50 WORKER_CODE
     VARCHAR2_500 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     VARCHAR2_50 CREATED_BY
     TIMESTAMP_6 CREATED_AT NOT_NULL
     NUMBER_5 SEQ PK NOT_NULL
@@ -4428,7 +4428,7 @@ erDiagram
     NUMBER_1 OUT_OF_CONTROL NOT_NULL
     VARCHAR2_500 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     NUMBER_5 SEQ PK NOT_NULL
     VARCHAR2_30 CHART_ID PK NOT_NULL
     string more_columns
@@ -4686,7 +4686,7 @@ erDiagram
     VARCHAR2_20 STATUS NOT_NULL
     VARCHAR2_500 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     VARCHAR2_50 CREATED_BY
     VARCHAR2_30 AUDIT_ID PK NOT_NULL
     string more_columns
@@ -4775,7 +4775,7 @@ erDiagram
     TIMESTAMP_6 APPROVED_AT
     VARCHAR2_1000 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     string more_columns
   }
   CONTROL_PLAN_ITEMS {
@@ -5097,7 +5097,7 @@ erDiagram
     TIMESTAMP_6 END_AT
     VARCHAR2_1000 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     VARCHAR2_50 CREATED_BY
     VARCHAR2_50 REWORK_ORDER_ID PK NOT_NULL
     VARCHAR2_50 PROCESS_CODE PK NOT_NULL
@@ -5368,7 +5368,7 @@ erDiagram
     VARCHAR2_20 STATUS NOT_NULL
     VARCHAR2_2000 DESCRIPTION
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     string more_columns
   }
   TRAINING_RESULTS {
@@ -5381,7 +5381,7 @@ erDiagram
     TIMESTAMP_6 VALID_UNTIL
     VARCHAR2_500 REMARK
     VARCHAR2_50 COMPANY NOT_NULL
-    VARCHAR2_20 PLANT NOT_NULL
+    VARCHAR2_20 PLANT_CD NOT_NULL
     VARCHAR2_50 CREATED_BY
     TIMESTAMP_6 CREATED_AT NOT_NULL
     VARCHAR2_50 PLAN_NO PK NOT_NULL
@@ -5511,7 +5511,7 @@ erDiagram
 | `STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'OPEN'` |  |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `AUDIT_ID` | `VARCHAR2(30)` | `N` | PK |  |  |
@@ -5536,7 +5536,7 @@ erDiagram
 | `OVERALL_RESULT` | `VARCHAR2(20)` | `Y` |  |  |  |
 | `SUMMARY` | `VARCHAR2(2000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -5642,7 +5642,7 @@ erDiagram
 | `CERTIFICATE_NO` | `VARCHAR2(100)` | `Y` |  |  |  |
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -5692,7 +5692,7 @@ erDiagram
 | `ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `LINE_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -5727,7 +5727,7 @@ erDiagram
 | `EFFECTIVE_DATE` | `DATE` | `Y` |  |  |  |
 | `COMPLETION_DATE` | `DATE` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -5956,7 +5956,7 @@ erDiagram
 | `APPROVED_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -5985,7 +5985,7 @@ erDiagram
 | `REACTION_PLAN` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `CONTROL_PLAN_ID` | `VARCHAR2(30)` | `N` | PK |  |  |
@@ -6018,7 +6018,7 @@ erDiagram
 | `COST_AMOUNT` | `NUMBER(12,2)` | `Y` |  |  |  |
 | `RESOLVED_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -6263,7 +6263,7 @@ erDiagram
 | `EXPIRES_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `DESCRIPTION` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -6439,6 +6439,7 @@ erDiagram
 | `CURRENT_JOB_ORDER_ID` | `VARCHAR2(50)` | `Y` |  |  | 현재작업지시ID (FK -> JOB_ORDERS) |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  | 설비 사진 파일 URL (/uploads/equips/...) |
 
 ### `EQUIP_PROTOCOLS`
 
@@ -6507,7 +6508,7 @@ erDiagram
 | `APPROVAL_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `APPROVED_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -6565,7 +6566,7 @@ erDiagram
 | `LOCATION` | `VARCHAR2(200)` | `Y` |  |  |  |
 | `RESPONSIBLE_PERSON` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -7491,7 +7492,7 @@ erDiagram
 | `PURCHASE_DATE` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -7512,7 +7513,7 @@ erDiagram
 | `WORKER_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `SEQ` | `NUMBER(5)` | `N` | PK | 기본값 `1` |  |
@@ -7868,7 +7869,7 @@ erDiagram
 | `PART_SUBMISSION_WARRANT` | `NUMBER(1)` | `N` |  | 기본값 `0` |  |
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -8295,7 +8296,7 @@ erDiagram
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -8335,7 +8336,7 @@ erDiagram
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -8362,7 +8363,7 @@ erDiagram
 | `END_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -8385,7 +8386,7 @@ erDiagram
 | `END_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -8929,7 +8930,7 @@ erDiagram
 | `CL` | `NUMBER(12,4)` | `Y` |  |  |  |
 | `STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'ACTIVE'` |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -8955,7 +8956,7 @@ erDiagram
 | `OUT_OF_CONTROL` | `NUMBER(1)` | `N` |  | 기본값 `0` |  |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `SEQ` | `NUMBER(5)` | `N` | PK | 기본값 `1` |  |
@@ -9167,7 +9168,7 @@ erDiagram
 | `STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'PLANNED'` |  |
 | `DESCRIPTION` | `VARCHAR2(2000)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
@@ -9189,7 +9190,7 @@ erDiagram
 | `VALID_UNTIL` | `TIMESTAMP(6)` | `Y` |  |  |  |
 | `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
-| `PLANT` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `PLAN_NO` | `VARCHAR2(50)` | `N` | PK |  |  |

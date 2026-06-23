@@ -8,6 +8,15 @@ Use this heading format for every new entry:
 ## YYYY-MM-DD HH:mm Agent
 ```
 
+## 2026-06-24 Claude (T-KIOSK-MAT-MOUNT 키오스크 자재 설비기준 장착 전환)
+
+- 작업: 키오스크(`/production/input-kiosk`) 자재 입력을 작업지시 기준(JOB_MATERIAL_LOTS)에서 **설비 기준 장착**(WIP_MAT_STOCKS)으로 전환. 소모품은 이미 설비 기준이라 미변경. 입력 방식만 변경, 이력(WIP_MAT_TRANSACTIONS) 전량 보존.
+- 백엔드(신규): `kiosk-material.dto.ts`(ScanMaterialMountDto), `kiosk-material.service.ts`(작업지시→설비 해석, MAT_LOT 조회, BOM USE_YN='Y' 오장착 가드 후 `EquipMaterialService.mount` 위임), `kiosk-material.controller.ts`(`POST /production/job-orders/:orderNo/material-mounts/scan`). production.module에 등록. 목록/해제는 기존 `/production/equip-material/mounted`·`/unmount` 재사용(키오스크가 equipCode 보유).
+- 사전 검증(systemic): auto-issue.service / wip-mat-stock.service 정독 → scannedMatUids는 우선순위일 뿐 필수 아님, deductStockInTx 빈 배열로 FIFO 동작. JOB_MATERIAL_LOTS 미적재해도 소비경로 무손상 확인.
+- 프론트: MaterialListPanel 자재섹션을 `/equip-material/mounted?equipCode` 로드 + BOM 커버리지 조인으로 교체(interlock=모든 BOM childItemCode가 availableQty>0로 커버), 해제는 `/equip-material/unmount`. MaterialScanModal은 `.../material-mounts/scan {matUid,equipCode}`로 전환 후 materialMountRefreshSeq bump. kioskStore: scannedMaterialLots 기계장치 제거, materialMountRefreshSeq/bumpMaterialMountRefresh 추가. 구조테스트 1번 케이스를 mount 모델로 갱신(3/3 pass).
+- i18n: `kiosk.material.andMore` 4 locale(ko/en/zh/vi) 추가(BOM 없음).
+- 검증: frontend tsc 0 / backend tsc 0 / 구조테스트 3 pass.
+
 ## 2026-06-23 Claude (Phase 3 STATUS→ComCodeSelect)
 
 - 작업: `T-INLINE-SELECT-CLEANUP` Phase 3 — STATUS/유형 inline 하드코딩을 ComCodeSelect로 치환.
@@ -2846,3 +2855,20 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - `docs/reports/hanes-all-menu-scenario-qa-2026-06-23-missing-chunk-04/`
   - `docs/reports/hanes-all-menu-scenario-qa-summary-2026-06-23/`
 - `T-MASTER-PART-PAGE-STANDARD` 완료. `/master/part`를 기준 화면으로 삼아 품목마스터 유지보수 표준 문서를 추가했다. 상단 액션 배치, 12px 배지, 아이콘 중심 행 액션, 우측 슬라이드 패널, 필드별 DB 컬럼 툴팁, 유지보수 체크리스트를 정리했고 `docs/standards/ui-screen-patterns.md`에 연결했다. 검증: `playwright-cli`로 `/master/part` 실제 화면 확인, `git diff --check` PASS. 커밋하지 않았다.
+
+# 2026-06-24 - T-MASTER-EQUIP-IMAGE-UPLOAD 설비마스터 사진 업로드 추가
+
+- owner: codex
+- status: DONE
+- 변경:
+  - `EQUIP_MASTERS.IMAGE_URL` 컬럼을 JSHANES에 추가하고 주석 `설비 사진 파일 URL (/uploads/equips/...)`을 등록했다.
+  - 설비마스터 엔티티/DTO/서비스/컨트롤러에 사진 업로드·삭제 경로를 추가하고, `POST /equipment/equips/:id/image`, `DELETE /equipment/equips/:id/image`로 품목마스터와 같은 패턴을 맞췄다.
+  - `/master/equip` 우측 패널에 사진 썸네일, 업로드, 삭제 확인, 미리보기 상태를 추가하고 field help에 `EQUIP_MASTERS.IMAGE_URL` 메타를 넣었다.
+  - `docs/reports/db-schema-erd.md`를 재생성해 스키마 문서에 `IMAGE_URL` 반영을 포함시켰다.
+- 검증:
+  - PASS: `pnpm.cmd --filter @harness/backend exec jest src/modules/equipment/services/equip-master.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/master/equip/equip-image-upload.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check -- apps/backend/src/entities/equip-master.entity.ts apps/backend/src/modules/equipment/dto/equip-master.dto.ts apps/backend/src/modules/equipment/controllers/equip-master.controller.ts apps/backend/src/modules/equipment/services/equip-master.service.ts apps/backend/src/modules/equipment/services/equip-master.service.spec.ts apps/backend/src/migrations/2026-06-24_add_equip_master_image_url.sql apps/frontend/src/app/(authenticated)/master/equip/types.ts apps/frontend/src/app/(authenticated)/master/equip/components/EquipFieldHelp.tsx apps/frontend/src/app/(authenticated)/master/equip/components/EquipMasterTab.tsx apps/frontend/src/app/(authenticated)/master/equip/equip-image-upload.structure.test.mjs docs/reports/db-schema-erd.md`
+  - PASS: Oracle `EQUIP_MASTERS.IMAGE_URL` 컬럼/주석 확인

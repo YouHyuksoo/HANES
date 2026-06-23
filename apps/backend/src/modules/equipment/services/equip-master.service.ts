@@ -179,6 +179,7 @@ export class EquipMasterService {
       equipName: dto.equipName,
       equipType: dto.equipType,
       modelName: dto.modelName,
+      imageUrl: dto.imageUrl ?? null,
       maker: dto.maker,
       lineCode: dto.lineCode,
       processCode: dto.processCode,
@@ -205,8 +206,9 @@ export class EquipMasterService {
 
     if (dto.equipName !== undefined) updateData.equipName = dto.equipName;
     if (dto.equipType !== undefined) updateData.equipType = dto.equipType;
-    if (dto.modelName !== undefined) updateData.modelName = dto.modelName;
-    if (dto.maker !== undefined) updateData.maker = dto.maker;
+      if (dto.modelName !== undefined) updateData.modelName = dto.modelName;
+    if (dto.imageUrl !== undefined) updateData.imageUrl = dto.imageUrl;
+      if (dto.maker !== undefined) updateData.maker = dto.maker;
     if (dto.lineCode !== undefined) updateData.lineCode = dto.lineCode;
     if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
     if (dto.ipAddress !== undefined) updateData.ipAddress = dto.ipAddress;
@@ -229,6 +231,12 @@ export class EquipMasterService {
 
     await this.equipMasterRepository.delete({ equipCode, ...this.tenantWhere(company, plant) });
     return { equipCode, deleted: true };
+  }
+
+  async updateImage(equipCode: string, imageUrl: string | null, company?: string, plant?: string) {
+    await this.findById(equipCode, company, plant);
+    await this.equipMasterRepository.update({ equipCode, ...this.tenantWhere(company, plant) }, { imageUrl });
+    return this.findById(equipCode, company, plant);
   }
 
   // =============================================

@@ -23,6 +23,7 @@ export interface EquipMaster {
   equipName: string;
   equipType: EquipType;
   modelName?: string;
+  imageUrl?: string | null;
   maker?: string;
   lineCode?: string;
   lineName?: string;

@@ -151,7 +151,7 @@ export default function EquipListPanel({
       </div>
 
       {/* 목록 */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto p-2">
         {loading ? (
           <div className="py-8 text-center text-text-muted text-xs">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
@@ -159,45 +159,58 @@ export default function EquipListPanel({
             {emptyText ?? t("equipment.dailyInspect.noEquipFound")}
           </div>
         ) : (
-          <div className="py-1 space-y-0.5">
+          <div className="space-y-2">
             {grouped.map(([groupKey, equipList]) => (
               <div key={groupKey}>
                 <button
                   onClick={() => toggleGroup(groupKey)}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-1 text-xs font-semibold text-text hover:bg-surface transition-colors"
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1 rounded-md text-xs font-semibold text-text-muted uppercase tracking-wide hover:bg-surface transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
                     <ChevronRight className={`w-3.5 h-3.5 transition-transform ${expandedGroups.has(groupKey) ? "rotate-90" : ""}`} />
                     <span>{groupKey}</span>
                   </div>
-                  <span className="text-text-muted bg-background px-1.5 py-0.5 rounded-full">{equipList.length}</span>
+                  <span className="text-xs font-normal text-text-muted">{equipList.length}</span>
                 </button>
                 {expandedGroups.has(groupKey) && (
-                  <div>
-                    {equipList.map((e) => (
-                      <div
-                        key={e.equipCode}
-                        onClick={() => onSelect(e.equipCode)}
-                        className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors hover:bg-surface ${
-                          selectedEquipCode === e.equipCode
-                            ? "bg-primary/10 dark:bg-primary/20"
-                            : ""
-                        }`}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold">{e.equipCode}</div>
-                          <div className="text-[11px] text-text-muted truncate">{e.equipName}</div>
-                        </div>
-                        <div className="text-[11px] text-text-muted w-16 text-center shrink-0">
-                          {e.inspectorName || "-"}
-                        </div>
-                        <span
-                          className={`inline-block px-1.5 py-0.5 rounded font-medium text-[11px] w-16 text-center shrink-0 ${STATUS_BADGE[e.status]}`}
+                  <div className="mt-1 grid grid-cols-2 gap-1.5">
+                    {equipList.map((e) => {
+                      const isSelected = selectedEquipCode === e.equipCode;
+                      return (
+                        <button
+                          key={e.equipCode}
+                          onClick={() => onSelect(e.equipCode)}
+                          className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-lg border text-left transition-colors ${
+                            isSelected
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/40 hover:bg-surface"
+                          }`}
                         >
-                          {STATUS_LABEL[e.status]}
-                        </span>
-                      </div>
-                    ))}
+                          <span className={`font-mono text-[11px] font-semibold leading-none ${isSelected ? "text-primary" : "text-text-muted"}`}>
+                            {e.equipCode}
+                          </span>
+                          <span className={`text-xs font-medium leading-snug line-clamp-2 ${isSelected ? "text-primary" : "text-text"}`}>
+                            {e.equipName}
+                          </span>
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                              e.status === "done-ok"
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                                : e.status === "done-ng"
+                                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                                : isSelected
+                                ? "bg-primary/20 text-primary"
+                                : "bg-surface text-text-muted"
+                            }`}>
+                              {STATUS_LABEL[e.status]}
+                            </span>
+                            {e.inspectorName && (
+                              <span className="text-[10px] text-text-muted">{e.inspectorName}</span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -21,14 +21,6 @@ export interface PendingDefect {
   qty: number;
 }
 
-/** 스캔 완료된 자재 롯트 정보 */
-export interface ScannedMaterialLot {
-  itemCode: string;
-  seq: number;
-  matUid: string;
-  initQty: number;
-}
-
 /** 자주검사 시점 판별 */
 export type InspectTiming = 'FIRST' | 'MID' | 'LAST';
 
@@ -59,8 +51,6 @@ interface KioskState {
   serialSeq: number;
   /** 준비단계 인터락 상태 */
   interlock: KioskInterlock;
-  /** 스캔 완료된 자재 롯트 정보 (소모품도 자재로 통합되어 여기에 저장된다) */
-  scannedMaterialLots: ScannedMaterialLot[];
   /** 실적 저장 전 임시 보관 불량 목록 */
   pendingDefects: PendingDefect[];
   /** 현재 작업지시의 누적 생산수량(양품+불량, 서버 PROD_RESULTS 집계 기준) — 초물/중물 트리거·진행률·검사 시점 생산량에 사용 */
@@ -71,6 +61,8 @@ interface KioskState {
   midInspectDone: boolean;
   /** 소모품 매핑 목록 새로고침 트리거 (롯트 스캔 장착 후 증가) */
   consumableRefreshSeq: number;
+  /** 자재 설비 장착 목록 새로고침 트리거 (자재 스캔 장착/해제 후 증가) */
+  materialMountRefreshSeq: number;
 
   setSelectedEquip: (equip: KioskEquip | null) => void;
   setSelectedJobOrder: (jobOrder: JobOrder | null) => void;
@@ -80,9 +72,6 @@ interface KioskState {
   incrementSerial: () => void;
   resetSerial: () => void;
   setInterlock: (key: keyof KioskInterlock, value: boolean) => void;
-  addScannedMaterialLot: (lot: ScannedMaterialLot) => void;
-  removeScannedMaterialLot: (itemCode: string, seq: number) => void;
-  clearScannedMaterialLots: () => void;
   addPendingDefect: (defect: PendingDefect) => void;
   removePendingDefect: (defectCode: string) => void;
   clearPendingDefects: () => void;
@@ -90,6 +79,7 @@ interface KioskState {
   setHasPendingDelegate: (value: boolean) => void;
   setMidInspectDone: (value: boolean) => void;
   bumpConsumableRefresh: () => void;
+  bumpMaterialMountRefresh: () => void;
   clearAll: () => void;
 }
 
@@ -109,12 +99,12 @@ export const useKioskStore = create<KioskState>()(
       lotSize: 1,
       serialSeq: 1,
       interlock: DEFAULT_INTERLOCK,
-      scannedMaterialLots: [],
       pendingDefects: [],
       savedResultCount: 0,
       hasPendingDelegate: false,
       midInspectDone: false,
       consumableRefreshSeq: 0,
+      materialMountRefreshSeq: 0,
 
       setSelectedEquip: (equip) => set({
         selectedEquip: equip,
@@ -122,7 +112,6 @@ export const useKioskStore = create<KioskState>()(
         selectedWorkers: [],
         serialSeq: 1,
         interlock: DEFAULT_INTERLOCK,
-        scannedMaterialLots: [],
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
@@ -134,7 +123,6 @@ export const useKioskStore = create<KioskState>()(
         serialSeq: 1,
         // 작업지시 변경 시 작업자점검·자재·소모품 스캔 초기화
         interlock: { ...DEFAULT_INTERLOCK, dailyInspectDone: true },
-        scannedMaterialLots: [],
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
@@ -160,23 +148,6 @@ export const useKioskStore = create<KioskState>()(
         interlock: { ...state.interlock, [key]: value },
       })),
 
-      addScannedMaterialLot: (lot) =>
-        set(s => {
-          const filtered = s.scannedMaterialLots.filter(
-            l => !(l.itemCode === lot.itemCode && l.seq === lot.seq)
-          );
-          return { scannedMaterialLots: [...filtered, lot] };
-        }),
-
-      removeScannedMaterialLot: (itemCode, seq) =>
-        set(s => ({
-          scannedMaterialLots: s.scannedMaterialLots.filter(
-            l => !(l.itemCode === itemCode && l.seq === seq)
-          ),
-        })),
-
-      clearScannedMaterialLots: () => set({ scannedMaterialLots: [] }),
-
       addPendingDefect: (defect) => set((state) => {
         const existing = state.pendingDefects.findIndex(d => d.defectCode === defect.defectCode);
         if (existing >= 0) {
@@ -201,6 +172,8 @@ export const useKioskStore = create<KioskState>()(
 
       bumpConsumableRefresh: () => set(s => ({ consumableRefreshSeq: s.consumableRefreshSeq + 1 })),
 
+      bumpMaterialMountRefresh: () => set(s => ({ materialMountRefreshSeq: s.materialMountRefreshSeq + 1 })),
+
       clearAll: () => set({
         selectedEquip: null,
         selectedJobOrder: null,
@@ -208,7 +181,6 @@ export const useKioskStore = create<KioskState>()(
         lotSize: 1,
         serialSeq: 1,
         interlock: DEFAULT_INTERLOCK,
-        scannedMaterialLots: [],
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,

@@ -99,3 +99,56 @@ export class ConfirmAssemblyDto {
   @IsString()
   circuitNo?: string;
 }
+
+/**
+ * 서브공정 키팅 SG 라벨 발행 DTO (② 새 SG 바코드 채번 + ISSUED 저장만).
+ * 이전 공정 SG → 회로별 새 SG 1장 발행. 입력 SG 소비·자재·실적·재고는 미반영.
+ */
+export class IssueSgLabelDto {
+  @IsString()
+  @IsNotEmpty()
+  orderNo: string;
+
+  @IsString()
+  @IsNotEmpty()
+  processCode: string;
+
+  @IsOptional()
+  @IsString()
+  equipCode?: string;
+
+  @IsOptional()
+  @IsString()
+  circuitNo?: string;
+}
+
+/**
+ * 서브공정 키팅 확정 DTO (③ 실물 새 SG 라벨 스캔 → 단일 트랜잭션 확정).
+ * 입력 SG 소비 + genealogy(SG←SG, SG←MAT_LOT) + 설비자재 차감 + 새 SG IN_STOCK 승격 + 실적 + WIP.
+ */
+export class ConfirmSubKitDto {
+  @IsString()
+  @IsNotEmpty()
+  newSgBarcode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  orderNo: string;
+
+  @IsString()
+  @IsNotEmpty()
+  processCode: string;
+
+  @IsOptional()
+  @IsString()
+  equipCode?: string;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  inputSgBarcodes: string[];
+
+  @IsOptional()
+  @IsString()
+  circuitNo?: string;
+}

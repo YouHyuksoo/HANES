@@ -2,14 +2,17 @@
 
 /**
  * @file components/MaterialListPanel.tsx
- * @description 좌측 패널 — BOM 자재리스트(롯트 스캔 현황) + 소모성 설비 부품(매핑 기반)
+ * @description 좌측 패널 — BOM 자재리스트(설비 장착 현황) + 소모성 설비 부품(매핑 기반)
  *
  * 초보자 가이드:
- * - 상단 자재리스트: 작업지시 제품 BOM의 투입자재. 바코드(matUid) 롯트 스캔.
+ * - 상단 자재리스트: 작업지시 제품 BOM의 투입자재. 바코드(matUid) 롯트를 "설비에 장착"한다.
+ *   장착된 자재는 설비(equipCode)에 귀속(WIP_MAT_STOCKS)되어 작업지시가 바뀌어도 유지된다.
+ *   → BOM 요구 품목이 설비에 장착돼 있으면 커버(초록), 없으면 미커버(빨강).
  * - 하단 소모성 설비 부품: 소모품-설비-모델 매핑(CONSUMABLE_USAGE_MAP)으로 필요 소모품을 조회,
  *   바코드(conUid) 스캔으로 실제 롯트를 장착. 재고 차감이 아니라 사용횟수를 관리한다.
+ * - 자재/소모품 모두 "설비 기준 장착"으로 동작이 일치한다.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Package, AlertTriangle, AlertCircle, X, Scan, CheckCircle2, Trash2 } from 'lucide-react';
 import api from '@/services/api';
@@ -31,6 +34,16 @@ export interface BomItem {
   seq: number;
   processCode?: string;
   childPart?: { itemType?: string | null; itemName?: string | null } | null;
+}
+
+/** 설비에 장착된 자재 행 (백엔드 EquipMaterialService.MountedRow) */
+export interface MountedMaterial {
+  equipCode: string;
+  itemCode: string;
+  itemName: string | null;
+  matUid: string;
+  qty: number;
+  availableQty: number;
 }
 
 /**
@@ -60,8 +73,9 @@ export default function MaterialListPanel({
   consumableScanDisabledReasons = [],
 }: MaterialListPanelProps) {
   const { t } = useTranslation();
-  const { selectedEquip, selectedJobOrder, scannedMaterialLots, interlock, removeScannedMaterialLot, addScannedMaterialLot, setInterlock, consumableRefreshSeq, bumpConsumableRefresh } = useKioskStore();
+  const { selectedEquip, selectedJobOrder, interlock, setInterlock, consumableRefreshSeq, bumpConsumableRefresh, materialMountRefreshSeq, bumpMaterialMountRefresh } = useKioskStore();
   const [bomItems, setBomItems] = useState<BomItem[]>([]);
+  const [mounted, setMounted] = useState<MountedMaterial[]>([]);
   const [consumables, setConsumables] = useState<ConsumableMapRow[]>([]);
 
   // 작업지시 품목의 제품 BOM(투입자재만) 로드
@@ -71,6 +85,17 @@ export default function MaterialListPanel({
       .then(res => setBomItems(filterBomMaterials(res.data?.data ?? [])))
       .catch(() => setBomItems([]));
   }, [selectedJobOrder?.itemCode]);
+
+  // 설비에 장착된 자재(WIP) 로드 — 장착/해제 후 materialMountRefreshSeq 증가로 재조회.
+  // 자재는 설비 귀속이므로 작업지시가 아니라 selectedEquip 기준으로 조회한다.
+  useEffect(() => {
+    if (!selectedEquip?.equipCode) { setMounted([]); return; }
+    api.get('/production/equip-material/mounted', {
+      params: { equipCode: selectedEquip.equipCode },
+    })
+      .then(res => setMounted(res.data?.data ?? []))
+      .catch(() => setMounted([]));
+  }, [selectedEquip?.equipCode, materialMountRefreshSeq]);
 
   // 소모품 매핑(모델+설비) 로드 — 스캔 장착 후 consumableRefreshSeq 증가로 재조회
   useEffect(() => {
@@ -82,27 +107,24 @@ export default function MaterialListPanel({
       .catch(() => setConsumables([]));
   }, [selectedJobOrder?.orderNo, selectedEquip?.equipCode, consumableRefreshSeq]);
 
-  // 작업지시 변경 시 기존 자재 스캔 내역 서버에서 로드
-  useEffect(() => {
-    if (!selectedJobOrder?.orderNo) return;
-    api.get(`/production/job-orders/${selectedJobOrder.orderNo}/material-lots`)
-      .then(res => {
-        const lots: { itemCode: string; seq: number; matUid: string; initQty: number }[] = res.data?.data ?? [];
-        lots.forEach(l => {
-          addScannedMaterialLot({ itemCode: l.itemCode, seq: l.seq, matUid: l.matUid, initQty: l.initQty });
-        });
-      })
-      .catch(() => {});
-  }, [selectedJobOrder?.orderNo, addScannedMaterialLot]);
+  // 품목코드별 장착 자재(가용 잔량>0) 매핑 — BOM 라인 커버리지 판정에 사용
+  const mountedByItem = useMemo(() => {
+    const map = new Map<string, MountedMaterial[]>();
+    for (const m of mounted) {
+      if ((m.availableQty ?? 0) <= 0) continue;
+      const list = map.get(m.itemCode) ?? [];
+      list.push(m);
+      map.set(m.itemCode, list);
+    }
+    return map;
+  }, [mounted]);
 
-  // 자재 롯트가 모두 커버하면 인터락 자동 재평가
+  // BOM 요구 품목이 모두 설비에 장착되면 자재 인터락 자동 재평가
   useEffect(() => {
     if (bomItems.length === 0) return;
-    const allDone = bomItems.every(b =>
-      scannedMaterialLots.some(l => l.itemCode === b.childItemCode && l.seq === b.seq)
-    );
+    const allDone = bomItems.every(b => mountedByItem.has(b.childItemCode));
     setInterlock('materialScanDone', allDone);
-  }, [bomItems, scannedMaterialLots, setInterlock]);
+  }, [bomItems, mountedByItem, setInterlock]);
 
   // 매핑 소모품이 모두 장착(conUid)되면(또는 매핑 소모품이 없으면) 소모품 인터락 재평가
   useEffect(() => {
@@ -110,20 +132,19 @@ export default function MaterialListPanel({
     setInterlock('consumableScanDone', allDone);
   }, [consumables, setInterlock]);
 
-  const scannedMap = new Map(
-    scannedMaterialLots.map(l => [`${l.itemCode}::${l.seq}`, l])
-  );
-
-  const handleRemoveLot = async (item: BomItem) => {
-    if (!selectedJobOrder?.orderNo) return;
-    try {
-      await api.delete(
-        `/production/job-orders/${selectedJobOrder.orderNo}/material-lots/${item.childItemCode}/${item.seq}`
-      );
-      removeScannedMaterialLot(item.childItemCode, item.seq);
-    } catch {
-      // 삭제 실패 시 무시
+  const handleRemoveMaterial = async (mounts: MountedMaterial[]) => {
+    if (!selectedEquip?.equipCode || mounts.length === 0) return;
+    for (const m of mounts) {
+      try {
+        await api.post('/production/equip-material/unmount',
+          { equipCode: selectedEquip.equipCode, matUid: m.matUid },
+          { suppressErrorModal: true },
+        );
+      } catch {
+        // 개별 해제 실패(예약 등)는 무시하고 계속
+      }
     }
+    bumpMaterialMountRefresh();
   };
 
   const handleRemoveConsumable = async (item: ConsumableMapRow) => {
@@ -138,35 +159,36 @@ export default function MaterialListPanel({
     }
   };
 
-  // 자재투입 전체 취소 (스캔 등록된 롯트 일괄 삭제)
+  // 자재투입 전체 취소 (설비 장착 자재 일괄 해제)
   const [cancelAllOpen, setCancelAllOpen] = useState(false);
-  const handleRemoveAllLots = async () => {
-    if (!selectedJobOrder?.orderNo) return;
-    for (const lot of [...scannedMaterialLots]) {
+  const handleRemoveAllMounts = async () => {
+    if (!selectedEquip?.equipCode) return;
+    for (const m of [...mounted]) {
       try {
-        await api.delete(
-          `/production/job-orders/${selectedJobOrder.orderNo}/material-lots/${lot.itemCode}/${lot.seq}`,
+        await api.post('/production/equip-material/unmount',
+          { equipCode: selectedEquip.equipCode, matUid: m.matUid },
           { suppressErrorModal: true },
         );
-        removeScannedMaterialLot(lot.itemCode, lot.seq);
       } catch {
         // 개별 실패는 무시하고 계속
       }
     }
+    bumpMaterialMountRefresh();
     setCancelAllOpen(false);
   };
 
+  const mountedBomCount = bomItems.filter(b => mountedByItem.has(b.childItemCode)).length;
   const mountedConsumCount = consumables.filter(c => c.mountedConUid != null).length;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* BOM 자재리스트 */}
+      {/* BOM 자재리스트 (설비 장착 현황) */}
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="sticky top-0 bg-slate-100 dark:bg-slate-800 px-3 py-2 border-b border-border flex items-center gap-1.5">
           <Package className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-semibold text-text">{t('kiosk.material.bomList')}</span>
           <span className="ml-auto text-xs text-text-muted">
-            {scannedMaterialLots.length}/{bomItems.length}{t('kiosk.material.unit')}
+            {mountedBomCount}/{bomItems.length}{t('kiosk.material.unit')}
           </span>
           {onOpenMaterialScan && (
             <button
@@ -187,7 +209,7 @@ export default function MaterialListPanel({
               {interlock.materialScanDone && <CheckCircle2 className="h-3 w-3 text-teal-500" />}
             </button>
           )}
-          {scannedMaterialLots.length > 0 && (
+          {mounted.length > 0 && (
             <button
               onClick={() => setCancelAllOpen(true)}
               title={t('kiosk.material.cancelAll', '자재투입 전체 취소')}
@@ -215,17 +237,20 @@ export default function MaterialListPanel({
         ) : (
           <ul className="divide-y divide-border/40">
             {bomItems.map((item) => {
-              const scanned = scannedMap.get(`${item.childItemCode}::${item.seq}`);
-              const isScanned = Boolean(scanned);
+              const coveredMounts = mountedByItem.get(item.childItemCode) ?? [];
+              const isMounted = coveredMounts.length > 0;
+              const availableQty = coveredMounts.reduce((s, m) => s + (m.availableQty ?? 0), 0);
+              const firstUid = coveredMounts[0]?.matUid;
+              const extra = coveredMounts.length - 1;
               return (
                 <li
                   key={`${item.childItemCode}-${item.seq}`}
                   className={[
                     'flex items-center gap-1.5 px-2 py-1 border-l-2 transition-colors',
-                    isScanned ? 'border-l-green-500 bg-green-50/30 dark:bg-green-950/10' : 'border-l-red-400',
+                    isMounted ? 'border-l-green-500 bg-green-50/30 dark:bg-green-950/10' : 'border-l-red-400',
                   ].join(' ')}
                 >
-                  {isScanned
+                  {isMounted
                     ? <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
                     : <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />}
                   <div className="flex-1 min-w-0">
@@ -234,19 +259,21 @@ export default function MaterialListPanel({
                       <span className="text-[11px] font-bold text-text tabular-nums shrink-0 leading-none">{(item.qtyPer ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="flex items-baseline justify-between gap-1 mt-0.5">
-                      {isScanned ? (
+                      {isMounted ? (
                         <>
-                          <span className="text-[10px] text-green-700 dark:text-green-300 truncate leading-none">{scanned!.matUid}</span>
-                          <span className="text-[10px] text-green-700 dark:text-green-300 tabular-nums shrink-0 leading-none">{scanned!.initQty.toLocaleString()}</span>
+                          <span className="text-[10px] text-green-700 dark:text-green-300 truncate leading-none">
+                            {firstUid}{extra > 0 ? t('kiosk.material.andMore', { count: extra }) : ''}
+                          </span>
+                          <span className="text-[10px] text-green-700 dark:text-green-300 tabular-nums shrink-0 leading-none">{availableQty.toLocaleString()}</span>
                         </>
                       ) : (
                         <span className="text-[10px] text-red-400 italic leading-none">{t('kiosk.material.noLot')}</span>
                       )}
                     </div>
                   </div>
-                  {isScanned && (
+                  {isMounted && (
                     <button
-                      onClick={() => handleRemoveLot(item)}
+                      onClick={() => handleRemoveMaterial(coveredMounts)}
                       className="shrink-0 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-text-muted hover:text-red-500 transition-colors"
                       title={t('kiosk.material.removeLot')}
                     >
@@ -356,9 +383,9 @@ export default function MaterialListPanel({
       <ConfirmModal
         isOpen={cancelAllOpen}
         onClose={() => setCancelAllOpen(false)}
-        onConfirm={handleRemoveAllLots}
+        onConfirm={handleRemoveAllMounts}
         title={t('kiosk.material.cancelAllTitle', '자재투입 취소')}
-        message={t('kiosk.material.cancelAllConfirm', '투입된 자재 {{count}}건을 모두 취소하시겠습니까?', { count: scannedMaterialLots.length })}
+        message={t('kiosk.material.cancelAllConfirm', '투입된 자재 {{count}}건을 모두 취소하시겠습니까?', { count: mounted.length })}
         variant="danger"
       />
     </div>

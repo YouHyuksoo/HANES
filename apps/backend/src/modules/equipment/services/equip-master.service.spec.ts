@@ -111,6 +111,19 @@ describe('EquipMasterService', () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001' } as any);
       await expect(target.create({ equipCode: 'EQ-001' } as any)).rejects.toThrow(ConflictException);
     });
+
+    it('should persist imageUrl when creating an equip', async () => {
+      mockEquipRepo.findOne.mockResolvedValue(null);
+      const saved = { equipCode: 'EQ-001', imageUrl: '/uploads/equips/eq-001.png' } as any;
+      mockEquipRepo.create.mockReturnValue(saved);
+      mockEquipRepo.save.mockResolvedValue(saved);
+
+      await target.create({ equipCode: 'EQ-001', equipName: 'Test', imageUrl: '/uploads/equips/eq-001.png' } as any);
+
+      expect(mockEquipRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ imageUrl: '/uploads/equips/eq-001.png' }),
+      );
+    });
   });
 
   describe('delete', () => {
@@ -131,6 +144,23 @@ describe('EquipMasterService', () => {
         company: 'CO',
         plant: 'P01',
       });
+    });
+  });
+
+  describe('updateImage', () => {
+    it('should update imageUrl and return the equip', async () => {
+      mockEquipRepo.findOne
+        .mockResolvedValueOnce({ equipCode: 'EQ-001', imageUrl: null } as any)
+        .mockResolvedValueOnce({ equipCode: 'EQ-001', imageUrl: '/uploads/equips/eq-001.png' } as any);
+      mockEquipRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      const result = await (target as any).updateImage('EQ-001', '/uploads/equips/eq-001.png');
+
+      expect(mockEquipRepo.update).toHaveBeenCalledWith(
+        { equipCode: 'EQ-001' },
+        { imageUrl: '/uploads/equips/eq-001.png' },
+      );
+      expect(result.imageUrl).toBe('/uploads/equips/eq-001.png');
     });
   });
 

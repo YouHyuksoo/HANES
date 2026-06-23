@@ -31,8 +31,15 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiResponse as SwaggerResponse } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiParam, ApiResponse as SwaggerResponse, ApiConsumes } from '@nestjs/swagger';
+import { diskStorage } from 'multer';
+import type { Request } from 'express';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
+import { extname, join } from 'path';
 import { EquipMasterService } from '../services/equip-master.service';
 import {
   CreateEquipMasterDto,
@@ -140,6 +147,64 @@ export class EquipMasterController {
   ) {
     const data = await this.equipMasterService.findById(id, company, plant);
     return ResponseUtil.success(data);
+  }
+
+  @Post(':id/image')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: (_req: Request, _file: Express.Multer.File, callback: (error: Error | null, destination: string) => void) => {
+          const uploadPath = './uploads/equips';
+          if (!existsSync(uploadPath)) {
+            mkdirSync(uploadPath, { recursive: true });
+          }
+          callback(null, uploadPath);
+        },
+        filename: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, `equip-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
+        if (!/^image\/(jpeg|jpg|png|gif|webp)$/.test(file.mimetype)) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @ApiOperation({ summary: '설비 사진 업로드' })
+  @ApiConsumes('multipart/form-data')
+  async uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const imageUrl = `/uploads/equips/${file.filename}`;
+    const data = await this.equipMasterService.updateImage(id, imageUrl, company, plant);
+    return ResponseUtil.success(data, '설비 사진이 업로드되었습니다.');
+  }
+
+  @Delete(':id/image')
+  @ApiOperation({ summary: '설비 사진 삭제' })
+  async removeImage(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const existing = await this.equipMasterService.findById(id, company, plant);
+    if (existing.imageUrl) {
+      const filePath = join('.', existing.imageUrl);
+      try {
+        if (existsSync(filePath)) unlinkSync(filePath);
+      } catch {
+        // 파일 삭제 실패는 DB 경로 해제를 막지 않는다.
+      }
+    }
+    const data = await this.equipMasterService.updateImage(id, null, company, plant);
+    return ResponseUtil.success(data, '설비 사진이 삭제되었습니다.');
   }
 
   // =============================================

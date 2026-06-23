@@ -64,6 +64,12 @@ export class CreateEquipMasterDto {
   @MaxLength(100)
   modelName?: string;
 
+  @ApiPropertyOptional({ description: '설비 사진 URL', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string;
+
   @ApiPropertyOptional({ description: '제조사', maxLength: 100 })
   @IsOptional()
   @IsString()
