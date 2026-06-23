@@ -13,8 +13,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw, ClipboardCheck, Clock, CheckCircle, XCircle, Search, FileSearch, X } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge } from "@/components/ui";
+import { RefreshCw, ClipboardCheck, Search, FileSearch } from "lucide-react";
+import { Card, CardContent, Button, Input, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import InspectFormPanel from "./components/InspectFormPanel";
@@ -39,8 +39,6 @@ export default function ReworkInspectPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedTarget, setSelectedTarget] = useState<InspectTarget | null>(null);
-  const [passCount, setPassCount] = useState(0);
-  const [failCount, setFailCount] = useState(0);
 
   /* ── 목록 조회 ── */
   const fetchData = useCallback(async () => {
@@ -57,17 +55,7 @@ export default function ReworkInspectPage() {
     }
   }, [searchText]);
 
-  /* ── 통계 조회 ── */
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await api.get("/quality/reworks/stats");
-      const rawStats: { status: string; count: string }[] = res.data?.data ?? [];
-      setPassCount(Number(rawStats.find(s => s.status === "PASS")?.count ?? 0));
-      setFailCount(Number(rawStats.find(s => s.status === "FAIL")?.count ?? 0));
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => { fetchData(); fetchStats(); }, [fetchData, fetchStats]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   /* ── 행 선택 → 패널 열기 ── */
   const openPanel = useCallback((row: ReworkOrder) => {
@@ -82,8 +70,7 @@ export default function ReworkInspectPage() {
   const handleSave = useCallback(() => {
     setSelectedTarget(null);
     fetchData();
-    fetchStats();
-  }, [fetchData, fetchStats]);
+  }, [fetchData]);
 
   /* ── 컬럼 정의 ── */
   const columns = useMemo<ColumnDef<ReworkOrder>[]>(() => [
@@ -129,13 +116,6 @@ export default function ReworkInspectPage() {
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-        </div>
-
-        {/* 통계 카드 */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-shrink-0">
-          <StatCard label={t("quality.rework.statsInspectPending")} value={data.length} icon={Clock} color="yellow" />
-          <StatCard label={t("quality.rework.statusPASS")} value={passCount} icon={CheckCircle} color="green" />
-          <StatCard label={t("quality.rework.statusFAIL")} value={failCount} icon={XCircle} color="red" />
         </div>
 
         {/* DataGrid */}
