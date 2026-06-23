@@ -104,6 +104,8 @@ import { SgLabel } from '../../entities/sg-label.entity';
 import { ProductGenealogy } from '../../entities/product-genealogy.entity';
 import { SubprocessKittingController } from './controllers/subprocess-kitting.controller';
 import { SubprocessKittingService } from './services/subprocess-kitting.service';
+import { EquipMaterialController } from './controllers/equip-material.controller';
+import { EquipMaterialService } from './services/equip-material.service';
 
 @Module({
   imports: [
@@ -125,6 +127,7 @@ import { SubprocessKittingService } from './services/subprocess-kitting.service'
     KioskConsumableController,
     ProductionSpecificationController,
     SubprocessKittingController,
+    EquipMaterialController,
   ],
   providers: [
     JobOrderService,
@@ -143,6 +146,7 @@ import { SubprocessKittingService } from './services/subprocess-kitting.service'
     KioskConsumableService,
     ProductionSpecificationService,
     SubprocessKittingService,
+    EquipMaterialService,
   ],
   exports: [
     JobOrderService,
