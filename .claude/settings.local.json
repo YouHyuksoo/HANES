@@ -1,39 +1,4 @@
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\hsyou\\.claude\\scripts\\ai-presence.ps1\" -Event SessionStart -Agent claude"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\hsyou\\.claude\\scripts\\ai-presence.ps1\" -Event PostToolUse -Agent claude"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\hsyou\\.claude\\scripts\\ai-presence.ps1\" -Event Stop -Agent claude"
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "mcp__plugin_supabase_supabase__list_organizations",
@@ -223,7 +188,43 @@
       "Bash(kimi:*)",
       "Bash(wait)",
       "Bash(sqlplus test/test123@10.1.10.35:1527/JSHNSMES)",
-      "Bash(sqlplus -S test/test123@10.1.10.35:1527/JSHNSMES)"
+      "Bash(sqlplus -S test/test123@10.1.10.35:1527/JSHNSMES)",
+      "Bash(set -e)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\hsyou\\.claude\\scripts\\ai-presence.ps1\" -Event SessionStart -Agent claude"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\hsyou\\.claude\\scripts\\ai-presence.ps1\" -Event PostToolUse -Agent claude"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\hsyou\\.claude\\scripts\\ai-presence.ps1\" -Event Stop -Agent claude"
+          }
+        ]
+      }
     ]
   }
 }
