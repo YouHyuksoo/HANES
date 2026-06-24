@@ -4,28 +4,34 @@ import fs from "node:fs";
 
 const pageSource = fs.readFileSync("apps/frontend/src/app/(authenticated)/workflow/page.tsx", "utf8");
 const mapSource = fs.readFileSync("apps/frontend/src/config/workflowMap.ts", "utf8");
+const flowSource = fs.readFileSync(
+  "apps/frontend/src/app/(authenticated)/workflow/components/WorkflowFlow.tsx",
+  "utf8",
+);
+const guideSource = fs.readFileSync(
+  "apps/frontend/src/app/(authenticated)/workflow/components/WorkflowGuide.tsx",
+  "utf8",
+);
 
 test("/workflow renders an interactive React Flow business map", () => {
-  assert.match(pageSource, /@xyflow\/react/);
-  assert.match(pageSource, /ReactFlow/);
-  assert.match(pageSource, /Controls/);
-  assert.match(pageSource, /Background/);
+  assert.match(flowSource, /@xyflow\/react/);
+  assert.match(flowSource, /ReactFlow/);
+  assert.match(flowSource, /Controls/);
+  assert.match(flowSource, /Background/);
 });
 
 test("/workflow is static business guidance, not a live count dashboard", () => {
   assert.doesNotMatch(pageSource, /\/workflow\/summary/);
   assert.doesNotMatch(pageSource, /pendingCnt|activeCnt|doneCnt|reverseCnt/);
-  assert.doesNotMatch(pageSource, /업무 활동\s*\{workflowNodes\.length\}/);
-  assert.doesNotMatch(pageSource, /스윔레인\s*\{workflowLanes\.length\}/);
-  assert.match(pageSource, /workflowNodes/);
-  assert.match(pageSource, /workflowEdges/);
+  assert.match(flowSource, /workflowNodes/);
+  assert.match(flowSource, /workflowEdges/);
   assert.match(mapSource, /workflowLanes/);
 });
 
 test("/workflow keeps secondary relations out of the default visual noise", () => {
-  assert.match(pageSource, /showAllRelations/);
-  assert.match(pageSource, /보조 연결 보기/);
-  assert.match(pageSource, /edge\.kind === "normal" \|\| edge\.kind === "branch"/);
+  assert.match(flowSource, /showAllRelations/);
+  assert.match(flowSource, /보조 연결 보기/);
+  assert.match(flowSource, /\.kind === "normal" \|\| \w+\.kind === "branch"/);
 });
 
 test("/workflow uses swimlanes and business activity nodes", () => {
@@ -45,12 +51,18 @@ test("/workflow shows input kiosk as the production floor start point", () => {
   assert.doesNotMatch(mapSource, /source: "job-order", target: "subprocess-kitting"/);
 });
 
-test("/workflow has a right-side detail panel and explicit route navigation", () => {
-  assert.match(pageSource, /selectedNode/);
+test("/workflow has a guide hub with tabs, sidebar and inline help", () => {
+  assert.match(pageSource, /selectedNodeId/);
   assert.match(pageSource, /data-workflow-detail-panel/);
-  assert.match(pageSource, /router\.push/);
-  assert.match(pageSource, /관련 화면/);
-  assert.match(pageSource, /생성\/변경 데이터/);
+  assert.match(pageSource, /WorkflowSidebar/);
+  assert.match(pageSource, /WorkflowGuide/);
+  assert.match(pageSource, /WorkflowFlow/);
+  assert.match(pageSource, /가이드/);
+  assert.match(pageSource, /흐름도/);
+  assert.match(guideSource, /router\.push/);
+  assert.match(guideSource, /화면 바로가기/);
+  assert.match(guideSource, /관련 화면 도움말/);
+  assert.match(guideSource, /왜 하는가/);
 });
 
 test("/workflow map carries onboarding guide fields and helpers", () => {
