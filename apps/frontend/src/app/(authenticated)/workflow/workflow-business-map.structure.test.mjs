@@ -52,3 +52,15 @@ test("/workflow has a right-side detail panel and explicit route navigation", ()
   assert.match(pageSource, /관련 화면/);
   assert.match(pageSource, /생성\/변경 데이터/);
 });
+
+test("/workflow map carries onboarding guide fields and helpers", () => {
+  assert.match(mapSource, /why\?: string/);
+  assert.match(mapSource, /cautions\?: string\[\]/);
+  assert.match(mapSource, /export function getNodesByLane/);
+  assert.match(mapSource, /export function getVisibleNodeIds/);
+  assert.match(mapSource, /export function getPreviousNodes/);
+  assert.match(mapSource, /export function getNextNodes/);
+  // 주 흐름 노드 본문 작성 확인
+  assert.match(mapSource, /입하의 출처가 되는 구매 근거/);
+  assert.match(mapSource, /작업지시를 현장에서 스캔해 실제 생산 실행을 시작/);
+});

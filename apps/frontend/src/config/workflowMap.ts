@@ -30,6 +30,16 @@ export interface WorkflowActivityNode {
   routes: WorkflowRoute[];
   inputs: string[];
   outputs: string[];
+  /** 가이드: 이 업무를 왜 하는가 (1~2문장) */
+  why?: string;
+  /** 가이드: 선행조건 / 언제 수행하나 */
+  when?: string;
+  /** 가이드: 자주 하는 실수 · 주의점 */
+  cautions?: string[];
+  /** 좌측 목록 진행번호 (레인 내 순서). 미지정 시 x 좌표 순서 */
+  order?: number;
+  /** help md 연결 override. 미지정 시 routes에서 메뉴코드 자동 도출 */
+  helpRefs?: { menuCode: string; audience: "user" | "operator" }[];
 }
 
 export interface WorkflowBusinessEdge {
@@ -100,6 +110,13 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["거래처", "품목", "발주수량"],
     outputs: ["PO 라인", "입하 가능 잔량"],
+    order: 1,
+    why: "입하의 출처가 되는 구매 근거를 만들어 어떤 품목을 얼마나 받을지 사전에 확정한다.",
+    when: "거래처에 자재를 발주할 때. 입하 등록보다 먼저 수행한다.",
+    cautions: [
+      "품목·수량·납기·거래처를 정확히 입력해야 입하 잔량 계산이 맞는다.",
+      "발주 없이 입하하면 잔량 추적이 끊긴다.",
+    ],
   },
   {
     id: "arrival-register",
@@ -115,6 +132,13 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["PO 라인", "입하수량", "제조사", "창고"],
     outputs: ["입하번호", "입하 시리얼 후보", "입하 수불"],
+    order: 2,
+    why: "현장에 실제 도착한 자재를 시스템 재고 흐름으로 진입시키고 입하번호를 만든다.",
+    when: "공장에 자재가 물리적으로 도착했을 때.",
+    cautions: [
+      "PO 잔량을 초과해 입하하지 않는다.",
+      "제조사·창고를 잘못 고르면 이후 추적과 입고가 어긋난다.",
+    ],
   },
   {
     id: "arrival-review",
@@ -130,6 +154,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["입하번호", "품목"],
     outputs: ["입하 상태", "입하취소 가능 여부"],
+    order: 3,
+    why: "입하 건의 시리얼·제조사·후속 진행 여부를 확인하고 잘못된 입하를 취소할 근거를 본다.",
+    when: "입하 등록 직후 또는 IQC·입고 진행 상태를 점검할 때.",
+    cautions: [
+      "뒤 공정(IQC·라벨·입고)이 시작된 입하는 취소할 수 없다.",
+    ],
   },
   {
     id: "iqc-policy",
@@ -145,6 +175,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["품목", "검사항목", "AQL 정책"],
     outputs: ["품목별 검사 기준", "샘플링 정책"],
+    order: 1,
+    why: "품목이 어떤 항목·AQL 기준으로 검사될지 사전에 정해 IQC 판정의 기준을 만든다.",
+    when: "신규 품목 도입 시 또는 검사 기준 변경 시. IQC 판정보다 먼저.",
+    cautions: [
+      "기준이 없으면 샘플수·Ac/Re를 계산할 수 없어 IQC가 막힌다.",
+    ],
   },
   {
     id: "iqc-inspection",
@@ -161,6 +197,13 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["입하번호", "품목", "검사항목", "시료"],
     outputs: ["IQC 이력", "PASS/FAIL", "불량코드"],
+    order: 2,
+    why: "입하 자재가 생산에 투입 가능한 품질인지 PASS/FAIL로 확정한다.",
+    when: "입하 등록 후, 라벨 발행·입고 전.",
+    cautions: [
+      "FAIL은 라벨·입고로 넘기지 말고 불용·재검토로 분기한다.",
+      "입하번호·품목 단위로 판정해야 한다.",
+    ],
   },
   {
     id: "material-label",
@@ -176,6 +219,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["IQC PASS 입하건"],
     outputs: ["MAT UID", "라벨 출력 이력"],
+    order: 3,
+    why: "외부 입하 정보를 현장에서 스캔 가능한 내부 시리얼(MAT UID)로 전환한다.",
+    when: "IQC PASS 직후.",
+    cautions: [
+      "자동입고 설정이 있으면 라벨 발행이 입고까지 이어지니 중복 입고에 주의한다.",
+    ],
   },
   {
     id: "material-receive",
@@ -192,6 +241,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["MAT UID", "입고창고"],
     outputs: ["자재재고", "입고 수불"],
+    order: 4,
+    why: "라벨 발행된 자재를 실제 사용 가능한 창고 재고로 확정한다.",
+    when: "라벨 발행 후, 출고·공정투입 전.",
+    cautions: [
+      "입고해야 출고요청·공정투입·LOT 분할/병합이 가능하다.",
+    ],
   },
   {
     id: "lot-control",
@@ -209,6 +264,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["입고 LOT", "재고상태"],
     outputs: ["가용 LOT", "분할/병합 LOT"],
+    order: 5,
+    why: "입고 LOT을 조회하고 분할·병합·보류·폐기로 재고 단위를 재구성한다.",
+    when: "생산 투입 단위 조정이나 보류가 필요할 때.",
+    cautions: [
+      "분할·병합은 원본 LOT을 폐기하고 새 LOT을 발행하는 재가공이다.",
+    ],
   },
   {
     id: "material-request",
@@ -224,6 +285,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["작업지시", "품목", "소요량"],
     outputs: ["출고요청", "승인 대상"],
+    order: 6,
+    why: "생산에 필요한 자재를 창고에서 공정으로 요청한다.",
+    when: "작업지시 실행 전 자재가 필요할 때.",
+    cautions: [
+      "요청 수량은 작업지시 소요량 기준으로 잡는다.",
+    ],
   },
   {
     id: "material-issue",
@@ -239,6 +306,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["출고요청", "MAT UID"],
     outputs: ["자재출고 이력", "공정 투입 자재"],
+    order: 7,
+    why: "승인된 요청 또는 스캔으로 자재를 생산 공정에 실제 투입하고 재고를 차감한다.",
+    when: "출고요청 승인 후 또는 현장 스캔 시점.",
+    cautions: [
+      "잘못된 품목 스캔은 출고 전에 차단되어야 한다.",
+    ],
   },
   {
     id: "spec-setup",
@@ -255,6 +328,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["품목", "BOM", "라우팅"],
     outputs: ["도면 Revision", "회로 사양"],
+    order: 1,
+    why: "도면·Revision·회로별 제조 조건 등 제품 제조 기준을 정리한다.",
+    when: "신제품·설계 변경 시. 생산계획·키팅보다 먼저.",
+    cautions: [
+      "Revision 관리를 놓치면 잘못된 도면으로 생산된다.",
+    ],
   },
   {
     id: "production-plan",
@@ -270,6 +349,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["수주", "품목", "CAPA", "월력"],
     outputs: ["생산계획", "작업지시 발행 기준"],
+    order: 2,
+    why: "수요와 CAPA를 기준으로 생산 품목·수량·우선순위를 계획한다.",
+    when: "작업지시 발행 전.",
+    cautions: [
+      "CAPA를 넘는 계획은 납기 지연으로 이어진다.",
+    ],
   },
   {
     id: "job-order",
@@ -285,6 +370,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["생산계획", "품목", "라우팅", "BOM"],
     outputs: ["작업지시", "공정 실행 기준"],
+    order: 3,
+    why: "현장에 실행할 생산 작업을 라우팅·BOM·설비·수량과 묶어 지시한다.",
+    when: "생산계획 확정 후.",
+    cautions: [
+      "작업지시가 키오스크·실적의 기준이라 잘못 묶이면 현장이 멈춘다.",
+    ],
   },
   {
     id: "input-kiosk-start",
@@ -301,6 +392,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["작업지시", "작업자", "설비", "SG/자재 바코드"],
     outputs: ["생산 시작", "스캔 실적", "공정 진행 상태"],
+    order: 4,
+    why: "작업지시를 현장에서 스캔해 실제 생산 실행을 시작하는 진입점이다.",
+    when: "작업지시가 현장에 내려온 뒤 작업 시작 시.",
+    cautions: [
+      "작업자·설비·바코드 스캔이 맞아야 실적이 올바르게 집계된다.",
+    ],
   },
   {
     id: "subprocess-kitting",
@@ -316,6 +413,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["작업지시", "이전 SG", "회로 사양"],
     outputs: ["신규 SG", "SG 계보"],
+    order: 5,
+    why: "이전 공정 SG를 소비하고 회로별 새 SG를 발행해 SG 계보를 잇는다.",
+    when: "서브공정(키팅) 단계에서.",
+    cautions: [
+      "단순 실적이 아니라 SG 계보를 잇는 흐름이라, 이전 SG 투입을 빠뜨리면 추적이 끊긴다.",
+    ],
   },
   {
     id: "assembly-input",
@@ -332,6 +435,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["작업지시", "SG", "자재투입"],
     outputs: ["생산실적", "FG/SG 라벨"],
+    order: 6,
+    why: "SG·자재를 투입해 완제품 또는 다음 공정 실적과 FG/SG 라벨을 남긴다.",
+    when: "키오스크 시작 이후 실제 조립 시점.",
+    cautions: [
+      "자재 투입 이력이 빠지면 BOM 소요와 재고가 어긋난다.",
+    ],
   },
   {
     id: "production-result",
@@ -348,6 +457,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["작업지시", "현장 실적"],
     outputs: ["양품수량", "불량수량", "WIP/제품재고 후보"],
+    order: 7,
+    why: "작업지시별 양품·불량·진행률을 집계해 완료·제품재고·출하 가능 여부의 기준을 만든다.",
+    when: "조립·실적 등록 후.",
+    cautions: [
+      "작업지시 완료가 이 실적을 기준으로 판단된다.",
+    ],
   },
   {
     id: "process-inspection",
@@ -364,6 +479,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["생산실적", "검사항목"],
     outputs: ["검사결과", "합격/불합격"],
+    order: 1,
+    why: "생산 중·후 품질 항목을 검사해 제품 통과 여부와 추적 근거를 만든다.",
+    when: "생산 실적 등록 후.",
+    cautions: [
+      "FAIL은 불량·재작업으로, PASS는 제품 입고로 분기된다.",
+    ],
   },
   {
     id: "defect-rework",
@@ -381,6 +502,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["검사 FAIL", "불량코드"],
     outputs: ["불량이력", "재작업지시", "수리이력"],
+    order: 2,
+    why: "불량을 등록하고 재작업·수리·재검사로 다시 합격 여부를 확인한다.",
+    when: "검사 FAIL 발생 시.",
+    cautions: [
+      "불량코드·등급을 정확히 남겨야 품질 분석이 가능하다.",
+    ],
   },
   {
     id: "product-receive",
@@ -397,6 +524,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["생산실적", "FG 라벨"],
     outputs: ["제품재고", "제품수불"],
+    order: 1,
+    why: "생산 완료·검사 통과 제품을 출하 가능한 제품재고로 확정한다.",
+    when: "생산 실적·공정검사 PASS 후.",
+    cautions: [
+      "제품 입고가 돼야 포장·출하 대상이 된다.",
+    ],
   },
   {
     id: "packing",
@@ -413,6 +546,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["FG 라벨", "제품재고"],
     outputs: ["박스", "포장실적", "OQC 요청"],
+    order: 2,
+    why: "검사 합격 FG 시리얼을 박스에 담아 출하 물류 단위를 만든다.",
+    when: "제품 입고 후.",
+    cautions: [
+      "박스 마감 이후 OQC 요청과 팔레트 적재로 넘어간다.",
+    ],
   },
   {
     id: "oqc",
@@ -428,6 +567,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["마감 박스", "검사항목"],
     outputs: ["OQC PASS/FAIL", "출하 가능 박스"],
+    order: 3,
+    why: "출하 전 박스·제품 단위 최종 품질 게이트를 통과시킨다.",
+    when: "포장 마감 후, 팔레트·출하 전.",
+    cautions: [
+      "PASS 박스만 팔레트·출하로 넘기는 정책을 둘 수 있다.",
+    ],
   },
   {
     id: "palletize",
@@ -443,6 +588,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["OQC PASS 박스", "출하지시"],
     outputs: ["팔레트", "박스 적재 관계"],
+    order: 3,
+    why: "출하 가능한 박스를 팔레트로 묶어 출하 단위를 구성한다.",
+    when: "OQC PASS 후, 출하확정 전.",
+    cautions: [
+      "출하지시와 연결된 팔레트만 실제 출하로 넘어간다.",
+    ],
   },
   {
     id: "shipping-order",
@@ -458,6 +609,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["고객주문", "품목", "출하수량"],
     outputs: ["확정 출하지시", "출하잔량"],
+    order: 4,
+    why: "고객에게 출하할 품목·수량을 확정한다.",
+    when: "고객 주문 확정 시.",
+    cautions: [
+      "확정 지시 기준으로 박스·팔레트 출하가 수행된다.",
+    ],
   },
   {
     id: "shipping-confirm",
@@ -473,6 +630,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["확정 출하지시", "박스/팔레트"],
     outputs: ["출하이력", "제품재고 차감", "출하상태"],
+    order: 5,
+    why: "박스·팔레트를 실제 출하 처리하고 제품재고를 차감한다.",
+    when: "출하지시 확정·출하 단위 준비 후.",
+    cautions: [
+      "재고 차감·상태 전환·출하수량 갱신이 한 흐름으로 묶인다.",
+    ],
   },
   {
     id: "shipping-history",
@@ -488,6 +651,12 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["출하확정 결과"],
     outputs: ["출하 조회 기준", "취소 검토 대상"],
+    order: 6,
+    why: "출하지시와 출하 완료 결과를 조회하고 취소·추적으로 연결한다.",
+    when: "출하확정 후.",
+    cautions: [
+      "취소·추적성 조회의 진입점이다.",
+    ],
   },
   {
     id: "traceability",
@@ -572,3 +741,49 @@ export const workflowEdges: WorkflowBusinessEdge[] = [
   { id: "e-receive-reversal", source: "material-receive", target: "material-reversal", label: "입고 취소", kind: "reversal" },
   { id: "e-history-reversal", source: "shipping-history", target: "shipping-reversal", label: "취소 검토", kind: "reversal" },
 ];
+
+const _nodeById = new Map(workflowNodes.map((n) => [n.id, n]));
+
+/** 레인 순서대로, 각 레인 내 노드는 order(없으면 x) 오름차순 */
+export function getNodesByLane(): { lane: WorkflowLane; nodes: WorkflowActivityNode[] }[] {
+  return workflowLanes.map((lane) => ({
+    lane,
+    nodes: workflowNodes
+      .filter((n) => n.lane === lane.id)
+      .sort((a, b) => (a.order ?? a.x) - (b.order ?? b.x)),
+  }));
+}
+
+/** 레인 활성 + 검색어 매칭 노드 id 집합 */
+export function getVisibleNodeIds(query: string, activeLaneIds: Set<WorkflowLaneId>): Set<string> {
+  const q = query.trim().toLowerCase();
+  return new Set(
+    workflowNodes
+      .filter((n) => activeLaneIds.has(n.lane))
+      .filter((n) => {
+        if (!q) return true;
+        const hay = [
+          n.activity, n.summary, n.detail, n.why ?? "", n.when ?? "",
+          ...(n.cautions ?? []),
+          ...n.dataObjects, ...n.inputs, ...n.outputs,
+          ...n.routes.map((r) => r.label),
+        ].join(" ").toLowerCase();
+        return hay.includes(q);
+      })
+      .map((n) => n.id),
+  );
+}
+
+export function getPreviousNodes(nodeId: string): { edge: WorkflowBusinessEdge; node: WorkflowActivityNode }[] {
+  return workflowEdges
+    .filter((e) => e.target === nodeId)
+    .map((e) => ({ edge: e, node: _nodeById.get(e.source) }))
+    .filter((x): x is { edge: WorkflowBusinessEdge; node: WorkflowActivityNode } => Boolean(x.node));
+}
+
+export function getNextNodes(nodeId: string): { edge: WorkflowBusinessEdge; node: WorkflowActivityNode }[] {
+  return workflowEdges
+    .filter((e) => e.source === nodeId)
+    .map((e) => ({ edge: e, node: _nodeById.get(e.target) }))
+    .filter((x): x is { edge: WorkflowBusinessEdge; node: WorkflowActivityNode } => Boolean(x.node));
+}
