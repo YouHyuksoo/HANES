@@ -1,0 +1,162 @@
+{
+  "title": "HANES MES 생산관리 사용자 매뉴얼",
+  "outPath": "C:\\Project\\HANES\\docs\\manuals\\hanes-production-manual-2026-06-24.html",
+  "date": "2026-06-24",
+  "total": 19,
+  "missingHelp": [],
+  "missingCapture": [],
+  "sections": [
+    {
+      "code": "PROD_MONTHLY_PLAN",
+      "title": "제품생산계획",
+      "path": "/production/monthly-plan",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_SIMULATION",
+      "title": "생산계획 시뮬레이션",
+      "path": "/production/simulation",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_SPEC_SETUP",
+      "title": "제품 도면관리",
+      "path": "/production/specification-setup",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_KITTING",
+      "title": "실적입력(서브공정)",
+      "path": "/production/subprocess-kitting",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_INPUT_ASSEMBLY",
+      "title": "실적입력(조립)",
+      "path": "/production/input-assembly",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_ORDER",
+      "title": "작업지시 관리",
+      "path": "/production/order",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_RESULT",
+      "title": "생산실적",
+      "path": "/production/result",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_PROGRESS",
+      "title": "작업지시 진행현황",
+      "path": "/production/progress",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_INPUT_KIOSK",
+      "title": "실적입력(키오스크)",
+      "path": "/production/input-kiosk",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_INPUT_INSPECT",
+      "title": "실적입력(단순검사)",
+      "path": "/production/input-inspect",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_INPUT_EQUIP",
+      "title": "실적입력(검사장비)",
+      "path": "/production/input-equip",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_RESULT_SUMMARY",
+      "title": "생산실적 통합조회",
+      "path": "/production/result-summary",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_WIP_STOCK",
+      "title": "반제품재공조회",
+      "path": "/production/wip-stock",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_FG_STOCK",
+      "title": "제품재공조회",
+      "path": "/production/fg-stock",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_WIP_MAT_STOCK",
+      "title": "원자재공정재고",
+      "path": "/production/wip-material-stock",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_WIP_MAT_TRANS",
+      "title": "원자재공정수불",
+      "path": "/production/wip-material-trans",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_REWORK",
+      "title": "재작업 지시",
+      "path": "/quality/rework",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_REWORK_HISTORY",
+      "title": "재작업 현황",
+      "path": "/quality/rework-history",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_REPAIR",
+      "title": "수리관리",
+      "path": "/production/repair",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    }
+  ]
+}

@@ -8,6 +8,8 @@ Format:
 - T-000 | YYYY-MM-DD | owner | short result | evidence: JOURNAL heading or commit
 ```
 
+- T-REMAINING-HELP-MANUALS | 2026-06-24 | codex | 품질/검사/제품수불/출하 도움말 user 36개·operator 30개 작성, manifest 보강, 공식 runner 3002 재시도 후 4개 HTML/result 모두 `missingHelp=[]`, `missingCapture=[]` | evidence: JOURNAL 2026-06-24 21:37 Codex
+
 - T-KIOSK-MAT-MOUNT | 2026-06-24 | claude | 키오스크 자재 입력을 작업지시 기준→설비 기준 장착(WIP_MAT_STOCKS, EquipMaterialService.mount 재사용)으로 전환, mount 시점 BOM 오장착 가드, 이력 전량 보존. tsc 0/0 · 구조테스트 3 pass | evidence: JOURNAL 2026-06-24 Claude
 
 - T-CONS-MOUNT-SQL-PREVIEW | 2026-06-23 | kimi | `/consumables/mount` DataGrid `sqlQuery`를 `CONSUMABLE_MASTERS` 실제 조회 SQL로 교체 (`COMPANY`/`PLANT_CD`, `CATEGORY`, `CONSUMABLE_CODE`/`NAME` 검색, `ORDER BY CONSUMABLE_CODE ASC`, `OFFSET/FETCH`) | evidence: JOURNAL 2026-06-23 20:46 Kimi
@@ -138,3 +140,6 @@ Format:
 - T-ACTIVITY-LOGS-NAME-COLUMN | 2026-06-23 | codex | JSHANES `ACTIVITY_LOGS.USER_NAME`을 `NAME`으로 rename하고 entity/ERD/live schema 갱신 | evidence: JOURNAL 2026-06-23 Codex
 - T-MASTER-EQUIP-IMAGE-UPLOAD | 2026-06-24 | codex | 설비마스터 IMAGE_URL 추가, 사진 업로드/삭제 API와 우측 패널 UI를 품목마스터 패턴으로 일치시킴 | evidence: JOURNAL 2026-06-24 Codex
 - T-ER-VIEW-DROP-FK | 2026-06-23 | codex | `/system/er-view` 물리 FK 선택 시 `DROP_FK` dry-run/execute 및 `FK 제거 후보` 버튼 추가 | evidence: JOURNAL 2026-06-23 Codex
+- T-MATERIAL-HELP-MANUAL | 2026-06-24 | codex | 자재관리 26개 화면 도움말/manifest를 보강하고 단일 HTML 매뉴얼 `docs/manuals/hanes-material-manual-2026-06-24.html` 생성, runner `missingHelp`/`missingCapture` 0건 확인 | evidence: JOURNAL 2026-06-24 15:39 Codex
+- T-PRESENTATION-REINFORCE | 2026-06-24 | claude | 소개자료에 AQL·생산실적(서브/조립)·검사결과·출하이력·팔레트·추적성 종합 5개 슬라이드 보강(24→29장), 빈/깨진 캡처 37+2장 전량 실데이터로 재생성, PPTX 재빌드 | evidence: JOURNAL 2026-06-24 Claude
+- T-PRODUCTION-HELP-MANUAL | 2026-06-24 | codex | 생산관리 19개 화면 도움말/manifest를 보강하고 단일 HTML 매뉴얼 `docs/manuals/hanes-production-manual-2026-06-24.html` 생성, runner `missingHelp`/`missingCapture` 0건 확인 | evidence: JOURNAL 2026-06-24 16:39 Codex

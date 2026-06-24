@@ -34,6 +34,61 @@
           "menuCode": "EQUIP_INSPECT_ITEM",
           "title": "설비별 점검항목",
           "path": "/master/equip-inspect"
+        },
+        {
+          "menuCode": "MST_PARTNER",
+          "title": "거래처관리",
+          "path": "/master/partner"
+        },
+        {
+          "menuCode": "EQUIP_MASTER",
+          "title": "설비마스터",
+          "path": "/master/equip"
+        },
+        {
+          "menuCode": "MST_PROCESS",
+          "title": "공정마스터",
+          "path": "/master/process"
+        },
+        {
+          "menuCode": "MST_PROD_LINE",
+          "title": "생산라인관리",
+          "path": "/master/prod-line"
+        },
+        {
+          "menuCode": "MST_ROUTING",
+          "title": "라우팅관리",
+          "path": "/master/routing"
+        },
+        {
+          "menuCode": "MST_WORK_CALENDAR",
+          "title": "생산월력관리",
+          "path": "/master/work-calendar"
+        },
+        {
+          "menuCode": "MST_WORKER",
+          "title": "작업자관리",
+          "path": "/master/worker"
+        },
+        {
+          "menuCode": "MST_LABEL",
+          "title": "라벨관리",
+          "path": "/master/label"
+        },
+        {
+          "menuCode": "MST_VENDOR_BARCODE",
+          "title": "제조사 바코드 매핑",
+          "path": "/master/vendor-barcode"
+        },
+        {
+          "menuCode": "MST_PROCESS_CAPA",
+          "title": "공정 CAPA 관리",
+          "path": "/master/process-capa"
+        },
+        {
+          "menuCode": "SYS_DOCUMENT",
+          "title": "문서관리",
+          "path": "/system/document"
         }
       ]
     },
@@ -141,6 +196,51 @@
           "menuCode": "MAT_HOLD",
           "title": "자재재고홀드관리",
           "path": "/material/hold"
+        },
+        {
+          "menuCode": "MAT_ARRIVAL_RESULT",
+          "title": "입하실적조회",
+          "path": "/material/arrival-result"
+        },
+        {
+          "menuCode": "MAT_ARRIVAL_TRANSACTION",
+          "title": "입하수불조회",
+          "path": "/material/arrival-transaction"
+        },
+        {
+          "menuCode": "MAT_RECEIVE_LABEL",
+          "title": "자재라벨발행",
+          "path": "/material/receive-label"
+        },
+        {
+          "menuCode": "MAT_RECEIVE_HISTORY",
+          "title": "자재입고이력",
+          "path": "/material/receive-history"
+        },
+        {
+          "menuCode": "MAT_LOT",
+          "title": "자재 LOT 조회",
+          "path": "/material/lot"
+        },
+        {
+          "menuCode": "MAT_SHELF_LIFE",
+          "title": "유수명자재 만료현황",
+          "path": "/material/shelf-life"
+        },
+        {
+          "menuCode": "MAT_SCRAP",
+          "title": "자재폐기",
+          "path": "/material/scrap"
+        },
+        {
+          "menuCode": "MAT_MISC_RECEIPT",
+          "title": "기타입고",
+          "path": "/material/misc-receipt"
+        },
+        {
+          "menuCode": "INV_ARRIVAL_STOCK",
+          "title": "입하재고현황",
+          "path": "/material/arrival-stock"
         }
       ]
     },
@@ -165,13 +265,73 @@
         },
         {
           "menuCode": "PROD_RESULT_SUMMARY",
-          "title": "작업실적 통합 조회",
+          "title": "생산실적 통합조회",
           "path": "/production/result-summary"
         },
         {
           "menuCode": "PROD_WIP_MAT_TRANS",
           "title": "원자재공정수불",
           "path": "/production/wip-material-trans"
+        },
+        {
+          "menuCode": "PROD_SIMULATION",
+          "title": "생산계획 시뮬레이션",
+          "path": "/production/simulation"
+        },
+        {
+          "menuCode": "PROD_SPEC_SETUP",
+          "title": "제품 도면관리",
+          "path": "/production/specification-setup"
+        },
+        {
+          "menuCode": "PROD_KITTING",
+          "title": "실적입력(서브공정)",
+          "path": "/production/subprocess-kitting"
+        },
+        {
+          "menuCode": "PROD_INPUT_ASSEMBLY",
+          "title": "실적입력(조립)",
+          "path": "/production/input-assembly"
+        },
+        {
+          "menuCode": "PROD_PROGRESS",
+          "title": "작업지시 진행현황",
+          "path": "/production/progress"
+        },
+        {
+          "menuCode": "PROD_INPUT_INSPECT",
+          "title": "실적입력(단순검사)",
+          "path": "/production/input-inspect"
+        },
+        {
+          "menuCode": "PROD_INPUT_EQUIP",
+          "title": "실적입력(검사장비)",
+          "path": "/production/input-equip"
+        },
+        {
+          "menuCode": "PROD_RESULT",
+          "title": "생산실적",
+          "path": "/production/result"
+        },
+        {
+          "menuCode": "PROD_WIP_STOCK",
+          "title": "반제품재공조회",
+          "path": "/production/wip-stock"
+        },
+        {
+          "menuCode": "PROD_FG_STOCK",
+          "title": "제품재공조회",
+          "path": "/production/fg-stock"
+        },
+        {
+          "menuCode": "PROD_WIP_MAT_STOCK",
+          "title": "원자재공정재고",
+          "path": "/production/wip-material-stock"
+        },
+        {
+          "menuCode": "PROD_REPAIR",
+          "title": "수리관리",
+          "path": "/production/repair"
         }
       ]
     },
@@ -211,18 +371,108 @@
         },
         {
           "menuCode": "QC_DEFECT",
-          "title": "불량관리",
+          "title": "불량등록관리",
           "path": "/quality/defect"
         },
         {
           "menuCode": "QC_REWORK",
-          "title": "재작업 지시 관리",
+          "title": "재작업 지시",
           "path": "/quality/rework"
         },
         {
           "menuCode": "QC_REWORK_INSPECT",
-          "title": "재작업검사",
+          "title": "재작업 후 검사",
           "path": "/quality/rework-inspect"
+        },
+        {
+          "menuCode": "QC_REWORK_HISTORY",
+          "title": "재작업 현황",
+          "path": "/quality/rework-history"
+        },
+        {
+          "menuCode": "QC_IQC",
+          "title": "수입검사(IQC)",
+          "path": "/material/iqc"
+        },
+        {
+          "menuCode": "QC_IQC_HISTORY",
+          "title": "IQC 검사이력",
+          "path": "/material/iqc-history"
+        },
+        {
+          "menuCode": "QC_CONCESSION",
+          "title": "특채관리",
+          "path": "/material/concession"
+        },
+        {
+          "menuCode": "QC_SELF_INSPECT_HISTORY",
+          "title": "자주검사 이력",
+          "path": "/quality/self-inspect-history"
+        },
+        {
+          "menuCode": "QC_SAMPLE_INSPECT",
+          "title": "공정샘플검사",
+          "path": "/production/sample-inspect"
+        },
+        {
+          "menuCode": "QC_OQC",
+          "title": "출하검사",
+          "path": "/quality/oqc"
+        },
+        {
+          "menuCode": "QC_OQC_HISTORY",
+          "title": "출하검사 이력",
+          "path": "/quality/oqc-history"
+        },
+        {
+          "menuCode": "QC_TRACE",
+          "title": "추적성 종합 조회",
+          "path": "/quality/trace"
+        },
+        {
+          "menuCode": "QC_CHANGE",
+          "title": "변경관리",
+          "path": "/quality/change-control"
+        },
+        {
+          "menuCode": "QC_COMPLAINT",
+          "title": "고객불만관리",
+          "path": "/quality/complaint"
+        },
+        {
+          "menuCode": "QC_CAPA",
+          "title": "CAPA 관리",
+          "path": "/quality/capa"
+        },
+        {
+          "menuCode": "QC_FAI",
+          "title": "초도품검사",
+          "path": "/quality/fai"
+        },
+        {
+          "menuCode": "QC_PPAP",
+          "title": "PPAP 관리",
+          "path": "/quality/ppap"
+        },
+        {
+          "menuCode": "QC_SPC",
+          "title": "SPC 관리",
+          "path": "/quality/spc"
+        },
+        {
+          "menuCode": "QC_CONTROL_PLAN",
+          "title": "관리계획서",
+          "path": "/quality/control-plan"
+        },
+        {
+          "menuCode": "QC_AUDIT",
+          "title": "품질감사",
+          "path": "/quality/audit"
+        },
+        {
+          "menuCode": "SYS_TRAINING",
+          "title": "교육훈련관리",
+          "path": "/system/training"
         }
       ]
     },
@@ -232,8 +482,33 @@
       "items": [
         {
           "menuCode": "INSP_RESULT",
-          "title": "통전검사",
+          "title": "검사결과조회",
           "path": "/inspection/result"
+        },
+        {
+          "menuCode": "INSP_INTEGRATED",
+          "title": "통합검사",
+          "path": "/inspection/integrated"
+        },
+        {
+          "menuCode": "INSP_STRUCTURE",
+          "title": "구조검사",
+          "path": "/inspection/structure"
+        },
+        {
+          "menuCode": "INSP_TERMINAL_RESULT",
+          "title": "단자검사결과",
+          "path": "/inspection/terminal-result"
+        },
+        {
+          "menuCode": "INSP_HISTORY",
+          "title": "검사이력",
+          "path": "/inspection/history"
+        },
+        {
+          "menuCode": "INSP_PROTOCOL",
+          "title": "검사프로토콜",
+          "path": "/inspection/protocol"
         }
       ]
     },
@@ -274,12 +549,12 @@
       "items": [
         {
           "menuCode": "SHIP_ORDER",
-          "title": "출하지시등록",
+          "title": "출하지시관리",
           "path": "/shipping/order"
         },
         {
           "menuCode": "SHIP_PALLET",
-          "title": "팔레트적재",
+          "title": "팔레트관리",
           "path": "/shipping/pallet"
         },
         {
@@ -289,35 +564,91 @@
         },
         {
           "menuCode": "SHIP_PACK",
-          "title": "제품포장관리",
+          "title": "포장관리",
           "path": "/shipping/pack"
+        },
+        {
+          "menuCode": "SHIP_PACK_RESULT",
+          "title": "포장실적조회",
+          "path": "/production/pack-result"
+        },
+        {
+          "menuCode": "SHIP_BOX_STOCK",
+          "title": "박스재고조회",
+          "path": "/shipping/box-stock"
+        },
+        {
+          "menuCode": "SHIP_CONFIRM",
+          "title": "출하확정",
+          "path": "/shipping/confirm"
+        },
+        {
+          "menuCode": "SHIP_HISTORY",
+          "title": "출하이력",
+          "path": "/shipping/history"
+        },
+        {
+          "menuCode": "SHIP_RETURN",
+          "title": "출하취소",
+          "path": "/shipping/return"
         }
       ]
     },
     {
       "key": "inventory",
-    "title": "재고관리",
-    "items": [
-      {
-        "menuCode": "INV_MAT_STOCK",
-        "title": "자재재고현황조회",
-        "path": "/inventory/material-stock"
-      },
-      {
-        "menuCode": "INV_TRANSACTION",
-        "title": "자재수불이력조회",
-        "path": "/inventory/transaction"
-      },
-      {
-        "menuCode": "INV_MAT_PHYSICAL_INV",
-        "title": "자재재고실사 관리",
-        "path": "/inventory/material-physical-inv"
-      },
-      {
-        "menuCode": "INV_MAT_PHYSICAL_INV_APPLY",
-        "title": "자재재고실사 반영",
-        "path": "/inventory/material-physical-inv-apply"
-      }
+      "title": "재고관리",
+      "items": [
+        {
+          "menuCode": "INV_MAT_STOCK",
+          "title": "자재재고현황조회",
+          "path": "/inventory/material-stock"
+        },
+        {
+          "menuCode": "INV_TRANSACTION",
+          "title": "자재수불이력조회",
+          "path": "/inventory/transaction"
+        },
+        {
+          "menuCode": "INV_MAT_PHYSICAL_INV",
+          "title": "자재재고실사 관리",
+          "path": "/inventory/material-physical-inv"
+        },
+        {
+          "menuCode": "INV_MAT_PHYSICAL_INV_APPLY",
+          "title": "자재재고실사 반영",
+          "path": "/inventory/material-physical-inv-apply"
+        },
+        {
+          "menuCode": "INV_MAT_PHYSICAL_INV_HISTORY",
+          "title": "자재재고실사 이력",
+          "path": "/inventory/material-physical-inv-history"
+        }
+      ]
+    },
+    {
+      "key": "product",
+      "title": "제품수불관리",
+      "items": [
+        {
+          "menuCode": "PROD_RECEIVE",
+          "title": "제품입고",
+          "path": "/product/receive"
+        },
+        {
+          "menuCode": "PROD_RECEIPT_CANCEL",
+          "title": "제품입고취소",
+          "path": "/product/receipt-cancel"
+        },
+        {
+          "menuCode": "PROD_ISSUE",
+          "title": "제품출고",
+          "path": "/product/issue"
+        },
+        {
+          "menuCode": "PROD_ISSUE_CANCEL",
+          "title": "제품출고취소",
+          "path": "/product/issue-cancel"
+        }
       ]
     }
   ]

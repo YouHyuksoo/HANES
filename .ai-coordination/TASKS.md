@@ -29,6 +29,39 @@ notes:
 
 ## Active Tasks
 
+## T-WORKFLOW-BUSINESS-MAP `/workflow` 업무 이해용 React Flow 재구성
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/workflow`를 건수 대시보드가 아닌 업무-시스템 관계도 React Flow 캔버스로 재구성
+- 6개 스윔레인, 업무 활동 노드, 우측 상세 패널, 관련 화면 바로가기 제공
+files:
+- apps/frontend/src/config/workflowMap.ts
+- apps/frontend/src/app/(authenticated)/workflow/page.tsx
+- apps/frontend/src/app/(authenticated)/workflow/workflow-business-map.structure.test.mjs
+- docs/superpowers/specs/2026-06-24-workflow-business-map-design.md
+- docs/superpowers/plans/2026-06-24-workflow-business-map.md
+- docs/reports/workflow-business-map-3002.png
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/workflow/workflow-business-map.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `git diff --check -- apps/frontend/src/config/workflowMap.ts "apps/frontend/src/app/(authenticated)/workflow" docs/superpowers/specs/2026-06-24-workflow-business-map-design.md docs/superpowers/plans/2026-06-24-workflow-business-map.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md .ai-coordination/JOURNAL.md .ai-coordination/HANDOFF/codex.md`
+- PASS: 3002 기존 dev 서버에서 `/workflow` HTTP 200
+- PASS: Playwright 인증 세션에서 React Flow 1개, 노드 34개, 상세 패널 1개, `IQC 판정` 클릭 후 상세 갱신, console/page error 0
+- PASS: 사용자 제공 계정으로 3002 로그인 후 `/workflow` 재검증. React Flow 1개, 업무 노드 29개, 레인 6개, `조립실적(키오스크)` 표시, 노드 겹침 0, 미니맵 제거, 건수 배지 0개, console/page error 0. 캡처 `docs/reports/workflow-business-map-3002.png`
+review:
+- needs-review
+notes:
+- 실시간 건수/KPI/DB 패키지 변경은 제외한다. locale 파일은 다른 active lock과 충돌 가능성이 있어 수정하지 않는다.
+- 사용자 지시에 따라 임의 대체 포트 dev server를 띄우지 않는다. 최종 검증은 3002 기준으로 수행했다.
+- 사용자 피드백에 따라 기본 viewport를 `x=180, y=28, zoom=0.62`로 보정하고 장거리 보조 연결은 선택 업무 중심 표시로 접었다.
+- 생산 레인은 `작업지시 -> 조립실적(키오스크) -> 서브공정 키팅/조립·라벨 실적`으로 현장 시작 공정을 명시한다.
+
 ## T-MASTER-PART-PAGE-STANDARD 품목마스터 페이지 표준 문서화
 status: IN_PROGRESS
 owner: codex

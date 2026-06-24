@@ -8,6 +8,24 @@ Use this heading format for every new entry:
 ## YYYY-MM-DD HH:mm Agent
 ```
 
+## 2026-06-24 21:37 Codex
+
+- 작업: `T-REMAINING-HELP-MANUALS` 공식 runner 3002 재시도 및 최종 완료.
+- 사용자 선택: 이전 캡처 누락에 대해 1번(`3002 단독 사용 상태에서 공식 runner 재시도`) 선택.
+- 실행: 추가 포트/대체 runner/우회 캡처 없이 `C:\Users\hsyou\.claude\skills\help-manual-export\scripts\help-manual-export-runner.mjs`만 `HANES_FRONTEND_URL=http://localhost:3002`로 재실행.
+- 결과: `docs/manuals/hanes-product-mgmt-manual-2026-06-24.result.json` `total=4`, `missingHelp=[]`, `missingCapture=[]`; `docs/manuals/hanes-inspection-manual-2026-06-24.result.json` `total=6`, `missingHelp=[]`, `missingCapture=[]`; `docs/manuals/hanes-shipping-manual-2026-06-24.result.json` `total=9`, `missingHelp=[]`, `missingCapture=[]`; `docs/manuals/hanes-quality-manual-2026-06-24.result.json` `total=25`, `missingHelp=[]`, `missingCapture=[]`.
+- 검증: runner 프로세스 잔여 없음. 재시도 로그 파일 삭제. 후속 검증에서 manifest/frontmatter/result/diff check 확인 예정.
+
+## 2026-06-24 19:39 Codex
+
+- 작업: `T-REMAINING-HELP-MANUALS` 품질/검사/제품수불/출하 매뉴얼 생성.
+- 생성: `.ai-coordination/TASK-quality-manual.md`, `TASK-inspection-manual.md`, `TASK-product-mgmt-manual.md`, `TASK-shipping-manual.md` 기준으로 user 도움말 36개, operator 도움말 30개를 작성하고 `apps/frontend/public/help/manifest.json`을 보강했다.
+- 산출물: `docs/manuals/hanes-quality-manual-2026-06-24.html`, `docs/manuals/hanes-inspection-manual-2026-06-24.html`, `docs/manuals/hanes-product-mgmt-manual-2026-06-24.html`, `docs/manuals/hanes-shipping-manual-2026-06-24.html` 및 각 `.result.json`.
+- 검증: frontmatter/BOM/audience/manifest 검사 PASS. 공식 `C:\Users\hsyou\.claude\skills\help-manual-export\scripts\help-manual-export-runner.mjs`를 `HANES_FRONTEND_URL=http://localhost:3002`로만 실행했다. 추가 포트/대체 runner/우회 캡처는 사용하지 않았다.
+- 결과: 4개 result 모두 `missingHelp=[]`. `total`은 quality 25, inspection 6, product 4, shipping 9.
+- BLOCKED: 공식 runner 캡처가 `page.goto: Timeout 120000ms exceeded.`로 실패해 `missingCapture`가 남았다. quality 5건(`QC_PPAP`, `QC_SPC`, `QC_CONTROL_PLAN`, `QC_AUDIT`, `SYS_TRAINING`), inspection 6건 전체, product 4건 전체, shipping 9건 전체.
+- 다음 결정 필요: 3002 단독 사용 상태에서 공식 runner 재시도, 3002 환경 원인 수정, 또는 사용자 승인 후 runner/캡처 방식 보정.
+
 ## 2026-06-24 Claude (T-KIOSK-MAT-MOUNT 키오스크 자재 설비기준 장착 전환)
 
 - 작업: 키오스크(`/production/input-kiosk`) 자재 입력을 작업지시 기준(JOB_MATERIAL_LOTS)에서 **설비 기준 장착**(WIP_MAT_STOCKS)으로 전환. 소모품은 이미 설비 기준이라 미변경. 입력 방식만 변경, 이력(WIP_MAT_TRANSACTIONS) 전량 보존.
@@ -2872,3 +2890,86 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
   - PASS: `git diff --check -- apps/backend/src/entities/equip-master.entity.ts apps/backend/src/modules/equipment/dto/equip-master.dto.ts apps/backend/src/modules/equipment/controllers/equip-master.controller.ts apps/backend/src/modules/equipment/services/equip-master.service.ts apps/backend/src/modules/equipment/services/equip-master.service.spec.ts apps/backend/src/migrations/2026-06-24_add_equip_master_image_url.sql apps/frontend/src/app/(authenticated)/master/equip/types.ts apps/frontend/src/app/(authenticated)/master/equip/components/EquipFieldHelp.tsx apps/frontend/src/app/(authenticated)/master/equip/components/EquipMasterTab.tsx apps/frontend/src/app/(authenticated)/master/equip/equip-image-upload.structure.test.mjs docs/reports/db-schema-erd.md`
   - PASS: Oracle `EQUIP_MASTERS.IMAGE_URL` 컬럼/주석 확인
+
+# 2026-06-24 - T-WORKFLOW-BUSINESS-MAP `/workflow` 업무 이해용 React Flow 재구성
+
+- owner: codex
+- status: REVIEW
+- 변경:
+  - `/workflow`를 기존 카드형 건수 대시보드에서 `@xyflow/react` 기반 업무-시스템 관계도 캔버스로 재구성했다.
+  - `apps/frontend/src/config/workflowMap.ts`에 6개 스윔레인과 29개 업무 활동 노드, 업무 산출물 기반 edge를 정적 정의로 추가했다.
+  - 노드 클릭 시 바로 이동하지 않고 우측 상세 패널에서 업무 설명, 관련 화면, 생성/변경 데이터, 입력/산출, 선행/후행 업무를 보여준다.
+  - 실시간 건수, KPI, `/workflow/summary`, Oracle `PKG_WORKFLOW` 변경은 제외했다.
+  - 설계와 구현 계획은 `docs/superpowers/specs/2026-06-24-workflow-business-map-design.md`, `docs/superpowers/plans/2026-06-24-workflow-business-map.md`에 남겼다.
+- 검증:
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/workflow/workflow-business-map.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check -- apps/frontend/src/config/workflowMap.ts "apps/frontend/src/app/(authenticated)/workflow" docs/superpowers/specs/2026-06-24-workflow-business-map-design.md docs/superpowers/plans/2026-06-24-workflow-business-map.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md .ai-coordination/JOURNAL.md .ai-coordination/HANDOFF/codex.md`
+  - PASS: 3002 기존 dev 서버에서 `/workflow` HTTP 200
+  - PASS: Playwright 인증 세션에서 React Flow 1개, 노드 34개, 상세 패널 1개, `IQC 판정` 클릭 후 상세 갱신, console/page error 0
+  - PASS: 사용자 제공 계정으로 3002 로그인 후 `/workflow` 재검증. React Flow 1개, 업무 노드 29개, 레인 6개, 노드 겹침 0, edge label 1개, 건수 배지 0개, minimap false, console/page error 0
+  - PASS: 사용자 지적에 따라 생산 레인에 `조립실적(키오스크)` 노드를 추가한 뒤 3002에서 재검증. React Flow 1개, 업무 노드 29개, 레인 6개, `조립실적(키오스크)` 표시, `조립/라벨 실적` 명칭 분리, 노드 겹침 0, console/page error 0
+- 산출물:
+  - `docs/reports/workflow-business-map-3002.png`
+- 참고:
+  - 임시 대체 포트 검증 서버와 이전 캡처는 정리했고, 최종 검증은 3002 기준으로 다시 수행했다.
+  - 사용자 피드백 후 기본 viewport를 `x=180, y=28, zoom=0.62`로 조정해 스윔레인 설명이 잘리지 않게 했다.
+  - 출하 구간 x 좌표 겹침을 제거했고, 장거리 reference/reversal edge는 선택 업무 주변 또는 `보조 연결 보기`에서만 노출한다.
+  - 미니맵은 하단 레인 설명을 가려 제거했다.
+  - 생산 실행 흐름은 `작업지시 -> 조립실적(키오스크) -> 서브공정 키팅/조립·라벨 실적`로 보이도록 갱신했다.
+
+# 2026-06-24 15:39 - T-MATERIAL-HELP-MANUAL 자재관리 도움말 및 단일 HTML 매뉴얼 생성
+
+- owner: codex
+- status: DONE
+- 변경:
+  - `.ai-coordination/TASK-material-manual.md`의 26개 자재관리 메뉴 기준으로 누락 도움말을 작성했다.
+  - 신규 user 도움말 13개와 신규 operator 도움말 10개를 `apps/frontend/public/help/{user,operator}/ko/`에 추가했다.
+  - 기존 완비 13개 도움말은 덮어쓰지 않았고, user-only 3개(`MAT_ISSUE_OTHER`, `MAT_SHELF_LIFE_REINSPECT`, `MAT_SHELF_LIFE_HISTORY`)는 기존 operator 문서가 없으므로 user 문서만 추가했다.
+  - `apps/frontend/public/help/manifest.json`에 대상 메뉴 13개 항목을 보강했다.
+  - 공식 `help-manual-export-runner.mjs`로 단일 HTML 매뉴얼을 생성했다.
+- 산출물:
+  - `docs/manuals/hanes-material-manual-2026-06-24.html`
+  - `docs/manuals/hanes-material-manual-2026-06-24.result.json`
+- 검증:
+  - PASS: 도움말 frontmatter/BOM/audience/manifest 중복/누락 검증, errors 0건
+  - PASS: 공식 runner 결과 JSON `total=26`, `missingHelp=[]`, `missingCapture=[]`
+  - PASS: `git diff --check -- apps/frontend/public/help/user/ko apps/frontend/public/help/operator/ko apps/frontend/public/help/manifest.json docs/manuals .ai-coordination/TASKS.md .ai-coordination/LOCKS.md`
+- 참고:
+  - 기존 3002는 `/inventory/material-physical-inv-history` 캡처에서 타임아웃되어 별도 3004 dev 서버로 생성했고, 작업 후 3004 임시 서버는 종료한다.
+  - 소스 추적 중 `MAT_SCRAP`, `MAT_MISC_RECEIPT`, `INV_MAT_PHYSICAL_INV_HISTORY` 화면의 표시용 SQL 텍스트가 실제 backend 저장/조회 테이블과 달라 도움말에는 실제 서비스 기준(`STOCK_TRANSACTIONS`, `INV_ADJ_LOGS`)으로 설명했다.
+
+# 2026-06-24 16:39 - T-PRODUCTION-HELP-MANUAL 생산관리 도움말 및 단일 HTML 매뉴얼 생성
+
+- owner: codex
+- status: DONE
+- 변경:
+  - `.ai-coordination/TASK-production-manual.md`의 생산관리 19개 메뉴 기준으로 누락 도움말을 작성했다.
+  - 신규 user 도움말 15개와 신규 operator 도움말 12개를 `apps/frontend/public/help/{user,operator}/ko/`에 추가했다.
+  - 기존 완비 4개(`PROD_MONTHLY_PLAN`, `PROD_ORDER`, `PROD_INPUT_KIOSK`, `PROD_WIP_MAT_TRANS`)와 기존 operator 3개(`PROD_RESULT`, `PROD_RESULT_SUMMARY`, `QC_REWORK`)는 덮어쓰지 않았다.
+  - `apps/frontend/public/help/manifest.json`에 생산관리 17개와 품질관리 2개(`QC_REWORK`, `QC_REWORK_HISTORY`) 항목을 등재/보강했다.
+  - 공식 `help-manual-export-runner.mjs`를 3002 기준으로 실행해 단일 HTML 매뉴얼을 생성했다.
+- 산출물:
+  - `docs/manuals/hanes-production-manual-2026-06-24.html`
+  - `docs/manuals/hanes-production-manual-2026-06-24.result.json`
+- 검증:
+  - PASS: 도움말 frontmatter/BOM/audience/manifest 검증, errors 0건
+  - PASS: 공식 runner 결과 JSON `total=19`, `missingHelp=[]`, `missingCapture=[]`
+  - PASS: `git diff --check -- apps/frontend/public/help/user/ko apps/frontend/public/help/operator/ko apps/frontend/public/help/manifest.json docs/manuals .ai-coordination/TASKS.md .ai-coordination/LOCKS.md`
+- 참고:
+  - 3002만 사용했다. 추가 포트 또는 대체 runner는 사용하지 않았다.
+  - 중간에 runner 진행 감시 명령에서 stdout/stderr 동일 파일 지정 오류가 있었고, 이후 분리 로그로 재실행해 정상 완료했다.
+
+## 2026-06-24 Claude — T-PRESENTATION-REINFORCE 소개자료 슬라이드 보강 + 캡처 재생성
+- 배경: `docs/presentation/hanes-mes-introduction.{html,pptx}` 소개자료에 5개 주제 보강 요청. 기존 menu-captures가 빈 DB("Capture Admin")·렌더 실패로 빈 껍데기/백지였음(예: `20-material-mat_arrival.png` 백지, 품목/재고 그리드 "데이터 없음").
+- 캡처 재생성:
+  - help-manual-export 러너 방식 차용한 `docs/presentation/scripts/capture-screens.mjs` 작성(addInitScript 인증 주입, 메뉴트리 code→path, 1600x900).
+  - 근본 원인 = Next dev의 좌측 메뉴 **prefetch 폭주**가 전체 라우트 동시 컴파일 → 컴파일러 잼. 캡처 시 `next-router-prefetch`/`purpose:prefetch` 요청 abort로 해결.
+  - 강제중단 시 남은 고아 헤드리스 크롬이 서버를 두드려 추가 지연 → 정리.
+  - 결과: 37/37 성공, 빈화면·실패 0건. 백지였던 mat_arrival 정상화.
+  - 진입 시 빈 조회화면(추적성조회/출하이력)은 `capture-interactive.mjs`로 실제 조회 수행 후 캡처: 추적성=제품시리얼 FG26062300301 검색→제품/공정타임라인/검사/자재 전 구간, 출하이력=날짜 2026-01-01~ 현대자동차 출하 2건.
+- 슬라이드: `insert-slides.mjs`로 신규 5장 삽입 후 전체 번호 재정렬(24→29). 09 AQL / 15 생산실적(서브·조립) / 18 검사·출하 이력 / 23 팔레트 구성 / 25 추적성 종합.
+- PPTX: `render-slides.mjs`(?slide=N 단일모드 렌더)+`build-pptx.py`(python-pptx)로 29장 재빌드, 빈이미지 0.
+- 산출물: docs/presentation/hanes-mes-introduction.{html,pptx}, artifact-build-manifest.json, assets/menu-captures/(재생성+21~31 신규), scripts/(capture-screens/capture-interactive/insert-slides/render-slides/build-pptx).
+- 검증: 캡처 manifest suspect 0건, 신규 화면 육안 데이터 확인(AQL·키오스크 서브공정·팔레트·검사결과·출하이력·추적성), 렌더 29/29, PPTX 10.3MB/29장/빈이미지0.
+- 미수정: locales(ko/en/zh/vi), help 파일(codex T-MATERIAL-HELP-MANUAL 잠금 회피). 소개자료는 자체 HTML 텍스트라 i18n 영향 없음.
