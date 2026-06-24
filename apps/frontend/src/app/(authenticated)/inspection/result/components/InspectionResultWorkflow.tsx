@@ -153,6 +153,11 @@ export default function InspectionResultWorkflow({
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  /** 작업지시가 정확히 1개이면 자동 선택 */
+  useEffect(() => {
+    if (orders.length === 1) setSelected(orders[0]);
+  }, [orders]);
+
   const filtered = useMemo(() => {
     if (!debouncedSearch) return orders;
     const q = debouncedSearch.toLowerCase();
@@ -175,17 +180,6 @@ export default function InspectionResultWorkflow({
           <p className="text-text-muted mt-1">{t(descriptionKey)}</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* 검사기(TESTER) 선택 */}
-          <div className="flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-primary shrink-0" />
-            <Select
-              value={selectedEquipCode}
-              onChange={handleSelectEquip}
-              placeholder={t("inspection.result.selectEquip")}
-              options={testers.map((e) => ({ value: e.equipCode, label: `${e.equipName} (${e.equipCode})` }))}
-              className="min-w-[200px]"
-            />
-          </div>
           <Button variant="secondary" size="sm" onClick={fetchOrders}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
             {t("common.refresh")}
@@ -207,6 +201,17 @@ export default function InspectionResultWorkflow({
         <div className="col-span-4 flex flex-col gap-4 min-h-0 overflow-hidden">
           <Card className="flex-1 min-h-0 overflow-hidden flex flex-col" padding="none">
             <CardContent className="flex flex-col h-full p-3 gap-2">
+              {/* 검사기(TESTER) 선택 */}
+              <div className="flex items-center gap-1.5">
+                <Cpu className="w-4 h-4 text-primary shrink-0" />
+                <Select
+                  value={selectedEquipCode}
+                  onChange={handleSelectEquip}
+                  placeholder={t("inspection.result.selectEquip")}
+                  options={testers.map((e) => ({ value: e.equipCode, label: `${e.equipName} (${e.equipCode})` }))}
+                  className="flex-1"
+                />
+              </div>
               <Input
                 placeholder={t(searchPlaceholderKey)}
                 value={searchText}

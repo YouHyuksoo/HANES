@@ -3976,6 +3976,7 @@
       "fgBarcode": "成品条码",
       "issuedAt": "发行时间",
       "fgLabelHistory": "条码发行记录",
+      "inspectHistory": "检查记录",
       "inspectOne": "检查1个",
       "lastBarcode": "最近发行",
       "scanBarcode": "扫描条码",
@@ -4273,6 +4274,7 @@
       "inspectStatus": "检查状态",
       "scanPlaceholder": "请扫描FG条码",
       "barcodeNotFound": "找不到条码",
+      "wrongOrder": "该标签属于其他工单 ({{orderNo}})",
       "defectCode": "不良代码",
       "inspectType": "检验类型"
     },

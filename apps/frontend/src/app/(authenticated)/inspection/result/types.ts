@@ -32,6 +32,20 @@ export interface FgLabelRow {
   circuitLabel?: string | null;
 }
 
+/** 검사 이력 행 (INSPECT_RESULTS 기반) */
+export interface InspectHistoryRow {
+  resultNo: string;
+  inspectType: string | null;
+  passYn: string;
+  fgBarcode: string | null;
+  circuitLabel: string | null;
+  errorCode: string | null;
+  errorDetail: string | null;
+  inspectAt: string;
+  equipCode: string | null;
+  inspectorId: string | null;
+}
+
 /** 검사 통계 */
 export interface InspectStats {
   total: number;

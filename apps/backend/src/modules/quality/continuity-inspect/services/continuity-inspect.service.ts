@@ -300,6 +300,62 @@ export class ContinuityInspectService {
   }
 
   /**
+   * 작업지시별 검사 이력 조회 (PASS+FAIL 모두 포함)
+   * - FG_LABELS.ORDER_NO 로 연결된 검사결과 (PASS)
+   * - PROD_RESULTS.ORDER_NO 로 연결된 검사결과 (FAIL, prodResultNo null 허용)
+   */
+  async findInspectHistory(
+    orderNo: string,
+    company: string,
+    plant: string,
+    inspectType?: string,
+  ) {
+    // 해당 작업지시에 속하는 FG_BARCODE 목록 (PASS 케이스 추적)
+    const fgLabels = await this.fgLabelRepo
+      .createQueryBuilder('fg')
+      .select('fg.fgBarcode')
+      .where('fg.orderNo = :orderNo', { orderNo })
+      .getMany();
+    const fgBarcodes = fgLabels.map((l) => l.fgBarcode).filter((v): v is string => !!v);
+
+    // 해당 작업지시에 속하는 PROD_RESULT_NO 목록 (FAIL 케이스 추적)
+    const prodResults = await this.prodResultRepo
+      .createQueryBuilder('pr')
+      .select('pr.resultNo')
+      .where('pr.orderNo = :orderNo', { orderNo })
+      .getMany();
+    const prodResultNos = prodResults.map((p) => p.resultNo);
+
+    if (fgBarcodes.length === 0 && prodResultNos.length === 0) return [];
+
+    const conditions: string[] = [];
+    const params: Record<string, unknown> = { company, plant };
+
+    if (fgBarcodes.length > 0) {
+      conditions.push('ir.fgBarcode IN (:...fgBarcodes)');
+      params.fgBarcodes = fgBarcodes;
+    }
+    if (prodResultNos.length > 0) {
+      conditions.push('ir.prodResultNo IN (:...prodResultNos)');
+      params.prodResultNos = prodResultNos;
+    }
+
+    const qb = this.inspectResultRepo
+      .createQueryBuilder('ir')
+      .where(`(${conditions.join(' OR ')})`, params)
+      .andWhere('ir.company = :company', { company })
+      .andWhere('ir.plant = :plant', { plant })
+      .orderBy('ir.inspectAt', 'DESC')
+      .take(20);
+
+    if (inspectType) {
+      qb.andWhere('ir.inspectType = :inspectType', { ...params, inspectType });
+    }
+
+    return qb.getMany();
+  }
+
+  /**
    * 작업지시별 발행된 FG_LABELS 목록 조회
    */
   async findFgLabelsByOrder(

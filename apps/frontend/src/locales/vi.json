@@ -3976,6 +3976,7 @@
       "fgBarcode": "Mã vạch TP",
       "issuedAt": "Thời gian PH",
       "fgLabelHistory": "Lịch sử phát hành",
+      "inspectHistory": "Lịch sử kiểm tra",
       "inspectOne": "Kiểm tra 1",
       "lastBarcode": "Mã gần nhất",
       "scanBarcode": "Quét mã vạch",
@@ -4273,6 +4274,7 @@
       "inspectStatus": "Trạng thái KT",
       "scanPlaceholder": "Quét mã vạch FG",
       "barcodeNotFound": "Không tìm thấy mã vạch",
+      "wrongOrder": "Nhãn thuộc lệnh sản xuất khác ({{orderNo}})",
       "defectCode": "Mã lỗi",
       "inspectType": "Loại kiểm tra"
     },

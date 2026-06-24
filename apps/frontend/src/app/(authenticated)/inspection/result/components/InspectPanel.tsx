@@ -15,16 +15,15 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import toast from "react-hot-toast";
 import {
   CheckCircle, XCircle, RefreshCw, Zap,
-  ScanBarcode, AlertTriangle, Printer, Ban, RotateCcw,
+  ScanBarcode, AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
-import type { JobOrderRow, FgLabelRow } from "../types";
+import type { JobOrderRow, InspectHistoryRow } from "../types";
 import FailModal from "./FailModal";
 
 interface Props {
@@ -46,7 +45,7 @@ export default function InspectPanel({
   unmountedConsumCount = 0,
 }: Props) {
   const { t } = useTranslation();
-  const [labels, setLabels] = useState<FgLabelRow[]>([]);
+  const [history, setHistory] = useState<InspectHistoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [inspecting, setInspecting] = useState(false);
   const [lastBarcode, setLastBarcode] = useState<string | null>(null);
@@ -59,16 +58,16 @@ export default function InspectPanel({
   /** 바코드 스캔 모드 상태 */
   const [scannedBarcode, setScannedBarcode] = useState("");
   const [circuitLabel, setCircuitLabel] = useState("");
-  const [pendingBarcodes, setPendingBarcodes] = useState<FgLabelRow[]>([]);
+  const [pendingBarcodes, setPendingBarcodes] = useState<{ fgBarcode: string; issuedAt: string }[]>([]);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const circuitInputRef = useRef<HTMLInputElement>(null);
 
-  /** 라벨 목록 새로고침 */
+  /** 검사이력 새로고침 */
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const labelsRes = await api.get(`/quality/continuity-inspect/fg-labels/${order.orderNo}`, { params: { inspectType } });
-      setLabels(labelsRes.data?.data ?? []);
+      const res = await api.get(`/quality/continuity-inspect/inspect-history/${order.orderNo}`, { params: { inspectType } });
+      setHistory(res.data?.data ?? []);
     } catch { /* 에러 무시 */ }
     finally { setLoading(false); }
   }, [order.orderNo, inspectType]);
@@ -149,91 +148,36 @@ export default function InspectPanel({
     }
   }, []);
 
-  // FG라벨 복구 액션 상태
-  const [voidTarget, setVoidTarget] = useState<FgLabelRow | null>(null);
-  const [voidReason, setVoidReason] = useState("");
-  const [reTarget, setReTarget] = useState<FgLabelRow | null>(null);
-  const [rePass, setRePass] = useState(true);
-  const [reRemark, setReRemark] = useState("");
-  const [actionBusy, setActionBusy] = useState(false);
-
-  const handleReprint = useCallback(async (barcode: string) => {
-    setActionBusy(true);
-    try {
-      await api.post(`/quality/continuity-inspect/reprint/${encodeURIComponent(barcode)}`);
-      toast.success(t("inspection.result.reprintSuccess", "라벨 재발행 처리되었습니다."));
-      await refresh();
-    } catch { /* 인터셉터 처리 */ } finally { setActionBusy(false); }
-  }, [refresh, t]);
-
-  const handleVoidConfirm = useCallback(async () => {
-    if (!voidTarget || !voidReason.trim()) return;
-    setActionBusy(true);
-    try {
-      await api.post(`/quality/continuity-inspect/void/${encodeURIComponent(voidTarget.fgBarcode)}`, { reason: voidReason.trim() });
-      toast.success(t("inspection.result.voidSuccess", "FG 라벨이 폐기되었습니다."));
-      setVoidTarget(null); setVoidReason("");
-      await refresh();
-    } catch { /* 인터셉터 처리 */ } finally { setActionBusy(false); }
-  }, [voidTarget, voidReason, refresh, t]);
-
-  const handleReInspectConfirm = useCallback(async () => {
-    if (!reTarget) return;
-    setActionBusy(true);
-    try {
-      await api.post(`/quality/continuity-inspect/re-inspect/${encodeURIComponent(reTarget.fgBarcode)}`, {
-        passYn: rePass ? "Y" : "N",
-        ...(reRemark ? { remark: reRemark } : {}),
-      });
-      toast.success(t("inspection.result.reInspectSuccess", "재검사 결과가 반영되었습니다."));
-      setReTarget(null); setReRemark(""); setRePass(true);
-      await refresh();
-    } catch { /* 인터셉터 처리 */ } finally { setActionBusy(false); }
-  }, [reTarget, rePass, reRemark, refresh, t]);
-
-  const columns = useMemo<ColumnDef<FgLabelRow>[]>(() => [
-    { accessorKey: "fgBarcode", header: t("inspection.result.fgBarcode"), size: 200,
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: "circuitLabel", header: t("inspection.result.circuitLabel"), size: 160,
-      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span> },
-    { accessorKey: "issuedAt", header: t("inspection.result.issuedAt"), size: 150 },
-    { accessorKey: "status", header: t("common.status"), size: 90 },
+  const columns = useMemo<ColumnDef<InspectHistoryRow>[]>(() => [
     {
-      id: "recovery", header: t("common.actions"), size: 110, meta: { filterType: "none" as const },
-      cell: ({ row }) => {
-        const r = row.original;
-        const downstream = r.status === "PACKED" || r.status === "SHIPPED";
-        const voided = r.status === "VOIDED";
-        return (
-          <div className="flex gap-1">
-            {r.inspectPassYn === "N" && !voided && (
-              <button type="button" title={t("inspection.result.reInspect", "재검사")} disabled={actionBusy}
-                className="p-1 hover:bg-surface rounded disabled:opacity-50"
-                onClick={() => { setRePass(true); setReRemark(""); setReTarget(r); }}>
-                <RotateCcw className="w-4 h-4 text-blue-500" />
-              </button>
-            )}
-            {!voided && (
-              <button type="button" title={t("inspection.result.reprint", "재발행")} disabled={actionBusy}
-                className="p-1 hover:bg-surface rounded disabled:opacity-50"
-                onClick={() => handleReprint(r.fgBarcode)}>
-                <Printer className="w-4 h-4 text-text-muted" />
-              </button>
-            )}
-            {!downstream && !voided && (
-              <button type="button" title={t("inspection.result.void", "폐기")} disabled={actionBusy}
-                className="p-1 hover:bg-surface rounded disabled:opacity-50"
-                onClick={() => { setVoidReason(""); setVoidTarget(r); }}>
-                <Ban className="w-4 h-4 text-red-500" />
-              </button>
-            )}
-          </div>
-        );
+      accessorKey: "inspectAt", header: t("inspection.result.inspectedAt"), size: 140,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        if (!v) return "-";
+        const d = new Date(v);
+        return <span className="tabular-nums text-xs">{d.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>;
       },
     },
-  ], [t, actionBusy, handleReprint]);
+    {
+      accessorKey: "passYn", header: t("inspection.result.resultCol"), size: 70,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v === "Y"
+          ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400"><CheckCircle className="w-3.5 h-3.5" />PASS</span>
+          : <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 dark:text-red-400"><XCircle className="w-3.5 h-3.5" />FAIL</span>;
+      },
+    },
+    { accessorKey: "fgBarcode", header: t("inspection.result.fgBarcode"), size: 170,
+      cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string | null) ?? "-"}</span> },
+    { accessorKey: "circuitLabel", header: t("inspection.result.circuitLabel"), size: 140,
+      cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string | null) ?? "-"}</span> },
+    { accessorKey: "errorCode", header: t("inspection.result.errorCode"), size: 100,
+      cell: ({ getValue }) => <span className="text-xs text-red-500">{(getValue() as string | null) ?? "-"}</span> },
+    { accessorKey: "errorDetail", header: t("inspection.result.errorDesc"), size: 180,
+      cell: ({ getValue }) => <span className="text-xs">{(getValue() as string | null) ?? "-"}</span> },
+  ], [t]);
 
-  const pendingColumns = useMemo<ColumnDef<FgLabelRow>[]>(() => [
+  const pendingColumns = useMemo<ColumnDef<{ fgBarcode: string; issuedAt: string }>[]>(() => [
     { accessorKey: "fgBarcode", header: t("inspection.result.fgBarcode"), size: 220,
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
     { accessorKey: "issuedAt", header: t("inspection.result.issuedAt"), size: 160 },
@@ -375,63 +319,27 @@ export default function InspectPanel({
         </Card>
       )}
 
-      {/* FG 라벨 이력 */}
+      {/* 검사 이력 */}
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-text">{t("inspection.result.fgLabelHistory")}</span>
-          <Button variant="ghost" size="sm" onClick={refresh}>
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-        </div>
-        <DataGrid data={labels} columns={columns} isLoading={loading} 
-        sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        <p className="text-sm font-semibold text-text mb-1">{t("inspection.result.inspectHistory", "검사 이력")}</p>
+        <DataGrid
+          data={history}
+          columns={columns}
+          isLoading={loading}
+          toolbarLeft={
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-text-muted">최근 20건</span>
+              <Button variant="ghost" size="sm" onClick={refresh}>
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          }
+          sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY INSPECT_TIME DESC`}
+        />
       </CardContent></Card>
 
       <FailModal isOpen={failModalOpen} onClose={() => setFailModalOpen(false)}
         onSubmit={handleFailSubmit} submitting={inspecting} />
-
-      {/* FG 라벨 폐기 모달 */}
-      <Modal isOpen={!!voidTarget} onClose={() => { if (!actionBusy) { setVoidTarget(null); setVoidReason(""); } }}
-        title={t("inspection.result.void", "FG 라벨 폐기")} size="md"
-        footer={
-          <>
-            <Button variant="secondary" size="sm" onClick={() => { setVoidTarget(null); setVoidReason(""); }} disabled={actionBusy}>{t("common.cancel")}</Button>
-            <Button variant="danger" size="sm" onClick={handleVoidConfirm} disabled={!voidReason.trim() || actionBusy}>
-              {actionBusy ? t("common.processing") : t("inspection.result.void", "폐기")}
-            </Button>
-          </>
-        }>
-        <div className="flex flex-col gap-3">
-          <p className="font-mono text-sm">{voidTarget?.fgBarcode}</p>
-          <Input label={t("inspection.result.voidReason", "폐기 사유")} value={voidReason}
-            onChange={(e) => setVoidReason(e.target.value)} fullWidth />
-        </div>
-      </Modal>
-
-      {/* 재검사 모달 */}
-      <Modal isOpen={!!reTarget} onClose={() => { if (!actionBusy) { setReTarget(null); setReRemark(""); } }}
-        title={t("inspection.result.reInspect", "재검사")} size="md"
-        footer={
-          <>
-            <Button variant="secondary" size="sm" onClick={() => { setReTarget(null); setReRemark(""); }} disabled={actionBusy}>{t("common.cancel")}</Button>
-            <Button size="sm" onClick={handleReInspectConfirm} disabled={actionBusy}>
-              {actionBusy ? t("common.processing") : t("common.save")}
-            </Button>
-          </>
-        }>
-        <div className="flex flex-col gap-3">
-          <p className="font-mono text-sm">{reTarget?.fgBarcode}</p>
-          <div className="flex gap-2">
-            <Button variant={rePass ? "primary" : "secondary"} size="sm" onClick={() => setRePass(true)}>
-              <CheckCircle className="w-4 h-4 mr-1" />PASS
-            </Button>
-            <Button variant={!rePass ? "danger" : "secondary"} size="sm" onClick={() => setRePass(false)}>
-              <XCircle className="w-4 h-4 mr-1" />FAIL
-            </Button>
-          </div>
-          <Input label={t("common.remark")} value={reRemark} onChange={(e) => setReRemark(e.target.value)} fullWidth />
-        </div>
-      </Modal>
     </div>
   );
 }

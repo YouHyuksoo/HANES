@@ -145,6 +145,19 @@ export class ContinuityInspectController {
     return ResponseUtil.paged(data.data, data.total, data.page, data.limit);
   }
 
+  @Get('inspect-history/:orderNo')
+  @ApiOperation({ summary: '작업지시별 검사 이력 조회 (PASS+FAIL 포함)' })
+  @ApiParam({ name: 'orderNo' })
+  async getInspectHistory(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Query('inspectType') inspectType?: string,
+  ) {
+    const data = await this.continuityInspectService.findInspectHistory(orderNo, company, plant, inspectType);
+    return ResponseUtil.success(data);
+  }
+
   @Get('fg-labels/:orderNo')
   @ApiOperation({ summary: 'List FG labels by order' })
   @ApiParam({ name: 'orderNo' })

@@ -3976,6 +3976,7 @@
       "fgBarcode": "FG Barcode",
       "issuedAt": "Issued At",
       "fgLabelHistory": "Barcode History",
+      "inspectHistory": "Inspection History",
       "inspectOne": "Inspect 1",
       "lastBarcode": "Last Barcode",
       "scanBarcode": "Scan Barcode",
@@ -4273,6 +4274,7 @@
       "inspectStatus": "Inspect Status",
       "scanPlaceholder": "Scan the FG barcode",
       "barcodeNotFound": "Barcode not found",
+      "wrongOrder": "Label belongs to another work order ({{orderNo}})",
       "defectCode": "Defect Code",
       "inspectType": "Inspection Type"
     },
