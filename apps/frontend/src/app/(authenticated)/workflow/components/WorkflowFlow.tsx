@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Background,
   Controls,
@@ -48,6 +49,7 @@ export default function WorkflowFlow({
   onSelect: (id: string) => void;
   query: string;
 }) {
+  const { t } = useTranslation();
   const [activeLaneIds, setActiveLaneIds] = useState<Set<WorkflowLaneId>>(
     () => new Set(workflowLanes.map((l) => l.id)),
   );
@@ -128,7 +130,7 @@ export default function WorkflowFlow({
       <div className="flex shrink-0 items-center gap-2 border-b border-border bg-surface px-3 py-2">
         <span className="inline-flex items-center gap-1 px-1 text-xs text-text-muted">
           <Filter className="h-3.5 w-3.5" />
-          레인
+          {t("workflowGuide.lane", "레인")}
         </span>
         <div className="flex items-center gap-1 overflow-x-auto">
           {workflowLanes.map((lane) => {
@@ -154,7 +156,7 @@ export default function WorkflowFlow({
           className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded border border-border bg-card px-2.5 text-xs font-semibold text-text-muted hover:bg-muted"
         >
           {showAllRelations ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          {showAllRelations ? "보조 연결 숨김" : "보조 연결 보기"}
+          {showAllRelations ? t("workflowGuide.hideRelations", "보조 연결 숨김") : t("workflowGuide.showRelations", "보조 연결 보기")}
         </button>
       </div>
       <div className="min-h-0 flex-1">

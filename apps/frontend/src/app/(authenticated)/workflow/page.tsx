@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { GitBranch, LayoutList, Search, Workflow } from "lucide-react";
 import { workflowNodes, type WorkflowActivityNode } from "@/config/workflowMap";
 import WorkflowSidebar from "./components/WorkflowSidebar";
@@ -17,6 +18,7 @@ type WorkflowTab = "guide" | "flow";
 const nodeById = new Map(workflowNodes.map((n) => [n.id, n]));
 
 export default function WorkflowPage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<WorkflowTab>("guide");
   const [query, setQuery] = useState("");
   const [selectedNodeId, setSelectedNodeId] = useState(workflowNodes[0]?.id ?? "");
@@ -38,19 +40,19 @@ export default function WorkflowPage() {
               <GitBranch className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-semibold">업무 가이드</h1>
+              <h1 className="text-lg font-semibold">{t("workflowGuide.pageTitle", "업무 가이드")}</h1>
               <p className="truncate text-xs text-text-muted">
-                처음 사용자를 위한 단계별 업무 지침과 화면 바로가기를 제공합니다.
+                {t("workflowGuide.pageSubtitle", "처음 사용자를 위한 단계별 업무 지침과 화면 바로가기를 제공합니다.")}
               </p>
             </div>
           </div>
           {/* 탭 */}
           <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             <TabButton active={tab === "guide"} onClick={() => setTab("guide")} icon={<LayoutList className="h-3.5 w-3.5" />}>
-              가이드
+              {t("workflowGuide.tabGuide", "가이드")}
             </TabButton>
             <TabButton active={tab === "flow"} onClick={() => setTab("flow")} icon={<Workflow className="h-3.5 w-3.5" />}>
-              흐름도
+              {t("workflowGuide.tabFlow", "흐름도")}
             </TabButton>
           </div>
         </div>
@@ -60,7 +62,7 @@ export default function WorkflowPage() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="업무, 화면, 데이터 객체 검색"
+              placeholder={t("workflowGuide.searchPlaceholder", "업무, 화면, 데이터 객체 검색")}
               className="h-9 w-full rounded border border-border bg-background pl-8 pr-3 text-sm outline-none focus:border-primary"
             />
           </label>
