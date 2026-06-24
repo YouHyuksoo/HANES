@@ -1,117 +1,113 @@
 ---
 menuCode: QC_INSPECT
 audience: operator
-title: Kiểm tra ngoại quan — Hướng dẫn vận hành
-summary: Kiểm tra ngoại quan dựa trên quét mã vạch FG — đánh giá đạt/không đạt, nhập mã lỗi, chuyển trạng thái FG_LABELS (ISSUED→VISUAL_PASS/FAIL), tự động tạo INSPECT_RESULTS
-tags: [chất lượng, kiểm tra, ngoại quan, vận hành]
-keywords: [INSPECT_RESULTS, FG_LABELS, FG_BARCODE, VISUAL_DEFECT, PASS_YN, ERROR_CODE, VISUAL_PASS, VISUAL_FAIL, INSPECT_TYPE, kiểm tra ngoại quan, mã vạch FG, đạt, không đạt, mã lỗi, kết quả kiểm tra]
-related: [INSP_RESULT]
+title: Kiểm Tra Ngoại Quan — Hướng Dẫn Vận Hành
+summary: Cấu trúc bảng INSPECT_RESULTS(VISUAL), chuyển trạng thái FG_LABELS, luồng giao dịch ĐẠT/KHÔNG ĐẠT và xử lý sự cố
+tags: [chất-lượng, kiểm-tra-ngoại-quan, vận-hành, VISUAL, FG_LABELS, INSPECT_RESULTS]
+keywords: [QC_INSPECT, INSPECT_RESULTS, VISUAL, FG_LABELS, PASS_YN, VISUAL_DEFECT, FG_BARCODE, kiểm-tra-ngoại-quan, VISUAL_PASS, VISUAL_FAIL, ISSUED]
+related: [QC_DEFECT_CODE, QC_DEFECT]
 ---
 
-# Kiểm tra ngoại quan — Hướng dẫn vận hành
+# Kiểm Tra Ngoại Quan — Hướng Dẫn Vận Hành
 
-## Mục đích & vai trò hệ thống
-Màn hình đăng ký·tra cứu kết quả **kiểm tra ngoại quan** cho thành phẩm (FG). Quét mã vạch FG, đánh giá đạt/không đạt, ghi mã lỗi và chi tiết khi không đạt.
+## Mục Đích & Vai Trò Hệ Thống
+Kiểm tra trực quan sản phẩm đã được phát hành nhãn FG (`ISSUED`), lưu kết quả vào bảng `INSPECT_RESULTS` với `INSPECT_TYPE='VISUAL'`. Dựa trên kết quả đạt/không đạt, `FG_LABELS.STATUS` chuyển sang `VISUAL_PASS` hoặc `VISUAL_FAIL`.
 
-| Kết quả | Chuyển trạng thái FG_LABELS | Mô tả |
-|--------|---------------------|-------------|
-| Đạt (PASS) | `ISSUED` → `VISUAL_PASS` | Ngoại quan tốt, có thể tiến hành công đoạn tiếp theo (đóng gói) |
-| Không đạt (FAIL) | `ISSUED` → `VISUAL_FAIL` | Phát hiện lỗi, cần kiểm tra lại hoặc hủy |
-
-## Cấu trúc dữ liệu
+## Cấu Trúc Dữ Liệu
 ```
-FG_LABELS (PK: FG_BARCODE)
-   Chuyển trạng thái: ISSUED → VISUAL_PASS/VISUAL_FAIL → PACKED → SHIPPED
-   Đạt → VISUAL_PASS, Không đạt → VISUAL_FAIL
-
-INSPECT_RESULTS (PK: RESULT_NO, SeqGenerator INSPECT_RESULT)
-   ├─ FG_BARCODE ─▶ FG_LABELS (mã vạch FG đã quét)
-   ├─ PASS_YN: Y/N (đạt/không đạt)
-   ├─ ERROR_CODE: mã lỗi (mã chung VISUAL_DEFECT)
-   └─ INSPECT_TYPE: 'VISUAL'
+FG_LABELS (FG_BARCODE PK)
+    │   STATUS: ISSUED → VISUAL_PASS / VISUAL_FAIL → PACKED → SHIPPED
+    │   INSPECT_RESULT_ID → INSPECT_RESULTS.RESULT_NO
+    │   ORDER_NO → JOB_ORDERS
+    │
+    └──▶ INSPECT_RESULTS (RESULT_NO PK)
+            │   INSPECT_TYPE = 'VISUAL' (cố định)
+            │   INSPECT_SCOPE = 'FULL' (cố định)
+            │   PASS_YN = 'Y'(đạt) / 'N'(không đạt)
+            │   ERROR_CODE → COM_CODES.VISUAL_DEFECT
+            │   ERROR_DETAIL (VARCHAR2 500)
+            │   FG_BARCODE → FG_LABELS
+            │   INSPECTOR_ID → WORKER_MASTERS
 ```
 
-## Bố cục màn hình
-- **Khu vực chính bên trái**: DataGrid — lịch sử kiểm tra (mã vạch FG·đánh giá·mã lỗi·thời gian·người kiểm tra)
-  - Thống kê tóm tắt: tổng số, đã kiểm tra, chưa kiểm tra, tỷ lệ đạt
-  - Tìm kiếm: số lệnh sản xuất·mã hạng mục, bộ lọc trạng thái·đánh giá
-  - Modal chọn nhãn FG: `FgLabelSelectModal` — chọn từ danh sách FG trạng thái ISSUED
-- **Bảng trượt bên phải**: `InspectFormPanel` — biểu mẫu đăng ký kiểm tra (tự động mở khi quét mã vạch)
-  - Thông tin sản phẩm: mã vạch FG·mã hạng mục·lệnh sản xuất·mã thiết bị·trạng thái (chỉ đọc)
-  - Nút Đạt/Không đạt (chuyển đổi lớn)
-  - Danh sách kiểm tra lỗi: mã chung `VISUAL_DEFECT` hạng mục lỗi với hộp kiểm + số lượng
-  - Mã lỗi chính: chọn `VISUAL_DEFECT`
-  - Lý do chi tiết: nhập văn bản tự do
+---
 
-## Quy trình kiểm tra
+## ① Kết Quả Kiểm Tra — INSPECT_RESULTS (Cột Liên Quan Kiểm Tra Ngoại Quan)
 
-### ① Quét mã vạch FG
-`GET /quality/continuity-inspect/fg-label/{barcode}`
-- Nhập mã vạch vào ô nhập liệu → Enter
-- Tra cứu FG_LABELS → hiển thị thông tin sản phẩm + mở bảng bên phải
-- Nhãn đã kiểm tra (`status !== ISSUED`): cảnh báo `Đã kiểm tra` + vô hiệu hóa nút Lưu
-
-### ② Đánh giá Đạt/Không đạt
-`POST /quality/continuity-inspect/visual-inspect/{fgBarcode}`
-- **Đạt (PASS)**: Nhấp nút xanh lớn → lưu với `passYn: "Y"`
-- **Không đạt (FAIL)**: Nhấp nút đỏ lớn → nhập mã lỗi·lý do chi tiết → lưu
-- Xử lý giao dịch: tạo `InspectResult` + cập nhật `FgLabel.status` (nguyên tử)
-
-### ③ Xác nhận kết quả
-- DataGrid lịch sử kiểm tra tự động làm mới
-- Trạng thái FG_LABELS chuyển thành `VISUAL_PASS` hoặc `VISUAL_FAIL`
-- `VISUAL_PASS` → có thể đóng gói thùng tại `/shipping/pack`
-- `VISUAL_FAIL` → xử lý kiểm tra lại hoặc hủy
-
-## Toàn bộ cột — INSPECT_RESULTS
-
-| Mục màn hình | Cột DB | Vai trò / Ý nghĩa · Lưu ý vận hành |
+| Trường màn hình | Cột DB | Vai trò / Ý nghĩa · Lưu ý vận hành |
 |------|------|------|
-| Số kiểm tra | `RESULT_NO` | PK. SeqGenerator tự động đánh số (`INSPECT_RESULT`). |
-| Mã vạch FG | `FG_BARCODE` | Tham chiếu `FG_LABELS.FG_BARCODE`. Giá trị nhập từ quét. |
-| Loại kiểm tra | `INSPECT_TYPE` | `VISUAL` (kiểm tra ngoại quan). Mọi bản ghi từ màn hình này đều là VISUAL. |
-| Phạm vi kiểm tra | `INSPECT_SCOPE` | `FULL` (toàn bộ). Kiểm tra ngoại quan luôn là kiểm tra toàn bộ. |
-| Đạt/Không đạt | `PASS_YN` | Y/N. |
-| Mã lỗi | `ERROR_CODE` | Mã chung `VISUAL_DEFECT`. Yêu cầu khi không đạt. |
-| Chi tiết lỗi | `ERROR_DETAIL` | Văn bản chi tiết không đạt. |
-| Dữ liệu kiểm tra | `INSPECT_DATA` | CLOB. JSON danh sách kiểm tra lỗi và dữ liệu bổ sung. |
-| Thời gian kiểm tra | `INSPECT_TIME` | Dấu thời gian kiểm tra. Mặc định CURRENT_TIMESTAMP. |
-| Người kiểm tra | `INSPECTOR_ID` | ID người kiểm tra. |
-| Mã thiết bị | `EQUIP_CODE` | Mã thiết bị kiểm tra (tùy chọn cho kiểm tra ngoại quan). |
-| Kiểm toán | `CREATED_BY`, `UPDATED_BY`, `CREATED_AT`, `UPDATED_AT` | Lịch sử tạo/sửa. |
-| Đa khách hàng | `COMPANY`, `PLANT_CD` | Phạm vi `40` / `1000`. |
+| Số kết quả | `RESULT_NO` | **PK**. Tự động đánh số từ sequence. |
+| ID KQ SX | `PROD_RESULT_ID` | → `PROD_RESULTS` FK (có thể bỏ qua với kiểm tra ngoại quan). |
+| Loại kiểm tra | `INSPECT_TYPE` | Cố định là `'VISUAL'`. |
+| Phạm vi kiểm tra | `INSPECT_SCOPE` | Cố định là `'FULL'`. |
+| Đạt/Không đạt | `PASS_YN` | `'Y'`(đạt) / `'N'`(không đạt). Mặc định `'Y'`. |
+| Mã lỗi | `ERROR_CODE` | Tham chiếu mã nhóm common code `VISUAL_DEFECT`. |
+| Lý do chi tiết | `ERROR_DETAIL` | Lý do chi tiết không đạt. Tối đa 500 ký tự. |
+| Dữ liệu kiểm tra | `INSPECT_DATA` | CLOB — dữ liệu kiểm tra bổ sung (JSON). |
+| Mã vạch FG | `FG_BARCODE` | → `FG_LABELS.FG_BARCODE`. |
+| Thời gian kiểm tra | `INSPECT_TIME` | Dấu thời gian thực hiện kiểm tra. |
+| ID người kiểm tra | `INSPECTOR_ID` | → `WORKER_MASTERS`. |
+| Đa nhiệm | `COMPANY`, `PLANT_CD` | Mã công ty (`40`) / Mã nhà máy (`1000`). |
 
-## Chuyển trạng thái FG_LABELS
+---
 
-| Trạng thái | Ý nghĩa | Trạng thái tiếp theo |
-|------|---------|-------------|
-| `ISSUED` | Nhãn đã phát hành, chưa kiểm tra | `VISUAL_PASS` hoặc `VISUAL_FAIL` |
-| `VISUAL_PASS` | Kiểm tra ngoại quan đạt | `PACKED` (đóng gói) |
-| `VISUAL_FAIL` | Kiểm tra ngoại quan không đạt | Kiểm tra lại (quay lại ISSUED) hoặc hủy |
-| `PACKED` | Đã đóng gói | `SHIPPED` (xuất hàng) |
-| `SHIPPED` | Đã xuất hàng | Trạng thái cuối |
-| `VOIDED` | Đã hủy | Trạng thái cuối |
+## ② Nhãn FG — FG_LABELS (Chuyển Trạng Thái)
 
-## Thiết lập trước (Master·Mã chung)
-- Mã chung: `VISUAL_DEFECT`(mã lỗi ngoại quan) — dùng để chọn mã lỗi và danh sách kiểm tra
-- FG_LABELS: Phải được tạo trước ở trạng thái `ISSUED` qua kiểm tra liên tục (`/inspection/result`) hoặc phát hành FG trực tiếp
-- INSPECT_RESULTS: SeqGenerator `INSPECT_RESULT` phải được đăng ký trong SEQ_RULES
+| Cột DB | Vai trò / Ý nghĩa |
+|---------|------|
+| `FG_BARCODE` | **PK**. Mã vạch FG (serial). |
+| `STATUS` | `ISSUED`(phát hành) → `VISUAL_PASS`(đạt ngoại quan) / `VISUAL_FAIL`(không đạt ngoại quan) → `PACKED`(đóng gói) → `SHIPPED`(xuất hàng). |
+| `INSPECT_RESULT_ID` | Tham chiếu `INSPECT_RESULTS.RESULT_NO` sau khi kiểm tra. |
+| `INSPECT_PASS_YN` | Kết quả đạt/không đạt cuối cùng. |
 
-## Phân quyền
-Nhân viên kiểm tra chất lượng (đăng ký/tra cứu kiểm tra ngoại quan). Quản trị viên có thể sửa/xóa (chỉ xóa khi kết quả sản xuất liên kết ở trạng thái CANCELED).
+---
 
-## Xử lý sự cố
-| Triệu chứng | Nguyên nhân | Xử lý |
+## Chi Tiết Xử Lý Giao Dịch Đạt/Không Đạt
+
+Khi gọi `POST /quality/continuity-inspect/visual-inspect/{fgBarcode}`, `visualInspect()` thực thi:
+
+1. **Giai đoạn xác thực**:
+   - Kiểm tra cài đặt hệ thống `VISUAL_INSP_BYPASS` (lỗi 400 nếu đang bật)
+   - Xác nhận nhãn FG tồn tại và `STATUS` là `ISSUED`
+   - Trạng thái `PACKED`, `SHIPPED`, `VOIDED` không thể kiểm tra
+
+2. **Thực thi trong giao dịch**:
+   - Đánh số sequence `RESULT_NO`
+   - INSERT vào `INSPECT_RESULTS` (`INSPECT_TYPE='VISUAL'`, `INSPECT_SCOPE='FULL'`, `PASS_YN`, `ERROR_CODE`, `ERROR_DETAIL`)
+   - `FG_LABELS.UPDATE`: đặt `STATUS='VISUAL_PASS'` hoặc `STATUS='VISUAL_FAIL'`, đặt `INSPECT_RESULT_ID`
+
+---
+
+## Mã Chung (Common Code)
+
+| Mã nhóm | Mục đích | Ví dụ |
+|---------|------|------|
+| `VISUAL_DEFECT` | Mã lỗi kiểm tra ngoại quan | Trầy xước, Dị vật, Đổi màu, In lỗi, Khác |
+
+---
+
+## Quy Tắc Xác Thực
+
+| Điều kiện | Xử lý |
+|------|------|
+| Mã vạch FG không tồn tại | `BadRequestException` |
+| Trạng thái nhãn FG không phải `ISSUED` | Thông báo không thể kiểm tra (đã kiểm tra/đóng gói/xuất hàng/hủy) |
+| Mã vạch không thuộc lệnh SX đã chọn | Hiển thị cảnh báo |
+| `VISUAL_INSP_BYPASS` BẬT | 400 BadRequest |
+| FAIL không chọn mã lỗi | Nhập bắt buộc qua `FailModal` |
+
+## Xử Lý Sự Cố
+
+| Triệu chứng | Nguyên nhân | Biện pháp |
 |------|------|------|
-| Quét mã vạch không có kết quả | Mã vạch không có trong FG_LABELS | Xác nhận FG đã phát hành hoặc dùng modal chọn nhãn |
-| Lưu kiểm tra bị chặn — đã kiểm tra | `FG_LABELS.status` không phải ISSUED | Không cho phép kiểm tra trùng lặp |
-| Không thể chọn mã lỗi khi không đạt | Mã chung `VISUAL_DEFECT` chưa đăng ký | Đăng ký mã lỗi ngoại quan trong mã chung |
-| Kiểm tra gần đây không hiển thị trong danh sách | Trước khi tự động làm mới | DataGrid tự động làm mới khi lưu; có thể làm mới thủ công |
-| Không có nhãn trong modal chọn FG | Tất cả FG không ở trạng thái ISSUED | Xác nhận FG mục tiêu có trạng thái ISSUED |
-| Không thể xóa kết quả kiểm tra | Kết quả sản xuất không ở trạng thái CANCELED | Chỉ xóa được sau khi hủy kết quả sản xuất |
+| Tra cứu mã vạch FG thất bại | Nhập sai mã vạch hoặc không tồn tại | Kiểm tra lại mã vạch |
+| Thông báo "Đã kiểm tra xong" | Nhãn FG đã ở trạng thái `VISUAL_PASS`/`VISUAL_FAIL` | Không thể kiểm tra lại; xác nhận tại màn hình Quản lý Lỗi |
+| Lỗi "Nhãn lệnh SX khác" | Mã vạch quét không khớp lệnh SX đã chọn | Chọn đúng lệnh SX hoặc kiểm tra lại mã vạch |
+| Lưu FAIL thất bại | Chưa chọn mã lỗi hoặc chưa nhập lý do chi tiết | Kiểm tra các trường bắt buộc |
+| Lỗi cài đặt hệ thống (400) | `VISUAL_INSP_BYPASS` đang bật | Liên hệ quản trị viên để kiểm tra cài đặt |
+| Không thay đổi trạng thái sau kiểm tra | Giao dịch thất bại (lỗi DB) | Kiểm tra log và thử lại |
 
-## Dữ liệu & Liên kết
-- Bảng: `INSPECT_RESULTS`, `FG_LABELS`
-- Liên kết: Kiểm tra liên tục (`/inspection/result`), Đóng gói sản phẩm (`/shipping/pack`), Quản lý mã lỗi (`/quality/defect-code`), Truy xuất nguồn gốc (`/quality/trace`)
-- Sinh số kiểm tra: `SEQ_RULES` mã `INSPECT_RESULT`
-- Phạm vi: `COMPANY='40'`, `PLANT_CD='1000'`
+## Dữ Liệu & Liên Kết
+- **Bảng**: `INSPECT_RESULTS` (kết quả kiểm tra), `FG_LABELS` (nhãn/trạng thái), `COM_CODES` (mã lỗi)
+- **Liên kết**: Kết quả sản xuất (`PROD_RESULTS`), Công nhân (`WORKER_MASTERS`)
+- **Phạm vi**: `COMPANY='40'`, `PLANT_CD='1000'`
