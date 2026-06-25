@@ -64,12 +64,21 @@ export const pdaMainMenuItems: PdaMenuItem[] = [
     menuCode: "PDA_SHIPPING",
   },
   {
-    labelKey: "pda.menu.palletShip",
-    fallbackLabel: "팔레트 출하",
+    labelKey: "pda.menu.palletBuild",
+    fallbackLabel: "팔레트 구성",
     path: "/pda/shipping-pallet",
     icon: Boxes,
     borderClass: "border-emerald-200 dark:border-emerald-800",
     iconColorClass: "text-emerald-600 dark:text-emerald-400",
+    menuCode: "PDA_PALLET_BUILD",
+  },
+  {
+    labelKey: "pda.menu.palletShip",
+    fallbackLabel: "팔레트 출하",
+    path: "/pda/pallet-ship",
+    icon: Truck,
+    borderClass: "border-rose-200 dark:border-rose-800",
+    iconColorClass: "text-rose-600 dark:text-rose-400",
     menuCode: "PDA_PALLET_SHIP",
   },
   {
