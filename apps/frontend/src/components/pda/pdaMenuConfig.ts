@@ -14,6 +14,7 @@
 import {
   Package,
   Truck,
+  Boxes,
   Wrench,
   ClipboardCheck,
   PackagePlus,
@@ -38,6 +39,8 @@ export interface PdaMenuItem {
   iconColorClass: string;
   /** PDA 권한 체크용 메뉴 코드 (없으면 항상 표시) */
   menuCode?: string;
+  /** i18n 키 미존재 시 표시할 한국어 fallback (locale 락 대응) */
+  fallbackLabel?: string;
 }
 
 /**
@@ -59,6 +62,15 @@ export const pdaMainMenuItems: PdaMenuItem[] = [
     borderClass: "border-green-200 dark:border-green-800",
     iconColorClass: "text-green-600 dark:text-green-400",
     menuCode: "PDA_SHIPPING",
+  },
+  {
+    labelKey: "pda.menu.palletShip",
+    fallbackLabel: "팔레트 출하",
+    path: "/pda/shipping-pallet",
+    icon: Boxes,
+    borderClass: "border-emerald-200 dark:border-emerald-800",
+    iconColorClass: "text-emerald-600 dark:text-emerald-400",
+    menuCode: "PDA_PALLET_SHIP",
   },
   {
     labelKey: "pda.menu.equipInspect",

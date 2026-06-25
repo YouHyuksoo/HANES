@@ -51,7 +51,7 @@ export default function PdaMenuGrid({
             >
               <Icon className={`w-6 h-6 ${item.iconColorClass}`} />
               <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 text-center leading-tight px-1">
-                {t(item.labelKey)}
+                {t(item.labelKey, { defaultValue: item.fallbackLabel })}
               </span>
             </button>
           );
@@ -90,7 +90,7 @@ export default function PdaMenuGrid({
           >
             <Icon className={`w-6 h-6 shrink-0 ${item.iconColorClass}`} />
             <span className="text-base font-semibold text-slate-700 dark:text-slate-200">
-              {t(item.labelKey)}
+              {t(item.labelKey, { defaultValue: item.fallbackLabel })}
             </span>
           </button>
         );

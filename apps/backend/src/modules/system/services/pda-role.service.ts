@@ -29,6 +29,7 @@ export const PDA_MENU_CODES = [
   { code: 'PDA_MAT_ADJUSTMENT', label: '자재 조정' },
   { code: 'PDA_MAT_INV_COUNT', label: '자재 재고실사' },
   { code: 'PDA_SHIPPING', label: '출하' },
+  { code: 'PDA_PALLET_SHIP', label: '팔레트 출하' },
   { code: 'PDA_EQUIP_INSPECT', label: '설비 점검' },
   { code: 'PDA_PRODUCT_INV_COUNT', label: '제품 재고실사' },
 ];
