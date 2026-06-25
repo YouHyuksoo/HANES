@@ -973,7 +973,7 @@ export const workflowNodes: WorkflowActivityNode[] = [
     lane: "pda",
     activity: "PDA 출하",
     summary: "출하지시·작업자·박스를 스캔해 박스 단위로 즉시 출하합니다.",
-    detail: "PDA에서 확정(CONFIRMED) 출하지시와 작업자 QR을 스캔한 뒤 제품 박스를 스캔하면 박스 단위로 즉시 출하 처리됩니다. 팔레트 단위 출하는 PDA에서 지원하지 않습니다.",
+    detail: "PDA에서 확정(CONFIRMED) 출하지시와 작업자 QR을 스캔한 뒤 제품 박스를 스캔하면 박스 단위로 즉시 출하 처리됩니다. 팔레트 단위 출하는 별도 'PDA 팔레트 출하' 화면에서 처리합니다.",
     x: 2340,
     dataObjects: ["SHIPMENT_LOGS", "PRODUCT_TRANSACTIONS", "BOX_MASTERS"],
     routes: [
@@ -985,8 +985,29 @@ export const workflowNodes: WorkflowActivityNode[] = [
     why: "확정 출하지시에 대해 현장에서 박스를 스캔해 즉시 출하 처리한다.",
     when: "출하지시 확정 후 박스를 차량에 상차·출하할 때.",
     cautions: [
-      "팔레트(PLT) 바코드는 PDA에서 거부된다 — 팔레트 출하는 PC 출하확정을 사용한다.",
+      "이 박스 출하 화면에서는 팔레트(PLT) 바코드가 거부된다 — 팔레트 출하는 'PDA 팔레트 출하' 화면 또는 PC 출하확정을 사용한다.",
       "박스는 스캔 즉시 출하되어 일괄 취소가 어렵다.",
+    ],
+  },
+  {
+    id: "pda-pallet-ship",
+    lane: "pda",
+    activity: "PDA 팔레트 출하",
+    summary: "출하지시·작업자를 스캔하고 박스를 팔레트로 구성·마감한 뒤 팔레트 단위로 출하합니다.",
+    detail: "PDA에서 확정(CONFIRMED) 출하지시와 작업자 QR을 스캔한 뒤, 새 팔레트를 생성(또는 이어서)하고 박스를 스캔해 적재합니다. 팔레트를 마감하면 마감(CLOSED) 팔레트를 팔레트 단위로 즉시 출하 처리합니다. PC의 팔레트 적재+출하확정과 동일한 프로세스를 현장 스캔으로 수행합니다.",
+    x: 2600,
+    dataObjects: ["PALLET_MASTERS", "PALLET_BOXES", "SHIPMENT_LOGS", "PRODUCT_TRANSACTIONS", "BOX_MASTERS"],
+    routes: [
+      { label: "PDA 팔레트 출하", path: "/pda/shipping-pallet" },
+    ],
+    inputs: ["출하지시(확정)", "작업자 QR", "박스 번호(마감·OQC합격)"],
+    outputs: ["팔레트 구성", "출하 처리", "제품재고 차감"],
+    order: 6,
+    why: "확정 출하지시에 대해 현장에서 박스를 팔레트로 구성·마감하고 팔레트 단위로 즉시 출하한다.",
+    when: "OQC PASS 박스를 팔레트로 묶어 팔레트 단위로 출하할 때.",
+    cautions: [
+      "적재 가능한 박스는 마감·OQC합격·미할당 상태여야 한다.",
+      "박스가 없는 팔레트는 마감할 수 없고, 마감(CLOSED) 팔레트만 출하된다.",
     ],
   },
   {
@@ -1003,7 +1024,7 @@ export const workflowNodes: WorkflowActivityNode[] = [
     ],
     inputs: ["설비 바코드", "점검 항목"],
     outputs: ["점검 결과", "FAIL 인터락"],
-    order: 6,
+    order: 7,
     why: "생산 시작 전 설비 상태를 현장에서 점검해 불량 설비 가동을 막는다.",
     when: "작업 시작 전 또는 일상점검 주기.",
     cautions: [
@@ -1061,6 +1082,7 @@ export const workflowEdges: WorkflowBusinessEdge[] = [
   { id: "e-lot-pda", source: "lot-control", target: "pda-inventory", label: "PDA 조정·실사", kind: "reference" },
   { id: "e-product-pda", source: "product-receive", target: "pda-product-receive", label: "PDA로도 처리", kind: "reference" },
   { id: "e-confirm-pda", source: "shipping-confirm", target: "pda-shipping", label: "PDA로도 처리(박스)", kind: "reference" },
+  { id: "e-pallet-pda", source: "palletize", target: "pda-pallet-ship", label: "PDA로도 구성·출하(팔레트)", kind: "reference" },
   { id: "e-pda-equip-kiosk", source: "pda-equip-inspect", target: "input-kiosk-start", label: "점검 후 가동", kind: "reference" },
 ];
 
