@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, ArrowRight, Clock, Database, ExternalLink, HelpCircle, Lightbulb } from "lucide-react";
@@ -11,6 +12,7 @@ import {
   type WorkflowActivityNode,
 } from "@/config/workflowMap";
 import WorkflowHelpInline from "./WorkflowHelpInline";
+import WorkflowSchemaPanel from "./WorkflowSchemaPanel";
 
 const laneById = new Map(workflowLanes.map((l) => [l.id, l]));
 
@@ -23,9 +25,15 @@ export default function WorkflowGuide({
 }) {
   const router = useRouter();
   const { t } = useTranslation();
+  const [schemaTable, setSchemaTable] = useState<string | null>(null);
   const lane = laneById.get(node.lane);
   const previous = getPreviousNodes(node.id);
   const next = getNextNodes(node.id);
+
+  // 다른 단계를 선택하면 열려 있던 스키마 패널을 닫는다
+  useEffect(() => {
+    setSchemaTable(null);
+  }, [node.id]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 p-5">
@@ -102,15 +110,28 @@ export default function WorkflowGuide({
         <WorkflowHelpInline node={node} />
       </GuideBlock>
 
-      {/* 생성/변경 데이터 */}
+      {/* 생성/변경 데이터 — 칩 클릭 시 우측 스키마 패널 */}
       <GuideBlock title={t("workflowGuide.dataObjects", "생성/변경 데이터")}>
         <div className="flex flex-wrap gap-1.5">
-          {node.dataObjects.map((obj) => (
-            <span key={obj} className="rounded border border-border bg-card px-2 py-1 font-mono text-[11px] text-text-muted">
-              <Database className="mr-1 inline h-3 w-3" />
-              {obj}
-            </span>
-          ))}
+          {node.dataObjects.map((obj) => {
+            const active = schemaTable === obj;
+            return (
+              <button
+                key={obj}
+                type="button"
+                onClick={() => setSchemaTable(obj)}
+                title={t("workflowGuide.viewSchema", "테이블 스키마 보기")}
+                className={`rounded border px-2 py-1 font-mono text-[11px] transition-colors ${
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-text-muted hover:border-primary/60 hover:text-text"
+                }`}
+              >
+                <Database className="mr-1 inline h-3 w-3" />
+                {obj}
+              </button>
+            );
+          })}
         </div>
       </GuideBlock>
 
@@ -139,6 +160,10 @@ export default function WorkflowGuide({
           )}
         </GuideBlock>
       </section>
+
+      {schemaTable && (
+        <WorkflowSchemaPanel tableName={schemaTable} onClose={() => setSchemaTable(null)} />
+      )}
     </div>
   );
 }
