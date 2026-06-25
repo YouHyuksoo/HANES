@@ -463,15 +463,23 @@ export class ShipOrderService {
           { palletNo: In(palletNos), ...this.tenantWhere(company, plant) },
         ]
       : where;
-    const boxCount = await this.boxRepository.count({ where: boxWhere });
-    const hasNonEmptyOrProgressedPallet = pallets.some((pallet) =>
+    const blockingPallets = pallets.filter((pallet) =>
       pallet.status !== 'OPEN' ||
       !!pallet.shipmentId ||
       (Number(pallet.boxCount) || 0) > 0 ||
       (Number(pallet.totalQty) || 0) > 0
     );
-    if (boxCount > 0 || hasNonEmptyOrProgressedPallet) {
-      throw new BadRequestException('출하지시에 배정된 팔레트 또는 박스가 있으면 확정취소할 수 없습니다.');
+    const boxCount = await this.boxRepository.count({ where: boxWhere });
+    if (boxCount > 0 || blockingPallets.length > 0) {
+      const parts: string[] = [];
+      if (blockingPallets.length > 0) {
+        parts.push(`팔레트 ${blockingPallets.map((pallet) => pallet.palletNo).join(', ')}`);
+      }
+      if (boxCount > 0) {
+        const blockingBoxes = await this.boxRepository.find({ where: boxWhere, select: ['boxNo'] });
+        parts.push(`박스 ${blockingBoxes.map((box) => box.boxNo).join(', ')}`);
+      }
+      throw new BadRequestException(`확정취소 불가 — 배정된 ${parts.join(' / ')}를 먼저 해제하세요.`);
     }
 
     if (palletNos.length > 0) {

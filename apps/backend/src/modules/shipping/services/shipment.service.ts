@@ -664,7 +664,7 @@ export class ShipmentService {
       await qr.manager.update(
         BoxMaster,
         { palletNo: In(palletNos), ...this.tenantWhere(company, plant) },
-        { status: 'CLOSED', shippedAt: null },
+        { status: 'CLOSED', shippedAt: null, shipOrderNo: null },
       );
     }
 
@@ -749,7 +749,7 @@ export class ShipmentService {
       await qr.manager.update(
         BoxMaster,
         { palletNo: In(palletIds), ...this.tenantWhere(company, plant) },
-        { status: 'CLOSED', shippedAt: null },
+        { status: 'CLOSED', shippedAt: null, shipOrderNo: null },
       );
     }
 
