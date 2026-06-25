@@ -2,25 +2,6 @@
 
 ## Active Locks
 
-## T-SHIP-OQC-GATE-CONSISTENCY 출하 OQC 사용여부 게이트 일관화
-status: active
-owner: codex
-role: implementer
-started: 2026-06-26 00:00 KST
-last_seen: 2026-06-26 00:00 KST
-files:
-- apps/backend/src/modules/shipping/services/ship-order.service.ts
-- apps/backend/src/modules/shipping/services/ship-order.service.spec.ts
-- apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx
-- apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-oqc-gate.structure.test.mjs
-- tools/hanes-shipping-workflow-scenario-qa.mjs
-- .ai-coordination/TASKS.md
-- .ai-coordination/LOCKS.md
-- .ai-coordination/DECISIONS.md
-- .ai-coordination/JOURNAL.md
-- .ai-coordination/HANDOFF/codex.md
-note: `T-SHIP-ORDER-CANCEL`의 `ship-order.service.ts` lock과 겹치지만, 사용자 명시 지시에 따라 OQC_ENABLED 게이트 불일치만 최소 범위로 보정한다.
-
 ## T-MASTER-PART-PAGE-STANDARD 품목마스터 페이지 표준 문서화
 status: stale
 owner: codex

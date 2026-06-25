@@ -13,6 +13,15 @@ Reason:
 - Reason text
 ```
 
+## D-20260626-SHIP-OQC-GATE-CONSISTENCY
+Status: Accepted
+Decision:
+- 출하지시 기반 후보 조회, 팔레트 적재, 팔레트 출하는 단건 박스출하와 동일하게 `SYS_CONFIGS.OQC_ENABLED`가 `Y`일 때만 `OQC_STATUS='PASS'`를 강제한다.
+- 프론트 `/shipping/pallet` 후보 박스 조회도 `useSysConfigStore`의 `OQC_ENABLED` 기준으로 `oqcStatus=PASS` 파라미터를 조건부 적용한다. 설정이 아직 로드되지 않은 초기 상태는 기존처럼 PASS 필터를 적용해 보수적으로 동작한다.
+Reason:
+- JSHANES는 `OQC_ENABLED=N`인데 출하지시 팔레트 경로와 화면 후보 조회가 `OQC_STATUS=PASS`를 고정 요구해 단건 박스출하와 팔레트출하의 상태전이 조건이 달랐다.
+- OQC 미사용 설정에서는 CLOSED 박스가 출하 후보로 보여야 하고, 적재/출하 후속 프로세스에서도 같은 기준으로 노출/제외되어야 한다.
+
 ## D-20260618-HARNESS-DRAWING-REVISION
 Status: Accepted
 Decision:

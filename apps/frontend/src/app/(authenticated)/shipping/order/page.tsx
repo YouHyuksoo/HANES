@@ -108,6 +108,7 @@ export default function ShipOrderPage() {
   const [editingItem, setEditingItem] = useState<ShipOrder | null>(null);
   const [form, setForm] = useState({ customerId: "", customerPoNo: "", dueDate: "", shipDate: "", remark: "" });
   const [orderItems, setOrderItems] = useState<ShipOrderLine[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<ShipOrder | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ShipOrder | null>(null);
   const [printTarget, setPrintTarget] = useState<ShipOrder | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ShipOrder | null>(null);
@@ -149,6 +150,12 @@ export default function ShipOrderPage() {
   }, [searchText, statusFilter, shipDateFrom, shipDateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    setSelectedOrder((current) =>
+      current ? data.find((row) => row.shipOrderNo === current.shipOrderNo) ?? null : null,
+    );
+  }, [data]);
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
@@ -304,6 +311,26 @@ export default function ShipOrderPage() {
     window.setTimeout(() => window.print(), 80);
   }, []);
 
+  const handleTopPrintShipOrder = useCallback(() => {
+    if (!selectedOrder) return;
+    handlePrintShipOrder(selectedOrder);
+  }, [handlePrintShipOrder, selectedOrder]);
+
+  const handleTopConfirmOrder = useCallback(() => {
+    if (!selectedOrder || selectedOrder.status !== "DRAFT" || (selectedOrder.itemCount ?? 0) === 0) return;
+    setConfirmTarget(selectedOrder);
+  }, [selectedOrder]);
+
+  const handleTopUnconfirmOrder = useCallback(() => {
+    if (!selectedOrder || selectedOrder.status !== "CONFIRMED") return;
+    setUnconfirmTarget(selectedOrder);
+  }, [selectedOrder]);
+
+  const handleTopDeleteOrder = useCallback(() => {
+    if (!selectedOrder || selectedOrder.status !== "DRAFT") return;
+    setDeleteTarget(selectedOrder);
+  }, [selectedOrder]);
+
   const closeFormPanel = useCallback(() => {
     setIsFormPanelOpen(false);
     setEditingItem(null);
@@ -342,46 +369,19 @@ export default function ShipOrderPage() {
   }, [unconfirmTarget, closeFormPanel, fetchData]);
 
   const columns = useMemo<ColumnDef<ShipOrder>[]>(() => [
-    { id: "actions", header: "", size: 168, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
+    { id: "actions", header: "", size: 56, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
         <button
-          onClick={() => handlePrintShipOrder(row.original)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedOrder(row.original);
+            openEdit(row.original);
+          }}
           className="p-1 hover:bg-surface rounded"
-          title={t("shipping.shipOrder.printOrder", "출하지시서 출력")}
+          title={t("common.edit")}
         >
-          <Printer className="w-4 h-4 text-primary" />
+          <Edit2 className="w-4 h-4 text-primary" />
         </button>
-        {row.original.status === "DRAFT" && (
-          <button
-            onClick={() => setConfirmTarget(row.original)}
-            disabled={(row.original.itemCount ?? 0) === 0}
-            className="p-1 hover:bg-surface rounded disabled:opacity-40 disabled:cursor-not-allowed"
-            title={(row.original.itemCount ?? 0) === 0
-              ? t("shipping.shipOrder.confirmNeedItems", "품목이 있어야 확정할 수 있습니다.")
-              : t("shipping.shipOrder.confirmOrder", "출하지시 확정")}
-          >
-            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-          </button>
-        )}
-        {row.original.status === "CONFIRMED" && (
-          <button
-            onClick={() => setUnconfirmTarget(row.original)}
-            className="p-1 hover:bg-surface rounded"
-            title={t("shipping.shipOrder.unconfirmOrder", "확정취소")}
-          >
-            <RotateCcw className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          </button>
-        )}
-        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        {row.original.status === "DRAFT" && (
-          <button
-            onClick={() => setDeleteTarget(row.original)}
-            className="p-1 hover:bg-surface rounded"
-            title={t("common.delete")}
-          >
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        )}
       </div>
     ) },
     { accessorKey: "shipOrderNo", header: t("shipping.shipOrder.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
@@ -392,7 +392,7 @@ export default function ShipOrderPage() {
     { accessorKey: "itemCount", header: t("shipping.shipOrder.itemCount"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "status", header: () => <ShipOrderStatusHeader />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
-  ], [t, openEdit, handlePrintShipOrder]);
+  ], [t, openEdit]);
 
   return (
     <div className="flex h-full animate-fade-in">
@@ -402,7 +402,45 @@ export default function ShipOrderPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardList className="w-7 h-7 text-primary" />{t("shipping.shipOrder.title")}</h1>
           <p className="text-text-muted mt-1">{t("shipping.shipOrder.subtitle")}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleTopPrintShipOrder}
+            disabled={!selectedOrder}
+            title={t("shipping.shipOrder.printOrder", "출하지시서 출력")}
+          >
+            <Printer className="w-4 h-4 mr-1" />{t("common.print", "출력")}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="border-green-500 text-green-600 dark:text-green-400"
+            onClick={handleTopConfirmOrder}
+            disabled={!selectedOrder || selectedOrder.status !== "DRAFT" || (selectedOrder.itemCount ?? 0) === 0 || confirming}
+            title={t("shipping.shipOrder.confirmOrder", "출하지시 확정")}
+          >
+            <CheckCircle className="w-4 h-4 mr-1" />{t("shipping.shipOrder.confirm", "확정")}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="border-amber-500 text-amber-600 dark:text-amber-400"
+            onClick={handleTopUnconfirmOrder}
+            disabled={!selectedOrder || selectedOrder.status !== "CONFIRMED" || unconfirming}
+            title={t("shipping.shipOrder.unconfirmOrder", "확정취소")}
+          >
+            <RotateCcw className="w-4 h-4 mr-1" />{t("shipping.shipOrder.unconfirmOrder", "확정취소")}
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={handleTopDeleteOrder}
+            disabled={!selectedOrder || selectedOrder.status !== "DRAFT"}
+            title={t("common.delete")}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />{t("common.delete")}
+          </Button>
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
@@ -412,6 +450,9 @@ export default function ShipOrderPage() {
         <OpenIncludedNotice count={outOfRangeNos.size} />
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+            onRowClick={(row) => setSelectedOrder(row)}
+            selectedRowId={selectedOrder?.shipOrderNo}
+            getRowId={(row) => row.shipOrderNo}
             rowClassName={(row) => outOfRangeNos.has(row.shipOrderNo) ? "border-l-2 border-l-amber-500" : ""}
             enableExport exportFileName={t("shipping.shipOrder.title")}
             toolbarLeft={

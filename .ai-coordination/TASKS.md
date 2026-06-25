@@ -29,33 +29,6 @@ notes:
 
 ## Active Tasks
 
-## T-SHIP-OQC-GATE-CONSISTENCY 출하 OQC 사용여부 게이트 일관화
-status: IN_PROGRESS
-owner: codex
-role: implementer
-scope:
-- `/shipping/pallet`, `/shipping/confirm` 팔레트/박스 출하 후보와 처리에서 `OQC_ENABLED` 설정을 일관 적용
-files:
-- apps/backend/src/modules/shipping/services/ship-order.service.ts
-- apps/backend/src/modules/shipping/services/ship-order.service.spec.ts
-- apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx
-- apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-oqc-gate.structure.test.mjs
-- tools/hanes-shipping-workflow-scenario-qa.mjs
-- .ai-coordination/TASKS.md
-- .ai-coordination/LOCKS.md
-- .ai-coordination/DECISIONS.md
-- .ai-coordination/JOURNAL.md
-- .ai-coordination/HANDOFF/codex.md
-verification:
-- RED/GREEN: backend ship-order service focused spec
-- RED/GREEN: pallet page OQC gate structure test
-- 출하관리 워크플로우 QA 재실행
-review:
-- needs-review
-notes:
-- `ship-order.service.ts`는 `T-SHIP-ORDER-CANCEL` active lock과 겹친다. 사용자가 2026-06-26에 "잘못된건 수정을 해야지"라고 명시 지시하여 충돌 사실을 기록하고 OQC 게이트 최소 범위만 수정한다.
-- 원인: 단건 박스출하는 `OQC_ENABLED`를 존중하지만, 출하지시 fulfillment/팔레트 적재/팔레트 출하와 `/shipping/pallet` 후보 조회가 `OQC_STATUS=PASS`를 고정 강제한다.
-
 ## T-SHIP-HISTORY-SHIPPED-DETAIL 출하이력 우측 패널 박스출하 표시 보정
 status: REVIEW
 owner: codex

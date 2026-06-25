@@ -3138,3 +3138,46 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: `node tools/hanes-shipping-workflow-scenario-qa.mjs`
   - PASS: 결과 JSON 검증. 화면 8/8, 스크린샷 8건, 전이 step 전부 PASS, 최종 테스트 잔여 0건.
   - PASS: `git diff --check -- tools/hanes-shipping-workflow-scenario-qa.mjs docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-25 .ai-coordination/TASKS.md .ai-coordination/LOCKS.md .ai-coordination/JOURNAL.md .ai-coordination/HANDOFF/codex.md .ai-coordination/ARCHIVE.md`
+
+# 2026-06-26 00:18 KST - codex - T-SHIP-OQC-GATE-CONSISTENCY
+
+- 출하관리 워크플로우 QA에서 발견된 OQC 게이트 불일치를 수정했다.
+- 원인: `shipBox()`는 `SYS_CONFIGS.OQC_ENABLED`가 켜진 경우에만 `OQC_STATUS=PASS`를 요구하지만, `getFulfillment()`, `addBoxesToOrderPallet()`, `shipOrderPallets()`와 `/shipping/pallet` 후보 조회는 `OQC_STATUS=PASS`를 고정 강제했다. JSHANES는 `OQC_ENABLED=N`이라 같은 CLOSED 박스가 단건 출하는 가능하지만 팔레트 적재/출하는 막히는 상태였다.
+- 변경:
+  - `apps/backend/src/modules/shipping/services/ship-order.service.ts`: fulfillment 후보 조회, 팔레트 적재, 팔레트 출하에서 `OQC_ENABLED`가 true일 때만 PASS 필터/검증을 적용한다.
+  - `apps/backend/src/modules/shipping/services/ship-order.service.spec.ts`: OQC 미사용 시 PENDING 박스가 후보/적재/팔레트출하 경로에서 허용되는 회귀 테스트를 추가했다.
+  - `apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx`: `useSysConfigStore`로 `OQC_ENABLED`를 읽고, 후보/스캔 박스 조회의 `oqcStatus=PASS` 파라미터를 조건부로 붙인다. 설정 미로드 상태는 보수적으로 PASS 필터를 유지한다.
+  - `apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-oqc-gate.structure.test.mjs`: 화면의 조건부 OQC 필터 구조 테스트를 추가했다.
+  - `tools/hanes-shipping-workflow-scenario-qa.mjs`: 테스트 박스 `OQC_STATUS`를 PASS로 강제 변경하던 전제 step을 제거해 `OQC_ENABLED=N` 기준 그대로 검증하게 했다.
+- 검증:
+  - RED 확인: 기존 코드에서 backend OQC disabled 테스트 3건과 frontend 구조 테스트가 실패.
+  - PASS: `pnpm.cmd --filter @harness/backend exec jest src/modules/shipping/services/ship-order.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-oqc-gate.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-order-required.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `node tools/hanes-shipping-workflow-scenario-qa.mjs` 결과 `status=PASS`, 테스트 키 `SWF260626000949`, 잔여 0건.
+  - PASS: 대상 파일 `git diff --check`
+- 산출물:
+  - `docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-26/index.html`
+  - `docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-26/pages/shipping-workflow.html`
+  - `docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-26/shipping-workflow-result.json`
+- 참고:
+  - 작업 중 HEAD가 `131fb013 chore: 진행 중 작업 일괄 커밋...`으로 이동하며 코드 변경 일부가 이미 커밋에 포함됐다. 본 로그 정리 시점의 working tree에는 2026-06-26 QA 리포트 미추적 파일과 협업 문서 정리 변경만 남아 있다.
+
+# 2026-06-26 00:37 KST - codex - T-SHIP-ORDER-TOP-ACTIONS
+
+- `/shipping/order` 목록의 행 관리 액션을 상단 선택행 공통 버튼으로 전환했다.
+- 변경:
+  - `apps/frontend/src/app/(authenticated)/shipping/order/page.tsx`: `selectedOrder` 상태를 추가하고 `DataGrid` 행 클릭/하이라이트(`onRowClick`, `selectedRowId`, `getRowId`)를 연결했다.
+  - 행 액션 컬럼은 수정 아이콘만 남겼다. 수정 아이콘 클릭 시 행 선택도 동기화하고 우측 패널을 연다.
+  - 출력, 확정, 확정취소, 삭제는 상단 버튼으로 이동했다. 선택 행이 없거나 상태가 맞지 않으면 비활성화한다.
+  - `apps/frontend/src/app/(authenticated)/shipping/order/ship-order-top-actions.structure.test.mjs`: 상단 공통 액션과 행 수정 단독 액션 계약을 추가했다.
+  - `apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs`: 확정취소/삭제가 행 액션이 아니라 상단 선택행 액션이라는 계약으로 갱신했다.
+- 검증:
+  - RED: 신규 `ship-order-top-actions.structure.test.mjs`가 `selectedOrder` 부재로 실패.
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-top-actions.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-print.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-payload.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-required-fields.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-right-panel.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 대상 파일 `git diff --check`
+  - PASS: 기존 3002 Playwright 확인. `/shipping/order` 행 1건, 행 버튼 1개(`수정`)만 표시, 상단 `인쇄/확정/확정취소/삭제` 버튼 표시. 행 선택 후 CONFIRMED 행에서 확정취소 활성화, console error 0건.
+- 참고:
+  - 기존 working tree에는 이번 범위 밖 변경(`apps/backend/src/modules/system/services/pda-role.service.ts`, PDA 팔레트 출하 파일들, 2026-06-26 출하 QA 리포트 등)이 함께 남아 있어 되돌리지 않았다.

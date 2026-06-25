@@ -146,3 +146,5 @@ Format:
 - T-PRESENTATION-REINFORCE | 2026-06-24 | claude | 소개자료에 AQL·생산실적(서브/조립)·검사결과·출하이력·팔레트·추적성 종합 5개 슬라이드 보강(24→29장), 빈/깨진 캡처 37+2장 전량 실데이터로 재생성, PPTX 재빌드 | evidence: JOURNAL 2026-06-24 Claude
 - T-PRODUCTION-HELP-MANUAL | 2026-06-24 | codex | 생산관리 19개 화면 도움말/manifest를 보강하고 단일 HTML 매뉴얼 `docs/manuals/hanes-production-manual-2026-06-24.html` 생성, runner `missingHelp`/`missingCapture` 0건 확인 | evidence: JOURNAL 2026-06-24 16:39 Codex
 - T-SHIP-WORKFLOW-QA | 2026-06-25 | codex | 출하관리 8개 화면과 정/역방향 핵심 상태전이를 실제 API/DB/Playwright로 검증하고 테스트 잔여 0건 확인 | evidence: JOURNAL 2026-06-25 23:59 Codex
+- T-SHIP-OQC-GATE-CONSISTENCY | 2026-06-26 | codex | `OQC_ENABLED=N`에서 출하지시 후보/팔레트 적재/팔레트 출하와 `/shipping/pallet` 후보 조회가 OQC PASS를 강제하지 않도록 일관화하고 워크플로우 QA PASS | evidence: JOURNAL 2026-06-26 00:18 Codex
+- T-SHIP-ORDER-TOP-ACTIONS | 2026-06-26 | codex | `/shipping/order` 행 관리 컬럼은 수정 아이콘만 남기고 출력/확정/확정취소/삭제를 선택 행 기준 상단 공통 버튼으로 이동 | evidence: JOURNAL 2026-06-26 00:37 Codex
