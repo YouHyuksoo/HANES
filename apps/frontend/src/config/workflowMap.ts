@@ -4,7 +4,9 @@ export type WorkflowLaneId =
   | "production"
   | "quality"
   | "shipping"
-  | "trace-reversal";
+  | "trace-reversal"
+  | "quality-system"
+  | "consumables";
 
 export interface WorkflowLane {
   id: WorkflowLaneId;
@@ -92,6 +94,20 @@ export const workflowLanes: WorkflowLane[] = [
     description: "제품/자재 추적성과 입고취소, 출하취소처럼 뒤 공정 조건을 확인하는 보정 흐름입니다.",
     color: "#475569",
     y: 1100,
+  },
+  {
+    id: "quality-system",
+    title: "품질관리(IATF)",
+    description: "관리계획서, 4M변경, SPC, 클레임/CAPA처럼 양산을 둘러싼 품질시스템을 관리합니다.",
+    color: "#15803d",
+    y: 1320,
+  },
+  {
+    id: "consumables",
+    title: "소모품관리",
+    description: "금형·지그·공구를 기준정보로 등록하고 입출고, 설비 장착, 수명까지 관리합니다.",
+    color: "#4f46e5",
+    y: 1540,
   },
 ];
 
@@ -194,6 +210,7 @@ export const workflowNodes: WorkflowActivityNode[] = [
       { label: "IQC검사", path: "/material/iqc" },
       { label: "IQC이력", path: "/material/iqc-history" },
       { label: "불량코드관리", path: "/quality/defect-code" },
+      { label: "특채처리", path: "/material/concession" },
     ],
     inputs: ["입하번호", "품목", "검사항목", "시료"],
     outputs: ["IQC 이력", "PASS/FAIL", "불량코드"],
@@ -474,8 +491,13 @@ export const workflowNodes: WorkflowActivityNode[] = [
     dataObjects: ["INSPECT_RESULTS", "SAMPLE_INSPECT_RESULTS", "QC_RESULTS"],
     routes: [
       { label: "검사관리", path: "/quality/inspect" },
+      { label: "통합검사", path: "/inspection/integrated" },
       { label: "검사결과", path: "/inspection/result" },
+      { label: "단자검사결과", path: "/inspection/terminal-result" },
+      { label: "검사이력", path: "/inspection/history" },
       { label: "샘플검사", path: "/production/sample-inspect" },
+      { label: "의뢰검사", path: "/quality/request-inspect" },
+      { label: "자주검사이력", path: "/quality/self-inspect-history" },
     ],
     inputs: ["생산실적", "검사항목"],
     outputs: ["검사결과", "합격/불합격"],
@@ -703,6 +725,156 @@ export const workflowNodes: WorkflowActivityNode[] = [
     inputs: ["출하이력", "취소 사유"],
     outputs: ["취소이력", "제품재고 원복", "출하지시 수량 복원"],
   },
+  {
+    id: "quality-planning",
+    lane: "quality-system",
+    activity: "사전품질 승인",
+    summary: "양산 전 관리계획서·초물검사·PPAP로 품질 기준을 확정합니다.",
+    detail: "신규 또는 변경 품목이 양산에 들어가기 전 공정별 검사방법과 빈도를 정의(관리계획서)하고, 첫 생산품을 검증(FAI)하며, 고객 승인용 PPAP를 제출합니다. 이후 공정검사와 출하 품질의 기준이 됩니다.",
+    x: 780,
+    dataObjects: ["CONTROL_PLANS", "FAI_REQUESTS", "PPAP_SUBMISSIONS"],
+    routes: [
+      { label: "관리계획서", path: "/quality/control-plan" },
+      { label: "초물검사(FAI)", path: "/quality/fai" },
+      { label: "PPAP", path: "/quality/ppap" },
+    ],
+    inputs: ["신규/변경 품목", "도면/사양", "고객 요구"],
+    outputs: ["관리계획서", "FAI 판정", "PPAP 승인"],
+    order: 1,
+    why: "양산 전에 검사방법·초물·고객승인 기준을 확정해 품질 리스크를 사전에 통제한다(IATF 8.5.1).",
+    when: "신규 품목 도입 또는 설계·공정 변경 시, 양산 시작 전.",
+    cautions: [
+      "관리계획서 없이 양산하면 공정검사 기준이 불명확해진다.",
+      "FAI/PPAP 미승인 상태로 고객 출하하면 클레임 위험이 크다.",
+    ],
+  },
+  {
+    id: "quality-change",
+    lane: "quality-system",
+    activity: "4M 변경관리",
+    summary: "인원·설비·자재·방법 변경점을 등록·검토·승인합니다.",
+    detail: "4M(Man/Machine/Material/Method) 변경이 발생하면 변경점을 등록하고 영향 검토·승인 흐름을 거쳐 미검증 변경이 양산에 유입되는 것을 통제합니다(IATF 8.5.6).",
+    x: 1300,
+    dataObjects: ["CHANGE_ORDERS"],
+    routes: [
+      { label: "4M변경관리", path: "/quality/change-control" },
+    ],
+    inputs: ["변경 요청", "영향 범위"],
+    outputs: ["변경 승인", "변경 이력"],
+    order: 2,
+    why: "변경점이 품질에 미치는 영향을 사전에 검토·승인해 추적 불가 불량의 원인을 차단한다.",
+    when: "설비 교체, 자재 변경, 작업방법 변경 등 4M 변경 발생 시.",
+    cautions: [
+      "승인 전 변경 적용은 추적 불가 불량의 원인이 된다.",
+    ],
+  },
+  {
+    id: "quality-spc",
+    lane: "quality-system",
+    activity: "SPC·계측기",
+    summary: "공정 데이터를 관리도로 모니터링하고 계측기 교정을 관리합니다.",
+    detail: "X̄-R 관리도로 공정 산포를 모니터링하고 Cpk를 산출하며, 측정 신뢰성을 위해 계측기 교정 주기와 결과를 관리합니다. 공정검사 데이터가 SPC의 입력이 됩니다.",
+    x: 1820,
+    dataObjects: ["SPC_CHARTS", "SPC_DATA", "CALIBRATION_LOGS"],
+    routes: [
+      { label: "SPC", path: "/quality/spc" },
+      { label: "계측기 교정", path: "/quality/msa" },
+    ],
+    inputs: ["공정 측정값", "계측기"],
+    outputs: ["관리도/Cpk", "교정 상태"],
+    order: 3,
+    why: "공정 산포를 통계로 감시하고 계측기를 교정해 측정·판정의 신뢰성을 확보한다.",
+    when: "양산 중 공정 데이터 축적 시 주기적으로, 계측기 교정 주기 도래 시.",
+    cautions: [
+      "교정 만료 계측기로 측정한 검사결과는 신뢰할 수 없다.",
+    ],
+  },
+  {
+    id: "quality-capa",
+    lane: "quality-system",
+    activity: "클레임·CAPA·심사",
+    summary: "고객 클레임과 부적합에 시정·예방조치를 실행하고 내부심사로 점검합니다.",
+    detail: "고객 클레임을 접수·조사·대응하고, 부적합에 시정조치·예방조치(CAPA)를 등록·추적하며, 내부심사로 품질시스템을 주기적으로 점검합니다(IATF 10.2).",
+    x: 2340,
+    dataObjects: ["CUSTOMER_COMPLAINTS", "CAPA_REQUESTS", "AUDIT_PLANS"],
+    routes: [
+      { label: "고객클레임", path: "/quality/complaint" },
+      { label: "CAPA", path: "/quality/capa" },
+      { label: "내부심사", path: "/quality/audit" },
+    ],
+    inputs: ["고객 클레임", "부적합 발견"],
+    outputs: ["시정/예방조치", "심사 결과"],
+    order: 4,
+    why: "발생한 품질 문제에 근본원인 기반 시정·예방조치를 실행해 재발을 막고 시스템을 개선한다.",
+    when: "고객 클레임 접수 시, 중대 부적합 발생 시, 정기 내부심사 주기.",
+    cautions: [
+      "근본원인 분석 없는 임시조치는 동일 불량의 재발로 이어진다.",
+    ],
+  },
+  {
+    id: "cons-master",
+    lane: "consumables",
+    activity: "소모품 기준/라벨",
+    summary: "금형·지그·공구를 마스터로 등록하고 conUid 라벨을 발행합니다.",
+    detail: "소모품 기준정보(카테고리·예상수명·단위)를 등록하고, 개별 인스턴스마다 conUid를 채번해 바코드 라벨을 인쇄함으로써 현장 추적 단위를 만듭니다.",
+    x: 0,
+    dataObjects: ["CONSUMABLE_MASTERS", "CONSUMABLE_STOCKS"],
+    routes: [
+      { label: "소모품마스터", path: "/consumables/master" },
+      { label: "소모품라벨", path: "/consumables/label" },
+    ],
+    inputs: ["소모품 품목", "카테고리", "예상수명"],
+    outputs: ["소모품 마스터", "conUid 라벨"],
+    order: 1,
+    why: "소모품을 개별 시리얼(conUid) 단위로 추적할 수 있게 기준정보와 라벨을 만든다.",
+    when: "신규 소모품(금형/지그/공구) 도입 시.",
+    cautions: [
+      "예상수명을 잘못 등록하면 수명 알림이 부정확해진다.",
+    ],
+  },
+  {
+    id: "cons-stock",
+    lane: "consumables",
+    activity: "소모품 입출고/재고",
+    summary: "conUid 단위로 입고·출고·재고 현황을 관리합니다.",
+    detail: "라벨 발행된 소모품을 입고(반납 포함)하고 설비·현장으로 출고하며, conUid 단위 인스턴스 상태와 잔여수명을 재고로 조회합니다.",
+    x: 520,
+    dataObjects: ["CONSUMABLE_STOCKS", "CONSUMABLE_LOGS"],
+    routes: [
+      { label: "소모품입고", path: "/consumables/receiving" },
+      { label: "소모품출고", path: "/consumables/issuing" },
+      { label: "소모품재고", path: "/consumables/stock" },
+    ],
+    inputs: ["conUid 라벨", "입출고 대상"],
+    outputs: ["소모품 재고", "입출고 이력"],
+    order: 2,
+    why: "소모품을 개별 인스턴스 단위로 입출고·재고 관리해 위치와 상태를 추적한다.",
+    when: "소모품 입고/반납, 설비·현장 출고 시.",
+    cautions: [
+      "출고 대상(설비/현장)을 정확히 지정해야 장착·수명 추적이 이어진다.",
+    ],
+  },
+  {
+    id: "cons-mount",
+    lane: "consumables",
+    activity: "장착·수명관리",
+    summary: "소모품을 설비에 장착·분리하고 사용횟수 기반 수명을 모니터링합니다.",
+    detail: "소모품을 설비에 장착·분리하고 장착 이력을 남기며, 사용횟수 기반 수명 상태(NORMAL/WARNING/REPLACE)를 모니터링해 교체 주기를 넘기지 않게 합니다. 생산 키오스크의 설비 장착 소모품과 연결됩니다.",
+    x: 1040,
+    dataObjects: ["CONSUMABLE_MOUNT_LOGS", "CONSUMABLE_STOCKS"],
+    routes: [
+      { label: "장착/분리", path: "/consumables/mount" },
+      { label: "수명현황", path: "/consumables/life" },
+    ],
+    inputs: ["소모품 conUid", "설비"],
+    outputs: ["장착 이력", "수명 상태/교체 알림"],
+    order: 3,
+    why: "설비에 장착된 소모품의 사용 수명을 추적해 교체 주기를 넘긴 채 생산되는 것을 막는다.",
+    when: "소모품을 설비에 장착·교체할 때, 수명 경고 발생 시.",
+    cautions: [
+      "수명 초과 소모품을 교체하지 않으면 제품 불량의 직접 원인이 된다.",
+    ],
+  },
 ];
 
 export const workflowEdges: WorkflowBusinessEdge[] = [
@@ -740,6 +912,14 @@ export const workflowEdges: WorkflowBusinessEdge[] = [
   { id: "e-arrival-reversal", source: "arrival-review", target: "material-reversal", label: "뒤 공정 없음", kind: "reversal" },
   { id: "e-receive-reversal", source: "material-receive", target: "material-reversal", label: "입고 취소", kind: "reversal" },
   { id: "e-history-reversal", source: "shipping-history", target: "shipping-reversal", label: "취소 검토", kind: "reversal" },
+  { id: "e-planning-order", source: "quality-planning", target: "job-order", label: "양산 품질 기준", kind: "reference" },
+  { id: "e-change-result", source: "quality-change", target: "production-result", label: "변경점 통제", kind: "reference" },
+  { id: "e-inspect-spc", source: "process-inspection", target: "quality-spc", label: "공정 데이터", kind: "reference" },
+  { id: "e-history-capa", source: "shipping-history", target: "quality-capa", label: "클레임 피드백", kind: "reference" },
+  { id: "e-capa-planning", source: "quality-capa", target: "quality-planning", label: "재발방지 반영", kind: "reference" },
+  { id: "e-cons-master-stock", source: "cons-master", target: "cons-stock", label: "라벨 발행분", kind: "normal" },
+  { id: "e-cons-stock-mount", source: "cons-stock", target: "cons-mount", label: "출고 소모품", kind: "normal" },
+  { id: "e-cons-mount-kiosk", source: "cons-mount", target: "input-kiosk-start", label: "설비 장착 소모품", kind: "reference" },
 ];
 
 const _nodeById = new Map(workflowNodes.map((n) => [n.id, n]));

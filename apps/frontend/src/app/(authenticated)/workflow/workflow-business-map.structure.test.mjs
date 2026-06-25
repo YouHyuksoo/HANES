@@ -76,3 +76,24 @@ test("/workflow map carries onboarding guide fields and helpers", () => {
   assert.match(mapSource, /입하의 출처가 되는 구매 근거/);
   assert.match(mapSource, /작업지시를 현장에서 스캔해 실제 생산 실행을 시작/);
 });
+
+test("/workflow covers quality-system and consumables lanes", () => {
+  // 새 레인 2종
+  assert.match(mapSource, /id: "quality-system"/);
+  assert.match(mapSource, /id: "consumables"/);
+  assert.match(mapSource, /품질관리\(IATF\)/);
+  assert.match(mapSource, /소모품관리/);
+  // 품질시스템 노드
+  assert.match(mapSource, /id: "quality-planning"/);
+  assert.match(mapSource, /id: "quality-capa"/);
+  assert.match(mapSource, /path: "\/quality\/control-plan"/);
+  assert.match(mapSource, /path: "\/quality\/spc"/);
+  // 소모품 노드
+  assert.match(mapSource, /id: "cons-master"/);
+  assert.match(mapSource, /id: "cons-mount"/);
+  assert.match(mapSource, /path: "\/consumables\/master"/);
+  assert.match(mapSource, /path: "\/consumables\/mount"/);
+  // 기존 공정검사 노드 보강(검사기 연동 화면)
+  assert.match(mapSource, /path: "\/inspection\/integrated"/);
+  assert.match(mapSource, /path: "\/material\/concession"/);
+});
