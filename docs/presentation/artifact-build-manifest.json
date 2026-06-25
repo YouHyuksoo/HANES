@@ -1,23 +1,18 @@
 {
-  "output": "C:\\Project\\HANES\\docs\\presentation\\hanes-mes-introduction.pptx",
-  "outputBytes": 3466246,
-  "html": "C:\\Project\\HANES\\docs\\presentation\\hanes-mes-introduction.html",
-  "htmlBytes": 57014,
-  "slideCount": 24,
+  "output": "C:\\Project\\HANES\\docs/presentation/hanes-mes-introduction.pptx",
+  "outputBytes": 10277641,
+  "html": "C:\\Project\\HANES\\docs/presentation/hanes-mes-introduction.html",
+  "htmlBytes": 65035,
+  "slideCount": 29,
   "slideSize": {
     "width": 1600,
     "height": 900,
     "ratio": "16:9"
   },
   "buildMode": "html-rendered-pptx",
-  "insertedSlide": {
-    "number": 4,
-    "title": "HANES MES 기능흐름도",
-    "source": "user reference image interpreted for HANES MES workflow"
-  },
   "packageCheck": {
-    "mediaCount": 24,
+    "mediaCount": 29,
     "emptyMedia": 0
   },
-  "updatedAt": "2026-06-12 09:45:00 KST"
+  "updatedAt": "2026-06-24 16:03:27 KST"
 }

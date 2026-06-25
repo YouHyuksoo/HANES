@@ -158,7 +158,8 @@
       "today": "Today",
       "recent7": "Last 7 Days",
       "thisMonth": "This Month",
-      "presets": "Select Range"
+      "presets": "Select Range",
+      "openIncludedNotice": "{{count}} in-progress item(s) outside the date range are included."
     }
   },
   "help": {
@@ -5359,6 +5360,7 @@
       "statClosed": "Closed",
       "statShipped": "Shipped",
       "searchPlaceholder": "Search box no, part code...",
+      "createdDate": "Created",
       "allParts": "All Parts",
       "box": "Box",
       "currentQty": "Current Qty",

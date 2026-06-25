@@ -158,7 +158,8 @@
       "today": "오늘",
       "recent7": "최근 7일",
       "thisMonth": "이번 달",
-      "presets": "기간 선택"
+      "presets": "기간 선택",
+      "openIncludedNotice": "기간 밖이지만 진행 중인 {{count}}건이 포함되어 있습니다."
     }
   },
   "help": {
@@ -5363,6 +5364,7 @@
       "statClosed": "마감",
       "statShipped": "출하",
       "searchPlaceholder": "박스번호, 품목코드 검색...",
+      "createdDate": "생성일",
       "allParts": "전체 품목",
       "box": "박스",
       "currentQty": "현재수량",

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, ArrowRight, Clock, Database, ExternalLink, HelpCircle, Lightbulb } from "lucide-react";
+import { AlertTriangle, ArrowRight, Clock, Database, ExternalLink, HelpCircle, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import {
   workflowLanes,
@@ -26,7 +26,15 @@ export default function WorkflowGuide({
   const router = useRouter();
   const { t } = useTranslation();
   const [schemaTable, setSchemaTable] = useState<string | null>(null);
+  const [isNavPending, startNav] = useTransition();
+  const [navPath, setNavPath] = useState<string | null>(null);
   const lane = laneById.get(node.lane);
+
+  // 화면 바로가기: 클릭 즉시 pending 표시 후 이동(대상 페이지 로딩 동안 스피너)
+  const goToRoute = (path: string) => {
+    setNavPath(path);
+    startNav(() => router.push(path));
+  };
   const previous = getPreviousNodes(node.id);
   const next = getNextNodes(node.id);
 
@@ -90,18 +98,22 @@ export default function WorkflowGuide({
       {/* 화면 바로가기 */}
       <GuideBlock title={t("workflowGuide.routes", "화면 바로가기")}>
         <div className="space-y-2">
-          {node.routes.map((route) => (
-            <Button
-              key={route.path}
-              variant="secondary"
-              size="sm"
-              className="w-full justify-between"
-              onClick={() => router.push(route.path)}
-            >
-              <span>{route.label}</span>
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          ))}
+          {node.routes.map((route) => {
+            const navigating = isNavPending && navPath === route.path;
+            return (
+              <Button
+                key={route.path}
+                variant="secondary"
+                size="sm"
+                className="w-full justify-between"
+                onClick={() => goToRoute(route.path)}
+                disabled={isNavPending}
+              >
+                <span>{navigating ? t("workflowGuide.opening", "여는 중…") : route.label}</span>
+                {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+              </Button>
+            );
+          })}
         </div>
       </GuideBlock>
 

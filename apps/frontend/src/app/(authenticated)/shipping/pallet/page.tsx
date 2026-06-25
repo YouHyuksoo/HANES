@@ -7,7 +7,7 @@
  * 초보자 가이드:
  * 1. **팔레트**: 여러 박스를 묶어 운송하는 물류 단위
  * 2. **상태 흐름**: OPEN -> CLOSED -> LOADED -> SHIPPED
- * 3. **박스 할당**: 마감(CLOSED) + OQC 합격 + 미할당 박스만 적재 가능
+ * 3. **박스 할당**: 마감(CLOSED) + OQC 사용 시 합격 + 미할당 박스만 적재 가능
  * 4. API:
  *    - GET  /shipping/pallets (palletNo/status 필터)
  *    - POST /shipping/pallets (팔레트번호 자동 채번)
@@ -35,6 +35,7 @@ import api from "@/services/api";
 import toast from "react-hot-toast";
 import PalletLabelModal from "./components/PalletLabelModal";
 import type { PalletLabelInfo } from "./components/PalletLabelModal";
+import { useSysConfigStore } from "@/stores/sysConfigStore";
 
 /** 팔레트 포함 박스 (GET /shipping/pallets/barcode/:no/boxes 응답) */
 interface PalletBox {
@@ -112,6 +113,10 @@ function PalletStatusHeader() {
 
 export default function PalletPage() {
   const { t } = useTranslation();
+  const sysConfigLoaded = useSysConfigStore((state) => state.isLoaded);
+  const sysConfigOqcEnabled = useSysConfigStore((state) => state.isEnabled("OQC_ENABLED"));
+  const fetchConfigs = useSysConfigStore((state) => state.fetchConfigs);
+  const oqcEnabled = !sysConfigLoaded || sysConfigOqcEnabled;
   const comCodeOptions = useComCodeOptions("PALLET_STATUS");
   const statusOptions = useMemo(
     () => [{ value: "", label: t("common.allStatus") }, ...comCodeOptions],
@@ -145,6 +150,10 @@ export default function PalletPage() {
   const scanBoxRef = useRef<HTMLInputElement>(null);
   const [labelPallet, setLabelPallet] = useState<PalletLabelInfo | null>(null);
   const [labelAutoPrint, setLabelAutoPrint] = useState(false);
+
+  useEffect(() => {
+    if (!sysConfigLoaded) void fetchConfigs();
+  }, [fetchConfigs, sysConfigLoaded]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -254,17 +263,23 @@ export default function PalletPage() {
     scanInputRef.current?.focus();
   }, [scanText]);
 
-  /** 적재 후보: 마감(CLOSED) + OQC 합격(PASS) + 팔레트 미할당 박스 */
+  const buildAvailableBoxParams = useCallback((extra: Record<string, string> = {}) => {
+    const params: Record<string, string> = { status: "CLOSED", unassigned: "true", ...extra };
+    if (oqcEnabled) params.oqcStatus = "PASS";
+    return params;
+  }, [oqcEnabled]);
+
+  /** 적재 후보: 마감(CLOSED) + OQC 사용 시 합격(PASS) + 팔레트 미할당 박스 */
   const fetchAvailableBoxes = useCallback(async () => {
     try {
       const res = await api.get("/shipping/boxes", {
-        params: { status: "CLOSED", unassigned: "true", oqcStatus: "PASS" },
+        params: buildAvailableBoxParams(),
       });
       setAvailableBoxes(res.data?.data ?? []);
     } catch {
       setAvailableBoxes([]);
     }
-  }, []);
+  }, [buildAvailableBoxParams]);
 
   /** 액션 응답의 팔레트로 선택 상태를 동기화하고 목록·박스를 갱신 */
   const syncAfterAction = useCallback((pallet: Pallet | undefined) => {
@@ -312,7 +327,7 @@ export default function PalletPage() {
     }
     try {
       const res = await api.get("/shipping/boxes", {
-        params: { boxNo, status: "CLOSED", oqcStatus: "PASS", unassigned: "true" },
+        params: buildAvailableBoxParams({ boxNo }),
       });
       const boxes: AvailableBox[] = res.data?.data ?? [];
       if (boxes.length === 0) {
@@ -327,7 +342,7 @@ export default function PalletPage() {
     }
     setScanBoxInput("");
     scanBoxRef.current?.focus();
-  }, [scanBoxInput, selectedPallet, t]);
+  }, [buildAvailableBoxParams, scanBoxInput, selectedPallet, t]);
 
   const handleAssignBoxes = useCallback(async () => {
     if (!selectedPallet || selectedBoxes.length === 0) return;

@@ -503,6 +503,7 @@ export class ShipOrderService {
       remainingQty: Math.max(0, item.orderQty - item.shippedQty),
     }));
     const itemCodes = [...new Set(lines.filter((line) => line.remainingQty > 0).map((line) => line.itemCode))];
+    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
 
     const [candidateBoxes, pallets, shipments] = await Promise.all([
       itemCodes.length
@@ -510,7 +511,7 @@ export class ShipOrderService {
             where: {
               itemCode: In(itemCodes),
               status: 'CLOSED',
-              oqcStatus: 'PASS',
+              ...(oqcEnabled ? { oqcStatus: 'PASS' } : {}),
               palletNo: IsNull(),
               ...this.tenantWhere(company, plant),
             },
@@ -626,9 +627,12 @@ export class ShipOrderService {
       throw new BadRequestException(`CLOSED 상태가 아닌 박스가 있습니다: ${invalidStatus.map((box) => box.boxNo).join(', ')}`);
     }
 
-    const oqcBlocked = boxes.filter((box) => box.oqcStatus !== 'PASS');
-    if (oqcBlocked.length > 0) {
-      throw new BadRequestException(`OQC 미완료/불합격 박스는 적재할 수 없습니다: ${oqcBlocked.map((box) => box.boxNo).join(', ')}`);
+    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
+    if (oqcEnabled) {
+      const oqcBlocked = boxes.filter((box) => box.oqcStatus !== 'PASS');
+      if (oqcBlocked.length > 0) {
+        throw new BadRequestException(`OQC 미완료/불합격 박스는 적재할 수 없습니다: ${oqcBlocked.map((box) => box.boxNo).join(', ')}`);
+      }
     }
 
     const assignedOther = boxes.filter((box) => box.palletNo && box.palletNo !== palletNo);
@@ -763,10 +767,11 @@ export class ShipOrderService {
 
     const itemQtyMap = new Map<string, number>();
     const fgBarcodes: string[] = [];
+    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
     for (const box of boxes) {
       if (!lineByItem.has(box.itemCode)) throw new BadRequestException(`출하지시에 없는 품목입니다: ${box.itemCode}`);
       if (box.status !== 'CLOSED') throw new BadRequestException(`CLOSED 상태가 아닌 박스가 있습니다: ${box.boxNo}`);
-      if (box.oqcStatus !== 'PASS') throw new BadRequestException(`OQC 미완료/불합격 박스가 포함되었습니다: ${box.boxNo}`);
+      if (oqcEnabled && box.oqcStatus !== 'PASS') throw new BadRequestException(`OQC 미완료/불합격 박스가 포함되었습니다: ${box.boxNo}`);
       itemQtyMap.set(box.itemCode, (itemQtyMap.get(box.itemCode) ?? 0) + box.qty);
       if (box.serialList) {
         try {

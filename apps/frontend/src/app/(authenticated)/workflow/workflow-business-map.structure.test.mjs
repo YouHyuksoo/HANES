@@ -37,7 +37,8 @@ test("/workflow keeps secondary relations out of the default visual noise", () =
 test("/workflow uses swimlanes and business activity nodes", () => {
   assert.match(mapSource, /구매\/입하/);
   assert.match(mapSource, /자재\/IQC/);
-  assert.match(mapSource, /추적\/역처리/);
+  assert.match(mapSource, /title: "추적성"/);
+  assert.match(mapSource, /title: "역처리"/);
   assert.match(mapSource, /activity/);
   assert.match(mapSource, /dataObjects/);
   assert.match(mapSource, /routes/);

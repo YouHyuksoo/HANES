@@ -37,6 +37,7 @@ describe('ShipOrderService', () => {
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
+  let mockSysConfig: DeepMocked<SysConfigService>;
 
   beforeEach(async () => {
     mockOrderRepo = createMock<Repository<ShipmentOrder>>();
@@ -50,6 +51,8 @@ describe('ShipOrderService', () => {
     mockTx = createMock<TransactionService>();
     mockQr = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
+    mockSysConfig = createMock<SysConfigService>();
+    mockSysConfig.isEnabled.mockResolvedValue(true);
     mockDataSource.createQueryRunner.mockReturnValue(mockQr);
     mockTx.run.mockImplementation(async (callback) => callback(mockQr));
     mockQr.connect.mockResolvedValue(undefined);
@@ -72,7 +75,7 @@ describe('ShipOrderService', () => {
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
-        { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
+        { provide: SysConfigService, useValue: mockSysConfig },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: ShipmentService, useValue: createMock<ShipmentService>() },
       ],
@@ -268,7 +271,7 @@ describe('ShipOrderService', () => {
       ] as any);
       mockBoxRepo.count.mockResolvedValue(0);
 
-      await expect(target.unconfirm('SO-001')).rejects.toThrow('출하지시에 배정된 팔레트 또는 박스가 있으면 확정취소할 수 없습니다.');
+      await expect(target.unconfirm('SO-001')).rejects.toThrow('확정취소 불가 — 배정된 팔레트 PLT-001를 먼저 해제하세요.');
     });
   });
 
@@ -425,6 +428,62 @@ describe('ShipOrderService', () => {
       expect(mockTx.run).not.toHaveBeenCalled();
     });
 
+    it('OQC 미사용 시 fulfillment 후보 조회에서 OQC PASS 필터를 제거한다', async () => {
+      mockSysConfig.isEnabled.mockResolvedValue(false);
+      mockBoxRepo.find.mockResolvedValue([] as any);
+      mockPalletRepo.find.mockResolvedValue([] as any);
+      mockShipmentRepo.find.mockResolvedValue([] as any);
+
+      await target.getFulfillment('SO-001', 'C1', 'P1');
+
+      const firstBoxFind = mockBoxRepo.find.mock.calls[0]?.[0] as any;
+      expect(firstBoxFind.where).toEqual(expect.objectContaining({
+        status: 'CLOSED',
+        palletNo: expect.anything(),
+        company: 'C1',
+        plant: 'P1',
+      }));
+      expect(firstBoxFind.where.oqcStatus).toBeUndefined();
+    });
+
+    it('OQC 미사용 시 PENDING 박스도 출하지시 팔레트에 적재한다', async () => {
+      mockSysConfig.isEnabled.mockResolvedValue(false);
+      mockPalletRepo.findOne.mockResolvedValue({
+        palletNo: 'PLT-001',
+        shipOrderNo: 'SO-001',
+        status: 'OPEN',
+        boxCount: 0,
+      } as any);
+      mockBoxRepo.find
+        .mockResolvedValueOnce([
+          { boxNo: 'BX-001', itemCode: 'ITEM-A', qty: 10, status: 'CLOSED', oqcStatus: 'PENDING', palletNo: null },
+        ] as any)
+        .mockResolvedValueOnce([] as any)
+        .mockResolvedValueOnce([] as any);
+      mockPalletRepo.find
+        .mockResolvedValueOnce([{ palletNo: 'PLT-001', status: 'OPEN' }] as any)
+        .mockResolvedValueOnce([] as any);
+      mockShipmentRepo.find.mockResolvedValue([] as any);
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ count: '1', totalQty: '10' }),
+      };
+      mockQr.manager.createQueryBuilder.mockReturnValue(qb as any);
+
+      await expect(
+        target.addBoxesToOrderPallet('SO-001', 'PLT-001', { boxIds: ['BX-001'] }, 'C1', 'P1'),
+      ).resolves.toEqual(expect.objectContaining({ candidateBoxes: [] }));
+
+      expect(mockQr.manager.update).toHaveBeenCalledWith(
+        BoxMaster,
+        expect.objectContaining({ boxNo: expect.anything(), company: 'C1', plant: 'P1' }),
+        { palletNo: 'PLT-001' },
+      );
+    });
+
     it('팔레트 바코드 출하 시 내부 출하건을 자동 생성해 제품출하까지 진행한다', async () => {
       mockNumbering.nextShipmentNo.mockResolvedValue('SHP-001');
       mockPalletRepo.find.mockResolvedValue([
@@ -445,6 +504,30 @@ describe('ShipOrderService', () => {
         shipOrderNo: 'SO-001',
         customer: '거래처A',
         status: 'LOADED',
+      }));
+    });
+
+    it('OQC 미사용 시 PENDING 박스가 포함된 팔레트도 출하한다', async () => {
+      mockSysConfig.isEnabled.mockResolvedValue(false);
+      mockNumbering.nextShipmentNo.mockResolvedValue('SHP-001');
+      mockPalletRepo.find.mockResolvedValue([
+        { palletNo: 'PLT-001', shipOrderNo: 'SO-001', status: 'CLOSED', shipmentId: null, boxCount: 1, totalQty: 10 },
+      ] as any);
+      mockBoxRepo.find.mockResolvedValue([
+        { boxNo: 'BX-001', itemCode: 'ITEM-A', qty: 10, status: 'CLOSED', oqcStatus: 'PENDING', palletNo: 'PLT-001', serialList: null },
+      ] as any);
+      mockShipmentRepo.findOne.mockResolvedValue(null);
+      mockShipmentRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save.mockImplementation(async (entity: any) => entity);
+      mockQr.manager.findOne.mockResolvedValue({ warehouseCode: 'FG_MAIN' } as any);
+
+      await expect(
+        target.shipOrderPallets('SO-001', { palletNos: ['PLT-001'] }, 'C1', 'P1'),
+      ).resolves.toEqual(expect.objectContaining({ shipped: true }));
+
+      expect(mockShipmentRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        shipNo: 'SHP-001',
+        shipOrderNo: 'SO-001',
       }));
     });
   });

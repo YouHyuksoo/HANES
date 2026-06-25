@@ -4,7 +4,8 @@ export type WorkflowLaneId =
   | "production"
   | "quality"
   | "shipping"
-  | "trace-reversal"
+  | "trace"
+  | "reversal"
   | "quality-system"
   | "consumables"
   | "pda";
@@ -90,32 +91,39 @@ export const workflowLanes: WorkflowLane[] = [
     y: 880,
   },
   {
-    id: "trace-reversal",
-    title: "추적/역처리",
-    description: "제품/자재 추적성과 입고취소, 출하취소처럼 뒤 공정 조건을 확인하는 보정 흐름입니다.",
+    id: "trace",
+    title: "추적성",
+    description: "제품 시리얼에서 SG, 자재, PO, IQC, 출하까지 계보를 역추적하는 조회 흐름입니다.",
     color: "#475569",
     y: 1100,
+  },
+  {
+    id: "reversal",
+    title: "역처리",
+    description: "입하/입고 취소, 출하취소처럼 이미 처리된 거래를 조건에 맞춰 되돌리는 보정 흐름입니다.",
+    color: "#57534e",
+    y: 1320,
   },
   {
     id: "quality-system",
     title: "품질관리(IATF)",
     description: "관리계획서, 4M변경, SPC, 클레임/CAPA처럼 양산을 둘러싼 품질시스템을 관리합니다.",
     color: "#15803d",
-    y: 1320,
+    y: 1540,
   },
   {
     id: "consumables",
     title: "소모품관리",
     description: "금형·지그·공구를 기준정보로 등록하고 입출고, 설비 장착, 수명까지 관리합니다.",
     color: "#4f46e5",
-    y: 1540,
+    y: 1760,
   },
   {
     id: "pda",
     title: "PDA(현장 단말)",
     description: "PC 화면과 동일한 입고·불출·출하·점검 업무를 현장 PDA 스캔으로도 처리합니다.",
     color: "#db2777",
-    y: 1760,
+    y: 1980,
   },
 ];
 
@@ -690,7 +698,7 @@ export const workflowNodes: WorkflowActivityNode[] = [
   },
   {
     id: "traceability",
-    lane: "trace-reversal",
+    lane: "trace",
     activity: "추적성 조회",
     summary: "제품 시리얼에서 SG, 자재, PO, IQC, 출하까지 역추적합니다.",
     detail: "추적성은 문제 발생 시 어느 자재와 검사, 생산, 출하가 연결되어 있는지 찾는 화면입니다. 업무 이해 관점에서는 모든 도메인의 연결 결과를 보여줍니다.",
@@ -705,7 +713,7 @@ export const workflowNodes: WorkflowActivityNode[] = [
   },
   {
     id: "material-reversal",
-    lane: "trace-reversal",
+    lane: "reversal",
     activity: "입하/입고 취소",
     summary: "뒤 공정이 없을 때만 입하 또는 입고를 역처리합니다.",
     detail: "취소는 단순 삭제가 아니라 수불과 상태를 되돌리는 보정 거래입니다. 이미 출고나 생산이 진행된 자재는 먼저 후속 흐름을 정리해야 합니다.",
@@ -720,7 +728,7 @@ export const workflowNodes: WorkflowActivityNode[] = [
   },
   {
     id: "shipping-reversal",
-    lane: "trace-reversal",
+    lane: "reversal",
     activity: "출하취소",
     summary: "출하 완료 후 조건에 맞는 건을 보상 거래로 되돌립니다.",
     detail: "출하취소는 제품재고, 박스, 팔레트, 출하지시 수량을 함께 되돌려야 합니다. ERP 동기화나 후속 처리 여부가 취소 가능 조건이 됩니다.",

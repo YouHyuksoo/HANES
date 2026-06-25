@@ -2,9 +2,18 @@
 
 ## Last Update
 
-2026-06-24 (local) — T-KIOSK-SG-LABEL-PRINT 완료
+2026-06-25 (local) — T-WORKFLOW-GUIDE-HUB 완료 + 푸시
 
 ## Latest
+
+- T-WORKFLOW-GUIDE-HUB(`/workflow` 처음 사용자용 업무 가이드 허브 재설계) 완료 — **브랜치 `feature/workflow-guide-hub` 원격 푸시 완료**(main 미병합). 설계 `docs/superpowers/specs/2026-06-24-workflow-guide-hub-design.md`, 계획 `docs/superpowers/plans/2026-06-24-workflow-guide-hub.md`. SDD 7 Task + 최종 통합리뷰(opus, Ready to merge, Critical/Important 0).
+  - **구조**: 좌측 레인그룹 단계목록(`WorkflowSidebar`) + 중앙 가이드본문(`WorkflowGuide`: 왜/언제/주의점 + 입력·산출 + 화면바로가기 + help md 인라인 + 선·후행) + 상단 [가이드]/[흐름도] 탭. 두 탭이 `selectedNodeId` 공유, 흐름도 노드클릭→가이드탭 점프(`selectFromFlow`).
+  - **데이터**: `config/workflowMap.ts`에 optional 가이드필드(why/when/cautions/order/helpRefs) + 헬퍼 4종(getNodesByLane/getVisibleNodeIds/getPreviousNodes/getNextNodes). 주 흐름 22단계 한국어 본문 작성(추적·역처리 3노드는 골격).
+  - **재사용**: `WorkflowHelpInline`이 `useHelpDoc`+`MarkdownRenderer`+`findMenuCodeByPath`로 단계별 help md를 접힌 아코디언 인라인 렌더(helpRefs 우선, 없으면 routes→메뉴코드 자동도출+dedup, notFound 숨김). 흐름도는 기존 React Flow 맵을 `WorkflowFlow`로 분리(동작 동일).
+  - **i18n**: locale 4파일이 타 세션(T-TRACE-FULL/T-KIOSK-SG-LABEL-PRINT 등) active 락이라 **JSON 미수정** — 라벨만 `t("workflowGuide.*", "한국어fallback")`. 한국어 폴백 리터럴 보존으로 구조테스트 통과. 키는 락 해제 후 별도 추가 필요.
+  - **검증**: 통합 HEAD 기준 구조테스트 `workflow-business-map.structure.test.mjs` **7/7 PASS**, 프론트 tsc **0**. 피처 커밋 7개 `a391e3d6 a88f0359 3ea8edb9 ea9806bb ef0f1ac4 bcfc3f4d c9203115`.
+  - **Minor(전부 defer, 사용자판단)**: getNodesByLane 혼합정렬키(`order ?? x`, 현재 trace-reversal만 order결측이라 무해—향후 order보유 레인에 order없는 노드 추가 시 정렬 꼬임 주의); 빈/로딩 상태 한국어 4문자열 미i18n; stepSuffix 숫자+접미사 연결(언어별 어순 미대응); 구조테스트 edge.kind 정규식 `\w+.kind`로 일반화. PR 미생성(푸시만).
+  - **LOCKS 정리**: 본 세션 락 `T-WORKFLOW-GUIDE-HUB` 제거함. locale 등 타 세션 미커밋 변경 혼입 회피 위해 협업 보드는 워킹트리만 갱신(미커밋), 직전 claude 세션 관례 동일.
 
 - T-KIOSK-SG-LABEL-PRINT(키오스크 SG 라벨 발행공정 자동 출력) 완료: 키오스크 실적저장 시 라우팅 `ISSUE_SG_LABEL_YN='Y'` 발행공정이면 백엔드가 발행한 `SG_LABELS`를 **HANES Print Agent(Go, PNG, `printAgentPng`)로 모달 없이 자동 출력**.
   - **흐름**: `ProductionInputBar` 실적저장 성공 → `onResultSaved(resultNo)` 상위 전달 → `page.tsx` `handleResultSaved` → `SgLabelPrintHost.printByResultNo` → `GET /production/subprocess-kitting/sg-labels-by-result/:resultNo`(발행분 0건이면 무동작) → 오프스크린 `LabelPrintRenderer` 렌더 → `printLabelNodesViaAgent`(신규 `services/label-print.ts`, MatLabelPreviewModal 검증로직 추출: SVG foreignObject→canvas→PNG base64→`printAgentPng`). **백엔드 SG 발행(`issueSgLabelInTx`)은 기존 동작 그대로**, 출력만 추가.

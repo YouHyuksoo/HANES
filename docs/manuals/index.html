@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HANES MES 매뉴얼 목차</title>
+  <style>
+    :root {
+      --paper: #f5f3ee;
+      --surface: #ffffff;
+      --ink: #171b1f;
+      --muted: #66707a;
+      --line: #d7d2c8;
+      --deep: #23313b;
+      --steel: #405468;
+      --green: #0f7a5f;
+      --blue: #255f99;
+      --amber: #a76512;
+      --red: #a93d35;
+      --shadow: 0 18px 40px rgba(34, 37, 40, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(90deg, rgba(23, 27, 31, 0.045) 1px, transparent 1px) 0 0 / 34px 34px,
+        linear-gradient(rgba(23, 27, 31, 0.035) 1px, transparent 1px) 0 0 / 34px 34px,
+        var(--paper);
+      color: var(--ink);
+      font-family: "Malgun Gothic", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+
+    .rail {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 22px;
+      background: var(--deep);
+      color: #f7f3e9;
+      border-right: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: auto;
+    }
+
+    .brand {
+      display: grid;
+      gap: 10px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      background: #f7f3e9;
+      color: var(--deep);
+      font-weight: 900;
+      border-radius: 6px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .brand p {
+      margin: 0;
+      color: rgba(247, 243, 233, 0.70);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .nav a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      min-height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 6px;
+      color: rgba(247, 243, 233, 0.92);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav a:hover,
+    .nav a:focus-visible {
+      background: rgba(255, 255, 255, 0.12);
+      outline: none;
+    }
+
+    .nav b {
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .nav span {
+      min-width: 34px;
+      height: 24px;
+      display: inline-grid;
+      place-items: center;
+      background: rgba(247, 243, 233, 0.14);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .content {
+      padding: 30px;
+      max-width: 1480px;
+      width: 100%;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .title-block {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .title-block h2 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .title-block p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 18px;
+      min-height: 98px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 30px;
+      line-height: 1;
+      color: var(--deep);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 22px;
+      background: rgba(245, 243, 238, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      backdrop-filter: blur(12px);
+    }
+
+    .search {
+      width: 100%;
+      height: 44px;
+      padding: 0 14px;
+      border: 1px solid #b9b2a6;
+      border-radius: 6px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .search:focus {
+      outline: 3px solid rgba(15, 122, 95, 0.18);
+      border-color: var(--green);
+    }
+
+    .count {
+      min-width: 132px;
+      text-align: center;
+      color: #fff;
+      background: var(--green);
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .manual-section {
+      margin-bottom: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .manual-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 18px 20px;
+      border-top: 6px solid var(--accent);
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #f9f7f1);
+    }
+
+    .manual-header h3 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .manual-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid #b9b2a6;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--deep);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .action.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .screen-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .screen-table th,
+    .screen-table td {
+      border-bottom: 1px solid #ebe7df;
+      padding: 11px 12px;
+      vertical-align: middle;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .screen-table th {
+      color: var(--muted);
+      background: #fbfaf7;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .screen-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .screen-table tr:hover td {
+      background: #faf7ef;
+    }
+
+    .col-no { width: 56px; color: var(--muted); font-weight: 900; }
+    .col-title { width: 26%; font-weight: 900; }
+    .col-code { width: 18%; }
+    .col-path { width: 32%; color: var(--steel); }
+    .col-open { width: 110px; text-align: right; }
+
+    code {
+      display: inline-block;
+      max-width: 100%;
+      padding: 3px 6px;
+      border: 1px solid #ddd7cc;
+      border-radius: 5px;
+      background: #f6f2ea;
+      color: #26313a;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .open-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 74px;
+      min-height: 34px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .open-link:hover,
+    .open-link:focus-visible {
+      background: var(--accent);
+      color: #fff;
+      outline: none;
+    }
+
+    .empty {
+      display: none;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 1080px) {
+      .page { grid-template-columns: 1fr; }
+      .rail {
+        position: relative;
+        height: auto;
+      }
+      .nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .content { padding: 16px; }
+      .rail { padding: 20px 16px; }
+      .nav { grid-template-columns: 1fr; }
+      .title-block h2 { font-size: 26px; }
+      .metrics { grid-template-columns: 1fr; }
+      .toolbar { grid-template-columns: 1fr; }
+      .count { min-width: 0; }
+      .manual-header { grid-template-columns: 1fr; }
+      .actions { justify-content: flex-start; }
+      .screen-table thead { display: none; }
+      .screen-table,
+      .screen-table tbody,
+      .screen-table tr,
+      .screen-table td {
+        display: block;
+        width: 100%;
+      }
+      .screen-table tr {
+        border-bottom: 1px solid #ebe7df;
+        padding: 10px 0;
+      }
+      .screen-table td {
+        border: 0;
+        padding: 6px 14px;
+      }
+      .col-open { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="rail">
+      <div class="brand">
+        <div class="brand-mark">H</div>
+        <h1>HANES MES<br />Manual Index</h1>
+        <p>생성된 메뉴그룹 매뉴얼을 한 화면에서 찾는 운영 목차</p>
+      </div>
+      <nav class="nav" id="groupNav" aria-label="매뉴얼 그룹"></nav>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <section class="title-block">
+          <p class="eyebrow">2026-06-24 생성본</p>
+          <h2>HANES MES 매뉴얼 목차</h2>
+          <p>기준정보, 자재, 생산, 품질, 검사, 제품수불, 출하 매뉴얼을 메뉴그룹 단위로 묶었습니다. 각 화면명은 해당 매뉴얼 내부 섹션으로 바로 연결됩니다.</p>
+        </section>
+        <section class="metrics" aria-label="요약">
+          <div class="metric"><span>매뉴얼 그룹</span><strong id="manualCount">0</strong></div>
+          <div class="metric"><span>화면 항목</span><strong id="screenCount">0</strong></div>
+          <div class="metric"><span>도움말 누락</span><strong id="helpMissing">0</strong></div>
+          <div class="metric"><span>캡처 누락</span><strong id="captureMissing">0</strong></div>
+        </section>
+      </div>
+
+      <div class="toolbar">
+        <input class="search" id="search" type="search" placeholder="화면명, 메뉴코드, URL 검색" autocomplete="off" />
+        <div class="count" id="visibleCount">0개 표시</div>
+      </div>
+
+      <div id="manuals"></div>
+      <div class="empty" id="empty">일치하는 화면이 없습니다.</div>
+
+      <p class="footer">
+        Source: `docs/manuals/*.result.json`. All linked manual pages are relative files in this folder.
+      </p>
+    </main>
+  </div>
+
+  <script>
+    const manuals = [
+      {
+        id: "master",
+        title: "기준정보",
+        subtitle: "품목, BOM, 거래처, 설비, 공정, 라우팅, 작업자, 문서 기준",
+        file: "hanes-master-manual-2026-06-24.html",
+        result: "hanes-master-manual-2026-06-24.result.json",
+        total: 15,
+        missingHelp: 0,
+        missingCapture: 0,
+        accent: "#255f99",
+        screens: [
+          ["MST_PART", "품목마스터", "/master/part"],
+          ["MST_BOM", "BOM관리", "/master/bom"],
+          ["MST_PARTNER", "거래처관리", "/master/partner"],
+          ["EQUIP_MASTER", "설비마스터", "/master/equip"],
+          ["MST_PROCESS", "공정마스터", "/master/process"],
+          ["MST_PROD_LINE", "생산라인관리", "/master/prod-line"],
+          ["MST_ROUTING", "라우팅관리", "/master/routing"],
+          ["MST_WORK_CALENDAR", "생산월력관리", "/master/work-calendar"],
+          ["MST_WORKER", "작업자관리", "/master/worker"],
+          ["MST_WORK_INST", "작업지도서 관리", "/master/work-instruction"],
+          ["MST_WAREHOUSE", "창고/로케이션 관리", "/master/warehouse"],
+          ["MST_LABEL", "라벨관리", "/master/label"],
+          ["MST_VENDOR_BARCODE", "제조사 바코드 매핑", "/master/vendor-barcode"],
+          ["MST_PROCESS_CAPA", "공정 CAPA 관리", "/master/process-capa"],
+          ["SYS_DOCUMENT", "문서관리", "/system/document"]
+        ]
+      },
+      {
+        id: "material",
+        title: "자재관리",
+        subtitle: "입하, 입고, 출고, LOT, 유수명, 실사, 입하재고 흐름",
+        file: "hanes-material-manual-2026-06-24.html",
+        result: "hanes-material-manual-2026-06-24.result.json",
+        total: 26,
+        missingHelp: 0,
+        missingCapture: 0,
+        accent: "#0f7a5f",
+        screens: [
+          ["MAT_ARRIVAL", "입하관리", "/material/arrival"],
+          ["MAT_ARRIVAL_RESULT", "입하실적조회", "/material/arrival-result"],
+          ["MAT_ARRIVAL_TRANSACTION", "입하수불조회", "/material/arrival-transaction"],
+          ["MAT_RECEIVE_LABEL", "자재라벨발행", "/material/receive-label"],
+          ["MAT_RECEIVE", "자재입고관리", "/material/receive"],
+          ["MAT_RECEIVE_HISTORY", "자재입고이력", "/material/receive-history"],
+          ["MAT_REQUEST", "출고요청관리", "/material/request"],
+          ["MAT_ISSUE", "자재출고관리(양산)", "/material/issue"],
+          ["MAT_ISSUE_OTHER", "기타출고관리", "/material/issue-other"],
+          ["MAT_LOT", "자재 LOT 조회", "/material/lot"],
+          ["MAT_LOT_SPLIT", "자재분할", "/material/lot-split"],
+          ["MAT_LOT_MERGE", "자재병합", "/material/lot-merge"],
+          ["MAT_SHELF_LIFE", "유수명자재 만료현황", "/material/shelf-life"],
+          ["MAT_SHELF_LIFE_REINSPECT", "유수명자재 재검사", "/material/shelf-life-reinspect"],
+          ["MAT_SHELF_LIFE_HISTORY", "유수명자재 검사이력", "/material/shelf-life-history"],
+          ["MAT_SCRAP", "자재폐기", "/material/scrap"],
+          ["MAT_ADJUSTMENT", "재고보정", "/material/adjustment"],
+          ["MAT_MISC_RECEIPT", "기타입고", "/material/misc-receipt"],
+          ["MAT_RECEIPT_CANCEL", "자재입고취소", "/material/receipt-cancel"],
+          ["INV_MAT_STOCK", "자재재고현황조회", "/inventory/material-stock"],
+          ["INV_TRANSACTION", "자재수불이력조회", "/inventory/transaction"],
+          ["INV_MAT_PHYSICAL_INV", "자재재고실사 관리", "/inventory/material-physical-inv"],
+          ["INV_MAT_PHYSICAL_INV_APPLY", "자재재고실사 반영", "/inventory/material-physical-inv-apply"],
+          ["INV_MAT_PHYSICAL_INV_HISTORY", "자재재고실사 이력", "/inventory/material-physical-inv-history"],
+          ["INV_ARRIVAL_STOCK", "입하재고현황", "/material/arrival-stock"],
+          ["MAT_HOLD", "자재재고홀드관리", "/material/hold"]
+        ]
+      },
+      {
+        id: "production",
+        title: "생산관리",
+        subtitle: "생산계획, 도면, 키팅, 실적입력, 재공, 재작업, 수리",
+        file: "hanes-production-manual-2026-06-24.html",
+        result: "hanes-production-manual-2026-06-24.result.json",
+        total: 19,
+        missingHelp: 0,
+        missingCapture: 0,
+        accent: "#a76512",
+        screens: [
+          ["PROD_MONTHLY_PLAN", "제품생산계획", "/production/monthly-plan"],
+          ["PROD_SIMULATION", "생산계획 시뮬레이션", "/production/simulation"],
+          ["PROD_SPEC_SETUP", "제품 도면관리", "/production/specification-setup"],
+          ["PROD_KITTING", "실적입력(서브공정)", "/production/subprocess-kitting"],
+          ["PROD_INPUT_ASSEMBLY", "실적입력(조립)", "/production/input-assembly"],
+          ["PROD_ORDER", "작업지시 관리", "/production/order"],
+          ["PROD_RESULT", "생산실적", "/production/result"],
+          ["PROD_PROGRESS", "작업지시 진행현황", "/production/progress"],
+          ["PROD_INPUT_KIOSK", "실적입력(키오스크)", "/production/input-kiosk"],
+          ["PROD_INPUT_INSPECT", "실적입력(단순검사)", "/production/input-inspect"],
+          ["PROD_INPUT_EQUIP", "실적입력(검사장비)", "/production/input-equip"],
+          ["PROD_RESULT_SUMMARY", "생산실적 통합조회", "/production/result-summary"],
+          ["PROD_WIP_STOCK", "반제품재공조회", "/production/wip-stock"],
+          ["PROD_FG_STOCK", "제품재공조회", "/production/fg-stock"],
+          ["PROD_WIP_MAT_STOCK", "원자재공정재고", "/production/wip-material-stock"],
+          ["PROD_WIP_MAT_TRANS", "원자재공정수불", "/production/wip-material-trans"],
+          ["QC_REWORK", "재작업 지시", "/quality/rework"],
+          ["QC_REWORK_HISTORY", "재작업 현황", "/quality/rework-history"],
+          ["PROD_REPAIR", "수리관리", "/production/repair"]
+        ]
+      },
+      {
+        id: "quality",
+        title: "품질관리",
+        subtitle: "AQL, IQC, 불량, 재작업 검사, OQC, 추적성, CAPA, 감사",
+        file: "hanes-quality-manual-2026-06-24.html",
+        result: "hanes-quality-manual-2026-06-24.result.json",
+        total: 25,
+        missingHelp: 0,
+        missingCapture: 0,
+        accent: "#a93d35",
+        screens: [
+          ["QC_IQC_ITEM", "검사항목마스터", "/master/iqc-item"],
+          ["QC_IQC_PART_SPEC", "품목별 IQC 항목관리", "/master/iqc-part-spec"],
+          ["QC_AQL", "AQL 기준관리", "/quality/aql"],
+          ["QC_IQC", "수입검사(IQC)", "/material/iqc"],
+          ["QC_IQC_HISTORY", "IQC 검사이력", "/material/iqc-history"],
+          ["QC_CONCESSION", "특채관리", "/material/concession"],
+          ["QC_DEFECT", "불량등록관리", "/quality/defect"],
+          ["QC_DEFECT_CODE", "불량코드관리", "/quality/defect-code"],
+          ["QC_REWORK_INSPECT", "재작업 후 검사", "/quality/rework-inspect"],
+          ["QC_INSPECT", "외관검사", "/quality/inspect"],
+          ["QC_REQUEST_INSPECT", "의뢰검사 입력", "/quality/request-inspect"],
+          ["QC_SELF_INSPECT_HISTORY", "자주검사 이력", "/quality/self-inspect-history"],
+          ["QC_SAMPLE_INSPECT", "공정샘플검사", "/production/sample-inspect"],
+          ["QC_OQC", "출하검사", "/quality/oqc"],
+          ["QC_OQC_HISTORY", "출하검사 이력", "/quality/oqc-history"],
+          ["QC_TRACE", "추적성 종합 조회", "/quality/trace"],
+          ["QC_CHANGE", "변경관리", "/quality/change-control"],
+          ["QC_COMPLAINT", "고객불만관리", "/quality/complaint"],
+          ["QC_CAPA", "CAPA 관리", "/quality/capa"],
+          ["QC_FAI", "초도품검사", "/quality/fai"],
+          ["QC_PPAP", "PPAP 관리", "/quality/ppap"],
+          ["QC_SPC", "SPC 관리", "/quality/spc"],
+          ["QC_CONTROL_PLAN", "관리계획서", "/quality/control-plan"],
+          ["QC_AUDIT", "품질감사", "/quality/audit"],
+          ["SYS_TRAINING", "교육훈련관리", "/system/training"]
+        ]
+      },
+      {
+        id: "inspection",
+        title: "검사관리",
+        subtitle: "통합검사, 구조검사, 검사결과, 단자검사, 검사이력",
+        file: "hanes-inspection-manual-2026-06-24.html",
+        result: "hanes-inspection-manual-2026-06-24.result.json",
+        total: 6,
+        missingHelp: 0,
+        missingCapture: 0,
+        accent: "#405468",
+        screens: [
+          ["INSP_INTEGRATED", "통합검사", "/inspection/integrated"],
+          ["INSP_STRUCTURE", "구조검사", "/inspection/structure"],
+          ["INSP_RESULT", "검사결과조회", "/inspection/result"],
+          ["INSP_TERMINAL_RESULT", "단자검사결과", "/inspection/terminal-result"],
+          ["INSP_HISTORY", "검사이력", "/inspection/history"],
+          ["INSP_PROTOCOL", "검사프로토콜", "/inspection/protocol"]
+        ]
+      },
+      {
+        id: "product",
+        title: "제품수불관리",
+        subtitle: "FG 라벨 기준 제품 입고, 입고취소, 출고, 출고취소",
+        file: "hanes-product-mgmt-manual-2026-06-24.html",
+        result: "hanes-product-mgmt-manual-2026-06-24.result.json",
+        total: 4,
+        missingHelp: 0,
+        missingCapture: 0,
+        accent: "#7357a6",
+        screens: [
+          ["PROD_RECEIVE", "제품입고", "/product/receive"],
+          ["PROD_RECEIPT_CANCEL", "제품입고취소", "/product/receipt-cancel"],
+          ["PROD_ISSUE", "제품출고", "/product/issue"],
+          ["PROD_ISSUE_CANCEL", "제품출고취소", "/product/issue-cancel"]
+        ]
+      },
+      {
+        id: "shipping",
+        title: "출하관리",
+        subtitle: "포장, 출하지시, 박스재고, 출하확정, 팔레트, 출하취소",
+        file: "hanes-shipping-manual-2026-06-24.html",
+        result: "hanes-shipping-manual-2026-06-24.result.json",
+        total: 9,
+        missingHelp: 0,
+        missingCapture: 0,
+        accent: "#8c4d22",
+        screens: [
+          ["SHIP_PACK_RESULT", "포장실적조회", "/production/pack-result"],
+          ["SHIP_PACK", "포장관리", "/shipping/pack"],
+          ["SHIP_ORDER", "출하지시관리", "/shipping/order"],
+          ["SHIP_BOX_STOCK", "박스재고조회", "/shipping/box-stock"],
+          ["SHIP_CONFIRM", "출하확정", "/shipping/confirm"],
+          ["SHIP_PALLET", "팔레트관리", "/shipping/pallet"],
+          ["SHIP_PALLET_SHIP", "팔레트출하", "/shipping/pallet-ship"],
+          ["SHIP_HISTORY", "출하이력", "/shipping/history"],
+          ["SHIP_RETURN", "출하취소", "/shipping/return"]
+        ]
+      }
+    ];
+
+    const nav = document.querySelector("#groupNav");
+    const manualsRoot = document.querySelector("#manuals");
+    const search = document.querySelector("#search");
+    const visibleCount = document.querySelector("#visibleCount");
+    const empty = document.querySelector("#empty");
+
+    const totalScreens = manuals.reduce((sum, group) => sum + group.screens.length, 0);
+    const missingHelp = manuals.reduce((sum, group) => sum + group.missingHelp, 0);
+    const missingCapture = manuals.reduce((sum, group) => sum + group.missingCapture, 0);
+
+    document.querySelector("#manualCount").textContent = manuals.length;
+    document.querySelector("#screenCount").textContent = totalScreens;
+    document.querySelector("#helpMissing").textContent = missingHelp;
+    document.querySelector("#captureMissing").textContent = missingCapture;
+
+    nav.innerHTML = manuals.map((group) => `
+      <a href="#${group.id}">
+        <b>${group.title}</b>
+        <span>${group.screens.length}</span>
+      </a>
+    `).join("");
+
+    manualsRoot.innerHTML = manuals.map((group) => `
+      <section class="manual-section" id="${group.id}" style="--accent: ${group.accent}" data-group="${group.title}">
+        <header class="manual-header">
+          <div>
+            <h3>${group.title}</h3>
+            <p>${group.subtitle} · ${group.screens.length}개 화면 · missingHelp ${group.missingHelp} · missingCapture ${group.missingCapture}</p>
+          </div>
+          <div class="actions">
+            <a class="action primary" href="${group.file}">매뉴얼 열기</a>
+            <a class="action" href="${group.result}">결과 JSON</a>
+          </div>
+        </header>
+        <table class="screen-table">
+          <thead>
+            <tr>
+              <th class="col-no">No</th>
+              <th class="col-title">화면</th>
+              <th class="col-code">메뉴코드</th>
+              <th class="col-path">경로</th>
+              <th class="col-open">바로가기</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${group.screens.map((screen, index) => `
+              <tr data-search="${`${group.title} ${screen[0]} ${screen[1]} ${screen[2]}`.toLowerCase()}">
+                <td class="col-no">${String(index + 1).padStart(2, "0")}</td>
+                <td class="col-title">${screen[1]}</td>
+                <td class="col-code"><code>${screen[0]}</code></td>
+                <td class="col-path"><code>${screen[2]}</code></td>
+                <td class="col-open"><a class="open-link" href="${group.file}#screen-${index + 1}">열기</a></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </section>
+    `).join("");
+
+    function applyFilter() {
+      const keyword = search.value.trim().toLowerCase();
+      let shown = 0;
+      for (const section of manualsRoot.querySelectorAll(".manual-section")) {
+        let sectionShown = 0;
+        for (const row of section.querySelectorAll("tbody tr")) {
+          const match = !keyword || row.dataset.search.includes(keyword);
+          row.hidden = !match;
+          if (match) {
+            shown += 1;
+            sectionShown += 1;
+          }
+        }
+        section.hidden = sectionShown === 0;
+      }
+      visibleCount.textContent = `${shown}개 표시`;
+      empty.style.display = shown === 0 ? "block" : "none";
+    }
+
+    search.addEventListener("input", applyFilter);
+    applyFilter();
+  </script>
+</body>
+</html>

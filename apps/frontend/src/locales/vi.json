@@ -158,7 +158,8 @@
       "today": "Hôm nay",
       "recent7": "7 ngày gần đây",
       "thisMonth": "Tháng này",
-      "presets": "Chọn khoảng"
+      "presets": "Chọn khoảng",
+      "openIncludedNotice": "Đã bao gồm {{count}} mục đang xử lý nằm ngoài khoảng ngày."
     }
   },
   "help": {
@@ -5359,6 +5360,7 @@
       "statClosed": "Đã đóng",
       "statShipped": "Đã xuất",
       "searchPlaceholder": "Tìm mã thùng, mã linh kiện...",
+      "createdDate": "Ngày tạo",
       "allParts": "Tất cả linh kiện",
       "box": "Thùng",
       "currentQty": "Số lượng hiện tại",

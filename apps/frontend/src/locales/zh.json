@@ -158,7 +158,8 @@
       "today": "今天",
       "recent7": "最近7天",
       "thisMonth": "本月",
-      "presets": "选择期间"
+      "presets": "选择期间",
+      "openIncludedNotice": "已包含 {{count}} 件超出日期范围但进行中的记录。"
     }
   },
   "help": {
@@ -5359,6 +5360,7 @@
       "statClosed": "已封箱",
       "statShipped": "已出货",
       "searchPlaceholder": "搜索箱号、零件代码...",
+      "createdDate": "创建日期",
       "allParts": "全部零件",
       "box": "箱子",
       "currentQty": "当前数量",

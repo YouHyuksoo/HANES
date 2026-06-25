@@ -8,6 +8,8 @@ Format:
 - T-000 | YYYY-MM-DD | owner | short result | evidence: JOURNAL heading or commit
 ```
 
+- T-MANUAL-INDEX-PAGE | 2026-06-25 | codex | `docs/manuals/index.html` 추가, 7개 매뉴얼 그룹/104개 화면을 검색 가능한 메인 목차로 연결 | evidence: JOURNAL 2026-06-25 11:28 Codex
+
 - T-REMAINING-HELP-MANUALS | 2026-06-24 | codex | 품질/검사/제품수불/출하 도움말 user 36개·operator 30개 작성, manifest 보강, 공식 runner 3002 재시도 후 4개 HTML/result 모두 `missingHelp=[]`, `missingCapture=[]` | evidence: JOURNAL 2026-06-24 21:37 Codex
 
 - T-KIOSK-MAT-MOUNT | 2026-06-24 | claude | 키오스크 자재 입력을 작업지시 기준→설비 기준 장착(WIP_MAT_STOCKS, EquipMaterialService.mount 재사용)으로 전환, mount 시점 BOM 오장착 가드, 이력 전량 보존. tsc 0/0 · 구조테스트 3 pass | evidence: JOURNAL 2026-06-24 Claude
@@ -143,3 +145,4 @@ Format:
 - T-MATERIAL-HELP-MANUAL | 2026-06-24 | codex | 자재관리 26개 화면 도움말/manifest를 보강하고 단일 HTML 매뉴얼 `docs/manuals/hanes-material-manual-2026-06-24.html` 생성, runner `missingHelp`/`missingCapture` 0건 확인 | evidence: JOURNAL 2026-06-24 15:39 Codex
 - T-PRESENTATION-REINFORCE | 2026-06-24 | claude | 소개자료에 AQL·생산실적(서브/조립)·검사결과·출하이력·팔레트·추적성 종합 5개 슬라이드 보강(24→29장), 빈/깨진 캡처 37+2장 전량 실데이터로 재생성, PPTX 재빌드 | evidence: JOURNAL 2026-06-24 Claude
 - T-PRODUCTION-HELP-MANUAL | 2026-06-24 | codex | 생산관리 19개 화면 도움말/manifest를 보강하고 단일 HTML 매뉴얼 `docs/manuals/hanes-production-manual-2026-06-24.html` 생성, runner `missingHelp`/`missingCapture` 0건 확인 | evidence: JOURNAL 2026-06-24 16:39 Codex
+- T-SHIP-WORKFLOW-QA | 2026-06-25 | codex | 출하관리 8개 화면과 정/역방향 핵심 상태전이를 실제 API/DB/Playwright로 검증하고 테스트 잔여 0건 확인 | evidence: JOURNAL 2026-06-25 23:59 Codex
