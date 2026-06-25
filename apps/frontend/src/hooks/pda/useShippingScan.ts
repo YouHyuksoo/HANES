@@ -7,9 +7,10 @@
  * Phase 2 (SCAN_WORKER): 작업자 QR → GET /master/workers/by-qr/:qr → Phase 3 전환
  * Phase 3 (SCAN_PRODUCT): 박스 반복 스캔 — 박스 1건마다 즉시 출하 처리
  *   - 박스마다 POST /shipping/orders/:shipOrderNo/ship-box { boxNo, workerId? } (웹과 동일 계약)
+ *   - 취소는 POST /shipping/orders/:shipOrderNo/cancel-ship-box { boxNo, workerId? } (웹과 동일 계약)
  *   - 팔레트 바코드(PLT 접두사): 차단(PALLET_NOT_SUPPORTED) — 백엔드 shipBox()가
  *     팔레트 적재 박스를 이중 차감 방지로 거부하므로, 팔레트 단위 출하는
- *     웹 출하확정(shipment mark-shipped) 경로를 사용해야 한다.
+ *     PDA 팔레트 출하 화면(/pda/pallet-ship)을 사용해야 한다.
  *   - 중복(DUPLICATE) → 차단, 서버 검증 실패(SHIP_FAILED)
  * 출하확인: 스캔 단위로 즉시 출하되므로 배치 확인 없음 (handleConfirmShip은 호환용 no-op)
  *
@@ -153,10 +154,8 @@ export function useShippingScan(): UseShippingScanReturn {
       setIsScanning(true);
       setError(null);
       try {
-        // 팔레트 출하는 shipment(출하확정) 경로 전용 — 박스 스캔 출하(ship-box)는
-        // 팔레트 적재 박스를 이중 차감 방지로 거부하므로 여기서 먼저 안내한다.
-        // TODO(T-PDA-PALLET-SHIP): PDA 팔레트 단위 출하 지원 — 출하지시-팔레트 연계
-        // 백엔드 설계(shipment 자동 생성 또는 ship-pallet 엔드포인트) 후 이 분기를 대체한다.
+        // 팔레트 적재 박스는 ship-box가 이중 차감을 막기 위해 거부한다.
+        // 팔레트는 별도 PDA 팔레트 출하 화면에서 ship-pallets 계약으로 처리한다.
         if (isPalletBarcode(code)) {
           setError("PALLET_NOT_SUPPORTED");
           return;
@@ -208,6 +207,46 @@ export function useShippingScan(): UseShippingScanReturn {
     [scannedOrder, scannedItems, worker],
   );
 
+  const handleCancelBox = useCallback(
+    async (boxNo: string): Promise<void> => {
+      if (!boxNo || !scannedOrder) return;
+      const item = scannedItems.find((i) => i.boxNo === boxNo);
+      if (!item) return;
+      setIsScanning(true);
+      setError(null);
+      try {
+        const res = await api.post(
+          `/shipping/orders/${encodeURIComponent(scannedOrder.shipOrderNo)}/cancel-ship-box`,
+          {
+            boxNo,
+            workerId: worker?.workerCode || undefined,
+          },
+        );
+        const d = res.data?.data;
+        setScannedItems((prev) => prev.filter((i) => i.boxNo !== boxNo));
+        setScannedOrder((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: d?.orderStatus ?? prev.status,
+                items: prev.items.map((it) =>
+                  it.itemCode === item.itemCode
+                    ? { ...it, shippedQty: d?.lineShippedQty ?? Math.max(0, it.shippedQty - item.qty) }
+                    : it,
+                ),
+                shippedQty: Math.max(0, prev.shippedQty - item.qty),
+              }
+            : prev,
+        );
+      } catch (err) {
+        setError(extractErrMsg(err, "CANCEL_FAILED"));
+      } finally {
+        setIsScanning(false);
+      }
+    },
+    [scannedOrder, scannedItems, worker],
+  );
+
   // ── 출하 확인 ─────────────────────────────────────────
 
   // 박스 스캔 시점에 즉시 출하되므로 배치 확인은 더 이상 필요 없다.
@@ -246,6 +285,6 @@ export function useShippingScan(): UseShippingScanReturn {
     phase, scannedOrder, worker, scannedItems, scannedQty, progress,
     isScanning, isConfirming, error, history,
     handleScanShipOrder, handleScanWorker, handleScanProduct,
-    handleConfirmShip, handleReset,
+    handleCancelBox, handleConfirmShip, handleReset,
   };
 }

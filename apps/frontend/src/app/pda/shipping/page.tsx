@@ -45,6 +45,7 @@ export default function ShippingPage() {
     handleScanShipOrder,
     handleScanWorker,
     handleScanProduct,
+    handleCancelBox,
     handleConfirmShip,
     handleReset,
   } = useShippingScan();
@@ -86,6 +87,8 @@ export default function ShippingPage() {
         return t("pda.shipping.orderNotFound");
       case "SHIP_FAILED":
         return t("pda.shipping.shipFailed");
+      case "CANCEL_FAILED":
+        return t("pda.shipping.cancelFailed", "출하 취소에 실패했습니다.");
       case "PALLET_NOT_SUPPORTED":
         return t("pda.shipping.palletNotSupported");
       default:
@@ -263,6 +266,8 @@ export default function ShippingPage() {
             orderQty={orderQty}
             progressPct={progressPct}
             scannedItems={scannedItems}
+            onCancelBox={handleCancelBox}
+            disabled={isScanning}
           />
         </>
       )}
@@ -279,7 +284,7 @@ export default function ShippingPage() {
         <PdaActionButton
           buttons={[
             {
-              label: t("pda.shipping.confirmShip"),
+              label: t("pda.shipping.nextOrder", "다음 출하지시"),
               onClick: onConfirm,
               variant: "primary",
               isLoading: isConfirming,

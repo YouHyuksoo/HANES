@@ -65,6 +65,5 @@ export interface UsePalletShipScanReturn {
   handleScanBox: (barcode: string) => Promise<void>;
   handleRemoveBox: (boxNo: string) => Promise<void>;
   handleClosePallet: () => Promise<void>;
-  handleShipPallet: () => Promise<boolean>;
   handleReset: () => void;
 }

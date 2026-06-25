@@ -7,7 +7,7 @@
  * - fromPallet 필드가 있으면 팔레트 출처 표시
  */
 import { useTranslation } from "react-i18next";
-import { Package } from "lucide-react";
+import { Package, XCircle } from "lucide-react";
 import type { ScannedShipItem } from "@/hooks/pda/useShippingScan";
 
 interface ShippingProgressPanelProps {
@@ -15,6 +15,8 @@ interface ShippingProgressPanelProps {
   orderQty: number;
   progressPct: number;
   scannedItems: ScannedShipItem[];
+  onCancelBox?: (boxNo: string) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -25,6 +27,8 @@ export function ShippingProgressPanel({
   orderQty,
   progressPct,
   scannedItems,
+  onCancelBox,
+  disabled = false,
 }: ShippingProgressPanelProps) {
   const { t } = useTranslation();
 
@@ -64,9 +68,23 @@ export function ShippingProgressPanel({
                   {item.boxNo}
                 </span>
               </div>
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-400 flex-shrink-0 ml-2">
-                {item.qty}
-              </span>
+              <div className="ml-2 flex flex-shrink-0 items-center gap-2">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                  {item.qty}
+                </span>
+                {onCancelBox && (
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onCancelBox(item.boxNo)}
+                    className="rounded p-0.5 text-red-500 hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-900/20"
+                    aria-label={t("pda.shipping.cancelBox", "출하 취소")}
+                    title={t("pda.shipping.cancelBox", "출하 취소")}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

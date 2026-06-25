@@ -91,6 +91,7 @@ export interface UseShippingScanReturn {
   handleScanShipOrder: (barcode: string) => Promise<void>;
   handleScanWorker: (qr: string) => Promise<void>;
   handleScanProduct: (barcode: string) => Promise<void>;
+  handleCancelBox: (boxNo: string) => Promise<void>;
   handleConfirmShip: () => Promise<boolean>;
   handleReset: () => void;
 }

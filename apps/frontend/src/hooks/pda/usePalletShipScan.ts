@@ -3,7 +3,7 @@
  * @description PDA 팔레트 출하 워크플로우 훅
  *
  * 흐름: SCAN_ORDER(출하지시,CONFIRMED) → SCAN_WORKER(작업자 QR)
- *      → BUILD_PALLET(팔레트 생성/이어서 + 박스 스캔 적재 + 마감 + 출하)
+ *      → BUILD_PALLET(팔레트 생성/이어서 + 박스 스캔 적재 + 마감)
  * 지시별 상태는 GET /shipping/orders/:no/fulfillment 단일 응답으로 동기화.
  * 비즈니스 검증은 모두 서버(데스크톱과 동일 엔드포인트)에서 수행.
  */
@@ -221,28 +221,6 @@ export function usePalletShipScan(): UsePalletShipScanReturn {
       await api.post(
         `/shipping/orders/${encodeURIComponent(order.shipOrderNo)}/pallets/${encodeURIComponent(pallet.palletNo)}/close`,
       );
-      await refresh(order.shipOrderNo);
-    } catch (err) {
-      setError(extractErrMsg(err, "CLOSE_FAILED"));
-    } finally {
-      setIsBusy(false);
-    }
-  }, [order, pallet, refresh]);
-
-  // ── Phase 3: 출하 ────────────────────────────────────
-  const handleShipPallet = useCallback(async (): Promise<boolean> => {
-    if (!order || !pallet) return false;
-    if (pallet.status !== "CLOSED") {
-      setError("NOT_CLOSED");
-      return false;
-    }
-    setIsBusy(true);
-    setError(null);
-    try {
-      await api.post(`/shipping/orders/${encodeURIComponent(order.shipOrderNo)}/ship-pallets`, {
-        palletNos: [pallet.palletNo],
-        workerId: worker?.workerCode || undefined,
-      });
       setHistory((prev) => [
         {
           shipOrderNo: order.shipOrderNo,
@@ -253,19 +231,13 @@ export function usePalletShipScan(): UsePalletShipScanReturn {
         },
         ...prev,
       ]);
-      setPhase("SCAN_ORDER");
-      setOrder(null);
-      setWorker(null);
-      setPallet(null);
-      setCandidateBoxNos(new Set());
-      return true;
+      await refresh(order.shipOrderNo);
     } catch (err) {
-      setError(extractErrMsg(err, "SHIP_FAILED"));
-      return false;
+      setError(extractErrMsg(err, "CLOSE_FAILED"));
     } finally {
       setIsBusy(false);
     }
-  }, [order, pallet, worker]);
+  }, [order, pallet, refresh]);
 
   const handleReset = useCallback(() => {
     setPhase("SCAN_ORDER");
@@ -281,6 +253,6 @@ export function usePalletShipScan(): UsePalletShipScanReturn {
     candidateCount: candidateBoxNos.size,
     isScanning, isBusy, error, history,
     handleScanOrder, handleScanWorker, handleCreatePallet,
-    handleScanBox, handleRemoveBox, handleClosePallet, handleShipPallet, handleReset,
+    handleScanBox, handleRemoveBox, handleClosePallet, handleReset,
   };
 }

@@ -22,6 +22,7 @@ test("build hook calls the existing desktop pallet endpoints (no new backend)", 
   assert.match(buildHook, /\/pallets`/);
   assert.match(buildHook, /\/pallets\/\$\{encodeURIComponent\(pallet\.palletNo\)\}\/boxes/);
   assert.match(buildHook, /\/close`/);
+  assert.doesNotMatch(buildHook, /\/ship-pallets`/, "pallet build hook should not ship pallets");
 });
 
 test("PDA pallet SHIP screen ships a scanned CLOSED pallet", () => {
