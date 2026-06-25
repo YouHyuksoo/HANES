@@ -8,6 +8,14 @@ Use this heading format for every new entry:
 ## YYYY-MM-DD HH:mm Agent
 ```
 
+## 2026-06-25 11:28 Codex
+
+- 작업: `T-MANUAL-INDEX-PAGE` 매뉴얼 메인 목차 페이지 생성.
+- 변경: `docs/manuals/index.html` 추가. `docs/manuals/*.result.json` 기준 7개 매뉴얼 그룹(기준정보/자재/생산/품질/검사/제품수불/출하)과 104개 화면을 정적 HTML 목차로 구성했다.
+- 기능: 좌측 그룹 네비게이션, 상단 요약(그룹/화면/누락 수), 화면명·메뉴코드·경로 검색, 매뉴얼 열기, 결과 JSON 열기, 화면별 `#screen-N` 바로가기.
+- 검증: HTML script syntax PASS, runtime smoke PASS(`manualCount=7`, `screenCount=104`), embedded manual/result link existence PASS, index total 104/result total 104 PASS, `git diff --check -- docs/manuals/index.html .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` PASS.
+- 범위: 기존 매뉴얼 HTML/result JSON은 수정하지 않았다.
+
 ## 2026-06-24 21:37 Codex
 
 - 작업: `T-REMAINING-HELP-MANUALS` 공식 runner 3002 재시도 및 최종 완료.
@@ -2918,6 +2926,68 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - 미니맵은 하단 레인 설명을 가려 제거했다.
   - 생산 실행 흐름은 `작업지시 -> 조립실적(키오스크) -> 서브공정 키팅/조립·라벨 실적`로 보이도록 갱신했다.
 
+## 2026-06-25 22:35 - T-SHIP-ORDER-UNCONFIRM 출하지시 확정취소(DRAFT 복귀) 추가
+
+- owner: codex
+- status: REVIEW
+- 변경:
+  - `/shipping/order`에서 `CONFIRMED` 행에 확정취소 버튼을 추가하고 확인 모달에서 전용 API를 호출하도록 했다.
+  - `PUT /shipping/orders/:id/unconfirm` API와 `ShipOrderService.unconfirm()`을 추가했다.
+  - 확정취소는 `CONFIRMED` 상태, 모든 품목 `shippedQty=0`, 연결 팔레트/박스 0건일 때만 `DRAFT`로 되돌린다.
+  - `CONFIRMED` 편집 패널에서는 저장 버튼을 비활성화하고 확정취소 버튼을 제공한다.
+- 검증:
+  - RED 확인: backend spec는 `target.unconfirm is not a function`, frontend structure test는 `unconfirmTarget` 부재로 실패.
+  - PASS: `pnpm.cmd --filter @harness/backend exec jest src/modules/shipping/services/ship-order.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check -- apps/backend/src/modules/shipping/services/ship-order.service.ts apps/backend/src/modules/shipping/services/ship-order.service.spec.ts apps/backend/src/modules/shipping/controllers/ship-order.controller.ts "apps/frontend/src/app/(authenticated)/shipping/order/page.tsx" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs" .ai-coordination/TASKS.md .ai-coordination/LOCKS.md .ai-coordination/DECISIONS.md`
+- 참고:
+  - `ship-order.service.ts`와 `ship-order.controller.ts`는 `T-SHIP-ORDER-CANCEL` active lock과 겹쳤다. 사용자 직접 지시로 최소 변경만 수행했고 출하취소 로직은 수정하지 않았다.
+  - 3002 dev server는 새로 시작하지 않았다. 브라우저 실측은 미수행.
+
+## 2026-06-25 22:31 - T-SHIP-ORDER-UNCONFIRM 후속: CONFIRMED 삭제 400 보정
+
+- owner: codex
+- status: REVIEW
+- 원인:
+  - `/shipping/order` 행 액션의 삭제 버튼이 모든 상태에 노출되어 `CONFIRMED` 출하지시에서도 `DELETE /shipping/orders/:id`가 호출됐다.
+  - 백엔드는 의도대로 `DRAFT`만 삭제 허용하므로 400을 반환했다.
+- 변경:
+  - 삭제 버튼은 `DRAFT` 행에만 렌더링한다.
+  - `handleDeleteConfirm()`도 `deleteTarget.status !== "DRAFT"`이면 API 호출 전 모달만 닫고 반환한다.
+  - 기존 확정취소 구조 테스트에 DRAFT-only 삭제 조건을 추가했다.
+- 검증:
+  - RED 확인: 신규 구조 테스트가 `deleteTarget.status !== "DRAFT"` 부재로 실패.
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check -- "apps/frontend/src/app/(authenticated)/shipping/order/page.tsx" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs" .ai-coordination/TASKS.md .ai-coordination/LOCKS.md`
+- 참고:
+  - 백엔드와 dev server는 건드리지 않았다. 3002 새 시작 또는 대체 포트 사용 없음.
+
+## 2026-06-25 22:45 - T-SHIP-ORDER-UNCONFIRM 후속: 빈 OPEN 팔레트 자동정리 및 삭제 UI
+
+- owner: codex
+- status: REVIEW
+- 원인:
+  - 사용자 리포트 `PUT /shipping/orders/SH2606220004/unconfirm` 400은 빈 `OPEN` 팔레트 1건 때문에 발생했다.
+  - JSHANES 실측: `SH2606220004`는 `CONFIRMED`, 품목 `HNS02` `ORDER_QTY=100`, `SHIPPED_QTY=0`, 팔레트 `PLT2606220002` `OPEN/BOX_COUNT=0/TOTAL_QTY=0/SHIPMENT_ID=NULL`, 관련 박스 0건.
+  - `/shipping/pallet`에는 기존 `DELETE /shipping/pallets/:id` 백엔드 API가 있는데 화면에서 빈 팔레트 삭제 액션이 없었다.
+- 변경:
+  - `ShipOrderService.unconfirm()`은 빈 `OPEN` 팔레트만 있으면 같은 transaction에서 해당 팔레트를 삭제하고 출하지시를 `DRAFT`로 전환한다.
+  - 박스가 있거나, 팔레트가 `OPEN`이 아니거나, 출하 할당/수량이 있으면 기존처럼 확정취소를 차단한다.
+  - `/shipping/pallet` 그리드에 `빈 팔레트 삭제` 버튼과 확인 모달을 추가했다. 조건은 `OPEN`, `boxCount === 0`, `shipmentId` 없음이다.
+- 검증:
+  - RED 확인: backend spec는 빈 `OPEN` 팔레트 삭제 transaction 부재로 실패, frontend structure test는 `deletePalletTarget` 부재로 실패.
+  - PASS: `pnpm.cmd --filter @harness/backend exec jest src/modules/shipping/services/ship-order.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-order-required.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check -- apps/backend/src/modules/shipping/services/ship-order.service.ts apps/backend/src/modules/shipping/services/ship-order.service.spec.ts "apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs" .ai-coordination/TASKS.md .ai-coordination/LOCKS.md`
+- 참고:
+  - 실제 `SH2606220004` unconfirm 재호출은 DB 상태 변경이므로 수행하지 않았다.
+  - dev server 새 시작 또는 대체 포트 사용 없음.
+
 # 2026-06-24 15:39 - T-MATERIAL-HELP-MANUAL 자재관리 도움말 및 단일 HTML 매뉴얼 생성
 
 - owner: codex
@@ -2973,3 +3043,38 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
 - 산출물: docs/presentation/hanes-mes-introduction.{html,pptx}, artifact-build-manifest.json, assets/menu-captures/(재생성+21~31 신규), scripts/(capture-screens/capture-interactive/insert-slides/render-slides/build-pptx).
 - 검증: 캡처 manifest suspect 0건, 신규 화면 육안 데이터 확인(AQL·키오스크 서브공정·팔레트·검사결과·출하이력·추적성), 렌더 29/29, PPTX 10.3MB/29장/빈이미지0.
 - 미수정: locales(ko/en/zh/vi), help 파일(codex T-MATERIAL-HELP-MANUAL 잠금 회피). 소개자료는 자체 HTML 텍스트라 i18n 영향 없음.
+# 2026-06-25 22:46 KST - codex - T-SHIP-PALLET-LAYOUT-TIDY
+
+- `/shipping/pallet` 팔레트적재 화면에서 우측 포함박스 섹션이 본문 폭을 과하게 차지하고, 좌측 그리드 툴바가 좁은 폭에서 불안정하게 배치되는 문제를 보정했다.
+- 공용 `DataGrid`는 수정하지 않고 `apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx` 전용으로 처리했다.
+- 본문 레이아웃은 `xl:grid-cols-[minmax(0,1fr)_18rem]`, `2xl:grid-cols-[minmax(0,1fr)_20rem]`로 바꿔 우측 섹션을 좁혔다. 1155px 폭에서는 좌우 분할 대신 포함박스 섹션이 아래로 내려가게 했다.
+- 툴바는 `flex-wrap` 대신 고정 grid 컬럼을 사용하고, 날짜 프리셋 버튼 제거, 검색 input 최소폭 해제, 상태/바코드 폭 축소로 아이콘/입력 겹침을 제거했다.
+- 검증:
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-order-required.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `git diff --check -- "apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs" .ai-coordination/TASKS.md .ai-coordination/LOCKS.md .ai-coordination/JOURNAL.md .ai-coordination/HANDOFF/codex.md`
+  - PASS: 기존 `http://localhost:3002/shipping/pallet` Playwright 측정. 1155px 폭에서 툴바 1줄, 겹침 0건, 가로 overflow 없음. 스크린샷 `docs/reports/shipping-pallet-layout-3002.png`
+# 2026-06-25 22:55 KST - codex - T-SHIP-ORDER-SAVE-CONFIRM
+
+- `/shipping/order` 출하지시등록 화면에서 백엔드 확정 API(`PUT /shipping/orders/:id/confirm`)와 행 액션은 이미 있었지만, 신규 작성 패널에서 임시저장 직후 확정으로 이어지는 명확한 액션이 없어 사용자가 확정 단계를 찾기 어려운 문제가 있었다.
+- `apps/frontend/src/app/(authenticated)/shipping/order/page.tsx`에 `buildSavePayload()`와 `handleSaveAndConfirm()`을 추가했다.
+- 패널 하단에는 신규/기존 DRAFT 상태에서 `저장 후 확정` 버튼을 표시한다. 신규 작성은 `POST /shipping/orders` 응답의 `shipOrderNo`로 즉시 confirm하고, 기존 DRAFT 수정은 저장 `PUT` 후 confirm한다.
+- 기존 그리드 행의 초록 체크 확정 액션과 `CONFIRMED` 상태의 확정취소 액션은 유지했다.
+- 검증:
+  - RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs"`가 `handleSaveAndConfirm` 부재로 실패
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-payload.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-required-fields.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-right-panel.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 기존 `http://localhost:3002/shipping/order` Playwright 확인. 신규 등록 패널에서 `저장 후 확정` 버튼 표시, 필수값 전 disabled 정상, 가로 overflow 없음. 스크린샷 `docs/reports/shipping-order-save-confirm-3002.png`
+  - PASS: 대상 파일 `git diff --check`
+# 2026-06-25 23:07 KST - codex - T-SHIP-HISTORY-SHIPPED-DETAIL
+
+- `/shipping/history` 우측 패널이 팔레트 없는 박스 단건 출하를 `팔레트 0 / 박스 0 / 총수량 0`처럼 보이게 하는 문제를 보정했다.
+- 원인: 화면이 `GET /shipping/orders/:id/fulfillment`를 호출해 팔레트 목록만 기준으로 우측 패널을 구성했다. 실제 `SH2606250005`는 `PALLET_MASTERS` 0건이지만 `BOX_MASTERS`에는 `BX2606250001`/`SHIPPED`/수량 10이 있다.
+- 백엔드에는 이미 `GET /shipping/orders/:id/shipped-detail`가 있고, 이 API는 `boxShipped`로 팔레트 없는 박스 출하를 내려준다. 백엔드 lock 파일은 수정하지 않고 history 화면만 해당 API를 사용하도록 변경했다.
+- 우측 패널 합계는 팔레트 박스 수량과 `boxShipped`를 함께 계산한다. 팔레트 집계는 stale 가능성이 있는 `pallet.boxCount`보다 실제 반환된 `pallet.boxes.length`를 우선 사용한다.
+- 검증:
+  - RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-pallet-detail.structure.test.mjs"`가 `OrderShippedBox` 부재로 실패
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-pallet-detail.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-no-info-cards.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-status-help.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 기존 `http://localhost:3002/shipping/history` Playwright 확인. `SH2606250005` 선택 시 우측 패널 `팔레트 0 / 박스 1 / 총수량 10`, `BX2606250001` 표시. 스크린샷 `docs/reports/shipping-history-shipped-detail-3002.png`
+  - PASS: 대상 파일 `git diff --check`

@@ -101,6 +101,16 @@ Reason:
 - HANES는 멀티 회사/공장 MES 구조이며, 같은 업무코드가 회사/공장별로 독립될 수 있어 단독 코드 PK는 tenant 경계를 표현하지 못한다.
 - FK가 단독 코드만 참조하면 다른 회사/공장의 기준정보를 잘못 참조할 수 있으므로 물리 PK/FK 수준에서 tenant 경계를 강제한다.
 
+## D-20260625-SHIP-ORDER-UNCONFIRM
+Status: Accepted
+Decision:
+- 출하지시 확정취소는 일반 `PUT /shipping/orders/:id` 상태 직접수정이 아니라 전용 `PUT /shipping/orders/:id/unconfirm` API로 처리한다.
+- `CONFIRMED` 상태이고 모든 출하지시 품목의 `shippedQty`가 0인 경우에만 `DRAFT`로 되돌린다.
+- 출하취소/역분개 기능은 출하 전 상태인 `CONFIRMED` 복원이 책임이고, 확정취소는 출하 작업 전 지시 수정 복귀가 책임이다.
+Reason:
+- 확정된 출하지시를 임의 상태수정으로 되돌리면 진행 중 출하, 재고 수불, 취소 이력과 충돌할 수 있다.
+- 사용자는 `/shipping/order`에서 출하확정 후 작성중으로 되돌릴 방법이 없다고 지적했고, 운영상 확정 직후 수정 필요 케이스를 별도 액션으로 처리하는 것이 가장 좁고 추적 가능한 변경이다.
+
 - `/master/part`는 `AQL 정책` 선택만 제공하고, `/quality/aql/resolve-iqc`는 품목의 정책 코드를 따라 sampling rule을 산출한다.
 - `IQC_PART_SPEC_ITEMS`의 검사수준/AQL은 품목 정책을 대체하는 것이 아니라 검사항목별 override 기준으로 유지한다.
 - 실제 IQC 검사 화면과 저장 판정은 검사항목별 판정 경로인 `resolveIqcPolicyByItem()`을 기준으로 맞춘다.

@@ -186,6 +186,92 @@ describe('ShipOrderService', () => {
     });
   });
 
+  describe('unconfirm', () => {
+    it('should revert CONFIRMED order to DRAFT before shipping starts', async () => {
+      const line = { shipOrderNo: 'SO-001', seq: 1, itemCode: 'ITEM-1', orderQty: 3, shippedQty: 0 };
+      mockOrderRepo.findOne
+        .mockResolvedValueOnce({ shipOrderNo: 'SO-001', status: 'CONFIRMED', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce({ shipOrderNo: 'SO-001', status: 'DRAFT', company: 'C1', plant: 'P1' } as any);
+      mockItemRepo.find
+        .mockResolvedValueOnce([line] as any)
+        .mockResolvedValueOnce([line] as any);
+      mockPartRepo.findOne.mockResolvedValue(null);
+      mockPartnerRepo.findOne.mockResolvedValue(null);
+      mockPalletRepo.find.mockResolvedValue([]);
+      mockBoxRepo.count.mockResolvedValue(0);
+
+      const result = await target.unconfirm('SO-001', 'C1', 'P1');
+
+      expect(mockOrderRepo.update).toHaveBeenCalledWith(
+        { shipOrderNo: 'SO-001', company: 'C1', plant: 'P1' },
+        { status: 'DRAFT' },
+      );
+      expect(result.status).toBe('DRAFT');
+    });
+
+    it('should delete empty OPEN pallets when reverting to DRAFT', async () => {
+      const line = { shipOrderNo: 'SO-001', seq: 1, itemCode: 'ITEM-1', orderQty: 3, shippedQty: 0 };
+      mockOrderRepo.findOne
+        .mockResolvedValueOnce({ shipOrderNo: 'SO-001', status: 'CONFIRMED', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce({ shipOrderNo: 'SO-001', status: 'DRAFT', company: 'C1', plant: 'P1' } as any);
+      mockItemRepo.find
+        .mockResolvedValueOnce([line] as any)
+        .mockResolvedValueOnce([line] as any);
+      mockPartRepo.findOne.mockResolvedValue(null);
+      mockPartnerRepo.findOne.mockResolvedValue(null);
+      mockPalletRepo.find.mockResolvedValue([
+        { palletNo: 'PLT-001', status: 'OPEN', shipmentId: null, boxCount: 0, totalQty: 0 },
+      ] as any);
+      mockBoxRepo.count.mockResolvedValue(0);
+
+      const result = await target.unconfirm('SO-001', 'C1', 'P1');
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockQr.manager.delete).toHaveBeenCalledWith(
+        PalletMaster,
+        { palletNo: expect.anything(), shipOrderNo: 'SO-001', company: 'C1', plant: 'P1' },
+      );
+      expect(mockQr.manager.update).toHaveBeenCalledWith(
+        ShipmentOrder,
+        { shipOrderNo: 'SO-001', company: 'C1', plant: 'P1' },
+        { status: 'DRAFT' },
+      );
+      expect(mockOrderRepo.update).not.toHaveBeenCalled();
+      expect(result.status).toBe('DRAFT');
+    });
+
+    it('should block unconfirm when order is not CONFIRMED', async () => {
+      mockOrderRepo.findOne.mockResolvedValue({ shipOrderNo: 'SO-001', status: 'DRAFT' } as any);
+      mockItemRepo.find.mockResolvedValue([]);
+
+      await expect(target.unconfirm('SO-001')).rejects.toThrow('CONFIRMED 상태에서만 확정취소할 수 있습니다.');
+    });
+
+    it('should block unconfirm after shipping quantity exists', async () => {
+      mockOrderRepo.findOne.mockResolvedValue({ shipOrderNo: 'SO-001', status: 'CONFIRMED' } as any);
+      mockItemRepo.find.mockResolvedValue([
+        { shipOrderNo: 'SO-001', seq: 1, itemCode: 'ITEM-1', orderQty: 3, shippedQty: 1 },
+      ] as any);
+      mockPartRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.unconfirm('SO-001')).rejects.toThrow('출하수량이 있는 출하지시는 확정취소할 수 없습니다.');
+    });
+
+    it('should block unconfirm after pallets or boxes are assigned', async () => {
+      mockOrderRepo.findOne.mockResolvedValue({ shipOrderNo: 'SO-001', status: 'CONFIRMED' } as any);
+      mockItemRepo.find.mockResolvedValue([
+        { shipOrderNo: 'SO-001', seq: 1, itemCode: 'ITEM-1', orderQty: 3, shippedQty: 0 },
+      ] as any);
+      mockPartRepo.findOne.mockResolvedValue(null);
+      mockPalletRepo.find.mockResolvedValue([
+        { palletNo: 'PLT-001', status: 'OPEN', shipmentId: null, boxCount: 1, totalQty: 3 },
+      ] as any);
+      mockBoxRepo.count.mockResolvedValue(0);
+
+      await expect(target.unconfirm('SO-001')).rejects.toThrow('출하지시에 배정된 팔레트 또는 박스가 있으면 확정취소할 수 없습니다.');
+    });
+  });
+
   describe('create', () => {
     it('should reject creating an order without customer ship date', async () => {
       mockNumbering.nextShipmentNo.mockResolvedValue('SO-AUTO-001');

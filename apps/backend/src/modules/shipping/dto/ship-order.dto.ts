@@ -128,6 +128,24 @@ export class ShipOrderQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsDateString()
   dueDateTo?: string;
+
+  @ApiPropertyOptional({ description: '출하예정일 시작 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  shipDateFrom?: string;
+
+  @ApiPropertyOptional({ description: '출하예정일 종료 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  shipDateTo?: string;
+
+  @ApiPropertyOptional({
+    description: '기간 밖이어도 미완료(DRAFT/CONFIRMED/SHIPPING) 지시는 항상 포함',
+    default: false,
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  includeOpen?: boolean;
 }
 
 /** 출하지시 기준 팔레트 생성 DTO */

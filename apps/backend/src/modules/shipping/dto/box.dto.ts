@@ -121,6 +121,24 @@ export class BoxQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   oqcStatus?: string;
+
+  @ApiPropertyOptional({ description: '생성일 시작(YYYY-MM-DD)', example: '2026-06-24' })
+  @IsOptional()
+  @IsString()
+  createdFrom?: string;
+
+  @ApiPropertyOptional({ description: '생성일 종료(YYYY-MM-DD)', example: '2026-06-24' })
+  @IsOptional()
+  @IsString()
+  createdTo?: string;
+
+  @ApiPropertyOptional({
+    description: '기간 밖이어도 진행중(OPEN) 박스는 항상 포함',
+    default: false,
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  includeOpen?: boolean;
 }
 
 /**

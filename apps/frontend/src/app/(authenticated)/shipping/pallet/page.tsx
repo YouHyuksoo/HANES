@@ -20,9 +20,12 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Layers, Plus, Search, RefreshCw, Lock, LockOpen,
-  Package, ArrowRight, X, ScanLine, Printer, HelpCircle,
+  Package, ArrowRight, X, ScanLine, Printer, HelpCircle, Trash2,
 } from "lucide-react";
 import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
+import { getTodayLocal } from "@/utils/date";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -122,6 +125,9 @@ export default function PalletPage() {
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+  // 작업 대상 목록 기본 필터: 당일 생성분 + 미완료(OPEN/CLOSED/LOADED)는 기간 무관 항상 노출
+  const [createdFrom, setCreatedFrom] = useState(getTodayLocal());
+  const [createdTo, setCreatedTo] = useState(getTodayLocal());
   const [scanText, setScanText] = useState("");
   const [selectedPallet, setSelectedPallet] = useState<Pallet | null>(null);
   const [shipOrders, setShipOrders] = useState<ShipOrderSummary[]>([]);
@@ -132,6 +138,7 @@ export default function PalletPage() {
   const [availableBoxes, setAvailableBoxes] = useState<AvailableBox[]>([]);
   const [selectedBoxes, setSelectedBoxes] = useState<string[]>([]);
   const [removeBoxTarget, setRemoveBoxTarget] = useState<string | null>(null);
+  const [deletePalletTarget, setDeletePalletTarget] = useState<Pallet | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [scanBoxInput, setScanBoxInput] = useState("");
@@ -142,9 +149,13 @@ export default function PalletPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.palletNo = searchText;
       if (statusFilter) params.status = statusFilter;
+      if (createdFrom) params.createdFrom = createdFrom;
+      if (createdTo) params.createdTo = createdTo;
+      // 상태 미지정 시 기간 밖이어도 미완료(작업 중) 팔레트는 항상 노출
+      if (!statusFilter) params.includeOpen = "true";
       const res = await api.get("/shipping/pallets", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -152,7 +163,7 @@ export default function PalletPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter]);
+  }, [searchText, statusFilter, createdFrom, createdTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -263,6 +274,10 @@ export default function PalletPage() {
     }
     fetchData();
   }, [fetchData, fetchPalletBoxes]);
+
+  const canDeleteEmptyPallet = useCallback((pallet: Pallet) => (
+    pallet.status === "OPEN" && pallet.boxCount === 0 && !pallet.shipmentId
+  ), []);
 
   const handleCreate = useCallback(async () => {
     const scanned = shipOrderScanText.trim();
@@ -397,12 +412,47 @@ export default function PalletPage() {
     }
   }, [syncAfterAction]);
 
+  const handleDeletePallet = useCallback(async () => {
+    if (!deletePalletTarget) return;
+    if (!canDeleteEmptyPallet(deletePalletTarget)) {
+      setDeletePalletTarget(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.delete(`/shipping/pallets/${deletePalletTarget.palletNo}`);
+      if (selectedPallet?.palletNo === deletePalletTarget.palletNo) {
+        setSelectedPallet(null);
+        setPalletBoxes([]);
+      }
+      setDeletePalletTarget(null);
+      fetchData();
+      fetchShipOrders();
+    } catch (e) {
+      console.error("Delete pallet failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  }, [canDeleteEmptyPallet, deletePalletTarget, fetchData, fetchShipOrders, selectedPallet]);
+
   const toggleBoxSelection = (boxNo: string) =>
     setSelectedBoxes((prev) => prev.includes(boxNo) ? prev.filter((b) => b !== boxNo) : [...prev, boxNo]);
 
+  // 기간(생성일) 밖이지만 미완료(SHIPPED 아님)라 includeOpen으로 포함된 행
+  const outOfRangeNos = useMemo(() => {
+    const set = new Set<string>();
+    if (statusFilter) return set; // 상태 명시 시 includeOpen 미적용
+    for (const p of data) {
+      const d = (p.createdAt || "").slice(0, 10);
+      const inRange = !!d && !!createdFrom && !!createdTo && d >= createdFrom && d <= createdTo;
+      if (!inRange && p.status !== "SHIPPED") set.add(p.palletNo);
+    }
+    return set;
+  }, [data, statusFilter, createdFrom, createdTo]);
+
   const columns = useMemo<ColumnDef<Pallet>[]>(() => [
     {
-      id: "actions", header: t("common.actions"), size: 130, meta: { align: "center" as const, filterType: "none" as const },
+      id: "actions", header: t("common.actions"), size: 164, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => {
         const pallet = row.original;
         const isOpen = pallet.status === "OPEN";
@@ -420,6 +470,9 @@ export default function PalletPage() {
             <Button variant="ghost" size="sm" title={t("shipping.pallet.printLabel", "라벨 출력")} onClick={() => handleOpenLabel(pallet)}>
               <Printer className="w-4 h-4" />
             </Button>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.deleteEmptyPallet", "빈 팔레트 삭제")} disabled={!canDeleteEmptyPallet(pallet) || saving} onClick={() => setDeletePalletTarget(pallet)}>
+              <Trash2 className="w-4 h-4 text-danger" />
+            </Button>
           </div>
         );
       },
@@ -431,7 +484,7 @@ export default function PalletPage() {
     { accessorKey: "status", header: () => <PalletStatusHeader />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
     { accessorKey: "shipmentId", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
-  ], [t, handleClosePallet, handleReopenPallet, fetchAvailableBoxes, selectPallet]);
+  ], [t, handleClosePallet, handleReopenPallet, fetchAvailableBoxes, selectPallet, canDeleteEmptyPallet, saving]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -448,8 +501,10 @@ export default function PalletPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden">
-        <div className="lg:col-span-2 min-h-0">
+      <OpenIncludedNotice count={outOfRangeNos.size} />
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_20rem] gap-4 flex-1 min-h-0 overflow-hidden">
+        <div className="min-h-0">
           <Card className="h-full flex flex-col overflow-hidden" padding="none"><CardContent className="h-full p-4 flex flex-col min-h-0">
             <DataGrid
               data={data}
@@ -458,15 +513,25 @@ export default function PalletPage() {
               enableColumnFilter
               enableExport
               exportFileName={t("shipping.pallet.title")}
+              rowClassName={(row) => outOfRangeNos.has(row.palletNo) ? "border-l-2 border-l-amber-500" : ""}
               toolbarLeft={
-                <div className="flex gap-3 flex-1 min-w-0">
-                  <div className="flex-1 min-w-0">
+                <div className="grid w-full min-w-0 grid-cols-1 gap-2 lg:grid-cols-[auto_minmax(7rem,1fr)_7rem_8rem] lg:items-center">
+                  <DateRangeFilter
+                    from={createdFrom}
+                    to={createdTo}
+                    onFromChange={setCreatedFrom}
+                    onToChange={setCreatedTo}
+                    label={t("common.createdAt")}
+                    presets={false}
+                    className="[&_input]:w-28"
+                  />
+                  <div className="min-w-0">
                     <Input placeholder={t("shipping.pallet.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                   </div>
-                  <div className="w-36 flex-shrink-0">
+                  <div className="w-28">
                     <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
-                  <div className="w-48 flex-shrink-0">
+                  <div className="w-32">
                     <Input
                       ref={scanInputRef}
                       placeholder={t("shipping.pallet.barcodePlaceholder", "바코드 스캔")}
@@ -665,6 +730,14 @@ export default function PalletPage() {
         onConfirm={handleRemoveBox}
         title={t("common.deleteConfirm", "삭제 확인")}
         message={`${removeBoxTarget ?? ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        variant="danger"
+      />
+      <ConfirmModal
+        isOpen={!!deletePalletTarget}
+        onClose={() => setDeletePalletTarget(null)}
+        onConfirm={handleDeletePallet}
+        title={t("common.deleteConfirm", "삭제 확인")}
+        message={`${deletePalletTarget?.palletNo ?? ""} ${t("shipping.pallet.deleteEmptyPalletMessage", "빈 팔레트를 삭제하시겠습니까?")}`}
         variant="danger"
       />
     </div>

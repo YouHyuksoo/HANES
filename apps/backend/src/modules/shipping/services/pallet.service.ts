@@ -22,7 +22,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, In, FindOptionsWhere } from 'typeorm';
+import { Repository, IsNull, ILike, In, Between, FindOptionsWhere } from 'typeorm';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
@@ -74,17 +75,49 @@ export class PalletService {
       shipmentId,
       status,
       unassigned,
+      createdFrom,
+      createdTo,
+      includeOpen,
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<PalletMaster> = {
+    // 미완료(작업 대상) 상태 — 기간 밖이어도 항상 노출 대상
+    const OPEN_STATUSES = ['OPEN', 'CLOSED', 'LOADED'];
+
+    // 날짜·상태를 제외한 공통 조건
+    const common: FindOptionsWhere<PalletMaster> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(palletNo && { palletNo: ILike(`%${palletNo}%`) }),
       ...(shipmentId && { shipmentId }),
-      ...(status && { status }),
       ...(unassigned && { shipmentId: IsNull() }),
     };
+
+    // 생성일 범위
+    const createdRange =
+      createdFrom && createdTo
+        ? Between(parseDateStart(createdFrom)!, parseDateEnd(createdTo)!)
+        : createdFrom
+          ? Between(parseDateStart(createdFrom)!, parseDateEnd(createdFrom)!)
+          : createdTo
+            ? Between(parseDateStart(createdTo)!, parseDateEnd(createdTo)!)
+            : undefined;
+
+    const dated: FindOptionsWhere<PalletMaster> = {
+      ...common,
+      ...(createdRange && { createdAt: createdRange }),
+    };
+
+    // 상태 명시 → 해당 상태만(기간 적용, 미완료-always 무시)
+    // 상태 미지정 + 기간 있음 + includeOpen → 기간 내 전체 + 기간 밖 미완료도 포함
+    let where: FindOptionsWhere<PalletMaster> | FindOptionsWhere<PalletMaster>[];
+    if (status) {
+      where = { ...dated, status };
+    } else if (includeOpen && createdRange) {
+      where = [dated, { ...common, status: In(OPEN_STATUSES) }];
+    } else {
+      where = dated;
+    }
 
     const [data, total] = await Promise.all([
       this.palletRepository.find({

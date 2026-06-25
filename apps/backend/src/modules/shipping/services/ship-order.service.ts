@@ -156,23 +156,54 @@ export class ShipOrderService {
 
   /** 출하지시 목록 조회 */
   async findAll(query: ShipOrderQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
+    const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo, shipDateFrom, shipDateTo, includeOpen } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<ShipmentOrder> = {
+    // 미완료(작업 대상) 상태 — 기간 밖이어도 항상 노출 대상
+    const OPEN_STATUSES = ['DRAFT', 'CONFIRMED', 'SHIPPING'];
+
+    // 날짜·상태를 제외한 공통 조건
+    const common: FindOptionsWhere<ShipmentOrder> = {
       ...(company && { company }),
       ...(plant && { plant }),
-      ...(status && { status }),
-      ...(search && {
-        shipOrderNo: ILike(`%${search}%`),
-      }),
+      ...(search && { shipOrderNo: ILike(`%${search}%`) }),
     };
-    if (dueDateFrom && dueDateTo) {
-      where.dueDate = Between(parseDateStart(dueDateFrom)!, parseDateEnd(dueDateTo)!);
-    } else if (dueDateFrom) {
-      where.dueDate = MoreThanOrEqual(parseDateStart(dueDateFrom)!);
-    } else if (dueDateTo) {
-      where.dueDate = LessThanOrEqual(parseDateEnd(dueDateTo)!);
+
+    // 납기일 범위(기존 기능 유지)
+    const dueRange =
+      dueDateFrom && dueDateTo
+        ? Between(parseDateStart(dueDateFrom)!, parseDateEnd(dueDateTo)!)
+        : dueDateFrom
+          ? MoreThanOrEqual(parseDateStart(dueDateFrom)!)
+          : dueDateTo
+            ? LessThanOrEqual(parseDateEnd(dueDateTo)!)
+            : undefined;
+
+    // 출하예정일 범위
+    const shipRange =
+      shipDateFrom && shipDateTo
+        ? Between(parseDateStart(shipDateFrom)!, parseDateEnd(shipDateTo)!)
+        : shipDateFrom
+          ? MoreThanOrEqual(parseDateStart(shipDateFrom)!)
+          : shipDateTo
+            ? LessThanOrEqual(parseDateEnd(shipDateTo)!)
+            : undefined;
+
+    const dated: FindOptionsWhere<ShipmentOrder> = {
+      ...common,
+      ...(dueRange && { dueDate: dueRange }),
+      ...(shipRange && { shipDate: shipRange }),
+    };
+
+    // 상태 명시 → 해당 상태만(기간 적용, 미완료-always 무시)
+    // 상태 미지정 + 기간 있음 + includeOpen → 기간 내 전체 + 기간 밖 미완료도 포함
+    let where: FindOptionsWhere<ShipmentOrder> | FindOptionsWhere<ShipmentOrder>[];
+    if (status) {
+      where = { ...dated, status };
+    } else if (includeOpen && (shipRange || dueRange)) {
+      where = [dated, { ...common, status: In(OPEN_STATUSES) }];
+    } else {
+      where = dated;
     }
 
     const [data, total] = await Promise.all([
@@ -401,6 +432,57 @@ export class ShipOrderService {
       { shipOrderNo, ...this.tenantWhere(company, plant) },
       { status: 'CONFIRMED' },
     );
+
+    return this.findById(shipOrderNo, company, plant);
+  }
+
+  /**
+   * 출하지시 확정취소 (CONFIRMED -> DRAFT)
+   * 빈 OPEN 팔레트는 같이 정리하고, 박스/출하수량/마감 이후 팔레트가 있으면 차단한다.
+   */
+  async unconfirm(shipOrderNo: string, company?: string, plant?: string) {
+    const order = await this.findById(shipOrderNo, company, plant);
+    if (order.status !== 'CONFIRMED') {
+      throw new BadRequestException('CONFIRMED 상태에서만 확정취소할 수 있습니다.');
+    }
+
+    const shippedQty = (order.items ?? []).reduce((sum, item) => sum + (Number(item.shippedQty) || 0), 0);
+    if (shippedQty > 0) {
+      throw new BadRequestException('출하수량이 있는 출하지시는 확정취소할 수 없습니다.');
+    }
+
+    const where = { shipOrderNo, ...this.tenantWhere(company, plant) };
+    const pallets = await this.palletRepository.find({
+      where,
+      select: ['palletNo', 'status', 'shipmentId', 'boxCount', 'totalQty'],
+    });
+    const palletNos = pallets.map((pallet) => pallet.palletNo);
+    const boxWhere = palletNos.length > 0
+      ? [
+          where,
+          { palletNo: In(palletNos), ...this.tenantWhere(company, plant) },
+        ]
+      : where;
+    const boxCount = await this.boxRepository.count({ where: boxWhere });
+    const hasNonEmptyOrProgressedPallet = pallets.some((pallet) =>
+      pallet.status !== 'OPEN' ||
+      !!pallet.shipmentId ||
+      (Number(pallet.boxCount) || 0) > 0 ||
+      (Number(pallet.totalQty) || 0) > 0
+    );
+    if (boxCount > 0 || hasNonEmptyOrProgressedPallet) {
+      throw new BadRequestException('출하지시에 배정된 팔레트 또는 박스가 있으면 확정취소할 수 없습니다.');
+    }
+
+    if (palletNos.length > 0) {
+      await this.tx.run(async (queryRunner) => {
+        await queryRunner.manager.delete(PalletMaster, { palletNo: In(palletNos), ...where });
+        await queryRunner.manager.update(ShipmentOrder, where, { status: 'DRAFT' });
+      });
+      return this.findById(shipOrderNo, company, plant);
+    }
+
+    await this.shipOrderRepository.update(where, { status: 'DRAFT' });
 
     return this.findById(shipOrderNo, company, plant);
   }
@@ -933,7 +1015,7 @@ export class ShipOrderService {
       qty: box.qty,
     });
 
-    await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED', shippedAt: null });
+    await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED', shippedAt: null, shipOrderNo: null });
     if (serials.length > 0) {
       await qr.manager.update(FgLabel, { fgBarcode: In(serials), ...where }, { status: 'PACKED' });
     }

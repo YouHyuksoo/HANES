@@ -6,7 +6,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, IsNull, In, Like, Not, Repository } from 'typeorm';
+import { ILike, IsNull, In, Like, Not, Between, Repository } from 'typeorm';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -118,25 +119,53 @@ export class BoxService {
   }
 
   async findAll(query: BoxQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, search, boxNo, itemCode, palletId: palletNo, status, unassigned, oqcStatus } = query;
+    const { page = 1, limit = 10, search, boxNo, itemCode, palletId: palletNo, status, unassigned, oqcStatus, createdFrom, createdTo, includeOpen } = query;
     const skip = (page - 1) * limit;
 
-    const baseWhere: Record<string, unknown> = {
+    // 날짜·상태를 제외한 공통 조건(모든 OR 절에 공통 적용)
+    const common: Record<string, unknown> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(boxNo && { boxNo: ILike(`%${boxNo}%`) }),
       ...(itemCode && { itemCode }),
       ...(palletNo && { palletNo }),
-      ...(status && { status }),
       ...(unassigned && { palletNo: IsNull() }),
       ...(oqcStatus && { oqcStatus }),
     };
-    const where = search
-      ? [
-          { ...baseWhere, boxNo: ILike(`%${search}%`) },
-          { ...baseWhere, itemCode: ILike(`%${search}%`) },
-        ]
-      : baseWhere;
+
+    // 생성일 범위(시작/종료 중 하나만 와도 처리)
+    const createdRange =
+      createdFrom && createdTo
+        ? Between(parseDateStart(createdFrom)!, parseDateEnd(createdTo)!)
+        : createdFrom
+          ? Between(parseDateStart(createdFrom)!, parseDateEnd(createdFrom)!)
+          : createdTo
+            ? Between(parseDateStart(createdTo)!, parseDateEnd(createdTo)!)
+            : undefined;
+
+    // 검색어(박스번호 OR 품목코드)를 각 기본 절에 곱해 OR 확장
+    const withSearch = (base: Record<string, unknown>): Record<string, unknown>[] =>
+      search
+        ? [
+            { ...base, boxNo: ILike(`%${search}%`) },
+            { ...base, itemCode: ILike(`%${search}%`) },
+          ]
+        : [base];
+
+    // 기본 절 구성:
+    //  - status 명시 → 해당 상태만(기간 적용, OPEN-always 무시)
+    //  - status 미지정 + 기간 있음 → 기간 내 전체 + (includeOpen 시) 기간 밖 OPEN도 포함
+    //  - 기간 없음 → 공통 조건만
+    let baseClauses: Record<string, unknown>[];
+    if (status) {
+      baseClauses = [{ ...common, status, ...(createdRange && { createdAt: createdRange }) }];
+    } else if (createdRange) {
+      baseClauses = [{ ...common, createdAt: createdRange }];
+      if (includeOpen) baseClauses.push({ ...common, status: 'OPEN' });
+    } else {
+      baseClauses = [{ ...common }];
+    }
+    const where = baseClauses.flatMap(withSearch);
 
     const [data, total] = await Promise.all([
       this.boxRepository.find({

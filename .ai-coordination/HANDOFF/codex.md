@@ -2,10 +2,15 @@
 
 ## Last Update
 
-2026-06-24 KST
+2026-06-25 KST
+
+## Current Review
+
+- `T-SHIP-ORDER-UNCONFIRM`: `/shipping/order` 확정취소 기능을 추가했다. `CONFIRMED` 행/패널에서 `PUT /shipping/orders/:id/unconfirm`을 호출한다. 서버는 `CONFIRMED` + 품목 `shippedQty=0`일 때 동작하며, 빈 `OPEN` 팔레트만 있으면 같은 transaction에서 팔레트를 삭제하고 `DRAFT`로 되돌린다. 박스/출하수량/마감 이후 팔레트가 있으면 차단한다. 후속으로 `CONFIRMED` 삭제 버튼 노출 때문에 발생한 `DELETE /shipping/orders/:id` 400도 보정해 삭제 버튼/handler는 `DRAFT`만 허용한다. `/shipping/pallet`에는 `OPEN + boxCount 0 + shipmentId 없음` 조건의 `빈 팔레트 삭제` 버튼을 추가했다. JSHANES 실측 `SH2606220004`는 빈 `OPEN` 팔레트 `PLT2606220002`만 있어 새 로직 대상이다. 실제 unconfirm 재호출은 DB 상태 변경이라 수행하지 않았다. 검증: backend focused spec 31/31 PASS, frontend structure tests PASS, FE/BE tsc PASS, diff check PASS. `ship-order.service.ts`는 `T-SHIP-ORDER-CANCEL` active lock과 겹쳤으나 사용자 직접 후속 지시로 최소 변경했다.
 
 ## Latest Done
 
+- `T-MANUAL-INDEX-PAGE` 완료. `docs/manuals/index.html`을 추가해 `docs/manuals`의 7개 매뉴얼 그룹(기준정보/자재/생산/품질/검사/제품수불/출하)과 104개 화면을 검색 가능한 정적 목차로 묶었다. 각 화면 행은 해당 매뉴얼의 `#screen-N` 앵커로 이동한다. 검증: HTML script syntax/runtime smoke, embedded link existence, result total 104 일치, diff check PASS.
 - `T-REMAINING-HELP-MANUALS` 완료. `.ai-coordination/TASK-quality-manual.md`, `TASK-inspection-manual.md`, `TASK-product-mgmt-manual.md`, `TASK-shipping-manual.md` 기준으로 user 도움말 36개/operator 도움말 30개를 새로 작성했고 `apps/frontend/public/help/manifest.json`을 보강했다. 공식 `help-manual-export-runner.mjs`를 3002 기준으로만 재시도해 `docs/manuals/hanes-quality-manual-2026-06-24.html`, `hanes-inspection-manual-2026-06-24.html`, `hanes-product-mgmt-manual-2026-06-24.html`, `hanes-shipping-manual-2026-06-24.html` 및 각 `.result.json`을 생성했다. 최종 result는 quality `total=25`, inspection `total=6`, product `total=4`, shipping `total=9`, 4개 모두 `missingHelp=[]`, `missingCapture=[]`. 추가 포트/대체 runner/우회 캡처는 사용하지 않았다.
 - `T-PRODUCTION-HELP-MANUAL` 완료. `.ai-coordination/TASK-production-manual.md` 기준 생산관리 19개 화면의 누락 도움말을 보강했다. 신규 user 도움말 15개, operator 도움말 12개, `apps/frontend/public/help/manifest.json` 보강을 완료했고, 공식 `help-manual-export-runner.mjs`를 3002 기준으로 실행해 `docs/manuals/hanes-production-manual-2026-06-24.html` 및 `.result.json`을 생성했다. 검증 결과 runner JSON `total=19`, `missingHelp=[]`, `missingCapture=[]`, 도움말/manifest 검증 errors 0건, diff check PASS. 추가 포트는 사용하지 않았다.
 - `T-MATERIAL-HELP-MANUAL` 완료. `.ai-coordination/TASK-material-manual.md` 기준 자재관리 26개 화면의 누락 도움말을 보강했다. 신규 user 도움말 13개, operator 도움말 10개, `apps/frontend/public/help/manifest.json` 보강을 완료했고, 공식 `help-manual-export-runner.mjs`로 `docs/manuals/hanes-material-manual-2026-06-24.html` 및 `.result.json`을 생성했다. 검증 결과 runner JSON `total=26`, `missingHelp=[]`, `missingCapture=[]`, 도움말/manifest 검증 errors 0건, diff check PASS. 3002 캡처 타임아웃 때문에 3004 임시 dev 서버를 사용했다.
@@ -172,6 +177,9 @@
 
 ## Next AI Should
 
+- `T-SHIP-HISTORY-SHIPPED-DETAIL` 완료 후 REVIEW 상태. `/shipping/history` 우측 패널은 이제 `fulfillment` 대신 기존 `GET /shipping/orders/:id/shipped-detail`를 사용해 팔레트 없는 박스 단건 출하(`boxShipped`)도 표시한다. 실측 케이스 `SH2606250005`: `PALLET_MASTERS` 0건, `BOX_MASTERS` `BX2606250001`/수량 10. 3002에서 우측 패널 `팔레트 0 / 박스 1 / 총수량 10` 표시 확인. 검증: RED/GREEN 구조 테스트, history 구조 테스트 4건, FE tsc, 3002 Playwright, diff check PASS. 스크린샷 `docs/reports/shipping-history-shipped-detail-3002.png`. 커밋하지 않았다.
+- `T-SHIP-ORDER-SAVE-CONFIRM` 완료 후 REVIEW 상태. `/shipping/order` 신규/기존 DRAFT 패널 하단에 `저장 후 확정` 버튼을 추가했다. 신규는 `POST /shipping/orders` 응답 `shipOrderNo`로 즉시 `PUT /shipping/orders/:id/confirm`을 호출하고, 기존 DRAFT는 저장 후 confirm한다. 검증: RED/GREEN 구조 테스트, 관련 order 구조 테스트 4건, FE tsc, 기존 3002 Playwright DOM 확인, diff check PASS. 스크린샷 `docs/reports/shipping-order-save-confirm-3002.png`. 커밋하지 않았다.
+- `T-SHIP-PALLET-LAYOUT-TIDY` 완료 후 REVIEW 상태. `/shipping/pallet` 우측 포함박스 섹션은 `xl` 이상 18rem, `2xl` 이상 20rem으로 축소했고 1155px 폭에서는 아래로 내려가도록 했다. 툴바는 화면 전용 grid로 바꾸고 날짜 프리셋 버튼/검색 최소폭을 줄여 아이콘/입력 겹침을 제거했다. 검증: 팔레트 구조 테스트 5/5, FE tsc, diff check, 기존 3002 Playwright 렌더 측정 PASS. 스크린샷 `docs/reports/shipping-pallet-layout-3002.png`. 커밋하지 않았다.
 - `T-ER-VIEW-MULTI-TABLE-SELECT` 완료. `/system/er-view` 좌측 테이블 목록은 checkbox 다중 선택으로 바뀌었고, 선택된 각 테이블의 기존 `/graph?table=...&depth=1` 응답을 프론트에서 node/edge/relationship `id` 기준 병합해 표시한다. `selectedTables[0]`가 포커스 테이블이며, 새로 체크하거나 그래프 노드를 클릭하면 포커스로 올라간다. 마지막 1개 선택은 해제하지 않는다. 검증: ER VIEW structure test, FE tsc, diff check, 3002 HTTP 200 PASS. 커밋하지 않았다.
 - `T-ER-VIEW-FK-NAME-RISK-DISPLAY` 완료. `/system/er-view` 물리 FK 관계에서 실제 `constraintName`을 우측 상세 `현재 FK명`과 그래프 edge 라벨에 표시한다. 추정 관계에는 실행 전 확인용 `FK 후보명`을 표시한다. `PHYSICAL_FK_EXISTS`는 `-100` 리스크 점수가 아니라 `이미 FK 존재: 신규 생성 불필요` 상태 사유로 바꿨고, UI는 양수 리스크만 점수로 보여준다. 검증: backend ER VIEW spec, frontend ER VIEW structure test, FE/BE tsc, diff check PASS. 커밋하지 않았다.
 - `T-PARTNER-ID-TO-PARTNER-CODE` 완료. JSHANES `PURCHASE_ORDERS.PARTNER_ID`는 `PARTNER_CODE`로 rename됐고 `USER_TAB_COLUMNS` 기준 `PARTNER_ID` 0건 확인. 구매발주 entity/DTO/service/spec, ERP PO 수신 controller/service/spec, 입하 서비스 PO 참조, 구매발주 프론트 패널/입하 타입, ER VIEW 추정 매핑, `create-hanes-schema.sql`, `docs/reports/db-schema-erd.md`를 갱신했다. 검증: migration 적용/재실행, ERD 재생성, purchase-order/erp-material/arrival/er-view focused spec, backend build, frontend tsc, diff check PASS. 커밋하지 않았다.

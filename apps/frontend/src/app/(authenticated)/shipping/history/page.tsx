@@ -102,7 +102,15 @@ interface OrderPalletBox {
   boxNo: string;
   itemCode: string;
   qty: number;
-  status: string;
+  status?: string;
+}
+
+interface OrderShippedBox {
+  boxNo: string;
+  itemCode: string;
+  qty: number;
+  palletNo?: string;
+  shippedAt?: string | null;
 }
 
 interface OrderPallet {
@@ -117,6 +125,7 @@ interface OrderPallet {
 
 interface PalletDetail {
   pallets: OrderPallet[];
+  boxShipped: OrderShippedBox[];
 }
 
 export default function ShipHistoryPage() {
@@ -175,12 +184,15 @@ export default function ShipHistoryPage() {
     setSelectedHistory(row);
     setPalletLoading(true);
     try {
-      const res = await api.get(`/shipping/orders/${encodeURIComponent(row.shipOrderNo)}/fulfillment`, {
+      const res = await api.get(`/shipping/orders/${encodeURIComponent(row.shipOrderNo)}/shipped-detail`, {
         suppressErrorModal: true,
       });
-      setPalletDetail({ pallets: res.data?.data?.pallets ?? [] });
+      setPalletDetail({
+        pallets: res.data?.data?.pallets ?? [],
+        boxShipped: res.data?.data?.boxShipped ?? [],
+      });
     } catch {
-      setPalletDetail({ pallets: [] });
+      setPalletDetail({ pallets: [], boxShipped: [] });
     } finally {
       setPalletLoading(false);
     }
@@ -198,11 +210,18 @@ export default function ShipHistoryPage() {
   ], [t]);
 
   const pallets = palletDetail?.pallets ?? [];
+  const looseBoxes = palletDetail?.boxShipped ?? [];
+  const getPalletBoxCount = (pallet: OrderPallet) => pallet.boxes?.length ?? pallet.boxCount ?? 0;
+  const getPalletQty = (pallet: OrderPallet) => (
+    pallet.boxes?.length
+      ? pallet.boxes.reduce((sum, box) => sum + Number(box.qty ?? 0), 0)
+      : Number(pallet.totalQty ?? 0)
+  );
   const palletTotals = useMemo(() => ({
     palletCount: pallets.length,
-    boxCount: pallets.reduce((sum, pallet) => sum + Number(pallet.boxCount ?? pallet.boxes?.length ?? 0), 0),
-    totalQty: pallets.reduce((sum, pallet) => sum + Number(pallet.totalQty ?? 0), 0),
-  }), [pallets]);
+    boxCount: pallets.reduce((sum, pallet) => sum + getPalletBoxCount(pallet), 0) + looseBoxes.length,
+    totalQty: pallets.reduce((sum, pallet) => sum + getPalletQty(pallet), 0) + looseBoxes.reduce((sum, box) => sum + Number(box.qty ?? 0), 0),
+  }), [pallets, looseBoxes]);
   const fmt = (value?: number | null) => Number(value ?? 0).toLocaleString();
   const fmtDateTime = (value?: string | null) => value ? String(value).replace("T", " ").slice(0, 16) : "-";
 
@@ -274,7 +293,7 @@ export default function ShipHistoryPage() {
                   </div>
                 </div>
 
-                {pallets.length === 0 && !palletLoading ? (
+                {pallets.length === 0 && looseBoxes.length === 0 && !palletLoading ? (
                   <div className="rounded border border-dashed border-border px-4 py-8 text-center text-sm text-text-muted">
                     {t("shipping.history.noPalletDetail", "등록된 팔레트 정보가 없습니다.")}
                   </div>
@@ -290,8 +309,8 @@ export default function ShipHistoryPage() {
                             <span className="shrink-0 rounded border border-border px-2 py-0.5 text-xs text-text-muted">{pallet.status}</span>
                           </div>
                           <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-text-muted">
-                            <span>{t("shipping.confirm.box", "박스")} {fmt(pallet.boxCount)}</span>
-                            <span>{t("common.qty", "수량")} {fmt(pallet.totalQty)}</span>
+                            <span>{t("shipping.confirm.box", "박스")} {fmt(getPalletBoxCount(pallet))}</span>
+                            <span>{t("common.qty", "수량")} {fmt(getPalletQty(pallet))}</span>
                             <span>{t("shipping.pallet.closeAt", "마감")} {fmtDateTime(pallet.closeAt)}</span>
                             <span>{t("shipping.pallet.shippedAt", "출하")} {fmtDateTime(pallet.shippedAt)}</span>
                           </div>
@@ -319,6 +338,38 @@ export default function ShipHistoryPage() {
                         </div>
                       </section>
                     ))}
+                    {looseBoxes.length > 0 && (
+                      <section className="rounded border border-border bg-background">
+                        <div className="border-b border-border px-3 py-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="min-w-0 truncate text-sm font-semibold text-primary">
+                              {t("shipping.history.boxShipped", "박스 단건 출하")}
+                            </p>
+                            <span className="shrink-0 rounded border border-border px-2 py-0.5 text-xs text-text-muted">*</span>
+                          </div>
+                          <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-text-muted">
+                            <span>{t("shipping.confirm.box", "박스")} {fmt(looseBoxes.length)}</span>
+                            <span>{t("common.qty", "수량")} {fmt(looseBoxes.reduce((sum, box) => sum + Number(box.qty ?? 0), 0))}</span>
+                          </div>
+                        </div>
+                        <div className="divide-y divide-border">
+                          {looseBoxes.map((box) => (
+                            <div key={box.boxNo} className="grid grid-cols-[1fr_auto] gap-2 px-3 py-2 text-xs">
+                              <div className="min-w-0">
+                                <p className="flex items-center gap-1 truncate font-mono font-medium text-text" title={box.boxNo}>
+                                  <Box className="h-3 w-3 text-text-muted" /> {box.boxNo}
+                                </p>
+                                <p className="mt-0.5 truncate text-text-muted">{box.itemCode}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-mono font-semibold text-text">{fmt(box.qty)}</p>
+                                <p className="text-text-muted">{fmtDateTime(box.shippedAt)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
                   </div>
                 )}
               </div>

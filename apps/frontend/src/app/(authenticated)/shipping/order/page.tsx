@@ -14,16 +14,24 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import QRCode from "react-qr-code";
 import {
-  ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2, X, Printer, HelpCircle, CheckCircle,
+  ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2, X, Printer, HelpCircle, CheckCircle, RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import QtyInput from "@/components/shared/QtyInput";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
+import { getTodayLocal } from "@/utils/date";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import PartSearchModal from "@/components/shared/PartSearchModal";
 import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
+import toast from "react-hot-toast";
+
+/** Axios 에러에서 서버 메시지 추출 (없으면 fallback) */
+const getApiErrorMessage = (e: unknown, fallback: string): string =>
+  (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
 
 interface ShipOrderLine {
   itemCode: string;
@@ -47,24 +55,37 @@ interface ShipOrder {
   items?: ShipOrderLine[];
 }
 
-const shipOrderStatusHelpText = [
-  "DRAFT: 출하지시 작성 중 상태입니다. 품목, 고객사, 출하일을 수정할 수 있습니다.",
-  "CONFIRMED: 출하지시가 확정되어 박스 또는 팔레트 출하 작업을 진행할 수 있습니다.",
-  "SHIPPING: 출하 작업이 진행 중인 상태입니다. 일부 물류 처리가 남아 있을 수 있습니다.",
-  "SHIPPED: 출하 처리가 완료된 상태입니다. 출하 이력과 수불이 기록되었습니다.",
-  "CLOSED: 출하지시 수량이 모두 처리되어 마감된 상태입니다.",
-].join("\n");
+/** 상태 코드별 설명. 상태명(라벨)은 공통코드(SHIP_ORDER_STATUS)에서 실제 언어로 가져온다. */
+const SHIP_ORDER_STATUS_DESC: Record<string, string> = {
+  DRAFT: "출하지시 작성 중 상태입니다. 품목, 고객사, 출하일을 수정할 수 있습니다.",
+  CONFIRMED: "출하지시가 확정되어 박스 또는 팔레트 출하 작업을 진행할 수 있습니다.",
+  SHIPPING: "출하 작업이 진행 중인 상태입니다. 일부 물류 처리가 남아 있을 수 있습니다.",
+  SHIPPED: "출하 처리가 완료된 상태입니다. 출하 이력과 수불이 기록되었습니다.",
+  CLOSED: "출하지시 수량이 모두 처리되어 마감된 상태입니다.",
+};
 
 function ShipOrderStatusHeader() {
   const { t } = useTranslation();
+  // 그리드 배지(ComCodeBadge)와 동일하게 공통코드 라벨을 사용 → 툴팁의 상태명이 실제 언어로 그리드와 일치
+  const statusOptions = useComCodeOptions("SHIP_ORDER_STATUS");
+  const helpText = useMemo(
+    () =>
+      statusOptions
+        .map((opt) => {
+          const desc = SHIP_ORDER_STATUS_DESC[opt.value];
+          return desc ? `${opt.label}: ${desc}` : opt.label;
+        })
+        .join("\n"),
+    [statusOptions],
+  );
 
   return (
     <div className="flex items-center justify-center gap-1">
       <span>{t("common.status")}</span>
       <span
         className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-primary"
-        title={shipOrderStatusHelpText}
-        aria-label={shipOrderStatusHelpText}
+        title={helpText}
+        aria-label={helpText}
       >
         <HelpCircle className="h-3.5 w-3.5" />
       </span>
@@ -79,6 +100,9 @@ export default function ShipOrderPage() {
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  // 작업 대상 목록 기본 필터: 당일 출하예정분 + 미완료(DRAFT/CONFIRMED/SHIPPING)는 기간 무관 항상 노출
+  const [shipDateFrom, setShipDateFrom] = useState(getTodayLocal());
+  const [shipDateTo, setShipDateTo] = useState(getTodayLocal());
   const [isFormPanelOpen, setIsFormPanelOpen] = useState(false);
   const [isPartModalOpen, setIsPartModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShipOrder | null>(null);
@@ -87,7 +111,9 @@ export default function ShipOrderPage() {
   const [deleteTarget, setDeleteTarget] = useState<ShipOrder | null>(null);
   const [printTarget, setPrintTarget] = useState<ShipOrder | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ShipOrder | null>(null);
+  const [unconfirmTarget, setUnconfirmTarget] = useState<ShipOrder | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [unconfirming, setUnconfirming] = useState(false);
 
   const comCodeStatusOptions = useComCodeOptions("SHIP_ORDER_STATUS");
   const { options: customerOptions } = usePartnerOptions("CUSTOMER");
@@ -101,6 +127,10 @@ export default function ShipOrderPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
+      if (shipDateFrom) params.shipDateFrom = shipDateFrom;
+      if (shipDateTo) params.shipDateTo = shipDateTo;
+      // 상태 미지정 시 기간 밖이어도 미완료(작업 중) 지시는 항상 노출
+      if (!statusFilter) params.includeOpen = "true";
       const res = await api.get("/shipping/orders", { params });
       const rows = Array.isArray(res.data?.data) ? res.data.data : [];
       setData(rows.map((row: ShipOrder) => {
@@ -116,7 +146,7 @@ export default function ShipOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter]);
+  }, [searchText, statusFilter, shipDateFrom, shipDateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -173,27 +203,42 @@ export default function ShipOrderPage() {
   const canSave = orderItems.length > 0
     && form.shipDate.trim().length > 0
     && orderItems.every((item) => Number.isInteger(item.orderQty) && item.orderQty > 0);
+  const canEditCurrentOrder = !editingItem || editingItem.status === "DRAFT";
 
   const shipOrderNoDisplay = editingItem
     ? { shipOrderNo: editingItem.shipOrderNo }
     : { shipOrderNo: t("common.autoGenerated", "자동생성") };
 
+  // 기간(출하예정일) 밖이지만 미완료(SHIPPED 아님)라 includeOpen으로 포함된 행
+  const outOfRangeNos = useMemo(() => {
+    const set = new Set<string>();
+    if (statusFilter) return set; // 상태 명시 시 includeOpen 미적용
+    for (const o of data) {
+      const d = (o.shipDate || "").slice(0, 10);
+      const inRange = !!d && !!shipDateFrom && !!shipDateTo && d >= shipDateFrom && d <= shipDateTo;
+      if (!inRange && o.status !== "SHIPPED") set.add(o.shipOrderNo);
+    }
+    return set;
+  }, [data, statusFilter, shipDateFrom, shipDateTo]);
+
+  const buildSavePayload = useCallback(() => ({
+    customerId: form.customerId || undefined,
+    customerPoNo: form.customerPoNo || undefined,
+    dueDate: form.dueDate || undefined,
+    shipDate: form.shipDate,
+    remark: form.remark || undefined,
+    items: orderItems.map((item) => ({
+      itemCode: item.itemCode,
+      orderQty: item.orderQty,
+      remark: item.remark || undefined,
+    })),
+  }), [form, orderItems]);
+
   const handleSave = useCallback(async () => {
     if (!canSave || saving) return;
     setSaving(true);
     try {
-      const payload = {
-        customerId: form.customerId || undefined,
-        customerPoNo: form.customerPoNo || undefined,
-        dueDate: form.dueDate || undefined,
-        shipDate: form.shipDate,
-        remark: form.remark || undefined,
-        items: orderItems.map((item) => ({
-          itemCode: item.itemCode,
-          orderQty: item.orderQty,
-          remark: item.remark || undefined,
-        })),
-      };
+      const payload = buildSavePayload();
       if (editingItem) {
         await api.put(`/shipping/orders/${editingItem.shipOrderNo}`, payload);
       } else {
@@ -203,18 +248,52 @@ export default function ShipOrderPage() {
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
+      toast.error(getApiErrorMessage(e, t("shipping.shipOrder.saveFailed", "저장에 실패했습니다.")));
     } finally {
       setSaving(false);
     }
-  }, [canSave, editingItem, form, orderItems, fetchData, saving]);
+  }, [buildSavePayload, canSave, editingItem, fetchData, saving]);
+
+  const handleSaveAndConfirm = useCallback(async () => {
+    if (!canSave || saving || confirming) return;
+    setSaving(true);
+    setConfirming(true);
+    try {
+      const payload = buildSavePayload();
+      let createdOrderNo = editingItem?.shipOrderNo;
+      if (editingItem) {
+        await api.put(`/shipping/orders/${editingItem.shipOrderNo}`, payload);
+      } else {
+        const created = await api.post("/shipping/orders", payload);
+        createdOrderNo = created.data?.data?.shipOrderNo ?? created.data?.shipOrderNo;
+      }
+      if (!createdOrderNo) {
+        throw new Error("Missing created ship order number");
+      }
+      await api.put(`/shipping/orders/${createdOrderNo}/confirm`);
+      setIsFormPanelOpen(false);
+      fetchData();
+    } catch (e) {
+      console.error("Save and confirm failed:", e);
+      toast.error(getApiErrorMessage(e, t("shipping.shipOrder.confirmFailed", "확정에 실패했습니다.")));
+    } finally {
+      setConfirming(false);
+      setSaving(false);
+    }
+  }, [buildSavePayload, canSave, confirming, editingItem, fetchData, saving, t]);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
+    if (deleteTarget.status !== "DRAFT") {
+      setDeleteTarget(null);
+      return;
+    }
     try {
       await api.delete(`/shipping/orders/${deleteTarget.shipOrderNo}`);
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);
+      toast.error(getApiErrorMessage(e, t("shipping.shipOrder.deleteFailed", "삭제에 실패했습니다.")));
     } finally {
       setDeleteTarget(null);
     }
@@ -240,13 +319,30 @@ export default function ShipOrderPage() {
       fetchData();
     } catch (e) {
       console.error("Confirm failed:", e);
+      toast.error(getApiErrorMessage(e, t("shipping.shipOrder.confirmFailed", "확정에 실패했습니다.")));
     } finally {
       setConfirming(false);
     }
   }, [confirmTarget, closeFormPanel, fetchData]);
 
+  const handleUnconfirmOrder = useCallback(async () => {
+    if (!unconfirmTarget) return;
+    setUnconfirming(true);
+    try {
+      await api.put(`/shipping/orders/${unconfirmTarget.shipOrderNo}/unconfirm`);
+      setUnconfirmTarget(null);
+      closeFormPanel();
+      fetchData();
+    } catch (e) {
+      console.error("Unconfirm failed:", e);
+      toast.error(getApiErrorMessage(e, t("shipping.shipOrder.unconfirmFailed", "확정취소에 실패했습니다.")));
+    } finally {
+      setUnconfirming(false);
+    }
+  }, [unconfirmTarget, closeFormPanel, fetchData]);
+
   const columns = useMemo<ColumnDef<ShipOrder>[]>(() => [
-    { id: "actions", header: "", size: 140, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
+    { id: "actions", header: "", size: 168, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
         <button
           onClick={() => handlePrintShipOrder(row.original)}
@@ -267,8 +363,25 @@ export default function ShipOrderPage() {
             <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
           </button>
         )}
+        {row.original.status === "CONFIRMED" && (
+          <button
+            onClick={() => setUnconfirmTarget(row.original)}
+            className="p-1 hover:bg-surface rounded"
+            title={t("shipping.shipOrder.unconfirmOrder", "확정취소")}
+          >
+            <RotateCcw className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          </button>
+        )}
         <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+        {row.original.status === "DRAFT" && (
+          <button
+            onClick={() => setDeleteTarget(row.original)}
+            className="p-1 hover:bg-surface rounded"
+            title={t("common.delete")}
+          >
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        )}
       </div>
     ) },
     { accessorKey: "shipOrderNo", header: t("shipping.shipOrder.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
@@ -296,12 +409,21 @@ export default function ShipOrderPage() {
           <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
         </div>
       </div>
+        <OpenIncludedNotice count={outOfRangeNos.size} />
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+            rowClassName={(row) => outOfRangeNos.has(row.shipOrderNo) ? "border-l-2 border-l-amber-500" : ""}
             enableExport exportFileName={t("shipping.shipOrder.title")}
             toolbarLeft={
-              <div className="flex gap-3 flex-1 min-w-0">
-                <div className="flex-1 min-w-0">
+              <div className="flex gap-3 flex-1 min-w-0 items-center flex-wrap">
+                <DateRangeFilter
+                  from={shipDateFrom}
+                  to={shipDateTo}
+                  onFromChange={setShipDateFrom}
+                  onToChange={setShipDateTo}
+                  label={t("shipping.shipOrder.shipDate")}
+                />
+                <div className="flex-1 min-w-[12rem]">
                   <Input placeholder={t("shipping.shipOrder.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-36 flex-shrink-0">
@@ -358,6 +480,37 @@ ORDER BY so.CREATED_AT DESC`}/>
             <button type="button" onClick={closeFormPanel} className="rounded p-1 text-text-muted hover:bg-surface-secondary hover:text-text" aria-label={t("common.close", "닫기")}>
               <X className="h-4 w-4" />
             </button>
+          </div>
+
+          {/* 액션 버튼 — 상단 표준 배치 */}
+          <div className="flex flex-wrap justify-end gap-2 border-b border-border px-4 py-3">
+            <Button variant="secondary" onClick={closeFormPanel}>{t("common.cancel")}</Button>
+            {canEditCurrentOrder && (
+              <Button
+                variant="secondary"
+                className="border-green-500 text-green-600 dark:text-green-400"
+                onClick={handleSaveAndConfirm}
+                disabled={!canSave || saving || confirming}
+                title={orderItems.length === 0 ? t("shipping.shipOrder.confirmNeedItems", "품목이 있어야 확정할 수 있습니다.") : undefined}
+              >
+                <CheckCircle className="w-4 h-4 mr-1" />
+                {t("shipping.shipOrder.saveAndConfirm", "저장 후 확정")}
+              </Button>
+            )}
+            {editingItem && editingItem.status === "CONFIRMED" && (
+              <Button
+                variant="secondary"
+                className="border-amber-500 text-amber-600 dark:text-amber-400"
+                onClick={() => setUnconfirmTarget(editingItem)}
+                disabled={saving || unconfirming}
+              >
+                <RotateCcw className="w-4 h-4 mr-1" />
+                {t("shipping.shipOrder.unconfirmOrder", "확정취소")}
+              </Button>
+            )}
+            <Button onClick={handleSave} disabled={!canEditCurrentOrder || !canSave || saving}>
+              {saving ? t("common.saving") : t("common.save", "저장")}
+            </Button>
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col">
@@ -434,24 +587,6 @@ ORDER BY so.CREATED_AT DESC`}/>
                   )}
                 </div>
               </div>
-              <div className="flex justify-end gap-2 border-t border-border p-4">
-                <Button variant="secondary" onClick={closeFormPanel}>{t("common.cancel")}</Button>
-                {editingItem && editingItem.status === "DRAFT" && (
-                  <Button
-                    variant="secondary"
-                    className="border-green-500 text-green-600 dark:text-green-400"
-                    onClick={() => setConfirmTarget(editingItem)}
-                    disabled={orderItems.length === 0 || saving || confirming}
-                    title={orderItems.length === 0 ? t("shipping.shipOrder.confirmNeedItems", "품목이 있어야 확정할 수 있습니다.") : undefined}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    {t("shipping.shipOrder.confirmOrder", "출하지시 확정")}
-                  </Button>
-                )}
-                <Button onClick={handleSave} disabled={!canSave || saving}>
-                  {saving ? t("common.saving") : t("common.save", "저장")}
-                </Button>
-              </div>
             </div>
         </aside>
       )}
@@ -467,6 +602,12 @@ ORDER BY so.CREATED_AT DESC`}/>
         onClose={() => setConfirmTarget(null)}
         onConfirm={handleConfirmOrder}
         message={`'${confirmTarget?.shipOrderNo || ""}' ${t("shipping.shipOrder.confirmOrderMessage", "출하지시를 확정하시겠습니까? 확정 후에는 수정·삭제할 수 없습니다.")}`}
+      />
+      <ConfirmModal
+        isOpen={!!unconfirmTarget}
+        onClose={() => setUnconfirmTarget(null)}
+        onConfirm={handleUnconfirmOrder}
+        message={`'${unconfirmTarget?.shipOrderNo || ""}' ${t("shipping.shipOrder.unconfirmOrderMessage", "출하지시 확정을 취소하고 작성중(DRAFT) 상태로 되돌리시겠습니까? 출하수량 또는 배정된 박스/팔레트가 있으면 처리되지 않습니다.")}`}
       />
       <PartSearchModal
         isOpen={isPartModalOpen}

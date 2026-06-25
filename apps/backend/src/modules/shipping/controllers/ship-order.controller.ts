@@ -12,6 +12,7 @@
  * - POST   /shipping/orders       출하지시 생성
  * - PUT    /shipping/orders/:id   출하지시 수정
  * - DELETE /shipping/orders/:id   출하지시 삭제
+ * - PUT    /shipping/orders/:id/unconfirm 출하지시 확정취소
  * - POST   /shipping/orders/:id/cancel-ship-box  박스 단건 출하 취소
  */
 
@@ -111,6 +112,14 @@ export class ShipOrderController {
   async confirm(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
     const data = await this.shipOrderService.confirm(id, company, plant);
     return ResponseUtil.success(data, '출하지시가 확정되었습니다.');
+  }
+
+  @Put(':id/unconfirm')
+  @ApiOperation({ summary: '출하지시 확정취소 (CONFIRMED → DRAFT)' })
+  @ApiParam({ name: 'id', description: '출하지시 번호' })
+  async unconfirm(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.unconfirm(id, company, plant);
+    return ResponseUtil.success(data, '출하지시 확정이 취소되었습니다.');
   }
 
   @Get(':id/fulfillment')

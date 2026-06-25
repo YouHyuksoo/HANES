@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import PartSelect from "@/components/shared/PartSelect";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
+import { getTodayLocal } from "@/utils/date";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -106,6 +109,9 @@ export default function PackPage() {
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+  // 작업 대상 목록 기본 필터: 당일 생성분 + 진행중(OPEN) 박스는 기간 무관 항상 노출
+  const [createdFrom, setCreatedFrom] = useState(getTodayLocal());
+  const [createdTo, setCreatedTo] = useState(getTodayLocal());
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
   const [isPackableModalOpen, setIsPackableModalOpen] = useState(false);
@@ -148,6 +154,10 @@ export default function PackPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
+      if (createdFrom) params.createdFrom = createdFrom;
+      if (createdTo) params.createdTo = createdTo;
+      // 상태 미지정 시 기간 밖이어도 미마감(OPEN) 박스는 항상 노출
+      if (!statusFilter) params.includeOpen = "true";
       const res = await api.get("/shipping/boxes", { params });
       const list: Box[] = res.data?.data ?? [];
       setData(list);
@@ -164,7 +174,7 @@ export default function PackPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter, t]);
+  }, [searchText, statusFilter, createdFrom, createdTo, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -312,6 +322,18 @@ export default function PackPage() {
     { accessorKey: "closeAt", header: t("shipping.pack.closedAt"), size: 150, meta: { filterType: "date" as const }, cell: ({ getValue }) => (getValue() ? String(getValue()).replace("T", " ").slice(0, 16) : "-") },
   ], [t]);
 
+  // 기간(생성일) 밖이지만 미마감(OPEN)이라 includeOpen으로 포함된 박스
+  const outOfRangeNos = useMemo(() => {
+    const set = new Set<string>();
+    if (statusFilter) return set; // 상태 명시 시 includeOpen 미적용
+    for (const b of data) {
+      const d = (b.createdAt || "").slice(0, 10);
+      const inRange = !!d && !!createdFrom && !!createdTo && d >= createdFrom && d <= createdTo;
+      if (!inRange && b.status === "OPEN") set.add(b.boxNo);
+    }
+    return set;
+  }, [data, statusFilter, createdFrom, createdTo]);
+
   // 시리얼 모달 용량 계산
   const modalSerials = parseSerials(selectedBox);
   const modalPackUnit = selectedBox?.boxQty ?? null;
@@ -375,6 +397,8 @@ export default function PackPage() {
         </div>
       )}
 
+      <OpenIncludedNotice count={outOfRangeNos.size} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-auto">
         <div className="lg:col-span-2">
           <Card className="h-full min-h-0" padding="none"><CardContent className="h-full p-4 flex flex-col min-h-0">
@@ -399,11 +423,21 @@ export default function PackPage() {
               enableColumnFilter
               enableExport
               exportFileName={t("shipping.pack.title")}
-              rowClassName={(row) => row.boxNo === activePackingBoxNo ? "ring-2 ring-primary bg-primary/5" : (row.boxNo === selectedBox?.boxNo ? "bg-primary/5" : "")}
+              rowClassName={(row) => {
+                const sel = row.boxNo === activePackingBoxNo ? "ring-2 ring-primary bg-primary/5" : (row.boxNo === selectedBox?.boxNo ? "bg-primary/5" : "");
+                return outOfRangeNos.has(row.boxNo) ? `${sel} border-l-2 border-l-amber-500` : sel;
+              }}
               onRowClick={(row) => setSelectedBox(row)}
               toolbarLeft={
-                <div className="flex gap-3 flex-1 min-w-0">
-                  <div className="flex-1 min-w-0">
+                <div className="flex gap-3 flex-1 min-w-0 items-center flex-wrap">
+                  <DateRangeFilter
+                    from={createdFrom}
+                    to={createdTo}
+                    onFromChange={setCreatedFrom}
+                    onToChange={setCreatedTo}
+                    label={t("shipping.pack.createdDate", "생성일")}
+                  />
+                  <div className="flex-1 min-w-[12rem]">
                     <Input placeholder={t("shipping.pack.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                   </div>
                   <div className="w-36 flex-shrink-0">

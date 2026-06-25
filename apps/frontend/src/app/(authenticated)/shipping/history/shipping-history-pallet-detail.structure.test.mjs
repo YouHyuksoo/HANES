@@ -6,15 +6,19 @@ const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 
 test("shipping history shows selected order pallet detail on the right", () => {
   assert.match(source, /interface\s+OrderPallet/, "page should define pallet detail data");
+  assert.match(source, /interface\s+OrderShippedBox/, "page should define loose shipped-box detail data");
   assert.match(source, /selectedHistory/, "page should keep the selected history row");
   assert.match(source, /palletDetail/, "page should keep selected order pallet detail");
-  assert.match(source, /api\.get\(`\/shipping\/orders\/\$\{encodeURIComponent\(row\.shipOrderNo\)\}\/fulfillment`/, "row selection should load fulfillment pallets");
+  assert.match(source, /api\.get\(`\/shipping\/orders\/\$\{encodeURIComponent\(row\.shipOrderNo\)\}\/shipped-detail`/, "row selection should load shipped detail including loose shipped boxes");
   assert.match(source, /onRowClick=\{handleSelectHistory\}/, "history grid row click should select a row");
   assert.match(source, /selectedRowId=\{selectedHistory\?\.id\}/, "selected grid row should be highlighted");
   assert.match(source, /getRowId=\{\(row\) => row\.id\}/, "grid should use the history id for row selection");
   assert.match(source, /팔레트\s*상세|shipping\.history\.palletDetail/, "right panel should render pallet detail title");
   assert.match(source, /pallet\.palletNo/, "right panel should render pallet numbers");
   assert.match(source, /pallet\.boxes\.map/, "right panel should render boxes under each pallet");
+  assert.match(source, /boxShipped/, "right panel should keep loose shipped boxes from the shipped-detail API");
+  assert.match(source, /looseBoxes\.map/, "right panel should render loose shipped boxes");
+  assert.match(source, /pallet\.boxes\?\.length \?\? pallet\.boxCount/, "pallet box totals should prefer actual returned boxes over stale aggregate columns");
 });
 
 test("shipping history defaults to today filters and renders local colored status badges", () => {

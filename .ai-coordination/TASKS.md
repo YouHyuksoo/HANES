@@ -29,6 +29,122 @@ notes:
 
 ## Active Tasks
 
+## T-SHIP-HISTORY-SHIPPED-DETAIL 출하이력 우측 패널 박스출하 표시 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/history` 우측 상세 패널이 팔레트 없는 박스 단건 출하를 0으로 표시하는 문제 보정
+files:
+- apps/frontend/src/app/(authenticated)/shipping/history/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-pallet-detail.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-pallet-detail.structure.test.mjs"`가 `OrderShippedBox` 부재로 실패
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-pallet-detail.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-no-info-cards.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/history/shipping-history-status-help.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 기존 3002 Playwright 확인. `SH2606250005` 선택 시 우측 패널 `팔레트 0 / 박스 1 / 총수량 10`, `BX2606250001` 표시. 스크린샷 `docs/reports/shipping-history-shipped-detail-3002.png`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- DB 확인: `SH2606250005`는 `PALLET_MASTERS` 0건, `BOX_MASTERS` 단건 `BX2606250001`/`SHIPPED`/수량 10. 기존 fulfillment API는 팔레트만 반환해 우측 패널이 0으로 보인다.
+- 백엔드 lock 파일은 수정하지 않고 기존 `GET /shipping/orders/:id/shipped-detail`를 사용했다.
+
+## T-SHIP-ORDER-SAVE-CONFIRM 출하지시 저장 후 확정 액션 추가
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/order` 신규/수정 패널에서 임시저장 후 바로 확정 처리 가능하게 보정
+files:
+- apps/frontend/src/app/(authenticated)/shipping/order/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs"`가 `handleSaveAndConfirm` 부재로 실패
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-payload.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-required-fields.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-right-panel.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 기존 3002 Playwright 렌더 확인. 신규 등록 패널에서 `저장 후 확정` 버튼 표시, 필수값 전 disabled 정상, 가로 overflow 없음. 스크린샷 `docs/reports/shipping-order-save-confirm-3002.png`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- 백엔드 확정 API는 이미 `PUT /shipping/orders/:id/confirm`로 존재한다. 문제는 신규 작성 화면에서 저장 직후 확정 진입점이 없는 UX였다.
+- 패널 하단에는 `저장 후 확정` 버튼을 추가했다. 신규는 `POST /shipping/orders` 응답의 `shipOrderNo`로 즉시 confirm하고, 기존 DRAFT 수정은 `PUT /shipping/orders/:id` 후 confirm한다.
+
+## T-SHIP-PALLET-LAYOUT-TIDY 팔레트적재 툴바/우측 패널 정렬 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/pallet` 툴바 아이콘/바코드 입력 배치 정렬
+- 우측 포함박스 섹션 폭 축소
+files:
+- apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-order-required.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `git diff --check -- "apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs" .ai-coordination/TASKS.md .ai-coordination/LOCKS.md .ai-coordination/JOURNAL.md .ai-coordination/HANDOFF/codex.md`
+- PASS: 3002 Playwright 렌더 측정. 1155px 폭에서 툴바 1줄, 겹침 0건, 가로 overflow 없음. 스크린샷 `docs/reports/shipping-pallet-layout-3002.png`
+review:
+- needs-review
+notes:
+- 공용 DataGrid는 건드리지 않고 팔레트 화면의 toolbarLeft와 본문 grid만 수정했다.
+- 우측 포함박스 섹션은 `xl` 이상에서 18rem, `2xl` 이상에서 20rem으로 제한하고, 1155px 폭에서는 아래로 내려가도록 했다.
+
+## T-SHIP-ORDER-UNCONFIRM 출하지시 확정취소(DRAFT 복귀) 추가
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/shipping/order`에서 확정된 출하지시를 출하 진행 전 `DRAFT`로 되돌리는 기능 추가
+files:
+- apps/backend/src/modules/shipping/services/ship-order.service.ts
+- apps/backend/src/modules/shipping/services/ship-order.service.spec.ts
+- apps/backend/src/modules/shipping/controllers/ship-order.controller.ts
+- apps/frontend/src/app/(authenticated)/shipping/order/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/shipping/pallet/page.tsx
+- apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/DECISIONS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: `pnpm.cmd --filter @harness/backend exec jest src/modules/shipping/services/ship-order.service.spec.ts --runInBand`
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs"`
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-empty-delete.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/pallet/shipping-pallet-order-required.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `git diff --check -- apps/backend/src/modules/shipping/services/ship-order.service.ts apps/backend/src/modules/shipping/services/ship-order.service.spec.ts apps/backend/src/modules/shipping/controllers/ship-order.controller.ts "apps/frontend/src/app/(authenticated)/shipping/order/page.tsx" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs" .ai-coordination/TASKS.md .ai-coordination/LOCKS.md .ai-coordination/DECISIONS.md`
+- PASS: 후속 400 보정 후 `node --test "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs"`
+- PASS: 후속 400 보정 후 `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 후속 400 보정 후 `git diff --check -- "apps/frontend/src/app/(authenticated)/shipping/order/page.tsx" "apps/frontend/src/app/(authenticated)/shipping/order/ship-order-unconfirm.structure.test.mjs" .ai-coordination/TASKS.md .ai-coordination/LOCKS.md`
+- PASS: 빈 팔레트 삭제/자동정리 보정 후 `pnpm.cmd --filter @harness/backend exec jest src/modules/shipping/services/ship-order.service.spec.ts --runInBand`
+- PASS: 빈 팔레트 삭제/자동정리 보정 후 FE/BE `tsc --noEmit --pretty false`
+- PASS: 빈 팔레트 삭제/자동정리 보정 후 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `ship-order.service.ts`와 `ship-order.controller.ts`는 `T-SHIP-ORDER-CANCEL` active lock과 겹친다. 사용자가 2026-06-25 22:22 KST에 "지금 수정해"라고 명시 지시하여 충돌 사실을 기록하고 최소 범위로 진행한다.
+- 전용 `PUT /shipping/orders/:id/unconfirm`은 `CONFIRMED` + 출하수량 0 + 배정 팔레트/박스 0건에서만 `DRAFT`로 되돌린다.
+- 후속 오류: `CONFIRMED` 행에서도 삭제 버튼이 노출되어 `DELETE /shipping/orders/:id` 400이 발생했다. 삭제 액션은 `DRAFT`에만 노출하고 handler도 non-DRAFT API 호출 전 차단하도록 보정했다.
+- 후속 오류: `SH2606220004`는 출하수량 0, 박스 0, 빈 `OPEN` 팔레트 1건(`PLT2606220002`)만 있어 확정취소에서 자동 정리 가능한 상태다. `/shipping/pallet`에도 빈 팔레트 삭제 UI를 추가한다.
+- 실제 `SH2606220004` unconfirm 재호출은 DB 상태 변경이므로 수행하지 않았다.
+
 ## T-WORKFLOW-BUSINESS-MAP `/workflow` 업무 이해용 React Flow 재구성
 status: REVIEW
 owner: codex
