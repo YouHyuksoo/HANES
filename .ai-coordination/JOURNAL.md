@@ -3009,6 +3009,44 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - 기존 3002는 `/inventory/material-physical-inv-history` 캡처에서 타임아웃되어 별도 3004 dev 서버로 생성했고, 작업 후 3004 임시 서버는 종료한다.
   - 소스 추적 중 `MAT_SCRAP`, `MAT_MISC_RECEIPT`, `INV_MAT_PHYSICAL_INV_HISTORY` 화면의 표시용 SQL 텍스트가 실제 backend 저장/조회 테이블과 달라 도움말에는 실제 서비스 기준(`STOCK_TRANSACTIONS`, `INV_ADJ_LOGS`)으로 설명했다.
 
+# 2026-06-26 00:08 KST - codex - T-LABEL-TEXT-IMAGE-INPUT
+
+- `/master/label` 라벨 디자이너에서 텍스트 객체가 사용자 고정 문구를 직접 출력할 수 없고, 이미지 객체가 파일 업로드 없이 URL 직접 입력만 가능하던 문제를 보정했다.
+- `LabelObjectDesigner.tsx`는 `T-KIOSK-SG-LABEL-PRINT` active lock에 포함되어 있었지만, 사용자가 충돌 수정 진행을 명시 승인해 최소 범위로 수정했다.
+- 변경:
+  - 툴바에서 추가한 글자/이미지 객체는 기본 소스 필드에 묶지 않고 `고정값 사용` 상태로 시작한다.
+  - 필드 목록을 클릭해 추가한 글자 객체만 해당 소스 필드에 연결한다.
+  - 텍스트 고정 문구 입력을 여러 줄 `TextareaInput`으로 변경했다.
+  - 이미지 객체 속성에 `이미지 업로드` 버튼, 미리보기, URL 직접 입력, 제거 버튼을 추가했다.
+  - `POST /master/label-templates/upload-image`를 추가해 `/uploads/label-templates`에 이미지 파일을 저장하고 URL을 반환한다.
+- 검증:
+  - RED: 프론트 구조 테스트가 sourceField/업로드 UI 부재로 실패
+  - RED: 백엔드 구조 테스트가 upload-image endpoint 부재로 실패
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-object-inputs.structure.test.mjs" "apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs" "apps/backend/src/modules/master/controllers/label-template-upload.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: 기존 3002 `/master/label` Playwright 확인. 고정 텍스트 입력/이미지 업로드/정적 URL 200/미리보기/console error 0건
+  - PASS: 대상 파일 `git diff --check`
+- 참고:
+  - locale 파일은 active lock 충돌이 있어 수정하지 않고 `t(key, fallback)`만 사용했다.
+  - 검증 중 생성한 업로드 파일 `label-image-1782398858012-220155548.png`는 삭제했다.
+
+# 2026-06-25 23:42 KST - codex - T-LABEL-BOX-STROKE
+
+- `/master/label` 박스 객체가 실제 사용/출력에서 상단선이 빠져 보이는 문제를 공용 `LabelDesignRenderer`에서 보정했다.
+- 원인: 박스/원/선 stroke를 outer element의 CSS `border`/`borderTop` 한 겹으로만 그려서 SVG `foreignObject` 캡처 및 객체 가장자리/겹침 조건에서 stroke가 쉽게 잘려 보일 수 있었다.
+- 조치:
+  - `ShapeStrokeLayer`를 추가해 박스/원은 내부 `box-shadow: inset ...`로 stroke를 그리고, 선은 절대 위치 내부 span으로 그린다.
+  - shape outer element의 CSS border를 제거하고 shape에 한해 `overflow: visible`을 적용했다.
+  - locked 상태인 `LabelObjectDesigner.tsx`, `types.ts`, `page.tsx`는 수정하지 않았다.
+- 검증:
+  - RED: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs"`가 `ShapeStrokeLayer` 부재로 실패
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs" "apps/frontend/src/app/(authenticated)/production/input-kiosk/components/kiosk-sg-label-print.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 기존 3002 `/master/label` Playwright 인증 세션 확인. `data-label-element=8`, `data-label-shape-stroke=2`, console error 0건
+  - PASS: 대상 파일 `git diff --check`
+- 참고: `apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs`는 이번 변경과 무관하게 현재 코드의 i18n 함수 호출 문자열과 테스트의 하드코딩 정규식이 맞지 않아 실패한다. scope 밖이라 수정하지 않았다.
+
 # 2026-06-24 16:39 - T-PRODUCTION-HELP-MANUAL 생산관리 도움말 및 단일 HTML 매뉴얼 생성
 
 - owner: codex
@@ -3078,3 +3116,25 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
   - PASS: 기존 `http://localhost:3002/shipping/history` Playwright 확인. `SH2606250005` 선택 시 우측 패널 `팔레트 0 / 박스 1 / 총수량 10`, `BX2606250001` 표시. 스크린샷 `docs/reports/shipping-history-shipped-detail-3002.png`
   - PASS: 대상 파일 `git diff --check`
+
+# 2026-06-25 23:59 KST - codex - T-SHIP-WORKFLOW-QA
+
+- 출하관리 메뉴 상태전이 QA 러너 `tools/hanes-shipping-workflow-scenario-qa.mjs`를 추가했다.
+- 3002/3003/JSHANES 기준으로 `/shipping/order`, `/shipping/pack`, `/shipping/pallet`, `/shipping/pallet-ship`, `/shipping/confirm`, `/shipping/return`, `/shipping/history`, `/shipping/box-stock` 8개 화면을 Playwright로 열고 API 호출/버튼/스크린샷을 수집했다.
+- 새 테스트 키 `SWF260625235757`로 실제 전이 실행:
+  - 출하지시 생성 `- -> DRAFT`, 확정 `DRAFT -> CONFIRMED`, 확정취소 `CONFIRMED -> DRAFT`, 재확정.
+  - 박스 생성 `- -> OPEN`, 시리얼 담기, 마감 `OPEN -> CLOSED`, 재오픈 `CLOSED -> OPEN`, 재마감.
+  - 팔레트 생성 `- -> OPEN`, 박스 적재, 마감 `OPEN -> CLOSED`, 재오픈 `CLOSED -> OPEN`, 박스 제거.
+  - 박스출하 `CLOSED -> SHIPPED`, box-stock 제외와 shipped-detail 노출 확인, 박스출하취소 `SHIPPED -> CLOSED`, box-stock 재노출 확인.
+  - 정리: 박스 재오픈/시리얼 제거/박스 삭제/확정취소/출하지시 삭제.
+- 발견:
+  - 일반 `shipping/shipments` 전이 API(`mark-loaded`, `mark-shipped`, `mark-delivered`, `reverse`, `cancel`, `erp-sync`)는 백엔드와 `ShipmentScanModal` 컴포넌트에는 있으나 현재 출하관리 메뉴 페이지에서 연결 사용처가 확인되지 않는다.
+  - JSHANES `OQC_ENABLED=N`인데 박스 단건 출하 서비스는 PENDING 박스를 허용하고, 팔레트 적재/팔레트 출하 경로는 여전히 `OQC_STATUS=PASS`를 요구한다. 화면 `/shipping/confirm`도 후보 조회에 `oqcStatus=PASS`를 붙여 서비스 설정과 노출 조건이 다르다.
+- 산출물:
+  - `docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-25/index.html`
+  - `docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-25/pages/shipping-workflow.html`
+  - `docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-25/shipping-workflow-result.json`
+- 검증:
+  - PASS: `node tools/hanes-shipping-workflow-scenario-qa.mjs`
+  - PASS: 결과 JSON 검증. 화면 8/8, 스크린샷 8건, 전이 step 전부 PASS, 최종 테스트 잔여 0건.
+  - PASS: `git diff --check -- tools/hanes-shipping-workflow-scenario-qa.mjs docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-25 .ai-coordination/TASKS.md .ai-coordination/LOCKS.md .ai-coordination/JOURNAL.md .ai-coordination/HANDOFF/codex.md .ai-coordination/ARCHIVE.md`

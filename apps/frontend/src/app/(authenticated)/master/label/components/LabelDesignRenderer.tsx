@@ -133,6 +133,45 @@ function renderElementContent(element: LabelElement, data?: Record<string, unkno
   return null;
 }
 
+function ShapeStrokeLayer({ element, unit, scale }: { element: LabelElement; unit: RenderUnit; scale: number }) {
+  if (element.type !== "box" && element.type !== "circle" && element.type !== "line") return null;
+
+  const borderWidth = cssSize(element.lineWidth ?? 0.35, unit, scale);
+  const strokeColor = element.strokeColor ?? "#111827";
+
+  if (element.type === "line") {
+    return (
+      <span
+        data-label-shape-stroke="line"
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: "100%",
+          height: borderWidth,
+          background: strokeColor,
+          pointerEvents: "none",
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      data-label-shape-stroke={element.type}
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        borderRadius: element.type === "circle" ? "9999px" : undefined,
+        boxShadow: `inset 0 0 0 ${borderWidth} ${strokeColor}`,
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
 function handleClass(anchor: ResizeAnchor) {
   const base = "resize-handle absolute w-2.5 h-2.5 bg-primary border border-white shadow-sm rounded-sm z-50";
   const pos: Record<ResizeAnchor, string> = {
@@ -187,7 +226,6 @@ export function LabelDesignRenderer({
           zIndex: element.zIndex ?? 1,
         };
 
-        const border = `${cssSize(element.lineWidth ?? 0.35, unit, scale)} solid ${element.strokeColor ?? "#111827"}`;
         const content = renderElementContent(element, data);
 
         return (
@@ -204,20 +242,19 @@ export function LabelDesignRenderer({
               ...commonStyle,
               color: element.textColor ?? "#111827",
               background: element.type === "box" || element.type === "circle" ? (element.fillColor ?? "transparent") : "transparent",
-              border: element.type === "box" || element.type === "circle" ? border : undefined,
               borderRadius: element.type === "circle" ? "9999px" : undefined,
-              borderTop: element.type === "line" ? border : undefined,
               fontSize: cssFont(element.fontSize, unit, scale),
               fontFamily: element.fontFamily ?? "sans-serif",
               fontWeight: element.fontWeight ?? "normal",
               textAlign: element.align ?? "left",
               lineHeight: element.type === "text" ? cssSize(element.height, unit, scale) : undefined,
-              overflow: "hidden",
+              overflow: element.type === "box" || element.type === "circle" || element.type === "line" ? "visible" : "hidden",
               whiteSpace: element.type === "text" ? "nowrap" : undefined,
               textOverflow: element.type === "text" ? "ellipsis" : undefined,
             }}
           >
             {content}
+            <ShapeStrokeLayer element={element} unit={unit} scale={scale} />
             {editable && selected && (["nw", "ne", "sw", "se"] as ResizeAnchor[]).map((anchor) => (
               <span
                 key={anchor}

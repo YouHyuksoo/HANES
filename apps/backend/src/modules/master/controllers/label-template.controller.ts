@@ -20,8 +20,15 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiParam, ApiConsumes } from '@nestjs/swagger';
+import { diskStorage } from 'multer';
+import type { Request } from 'express';
+import { extname } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { LabelTemplateService } from '../services/label-template.service';
@@ -37,6 +44,45 @@ export class LabelTemplateController {
   constructor(
     private readonly labelTemplateService: LabelTemplateService,
   ) {}
+
+  @Post('upload-image')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: (_req: Request, _file: Express.Multer.File, callback: (error: Error | null, destination: string) => void) => {
+          const uploadPath = './uploads/label-templates';
+          if (!existsSync(uploadPath)) {
+            mkdirSync(uploadPath, { recursive: true });
+          }
+          callback(null, uploadPath);
+        },
+        filename: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, `label-image-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (_req: Request, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
+        const okByExt = /\.(jpe?g|png|gif|webp|svg)$/i.test(file.originalname);
+        const okByMime = /^image\/(jpeg|png|gif|webp|svg\+xml)$/i.test(file.mimetype);
+        if (!okByExt && !okByMime) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '라벨 템플릿 이미지 업로드' })
+  @ApiConsumes('multipart/form-data')
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
+    const imageUrl = `/uploads/label-templates/${file.filename}`;
+    return ResponseUtil.success({
+      url: imageUrl,
+      originalName: file.originalname,
+      size: file.size,
+    }, '라벨 이미지가 업로드되었습니다.');
+  }
 
   @Get()
   @ApiOperation({ summary: '라벨 템플릿 목록 조회' })

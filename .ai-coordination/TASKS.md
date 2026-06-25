@@ -1867,6 +1867,63 @@ notes:
 - `useIqcData`는 표시명 `supplierName`과 실제 코드 `vendorCode`를 분리해 AQL preview에는 `vendorCode`를 전달한다.
 - `AqlService.resolvePartPolicy()`는 정책코드 미설정 시 `BadRequestException`으로 차단한다.
 
+## T-LABEL-TEXT-IMAGE-INPUT 라벨 텍스트 직접입력 및 이미지 업로드 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/master/label` 텍스트 객체가 소스 필드 없이 사용자 고정 문구를 직접 출력할 수 있게 보정
+- 이미지 객체에 파일 업로드를 추가하고 업로드 URL을 `imageUrl`로 자동 반영
+files:
+- apps/frontend/src/app/(authenticated)/master/label/components/LabelObjectDesigner.tsx
+- apps/frontend/src/app/(authenticated)/master/label/master-label-object-inputs.structure.test.mjs
+- apps/backend/src/modules/master/controllers/label-template.controller.ts
+- apps/backend/src/modules/master/controllers/label-template-upload.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-object-inputs.structure.test.mjs"`가 텍스트/이미지 sourceField 고정 및 업로드 API 부재로 실패
+- RED 확인: `node --test "apps/backend/src/modules/master/controllers/label-template-upload.structure.test.mjs"`가 `upload-image` 엔드포인트 부재로 실패
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-object-inputs.structure.test.mjs" "apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs" "apps/backend/src/modules/master/controllers/label-template-upload.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: 기존 3002 `/master/label` Playwright 인증 세션 확인. 텍스트 고정값 입력 표시, `고정값 사용` option 1건, 이미지 업로드 버튼 표시, PNG 업로드 200, 정적 URL 200, console error 0건
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `LabelObjectDesigner.tsx`는 `T-KIOSK-SG-LABEL-PRINT` active lock에 포함되어 있으나, 사용자가 본 대화에서 충돌 수정 진행을 승인했다.
+- locale 파일은 active lock 충돌이 있어 수정하지 않고 `t(key, fallback)` 패턴만 사용한다.
+- 검증 중 생성된 `apps/backend/uploads/label-templates/label-image-1782398858012-220155548.png`는 검증 후 삭제했다.
+
+## T-LABEL-BOX-STROKE 박스 객체 상단선 출력 누락 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/master/label` 박스 객체의 상단 stroke가 실제 출력/캡처에서 빠져 보이는 문제 원인 확인
+- locked된 디자이너/타입 파일을 수정하지 않고 공용 렌더러에서 stroke 안정성 보정
+files:
+- apps/frontend/src/app/(authenticated)/master/label/components/LabelDesignRenderer.tsx
+- apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs"`가 `ShapeStrokeLayer` 부재로 실패
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs" "apps/frontend/src/app/(authenticated)/production/input-kiosk/components/kiosk-sg-label-print.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 기존 3002 `/master/label` Playwright 인증 세션 확인. `data-label-element=8`, `data-label-shape-stroke=2`, console error 0건
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `T-KIOSK-SG-LABEL-PRINT`가 `LabelObjectDesigner.tsx`, `types.ts`, `page.tsx` 등을 active lock 중이므로 해당 파일은 읽기만 한다.
+- `apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs`는 이번 변경과 무관하게 현재 코드가 `t("consumables.label.preview", "미리보기")` 형태라 하드코딩 정규식 `>미리보기<`와 맞지 않아 실패한다. 해당 파일은 lock/scope 밖이라 수정하지 않았다.
+
 ## T-ER-VIEW-MENU-VISIBILITY ER VIEW 메뉴 노출 누락 보정
 status: REVIEW
 owner: codex

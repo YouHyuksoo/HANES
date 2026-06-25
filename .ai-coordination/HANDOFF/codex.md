@@ -10,6 +10,7 @@
 
 ## Latest Done
 
+- `T-SHIP-WORKFLOW-QA` 완료. `tools/hanes-shipping-workflow-scenario-qa.mjs`를 추가해 출하관리 8개 화면(`/shipping/order`, `/shipping/pack`, `/shipping/pallet`, `/shipping/pallet-ship`, `/shipping/confirm`, `/shipping/return`, `/shipping/history`, `/shipping/box-stock`)을 Playwright로 열고 API/버튼/스크린샷을 수집했다. 새 테스트 키 `SWF260625235757`로 출하지시 DRAFT/CONFIRMED 정역전이, 박스 OPEN/CLOSED/SHIPPED/취소, 팔레트 OPEN/CLOSED/재오픈/박스 제거, 후속 box-stock 제외/재노출과 shipped-detail 노출을 실제 API/DB로 확인했다. 최종 테스트 잔여 0건. 리포트: `docs/reports/hanes-shipping-workflow-scenario-qa-2026-06-25/index.html`. 발견: 일반 `shipping/shipments` 전이 API는 현재 출하관리 메뉴 페이지 연결이 없고, `OQC_ENABLED=N`이어도 팔레트 경로와 `/shipping/confirm` 후보 조회는 `OQC_STATUS=PASS`를 요구한다.
 - `T-MANUAL-INDEX-PAGE` 완료. `docs/manuals/index.html`을 추가해 `docs/manuals`의 7개 매뉴얼 그룹(기준정보/자재/생산/품질/검사/제품수불/출하)과 104개 화면을 검색 가능한 정적 목차로 묶었다. 각 화면 행은 해당 매뉴얼의 `#screen-N` 앵커로 이동한다. 검증: HTML script syntax/runtime smoke, embedded link existence, result total 104 일치, diff check PASS.
 - `T-REMAINING-HELP-MANUALS` 완료. `.ai-coordination/TASK-quality-manual.md`, `TASK-inspection-manual.md`, `TASK-product-mgmt-manual.md`, `TASK-shipping-manual.md` 기준으로 user 도움말 36개/operator 도움말 30개를 새로 작성했고 `apps/frontend/public/help/manifest.json`을 보강했다. 공식 `help-manual-export-runner.mjs`를 3002 기준으로만 재시도해 `docs/manuals/hanes-quality-manual-2026-06-24.html`, `hanes-inspection-manual-2026-06-24.html`, `hanes-product-mgmt-manual-2026-06-24.html`, `hanes-shipping-manual-2026-06-24.html` 및 각 `.result.json`을 생성했다. 최종 result는 quality `total=25`, inspection `total=6`, product `total=4`, shipping `total=9`, 4개 모두 `missingHelp=[]`, `missingCapture=[]`. 추가 포트/대체 runner/우회 캡처는 사용하지 않았다.
 - `T-PRODUCTION-HELP-MANUAL` 완료. `.ai-coordination/TASK-production-manual.md` 기준 생산관리 19개 화면의 누락 도움말을 보강했다. 신규 user 도움말 15개, operator 도움말 12개, `apps/frontend/public/help/manifest.json` 보강을 완료했고, 공식 `help-manual-export-runner.mjs`를 3002 기준으로 실행해 `docs/manuals/hanes-production-manual-2026-06-24.html` 및 `.result.json`을 생성했다. 검증 결과 runner JSON `total=19`, `missingHelp=[]`, `missingCapture=[]`, 도움말/manifest 검증 errors 0건, diff check PASS. 추가 포트는 사용하지 않았다.
@@ -186,6 +187,51 @@
 - `T-VENDOR-ID-TO-VENDOR-CODE` 완료. JSHANES `MAT_ARRIVALS`, `SUBCON_ORDERS`, `WAREHOUSES`의 `VENDOR_ID`는 모두 `VENDOR_CODE`로 rename됐고 `USER_TAB_COLUMNS` 기준 `VENDOR_ID` 0건 확인. `MatArrival`/`SubconOrder`/`Warehouse` entity, 입하/외주/창고 DTO와 service, 관련 프론트 타입/form, ER VIEW 추정 매핑, `create-hanes-schema.sql`, `docs/reports/db-schema-erd.md`를 갱신했다. 검증: migration 적용/재실행, ERD 재생성, arrival/outsourcing/er-view focused spec, backend build, frontend tsc, diff check PASS. 커밋하지 않았다.
 - `T-SHIP-PALLET-SHIP-STATUS-HELP` 완료. `/shipping/pallet-ship` 중앙 팔레트 그리드 상태 컬럼에 `?` 도움말을 추가했고, 출하번호 컬럼은 `shipmentId` 우선 + 단일 fulfillment 출하번호 fallback + `출하 전`/`확인필요` 안내로 보정했다. 검증: 신규 구조 테스트, 관련 shipping pallet 구조 테스트 6/6, FE typecheck, 3002 Playwright DOM 확인, 대상 파일 diff check PASS. 커밋하지 않았다.
 - `T-DEFECT-CODE-PAGE-HEIGHT` 완료. `/quality/defect-code`의 `h-[calc(100vh-150px)]` 고정 높이를 제거하고 루트 `flex flex-col`, 헤더 `shrink-0`, 본문 `flex-1 min-h-0` 구조로 바꿔 하단 overflow를 보정했다. 검증: 구조 테스트 9/9 PASS, FE typecheck PASS, 대상 파일 diff check PASS. 3002/3003은 재시작하지 않았다.
+# 2026-06-26 00:08 KST - T-LABEL-TEXT-IMAGE-INPUT 완료
+
+- 상태: REVIEW
+- 변경 파일:
+  - `apps/frontend/src/app/(authenticated)/master/label/components/LabelObjectDesigner.tsx`
+  - `apps/frontend/src/app/(authenticated)/master/label/master-label-object-inputs.structure.test.mjs`
+  - `apps/backend/src/modules/master/controllers/label-template.controller.ts`
+  - `apps/backend/src/modules/master/controllers/label-template-upload.structure.test.mjs`
+- 내용:
+  - 글자/이미지 객체는 툴바 추가 시 기본 소스 필드에 묶지 않는다. `고정값 사용` option으로 소스 필드를 비울 수 있다.
+  - 필드 목록에서 글자를 추가할 때만 해당 sourceField를 설정한다.
+  - 텍스트 고정 문구는 `TextareaInput`으로 직접 입력한다.
+  - 이미지 객체 속성에 업로드 버튼, URL 입력, 미리보기, 제거 버튼을 추가했다.
+  - 라벨 전용 업로드 API `POST /master/label-templates/upload-image`는 `/uploads/label-templates`에 저장하고 `{ url }`을 반환한다.
+- 검증:
+  - RED/GREEN 구조 테스트 완료
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-object-inputs.structure.test.mjs" "apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs" "apps/backend/src/modules/master/controllers/label-template-upload.structure.test.mjs"`
+  - PASS: frontend/backend tsc
+  - PASS: 3002 `/master/label` Playwright 확인. 텍스트 고정값, 이미지 업로드 200, 정적 URL 200, 화면 미리보기, console error 0건
+  - PASS: 대상 파일 `git diff --check`
+- 참고:
+  - `LabelObjectDesigner.tsx`는 `T-KIOSK-SG-LABEL-PRINT` active lock에 포함되어 있었지만, 사용자가 본 대화에서 충돌 수정 진행을 승인했다.
+  - locale 파일은 건드리지 않고 fallback 문자열만 사용했다.
+  - 검증 중 생성한 업로드 파일은 삭제했다.
+
+# 2026-06-25 23:42 KST - T-LABEL-BOX-STROKE 완료
+
+- 상태: REVIEW
+- 변경 파일:
+  - `apps/frontend/src/app/(authenticated)/master/label/components/LabelDesignRenderer.tsx`
+  - `apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs`
+- 내용:
+  - 박스/원/선 stroke를 outer CSS border가 아니라 `ShapeStrokeLayer` 내부 레이어로 렌더링하도록 변경했다.
+  - 박스/원은 `box-shadow: inset ...`, 선은 내부 absolute span으로 그린다.
+  - shape 객체는 `overflow: visible`로 바꿔 출력 캡처 가장자리에서 stroke가 잘리는 조건을 줄였다.
+  - `T-KIOSK-SG-LABEL-PRINT` active lock 범위인 `LabelObjectDesigner.tsx`, `types.ts`, `page.tsx`, locale 파일은 수정하지 않았다.
+- 검증:
+  - RED: 신규 구조 테스트가 `ShapeStrokeLayer` 부재로 실패
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/master/label/master-label-box-stroke.structure.test.mjs" "apps/frontend/src/app/(authenticated)/production/input-kiosk/components/kiosk-sg-label-print.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 3002 `/master/label` Playwright 인증 세션에서 `data-label-shape-stroke=2`, console error 0건
+  - PASS: 대상 파일 `git diff --check`
+- 참고:
+  - `apps/frontend/src/app/(authenticated)/consumables/label/consumable-label-reprint.structure.test.mjs`는 이번 변경과 무관하게 현재 코드가 i18n 함수 호출로 버튼 텍스트를 렌더링해 테스트의 `>미리보기<` 정규식과 맞지 않아 실패한다. 이번 scope 밖이라 수정하지 않았다.
+
 - `T-DEFECT-CODE-GRID-LEVEL-COLUMNS` 완료. `/quality/defect-code` 좌측 전체 불량코드 그리드의 단일 `분류` 경로 컬럼을 `1레벨`, `2레벨`, `3레벨` 컬럼으로 분리했다. 검증: 구조 테스트 8/8 PASS, FE typecheck PASS, 대상 파일 diff check PASS. 3002/3003은 재시작하지 않았다.
 - `T-DEFECT-CODE-MASTER` 후속 보정 완료. `/quality/defect-code`는 좌측 전체 불량코드 그리드 + 우측 1/2/3레벨 선택 등록/수정 폼으로 단순화했다. 기존 분류 트리와 분류 선택 조회 필터는 제거했고, 우측 하단에는 `분류 빠른 추가`만 남겼다. 검증: 구조 테스트 7/7 PASS, locale JSON parse PASS, FE typecheck PASS, 트리/분류필터 잔재 검색 없음, `git diff --check` PASS. 3002/3003은 사용자 요청대로 재시작하지 않았다.
 - `T-WIP-FG-LABEL-SOURCE-SPLIT` 완료 후 REVIEW 상태. 재공 상세 라벨 API는 이제 `/production/wip-stock/labels?itemCode=&itemType=`이며, `SEMI_PRODUCT`는 `SG_LABELS`, `FINISHED`는 `FG_LABELS`를 조회한다. 프론트 우측 패널은 공통 컬럼 `구분/라벨바코드/상태/잔량/검사/작업지시/현재공정/장착설비/발행일시`를 표시한다. 기존 `/fg-labels` endpoint는 호환용 FINISHED wrapper로 남겼다. 3002 실측: `HNS02C2ABCDE` 반제품은 `SG_LABELS` SQL과 `labelType=SG` 1건 반환, FINISHED 요청은 `FG_LABELS` SQL 확인. 구조 테스트 9건, FE/BE tsc, 브라우저 API/DOM 검증 PASS. 커밋하지 않았다.

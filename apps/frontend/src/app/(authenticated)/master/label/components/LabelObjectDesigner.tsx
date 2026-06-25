@@ -3,9 +3,11 @@
 import { PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Barcode, Circle, Copy, Image as ImageIcon, Minus, Square, TableProperties, Trash2, Type,
+  Barcode, Circle, Copy, Image as ImageIcon, Loader2, Minus, Square, TableProperties, Trash2, Type, Upload, X,
 } from "lucide-react";
 import { Button } from "@/components/ui";
+import { api } from "@/services/api";
+import { resolveBackendFileUrl } from "@/utils/file-url";
 import {
   BARCODE_FORMATS,
   BarcodeFormat,
@@ -75,8 +77,10 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
     sg_label: t("master.label.srcSgLabel", "반제품 SG"),
   };
   const canvasRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(design.elements?.[0]?.id ?? null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const source = getLabelSource(category, design.sourceTable);
   const sourceFields = useMemo(() => getDesignSourceFields(design, category), [category, design]);
   const sampleData = useMemo(
@@ -108,6 +112,7 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
 
   const addElement = useCallback((type: LabelElementKind, barcodeFormat?: BarcodeFormat, fieldKey?: string) => {
     const field = fieldKey ?? sourceFields[0]?.key;
+    const sourceField = fieldKey ?? (type === "barcode" ? field : undefined);
     const base: LabelElement = {
       id: uid(type),
       type,
@@ -116,7 +121,7 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
       width: type === "line" ? 30 : type === "barcode" ? 18 : 24,
       height: type === "line" ? 1 : type === "text" ? 6 : type === "barcode" ? 18 : 14,
       sourceTable: source.table,
-      sourceField: type === "text" || type === "barcode" || type === "image" ? field : undefined,
+      sourceField,
       text: type === "text" ? "TEXT" : undefined,
       barcodeFormat: type === "barcode" ? (barcodeFormat ?? "qrcode") : undefined,
       fontSize: type === "text" ? 3 : undefined,
@@ -132,6 +137,31 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
     onChange({ ...design, elements: [...(design.elements ?? []), base] });
     setSelectedId(base.id);
   }, [design, onChange, source.table, sourceFields]);
+
+  const uploadImageFile = useCallback(async (file: File) => {
+    if (!selected || selected.type !== "image") return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) return;
+
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await api.post("/master/label-templates/upload-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const url = res.data?.data?.url;
+      if (url) updateElement(selected.id, { imageUrl: url, sourceField: undefined });
+    } finally {
+      setImageUploading(false);
+    }
+  }, [selected, updateElement]);
+
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) void uploadImageFile(file);
+    event.target.value = "";
+  };
 
   const deleteSelected = useCallback(() => {
     if (!selectedId) return;
@@ -247,7 +277,7 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
         sourceTable: next,
         sourceField: element.sourceField && nextFields.some((field) => field.key === element.sourceField)
           ? element.sourceField
-          : nextFields[0]?.key,
+          : undefined,
       })),
     });
   };
@@ -358,9 +388,12 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
                 <label className="block text-xs font-medium text-text-muted mb-1">{t("master.label.sourceField", "소스 필드")}</label>
                 <select
                   value={selected.sourceField ?? ""}
-                  onChange={(event) => updateElement(selected.id, { sourceField: event.target.value })}
+                  onChange={(event) => updateElement(selected.id, { sourceField: event.target.value || undefined })}
                   className="w-full h-9 rounded border border-border bg-background px-2 text-sm text-text"
                 >
+                  {(selected.type === "text" || selected.type === "image") && (
+                    <option value="">{t("master.label.noSourceField", "고정값 사용")}</option>
+                  )}
                   {sourceFields.map((field) => (
                     <option key={field.key} value={field.key}>{fieldLabel(source.table, field.key, field.label)} ({field.key})</option>
                   ))}
@@ -370,7 +403,7 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
 
             {selected.type === "text" && (
               <>
-                <TextInput label={t("master.label.fixedText", "고정 문구")} value={selected.text ?? ""} onChange={(value) => updateElement(selected.id, { text: value })} />
+                <TextareaInput label={t("master.label.fixedText", "고정 문구")} value={selected.text ?? ""} onChange={(value) => updateElement(selected.id, { text: value })} />
                 <NumberInput label={t("master.label.fontSizeMm", "글자 크기(mm)")} value={selected.fontSize ?? 3} onChange={(value) => updateElement(selected.id, { fontSize: value })} />
                 <div className="grid grid-cols-2 gap-2">
                   <SelectInput label={t("master.label.fontWeight", "굵기")} value={selected.fontWeight ?? "normal"} options={["normal", "bold"]} onChange={(value) => updateElement(selected.id, { fontWeight: value as "normal" | "bold" })} />
@@ -389,7 +422,46 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
             )}
 
             {selected.type === "image" && (
-              <TextInput label={t("master.label.defaultImageUrl", "기본 이미지 URL")} value={selected.imageUrl ?? ""} onChange={(value) => updateElement(selected.id, { imageUrl: value })} />
+              <div className="space-y-2">
+                {selected.imageUrl && (
+                  <div className="h-24 overflow-hidden rounded border border-border bg-background">
+                    <img
+                      src={resolveBackendFileUrl(selected.imageUrl)}
+                      alt=""
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                )}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageFileChange}
+                />
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={imageUploading}
+                  >
+                    {imageUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    {imageUploading ? t("common.uploading", "업로드 중...") : t("master.label.uploadImage", "이미지 업로드")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => updateElement(selected.id, { imageUrl: "", sourceField: undefined })}
+                    disabled={!selected.imageUrl || imageUploading}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <TextInput label={t("master.label.defaultImageUrl", "또는 이미지 URL")} value={selected.imageUrl ?? ""} onChange={(value) => updateElement(selected.id, { imageUrl: value, sourceField: undefined })} />
+              </div>
             )}
 
             {(selected.type === "box" || selected.type === "circle" || selected.type === "line") && (
@@ -451,6 +523,20 @@ function TextInput({ label, value, onChange }: { label: string; value: string; o
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="w-full h-8 rounded border border-border bg-background px-2 text-sm text-text"
+      />
+    </label>
+  );
+}
+
+function TextareaInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block">
+      <span className="block text-[11px] text-text-muted mb-1">{label}</span>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        rows={3}
+        className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm text-text resize-y"
       />
     </label>
   );
