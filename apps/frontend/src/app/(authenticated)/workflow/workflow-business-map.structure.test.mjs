@@ -97,3 +97,18 @@ test("/workflow covers quality-system and consumables lanes", () => {
   assert.match(mapSource, /path: "\/inspection\/integrated"/);
   assert.match(mapSource, /path: "\/material\/concession"/);
 });
+
+test("/workflow covers a PDA (handheld) lane linked to desktop steps", () => {
+  assert.match(mapSource, /id: "pda"/);
+  assert.match(mapSource, /PDA\(현장 단말\)/);
+  // PDA 노드
+  assert.match(mapSource, /id: "pda-mat-receive"/);
+  assert.match(mapSource, /id: "pda-shipping"/);
+  assert.match(mapSource, /id: "pda-equip-inspect"/);
+  assert.match(mapSource, /path: "\/pda\/material\/receiving"/);
+  assert.match(mapSource, /path: "\/pda\/shipping"/);
+  // PC↔PDA 연결 엣지
+  assert.match(mapSource, /source: "material-receive", target: "pda-mat-receive"/);
+  assert.match(mapSource, /source: "shipping-confirm", target: "pda-shipping"/);
+  assert.match(mapSource, /PDA로도 처리/);
+});

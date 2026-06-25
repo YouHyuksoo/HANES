@@ -6,7 +6,8 @@ export type WorkflowLaneId =
   | "shipping"
   | "trace-reversal"
   | "quality-system"
-  | "consumables";
+  | "consumables"
+  | "pda";
 
 export interface WorkflowLane {
   id: WorkflowLaneId;
@@ -108,6 +109,13 @@ export const workflowLanes: WorkflowLane[] = [
     description: "금형·지그·공구를 기준정보로 등록하고 입출고, 설비 장착, 수명까지 관리합니다.",
     color: "#4f46e5",
     y: 1540,
+  },
+  {
+    id: "pda",
+    title: "PDA(현장 단말)",
+    description: "PC 화면과 동일한 입고·불출·출하·점검 업무를 현장 PDA 스캔으로도 처리합니다.",
+    color: "#db2777",
+    y: 1760,
   },
 ];
 
@@ -875,6 +883,134 @@ export const workflowNodes: WorkflowActivityNode[] = [
       "수명 초과 소모품을 교체하지 않으면 제품 불량의 직접 원인이 된다.",
     ],
   },
+  {
+    id: "pda-mat-receive",
+    lane: "pda",
+    activity: "PDA 자재입고",
+    summary: "현장 단말로 MAT UID를 스캔해 자재를 창고 재고로 입고합니다.",
+    detail: "PDA에서 자재 시리얼(MAT UID)을 스캔해 입고 가능 여부(IQC 합격·특채)를 확인하고 창고를 선택해 입고를 확정합니다. PC 자재입고 화면과 동일한 업무를 현장에서 처리합니다.",
+    x: 780,
+    dataObjects: ["MAT_STOCKS", "STOCK_TRANSACTIONS", "MAT_RECEIVINGS"],
+    routes: [
+      { label: "PDA 자재입고", path: "/pda/material/receiving" },
+    ],
+    inputs: ["MAT UID 바코드", "입고창고"],
+    outputs: ["자재재고", "입고 수불"],
+    order: 1,
+    why: "라벨 발행된 자재를 현장에서 즉시 스캔 입고해 PC 입력 없이 재고를 확정한다.",
+    when: "라벨 발행·IQC 합격된 자재가 현장에 도착했을 때.",
+    cautions: [
+      "IQC 미합격·잔량 없는 시리얼은 입고가 차단된다.",
+      "라벨 발행은 PDA가 아닌 PC에서 선행되어야 한다.",
+    ],
+  },
+  {
+    id: "pda-mat-issue",
+    lane: "pda",
+    activity: "PDA 자재불출",
+    summary: "작업지시와 자재 LOT을 스캔해 생산 공정으로 불출합니다.",
+    detail: "PDA에서 작업지시를 스캔하고 BOM 기준 불출 항목을 확인한 뒤 자재 LOT 시리얼을 스캔해 출고를 확정합니다. PC 자재출고와 동일 엔드포인트를 사용합니다.",
+    x: 1560,
+    dataObjects: ["MAT_ISSUES", "MAT_STOCKS", "STOCK_TRANSACTIONS"],
+    routes: [
+      { label: "PDA 자재불출", path: "/pda/material/issuing" },
+    ],
+    inputs: ["작업지시", "BOM 항목", "MAT UID"],
+    outputs: ["자재출고 이력", "공정 투입 자재"],
+    order: 2,
+    why: "현장에서 작업지시·BOM 기준으로 자재를 스캔 불출해 오투입을 막고 재고를 차감한다.",
+    when: "작업지시 실행을 위해 자재를 공정에 투입할 때.",
+    cautions: [
+      "BOM에 없는 자재 스캔은 차단된다.",
+      "PDA 불출은 정식 출고요청 단계를 건너뛴다.",
+    ],
+  },
+  {
+    id: "pda-inventory",
+    lane: "pda",
+    activity: "PDA 재고조정·실사",
+    summary: "현장에서 재고를 조정 요청하거나 재고실사 카운트를 수행합니다.",
+    detail: "PDA에서 LOT을 스캔해 ±수량 조정을 요청(PC 승인 대기)하거나, PC에서 개시한 재고실사 세션에 대해 위치·바코드를 스캔해 실사 수량을 집계합니다.",
+    x: 1040,
+    dataObjects: ["MAT_STOCKS", "STOCK_TRANSACTIONS", "PHYSICAL_INV_SESSIONS", "PHYSICAL_INV_COUNT_DETAILS"],
+    routes: [
+      { label: "PDA 재고조정", path: "/pda/material/adjustment" },
+      { label: "PDA 자재실사", path: "/pda/material/inventory-count" },
+      { label: "PDA 제품실사", path: "/pda/product/inventory-count" },
+    ],
+    inputs: ["LOT 바코드", "조정수량/사유", "실사 세션"],
+    outputs: ["조정 요청(PENDING)", "실사 카운트"],
+    order: 3,
+    why: "현장 실물 기준으로 재고 차이를 조정 요청하거나 실사 수량을 집계해 장부 정합성을 맞춘다.",
+    when: "재고 불일치 발견 시(조정), PC가 재고실사 세션을 개시했을 때(실사).",
+    cautions: [
+      "조정은 즉시 반영이 아니라 PC 승인 후 확정된다.",
+      "실사는 PC에서 세션을 먼저 열어야 시작할 수 있다.",
+    ],
+  },
+  {
+    id: "pda-product-receive",
+    lane: "pda",
+    activity: "PDA 제품입고",
+    summary: "마감된 박스를 스캔해 완제품/반제품을 재고로 입고합니다.",
+    detail: "PDA에서 박스 번호(마감 상태)를 스캔하고 창고를 선택해 완제품(FG) 또는 반제품(WIP) 재고로 입고합니다. 세션 내 입고 취소도 가능합니다.",
+    x: 1300,
+    dataObjects: ["PRODUCT_STOCKS", "PRODUCT_TRANSACTIONS", "FG_LABELS"],
+    routes: [
+      { label: "PDA 제품입고", path: "/pda/product/receiving" },
+    ],
+    inputs: ["박스 번호(마감)", "입고창고"],
+    outputs: ["제품재고", "제품수불"],
+    order: 4,
+    why: "포장 마감된 박스를 현장에서 스캔해 즉시 제품재고로 확정한다.",
+    when: "박스 마감 후 제품을 창고로 입고할 때.",
+    cautions: [
+      "마감(CLOSED) 상태 박스만 입고된다.",
+    ],
+  },
+  {
+    id: "pda-shipping",
+    lane: "pda",
+    activity: "PDA 출하",
+    summary: "출하지시·작업자·박스를 스캔해 박스 단위로 즉시 출하합니다.",
+    detail: "PDA에서 확정(CONFIRMED) 출하지시와 작업자 QR을 스캔한 뒤 제품 박스를 스캔하면 박스 단위로 즉시 출하 처리됩니다. 팔레트 단위 출하는 PDA에서 지원하지 않습니다.",
+    x: 2340,
+    dataObjects: ["SHIPMENT_LOGS", "PRODUCT_TRANSACTIONS", "BOX_MASTERS"],
+    routes: [
+      { label: "PDA 출하", path: "/pda/shipping" },
+    ],
+    inputs: ["출하지시(확정)", "작업자 QR", "박스 번호"],
+    outputs: ["출하 처리", "제품재고 차감"],
+    order: 5,
+    why: "확정 출하지시에 대해 현장에서 박스를 스캔해 즉시 출하 처리한다.",
+    when: "출하지시 확정 후 박스를 차량에 상차·출하할 때.",
+    cautions: [
+      "팔레트(PLT) 바코드는 PDA에서 거부된다 — 팔레트 출하는 PC 출하확정을 사용한다.",
+      "박스는 스캔 즉시 출하되어 일괄 취소가 어렵다.",
+    ],
+  },
+  {
+    id: "pda-equip-inspect",
+    lane: "pda",
+    activity: "PDA 설비 일상점검",
+    summary: "설비를 스캔해 일상점검 체크리스트를 입력합니다.",
+    detail: "PDA에서 설비 바코드를 스캔해 당일 점검 여부를 확인하고 점검 항목별 PASS/FAIL/조건부를 입력합니다. FAIL 발생 시 인터락 경고가 표시됩니다.",
+    x: 0,
+    dataObjects: ["EQUIP_INSPECT_LOGS", "EQUIP_INSPECT_ITEM_MASTERS"],
+    routes: [
+      { label: "PDA 설비점검", path: "/pda/equip-inspect" },
+      { label: "설비 일상점검(PC)", path: "/equipment/daily-inspect" },
+    ],
+    inputs: ["설비 바코드", "점검 항목"],
+    outputs: ["점검 결과", "FAIL 인터락"],
+    order: 6,
+    why: "생산 시작 전 설비 상태를 현장에서 점검해 불량 설비 가동을 막는다.",
+    when: "작업 시작 전 또는 일상점검 주기.",
+    cautions: [
+      "FAIL 항목은 인터락으로 후속 작업을 막을 수 있다.",
+      "당일 이미 점검한 설비는 중복 점검이 제한된다.",
+    ],
+  },
 ];
 
 export const workflowEdges: WorkflowBusinessEdge[] = [
@@ -920,6 +1056,12 @@ export const workflowEdges: WorkflowBusinessEdge[] = [
   { id: "e-cons-master-stock", source: "cons-master", target: "cons-stock", label: "라벨 발행분", kind: "normal" },
   { id: "e-cons-stock-mount", source: "cons-stock", target: "cons-mount", label: "출고 소모품", kind: "normal" },
   { id: "e-cons-mount-kiosk", source: "cons-mount", target: "input-kiosk-start", label: "설비 장착 소모품", kind: "reference" },
+  { id: "e-receive-pda", source: "material-receive", target: "pda-mat-receive", label: "PDA로도 처리", kind: "reference" },
+  { id: "e-issue-pda", source: "material-issue", target: "pda-mat-issue", label: "PDA로도 처리", kind: "reference" },
+  { id: "e-lot-pda", source: "lot-control", target: "pda-inventory", label: "PDA 조정·실사", kind: "reference" },
+  { id: "e-product-pda", source: "product-receive", target: "pda-product-receive", label: "PDA로도 처리", kind: "reference" },
+  { id: "e-confirm-pda", source: "shipping-confirm", target: "pda-shipping", label: "PDA로도 처리(박스)", kind: "reference" },
+  { id: "e-pda-equip-kiosk", source: "pda-equip-inspect", target: "input-kiosk-start", label: "점검 후 가동", kind: "reference" },
 ];
 
 const _nodeById = new Map(workflowNodes.map((n) => [n.id, n]));
