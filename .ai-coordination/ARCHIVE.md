@@ -159,3 +159,5 @@ Format:
 - T-SHIP-WORKFLOW-QA | 2026-06-25 | codex | 출하관리 8개 화면과 정/역방향 핵심 상태전이를 실제 API/DB/Playwright로 검증하고 테스트 잔여 0건 확인 | evidence: JOURNAL 2026-06-25 23:59 Codex
 - T-SHIP-OQC-GATE-CONSISTENCY | 2026-06-26 | codex | `OQC_ENABLED=N`에서 출하지시 후보/팔레트 적재/팔레트 출하와 `/shipping/pallet` 후보 조회가 OQC PASS를 강제하지 않도록 일관화하고 워크플로우 QA PASS | evidence: JOURNAL 2026-06-26 00:18 Codex
 - T-SHIP-ORDER-TOP-ACTIONS | 2026-06-26 | codex | `/shipping/order` 행 관리 컬럼은 수정 아이콘만 남기고 출력/확정/확정취소/삭제를 선택 행 기준 상단 공통 버튼으로 이동 | evidence: JOURNAL 2026-06-26 00:37 Codex
+- T-IQC-AQL-S1-0015-DATA | 2026-06-26 | codex | JSHANES `AQL-S-1-0.015` 기준과 15개 sampling rule을 추가해 `DLMLS6-3-3`/`VND-001`/LOT 100의 `resolve-iqc-items` 404 원인을 보정 | evidence: JOURNAL 2026-06-26 16:16 Codex
+- T-IQC-AQL-STANDARD-GUARD | 2026-06-26 | codex | `/master/iqc-part-spec` 검사항목 AQL 선택지를 실제 `AQL_STANDARDS` 조합으로 제한하고 저장 API에서도 기준/rule 없는 조합을 차단 | evidence: JOURNAL 2026-06-26 16:41 Codex

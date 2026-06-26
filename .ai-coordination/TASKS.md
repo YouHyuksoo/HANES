@@ -29,6 +29,185 @@ notes:
 
 ## Active Tasks
 
+## T-PRODUCT-RECEIVE-CANCEL-RETRY 제품입고 취소 후 재입고 버그 보정
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/product/receive` 완제품 박스 입고 후 취소가 실제 `WIP_OUT` 입고 거래를 대상으로 처리되게 보정
+- 취소 후 같은 박스를 재입고할 때 기존 `WIP_OUT DONE` 잔재로 중복입고 가드가 걸리지 않도록 이력/취소 경로 정합성 확인
+files:
+- apps/frontend/src/app/(authenticated)/product/receive/page.tsx
+- apps/frontend/src/app/(authenticated)/product/receipt-cancel/page.tsx
+- apps/frontend/src/app/(authenticated)/product/receive/product-receive-cancel-retry.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: 신규 구조 테스트가 `WIP_OUT,WIP_OUT_CANCEL` 박스 입고 이력 조회 부재로 실패
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/product/receive/product-receive-cancel-retry.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `/inventory/fg/receive`는 박스 완제품 입고를 `PRODUCT_TRANSACTIONS.TRANS_TYPE='WIP_OUT'`, `REF_TYPE='BOX'`로 기록한다.
+- 기존 `/product/receive` 완제품 이력은 `FG_IN,FG_IN_CANCEL`만 조회해 실제 입고 거래가 숨겨지고 취소 대상에서 빠졌다.
+
+## T-PRODUCT-RECEIVE-BX2606260001-CLEANUP BX2606260001 제품입고 이력 정리
+status: REVIEW
+owner: codex
+role: operator
+scope:
+- 취소 후에도 이미 입고된 박스로 판단되는 `BX2606260001` 제품입고 이력 삭제
+- 제품재고를 입고 전 상태(`WIP_MAIN` 가용 5, `FG_MAIN` 제거/차감)로 복원
+files:
+- apps/backend/src/migrations/2026-06-26_cleanup_product_receive_bx2606260001.sql
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: JSHANES pre-check 원인 행 `PTX2026062600001 / WIP_OUT / REF_TYPE=BOX / REF_ID=BX2606260001 / STATUS=DONE` 확인
+- PASS: JSHANES pre-check `FG_MAIN / N91H00-X9800` 재고 5, `WIP_MAIN` 없음 확인
+- PASS: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-26_cleanup_product_receive_bx2606260001.sql`
+- PASS: post-check `BX2606260001` 관련 정상 BOX 전표 0건
+- PASS: post-check 중복입고 가드 조건 count 0건
+- PASS: post-check `WIP_MAIN / N91H00-X9800` = `QTY=5 / AVAILABLE_QTY=5 / STATUS=NORMAL`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- 원인 행: `PRODUCT_TRANSACTIONS.PTX2026062600001` = `WIP_OUT / REF_TYPE=BOX / REF_ID=BX2606260001 / STATUS=DONE`.
+- 이력만 삭제하면 `WIP_MAIN` 재고 부족이 재발하므로 `FG_MAIN` 수량을 되돌려야 한다.
+
+## T-PRODUCT-RECEIVE-BX2606260001-WIP-SEED BX2606260001 제품입고 WIP 재고 시드
+status: REVIEW
+owner: codex
+role: operator
+scope:
+- `/product/receive`에서 `BX2606260001` 제품입고 시 `WIP_MAIN` 출고 재고 부족을 해소
+files:
+- apps/backend/src/migrations/2026-06-26_seed_wip_stock_bx2606260001_n91h00.sql
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: JSHANES pre-check `BX2606260001` = `CLOSED / QTY=5 / N91H00-X9800`
+- PASS: JSHANES pre-check `PRODUCT_STOCKS`에 `N91H00-X9800` 재고 0건, `PRODUCT_TRANSACTIONS`의 `BX2606260001` 정상 BOX 전표 0건
+- PASS: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-26_seed_wip_stock_bx2606260001_n91h00.sql`
+- PASS: 같은 SQL 재실행 idempotent 확인
+- PASS: post-check `WIP_MAIN / N91H00-X9800` = `QTY=5 / AVAILABLE_QTY=5 / STATUS=NORMAL`
+- PASS: seed 전표 `PTX-SEED-BX2606260001-WIP` = `WIP_IN / REF_TYPE=SEED`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `/inventory/fg/receive`는 `WIP_MAIN` 제품재고를 먼저 `WIP_OUT` 차감한 뒤 FG 기본창고로 이동한다.
+- `BOX` refType 전표를 미리 만들면 이중입고 가드에 걸리므로 seed 전표는 `refType='SEED'`로 남긴다.
+
+## T-SHIP-PACK-BX2606260001-SEED BX2606260001 포장 시드
+status: REVIEW
+owner: codex
+role: operator
+scope:
+- JSHANES `/shipping/pack`에서 `BX2606260001`에 `N91H00-X9800` FG 시리얼을 담을 수 있도록 시드 데이터 추가
+files:
+- apps/backend/src/migrations/2026-06-26_seed_pack_bx2606260001_n91h00.sql
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: JSHANES pre-check `BX2606260001` = `OPEN / N91H00-X9800 / QTY=0 / SERIAL_LIST IS NULL`
+- PASS: JSHANES pre-check `ITEM_MASTERS.N91H00-X9800` 존재, 기존 packable FG 0건
+- PASS: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-26_seed_pack_bx2606260001_n91h00.sql`
+- PASS: 같은 SQL 재실행 idempotent 확인
+- PASS: post-check `FG-N91-X9800-001`~`005` 5건이 `VISUAL_PASS / INSPECT_PASS_YN=Y / BOX_NO IS NULL`
+- PASS: `MAT_LOTS` 동일 바코드 0건으로 포장 검증 충돌 없음
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `BOX_MASTERS.BX2606260001`은 이미 `OPEN / N91H00-X9800 / QTY=0 / SERIAL_LIST IS NULL` 상태다.
+- 포장 가능 조건은 `FG_LABELS.STATUS='VISUAL_PASS'`, `INSPECT_PASS_YN='Y'`, `BOX_NO IS NULL`, 같은 회사/공장/품목이다.
+
+## T-RECEIVE-HISTORY-CONCESSION-FLAG 입고이력 특채여부 표시
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/material/receive-history` 그리드에 특채 입고 여부 표시
+- `/material/receiving` 이력 응답에 LOT 기준 `isConcession`/`specialAcceptYn` 보강
+files:
+- apps/backend/src/modules/material/services/receiving.service.ts
+- apps/backend/src/modules/material/services/receiving.service.spec.ts
+- apps/frontend/src/app/(authenticated)/material/receive/components/ReceivingHistoryTable.tsx
+- apps/frontend/src/app/(authenticated)/material/receive/components/types.ts
+- apps/frontend/src/app/(authenticated)/material/receive-history/receive-history-concession-flag.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `receiving.service.spec.ts`에 특채 LOT 응답 기대 추가
+- PASS: `pnpm.cmd --filter @harness/backend test -- receiving.service.spec.ts --runInBand`
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/material/receive-history/receive-history-concession-flag.structure.test.mjs" "apps/frontend/src/app/(authenticated)/material/concession/concession-worker.structure.test.mjs" apps/frontend/src/hooks/use-master-options-worker.structure.test.mjs`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `apps/backend/src/modules/material/services/receiving.service.ts`는 `T-RECEIVE-LOCATION` active lock과 겹친다. 사용자가 `/material/receive-history` 특채여부 표시를 바로 요청했으므로 충돌 사실을 기록하고 `findAll()` 반환부만 최소 범위로 수정한다.
+- 특채여부 기준은 `MAT_LOTS.IQC_STATUS = 'FAIL' AND MAT_LOTS.SPECIAL_ACCEPT_YN = 'Y'`이다.
+
+## T-CONCESSION-WORKER 특채처리 작업자 기록
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- `/material/concession` 특채 처리 모달에 특채처리 작업자 선택 추가
+- 특채 처리 모달에서 작업자 QR 스캔으로도 같은 작업자 코드를 입력 가능하게 보정
+- 작업자 선택과 QR 스캔을 분리된 두 영역이 아니라 한 줄 대체 입력 방식으로 정리
+- `MAT_LOTS`에 특채처리 작업자 컬럼 추가 및 JSHANES 적용
+files:
+- apps/backend/src/entities/mat-lot.entity.ts
+- apps/backend/src/modules/material/dto/concession.dto.ts
+- apps/backend/src/modules/material/services/concession.service.ts
+- apps/backend/src/modules/material/services/concession.service.spec.ts
+- apps/backend/src/migrations/2026-06-26_mat_lots_concession_worker.sql
+- apps/frontend/src/app/(authenticated)/material/concession/page.tsx
+- apps/frontend/src/app/(authenticated)/material/concession/concession-worker.structure.test.mjs
+- apps/frontend/src/hooks/useMasterOptions.ts
+- apps/frontend/src/hooks/use-master-options-worker.structure.test.mjs
+- docs/reports/db-schema-erd.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/DECISIONS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: backend spec가 작업자 검증/저장 부재로 실패, frontend 구조 테스트가 `WorkerSelect`/payload 부재로 실패
+- PASS: `pnpm.cmd --filter @harness/backend test -- concession.service.spec.ts --runInBand`
+- PASS: `node --test apps/frontend/src/hooks/use-master-options-worker.structure.test.mjs "apps/frontend/src/app/(authenticated)/material/concession/concession-worker.structure.test.mjs"`
+- PASS: 후속 QR 스캔 보정 후 `node --test "apps/frontend/src/app/(authenticated)/material/concession/concession-worker.structure.test.mjs" apps/frontend/src/hooks/use-master-options-worker.structure.test.mjs`
+- PASS: 후속 QR 스캔 보정 후 `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: QR 스캔 옆 작업자 선택 단일 영역화 후 `node --test "apps/frontend/src/app/(authenticated)/material/receive-history/receive-history-concession-flag.structure.test.mjs" "apps/frontend/src/app/(authenticated)/material/concession/concession-worker.structure.test.mjs" apps/frontend/src/hooks/use-master-options-worker.structure.test.mjs`
+- PASS: QR 스캔 옆 작업자 선택 단일 영역화 후 `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: JSHANES `2026-06-26_mat_lots_concession_worker.sql` 적용 및 재실행 idempotent 확인
+- PASS: `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- 작업자 기준정보는 기존 `/master/workers`와 공용 `WorkerSelect`를 사용한다.
+- QR 스캔은 기존 `GET /master/workers/by-qr/:qrCode`를 사용해 `specialAcceptWorkerCode`에 같은 값을 채운다.
+
 ## T-TRACE-WEBDISPLAY-WIZARD 추적성 WebDisplay식 시작 모달 적용
 status: REVIEW
 owner: codex

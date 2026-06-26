@@ -22,6 +22,15 @@ Reason:
 - JSHANES는 `OQC_ENABLED=N`인데 출하지시 팔레트 경로와 화면 후보 조회가 `OQC_STATUS=PASS`를 고정 요구해 단건 박스출하와 팔레트출하의 상태전이 조건이 달랐다.
 - OQC 미사용 설정에서는 CLOSED 박스가 출하 후보로 보여야 하고, 적재/출하 후속 프로세스에서도 같은 기준으로 노출/제외되어야 한다.
 
+## D-20260626-CONCESSION-WORKER
+Status: Accepted
+Decision:
+- 특채 처리 작업자는 `MAT_LOTS.SPECIAL_ACCEPT_WORKER_CODE`에 저장하고 `WORKER_MASTERS(COMPANY, PLANT_CD, WORKER_CODE)`를 참조한다.
+- `/material/concession` 특채 승인 모달은 공용 `WorkerSelect`로 작업자 기준정보를 선택하게 하며, 서버는 활성 작업자 존재 여부를 검증한 뒤 LOT 그룹 전체에 저장한다.
+Reason:
+- 특채 승인은 불합격 LOT을 조건부 양품입고 대상으로 바꾸는 감사 대상 행위이므로 작업자 기준정보 코드로 남겨야 조회/추적/제약 검증이 가능하다.
+- 자유입력 작업자명은 오탈자와 기준 불일치가 생기므로 기존 작업자마스터 선택 패턴을 따른다.
+
 ## D-20260618-HARNESS-DRAWING-REVISION
 Status: Accepted
 Decision:

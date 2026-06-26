@@ -8,6 +8,66 @@ Use this heading format for every new entry:
 ## YYYY-MM-DD HH:mm Agent
 ```
 
+## 2026-06-26 17:47 Codex
+
+### T-PRODUCT-RECEIVE-BX2606260001-CLEANUP
+- 요청: `BX2606260001` 제품입고를 했다가 취소했는데 이미 입고된 것으로 판단되어, 해당 박스 관련 입고이력을 삭제.
+- 원인 증거: JSHANES `PRODUCT_TRANSACTIONS`에 `PTX2026062600001 / WIP_OUT / REF_TYPE=BOX / REF_ID=BX2606260001 / STATUS=DONE`이 남아 있었다. `ProductInventoryService.receiveFinishedFromWip()`의 이중입고 가드는 `REF_TYPE='BOX'`, `REF_ID='BX2606260001'`, `TRANS_TYPE IN ('WIP_OUT','FG_IN','WIP_IN')`, `STATUS='DONE'`을 보므로 이 행 때문에 재입고가 차단된다.
+- 재고 증거: `FG_MAIN / N91H00-X9800` 재고 5가 남아 있고 `WIP_MAIN` 재고는 없었다. 이력만 삭제하면 다음 입고 시 WIP 재고 부족이 재발하므로 재고도 입고 전 상태로 복원했다.
+- 조치: `apps/backend/src/migrations/2026-06-26_cleanup_product_receive_bx2606260001.sql` 추가 및 JSHANES 적용. `PTX2026062600001` 및 그 취소참조 전표 삭제, `FG_MAIN / N91H00-X9800` 5개 제거, `WIP_MAIN / N91H00-X9800` 가용 5개 복원.
+- 보존: `BOX_MASTERS.BX2606260001`은 `CLOSED / QTY=5` 유지, `FG_LABELS` 5건은 `PACKED / BOX_NO=BX2606260001` 유지.
+
+검증:
+- PASS: `BX2606260001` 관련 정상 BOX 제품전표 0건.
+- PASS: 중복입고 가드 조건 count 0건.
+- PASS: `WIP_MAIN / N91H00-X9800 / QTY=5 / AVAILABLE_QTY=5 / STATUS=NORMAL`.
+- PASS: 대상 파일 `git diff --check`.
+
+남은 의심:
+- 사용자가 취소를 눌렀는데 원본 `WIP_OUT`이 `CANCELED` 처리되지 않고 취소 전표도 보이지 않았다. 제품입고 취소 로직은 별도 버그로 추적 필요.
+
+## 2026-06-26 17:36 Codex
+
+### T-PRODUCT-RECEIVE-BX2606260001-WIP-SEED
+- 요청: `/product/receive`에서 `BX2606260001` 박스입고 시 `재고 부족으로 출고할 수 없습니다: N91H00-X9800 (가용 0, 요청 5)` 오류 해결.
+- 원인: `POST /inventory/fg/receive`는 `ProductInventoryService.receiveFinishedFromWip()`에서 `WIP_MAIN`의 `PRODUCT_STOCKS`를 먼저 `WIP_OUT` 차감하고 FG 기본창고(`FG_SHIP`)로 이동한다. JSHANES `PRODUCT_STOCKS`에 `WIP_MAIN / N91H00-X9800` 재고 행이 없어 가용 0으로 차단됐다.
+- 조치: `apps/backend/src/migrations/2026-06-26_seed_wip_stock_bx2606260001_n91h00.sql` 추가 및 JSHANES 적용. `PRODUCT_STOCKS`에 `WIP_MAIN / N91H00-X9800 / QTY=5 / AVAILABLE_QTY=5 / STATUS=NORMAL` 시드, 추적용 `PRODUCT_TRANSACTIONS` seed 전표 `PTX-SEED-BX2606260001-WIP` 생성.
+- 보호: 실제 박스 입고 이중처리 가드에 걸리지 않도록 seed 전표는 `REF_TYPE='SEED'`로 남겼다. SQL은 `BX2606260001`의 정상 `BOX` 입고/이동 전표가 이미 있으면 재고를 다시 만들지 않는다.
+
+검증:
+- PASS: SQL 적용 및 재실행 성공.
+- PASS: post-check `WIP_MAIN / N91H00-X9800` 가용 5 확인.
+- PASS: `BX2606260001` 정상 BOX 전표 0건이라 사용자가 UI에서 재시도 가능.
+- PASS: 대상 파일 `git diff --check`.
+
+## 2026-06-26 17:16 Codex
+
+### T-SHIP-PACK-BX2606260001-SEED
+- 요청: `http://localhost:3002/shipping/pack`에서 `BX2606260001`에 `N91H00-X9800`을 담을 수 있도록 시드 데이터 생성.
+- 원인/상태: `BOX_MASTERS.BX2606260001`은 이미 `OPEN / N91H00-X9800 / QTY=0 / SERIAL_LIST IS NULL` 상태였고, `N91H00-X9800` 포장 가능 FG 라벨이 0건이었다.
+- 조치: `apps/backend/src/migrations/2026-06-26_seed_pack_bx2606260001_n91h00.sql` 추가 및 JSHANES 적용. `FG-N91-X9800-001`~`FG-N91-X9800-005` 5건을 `FG_LABELS`에 `VISUAL_PASS / INSPECT_PASS_YN='Y' / BOX_NO NULL`로 시드했다.
+- 보호: SQL은 `MERGE` 기반으로 재실행 가능하다. 이미 박스에 담긴 FG 라벨은 `BOX_NO`를 되돌리지 않는다.
+
+검증:
+- PASS: SQL 적용 및 재실행 성공.
+- PASS: `/shipping/pack` 포장 가능 조건 동일 SQL에서 `N91H00-X9800` packable 5건 확인.
+- PASS: 동일 바코드 `MAT_LOTS` 0건으로 `BoxService.addSerial()`의 원자재 LOT 품목 검증 충돌 없음.
+- PASS: 대상 파일 `git diff --check`.
+
+## 2026-06-26 17:05 Codex
+
+### T-CONCESSION-WORKER / T-RECEIVE-HISTORY-CONCESSION-FLAG
+- `/material/concession` 특채처리 모달의 작업자 입력을 QR 스캔 입력과 작업자 선택이 나란히 있는 단일 영역으로 정리했다. 저장 payload는 기존처럼 `specialAcceptWorkerCode` 하나만 사용한다.
+- `/material/receive-history` 그리드에 `특채여부` 컬럼을 추가했다. 백엔드 `/material/receiving` `findAll()`은 LOT 기준 `IQC_STATUS='FAIL' AND SPECIAL_ACCEPT_YN='Y'`이면 `isConcession=true`, `specialAcceptYn='Y'`, `lot.specialAcceptYn`, `lot.iqcStatus`를 응답에 포함한다.
+- `receiving.service.ts`는 `T-RECEIVE-LOCATION` active lock과 겹쳤으나 사용자 요청 범위상 이력 응답 반환부만 최소 수정했고 충돌 사실을 TASKS/LOCKS에 기록했다.
+
+검증:
+- PASS: `pnpm.cmd --filter @harness/backend test -- receiving.service.spec.ts --runInBand`
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/material/receive-history/receive-history-concession-flag.structure.test.mjs" "apps/frontend/src/app/(authenticated)/material/concession/concession-worker.structure.test.mjs" apps/frontend/src/hooks/use-master-options-worker.structure.test.mjs`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: 대상 파일 `git diff --check`
+
 ## 2026-06-26 Claude — N91H00 후속(품목속성/AQL표준/라우팅)
 
 ### 1) 품목마스터 속성 채움 (T-ITEM-ATTR-FILL)
@@ -3295,3 +3355,106 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: 대상 파일 `git diff --check`
 - 미실행:
   - 기존 `http://localhost:3002/quality/trace`는 5초 HTTP 타임아웃으로 런타임 화면 확인을 못 했다. HANES 규칙에 따라 임의 대체 포트나 추가 dev server는 사용하지 않았다.
+
+# 2026-06-26 16:16 KST - codex - T-IQC-AQL-S1-0015-DATA
+
+- `/quality/aql/resolve-iqc-items?itemCode=DLMLS6-3-3&vendorCode=VND-001&lotQty=100` 404 원인을 JSHANES 기준정보에서 확인하고 보정했다.
+- 원인:
+  - `IQC_PART_SPEC_ITEMS`의 `DLMLS6-3-3` active 검사항목 1건이 `INSPECTION_LEVEL='S-1'`, `AQL=0.015`, `INSPECTION_TYPE='AQL'`, `SAMPLE_METHOD='AQL'`을 참조했다.
+  - `VND-001`은 `PARTNER_MASTERS.INSPECTION_MODE='NORMAL'`이다.
+  - 서비스 후보 `AQL-S-1-NORMAL-0.015` -> `AQL-S-1-0.015` 중 기존 `AQL_STANDARDS`/`AQL_SAMPLING_RULES`에는 해당 조합이 0건이라 404가 발생했다.
+- 변경:
+  - `apps/backend/src/migrations/2026-06-26_aql_standard_s1_0_015.sql` 추가.
+  - JSHANES `AQL_STANDARDS`에 `AQL-S-1-0.015`를 추가했다.
+  - JSHANES `AQL_SAMPLING_RULES`에 전 LOT 구간 15건을 추가했다. LOT 100 매칭 rule은 `91~150`, `CODE_LETTER='B'`, `SAMPLE_SIZE=80`, `ACCEPT_QTY=0`, `REJECT_QTY=1`.
+- 검증:
+  - PASS: `python C:/Users/hsyou/.codex/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file apps/backend/src/migrations/2026-06-26_aql_standard_s1_0_015.sql`
+  - PASS: 동일 execute-file 재실행 idempotent.
+  - PASS: post-check `AQL_STANDARDS`에서 `AQL-S-1-0.015` 1건.
+  - PASS: post-check LOT 100 rule 1건, `SAMPLE_SIZE=80`, `ACCEPT_QTY=0`, `REJECT_QTY=1`.
+  - PASS: `DLMLS6-3-3` + `VND-001` + LOT 100 조합이 `AQL-S-1-0.015` rule에 매칭됨.
+  - PASS: `git diff --check -- apps/backend/src/migrations/2026-06-26_aql_standard_s1_0_015.sql .ai-coordination/TASKS.md .ai-coordination/LOCKS.md`
+- 미실행:
+  - 현재 listen 포트는 3002 프론트뿐이라 실제 API 호출은 수행하지 않았다. 임의 백엔드 서버나 대체 포트는 띄우지 않았다.
+
+# 2026-06-26 16:41 KST - codex - T-IQC-AQL-STANDARD-GUARD
+
+- 공통코드에는 있으나 실제 `AQL_STANDARDS`/`AQL_SAMPLING_RULES`에 없는 조합을 다시 선택/저장하지 못하게 보정했다.
+- 변경:
+  - `apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcSpecPanel.tsx`: `GET /quality/aql?useYn=Y&limit=5000`로 활성 AQL 기준 목록을 읽고, 검사항목 행의 검사수준/AQL 선택지를 실제 기준 조합으로만 제한한다. 선택한 검사수준에 매칭되는 AQL 값이 없으면 `AQL 기준관리에서 먼저 등록하세요` 안내를 표시하고 행 확정을 막는다.
+  - `apps/frontend/src/app/(authenticated)/master/iqc-item/components/iqc-spec-aql-standard-options.structure.test.mjs`: 공통코드 cartesian 선택 금지 구조 테스트를 추가했다.
+  - `apps/backend/src/modules/master/services/iqc-part-spec.service.ts`: 품목별 IQC 기준 저장 시 AQL 행의 검사수준/AQL 조합이 활성 AQL 기준과 sampling rule을 가진 경우만 저장하도록 검증한다. 없으면 `AQL 기준이 등록되지 않은 조합입니다: ...`로 400 차단한다.
+  - `apps/backend/src/modules/master/master.module.ts`: 검증에 필요한 AQL entity metadata를 등록했다.
+  - `apps/backend/src/modules/master/services/iqc-part-spec.service.spec.ts`: 없는 AQL 기준 조합 저장 차단 회귀 테스트를 추가했다.
+- 검증:
+  - RED 확인: 신규 frontend structure test가 `/quality/aql` 기반 선택 제한 부재로 실패.
+  - RED 확인: backend 신규 저장 차단 테스트가 기존 코드에서는 기대한 오류를 내지 못함.
+  - PASS: `pnpm.cmd --filter @harness/backend test -- iqc-part-spec.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/master/iqc-item/components/iqc-spec-aql-standard-options.structure.test.mjs" "apps/frontend/src/app/(authenticated)/master/iqc-item/components/iqc-spec-inspection-type.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 대상 파일 `git diff --check`
+  - PASS: JSHANES active IQC AQL 조합 미매칭 0건. 현재 `I / 0.01` 15건, `S-1 / 0.015` 1건 모두 기준/rule 매칭.
+- 참고:
+  - `IqcSpecPanel.tsx`에는 기존 미커밋 UI 밀도 변경이 있었고, 해당 변경은 유지한 채 AQL 선택 제한만 추가했다.
+  - 실제 3002 브라우저 렌더 확인은 이번 턴에서 수행하지 않았다.
+
+# 2026-06-26 16:55 KST - codex - T-CONCESSION-WORKER
+
+- `/material/concession` 특채 처리 시 작업자 기준정보를 선택하고 DB에 남기도록 보정했다.
+- 변경:
+  - `MAT_LOTS.SPECIAL_ACCEPT_WORKER_CODE` 컬럼, 인덱스 `IDX_MAT_LOTS_SA_WORKER`, FK `FK_MAT_LOTS_SA_WORKER`를 추가하는 재실행 가능 마이그레이션을 작성하고 JSHANES에 적용했다.
+  - `MatLot` entity와 `ConcessionService.apply()`에 특채 처리 작업자 저장/활성 작업자 검증을 추가했다. 작업자 미선택 또는 기준정보 미존재는 400으로 차단한다.
+  - 특채 취소 시 `SPECIAL_ACCEPT_YN='N'`과 함께 `SPECIAL_ACCEPT_WORKER_CODE`도 null로 복원한다.
+  - `/material/concession` 모달에 공용 `WorkerSelect` 특채처리작업자 선택을 추가하고, 목록에는 특채처리자 컬럼을 표시한다.
+  - 공용 `useWorkerOptions()`가 `/master/workers` 실제 응답의 `workerCode`를 select value로 쓰도록 보정했다.
+  - 스키마 변경 규칙에 따라 `docs/reports/db-schema-erd.md`를 재생성했다.
+- 검증:
+  - RED 확인: backend spec가 작업자 검증/저장 부재로 실패, frontend 구조 테스트가 `WorkerSelect`/payload 부재로 실패, worker option 구조 테스트가 `workerCode` value 부재로 실패.
+  - PASS: `pnpm.cmd --filter @harness/backend test -- concession.service.spec.ts --runInBand`
+  - PASS: `node --test apps/frontend/src/hooks/use-master-options-worker.structure.test.mjs "apps/frontend/src/app/(authenticated)/material/concession/concession-worker.structure.test.mjs"`
+  - PASS: JSHANES pre-check 컬럼/FK 0건 -> 마이그레이션 적용 -> 재실행 성공.
+  - PASS: JSHANES post-check `SPECIAL_ACCEPT_WORKER_CODE` 컬럼 1건, FK `ENABLED`, 인덱스 `VALID`.
+  - PASS: `ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 대상 파일 `git diff --check`
+- 미실행:
+  - 3002 브라우저 수동 확인은 수행하지 않았다.
+
+# 2026-06-26 17:00 KST - codex - T-CONCESSION-WORKER 후속 QR 스캔
+
+- 사용자 요청에 따라 특채 처리 모달에서 작업자 선택뿐 아니라 작업자 QR 스캔으로도 특채처리작업자를 지정할 수 있게 보정했다.
+- 변경:
+  - `apps/frontend/src/app/(authenticated)/material/concession/page.tsx`: 특채 승인 모달에 `작업자 QR 스캔` 입력과 조회 버튼을 추가했다.
+  - 스캐너 Enter/CRLF 입력을 `onKeyDown`에서 처리해 `GET /master/workers/by-qr/:qrCode`로 조회하고, 응답의 `workerCode`를 기존 `specialAcceptWorkerCode` 저장 필드에 채운다.
+  - QR 조회 성공 시 선택된 작업자명/코드를 모달에 표시하고, 실패 시 오류 메시지를 표시한다. 직접 `WorkerSelect` 선택도 그대로 유지한다.
+  - `concession-worker.structure.test.mjs`에 QR 조회 구조 테스트를 추가했다.
+- 검증:
+  - RED 확인: 신규 구조 테스트가 `workerQrText`/`handleWorkerQrLookup`/`by-qr` 호출 부재로 실패.
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/material/concession/concession-worker.structure.test.mjs" apps/frontend/src/hooks/use-master-options-worker.structure.test.mjs`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 대상 파일 `git diff --check`
+- 미실행:
+  - 3002 브라우저에서 실제 QR 스캔 동작은 확인하지 않았다.
+
+# 2026-06-26 17:50 KST - codex - T-PRODUCT-RECEIVE-CANCEL-RETRY
+
+- 제품입고 후 취소했는데 재입고 시 이미 입고된 박스로 판단되는 원인을 보정했다.
+- 원인:
+  - `/inventory/fg/receive` 박스 완제품 입고는 `PRODUCT_TRANSACTIONS`에 `TRANS_TYPE='WIP_OUT'`, `REF_TYPE='BOX'`로 기록된다.
+  - 기존 `/product/receive` 완제품 이력은 `FG_IN,FG_IN_CANCEL`만 조회해 실제 박스 입고 전표가 화면 이력에서 빠졌다.
+  - 기존 `/product/receipt-cancel`도 `WIP_IN,FG_IN` 계열만 조회해 박스 완제품 입고 전표를 취소 대상으로 잡지 못했다.
+  - 그래서 원 `WIP_OUT` 전표가 `DONE`으로 남으면 백엔드 중복입고 가드가 같은 박스 재입고를 차단한다.
+- 변경:
+  - `/product/receive` 완제품 탭에서 기존 `FG_IN/FG_IN_CANCEL` 조회에 `WIP_OUT/WIP_OUT_CANCEL + refType=BOX` 조회를 병합한다.
+  - `/product/receipt-cancel`도 일반 입고 전표 조회와 박스 완제품 입고 전표 조회를 병합해 실제 `WIP_OUT` 전표를 취소할 수 있게 했다.
+  - 일반 제품출고 `WIP_OUT`이 입고취소에 섞이지 않도록 추가 조회는 `refType=BOX`로 제한했다.
+  - `WIP_OUT` 박스 입고 수량은 화면에서 입고 의미에 맞게 양수로, `WIP_OUT_CANCEL`은 취소 의미에 맞게 음수로 표시한다.
+- 검증:
+  - RED 확인: 신규 구조 테스트가 `WIP_OUT,WIP_OUT_CANCEL` 박스 입고 이력 조회 부재로 실패.
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/product/receive/product-receive-cancel-retry.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 대상 파일 `git diff --check`
+- 미실행:
+  - 3002 브라우저에서 실제 입고취소 클릭 재현은 수행하지 않았다.
