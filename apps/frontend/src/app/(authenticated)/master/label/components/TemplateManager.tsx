@@ -9,9 +9,9 @@
  * 2. **불러오기**: 목록에서 선택하면 디자인 설정 복원
  * 3. **삭제**: 불필요한 템플릿 삭제
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Save, FolderOpen, Trash2, Star } from "lucide-react";
+import { Save, FolderOpen, Trash2, Star, FilePlus2 } from "lucide-react";
 import { Button, ConfirmModal } from "@/components/ui";
 import { LabelDesign, LabelCategory } from "../types";
 import { useLabelTemplates, LabelTemplateItem } from "../hooks/useLabelTemplates";
@@ -21,25 +21,52 @@ interface TemplateManagerProps {
   category: LabelCategory;
   design: LabelDesign;
   onLoad: (design: LabelDesign) => void;
+  /** 새 디자인(빈/기본 캔버스)으로 새 작업 시작 */
+  onNew?: () => void;
   /** 현재 디자인에 미저장 변경이 있는지 — true면 템플릿 로드 전 경고 */
   isDirty?: boolean;
   /** 저장/덮어쓰기 성공 시 호출(상위 dirty 기준선 갱신) */
   onSaved?: () => void;
 }
 
-export default function TemplateManager({ category, design, onLoad, isDirty = false, onSaved }: TemplateManagerProps) {
+export default function TemplateManager({ category, design, onLoad, onNew, isDirty = false, onSaved }: TemplateManagerProps) {
   const { t } = useTranslation();
-  const { templates, loading, fetchList, save, update, remove } = useLabelTemplates();
+  const { templates, loading, fetchedCategory, fetchList, save, update, remove } = useLabelTemplates();
   const [saveName, setSaveName] = useState("");
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LabelTemplateItem | null>(null);
   const [pendingLoad, setPendingLoad] = useState<LabelTemplateItem | null>(null);
   const [showSave, setShowSave] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // 카테고리(소스)별로 1회 자동 로드 — 진입/소스 전환 시 해당 카테고리와 캔버스를 동기화
+  const loadedCategoriesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     fetchList(category);
   }, [category, fetchList]);
+
+  /** 실제 로드 수행(경고 통과 후) */
+  const doLoad = useCallback((tpl: LabelTemplateItem) => {
+    setSelectedTemplateKey(tpl.templateKey);
+    onLoad(tpl.designData);
+  }, [onLoad]);
+
+  // 진입/소스 전환 시 해당 카테고리의 저장 라벨(기본 우선, 없으면 최근)을 캔버스에 자동 로드.
+  // 저장된 라벨이 없으면 해당 카테고리의 기본 디자인으로 새 작업을 시작해 목록과 싱크를 맞춘다.
+  useEffect(() => {
+    if (loading) return;
+    // 현재 카테고리의 목록 조회가 끝나기 전(templates가 이전 카테고리 잔존)에는 자동 로드하지 않는다.
+    if (fetchedCategory !== category) return;
+    if (loadedCategoriesRef.current.has(category)) return;
+    loadedCategoriesRef.current.add(category);
+    if (templates.length > 0) {
+      const target = templates.find((tpl) => tpl.isDefault) ?? templates[0];
+      doLoad(target);
+    } else {
+      setSelectedTemplateKey(null);
+      onNew?.();
+    }
+  }, [templates, loading, fetchedCategory, category, doLoad, onNew]);
 
   const handleSave = async () => {
     if (!saveName.trim()) return;
@@ -63,12 +90,6 @@ export default function TemplateManager({ category, design, onLoad, isDirty = fa
     await update(tpl.templateKey, design);
     onSaved?.();
     fetchList(category);
-  };
-
-  /** 실제 로드 수행(경고 통과 후) */
-  const doLoad = (tpl: LabelTemplateItem) => {
-    setSelectedTemplateKey(tpl.templateKey);
-    onLoad(tpl.designData);
   };
 
   const handleLoad = (tpl: LabelTemplateItem) => {
@@ -97,14 +118,25 @@ export default function TemplateManager({ category, design, onLoad, isDirty = fa
           <FolderOpen className="w-3.5 h-3.5 text-primary" />
           {t("master.label.templateList")}
         </h4>
-        <Button
-          size="sm"
-          variant={showSave ? "secondary" : "primary"}
-          onClick={() => { setShowSave(!showSave); setTimeout(() => inputRef.current?.focus(), 50); }}
-        >
-          <Save className="w-3.5 h-3.5 mr-1" />
-          {t("master.label.saveNew")}
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => { setSelectedTemplateKey(null); onNew?.(); }}
+            title={t("master.label.newDesignHint", "현재 카테고리의 빈 디자인으로 새 작업을 시작합니다")}
+          >
+            <FilePlus2 className="w-3.5 h-3.5 mr-1" />
+            {t("master.label.newDesign", "새 디자인")}
+          </Button>
+          <Button
+            size="sm"
+            variant={showSave ? "secondary" : "primary"}
+            onClick={() => { setShowSave(!showSave); setTimeout(() => inputRef.current?.focus(), 50); }}
+          >
+            <Save className="w-3.5 h-3.5 mr-1" />
+            {t("master.label.saveNew")}
+          </Button>
+        </div>
       </div>
 
       {/* 새 저장 입력 */}

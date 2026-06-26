@@ -53,6 +53,13 @@ function LabelPage() {
     setBaseline(JSON.stringify(design));
   }, [design]);
 
+  // 새 디자인: 현재 카테고리의 기본 디자인으로 캔버스 초기화(새 작업 시작)
+  const handleNew = useCallback(() => {
+    const fresh = createDefaultLabelDesign(category);
+    setDesign(fresh);
+    setBaseline(JSON.stringify(fresh));
+  }, [category]);
+
   const sampleData = getSampleData(category, design.sourceTable, design.sourceFields);
 
   return (
@@ -78,7 +85,7 @@ function LabelPage() {
 
         <aside className="min-h-0 space-y-4 overflow-y-auto">
           <Card><CardContent>
-            <TemplateManager category={category} design={design} onLoad={handleLoad} isDirty={isDirty} onSaved={handleSaved} />
+            <TemplateManager category={category} design={design} onLoad={handleLoad} onNew={handleNew} isDirty={isDirty} onSaved={handleSaved} />
           </CardContent></Card>
 
           <Card><CardContent>

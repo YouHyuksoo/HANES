@@ -31,6 +31,8 @@ const BASE = "/master/label-templates";
 export function useLabelTemplates() {
   const [templates, setTemplates] = useState<LabelTemplateItem[]>([]);
   const [loading, setLoading] = useState(false);
+  // 마지막으로 목록 조회를 완료한 카테고리(자동 로드 타이밍 가드용)
+  const [fetchedCategory, setFetchedCategory] = useState<LabelCategory | undefined>(undefined);
 
   /** 카테고리별 목록 조회 */
   const fetchList = useCallback(async (category?: LabelCategory) => {
@@ -49,6 +51,7 @@ export function useLabelTemplates() {
       setTemplates([]);
     } finally {
       setLoading(false);
+      setFetchedCategory(category);
     }
   }, []);
 
@@ -84,5 +87,5 @@ export function useLabelTemplates() {
     await api.delete(`${BASE}/${templateKey}`);
   }, []);
 
-  return { templates, loading, fetchList, save, update, remove };
+  return { templates, loading, fetchedCategory, fetchList, save, update, remove };
 }
