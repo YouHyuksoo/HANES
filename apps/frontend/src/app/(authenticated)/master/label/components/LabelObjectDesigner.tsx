@@ -75,6 +75,7 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
     box: t("master.label.srcBox", "제품포장"),
     pallet: t("master.label.srcPallet", "팔레트"),
     sg_label: t("master.label.srcSgLabel", "반제품 SG"),
+    fg_label: t("master.label.srcFgLabel", "완제품 FG"),
   };
   const canvasRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);

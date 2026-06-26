@@ -29,6 +29,7 @@ const sourceCategoryMap: Record<LabelSourceTable, LabelCategory> = {
   box: "box",
   pallet: "pallet",
   sg_label: "sg",
+  fg_label: "fg",
 };
 
 function LabelPage() {

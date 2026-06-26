@@ -14,6 +14,7 @@ export const categorySourceTable: Record<LabelCategory, LabelSourceTable> = {
   box: "box",
   pallet: "pallet",
   sg: "sg_label",
+  fg: "fg_label",
 };
 
 export const labelSources: Record<LabelSourceTable, LabelSourceDefinition> = {
@@ -100,6 +101,17 @@ export const labelSources: Record<LabelSourceTable, LabelSourceDefinition> = {
       { key: "orderNo", label: "작업지시번호", sample: "W26061700001" },
       { key: "issueProcessCode", label: "발행공정", sample: "ASSY" },
       { key: "issuedAt", label: "발행일시", sample: "2026-06-17 09:30" },
+    ],
+  },
+  fg_label: {
+    table: "fg_label",
+    label: "완제품 FG",
+    fields: [
+      { key: "fgBarcode", label: "FG 바코드", sample: "FG26061700001" },
+      { key: "itemCode", label: "완제품코드", sample: "HNS02C1ABCD" },
+      { key: "orderNo", label: "작업지시번호", sample: "W26061700001" },
+      { key: "equipCode", label: "설비코드", sample: "EQ-ACTUT-01" },
+      { key: "lineCode", label: "라인", sample: "LINE-01" },
     ],
   },
 };

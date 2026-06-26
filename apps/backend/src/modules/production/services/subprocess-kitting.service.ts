@@ -26,6 +26,7 @@ import { SgLabel } from '../../../entities/sg-label.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
+import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { KitDto, ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.dto';
 import { In } from 'typeorm';
 import { ProductionSpecificationService } from './production-specification.service';
@@ -59,12 +60,30 @@ export class SubprocessKittingService {
    * 서브공정 키팅 — FG 발행 + SG 소비 + genealogy + 제품 WIP 재고 적재.
    * @returns { resultNo, fgBarcodes }
    */
+  /**
+   * 현재 공정이 제품(FG) 라벨 인쇄 공정인지 판정한다(라우팅 ISSUE_FG_LABEL_YN='Y').
+   * FG 데이터는 항상 발행하되, 프린터 출력 여부만 이 플래그로 제어한다.
+   * routingCode/processCode 가 없으면 인쇄하지 않는다(false).
+   */
+  private async isFgPrintProcess(
+    qr: QueryRunner,
+    routingCode: string | null | undefined,
+    processCode: string | null | undefined,
+    tenant: { company: string; plant: string },
+  ): Promise<boolean> {
+    if (!routingCode || !processCode) return false;
+    const step = await qr.manager.findOne(RoutingProcess, {
+      where: { routingCode, processCode, ...tenant },
+    });
+    return step?.issueFgLabelYn === 'Y';
+  }
+
   async kit(
     dto: KitDto,
     company: string,
     plant: string,
     workerId?: string,
-  ): Promise<{ resultNo: string; fgBarcodes: string[] }> {
+  ): Promise<{ resultNo: string; fgBarcodes: string[]; printFg: boolean }> {
     const tenantWhere = { company, plant };
 
     return this.tx.run(async (qr) => {
@@ -298,7 +317,8 @@ export class SubprocessKittingService {
         `서브공정 키팅: ${jobOrder.itemCode} × ${dto.qty} → ${WIP_WAREHOUSE} (실적 #${resultNo}, FG ${fgBarcodes.length}건)`,
       );
 
-      return { resultNo, fgBarcodes };
+      const printFg = await this.isFgPrintProcess(qr, jobOrder.routingCode, dto.processCode, { company, plant });
+      return { resultNo, fgBarcodes, printFg };
     });
   }
 
@@ -366,7 +386,7 @@ export class SubprocessKittingService {
     company: string,
     plant: string,
     workerId?: string,
-  ): Promise<{ resultNo: string; fgBarcode: string }> {
+  ): Promise<{ resultNo: string; fgBarcode: string; printFg: boolean }> {
     const tenantWhere = { company, plant };
     const { fgBarcode, orderNo, equipCode, processCode, circuitNo } = dto;
 
@@ -581,7 +601,8 @@ export class SubprocessKittingService {
         `조립 확정: ${fgBarcode} → ${WIP_WAREHOUSE} (실적 #${resultNoForRef})`,
       );
 
-      return { resultNo: resultNoForRef, fgBarcode };
+      const printFg = await this.isFgPrintProcess(qr, jobOrder.routingCode, processCode, { company, plant });
+      return { resultNo: resultNoForRef, fgBarcode, printFg };
     });
   }
 

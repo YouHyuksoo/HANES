@@ -12,6 +12,7 @@ import SgScanPanel from "./components/SgScanPanel";
 import AssemblyActionBar from "./components/AssemblyActionBar";
 import WorkInstructionView from "../input-kiosk/components/WorkInstructionView";
 import EquipSelectModal from "../input-kiosk/components/EquipSelectModal";
+import FgLabelPrintHost, { type FgLabelPrintHandle } from "../input-kiosk/components/FgLabelPrintHost";
 import { normalizeEquipOptions, type EquipOption } from "../input-kiosk/utils/equipOptions";
 
 interface AssemblyComponent {
@@ -60,6 +61,8 @@ const toJobOrderPick = (jo: JobOrder): JobOrderPick => ({
 
 export default function InputAssemblyPage() {
   const { t } = useTranslation();
+
+  const fgPrinterRef = useRef<FgLabelPrintHandle>(null);
 
   const [selectedOrder, setSelectedOrder] = useState<JobOrderPick | null>(null);
   const [orderScan, setOrderScan] = useState("");
@@ -249,7 +252,7 @@ export default function InputAssemblyPage() {
 
       setConfirming(true);
       try {
-        await api.post("/production/subprocess-kitting/confirm", {
+        const res = await api.post("/production/subprocess-kitting/confirm", {
           fgBarcode: scanned,
           orderNo: selectedOrder.orderNo,
           equipCode,
@@ -257,6 +260,18 @@ export default function InputAssemblyPage() {
           sgBarcodes: sgList.map((s) => s.sgBarcode),
         });
         toast.success(t("production.inputAssembly.confirmSuccess", "조립이 확정되었습니다."));
+        // FG 라벨 데이터는 항상 발행되며, 인쇄 여부는 백엔드 printFg(라우팅 ISSUE_FG_LABEL_YN='Y')로 제어한다.
+        const confirmData = res.data?.data as { fgBarcode?: string; printFg?: boolean } | undefined;
+        if (confirmData?.printFg) {
+          void fgPrinterRef.current?.printByFgBarcodes([
+            {
+              fgBarcode: confirmData.fgBarcode ?? scanned,
+              itemCode: selectedOrder.itemCode,
+              orderNo: selectedOrder.orderNo,
+              equipCode,
+            },
+          ]);
+        }
         setSgList([]);
         setIssuedFg(null);
       } catch (error: unknown) {
@@ -447,6 +462,9 @@ export default function InputAssemblyPage() {
         equips={equips}
         onSelect={handleEquipSelect}
       />
+
+      {/* FG 라벨 자동 출력 호스트(오프스크린). 조립 확정 시 printFg=true면 출력. */}
+      <FgLabelPrintHost ref={fgPrinterRef} />
     </div>
   );
 }
