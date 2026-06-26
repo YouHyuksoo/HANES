@@ -5,7 +5,7 @@
  * @description 제품입고취소 페이지 - 제품 입고 트랜잭션 역분개 처리
  *
  * 초보자 가이드:
- * 1. PRODUCT_TRANSACTIONS에서 WIP_IN/FG_IN 유형의 DONE 상태만 취소 가능
+ * 1. PRODUCT_TRANSACTIONS에서 WIP_IN/FG_IN 입고와 박스 완제품 입고(WIP_OUT, REF_TYPE=BOX)를 취소 가능
  * 2. 취소 시 source='product'로 전달하여 ProductInventoryService로 라우팅
  * 3. 역분개: 원래 입고의 반대 트랜잭션 생성 + PRODUCT_STOCKS 재고 차감
  */
@@ -29,11 +29,36 @@ interface ProductReceiptTx {
   itemType: string | null;
   qty: number;
   status: string;
+  refType?: string | null;
   cancelRefId: string | null;
   remark: string | null;
   orderNo: string | null;
   part?: { itemCode: string; itemName: string; unit: string } | null;
   toWarehouse?: { warehouseName: string } | null;
+}
+
+function extractReceiptTransactions(response: { data?: unknown }): ProductReceiptTx[] {
+  const body = response.data as { data?: unknown } | ProductReceiptTx[] | undefined;
+  const list = body && !Array.isArray(body) && "data" in body ? body.data : body;
+  return Array.isArray(list) ? list as ProductReceiptTx[] : [];
+}
+
+function mergeReceiptTransactions(...groups: ProductReceiptTx[][]): ProductReceiptTx[] {
+  const merged = new Map<string, ProductReceiptTx>();
+  for (const row of groups.flat()) {
+    merged.set(row.transNo || row.id, row);
+  }
+  return [...merged.values()].sort((a, b) => String(b.transDate).localeCompare(String(a.transDate)));
+}
+
+function isReceiptMovement(tx: ProductReceiptTx): boolean {
+  return tx.transType === "WIP_IN" || tx.transType === "FG_IN" || tx.transType === "WIP_OUT";
+}
+
+function displayReceiptQty(tx: ProductReceiptTx): number {
+  if (tx.transType === "WIP_OUT") return Math.abs(tx.qty);
+  if (tx.transType === "WIP_OUT_CANCEL") return -Math.abs(tx.qty);
+  return tx.qty;
 }
 
 const statusColors: Record<string, string> = {
@@ -58,15 +83,21 @@ export default function ProductReceiptCancelPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = {
-        transType: "WIP_IN,FG_IN,WIP_IN_CANCEL,FG_IN_CANCEL",
-        limit: "5000",
-      };
+      const params: Record<string, string> = { limit: "5000" };
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
-      const res = await api.get("/inventory/product/transactions", { params });
-      const list = res.data?.data ?? res.data;
-      setData(Array.isArray(list) ? list : []);
+      const [receiptRes, boxMoveRes] = await Promise.all([
+        api.get("/inventory/product/transactions", {
+          params: { ...params, transType: "WIP_IN,FG_IN,WIP_IN_CANCEL,FG_IN_CANCEL" },
+        }),
+        api.get("/inventory/product/transactions", {
+          params: { ...params, transType: "WIP_OUT,WIP_OUT_CANCEL", refType: "BOX" },
+        }),
+      ]);
+      setData(mergeReceiptTransactions(
+        extractReceiptTransactions(receiptRes),
+        extractReceiptTransactions(boxMoveRes),
+      ));
     } catch {
       setData([]);
     } finally {
@@ -78,9 +109,9 @@ export default function ProductReceiptCancelPage() {
 
   /** 통계 */
   const stats = useMemo(() => ({
-    total: data.filter((d) => d.transType === "WIP_IN" || d.transType === "FG_IN").length,
+    total: data.filter(isReceiptMovement).length,
     cancellable: data.filter(
-      (d) => (d.transType === "WIP_IN" || d.transType === "FG_IN") && d.status !== "CANCELED" && !d.cancelRefId
+      (d) => isReceiptMovement(d) && d.status !== "CANCELED" && !d.cancelRefId
     ).length,
     canceled: data.filter(
       (d) => d.status === "CANCELED" || d.transType.includes("CANCEL")
@@ -166,7 +197,7 @@ export default function ProductReceiptCancelPage() {
       accessorKey: "qty", header: t("productMgmt.receiptCancel.qty"), size: 100,
       meta: { align: "right" as const },
       cell: ({ row }) => {
-        const q = row.original.qty;
+        const q = displayReceiptQty(row.original);
         const color = q > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
         return (
           <span className={`font-medium ${color}`}>
@@ -227,7 +258,7 @@ export default function ProductReceiptCancelPage() {
               />
             </div>
           } 
-          sqlQuery={`SELECT *\nFROM PROD_RECEIPT_CANCELS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+          sqlQuery={`SELECT *\nFROM PRODUCT_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND (\n    TRANS_TYPE IN ('WIP_IN', 'FG_IN', 'WIP_IN_CANCEL', 'FG_IN_CANCEL')\n    OR (REF_TYPE = 'BOX' AND TRANS_TYPE IN ('WIP_OUT', 'WIP_OUT_CANCEL'))\n  )\nORDER BY TRANS_DATE DESC`}/>
       </CardContent></Card>
 
       {/* 취소 모달 */}
@@ -252,7 +283,7 @@ export default function ProductReceiptCancelPage() {
                 <div>
                   <span className="text-text-muted">{t("productMgmt.receiptCancel.qty")}:</span>{" "}
                   <span className="font-medium text-red-600 dark:text-red-400">
-                    {selectedTx.qty.toLocaleString()} {selectedTx.part?.unit || ""}
+                    {displayReceiptQty(selectedTx).toLocaleString()} {selectedTx.part?.unit || ""}
                   </span>
                 </div>
               </div>

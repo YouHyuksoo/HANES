@@ -37,6 +37,26 @@ interface ProductTransaction {
   toWarehouse?: { warehouseName: string } | null;
 }
 
+function extractTransactions(response: { data?: unknown }): ProductTransaction[] {
+  const body = response.data as { data?: unknown } | ProductTransaction[] | undefined;
+  const list = body && !Array.isArray(body) && "data" in body ? body.data : body;
+  return Array.isArray(list) ? list as ProductTransaction[] : [];
+}
+
+function mergeTransactions(...groups: ProductTransaction[][]): ProductTransaction[] {
+  const merged = new Map<string, ProductTransaction>();
+  for (const row of groups.flat()) {
+    merged.set(row.transNo || row.id, row);
+  }
+  return [...merged.values()].sort((a, b) => String(b.transDate).localeCompare(String(a.transDate)));
+}
+
+function displayReceiveQty(tx: ProductTransaction): number {
+  if (tx.transType === "WIP_OUT") return Math.abs(tx.qty);
+  if (tx.transType === "WIP_OUT_CANCEL") return -Math.abs(tx.qty);
+  return tx.qty;
+}
+
 const statusColors: Record<string, string> = {
   DONE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   CANCELED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
@@ -57,12 +77,23 @@ export default function ProductReceivePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const transType = activeTab === "SEMI_PRODUCT" ? "WIP_IN,WIP_IN_CANCEL" : "FG_IN,FG_IN_CANCEL";
-      const res = await api.get("/inventory/product/transactions", {
-        params: { transType, limit: 500 },
-      });
-      const body = res.data;
-      if (body.success) setData(body.data ?? []);
+      if (activeTab === "SEMI_PRODUCT") {
+        const res = await api.get("/inventory/product/transactions", {
+          params: { transType: "WIP_IN,WIP_IN_CANCEL", limit: 500 },
+        });
+        setData(extractTransactions(res));
+        return;
+      }
+
+      const [fgRes, boxMoveRes] = await Promise.all([
+        api.get("/inventory/product/transactions", {
+          params: { transType: "FG_IN,FG_IN_CANCEL", limit: 500 },
+        }),
+        api.get("/inventory/product/transactions", {
+          params: { transType: "WIP_OUT,WIP_OUT_CANCEL", refType: "BOX", limit: 500 },
+        }),
+      ]);
+      setData(mergeTransactions(extractTransactions(fgRes), extractTransactions(boxMoveRes)));
     } catch {
       setData([]);
     } finally {
@@ -115,7 +146,7 @@ export default function ProductReceivePage() {
         accessorKey: "qty", header: t("common.quantity"), size: 90,
         meta: { align: "right" as const },
         cell: ({ row }) => {
-          const q = row.original.qty;
+          const q = displayReceiveQty(row.original);
           const c = q > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
           return (
             <span className={`font-medium ${c}`}>
@@ -212,7 +243,7 @@ export default function ProductReceivePage() {
                   </div>
                 </div>
               }
-              sqlQuery={`SELECT *\nFROM PRODUCT_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND TRANS_TYPE IN ('FG_IN', 'FG_IN_CANCEL', 'WIP_IN', 'WIP_IN_CANCEL')\nORDER BY TRANS_DATE DESC`}
+              sqlQuery={`SELECT *\nFROM PRODUCT_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND (\n    TRANS_TYPE IN ('FG_IN', 'FG_IN_CANCEL', 'WIP_IN', 'WIP_IN_CANCEL')\n    OR (REF_TYPE = 'BOX' AND TRANS_TYPE IN ('WIP_OUT', 'WIP_OUT_CANCEL'))\n  )\nORDER BY TRANS_DATE DESC`}
             />
           </CardContent>
         </Card>
