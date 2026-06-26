@@ -232,6 +232,8 @@ export class RoutingGroupService {
       processName: processMaster.processName,
       processType: processMaster.processType ?? dto.processType ?? null,
       equipType: dto.equipType ?? null,
+      executionType: dto.executionType ?? 'IN_HOUSE',
+      subconVendorCode: dto.executionType === 'SUBCON' ? dto.subconVendorCode ?? null : null,
       stdTime: dto.stdTime ?? null,
       setupTime: dto.setupTime ?? null,
       sampleInspectYn: dto.sampleInspectYn ?? 'N',
@@ -254,6 +256,14 @@ export class RoutingGroupService {
     const processMaster = dto.processCode !== undefined
       ? await this.resolveProcessMaster(dto.processCode, company, plant)
       : null;
+    const nextExecutionType = dto.executionType ?? existing.executionType ?? 'IN_HOUSE';
+    const nextSubconVendorCode = dto.executionType !== undefined && nextExecutionType !== 'SUBCON'
+      ? null
+      : dto.subconVendorCode !== undefined
+        ? nextExecutionType === 'SUBCON'
+          ? dto.subconVendorCode || null
+          : null
+        : undefined;
 
     const updateData: Partial<Pick<
       RoutingProcess,
@@ -261,6 +271,8 @@ export class RoutingGroupService {
       | 'processName'
       | 'processType'
       | 'equipType'
+      | 'executionType'
+      | 'subconVendorCode'
       | 'stdTime'
       | 'setupTime'
       | 'sampleInspectYn'
@@ -276,6 +288,8 @@ export class RoutingGroupService {
       ...(processMaster ? { processName: processMaster.processName, processType: processMaster.processType ?? dto.processType ?? null } : {}),
       ...(!processMaster && dto.processType !== undefined ? { processType: dto.processType } : {}),
       ...(dto.equipType !== undefined ? { equipType: dto.equipType } : {}),
+      ...(dto.executionType !== undefined ? { executionType: dto.executionType } : {}),
+      ...(nextSubconVendorCode !== undefined ? { subconVendorCode: nextSubconVendorCode } : {}),
       ...(dto.stdTime !== undefined ? { stdTime: dto.stdTime } : {}),
       ...(dto.setupTime !== undefined ? { setupTime: dto.setupTime } : {}),
       ...(dto.sampleInspectYn !== undefined ? { sampleInspectYn: dto.sampleInspectYn } : {}),

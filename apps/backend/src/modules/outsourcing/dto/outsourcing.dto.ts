@@ -124,6 +124,31 @@ export class CreateSubconOrderDto {
   @IsString()
   itemName?: string;
 
+  @ApiPropertyOptional({ description: '연결 작업지시번호', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  jobOrderNo?: string;
+
+  @ApiPropertyOptional({ description: '연결 라우팅 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  routingCode?: string;
+
+  @ApiPropertyOptional({ description: '연결 라우팅 공정 순번' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  processSeq?: number;
+
+  @ApiPropertyOptional({ description: '연결 공정 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  processCode?: string;
+
   @ApiProperty({ description: '발주 수량' })
   @IsInt()
   @Min(1)

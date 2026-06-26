@@ -298,6 +298,31 @@ describe('RoutingGroupService', () => {
       );
     });
 
+    it('should create a process with subcontract execution metadata', async () => {
+      const dto = {
+        routingCode: 'RG01',
+        seq: 20,
+        processCode: 'P01',
+        executionType: 'SUBCON',
+        subconVendorCode: 'SUB001',
+      } as any;
+      const created = { ...dto, useYn: 'Y' } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(null);
+      mockProcessRepo.create.mockReturnValue(created);
+      mockProcessRepo.save.mockResolvedValue(created);
+
+      await target.createProcess(dto, 'C1', 'P1');
+
+      expect(mockProcessRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          executionType: 'SUBCON',
+          subconVendorCode: 'SUB001',
+          company: 'C1',
+          plant: 'P1',
+        }),
+      );
+    });
+
     it('uses PROCESS_MASTERS name when creating a routing process', async () => {
       const dto = {
         routingCode: 'RG01',
@@ -372,6 +397,49 @@ describe('RoutingGroupService', () => {
       expect(mockProcessRepo.update).toHaveBeenCalledWith(
         { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
         expect.objectContaining({ issueSgLabelYn: 'Y', issueFgLabelYn: 'N' }),
+      );
+    });
+
+    it('should update subcontract execution metadata', async () => {
+      const existing = { routingCode: 'RG01', seq: 10 } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(existing);
+      mockProcessRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.updateProcess(
+        'RG01',
+        10,
+        { executionType: 'SUBCON', subconVendorCode: 'SUB001' } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockProcessRepo.update).toHaveBeenCalledWith(
+        { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
+        expect.objectContaining({ executionType: 'SUBCON', subconVendorCode: 'SUB001' }),
+      );
+    });
+
+    it('clears subcontract vendor when switching process execution back to in-house', async () => {
+      const existing = {
+        routingCode: 'RG01',
+        seq: 10,
+        executionType: 'SUBCON',
+        subconVendorCode: 'SUB001',
+      } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(existing);
+      mockProcessRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.updateProcess(
+        'RG01',
+        10,
+        { executionType: 'IN_HOUSE' } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockProcessRepo.update).toHaveBeenCalledWith(
+        { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
+        expect.objectContaining({ executionType: 'IN_HOUSE', subconVendorCode: null }),
       );
     });
 

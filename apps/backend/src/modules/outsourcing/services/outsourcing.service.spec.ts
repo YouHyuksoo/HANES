@@ -279,6 +279,33 @@ describe('OutsourcingService', () => {
         }),
       );
     });
+
+    it('should persist job order and routing process reference for subcontract workflow', async () => {
+      mockNumbering.nextSubconNo.mockResolvedValue('SCO20260318-0001');
+      mockOrderRepo.create.mockReturnValue({ orderNo: 'SCO20260318-0001' } as SubconOrder);
+      mockOrderRepo.save.mockResolvedValue({ orderNo: 'SCO20260318-0001' } as SubconOrder);
+
+      await target.createOrder({
+        vendorCode: 'SUB001',
+        itemCode: 'ITEM-001',
+        orderQty: 100,
+        jobOrderNo: 'JO-001',
+        routingCode: 'RT-001',
+        processSeq: 20,
+        processCode: 'PLATING',
+      } as any, 'CO', 'P01');
+
+      expect(mockOrderRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          jobOrderNo: 'JO-001',
+          routingCode: 'RT-001',
+          processSeq: 20,
+          processCode: 'PLATING',
+          company: 'CO',
+          plant: 'P01',
+        }),
+      );
+    });
   });
 
   describe('updateOrder', () => {

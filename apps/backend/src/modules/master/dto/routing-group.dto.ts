@@ -83,6 +83,14 @@ export class CreateRoutingProcessDto {
   @IsOptional() @IsString() @MaxLength(50)
   equipType?: string;
 
+  @ApiPropertyOptional({ description: '공정 실행 유형', enum: ['IN_HOUSE', 'SUBCON'], default: 'IN_HOUSE' })
+  @IsOptional() @IsString() @IsIn(['IN_HOUSE', 'SUBCON'])
+  executionType?: 'IN_HOUSE' | 'SUBCON';
+
+  @ApiPropertyOptional({ description: '외주처 코드' })
+  @IsOptional() @IsString() @MaxLength(50)
+  subconVendorCode?: string;
+
   @ApiPropertyOptional({ description: '표준 시간' })
   @IsOptional() @Type(() => Number) @IsNumber()
   stdTime?: number;

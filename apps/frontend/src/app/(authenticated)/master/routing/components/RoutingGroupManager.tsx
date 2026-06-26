@@ -26,6 +26,11 @@ interface PartOption {
   itemType: string;
 }
 
+interface VendorOption {
+  vendorCode: string;
+  vendorName: string;
+}
+
 interface BomTreeItem {
   id: string;
   level: number;
@@ -66,6 +71,8 @@ const EMPTY_PROCESS = {
   sampleInspectYn: "N",
   issueSgLabelYn: "N",
   issueFgLabelYn: "N",
+  executionType: "IN_HOUSE",
+  subconVendorCode: "",
 };
 
 const partTypeIcon = (itemType?: string) => {
@@ -84,6 +91,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   const [bomTree, setBomTree] = useState<BomTreeItem[]>([]);
   const [processOptions, setProcessOptions] = useState<ProcessOption[]>([]);
   const [partOptions, setPartOptions] = useState<PartOption[]>([]);
+  const [vendorOptions, setVendorOptions] = useState<VendorOption[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<RoutingGroupItem | null>(null);
   const [selectedBomItem, setSelectedBomItem] = useState<BomTarget | null>(null);
   const [routingInfo, setRoutingInfo] = useState<RoutingInfo | null>(null);
@@ -227,11 +235,21 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     }
   }, []);
 
+  const fetchVendorOptions = useCallback(async () => {
+    try {
+      const res = await api.get("/outsourcing/vendors", { params: { limit: 5000, vendorType: "SUBCON", useYn: "Y" } });
+      setVendorOptions((res.data?.data || []).map((v: any) => ({ vendorCode: v.vendorCode, vendorName: v.vendorName })));
+    } catch {
+      setVendorOptions([]);
+    }
+  }, []);
+
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
   useEffect(() => { fetchBomTree(); }, [fetchBomTree]);
   useEffect(() => { fetchProcesses(); }, [fetchProcesses]);
   useEffect(() => { fetchProcessOptions(); }, [fetchProcessOptions]);
   useEffect(() => { fetchPartOptions(); }, [fetchPartOptions]);
+  useEffect(() => { fetchVendorOptions(); }, [fetchVendorOptions]);
 
   const nextSeq = useMemo(() => {
     if (processes.length === 0) return "10";
@@ -329,6 +347,8 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       sampleInspectYn: process.sampleInspectYn || "N",
       issueSgLabelYn: process.issueSgLabelYn || "N",
       issueFgLabelYn: process.issueFgLabelYn || "N",
+      executionType: process.executionType || "IN_HOUSE",
+      subconVendorCode: process.subconVendorCode || "",
     });
     setProcessModalOpen(true);
   };
@@ -351,6 +371,8 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       sampleInspectYn: processForm.sampleInspectYn || "N",
       issueSgLabelYn: processForm.issueSgLabelYn || "N",
       issueFgLabelYn: processForm.issueFgLabelYn || "N",
+      executionType: processForm.executionType,
+      subconVendorCode: processForm.executionType === "SUBCON" ? processForm.subconVendorCode || undefined : undefined,
       useYn: "Y",
     };
     if (editingProcess) {
@@ -504,6 +526,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                   <th className="text-center py-2 w-14">{t("master.routing.seq")}</th>
                   <th className="text-left py-2">{t("master.routing.processName")}</th>
                   <th className="text-center py-2 w-28">{t("master.routing.processCode")}</th>
+                  <th className="text-center py-2 w-20">{t("master.routing.executionType", "실행유형")}</th>
                   <th className="text-center py-2 w-20">{t("master.routing.sampleInspect")}</th>
                   <th className="text-center py-2 w-24">{t("master.routing.labelIssue")}</th>
                   <th className="text-right py-2 px-2 w-24">{t("common.actions")}</th>
@@ -512,7 +535,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
               <tbody>
                 {processes.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-text-muted dark:text-gray-400">
+                    <td colSpan={7} className="px-4 py-10 text-center text-text-muted dark:text-gray-400">
                       {t("master.routing.noProcessForRouting", "선택한 품목의 라우팅에 등록된 공정이 없습니다.")}
                     </td>
                   </tr>
@@ -525,6 +548,17 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                       <td className="py-2 text-center font-mono">{process.seq}</td>
                       <td className="py-2 font-medium truncate">{process.processName}</td>
                       <td className="py-2 text-center font-mono">{process.processCode}</td>
+                      <td className="py-2 text-center">
+                        {process.executionType === "SUBCON" ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                            {t("master.routing.executionSubcon", "외주")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            {t("master.routing.executionInHouse", "사내")}
+                          </span>
+                        )}
+                      </td>
                       <td className="py-2 text-center">
                         {process.sampleInspectYn === 'Y' ? (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
@@ -627,6 +661,31 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
               <select value={processForm.equipType} onChange={(e) => setProcessForm((f) => ({ ...f, equipType: e.target.value }))} className={selectCls}>
                 <option value="">-- {t("common.select")} --</option>
                 {equipTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FieldLabel field="executionType" label={t("master.routing.executionType", "실행유형")} />
+              <select
+                value={processForm.executionType}
+                onChange={(e) => setProcessForm((f) => ({ ...f, executionType: e.target.value as "IN_HOUSE" | "SUBCON", subconVendorCode: e.target.value === "SUBCON" ? f.subconVendorCode : "" }))}
+                className={selectCls}
+              >
+                <option value="IN_HOUSE">{t("master.routing.executionInHouse", "사내")}</option>
+                <option value="SUBCON">{t("master.routing.executionSubcon", "외주")}</option>
+              </select>
+            </div>
+            <div>
+              <FieldLabel field="subconVendorCode" label={t("master.routing.subconVendor", "외주처")} />
+              <select
+                value={processForm.subconVendorCode}
+                onChange={(e) => setProcessForm((f) => ({ ...f, subconVendorCode: e.target.value }))}
+                className={selectCls}
+                disabled={processForm.executionType !== "SUBCON"}
+              >
+                <option value="">-- {t("common.select")} --</option>
+                {vendorOptions.map((option) => <option key={option.vendorCode} value={option.vendorCode}>[{option.vendorCode}] {option.vendorName}</option>)}
               </select>
             </div>
           </div>

@@ -48,6 +48,15 @@ const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
   createdAt: true, updatedAt: true,
 };
 
+export interface RoutingProcessSnapshot {
+  routingCode: string;
+  seq: number;
+  processCode: string;
+  processName: string;
+  executionType: 'IN_HOUSE' | 'SUBCON';
+  subconVendorCode: string | null;
+}
+
 @Injectable()
 export class JobOrderService {
   private readonly logger = new Logger(JobOrderService.name);
@@ -104,6 +113,42 @@ export class JobOrderService {
       order: { seq: 'ASC' },
     });
     return firstStep?.processCode ?? null;
+  }
+
+  private async findActiveRoutingProcesses(jobOrder: Pick<JobOrder, 'routingCode'>, company?: string, plant?: string) {
+    return jobOrder.routingCode
+      ? this.routingProcessRepository.find({
+          where: {
+            routingCode: jobOrder.routingCode,
+            useYn: 'Y',
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+          order: { seq: 'ASC' },
+        })
+      : [];
+  }
+
+  private toRoutingProcessSnapshot(process: RoutingProcess | undefined): RoutingProcessSnapshot | null {
+    if (!process) return null;
+    return {
+      routingCode: process.routingCode,
+      seq: process.seq,
+      processCode: process.processCode,
+      processName: process.processName,
+      executionType: process.executionType ?? 'IN_HOUSE',
+      subconVendorCode: process.subconVendorCode ?? null,
+    };
+  }
+
+  private resolveRoutingFlow(jobOrder: Pick<JobOrder, 'processCode'>, routingProcesses: RoutingProcess[]) {
+    const currentIndex = routingProcesses.findIndex((process) => process.processCode === jobOrder.processCode);
+    const currentRoutingProcess = currentIndex >= 0 ? routingProcesses[currentIndex] : undefined;
+    const nextRoutingProcess = currentIndex >= 0 ? routingProcesses[currentIndex + 1] : undefined;
+    return {
+      currentRoutingProcess: this.toRoutingProcessSnapshot(currentRoutingProcess),
+      nextRoutingProcess: this.toRoutingProcessSnapshot(nextRoutingProcess),
+    };
   }
 
   private assertSameTenant(
@@ -225,19 +270,8 @@ export class JobOrderService {
     if (company) prQb.andWhere('pr.company = :company', { company });
     if (plant) prQb.andWhere('pr.plant = :plant', { plant });
     const prodResults = await prQb.getMany();
-    // 라우팅 공정순서 조회
-    const routingProcesses = jobOrder.routingCode
-      ? await this.routingProcessRepository.find({
-          where: {
-            routingCode: jobOrder.routingCode,
-            useYn: 'Y',
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
-          },
-          order: { seq: 'ASC' },
-        })
-      : [];
-    return { ...jobOrder, prodResults, routingProcesses };
+    const routingProcesses = await this.findActiveRoutingProcesses(jobOrder, company, plant);
+    return { ...jobOrder, prodResults, routingProcesses, ...this.resolveRoutingFlow(jobOrder, routingProcesses) };
   }
 
   /** 작업지시 단건 조회 (작업지시번호) */
@@ -262,7 +296,8 @@ export class JobOrderService {
 
     jobOrder.goodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
     jobOrder.defectQty = summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0;
-    return jobOrder;
+    const routingProcesses = await this.findActiveRoutingProcesses(jobOrder, company, plant);
+    return { ...jobOrder, ...this.resolveRoutingFlow(jobOrder, routingProcesses) };
   }
 
   /** 작업지시 생성 (트랜잭션 처리, company/plant 포함) */
@@ -619,7 +654,10 @@ export class JobOrderService {
       });
     });
 
-    return this.findOneWithSelect(id, company, plant);
+    const completed = await this.findOneWithSelect(id, company, plant);
+    if (!completed) return completed;
+    const routingProcesses = await this.findActiveRoutingProcesses(completed, company, plant);
+    return { ...completed, ...this.resolveRoutingFlow(completed, routingProcesses) };
   }
 
   /** 작업 취소 (WAITING/HOLD -> CANCELED) - 실적 있으면 취소 불가 */

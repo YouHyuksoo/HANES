@@ -18,6 +18,8 @@ export const ROUTING_FIELD_HELP = {
   processName: { db: "ROUTING_PROCESSES.PROCESS_NAME", description: "선택한 공정의 명칭입니다. 공정 코드 선택 시 자동으로 표시됩니다." },
   processType: { db: "ROUTING_PROCESSES.PROCESS_TYPE", description: "선택한 공정의 유형입니다. 공정 코드 선택 시 자동으로 표시됩니다." },
   equipType: { db: "ROUTING_PROCESSES.EQUIP_TYPE", description: "이 공정에서 사용할 설비 유형입니다." },
+  executionType: { db: "ROUTING_PROCESSES.EXECUTION_TYPE", description: "이 공정을 사내에서 수행할지 외주처로 보낼지 지정합니다." },
+  subconVendorCode: { db: "ROUTING_PROCESSES.SUBCON_VENDOR_CODE", description: "외주 공정일 때 기본 외주처를 지정합니다." },
   stdTime: { db: "ROUTING_PROCESSES.STD_TIME", description: "단위 작업 1회에 소요되는 표준 작업시간(초)입니다." },
   setupTime: { db: "ROUTING_PROCESSES.SETUP_TIME", description: "공정 시작 전 준비(셋업)에 소요되는 시간(초)입니다." },
   sampleInspectYn: { db: "ROUTING_PROCESSES.SAMPLE_INSPECT_YN", description: "이 공정에서 샘플검사(자주검사)를 수행할지 여부입니다." },

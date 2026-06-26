@@ -44,6 +44,12 @@ export class RoutingProcess {
   @Column({ type: 'varchar2', name: 'EQUIP_TYPE', length: 50, nullable: true })
   equipType: string | null;
 
+  @Column({ type: 'varchar2', name: 'EXECUTION_TYPE', length: 20, default: 'IN_HOUSE' })
+  executionType: 'IN_HOUSE' | 'SUBCON';
+
+  @Column({ type: 'varchar2', name: 'SUBCON_VENDOR_CODE', length: 50, nullable: true })
+  subconVendorCode: string | null;
+
   @Column({ name: 'STD_TIME', type: 'decimal', precision: 10, scale: 4, nullable: true })
   stdTime: number | null;
 

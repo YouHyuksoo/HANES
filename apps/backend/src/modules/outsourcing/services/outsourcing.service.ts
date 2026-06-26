@@ -334,6 +334,10 @@ export class OutsourcingService {
       vendorCode: dto.vendorCode,
       itemCode: dto.itemCode,
       itemName: dto.itemName,
+      jobOrderNo: dto.jobOrderNo ?? null,
+      routingCode: dto.routingCode ?? null,
+      processSeq: dto.processSeq ?? null,
+      processCode: dto.processCode ?? null,
       orderQty: dto.orderQty,
       unitPrice: dto.unitPrice,
       orderDate: dto.orderDate ? parseDateStart(dto.orderDate) : new Date(),
@@ -351,6 +355,10 @@ export class OutsourcingService {
     const updateData: Partial<SubconOrder> = {};
     if (dto.itemCode !== undefined) updateData.itemCode = dto.itemCode;
     if (dto.itemName !== undefined) updateData.itemName = dto.itemName;
+    if (dto.jobOrderNo !== undefined) updateData.jobOrderNo = dto.jobOrderNo || null;
+    if (dto.routingCode !== undefined) updateData.routingCode = dto.routingCode || null;
+    if (dto.processSeq !== undefined) updateData.processSeq = dto.processSeq ?? null;
+    if (dto.processCode !== undefined) updateData.processCode = dto.processCode || null;
     if (dto.orderQty !== undefined) updateData.orderQty = dto.orderQty;
     if (dto.unitPrice !== undefined) updateData.unitPrice = dto.unitPrice;
     if (dto.orderDate !== undefined) updateData.orderDate = parseDateStart(dto.orderDate);

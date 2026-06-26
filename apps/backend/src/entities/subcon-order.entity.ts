@@ -33,6 +33,18 @@ export class SubconOrder {
   @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 255, nullable: true })
   itemName: string | null;
 
+  @Column({ type: 'varchar2', name: 'JOB_ORDER_NO', length: 50, nullable: true })
+  jobOrderNo: string | null;
+
+  @Column({ type: 'varchar2', name: 'ROUTING_CODE', length: 50, nullable: true })
+  routingCode: string | null;
+
+  @Column({ name: 'PROCESS_SEQ', type: 'int', nullable: true })
+  processSeq: number | null;
+
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
+  processCode: string | null;
+
   @Column({ name: 'ORDER_QTY', type: 'int' })
   orderQty: number;
 

@@ -73,6 +73,15 @@ export interface JobOrderRoutingSummary {
   routingName: string;
 }
 
+export interface JobOrderRoutingProcessSnapshot {
+  routingCode: string;
+  seq: number;
+  processCode: string;
+  processName: string;
+  executionType: 'IN_HOUSE' | 'SUBCON';
+  subconVendorCode: string | null;
+}
+
 /** 현재 `/production/job-orders` API row shape */
 export interface ProductionJobOrderRow {
   orderNo: string;
@@ -95,6 +104,8 @@ export interface ProductionJobOrderRow {
   startAt?: string | Date | null;
   endAt?: string | Date | null;
   remark?: string | null;
+  currentRoutingProcess?: JobOrderRoutingProcessSnapshot | null;
+  nextRoutingProcess?: JobOrderRoutingProcessSnapshot | null;
   children?: ProductionJobOrderRow[];
 }
 
@@ -115,6 +126,8 @@ export interface JobOrderSelectItem {
   workDate?: string;
   equipCode?: string;
   equipName?: string;
+  currentRoutingProcess?: JobOrderRoutingProcessSnapshot | null;
+  nextRoutingProcess?: JobOrderRoutingProcessSnapshot | null;
 }
 
 /** select/dropdown option shape for job orders */

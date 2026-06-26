@@ -161,6 +161,70 @@ describe('JobOrderService', () => {
         order: { seq: 'ASC' },
       });
     });
+
+    it('exposes next subcontract routing process after the current job order process', async () => {
+      const jobOrder = {
+        orderNo: 'JO-001',
+        routingCode: 'RT-001',
+        processCode: 'CUT',
+        company: 'C1',
+        plant: 'P1',
+      } as JobOrder;
+      const mockQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockJobOrderRepo.findOne.mockResolvedValue(jobOrder);
+      mockProdResultRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+      mockRoutingProcessRepo.find.mockResolvedValue([
+        { routingCode: 'RT-001', seq: 10, processCode: 'CUT', processName: '절단', executionType: 'IN_HOUSE', subconVendorCode: null } as RoutingProcess,
+        { routingCode: 'RT-001', seq: 20, processCode: 'PLATING', processName: '도금', executionType: 'SUBCON', subconVendorCode: 'SUB001' } as RoutingProcess,
+      ]);
+
+      const result = await target.findByIdWithResults('JO-001', 'C1', 'P1');
+
+      expect((result as any).nextRoutingProcess).toEqual({
+        routingCode: 'RT-001',
+        seq: 20,
+        processCode: 'PLATING',
+        processName: '도금',
+        executionType: 'SUBCON',
+        subconVendorCode: 'SUB001',
+      });
+    });
+  });
+
+  describe('findByOrderNo', () => {
+    it('exposes next subcontract routing process for kiosk refresh', async () => {
+      const jobOrder = {
+        orderNo: 'JO-001',
+        routingCode: 'RT-001',
+        processCode: 'CUT',
+        company: 'C1',
+        plant: 'P1',
+      } as JobOrder;
+      const summaryQb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ totalGoodQty: '10', totalDefectQty: '0' }),
+      };
+      mockJobOrderRepo.findOne.mockResolvedValue(jobOrder);
+      mockProdResultRepo.createQueryBuilder.mockReturnValue(summaryQb as any);
+      mockRoutingProcessRepo.find.mockResolvedValue([
+        { routingCode: 'RT-001', seq: 10, processCode: 'CUT', processName: '절단', executionType: 'IN_HOUSE', subconVendorCode: null } as RoutingProcess,
+        { routingCode: 'RT-001', seq: 20, processCode: 'PLATING', processName: '도금', executionType: 'SUBCON', subconVendorCode: 'SUB001' } as RoutingProcess,
+      ]);
+
+      const result = await target.findByOrderNo('JO-001', 'C1', 'P1');
+
+      expect((result as any).nextRoutingProcess?.executionType).toBe('SUBCON');
+      expect((result as any).nextRoutingProcess?.subconVendorCode).toBe('SUB001');
+    });
   });
 
   // ─────────────────────────────────────────────
@@ -538,6 +602,46 @@ describe('JobOrderService', () => {
       );
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('returns next subcontract routing process after completion', async () => {
+      const jo = {
+        orderNo: 'JO-001',
+        status: 'RUNNING',
+        routingCode: 'RT-001',
+        processCode: 'CUT',
+        company: 'C1',
+        plant: 'P1',
+      } as JobOrder;
+      mockJobOrderRepo.findOne
+        .mockResolvedValueOnce(jo)
+        .mockResolvedValueOnce({ ...jo, status: 'DONE' } as JobOrder);
+      const txSummaryQb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ totalGoodQty: '10', totalDefectQty: '0' }),
+      };
+      const refreshSummaryQb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ totalGoodQty: '10', totalDefectQty: '0' }),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(txSummaryQb as any);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockProdResultRepo.createQueryBuilder.mockReturnValue(refreshSummaryQb as any);
+      mockRoutingProcessRepo.find.mockResolvedValue([
+        { routingCode: 'RT-001', seq: 10, processCode: 'CUT', processName: '절단', executionType: 'IN_HOUSE', subconVendorCode: null } as RoutingProcess,
+        { routingCode: 'RT-001', seq: 20, processCode: 'PLATING', processName: '도금', executionType: 'SUBCON', subconVendorCode: 'SUB001' } as RoutingProcess,
+      ]);
+
+      const result = await target.complete('JO-001', 'C1', 'P1');
+
+      expect((result as any).nextRoutingProcess?.executionType).toBe('SUBCON');
+      expect((result as any).nextRoutingProcess?.processCode).toBe('PLATING');
     });
 
     it('should throw BadRequestException when not RUNNING', async () => {
