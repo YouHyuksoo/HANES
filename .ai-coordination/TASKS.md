@@ -29,6 +29,39 @@ notes:
 
 ## Active Tasks
 
+## T-TRACE-WEBDISPLAY-WIZARD 추적성 WebDisplay식 시작 모달 적용
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/quality/trace`를 WebDisplay 추적성처럼 추적 방식 선택 모달 → 후보 목록 → 상세 추적 흐름으로 개선
+- 제품 바코드, 자재 UID/LOT, 박스번호, 팔레트번호, 출하지시번호, 설비+기간, 작업지시번호, SG 바코드 시작점을 지원
+files:
+- apps/backend/src/modules/quality/inspection/dto/product-traceability.dto.ts
+- apps/backend/src/modules/quality/inspection/services/product-traceability.service.ts
+- apps/backend/src/modules/quality/inspection/controllers/trace.controller.ts
+- apps/backend/src/modules/quality/inspection/inspection.module.ts
+- apps/frontend/src/app/(authenticated)/quality/trace/page.tsx
+- apps/frontend/src/app/(authenticated)/quality/trace/types.ts
+- apps/frontend/src/app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx
+- apps/frontend/src/app/(authenticated)/quality/trace/trace-webdisplay-wizard.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `node --test "apps/frontend/src/app/(authenticated)/quality/trace/trace-webdisplay-wizard.structure.test.mjs"`가 `TraceSearchWizard.tsx` 부재 및 후보 API 부재로 실패
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/quality/trace/trace-webdisplay-wizard.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 대상 파일 `git diff --check`
+- 미실행: 기존 3002 `/quality/trace`는 5초 HTTP 타임아웃이라 브라우저 런타임 확인 불가. 임의 대체 포트/서버는 사용하지 않음.
+review:
+- needs-review
+notes:
+- `T-TRACE-FULL` active lock과 같은 추적성 파일이 겹친다. 사용자가 본 대화에서 WebDisplay UI 방식 적용을 명시하고 "진행해"라고 지시했으므로 충돌 사실을 기록하고 진행한다.
+- locale 파일은 다른 active lock과 충돌 중이므로 수정하지 않고 `t(key, fallback)` 패턴만 사용한다.
+
 ## T-SHIP-HISTORY-SHIPPED-DETAIL 출하이력 우측 패널 박스출하 표시 보정
 status: REVIEW
 owner: codex

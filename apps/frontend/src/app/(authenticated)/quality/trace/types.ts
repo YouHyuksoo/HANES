@@ -1,3 +1,29 @@
+export type TraceSearchMode =
+  | "product"
+  | "material"
+  | "box"
+  | "pallet"
+  | "shipOrder"
+  | "equipment"
+  | "workOrder"
+  | "sg";
+
+export interface TraceCandidate {
+  traceKey: string;
+  traceType: "FG" | "SG";
+  itemCode: string | null;
+  itemName: string | null;
+  orderNo: string | null;
+  status: string | null;
+  eventDate: string | null;
+  sourceLabel: string;
+  sourceValue: string;
+}
+
+export type TraceSearchInput =
+  | { mode: Exclude<TraceSearchMode, "equipment">; value: string }
+  | { mode: "equipment"; equipCode: string; dateFrom: string; dateTo: string };
+
 export interface ProcessStep {
   process: string;
   processName: string;

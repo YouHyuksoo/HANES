@@ -6,6 +6,7 @@
 
 ## Current Review
 
+- `T-TRACE-WEBDISPLAY-WIZARD`: `/quality/trace`를 WebDisplay식 추적 시작 모달 UI로 전환했다. 페이지 진입 시 `TraceSearchWizard`가 자동 오픈되고, 사용자는 제품 바코드/자재 UID·LOT/박스/팔레트/출하지시/설비+기간/작업지시/SG 바코드 중 하나를 카드로 선택한다. 조회 후 좌측 후보 목록을 표시하고, FG 후보 선택 시 기존 `GET /quality/trace?serial=` 제조이력 상세를 중앙에 표시한다. 신규 `GET /quality/trace/candidates`는 HANES 실제 데이터 키(`FG_LABELS`, `SG_LABELS`, `PRODUCT_GENEALOGY`, `MAT_ISSUES`, `BOX_MASTERS`, `PALLET_MASTERS`, `SHIPMENT_ORDERS`, `PROD_RESULTS`) 기준으로 후보를 만든다. locale 파일은 건드리지 않고 fallback 문자열만 사용했다. 검증: 구조 테스트 RED/GREEN, FE/BE tsc, diff check PASS. 기존 3002 `/quality/trace`는 5초 HTTP 타임아웃이라 브라우저 확인은 못 했고, 대체 포트/서버는 사용하지 않았다. `T-TRACE-FULL` active lock과 겹쳤으나 사용자 진행 승인 후 최소 범위로 작업했다.
 - `T-SHIP-ORDER-UNCONFIRM`: `/shipping/order` 확정취소 기능을 추가했다. `CONFIRMED` 행/패널에서 `PUT /shipping/orders/:id/unconfirm`을 호출한다. 서버는 `CONFIRMED` + 품목 `shippedQty=0`일 때 동작하며, 빈 `OPEN` 팔레트만 있으면 같은 transaction에서 팔레트를 삭제하고 `DRAFT`로 되돌린다. 박스/출하수량/마감 이후 팔레트가 있으면 차단한다. 후속으로 `CONFIRMED` 삭제 버튼 노출 때문에 발생한 `DELETE /shipping/orders/:id` 400도 보정해 삭제 버튼/handler는 `DRAFT`만 허용한다. `/shipping/pallet`에는 `OPEN + boxCount 0 + shipmentId 없음` 조건의 `빈 팔레트 삭제` 버튼을 추가했다. JSHANES 실측 `SH2606220004`는 빈 `OPEN` 팔레트 `PLT2606220002`만 있어 새 로직 대상이다. 실제 unconfirm 재호출은 DB 상태 변경이라 수행하지 않았다. 검증: backend focused spec 31/31 PASS, frontend structure tests PASS, FE/BE tsc PASS, diff check PASS. `ship-order.service.ts`는 `T-SHIP-ORDER-CANCEL` active lock과 겹쳤으나 사용자 직접 후속 지시로 최소 변경했다.
 
 ## Latest Done

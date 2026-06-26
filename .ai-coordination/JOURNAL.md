@@ -8,6 +8,99 @@ Use this heading format for every new entry:
 ## YYYY-MM-DD HH:mm Agent
 ```
 
+## 2026-06-26 Claude — N91H00 후속(품목속성/AQL표준/라우팅)
+
+### 1) 품목마스터 속성 채움 (T-ITEM-ATTR-FILL)
+/master/part에서 제품유형·차종·모델구분·리비전 빈값 → ITEM_MASTERS 26건 NVL UPDATE(기존값 보존).
+- 제품유형(PRODUCT_TYPE): 완제품 HARNESS, 반제품 SUB_ASSY, 원자재는 ITEM_NAME 매핑(WIRE/TUBE/TAPE/TERMINAL/HOUSING/SEAL/SHIELD/HOLDER/LABEL). 코드마스터 PRODUCT_TYPE 기반.
+- 차종(MODEL_NAME)=OV(Usage Vehicle), 모델구분(DEFECT_MODEL_GROUP)=HV(고전압), 리비전(REV)=A.
+- migration: 2026-06-26_item_master_fill_attrs.sql.
+
+### 2) AQL 표준 추가 — resolve-iqc-items 404 (T-AQL-STD-I001)
+원인: 6TPP210190 IQC_PART_SPEC_ITEMS의 'IQC-TEST' 항목이 INSPECTION_LEVEL='I'/AQL=0.01/MAJOR인데 AQL_STANDARDS엔 II 3건만 → aql.service.ts:747 resolveSeverityRule('I',0.01) 후보 AQL-I-0.01 부재 → 404.
+조치: AQL_STANDARDS 'AQL-I-0.01' + AQL_SAMPLING_RULES 15구간(ISO 2859-1 보통검사 1회, AQL0.010 유효플랜 sample125/Ac0/Re1, 화살표 상향). lotQty=1000 → 501-1200 구간 매칭 검증. migration: 2026-06-26_aql_standard_I_0.01.sql.
+주: 'IQC-TEST'/AQL0.01은 테스트성 검사항목으로 보임. 표준만 보강했고 검사항목 자체는 미수정.
+
+### 3) N91H00-X9800 라우팅 생성 (T-N91H00-ROUTING)
+BOM 부모(완제품/C1/C2)별 ROUTING_GROUPS 3 + ROUTING_PROCESSES 17 + ROUTING_MATERIALS 33. 회신 시트 공정순서를 PROCESS_MASTERS 코드에 매핑.
+- C1/C2 공정: ATCNS(전선절단탈피)→SHDCT(차폐선절단)→HEXPR(압착준비)→HEXCP(육각압착)→TMCRP(일반압착). TMCRP 파괴검사+SG라벨.
+- 완제품 공정: TUBHT(열수축접착)→SGINS(반제품검사)→MATPR(조립자재준비)→PROTC(커넥터체결)→MASSY(외장재조립)→CIINS(통합회로검사,FG라벨)→AINSP(최종검사). 검사공정 SAMPLE_INSPECT_YN=Y.
+- 자재: 회신 공정별 투입자재를 BOM 자식으로 매핑. 33건 전부 BOM child 정합 검증(백엔드 BOM 검증규칙 충족, 위반 0).
+- 공정코드 일부는 근사 매핑(커넥터체결→PROTC, 외장재조립→MASSY, 최종검사→AINSP). 생성기: tools/seed/gen_n91h00_routing.py.
+
+## 2026-06-26 Claude — T-N91H00-BOM (N91H00-X9800 BOM 생성)
+
+### 입력
+사용자 엑셀 `정보전략 BOM 작성 회신 N91H00-X9800.xlsx` (회신 시트 = 공정별 투입자재, Usage 시트 = 완제품 1대 총소요량). 앞선 purge로 N91H00 BOM은 0건이었음(원래 미등록).
+
+### 레벨 (사용자 확정)
+완제품 N91H00-X9800 ← 반제품 C1/C2 + 완제품 조립자재. 압착공정(준비/육각/일반압착) 자재는 C1·C2 각 반제품에 분배(사용자 선택). 1EA 공통 압착자재(HTEAVCW002MA/DLMLS6-3-3/EKEESNATBC)는 C1 귀속, VSFT1-201은 C1 압착1+완제품 열수축1.
+
+### 조치
+- 누락 투입자재 3종 품목마스터 추가(MERGE): LB04201250(LABEL 42x12), LB08802520(LABEL 88x25 회로라벨), RIBON-7(라벨프린터 먹지). UNIT=EA, RAW_MATERIAL. 나머지 18종은 보존 원자재 재사용.
+- BOM_MASTERS 33행(완제품 11/C1 13/C2 9). 길이자재 QTY_PER=mm(전선 C1 670·C2 785, 튜브345, 테이프1330, 리본94), 그 외 EA.
+- migration: 2026-06-26_n91h00_x9800_bom.sql (37블록 전부 success).
+
+### 검증
+CONNECT BY 전개 leaf 21종 총소요량 = Usage 시트 QTY 전부 일치(1SH21A7A09 1455mm=1.455MT, 압착 7종 각 2EA, 1EA 3종, 조립자재 전부).
+
+### 미수행(범위 밖)
+라우팅(공정순서)·작업지도서는 미생성(사용자 BOM만 요청). 회신 시트에 공정/설비/관리항목 있어 후속 요청 시 활용 가능.
+
+## 2026-06-26 Claude — T-PURGE-HNS02-KS (HNS02 트리 + KS_ 품목 전 데이터 삭제)
+
+### 요청
+사용자: HNS02 BOM 하위 모든 품목 + KS_ 접두 품목의 기준정보 + 전 트랜잭션(IQC/PO/입고/출고/재고/입하/수불/포장/작업지시/실적/박스/팔레트) 삭제. 확인사항 2건 — 원자재 18종 포함, 품목마스터까지 완전 삭제.
+
+### 대상 품목 70개 (품목 한정, N91H00 계열 23개 보존)
+- HNS02 BOM 트리 전개(CONNECT BY): 반제품 17 + 전용 원자재 18(CBL/TMN/RSL/HSG/TP/TUB/NFT/PHDL/CNTR/CSH/HLD) + HNS02
+- ITEM_MASTERS LIKE 'HNS02%' / 'KS\_%' (KS_ 34개: 완제품 3/반제품 4/원자재 27)
+- 원자재 공유 검증: HNS02 전용 원자재는 비-HNS02 부모 BOM 0건(공유 안 됨), KS BOM 폐쇄적.
+
+### 도구
+`tools/seed/purge_items_hns02_ks.py` (reset_transactional_data.py 패턴). introspection으로 ITEM_CODE 직접/간접키(ORDER_NO·RESULT_NO·FG/SG바코드·MAT_UID·BOX_NO·PO_NO·SHIP_ORDER_NO·ROUTING_CODE) 전파, FK 비활성→자식우선 DELETE→재활성. dry-run/--commit.
+
+### 실행 결과 (JSHANES)
+1. 메인 purge: 트랜잭션 3547행(31테이블) + 기준정보 231행(WORK_INSTRUCTIONS 31/ROUTING_PROCESSES 42/ROUTING_GROUPS 22/BOM_MASTERS 66/ITEM_MASTERS 70) = **3778행 commit**.
+   - 헤더 혼합 0 확인(PO/출하): 대상 헤더 전량 삭제 안전. PURCHASE_ORDERS 4/5(비대상 1 보존), EQUIP_INSPECT_LOGS 1/9(대상 작업지시분만).
+   - 보존: 소모품 CONSUMABLE_* 380, 스케줄러 20, 재고실사 1, LABEL_PRINT_LOGS 3 (품목 무관/요청 범위 밖).
+   - FK 재활성화 1건 실패(ORA-02298): IQC_ITEM_MASTERS 잔존 → 2차 정리.
+2. 잔존 정리(migration sql 2개): IQC_ITEM_MASTERS 15/IQC_PART_SPECS 18/IQC_PART_SPEC_ITEMS 53 + CONTROL_PLANS 1(+자식 25)/HARNESS 도면 체인(회로스펙→리비전→도면 2). CONTROL_PLAN_ID(VARCHAR)=PLAN_NO 매핑, 하네스 체인 회로스펙 자식 처리.
+
+### 검증
+- 대상 품목 잔존 0 (HNS02%/KS_% = 0). ITEM_MASTERS 23 보존(N91H00 완제품/반제품3/원자재19).
+- DISABLED FK 0개(전수 복구). JOB_ORDERS/MAT_LOTS/FG_LABELS=0(전부 HNS02/KS였음).
+- _BAK 백업 3종(104행)은 의도적 보존(복구 안전장치).
+
+### 비고
+- 앞서 같은 날 추가한 KS 작업지도서 시드도 품목 삭제와 함께 제거됨(품목 자체 삭제로 무의미).
+- 산출물: tools/seed/purge_items_hns02_ks.py, migrations/2026-06-26_purge_hns02_ks_master_residue{,2}.sql.
+
+## 2026-06-26 Claude — T-KS-WORK-INSTRUCTION-SEED
+
+### 문제
+`/production/input-kiosk` 작업지도서(WorkInstructionView)가 KS 라인 작업지시 선택 시 표시되지 않음. WorkInstructionView는 `GET /master/work-instructions?itemCode=&processCode=&useYn=Y`로 조회하며, itemCode=작업지시 품목, processCode=선택 설비 공정(없으면 작업지시 PROCESS_CODE 폴백)으로 필터(`WorkInstructionView.tsx:53,57-63`).
+
+### 원인 (실측, JSHANES)
+- WORK_INSTRUCTIONS에 HNS02 계열 20건만 존재, KS 라인 0건.
+- 활성 작업지시 중 KS_L1_ACOMP_N91H00-X9800/KS_ASPRP(WAITING), KS_L2_SHLDCABLE/KS_CUTST(RUNNING)가 작업지도서 MISSING → 키오스크 빈 화면.
+- KS_EQ_* 설비는 PROCESS_CODE 전부 null → 키오스크는 작업지시 PROCESS_CODE로 폴백 조회.
+
+### 조치
+- `tools/generate-ks-work-instruction-seed.mjs` 신규(기존 generate-work-instruction-seed-images.mjs 패턴 차용, UPDATE→MERGE). KS 두 품목의 ROUTING_PROCESSES 전 공정(완제품 4 + 반제품 8 = 12건)에 대해 SVG + WORK_INSTRUCTIONS 행 생성.
+  - SVG: `apps/backend/uploads/work-instructions/wi-seed-ks_*.svg` 12개.
+  - SQL: `apps/backend/src/migrations/2026-06-26_ks_work_instruction_seed.sql` (MERGE 멱등, TITLE/CONTENT/IMAGE_URL/USE_YN='Y', COMPANY='40'/PLANT_CD='1000').
+- IMAGE_URL이 404여도 WorkInstructionView 마지막 fallback(`:170-177`)에서 CONTENT 텍스트 표시되도록 CONTENT도 채움.
+
+### 검증 (JSHANES)
+- 마이그레이션 실행: 13블록(MERGE 12 + COMMIT) 전부 success.
+- KS 작업지도서 12건 등록 확인.
+- 활성 작업지시(WAITING/RUNNING) 19건 ↔ WORK_INSTRUCTIONS LEFT JOIN: 전부 WI=OK, MISSING 0.
+
+### 비고
+- 코드 로직/locales 미수정(데이터 시드만). 로컬 backend가 uploads 정적 서빙 시 SVG 표시, 배포(hswbs)엔 SVG 미배포여도 CONTENT fallback으로 표시.
+- 라우팅 전 공정 시드로 향후 설비-공정 매핑/추가 작업지시도 커버.
+
 ## 2026-06-25 11:28 Codex
 
 - 작업: `T-MANUAL-INDEX-PAGE` 매뉴얼 메인 목차 페이지 생성.
@@ -3181,3 +3274,24 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: 기존 3002 Playwright 확인. `/shipping/order` 행 1건, 행 버튼 1개(`수정`)만 표시, 상단 `인쇄/확정/확정취소/삭제` 버튼 표시. 행 선택 후 CONFIRMED 행에서 확정취소 활성화, console error 0건.
 - 참고:
   - 기존 working tree에는 이번 범위 밖 변경(`apps/backend/src/modules/system/services/pda-role.service.ts`, PDA 팔레트 출하 파일들, 2026-06-26 출하 QA 리포트 등)이 함께 남아 있어 되돌리지 않았다.
+
+# 2026-06-26 00:55 KST - codex - T-TRACE-WEBDISPLAY-WIZARD
+
+- `/quality/trace`를 WebDisplay 추적성 화면처럼 `추적 시작` 모달에서 방식을 먼저 선택하는 흐름으로 전환했다.
+- 변경:
+  - `apps/frontend/src/app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx`: WebDisplay `BarcodeSearchWizard`/`TraceWizardModal` 패턴을 HANES용 2단계 카드 모달로 추가했다. 제품 바코드, 자재 UID/LOT, 박스번호, 팔레트번호, 출하지시번호, 설비+기간, 작업지시번호, SG 바코드 시작점을 제공한다.
+  - `apps/frontend/src/app/(authenticated)/quality/trace/page.tsx`: 단일 검색창을 제거하고, 모달 자동 오픈 -> 후보 목록 사이드바 -> FG 후보 선택 시 기존 제조이력 상세 조회 구조로 재배치했다.
+  - `apps/frontend/src/app/(authenticated)/quality/trace/types.ts` 및 backend DTO에 `TraceSearchMode`, `TraceCandidate`를 추가했다.
+  - `TraceController`에 `GET /quality/trace/candidates`를 추가했다.
+  - `ProductTraceabilityService.findCandidates()`와 모드별 후보 resolver를 추가했다. WebDisplay 테이블을 이식하지 않고 HANES 실제 키(`FG_LABELS`, `SG_LABELS`, `PRODUCT_GENEALOGY`, `MAT_ISSUES`, `BOX_MASTERS`, `PALLET_MASTERS`, `SHIPMENT_ORDERS`, `PROD_RESULTS`) 기준으로 후보를 만든다.
+  - locale 파일은 다른 active lock과 충돌 가능성이 있어 수정하지 않고 `t(key, fallback)`만 사용했다.
+- 충돌 기록:
+  - `T-TRACE-FULL` active lock과 같은 추적성 파일이 겹쳤다. 사용자가 본 대화에서 WebDisplay UI 방식 적용을 명시하고 `진행해`라고 지시해 충돌 사실을 TASK/LOCKS에 기록한 뒤 최소 범위로 진행했다.
+- 검증:
+  - RED: `node --test "apps/frontend/src/app/(authenticated)/quality/trace/trace-webdisplay-wizard.structure.test.mjs"`가 `TraceSearchWizard.tsx` 부재 및 후보 API 부재로 실패.
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/quality/trace/trace-webdisplay-wizard.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 대상 파일 `git diff --check`
+- 미실행:
+  - 기존 `http://localhost:3002/quality/trace`는 5초 HTTP 타임아웃으로 런타임 화면 확인을 못 했다. HANES 규칙에 따라 임의 대체 포트나 추가 dev server는 사용하지 않았다.

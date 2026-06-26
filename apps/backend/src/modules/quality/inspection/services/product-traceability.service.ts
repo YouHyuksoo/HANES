@@ -1,7 +1,7 @@
 // apps/backend/src/modules/quality/inspection/services/product-traceability.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, FindOptionsWhere } from 'typeorm';
+import { Repository, In, FindOptionsWhere, Like } from 'typeorm';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { SgLabel } from '../../../../entities/sg-label.entity';
 import { ProductGenealogy } from '../../../../entities/product-genealogy.entity';
@@ -43,6 +43,8 @@ import {
   EquipConsumable,
   DefectRecord,
   RepairRecord,
+  TraceCandidate,
+  TraceSearchMode,
 } from '../dto/product-traceability.dto';
 
 @Injectable()
@@ -546,6 +548,225 @@ export class ProductTraceabilityService {
     }));
 
     return { defects, repairs: [...repairRecords, ...reworkRecords] };
+  }
+
+  async findCandidates(
+    mode: TraceSearchMode,
+    input: { value?: string; equipCode?: string; dateFrom?: string; dateTo?: string },
+    company: string,
+    plant: string,
+  ): Promise<TraceCandidate[]> {
+    const value = input.value?.trim() ?? '';
+    if (mode !== 'equipment' && !value) return [];
+
+    switch (mode) {
+      case 'product':
+        return this.resolveProductCandidates(value, company, plant);
+      case 'material':
+        return this.resolveMaterialCandidates(value, company, plant);
+      case 'box':
+        return this.resolveBoxCandidates(value, company, plant);
+      case 'pallet':
+        return this.resolvePalletCandidates(value, company, plant);
+      case 'shipOrder':
+        return this.resolveShipOrderCandidates(value, company, plant);
+      case 'equipment':
+        return this.resolveEquipmentCandidates(input.equipCode?.trim() ?? '', input.dateFrom ?? '', input.dateTo ?? '', company, plant);
+      case 'workOrder':
+        return this.resolveWorkOrderCandidates(value, company, plant);
+      case 'sg':
+        return this.resolveSgCandidates(value, company, plant);
+      default:
+        return [];
+    }
+  }
+
+  private async resolveProductCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+    const rows = await this.fgLabelRepo.find({
+      where: [
+        { fgBarcode: value, company, plant },
+        { customerBarcode: value, company, plant },
+      ],
+      take: 500,
+      order: { issuedAt: 'DESC' },
+    });
+    return this.fgRowsToCandidates(rows, '제품 바코드', value, company, plant);
+  }
+
+  private async resolveMaterialCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+    const lotRows = await this.matLotRepo.find({
+      where: [
+        { matUid: value, company, plant },
+        { matUid: Like(`%${value}%`), company, plant },
+        { poNo: value, company, plant },
+        { arrivalNo: value, company, plant },
+      ],
+      take: 200,
+    });
+    const matUids = [...new Set([value, ...lotRows.map((lot) => lot.matUid)].filter(Boolean))];
+    if (matUids.length === 0) return [];
+
+    const fgKeys = new Set<string>();
+    const fgLinks = await this.genealogyRepo.find({
+      where: { childType: 'MAT_LOT', childKey: In(matUids), parentType: 'FG', company, plant },
+      take: 500,
+    });
+    for (const link of fgLinks) fgKeys.add(link.parentKey);
+
+    const sgLinks = await this.genealogyRepo.find({
+      where: { childType: 'MAT_LOT', childKey: In(matUids), parentType: 'SG', company, plant },
+      take: 500,
+    });
+    const sgKeys = [...new Set(sgLinks.map((link) => link.parentKey))];
+    if (sgKeys.length > 0) {
+      const parentFgLinks = await this.genealogyRepo.find({
+        where: { parentType: 'FG', childType: 'SG', childKey: In(sgKeys), company, plant },
+        take: 500,
+      });
+      for (const link of parentFgLinks) fgKeys.add(link.parentKey);
+    }
+
+    const matIssues = await this.matIssueRepo.find({
+      where: { matUid: In(matUids), company, plant },
+      take: 500,
+      order: { issueDate: 'DESC' },
+    });
+    const orderNos = [...new Set(matIssues.map((issue) => issue.orderNo).filter((v): v is string => !!v))];
+    const byOrder = orderNos.length
+      ? await this.fgLabelRepo.find({ where: { orderNo: In(orderNos), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      : [];
+    for (const fg of byOrder) fgKeys.add(fg.fgBarcode);
+
+    const fgs = fgKeys.size
+      ? await this.fgLabelRepo.find({ where: { fgBarcode: In([...fgKeys]), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      : [];
+    return this.fgRowsToCandidates(fgs, '자재 UID/LOT', value, company, plant);
+  }
+
+  private async resolveBoxCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+    const fgs = await this.fgLabelRepo.find({ where: { boxNo: value, company, plant }, take: 500, order: { issuedAt: 'DESC' } });
+    return this.fgRowsToCandidates(fgs, '박스번호', value, company, plant);
+  }
+
+  private async resolvePalletCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+    const boxes = await this.boxMasterRepo.find({ where: { palletNo: value, company, plant }, take: 500 });
+    const boxNos = boxes.map((box) => box.boxNo);
+    const fgs = boxNos.length
+      ? await this.fgLabelRepo.find({ where: { boxNo: In(boxNos), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      : [];
+    return this.fgRowsToCandidates(fgs, '팔레트번호', value, company, plant);
+  }
+
+  private async resolveShipOrderCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+    const directBoxes = await this.boxMasterRepo.find({ where: { shipOrderNo: value, company, plant }, take: 500 });
+    const pallets = await this.palletMasterRepo.find({ where: { shipOrderNo: value, company, plant }, take: 500 });
+    const palletNos = pallets.map((pallet) => pallet.palletNo);
+    const palletBoxes = palletNos.length
+      ? await this.boxMasterRepo.find({ where: { palletNo: In(palletNos), company, plant }, take: 500 })
+      : [];
+    const boxNos = [...new Set([...directBoxes, ...palletBoxes].map((box) => box.boxNo))];
+    const fgs = boxNos.length
+      ? await this.fgLabelRepo.find({ where: { boxNo: In(boxNos), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      : [];
+    return this.fgRowsToCandidates(fgs, '출하지시번호', value, company, plant);
+  }
+
+  private async resolveEquipmentCandidates(
+    equipCode: string,
+    dateFrom: string,
+    dateTo: string,
+    company: string,
+    plant: string,
+  ): Promise<TraceCandidate[]> {
+    if (!equipCode) return [];
+    const prodResults = await this.prodResultRepo.find({
+      where: { equipCode, company, plant },
+      take: 500,
+      order: { startAt: 'DESC' },
+    });
+    const fromTime = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
+    const toTime = dateTo ? new Date(`${dateTo}T23:59:59`).getTime() : Number.POSITIVE_INFINITY;
+    const orderNos = [
+      ...new Set(
+        prodResults
+          .filter((result) => {
+            const at = result.startAt ?? result.createdAt;
+            const time = at instanceof Date ? at.getTime() : 0;
+            return time >= fromTime && time <= toTime;
+          })
+          .map((result) => result.orderNo),
+      ),
+    ];
+    const byOrder = orderNos.length
+      ? await this.fgLabelRepo.find({ where: { orderNo: In(orderNos), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      : [];
+    const direct = await this.fgLabelRepo.find({ where: { equipCode, company, plant }, take: 500, order: { issuedAt: 'DESC' } });
+    return this.fgRowsToCandidates([...byOrder, ...direct], '설비 + 기간', equipCode, company, plant);
+  }
+
+  private async resolveWorkOrderCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+    const fgs = await this.fgLabelRepo.find({ where: { orderNo: value, company, plant }, take: 500, order: { issuedAt: 'DESC' } });
+    return this.fgRowsToCandidates(fgs, '작업지시번호', value, company, plant);
+  }
+
+  private async resolveSgCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+    const parentLinks = await this.genealogyRepo.find({
+      where: { parentType: 'FG', childType: 'SG', childKey: value, company, plant },
+      take: 500,
+    });
+    const fgKeys = [...new Set(parentLinks.map((link) => link.parentKey))];
+    const fgs = fgKeys.length
+      ? await this.fgLabelRepo.find({ where: { fgBarcode: In(fgKeys), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      : [];
+    const fgCandidates = await this.fgRowsToCandidates(fgs, 'SG 바코드', value, company, plant);
+    if (fgCandidates.length > 0) return fgCandidates;
+
+    const sg = await this.sgLabelRepo.findOne({ where: { sgBarcode: value, company, plant } });
+    if (!sg) return [];
+    const part = await this.partMasterRepo.findOne({ where: { itemCode: sg.itemCode, company, plant } });
+    return [{
+      traceKey: sg.sgBarcode,
+      traceType: 'SG',
+      itemCode: sg.itemCode,
+      itemName: part?.itemName ?? null,
+      orderNo: sg.orderNo,
+      status: sg.status,
+      eventDate: this.fmtDate(sg.issuedAt),
+      sourceLabel: 'SG 바코드',
+      sourceValue: value,
+    }];
+  }
+
+  private async fgRowsToCandidates(
+    rows: FgLabel[],
+    sourceLabel: string,
+    sourceValue: string,
+    company: string,
+    plant: string,
+  ): Promise<TraceCandidate[]> {
+    const deduped = new Map<string, FgLabel>();
+    for (const row of rows) if (!deduped.has(row.fgBarcode)) deduped.set(row.fgBarcode, row);
+    const fgs = [...deduped.values()].slice(0, 500);
+    const itemCodes = [...new Set(fgs.map((fg) => fg.itemCode).filter(Boolean))];
+    const parts = itemCodes.length
+      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
+      : [];
+    const partMap = new Map(parts.map((part) => [part.itemCode, part]));
+
+    return fgs.map((fg) => {
+      const part = partMap.get(fg.itemCode);
+      return {
+        traceKey: fg.fgBarcode,
+        traceType: 'FG' as const,
+        itemCode: fg.itemCode,
+        itemName: part?.itemName ?? null,
+        orderNo: fg.orderNo,
+        status: fg.status,
+        eventDate: this.fmtDate(fg.issuedAt),
+        sourceLabel,
+        sourceValue,
+      };
+    });
   }
 
   // ─── Step 3: getBySerial 메인 (제품 섹션 ①②③④⑤) ─────────────────────────

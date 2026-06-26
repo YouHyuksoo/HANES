@@ -28,12 +28,37 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { ProductTraceabilityService } from '../services/product-traceability.service';
+import { TraceSearchMode } from '../dto/product-traceability.dto';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 
 @ApiTags('품질관리 - 추적성 조회')
 @Controller('quality/trace')
 export class TraceController {
   constructor(private readonly traceabilityService: ProductTraceabilityService) {}
+
+  @Get('candidates')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: '추적 시작 후보 조회',
+    description: '제품/자재/박스/팔레트/출하지시/설비/작업지시/SG 기준으로 추적 대상 후보를 조회',
+  })
+  async getCandidates(
+    @Query('mode') mode: TraceSearchMode,
+    @Query('value') value: string | undefined,
+    @Query('equipCode') equipCode: string | undefined,
+    @Query('dateFrom') dateFrom: string | undefined,
+    @Query('dateTo') dateTo: string | undefined,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.traceabilityService.findCandidates(
+      mode,
+      { value, equipCode, dateFrom, dateTo },
+      company,
+      plant,
+    );
+    return ResponseUtil.success(data);
+  }
 
   /**
    * 시리얼번호로 추적성 데이터 조회
