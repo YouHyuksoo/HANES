@@ -6,7 +6,7 @@
  * 초보자 가이드:
  * 1. RESULT_NO가 PK (SeqGenerator로 채번, 예: PR260316-00001)
  * 2. ORDER_NO로 JobOrder(작업지시)를 참조
- * 3. EQUIP_CODE로 EquipMaster, WORKER_NO로 WorkerMaster 참조
+ * 3. EQUIP_CODE로 EquipMaster, WORKER_CODE로 WorkerMaster 참조
  */
 import {
   Entity,
@@ -54,14 +54,14 @@ export class ProdResult {
   ])
   equip: EquipMaster | null;
 
-  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 50, nullable: true })
   workerId: string | null;
 
   @ManyToOne(() => WorkerMaster)
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
-    { name: 'WORKER_NO', referencedColumnName: 'workerCode' },
+    { name: 'WORKER_CODE', referencedColumnName: 'workerCode' },
   ])
   worker: WorkerMaster | null;
 

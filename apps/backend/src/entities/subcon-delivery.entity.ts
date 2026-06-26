@@ -34,7 +34,7 @@ export class SubconDelivery {
   @Column({ name: 'DELIVERY_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   deliveredAt: Date;
 
-  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 255, nullable: true })
   workerId: string | null;
 
   @Column({ name: 'STATUS', length: 50, default: 'DONE' })

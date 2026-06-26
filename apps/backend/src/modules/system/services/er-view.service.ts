@@ -143,7 +143,6 @@ const SEMANTIC_PARENT: Record<string, string> = {
   PROCESS_CD: 'PROCESS_MASTERS',
   EQUIP_CODE: 'EQUIP_MASTERS',
   WORKER_CODE: 'WORKER_MASTERS',
-  WORKER_NO: 'WORKER_MASTERS',
   VENDOR_CODE: 'VENDOR_MASTERS',
   PARTNER_CODE: 'PARTNER_MASTERS',
   WAREHOUSE_CODE: 'WAREHOUSES',
@@ -855,7 +854,6 @@ export class ErViewService {
     const parentCols = new Set((columnsByTable.get(parentTable) ?? []).map((c) => c.columnName));
     if (parentCols.has(columnName)) return columnName;
     if ((columnName === 'PARENT_ITEM_CODE' || columnName === 'CHILD_ITEM_CODE') && parentCols.has('ITEM_CODE')) return 'ITEM_CODE';
-    if (columnName === 'WORKER_NO' && parentCols.has('WORKER_CODE')) return 'WORKER_CODE';
     if (columnName.endsWith('_ID')) {
       const noColumn = `${columnName.slice(0, -3)}_NO`;
       if (parentCols.has(noColumn)) return noColumn;

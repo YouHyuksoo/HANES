@@ -62,7 +62,7 @@ export class WipMatTransaction {
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ type: 'varchar2', name: 'COMPANY', length: 50 })

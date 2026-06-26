@@ -43,7 +43,7 @@ export class SubconReceive {
   @Column({ type: 'varchar2', name: 'INSPECT_RESULT', length: 255, nullable: true })
   inspectResult: string | null;
 
-  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 255, nullable: true })
   workerId: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })

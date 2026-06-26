@@ -82,7 +82,7 @@ describe('ErViewService', () => {
     }));
   });
 
-  it('maps WORKER_NO child columns to WORKER_MASTERS.WORKER_CODE', () => {
+  it('maps WORKER_CODE child columns to WORKER_MASTERS.WORKER_CODE', () => {
     const rels = service.inferRelationshipsForSnapshot({
       tables: [
         { tableName: 'WORKER_MASTERS', tableComment: '작업자', numRows: 10 },
@@ -94,7 +94,7 @@ describe('ErViewService', () => {
         { tableName: 'WORKER_MASTERS', columnName: 'WORKER_CODE', columnId: 3, dataType: 'VARCHAR2', nullable: 'N' },
         { tableName: 'PROD_RESULTS', columnName: 'COMPANY', columnId: 1, dataType: 'VARCHAR2', nullable: 'N' },
         { tableName: 'PROD_RESULTS', columnName: 'PLANT_CD', columnId: 2, dataType: 'VARCHAR2', nullable: 'N' },
-        { tableName: 'PROD_RESULTS', columnName: 'WORKER_NO', columnId: 3, dataType: 'VARCHAR2', nullable: 'Y' },
+        { tableName: 'PROD_RESULTS', columnName: 'WORKER_CODE', columnId: 3, dataType: 'VARCHAR2', nullable: 'Y' },
       ],
       keys: [
         { tableName: 'WORKER_MASTERS', constraintName: 'PK_WORKER_MASTERS', constraintType: 'P', columns: ['COMPANY', 'PLANT_CD', 'WORKER_CODE'] },
@@ -104,7 +104,7 @@ describe('ErViewService', () => {
 
     expect(rels).toContainEqual(expect.objectContaining({
       childTable: 'PROD_RESULTS',
-      childColumns: ['COMPANY', 'PLANT_CD', 'WORKER_NO'],
+      childColumns: ['COMPANY', 'PLANT_CD', 'WORKER_CODE'],
       parentTable: 'WORKER_MASTERS',
       parentColumns: ['COMPANY', 'PLANT_CD', 'WORKER_CODE'],
       parentKeyReady: true,

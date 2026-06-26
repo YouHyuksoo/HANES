@@ -67,7 +67,7 @@ export class StockTransaction {
   @Column({ type: 'varchar2', name: 'CANCEL_REF_ID', length: 50, nullable: true })
   cancelRefId: string | null;
 
-  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })

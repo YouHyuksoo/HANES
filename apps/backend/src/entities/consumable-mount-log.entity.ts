@@ -37,7 +37,7 @@ export class ConsumableMountLog {
   @Column({ name: 'ACTION', length: 20 })
   action: string;
 
-  @Column({ type: 'varchar2', name: 'WORKER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
