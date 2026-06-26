@@ -149,6 +149,7 @@ export class MatStockService {
         vendorName: lot?.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
         manufactureDate: lot?.manufactureDate || null,
         expireDate: lot?.expireDate || null,
+        specialAcceptYn: lot?.specialAcceptYn ?? 'N',
         elapsedDays,
         remainingDays,
       };

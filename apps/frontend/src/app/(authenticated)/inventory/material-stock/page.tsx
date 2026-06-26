@@ -19,6 +19,7 @@ import {
   RefreshCw,
   List,
   Layers,
+  BadgeCheck,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Badge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -44,6 +45,7 @@ interface StockItem {
   expireDate?: string | null;
   elapsedDays?: number | null;
   remainingDays?: number | null;
+  specialAcceptYn?: string | null;
 }
 
 /** 품목별 그룹 합계 행 */
@@ -211,6 +213,23 @@ function MaterialStockPage() {
         cell: ({ getValue }) => (
           <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>
         ),
+      },
+      {
+        accessorKey: "specialAcceptYn",
+        header: t("material.concession.status"),
+        size: 90,
+        meta: { filterType: "multi" as const, align: "center" as const },
+        cell: ({ getValue }) => {
+          const isAccepted = (getValue() as string) === "Y";
+          return isAccepted ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border text-primary border-primary">
+              <BadgeCheck className="w-3.5 h-3.5" />
+              {t("material.concession.accepted")}
+            </span>
+          ) : (
+            <span className="text-text-muted">-</span>
+          );
+        },
       },
       {
         accessorKey: "warehouseName",
