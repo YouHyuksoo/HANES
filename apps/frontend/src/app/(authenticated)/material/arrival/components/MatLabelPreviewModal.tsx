@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Printer } from "lucide-react";
 import { Modal, Button, Select } from "@/components/ui";
-import { printAgentPng } from "@/services/print-agent";
+import { printAgentPng, PrintAgentUnavailableError } from "@/services/print-agent";
 import type { SelectOption } from "@/components/ui";
 import { LabelDesign, createDefaultLabelDesign } from "../../../master/label/types";
 import { LabelDesignRenderer, LabelPrintRenderer } from "../../../master/label/components/LabelDesignRenderer";
@@ -173,8 +173,12 @@ export default function MatLabelPreviewModal({
         }
 
         toast.success(t("material.arrival.label.toastSent", "{{count}}개 입하 라벨을 agent로 전송했습니다.", { count: labelItems.length }), { id: loadingToast });
-      } catch (err) {
-        const message = err instanceof Error && err.message ? err.message : t("material.arrival.label.toastError", "agent 출력 중 오류가 발생했습니다.");
+      } catch (err: unknown) {
+        const message = err instanceof PrintAgentUnavailableError
+          ? t("material.arrival.label.agentUnavailable", "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.")
+          : err instanceof Error && err.message
+            ? err.message
+            : t("material.arrival.label.toastError", "agent 출력 중 오류가 발생했습니다.");
         toast.error(message, { id: loadingToast });
       } finally {
         setPrinting(false);

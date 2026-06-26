@@ -1040,6 +1040,19 @@
     "noConfig": "No SERIAL config registered",
     "defaultConfig": "Default (9600-8-N-1)"
   },
+  "printAgent": {
+    "title": "Label Print Agent",
+    "connected": "Connected",
+    "checking": "Checking…",
+    "disconnected": "Not connected",
+    "openSettings": "Open agent settings",
+    "recheck": "Re-check status",
+    "download": "Download Print Agent",
+    "guide": "To print labels, Print Agent must be running on this PC. Download and run it below, then click [Re-check status].",
+    "step1": "Download the installer",
+    "step2": "Run the downloaded file (stays in tray)",
+    "step3": "Click [Re-check status]"
+  },
   "serialTest": {
     "title": "Serial Port Test",
     "connectedStatus": "Connected",
@@ -2143,6 +2156,7 @@
         "toastPreparing": "Preparing to send {{count}} arrival labels to the agent.",
         "toastSent": "Sent {{count}} arrival labels to the agent.",
         "toastError": "An error occurred during agent printing.",
+        "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again.",
         "errorPrepareScreen": "Failed to prepare the label print view."
       },
       "selectPoDesc": "Select a PO available for arrival.",
@@ -5831,6 +5845,7 @@
       "sendingToAgent": "Preparing to send label {{conUid}} to the agent.",
       "sentToAgent": "Label {{conUid}} was sent to the agent.",
       "agentPrintError": "An error occurred during agent printing.",
+      "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again.",
       "itemsSelected": "{{count}} selected",
       "printingState": "Printing",
       "categoryFilter": "Category Filter",
@@ -7667,7 +7682,8 @@
     "sgLabel": {
       "prepareFailed": "Failed to prepare the SFG label print view.",
       "printSent": "Sent {{count}} SFG label(s) to the printer.",
-      "printError": "An error occurred while printing SFG labels."
+      "printError": "An error occurred while printing SFG labels.",
+      "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again."
     },
     "instruction": {
       "title": "Work Instruction",

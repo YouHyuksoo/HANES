@@ -20,6 +20,9 @@ type Config struct {
 	DefaultPrinter  string   `json:"defaultPrinter"`
 	MaxPayloadBytes int64    `json:"maxPayloadBytes"`
 	LogDir          string   `json:"logDir"`
+	// AutoStart 는 Windows 로그인 시 자동 실행 여부.
+	// nil = 최초 실행(아직 결정 안 됨 → 기본 ON 등록), true/false = 사용자가 정한 값.
+	AutoStart *bool `json:"autoStart,omitempty"`
 }
 
 func Default() Config {

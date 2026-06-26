@@ -10,13 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"hanes/print-agent/internal/autostart"
 	"hanes/print-agent/internal/config"
 	"hanes/print-agent/internal/printer"
 	"hanes/print-agent/internal/server"
 	"hanes/print-agent/internal/tray"
 )
 
-func runAgent(cfg config.Config, srv *server.Server, backend printer.Backend) error {
+func runAgent(cfg config.Config, configPath string, srv *server.Server, backend printer.Backend) error {
 	httpServer := &http.Server{
 		Addr:              cfg.ListenAddress,
 		Handler:           srv,
@@ -49,6 +50,25 @@ func runAgent(cfg config.Config, srv *server.Server, backend printer.Backend) er
 					return "등록된 Windows 프린터가 없습니다."
 				}
 				return "등록된 프린터:\n- " + strings.Join(printers, "\n- ")
+			},
+			AutoStartEnabled: func() bool {
+				ok, _ := autostart.Enabled()
+				return ok
+			},
+			ToggleAutoStart: func() error {
+				on, _ := autostart.Enabled()
+				var err error
+				if on {
+					err = autostart.Disable()
+				} else {
+					err = autostart.Enable()
+				}
+				if err != nil {
+					return err
+				}
+				newState := !on
+				cfg.AutoStart = &newState
+				return config.Save(configPath, cfg)
 			},
 		})
 	}()

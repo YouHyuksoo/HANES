@@ -13,6 +13,10 @@ type Options struct {
 	SettingsURL string
 	StatusText  func() string
 	PrinterText func() string
+	// AutoStartEnabled 는 현재 자동 시작 등록 여부를 반환(메뉴 체크 표시용). nil 이면 메뉴를 숨긴다.
+	AutoStartEnabled func() bool
+	// ToggleAutoStart 는 자동 시작 등록 상태를 토글한다.
+	ToggleAutoStart func() error
 }
 
 const (
@@ -32,16 +36,18 @@ const (
 	imageIcon      = 1
 	lrShared       = 0x00008000
 
-	mfString = 0x00000000
-	mfSep    = 0x00000800
+	mfString  = 0x00000000
+	mfSep     = 0x00000800
+	mfChecked = 0x00000008
 
 	tpmRightButton = 0x0002
 	tpmReturnCmd   = 0x0100
 
-	cmdStatus   = 1001
-	cmdPrinters = 1002
-	cmdSettings = 1003
-	cmdExit     = 1004
+	cmdStatus    = 1001
+	cmdPrinters  = 1002
+	cmdSettings  = 1003
+	cmdExit      = 1004
+	cmdAutoStart = 1005
 )
 
 var (
@@ -241,6 +247,13 @@ func (a *app) showMenu() {
 	appendMenu(menu, mfString, cmdStatus, "상태 보기")
 	appendMenu(menu, mfString, cmdSettings, "설정")
 	appendMenu(menu, mfString, cmdPrinters, "프린터 보기")
+	if a.options.AutoStartEnabled != nil {
+		autoFlags := uintptr(mfString)
+		if a.options.AutoStartEnabled() {
+			autoFlags |= mfChecked
+		}
+		appendMenu(menu, autoFlags, cmdAutoStart, "Windows 시작 시 자동 실행")
+	}
 	appendMenu(menu, mfSep, 0, "")
 	appendMenu(menu, mfString, cmdExit, "종료")
 
@@ -270,6 +283,12 @@ func (a *app) handleCommand(command uint16) {
 		}
 		if err := openURL(a.options.SettingsURL); err != nil {
 			messageBox(a.hwnd, "설정", "설정 화면을 열지 못했습니다.\n"+err.Error())
+		}
+	case cmdAutoStart:
+		if a.options.ToggleAutoStart != nil {
+			if err := a.options.ToggleAutoStart(); err != nil {
+				messageBox(a.hwnd, "자동 실행", "자동 실행 설정을 변경하지 못했습니다.\n"+err.Error())
+			}
 		}
 	case cmdExit:
 		procDestroyWindow.Call(a.hwnd)

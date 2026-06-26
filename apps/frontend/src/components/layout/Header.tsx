@@ -23,6 +23,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LanguageSwitcher from "./LanguageSwitcher";
 import SerialIndicator from "./SerialIndicator";
+import PrintAgentIndicator from "./PrintAgentIndicator";
 import HelpButton from "@/components/help/HelpButton";
 
 interface HeaderProps {
@@ -151,6 +152,9 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
       <div className="flex items-center gap-2">
         {/* 바코드 스캐너 연결 상태 */}
         <SerialIndicator />
+
+        {/* 라벨 프린트 에이전트 연결/다운로드 */}
+        <PrintAgentIndicator />
 
         {/* 알림 (스케줄러 알림 벨) — 폴링 부하/오류 리포트 노이즈로 임시 비활성화. 재활성화 시 아래 주석 해제 */}
         {/* <NotificationBell /> */}

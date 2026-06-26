@@ -18,7 +18,7 @@ import {
 import { Card, CardContent, Button, Input, Select, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { api } from "@/services/api";
-import { printAgentPng } from "@/services/print-agent";
+import { printAgentPng, PrintAgentUnavailableError } from "@/services/print-agent";
 import { LabelableMaster, useConLabelColumns } from "./components/ConLabelColumns";
 import { useConLabelIssue } from "./components/useConLabelIssue";
 import ConLabelDetailPanel, { InstanceItem } from "./components/ConLabelDetailPanel";
@@ -478,8 +478,12 @@ function ConsumableLabelPage() {
           type: "success",
           message: sentMsg,
         });
-      } catch (err) {
-        const message = err instanceof Error && err.message ? err.message : t("consumables.label.agentPrintError", "agent 출력 중 오류가 발생했습니다.");
+      } catch (err: unknown) {
+        const message = err instanceof PrintAgentUnavailableError
+          ? t("consumables.label.agentUnavailable", "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.")
+          : err instanceof Error && err.message
+            ? err.message
+            : t("consumables.label.agentPrintError", "agent 출력 중 오류가 발생했습니다.");
         setPrinting(false);
         setActivePrintItems([]);
         toast.error(message, { id: loadingToast });

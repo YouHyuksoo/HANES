@@ -1040,6 +1040,19 @@
     "noConfig": "Chưa đăng ký cấu hình SERIAL",
     "defaultConfig": "Mặc định (9600-8-N-1)"
   },
+  "printAgent": {
+    "title": "Agent in nhãn",
+    "connected": "Đã kết nối",
+    "checking": "Đang kiểm tra…",
+    "disconnected": "Chưa kết nối",
+    "openSettings": "Mở cài đặt agent",
+    "recheck": "Kiểm tra lại trạng thái",
+    "download": "Tải Print Agent",
+    "guide": "Để in nhãn, Print Agent phải đang chạy trên máy này. Hãy tải và chạy bên dưới, rồi nhấn [Kiểm tra lại trạng thái].",
+    "step1": "Tải tệp cài đặt",
+    "step2": "Chạy tệp đã tải (thường trú ở khay hệ thống)",
+    "step3": "Nhấn [Kiểm tra lại trạng thái]"
+  },
   "serialTest": {
     "title": "Kiểm tra cổng Serial",
     "connectedStatus": "Đã kết nối",
@@ -2143,6 +2156,7 @@
         "toastPreparing": "Đang chuẩn bị gửi {{count}} nhãn nhập kho đến agent.",
         "toastSent": "Đã gửi {{count}} nhãn nhập kho đến agent.",
         "toastError": "Đã xảy ra lỗi khi in qua agent.",
+        "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại.",
         "errorPrepareScreen": "Không thể chuẩn bị màn hình in nhãn."
       },
       "selectPoDesc": "Chọn PO có thể nhập hàng.",
@@ -5831,6 +5845,7 @@
       "sendingToAgent": "Đang chuẩn bị gửi nhãn {{conUid}} đến agent.",
       "sentToAgent": "Đã gửi nhãn {{conUid}} đến agent.",
       "agentPrintError": "Đã xảy ra lỗi khi in qua agent.",
+      "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại.",
       "itemsSelected": "Đã chọn {{count}}",
       "printingState": "Đang in",
       "categoryFilter": "Bộ lọc danh mục",
@@ -7667,7 +7682,8 @@
     "sgLabel": {
       "prepareFailed": "Không thể chuẩn bị màn hình in nhãn SFG.",
       "printSent": "Đã gửi {{count}} nhãn SFG đến máy in.",
-      "printError": "Đã xảy ra lỗi khi in nhãn SFG."
+      "printError": "Đã xảy ra lỗi khi in nhãn SFG.",
+      "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại."
     },
     "instruction": {
       "title": "Hướng dẫn sản xuất",

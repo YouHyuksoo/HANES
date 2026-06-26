@@ -44,6 +44,7 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { GuardModule } from './common/modules/guard.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AiPageToolsModule } from './modules/ai-page-tools/ai-page-tools.module';
+import { PrintAgentModule } from './modules/print-agent/print-agent.module';
 
 @Module({
   imports: [
@@ -130,6 +131,9 @@ import { AiPageToolsModule } from './modules/ai-page-tools/ai-page-tools.module'
 
     // 스케줄러 (정기 작업 실행 + 로그 + 알림)
     SchedulerModule,
+
+    // Print Agent 실행파일 배포 (info/download)
+    PrintAgentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

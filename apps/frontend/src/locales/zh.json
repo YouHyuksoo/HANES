@@ -1040,6 +1040,19 @@
     "noConfig": "未注册SERIAL配置",
     "defaultConfig": "默认值 (9600-8-N-1)"
   },
+  "printAgent": {
+    "title": "标签打印代理",
+    "connected": "已连接",
+    "checking": "检查中…",
+    "disconnected": "未连接",
+    "openSettings": "打开代理设置",
+    "recheck": "重新检查状态",
+    "download": "下载 Print Agent",
+    "guide": "要打印标签，本机需运行 Print Agent。请在下方下载并运行后，点击[重新检查状态]。",
+    "step1": "下载安装文件",
+    "step2": "运行下载的文件（驻留于托盘）",
+    "step3": "点击[重新检查状态]"
+  },
   "serialTest": {
     "title": "串口通信测试",
     "connectedStatus": "已连接",
@@ -2143,6 +2156,7 @@
         "toastPreparing": "正在准备向 agent 发送 {{count}} 个入库标签。",
         "toastSent": "已向 agent 发送 {{count}} 个入库标签。",
         "toastError": "agent 打印时发生错误。",
+        "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。",
         "errorPrepareScreen": "无法准备标签打印画面。"
       },
       "selectPoDesc": "请选择可到货的PO。",
@@ -5831,6 +5845,7 @@
       "sendingToAgent": "正在准备将标签 {{conUid}} 发送到 agent。",
       "sentToAgent": "标签 {{conUid}} 已发送到 agent。",
       "agentPrintError": "agent 打印过程中发生错误。",
+      "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。",
       "itemsSelected": "已选择 {{count}} 件",
       "printingState": "打印中",
       "categoryFilter": "类别筛选",
@@ -7667,7 +7682,8 @@
     "sgLabel": {
       "prepareFailed": "无法准备 SFG 标签打印画面。",
       "printSent": "已将 {{count}} 个 SFG 标签发送到打印机。",
-      "printError": "打印 SFG 标签时发生错误。"
+      "printError": "打印 SFG 标签时发生错误。",
+      "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。"
     },
     "instruction": {
       "title": "作业指导书",

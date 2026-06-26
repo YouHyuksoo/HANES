@@ -5,10 +5,12 @@ package tray
 import "errors"
 
 type Options struct {
-	Tooltip     string
-	SettingsURL string
-	StatusText  func() string
-	PrinterText func() string
+	Tooltip          string
+	SettingsURL      string
+	StatusText       func() string
+	PrinterText      func() string
+	AutoStartEnabled func() bool
+	ToggleAutoStart  func() error
 }
 
 func Run(Options) error {

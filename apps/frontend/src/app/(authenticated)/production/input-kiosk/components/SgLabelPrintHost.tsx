@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import api from "@/services/api";
 import { printLabelNodesViaAgent } from "@/services/label-print";
+import { PrintAgentUnavailableError } from "@/services/print-agent";
 import {
   LabelDesign,
   createDefaultLabelDesign,
@@ -112,9 +113,11 @@ const SgLabelPrintHost = forwardRef<SgLabelPrintHandle>(function SgLabelPrintHos
         );
         toast.success(t("kiosk.sgLabel.printSent", "SG 라벨 {{count}}건을 프린터로 전송했습니다.", { count: printItems.length }));
       } catch (error: unknown) {
-        const message = error instanceof Error && error.message
-          ? error.message
-          : t("kiosk.sgLabel.printError", "SG 라벨 출력 중 오류가 발생했습니다.");
+        const message = error instanceof PrintAgentUnavailableError
+          ? t("kiosk.sgLabel.agentUnavailable", "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.")
+          : error instanceof Error && error.message
+            ? error.message
+            : t("kiosk.sgLabel.printError", "SG 라벨 출력 중 오류가 발생했습니다.");
         toast.error(message);
       } finally {
         setItems([]);
