@@ -106,7 +106,7 @@ export default function EquipHeader({
             className={`flex h-11 w-52 shrink-0 items-center gap-2 rounded-lg border-2 px-3 text-left transition-colors ${
               selectedEquip
                 ? 'border-primary/40 bg-primary/5 hover:bg-primary/10'
-                : 'border-dashed border-border hover:border-primary'
+                : 'border-dashed border-border hover:border-primary animate-pulse'
             }`}
           >
             <Cpu className="h-5 w-5 shrink-0 text-primary" />
@@ -136,23 +136,21 @@ export default function EquipHeader({
             <div className="flex h-11 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3 min-w-0">
               <ClipboardList className="h-4 w-4 shrink-0 text-primary" />
               {selectedJobOrder ? (
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-mono text-sm font-bold text-black dark:text-white">{selectedJobOrder.orderNo}</span>
-                    <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-                      {selectedJobOrder.processType}
-                    </span>
-                    <button onClick={onOpenJobOrder}
-                      className="shrink-0 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90">
-                      {t('common.change')}
-                    </button>
-                  </div>
-                  <p className="mt-0.5 truncate text-xs text-black/60 dark:text-white/60">{selectedJobOrder.itemName}</p>
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="shrink-0 font-mono text-sm font-bold text-black dark:text-white">{selectedJobOrder.orderNo}</span>
+                  <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
+                    {selectedJobOrder.processType}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-black/60 dark:text-white/60">{selectedJobOrder.itemName}</span>
+                  <button onClick={onOpenJobOrder}
+                    className="shrink-0 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90">
+                    {t('common.change')}
+                  </button>
                 </div>
               ) : (
                 <button onClick={() => selectedEquip && onOpenJobOrder()} disabled={!selectedEquip}
                   title={selectedEquip ? t('kiosk.header.selectJobOrder') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
-                  className="rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-black/60 dark:text-white/60">
+                  className={`rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-black/60 dark:text-white/60 ${selectedEquip ? 'animate-pulse' : ''}`}>
                   {t('kiosk.header.selectJobOrder')}
                 </button>
               )}
@@ -172,7 +170,7 @@ export default function EquipHeader({
               ))}
               <button onClick={onOpenWorker} disabled={!selectedEquip}
                 title={selectedEquip ? t('kiosk.header.addWorker') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
-                className="inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-black/60 dark:text-white/60">
+                className={`inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-black/60 dark:text-white/60 ${selectedEquip && selectedWorkers.length === 0 ? 'animate-pulse' : ''}`}>
                 <UserPlus className="h-3 w-3" />
                 {t('kiosk.header.addWorker')}
               </button>

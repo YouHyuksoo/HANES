@@ -1857,6 +1857,8 @@
       "enabled": "Hiện",
       "templateList": "Mẫu đã lưu",
       "saveNew": "Lưu mới",
+      "newDesign": "Thiết kế mới",
+      "newDesignHint": "Bắt đầu nhãn mới với thiết kế trống cho danh mục hiện tại",
       "unsavedTitle": "Thay đổi chưa lưu",
       "unsavedMessage": "Nhãn đang chỉnh sửa chưa được lưu. Tải mẫu khác sẽ mất các thay đổi. Tiếp tục?",
       "discardAndLoad": "Bỏ qua & Tải",
@@ -3902,7 +3904,7 @@
     },
     "line": "Chuyền",
     "inputKiosk": {
-      "title": "Nhập kết quả (Kiosk)",
+      "title": "Nhập kết quả (Gia công)",
       "description": "Nhập kết quả sản xuất tại kiosk thiết bị hiện trường"
     },
     "specSetup": {

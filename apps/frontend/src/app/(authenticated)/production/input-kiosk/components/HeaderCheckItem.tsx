@@ -74,7 +74,7 @@ export default function HeaderCheckItem({
         aria-describedby={reasonId}
         aria-label={buttonTitle}
         title={buttonTitle}
-        className="shrink-0 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-black/40"
+        className={`shrink-0 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-black/40 ${!done && !isDisabled ? 'animate-pulse' : ''}`}
       >
         {t('common.input', '입력')}
       </button>

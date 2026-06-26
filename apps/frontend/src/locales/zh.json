@@ -1857,6 +1857,8 @@
       "enabled": "显示",
       "templateList": "已保存模板",
       "saveNew": "新建保存",
+      "newDesign": "新建设计",
+      "newDesignHint": "以当前类别的空白设计开始新建标签",
       "unsavedTitle": "未保存的更改",
       "unsavedMessage": "当前正在编辑的标签尚未保存。加载其他模板将丢失更改。是否继续？",
       "discardAndLoad": "放弃并加载",

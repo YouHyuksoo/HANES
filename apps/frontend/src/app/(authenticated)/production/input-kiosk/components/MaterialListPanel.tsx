@@ -201,7 +201,8 @@ export default function MaterialListPanel({
                 'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
                 interlock.materialScanDone
                   ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-900/20 dark:text-teal-300'
-                  : 'border-border text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed',
+                  : 'border-primary bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed',
+                !interlock.materialScanDone && selectedJobOrder ? 'animate-pulse' : '',
               ].join(' ')}
             >
               <Scan className="h-3 w-3" />
@@ -306,7 +307,8 @@ export default function MaterialListPanel({
                 'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
                 interlock.consumableScanDone
                   ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-900/20 dark:text-teal-300'
-                  : 'border-border text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed',
+                  : 'border-primary bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed',
+                !interlock.consumableScanDone && consumableScanDisabledReasons.length === 0 ? 'animate-pulse' : '',
               ].join(' ')}
             >
               <Scan className="h-3 w-3" />

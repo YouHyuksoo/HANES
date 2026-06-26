@@ -325,7 +325,7 @@
     "production.order": "작업지시관리",
     "production.result": "생산실적조회",
     "production.progress": "작업지시현황조회",
-    "production.inputKiosk": "실적입력(키오스크)",
+    "production.inputKiosk": "실적입력(가공)",
     "production.inputInspect": "실적입력(단순검사)",
     "production.inputEquip": "실적입력(검사장비)",
     "production.sampleInspect": "샘플검사이력조회",
@@ -2271,6 +2271,8 @@
       "enabled": "표시",
       "templateList": "저장된 템플릿",
       "saveNew": "새로 저장",
+      "newDesign": "새 디자인",
+      "newDesignHint": "현재 카테고리의 빈 디자인으로 새 작업을 시작합니다",
       "unsavedTitle": "저장하지 않은 변경사항",
       "unsavedMessage": "현재 작업 중인 라벨이 저장되지 않았습니다. 다른 템플릿을 불러오면 변경사항이 사라집니다. 계속할까요?",
       "discardAndLoad": "변경 무시하고 불러오기",
@@ -4025,7 +4027,7 @@
       "shiftFilter": "교대"
     },
     "inputKiosk": {
-      "title": "실적입력 (키오스크)",
+      "title": "실적입력 (가공)",
       "description": "현장 설비 키오스크에서 생산실적을 입력합니다"
     },
     "inputManual": {

@@ -1857,6 +1857,8 @@
       "enabled": "Show",
       "templateList": "Saved Templates",
       "saveNew": "Save New",
+      "newDesign": "New Design",
+      "newDesignHint": "Start a new label with a blank design for the current category",
       "unsavedTitle": "Unsaved Changes",
       "unsavedMessage": "The label you are working on is not saved. Loading another template will discard your changes. Continue?",
       "discardAndLoad": "Discard & Load",
