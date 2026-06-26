@@ -25,7 +25,6 @@ import {
   AutoInspectDto,
   ContinuityInspectDto,
   CreateEquipProtocolDto,
-  PreIssueDto,
   ReInspectDto,
   UpdateEquipProtocolDto,
   VoidLabelDto,
@@ -273,18 +272,6 @@ export class ContinuityInspectController {
   async deleteProtocol(@Param('protocolId') protocolId: string, @Company() company: string, @Plant() plant: string) {
     await this.continuityInspectService.deleteProtocol(protocolId, company, plant);
     return ResponseUtil.success(null, 'Deleted');
-  }
-
-  @Post('pre-issue')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Pre-issue FG barcodes' })
-  async preIssue(
-    @Body() dto: PreIssueDto,
-    @Company() company: string,
-    @Plant() plant: string,
-  ) {
-    const data = await this.continuityInspectService.preIssue(dto, company, plant);
-    return ResponseUtil.success(data, `${data.issued} issued`);
   }
 
   @Get('pending/:orderNo')

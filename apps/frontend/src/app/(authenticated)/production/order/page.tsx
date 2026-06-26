@@ -17,10 +17,10 @@ import toast from "react-hot-toast";
 import {
   Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown,
   Edit2, Trash2, Play, CheckCircle2, PauseCircle, PlayCircle, XCircle,
-  Barcode, Printer, Wrench,
+  Printer, Wrench,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
-import { ComCodeSelect, EquipSelect, QtyInput } from "@/components/shared";
+import { ComCodeSelect, EquipSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -28,7 +28,6 @@ import api from "@/services/api";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
 import { useAiChatStore } from "@/stores/aiChatStore";
-import { useSysConfigStore } from "@/stores/sysConfigStore";
 import JobOrderFormPanel from "./components/JobOrderFormPanel";
 import type { JobOrderFormData } from "./components/JobOrderFormPanel";
 import JobOrderPrintModal from "./components/JobOrderPrintModal";
@@ -103,12 +102,6 @@ export default function JobOrderPage() {
   // 작업지시서 출력
   const [printOrderNo, setPrintOrderNo] = useState<string | null>(null);
 
-  // 사전발행 모달
-  const issueTiming = useSysConfigStore((s) => s.getConfig("FG_BARCODE_ISSUE_TIMING")) ?? "ON_INSPECT";
-  const isPreIssue = issueTiming === "PRE_ISSUE";
-  const [preIssueOpen, setPreIssueOpen] = useState(false);
-  const [preIssueQty, setPreIssueQty] = useState(0);
-  const [preIssueLoading, setPreIssueLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -215,28 +208,6 @@ export default function JobOrderPage() {
 
   const getConfirmVariant = (action: ActionType): "danger" | "default" => {
     return action === "cancel" ? "danger" : "default";
-  };
-
-  /** 사전발행 모달 열기 */
-  const handleOpenPreIssue = () => {
-    if (!selectedRow) return;
-    setPreIssueQty(selectedRow.planQty);
-    setPreIssueOpen(true);
-  };
-
-  /** 사전발행 실행 */
-  const handlePreIssue = async () => {
-    if (!selectedRow || preIssueQty <= 0) return;
-    setPreIssueLoading(true);
-    try {
-      await api.post("/quality/continuity-inspect/pre-issue", {
-        orderNo: selectedRow.orderNo,
-        qty: preIssueQty,
-      });
-      toast.success(t("production.order.preIssueSuccess", { count: preIssueQty }));
-      setPreIssueOpen(false);
-    } catch { /* api 인터셉터에서 처리 */ }
-    finally { setPreIssueLoading(false); }
   };
 
   // ===== 패널 로직 =====
@@ -492,11 +463,6 @@ export default function JobOrderPage() {
             className={canCancel ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30" : ""}>
             <XCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionCancel")}
           </Button>
-          {isPreIssue && (
-            <Button size="sm" variant="secondary" disabled={!selectedRow} onClick={handleOpenPreIssue}>
-              <Barcode className="w-3.5 h-3.5 mr-1" />{t("production.order.preIssueBtn")}
-            </Button>
-          )}
         </div>
 
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
@@ -578,32 +544,6 @@ export default function JobOrderPage() {
         variant={pendingAction ? getConfirmVariant(pendingAction) : "default"}
       />
 
-      {/* 바코드 사전발행 모달 */}
-      <Modal isOpen={preIssueOpen} onClose={() => setPreIssueOpen(false)}
-        title={t("production.order.preIssueBtn")} size="sm"
-        footer={
-          <>
-            <Button size="sm" variant="ghost" onClick={() => setPreIssueOpen(false)} disabled={preIssueLoading}>
-              {t("common.cancel")}
-            </Button>
-            <Button size="sm" variant="primary" onClick={handlePreIssue}
-              isLoading={preIssueLoading} disabled={preIssueQty <= 0}>
-              {t("common.confirm")}
-            </Button>
-          </>
-        }>
-        <div className="space-y-3">
-          <p className="text-sm text-text-muted">
-            {selectedRow?.orderNo} - {selectedRow?.itemCode}
-          </p>
-          <label className="block text-sm font-medium text-text">
-            {t("production.order.preIssueQty")}
-          </label>
-          <QtyInput value={preIssueQty}
-            onChange={(n) => setPreIssueQty(n)}
-            fullWidth />
-        </div>
-      </Modal>
     </div>
   );
 }

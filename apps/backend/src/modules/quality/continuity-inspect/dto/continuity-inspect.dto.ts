@@ -142,22 +142,6 @@ export class AutoInspectDto {
 }
 
 /**
- * FG 바코드 사전발행 DTO
- */
-export class PreIssueDto {
-  @ApiProperty({ description: '작업지시번호' })
-  @IsString()
-  orderNo: string;
-
-  @ApiPropertyOptional({ description: '발행 수량 (미지정 시 planQty-기발행수)' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  qty?: number;
-}
-
-/**
  * 재검사 DTO
  */
 export class ReInspectDto {

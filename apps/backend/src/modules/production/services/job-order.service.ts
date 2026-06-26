@@ -562,25 +562,7 @@ export class JobOrderService {
       updateData,
     );
 
-    // FG 바코드 사전 일괄 발행 (PRE_ISSUE 모드)
-    const fgTiming = await this.sysConfigService.getValue('FG_BARCODE_ISSUE_TIMING');
-    if (fgTiming === 'PRE_ISSUE') {
-      const fgJobOrder = await this.findById(id, company, plant);
-      for (let i = 0; i < fgJobOrder.planQty; i++) {
-        const fgBarcode = await this.numbering.nextFgBarcode();
-        await this.fgLabelRepo.save({
-          fgBarcode,
-          itemCode: fgJobOrder.itemCode,
-          orderNo: fgJobOrder.orderNo,
-          status: 'PENDING',
-          inspectPassYn: null,
-          company: fgJobOrder.company,
-          plant: fgJobOrder.plant,
-        });
-      }
-      this.logger.log(`PRE_ISSUE: ${fgJobOrder.orderNo} — ${fgJobOrder.planQty}건 바코드 발행`);
-    }
-
+    // FG 바코드는 조립(서브공정) 키팅 공정에서 발행한다(라우팅 ISSUE_FG_LABEL_YN). START 시 사전발행하지 않는다.
     return this.findOneWithSelect(id, company, plant);
   }
 

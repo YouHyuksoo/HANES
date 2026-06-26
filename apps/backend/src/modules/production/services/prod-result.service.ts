@@ -521,39 +521,7 @@ export class ProdResultService {
         );
       }
 
-      // FG 바코드 사전 발행 (ON_PRODUCTION 모드)
-      const fgTiming = await this.sysConfigService.getValue('FG_BARCODE_ISSUE_TIMING');
-      if (fgTiming === 'ON_PRODUCTION') {
-        const fgJobOrder = await queryRunner.manager.findOne(JobOrder, {
-          where: { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-        });
-        if (fgJobOrder) {
-          this.assertTenantConsistency('생산실적 FG 라벨 작업지시', {
-            expected: { company, plant },
-            sources: [{ label: 'fgJobOrder', company: fgJobOrder.company, plant: fgJobOrder.plant }],
-          });
-          const fgBarcode = await this.numbering.nextFgBarcode(queryRunner);
-          await queryRunner.manager.save(FgLabel, {
-            fgBarcode,
-            itemCode: fgJobOrder.itemCode,
-            orderNo: dto.orderNo,
-            status: 'PENDING',
-            inspectPassYn: null,
-            company: fgJobOrder.company,
-            plant: fgJobOrder.plant,
-          });
-          // prdUid에 FG 바코드 연결
-          await queryRunner.manager.update(
-            ProdResult,
-            {
-              resultNo: savedResultNo,
-              ...(company ? { company } : {}),
-              ...(plant ? { plant } : {}),
-            },
-            { prdUid: fgBarcode },
-          );
-        }
-      }
+      // FG 바코드는 조립(서브공정) 키팅 공정에서 발행한다(라우팅 ISSUE_FG_LABEL_YN). 실적 등록 시 사전발행하지 않는다.
 
       // 불량 상세 로그 저장 (불량입력 모달에서 등록된 유형별 불량)
       // 같은 occurAt에 seq 1..N으로 복합 PK 충돌을 방지하고, defectQty는 위에서 이미 산정했으므로 재증가하지 않는다.
@@ -1437,30 +1405,18 @@ export class ProdResultService {
     if (!jobOrderWithPart?.itemCode) return;
     if (jobOrderWithPart.part?.itemType === 'FINISHED') return;
 
-    // 가드 3: 발행 공정 판정 (플래그 우선, 없으면 최초 공정 폴백)
+    // 가드 3: 발행 공정 판정 — 현재 공정의 ISSUE_SG_LABEL_YN='Y'면 발행, 아니면 발행하지 않는다(폴백 없음).
     const routingCode = jobOrderWithPart.routingCode;
     if (!routingCode) return;
-    const tenantWhere = {
-      routingCode,
-      ...(company ? { company } : {}),
-      ...(plant ? { plant } : {}),
-    };
-
-    const flaggedRows = await qr.manager.find(RoutingProcess, {
-      where: { ...tenantWhere, issueSgLabelYn: 'Y' },
+    const currentStep = await qr.manager.findOne(RoutingProcess, {
+      where: {
+        routingCode,
+        processCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
-    let shouldIssue: boolean;
-    if (flaggedRows.length > 0) {
-      shouldIssue = flaggedRows.some((r) => r.processCode === processCode);
-    } else {
-      // 폴백: 최초 공정(seq ASC 첫 행)과 일치하면 발행
-      const firstStep = await qr.manager.findOne(RoutingProcess, {
-        where: tenantWhere,
-        order: { seq: 'ASC' },
-      });
-      shouldIssue = !!firstStep && firstStep.processCode === processCode;
-    }
-    if (!shouldIssue) return;
+    if (currentStep?.issueSgLabelYn !== 'Y') return;
 
     // 가드 4: 멱등 — 같은 실적(resultNo)으로 이미 발행됐으면 중단.
     // (배치마다 실적이 다르므로 resultNo 단위로 dedup → 다중 배치 작업지시도 배치별 묶음 발행됨)

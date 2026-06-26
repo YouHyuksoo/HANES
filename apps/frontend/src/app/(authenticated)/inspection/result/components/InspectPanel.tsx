@@ -6,11 +6,9 @@
  *
  * 초보자 가이드:
  * 1. PASS/FAIL 큰 버튼으로 1개씩 검사 등록
- * 2. PASS -> 즉시 API 호출 -> FG_BARCODE 생성, FAIL -> FailModal 열림
- * 3. 하단 DataGrid에 FG 바코드 발행 이력 표시
- * 4. FG_BARCODE_ISSUE_TIMING 설정에 따라 모드 분기:
- *    - ON_INSPECT: 기존 방식 (검사 시 바코드 자동 생성)
- *    - ON_PRODUCTION / PRE_ISSUE: 바코드 스캔 후 검사 등록
+ * 2. 제품(FG) 라벨은 조립(서브공정) 키팅 공정에서 발행되므로, 검사 단계는 발행된 ISSUED 라벨을 스캔만 한다.
+ * 3. PASS -> 제품 라벨 + 회로라벨 스캔 후 API 호출(판정 갱신), FAIL -> FailModal 열림
+ * 4. 하단 DataGrid에 FG 바코드 검사 이력 표시
  */
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,7 +20,6 @@ import {
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
-import { useSysConfigStore } from "@/stores/sysConfigStore";
 import type { JobOrderRow, InspectHistoryRow } from "../types";
 import FailModal from "./FailModal";
 
@@ -51,9 +48,8 @@ export default function InspectPanel({
   const [lastBarcode, setLastBarcode] = useState<string | null>(null);
   const [failModalOpen, setFailModalOpen] = useState(false);
 
-  /** FG 바코드 발행 타이밍 설정 */
-  const issueTiming = useSysConfigStore((s) => s.getConfig("FG_BARCODE_ISSUE_TIMING")) ?? "ON_INSPECT";
-  const isScanMode = issueTiming !== "ON_INSPECT";
+  /** 검사는 조립(서브공정) 키팅에서 발행된 FG 라벨을 스캔해 판정한다. (항상 스캔 모드) */
+  const isScanMode = true;
 
   /** 바코드 스캔 모드 상태 */
   const [scannedBarcode, setScannedBarcode] = useState("");
@@ -72,7 +68,7 @@ export default function InspectPanel({
     finally { setLoading(false); }
   }, [order.orderNo, inspectType]);
 
-  /** PENDING 바코드 목록 조회 (스캔 모드) */
+  /** 검사 대기 FG 라벨 목록 조회 (조립 발행 ISSUED + 미검사) */
   const fetchPending = useCallback(async () => {
     if (!isScanMode) return;
     try {
@@ -89,7 +85,7 @@ export default function InspectPanel({
     setCircuitLabel("");
   }, [refresh, fetchPending]);
 
-  /** PASS 검사 등록 (ON_INSPECT 모드) */
+  /** PASS 검사 등록 (제품 라벨 스캔 → 판정 갱신) */
   const handlePass = useCallback(async () => {
     setInspecting(true);
     try {
@@ -208,7 +204,7 @@ export default function InspectPanel({
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-auto">
-      {/* 바코드 스캔 입력 (ON_PRODUCTION / PRE_ISSUE 모드) */}
+      {/* 제품 라벨(FG) 스캔 입력 — 조립 발행 라벨을 스캔해 판정 */}
       {isScanMode && (
         <Card padding="sm" className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
           <CardContent>
@@ -246,7 +242,7 @@ export default function InspectPanel({
         </Card>
       )}
 
-      {/* PENDING 바코드 목록 (스캔 모드) */}
+      {/* 검사 대기 FG 라벨 목록 (조립 발행 ISSUED + 미검사) */}
       {isScanMode && pendingBarcodes.length > 0 && (
         <Card padding="sm"><CardContent>
           <div className="flex items-center justify-between mb-2">
