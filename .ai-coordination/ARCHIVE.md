@@ -8,6 +8,17 @@ Format:
 - T-000 | YYYY-MM-DD | owner | short result | evidence: JOURNAL heading or commit
 ```
 
+- T-LABEL-AUTOLOAD | 2026-06-26 | claude | /master/label 진입 시 저장 라벨 미로드(무조건 신규) 수정 + 소스전환 싱크. 자동로드를 카테고리별 1회로(저장있으면 IS_DEFAULT 우선 로드, 없으면 onNew 기본디자인). 무한루프 근본원인=자동로드가 fetchList 완료 전 stale templates(이전 카테고리) 로드→category 진동, useLabelTemplates에 fetchedCategory 추적 추가해 fetchedCategory===category 가드. 저장라벨 7건 IS_DEFAULT=1. '새 디자인' 버튼+i18n 4파일. 브라우저 검증(소모품→제품포장 전환 시 box_label 자동로드, 캔버스/목록/필드 싱크, 루프없음). tsc 0 | evidence: TemplateManager.tsx, useLabelTemplates.ts, page.tsx
+- T-N91-PROCESS-CODE | 2026-06-26 | claude | N91 라우팅 근사매핑 정확화. PROCESS_MASTERS 신규 4종(GCRMP 일반압착/CONAS 커넥터체결/EXTAS 외장재조립/FINSP 최종검사) 추가 후 라우팅 공정 교체(TMCRP→GCRMP, PROTC→CONAS, MASSY→EXTAS, AINSP→FINSP). 17공정 마스터 정합 | evidence: 2026-06-26_add_process_codes_n91.sql
+- T-N91H00-ROUTING | 2026-06-26 | claude | N91H00-X9800 라우팅 3그룹(완제품 7공정/C1 5/C2 5) BOM+회신공정 기준 생성. 공정별 투입자재 33건 전부 BOM 자식 정합. SG/FG 라벨·파괴검사 플래그 설정 | evidence: JOURNAL 2026-06-26 Claude routing
+- T-AQL-STD-I001 | 2026-06-26 | claude | resolve-iqc-items 404(AQL-I-0.01 부재) 해결. AQL_STANDARDS+SAMPLING_RULES 15구간 ISO 2859-1 보통검사 추가(sample125/Ac0/Re1). 6TPP210190 IQC-TEST 항목 I/0.01 참조 | evidence: JOURNAL 2026-06-26 Claude aql
+- T-ITEM-ATTR-FILL | 2026-06-26 | claude | 품목마스터 26건 제품유형(성격별 매핑)·차종(OV)·모델구분(HV)·리비전(A) NVL 채움(기존값 보존) | evidence: JOURNAL 2026-06-26 Claude item-attr
+- T-N91H00-BOM | 2026-06-26 | claude | N91H00-X9800 BOM 신규 생성(엑셀 회신+Usage 기준). 완제품←C1/C2(전선~일반압착)+조립자재 33행. 누락 투입자재 3종(LB04201250/LB08802520/RIBON-7) 품목마스터 추가. 전개 leaf 21종 전부 Usage 총량 정합 검증 | evidence: JOURNAL 2026-06-26 Claude N91 BOM
+
+- T-PURGE-HNS02-KS | 2026-06-26 | claude | HNS02 BOM 트리(반제품+전용원자재 18) + KS_ 접두 품목 70개 전 데이터 삭제(JSHANES). 트랜잭션 3547행(31테이블) + 기준정보 231행(품목/BOM/라우팅/작업지도서) + IQC/관리계획/하네스도면 잔존 정리. 품목한정(N91H00 23개 보존), FK 전수 복구, _BAK 백업 보존. dry-run 승인 후 commit | evidence: JOURNAL 2026-06-26 Claude purge
+
+- T-KS-WORK-INSTRUCTION-SEED | 2026-06-26 | claude | input-kiosk 작업지도서 KS 라인 누락 보정. KS_L1_ACOMP_N91H00-X9800(완제품 4공정)·KS_L2_SHLDCABLE(반제품 8공정) WORK_INSTRUCTIONS 12건 시드(SVG+CONTENT, JSHANES MERGE 멱등). 활성 작업지시 19건 전부 WI 매칭 OK, 누락 0 | evidence: JOURNAL 2026-06-26 Claude
+
 - T-MANUAL-INDEX-PAGE | 2026-06-25 | codex | `docs/manuals/index.html` 추가, 7개 매뉴얼 그룹/104개 화면을 검색 가능한 메인 목차로 연결 | evidence: JOURNAL 2026-06-25 11:28 Codex
 
 - T-REMAINING-HELP-MANUALS | 2026-06-24 | codex | 품질/검사/제품수불/출하 도움말 user 36개·operator 30개 작성, manifest 보강, 공식 runner 3002 재시도 후 4개 HTML/result 모두 `missingHelp=[]`, `missingCapture=[]` | evidence: JOURNAL 2026-06-24 21:37 Codex
