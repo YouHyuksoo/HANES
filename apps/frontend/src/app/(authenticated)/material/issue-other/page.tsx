@@ -30,9 +30,9 @@ export default function IssueOtherPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('scan');
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div>
+      <div className="flex-shrink-0">
         <h1 className="text-xl font-bold text-text flex items-center gap-2">
           <PackageMinus className="w-7 h-7 text-primary" />
           {t('material.issueOther.title')}
@@ -41,7 +41,7 @@ export default function IssueOtherPage() {
       </div>
 
       {/* 탭 네비게이션 */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border flex-shrink-0">
         {TAB_CONFIG.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -64,8 +64,10 @@ export default function IssueOtherPage() {
       </div>
 
       {/* 탭 콘텐츠 */}
-      {activeTab === 'scan' && <BarcodeScanTab excludeIssueTypes={EXCLUDED_ISSUE_TYPES} />}
-      {activeTab === 'history' && <IssueHistoryTab />}
+      <div className="flex-1 min-h-0 overflow-auto">
+        {activeTab === 'scan' && <BarcodeScanTab excludeIssueTypes={EXCLUDED_ISSUE_TYPES} />}
+        {activeTab === 'history' && <IssueHistoryTab />}
+      </div>
     </div>
   );
 }
