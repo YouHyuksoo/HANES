@@ -19,6 +19,7 @@ export interface DayScheduleItem {
   seq: number;
   itemName: string;
   criteria: string | null;
+  imageUrl: string | null;
   cycle: string;
   result: string | null;
   remark: string;

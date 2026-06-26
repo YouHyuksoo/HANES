@@ -146,6 +146,7 @@ export default function InspectCalendarPage() {
           seq: idx + 1,
           itemName: String(item.itemName ?? ""),
           criteria: (item.criteria as string | null) ?? null,
+          imageUrl: (item.imageUrl as string | null) ?? null,
           cycle: String(item.cycle ?? ""),
           result: null,
           remark: "",

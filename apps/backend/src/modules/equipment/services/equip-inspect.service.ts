@@ -827,6 +827,7 @@ export class EquipInspectService {
           itemCode: item.itemCode,
           itemName: item.itemName,
           criteria: item.criteria,
+          imageUrl: item.imageUrl,
           cycle: item.cycle || 'DAILY',
           result: detailItem?.result || null,
           remark: detailItem?.remark || '',
@@ -853,7 +854,7 @@ export class EquipInspectService {
     inspectType: string,
     company?: string,
     plant?: string,
-  ): Promise<Array<{ equipCode: string; itemCode: string; inspectType: string; sortSeq: number | null; itemName: string | null; criteria: string | null; cycle: string | null }>> {
+  ): Promise<Array<{ equipCode: string; itemCode: string; inspectType: string; sortSeq: number | null; itemName: string | null; criteria: string | null; imageUrl: string | null; cycle: string | null }>> {
     const qb = this.inspectItemRepository
       .createQueryBuilder('pool')
       .leftJoin(
@@ -867,6 +868,7 @@ export class EquipInspectService {
       .addSelect('pool.sortSeq', 'sortSeq')
       .addSelect('master.itemName', 'itemName')
       .addSelect('master.criteria', 'criteria')
+      .addSelect('master.imageUrl', 'imageUrl')
       .addSelect('master.cycle', 'cycle')
       .where('pool.inspectType = :type', { type: inspectType })
       .andWhere('pool.useYn = :yn', { yn: 'Y' })

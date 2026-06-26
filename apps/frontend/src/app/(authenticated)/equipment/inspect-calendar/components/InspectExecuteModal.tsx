@@ -14,6 +14,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal, Button, Input, Select } from "@/components/ui";
+import { InspectItemImage } from "@/components/shared";
 import { CheckCircle, XCircle } from "lucide-react";
 import type { DayScheduleEquip, DayScheduleItem } from "./DaySchedulePanel";
 import { useWorkerOptions } from "@/hooks/useMasterOptions";
@@ -159,7 +160,7 @@ export default function InspectExecuteModal({
       isOpen={isOpen}
       onClose={onClose}
       title={`${equip.equipCode} ${equip.equipName} ${t(inspectTitleKey)} ${isEditMode ? `(${t("common.edit")})` : ""}`}
-      size="xl"
+      size="2xl"
     >
       <div className="space-y-4">
         {/* Header info */}
@@ -197,6 +198,9 @@ export default function InspectExecuteModal({
                 <th className="px-3 py-2 text-left text-xs font-medium text-text-muted w-40">
                   {t("equipment.inspectCalendar.criteria")}
                 </th>
+                <th className="px-3 py-2 text-center text-xs font-medium text-text-muted w-20">
+                  {t("master.equipInspectItem.image", "사진")}
+                </th>
                 <th className="px-3 py-2 text-center text-xs font-medium text-text-muted w-32">
                   {t("equipment.inspectCalendar.itemResult")}
                 </th>
@@ -212,6 +216,15 @@ export default function InspectExecuteModal({
                   <td className="px-3 py-2 text-text font-medium">{item.itemName}</td>
                   <td className="px-3 py-2 text-text-muted text-xs">
                     {equip.items[idx]?.criteria || "-"}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center justify-center">
+                      <InspectItemImage
+                        imageUrl={equip.items[idx]?.imageUrl}
+                        alt={item.itemName}
+                        size={48}
+                      />
+                    </div>
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-center gap-2">
