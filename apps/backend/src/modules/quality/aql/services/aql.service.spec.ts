@@ -17,6 +17,8 @@ function createRepoMock() {
 describe('AqlService', () => {
   let standardRepo: ReturnType<typeof createRepoMock>;
   let ruleRepo: ReturnType<typeof createRepoMock>;
+  let sampleRepo: ReturnType<typeof createRepoMock>;
+  let acceptanceRepo: ReturnType<typeof createRepoMock>;
   let policyRepo: ReturnType<typeof createRepoMock>;
   let partRepo: ReturnType<typeof createRepoMock>;
   let partnerRepo: ReturnType<typeof createRepoMock>;
@@ -29,6 +31,8 @@ describe('AqlService', () => {
   beforeEach(() => {
     standardRepo = createRepoMock();
     ruleRepo = createRepoMock();
+    sampleRepo = createRepoMock();
+    acceptanceRepo = createRepoMock();
     policyRepo = createRepoMock();
     partRepo = createRepoMock();
     partnerRepo = createRepoMock();
@@ -36,9 +40,35 @@ describe('AqlService', () => {
     modeHistoryRepo = createRepoMock();
     defectCodeRepo = createRepoMock();
     specItemRepo = createRepoMock();
+    ruleRepo.find.mockResolvedValue([{ lotQtyFrom: 501, lotQtyTo: 1200, codeLetter: 'J' }]);
+    sampleRepo.findOne.mockImplementation(async ({ where }) => {
+      const sampleByLetter: Record<string, number> = {
+        A: 2, B: 3, C: 5, D: 8, E: 13, F: 20, G: 32, H: 50,
+        J: 80, K: 125, L: 200, M: 315, N: 500, P: 800, Q: 1250, R: 2000,
+      };
+      return { codeLetter: where.codeLetter, sampleSize: sampleByLetter[where.codeLetter] ?? 80 };
+    });
+    acceptanceRepo.findOne.mockImplementation(async ({ where }) => {
+      const aqlValue = Number(where.aqlValue);
+      const codeLetter = String(where.codeLetter ?? 'J');
+      const key = `${codeLetter}:${aqlValue}`;
+      const values: Record<string, [number, number, string]> = {
+        'H:1': [1, 2, 'H'],
+        'J:1': [2, 3, 'J'],
+        'J:2.5': [5, 6, 'J'],
+        'J:4': [7, 8, 'J'],
+        'F:1': [0, 1, 'F'],
+        'F:2.5': [1, 2, 'F'],
+        'A:0.015': [0, 1, 'J'],
+      };
+      const [acceptQty, rejectQty, sampleCodeLetter] = values[key] ?? [0, 1, codeLetter];
+      return { codeLetter, aqlValue, sampleCodeLetter, acceptQty, rejectQty };
+    });
     service = new AqlService(
       standardRepo as any,
       ruleRepo as any,
+      sampleRepo as any,
+      acceptanceRepo as any,
       policyRepo as any,
       partRepo as any,
       partnerRepo as any,
@@ -65,6 +95,26 @@ describe('AqlService', () => {
     }, '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
   });
 
+  it('allows ISO sampling plans whose standard sample size is greater than the LOT upper bound', async () => {
+    standardRepo.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-S-1-0.015' });
+    ruleRepo.find.mockResolvedValue([{ lotQtyFrom: 2, lotQtyTo: 8, sampleSize: 80, acceptQty: 0, rejectQty: 1 }]);
+
+    await expect(service.create({
+      aqlCode: 'AQL-S-1-0.015',
+      aqlName: 'AQL S-1 0.015',
+      inspectionLevel: 'S-1',
+      aqlValue: 0.015,
+      useYn: 'Y',
+      rules: [
+        { lotQtyFrom: 2, lotQtyTo: 8, sampleSize: 80, acceptQty: 0, rejectQty: 1 },
+      ],
+    }, '40', '1000', 'tester')).resolves.toEqual(
+      expect.objectContaining({ aqlCode: 'AQL-S-1-0.015' }),
+    );
+  });
+
   it('resolves a lot quantity to the matching rule', async () => {
     standardRepo.findOne.mockResolvedValue({
       company: '40',
@@ -82,9 +132,35 @@ describe('AqlService', () => {
       expect.objectContaining({
         aqlCode: 'AQL-1.0',
         lotQty: 25,
+        codeLetter: 'C',
         sampleSize: 5,
-        acceptQty: 1,
-        rejectQty: 2,
+        acceptQty: 0,
+        rejectQty: 1,
+      }),
+    );
+  });
+
+  it('resolves standard sample size and actual inspection quantity separately', async () => {
+    standardRepo.findOne.mockResolvedValue({
+      company: '40',
+      plant: '1000',
+      aqlCode: 'AQL-S-1-0.015',
+      aqlName: 'AQL S-1 0.015',
+      useYn: 'Y',
+    });
+    ruleRepo.find.mockResolvedValue([
+      { lotQtyFrom: 2, lotQtyTo: 8, codeLetter: 'A', sampleSize: 80, acceptQty: 0, rejectQty: 1 },
+    ]);
+
+    await expect(service.resolveByAqlCode('AQL-S-1-0.015', 3, '40', '1000')).resolves.toEqual(
+      expect.objectContaining({
+        lotQty: 3,
+        codeLetter: 'A',
+        standardSampleSize: 80,
+        actualInspectQty: 3,
+        sampleSize: 80,
+        acceptQty: 0,
+        rejectQty: 1,
       }),
     );
   });
@@ -351,7 +427,7 @@ describe('AqlService', () => {
 
     expect(result.result).toBe('FAIL');
     expect(result.defectMajor).toBe(2);
-    expect(result.itemResults?.[0].acceptQty).toBe(1);
+    expect(result.itemResults?.[0].acceptQty).toBe(0);
   });
 
   it('falls back to part-level policy when no inspection item has a defect grade', async () => {

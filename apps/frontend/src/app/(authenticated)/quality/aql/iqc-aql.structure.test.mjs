@@ -8,6 +8,7 @@ const modulePath = 'apps/backend/src/modules/quality/aql/aql.module.ts';
 const policyEntityPath = 'apps/backend/src/entities/iqc-aql-policy.entity.ts';
 const migrationPath = 'apps/backend/src/migrations/2026-06-21_iqc_aql_policy_code.sql';
 const helpPath = 'apps/frontend/src/app/(authenticated)/quality/aql/components/AqlFieldHelp.tsx';
+const isoMigrationPath = 'apps/backend/src/migrations/2026-06-26_iqc_aql_iso2859_redesign.sql';
 
 test('AQL page uses the real AQL API and registration fields', () => {
   const page = fs.readFileSync(pagePath, 'utf8');
@@ -20,11 +21,10 @@ test('AQL page uses the real AQL API and registration fields', () => {
   assert.match(page, /aqlName/);
   assert.match(page, /inspectionLevel/);
   assert.match(page, /aqlValue/);
-  assert.match(page, /lotQtyFrom/);
-  assert.match(page, /lotQtyTo/);
-  assert.match(page, /sampleSize/);
-  assert.match(page, /acceptQty/);
-  assert.match(page, /rejectQty/);
+  assert.match(page, /api\.get\(["']\/quality\/aql\/iso["']/);
+  assert.match(page, /codeLetterRules/);
+  assert.match(page, /codeLetterSamples/);
+  assert.match(page, /acceptanceRules/);
 });
 
 test('AQL policy reference API exists for item master selectors', () => {
@@ -64,20 +64,49 @@ test('AQL page manages IQC AQL policies, not only AQL standards', () => {
   assert.match(page, /IQC_AQL_POLICIES/);
 });
 
-test('AQL policy management is the first top-left work area', () => {
+test('AQL page manages ISO 2859 tables in page tabs', () => {
   const page = fs.readFileSync(pagePath, 'utf8');
+  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const module = fs.readFileSync(modulePath, 'utf8');
+  const migration = fs.readFileSync(isoMigrationPath, 'utf8');
 
-  const layoutStart = page.indexOf('<div className="grid grid-cols-12 gap-4 flex-1 min-h-0">');
-  const policySection = page.indexOf('AQL 정책관리', layoutStart);
-  const standardList = page.indexOf('exportFileName="AQL 기준관리"', layoutStart);
-  const standardForm = page.indexOf('AQL 기준 등록', layoutStart);
+  assert.match(page, /type AqlTab = "policies" \| "standards" \| "codeLetters" \| "samplingPlan"/);
+  assert.match(page, /data-aql-tabs/);
+  assert.match(page, /quality\.aql\.policySection/);
+  assert.match(page, /quality\.aql\.standardTab/);
+  assert.match(page, /quality\.aql\.codeLetterTab/);
+  assert.match(page, /quality\.aql\.samplingPlanTab/);
+  assert.match(page, /activeTab === "codeLetters" \|\| activeTab === "samplingPlan"/);
+  assert.match(page, /fetchIsoTables\(\);/);
+  assert.match(page, /quality\.aql\.isoLoadFailed/);
+  assert.match(page, /Sample Size Code Letters/);
+  assert.match(page, /Single Sampling Plans for Normal Inspection/);
+  assert.match(page, /data-iso-code-letter-matrix/);
+  assert.match(page, /data-iso-sampling-plan-matrix/);
+  assert.match(page, /General Inspection Levels/);
+  assert.match(page, /Special Inspection Levels/);
+  assert.match(page, /Acceptable Quality Levels \(Normal Inspection\)/);
+  assert.match(page, /SAMPLE SIZE CODE LETTERS/);
+  assert.match(page, /SINGLE SAMPLING PLANS FOR NORMAL INSPECTION/);
+  assert.match(page, /AQL_CODE_LETTER_RULES/);
+  assert.match(page, /AQL_CODE_LETTER_SAMPLES/);
+  assert.match(page, /AQL_ACCEPTANCE_RULES/);
+  assert.match(page, /<IsoCodeLetterMatrix rules=\{codeLetterRules\} \/>/);
+  assert.match(page, /<IsoSamplingPlanMatrix samples=\{codeLetterSamples\} acceptanceRules=\{acceptanceRules\} \/>/);
+  assert.doesNotMatch(page, /columns=\{codeLetterColumns\}/);
+  assert.doesNotMatch(page, /columns=\{acceptanceColumns\}/);
+  assert.match(page, /isoRuleSection/);
+  assert.doesNotMatch(page, /quality\.aql\.addRule/);
+  assert.doesNotMatch(page, /LOT 수량별 판정기준을 추가하세요/);
 
-  assert.notEqual(layoutStart, -1);
-  assert.notEqual(policySection, -1);
-  assert.notEqual(standardList, -1);
-  assert.notEqual(standardForm, -1);
-  assert.ok(policySection < standardList, 'AQL policy management should render before the AQL standard list');
-  assert.ok(policySection < standardForm, 'AQL policy management should render before the AQL standard form');
+  assert.match(controller, /@Get\('iso'\)/);
+  assert.match(controller, /findIsoTables/);
+  assert.match(module, /AqlCodeLetterRule/);
+  assert.match(module, /AqlCodeLetterSample/);
+  assert.match(module, /AqlAcceptanceRule/);
+  assert.match(migration, /CREATE TABLE AQL_CODE_LETTER_RULES/);
+  assert.match(migration, /CREATE TABLE AQL_CODE_LETTER_SAMPLES/);
+  assert.match(migration, /CREATE TABLE AQL_ACCEPTANCE_RULES/);
 });
 
 test('AQL help text explains the policy-based model', () => {
@@ -93,33 +122,27 @@ test('AQL help text explains the policy-based model', () => {
     assert.match(help, new RegExp(`${field}: \\{`));
   }
 
-  assert.match(page, /<HelpField field="policyCode" label="정책 코드" required>/);
-  assert.match(page, /<HelpField field="policyName" label="정책명" required>/);
-  assert.match(page, /<HelpField field="policyInspectionLevel" label="검사수준">/);
-  assert.match(page, /<HelpField field="policyMajorAqlCode" label="Major AQL">/);
-  assert.match(page, /<HelpField field="policyMinorAqlCode" label="Minor AQL">/);
-  assert.match(page, /<HelpHeader field="policyCode" label="정책 코드" \/>/);
+  assert.match(page, /<HelpField field="policyCode" label=\{t\("quality\.aql\.policyCode", "정책 코드"\)\} required>/);
+  assert.match(page, /<HelpField field="policyName" label=\{t\("quality\.aql\.policyName", "정책명"\)\} required>/);
+  assert.match(page, /<HelpField field="policyInspectionLevel" label=\{t\("quality\.aql\.inspectionLevel", "검사수준"\)\}>/);
+  assert.match(page, /<HelpField field="policyMajorAqlCode" label=\{t\("quality\.aql\.majorAql", "Major AQL"\)\}>/);
+  assert.match(page, /<HelpField field="policyMinorAqlCode" label=\{t\("quality\.aql\.minorAql", "Minor AQL"\)\}>/);
 });
 
-test('AQL policy panel fits without its own vertical scroll', () => {
+test('AQL work areas are switched by page tabs', () => {
   const page = fs.readFileSync(pagePath, 'utf8');
-  const policyCardStart = page.indexOf('<Card className="col-span-5 min-h-0 overflow-hidden" padding="none">');
-  const standardCardStart = page.indexOf('<Card className="col-span-7 min-h-0 overflow-hidden" padding="none">');
 
-  assert.notEqual(policyCardStart, -1);
-  assert.notEqual(standardCardStart, -1);
-
-  const policyCard = page.slice(policyCardStart, standardCardStart);
-  assert.match(policyCard, /<CardContent className="h-full p-3 overflow-hidden flex flex-col">/);
-  assert.match(policyCard, /<div className="grid grid-cols-3 gap-2 flex-shrink-0">/);
-  assert.match(policyCard, /<div className="mt-3 flex-1 min-h-0">/);
-  assert.doesNotMatch(policyCard, /overflow-auto/);
-  assert.doesNotMatch(policyCard, /h-\[calc\(100%-224px\)\]/);
+  assert.match(page, /activeTab === "policies" \? "col-span-12 min-h-0 overflow-hidden" : "hidden"/);
+  assert.match(page, /activeTab === "standards" \? "col-span-12 min-h-0 overflow-hidden" : "hidden"/);
+  assert.match(page, /activeTab === "codeLetters" \? "col-span-12 min-h-0 overflow-hidden" : "hidden"/);
+  assert.match(page, /activeTab === "samplingPlan" \? "col-span-12 min-h-0 overflow-hidden" : "hidden"/);
+  assert.match(page, /activeTab === "standards" &&/);
+  assert.match(page, /activeTab === "codeLetters" \|\| activeTab === "samplingPlan"/);
 });
 
 test('AQL standard toolbar add button is explicit', () => {
   const page = fs.readFileSync(pagePath, 'utf8');
 
-  assert.match(page, /<Plus className="w-4 h-4" \/>AQL 기준 추가/);
+  assert.match(page, /<Plus className="w-4 h-4" \/>\{t\("quality\.aql\.addStandard", "AQL 기준 추가"\)\}/);
   assert.doesNotMatch(page, /<Plus className="w-4 h-4" \/>\{t\("common\.add"\)\}/);
 });

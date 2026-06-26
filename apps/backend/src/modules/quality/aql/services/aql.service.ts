@@ -1,8 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { AqlAcceptanceRule } from '../../../../entities/aql-acceptance-rule.entity';
+import { AqlCodeLetterRule } from '../../../../entities/aql-code-letter-rule.entity';
+import { AqlCodeLetterSample } from '../../../../entities/aql-code-letter-sample.entity';
 import { AqlStandard } from '../../../../entities/aql-standard.entity';
-import { AqlSamplingRule } from '../../../../entities/aql-sampling-rule.entity';
 import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
 import { IqcAqlPolicy } from '../../../../entities/iqc-aql-policy.entity';
 import { IqcLog } from '../../../../entities/iqc-log.entity';
@@ -34,7 +36,10 @@ type AqlSeverityRule = {
   aqlCode: string;
   aqlValue: number;
   codeLetter: string | null;
+  sampleCodeLetter?: string | null;
   sampleSize: number;
+  standardSampleSize?: number;
+  actualInspectQty?: number;
   acceptQty: number;
   rejectQty: number;
 };
@@ -79,8 +84,12 @@ export class AqlService {
   constructor(
     @InjectRepository(AqlStandard)
     private readonly standardRepo: Repository<AqlStandard>,
-    @InjectRepository(AqlSamplingRule)
-    private readonly ruleRepo: Repository<AqlSamplingRule>,
+    @InjectRepository(AqlCodeLetterRule)
+    private readonly codeLetterRuleRepo: Repository<AqlCodeLetterRule>,
+    @InjectRepository(AqlCodeLetterSample)
+    private readonly codeLetterSampleRepo: Repository<AqlCodeLetterSample>,
+    @InjectRepository(AqlAcceptanceRule)
+    private readonly acceptanceRuleRepo: Repository<AqlAcceptanceRule>,
     @InjectRepository(IqcAqlPolicy)
     private readonly policyRepo: Repository<IqcAqlPolicy>,
     @InjectRepository(PartMaster)
@@ -121,11 +130,25 @@ export class AqlService {
 
   async findOne(aqlCode: string, company?: string, plant?: string) {
     const standard = await this.findStandardOrThrow(aqlCode, company, plant);
-    const rules = await this.ruleRepo.find({
-      where: { aqlCode: standard.aqlCode, company: standard.company, plant: standard.plant },
-      order: { lotQtyFrom: 'ASC' },
-    });
-    return { ...standard, rules };
+    return { ...standard, rules: [] };
+  }
+
+  async findIsoTables(company: string, plant: string) {
+    const [codeLetterRules, samples, acceptanceRules] = await Promise.all([
+      this.codeLetterRuleRepo.find({
+        where: { company, plant },
+        order: { inspectionLevel: 'ASC', lotQtyFrom: 'ASC' },
+      }),
+      this.codeLetterSampleRepo.find({
+        where: { company, plant },
+        order: { sortOrder: 'ASC' },
+      }),
+      this.acceptanceRuleRepo.find({
+        where: { company, plant, inspectionMode: 'NORMAL' },
+        order: { codeLetter: 'ASC', aqlValue: 'ASC' },
+      }),
+    ]);
+    return { codeLetterRules, samples, acceptanceRules };
   }
 
   async findPolicies(query: { useYn?: string }, company?: string, plant?: string) {
@@ -257,23 +280,20 @@ export class AqlService {
     const standard = await this.findStandardOrThrow(aqlCode, company, plant);
     if (standard.useYn !== 'Y') throw new BadRequestException('사용 중지된 AQL 기준입니다.');
 
-    const rules = await this.ruleRepo.find({
-      where: { company: standard.company, plant: standard.plant, aqlCode },
-      order: { lotQtyFrom: 'ASC' },
+    const rule = await this.resolveIsoRule({
+      aqlCode,
+      aqlValue: this.resolveAqlValue(standard.aqlValue, aqlCode),
+      inspectionLevel: standard.inspectionLevel ?? 'II',
+      inspectionMode: 'NORMAL',
+      lotQty,
+      company: standard.company,
+      plant: standard.plant,
     });
-    const matched = rules.find((rule) => rule.lotQtyFrom <= lotQty && lotQty <= rule.lotQtyTo);
-    if (!matched) throw new NotFoundException('LOT 수량에 해당하는 AQL sampling rule이 없습니다.');
-
     return {
       aqlCode,
       aqlName: standard.aqlName,
       lotQty,
-      lotQtyFrom: matched.lotQtyFrom,
-      lotQtyTo: matched.lotQtyTo,
-      codeLetter: matched.codeLetter ?? this.deriveCodeLetter(matched.lotQtyFrom),
-      sampleSize: matched.sampleSize,
-      acceptQty: matched.acceptQty,
-      rejectQty: matched.rejectQty,
+      ...rule,
     };
   }
 
@@ -468,8 +488,8 @@ export class AqlService {
         }
       } else if (aql != null) {
         rule = await this.resolveSeverityRule(level, inspectionMode, aql, lotQty, input.company, input.plant);
-        sampleQty = Math.max(sampleQty, rule.sampleSize);
-        requiredQty = inspectedQty = rule.sampleSize;
+        sampleQty = Math.max(sampleQty, rule.actualInspectQty ?? rule.sampleSize);
+        requiredQty = inspectedQty = rule.actualInspectQty ?? rule.sampleSize;
         if (grade === 'MAJOR' && !majorRule) majorRule = rule;
         if (grade === 'MINOR' && !minorRule) minorRule = rule;
         if (defectCount > rule.acceptQty) {
@@ -714,21 +734,15 @@ export class AqlService {
     const standard = await this.findStandardOrThrow(aqlCodeParam, company, plant);
     if (standard.useYn !== 'Y') throw new BadRequestException('사용 중지된 AQL 기준입니다.');
 
-    const rules = await this.ruleRepo.find({
-      where: { company: standard.company, plant: standard.plant, aqlCode: standard.aqlCode },
-      order: { lotQtyFrom: 'ASC' },
-    });
-    const matched = rules.find((rule) => rule.lotQtyFrom <= lotQty && lotQty <= rule.lotQtyTo);
-    if (!matched) throw new NotFoundException('LOT 수량에 해당하는 AQL sampling rule이 없습니다.');
-
-    return {
+    return this.resolveIsoRule({
       aqlCode: standard.aqlCode,
-      aqlValue: standard.aqlValue ?? 0,
-      codeLetter: matched.codeLetter ?? this.deriveCodeLetter(matched.lotQtyFrom),
-      sampleSize: matched.sampleSize,
-      acceptQty: matched.acceptQty,
-      rejectQty: matched.rejectQty,
-    };
+      aqlValue: this.resolveAqlValue(standard.aqlValue, standard.aqlCode),
+      inspectionLevel: standard.inspectionLevel ?? 'II',
+      inspectionMode: 'NORMAL',
+      lotQty,
+      company: standard.company,
+      plant: standard.plant,
+    });
   }
 
   private async resolveSeverityRule(
@@ -747,21 +761,93 @@ export class AqlService {
     if (!standard) throw new NotFoundException(`AQL 기준을 찾을 수 없습니다: ${inspectionLevel} / ${aqlValue}`);
     if (standard.useYn !== 'Y') throw new BadRequestException('사용 중지된 AQL 기준입니다.');
 
-    const rules = await this.ruleRepo.find({
-      where: { company: standard.company, plant: standard.plant, aqlCode: standard.aqlCode },
-      order: { lotQtyFrom: 'ASC' },
-    });
-    const matched = rules.find((rule) => rule.lotQtyFrom <= lotQty && lotQty <= rule.lotQtyTo);
-    if (!matched) throw new NotFoundException('LOT 수량에 해당하는 AQL sampling rule이 없습니다.');
-
-    return {
+    return this.resolveIsoRule({
       aqlCode: standard.aqlCode,
       aqlValue,
-      codeLetter: matched.codeLetter ?? this.deriveCodeLetter(matched.lotQtyFrom),
-      sampleSize: matched.sampleSize,
-      acceptQty: matched.acceptQty,
-      rejectQty: matched.rejectQty,
+      inspectionLevel,
+      inspectionMode,
+      lotQty,
+      company: standard.company,
+      plant: standard.plant,
+    });
+  }
+
+  private async resolveIsoRule(input: {
+    aqlCode: string;
+    aqlValue: number;
+    inspectionLevel: string;
+    inspectionMode: string;
+    lotQty: number;
+    company?: string;
+    plant?: string;
+  }): Promise<AqlSeverityRule> {
+    const lotQty = Math.max(1, Number(input.lotQty) || 1);
+    const inspectionLevel = this.normalizeInspectionLevel(input.inspectionLevel);
+    const inspectionMode = this.normalizeInspectionMode(input.inspectionMode);
+    const rules = await this.codeLetterRuleRepo.find({
+      where: {
+        inspectionLevel,
+        ...(input.company ? { company: input.company } : {}),
+        ...(input.plant ? { plant: input.plant } : {}),
+      },
+      order: { lotQtyFrom: 'ASC' },
+    });
+    const codeRule = rules.find((rule) => rule.lotQtyFrom <= lotQty && lotQty <= rule.lotQtyTo);
+    if (!codeRule) throw new NotFoundException('LOT 수량과 검사수준에 해당하는 AQL Code Letter가 없습니다.');
+
+    const codeLetter = codeRule.codeLetter
+      ?? this.deriveCodeLetterForLevel(inspectionLevel, lotQty)
+      ?? this.deriveCodeLetter(codeRule.lotQtyFrom);
+    if (!codeLetter) throw new NotFoundException('LOT 수량과 검사수준에 해당하는 AQL Code Letter가 없습니다.');
+
+    const acceptance = await this.findAcceptanceRule(
+      codeLetter,
+      input.aqlValue,
+      inspectionMode,
+      input.company,
+      input.plant,
+    );
+    if (!acceptance) {
+      throw new NotFoundException(`AQL 판정표를 찾을 수 없습니다: ${codeRule.codeLetter} / ${input.aqlValue}`);
+    }
+
+    const sample = await this.codeLetterSampleRepo.findOne({
+      where: {
+        codeLetter: acceptance.sampleCodeLetter,
+        ...(input.company ? { company: input.company } : {}),
+        ...(input.plant ? { plant: input.plant } : {}),
+      },
+    });
+    if (!sample) throw new NotFoundException(`AQL 샘플수량 표를 찾을 수 없습니다: ${acceptance.sampleCodeLetter}`);
+
+    return {
+      aqlCode: input.aqlCode,
+      aqlValue: input.aqlValue,
+      codeLetter,
+      sampleCodeLetter: acceptance.sampleCodeLetter,
+      sampleSize: sample.sampleSize,
+      standardSampleSize: sample.sampleSize,
+      actualInspectQty: Math.min(sample.sampleSize, lotQty),
+      acceptQty: acceptance.acceptQty,
+      rejectQty: acceptance.rejectQty,
     };
+  }
+
+  private async findAcceptanceRule(
+    codeLetter: string,
+    aqlValue: number,
+    inspectionMode: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const baseWhere = {
+      codeLetter,
+      aqlValue,
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+    return await this.acceptanceRuleRepo.findOne({ where: { ...baseWhere, inspectionMode } })
+      ?? await this.acceptanceRuleRepo.findOne({ where: { ...baseWhere, inspectionMode: 'NORMAL' } });
   }
 
   private async findFirstStandard(aqlCodes: string[], company?: string, plant?: string) {
@@ -820,9 +906,42 @@ export class AqlService {
     return levelIiLetters.find(([from]) => from === Number(lotQtyFrom))?.[1] ?? null;
   }
 
+  private deriveCodeLetterForLevel(inspectionLevel: string, lotQty: number) {
+    const rows: Array<[number, number, Record<string, string>]> = [
+      [2, 8, { I: 'A', II: 'A', III: 'B', S1: 'A', S2: 'A', S3: 'A', S4: 'A' }],
+      [9, 15, { I: 'A', II: 'B', III: 'C', S1: 'A', S2: 'A', S3: 'A', S4: 'A' }],
+      [16, 25, { I: 'B', II: 'C', III: 'D', S1: 'A', S2: 'A', S3: 'B', S4: 'B' }],
+      [26, 50, { I: 'C', II: 'D', III: 'E', S1: 'A', S2: 'B', S3: 'B', S4: 'C' }],
+      [51, 90, { I: 'C', II: 'E', III: 'F', S1: 'B', S2: 'B', S3: 'C', S4: 'C' }],
+      [91, 150, { I: 'D', II: 'F', III: 'G', S1: 'B', S2: 'B', S3: 'C', S4: 'D' }],
+      [151, 280, { I: 'E', II: 'G', III: 'H', S1: 'B', S2: 'C', S3: 'D', S4: 'E' }],
+      [281, 500, { I: 'F', II: 'H', III: 'J', S1: 'B', S2: 'C', S3: 'D', S4: 'E' }],
+      [501, 1200, { I: 'G', II: 'J', III: 'K', S1: 'C', S2: 'C', S3: 'E', S4: 'F' }],
+      [1201, 3200, { I: 'H', II: 'K', III: 'L', S1: 'C', S2: 'D', S3: 'E', S4: 'G' }],
+      [3201, 10000, { I: 'J', II: 'L', III: 'M', S1: 'C', S2: 'D', S3: 'F', S4: 'G' }],
+      [10001, 35000, { I: 'K', II: 'M', III: 'N', S1: 'C', S2: 'D', S3: 'F', S4: 'H' }],
+      [35001, 150000, { I: 'L', II: 'N', III: 'P', S1: 'D', S2: 'E', S3: 'G', S4: 'J' }],
+      [150001, 500000, { I: 'M', II: 'P', III: 'Q', S1: 'D', S2: 'E', S3: 'G', S4: 'J' }],
+      [500001, 999999999, { I: 'N', II: 'Q', III: 'R', S1: 'D', S2: 'E', S3: 'H', S4: 'K' }],
+    ];
+    return rows.find(([from, to]) => from <= lotQty && lotQty <= to)?.[2]?.[inspectionLevel] ?? null;
+  }
+
   private normalizeInspectionMode(value?: string | null) {
     const mode = String(value || 'NORMAL').trim().toUpperCase();
     return ['TIGHTENED', 'NORMAL', 'REDUCED'].includes(mode) ? mode : 'NORMAL';
+  }
+
+  private normalizeInspectionLevel(value?: string | null) {
+    return String(value || 'II').trim().toUpperCase().replace(/^S-/, 'S');
+  }
+
+  private resolveAqlValue(value: number | null | undefined, aqlCode: string) {
+    if (value != null && Number.isFinite(Number(value))) return Number(value);
+    const tail = this.normalizeCode(aqlCode).match(/-([0-9]+(?:\.[0-9]+)?)$/);
+    if (tail) return Number(tail[1]);
+    const match = this.normalizeCode(aqlCode).match(/([0-9]+(?:\.[0-9]+)?)/);
+    return match ? Number(match[1]) : 0;
   }
 
   private toNonNegativeInt(value: unknown) {
@@ -878,25 +997,11 @@ export class AqlService {
   }
 
   private async replaceRules(aqlCode: string, rules: AqlRuleDto[], company: string, plant: string, userId: string) {
-    await this.ruleRepo.delete({ company, plant, aqlCode });
-    if (rules.length === 0) return;
-
-    const entities = rules
-      .sort((a, b) => a.lotQtyFrom - b.lotQtyFrom)
-      .map((rule, index) => this.ruleRepo.create({
-        company,
-        plant,
-        aqlCode,
-        lotQtyFrom: rule.lotQtyFrom,
-        lotQtyTo: rule.lotQtyTo,
-        sampleSize: rule.sampleSize,
-        acceptQty: rule.acceptQty,
-        rejectQty: rule.rejectQty,
-        sortOrder: rule.sortOrder ?? index + 1,
-        createdBy: userId,
-        updatedBy: userId,
-      }));
-    await this.ruleRepo.save(entities);
+    void aqlCode;
+    void rules;
+    void company;
+    void plant;
+    void userId;
   }
 
   private assertValidRules(rules: AqlRuleDto[]) {

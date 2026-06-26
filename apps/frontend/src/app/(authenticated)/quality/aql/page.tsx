@@ -7,7 +7,6 @@ import toast from "react-hot-toast";
 import { ClipboardList, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { Button, Card, CardContent, ConfirmModal, Input } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
-import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { HelpField, HelpHeader } from "./components/AqlFieldHelp";
@@ -44,6 +43,31 @@ interface IqcAqlPolicy {
   remark?: string | null;
 }
 
+interface AqlCodeLetterRule {
+  [key: string]: unknown;
+  inspectionLevel: string;
+  lotQtyFrom: number;
+  lotQtyTo: number;
+  codeLetter: string;
+}
+
+interface AqlCodeLetterSample {
+  [key: string]: unknown;
+  codeLetter: string;
+  sampleSize: number;
+}
+
+interface AqlAcceptanceRule {
+  [key: string]: unknown;
+  codeLetter: string;
+  aqlValue: number;
+  sampleCodeLetter: string;
+  acceptQty: number;
+  rejectQty: number;
+}
+
+type AqlTab = "policies" | "standards" | "codeLetters" | "samplingPlan";
+
 const emptyForm: AqlStandard = {
   aqlCode: "",
   aqlName: "",
@@ -51,9 +75,7 @@ const emptyForm: AqlStandard = {
   aqlValue: 1,
   useYn: "Y",
   remark: "",
-  rules: [
-    { lotQtyFrom: 1, lotQtyTo: 50, sampleSize: 5, acceptQty: 0, rejectQty: 1, sortOrder: 1 },
-  ],
+  rules: [],
 };
 
 const emptyPolicyForm: IqcAqlPolicy = {
@@ -67,9 +89,174 @@ const emptyPolicyForm: IqcAqlPolicy = {
   remark: "",
 };
 
-function toNumber(value: string, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
+const GENERAL_INSPECTION_LEVELS = ["I", "II", "III"];
+const SPECIAL_INSPECTION_LEVELS = ["S1", "S2", "S3", "S4"];
+const SAMPLE_CODE_ORDER = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R"];
+const BASE_AQL_COLUMNS = [
+  { value: 0.065, label: "0.065" },
+  { value: 0.10, label: "0.10" },
+  { value: 0.15, label: "0.15" },
+  { value: 0.25, label: "0.25" },
+  { value: 0.40, label: "0.40" },
+  { value: 0.65, label: "0.65" },
+  { value: 1.0, label: "1.0" },
+  { value: 1.5, label: "1.5" },
+  { value: 2.5, label: "2.5" },
+  { value: 4.0, label: "4.0" },
+  { value: 6.5, label: "6.5" },
+];
+
+function normalizeAqlKey(value: number) {
+  return String(Math.round(value * 1000) / 1000);
+}
+
+function formatAqlLabel(value: number) {
+  const base = BASE_AQL_COLUMNS.find((column) => normalizeAqlKey(column.value) === normalizeAqlKey(value));
+  if (base) return base.label;
+  return value < 1 ? value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") : value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function formatLotRange(from: number, to: number) {
+  if (to >= 999999999) return `${from.toLocaleString()} and over`;
+  return `${from.toLocaleString()} to ${to.toLocaleString()}`;
+}
+
+function codeOrder(code: string) {
+  const index = SAMPLE_CODE_ORDER.indexOf(code);
+  return index === -1 ? SAMPLE_CODE_ORDER.length : index;
+}
+
+function sampleCodeMarker(currentCode: string, targetCode: string) {
+  if (!targetCode || targetCode === currentCode) return "";
+  return codeOrder(targetCode) < codeOrder(currentCode) ? `↑${targetCode}` : `↓${targetCode}`;
+}
+
+function IsoCodeLetterMatrix({ rules }: { rules: AqlCodeLetterRule[] }) {
+  const rows = Array.from(
+    new Map(
+      rules
+        .map((rule) => [`${rule.lotQtyFrom}-${rule.lotQtyTo}`, { lotQtyFrom: rule.lotQtyFrom, lotQtyTo: rule.lotQtyTo }] as const)
+        .sort((a, b) => a[1].lotQtyFrom - b[1].lotQtyFrom),
+    ).values(),
+  );
+  const codeMap = new Map(rules.map((rule) => [`${rule.lotQtyFrom}-${rule.lotQtyTo}-${rule.inspectionLevel}`, rule.codeLetter]));
+  const levels = [...GENERAL_INSPECTION_LEVELS, ...SPECIAL_INSPECTION_LEVELS];
+
+  return (
+    <div className="h-full overflow-auto rounded border border-amber-500/40 bg-surface" data-iso-code-letter-matrix data-source-table="AQL_CODE_LETTER_RULES">
+      <table className="min-w-[860px] w-full border-collapse text-center text-sm">
+        <thead className="sticky top-0 z-10">
+          <tr>
+            <th colSpan={8} className="bg-amber-500 px-3 py-2 text-base font-bold uppercase tracking-normal text-white">
+              SAMPLE SIZE CODE LETTERS
+            </th>
+          </tr>
+          <tr className="bg-surface text-text">
+            <th rowSpan={2} className="w-40 border border-amber-400 bg-amber-500 px-3 py-2 font-semibold text-white">Lot Size</th>
+            <th colSpan={3} className="border border-border px-3 py-2 font-semibold">General Inspection Levels</th>
+            <th colSpan={4} className="border border-border px-3 py-2 font-semibold">Special Inspection Levels</th>
+          </tr>
+          <tr className="bg-surface text-amber-500">
+            {levels.map((level) => (
+              <th key={level} className="border border-border px-3 py-1.5 font-bold">{level}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.lotQtyFrom}-${row.lotQtyTo}`} className="hover:bg-amber-500/10">
+              <th className="border border-amber-400 bg-amber-500/95 px-3 py-1.5 text-left font-semibold text-white">
+                {formatLotRange(row.lotQtyFrom, row.lotQtyTo)}
+              </th>
+              {levels.map((level) => (
+                <td key={level} className="border border-border px-3 py-1.5 font-mono text-base font-semibold text-text">
+                  {codeMap.get(`${row.lotQtyFrom}-${row.lotQtyTo}-${level}`) ?? ""}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function IsoSamplingPlanMatrix({
+  samples,
+  acceptanceRules,
+}: {
+  samples: AqlCodeLetterSample[];
+  acceptanceRules: AqlAcceptanceRule[];
+}) {
+  const sampleRows = [...samples].sort((a, b) => codeOrder(a.codeLetter) - codeOrder(b.codeLetter));
+  const aqlColumns = Array.from(
+    new Map([
+      ...BASE_AQL_COLUMNS.map((column) => [normalizeAqlKey(column.value), column] as const),
+      ...acceptanceRules.map((rule) => [normalizeAqlKey(rule.aqlValue), { value: rule.aqlValue, label: formatAqlLabel(rule.aqlValue) }] as const),
+    ]).values(),
+  ).sort((a, b) => a.value - b.value);
+  const ruleMap = new Map(acceptanceRules.map((rule) => [`${rule.codeLetter}-${normalizeAqlKey(rule.aqlValue)}`, rule]));
+
+  return (
+    <div className="h-full overflow-auto rounded border border-amber-500/40 bg-surface" data-iso-sampling-plan-matrix data-source-table="AQL_CODE_LETTER_SAMPLES AQL_ACCEPTANCE_RULES">
+      <table className="min-w-[1380px] w-full border-collapse text-center text-xs">
+        <thead className="sticky top-0 z-10">
+          <tr>
+            <th colSpan={2 + aqlColumns.length * 2} className="bg-amber-500 px-3 py-2 text-base font-bold uppercase tracking-normal text-white">
+              SINGLE SAMPLING PLANS FOR NORMAL INSPECTION
+            </th>
+          </tr>
+          <tr className="bg-surface text-text">
+            <th rowSpan={2} className="w-24 border border-amber-400 bg-amber-500 px-2 py-2 font-semibold text-white">Sample Size Code Letter</th>
+            <th rowSpan={2} className="w-24 border border-amber-400 bg-amber-500 px-2 py-2 font-semibold text-white">Sample Size</th>
+            <th colSpan={aqlColumns.length * 2} className="border border-border px-3 py-2 text-sm font-semibold">Acceptable Quality Levels (Normal Inspection)</th>
+          </tr>
+          <tr className="bg-surface text-amber-500">
+            {aqlColumns.map((column) => (
+              <th key={normalizeAqlKey(column.value)} colSpan={2} className="border border-border px-2 py-1 font-bold">
+                <div>{column.label}</div>
+                <div className="mt-0.5 grid grid-cols-2 text-[10px] uppercase text-text-muted">
+                  <span>Ac</span>
+                  <span>Re</span>
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sampleRows.map((sample) => (
+            <tr key={sample.codeLetter} className="hover:bg-amber-500/10">
+              <th className="border border-amber-400 bg-amber-500/95 px-2 py-1.5 font-mono text-sm font-bold text-white">{sample.codeLetter}</th>
+              <td className="border border-amber-400 bg-amber-500/95 px-2 py-1.5 font-mono text-sm font-semibold text-white">{sample.sampleSize.toLocaleString()}</td>
+              {aqlColumns.map((column) => {
+                const rule = ruleMap.get(`${sample.codeLetter}-${normalizeAqlKey(column.value)}`);
+                const marker = rule ? sampleCodeMarker(sample.codeLetter, rule.sampleCodeLetter) : "";
+                return (
+                  <td key={`${column.value}-ac`} className="border border-border px-1.5 py-1.5 font-mono text-sm font-semibold text-text">
+                    {rule ? (
+                      <span className="inline-flex items-center gap-1">
+                        {marker && <span className="text-[10px] text-amber-500">{marker}</span>}
+                        {rule.acceptQty}
+                      </span>
+                    ) : ""}
+                  </td>
+                );
+              }).flatMap((cell, index) => {
+                const column = aqlColumns[index];
+                const rule = ruleMap.get(`${sample.codeLetter}-${normalizeAqlKey(column.value)}`);
+                return [
+                  cell,
+                  <td key={`${column.value}-re`} className="border border-border px-1.5 py-1.5 font-mono text-sm font-semibold text-text">
+                    {rule ? rule.rejectQty : ""}
+                  </td>,
+                ];
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export default function AqlPage() {
@@ -86,6 +273,10 @@ export default function AqlPage() {
   const [policyForm, setPolicyForm] = useState<IqcAqlPolicy>(emptyPolicyForm);
   const [policySaving, setPolicySaving] = useState(false);
   const [policyDeleteOpen, setPolicyDeleteOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<AqlTab>("policies");
+  const [codeLetterRules, setCodeLetterRules] = useState<AqlCodeLetterRule[]>([]);
+  const [codeLetterSamples, setCodeLetterSamples] = useState<AqlCodeLetterSample[]>([]);
+  const [acceptanceRules, setAcceptanceRules] = useState<AqlAcceptanceRule[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -108,6 +299,32 @@ export default function AqlPage() {
 
   useEffect(() => { fetchPolicies(); }, [fetchPolicies]);
 
+  const fetchIsoTables = useCallback(async () => {
+    try {
+      const res = await api.get("/quality/aql/iso");
+      const iso = res.data?.data ?? {};
+      setCodeLetterRules(iso.codeLetterRules ?? []);
+      setCodeLetterSamples(iso.samples ?? []);
+      setAcceptanceRules(iso.acceptanceRules ?? []);
+    } catch {
+      toast.error(t("quality.aql.isoLoadFailed", "ISO AQL 표 데이터를 불러오지 못했습니다."));
+    }
+  }, [t]);
+
+  useEffect(() => { fetchIsoTables(); }, [fetchIsoTables]);
+
+  useEffect(() => {
+    if (activeTab === "codeLetters" || activeTab === "samplingPlan") {
+      fetchIsoTables();
+    }
+  }, [activeTab, fetchIsoTables]);
+
+  const refreshAll = useCallback(() => {
+    fetchData();
+    fetchPolicies();
+    fetchIsoTables();
+  }, [fetchData, fetchPolicies, fetchIsoTables]);
+
   const loadDetail = useCallback(async (row: AqlStandard) => {
     const res = await api.get(`/quality/aql/${encodeURIComponent(row.aqlCode)}`);
     const detail = res.data?.data ?? row;
@@ -125,36 +342,6 @@ export default function AqlPage() {
 
   const setField = useCallback((key: keyof AqlStandard, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const setRuleField = useCallback((index: number, key: keyof AqlRule, value: number) => {
-    setForm((prev) => ({
-      ...prev,
-      rules: (prev.rules ?? []).map((rule, ruleIndex) =>
-        ruleIndex === index ? { ...rule, [key]: value } : rule,
-      ),
-    }));
-  }, []);
-
-  const addRule = useCallback(() => {
-    setForm((prev) => {
-      const rules = prev.rules ?? [];
-      const lastTo = rules.length ? Math.max(...rules.map((rule) => rule.lotQtyTo)) : 0;
-      return {
-        ...prev,
-        rules: [
-          ...rules,
-          { lotQtyFrom: lastTo + 1, lotQtyTo: lastTo + 50, sampleSize: 5, acceptQty: 0, rejectQty: 1, sortOrder: rules.length + 1 },
-        ],
-      };
-    });
-  }, []);
-
-  const removeRule = useCallback((index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      rules: (prev.rules ?? []).filter((_, ruleIndex) => ruleIndex !== index),
-    }));
   }, []);
 
   const validateForm = useCallback(() => {
@@ -312,6 +499,13 @@ export default function AqlPage() {
     { accessorKey: "useYn", header: () => <HelpHeader field="policyUseYn" label={t("quality.aql.use", "사용")} />, size: 60 },
   ], [t]);
 
+  const tabs: Array<{ id: AqlTab; label: string }> = [
+    { id: "policies", label: t("quality.aql.policySection", "AQL 정책관리") },
+    { id: "standards", label: t("quality.aql.standardTab", "AQL 기준") },
+    { id: "codeLetters", label: t("quality.aql.codeLetterTab", "Code Letter 표") },
+    { id: "samplingPlan", label: t("quality.aql.samplingPlanTab", "Sampling Plan 표") },
+  ];
+
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex items-center justify-between flex-shrink-0">
@@ -323,29 +517,51 @@ export default function AqlPage() {
           <p className="text-text-muted mt-1">{t("quality.aql.subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
+          <Button variant="secondary" size="sm" onClick={refreshAll}>
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <Button size="sm" onClick={handleNew}>
-            <Plus className="w-4 h-4" />{t("quality.aql.addStandard", "AQL 기준 추가")}
-          </Button>
-          <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-          <Button variant="secondary" size="sm" onClick={addRule}>
-            <Plus className="w-4 h-4" />{t("quality.aql.addRule", "판정기준 추가")}
-          </Button>
-          {selected && (
-            <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="w-4 h-4" />{t("quality.aql.disable", "사용중지")}
+          {activeTab === "standards" && (
+            <>
+              <Button size="sm" onClick={handleNew}>
+                <Plus className="w-4 h-4" />{t("quality.aql.addStandard", "AQL 기준 추가")}
+              </Button>
+              {selected && (
+                <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+                  <Trash2 className="w-4 h-4" />{t("quality.aql.disable", "사용중지")}
+                </Button>
+              )}
+              <Button size="sm" onClick={handleSave} isLoading={saving}>
+                <Save className="w-4 h-4" />{t("common.save")}
+              </Button>
+            </>
+          )}
+          {(activeTab === "codeLetters" || activeTab === "samplingPlan") && (
+            <Button variant="secondary" size="sm" onClick={fetchIsoTables}>
+              <RefreshCw className="w-4 h-4" />{t("quality.aql.reloadIsoTables", "표 다시읽기")}
             </Button>
           )}
-          <Button size="sm" onClick={handleSave} isLoading={saving}>
-            <Save className="w-4 h-4" />{t("common.save")}
-          </Button>
         </div>
       </div>
 
+      <div className="flex items-center gap-1 border-b border-border flex-shrink-0" data-aql-tabs>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+              activeTab === tab.id
+                ? "border-primary text-primary"
+                : "border-transparent text-text-muted hover:text-text"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
-        <Card className="col-span-5 min-h-0 overflow-hidden" padding="none">
+        <Card className={activeTab === "policies" ? "col-span-12 min-h-0 overflow-hidden" : "hidden"} padding="none">
           <CardContent className="h-full p-3 overflow-hidden flex flex-col">
             <div className="mb-2 flex flex-wrap items-start justify-between gap-2 flex-shrink-0">
               <div>
@@ -421,7 +637,7 @@ export default function AqlPage() {
           </CardContent>
         </Card>
 
-        <Card className="col-span-7 min-h-0 overflow-hidden" padding="none">
+        <Card className={activeTab === "standards" ? "col-span-12 min-h-0 overflow-hidden" : "hidden"} padding="none">
           <CardContent className="h-full p-4 overflow-auto">
             <div className="mb-4 h-72">
               <DataGrid
@@ -485,36 +701,45 @@ export default function AqlPage() {
               </HelpField>
             </div>
 
-            <div className="mt-5 mb-2">
-              <h3 className="text-sm font-semibold text-text">{t("quality.aql.ruleSection")}</h3>
+            <div className="mt-5 rounded border border-border bg-surface/60 p-4">
+              <h3 className="text-sm font-semibold text-text">{t("quality.aql.isoRuleSection", "ISO 판정표 관리")}</h3>
+              <p className="mt-1 text-sm text-text-muted">
+                {t("quality.aql.isoRuleSectionDesc", "LOT 수량별 Sample Size, Ac, Re는 이 기준 화면에서 직접 입력하지 않습니다. Code Letter 표 탭에서 LOT+검사수준 기준을 관리하고, Sampling Plan 표 탭에서 Code Letter+AQL 기준의 Ac/Re를 관리합니다.")}
+              </p>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="mt-2 rounded border border-border overflow-hidden">
-              <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_36px] bg-slate-200 dark:bg-slate-800 text-xs font-semibold text-text">
-                <div className="px-2 py-1.5"><HelpHeader field="lotQtyFrom" label="lotQtyFrom" /></div>
-                <div className="px-2 py-1.5"><HelpHeader field="lotQtyTo" label="lotQtyTo" /></div>
-                <div className="px-2 py-1.5"><HelpHeader field="sampleSize" label="sampleSize" /></div>
-                <div className="px-2 py-1.5"><HelpHeader field="acceptQty" label="acceptQty" /></div>
-                <div className="px-2 py-1.5"><HelpHeader field="rejectQty" label="rejectQty" /></div>
-                <div />
+        <Card className={activeTab === "codeLetters" ? "col-span-12 min-h-0 overflow-hidden" : "hidden"} padding="none">
+          <CardContent className="h-full p-4 overflow-hidden flex flex-col">
+            <div className="mb-3 flex items-start justify-between gap-3 flex-shrink-0">
+              <div>
+                <h2 className="text-sm font-semibold text-text">{t("quality.aql.codeLetterTable", "Sample Size Code Letters")}</h2>
+                <p className="mt-0.5 text-xs text-text-muted">{t("quality.aql.codeLetterDesc", "LOT 수량과 검사수준(I, II, III, S1~S4)으로 ISO Code Letter를 결정합니다.")}</p>
               </div>
-              {(form.rules ?? []).map((rule, index) => (
-                <div key={`${rule.lotQtyFrom}-${index}`} className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_36px] border-t border-border bg-surface/60">
-                  <div className="p-1"><QtyInput value={rule.lotQtyFrom} onChange={(n) => setRuleField(index, "lotQtyFrom", n || 1)} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1"><QtyInput value={rule.lotQtyTo} onChange={(n) => setRuleField(index, "lotQtyTo", n || 1)} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1"><QtyInput value={rule.sampleSize} onChange={(n) => setRuleField(index, "sampleSize", n)} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1"><QtyInput value={rule.acceptQty} onChange={(n) => setRuleField(index, "acceptQty", n)} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1"><QtyInput value={rule.rejectQty} onChange={(n) => setRuleField(index, "rejectQty", n)} className="!h-8 !px-2" fullWidth /></div>
-                  <div className="p-1 flex items-center justify-center">
-                    <button className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500" onClick={() => removeRule(index)} title={t("common.delete", "삭제")}>
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {(form.rules ?? []).length === 0 && (
-                <div className="p-6 text-sm text-text-muted text-center">{t("quality.aql.ruleEmpty", "LOT 수량별 판정기준을 추가하세요.")}</div>
-              )}
+              <Button variant="secondary" size="sm" onClick={fetchIsoTables}>
+                <RefreshCw className="w-4 h-4" />{t("common.refresh")}
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <IsoCodeLetterMatrix rules={codeLetterRules} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={activeTab === "samplingPlan" ? "col-span-12 min-h-0 overflow-hidden" : "hidden"} padding="none">
+          <CardContent className="h-full p-4 overflow-hidden flex flex-col">
+            <div className="mb-3 flex items-start justify-between gap-3 flex-shrink-0">
+              <div>
+                <h2 className="text-sm font-semibold text-text">{t("quality.aql.samplingPlanTable", "Single Sampling Plans for Normal Inspection")}</h2>
+                <p className="mt-0.5 text-xs text-text-muted">{t("quality.aql.samplingPlanDesc", "Code Letter와 AQL 값의 교차점으로 표준 샘플수량, Ac, Re를 결정합니다. 화살표는 Sample Code Letter로 저장합니다.")}</p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={fetchIsoTables}>
+                <RefreshCw className="w-4 h-4" />{t("common.refresh")}
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <IsoSamplingPlanMatrix samples={codeLetterSamples} acceptanceRules={acceptanceRules} />
             </div>
           </CardContent>
         </Card>

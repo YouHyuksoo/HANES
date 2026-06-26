@@ -1,6 +1,6 @@
 -- AQL 표준 추가: 특별검사수준 S-1 · AQL 0.015
 -- resolve-iqc-items 404 해결: DLMLS6-3-3 검사항목이 S-1/0.015를 참조하나 표준 부재였음.
--- AQL 0.015 유효 플랜: sample 80 Ac0/Re1 (작은 샘플은 화살표로 상향).
+-- AQL 0.015 유효 플랜: sample 80 Ac0/Re1. LOT보다 샘플수가 크거나 같으면 전수검사로 해석한다.
 
 MERGE INTO AQL_STANDARDS s
 USING (SELECT '40' COMPANY, '1000' PLANT_CD, 'AQL-S-1-0.015' AQL_CODE FROM DUAL) x

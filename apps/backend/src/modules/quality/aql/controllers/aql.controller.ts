@@ -46,6 +46,16 @@ export class AqlController {
     return ResponseUtil.success(data);
   }
 
+  @Get('iso')
+  @ApiOperation({ summary: 'ISO 2859 AQL Code Letter / Sampling Plan 표 조회' })
+  async findIsoTables(
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.aqlService.findIsoTables(company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Post('policies')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'IQC AQL 정책 등록' })

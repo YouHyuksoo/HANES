@@ -1,6 +1,6 @@
 -- AQL 표준 추가: 검사수준 I · AQL 0.01 (ISO 2859-1 보통검사 1회 샘플링, 화살표 적용)
 -- resolve-iqc-items 404 해결: 검사항목이 I/0.01을 참조하나 표준 부재였음.
--- AQL 0.010 유효 플랜: sample 125 Ac0/Re1 (작은 샘플은 화살표로 125 상향).
+-- AQL 0.010 유효 플랜: sample 125 Ac0/Re1. LOT보다 샘플수가 크거나 같으면 전수검사로 해석한다.
 
 MERGE INTO AQL_STANDARDS s
 USING (SELECT '40' COMPANY, '1000' PLANT_CD, 'AQL-I-0.01' AQL_CODE FROM DUAL) x

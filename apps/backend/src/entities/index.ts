@@ -71,6 +71,11 @@ export * from './oqc-request.entity';
 export * from './oqc-request-box.entity';
 export * from './self-inspect-item.entity';
 export * from './self-inspect-result.entity';
+export * from './aql-standard.entity';
+export * from './aql-code-letter-rule.entity';
+export * from './aql-code-letter-sample.entity';
+export * from './aql-acceptance-rule.entity';
+export * from './iqc-aql-policy.entity';
 
 // Shipping
 export * from './box-master.entity';

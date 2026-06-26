@@ -22,6 +22,18 @@ Reason:
 - JSHANES는 `OQC_ENABLED=N`인데 출하지시 팔레트 경로와 화면 후보 조회가 `OQC_STATUS=PASS`를 고정 요구해 단건 박스출하와 팔레트출하의 상태전이 조건이 달랐다.
 - OQC 미사용 설정에서는 CLOSED 박스가 출하 후보로 보여야 하고, 적재/출하 후속 프로세스에서도 같은 기준으로 노출/제외되어야 한다.
 
+## D-20260626-AQL-ISO2859-CODE-LETTER
+Status: Accepted
+Decision:
+- IQC AQL 판정은 `LOT 수량 + 검사수준 -> Code Letter -> Sample Size -> AQL -> Ac/Re` 순서로 해석한다.
+- `AQL_STANDARDS`는 AQL 값 마스터로 유지하고, LOT별 Code Letter는 `AQL_CODE_LETTER_RULES`, Code Letter별 표준 샘플수량은 `AQL_CODE_LETTER_SAMPLES`, Code Letter+AQL별 Ac/Re는 `AQL_ACCEPTANCE_RULES`에서 관리한다.
+- 표준 샘플수량이 LOT 수량보다 크거나 같으면 표준 값은 유지하고 실제 검사수량만 LOT 수량으로 제한한다. 표준 샘플수량을 LOT 상한으로 저장 보정하지 않는다.
+- `/quality/aql` UI는 정책, AQL 기준, Code Letter 표, Sampling Plan 표를 페이지 내 탭으로 분리한다.
+Reason:
+- ISO 2859-1은 LOT에서 직접 Sample Size를 결정하지 않고 Sample Size Code Letter를 거친다.
+- LOT 상한으로 `SAMPLE_SIZE`를 보정하면 ISO 표의 화살표/전수검사 의미가 사라지고, AQL 0.015처럼 작은 LOT에서 표준 sample 80이 필요한 케이스를 오판한다.
+- 사용자가 점진폐기가 아니라 즉시 표준 구조 전환을 지시했다.
+
 ## D-20260626-CONCESSION-WORKER
 Status: Accepted
 Decision:
