@@ -10,6 +10,10 @@
  *   → 같은 작업지시라도 설비(공정)가 다르면 다른 작업지도서가 표시된다
  * - imageUrl이 있으면 이미지 표시, 없으면 플레이스홀더
  * - 복수 페이지 지원: 목록 상단 탭으로 전환
+ *
+ * 재사용 모드:
+ * - props(itemCode/processCode)를 전달하면 그 값으로 조회한다(예: 서브공정 키팅 화면).
+ * - props 미전달 시 kioskStore(selectedJobOrder/selectedEquip)에서 읽는다(키오스크 기본 동작).
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -38,7 +42,17 @@ const isOfficeUrl = (url?: string | null) => !!url && /\.(pptx?|ppsx?|docx?)$/i.
 const officeEmbedUrl = (absUrl: string) =>
   `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(absUrl)}`;
 
-export default function WorkInstructionView() {
+interface WorkInstructionViewProps {
+  /** 주입 모드 — 작업지도서를 조회할 품목코드. 미전달 시 kioskStore의 선택 작업지시 품목을 사용. */
+  itemCode?: string;
+  /** 주입 모드 — 조회 공정코드. 미전달 시 kioskStore의 선택 설비/작업지시 공정을 사용. */
+  processCode?: string;
+}
+
+export default function WorkInstructionView({
+  itemCode: itemCodeProp,
+  processCode: processCodeProp,
+}: WorkInstructionViewProps = {}) {
   const { t } = useTranslation();
   const { selectedJobOrder, selectedEquip } = useKioskStore();
   const [instructions, setInstructions] = useState<WorkInstruction[]>([]);
@@ -49,13 +63,14 @@ export default function WorkInstructionView() {
   // 페이지 전환 시 이미지 로드 에러 상태 리셋
   useEffect(() => { setImgError(false); }, [activeIdx]);
 
-  // 공정코드: 선택된 설비 기준 우선, 없으면 작업지시 공정코드로 폴백
-  const processCode = selectedEquip?.processCode ?? selectedJobOrder?.processCode;
+  // 조회 기준: props 우선, 없으면 kioskStore(작업지시 품목 / 설비·작업지시 공정)로 폴백
+  const itemCode = itemCodeProp ?? selectedJobOrder?.itemCode;
+  const processCode = processCodeProp ?? selectedEquip?.processCode ?? selectedJobOrder?.processCode;
 
   useEffect(() => {
-    if (!selectedJobOrder?.itemCode) { setInstructions([]); return; }
+    if (!itemCode) { setInstructions([]); return; }
     const params: Record<string, string> = {
-      itemCode: selectedJobOrder.itemCode,
+      itemCode,
       useYn: 'Y',
       limit: '20',
     };
@@ -66,7 +81,7 @@ export default function WorkInstructionView() {
         setActiveIdx(0);
       })
       .catch(() => setInstructions([]));
-  }, [selectedJobOrder?.itemCode, processCode]);
+  }, [itemCode, processCode]);
 
   const current = instructions[activeIdx];
   const fileUrl = current?.imageUrl ? resolveBackendFileUrl(current.imageUrl) : null;
@@ -125,7 +140,7 @@ export default function WorkInstructionView() {
 
       {/* 이미지 영역 */}
       <div className="flex-1 overflow-auto bg-surface/20 min-h-0">
-        {!selectedJobOrder ? (
+        {!itemCode ? (
           <div className="flex flex-col items-center justify-center gap-2 text-text-muted h-full">
             <BookOpen className="w-12 h-12 opacity-20" />
             <span className="text-sm">{t('kiosk.instruction.selectJobOrder')}</span>

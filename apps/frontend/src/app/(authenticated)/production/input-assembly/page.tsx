@@ -1,16 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Boxes, RefreshCw, Scan, Search } from "lucide-react";
-import { Button, Card, CardContent, Input, Select } from "@/components/ui";
-import { useProcessOptions, useEquipOptions } from "@/hooks/useMasterOptions";
+import { Boxes, Cpu, ChevronDown, RefreshCw, Scan, Search } from "lucide-react";
+import { Button, Card, CardContent, Input } from "@/components/ui";
 import api from "@/services/api";
-import JobOrderSearchModal, { JobOrderPick } from "../subprocess-kitting/components/JobOrderSearchModal";
+import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import EquipMaterialMountPanel from "./components/EquipMaterialMountPanel";
 import SgScanPanel from "./components/SgScanPanel";
 import AssemblyActionBar from "./components/AssemblyActionBar";
+import WorkInstructionView from "../input-kiosk/components/WorkInstructionView";
+import EquipSelectModal from "../input-kiosk/components/EquipSelectModal";
+import { normalizeEquipOptions, type EquipOption } from "../input-kiosk/utils/equipOptions";
 
 interface AssemblyComponent {
   itemCode: string;
@@ -36,6 +38,26 @@ interface SgLabelInfo {
   orderNo?: string | null;
 }
 
+/** 화면에서 보관하는 작업지시 최소 정보 — 공용 모달(JobOrder)·스캔 응답을 공통으로 담는다. */
+interface JobOrderPick {
+  orderNo: string;
+  itemCode: string;
+  itemName?: string;
+  planQty?: number;
+  status?: string;
+  processCode?: string;
+}
+
+/** 공용 모달 JobOrder → 화면 JobOrderPick 매핑 */
+const toJobOrderPick = (jo: JobOrder): JobOrderPick => ({
+  orderNo: jo.orderNo,
+  itemCode: jo.itemCode,
+  itemName: jo.itemName,
+  planQty: jo.planQty,
+  status: jo.status,
+  processCode: jo.processCode,
+});
+
 export default function InputAssemblyPage() {
   const { t } = useTranslation();
 
@@ -43,8 +65,13 @@ export default function InputAssemblyPage() {
   const [orderScan, setOrderScan] = useState("");
   const [orderSearchOpen, setOrderSearchOpen] = useState(false);
 
+  // 설비 선택으로 공정을 도출한다(설비→공정). processCode는 설비 선택 시 자동 설정.
   const [processCode, setProcessCode] = useState("");
   const [equipCode, setEquipCode] = useState("");
+  const [equipName, setEquipName] = useState("");
+  const [processName, setProcessName] = useState("");
+  const [equips, setEquips] = useState<EquipOption[]>([]);
+  const [equipModalOpen, setEquipModalOpen] = useState(false);
 
   const [requirements, setRequirements] = useState<AssemblyRequirements | null>(null);
   const [sgList, setSgList] = useState<SgLabelInfo[]>([]);
@@ -54,17 +81,13 @@ export default function InputAssemblyPage() {
 
   const orderScanRef = useRef<HTMLInputElement>(null);
 
-  const { options: rawProcessOptions } = useProcessOptions();
-  const { options: rawEquipOptions } = useEquipOptions(processCode || undefined);
-
-  const processOptions = useMemo(
-    () => [{ value: "", label: t("production.subprocess.selectProcess", "공정 선택") }, ...rawProcessOptions],
-    [rawProcessOptions, t],
-  );
-  const equipOptions = useMemo(
-    () => [{ value: "", label: t("production.inputAssembly.selectEquip", "설비 선택") }, ...rawEquipOptions],
-    [rawEquipOptions, t],
-  );
+  // 설비 목록 로드(공정 정보 포함) — input-kiosk와 동일 소스
+  useEffect(() => {
+    api
+      .get("/equipment/equips", { params: { limit: "500" } })
+      .then((res) => setEquips(normalizeEquipOptions(res.data)))
+      .catch(() => setEquips([]));
+  }, []);
 
   // 작업지시 선택 시 BOM 요구사항 조회
   useEffect(() => {
@@ -100,17 +123,35 @@ export default function InputAssemblyPage() {
     setIssuedFg(null);
   }, []);
 
+  // 설비 선택 — 설비가 공정을 결정한다(설비→공정 자동). 작업지시 조회조건이 바뀌므로
+  // 작업지시·스캔을 모두 초기화한다.
+  const handleEquipSelect = useCallback((equip: EquipOption) => {
+    setEquipCode(equip.equipCode);
+    setEquipName(equip.equipName);
+    setProcessCode(equip.processCode ?? "");
+    setProcessName(equip.processName ?? "");
+    setSelectedOrder(null);
+    setOrderScan("");
+    setRequirements(null);
+    setSgList([]);
+    setIssuedFg(null);
+  }, []);
+
   const fetchOrderByNo = useCallback(
     async (no: string) => {
       const trimmed = no.trim();
       if (!trimmed) return;
+      if (!equipCode) {
+        toast.error(t("production.subprocess.requireEquipFirst", "설비를 먼저 선택하세요."));
+        return;
+      }
       if (/^(FG|SG)\d/i.test(trimmed)) {
         toast.error(t("production.subprocess.scanIsLabel", "바코드 라벨입니다. 작업지시번호를 입력하거나 검색 버튼을 이용하세요."));
         return;
       }
       try {
         const res = await api.get("/production/job-orders", {
-          params: { limit: 20, search: trimmed, itemType: "FINISHED" },
+          params: { limit: 20, search: trimmed, itemType: "FINISHED", ...(processCode ? { processCode } : {}) },
         });
         const list: JobOrderPick[] = Array.isArray(res.data?.data) ? res.data.data : [];
         const found = list.find((r) => r.orderNo === trimmed) ?? list[0];
@@ -123,7 +164,7 @@ export default function InputAssemblyPage() {
         toast.error(t("production.subprocess.orderNotFound", "작업지시를 찾을 수 없습니다."));
       }
     },
-    [selectOrder, t],
+    [equipCode, processCode, selectOrder, t],
   );
 
   const clearOrder = () => {
@@ -140,6 +181,8 @@ export default function InputAssemblyPage() {
     setOrderScan("");
     setProcessCode("");
     setEquipCode("");
+    setEquipName("");
+    setProcessName("");
     setRequirements(null);
     setSgList([]);
     setIssuedFg(null);
@@ -255,10 +298,47 @@ export default function InputAssemblyPage() {
         </Button>
       </div>
 
-      {/* 상단 고정 바: 작업지시 + 공정 + 설비 */}
+      {/* 상단 고정 바: 설비(=공정) + 작업지시 */}
       <Card padding="none" className="flex-shrink-0">
         <CardContent className="p-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+            {/* 1) 설비 — 가장 먼저 선택. 설비가 공정을 결정(설비→공정)하고 작업지시 조회조건이 된다. */}
+            <div className="w-full lg:w-56">
+              <label className="block text-sm font-medium text-text mb-1">
+                {t("production.inputAssembly.equip", "설비")}
+              </label>
+              <button
+                type="button"
+                onClick={() => setEquipModalOpen(true)}
+                className={`flex h-11 w-full items-center gap-2 rounded-lg border px-3 text-left transition-colors ${
+                  equipCode
+                    ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                    : "border-dashed border-border hover:border-primary"
+                }`}
+              >
+                <Cpu className="h-5 w-5 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  {equipCode ? (
+                    <>
+                      <div className="truncate text-sm font-semibold text-text">{equipName}</div>
+                      <div className="truncate text-[11px] text-text-muted">
+                        {equipCode}
+                        {processName && (
+                          <span className="ml-1 font-semibold text-primary">· {processName}</span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-sm text-text-muted">
+                      {t("kiosk.header.selectEquip", "설비 선택")}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+              </button>
+            </div>
+
+            {/* 2) 작업지시 — 설비 선택 후 활성화. 선택 설비의 공정에 내려진 작업지시만 조회. */}
             <div className="flex-1 min-w-0">
               {selectedOrder ? (
                 <div className="flex items-center justify-between gap-3 rounded border border-primary/40 bg-primary/5 px-3 py-2">
@@ -288,8 +368,13 @@ export default function InputAssemblyPage() {
                           fetchOrderByNo(orderScan);
                         }
                       }}
-                      placeholder="W-20260001"
+                      placeholder={
+                        equipCode
+                          ? "W-20260001"
+                          : t("production.subprocess.requireEquipFirst", "설비를 먼저 선택하세요.")
+                      }
                       leftIcon={<Scan className="w-4 h-4" />}
+                      disabled={!equipCode}
                       fullWidth
                     />
                   </div>
@@ -298,6 +383,7 @@ export default function InputAssemblyPage() {
                     variant="secondary"
                     onClick={() => setOrderSearchOpen(true)}
                     leftIcon={<Search className="w-4 h-4" />}
+                    disabled={!equipCode}
                     className="mb-0.5"
                   >
                     {t("common.search")}
@@ -305,32 +391,21 @@ export default function InputAssemblyPage() {
                 </div>
               )}
             </div>
-
-            <div className="w-full lg:w-48">
-              <Select
-                label={t("production.subprocess.process", "공정")}
-                options={processOptions}
-                value={processCode}
-                onChange={setProcessCode}
-                fullWidth
-              />
-            </div>
-            <div className="w-full lg:w-48">
-              <Select
-                label={t("production.inputAssembly.equip", "설비")}
-                options={equipOptions}
-                value={equipCode}
-                onChange={setEquipCode}
-                fullWidth
-              />
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 본문 2영역 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
+      {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(반제품 SG 스캔).
+          좌·우는 고정폭으로 축소하고 중앙 작업지도서를 넓게 둔다. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_340px] gap-3 flex-1 min-h-0">
         <EquipMaterialMountPanel equipCode={equipCode} />
+        {/* 중앙: 작업지도서 — 선택된 작업지시 품목 + 공정 기준 조회 */}
+        <div className="flex flex-col h-full min-h-0 overflow-hidden rounded border border-border bg-card">
+          <WorkInstructionView
+            itemCode={selectedOrder?.itemCode}
+            processCode={processCode || undefined}
+          />
+        </div>
         <SgScanPanel
           orderNo={selectedOrder?.orderNo}
           sgList={sgList}
@@ -353,12 +428,24 @@ export default function InputAssemblyPage() {
         />
       </div>
 
-      {/* 작업지시 검색 모달 — FINISHED 필터 */}
-      <JobOrderSearchModal
+      {/* 작업지시 선택 모달 — 공용 모달. 선택 공정 + FINISHED 조회조건. */}
+      <JobOrderSelectModal
         isOpen={orderSearchOpen}
         onClose={() => setOrderSearchOpen(false)}
-        onSelect={selectOrder}
+        onConfirm={(jo) => {
+          selectOrder(toJobOrderPick(jo));
+          setOrderSearchOpen(false);
+        }}
+        processCode={processCode || undefined}
         itemType="FINISHED"
+      />
+
+      {/* 설비 선택 모달 — input-kiosk 공용. 설비 선택 시 공정 자동 도출. */}
+      <EquipSelectModal
+        isOpen={equipModalOpen}
+        onClose={() => setEquipModalOpen(false)}
+        equips={equips}
+        onSelect={handleEquipSelect}
       />
     </div>
   );

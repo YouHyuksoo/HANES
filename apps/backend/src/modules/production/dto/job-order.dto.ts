@@ -219,6 +219,11 @@ export class JobOrderQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   itemType?: string;
+
+  @ApiPropertyOptional({ description: '공정 필터 (작업지시 PROCESS_CODE 기준)' })
+  @IsOptional()
+  @IsString()
+  processCode?: string;
 }
 
 /**

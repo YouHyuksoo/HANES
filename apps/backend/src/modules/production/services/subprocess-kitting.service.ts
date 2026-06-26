@@ -591,7 +591,7 @@ export class SubprocessKittingService {
    * @returns { sgBarcode }
    */
   async issueSgLabel(
-    dto: { orderNo: string; processCode: string; equipCode?: string; circuitNo?: string },
+    dto: { orderNo: string; processCode: string; equipCode?: string },
     company: string,
     plant: string,
     workerId?: string,
@@ -704,6 +704,18 @@ export class SubprocessKittingService {
       }
       if (jobOrder.status === 'HOLD') {
         throw new BadRequestException('홀딩된 작업지시에는 키팅을 확정할 수 없습니다.');
+      }
+
+      // 회로 필수 검증 — 회로가 있는 품목이면 circuitNo 없이 확정 불가.
+      // 회로 정보는 아래 genealogy(SG→입력SG, SG→MAT_LOT)의 CIRCUIT_NO로만 남으므로,
+      // 누락 시 추적 데이터가 비게 된다. 프론트 가드와 대칭으로 서버에서도 강제한다.
+      const orderCircuits = await this.productionSpec.findCircuitsByItemCode(
+        jobOrder.itemCode,
+        company,
+        plant,
+      );
+      if (orderCircuits.length > 0 && !circuitNo) {
+        throw new BadRequestException('회로를 선택해야 키팅을 확정할 수 있습니다.');
       }
 
       const bomRows = await qr.manager.find(BomMaster, {

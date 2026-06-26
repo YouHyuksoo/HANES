@@ -26,6 +26,10 @@ interface JobOrderSelectModalProps {
   onConfirm: (jobOrder: JobOrder) => void;
   filterStatus?: string[];
   equipCode?: string;
+  /** 공정 조회조건 — 전달 시 해당 공정에 내려진 작업지시만 서버에서 필터링 */
+  processCode?: string;
+  /** 품목유형 필터 — SEMI_PRODUCT | FINISHED 등 (예: 서브공정/조립 화면) */
+  itemType?: string;
 }
 
 export default function JobOrderSelectModal({
@@ -34,6 +38,8 @@ export default function JobOrderSelectModal({
   onConfirm,
   filterStatus = ['WAITING', 'RUNNING'],
   equipCode,
+  processCode,
+  itemType,
 }: JobOrderSelectModalProps) {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
@@ -42,13 +48,21 @@ export default function JobOrderSelectModal({
   const [loading, setLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
+  // filterStatus가 매 렌더 새 배열(기본값)이어도 useCallback이 재생성되지 않도록 문자열 키로 안정화.
+  // (배열 참조를 deps에 직접 두면 모달 fetch→리렌더→재생성→fetch 무한 루프가 발생한다.)
+  const statusesKey = filterStatus.join(',');
+
   const fetchJobOrders = useCallback(async () => {
     if (!isOpen) return;
     setLoading(true);
     try {
-      const statuses = filterStatus.join(',');
       const res = await api.get('/production/job-orders', {
-        params: { statuses, limit: 500 },
+        params: {
+          statuses: statusesKey,
+          limit: 500,
+          ...(processCode ? { processCode } : {}),
+          ...(itemType ? { itemType } : {}),
+        },
       });
       const items: JobOrder[] = (res.data?.data ?? []).map((jo: Record<string, unknown>) => {
         const part = jo.part as Record<string, unknown> | undefined;
@@ -82,7 +96,7 @@ export default function JobOrderSelectModal({
     } finally {
       setLoading(false);
     }
-  }, [isOpen, filterStatus, equipCode]);
+  }, [isOpen, statusesKey, equipCode, processCode, itemType]);
 
   useEffect(() => {
     if (isOpen) {

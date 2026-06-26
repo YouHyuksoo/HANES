@@ -102,7 +102,9 @@ export class ConfirmAssemblyDto {
 
 /**
  * 서브공정 키팅 SG 라벨 발행 DTO (② 새 SG 바코드 채번 + ISSUED 저장만).
- * 이전 공정 SG → 회로별 새 SG 1장 발행. 입력 SG 소비·자재·실적·재고는 미반영.
+ * 이전 공정 SG → 새 SG 1장 발행. 입력 SG 소비·자재·실적·재고는 미반영.
+ * 회로(circuitNo)는 발행 단계에서 SG에 영속화되지 않으므로 받지 않는다.
+ * 회로 추적은 confirm-subkit 단계의 genealogy(PRODUCT_GENEALOGY.CIRCUIT_NO)로 일원화한다.
  */
 export class IssueSgLabelDto {
   @IsString()
@@ -116,10 +118,6 @@ export class IssueSgLabelDto {
   @IsOptional()
   @IsString()
   equipCode?: string;
-
-  @IsOptional()
-  @IsString()
-  circuitNo?: string;
 }
 
 /**
