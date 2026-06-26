@@ -50,6 +50,23 @@ export default function ReceivingHistoryTable({ data, isLoading, toolbarLeft }: 
         );
       },
     },
+    {
+      id: 'isConcession',
+      header: t('material.receiveHistory.concessionYn', '특채여부'),
+      size: 90,
+      meta: { filterType: "multi" as const, align: "center" as const },
+      accessorFn: (row) => (row.isConcession ? 'Y' : 'N'),
+      cell: ({ row }) => {
+        const isConcession = row.original.isConcession === true;
+        return (
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
+            isConcession ? 'text-amber-600 border-amber-500' : 'text-text-muted border-border'
+          }`}>
+            {isConcession ? t('material.receiveHistory.concession', '특채') : t('material.receiveHistory.normal', '일반')}
+          </span>
+        );
+      },
+    },
     { id: 'vendor', header: t('material.col.supplier', '공급처'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendorName || row.original.vendor || '-' },
     { id: 'manufacturer', header: t('common.manufacturer', '제조사'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.manufacturer || '-' },
     {

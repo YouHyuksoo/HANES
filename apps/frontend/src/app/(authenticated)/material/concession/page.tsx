@@ -14,9 +14,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  BadgeCheck, Search, RefreshCw, ShieldCheck, ShieldX, AlertTriangle,
+  BadgeCheck, Search, RefreshCw, ShieldCheck, ShieldX, AlertTriangle, ScanLine,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
+import { WorkerSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -31,6 +32,14 @@ interface ConcessionTarget {
   serialCount: number;
   specialAcceptCount: number;
   specialAcceptYn: string;
+  specialAcceptWorkerCode?: string | null;
+  specialAcceptWorkerName?: string | null;
+}
+
+interface WorkerQrResponse {
+  workerCode: string;
+  workerName?: string | null;
+  dept?: string | null;
 }
 
 const formatQty = (value?: number | null) => (typeof value === "number" ? value.toLocaleString() : "0");
@@ -46,6 +55,11 @@ export default function ConcessionPage() {
   const [selected, setSelected] = useState<ConcessionTarget | null>(null);
   const [actionType, setActionType] = useState<"apply" | "cancel">("apply");
   const [reason, setReason] = useState("");
+  const [specialAcceptWorkerCode, setSpecialAcceptWorkerCode] = useState("");
+  const [specialAcceptWorkerName, setSpecialAcceptWorkerName] = useState("");
+  const [workerQrText, setWorkerQrText] = useState("");
+  const [workerQrLoading, setWorkerQrLoading] = useState(false);
+  const [workerQrError, setWorkerQrError] = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -77,10 +91,15 @@ export default function ConcessionPage() {
       await api.post(url, {
         arrivalNo: selected.arrivalNo,
         itemCode: selected.itemCode,
+        specialAcceptWorkerCode: specialAcceptWorkerCode || undefined,
         reason: reason || undefined,
       });
       setIsModalOpen(false);
       setReason("");
+      setSpecialAcceptWorkerCode("");
+      setSpecialAcceptWorkerName("");
+      setWorkerQrText("");
+      setWorkerQrError("");
       setSelected(null);
       fetchData();
     } catch (e: unknown) {
@@ -88,14 +107,41 @@ export default function ConcessionPage() {
     } finally {
       setSaving(false);
     }
-  }, [selected, actionType, reason, fetchData]);
+  }, [selected, actionType, specialAcceptWorkerCode, reason, fetchData]);
 
   const openModal = useCallback((row: ConcessionTarget, type: "apply" | "cancel") => {
     setSelected(row);
     setActionType(type);
     setReason("");
+    setSpecialAcceptWorkerCode(type === "apply" ? "" : (row.specialAcceptWorkerCode ?? ""));
+    setSpecialAcceptWorkerName(type === "apply" ? "" : (row.specialAcceptWorkerName ?? ""));
+    setWorkerQrText("");
+    setWorkerQrError("");
     setIsModalOpen(true);
   }, []);
+
+  const handleWorkerQrLookup = useCallback(async () => {
+    if (!workerQrText.trim()) return;
+    setWorkerQrLoading(true);
+    setWorkerQrError("");
+    try {
+      const res = await api.get(
+        `/master/workers/by-qr/${encodeURIComponent(workerQrText.trim())}`,
+      );
+      const worker = res.data?.data as WorkerQrResponse | undefined;
+      if (!worker?.workerCode) {
+        setWorkerQrError(t("material.concession.workerQrNotFound", "작업자 QR을 찾을 수 없습니다."));
+        return;
+      }
+      setSpecialAcceptWorkerCode(worker.workerCode);
+      setSpecialAcceptWorkerName(worker.workerName ?? worker.workerCode);
+      setWorkerQrText("");
+    } catch {
+      setWorkerQrError(t("material.concession.workerQrNotFound", "작업자 QR을 찾을 수 없습니다."));
+    } finally {
+      setWorkerQrLoading(false);
+    }
+  }, [t, workerQrText]);
 
   const columns = useMemo<ColumnDef<ConcessionTarget>[]>(() => [
     {
@@ -162,6 +208,15 @@ export default function ConcessionPage() {
         );
       },
     },
+    {
+      id: "specialAcceptWorker",
+      header: t("material.concession.specialAcceptWorker", "특채처리자"),
+      size: 120,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => (
+        <span>{row.original.specialAcceptWorkerName || row.original.specialAcceptWorkerCode || "-"}</span>
+      ),
+    },
   ], [t, openModal]);
 
   return (
@@ -197,7 +252,7 @@ export default function ConcessionPage() {
               </div>
             </div>
           }
-          sqlQuery={`SELECT ARRIVAL_NO, ITEM_CODE, VENDOR,\n       COUNT(*) AS SERIAL_COUNT, SUM(INIT_QTY) AS TOTAL_QTY,\n       SUM(CASE WHEN SPECIAL_ACCEPT_YN='Y' THEN 1 ELSE 0 END) AS SPECIAL_ACCEPT_COUNT\nFROM MAT_LOTS\nWHERE COMPANY = '40' AND PLANT_CD = '1000'\n  AND IQC_STATUS = 'FAIL' AND ARRIVAL_NO IS NOT NULL\nGROUP BY ARRIVAL_NO, ITEM_CODE, VENDOR\nORDER BY MIN(CREATED_AT) DESC`} />
+          sqlQuery={`SELECT ARRIVAL_NO, ITEM_CODE, VENDOR,\n       COUNT(*) AS SERIAL_COUNT, SUM(INIT_QTY) AS TOTAL_QTY,\n       SUM(CASE WHEN SPECIAL_ACCEPT_YN='Y' THEN 1 ELSE 0 END) AS SPECIAL_ACCEPT_COUNT,\n       MAX(SPECIAL_ACCEPT_WORKER_CODE) AS SPECIAL_ACCEPT_WORKER_CODE\nFROM MAT_LOTS\nWHERE COMPANY = '40' AND PLANT_CD = '1000'\n  AND IQC_STATUS = 'FAIL' AND ARRIVAL_NO IS NOT NULL\nGROUP BY ARRIVAL_NO, ITEM_CODE, VENDOR\nORDER BY MIN(CREATED_AT) DESC`} />
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
@@ -216,11 +271,60 @@ export default function ConcessionPage() {
             <p className="text-sm text-text-muted">
               {actionType === "apply" ? t("material.concession.applyHint") : t("material.concession.cancelHint")}
             </p>
+            {actionType === "apply" && (
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(13rem,16rem)_auto] gap-2 items-end">
+                  <Input
+                    label={t("material.concession.workerQrScan", "작업자 QR 스캔")}
+                    placeholder={t("material.concession.workerQrScanPlaceholder", "작업자 QR을 스캔하거나 입력 후 Enter")}
+                    value={workerQrText}
+                    onChange={(e) => {
+                      setWorkerQrText(e.target.value);
+                      setWorkerQrError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleWorkerQrLookup();
+                      }
+                    }}
+                    leftIcon={<ScanLine className="w-4 h-4" />}
+                    fullWidth
+                  />
+                  <WorkerSelect
+                    label={t("material.concession.workerSelect", "작업자 선택")}
+                    placeholder={t("material.concession.specialAcceptWorkerPlaceholder", "작업자 선택")}
+                    value={specialAcceptWorkerCode}
+                    onChange={(value) => {
+                      setSpecialAcceptWorkerCode(value);
+                      setSpecialAcceptWorkerName("");
+                      setWorkerQrError("");
+                    }}
+                    fullWidth
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleWorkerQrLookup}
+                    disabled={workerQrLoading || !workerQrText.trim()}
+                  >
+                    {workerQrLoading ? t("common.loading") : t("common.search")}
+                  </Button>
+                </div>
+                {specialAcceptWorkerName && (
+                  <p className="text-xs text-primary">
+                    {t("material.concession.selectedWorker", "선택된 작업자")}: {specialAcceptWorkerName} ({specialAcceptWorkerCode})
+                  </p>
+                )}
+                {workerQrError && <p className="text-xs text-red-500">{workerQrError}</p>}
+              </div>
+            )}
             <Input label={t("material.concession.reason")} placeholder={t("material.concession.reasonPlaceholder")}
               value={reason} onChange={(e) => setReason(e.target.value)} fullWidth />
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={handleAction} disabled={saving}>
+              <Button onClick={handleAction} disabled={saving || (actionType === "apply" && !specialAcceptWorkerCode)}>
                 {saving ? t("common.saving") : actionType === "apply" ? t("material.concession.apply") : t("material.concession.cancel")}
               </Button>
             </div>

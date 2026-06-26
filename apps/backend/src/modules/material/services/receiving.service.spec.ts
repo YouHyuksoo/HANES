@@ -120,10 +120,19 @@ describe('ReceivingService', () => {
     };
     mockMatReceivingRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
     mockPartMasterRepo.find.mockResolvedValue([]);
-    mockMatLotRepo.find.mockResolvedValue([]);
+    mockMatLotRepo.find.mockResolvedValue([
+      {
+        matUid: 'MAT-001',
+        poNo: 'PO-001',
+        iqcStatus: 'FAIL',
+        specialAcceptYn: 'Y',
+        company: 'C1',
+        plant: 'P1',
+      } as MatLot,
+    ]);
     mockWarehouseRepo.find.mockResolvedValue([]);
 
-    await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+    const result = await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
     expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
       where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
@@ -134,6 +143,16 @@ describe('ReceivingService', () => {
     expect(mockWarehouseRepo.find).toHaveBeenCalledWith({
       where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
     });
+    expect(result.data[0]).toEqual(expect.objectContaining({
+      isConcession: true,
+      specialAcceptYn: 'Y',
+    }));
+    expect(result.data[0].lot).toEqual(expect.objectContaining({
+      matUid: 'MAT-001',
+      poNo: 'PO-001',
+      iqcStatus: 'FAIL',
+      specialAcceptYn: 'Y',
+    }));
   });
 
   it('findReceivable prefers the actual arrival warehouse over the default warehouse', async () => {

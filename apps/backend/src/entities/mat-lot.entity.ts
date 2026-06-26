@@ -74,6 +74,10 @@ export class MatLot {
   @Column({ name: 'SPECIAL_ACCEPT_YN', length: 1, default: 'N' })
   specialAcceptYn: string;
 
+  /** 특채 처리 작업자 코드 */
+  @Column({ type: 'varchar2', name: 'SPECIAL_ACCEPT_WORKER_CODE', length: 50, nullable: true })
+  specialAcceptWorkerCode: string | null;
+
   @Column({ name: 'STATUS', length: 20, default: 'NORMAL' })
   status: string;
 

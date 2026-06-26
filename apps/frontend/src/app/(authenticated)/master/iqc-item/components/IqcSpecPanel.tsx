@@ -9,7 +9,7 @@
  * 3. 검사항목 DataGrid: 행 추가/삭제 + 행별 수정 버튼으로 인라인 편집
  * 4. [저장] 한 번에 POST /master/iqc-part-specs
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Save, ClipboardList, Pencil, Check, X } from "lucide-react";
 import { Button, ComCodeBadge } from "@/components/ui";
@@ -22,6 +22,13 @@ interface Props {
   itemCode: string | null;
   itemName: string;
   poolItems: IqcPoolItem[];
+}
+
+interface AqlStandardOption {
+  aqlCode: string;
+  aqlName?: string | null;
+  inspectionLevel?: string | null;
+  aqlValue?: number | null;
 }
 
 const EMPTY_SPEC: IqcPartSpec = {
@@ -39,6 +46,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [validAqlStandards, setValidAqlStandards] = useState<AqlStandardOption[]>([]);
   // 수정 중인 행 인덱스 (-1: 없음)
   const [editingIdx, setEditingIdx] = useState<number>(-1);
   // 수정 임시 값
@@ -49,6 +57,50 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
   const inspLevelOptions = useComCodeOptions("AQL_INSP_LEVEL");
   const aqlOptions = useComCodeOptions("AQL_VALUE");
   const inspectTypeOptions = useComCodeOptions("IQC_ITEM_INSP_TYPE");
+
+  useEffect(() => {
+    let mounted = true;
+    api.get("/quality/aql", { params: { useYn: "Y", limit: "5000" } })
+      .then((res) => {
+        if (!mounted) return;
+        const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+        setValidAqlStandards(rows
+          .filter((row: AqlStandardOption) => row.inspectionLevel && row.aqlValue != null)
+          .map((row: AqlStandardOption) => ({
+            aqlCode: row.aqlCode,
+            aqlName: row.aqlName ?? null,
+            inspectionLevel: row.inspectionLevel?.trim().toUpperCase() ?? null,
+            aqlValue: Number(row.aqlValue),
+          })));
+      })
+      .catch(() => {
+        if (mounted) setValidAqlStandards([]);
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  const aqlStandardOptionsByLevel = useMemo(() => {
+    const grouped = new Map<string, AqlStandardOption[]>();
+    for (const standard of validAqlStandards) {
+      if (!standard.inspectionLevel || standard.aqlValue == null) continue;
+      const list = grouped.get(standard.inspectionLevel) ?? [];
+      if (!list.some((item) => Number(item.aqlValue) === Number(standard.aqlValue))) {
+        list.push(standard);
+      }
+      grouped.set(standard.inspectionLevel, list.sort((a, b) => Number(a.aqlValue) - Number(b.aqlValue)));
+    }
+    return grouped;
+  }, [validAqlStandards]);
+
+  const aqlLevelOptions = useMemo(() => {
+    const levels = new Set(aqlStandardOptionsByLevel.keys());
+    return inspLevelOptions.filter((option) => levels.has(String(option.value).trim().toUpperCase()));
+  }, [aqlStandardOptionsByLevel, inspLevelOptions]);
+
+  const availableAqlOptionsForLevel = useCallback((inspectionLevel?: string | null) => {
+    const level = inspectionLevel?.trim().toUpperCase();
+    return level ? (aqlStandardOptionsByLevel.get(level) ?? []) : [];
+  }, [aqlStandardOptionsByLevel]);
 
   const loadSpec = useCallback(async (code: string) => {
     setLoading(true);
@@ -174,6 +226,14 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
         usl: null,
         judgeCriteria: null,
       });
+    } else if (field === 'inspectionLevel') {
+      const level = (value as string | null)?.trim().toUpperCase() || null;
+      const availableAqlValues = availableAqlOptionsForLevel(level).map((option) => Number(option.aqlValue));
+      setEditDraft({
+        ...editDraft,
+        inspectionLevel: level,
+        aql: editDraft.aql != null && availableAqlValues.includes(Number(editDraft.aql)) ? editDraft.aql : null,
+      });
     } else if (field === 'inspectionType') {
       const v = value as string;
       setEditDraft({
@@ -220,6 +280,13 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const isDraftAqlStandardValid = (draft: IqcSpecRow) => {
+    const inspectionType = draft.inspectionType ?? 'AQL';
+    if (inspectionType !== 'AQL' || draft.aql == null || !draft.inspectionLevel) return true;
+    return availableAqlOptionsForLevel(draft.inspectionLevel)
+      .some((option) => Number(option.aqlValue) === Number(draft.aql));
   };
 
   const applyTemplate = (items: IqcSpecRow[], sampleQty: number, isDest: string) => {
@@ -294,22 +361,22 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
           </div>
         ) : (
           <div className="flex-1 overflow-auto">
-            <table className="w-full text-sm [&_th]:border-r [&_td]:border-r [&_th]:border-border/60 [&_td]:border-border/60 [&_tr>*:last-child]:border-r-0">
+            <table className="w-full text-xs [&_th]:border-r [&_td]:border-r [&_th]:border-border/60 [&_td]:border-border/60 [&_tr>*:last-child]:border-r-0">
               <thead className="sticky top-0 bg-primary/10 border-b border-primary/30">
                 <tr>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-10">{t("master.iqcItem.seq", "순서")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium">{t("master.iqcItem.inspItem", "검사항목")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">{t("master.iqcItem.type", "종류")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.inspectionType", "검사유형")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">{t("master.iqcItem.sampleQtyCol", "샘플수")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.defectGrade", "불량등급")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">{t("master.iqcItem.inspectionLevel", "검사수준")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-20">AQL</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.lsl", "하한(LSL)")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-24">{t("master.iqcItem.usl", "상한(USL)")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium">{t("master.iqcItem.judgeCriteria", "판정기준")}</th>
-                  <th className="px-3 py-2 text-left text-text-muted font-medium w-14">{t("common.unit", "단위")}</th>
-                  <th className="px-3 py-2 w-20"></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-10">{t("master.iqcItem.seq", "순서")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium">{t("master.iqcItem.inspItem", "검사항목")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">{t("master.iqcItem.type", "종류")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("master.iqcItem.inspectionType", "검사유형")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">{t("master.iqcItem.sampleQtyCol", "샘플수")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("master.iqcItem.defectGrade", "불량등급")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">{t("master.iqcItem.inspectionLevel", "검사수준")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">AQL</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("master.iqcItem.lsl", "하한(LSL)")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("master.iqcItem.usl", "상한(USL)")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium">{t("master.iqcItem.judgeCriteria", "판정기준")}</th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-14">{t("common.unit", "단위")}</th>
+                  <th className="px-2 py-1.5 w-20"></th>
                 </tr>
               </thead>
               <tbody>
@@ -324,12 +391,14 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                   const isEditing = editingIdx === idx;
                   const draft = isEditing ? editDraft! : row;
                   const isMeasure = draft.judgeMethod === 'MEASURE';
+                  const draftAqlOptions = availableAqlOptionsForLevel(draft.inspectionLevel);
+                  const canConfirmDraft = isDraftAqlStandardValid(draft);
 
                   if (isEditing) {
                     return (
                       <tr key={idx} className="border-b border-primary/30 bg-primary/5">
-                        <td className="px-3 py-2 text-text-muted text-center">{row.seq}</td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5 text-text-muted text-center">{row.seq}</td>
+                        <td className="px-2 py-1.5">
                           <select
                             value={draft.inspItemCode}
                             onChange={(e) => updateDraft('inspItemCode', e.target.value)}
@@ -343,7 +412,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             ))}
                           </select>
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           {draft.judgeMethod ? (
                             <span className={`text-xs px-1.5 py-0.5 rounded ${
                               isMeasure
@@ -354,7 +423,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             </span>
                           ) : <span className="text-text-muted text-xs">-</span>}
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           <select
                             value={draft.inspectionType ?? 'AQL'}
                             onChange={(e) => updateDraft('inspectionType', e.target.value)}
@@ -365,7 +434,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             ))}
                           </select>
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           {(draft.inspectionType === 'DESTRUCTIVE' || draft.inspectionType === 'FULL' || draft.sampleMethod === 'FIXED') ? (
                             <input
                               type="number"
@@ -377,7 +446,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             />
                           ) : <span className="text-text-muted text-xs">{t("master.iqcItem.auto", "자동")}</span>}
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           <select
                             value={draft.defectGrade ?? ''}
                             onChange={(e) => updateDraft('defectGrade', e.target.value || null)}
@@ -389,31 +458,41 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             ))}
                           </select>
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           <select
                             value={draft.inspectionLevel ?? ''}
                             onChange={(e) => updateDraft('inspectionLevel', e.target.value || null)}
                             className="w-full border border-border rounded px-2 py-1 bg-surface text-text text-sm focus:border-primary focus:outline-none"
                           >
                             <option value="">-</option>
-                            {inspLevelOptions.map((o) => (
+                            {aqlLevelOptions.map((o) => (
                               <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
                           </select>
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           <select
                             value={draft.aql == null ? '' : String(draft.aql)}
                             onChange={(e) => updateDraft('aql', e.target.value === '' ? null : Number(e.target.value))}
                             className="w-full border border-border rounded px-2 py-1 bg-surface text-text text-sm focus:border-primary focus:outline-none"
                           >
                             <option value="">-</option>
-                            {aqlOptions.map((o) => (
-                              <option key={o.value} value={o.value}>{o.label}</option>
+                            {draft.inspectionLevel && draftAqlOptions.length === 0 && (
+                              <option value="" disabled>{t("master.iqcItem.registerAqlStandardFirst", "AQL 기준관리에서 먼저 등록하세요")}</option>
+                            )}
+                            {draftAqlOptions.map((o) => (
+                              <option key={o.aqlCode} value={String(o.aqlValue)}>
+                                {aqlOptions.find((option) => Number(option.value) === Number(o.aqlValue))?.label ?? o.aqlName ?? o.aqlValue}
+                              </option>
                             ))}
                           </select>
+                          {!canConfirmDraft && (
+                            <div className="mt-1 text-[10px] text-red-600">
+                              {t("master.iqcItem.registerAqlStandardFirst", "AQL 기준관리에서 먼저 등록하세요")}
+                            </div>
+                          )}
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           {isMeasure ? (
                             <input
                               type="number"
@@ -424,7 +503,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             />
                           ) : <span className="text-text-muted text-xs">-</span>}
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           {isMeasure ? (
                             <input
                               type="number"
@@ -435,7 +514,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             />
                           ) : <span className="text-text-muted text-xs">-</span>}
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5">
                           <input
                             type="text"
                             value={draft.judgeCriteria ?? ''}
@@ -444,11 +523,12 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
                           />
                         </td>
-                        <td className="px-3 py-2 text-text-muted text-xs">{draft.unit ?? '-'}</td>
-                        <td className="px-3 py-2">
+                        <td className="px-2 py-1.5 text-text-muted text-xs">{draft.unit ?? '-'}</td>
+                        <td className="px-2 py-1.5">
                           <div className="flex items-center gap-1">
                             <button
                               onClick={confirmEdit}
+                              disabled={!canConfirmDraft}
                               className="flex items-center gap-0.5 rounded bg-primary px-2 py-1 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
                               title={t("master.iqcItem.confirm", "확인")}
                             >
@@ -471,14 +551,14 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
 
                   return (
                     <tr key={idx} className="border-b border-border hover:bg-bg-elevated transition-colors">
-                      <td className="px-3 py-2 text-text-muted text-center">{row.seq}</td>
-                      <td className="px-3 py-2 font-medium text-text">
+                      <td className="px-2 py-1.5 text-text-muted text-center">{row.seq}</td>
+                      <td className="px-2 py-1.5 font-medium text-text">
                         {row.inspItemName || row.inspItemCode || <span className="text-text-muted italic">{t("master.iqcItem.notSelected", "미선택")}</span>}
                         {row.inspItemCode && (
                           <span className="ml-1.5 text-xs text-text-muted">({row.inspItemCode})</span>
                         )}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-1.5">
                         {row.judgeMethod ? (
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
                             row.judgeMethod === 'MEASURE'
@@ -489,40 +569,40 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                           </span>
                         ) : <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-1.5">
                         {row.inspectionType && row.inspectionType !== 'AQL'
                           ? <ComCodeBadge groupCode="IQC_ITEM_INSP_TYPE" code={row.inspectionType} />
                           : <span className="text-text-muted text-xs">AQL</span>}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-text">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-text">
                         {(row.inspectionType === 'DESTRUCTIVE' || row.inspectionType === 'FULL')
                           ? (row.sampleQty ?? <span className="text-text-muted text-xs">-</span>)
                           : <span className="text-text-muted text-xs">{t("master.iqcItem.auto", "자동")}</span>}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-1.5">
                         {row.defectGrade
                           ? <ComCodeBadge groupCode="DEFECT_GRADE" code={row.defectGrade} className="!rounded px-2.5 py-1" />
                           : <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-2 text-text font-medium">
+                      <td className="px-2 py-1.5 text-text font-medium">
                         {row.inspectionLevel || <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-text">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-text">
                         {row.aql != null ? row.aql : <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-text">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-text">
                         {row.lsl !== null ? row.lsl : <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-text">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-text">
                         {row.usl !== null ? row.usl : <span className="text-text-muted text-xs">-</span>}
                       </td>
-                      <td className="px-3 py-2 text-text max-w-[200px]">
+                      <td className="px-2 py-1.5 text-text max-w-[200px]">
                         <span className="block truncate" title={row.judgeCriteria ?? undefined}>
                           {row.judgeCriteria || <span className="text-text-muted text-xs">-</span>}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-text-muted text-xs">{row.unit ?? '-'}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-1.5 text-text-muted text-xs">{row.unit ?? '-'}</td>
+                      <td className="px-2 py-1.5">
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => startEdit(idx)}

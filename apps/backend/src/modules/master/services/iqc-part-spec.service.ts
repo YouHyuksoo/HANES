@@ -7,13 +7,15 @@
  * 2. upsert: 헤더 없으면 INSERT, 있으면 UPDATE + 검사항목 전체 교체
  * 3. delete: 헤더 삭제 (CASCADE로 세부항목 자동 삭제)
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { IqcPartSpec } from '../../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../../entities/iqc-part-spec-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { AqlStandard } from '../../../entities/aql-standard.entity';
+import { AqlSamplingRule } from '../../../entities/aql-sampling-rule.entity';
 import { UpsertIqcPartSpecDto } from '../dto/iqc-part-spec.dto';
 
 @Injectable()
@@ -71,6 +73,7 @@ export class IqcPartSpecService {
   ): Promise<IqcPartSpec> {
     return this.tx.run(async (queryRunner) => {
       const tenantWhere = this.tenantWhere(company, plant);
+      await this.assertAqlItemStandardsExist(dto, company, plant, queryRunner.manager);
       let spec = await queryRunner.manager.findOne(IqcPartSpec, { where: { itemCode: dto.itemCode, ...tenantWhere } });
 
       if (!spec) {
@@ -136,6 +139,54 @@ export class IqcPartSpecService {
       if (!saved) throw new NotFoundException(`IQC 기준이 없습니다: ${dto.itemCode}`);
       return saved;
     });
+  }
+
+  private async assertAqlItemStandardsExist(
+    dto: UpsertIqcPartSpecDto,
+    company: string,
+    plant: string,
+    manager: EntityManager,
+  ) {
+    for (const item of dto.items ?? []) {
+      const inspectionType = String(item.inspectionType ?? 'AQL').trim().toUpperCase();
+      const sampleMethod = String(item.sampleMethod ?? 'AQL').trim().toUpperCase();
+      if (inspectionType !== 'AQL' || sampleMethod === 'FIXED' || item.aql == null || !item.inspectionLevel) continue;
+
+      const inspectionLevel = String(item.inspectionLevel).trim().toUpperCase();
+      const aqlValue = Number(item.aql);
+      const standard = await manager.findOne(AqlStandard, {
+        where: this.buildAqlStandardCodeCandidates(inspectionLevel, aqlValue)
+          .map((aqlCode) => ({ company, plant, aqlCode, useYn: 'Y' })),
+      });
+      if (!standard) {
+        throw new BadRequestException(`AQL 기준이 등록되지 않은 조합입니다: ${inspectionLevel} / ${aqlValue}`);
+      }
+
+      const ruleCount = await manager.count(AqlSamplingRule, {
+        where: { company, plant, aqlCode: standard.aqlCode },
+      });
+      if (ruleCount === 0) {
+        throw new BadRequestException(`AQL sampling rule이 없는 기준입니다: ${standard.aqlCode}`);
+      }
+    }
+  }
+
+  private buildAqlStandardCodeCandidates(inspectionLevel: string, aqlValue: number) {
+    const level = inspectionLevel.trim().toUpperCase();
+    const values = this.formatAqlValues(aqlValue);
+    const codes: string[] = [];
+    for (const mode of ['TIGHTENED', 'NORMAL', 'REDUCED']) {
+      for (const value of values) codes.push(`AQL-${level}-${mode}-${value}`);
+    }
+    for (const value of values) codes.push(`AQL-${level}-${value}`);
+    return [...new Set(codes.map((code) => code.trim().toUpperCase()))];
+  }
+
+  private formatAqlValues(aqlValue: number) {
+    const raw = String(aqlValue);
+    const fixed1 = Number.isInteger(aqlValue) ? aqlValue.toFixed(1) : raw;
+    const trimmed = raw.replace(/\.0+$/, '');
+    return [...new Set([raw, fixed1, trimmed])].filter(Boolean);
   }
 
   async resolveItems(

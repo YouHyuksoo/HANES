@@ -114,7 +114,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
         {/* 폼 그리드 */}
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm flex flex-col gap-1">
-            <span>{t('material.arrival.col.receivedQty')} *</span>
+            <span>{t('material.arrival.col.receivedQty')}<span className="text-red-500 ml-0.5">*</span></span>
             <div className="flex items-stretch gap-1">
               <div className="flex-1">
                 <QtyInput
@@ -139,7 +139,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
           </label>
 
           <label className="text-sm flex flex-col gap-1">
-            <span>{t('material.arrival.col.receivedDate')} *</span>
+            <span>{t('material.arrival.col.receivedDate')}<span className="text-red-500 ml-0.5">*</span></span>
             <Input
               type="date"
               max={today}
@@ -149,7 +149,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
           </label>
 
           <label className="text-sm flex flex-col gap-1">
-            <span>{t('material.arrival.col.mfgPartner')} *</span>
+            <span>{t('material.arrival.col.mfgPartner')}<span className="text-red-500 ml-0.5">*</span></span>
             <MfgPartnerSelect
               value={mfgPartnerCode}
               onChange={setMfgPartnerCode}
@@ -159,7 +159,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
           </label>
 
           <label className="text-sm flex flex-col gap-1">
-            <span>{t('material.arrival.col.warehouse')} *</span>
+            <span>{t('material.arrival.col.warehouse')}<span className="text-red-500 ml-0.5">*</span></span>
             <Select
               options={warehouses}
               value={warehouseCode}

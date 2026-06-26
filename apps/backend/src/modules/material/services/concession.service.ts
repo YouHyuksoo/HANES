@@ -16,6 +16,7 @@ import { Repository, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { ConcessionTargetQueryDto, ApplyConcessionDto } from '../dto/concession.dto';
 
 @Injectable()
@@ -27,6 +28,8 @@ export class ConcessionService {
     private readonly matReceivingRepository: Repository<MatReceiving>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(WorkerMaster)
+    private readonly workerMasterRepository: Repository<WorkerMaster>,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -50,6 +53,7 @@ export class ConcessionService {
       .addSelect('SUM(lot.initQty)', 'totalQty')
       .addSelect('COUNT(*)', 'serialCount')
       .addSelect("SUM(CASE WHEN lot.specialAcceptYn = 'Y' THEN 1 ELSE 0 END)", 'specialAcceptCount')
+      .addSelect('MAX(lot.specialAcceptWorkerCode)', 'specialAcceptWorkerCode')
       .addSelect('MIN(lot.recvDate)', 'recvDate')
       .addSelect('MIN(lot.createdAt)', 'createdAt')
       .where('lot.arrivalNo IS NOT NULL')
@@ -75,17 +79,27 @@ export class ConcessionService {
       totalQty: string;
       serialCount: string;
       specialAcceptCount: string;
+      specialAcceptWorkerCode: string | null;
       recvDate: Date | null;
       createdAt: Date | null;
     }>();
 
     const itemCodes = [...new Set(rows.map((r) => r.itemCode).filter(Boolean))];
-    const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
-        where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
-      })
-      : [];
+    const specialAcceptWorkerCodes = [...new Set(rows.map((r) => r.specialAcceptWorkerCode).filter(Boolean))] as string[];
+    const [parts, workers] = await Promise.all([
+      itemCodes.length > 0
+        ? this.partMasterRepository.find({
+          where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
+        })
+        : Promise.resolve([]),
+      specialAcceptWorkerCodes.length > 0
+        ? this.workerMasterRepository.find({
+          where: { workerCode: In(specialAcceptWorkerCodes), ...this.tenantWhere(company, plant) },
+        })
+        : Promise.resolve([]),
+    ]);
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const workerMap = new Map(workers.map((w) => [w.workerCode, w.workerName]));
 
     return rows.map((r) => {
       const part = partMap.get(r.itemCode);
@@ -102,6 +116,10 @@ export class ConcessionService {
         specialAcceptCount,
         /** 그룹 전체 시리얼이 특채 처리되었는지 */
         specialAcceptYn: serialCount > 0 && specialAcceptCount >= serialCount ? 'Y' : 'N',
+        specialAcceptWorkerCode: r.specialAcceptWorkerCode ?? null,
+        specialAcceptWorkerName: r.specialAcceptWorkerCode
+          ? (workerMap.get(r.specialAcceptWorkerCode) ?? r.specialAcceptWorkerCode)
+          : null,
         recvDate: r.recvDate,
         createdAt: r.createdAt,
       };
@@ -110,6 +128,11 @@ export class ConcessionService {
 
   /** 특채 처리 — 그룹의 FAIL 시리얼 전체에 SPECIAL_ACCEPT_YN='Y' 설정 */
   async apply(dto: ApplyConcessionDto, company?: string, plant?: string, userId?: string) {
+    const specialAcceptWorkerCode = dto.specialAcceptWorkerCode?.trim();
+    if (!specialAcceptWorkerCode) {
+      throw new BadRequestException('특채 처리 작업자를 선택해 주세요.');
+    }
+
     const lots = await this.matLotRepository.find({
       where: {
         arrivalNo: dto.arrivalNo,
@@ -127,6 +150,17 @@ export class ConcessionService {
     const tenantCompany = lots[0].company;
     const tenantPlant = lots[0].plant;
 
+    const worker = await this.workerMasterRepository.findOne({
+      where: {
+        workerCode: specialAcceptWorkerCode,
+        useYn: 'Y',
+        ...this.tenantWhere(tenantCompany, tenantPlant),
+      },
+    });
+    if (!worker) {
+      throw new BadRequestException(`유효한 특채 처리 작업자를 찾을 수 없습니다: ${specialAcceptWorkerCode}`);
+    }
+
     await this.matLotRepository.update(
       {
         arrivalNo: dto.arrivalNo,
@@ -134,7 +168,11 @@ export class ConcessionService {
         iqcStatus: 'FAIL',
         ...this.tenantWhere(tenantCompany, tenantPlant),
       },
-      { specialAcceptYn: 'Y', ...(userId ? { updatedBy: userId } : {}) },
+      {
+        specialAcceptYn: 'Y',
+        specialAcceptWorkerCode,
+        ...(userId ? { updatedBy: userId } : {}),
+      },
     );
 
     return {
@@ -142,6 +180,7 @@ export class ConcessionService {
       itemCode: dto.itemCode,
       affectedSerials: lots.length,
       specialAcceptYn: 'Y',
+      specialAcceptWorkerCode,
     };
   }
 
@@ -185,7 +224,7 @@ export class ConcessionService {
         iqcStatus: 'FAIL',
         ...this.tenantWhere(tenantCompany, tenantPlant),
       },
-      { specialAcceptYn: 'N', ...(userId ? { updatedBy: userId } : {}) },
+      { specialAcceptYn: 'N', specialAcceptWorkerCode: null, ...(userId ? { updatedBy: userId } : {}) },
     );
 
     return {

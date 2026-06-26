@@ -44,7 +44,7 @@ interface LocationItem {
 }
 
 interface WorkerItem {
-  id: string;
+  id?: string;
   workerName: string;
   workerCode?: string;
 }
@@ -203,7 +203,7 @@ export function useWorkerOptions(dept?: string) {
     const raw = data?.data;
     const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((w) => ({
-      value: w.id,
+      value: w.workerCode ?? w.id ?? "",
       label: w.workerName,
     }));
   }, [data]);

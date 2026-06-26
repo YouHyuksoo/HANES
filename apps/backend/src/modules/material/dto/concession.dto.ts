@@ -31,4 +31,9 @@ export class ApplyConcessionDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @ApiPropertyOptional({ description: '특채 처리 작업자 코드 (WORKER_MASTERS.WORKER_CODE)' })
+  @IsOptional()
+  @IsString()
+  specialAcceptWorkerCode?: string;
 }

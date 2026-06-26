@@ -656,6 +656,7 @@ export class ReceivingService {
       const part = partMap.get(item.itemCode);
       const lot = item.matUid ? lotMap.get(item.matUid) : null;
       const warehouse = item.warehouseCode ? warehouseMap.get(item.warehouseCode) : null;
+      const isConcession = lot?.iqcStatus === 'FAIL' && lot?.specialAcceptYn === 'Y';
 
       return {
         receiveNo: item.receiveNo,
@@ -666,7 +667,14 @@ export class ReceivingService {
         status: item.status,
         remark: item.remark,
         part: part ? { itemCode: part.itemCode, itemName: part.itemName, unit: part.unit } : null,
-        lot: lot ? { matUid: lot.matUid, poNo: lot.poNo } : null,
+        lot: lot ? {
+          matUid: lot.matUid,
+          poNo: lot.poNo,
+          iqcStatus: lot.iqcStatus,
+          specialAcceptYn: lot.specialAcceptYn,
+        } : null,
+        isConcession,
+        specialAcceptYn: lot?.specialAcceptYn ?? 'N',
         toWarehouse: warehouse ? { warehouseName: warehouse.warehouseName } : null,
         // 공급처(LOT 입고 거래처)
         vendor: lot?.vendor ?? null,

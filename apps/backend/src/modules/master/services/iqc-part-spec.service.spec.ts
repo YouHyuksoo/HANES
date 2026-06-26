@@ -56,6 +56,7 @@ describe('IqcPartSpecService', () => {
       create: jest.fn((_, value) => value),
       save: jest.fn().mockResolvedValue(undefined),
       delete: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue(undefined),
     };
     mockTx.run.mockImplementation(async (callback) => callback({ manager: em } as any));
 
@@ -78,6 +79,38 @@ describe('IqcPartSpecService', () => {
     expect(em.findOne).toHaveBeenNthCalledWith(2, IqcPartSpec, expect.objectContaining({
       where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
     }));
+  });
+
+  it('rejects AQL item rows when no active AQL standard exists for the level/value pair', async () => {
+    const em = {
+      findOne: jest.fn()
+        .mockResolvedValueOnce(null),
+      create: jest.fn((_, value) => value),
+      save: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue(undefined),
+      count: jest.fn().mockResolvedValue(0),
+    };
+    mockTx.run.mockImplementation(async (callback) => callback({ manager: em } as any));
+
+    await expect(target.upsert({
+      itemCode: 'ITEM-001',
+      sampleQty: 1,
+      isDest: 'N',
+      useYn: 'Y',
+      items: [{
+        seq: 1,
+        inspItemCode: 'IQC-DIM',
+        defectGrade: 'MAJOR',
+        inspectionLevel: 'S-2',
+        aql: 0.015,
+        inspectionType: 'AQL',
+        sampleMethod: 'AQL',
+        useYn: 'Y',
+      }],
+    }, 'C1', 'P1', 'user1')).rejects.toThrow('AQL 기준이 등록되지 않은 조합입니다: S-2 / 0.015');
+
+    expect(em.delete).not.toHaveBeenCalledWith(IqcPartSpecItem, expect.anything());
   });
 
   it('resolveItems가 파괴검사 항목의 inspectionType/sampleQty를 반환한다', async () => {

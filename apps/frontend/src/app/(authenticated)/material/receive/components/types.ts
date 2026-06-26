@@ -16,6 +16,8 @@ export interface LotInfo {
   poNo?: string | null;
   vendor?: string | null;
   initQty?: number;
+  iqcStatus?: string | null;
+  specialAcceptYn?: string | null;
 }
 
 export interface WarehouseInfo {
@@ -67,6 +69,10 @@ export interface ReceivingRecord {
   manufacturer?: string | null;
   /** 양산/MRO 구분: 'PROD'=양산, 'MRO'=소모품 */
   materialClass?: 'PROD' | 'MRO' | null;
+  /** IQC FAIL LOT을 특채 승인 후 입고한 이력 여부 */
+  isConcession?: boolean;
+  /** 원 LOT의 SPECIAL_ACCEPT_YN */
+  specialAcceptYn?: string | null;
 }
 
 /** 입고 통계 */
