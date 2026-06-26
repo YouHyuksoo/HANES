@@ -153,7 +153,7 @@ export default function IqcPartSpecPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
-        <div className="col-span-3 min-h-0">
+        <div className="col-span-2 min-h-0">
           <ItemListPanel
             parts={parts}
             linkCountMap={specCountMap}
@@ -164,7 +164,7 @@ export default function IqcPartSpecPage() {
             loading={partsLoading}
           />
         </div>
-        <div className="col-span-9 min-h-0 flex flex-col gap-3">
+        <div className="col-span-10 min-h-0 flex flex-col gap-3">
           {selectedPart && (
             <div className="flex-shrink-0 rounded-lg border border-border bg-bg px-4 py-3" data-iqc-part-aql-summary>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -186,47 +186,47 @@ export default function IqcPartSpecPage() {
                 </label>
               </div>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.aqlPolicy", "AQL 정책")}</div>
-                  <div className="mt-1 text-sm font-semibold text-text">{selectedPart.iqcAqlPolicyCode || "-"}</div>
+                <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
+                  <div className="text-[10px] leading-tight text-text-muted">{t("master.iqcPartSpec.aqlPolicy", "AQL 정책")}</div>
+                  <div className="mt-0.5 text-xs font-semibold text-text">{selectedPart.iqcAqlPolicyCode || "-"}</div>
                 </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.defaultSampleQty", "기본시료수")}</div>
-                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">{renderAqlValue(selectedPart.sampleQty)}</div>
+                <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
+                  <div className="text-[10px] leading-tight text-text-muted">{t("master.iqcPartSpec.defaultSampleQty", "기본시료수")}</div>
+                  <div className="mt-0.5 text-xs font-semibold text-text tabular-nums">{renderAqlValue(selectedPart.sampleQty)}</div>
                 </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">{t("master.iqcItem.inspectionLevel", "검사수준")}</div>
-                  <div className="mt-1 text-sm font-semibold text-text">
+                <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
+                  <div className="text-[10px] leading-tight text-text-muted">{t("master.iqcItem.inspectionLevel", "검사수준")}</div>
+                  <div className="mt-0.5 text-xs font-semibold text-text">
                     {aqlPreviewLoading ? "..." : (aqlPreview?.inspectionLevel ?? "-")}
                   </div>
                 </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.sampleQty", "샘플수량")}</div>
-                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
+                  <div className="text-[10px] leading-tight text-text-muted">{t("master.iqcPartSpec.sampleQty", "샘플수량")}</div>
+                  <div className="mt-0.5 text-xs font-semibold text-text tabular-nums">
                     {aqlPreviewLoading ? "..." : (aqlPreview?.sampleQty ?? "-")}
                   </div>
                 </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">Major Ac/Re</div>
-                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
+                  <div className="text-[10px] leading-tight text-text-muted">Major Ac/Re</div>
+                  <div className="mt-0.5 text-xs font-semibold text-text tabular-nums">
                     {aqlPreviewLoading ? "..." : (aqlPreview?.majorRule ? `${aqlPreview.majorRule.acceptQty}/${aqlPreview.majorRule.rejectQty}` : "-")}
                   </div>
                 </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">Minor Ac/Re</div>
-                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
+                  <div className="text-[10px] leading-tight text-text-muted">Minor Ac/Re</div>
+                  <div className="mt-0.5 text-xs font-semibold text-text tabular-nums">
                     {aqlPreviewLoading ? "..." : (aqlPreview?.minorRule ? `${aqlPreview.minorRule.acceptQty}/${aqlPreview.minorRule.rejectQty}` : "-")}
                   </div>
                 </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.inspItemCriteria", "검사항목 기준")}</div>
-                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
+                  <div className="text-[10px] leading-tight text-text-muted">{t("master.iqcPartSpec.inspItemCriteria", "검사항목 기준")}</div>
+                  <div className="mt-0.5 text-xs font-semibold text-text tabular-nums">
                     {aqlPreviewLoading ? "..." : t("master.iqcPartSpec.countCases", "{{count}}건", { count: itemSpecSummary.total })}
                   </div>
                 </div>
-                <div className="rounded border border-border/70 bg-surface px-3 py-2">
-                  <div className="text-[11px] text-text-muted">{t("master.iqcPartSpec.destFixed", "파괴/고정")}</div>
-                  <div className="mt-1 text-sm font-semibold text-text tabular-nums">
+                <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
+                  <div className="text-[10px] leading-tight text-text-muted">{t("master.iqcPartSpec.destFixed", "파괴/고정")}</div>
+                  <div className="mt-0.5 text-xs font-semibold text-text tabular-nums">
                     {aqlPreviewLoading ? "..." : t("master.iqcPartSpec.countCases", "{{count}}건", { count: itemSpecSummary.fixed })}
                   </div>
                 </div>
