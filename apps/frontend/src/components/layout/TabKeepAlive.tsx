@@ -11,7 +11,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { useTabStore, MAX_TABS } from "@/stores/tabStore";
+import { useTabStore, useMaxTabs } from "@/stores/tabStore";
 import { getPageComponent } from "./pageRegistry.generated";
 
 type CachedPage = {
@@ -46,6 +46,7 @@ const KeepAliveCell = memo(function KeepAliveCell({
 export default function TabKeepAlive({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const tabs = useTabStore((s) => s.tabs);
+  const maxTabs = useMaxTabs();
   const pagesRef = useRef(new Map<string, CachedPage>());
   // path:"" 초기값 — registry resolve 전(로딩 중)과 resolve 후 컴포넌트 없음(미등록)을 구분한다.
   const [loadedPage, setLoadedPage] = useState<LoadedPage>({ path: "", Component: null });
@@ -86,7 +87,7 @@ export default function TabKeepAlive({ children }: { children: ReactNode }) {
 
   const visiblePages = Array.from(pagesRef.current.values())
     .sort((a, b) => b.lastSeen - a.lastSeen)
-    .slice(0, MAX_TABS)
+    .slice(0, maxTabs)
     .sort((a, b) => a.lastSeen - b.lastSeen);
 
   return (

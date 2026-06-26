@@ -13,7 +13,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { useTabStore, Tab, MAX_TABS } from "@/stores/tabStore";
+import { useTabStore, Tab, useMaxTabs } from "@/stores/tabStore";
 import { menuConfig } from "@/config/menuConfig";
 import { useTabSync } from "@/hooks/useTabSync";
 import TabContextMenu from "./TabContextMenu";
@@ -32,6 +32,7 @@ const SCROLL_AMOUNT = 200;
 export default function TabBar() {
   const { t } = useTranslation();
   const { tabs, activeTabId, setActiveTab, removeTab, limitNoticeOpen, closeLimitNotice } = useTabStore();
+  const maxTabs = useMaxTabs();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [ctxMenu, setCtxMenu] = useState<{ tab: Tab; x: number; y: number } | null>(null);
@@ -205,7 +206,7 @@ export default function TabBar() {
           </Button>
         }
       >
-        <p className="text-text">{t("tabs.limitMessage", { max: MAX_TABS })}</p>
+        <p className="text-text">{t("tabs.limitMessage", { max: maxTabs })}</p>
       </Modal>
     </>
   );

@@ -16,7 +16,7 @@ test('TabKeepAlive lazily keeps visited page components alive without importing 
   assert.match(source, /pagesRef\.current\.set\(pathname/);
   assert.match(source, /Component: currentComponent/);
   assert.match(source, /<KeepAliveCell active=\{page\.path === pathname\} Component=\{page\.Component\}/);
-  assert.match(source, /slice\(0,\s*MAX_TABS\)/);
+  assert.match(source, /slice\(0,\s*maxTabs\)/);
   // keep-alive(display:none)만으로 상태를 보존한다. DOM 직렬화 저장/복원 레이어는 제거됨.
   assert.doesNotMatch(source, /restoreTabPageState/);
   assert.doesNotMatch(source, /saveTabPageState/);
