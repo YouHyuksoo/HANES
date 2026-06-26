@@ -1,10 +1,12 @@
 export type TraceSearchMode =
   | 'product'
   | 'material'
+  | 'supplierLot'
   | 'box'
   | 'pallet'
   | 'shipOrder'
   | 'equipment'
+  | 'operator'
   | 'workOrder'
   | 'sg';
 

@@ -8,11 +8,13 @@ import {
   CalendarDays,
   ChevronLeft,
   Factory,
+  Layers,
   Package,
   ScanLine,
   Search,
   Tag,
   Truck,
+  User,
   Wrench,
   X,
   type LucideProps,
@@ -47,17 +49,20 @@ interface EquipmentInput {
 const MODE_CARDS: ModeCard[] = [
   { mode: "product", Icon: Barcode, label: "제품 바코드", description: "제품 1건의 제조이력과 투입 자재를 역추적" },
   { mode: "material", Icon: Tag, label: "자재 UID / LOT", description: "자재가 투입된 대상 제품을 정추적" },
+  { mode: "supplierLot", Icon: Layers, label: "원자재 업체 LOT", description: "원자재 업체 LOT(송장번호)이 투입된 제품을 역추적" },
   { mode: "box", Icon: Package, label: "박스번호", description: "박스에 포함된 제품과 포장 이력 조회" },
   { mode: "pallet", Icon: Boxes, label: "팔레트번호", description: "팔레트에 적재된 박스와 제품 조회" },
   { mode: "shipOrder", Icon: Truck, label: "출하지시번호", description: "출하 대상 제품과 포장 단위 조회" },
   { mode: "equipment", Icon: Wrench, label: "설비 + 기간", description: "설비에서 생산 또는 검사된 제품 조회" },
+  { mode: "operator", Icon: User, label: "작업자 + 기간", description: "작업자가 기간 내 생산실적을 남긴 제품 조회" },
   { mode: "workOrder", Icon: Factory, label: "작업지시번호", description: "작업지시 기준 생산 제품과 반제품 조회" },
   { mode: "sg", Icon: ScanLine, label: "SG 바코드", description: "반제품 이력과 해당 SG를 사용한 제품 조회" },
 ];
 
-const SINGLE_PLACEHOLDER: Record<Exclude<TraceSearchMode, "equipment">, string> = {
+const SINGLE_PLACEHOLDER: Record<Exclude<TraceSearchMode, "equipment" | "operator">, string> = {
   product: "FG 바코드를 스캔하거나 입력",
   material: "MAT_UID 또는 자재 LOT를 입력",
+  supplierLot: "원자재 업체 LOT(송장번호)를 입력",
   box: "박스번호를 입력",
   pallet: "팔레트번호를 입력",
   shipOrder: "출하지시번호를 입력",
@@ -93,7 +98,9 @@ export default function TraceSearchWizard({ isOpen, loading, onClose, onSubmit }
 
   const selectedCard = MODE_CARDS.find((card) => card.mode === mode);
   const isEquipment = mode === "equipment";
-  const canSubmit = isEquipment
+  const isOperator = mode === "operator";
+  const needsPeriod = isEquipment || isOperator;
+  const canSubmit = needsPeriod
     ? !!equipment.equipCode.trim()
     : !!single.value.trim();
 
@@ -113,6 +120,15 @@ export default function TraceSearchWizard({ isOpen, loading, onClose, onSubmit }
       onSubmit({
         mode,
         equipCode: equipment.equipCode.trim(),
+        dateFrom: equipment.dateFrom,
+        dateTo: equipment.dateTo,
+      });
+      return;
+    }
+    if (mode === "operator") {
+      onSubmit({
+        mode,
+        value: equipment.equipCode.trim(),
         dateFrom: equipment.dateFrom,
         dateTo: equipment.dateTo,
       });
@@ -167,14 +183,18 @@ export default function TraceSearchWizard({ isOpen, loading, onClose, onSubmit }
 
           {step === "input" && mode && (
             <div className="space-y-4">
-              {isEquipment ? (
+              {needsPeriod ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <Input
-                    label={t("quality.trace.wizard.equipCode", "설비코드")}
+                    label={
+                      isOperator
+                        ? t("quality.trace.wizard.workerCode", "작업자코드")
+                        : t("quality.trace.wizard.equipCode", "설비코드")
+                    }
                     value={equipment.equipCode}
                     onChange={(event) => setEquipment((prev) => ({ ...prev, equipCode: event.target.value }))}
                     onKeyDown={(event) => event.key === "Enter" && submit()}
-                    leftIcon={<Wrench className="h-4 w-4" />}
+                    leftIcon={isOperator ? <User className="h-4 w-4" /> : <Wrench className="h-4 w-4" />}
                     fullWidth
                     autoFocus
                   />

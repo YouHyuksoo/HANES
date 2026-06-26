@@ -25,10 +25,12 @@ import TraceSearchWizard from "./components/TraceSearchWizard";
 const MODE_LABELS: Record<TraceSearchMode, string> = {
   product: "제품 바코드",
   material: "자재 UID / LOT",
+  supplierLot: "원자재 업체 LOT",
   box: "박스번호",
   pallet: "팔레트번호",
   shipOrder: "출하지시번호",
   equipment: "설비 + 기간",
+  operator: "작업자 + 기간",
   workOrder: "작업지시번호",
   sg: "SG 바코드",
 };
@@ -86,10 +88,19 @@ export default function TracePage() {
             dateFrom: input.dateFrom,
             dateTo: input.dateTo,
           }
+        : input.mode === "operator"
+        ? {
+            mode: input.mode,
+            value: input.value,
+            dateFrom: input.dateFrom,
+            dateTo: input.dateTo,
+          }
         : { mode: input.mode, value: input.value };
     const summary =
       input.mode === "equipment"
         ? `${input.equipCode} · ${input.dateFrom}~${input.dateTo}`
+        : input.mode === "operator"
+        ? `${input.value} · ${input.dateFrom}~${input.dateTo}`
         : input.value;
 
     try {

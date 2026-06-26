@@ -564,6 +564,8 @@ export class ProductTraceabilityService {
         return this.resolveProductCandidates(value, company, plant);
       case 'material':
         return this.resolveMaterialCandidates(value, company, plant);
+      case 'supplierLot':
+        return this.resolveSupplierLotCandidates(value, company, plant);
       case 'box':
         return this.resolveBoxCandidates(value, company, plant);
       case 'pallet':
@@ -572,6 +574,8 @@ export class ProductTraceabilityService {
         return this.resolveShipOrderCandidates(value, company, plant);
       case 'equipment':
         return this.resolveEquipmentCandidates(input.equipCode?.trim() ?? '', input.dateFrom ?? '', input.dateTo ?? '', company, plant);
+      case 'operator':
+        return this.resolveOperatorCandidates(value, input.dateFrom ?? '', input.dateTo ?? '', company, plant);
       case 'workOrder':
         return this.resolveWorkOrderCandidates(value, company, plant);
       case 'sg':
@@ -604,6 +608,31 @@ export class ProductTraceabilityService {
       take: 200,
     });
     const matUids = [...new Set([value, ...lotRows.map((lot) => lot.matUid)].filter(Boolean))];
+    return this.resolveFgCandidatesByMatUids(matUids, '자재 UID/LOT', value, company, plant);
+  }
+
+  /** 원자재 업체 LOT(= MAT_LOTS.INVOICE_NO 송장번호) 기준으로 투입 제품을 역추적 */
+  private async resolveSupplierLotCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+    const lotRows = await this.matLotRepo.find({
+      where: [
+        { invoiceNo: value, company, plant },
+        { invoiceNo: Like(`%${value}%`), company, plant },
+      ],
+      take: 200,
+    });
+    const matUids = [...new Set(lotRows.map((lot) => lot.matUid).filter(Boolean))];
+    return this.resolveFgCandidatesByMatUids(matUids, '원자재 업체 LOT', value, company, plant);
+  }
+
+  /** 자재 UID 집합 → 계보(genealogy)·투입이력으로 연결된 FG 후보로 변환 (자재/업체LOT 공통) */
+  private async resolveFgCandidatesByMatUids(
+    matUidsInput: string[],
+    sourceLabel: string,
+    sourceValue: string,
+    company: string,
+    plant: string,
+  ): Promise<TraceCandidate[]> {
+    const matUids = [...new Set(matUidsInput.filter(Boolean))];
     if (matUids.length === 0) return [];
 
     const fgKeys = new Set<string>();
@@ -640,7 +669,7 @@ export class ProductTraceabilityService {
     const fgs = fgKeys.size
       ? await this.fgLabelRepo.find({ where: { fgBarcode: In([...fgKeys]), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
       : [];
-    return this.fgRowsToCandidates(fgs, '자재 UID/LOT', value, company, plant);
+    return this.fgRowsToCandidates(fgs, sourceLabel, sourceValue, company, plant);
   }
 
   private async resolveBoxCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
@@ -702,6 +731,39 @@ export class ProductTraceabilityService {
       : [];
     const direct = await this.fgLabelRepo.find({ where: { equipCode, company, plant }, take: 500, order: { issuedAt: 'DESC' } });
     return this.fgRowsToCandidates([...byOrder, ...direct], '설비 + 기간', equipCode, company, plant);
+  }
+
+  /** 작업자코드 + 기간 기준으로 해당 작업자가 생산실적을 남긴 제품을 조회 */
+  private async resolveOperatorCandidates(
+    workerCode: string,
+    dateFrom: string,
+    dateTo: string,
+    company: string,
+    plant: string,
+  ): Promise<TraceCandidate[]> {
+    if (!workerCode) return [];
+    const prodResults = await this.prodResultRepo.find({
+      where: { workerId: workerCode, company, plant },
+      take: 500,
+      order: { startAt: 'DESC' },
+    });
+    const fromTime = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
+    const toTime = dateTo ? new Date(`${dateTo}T23:59:59`).getTime() : Number.POSITIVE_INFINITY;
+    const orderNos = [
+      ...new Set(
+        prodResults
+          .filter((result) => {
+            const at = result.startAt ?? result.createdAt;
+            const time = at instanceof Date ? at.getTime() : 0;
+            return time >= fromTime && time <= toTime;
+          })
+          .map((result) => result.orderNo),
+      ),
+    ];
+    const byOrder = orderNos.length
+      ? await this.fgLabelRepo.find({ where: { orderNo: In(orderNos), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      : [];
+    return this.fgRowsToCandidates(byOrder, '작업자 + 기간', workerCode, company, plant);
   }
 
   private async resolveWorkOrderCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {

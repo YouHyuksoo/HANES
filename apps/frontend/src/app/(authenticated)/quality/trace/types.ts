@@ -1,10 +1,12 @@
 export type TraceSearchMode =
   | "product"
   | "material"
+  | "supplierLot"
   | "box"
   | "pallet"
   | "shipOrder"
   | "equipment"
+  | "operator"
   | "workOrder"
   | "sg";
 
@@ -21,8 +23,9 @@ export interface TraceCandidate {
 }
 
 export type TraceSearchInput =
-  | { mode: Exclude<TraceSearchMode, "equipment">; value: string }
-  | { mode: "equipment"; equipCode: string; dateFrom: string; dateTo: string };
+  | { mode: Exclude<TraceSearchMode, "equipment" | "operator">; value: string }
+  | { mode: "equipment"; equipCode: string; dateFrom: string; dateTo: string }
+  | { mode: "operator"; value: string; dateFrom: string; dateTo: string };
 
 export interface ProcessStep {
   process: string;

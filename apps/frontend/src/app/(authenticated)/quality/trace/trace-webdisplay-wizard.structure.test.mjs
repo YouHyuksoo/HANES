@@ -34,10 +34,12 @@ test('trace wizard offers the HANES trace start points as cards', () => {
   for (const mode of [
     'product',
     'material',
+    'supplierLot',
     'box',
     'pallet',
     'shipOrder',
     'equipment',
+    'operator',
     'workOrder',
     'sg',
   ]) {
@@ -85,10 +87,12 @@ test('backend exposes candidates endpoint and resolver for WebDisplay-style trac
   assert.match(service, /async findCandidates/);
   assert.match(service, /resolveProductCandidates/);
   assert.match(service, /resolveMaterialCandidates/);
+  assert.match(service, /resolveSupplierLotCandidates/);
   assert.match(service, /resolveBoxCandidates/);
   assert.match(service, /resolvePalletCandidates/);
   assert.match(service, /resolveShipOrderCandidates/);
   assert.match(service, /resolveEquipmentCandidates/);
+  assert.match(service, /resolveOperatorCandidates/);
   assert.match(service, /resolveWorkOrderCandidates/);
   assert.match(service, /resolveSgCandidates/);
 });
