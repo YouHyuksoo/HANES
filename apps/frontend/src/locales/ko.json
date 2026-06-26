@@ -2376,7 +2376,8 @@
       },
       "catPart": "품목",
       "srcPallet": "팔레트",
-      "srcSgLabel": "반제품 SFG"
+      "srcSgLabel": "반제품 SFG",
+      "srcFgLabel": "완제품 FG"
     },
     "company": {
       "title": "회사관리",
@@ -3835,6 +3836,12 @@
       "confirmFailed": "서브 키팅 확정에 실패했습니다.",
       "cancelIssue": "발행 취소"
     },
+    "fgLabel": {
+      "prepareFailed": "FG 라벨 출력 화면을 준비하지 못했습니다.",
+      "printSent": "FG 라벨 {{count}}건을 프린터로 전송했습니다.",
+      "agentUnavailable": "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.",
+      "printError": "FG 라벨 출력 중 오류가 발생했습니다."
+    },
     "inputAssembly": {
       "title": "실적입력(조립)",
       "description": "반제품 SFG 라벨을 스캔하여 완제품을 조립합니다.",
@@ -3953,9 +3960,6 @@
       "confirmHold": "선택한 작업지시를 홀딩하시겠습니까? 실적등록/출하가 차단됩니다.",
       "confirmHoldRelease": "선택한 작업지시의 홀딩을 해제하시겠습니까?",
       "confirmCancel": "선택한 작업지시를 취소하시겠습니까?",
-      "preIssueBtn": "바코드 사전발행",
-      "preIssueQty": "발행 수량",
-      "preIssueSuccess": "{{count}}건의 바코드가 발행되었습니다.",
       "printTitle": "작업지시서",
       "printBtn": "작업지시서 출력",
       "printDate": "출력일",

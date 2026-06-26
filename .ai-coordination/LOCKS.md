@@ -2,6 +2,20 @@
 
 ## Active Locks
 
+## T-CHECKOUT-LOCALHOST-QA localhost checkout 흐름 브라우저 QA
+status: active
+owner: codex
+role: operator
+started: 2026-06-26 22:32 KST
+last_seen: 2026-06-26 22:32 KST
+expires: 2026-06-27 00:32 KST
+files:
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+note: localhost checkout/출고 관련 흐름을 브라우저로 검증한다. 앱 소스 파일은 수정하지 않는다.
+
 ## T-MASTER-PART-PAGE-STANDARD 품목마스터 페이지 표준 문서화
 status: stale
 owner: codex

@@ -88,42 +88,6 @@ export class ReceivingService {
     }
   }
 
-  private async assertIqcCertificatePolicy(lot: MatLot): Promise<void> {
-    const tenantWhere = this.tenantWhere(lot.company, lot.plant);
-    const part = await this.partMasterRepository.findOne({
-      where: { itemCode: lot.itemCode, ...tenantWhere },
-      select: ['itemCode', 'iqcYn'],
-    });
-    if (part?.iqcYn !== 'Y') {
-      return;
-    }
-
-    const iqcLog = await this.iqcLogRepository.findOne({
-      where: lot.arrivalNo
-        ? {
-            arrivalNo: lot.arrivalNo,
-            itemCode: lot.itemCode,
-            result: 'PASS',
-            status: 'DONE',
-            ...tenantWhere,
-          }
-        : {
-            matUid: lot.matUid,
-            itemCode: lot.itemCode,
-            result: 'PASS',
-            status: 'DONE',
-            ...tenantWhere,
-          },
-      order: { inspectDate: 'DESC' },
-    });
-
-    if (!iqcLog?.certFilePath) {
-      throw new BadRequestException(
-        `검사대상품은 검사성적서 업로드 후 입고할 수 있습니다. LOT: ${lot.matUid}`,
-      );
-    }
-  }
-
   /** 입고 가능 LOT 목록 (IQC 합격 + 미입고/부분입고) */
   async findReceivable(company?: string, plant?: string) {
     // 입고 대상 LOT 조회 (initQty > 0 조건으로 유효 LOT 필터)
@@ -269,13 +233,10 @@ export class ReceivingService {
           : null;
         const arrivalWarehouse = arrivalWhCode ? warehouseMap.get(arrivalWhCode) : null;
         const part = partMap.get(lot.itemCode);
-        // 특채(불합격 + 특채승인) LOT은 검사성적서 정책에서 면제 (PASS 검사 이력이 없음)
         const isConcession = lot.iqcStatus === 'FAIL' && lot.specialAcceptYn === 'Y';
-        const certRequired = !isConcession && part?.iqcYn === 'Y';
         const iqcLog = lot.arrivalNo
           ? iqcLogByArrivalItem.get(`${lot.arrivalNo}::${lot.itemCode}`)
           : null;
-        const certUploaded = !certRequired || !!iqcLog?.certFilePath;
 
         return {
           ...lot,
@@ -289,10 +250,10 @@ export class ReceivingService {
           arrivalWarehouseCode: arrivalWarehouse?.warehouseCode || defaultWarehouse?.warehouseCode,
           arrivalWarehouseName: arrivalWarehouse?.warehouseName || defaultWarehouse?.warehouseName,
           labelPrinted: printedLotNos.has(lot.matUid),
-          certRequired,
-          certUploaded,
+          certRequired: false,
+          certUploaded: !!iqcLog?.certFilePath,
           isConcession,
-          receivingBlockedReason: certRequired && !certUploaded ? '검사성적서 미첨부' : null,
+          receivingBlockedReason: null,
         };
       })
       .filter((lot) => lot.remainingQty > 0);
@@ -404,9 +365,6 @@ export class ReceivingService {
       if (lot.iqcStatus !== 'PASS' && !isConcession) {
         throw new BadRequestException(`IQC 합격 또는 특채 승인되지 않은 LOT입니다: ${lot.matUid}`);
       }
-      // 특채 LOT은 검사성적서 정책에서 면제
-      if (!isConcession) await this.assertIqcCertificatePolicy(lot);
-
       // 기입고수량 확인
       const receivedAgg = await this.stockTransactionRepository
         .createQueryBuilder('tx')

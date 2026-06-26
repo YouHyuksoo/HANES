@@ -29,6 +29,127 @@ notes:
 
 ## Active Tasks
 
+## T-CHECKOUT-LOCALHOST-QA localhost checkout 흐름 브라우저 QA
+status: IN_PROGRESS
+owner: codex
+role: operator
+scope:
+- localhost에서 checkout/출고 관련 흐름을 브라우저로 검증
+files:
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- pending: in-app Browser localhost QA
+review:
+- 사용자 확인
+notes:
+- 앱 소스는 수정하지 않고 실행 중 localhost 화면과 네트워크/콘솔 상태를 확인한다.
+
+## T-IQC-AQL-ISO-REDESIGN AQL ISO 2859 표준 구조 재설계
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- `/quality/aql`을 ISO 2859 흐름(`LOT+검사수준 -> Code Letter -> Sample Size -> AQL -> Ac/Re`) 기준 DB/API/UI로 재설계
+- 기존 `AQL_SAMPLING_RULES` 직접 판정 구조를 즉시 폐기하고 신규 표준 테이블로 resolve 경로 전환
+files:
+- apps/backend/src/entities/aql-*.entity.ts
+- apps/backend/src/modules/quality/aql/**
+- apps/backend/src/migrations/2026-06-26_iqc_aql_iso2859_redesign.sql
+- apps/frontend/src/app/(authenticated)/quality/aql/**
+- docs/superpowers/plans/2026-06-26-aql-iso2859-redesign.md
+- docs/reports/db-schema-erd.md
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/DECISIONS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED 확인: ISO Code Letter 기반 resolve 서비스 테스트가 구형 LOT 직접 rule 기준과 맞지 않아 실패
+- PASS: `pnpm.cmd --filter @harness/backend test -- aql-standard.entity.spec.ts aql.service.spec.ts --runInBand`
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/quality/aql/iqc-aql.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: JSHANES `2026-06-26_iqc_aql_iso2859_redesign.sql` 적용
+- PASS: JSHANES post-check `AQL_CODE_LETTER_RULES=105`, `AQL_CODE_LETTER_SAMPLES=16`, `AQL_ACCEPTANCE_RULES=62`
+- PASS: JSHANES 대표값 `LOT 350 + Level II -> H`, `H -> sample 50`, `H + AQL 1.0 -> Ac1/Re2`, `A + AQL 0.015 -> sample code J / Ac0/Re1`
+- PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+- PASS: 3002 `/quality/aql` Playwright 로그인 후 탭 표시/전환 확인, console error 0, 구형 LOT rule 안내문 미표시
+- PASS: 후속 빈 화면 보고 대응 후 Code Letter/Sampling Plan 탭 진입 시 `/iso` 재조회 보강, 3002 Playwright `전체 105건` 표시 확인
+- PASS: 후속 UI 보정 후 Code Letter/Sampling Plan을 사용자가 제공한 ISO 이미지형 매트릭스 표로 표시, 3002 Playwright 캡처 확인
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- 사용자가 점진폐기가 아니라 즉시 표준 구조 적용을 지시했다.
+- 기존 REVIEW 작업 `T-IQC-AQL-SAMPLE-SIZE-NORMALIZE`의 cap/보정 방향은 이번 구조에서 폐기된다.
+- 신규 UI는 `AQL 정책관리`, `AQL 기준`, `Code Letter 표`, `Sampling Plan 표` 4개 탭으로 구성한다.
+- `Code Letter 표`와 `Sampling Plan 표`는 일반 DataGrid 목록이 아니라 ISO 원표처럼 행/열 매트릭스로 표시한다.
+
+## T-IQC-AQL-SAMPLE-SIZE-NORMALIZE AQL 샘플수량 정상화
+status: REVIEW
+owner: codex
+role: implementer/operator
+scope:
+- JSHANES `AQL_SAMPLING_RULES`의 `SAMPLE_SIZE > LOT_QTY_TO` 비정상 행 보정
+- AQL resolve 결과가 실제 LOT 수량보다 큰 샘플수량을 반환하지 않도록 방어
+files:
+- apps/backend/src/modules/quality/aql/services/aql.service.ts
+- apps/backend/src/modules/quality/aql/services/aql.service.spec.ts
+- apps/backend/src/migrations/2026-06-26_fix_aql_sample_size_not_exceed_lot.sql
+- apps/backend/src/migrations/2026-06-26_aql_standard_s1_0_015.sql
+- apps/backend/src/migrations/2026-06-26_aql_standard_I_0.01.sql
+- apps/backend/src/migrations/aql-sample-size-normalize.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: `pnpm.cmd --filter @harness/backend test -- aql.service.spec.ts --runInBand`
+- PASS: `node --test apps/backend/src/migrations/aql-sample-size-normalize.structure.test.mjs`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: JSHANES correction SQL 적용/재실행 성공
+- PASS: JSHANES `SAMPLE_SIZE > LOT_QTY_TO` 0건
+review:
+- needs-review
+notes:
+- JSHANES pre-check에서 `SAMPLE_SIZE > LOT_QTY_TO` 행 9건 확인: `AQL-I-0.01` 5건, `AQL-S-1-0.015` 4건.
+- 화면의 LOT 2~8 구간 sampleSize 80은 계산 문제가 아니라 seed/migration 데이터 문제다.
+- 원본 seed SQL도 수정해 `AQL-S-1-0.015`와 `AQL-I-0.01` 작은 LOT 구간이 다시 비정상 샘플수량으로 돌아가지 않게 했다.
+- 후속 사용자 정정으로 이 보정 방향은 ISO 2859 기준에서 폐기됐다. 관련 correction migration/test는 삭제했고, `T-IQC-AQL-ISO-REDESIGN`에서 표준 sample과 실제 검사수량을 분리했다.
+
+## T-IQC-CERT-OPTIONAL IQC 성적서 첨부 선택 처리
+status: REVIEW
+owner: codex
+role: implementer
+scope:
+- `/material/iqc` 검사 이후 성적서 미첨부 상태에서도 입고 등록이 가능하도록 백엔드 차단 정책 해제
+files:
+- apps/frontend/src/app/(authenticated)/material/receive/components/ReceivableTable.tsx
+- apps/frontend/src/app/(authenticated)/material/receive/components/receivable-table-cert-status.structure.test.mjs
+- apps/backend/src/modules/material/services/receiving.service.ts
+- apps/backend/src/modules/material/services/receiving.service.spec.ts
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- RED: `pnpm.cmd --filter @harness/backend exec jest src/modules/material/services/receiving.service.spec.ts --runInBand`에서 성적서 미첨부 차단 테스트 2건 실패 확인
+- RED: `node --test "apps/frontend/src/app/(authenticated)/material/receive/components/receivable-table-cert-status.structure.test.mjs"`에서 첨부 상태 우선 표시 조건 실패 확인
+- PASS: `pnpm.cmd --filter @harness/backend test -- receiving.service.spec.ts --runInBand`
+- PASS: `node --test "apps/frontend/src/app/(authenticated)/material/receive/components/receivable-table-cert-status.structure.test.mjs"`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: 대상 파일 `git diff --check`
+review:
+- needs-review
+notes:
+- `/material/iqc`의 검사결과 저장 자체는 이미 `certFile`이 있을 때만 업로드하고 없어도 저장 API를 호출한다.
+- 실제 강제는 `ReceivingService`가 IQC 대상품의 PASS 이력에 `certFilePath`가 없으면 입고를 차단하는 정책이다.
+- 입고대기 그리드는 성적서가 선택 첨부로 바뀌어도 이미 첨부된 경우에는 `첨부` 상태를 먼저 보여야 한다.
+
 ## T-PRODUCT-RECEIVE-CANCEL-RETRY 제품입고 취소 후 재입고 버그 보정
 status: REVIEW
 owner: codex

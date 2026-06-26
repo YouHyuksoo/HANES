@@ -8,6 +8,21 @@ Use this heading format for every new entry:
 ## YYYY-MM-DD HH:mm Agent
 ```
 
+## 2026-06-26 21:44 Codex
+
+### T-IQC-AQL-SAMPLE-SIZE-NORMALIZE
+- 요청: `/quality/aql`에서 LOT 2~8 구간 샘플수량이 80으로 표시되는 비정상 AQL 기준을 전부 정상화.
+- 원인: 화면 계산 문제가 아니라 `AQL_SAMPLING_RULES` seed/migration 데이터에 `SAMPLE_SIZE > LOT_QTY_TO`가 들어가 있었다. JSHANES pre-check 결과 9건: `AQL-I-0.01` 5건, `AQL-S-1-0.015` 4건.
+- 조치: correction migration `apps/backend/src/migrations/2026-06-26_fix_aql_sample_size_not_exceed_lot.sql`로 `SAMPLE_SIZE = LOT_QTY_TO` 일괄 보정 후 JSHANES 적용/재실행. 원본 seed `2026-06-26_aql_standard_s1_0_015.sql`, `2026-06-26_aql_standard_I_0.01.sql`도 작은 LOT 구간 정상값으로 수정해 재실행 시 재발하지 않게 했다.
+- 보호: `AqlService`는 저장 시 `sampleSize > lotQtyTo`를 거부하고, resolve 결과는 실제 `lotQty`보다 큰 `sampleSize`를 반환하지 않도록 cap 처리한다.
+
+검증:
+- PASS: `pnpm.cmd --filter @harness/backend test -- aql.service.spec.ts --runInBand`
+- PASS: `node --test apps/backend/src/migrations/aql-sample-size-normalize.structure.test.mjs`
+- PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- PASS: JSHANES `SAMPLE_SIZE > LOT_QTY_TO` 0건
+- PASS: 대상 파일 `git diff --check`
+
 ## 2026-06-26 17:47 Codex
 
 ### T-PRODUCT-RECEIVE-BX2606260001-CLEANUP
@@ -3458,3 +3473,87 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: 대상 파일 `git diff --check`
 - 미실행:
   - 3002 브라우저에서 실제 입고취소 클릭 재현은 수행하지 않았다.
+
+# 2026-06-26 21:52 KST - codex - T-DB-LOCAL-BACKUP-20260626
+
+- `oracle-db` 스킬 기준 JSHANES 프로필로 접속을 확인한 뒤 TEST 스키마를 로컬 `db_backups`에 백업했다.
+- 산출물:
+  - `db_backups/JSHANES_TEST_20260626_213823.dmp` (1,103,872 bytes)
+  - `db_backups/JSHANES_TEST_20260626_213823.log` (14,975 bytes)
+  - `db_backups/JSHANES_TEST_20260626_213823.zip` (163,951 bytes)
+- 검증:
+  - PASS: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --query "SELECT USER AS CURRENT_USER, SYS_CONTEXT('USERENV','CURRENT_SCHEMA') AS CURRENT_SCHEMA FROM DUAL"` 결과 `TEST/TEST`.
+  - PASS: classic Oracle `exp.exe` 실행 결과 로그 마지막 줄 `Export terminated successfully with warnings.`
+  - PASS: zip 내부에 `JSHANES_TEST_20260626_213823.dmp`, `JSHANES_TEST_20260626_213823.log` 포함.
+  - PASS: zip SHA256 `B23B9AF920EA896FF16092FF04BDD7BF0A8846BF78006E7C22609581E1086F38`.
+- 참고:
+  - `expdp`는 서버 `DATA_PUMP_DIR`에 dump를 생성하므로 로컬 파일 목적에는 기존 `db_backups` 백업과 같은 classic `exp.exe` 경로를 사용했다.
+  - 로그에는 기존 2026-05 백업과 같은 `ORA-01455`/`ORA-01403` 경고가 있으며, export 자체는 warning 상태로 완료됐다.
+## 2026-06-26 19:24 codex
+
+- `T-IQC-CERT-OPTIONAL` 완료 후 REVIEW. `/material/iqc`의 검사결과 저장은 원래 `certFile`이 있을 때만 추가 업로드를 수행하고 없어도 `POST /material/iqc-history/arrival`을 호출하고 있었다. 실제 강제 지점은 `ReceivingService`가 IQC 대상품 PASS 이력의 `certFilePath`가 없으면 입고 가능 목록에 `receivingBlockedReason='검사성적서 미첨부'`를 만들고, `createBulkReceive()`에서 `BadRequestException`으로 입고를 차단하는 정책이었다.
+- 변경: `ReceivingService`의 성적서 필수 검증을 제거하고, 입고 가능 LOT 응답은 `certRequired=false`, `receivingBlockedReason=null`로 내려가게 했다. 기존 IQC 합격/특채 검증, 성적서 업로드 API, IQC 이력 `certFilePath` 저장은 유지했다.
+- 변경: `/material/receive` 입고대기 그리드의 성적서 상태는 `certUploaded`가 있으면 필수 여부보다 먼저 `첨부`를 표시하도록 조건 순서를 보정했다.
+- 검증: RED `pnpm.cmd --filter @harness/backend exec jest src/modules/material/services/receiving.service.spec.ts --runInBand` 성적서 미첨부 차단 실패 확인, RED `node --test "apps/frontend/src/app/(authenticated)/material/receive/components/receivable-table-cert-status.structure.test.mjs"` 조건 순서 실패 확인. PASS `pnpm.cmd --filter @harness/backend test -- receiving.service.spec.ts --runInBand`, PASS frontend structure test, PASS backend/frontend `tsc --noEmit`, PASS 대상 파일 `git diff --check`.
+- 비고: 커밋하지 않았다. 기존 무관 dirty file `apps/frontend/src/app/(authenticated)/master/label/components/TemplateManager.tsx`는 건드리지 않았다.
+
+## 2026-06-26 22:22 codex
+
+- `T-IQC-AQL-ISO-REDESIGN` 완료 후 REVIEW. 사용자가 AQL을 점진폐기 없이 ISO 2859 구조로 즉시 재설계하고, UI는 페이지 내 탭으로 관리하라고 지시했다.
+- 결정:
+  - `LOT 수량 + 검사수준 -> Code Letter -> Sample Size -> AQL -> Ac/Re` 흐름을 기준으로 삼는다.
+  - `AQL_STANDARDS`는 AQL 값 마스터로 유지하고, 신규 `AQL_CODE_LETTER_RULES`, `AQL_CODE_LETTER_SAMPLES`, `AQL_ACCEPTANCE_RULES`를 추가했다.
+  - 표준 샘플수량이 LOT 수량보다 크거나 같으면 DB 표준값은 유지하고, resolve 결과에 `standardSampleSize`와 `actualInspectQty`를 분리한다.
+  - 이전 `SAMPLE_SIZE > LOT_QTY_TO` cap 보정 migration/test는 폐기했다.
+- 변경:
+  - 신규 entity 3개를 추가하고 AQL module/service/controller를 신규 ISO 테이블 resolve 경로로 전환했다.
+  - `/quality/aql/iso` API를 추가했다.
+  - `/quality/aql` 화면을 `AQL 정책관리`, `AQL 기준`, `Code Letter 표`, `Sampling Plan 표` 4개 탭으로 재구성했다.
+  - 기존 AQL 기준 탭의 구형 LOT별 `sampleSize/acceptQty/rejectQty` 직접 입력 UI와 `판정기준 추가` 버튼을 제거했다.
+  - JSHANES에 `2026-06-26_iqc_aql_iso2859_redesign.sql`을 적용하고 ERD를 재생성했다.
+- 검증:
+  - PASS: `pnpm.cmd --filter @harness/backend test -- aql-standard.entity.spec.ts aql.service.spec.ts --runInBand`
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/quality/aql/iqc-aql.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: JSHANES migration 적용 7블록 성공.
+  - PASS: JSHANES post-check `AQL_CODE_LETTER_RULES=105`, `AQL_CODE_LETTER_SAMPLES=16`, `AQL_ACCEPTANCE_RULES=62`.
+  - PASS: 대표값 `LOT 350 + Level II -> H`, `H -> sample 50`, `H + AQL 1.0 -> Ac1/Re2`, `A + AQL 0.015 -> sample code J / Ac0/Re1`.
+  - PASS: `$env:ORACLE_SITE='JSHANES'; python tools/generate_db_schema_doc.py`
+  - PASS: 3002 `/quality/aql` Playwright 로그인 후 탭 표시/전환 확인, console error 0, 구형 LOT rule 안내문 미표시.
+  - PASS: 대상 파일 `git diff --check`
+- 비고:
+  - 커밋하지 않았다.
+  - 기존 `AQL_SAMPLING_RULES` 테이블은 데이터 호환상 남아 있으나 신규 resolve 경로와 UI는 ISO 2859 테이블을 사용한다.
+
+## 2026-06-26 22:35 codex
+
+- `T-IQC-AQL-ISO-REDESIGN` 후속. 사용자가 `/quality/aql` Code Letter 표에 데이터가 없다고 보고했다.
+- 확인:
+  - JSHANES `AQL_CODE_LETTER_RULES`는 `40/1000` 기준 105건 존재.
+  - 3002 인증 브라우저에서 `/api/quality/aql/iso`는 200으로 `codeLetterRules`를 반환.
+  - 실제 Code Letter 탭은 `전체 105건`, `I 2~8 A`, `II 281~500 H` 등을 표시.
+- 보강:
+  - 초기 로딩 때 인증/회사/사업장 hydration 타이밍으로 `/iso` 첫 호출이 실패해 빈 상태로 남을 수 있으므로, `Code Letter 표` 또는 `Sampling Plan 표` 탭 진입 시 `fetchIsoTables()`를 재호출하게 했다.
+  - `/iso` 조회 실패 시 `ISO AQL 표 데이터를 불러오지 못했습니다.` toast를 표시한다.
+  - 구조 테스트에 탭 진입 재조회와 실패 메시지 계약을 추가했다.
+- 검증:
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/quality/aql/iqc-aql.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: JSHANES `SELECT COUNT(*) FROM AQL_CODE_LETTER_RULES WHERE COMPANY='40' AND PLANT_CD='1000'` = 105
+  - PASS: 3002 Playwright 로그인 후 Code Letter 탭 `/iso` 200 2회, `전체 105건`, 대표 행 표시, empty text false
+  - PASS: 대상 파일 `git diff --check`
+
+## 2026-06-26 22:48 codex
+
+- `T-IQC-AQL-ISO-REDESIGN` 후속 UI 보정. 사용자가 제공한 ISO 2859 이미지처럼 표시되지 않고 일반 DataGrid 목록으로 보인다고 지적했다.
+- 변경:
+  - `Code Letter 표` 탭을 `LOT Size` 행과 `I/II/III/S1/S2/S3/S4` 열을 가진 `SAMPLE SIZE CODE LETTERS` 매트릭스 표로 변경했다.
+  - `Sampling Plan 표` 탭을 `Sample Size Code Letter`, `Sample Size`, AQL별 `Ac/Re` 열을 가진 `SINGLE SAMPLING PLANS FOR NORMAL INSPECTION` 매트릭스 표로 변경했다.
+  - 현재 등록된 `0.01`, `0.015` AQL도 표준 AQL 열 앞에 함께 표시한다.
+  - 구조 테스트가 매트릭스 표 marker(`data-iso-code-letter-matrix`, `data-iso-sampling-plan-matrix`)와 ISO 표 제목/그룹 헤더를 확인하게 보강했다.
+- 검증:
+  - PASS: `node --test "apps/frontend/src/app/(authenticated)/quality/aql/iqc-aql.structure.test.mjs"`
+  - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS: 대상 파일 `git diff --check`
+  - PASS: 3002 Playwright 로그인 후 `Code Letter 표`/`Sampling Plan 표` 매트릭스 렌더 확인, 캡처 저장 `C:/Users/hsyou/AppData/Local/Temp/aql-code-letter-matrix.png`, `C:/Users/hsyou/AppData/Local/Temp/aql-sampling-plan-matrix.png`

@@ -1966,7 +1966,8 @@
         }
       },
       "srcPallet": "托盘",
-      "srcSgLabel": "半成品 SFG"
+      "srcSgLabel": "半成品 SFG",
+      "srcFgLabel": "成品 FG"
     },
     "company": {
       "title": "公司管理",
@@ -3425,6 +3426,12 @@
       "confirmFailed": "子配套确认失败。",
       "cancelIssue": "取消发行"
     },
+    "fgLabel": {
+      "prepareFailed": "无法准备 FG 标签打印画面。",
+      "printSent": "已向打印机发送 {{count}} 个 FG 标签。",
+      "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。",
+      "printError": "打印 FG 标签时发生错误。"
+    },
     "inputAssembly": {
       "title": "组装实绩输入",
       "description": "扫描SFG标签进行成品组装。",
@@ -3543,9 +3550,6 @@
       "confirmHold": "确定要保留选中的工单吗？生产实绩和出货将被阻止。",
       "confirmHoldRelease": "确定要解除选中工单的保留吗？",
       "confirmCancel": "确定要取消选中的工单吗？",
-      "preIssueBtn": "预发行条码",
-      "preIssueQty": "发行数量",
-      "preIssueSuccess": "已发行{{count}}个条码。",
       "printTitle": "作业指示书",
       "printBtn": "打印作业指示书",
       "printDate": "打印日期",

@@ -113,27 +113,29 @@ export default function TemplateManager({ category, design, onLoad, onNew, isDir
     <>
     <div className="space-y-3">
       {/* 헤더 + 새 저장 토글 */}
-      <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold text-text flex items-center gap-1.5">
-          <FolderOpen className="w-3.5 h-3.5 text-primary" />
+      <div className="space-y-2">
+        <h4 className="text-xs font-semibold text-text flex items-center gap-1.5 whitespace-nowrap">
+          <FolderOpen className="w-3.5 h-3.5 text-primary shrink-0" />
           {t("master.label.templateList")}
         </h4>
         <div className="flex items-center gap-1.5">
           <Button
             size="sm"
             variant="secondary"
+            className="flex-1 justify-center whitespace-nowrap"
             onClick={() => { setSelectedTemplateKey(null); onNew?.(); }}
             title={t("master.label.newDesignHint", "현재 카테고리의 빈 디자인으로 새 작업을 시작합니다")}
           >
-            <FilePlus2 className="w-3.5 h-3.5 mr-1" />
+            <FilePlus2 className="w-3.5 h-3.5 mr-1 shrink-0" />
             {t("master.label.newDesign", "새 디자인")}
           </Button>
           <Button
             size="sm"
             variant={showSave ? "secondary" : "primary"}
+            className="flex-1 justify-center whitespace-nowrap"
             onClick={() => { setShowSave(!showSave); setTimeout(() => inputRef.current?.focus(), 50); }}
           >
-            <Save className="w-3.5 h-3.5 mr-1" />
+            <Save className="w-3.5 h-3.5 mr-1 shrink-0" />
             {t("master.label.saveNew")}
           </Button>
         </div>

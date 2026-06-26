@@ -1966,7 +1966,8 @@
         }
       },
       "srcPallet": "Pallet",
-      "srcSgLabel": "Bán thành phẩm SFG"
+      "srcSgLabel": "Bán thành phẩm SFG",
+      "srcFgLabel": "Thành phẩm FG"
     },
     "company": {
       "title": "Quản lý công ty",
@@ -3425,6 +3426,12 @@
       "confirmFailed": "Xác nhận sub-kitting thất bại.",
       "cancelIssue": "Hủy phát hành"
     },
+    "fgLabel": {
+      "prepareFailed": "Không thể chuẩn bị màn hình in nhãn FG.",
+      "printSent": "Đã gửi {{count}} nhãn FG đến máy in.",
+      "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại.",
+      "printError": "Đã xảy ra lỗi khi in nhãn FG."
+    },
     "inputAssembly": {
       "title": "Nhập Thực Tích Lắp Ráp",
       "description": "Quét nhãn SFG để lắp ráp thành phẩm.",
@@ -3543,9 +3550,6 @@
       "confirmHold": "Giữ lại lệnh sản xuất đã chọn? Kết quả sản xuất và xuất hàng sẽ bị chặn.",
       "confirmHoldRelease": "Hủy giữ lệnh sản xuất đã chọn?",
       "confirmCancel": "Hủy bỏ lệnh sản xuất đã chọn?",
-      "preIssueBtn": "Phát hành mã trước",
-      "preIssueQty": "Số lượng phát hành",
-      "preIssueSuccess": "Đã phát hành {{count}} mã vạch.",
       "printTitle": "Lệnh sản xuất",
       "printBtn": "In lệnh sản xuất",
       "printDate": "Ngày in",

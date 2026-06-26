@@ -1966,7 +1966,8 @@
         }
       },
       "srcPallet": "Pallet",
-      "srcSgLabel": "Semi-product SFG"
+      "srcSgLabel": "Semi-product SFG",
+      "srcFgLabel": "Finished FG"
     },
     "company": {
       "title": "Company Master",
@@ -3425,6 +3426,12 @@
       "confirmFailed": "Failed to confirm sub-kitting.",
       "cancelIssue": "Cancel Issue"
     },
+    "fgLabel": {
+      "prepareFailed": "Failed to prepare the FG label print view.",
+      "printSent": "Sent {{count}} FG labels to the printer.",
+      "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again.",
+      "printError": "An error occurred while printing FG labels."
+    },
     "inputAssembly": {
       "title": "Assembly Input",
       "description": "Scan SFG labels to assemble finished goods.",
@@ -3543,9 +3550,6 @@
       "confirmHold": "Hold the selected job order? Production results and shipments will be blocked.",
       "confirmHoldRelease": "Release the hold on the selected job order?",
       "confirmCancel": "Cancel the selected job order?",
-      "preIssueBtn": "Pre-issue Barcodes",
-      "preIssueQty": "Issue Quantity",
-      "preIssueSuccess": "{{count}} barcodes issued.",
       "printTitle": "Work Order",
       "printBtn": "Print Work Order",
       "printDate": "Print Date",
