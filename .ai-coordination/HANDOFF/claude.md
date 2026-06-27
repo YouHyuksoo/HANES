@@ -2,9 +2,17 @@
 
 ## Last Update
 
-2026-06-25 (local) — T-WORKFLOW-GUIDE-HUB 완료 + 푸시
+2026-06-28 (local) — T-ISSUE-REQ-PACK-QTY(출고요청 포장단위 올림+3값) 완료, 커밋 8cfaef22(미푸시)
 
 ## Latest
+
+- T-ISSUE-REQ-PACK-QTY 완료(커밋 8cfaef22, 미푸시): `/material/request` 출고요청에 포장단위(MIN_PACK_QTY) 올림 출고 + 3값 표시. 설계 출처 `docs/reports/unfinished-work/2026-06-28-issue-request-and-itemmaster-rename.md`(grill-me 확정). 사용자 선택 범위=**핵심만(포장단위 올림+3값)**, 나머지 우선순위(#2 중복가드/#4 PARTIAL/#1·#6·#7·#8)는 미착수.
+  - **수량 모델**: 요청=낱개 필요량(현행 buildBomRequestItems 유지) / 실출고=`ceil(요청÷minPackQty)×minPackQty` 올림 / 잔량=공정재고 재공(반납 안 함).
+  - **핵심 정합**: 올림 출고는 요청수량(낱개)보다 커질 수 있어 기존 `issueFromRequest` 초과차단(`issueQty>remaining`)과 충돌 → 차단 기준을 `roundUpToPack(remainingQty, minPackQty)`(올림 잔여)로 완화. issueFromRequest 루프에서 `itemMasterRepository.findOne`으로 minPackQty 조회. 완료판정(COMPLETED)은 `issuedQty>=requestQty`라 올림 출고 시 자연 충족.
+  - **BE**(issue-request.service.ts): `roundUpToPack` private 헬퍼, `flattenItems`/`buildBomRequestItems` 응답에 `minPackQty: toNumber(part?.minPackQty)`. **DB 무변경**(ITEM_MASTERS.MIN_PACK_QTY 기존 컬럼 read-only, default 0이면 올림 효과 없음=하위호환). mat-issue.createInTx는 미변경(재고차감만, 올림값 그대로 처리).
+  - **FE**: useIssueRequestData `RequestItem.minPackQty`+loadBomRequestItems 매핑. WorkOrderRequestPanel 작성그리드에 포장단위/실출고수량(calcIssueQty) 컬럼. IssueFromRequestModal `packRemainQty`(올림 잔여)로 issueQty 기본값·입력 max 설정 + 포장단위 컬럼. i18n `material.request.{minPackQty,issueQtyLabel}` 4파일.
+  - **검증**: BE jest `issue-request.service.spec.ts` 18/18(신규 3: minPackQty 응답·BOM 산출·올림 허용+경계차단), FE/BE tsc 0, 구조테스트 `issue-request-pack-qty.structure.test.mjs` + 기존 contract 3/3, locale JSON 4파일 유효. **브라우저 E2E 미수행**(APPROVED 요청+minPackQty>0 품목 시드 필요 → 사용자 확인 시 진행).
+  - **남은 우선순위(미착수)**: #2 중복출고 가드, #4 부분출고 PARTIAL 상태(현재 COMPLETED만), #1 품목직접입력, #6 LOT FIFO, #7 재고가시성, #8 공정효과표시. 이어서 하려면 같은 설계 기록 참조.
 
 - T-WORKFLOW-GUIDE-HUB(`/workflow` 처음 사용자용 업무 가이드 허브 재설계) 완료 — **브랜치 `feature/workflow-guide-hub` 원격 푸시 완료**(main 미병합). 설계 `docs/superpowers/specs/2026-06-24-workflow-guide-hub-design.md`, 계획 `docs/superpowers/plans/2026-06-24-workflow-guide-hub.md`. SDD 7 Task + 최종 통합리뷰(opus, Ready to merge, Critical/Important 0).
   - **구조**: 좌측 레인그룹 단계목록(`WorkflowSidebar`) + 중앙 가이드본문(`WorkflowGuide`: 왜/언제/주의점 + 입력·산출 + 화면바로가기 + help md 인라인 + 선·후행) + 상단 [가이드]/[흐름도] 탭. 두 탭이 `selectedNodeId` 공유, 흐름도 노드클릭→가이드탭 점프(`selectFromFlow`).
