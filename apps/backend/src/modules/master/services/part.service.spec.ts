@@ -9,7 +9,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PartService } from './part.service';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -76,7 +76,12 @@ describe('PartService', () => {
   describe('create', () => {
     it('should create a new part', async () => {
       // Arrange
-      const dto = { itemCode: 'ITEM01', itemName: 'Part1', itemType: 'RM' } as any;
+      const dto = {
+        itemCode: 'ITEM01',
+        itemName: 'Part1',
+        itemType: 'RM',
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      } as any;
       const created = { ...dto, useYn: 'Y' } as PartMaster;
       mockRepo.findOne.mockResolvedValue(null);
       mockRepo.create.mockReturnValue(created);
@@ -100,13 +105,53 @@ describe('PartService', () => {
       // Act & Assert
       await expect(target.create(dto)).rejects.toThrow(ConflictException);
     });
+
+    it('should require AQL policy for IQC inspected parts', async () => {
+      const dto = {
+        itemCode: 'ITEM01',
+        itemName: 'Part1',
+        itemNo: 'NO1',
+        itemType: 'RM',
+        iqcYn: 'Y',
+        inspectMethod: 'FULL',
+      } as any;
+      mockRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.create(dto, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should allow no AQL policy for IQC skip-inspection parts', async () => {
+      const dto = {
+        itemCode: 'ITEM01',
+        itemName: 'Part1',
+        itemNo: 'NO1',
+        itemType: 'RM',
+        iqcYn: 'Y',
+        inspectMethod: 'SKIP',
+      } as any;
+      const created = { ...dto, iqcAqlPolicyCode: null } as PartMaster;
+      mockRepo.findOne.mockResolvedValue(null);
+      mockRepo.create.mockReturnValue(created);
+      mockRepo.save.mockResolvedValue(created);
+
+      const result = await target.create(dto, 'C1', 'P1');
+
+      expect(result).toEqual(created);
+    });
   });
 
   // ─── update ───
   describe('update', () => {
     it('should update and return part', async () => {
       // Arrange
-      const existing = { itemCode: 'ITEM01', itemName: 'Old' } as PartMaster;
+      const existing = {
+        itemCode: 'ITEM01',
+        itemName: 'Old',
+        iqcYn: 'Y',
+        inspectMethod: 'FULL',
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      } as PartMaster;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
@@ -122,7 +167,15 @@ describe('PartService', () => {
     });
 
     it('should strip key and tenant columns from update payload', async () => {
-      const existing = { itemCode: 'ITEM01', itemName: 'Old', company: 'C1', plant: 'P1' } as PartMaster;
+      const existing = {
+        itemCode: 'ITEM01',
+        itemName: 'Old',
+        company: 'C1',
+        plant: 'P1',
+        iqcYn: 'Y',
+        inspectMethod: 'FULL',
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      } as PartMaster;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
@@ -140,7 +193,15 @@ describe('PartService', () => {
     });
 
     it('does not pass arbitrary fields from update payload to the repository', async () => {
-      const existing = { itemCode: 'ITEM01', itemName: 'Old', company: 'C1', plant: 'P1' } as PartMaster;
+      const existing = {
+        itemCode: 'ITEM01',
+        itemName: 'Old',
+        company: 'C1',
+        plant: 'P1',
+        iqcYn: 'Y',
+        inspectMethod: 'FULL',
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      } as PartMaster;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
@@ -152,6 +213,39 @@ describe('PartService', () => {
       expect(mockRepo.update).toHaveBeenCalledWith(
         { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
         { itemName: 'New' },
+      );
+    });
+
+    it('should reject clearing AQL policy when the effective part remains IQC inspected', async () => {
+      const existing = {
+        itemCode: 'ITEM01',
+        itemName: 'Old',
+        iqcYn: 'Y',
+        inspectMethod: 'FULL',
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      } as PartMaster;
+      mockRepo.findOne.mockResolvedValue(existing);
+
+      await expect(target.update('ITEM01', { iqcAqlPolicyCode: '' } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+      expect(mockRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should allow clearing AQL policy when the effective inspection method is SKIP', async () => {
+      const existing = {
+        itemCode: 'ITEM01',
+        itemName: 'Old',
+        iqcYn: 'Y',
+        inspectMethod: 'FULL',
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      } as PartMaster;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('ITEM01', { inspectMethod: 'SKIP', iqcAqlPolicyCode: '' } as any, 'C1', 'P1');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
+        { inspectMethod: 'SKIP', iqcAqlPolicyCode: null },
       );
     });
   });

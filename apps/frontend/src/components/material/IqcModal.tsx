@@ -83,6 +83,17 @@ interface AqlPolicyPreview {
   minorRule?: { aqlCode: string; acceptQty: number; rejectQty: number } | null;
 }
 
+interface DefectCodeOption {
+  defectCode: string;
+  defectName: string;
+  defectGrade?: string | null;
+}
+
+interface DefectRow {
+  defectCode: string;
+  qty: string;
+}
+
 interface IqcModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -96,6 +107,7 @@ interface IqcModalProps {
       sampleQty?: number;
       certFile?: File;
       sampleBarcode?: string;
+      defects?: Array<{ defectCode: string; qty: number }>;
     },
   ) => void;
 }
@@ -104,6 +116,7 @@ interface IqcModalProps {
 const INSPECTOR_DEPT = "품질팀";
 
 const MAX_SAMPLE_BARCODE_BYTES = 500;
+const EMPTY_DEFECT_ROW: DefectRow = { defectCode: "", qty: "1" };
 
 function utf8Bytes(value: string) {
   return new TextEncoder().encode(value).length;
@@ -189,6 +202,8 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [certFile, setCertFile] = useState<File | null>(null);
   const [showPendingList, setShowPendingList] = useState(false);
   const [destructInputs, setDestructInputs] = useState<Record<number, { inspectedQty: string; defectQty: string }>>({});
+  const [defectCodeOptions, setDefectCodeOptions] = useState<DefectCodeOption[]>([]);
+  const [defectRows, setDefectRows] = useState<DefectRow[]>([EMPTY_DEFECT_ROW]);
   const serialScanInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scanSequenceRef = useRef(0);
@@ -207,6 +222,8 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       setAqlPolicy(null);
       setCertFile(null);
       setDestructInputs({});
+      setDefectCodeOptions([]);
+      setDefectRows([EMPTY_DEFECT_ROW]);
       return;
     }
 
@@ -249,6 +266,16 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     })
       .then((res) => setPendingSerials(res.data?.data ?? []))
       .catch(() => setPendingSerials([]));
+  }, [isOpen, selectedItem]);
+
+  useEffect(() => {
+    if (!isOpen || !selectedItem) return;
+
+    api.get("/quality/defect-codes/options", {
+      params: selectedItem.defectModelGroup ? { productType: selectedItem.defectModelGroup } : undefined,
+    })
+      .then((res) => setDefectCodeOptions(res.data?.data ?? []))
+      .catch(() => setDefectCodeOptions([]));
   }, [isOpen, selectedItem]);
 
   useEffect(() => {
@@ -458,9 +485,37 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     };
   }), [destructItems, destructInputs]);
   const anyDestructFail = destructivePayload.some((d) => d.result === 'FAIL');
+  const hasDefectCodeRows = defectRows.some((row) => row.defectCode && Number(row.qty) > 0);
+  const needsDefectCode = (anyFail || anyDestructFail) && !hasDefectCodeRows;
+  const hasContradictingDefectCodes = !(anyFail || anyDestructFail) && hasDefectCodeRows;
   const canSubmit = (scannedSerials.length > 0 || (aqlItems.length === 0 && destructItems.length > 0))
     && !loadingItems
-    && !isIncomplete;
+    && !isIncomplete
+    && (!needsDefectCode || hasDefectCodeRows)
+    && !hasContradictingDefectCodes;
+
+  const defectPayload = useMemo(() => defectRows
+    .map((row) => ({ defectCode: row.defectCode, qty: Number(row.qty) || 0 }))
+    .filter((row) => row.defectCode && row.qty > 0), [defectRows]);
+  const defectSelectOptions = useMemo(() => [
+    { value: "", label: "-" },
+    ...defectCodeOptions.map((option) => ({
+      value: option.defectCode,
+      label: `${option.defectCode} - ${option.defectName}`,
+    })),
+  ], [defectCodeOptions]);
+
+  const updateDefectRow = useCallback((index: number, patch: Partial<DefectRow>) => {
+    setDefectRows((prev) => prev.map((row, idx) => (idx === index ? { ...row, ...patch } : row)));
+  }, []);
+
+  const addDefectRow = useCallback(() => {
+    setDefectRows((prev) => [...prev, { ...EMPTY_DEFECT_ROW }]);
+  }, []);
+
+  const removeDefectRow = useCallback((index: number) => {
+    setDefectRows((prev) => prev.length <= 1 ? [EMPTY_DEFECT_ROW] : prev.filter((_, idx) => idx !== index));
+  }, []);
 
   const handleSerialSubmit = useCallback(() => {
     if (!selectedItem || !canSubmit) return;
@@ -475,8 +530,9 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       sampleQty: sampleQty ? Number(sampleQty) : undefined,
       certFile: certFile ?? undefined,
       sampleBarcode: buildSampleBarcode(scannedSerials.map((serial) => serial.matUid)),
+      defects: defectPayload,
     });
-  }, [anyDestructFail, anyFail, canSubmit, certFile, destructivePayload, onSubmit, sampleQty, scannedSerials, selectedItem, serialInspectionPayload, setForm]);
+  }, [anyDestructFail, anyFail, canSubmit, certFile, defectPayload, destructivePayload, onSubmit, sampleQty, scannedSerials, selectedItem, serialInspectionPayload, setForm]);
 
   if (!selectedItem) return null;
 
@@ -685,6 +741,69 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                   })}
                 </div>
                 <p className="mt-1 text-[10px] text-text-muted">{t("material.iqc.destructiveHint", "검사수량 / 불량수 — 불량 1건이면 FAIL")}</p>
+              </div>
+            )}
+
+            {(anyFail || anyDestructFail || hasDefectCodeRows) && (
+              <div className="rounded border border-border bg-background p-1.5">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="block text-[11px] font-medium leading-none text-text-muted">
+                    {t("material.iqc.defectCode", "불량코드")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={addDefectRow}
+                    className="text-[11px] font-medium text-primary hover:underline"
+                  >
+                    {t("common.add", "추가")}
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {defectRows.map((row, index) => {
+                    const selectedDefect = defectCodeOptions.find((option) => option.defectCode === row.defectCode);
+                    return (
+                      <div key={index} className="grid grid-cols-[1fr_48px_24px] items-center gap-1">
+                        <Select
+                          options={defectSelectOptions}
+                          value={row.defectCode}
+                          onChange={(defectCode) => updateDefectRow(index, { defectCode })}
+                          fullWidth
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          value={row.qty}
+                          onChange={(e) => updateDefectRow(index, { qty: e.target.value })}
+                          className="h-8 min-w-0 rounded border border-border bg-surface px-1 text-xs text-text"
+                          title={t("material.iqc.defectQty", "불량수")}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeDefectRow(index)}
+                          className="flex h-8 w-6 items-center justify-center rounded text-text-muted hover:bg-red-50 hover:text-red-600"
+                          title={t("common.delete", "삭제")}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        {selectedDefect?.defectGrade && (
+                          <span className="col-span-3 text-[10px] text-text-muted">
+                            {t("material.iqc.defectGrade", "등급")}: <ComCodeBadge groupCode="DEFECT_GRADE" code={selectedDefect.defectGrade} />
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {needsDefectCode && (
+                  <p className="mt-1 text-[10px] text-red-600 dark:text-red-400">
+                    {t("material.iqc.defectCodeRequired", "FAIL 판정에는 불량코드와 불량수가 필요합니다.")}
+                  </p>
+                )}
+                {hasContradictingDefectCodes && (
+                  <p className="mt-1 text-[10px] text-red-600 dark:text-red-400">
+                    {t("material.iqc.defectCodeContradiction", "PASS 판정에는 불량코드를 입력할 수 없습니다.")}
+                  </p>
+                )}
               </div>
             )}
           </div>

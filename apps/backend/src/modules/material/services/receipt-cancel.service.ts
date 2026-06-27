@@ -13,6 +13,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
+import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { CreateReceiptCancelDto, ReceiptCancelQueryDto } from '../dto/receipt-cancel.dto';
@@ -214,6 +215,7 @@ export class ReceiptCancelService {
         cancelRefId: savedCancelTrans.transNo,
         status: 'CANCELED',
       });
+      await this.markReceivingCanceled(queryRunner, originalTransaction, txTenantWhere);
 
       return {
         transNo: savedCancelTrans.transNo,
@@ -222,6 +224,27 @@ export class ReceiptCancelService {
         cancelTransNo: savedCancelTrans.transNo,
       };
     });
+  }
+
+  private async markReceivingCanceled(
+    queryRunner: import('typeorm').QueryRunner,
+    originalTransaction: StockTransaction,
+    txTenantWhere: ReturnType<ReceiptCancelService['tenantWhere']>,
+  ) {
+    if (!['RECEIVE', 'RECEIVE_CONCESSION'].includes(originalTransaction.refType ?? '')) {
+      return;
+    }
+
+    const refMatch = (originalTransaction.refId ?? '').match(/^(.+)-(\d+)$/);
+    if (!refMatch) {
+      return;
+    }
+
+    await queryRunner.manager.update(
+      MatReceiving,
+      { receiveNo: refMatch[1], seq: Number(refMatch[2]), ...txTenantWhere },
+      { status: 'CANCELED' },
+    );
   }
 
   private async ensureNoDownstreamProgress(originalTransaction: StockTransaction) {

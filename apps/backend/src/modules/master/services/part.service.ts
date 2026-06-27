@@ -3,7 +3,7 @@
  * @description 품목마스터 비즈니스 로직 서비스 - TypeORM Repository 패턴
  */
 
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -21,6 +21,24 @@ export class PartService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+  }
+
+  private isNoInspectionMethod(inspectMethod?: string | null): boolean {
+    const method = (inspectMethod ?? '').trim().toUpperCase();
+    return method === 'SKIP' || method === 'NONE';
+  }
+
+  private assertIqcAqlPolicySelected(input: {
+    iqcYn?: string | null;
+    inspectMethod?: string | null;
+    iqcAqlPolicyCode?: string | null;
+  }): void {
+    const isIqcTarget = (input.iqcYn ?? 'Y').trim().toUpperCase() === 'Y';
+    if (!isIqcTarget || this.isNoInspectionMethod(input.inspectMethod)) return;
+
+    if (!input.iqcAqlPolicyCode?.trim()) {
+      throw new BadRequestException('유검사 IQC 대상 품목은 AQL 정책을 선택해야 합니다.');
+    }
   }
 
   async findAll(query: PartQueryDto, company?: string, plant?: string) {
@@ -89,6 +107,12 @@ export class PartService {
 
     if (existing) throw new ConflictException(`이미 존재하는 품목 코드입니다: ${dto.itemCode}`);
 
+    this.assertIqcAqlPolicySelected({
+      iqcYn: dto.iqcYn ?? 'Y',
+      inspectMethod: dto.inspectMethod ?? null,
+      iqcAqlPolicyCode: dto.iqcAqlPolicyCode ?? null,
+    });
+
     const part = this.partRepository.create({
       itemCode: dto.itemCode,
       itemName: dto.itemName,
@@ -131,7 +155,13 @@ export class PartService {
   }
 
   async update(itemCode: string, dto: UpdatePartDto, company?: string, plant?: string) {
-    await this.findById(itemCode, company, plant);
+    const existing = await this.findById(itemCode, company, plant);
+    this.assertIqcAqlPolicySelected({
+      iqcYn: dto.iqcYn !== undefined ? dto.iqcYn : existing.iqcYn,
+      inspectMethod: dto.inspectMethod !== undefined ? dto.inspectMethod : existing.inspectMethod,
+      iqcAqlPolicyCode: dto.iqcAqlPolicyCode !== undefined ? dto.iqcAqlPolicyCode : existing.iqcAqlPolicyCode,
+    });
+
     const updateData: Partial<Pick<PartMaster,
       | 'itemName'
       | 'itemNo'

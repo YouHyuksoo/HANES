@@ -17,7 +17,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
-export const LABEL_TEMPLATE_CATEGORIES = ['equip', 'jig', 'worker', 'part', 'mat_lot', 'box', 'pallet', 'sg'] as const;
+export const LABEL_TEMPLATE_CATEGORIES = ['equip', 'jig', 'worker', 'part', 'mat_lot', 'box', 'pallet', 'sg', 'fg'] as const;
 
 export class CreateLabelTemplateDto {
   @ApiProperty({ description: '템플릿 이름', maxLength: 100 })

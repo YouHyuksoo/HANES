@@ -31,6 +31,7 @@ interface Props {
 }
 
 const PACKAGING_QTY_OPTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+const NO_INSPECTION_METHODS = new Set(["SKIP", "NONE"]);
 
 type IqcAqlPolicyOption = {
   policyCode: string;
@@ -118,6 +119,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   const [previewUrl, setPreviewUrl] = useState<string | null>(editingPart?.imageUrl ?? null);
   const [imageError, setImageError] = useState(false);
   const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
+  const requiresIqcAqlPolicy = form.iqcYn === "Y" && !NO_INSPECTION_METHODS.has(form.inspectMethod.toUpperCase());
+  const canSave = !saving
+    && !!form.itemCode.trim()
+    && !!form.itemNo.trim()
+    && !!form.itemName.trim()
+    && (!requiresIqcAqlPolicy || !!form.iqcAqlPolicyCode);
 
   // editingPart 변경 시 폼 리셋
   useEffect(() => {
@@ -199,7 +206,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   };
 
   const handleSubmit = async () => {
-    if (!form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()) return;
+    if (!canSave) return;
     setSaving(true);
     try {
       const payload = {
@@ -225,7 +232,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         iqcYn: form.iqcYn,
         inspectMethod: form.inspectMethod || undefined,
         sampleQty: form.sampleQty || undefined,
-        iqcAqlPolicyCode: form.iqcAqlPolicyCode || undefined,
+        iqcAqlPolicyCode: form.iqcAqlPolicyCode || null,
         useYn: form.useYn,
         packUnit: form.packUnit || undefined,
         storageLocation: form.storageLocation || undefined,
@@ -265,7 +272,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()}>
+          <Button size="sm" onClick={handleSubmit} disabled={!canSave}>
           {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
@@ -320,7 +327,8 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={String(form.sampleQty)} onChange={e => setField("sampleQty", Number(e.target.value))} fullWidth />
             <FieldSelect field="iqcAqlPolicyCode" label={t("master.part.iqcAqlPolicyCode", "AQL 정책")}
               options={iqcAqlPolicyOptions}
-              value={form.iqcAqlPolicyCode} onChange={v => setField("iqcAqlPolicyCode", v)} fullWidth />
+              value={form.iqcAqlPolicyCode} onChange={v => setField("iqcAqlPolicyCode", v)} fullWidth
+              required={requiresIqcAqlPolicy} />
             <FieldYnRadio field="useYn" label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>

@@ -28,6 +28,7 @@ interface Props {
 }
 
 const PACKAGING_QTY_OPTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+const NO_INSPECTION_METHODS = new Set(["SKIP", "NONE"]);
 
 type IqcAqlPolicyOption = {
   policyCode: string;
@@ -107,13 +108,19 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     remark: editingPart?.remark || "",
   }));
   const [saving, setSaving] = useState(false);
+  const requiresIqcAqlPolicy = form.iqcYn === "Y" && !NO_INSPECTION_METHODS.has(form.inspectMethod.toUpperCase());
+  const canSave = !saving
+    && !!form.itemCode.trim()
+    && !!form.itemNo.trim()
+    && !!form.itemName.trim()
+    && (!requiresIqcAqlPolicy || !!form.iqcAqlPolicyCode);
 
   const setField = (key: string, value: string | number) => {
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async () => {
-    if (!form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()) return;
+    if (!canSave) return;
     setSaving(true);
     try {
       const payload = {
@@ -134,7 +141,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         expiryExtDays: form.expiryExtDays,
         inspectMethod: form.inspectMethod || undefined,
         sampleQty: form.sampleQty || undefined,
-        iqcAqlPolicyCode: form.iqcAqlPolicyCode || undefined,
+        iqcAqlPolicyCode: form.iqcAqlPolicyCode || null,
         useYn: form.useYn,
       };
 
@@ -195,7 +202,8 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
           value={String(form.sampleQty)} onChange={e => setField("sampleQty", Number(e.target.value))} fullWidth />
         <FieldSelect field="iqcAqlPolicyCode" label={t("master.part.iqcAqlPolicyCode", "AQL 정책")}
           options={iqcAqlPolicyOptions}
-          value={form.iqcAqlPolicyCode} onChange={v => setField("iqcAqlPolicyCode", v)} fullWidth />
+          value={form.iqcAqlPolicyCode} onChange={v => setField("iqcAqlPolicyCode", v)} fullWidth
+          required={requiresIqcAqlPolicy} />
         <FieldSelect field="iqcYn" label={t("master.part.iqcFlag", "IQC대상")} options={iqcOptions}
           value={form.iqcYn} onChange={v => setField("iqcYn", v)} fullWidth />
         <FieldYnRadio field="useYn" label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
@@ -243,7 +251,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
 
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemNo.trim() || !form.itemName.trim()}>
+        <Button onClick={handleSubmit} disabled={!canSave}>
           {saving ? t("common.saving") : t("common.save", "저장")}
         </Button>
       </div>

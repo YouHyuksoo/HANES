@@ -19,6 +19,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -206,8 +207,8 @@ describe('ReceiptCancelService', () => {
         itemCode: 'ITEM-001',
         matUid: 'MAT-001',
         qty: 10,
-        refType: null,
-        refId: null,
+        refType: 'RECEIVE',
+        refId: 'RCV-001-2',
         company: 'HANES',
         plant: 'P01',
       } as StockTransaction;
@@ -265,6 +266,11 @@ describe('ReceiptCancelService', () => {
         StockTransaction,
         { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
         { cancelRefId: 'CANCEL-001', status: 'CANCELED' },
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatReceiving,
+        { receiveNo: 'RCV-001', seq: 2, company: 'HANES', plant: 'P01' },
+        { status: 'CANCELED' },
       );
     });
 
