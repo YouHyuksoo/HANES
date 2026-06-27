@@ -318,8 +318,13 @@ export class JobOrderService {
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
     this.assertSameTenant('품목', { company, plant }, part);
 
-    // 품목 기반 라우팅 자동 조회
+    // 품목 기반 라우팅 자동 조회 — 라우팅은 필수(공정별 발행·차감·라벨이 라우팅에 걸림)
     const routingCode = await this.resolveRoutingCodeByItem(dto.itemCode, company, plant);
+    if (!routingCode) {
+      throw new BadRequestException(
+        `작업지시 품목에 라우팅이 지정되지 않았습니다: ${dto.itemCode}. 라우팅 없는 작업지시는 생성할 수 없습니다.`,
+      );
+    }
 
     return this.tx.run(async (queryRunner) => {
       const processCode = dto.processCode ?? await this.resolveFirstProcessCode(routingCode, company, plant);
@@ -412,6 +417,11 @@ export class JobOrderService {
       childSeq++;
 
       const childRoutingCode = await this.resolveRoutingCodeByItem(bom.childItemCode, parent.company, parent.plant);
+      if (!childRoutingCode) {
+        throw new BadRequestException(
+          `반제품에 라우팅이 지정되지 않았습니다: ${bom.childItemCode}. 라우팅 없는 반제품 작업지시는 생성할 수 없습니다.`,
+        );
+      }
       const childProcessCode = await this.resolveFirstProcessCode(childRoutingCode, parent.company, parent.plant);
 
       const childOrderNo = await this.numbering.nextJobOrderNo(queryRunner);

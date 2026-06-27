@@ -110,7 +110,8 @@ export default function ProductionInputBar({
         orderNo: selectedJobOrder!.orderNo,
         equipCode: selectedEquip!.equipCode,
         workerId: selectedWorkers[0].id,
-        processCode: selectedJobOrder?.processCode,
+        // 공정은 선택 설비에서 도출(설비→공정, 3화면 통일). 작업지시 processCode 고정 대신.
+        processCode: selectedEquip?.processCode,
         prdUid: serialNo || undefined,
         goodQty: good,
         defectQty: defect,

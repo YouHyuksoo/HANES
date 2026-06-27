@@ -458,6 +458,28 @@ export class ProdResultService {
       });
     }
 
+    // 실적 공정이 작업지시 라우팅에 존재하는지 검증 — 엉뚱한 공정 실적 차단(예외 배제)
+    if (dto.processCode) {
+      if (!jobOrder.routingCode) {
+        throw new BadRequestException(
+          `작업지시에 라우팅이 없어 공정 실적을 등록할 수 없습니다: ${dto.orderNo}`,
+        );
+      }
+      const step = await this.jobOrderRepository.manager.findOne(RoutingProcess, {
+        where: {
+          routingCode: jobOrder.routingCode,
+          processCode: dto.processCode,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+      });
+      if (!step) {
+        throw new BadRequestException(
+          `공정 '${dto.processCode}'가 작업지시 라우팅(${jobOrder.routingCode})에 없습니다: ${dto.orderNo}`,
+        );
+      }
+    }
+
     // 작업자 존재 확인 (옵션)
     // PROD_RESULTS.worker 관계는 WORKER_MASTERS.workerCode를 참조하므로 작업자마스터를 우선 조회한다.
     // (입력 화면들은 workerCode를 workerId로 전송). 과거 데이터 호환을 위해 USERS.email 폴백도 허용한다.

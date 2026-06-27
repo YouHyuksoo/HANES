@@ -297,7 +297,7 @@ describe('JobOrderService', () => {
         .mockResolvedValueOnce(null) // existing check
         .mockResolvedValueOnce({ orderNo: 'JO-20260318-0001' } as JobOrder); // final findOne
       mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'COMPANY', plant: 'PLANT' } as PartMaster);
-      mockRoutingGroupRepo.findOne.mockResolvedValue(null);
+      mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-001', itemCode: 'PART-001', company: 'COMPANY', plant: 'PLANT' } as any);
       mockQueryRunner.manager.create.mockReturnValue({ orderNo: 'JO-20260318-0001' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ orderNo: 'JO-20260318-0001' } as any);
 
@@ -317,7 +317,7 @@ describe('JobOrderService', () => {
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder);
       mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C1', plant: 'P1' } as PartMaster);
-      mockRoutingGroupRepo.findOne.mockResolvedValue(null);
+      mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-001', itemCode: 'PART-001', company: 'C1', plant: 'P1' } as any);
       mockQueryRunner.manager.create.mockReturnValue({ orderNo: 'JO-001' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ orderNo: 'JO-001' } as any);
 
@@ -379,7 +379,7 @@ describe('JobOrderService', () => {
       mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
       mockJobOrderRepo.findOne.mockResolvedValue(null);
       mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001' } as PartMaster);
-      mockRoutingGroupRepo.findOne.mockResolvedValue(null);
+      mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-001' } as any);
       mockQueryRunner.manager.create.mockReturnValue({} as any);
       mockQueryRunner.manager.save.mockRejectedValue(new Error('DB error'));
 
