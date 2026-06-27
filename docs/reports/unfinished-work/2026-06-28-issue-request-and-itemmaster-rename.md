@@ -16,8 +16,9 @@
 
 ## 미완료 / 막힌 것
 - **출고요청 개선 구현 미착수**(설계만 도출).
-- **PartMaster→ItemMaster 리네임 미착수**. 규모: `PartMaster` 714곳/141파일 + `partMaster`·`part-master` 246곳/139파일 ≈ **960곳/150파일**. 순수 기계적(클래스/변수/파일/import), 테이블명 `ITEM_MASTERS` 유지 → **DB 변경 0**.
-- **막힌 이유**: working tree에 다른 세션(Codex)의 part/IQC/AQL 미커밋 변경(`part.service.ts` 등)이 있어 리네임이 충돌. Codex 작업이 커밋된 후에야 안전.
+- ✅ **PartMaster→ItemMaster 리네임 완료** (커밋 `34790d2d`, 142파일). 잔존 0, `@Entity ITEM_MASTERS`·마이그레이션 클래스명 보존, backend/frontend tsc 0. (Codex 미커밋분은 `69816e32`로 선행 커밋)
+- **추적**: jest 1건 실패 `wip-mat-stock.service.spec.ts`의 `findByEquip` — 리네임 무관 선재 실패(테스트 mock queryBuilder `groupBy` 미정의)로 보고됨. 별도 확인 필요.
+- **남은 것**: 출고요청 개선 구현(아래 "다음에 바로 할 일" 3번)만 미착수.
 
 ## 변경 파일
 - 코드 변경 없음(설계 단계). DB 주석 1건(`ITEM_MASTERS.MIN_PACK_QTY`), Claude 메모리 1건(git 외부).
