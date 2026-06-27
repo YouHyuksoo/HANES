@@ -2,9 +2,20 @@
 
 ## Last Update
 
-2026-06-28 (local) — T-ISSUE-REQ-PACK-QTY(출고요청 포장단위 올림+3값) 완료, 커밋 8cfaef22(미푸시)
+2026-06-28 (local) — 출고요청 개선 우선순위 9개 전부 완료(커밋 8cfaef22·4acbabfb·35c25279, 미푸시)
 
 ## Latest
+
+- T-ISSUE-REQ 출고요청 개선 9개 우선순위 **전부 완료**(커밋 3개, 미푸시). 설계 출처 `docs/reports/unfinished-work/2026-06-28-issue-request-and-itemmaster-rename.md`(grill-me). DB 무변경. 검증: BE jest 53/53(issue-request 22+mat-stock 31), FE/BE tsc 0, 구조테스트 6/6, locale JSON 4파일.
+  - **#3+#9+#5(커밋 8cfaef22)**: 포장단위(MIN_PACK_QTY) 올림 출고 + [요청수량][포장단위][실출고수량] 3값. issueFromRequest 초과차단을 roundUpToPack(올림 잔여) 기준으로 완화. buildBomRequestItems/flattenItems 응답에 minPackQty. (상세는 이전 핸드오프 항목)
+  - **#4(커밋 4acbabfb)**: 부분출고 PARTIAL 상태. issueFromRequest 완료판정 allCompleted?COMPLETED:PARTIAL, 출고 가능 조건 APPROVED/PARTIAL. FE IssueRequestStatus+배지 PARTIAL(주황). STATUS varchar2(20) 제약없어 DB 무변경.
+  - **#6 LOT FIFO(커밋 35c25279)**: `mat-stock.findAvailable`을 입고일(RECV_DATE) 오름차순(null 뒤) 정렬 → 선입선출 LOT 우선. recvDate 응답 포함. **공유 API라 QueryBuilder 전면재작성 대신 기존 repository.find+메모리 구조 유지+정렬만 추가**(기존 spec 3건 보존). IssueFromRequestModal limit 100이라 실질 FIFO. 단 품목당 가용 LOT>100인 극단에선 updatedAt 상위 100 내 FIFO(페이지네이션은 기존부터 메모리필터로 부정확, 악화 아님).
+  - **#2 중복요청 가드(35c25279)**: issue-request.create에 assertNoDuplicateActiveRequest — 동일 orderNo의 미완료(REQUESTED/APPROVED/PARTIAL) 요청에 같은 itemCode 있으면 차단. COMPLETED/REJECTED는 재요청 허용. orderNo 없는 수동요청 제외.
+  - **#1 품목 직접입력(35c25279)**: RequestModal엔 이미 검색+추가 있었음. 갭은 메인 작성패널 WorkOrderRequestPanel create 모드 → 거기에 searchStockItems 검색+addManualItem 직접추가. StockItem/PartSearchResponse에 minPackQty 추가해 직접추가 품목도 3값 표시. page.tsx가 searchStockItems 전달.
+  - **#7 재고 가시성(35c25279)**: IssueFromRequestModal LOT 옵션 label에 입고일(📅)·FIFO 우선(⭐) 표시 + 선택 LOT 가용<출고수량이면 사전 경고(AlertTriangle). AvailableStock에 recvDate.
+  - **#8 공정효과(35c25279)**: processCode 지정 출고가 공정재고(장착 대기, ADR 0002)로 적재됨을 WorkOrderRequestPanel create 모드·IssueFromRequestModal에 Info 배너로 안내. RequestDetail에 processCode.
+  - **남은 것**: 브라우저 E2E 미수행(APPROVED 요청+minPackQty>0+다LOT 시드 필요). 별개 추적: jest `wip-mat-stock.service.spec.ts findByEquip` 선재 실패(리네임 무관, mock groupBy 미정의)는 미해결.
+  - **LOCKS**: 본 세션 락 T-ISSUE-REQ-PACK-QTY 제거 완료(순변경 없어 LOCKS.md 커밋엔 미반영).
 
 - T-ISSUE-REQ-PACK-QTY 완료(커밋 8cfaef22, 미푸시): `/material/request` 출고요청에 포장단위(MIN_PACK_QTY) 올림 출고 + 3값 표시. 설계 출처 `docs/reports/unfinished-work/2026-06-28-issue-request-and-itemmaster-rename.md`(grill-me 확정). 사용자 선택 범위=**핵심만(포장단위 올림+3값)**, 나머지 우선순위(#2 중복가드/#4 PARTIAL/#1·#6·#7·#8)는 미착수.
   - **수량 모델**: 요청=낱개 필요량(현행 buildBomRequestItems 유지) / 실출고=`ceil(요청÷minPackQty)×minPackQty` 올림 / 잔량=공정재고 재공(반납 안 함).

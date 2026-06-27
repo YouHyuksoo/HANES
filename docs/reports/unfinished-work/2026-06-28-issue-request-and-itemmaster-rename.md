@@ -15,10 +15,10 @@
 - **메모리**: `PartMaster 클래스 실제 테이블 = ITEM_MASTERS` (착각 재발 방지)
 
 ## 미완료 / 막힌 것
-- ✅ **출고요청 개선 — 핵심(포장단위 올림+3값 표시) 구현 완료** (커밋 `8cfaef22`, 2026-06-28). 사용자 선택 범위=핵심만. 요청=낱개 / 실출고=ceil(요청÷MIN_PACK_QTY)×MIN_PACK_QTY / 잔량=공정재고 재공. issueFromRequest 초과차단을 올림 잔여(roundUpToPack) 기준으로 완화. DB 무변경. BE jest 18/18·FE/BE tsc 0·구조테스트 3/3. 상세: `.ai-coordination/HANDOFF/claude.md` T-ISSUE-REQ-PACK-QTY.
-- **출고요청 나머지 우선순위 미착수**: #2 중복출고 가드, #4 부분출고 PARTIAL 상태(현재 COMPLETED만), #1 품목직접입력, #6 LOT FIFO, #7 재고가시성, #8 공정효과표시. (#3 초과차단·#5 업무흐름주체·#9 포장단위는 반영/해소됨)
+- ✅ **출고요청 개선 — 우선순위 9개 전부 완료** (커밋 `8cfaef22`·`4acbabfb`·`35c25279`, 2026-06-28). #3+#9+#5(포장단위 올림+3값), #4(부분출고 PARTIAL), #6(LOT FIFO 입고일정렬), #2(중복요청가드), #1(작성패널 품목직접입력), #7(LOT 입고일·부족경고), #8(공정재고 적재안내). DB 무변경. BE jest 53/53·FE/BE tsc 0·구조테스트 6/6. 상세: `.ai-coordination/HANDOFF/claude.md` T-ISSUE-REQ.
+- **출고요청 잔여**: 브라우저 E2E 미수행(APPROVED 요청+minPackQty>0+다LOT 시드 필요).
 - ✅ **PartMaster→ItemMaster 리네임 완료** (커밋 `34790d2d`, 142파일). 잔존 0, `@Entity ITEM_MASTERS`·마이그레이션 클래스명 보존, backend/frontend tsc 0. (Codex 미커밋분은 `69816e32`로 선행 커밋)
-- **추적**: jest 1건 실패 `wip-mat-stock.service.spec.ts`의 `findByEquip` — 리네임 무관 선재 실패(테스트 mock queryBuilder `groupBy` 미정의)로 보고됨. 별도 확인 필요.
+- **추적(미해결)**: jest 1건 실패 `wip-mat-stock.service.spec.ts`의 `findByEquip` — 리네임 무관 선재 실패(테스트 mock queryBuilder `groupBy` 미정의)로 보고됨. 별도 확인 필요.
 
 ## 변경 파일
 - 코드 변경 없음(설계 단계). DB 주석 1건(`ITEM_MASTERS.MIN_PACK_QTY`), Claude 메모리 1건(git 외부).

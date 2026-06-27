@@ -8,6 +8,7 @@ Format:
 - T-000 | YYYY-MM-DD | owner | short result | evidence: JOURNAL heading or commit
 ```
 
+- T-ISSUE-REQ-REST | 2026-06-28 | claude | 출고요청 잔여 약점 5종(#6 LOT FIFO 입고일정렬/#2 중복요청가드/#1 작성패널 품목직접입력/#7 LOT 입고일·부족경고/#8 공정재고 적재안내) + #4 부분출고 PARTIAL. DB 무변경. BE jest 53/53(issue-request 22+mat-stock 31)·FE/BE tsc 0·구조테스트 6/6 | evidence: commit 4acbabfb, 35c25279
 - T-ISSUE-REQ-PACK-QTY | 2026-06-28 | claude | 출고요청 포장단위(MIN_PACK_QTY) 올림+3값 표시. 요청=낱개 / 실출고=ceil(요청÷포장단위)×포장단위 / 잔량=공정재고 재공. issueFromRequest 초과차단을 roundUpToPack(올림 잔여) 기준으로 완화, buildBomRequestItems/flattenItems 응답에 minPackQty, FE 작성그리드·실출고모달에 포장단위/실출고 컬럼+기본값/상한 올림. DB 무변경. BE jest 18/18·FE/BE tsc 0·구조테스트 3/3 | evidence: commit 8cfaef22
 - T-LABEL-AUTOLOAD | 2026-06-26 | claude | /master/label 진입 시 저장 라벨 미로드(무조건 신규) 수정 + 소스전환 싱크. 자동로드를 카테고리별 1회로(저장있으면 IS_DEFAULT 우선 로드, 없으면 onNew 기본디자인). 무한루프 근본원인=자동로드가 fetchList 완료 전 stale templates(이전 카테고리) 로드→category 진동, useLabelTemplates에 fetchedCategory 추적 추가해 fetchedCategory===category 가드. 저장라벨 7건 IS_DEFAULT=1. '새 디자인' 버튼+i18n 4파일. 브라우저 검증(소모품→제품포장 전환 시 box_label 자동로드, 캔버스/목록/필드 싱크, 루프없음). tsc 0 | evidence: TemplateManager.tsx, useLabelTemplates.ts, page.tsx
 - T-N91-PROCESS-CODE | 2026-06-26 | claude | N91 라우팅 근사매핑 정확화. PROCESS_MASTERS 신규 4종(GCRMP 일반압착/CONAS 커넥터체결/EXTAS 외장재조립/FINSP 최종검사) 추가 후 라우팅 공정 교체(TMCRP→GCRMP, PROTC→CONAS, MASSY→EXTAS, AINSP→FINSP). 17공정 마스터 정합 | evidence: 2026-06-26_add_process_codes_n91.sql
