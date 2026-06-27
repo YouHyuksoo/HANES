@@ -201,21 +201,7 @@ export class AutoIssueService {
     const stockCheckPolicy =
       (await this.sysConfigService.getValue('MAT_ISSUE_STOCK_CHECK')) ?? 'BLOCK';
 
-    /* ── 5-1. 소비 모델 결정 ─────────────────────
-     * 공정재고 모델(R5): 출고이동이 원자재재고(MAT_STOCKS)→공정재고(WIP_MAT_STOCKS)로
-     * 이미 적재했으므로, 소비(차감)는 공정재고에서만 한다(이중차감 방지).
-     * - equipCode 있음: WipMatStockService.deductStockInTx 위임(WIP_MAT_TRANSACTIONS 기록).
-     * - equipCode 없음(설비 미배정): 안전책으로 기존 원자재창고 FIFO(MAT_OUT) fallback + 경고. */
-    const equipCode = jobOrder.equipCode;
-    if (!equipCode) {
-      const msg =
-        `작업지시에 설비가 배정되지 않아 공정재고 소비를 적용할 수 없습니다. ` +
-        `기존 원자재창고 차감으로 처리합니다. orderNo=${orderNo}`;
-      this.logger.warn(msg);
-      result.warnings.push(msg);
-    }
-
-    /* ── 5-2. 키오스크에서 스캔한 작업지시 자재 LOT (차감 우선순위 1순위) ── */
+    /* ── 5-1. 키오스크에서 스캔한 작업지시 자재 LOT (차감 우선순위 1순위) ── */
     const scannedLots = await qr.manager.find(JobMaterialLot, {
       where: { jobOrderNo: orderNo, ...this.tenantWhere(tenant) },
     });
@@ -251,41 +237,41 @@ export class AutoIssueService {
     }
     const scannedMatUids = new Set(scannedLots.map((l) => l.matUid));
 
-    /* ── 6. 자식 품목별 차감 (스캔 LOT 우선 → FIFO) ── */
+    /* ── 5-2. 소비 모델: 차감은 설비에 장착된 공정재고(WIP_MAT_STOCKS)에서만 한다.
+     * 설비 미배정이면 예외 경로 배제(ADR 0002) — 원자재창고 우회 차감 없이 오류로 드러낸다. */
+    const equipCode = jobOrder.equipCode;
+    if (!equipCode) {
+      throw new BadRequestException(
+        `설비가 배정되지 않아 자재를 차감할 수 없습니다 — 차감은 장착된 설비 공정재고에서만 가능합니다. ` +
+        `orderNo=${orderNo}, processCode=${processCode ?? '-'}`,
+      );
+    }
+
+    /* ── 6. 자식 품목별 차감 (스캔 LOT 우선) ── */
     for (const bom of bomList) {
       const requiredQty = Number(bom.qtyPer) * qty;
       if (requiredQty <= 0) continue;
 
-      if (equipCode) {
-        /* 공정재고(WIP_MAT_STOCKS) 소비 — WipMatStockService에 위임.
-         * WIP_MAT_TRANSACTIONS(PROD_CONSUME) 기록 + 스캔 LOT 우선 + 부족정책 처리는 서비스 내부 책임.
-         * 원자재재고(MAT_STOCKS)는 일절 건드리지 않는다(이중차감 방지). */
-        const deducted = await this.wipMatStockService.deductStockInTx(qr, {
-          equipCode,
-          itemCode: bom.childItemCode,
-          qty: requiredQty,
-          transType: 'PROD_CONSUME',
-          refType: 'PROD_RESULT',
-          refId: prodResultNo,
-          orderNo,
-          scannedMatUids: Array.from(scannedMatUids),
-          stockPolicy: stockCheckPolicy === 'WARN' ? 'WARN' : 'BLOCK',
-          company: jobOrder.company,
-          plant: jobOrder.plant,
-          warnings: result.warnings,
-        });
-        result.issued.push(
-          ...deducted.map((d) => ({ matUid: d.matUid, itemCode: bom.childItemCode, issueQty: d.qty })),
-        );
-      } else {
-        /* 설비 미배정 fallback — 기존 원자재창고 FIFO 차감(MAT_OUT + MatIssue PROD_AUTO) */
-        const childResult = await this.issueFifo(
-          qr, bom.childItemCode, requiredQty, orderNo,
-          prodResultNo, stockCheckPolicy, result.warnings, tenant,
-          scannedMatUids,
-        );
-        result.issued.push(...childResult);
-      }
+      /* 공정재고(설비 장착분, WIP_MAT_STOCKS) 소비 — WipMatStockService에 위임.
+       * WIP_MAT_TRANSACTIONS(PROD_CONSUME) 기록 + 스캔 LOT 우선 + 부족정책 처리는 서비스 내부 책임.
+       * 원자재재고(MAT_STOCKS)는 일절 건드리지 않는다. 장착된 재고가 부족하면 서비스가 오류로 막는다. */
+      const deducted = await this.wipMatStockService.deductStockInTx(qr, {
+        equipCode,
+        itemCode: bom.childItemCode,
+        qty: requiredQty,
+        transType: 'PROD_CONSUME',
+        refType: 'PROD_RESULT',
+        refId: prodResultNo,
+        orderNo,
+        scannedMatUids: Array.from(scannedMatUids),
+        stockPolicy: stockCheckPolicy === 'WARN' ? 'WARN' : 'BLOCK',
+        company: jobOrder.company,
+        plant: jobOrder.plant,
+        warnings: result.warnings,
+      });
+      result.issued.push(
+        ...deducted.map((d) => ({ matUid: d.matUid, itemCode: bom.childItemCode, issueQty: d.qty })),
+      );
     }
   }
 
@@ -334,147 +320,6 @@ ${tenantSql}
       params,
     );
     return rows;
-  }
-
-  /* ================================================================
-   *  [Fallback 전용] 설비 미배정 작업지시의 원자재창고 FIFO 차감.
-   *  공정재고(WIP) 소비는 WipMatStockService.deductStockInTx가 담당하며,
-   *  이 메서드는 equipCode가 없는 예외 케이스에서만 호출된다.
-   *  우선순위: ① 키오스크 스캔 LOT(JOB_MATERIAL_LOTS) → ② FIFO(createdAt)
-   * ================================================================ */
-  private async issueFifo(
-    qr: QueryRunner,
-    itemCode: string,
-    requiredQty: number,
-    orderNo: string,
-    prodResultNo: string,
-    stockCheckPolicy: string,
-    warnings: string[],
-    tenant: TenantContext,
-    scannedMatUids: Set<string> = new Set(),
-  ): Promise<{ matUid: string; itemCode: string; issueQty: number }[]> {
-    const issued: { matUid: string; itemCode: string; issueQty: number }[] = [];
-    const tenantWhere = this.tenantWhere(tenant);
-
-    /* FIFO LOT 목록 (PASS & NORMAL & MatStock.qty > 0) — IN 배치로 N+1 방지 */
-    const lotQb = qr.manager
-      .createQueryBuilder(MatLot, 'l')
-      .where('l.itemCode = :itemCode', { itemCode })
-      .andWhere('l.iqcStatus = :iqc', { iqc: 'PASS' })
-      .andWhere('l.status = :st', { st: 'NORMAL' });
-    if (tenant.company) lotQb.andWhere('l.company = :company', { company: tenant.company });
-    if (tenant.plant) lotQb.andWhere('l.plant = :plant', { plant: tenant.plant });
-    const fifoLots = await lotQb.orderBy('l.createdAt', 'ASC').getMany();
-
-    // 작업지시에 스캔 등록된 LOT을 차감 1순위로 — 스캔 추적(JOB_MATERIAL_LOTS)과 실제 차감 LOT 일치
-    const candidateLots = scannedMatUids.size > 0
-      ? [
-          ...fifoLots.filter((l) => scannedMatUids.has(l.matUid)),
-          ...fifoLots.filter((l) => !scannedMatUids.has(l.matUid)),
-        ]
-      : fifoLots;
-    for (const lot of candidateLots) {
-      this.assertSameTenant('자동차감 LOT', tenant, lot);
-    }
-
-    const candidateMatUids = candidateLots.map((l) => l.matUid);
-    const allStocks = candidateMatUids.length > 0
-      ? await qr.manager.find(MatStock, { where: { matUid: In(candidateMatUids), ...tenantWhere } })
-      : [];
-    for (const stock of allStocks) {
-      this.assertSameTenant('자동차감 재고', tenant, stock);
-    }
-
-    // matUid별 재고수량 합산 Map
-    const stockQtyByMatUid = new Map<string, number>();
-    for (const s of allStocks) {
-      stockQtyByMatUid.set(s.matUid, (stockQtyByMatUid.get(s.matUid) ?? 0) + s.qty);
-    }
-
-    const lotsWithStock: { lot: MatLot; stockQty: number }[] = [];
-    for (const lot of candidateLots) {
-      const totalStockQty = stockQtyByMatUid.get(lot.matUid) ?? 0;
-      if (totalStockQty > 0) {
-        lotsWithStock.push({ lot, stockQty: totalStockQty });
-      }
-    }
-
-    const totalAvailable = lotsWithStock.reduce((sum, ls) => sum + ls.stockQty, 0);
-
-    /* 재고 부족 체크 */
-    if (totalAvailable < requiredQty) {
-      const msg =
-        `재고 부족 — ${itemCode}: 필요 ${requiredQty}, 가용 ${totalAvailable}`;
-      if (stockCheckPolicy === 'BLOCK') {
-        throw new BadRequestException(msg);
-      }
-      // WARN: 가용분만 차감
-      this.logger.warn(msg);
-      warnings.push(msg);
-    }
-
-    let remaining = Math.min(requiredQty, totalAvailable);
-
-    for (const { lot, stockQty } of lotsWithStock) {
-      if (remaining <= 0) break;
-
-      const issueQty = Math.min(remaining, stockQty);
-      remaining -= issueQty;
-
-      /* (a) MatIssue 생성 */
-      const issueNo = await this.numbering.nextInTx(qr, 'MAT_ISSUE');
-      const issueEntity = qr.manager.create(MatIssue, {
-        issueNo,
-        seq: 1,
-        orderNo,
-        prodResultNo,
-        matUid: lot.matUid,
-        issueQty,
-        issueType: 'PROD_AUTO',
-        status: 'DONE',
-        company: lot.company,
-        plant: lot.plant,
-      });
-      await qr.manager.save(MatIssue, issueEntity);
-
-      /* (b) MatStock 차감 — LOT의 모든 창고에서 차감(원자재창고). 창고별 차감 내역 확보 */
-      const deductions = await this.deductMatStock(qr, itemCode, lot.matUid, issueQty, tenant);
-
-      /* (c) StockTransaction 생성 — 창고별로 FROM_WAREHOUSE_ID를 기록해야
-       *     실적 취소(reverseAutoIssue) 시 원 창고로 재고 복원이 가능하다.
-       *     설비 미배정 fallback 소비이므로 transType은 MAT_OUT. */
-      for (const deduction of deductions) {
-        const transNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
-        const txEntity = qr.manager.create(StockTransaction, {
-          transNo,
-          transType: 'MAT_OUT',
-          fromWarehouseId: deduction.warehouseCode,
-          toWarehouseId: null,
-          itemCode,
-          matUid: lot.matUid,
-          qty: -deduction.qty,
-          refType: 'MAT_ISSUE',
-          refId: `${issueNo}-1`,
-          status: 'DONE',
-          company: lot.company,
-          plant: lot.plant,
-        });
-        await qr.manager.save(StockTransaction, txEntity);
-      }
-
-      /* (d) MatStock.qty 합산 → 0이면 MatLot DEPLETED 처리. */
-      const remainingStocks = await qr.manager.find(MatStock, {
-        where: { matUid: lot.matUid, ...tenantWhere },
-      });
-      const remainingStockQty = remainingStocks.reduce((s, st) => s + st.qty, 0);
-      if (remainingStockQty <= 0) {
-        await qr.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: 'DEPLETED' });
-      }
-
-      issued.push({ matUid: lot.matUid, itemCode, issueQty });
-    }
-
-    return issued;
   }
 
   /* ================================================================
