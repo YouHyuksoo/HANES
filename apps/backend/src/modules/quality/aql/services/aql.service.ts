@@ -8,7 +8,7 @@ import { AqlStandard } from '../../../../entities/aql-standard.entity';
 import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
 import { IqcAqlPolicy } from '../../../../entities/iqc-aql-policy.entity';
 import { IqcLog } from '../../../../entities/iqc-log.entity';
-import { PartMaster } from '../../../../entities/part-master.entity';
+import { ItemMaster } from '../../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../../entities/partner-master.entity';
 import { VendorInspectionModeHistory } from '../../../../entities/vendor-inspection-mode-history.entity';
 import { IqcPartSpecItem } from '../../../../entities/iqc-part-spec-item.entity';
@@ -92,8 +92,8 @@ export class AqlService {
     private readonly acceptanceRuleRepo: Repository<AqlAcceptanceRule>,
     @InjectRepository(IqcAqlPolicy)
     private readonly policyRepo: Repository<IqcAqlPolicy>,
-    @InjectRepository(PartMaster)
-    private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepo: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerRepo: Repository<PartnerMaster>,
     @InjectRepository(IqcLog)
@@ -717,7 +717,7 @@ export class AqlService {
     }
   }
 
-  private async resolvePartPolicy(part: PartMaster, company?: string, plant?: string) {
+  private async resolvePartPolicy(part: ItemMaster, company?: string, plant?: string) {
     const policyCode = part.iqcAqlPolicyCode?.trim();
     if (!policyCode) {
       throw new BadRequestException(`IQC AQL 정책이 설정되지 않은 품목입니다: ${part.itemCode}`);

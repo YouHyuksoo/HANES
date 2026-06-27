@@ -13,7 +13,7 @@ import { EntityManager, Repository } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { IqcPartSpec } from '../../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../../entities/iqc-part-spec-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { AqlStandard } from '../../../entities/aql-standard.entity';
 import { AqlSamplingRule } from '../../../entities/aql-sampling-rule.entity';
 import { UpsertIqcPartSpecDto } from '../dto/iqc-part-spec.dto';
@@ -98,7 +98,7 @@ export class IqcPartSpecService {
       // 품목마스터(ITEM_MASTERS.SAMPLE_QTY)가 기본시료수의 기준 —
       // 품목별 IQC 기준에서 기본시료수를 저장하면 품목마스터 값도 동일하게 동기화한다.
       await queryRunner.manager.update(
-        PartMaster,
+        ItemMaster,
         { itemCode: dto.itemCode, ...tenantWhere },
         { sampleQty: dto.sampleQty, updatedBy: userId },
       );

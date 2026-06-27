@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -16,8 +16,8 @@ export class ProductLabelService {
     private readonly numbering: NumberingService,
     @InjectRepository(ProdResult)
     private readonly prodResultRepo: Repository<ProdResult>,
-    @InjectRepository(PartMaster)
-    private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepo: Repository<ItemMaster>,
   ) {}
 
   private assertSameTenant(

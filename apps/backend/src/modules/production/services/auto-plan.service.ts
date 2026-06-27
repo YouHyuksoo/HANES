@@ -17,7 +17,7 @@ import { Repository, QueryRunner, In } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import {
   AutoGeneratePlanDto,
   AutoPlanPreview,
@@ -45,8 +45,8 @@ export class AutoPlanService {
     private readonly orderRepo: Repository<CustomerOrder>,
     @InjectRepository(CustomerOrderItem)
     private readonly orderItemRepo: Repository<CustomerOrderItem>,
-    @InjectRepository(PartMaster)
-    private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepo: Repository<ItemMaster>,
     private readonly tx: TransactionService,
   ) {}
 

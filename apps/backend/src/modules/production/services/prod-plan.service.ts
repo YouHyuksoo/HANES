@@ -18,7 +18,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, QueryRunner } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -41,8 +41,8 @@ export class ProdPlanService {
   constructor(
     @InjectRepository(ProdPlan)
     private readonly planRepo: Repository<ProdPlan>,
-    @InjectRepository(PartMaster)
-    private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepo: Repository<ItemMaster>,
     @InjectRepository(JobOrder)
     private readonly jobOrderRepo: Repository<JobOrder>,
     @InjectRepository(RoutingGroup)
@@ -138,7 +138,7 @@ export class ProdPlanService {
       // IN 배치 선조회로 품목 검증 (N+1 제거)
       const allItemCodes = [...new Set(dto.items.map((i) => i.itemCode))];
       const allParts = allItemCodes.length > 0
-        ? await queryRunner.manager.find(PartMaster, {
+        ? await queryRunner.manager.find(ItemMaster, {
             where: { itemCode: In(allItemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
             select: ['itemCode'],
           })

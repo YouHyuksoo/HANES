@@ -5,7 +5,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { ProdPlanService } from './prod-plan.service';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -17,7 +17,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 describe('ProdPlanService', () => {
   let service: ProdPlanService;
   let planRepo: DeepMocked<Repository<ProdPlan>>;
-  let partRepo: DeepMocked<Repository<PartMaster>>;
+  let partRepo: DeepMocked<Repository<ItemMaster>>;
   let jobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let routingGroupRepo: DeepMocked<Repository<RoutingGroup>>;
   let bomMasterRepo: DeepMocked<Repository<BomMaster>>;
@@ -28,7 +28,7 @@ describe('ProdPlanService', () => {
 
   beforeEach(async () => {
     planRepo = createMock<Repository<ProdPlan>>();
-    partRepo = createMock<Repository<PartMaster>>();
+    partRepo = createMock<Repository<ItemMaster>>();
     jobOrderRepo = createMock<Repository<JobOrder>>();
     routingGroupRepo = createMock<Repository<RoutingGroup>>();
     bomMasterRepo = createMock<Repository<BomMaster>>();
@@ -49,7 +49,7 @@ describe('ProdPlanService', () => {
       providers: [
         ProdPlanService,
         { provide: getRepositoryToken(ProdPlan), useValue: planRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: getRepositoryToken(JobOrder), useValue: jobOrderRepo },
         { provide: getRepositoryToken(RoutingGroup), useValue: routingGroupRepo },
         { provide: getRepositoryToken(BomMaster), useValue: bomMasterRepo },
@@ -196,7 +196,7 @@ describe('ProdPlanService', () => {
 
     expect(result.count).toBe(1);
     expect(queryRunner.manager.find).toHaveBeenCalledWith(
-      PartMaster,
+      ItemMaster,
       { where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' }, select: ['itemCode'] },
     );
     expect(tx.run).toHaveBeenCalledTimes(1);

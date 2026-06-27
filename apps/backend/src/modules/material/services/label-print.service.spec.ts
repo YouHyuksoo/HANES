@@ -17,7 +17,7 @@ import { LabelPrintService } from './label-print.service';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { LabelTemplate } from '../../../entities/label-template.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('LabelPrintService', () => {
@@ -25,13 +25,13 @@ describe('LabelPrintService', () => {
   let mockPrintLogRepo: DeepMocked<Repository<LabelPrintLog>>;
   let mockTemplateRepo: DeepMocked<Repository<LabelTemplate>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
 
   beforeEach(async () => {
     mockPrintLogRepo = createMock<Repository<LabelPrintLog>>();
     mockTemplateRepo = createMock<Repository<LabelTemplate>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -39,7 +39,7 @@ describe('LabelPrintService', () => {
         { provide: getRepositoryToken(LabelPrintLog), useValue: mockPrintLogRepo },
         { provide: getRepositoryToken(LabelTemplate), useValue: mockTemplateRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -68,11 +68,11 @@ describe('LabelPrintService', () => {
         recvDate: new Date('2026-01-01'),
       } as MatLot]);
 
-      mockPartMasterRepo.find.mockResolvedValue([{
+      mockItemMasterRepo.find.mockResolvedValue([{
         itemCode: 'ITEM-001',
         itemName: '커넥터A',
         unit: 'EA',
-      } as PartMaster]);
+      } as ItemMaster]);
 
       const result = await target.generateZpl({ templateId: 'TEST', matUids: ['MAT-001'] });
 
@@ -100,7 +100,7 @@ describe('LabelPrintService', () => {
         itemCode: 'ITEM-MISSING',
         initQty: 100,
       } as MatLot]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.generateZpl({ templateId: 'TEST', matUids: ['MAT-001'] });
 
@@ -126,14 +126,14 @@ describe('LabelPrintService', () => {
         company: 'C1',
         plant: 'P1',
       } as MatLot]);
-      mockPartMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part', unit: 'EA' } as PartMaster]);
+      mockItemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part', unit: 'EA' } as ItemMaster]);
 
       await target.generateZpl({ templateId: 'TEST', matUids: ['MAT-001'] }, 'C1', 'P1');
 
       expect(mockMatLotRepo.find).toHaveBeenCalledWith({
         where: { matUid: expect.anything(), company: 'C1', plant: 'P1' },
       });
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
       });
     });
@@ -172,7 +172,7 @@ describe('LabelPrintService', () => {
         itemCode: 'ITEM-001',
         initQty: 100,
       } as MatLot]);
-      mockPartMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster]);
+      mockItemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster]);
 
       await target.generateZpl({ templateId: 'TEST::mat_lot', matUids: ['MAT-001'] });
 

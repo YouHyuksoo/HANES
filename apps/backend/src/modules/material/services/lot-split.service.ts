@@ -15,7 +15,7 @@ import { Repository, In, QueryRunner } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotSplitDto, LotSplitQueryDto } from '../dto/lot-split.dto';
@@ -40,8 +40,8 @@ export class LotSplitService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatIssue)
     private readonly matIssueRepository: Repository<MatIssue>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(StockTransaction)
@@ -97,7 +97,7 @@ export class LotSplitService {
     const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
     const tenantWhere = this.tenantWhere(company, plant);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -184,7 +184,7 @@ export class LotSplitService {
       }
 
       // 5) 품목 정보 + 분할 가능 여부
-      const part = await queryRunner.manager.findOne(PartMaster, {
+      const part = await queryRunner.manager.findOne(ItemMaster, {
         where: { itemCode: sourceLot.itemCode, ...tenantWhere },
       });
       if (!part) {

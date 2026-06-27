@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. PLAN_NO가 자연키 PK (PP-YYYYMM-NNN)
- * 2. ITEM_CODE로 PartMaster(품목)를 참조
+ * 2. ITEM_CODE로 ItemMaster(품목)를 참조
  * 3. STATUS: DRAFT → CONFIRMED → CLOSED 워크플로우
  */
 import {
@@ -17,7 +17,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 
 @Entity({ name: 'PROD_PLANS' })
 @Index(['planMonth'])
@@ -32,13 +32,13 @@ export class ProdPlan {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @ManyToOne(() => PartMaster, { nullable: true })
+  @ManyToOne(() => ItemMaster, { nullable: true })
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  part: PartMaster | null;
+  part: ItemMaster | null;
 
   @Column({ name: 'ITEM_TYPE', length: 10 })
   itemType: string;

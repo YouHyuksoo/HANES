@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { Repository } from 'typeorm';
 import { MockLoggerService } from '@test/mock-logger.service';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProcessCapa } from '../../../entities/process-capa.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { ProcessCapaService } from './process-capa.service';
@@ -13,19 +13,19 @@ describe('ProcessCapaService', () => {
   let target: ProcessCapaService;
   let repo: DeepMocked<Repository<ProcessCapa>>;
   let processRepo: DeepMocked<Repository<ProcessMaster>>;
-  let partRepo: DeepMocked<Repository<PartMaster>>;
+  let partRepo: DeepMocked<Repository<ItemMaster>>;
 
   beforeEach(async () => {
     repo = createMock<Repository<ProcessCapa>>();
     processRepo = createMock<Repository<ProcessMaster>>();
-    partRepo = createMock<Repository<PartMaster>>();
+    partRepo = createMock<Repository<ItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProcessCapaService,
         { provide: getRepositoryToken(ProcessCapa), useValue: repo },
         { provide: getRepositoryToken(ProcessMaster), useValue: processRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -39,7 +39,7 @@ describe('ProcessCapaService', () => {
   it('creates capa after validating process and part within tenant only', async () => {
     repo.findOne.mockResolvedValue(null);
     processRepo.findOne.mockResolvedValue({ processCode: 'P01', company: 'C1', plant: 'P1' } as ProcessMaster);
-    partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', company: 'C1', plant: 'P1' } as PartMaster);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', company: 'C1', plant: 'P1' } as ItemMaster);
     repo.create.mockImplementation((value) => value as ProcessCapa);
     repo.save.mockImplementation(async (value) => value as ProcessCapa);
 

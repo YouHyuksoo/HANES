@@ -16,7 +16,7 @@ import { ReceiptCancelService } from './receipt-cancel.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
@@ -29,7 +29,7 @@ describe('ReceiptCancelService', () => {
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockDataSource: DeepMocked<DataSource>;
@@ -41,13 +41,13 @@ describe('ReceiptCancelService', () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
 
     // enrichment 조회 기본값 (빈 배열)
     mockMatLotRepo.find.mockResolvedValue([]);
-    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockItemMasterRepo.find.mockResolvedValue([]);
     mockPartnerMasterRepo.find.mockResolvedValue([]);
     mockWarehouseRepo.find.mockResolvedValue([]);
     mockDataSource = createMock<DataSource>();
@@ -69,7 +69,7 @@ describe('ReceiptCancelService', () => {
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: DataSource, useValue: mockDataSource },

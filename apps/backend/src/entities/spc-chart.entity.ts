@@ -19,7 +19,7 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 import { ProcessMaster } from './process-master.entity';
 
 @Entity({ name: 'SPC_CHARTS' })
@@ -32,13 +32,13 @@ export class SpcChart {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @ManyToOne(() => PartMaster)
+  @ManyToOne(() => ItemMaster)
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  item: PartMaster;
+  item: ItemMaster;
 
   @Column({ name: 'PROCESS_CODE', length: 50 })
   processCode: string;

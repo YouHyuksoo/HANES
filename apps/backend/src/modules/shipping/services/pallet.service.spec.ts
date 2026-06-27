@@ -11,7 +11,7 @@ import { PalletService } from './pallet.service';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -21,7 +21,7 @@ describe('PalletService', () => {
   let mockPalletRepo: DeepMocked<Repository<PalletMaster>>;
   let mockBoxRepo: DeepMocked<Repository<BoxMaster>>;
   let mockShipmentRepo: DeepMocked<Repository<ShipmentLog>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
@@ -30,7 +30,7 @@ describe('PalletService', () => {
     mockPalletRepo = createMock<Repository<PalletMaster>>();
     mockBoxRepo = createMock<Repository<BoxMaster>>();
     mockShipmentRepo = createMock<Repository<ShipmentLog>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQr = createMock<QueryRunner>();
@@ -48,7 +48,7 @@ describe('PalletService', () => {
         { provide: getRepositoryToken(PalletMaster), useValue: mockPalletRepo },
         { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
         { provide: getRepositoryToken(ShipmentLog), useValue: mockShipmentRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
         { provide: NumberingService, useValue: { nextPalletNo: jest.fn().mockResolvedValue('PLT-TEST') } },

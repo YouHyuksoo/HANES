@@ -15,7 +15,7 @@ import { Repository, DataSource, Like, Between, In, FindOptionsWhere, IsNull } f
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { CreateAdjustmentDto, AdjustmentQueryDto } from '../dto/adjustment.dto';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -30,8 +30,8 @@ export class AdjustmentService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     private readonly dataSource: DataSource,
@@ -93,7 +93,7 @@ export class AdjustmentService {
     const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
     const tenantWhere = this.tenantWhere(company, plant);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -128,7 +128,7 @@ export class AdjustmentService {
     const tenantWhere = this.tenantWhere(company, plant);
 
     return this.tx.run(async (queryRunner) => {
-      const part = await queryRunner.manager.findOne(PartMaster, { where: { itemCode, ...tenantWhere } });
+      const part = await queryRunner.manager.findOne(ItemMaster, { where: { itemCode, ...tenantWhere } });
       if (!part) throw new NotFoundException(`?덈ぉ??李얠쓣 ???놁뒿?덈떎: ${itemCode}`);
 
       if (matUid) {
@@ -322,7 +322,7 @@ export class AdjustmentService {
 
     return this.tx.run(async (queryRunner) => {
       // ?덈ぉ ?뺤씤
-      const part = await queryRunner.manager.findOne(PartMaster, {
+      const part = await queryRunner.manager.findOne(ItemMaster, {
         where: { itemCode, ...tenantWhere },
       });
       if (!part) {

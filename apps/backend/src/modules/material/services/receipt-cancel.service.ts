@@ -9,7 +9,7 @@ import { Repository, DataSource, IsNull, Between, In, Like, FindOptionsWhere } f
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
@@ -30,8 +30,8 @@ export class ReceiptCancelService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(Warehouse)
@@ -102,7 +102,7 @@ export class ReceiptCancelService {
     const warehouseCodes = [...new Set(data.map((t) => t.toWarehouseId).filter((v): v is string => !!v))];
 
     const [parts, lots, warehouses] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
       matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
       warehouseCodes.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } }) : Promise.resolve([]),
     ]);

@@ -26,7 +26,7 @@ import { Repository, DataSource, Between, In, QueryRunner, FindOptionsWhere } fr
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import {
   CreateConsumableDto,
@@ -53,8 +53,8 @@ export class ConsumablesService {
     private readonly consumableLogRepository: Repository<ConsumableLog>,
     @InjectRepository(ConsumableUsageMap)
     private readonly usageMapRepository: Repository<ConsumableUsageMap>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
     @InjectRepository(EquipMaster)
     private readonly equipRepository: Repository<EquipMaster>,
     private readonly dataSource: DataSource,

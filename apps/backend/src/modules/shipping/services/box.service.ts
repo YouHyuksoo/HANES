@@ -10,7 +10,7 @@ import { ILike, IsNull, In, Like, Not, Between, Repository } from 'typeorm';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
@@ -36,8 +36,8 @@ export class BoxService {
     private readonly boxRepository: Repository<BoxMaster>,
     @InjectRepository(PalletMaster)
     private readonly palletRepository: Repository<PalletMaster>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
     @InjectRepository(MatLot)
     private readonly lotRepository: Repository<MatLot>,
     @InjectRepository(FgLabel)

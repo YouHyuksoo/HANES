@@ -7,7 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Raw, In, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { ShelfLifeQueryDto } from '../dto/shelf-life.dto';
 
@@ -16,8 +16,8 @@ export class ShelfLifeService {
   constructor(
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
   ) {}
@@ -46,7 +46,7 @@ export class ShelfLifeService {
     // part 정보 조회
     const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
+      ? await this.itemMasterRepository.find({
         where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) },
       })
       : [];

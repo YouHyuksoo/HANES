@@ -16,7 +16,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -43,8 +43,8 @@ export class ShelfLifeReInspectService {
     private readonly stockTxRepo: Repository<StockTransaction>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepo: Repository<Warehouse>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepo: Repository<ItemMaster>,
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
   ) {}
@@ -90,7 +90,7 @@ export class ShelfLifeReInspectService {
     // 품목명 보강
     const itemCodes = [...new Set(data.map(d => d.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepo.find({ where: itemCodes.map(code => ({ itemCode: code, ...(company && { company }), ...(plant && { plant }) })) })
+      ? await this.itemMasterRepo.find({ where: itemCodes.map(code => ({ itemCode: code, ...(company && { company }), ...(plant && { plant }) })) })
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
@@ -119,7 +119,7 @@ export class ShelfLifeReInspectService {
     const lotTenant = this.tenantWhere(lot.company, lot.plant);
 
     // 품목 조회 (최대 연장일 확인)
-    const item = await this.partMasterRepo.findOne({
+    const item = await this.itemMasterRepo.findOne({
       where: { itemCode: lot.itemCode, ...lotTenant },
     });
     const maxExtDays = item?.expiryExtDays ?? 0;

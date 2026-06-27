@@ -18,7 +18,7 @@ import { JobOrder } from '../../../../entities/job-order.entity';
 import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { MatIssue } from '../../../../entities/mat-issue.entity';
 import { TraceLog } from '../../../../entities/trace-log.entity';
-import { PartMaster } from '../../../../entities/part-master.entity';
+import { ItemMaster } from '../../../../entities/item-master.entity';
 import { EquipMaster } from '../../../../entities/equip-master.entity';
 import { WorkerMaster } from '../../../../entities/worker-master.entity';
 import { ProcessMaster } from '../../../../entities/process-master.entity';
@@ -86,8 +86,8 @@ export class TraceService {
     private readonly matIssueRepo: Repository<MatIssue>,
     @InjectRepository(TraceLog)
     private readonly traceLogRepo: Repository<TraceLog>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepo: Repository<ItemMaster>,
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepo: Repository<EquipMaster>,
     @InjectRepository(WorkerMaster)
@@ -141,8 +141,8 @@ export class TraceService {
         })
       : null;
 
-    // 4) PartMaster 조회 (품목 정보)
-    const partMaster = await this.partMasterRepo.findOne({
+    // 4) ItemMaster 조회 (품목 정보)
+    const itemMaster = await this.itemMasterRepo.findOne({
       where: { itemCode: fgLabel.itemCode, company, plant },
     });
 
@@ -357,7 +357,7 @@ export class TraceService {
 
       const matItemCodes = [...new Set(allMatLots.map((l) => l.itemCode).filter(Boolean))];
       const matParts = matItemCodes.length > 0
-        ? await this.partMasterRepo.find({ where: { itemCode: In(matItemCodes), company, plant } })
+        ? await this.itemMasterRepo.find({ where: { itemCode: In(matItemCodes), company, plant } })
         : [];
       const matPartMap = new Map(matParts.map((p) => [p.itemCode, p]));
 
@@ -482,8 +482,8 @@ export class TraceService {
       serialNo: fgLabel.fgBarcode,
       matUid: prdUid ? '' : fgLabel.itemCode,
       prdUid,
-      itemNo: partMaster?.itemNo ?? fgLabel.itemCode,
-      itemName: partMaster?.itemName ?? '',
+      itemNo: itemMaster?.itemNo ?? fgLabel.itemCode,
+      itemName: itemMaster?.itemName ?? '',
       workOrderNo: fgLabel.orderNo ?? '',
       productionDate: productionDate instanceof Date ? productionDate.toISOString().split('T')[0] : String(productionDate ?? ''),
       boxNo: fgLabel.boxNo ?? null,

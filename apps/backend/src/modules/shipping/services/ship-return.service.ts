@@ -19,7 +19,7 @@ import { Repository, ILike } from 'typeorm';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { CreateShipReturnDto, UpdateShipReturnDto, ShipReturnQueryDto } from '../dto/ship-return.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart } from '../../../shared/date.util';
@@ -33,8 +33,8 @@ export class ShipReturnService {
     private readonly shipReturnItemRepository: Repository<ShipmentReturnItem>,
     @InjectRepository(ShipmentOrder)
     private readonly shipOrderRepository: Repository<ShipmentOrder>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
     private readonly tx: TransactionService,
   ) {}
 

@@ -66,7 +66,7 @@ import { WorkCalendarController } from './controllers/work-calendar.controller';
 import { WorkCalendarService } from './services/work-calendar.service';
 
 // TypeORM Entities
-import { PartMaster } from '../../entities/part-master.entity';
+import { ItemMaster } from '../../entities/item-master.entity';
 import { BomMaster } from '../../entities/bom-master.entity';
 import { ComCode } from '../../entities/com-code.entity';
 import { CompanyMaster } from '../../entities/company-master.entity';
@@ -109,7 +109,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      PartMaster,
+      ItemMaster,
       BomMaster,
       ComCode,
       CompanyMaster,

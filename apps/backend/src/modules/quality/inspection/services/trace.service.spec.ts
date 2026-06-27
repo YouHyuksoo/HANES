@@ -25,7 +25,7 @@ describe('TraceService', () => {
     const inspectResultRepo = { find: jest.fn().mockResolvedValue([]) };
     const matIssueRepo = { find: jest.fn() };
     const traceLogRepo = { createQueryBuilder: jest.fn(() => traceLogQb) };
-    const partMasterRepo = { findOne: jest.fn(), find: jest.fn() };
+    const itemMasterRepo = { findOne: jest.fn(), find: jest.fn() };
     const equipMasterRepo = { createQueryBuilder: jest.fn(() => equipQb) };
     const workerMasterRepo = { createQueryBuilder: jest.fn(() => workerQb) };
     const processMasterRepo = { createQueryBuilder: jest.fn(() => processQb) };
@@ -42,7 +42,7 @@ describe('TraceService', () => {
       inspectResultRepo as any,
       matIssueRepo as any,
       traceLogRepo as any,
-      partMasterRepo as any,
+      itemMasterRepo as any,
       equipMasterRepo as any,
       workerMasterRepo as any,
       processMasterRepo as any,
@@ -58,7 +58,7 @@ describe('TraceService', () => {
       fgLabelRepo,
       prodResultRepo,
       jobOrderRepo,
-      partMasterRepo,
+      itemMasterRepo,
       inspectResultRepo,
       matIssueRepo,
       matLotRepo,
@@ -75,7 +75,7 @@ describe('TraceService', () => {
       fgLabelRepo,
       prodResultRepo,
       jobOrderRepo,
-      partMasterRepo,
+      itemMasterRepo,
       inspectResultRepo,
       matIssueRepo,
       matLotRepo,
@@ -89,14 +89,14 @@ describe('TraceService', () => {
     });
     prodResultRepo.find.mockResolvedValue([]);
     jobOrderRepo.findOne.mockResolvedValue(null);
-    partMasterRepo.findOne.mockResolvedValue(null);
+    itemMasterRepo.findOne.mockResolvedValue(null);
     matIssueRepo.find.mockResolvedValue([
       { orderNo: 'JO-001', matUid: 'MAT-001', issueQty: 2, issueDate: new Date('2026-01-01T01:00:00Z') },
     ]);
     matLotRepo.find.mockResolvedValue([
       { matUid: 'MAT-001', itemCode: 'RM-001', vendor: 'V001' },
     ]);
-    partMasterRepo.find.mockResolvedValue([
+    itemMasterRepo.find.mockResolvedValue([
       { itemCode: 'RM-001', itemName: 'Raw Material', unit: 'EA' },
     ]);
 
@@ -105,7 +105,7 @@ describe('TraceService', () => {
     expect(matLotRepo.find).toHaveBeenCalledWith({
       where: { matUid: expect.anything(), company: 'C1', plant: 'P1' },
     });
-    expect(partMasterRepo.find).toHaveBeenCalledWith({
+    expect(itemMasterRepo.find).toHaveBeenCalledWith({
       where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
     });
   });
@@ -116,7 +116,7 @@ describe('TraceService', () => {
       fgLabelRepo,
       prodResultRepo,
       jobOrderRepo,
-      partMasterRepo,
+      itemMasterRepo,
       inspectResultRepo,
       matIssueRepo,
       equipQb,
@@ -142,7 +142,7 @@ describe('TraceService', () => {
       },
     ]);
     jobOrderRepo.findOne.mockResolvedValue(null);
-    partMasterRepo.findOne.mockResolvedValue(null);
+    itemMasterRepo.findOne.mockResolvedValue(null);
     matIssueRepo.find.mockResolvedValue([]);
     inspectResultRepo.find.mockResolvedValue([]);
 
@@ -162,7 +162,7 @@ describe('TraceService', () => {
       fgLabelRepo,
       prodResultRepo,
       jobOrderRepo,
-      partMasterRepo,
+      itemMasterRepo,
       inspectResultRepo,
       matIssueRepo,
       controlPlanQb,
@@ -176,7 +176,7 @@ describe('TraceService', () => {
     });
     prodResultRepo.find.mockResolvedValue([]);
     jobOrderRepo.findOne.mockResolvedValue(null);
-    partMasterRepo.findOne.mockResolvedValue(null);
+    itemMasterRepo.findOne.mockResolvedValue(null);
     matIssueRepo.find.mockResolvedValue([]);
     inspectResultRepo.find.mockResolvedValue([]);
 

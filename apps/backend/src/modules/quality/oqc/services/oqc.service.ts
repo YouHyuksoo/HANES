@@ -9,7 +9,7 @@ import { In, Repository } from 'typeorm';
 import { BoxMaster } from '../../../../entities/box-master.entity';
 import { OqcRequestBox } from '../../../../entities/oqc-request-box.entity';
 import { OqcRequest } from '../../../../entities/oqc-request.entity';
-import { PartMaster } from '../../../../entities/part-master.entity';
+import { ItemMaster } from '../../../../entities/item-master.entity';
 import {
   CreateOqcRequestDto,
   ExecuteOqcInspectionDto,
@@ -30,8 +30,8 @@ export class OqcService {
     private readonly oqcRequestBoxRepo: Repository<OqcRequestBox>,
     @InjectRepository(BoxMaster)
     private readonly boxRepo: Repository<BoxMaster>,
-    @InjectRepository(PartMaster)
-    private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepo: Repository<ItemMaster>,
     private readonly tx: TransactionService,
   ) {}
 
@@ -52,7 +52,7 @@ export class OqcService {
 
     const qb = this.oqcRequestRepo
       .createQueryBuilder('oqc')
-      .leftJoinAndMapOne('oqc.part', PartMaster, 'part', 'oqc.itemCode = part.itemCode');
+      .leftJoinAndMapOne('oqc.part', ItemMaster, 'part', 'oqc.itemCode = part.itemCode');
 
     if (company) qb.andWhere('oqc.company = :company', { company });
     if (plant) qb.andWhere('oqc.plant = :plant', { plant });
@@ -293,7 +293,7 @@ export class OqcService {
   async getAvailableBoxes(itemCode?: string, company?: string, plant?: string) {
     const qb = this.boxRepo
       .createQueryBuilder('box')
-      .leftJoinAndMapOne('box.part', PartMaster, 'part', 'box.itemCode = part.itemCode')
+      .leftJoinAndMapOne('box.part', ItemMaster, 'part', 'box.itemCode = part.itemCode')
       .where('box.status = :status', { status: 'CLOSED' })
       .andWhere('box.oqcStatus IS NULL');
 

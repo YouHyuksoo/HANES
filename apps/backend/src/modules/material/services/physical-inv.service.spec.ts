@@ -7,7 +7,7 @@ import { PhysicalInvService } from './physical-inv.service';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -21,7 +21,7 @@ describe('PhysicalInvService', () => {
   let matStockRepo: DeepMocked<Repository<MatStock>>;
   let invAdjLogRepo: DeepMocked<Repository<InvAdjLog>>;
   let matLotRepo: DeepMocked<Repository<MatLot>>;
-  let partMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let itemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let sessionRepo: DeepMocked<Repository<PhysicalInvSession>>;
   let countDetailRepo: DeepMocked<Repository<PhysicalInvCountDetail>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
@@ -33,7 +33,7 @@ describe('PhysicalInvService', () => {
     matStockRepo = createMock<Repository<MatStock>>();
     invAdjLogRepo = createMock<Repository<InvAdjLog>>();
     matLotRepo = createMock<Repository<MatLot>>();
-    partMasterRepo = createMock<Repository<PartMaster>>();
+    itemMasterRepo = createMock<Repository<ItemMaster>>();
     sessionRepo = createMock<Repository<PhysicalInvSession>>();
     countDetailRepo = createMock<Repository<PhysicalInvCountDetail>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
@@ -58,7 +58,7 @@ describe('PhysicalInvService', () => {
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
         { provide: getRepositoryToken(InvAdjLog), useValue: invAdjLogRepo },
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: itemMasterRepo },
         { provide: getRepositoryToken(PhysicalInvSession), useValue: sessionRepo },
         { provide: getRepositoryToken(PhysicalInvCountDetail), useValue: countDetailRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
@@ -95,7 +95,7 @@ describe('PhysicalInvService', () => {
         getCount: jest.fn().mockResolvedValue(1),
       };
       matStockRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
       matLotRepo.find.mockResolvedValue([]);
 
       const result = await service.findStocks({ page: 1, limit: 10 });
@@ -130,12 +130,12 @@ describe('PhysicalInvService', () => {
         getCount: jest.fn().mockResolvedValue(1),
       };
       matStockRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
       matLotRepo.find.mockResolvedValue([]);
 
       await service.findStocks({ page: 1, limit: 10 }, 'C1', 'P1');
 
-      expect(partMasterRepo.find).toHaveBeenCalledWith({
+      expect(itemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
       expect(matLotRepo.find).toHaveBeenCalledWith({
@@ -159,7 +159,7 @@ describe('PhysicalInvService', () => {
       await service.findStocks({ page: 1, limit: 10, search: 'ITEM' } as any, 'C1', 'P1');
 
       expect(queryBuilder.leftJoin).toHaveBeenCalledWith(
-        PartMaster,
+        ItemMaster,
         'part',
         'part.itemCode = stock.itemCode AND part.company = stock.company AND part.plant = stock.plant',
       );
@@ -184,7 +184,7 @@ describe('PhysicalInvService', () => {
       await service.findHistory({ page: 1, limit: 50 } as any, 'C1', 'P1');
 
       expect(queryBuilder.leftJoin).toHaveBeenCalledWith(
-        PartMaster,
+        ItemMaster,
         'part',
         'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant',
       );
@@ -209,12 +209,12 @@ describe('PhysicalInvService', () => {
           plant: 'P1',
         } as MatStock,
       ]);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
       countDetailRepo.find.mockResolvedValue([]);
 
       await service.getLocationItems('2026-05-23', 1, 'LOC-01', 'C1', 'P1');
 
-      expect(partMasterRepo.find).toHaveBeenCalledWith({
+      expect(itemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -231,7 +231,7 @@ describe('PhysicalInvService', () => {
           plant: 'P1',
         } as MatStock,
       ]);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
       countDetailRepo.find.mockResolvedValue([]);
 
       await service.getLocationItems('2026-05-23', 1, 'LOC-01', 'C1', 'P1');
@@ -446,13 +446,13 @@ describe('PhysicalInvService', () => {
         ]),
       };
       matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
       warehouseRepo.find.mockResolvedValue([]);
       countDetailRepo.find.mockResolvedValue([]);
 
       await service.findStocksWithCounts({ page: 1, limit: 20, countMonth: '2026-05' }, 'C1', 'P1');
 
-      expect(partMasterRepo.find).toHaveBeenCalledWith({
+      expect(itemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
       expect(warehouseRepo.find).toHaveBeenCalledWith({
@@ -487,7 +487,7 @@ describe('PhysicalInvService', () => {
         ]),
       };
       matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
       warehouseRepo.find.mockResolvedValue([]);
       countDetailRepo.find.mockResolvedValue([]);
 
@@ -517,7 +517,7 @@ describe('PhysicalInvService', () => {
       await service.findStocksWithCounts({ countMonth: '2026-05', search: 'ITEM' } as any, 'C1', 'P1');
 
       expect(stockQb.leftJoin).toHaveBeenCalledWith(
-        PartMaster,
+        ItemMaster,
         'sp',
         'sp.itemCode = stock.itemCode AND sp.company = stock.company AND sp.plant = stock.plant',
       );

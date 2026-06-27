@@ -7,7 +7,7 @@ import { ScrapService } from './scrap.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -19,7 +19,7 @@ describe('ScrapService', () => {
   let stockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let matLotRepo: DeepMocked<Repository<MatLot>>;
   let matStockRepo: DeepMocked<Repository<MatStock>>;
-  let partMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let itemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
@@ -31,7 +31,7 @@ describe('ScrapService', () => {
     stockTxRepo = createMock<Repository<StockTransaction>>();
     matLotRepo = createMock<Repository<MatLot>>();
     matStockRepo = createMock<Repository<MatStock>>();
-    partMasterRepo = createMock<Repository<PartMaster>>();
+    itemMasterRepo = createMock<Repository<ItemMaster>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
@@ -55,7 +55,7 @@ describe('ScrapService', () => {
         { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: itemMasterRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
@@ -85,7 +85,7 @@ describe('ScrapService', () => {
         } as StockTransaction,
       ]);
       stockTxRepo.count.mockResolvedValue(1);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
       matLotRepo.find.mockResolvedValue([]);
 
       const result = await service.findAll({ page: 1, limit: 10 });
@@ -113,12 +113,12 @@ describe('ScrapService', () => {
         } as StockTransaction,
       ]);
       stockTxRepo.count.mockResolvedValue(1);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
       matLotRepo.find.mockResolvedValue([]);
 
       await service.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
-      expect(partMasterRepo.find).toHaveBeenCalledWith({
+      expect(itemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
       expect(matLotRepo.find).toHaveBeenCalledWith({

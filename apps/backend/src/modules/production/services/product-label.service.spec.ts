@@ -5,7 +5,7 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -15,7 +15,7 @@ import { ProductLabelService } from './product-label.service';
 describe('ProductLabelService', () => {
   let service: ProductLabelService;
   let prodResultRepo: DeepMocked<Repository<ProdResult>>;
-  let partRepo: DeepMocked<Repository<PartMaster>>;
+  let partRepo: DeepMocked<Repository<ItemMaster>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
@@ -23,7 +23,7 @@ describe('ProductLabelService', () => {
 
   beforeEach(async () => {
     prodResultRepo = createMock<Repository<ProdResult>>();
-    partRepo = createMock<Repository<PartMaster>>();
+    partRepo = createMock<Repository<ItemMaster>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
@@ -35,7 +35,7 @@ describe('ProductLabelService', () => {
       providers: [
         ProductLabelService,
         { provide: getRepositoryToken(ProdResult), useValue: prodResultRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: getRepositoryToken(FgLabel), useValue: createMock<Repository<FgLabel>>() },
         { provide: getRepositoryToken(LabelPrintLog), useValue: createMock<Repository<LabelPrintLog>>() },
         { provide: DataSource, useValue: dataSource },
@@ -101,7 +101,7 @@ describe('ProductLabelService', () => {
       plant: 'P1',
       jobOrder: { itemCode: 'FG-001' },
     } as ProdResult);
-    partRepo.findOne.mockResolvedValue({ itemCode: 'FG-001', itemName: 'Finished Good' } as PartMaster);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'FG-001', itemName: 'Finished Good' } as ItemMaster);
     numbering.nextPrdUid.mockResolvedValue('PRD-001');
     (queryRunner.manager.create as jest.Mock).mockImplementation((_entity, payload) => payload);
     (queryRunner.manager.findOne as jest.Mock).mockResolvedValue(null);
@@ -153,7 +153,7 @@ describe('ProductLabelService', () => {
       plant: 'P1',
       jobOrder: { itemCode: 'FG-001', lineCode: 'LINE-1' },
     } as ProdResult);
-    partRepo.findOne.mockResolvedValue({ itemCode: 'FG-001', itemName: 'Finished Good' } as PartMaster);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'FG-001', itemName: 'Finished Good' } as ItemMaster);
     (queryRunner.manager.create as jest.Mock).mockImplementation((_entity, payload) => payload);
     (queryRunner.manager.findOne as jest.Mock).mockResolvedValue(null);
 

@@ -6,14 +6,14 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
 
 @Injectable()
 export class PartService {
   constructor(
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -162,7 +162,7 @@ export class PartService {
       iqcAqlPolicyCode: dto.iqcAqlPolicyCode !== undefined ? dto.iqcAqlPolicyCode : existing.iqcAqlPolicyCode,
     });
 
-    const updateData: Partial<Pick<PartMaster,
+    const updateData: Partial<Pick<ItemMaster,
       | 'itemName'
       | 'itemNo'
       | 'custPartNo'

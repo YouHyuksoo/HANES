@@ -6,21 +6,21 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { AutoPlanService } from './auto-plan.service';
 
 describe('AutoPlanService', () => {
   let service: AutoPlanService;
-  let partRepo: DeepMocked<Repository<PartMaster>>;
+  let partRepo: DeepMocked<Repository<ItemMaster>>;
   let orderItemRepo: DeepMocked<Repository<CustomerOrderItem>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
-    partRepo = createMock<Repository<PartMaster>>();
+    partRepo = createMock<Repository<ItemMaster>>();
     orderItemRepo = createMock<Repository<CustomerOrderItem>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
@@ -35,7 +35,7 @@ describe('AutoPlanService', () => {
         { provide: getRepositoryToken(ProdPlan), useValue: createMock<Repository<ProdPlan>>() },
         { provide: getRepositoryToken(CustomerOrder), useValue: createMock<Repository<CustomerOrder>>() },
         { provide: getRepositoryToken(CustomerOrderItem), useValue: orderItemRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
       ],
@@ -68,7 +68,7 @@ describe('AutoPlanService', () => {
       existingDraftCount: 0,
       warnings: [],
     });
-    partRepo.find.mockResolvedValue([{ itemCode: 'FG-001', itemType: 'FINISHED' } as PartMaster]);
+    partRepo.find.mockResolvedValue([{ itemCode: 'FG-001', itemType: 'FINISHED' } as ItemMaster]);
     const planRepo = createMock<Repository<ProdPlan>>();
     planRepo.createQueryBuilder.mockReturnValue({
       where: jest.fn().mockReturnThis(),

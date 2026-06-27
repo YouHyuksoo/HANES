@@ -10,7 +10,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { ShipOrderService } from './ship-order.service';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
@@ -29,7 +29,7 @@ describe('ShipOrderService', () => {
   let target: ShipOrderService;
   let mockOrderRepo: DeepMocked<Repository<ShipmentOrder>>;
   let mockItemRepo: DeepMocked<Repository<ShipmentOrderItem>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockBoxRepo: DeepMocked<Repository<BoxMaster>>;
   let mockPalletRepo: DeepMocked<Repository<PalletMaster>>;
@@ -43,7 +43,7 @@ describe('ShipOrderService', () => {
   beforeEach(async () => {
     mockOrderRepo = createMock<Repository<ShipmentOrder>>();
     mockItemRepo = createMock<Repository<ShipmentOrderItem>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockPartnerRepo = createMock<Repository<PartnerMaster>>();
     mockBoxRepo = createMock<Repository<BoxMaster>>();
     mockPalletRepo = createMock<Repository<PalletMaster>>();
@@ -67,7 +67,7 @@ describe('ShipOrderService', () => {
         ShipOrderService,
         { provide: getRepositoryToken(ShipmentOrder), useValue: mockOrderRepo },
         { provide: getRepositoryToken(ShipmentOrderItem), useValue: mockItemRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerRepo },
         { provide: getRepositoryToken(Warehouse), useValue: createMock<Repository<Warehouse>>() },
         { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
@@ -567,7 +567,7 @@ describe('ShipOrderService.shipBox', () => {
         ShipOrderService,
         { provide: getRepositoryToken(ShipmentOrder), useValue: {} },
         { provide: getRepositoryToken(ShipmentOrderItem), useValue: {} },
-        { provide: getRepositoryToken(PartMaster), useValue: {} },
+        { provide: getRepositoryToken(ItemMaster), useValue: {} },
         { provide: getRepositoryToken(PartnerMaster), useValue: {} },
         { provide: getRepositoryToken(Warehouse), useValue: {} },
         { provide: getRepositoryToken(BoxMaster), useValue: {} },

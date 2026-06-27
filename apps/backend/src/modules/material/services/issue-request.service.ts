@@ -15,7 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
@@ -39,8 +39,8 @@ export class IssueRequestService {
     private readonly requestRepository: Repository<MatIssueRequest>,
     @InjectRepository(MatIssueRequestItem)
     private readonly requestItemRepository: Repository<MatIssueRequestItem>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
     @InjectRepository(BomMaster)
@@ -67,7 +67,7 @@ export class IssueRequestService {
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
-  private isRawMaterial(part?: PartMaster): boolean {
+  private isRawMaterial(part?: ItemMaster): boolean {
     if (!part?.itemType) return true;
     const itemType = part.itemType.toUpperCase();
     // 출고요청은 원자재만 대상으로 한다.
@@ -163,7 +163,7 @@ export class IssueRequestService {
   private async flattenItems(items: MatIssueRequestItem[], company?: string | null, plant?: string | null) {
     const itemCodes = items.map((i) => i.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } }) : [];
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } }) : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return items.map((item) => {
@@ -207,7 +207,7 @@ export class IssueRequestService {
 
     const childCodes = [...new Set(bomRows.map((bom) => bom.childItemCode).filter(Boolean))];
     const parts = childCodes.length > 0
-      ? await this.partMasterRepository.find({
+      ? await this.itemMasterRepository.find({
         where: { itemCode: In(childCodes), ...this.tenantWhere(effectiveCompany, effectivePlant) },
       })
       : [];
@@ -304,7 +304,7 @@ export class IssueRequestService {
     // 품목 정보 일괄 조회
     const allItemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))];
     const allParts = allItemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(allItemCodes), ...tenantWhere } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(allItemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
 

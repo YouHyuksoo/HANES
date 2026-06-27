@@ -19,7 +19,7 @@ import { InterfaceService } from './services/interface.service';
 import { ErpMaterialController } from './controllers/erp-material.controller';
 import { ErpMaterialService } from './services/erp-material.service';
 import { InterLog } from '../../entities/inter-log.entity';
-import { PartMaster } from '../../entities/part-master.entity';
+import { ItemMaster } from '../../entities/item-master.entity';
 import { BomMaster } from '../../entities/bom-master.entity';
 import { JobOrder } from '../../entities/job-order.entity';
 import { PurchaseOrder } from '../../entities/purchase-order.entity';
@@ -28,7 +28,7 @@ import { PurchaseOrderItem } from '../../entities/purchase-order-item.entity';
 @Module({
   imports: [
     SystemModule,
-    TypeOrmModule.forFeature([InterLog, PartMaster, BomMaster, JobOrder, PurchaseOrder, PurchaseOrderItem]),
+    TypeOrmModule.forFeature([InterLog, ItemMaster, BomMaster, JobOrder, PurchaseOrder, PurchaseOrderItem]),
   ],
   controllers: [InterfaceController, ErpMaterialController],
   providers: [InterfaceService, ErpMaterialService],

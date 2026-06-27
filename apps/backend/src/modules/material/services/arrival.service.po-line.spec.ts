@@ -26,7 +26,7 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatArrivalTransaction } from '../../../entities/mat-arrival-transaction.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
@@ -71,7 +71,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
         { provide: getRepositoryToken(MatArrivalStock), useValue: createMock<Repository<MatArrivalStock>>() },
         { provide: getRepositoryToken(MatArrivalTransaction), useValue: createMock<Repository<MatArrivalTransaction>>() },
         { provide: getRepositoryToken(StockTransaction), useValue: createMock<Repository<StockTransaction>>() },
-        { provide: getRepositoryToken(PartMaster), useValue: createMock<Repository<PartMaster>>() },
+        { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
         { provide: getRepositoryToken(Warehouse), useValue: createMock<Repository<Warehouse>>() },
         { provide: getRepositoryToken(VendorBarcodeMapping), useValue: createMock<Repository<VendorBarcodeMapping>>() },
         { provide: getRepositoryToken(IqcLog), useValue: createMock<Repository<IqcLog>>() },
@@ -121,7 +121,7 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
       if (entity === PartnerMaster) {
         return Promise.resolve(cfg.mfgFound ? { partnerCode: 'M001', partnerType: 'MFG' } : null);
       }
-      if (entity === PartMaster) {
+      if (entity === ItemMaster) {
         return Promise.resolve({ itemCode: 'TMN-0001', lotUnitQty: cfg.lotUnitQty });
       }
       if (entity === Warehouse) {

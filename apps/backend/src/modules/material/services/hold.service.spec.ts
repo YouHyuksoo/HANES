@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { HoldService } from './hold.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
@@ -14,13 +14,13 @@ describe('HoldService', () => {
   let service: HoldService;
   let matLotRepo: DeepMocked<Repository<MatLot>>;
   let matStockRepo: DeepMocked<Repository<MatStock>>;
-  let partRepo: DeepMocked<Repository<PartMaster>>;
+  let partRepo: DeepMocked<Repository<ItemMaster>>;
   let partnerRepo: DeepMocked<Repository<PartnerMaster>>;
 
   beforeEach(async () => {
     matLotRepo = createMock<Repository<MatLot>>();
     matStockRepo = createMock<Repository<MatStock>>();
-    partRepo = createMock<Repository<PartMaster>>();
+    partRepo = createMock<Repository<ItemMaster>>();
     partnerRepo = createMock<Repository<PartnerMaster>>();
     partnerRepo.find.mockResolvedValue([]);
 
@@ -29,7 +29,7 @@ describe('HoldService', () => {
         HoldService,
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: partnerRepo },
       ],
     })
@@ -83,7 +83,7 @@ describe('HoldService', () => {
       matLotRepo.findOne
         .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot)
         .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot);
-      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as PartMaster);
+      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as ItemMaster);
 
       const result = await service.hold({ matUid: 'MAT-001', reason: 'test' });
 
@@ -121,7 +121,7 @@ describe('HoldService', () => {
       matLotRepo.findOne
         .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot)
         .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot);
-      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as PartMaster);
+      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as ItemMaster);
 
       const result = await service.release({ matUid: 'MAT-001' });
 
@@ -151,7 +151,7 @@ describe('HoldService', () => {
       matLotRepo.findOne
         .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot)
         .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot);
-      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as PartMaster);
+      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as ItemMaster);
 
       await service.release({ matUid: 'MAT-001' }, 'C1', 'P1');
 

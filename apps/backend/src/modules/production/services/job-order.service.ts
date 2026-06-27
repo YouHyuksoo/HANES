@@ -19,7 +19,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, QueryRunner, FindOptionsSelect, IsNull, In, Brackets } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
@@ -64,8 +64,8 @@ export class JobOrderService {
   constructor(
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(ProdResult)
     private readonly prodResultRepository: Repository<ProdResult>,
     @InjectRepository(BomMaster)
@@ -312,7 +312,7 @@ export class JobOrderService {
     });
     if (existing) throw new ConflictException(`이미 존재하는 작업지시번호입니다: ${dto.orderNo}`);
 
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: dto.itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
@@ -401,7 +401,7 @@ export class JobOrderService {
     });
     if (bomItems.length === 0) return;
 
-    const wipParts = await this.partMasterRepository
+    const wipParts = await this.itemMasterRepository
       .createQueryBuilder('p')
       .where('p.itemCode IN (:...ids)', { ids: bomItems.map(b => b.childItemCode) })
       .andWhere('p.itemType = :type', { type: 'SEMI_PRODUCT' })

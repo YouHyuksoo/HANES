@@ -17,7 +17,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import {
   ReceiveStockDto,
   IssueStockDto,
@@ -41,8 +41,8 @@ export class InventoryService {
     private readonly lotRepository: Repository<MatLot>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     private readonly inventoryQueryService: InventoryQueryService,
     private readonly tx: TransactionService,
   ) {}

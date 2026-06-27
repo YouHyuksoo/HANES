@@ -1,8 +1,8 @@
 /**
- * @file part-master.entity.ts
+ * @file item-master.entity.ts
  * @description 품목 마스터(ItemMaster) 엔티티 - 자재/제품/반제품 등 모든 품목 정보를 관리한다.
  *              테이블명은 ITEM_MASTERS이며, itemCode를 자연키 PK로 사용한다.
- *              클래스명은 기존 참조 호환을 위해 PartMaster를 유지한다.
+ *              클래스명 ItemMaster는 테이블명 ITEM_MASTERS와 일치한다.
  */
 import {
   Entity,
@@ -15,7 +15,7 @@ import {
 
 @Entity({ name: 'ITEM_MASTERS' })
 @Index(['itemType'])
-export class PartMaster {
+export class ItemMaster {
   @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 

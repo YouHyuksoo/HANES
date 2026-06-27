@@ -8,7 +8,7 @@
  * 3. 보전 주기 관리: maintenanceCycle(타수 기준) → nextMaintenanceDate 자동 산출
  * 4. 상태: ACTIVE / MAINTENANCE / RETIRED / SCRAPPED
  * 5. MoldUsageLog 엔티티와 1:N 관계 (사용 이력)
- * 6. PartMaster와 ManyToOne 관계 (생산 품목)
+ * 6. ItemMaster와 ManyToOne 관계 (생산 품목)
  */
 import {
   Entity,
@@ -19,7 +19,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 
 @Entity({ name: 'MOLD_MASTERS' })
 export class MoldMaster {
@@ -35,13 +35,13 @@ export class MoldMaster {
   @Column({ type: 'varchar2', name: 'ITEM_CODE', length: 50, nullable: true })
   itemCode: string;
 
-  @ManyToOne(() => PartMaster)
+  @ManyToOne(() => ItemMaster)
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  part: PartMaster;
+  part: ItemMaster;
 
   @Column({ name: 'CAVITY', type: 'int', default: 1 })
   cavity: number;

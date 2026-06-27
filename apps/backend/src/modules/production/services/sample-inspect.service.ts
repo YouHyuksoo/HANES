@@ -13,7 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SampleInspectResult } from '../../../entities/sample-inspect-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { applyDateFilter } from '../../../shared/date-filter.util';
 import { parseDateStart } from '../../../shared/date.util';
@@ -89,7 +89,7 @@ export class SampleInspectService {
     const qb = this.sampleInspectRepository
       .createQueryBuilder('si')
       .leftJoin(JobOrder, 'jo', 'jo.orderNo = si.orderNo AND jo.company = si.company AND jo.plant = si.plant')
-      .leftJoin(PartMaster, 'p', 'p.itemCode = jo.itemCode AND p.company = jo.company AND p.plant = jo.plant')
+      .leftJoin(ItemMaster, 'p', 'p.itemCode = jo.itemCode AND p.company = jo.company AND p.plant = jo.plant')
       .select([
         'si.orderNo AS "orderNo"',
         'jo.orderNo AS "jobOrderNo"',

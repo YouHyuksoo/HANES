@@ -20,7 +20,7 @@ import { WipMatStockService } from '../../inventory/services/wip-mat-stock.servi
 import { AutoIssueService } from './auto-issue.service';
 import { WipMatStock } from '../../../entities/wip-mat-stock.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { SgLabel } from '../../../entities/sg-label.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
@@ -45,8 +45,8 @@ export class SubprocessKittingService {
     private readonly sgLabelRepository: Repository<SgLabel>,
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(BomMaster)
     private readonly bomMasterRepository: Repository<BomMaster>,
     private readonly tx: TransactionService,
@@ -225,7 +225,7 @@ export class SubprocessKittingService {
       }
 
       const childCodes = [...new Set(bomRows.map((b) => b.childItemCode))];
-      const childParts = await qr.manager.find(PartMaster, {
+      const childParts = await qr.manager.find(ItemMaster, {
         where: { itemCode: In(childCodes), ...tenantWhere },
         select: ['itemCode', 'itemType'],
       });
@@ -539,7 +539,7 @@ export class SubprocessKittingService {
       }
 
       const childCodes = [...new Set(bomRows.map((b) => b.childItemCode))];
-      const childParts = await qr.manager.find(PartMaster, {
+      const childParts = await qr.manager.find(ItemMaster, {
         where: { itemCode: In(childCodes), ...tenantWhere },
         select: ['itemCode', 'itemType'],
       });
@@ -783,7 +783,7 @@ export class SubprocessKittingService {
     const childCodes = [...new Set(bomRows.map((b) => b.childItemCode))];
     const childParts =
       childCodes.length > 0
-        ? await this.partMasterRepository.find({
+        ? await this.itemMasterRepository.find({
             where: { itemCode: In(childCodes), ...tenantWhere },
             select: ['itemCode', 'itemName', 'itemType'],
           })

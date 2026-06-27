@@ -7,7 +7,7 @@
  * 2. 복합 PK: COMPANY + PLANT_CD + PROCESS_CODE + ITEM_CODE
  * 3. stdUph 미입력 시 3600 / stdTactTime 으로 자동 계산
  * 4. dailyCapa는 UPH x 가동시간 x 인원/설비 수 x 밸런싱효율로 자동 계산
- * 5. ProcessMaster, PartMaster 존재 여부를 검증한 후 저장한다.
+ * 5. ProcessMaster, ItemMaster 존재 여부를 검증한 후 저장한다.
  */
 import {
   Injectable,
@@ -19,7 +19,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProcessCapa } from '../../../entities/process-capa.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import {
   CreateProcessCapaDto,
   UpdateProcessCapaDto,
@@ -33,8 +33,8 @@ export class ProcessCapaService {
     private readonly repo: Repository<ProcessCapa>,
     @InjectRepository(ProcessMaster)
     private readonly processRepo: Repository<ProcessMaster>,
-    @InjectRepository(PartMaster)
-    private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepo: Repository<ItemMaster>,
   ) {}
 
   /** 공정 CAPA 목록 조회 (공정/품목 JOIN) */
@@ -104,7 +104,7 @@ export class ProcessCapaService {
       );
     }
 
-    // FK 검증 - PartMaster
+    // FK 검증 - ItemMaster
     const part = await this.partRepo.findOne({
       where: { itemCode: dto.itemCode, company, plant },
     });

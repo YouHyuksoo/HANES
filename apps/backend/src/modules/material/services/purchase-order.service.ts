@@ -13,7 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto } from '../dto/purchase-order.dto';
@@ -28,8 +28,8 @@ export class PurchaseOrderService {
     private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
     @InjectRepository(PurchaseOrderItem)
     private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(MatArrival)
     private readonly matArrivalRepository: Repository<MatArrival>,
     @InjectRepository(PartnerMaster)
@@ -108,7 +108,7 @@ export class PurchaseOrderService {
     const items = await this.purchaseOrderItemRepository.find({ where: { poNo: In(poNos), ...tenantWhere } });
 
     const itemCodes = [...new Set(items.map((item) => item.itemCode).filter(Boolean))];
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
+    const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // PO별 아이템 그룹화
@@ -157,7 +157,7 @@ export class PurchaseOrderService {
     });
 
     const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
+    const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return {
@@ -231,7 +231,7 @@ export class PurchaseOrderService {
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
       };
-      const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
+      const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
       const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
       return {

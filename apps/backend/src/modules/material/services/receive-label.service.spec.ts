@@ -16,7 +16,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { ReceiveLabelService } from './receive-label.service';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -26,7 +26,7 @@ describe('ReceiveLabelService', () => {
   let target: ReceiveLabelService;
   let mockArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPrintLogRepo: DeepMocked<Repository<LabelPrintLog>>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockDataSource: DeepMocked<DataSource>;
@@ -36,7 +36,7 @@ describe('ReceiveLabelService', () => {
   beforeEach(async () => {
     mockArrivalRepo = createMock<Repository<MatArrival>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockPrintLogRepo = createMock<Repository<LabelPrintLog>>();
     mockNumbering = createMock<NumberingService>();
     mockDataSource = createMock<DataSource>();
@@ -59,7 +59,7 @@ describe('ReceiveLabelService', () => {
         { provide: NumberingService, useValue: mockNumbering },
         { provide: getRepositoryToken(MatArrival), useValue: mockArrivalRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(LabelPrintLog), useValue: mockPrintLogRepo },
       ],
     })
@@ -85,7 +85,7 @@ describe('ReceiveLabelService', () => {
         ]),
       };
       mockArrivalRepo.createQueryBuilder.mockReturnValue(mockQb as any);
-      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster]);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster]);
       mockPrintLogRepo.createQueryBuilder.mockReturnValue({
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -167,7 +167,7 @@ describe('ReceiveLabelService', () => {
         itemCode: 'ITEM-001', poNo: 'PO-001', vendorName: 'V-A',
         company: 'HANES', plant: 'P01', supUid: null,
       } as MatArrival;
-      const part = { itemCode: 'ITEM-001', itemName: '커넥터A' } as PartMaster;
+      const part = { itemCode: 'ITEM-001', itemName: '커넥터A' } as ItemMaster;
 
       mockArrivalRepo.findOne.mockResolvedValue(arrival);
       mockPartRepo.findOne.mockResolvedValue(part);
@@ -190,7 +190,7 @@ describe('ReceiveLabelService', () => {
         company: 'C1', plant: 'P1', supUid: null,
       } as MatArrival;
       mockArrivalRepo.findOne.mockResolvedValue(arrival);
-      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', company: 'C1', plant: 'P1' } as PartMaster);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', company: 'C1', plant: 'P1' } as ItemMaster);
       mockNumbering.nextMatUid.mockResolvedValue('MAT-20260318-001');
       mockQueryRunner.manager.create.mockReturnValue({} as any);
       mockQueryRunner.manager.save.mockResolvedValue({} as any);

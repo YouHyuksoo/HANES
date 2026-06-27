@@ -6,7 +6,7 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { BoxService } from './box.service';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { OqcRequest } from '../../../entities/oqc-request.entity';
@@ -19,7 +19,7 @@ describe('BoxService', () => {
   let target: BoxService;
   let mockBoxRepo: DeepMocked<Repository<BoxMaster>>;
   let mockPalletRepo: DeepMocked<Repository<PalletMaster>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockLotRepo: DeepMocked<Repository<MatLot>>;
   let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
   let mockOqcRequestRepo: DeepMocked<Repository<OqcRequest>>;
@@ -31,7 +31,7 @@ describe('BoxService', () => {
   beforeEach(async () => {
     mockBoxRepo = createMock<Repository<BoxMaster>>();
     mockPalletRepo = createMock<Repository<PalletMaster>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockLotRepo = createMock<Repository<MatLot>>();
     mockFgLabelRepo = createMock<Repository<FgLabel>>();
     mockOqcRequestRepo = createMock<Repository<OqcRequest>>();
@@ -53,7 +53,7 @@ describe('BoxService', () => {
         BoxService,
         { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
         { provide: getRepositoryToken(PalletMaster), useValue: mockPalletRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockLotRepo },
         { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
         { provide: getRepositoryToken(OqcRequest), useValue: mockOqcRequestRepo },
@@ -84,7 +84,7 @@ describe('BoxService', () => {
       company: 'C1',
       plant: 'P1',
     } as BoxMaster);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part A' } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part A' } as ItemMaster);
 
     await target.findByBoxNo('BOX-001', 'C1', 'P1');
 
@@ -98,7 +98,7 @@ describe('BoxService', () => {
 
   it('create validates part within tenant only', async () => {
     mockBoxRepo.findOne.mockResolvedValue(null);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
     mockBoxRepo.create.mockReturnValue({ boxNo: 'BOX-001', itemCode: 'ITEM-001' } as BoxMaster);
     mockBoxRepo.save.mockResolvedValue({ boxNo: 'BOX-001', itemCode: 'ITEM-001' } as BoxMaster);
 
@@ -143,7 +143,7 @@ describe('BoxService', () => {
       ]),
     };
     mockFgLabelRepo.createQueryBuilder.mockReturnValue(qb as any);
-    mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Harness' } as PartMaster]);
+    mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Harness' } as ItemMaster]);
 
     const rows = await target.findStockByBox(undefined, 'C1', 'P1');
 
@@ -177,7 +177,7 @@ describe('BoxService', () => {
       serialList: null,
     } as BoxMaster);
     mockLotRepo.find.mockResolvedValue([]);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as ItemMaster);
     mockFgLabelRepo.find.mockResolvedValue([
       { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'N', status: 'ISSUED' } as FgLabel,
     ]);
@@ -242,7 +242,7 @@ describe('BoxService', () => {
         plant: 'P1',
       } as BoxMaster);
     mockLotRepo.find.mockResolvedValue([{ matUid: 'FG-001', itemCode: 'ITEM-001' } as MatLot]);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as ItemMaster);
     mockFgLabelRepo.find.mockResolvedValue([
       { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'VISUAL_PASS' } as FgLabel,
     ]);
@@ -275,7 +275,7 @@ describe('BoxService', () => {
       plant: 'P1',
     } as BoxMaster);
     mockLotRepo.find.mockResolvedValue([]);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as ItemMaster);
     mockFgLabelRepo.find.mockResolvedValue([
       { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'VISUAL_PASS' } as FgLabel,
     ]);
@@ -291,7 +291,7 @@ describe('BoxService', () => {
 
   it('create rejects serialList already packed in another box', async () => {
     mockBoxRepo.findOne.mockResolvedValue(null);
-    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
     mockBoxRepo.find.mockResolvedValue([
       { boxNo: 'BOX-OTHER', serialList: JSON.stringify(['FG-001']) } as BoxMaster,
     ]);

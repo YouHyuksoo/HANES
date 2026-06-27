@@ -7,7 +7,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('InventoryQueryService', () => {
@@ -16,14 +16,14 @@ describe('InventoryQueryService', () => {
   let stockRepo: DeepMocked<Repository<MatStock>>;
   let lotRepo: DeepMocked<Repository<MatLot>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
-  let partRepo: DeepMocked<Repository<PartMaster>>;
+  let partRepo: DeepMocked<Repository<ItemMaster>>;
 
   beforeEach(async () => {
     stockTransactionRepo = createMock<Repository<StockTransaction>>();
     stockRepo = createMock<Repository<MatStock>>();
     lotRepo = createMock<Repository<MatLot>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
-    partRepo = createMock<Repository<PartMaster>>();
+    partRepo = createMock<Repository<ItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -32,7 +32,7 @@ describe('InventoryQueryService', () => {
         { provide: getRepositoryToken(MatStock), useValue: stockRepo },
         { provide: getRepositoryToken(MatLot), useValue: lotRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
       ],
     })
       .setLogger(new MockLoggerService())

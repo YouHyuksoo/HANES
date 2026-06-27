@@ -13,23 +13,23 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { BomService } from './bom.service';
 import { BomMaster } from '../../../entities/bom-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('BomService', () => {
   let target: BomService;
   let mockBomRepo: DeepMocked<Repository<BomMaster>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
 
   beforeEach(async () => {
     mockBomRepo = createMock<Repository<BomMaster>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BomService,
         { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -49,8 +49,8 @@ describe('BomService', () => {
       const bom = { parentItemCode: 'P01', childItemCode: 'C01', revision: 'A' } as BomMaster;
       mockBomRepo.findOne.mockResolvedValue(bom);
       mockPartRepo.find.mockResolvedValue([
-        { itemCode: 'P01', itemName: 'Parent' } as PartMaster,
-        { itemCode: 'C01', itemName: 'Child' } as PartMaster,
+        { itemCode: 'P01', itemName: 'Parent' } as ItemMaster,
+        { itemCode: 'C01', itemName: 'Child' } as ItemMaster,
       ]);
 
       // Act
@@ -100,8 +100,8 @@ describe('BomService', () => {
       const boms = [{ parentItemCode: 'P01', childItemCode: 'C01' }] as BomMaster[];
       mockBomRepo.findAndCount.mockResolvedValue([boms, 1]);
       mockPartRepo.find.mockResolvedValue([
-        { itemCode: 'P01', itemName: 'Parent' } as PartMaster,
-        { itemCode: 'C01', itemName: 'Child' } as PartMaster,
+        { itemCode: 'P01', itemName: 'Parent' } as ItemMaster,
+        { itemCode: 'C01', itemName: 'Child' } as ItemMaster,
       ]);
 
       // Act
@@ -245,7 +245,7 @@ describe('BomService', () => {
         { childItemCode: 'C01', parentItemCode: 'P01' },
       ]);
       mockPartRepo.find.mockResolvedValue([
-        { itemCode: 'C01', itemName: 'Child1' } as PartMaster,
+        { itemCode: 'C01', itemName: 'Child1' } as ItemMaster,
       ]);
 
       // Act

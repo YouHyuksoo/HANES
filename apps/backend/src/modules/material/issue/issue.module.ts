@@ -8,7 +8,7 @@ import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { IssueRequestController } from '../controllers/issue-request.controller';
@@ -28,7 +28,7 @@ import { MatOutRequestService } from '../services/mat-out-request.service';
       MatIssueRequestItem,
       MatLot,
       MatStock,
-      PartMaster,
+      ItemMaster,
       StockTransaction,
       Warehouse,
     ]),

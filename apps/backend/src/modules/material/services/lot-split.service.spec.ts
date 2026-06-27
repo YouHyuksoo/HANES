@@ -13,7 +13,7 @@ import { LotSplitService } from './lot-split.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -25,7 +25,7 @@ describe('LotSplitService', () => {
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockTx: DeepMocked<TransactionService>;
@@ -42,15 +42,15 @@ describe('LotSplitService', () => {
     qty: 10, availableQty: 10, reservedQty: 0, company: 'C1', plant: 'P1', ...over,
   } as MatStock);
 
-  const part = (over: Partial<PartMaster> = {}): PartMaster => ({
+  const part = (over: Partial<ItemMaster> = {}): ItemMaster => ({
     itemCode: 'ITEM-001', itemName: 'PART-A', isSplittable: 'Y', company: 'C1', plant: 'P1', ...over,
-  } as PartMaster);
+  } as ItemMaster);
 
   beforeEach(async () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockPartnerRepo = createMock<Repository<PartnerMaster>>();
     mockPartnerRepo.find.mockResolvedValue([]);
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
@@ -70,7 +70,7 @@ describe('LotSplitService', () => {
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(MatIssue), useValue: mockMatIssueRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: TransactionService, useValue: mockTx },

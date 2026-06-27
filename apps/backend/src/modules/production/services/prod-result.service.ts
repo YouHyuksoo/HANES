@@ -27,7 +27,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entity';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
@@ -72,8 +72,8 @@ export class ProdResultService {
     private readonly equipBomRelRepository: Repository<EquipBomRel>,
     @InjectRepository(EquipBomItem)
     private readonly equipBomItemRepository: Repository<EquipBomItem>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(ConsumableMaster)
     private readonly consumableMasterRepository: Repository<ConsumableMaster>,
     @InjectRepository(MatIssue)
@@ -260,7 +260,7 @@ export class ProdResultService {
 
     const itemCodes = lots.map((l) => l.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
+      ? await this.itemMasterRepository.find({
           where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         })
       : [];

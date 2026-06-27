@@ -15,7 +15,7 @@ import { PurchaseOrder } from '../../../../entities/purchase-order.entity';
 import { MatArrival } from '../../../../entities/mat-arrival.entity';
 import { IqcLog } from '../../../../entities/iqc-log.entity';
 import { MatReceiving } from '../../../../entities/mat-receiving.entity';
-import { PartMaster } from '../../../../entities/part-master.entity';
+import { ItemMaster } from '../../../../entities/item-master.entity';
 import { BoxMaster } from '../../../../entities/box-master.entity';
 import { PalletMaster } from '../../../../entities/pallet-master.entity';
 import { EquipMaster } from '../../../../entities/equip-master.entity';
@@ -65,7 +65,7 @@ export class ProductTraceabilityService {
     @InjectRepository(MatArrival) private readonly arrivalRepo: Repository<MatArrival>,
     @InjectRepository(IqcLog) private readonly iqcRepo: Repository<IqcLog>,
     @InjectRepository(MatReceiving) private readonly receivingRepo: Repository<MatReceiving>,
-    @InjectRepository(PartMaster) private readonly partMasterRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster) private readonly itemMasterRepo: Repository<ItemMaster>,
     @InjectRepository(BoxMaster) private readonly boxMasterRepo: Repository<BoxMaster>,
     @InjectRepository(PalletMaster) private readonly palletMasterRepo: Repository<PalletMaster>,
     @InjectRepository(EquipMaster) private readonly equipMasterRepo: Repository<EquipMaster>,
@@ -104,7 +104,7 @@ export class ProductTraceabilityService {
 
     const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
     const parts = itemCodes.length
-      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
+      ? await this.itemMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -785,7 +785,7 @@ export class ProductTraceabilityService {
 
     const sg = await this.sgLabelRepo.findOne({ where: { sgBarcode: value, company, plant } });
     if (!sg) return [];
-    const part = await this.partMasterRepo.findOne({ where: { itemCode: sg.itemCode, company, plant } });
+    const part = await this.itemMasterRepo.findOne({ where: { itemCode: sg.itemCode, company, plant } });
     return [{
       traceKey: sg.sgBarcode,
       traceType: 'SG',
@@ -811,7 +811,7 @@ export class ProductTraceabilityService {
     const fgs = [...deduped.values()].slice(0, 500);
     const itemCodes = [...new Set(fgs.map((fg) => fg.itemCode).filter(Boolean))];
     const parts = itemCodes.length
-      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
+      ? await this.itemMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
       : [];
     const partMap = new Map(parts.map((part) => [part.itemCode, part]));
 
@@ -837,7 +837,7 @@ export class ProductTraceabilityService {
     const fg = await this.fgLabelRepo.findOne({ where: { fgBarcode: serial, company, plant } });
     if (!fg) { this.logger.debug(`FgLabel not found: ${serial}`); return null; }
 
-    const part = await this.partMasterRepo.findOne({ where: { itemCode: fg.itemCode, company, plant } });
+    const part = await this.itemMasterRepo.findOne({ where: { itemCode: fg.itemCode, company, plant } });
     const jobOrder = fg.orderNo ? await this.jobOrderRepo.findOne({ where: { orderNo: fg.orderNo, company, plant } }) : null;
 
     const processHistory = await this.resolveProcessHistory(fg.orderNo, serial, company, plant);
@@ -917,7 +917,7 @@ export class ProductTraceabilityService {
 
     const itemCodes = [...new Set(sgLabels.map((s) => s.itemCode))];
     const parts = itemCodes.length
-      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
+      ? await this.itemMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
@@ -14,7 +14,7 @@ import { PurchaseOrderService } from '../services/purchase-order.service';
   imports: [
     TypeOrmModule.forFeature([
       MatArrival,
-      PartMaster,
+      ItemMaster,
       PartnerMaster,
       PurchaseOrder,
       PurchaseOrderItem,

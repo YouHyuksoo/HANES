@@ -16,7 +16,7 @@ import { ProductStock } from '../../entities/product-stock.entity';
 import { ProductTransaction } from '../../entities/product-transaction.entity';
 import { MatLot } from '../../entities/mat-lot.entity';
 import { Warehouse } from '../../entities/warehouse.entity';
-import { PartMaster } from '../../entities/part-master.entity';
+import { ItemMaster } from '../../entities/item-master.entity';
 import { InvAdjLog } from '../../entities/inv-adj-log.entity';
 import { WarehouseLocation } from '../../entities/warehouse-location.entity';
 import { FgLabel } from '../../entities/fg-label.entity';
@@ -43,7 +43,7 @@ import { ProcMatStockService } from './services/proc-mat-stock.service';
 import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MatStock, MatArrivalTransaction, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation, FgLabel, PhysicalInvSession, PhysicalInvCountDetail, BoxMaster, WipMatStock, WipMatTransaction, ProcMatStock, ProcMatTransaction])],
+  imports: [TypeOrmModule.forFeature([MatStock, MatArrivalTransaction, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, ItemMaster, InvAdjLog, WarehouseLocation, FgLabel, PhysicalInvSession, PhysicalInvCountDetail, BoxMaster, WipMatStock, WipMatTransaction, ProcMatStock, ProcMatTransaction])],
   controllers: [InventoryController, ProductPhysicalInvController, WarehouseLocationController, ProductHoldController],
   providers: [
     InventoryService,

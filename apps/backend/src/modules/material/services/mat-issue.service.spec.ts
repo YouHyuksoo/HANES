@@ -8,7 +8,7 @@ import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -21,7 +21,7 @@ describe('MatIssueService', () => {
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockJobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
@@ -34,7 +34,7 @@ describe('MatIssueService', () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockJobOrderRepo = createMock<Repository<JobOrder>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
@@ -57,7 +57,7 @@ describe('MatIssueService', () => {
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
@@ -88,7 +88,7 @@ describe('MatIssueService', () => {
       mockMatIssueRepo.count.mockResolvedValue(1);
       mockMatLotRepo.find.mockResolvedValue([]);
       mockJobOrderRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findAll({ page: 1, limit: 10 });
 
@@ -122,7 +122,7 @@ describe('MatIssueService', () => {
         { matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as MatLot,
       ]);
       mockJobOrderRepo.find.mockResolvedValue([{ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
@@ -132,7 +132,7 @@ describe('MatIssueService', () => {
       expect(mockJobOrderRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -176,7 +176,7 @@ describe('MatIssueService', () => {
       mockMatStockRepo.find.mockResolvedValue([
         { warehouseCode: 'WH-01', itemCode: 'ITEM-MISSING', matUid: 'MAT-001', qty: 5, availableQty: 5 } as MatStock,
       ]);
-      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
 
       jest.spyOn(target, 'create').mockResolvedValue([
         {
@@ -219,7 +219,7 @@ describe('MatIssueService', () => {
       mockMatStockRepo.find.mockResolvedValue([
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
       ]);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
       jest.spyOn(target, 'create').mockResolvedValue([
         {
           issueNo: 'ISS-001',
@@ -245,7 +245,7 @@ describe('MatIssueService', () => {
       expect(mockMatStockRepo.find).toHaveBeenCalledWith({
         where: { matUid: 'MAT-001', warehouseCode: 'WH-01', company: 'C1', plant: 'P1' },
       });
-      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
     });
@@ -303,7 +303,7 @@ describe('MatIssueService', () => {
       .mockResolvedValueOnce('TX-001')
       .mockResolvedValueOnce('TX-002');
     mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
 
     await target.create({
       issueType: 'PROD',
@@ -361,7 +361,7 @@ describe('MatIssueService', () => {
       .mockResolvedValueOnce('ISS-001')
       .mockResolvedValueOnce('TX-001');
     mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
 
     await target.create({
       processCode: 'PRC1',
@@ -431,7 +431,7 @@ describe('MatIssueService', () => {
       .mockResolvedValueOnce('ISS-001')
       .mockResolvedValueOnce('TX-001');
     mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
 
     await target.create({
       issueType: 'PROD',

@@ -19,7 +19,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 
 @Entity({ name: 'CONTROL_PLANS' })
 @Index(['company', 'plant', 'itemCode'])
@@ -30,13 +30,13 @@ export class ControlPlan {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @ManyToOne(() => PartMaster, { nullable: true })
+  @ManyToOne(() => ItemMaster, { nullable: true })
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  part: PartMaster | null;
+  part: ItemMaster | null;
 
   @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 200, nullable: true })
   itemName: string;

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EquipMaster } from '../../entities/equip-master.entity';
-import { PartMaster } from '../../entities/part-master.entity';
+import { ItemMaster } from '../../entities/item-master.entity';
 import { ProcessMaster } from '../../entities/process-master.entity';
 import { ProdLineMaster } from '../../entities/prod-line-master.entity';
 import { EquipmentModule } from '../equipment/equipment.module';
@@ -47,7 +47,7 @@ const PAGE_TOOL_PROVIDERS = [
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PartMaster, ProdLineMaster, ProcessMaster, EquipMaster]),
+    TypeOrmModule.forFeature([ItemMaster, ProdLineMaster, ProcessMaster, EquipMaster]),
     InventoryModule, // WarehouseService·WarehouseLocationService
     MasterModule, // 기준정보 도메인 서비스(Part/Bom/Partner/Process/ProdLine/Routing/Worker/... )
     EquipmentModule, // EquipMasterService

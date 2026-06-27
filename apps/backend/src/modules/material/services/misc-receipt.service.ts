@@ -4,7 +4,7 @@ import { Repository, Between, Like, In, FindOptionsWhere, IsNull } from 'typeorm
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { CreateMiscReceiptDto, MiscReceiptQueryDto } from '../dto/misc-receipt.dto';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -19,8 +19,8 @@ export class MiscReceiptService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly tx: TransactionService,
@@ -65,7 +65,7 @@ export class MiscReceiptService {
     let total: number;
 
     if (search) {
-      const parts = await this.partMasterRepository.find({
+      const parts = await this.itemMasterRepository.find({
         where: [
           { itemCode: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
           { itemName: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
@@ -115,7 +115,7 @@ export class MiscReceiptService {
 
     const [parts, lots, warehouses] = await Promise.all([
       itemCodes.length > 0
-        ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+        ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
         : Promise.resolve([]),
       matUids.length > 0
         ? this.matLotRepository.find({ where: { matUid: In(matUids), ...this.tenantWhere(company, plant) } })
@@ -164,7 +164,7 @@ export class MiscReceiptService {
         throw new NotFoundException(`Warehouse not found: ${warehouseId}`);
       }
 
-      const part = await queryRunner.manager.findOne(PartMaster, {
+      const part = await queryRunner.manager.findOne(ItemMaster, {
         where: { itemCode, ...this.tenantWhere(company, plant) },
       });
       if (!part) {

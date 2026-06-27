@@ -18,7 +18,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 
 @Entity({ name: 'PPAP_SUBMISSIONS' })
 @Index(['company', 'plant', 'itemCode'])
@@ -147,11 +147,11 @@ export class PpapSubmission {
   // Relations
   // =============================================
 
-  @ManyToOne(() => PartMaster)
+  @ManyToOne(() => ItemMaster)
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  part: PartMaster;
+  part: ItemMaster;
 }

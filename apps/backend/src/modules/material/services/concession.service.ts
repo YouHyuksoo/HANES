@@ -15,7 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { ConcessionTargetQueryDto, ApplyConcessionDto } from '../dto/concession.dto';
 
@@ -26,8 +26,8 @@ export class ConcessionService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatReceiving)
     private readonly matReceivingRepository: Repository<MatReceiving>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(WorkerMaster)
     private readonly workerMasterRepository: Repository<WorkerMaster>,
   ) {}
@@ -88,7 +88,7 @@ export class ConcessionService {
     const specialAcceptWorkerCodes = [...new Set(rows.map((r) => r.specialAcceptWorkerCode).filter(Boolean))] as string[];
     const [parts, workers] = await Promise.all([
       itemCodes.length > 0
-        ? this.partMasterRepository.find({
+        ? this.itemMasterRepository.find({
           where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
         })
         : Promise.resolve([]),

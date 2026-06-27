@@ -15,7 +15,7 @@ import { ConsumablesService } from './consumables.service';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -39,7 +39,7 @@ describe('ConsumablesService', () => {
         { provide: getRepositoryToken(ConsumableMaster), useValue: mockMasterRepo },
         { provide: getRepositoryToken(ConsumableLog), useValue: mockLogRepo },
         { provide: getRepositoryToken(ConsumableUsageMap), useValue: createMock<Repository<ConsumableUsageMap>>() },
-        { provide: getRepositoryToken(PartMaster), useValue: createMock<Repository<PartMaster>>() },
+        { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
         { provide: getRepositoryToken(EquipMaster), useValue: createMock<Repository<EquipMaster>>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },

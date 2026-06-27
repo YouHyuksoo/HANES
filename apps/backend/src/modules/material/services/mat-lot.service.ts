@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * - MatLot의 PK는 matUid (자재 고유 식별자)
- * - itemCode로 품목마스터(PartMaster)와 연결
+ * - itemCode로 품목마스터(ItemMaster)와 연결
  * - iqcStatus: IQC 검사 상태 (PENDING/PASS/FAIL)
  * - status: LOT 상태 (NORMAL/HOLD/SCRAPPED/DEPLETED)
  */
@@ -13,7 +13,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In, Not, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
@@ -25,8 +25,8 @@ export class MatLotService {
   constructor(
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(MatStock)
@@ -69,7 +69,7 @@ export class MatLotService {
     // part 정보 조회 및 중첩 객체 평면화
     const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
+      ? await this.itemMasterRepository.find({
         where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) },
       })
       : [];
@@ -108,7 +108,7 @@ export class MatLotService {
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
 
-    const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null;
+    const part = lot.itemCode ? await this.itemMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null;
 
     return {
       ...lot,
@@ -127,7 +127,7 @@ export class MatLotService {
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
 
     const [part, stock] = await Promise.all([
-      lot.itemCode ? this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null,
+      lot.itemCode ? this.itemMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null,
       this.matStockRepository.findOne({ where: { matUid, ...tenantWhere }, order: { warehouseCode: 'ASC' } }),
     ]);
 
@@ -166,7 +166,7 @@ export class MatLotService {
     });
 
     const saved = await this.matLotRepository.save(lot);
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: saved.itemCode, ...tenantWhere } });
+    const part = await this.itemMasterRepository.findOne({ where: { itemCode: saved.itemCode, ...tenantWhere } });
 
     return {
       ...saved,
@@ -194,7 +194,7 @@ export class MatLotService {
     await this.matLotRepository.update({ matUid, ...tenantWhere }, updateData);
 
     const lot = await this.matLotRepository.findOne({ where: { matUid, ...tenantWhere } });
-    const part = lot?.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null;
+    const part = lot?.itemCode ? await this.itemMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null;
 
     return {
       ...lot,

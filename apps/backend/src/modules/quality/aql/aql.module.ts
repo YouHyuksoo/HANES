@@ -7,7 +7,7 @@ import { AqlCodeLetterSample } from '../../../entities/aql-code-letter-sample.en
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { DefectCodeMaster } from '../../../entities/defect-code-master.entity';
 import { IqcAqlPolicy } from '../../../entities/iqc-aql-policy.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { VendorInspectionModeHistory } from '../../../entities/vendor-inspection-mode-history.entity';
 import { IqcPartSpecItem } from '../../../entities/iqc-part-spec-item.entity';
@@ -23,7 +23,7 @@ import { AqlService } from './services/aql.service';
     IqcAqlPolicy,
     IqcLog,
     DefectCodeMaster,
-    PartMaster,
+    ItemMaster,
     PartnerMaster,
     VendorInspectionModeHistory,
     IqcPartSpecItem,

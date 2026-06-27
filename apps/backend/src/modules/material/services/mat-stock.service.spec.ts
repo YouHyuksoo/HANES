@@ -15,7 +15,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { MatStockService } from './mat-stock.service';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -26,7 +26,7 @@ describe('MatStockService', () => {
   let target: MatStockService;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockInvAdjLogRepo: DeepMocked<Repository<InvAdjLog>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
@@ -51,7 +51,7 @@ describe('MatStockService', () => {
   beforeEach(async () => {
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockPartnerMasterRepo.find.mockResolvedValue([]);
     mockInvAdjLogRepo = createMock<Repository<InvAdjLog>>();
@@ -73,7 +73,7 @@ describe('MatStockService', () => {
         MatStockService,
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(InvAdjLog), useValue: mockInvAdjLogRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
@@ -97,8 +97,8 @@ describe('MatStockService', () => {
       const stock = createStock();
       mockMatStockRepo.find.mockResolvedValue([stock]);
       mockMatStockRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA', safetyStock: 50 } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA', safetyStock: 50 } as ItemMaster,
       ]);
       mockMatLotRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([
@@ -115,7 +115,7 @@ describe('MatStockService', () => {
       const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-MISSING' });
       mockMatStockRepo.find.mockResolvedValue([stock]);
       mockMatStockRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockMatLotRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
 
@@ -137,13 +137,13 @@ describe('MatStockService', () => {
       const stock = createStock({ company: 'C1', plant: 'P1' });
       mockMatStockRepo.find.mockResolvedValue([stock]);
       mockMatStockRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockMatLotRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
       expect(mockMatLotRepo.find).toHaveBeenCalledWith({
@@ -158,8 +158,8 @@ describe('MatStockService', () => {
       const stock = createStock({ matUid: 'MAT-SEARCH-001', itemCode: 'ITEM-001' });
       mockMatStockRepo.find.mockResolvedValue([stock]);
       mockMatStockRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-SEARCH-001', itemCode: 'ITEM-001' } as MatLot,
@@ -181,8 +181,8 @@ describe('MatStockService', () => {
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001' } as MatLot,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
 
       const result = await target.findAvailable({ page: 1, limit: 10 });
@@ -196,7 +196,7 @@ describe('MatStockService', () => {
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-MISSING' } as MatLot,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findAvailable({ page: 1, limit: 10 });
 
@@ -216,14 +216,14 @@ describe('MatStockService', () => {
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001' } as MatLot,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.findAvailable({ page: 1, limit: 10 }, 'C1', 'P1');
 
       expect(mockMatLotRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -234,7 +234,7 @@ describe('MatStockService', () => {
     it('품목 + 창고로 재고를 찾아 반환한다', async () => {
       const stock = createStock();
       mockMatStockRepo.findOne.mockResolvedValue(stock);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster);
       mockMatLotRepo.findOne.mockResolvedValue(null);
 
       const result = await target.findByPartAndWarehouse('ITEM-001', 'WH-01');
@@ -253,7 +253,7 @@ describe('MatStockService', () => {
     it('품목/LOT 마스터가 누락되어도 단건 재고 원본 itemCode와 matUid는 유지한다', async () => {
       const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-MISSING' });
       mockMatStockRepo.findOne.mockResolvedValue(stock);
-      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
       mockMatLotRepo.findOne.mockResolvedValue(null);
 
       const result = await target.findByPartAndWarehouse('ITEM-MISSING', 'WH-01', 'MAT-MISSING');
@@ -271,7 +271,7 @@ describe('MatStockService', () => {
     it('단건 재고의 품목/LOT 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
       const stock = createStock({ company: 'C1', plant: 'P1' });
       mockMatStockRepo.findOne.mockResolvedValue(stock);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
       mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
 
       await target.findByPartAndWarehouse('ITEM-001', 'WH-01', 'MAT-001', 'C1', 'P1');
@@ -279,7 +279,7 @@ describe('MatStockService', () => {
       expect(mockMatStockRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', warehouseCode: 'WH-01', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
       });
-      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
       expect(mockMatLotRepo.findOne).toHaveBeenCalledWith({
@@ -293,7 +293,7 @@ describe('MatStockService', () => {
     it('품목별 재고 요약을 반환한다', async () => {
       const stock = createStock();
       mockMatStockRepo.find.mockResolvedValue([stock]);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster);
       mockMatLotRepo.find.mockResolvedValue([]);
 
       const result = await target.getStockSummary('ITEM-001');
@@ -306,7 +306,7 @@ describe('MatStockService', () => {
     it('품목/LOT 마스터가 누락되어도 재고 요약의 원본 itemCode와 matUid는 유지한다', async () => {
       const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-MISSING' });
       mockMatStockRepo.find.mockResolvedValue([stock]);
-      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
       mockMatLotRepo.find.mockResolvedValue([]);
 
       const result = await target.getStockSummary('ITEM-MISSING');
@@ -325,7 +325,7 @@ describe('MatStockService', () => {
     it('재고 요약의 재고/품목/LOT 조회도 요청 테넌트 범위로 제한한다', async () => {
       const stock = createStock({ company: 'C1', plant: 'P1' });
       mockMatStockRepo.find.mockResolvedValue([stock]);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
       mockMatLotRepo.find.mockResolvedValue([{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot]);
 
       await target.getStockSummary('ITEM-001', 'C1', 'P1');
@@ -333,7 +333,7 @@ describe('MatStockService', () => {
       expect(mockMatStockRepo.find).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
-      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
       expect(mockMatLotRepo.find).toHaveBeenCalledWith({

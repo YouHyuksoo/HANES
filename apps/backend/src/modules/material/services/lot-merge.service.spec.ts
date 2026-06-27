@@ -13,7 +13,7 @@ import { LotMergeService } from './lot-merge.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -25,7 +25,7 @@ describe('LotMergeService', () => {
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockTx: DeepMocked<TransactionService>;
@@ -46,7 +46,7 @@ describe('LotMergeService', () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockPartnerRepo = createMock<Repository<PartnerMaster>>();
     mockPartnerRepo.find.mockResolvedValue([]);
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
@@ -64,7 +64,7 @@ describe('LotMergeService', () => {
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(MatIssue), useValue: mockMatIssueRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: TransactionService, useValue: mockTx },
@@ -133,7 +133,7 @@ describe('LotMergeService', () => {
         .mockResolvedValueOnce([stock('MAT-001', 30), stock('MAT-002', 20)]) // stocks
         .mockResolvedValueOnce([]);                                   // MatIssue
       (mockQueryRunner.manager.query as jest.Mock).mockResolvedValue([{ RECVD: 100 }]);
-      mockQueryRunner.manager.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'PART-A', company: 'C1', plant: 'P1' } as PartMaster);
+      mockQueryRunner.manager.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'PART-A', company: 'C1', plant: 'P1' } as ItemMaster);
       (mockQueryRunner.manager.create as jest.Mock).mockImplementation((_e: unknown, obj: unknown) => obj);
       mockQueryRunner.manager.save.mockResolvedValue({} as any);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
@@ -174,7 +174,7 @@ describe('LotMergeService', () => {
       mockMatStockRepo.findOne.mockResolvedValue(stock('MAT-001', 30));
       (mockMatLotRepo.manager.query as jest.Mock).mockResolvedValue([{ RECVD: 100 }]);
       mockMatIssueRepo.find.mockResolvedValue([]);
-      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'PART-A', unit: 'EA' } as PartMaster]);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'PART-A', unit: 'EA' } as ItemMaster]);
       mockMatStockRepo.find.mockResolvedValue([stock('MAT-001', 30)]);
 
       const result = await target.findByBarcode('MAT-001', 'C1', 'P1');
@@ -197,7 +197,7 @@ describe('LotMergeService', () => {
 
     it('병합 가능 목록을 메타와 함께 반환', async () => {
       mockMatLotRepo.createQueryBuilder.mockReturnValue(buildQb([lot('MAT-001')]) as any);
-      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'PART-A', unit: 'EA' } as PartMaster]);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'PART-A', unit: 'EA' } as ItemMaster]);
       mockMatStockRepo.find.mockResolvedValue([stock('MAT-001', 30)]);
 
       const result = await target.findMergeableLots({ page: 1, limit: 50 }, 'C1', 'P1');

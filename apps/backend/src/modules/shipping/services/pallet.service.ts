@@ -27,7 +27,7 @@ import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import {
   CreatePalletDto,
   UpdatePalletDto,
@@ -51,8 +51,8 @@ export class PalletService {
     private readonly boxRepository: Repository<BoxMaster>,
     @InjectRepository(ShipmentLog)
     private readonly shipmentRepository: Repository<ShipmentLog>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
   ) {}

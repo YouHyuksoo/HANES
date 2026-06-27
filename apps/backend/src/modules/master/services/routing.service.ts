@@ -12,7 +12,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProcessMap } from '../../../entities/process-map.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { CreateRoutingDto, UpdateRoutingDto, RoutingQueryDto } from '../dto/routing.dto';
 
 @Injectable()
@@ -20,8 +20,8 @@ export class RoutingService {
   constructor(
     @InjectRepository(ProcessMap)
     private readonly routingRepository: Repository<ProcessMap>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -42,7 +42,7 @@ export class RoutingService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.routingRepository.createQueryBuilder('routing')
-      .leftJoin(PartMaster, 'part', this.partJoinCondition)
+      .leftJoin(ItemMaster, 'part', this.partJoinCondition)
       .addSelect(['part.itemName']);
 
     if (company) queryBuilder.andWhere('routing.company = :company', { company });
@@ -77,7 +77,7 @@ export class RoutingService {
 
   async findByKey(itemCode: string, seq: number, company?: string, plant?: string) {
     const qb = this.routingRepository.createQueryBuilder('routing')
-      .leftJoin(PartMaster, 'part', this.partJoinCondition)
+      .leftJoin(ItemMaster, 'part', this.partJoinCondition)
       .addSelect(['part.itemName'])
       .where('routing.itemCode = :itemCode', { itemCode })
       .andWhere('routing.seq = :seq', { seq });

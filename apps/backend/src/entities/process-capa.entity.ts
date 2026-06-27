@@ -8,7 +8,7 @@
  * 2. STD_TACT_TIME: 표준 택트타임(초), STD_UPH: 시간당 생산량 (3600/택트타임 자동 계산)
  * 3. DAILY_CAPA: 일 생산능력 (UPH x 가동시간 x 인원/설비 수 x 밸런싱효율로 자동 계산)
  * 4. BALANCE_EFF: 밸런싱 효율(%), 기본 85%
- * 5. ManyToOne 관계: ProcessMaster(공정), PartMaster(품목)
+ * 5. ManyToOne 관계: ProcessMaster(공정), ItemMaster(품목)
  */
 import {
   Entity,
@@ -21,7 +21,7 @@ import {
   Index,
 } from 'typeorm';
 import { ProcessMaster } from './process-master.entity';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 
 @Entity({ name: 'PROCESS_CAPAS' })
 @Index(['useYn'])
@@ -90,11 +90,11 @@ export class ProcessCapa {
   ])
   process: ProcessMaster | null;
 
-  @ManyToOne(() => PartMaster, { nullable: true })
+  @ManyToOne(() => ItemMaster, { nullable: true })
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  part: PartMaster | null;
+  part: ItemMaster | null;
 }

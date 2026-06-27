@@ -22,7 +22,7 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatArrivalTransaction } from '../../../entities/mat-arrival-transaction.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
@@ -41,7 +41,7 @@ describe('ArrivalService', () => {
   let mockMatArrivalStockRepo: DeepMocked<Repository<MatArrivalStock>>;
   let mockMatArrivalTxRepo: DeepMocked<Repository<MatArrivalTransaction>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockVendorBarcodeRepo: DeepMocked<Repository<VendorBarcodeMapping>>;
   let mockIqcLogRepo: DeepMocked<Repository<IqcLog>>;
@@ -60,7 +60,7 @@ describe('ArrivalService', () => {
     mockMatArrivalStockRepo = createMock<Repository<MatArrivalStock>>();
     mockMatArrivalTxRepo = createMock<Repository<MatArrivalTransaction>>();
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
     mockVendorBarcodeRepo = createMock<Repository<VendorBarcodeMapping>>();
     mockIqcLogRepo = createMock<Repository<IqcLog>>();
@@ -89,7 +89,7 @@ describe('ArrivalService', () => {
         { provide: getRepositoryToken(MatArrivalStock), useValue: mockMatArrivalStockRepo },
         { provide: getRepositoryToken(MatArrivalTransaction), useValue: mockMatArrivalTxRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(VendorBarcodeMapping), useValue: mockVendorBarcodeRepo },
         { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
@@ -117,8 +117,8 @@ describe('ArrivalService', () => {
       mockPurchaseOrderItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, receivedQty: 0 } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
 
       const result = await target.findReceivablePOs();
@@ -133,14 +133,14 @@ describe('ArrivalService', () => {
       mockPurchaseOrderItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, receivedQty: 0, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.findReceivablePOs('C1', 'P1');
 
       expect(mockPurchaseOrderItemRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -153,8 +153,8 @@ describe('ArrivalService', () => {
       mockPurchaseOrderItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, receivedQty: 50 } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
 
       const result = await target.getPoItems('PO-001');
@@ -168,11 +168,11 @@ describe('ArrivalService', () => {
       mockPurchaseOrderItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, receivedQty: 50, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.getPoItems('PO-001', 'C1', 'P1');
 
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -182,7 +182,7 @@ describe('ArrivalService', () => {
       mockPurchaseOrderItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 100, receivedQty: 50, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.getPoItems('PO-001', 'C1', 'P1');
 
@@ -251,8 +251,8 @@ describe('ArrivalService', () => {
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0, company: 'CO', plant: 'P01' } as PurchaseOrderItem,
       ]);
       mockStockTxRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster,
       ]);
       mockWarehouseRepo.find.mockResolvedValue([
         { warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse,
@@ -306,7 +306,7 @@ describe('ArrivalService', () => {
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
       ]);
       mockStockTxRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockNumbering.nextInTx.mockResolvedValueOnce('ARR-PO-001');
       mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-PO-001');
@@ -326,7 +326,7 @@ describe('ArrivalService', () => {
         items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 10, warehouseId: 'WH-001' }],
       } as any, 'C1', 'P1');
 
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
       expect(mockWarehouseRepo.find).toHaveBeenCalledWith({
@@ -347,7 +347,7 @@ describe('ArrivalService', () => {
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 10, receivedQty: 0, company: 'CO', plant: 'P01' } as PurchaseOrderItem,
       ]);
       mockStockTxRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockNumbering.nextInTx.mockResolvedValueOnce('ARR-PO-001');
       mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-PO-001');
@@ -399,7 +399,7 @@ describe('ArrivalService', () => {
       mockNumbering.nextInTx.mockResolvedValueOnce('ARR-001');
       mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-001');
       mockNumbering.next.mockResolvedValueOnce('TX-001');
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
       mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
 
       const manager = {
@@ -432,7 +432,7 @@ describe('ArrivalService', () => {
       mockNumbering.nextInTx.mockResolvedValueOnce('ARR-001');
       mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-001');
       mockNumbering.next.mockResolvedValueOnce('TX-001');
-      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
       mockWarehouseRepo.findOne.mockResolvedValue(null);
 
       const manager = {
@@ -465,7 +465,7 @@ describe('ArrivalService', () => {
       mockNumbering.nextInTx.mockResolvedValueOnce('ARR-001');
       mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-001');
       mockNumbering.next.mockResolvedValueOnce('TX-001');
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
       mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
 
       const manager = {
@@ -483,7 +483,7 @@ describe('ArrivalService', () => {
         workerId: 'user',
       } as any, 'C1', 'P1');
 
-      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
     });
@@ -510,7 +510,7 @@ describe('ArrivalService', () => {
         getCount: jest.fn().mockResolvedValue(1),
       };
       mockMatArrivalTxRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockMatLotRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockMatArrivalRepo.find.mockResolvedValue([]);
@@ -551,14 +551,14 @@ describe('ArrivalService', () => {
         getCount: jest.fn().mockResolvedValue(1),
       };
       mockMatArrivalTxRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockMatLotRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockMatArrivalRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
       expect(mockMatLotRepo.find).toHaveBeenCalledWith({
@@ -583,7 +583,7 @@ describe('ArrivalService', () => {
         getCount: jest.fn().mockResolvedValue(0),
       };
       mockMatArrivalTxRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockMatLotRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockMatArrivalRepo.find.mockResolvedValue([]);
@@ -624,7 +624,7 @@ describe('ArrivalService', () => {
         getCount: jest.fn().mockResolvedValue(1),
       };
       mockMatArrivalTxRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-002', itemCode: 'ITEM-001', arrivalNo: 'ARR-002', arrivalSeq: 1, company: 'C1', plant: 'P1' } as MatLot,
       ]);
@@ -732,7 +732,7 @@ describe('ArrivalService', () => {
         plant: 'P01',
       } as MatArrivalTransaction);
       mockIqcLogRepo.findOne.mockResolvedValue(null);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
       mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
       mockDataSource.getRepository.mockReturnValue({
         findOne: jest.fn().mockResolvedValue(null),
@@ -800,7 +800,7 @@ describe('ArrivalService', () => {
         plant: 'P01',
       } as MatArrivalTransaction);
       mockIqcLogRepo.findOne.mockResolvedValue(null);
-      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
       mockMatLotRepo.findOne.mockResolvedValue(null);
       mockWarehouseRepo.findOne.mockResolvedValue(null);
       mockDataSource.getRepository.mockReturnValue({
@@ -847,7 +847,7 @@ describe('ArrivalService', () => {
         plant: 'P1',
       } as MatArrivalTransaction);
       mockIqcLogRepo.findOne.mockResolvedValue(null);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
       mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
       mockDataSource.getRepository.mockReturnValue({
         findOne: jest.fn().mockResolvedValue(null),
@@ -870,7 +870,7 @@ describe('ArrivalService', () => {
         where: { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
         order: { inspectDate: 'DESC' },
       });
-      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
     });
@@ -917,7 +917,7 @@ describe('ArrivalService', () => {
         ]),
       };
       mockMatArrivalRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockMatArrivalStockRepo.find.mockResolvedValue([]);
 
@@ -956,13 +956,13 @@ describe('ArrivalService', () => {
         ]),
       };
       mockMatArrivalRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockWarehouseRepo.find.mockResolvedValue([]);
       mockMatArrivalStockRepo.find.mockResolvedValue([]);
 
       await target.getArrivalStockStatus({ page: 1, limit: 20 }, 'C1', 'P1');
 
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
       expect(mockWarehouseRepo.find).toHaveBeenCalledWith({
@@ -1027,7 +1027,7 @@ describe('ArrivalService', () => {
         poNo: null, iqcStatus: 'PASS',
       } as MatArrival;
       mockMatArrivalRepo.findOne.mockResolvedValueOnce(arrival);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA', iqcYn: 'N' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA', iqcYn: 'N' } as ItemMaster);
 
       const result = await target.findByBarcode('ARR-001');
 
@@ -1067,7 +1067,7 @@ describe('ArrivalService', () => {
         company: 'C1',
         plant: 'P1',
       } as VendorBarcodeMapping);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA', iqcYn: 'N' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA', iqcYn: 'N' } as ItemMaster);
 
       const result = await target.findByBarcode('VB-001', 'C1', 'P1');
 
@@ -1075,7 +1075,7 @@ describe('ArrivalService', () => {
       expect(mockVendorBarcodeRepo.findOne).toHaveBeenCalledWith({
         where: { vendorBarcode: 'VB-001', useYn: 'Y', company: 'C1', plant: 'P1' },
       });
-      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
     });

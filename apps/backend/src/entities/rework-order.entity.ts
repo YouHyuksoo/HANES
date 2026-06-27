@@ -11,7 +11,7 @@ import {
   Entity, PrimaryColumn, Column, ManyToOne, JoinColumn,
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 import { ProdLineMaster } from './prod-line-master.entity';
 import { EquipMaster } from './equip-master.entity';
 
@@ -27,13 +27,13 @@ export class ReworkOrder {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @ManyToOne(() => PartMaster)
+  @ManyToOne(() => ItemMaster)
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  item: PartMaster;
+  item: ItemMaster;
 
   @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 200, nullable: true })
   itemName: string;

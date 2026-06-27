@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { HoldActionDto, ReleaseHoldDto, HoldQueryDto } from '../dto/hold.dto';
 
@@ -19,8 +19,8 @@ export class HoldService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
   ) {}
@@ -45,7 +45,7 @@ export class HoldService {
     // 검색어로 LOT 번호 또는 품목 코드 검색
     if (search) {
       // 먼저 품목 검색
-      const parts = await this.partMasterRepository.find({
+      const parts = await this.itemMasterRepository.find({
         where: [
           { itemCode: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
           { itemName: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
@@ -72,7 +72,7 @@ export class HoldService {
     // part 정보 조회 및 중첩 객체 평면화
     const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -135,7 +135,7 @@ export class HoldService {
     });
 
     const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid, ...this.tenantWhere(company, plant) } });
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: updatedLot!.itemCode, ...this.tenantWhere(company, plant) },
     });
 
@@ -170,7 +170,7 @@ export class HoldService {
     });
 
     const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid, ...this.tenantWhere(company, plant) } });
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: updatedLot!.itemCode, ...this.tenantWhere(company, plant) },
     });
 

@@ -17,7 +17,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { InventoryQueryService } from './inventory-query.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -28,7 +28,7 @@ describe('InventoryService', () => {
   let mockStockRepo: DeepMocked<Repository<MatStock>>;
   let mockLotRepo: DeepMocked<Repository<MatLot>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockInventoryQueryService: DeepMocked<InventoryQueryService>;
@@ -39,7 +39,7 @@ describe('InventoryService', () => {
     mockStockRepo = createMock<Repository<MatStock>>();
     mockLotRepo = createMock<Repository<MatLot>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockInventoryQueryService = createMock<InventoryQueryService>();
@@ -62,7 +62,7 @@ describe('InventoryService', () => {
         { provide: getRepositoryToken(MatStock), useValue: mockStockRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockLotRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: InventoryQueryService, useValue: mockInventoryQueryService },
         { provide: TransactionService, useValue: mockTransactionService },

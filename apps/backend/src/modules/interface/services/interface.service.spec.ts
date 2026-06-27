@@ -13,7 +13,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository, DataSource } from 'typeorm';
 import { InterfaceService } from './interface.service';
 import { InterLog } from '../../../entities/inter-log.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -23,7 +23,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 describe('InterfaceService', () => {
   let target: InterfaceService;
   let mockLogRepo: DeepMocked<Repository<InterLog>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockBomRepo: DeepMocked<Repository<BomMaster>>;
   let mockJobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let mockDataSource: DeepMocked<DataSource>;
@@ -32,7 +32,7 @@ describe('InterfaceService', () => {
 
   beforeEach(async () => {
     mockLogRepo = createMock<Repository<InterLog>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockBomRepo = createMock<Repository<BomMaster>>();
     mockJobOrderRepo = createMock<Repository<JobOrder>>();
     mockDataSource = createMock<DataSource>();
@@ -43,7 +43,7 @@ describe('InterfaceService', () => {
       providers: [
         InterfaceService,
         { provide: getRepositoryToken(InterLog), useValue: mockLogRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
         { provide: DataSource, useValue: mockDataSource },
@@ -547,7 +547,7 @@ describe('InterfaceService', () => {
     });
 
     it('receives job order using part lookup and created job order within tenant', async () => {
-      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'FG-001' } as PartMaster);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'FG-001' } as ItemMaster);
       mockJobOrderRepo.create.mockImplementation((value) => value as JobOrder);
       mockJobOrderRepo.save.mockImplementation(async (value) => value as JobOrder);
 
@@ -569,7 +569,7 @@ describe('InterfaceService', () => {
       mockPartRepo.find.mockResolvedValue([
         { itemCode: 'FG-001' },
         { itemCode: 'RM-001' },
-      ] as PartMaster[]);
+      ] as ItemMaster[]);
       mockBomRepo.find.mockResolvedValue([]);
       mockBomRepo.create.mockImplementation((value) => value as BomMaster);
       mockBomRepo.save.mockResolvedValue({ parentItemCode: 'FG-001', childItemCode: 'RM-001' } as BomMaster);
@@ -588,7 +588,7 @@ describe('InterfaceService', () => {
     });
 
     it('syncs parts using existing part lookup and updates within tenant', async () => {
-      mockPartRepo.find.mockResolvedValue([{ itemCode: 'FG-001' }] as PartMaster[]);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'FG-001' }] as ItemMaster[]);
       mockPartRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       await target.syncPart([{ itemCode: 'FG-001', itemName: 'Finished', itemType: 'FINISHED' } as any], 'C1', 'P1');

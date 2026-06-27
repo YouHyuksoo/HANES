@@ -21,7 +21,7 @@ import * as net from 'net';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { LabelTemplate } from '../../../entities/label-template.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import {
   GenerateZplDto,
   TcpPrintDto,
@@ -56,8 +56,8 @@ export class LabelPrintService {
     private readonly templateRepo: Repository<LabelTemplate>,
     @InjectRepository(MatLot)
     private readonly matLotRepo: Repository<MatLot>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepo: Repository<ItemMaster>,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -103,10 +103,10 @@ export class LabelPrintService {
       }
     }
 
-    // 배치 선조회: itemCodes → PartMaster Map
+    // 배치 선조회: itemCodes → ItemMaster Map
     const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
     const partsList = itemCodes.length > 0
-      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
+      ? await this.itemMasterRepo.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(partsList.map((p) => [p.itemCode, p] as const));
 

@@ -12,20 +12,20 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PartService } from './part.service';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('PartService', () => {
   let target: PartService;
-  let mockRepo: DeepMocked<Repository<PartMaster>>;
+  let mockRepo: DeepMocked<Repository<ItemMaster>>;
 
   beforeEach(async () => {
-    mockRepo = createMock<Repository<PartMaster>>();
+    mockRepo = createMock<Repository<ItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PartService,
-        { provide: getRepositoryToken(PartMaster), useValue: mockRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -42,7 +42,7 @@ describe('PartService', () => {
   describe('findById', () => {
     it('should return part when found', async () => {
       // Arrange
-      const part = { itemCode: 'ITEM01', itemName: 'Part1' } as PartMaster;
+      const part = { itemCode: 'ITEM01', itemName: 'Part1' } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(part);
 
       // Act
@@ -53,7 +53,7 @@ describe('PartService', () => {
     });
 
     it('should find part within tenant only', async () => {
-      const part = { itemCode: 'ITEM01', itemName: 'Part1', company: 'C1', plant: 'P1' } as PartMaster;
+      const part = { itemCode: 'ITEM01', itemName: 'Part1', company: 'C1', plant: 'P1' } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(part);
 
       await target.findById('ITEM01', 'C1', 'P1');
@@ -82,7 +82,7 @@ describe('PartService', () => {
         itemType: 'RM',
         iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
       } as any;
-      const created = { ...dto, useYn: 'Y' } as PartMaster;
+      const created = { ...dto, useYn: 'Y' } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(null);
       mockRepo.create.mockReturnValue(created);
       mockRepo.save.mockResolvedValue(created);
@@ -100,7 +100,7 @@ describe('PartService', () => {
     it('should throw ConflictException when item code exists', async () => {
       // Arrange
       const dto = { itemCode: 'ITEM01', itemName: 'Part1' } as any;
-      mockRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01' } as PartMaster);
+      mockRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01' } as ItemMaster);
 
       // Act & Assert
       await expect(target.create(dto)).rejects.toThrow(ConflictException);
@@ -130,7 +130,7 @@ describe('PartService', () => {
         iqcYn: 'Y',
         inspectMethod: 'SKIP',
       } as any;
-      const created = { ...dto, iqcAqlPolicyCode: null } as PartMaster;
+      const created = { ...dto, iqcAqlPolicyCode: null } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(null);
       mockRepo.create.mockReturnValue(created);
       mockRepo.save.mockResolvedValue(created);
@@ -151,7 +151,7 @@ describe('PartService', () => {
         iqcYn: 'Y',
         inspectMethod: 'FULL',
         iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
-      } as PartMaster;
+      } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
@@ -175,7 +175,7 @@ describe('PartService', () => {
         iqcYn: 'Y',
         inspectMethod: 'FULL',
         iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
-      } as PartMaster;
+      } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
@@ -201,7 +201,7 @@ describe('PartService', () => {
         iqcYn: 'Y',
         inspectMethod: 'FULL',
         iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
-      } as PartMaster;
+      } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
@@ -223,7 +223,7 @@ describe('PartService', () => {
         iqcYn: 'Y',
         inspectMethod: 'FULL',
         iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
-      } as PartMaster;
+      } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(existing);
 
       await expect(target.update('ITEM01', { iqcAqlPolicyCode: '' } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
@@ -237,7 +237,7 @@ describe('PartService', () => {
         iqcYn: 'Y',
         inspectMethod: 'FULL',
         iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
-      } as PartMaster;
+      } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
@@ -254,7 +254,7 @@ describe('PartService', () => {
   describe('delete', () => {
     it('should delete and return itemCode', async () => {
       // Arrange
-      const existing = { itemCode: 'ITEM01' } as PartMaster;
+      const existing = { itemCode: 'ITEM01' } as ItemMaster;
       mockRepo.findOne.mockResolvedValue(existing);
       mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
@@ -270,8 +270,8 @@ describe('PartService', () => {
   // ─── findByType ───
   describe('updateImage', () => {
     it('should update imageUrl and return the part', async () => {
-      const existing = { itemCode: 'ITEM01', imageUrl: null } as PartMaster;
-      const updated = { itemCode: 'ITEM01', imageUrl: '/uploads/parts/item.png' } as PartMaster;
+      const existing = { itemCode: 'ITEM01', imageUrl: null } as ItemMaster;
+      const updated = { itemCode: 'ITEM01', imageUrl: '/uploads/parts/item.png' } as ItemMaster;
       mockRepo.findOne.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
@@ -288,7 +288,7 @@ describe('PartService', () => {
   describe('findByType', () => {
     it('should return active parts of given type', async () => {
       // Arrange
-      const parts = [{ itemCode: 'ITEM01', itemType: 'RM' }] as PartMaster[];
+      const parts = [{ itemCode: 'ITEM01', itemType: 'RM' }] as ItemMaster[];
       mockRepo.find.mockResolvedValue(parts);
 
       // Act

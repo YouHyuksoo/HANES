@@ -15,7 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, FindOptionsWhere, SelectQueryBuilder } from 'typeorm';
 import * as XLSX from 'xlsx';
 import { BomMaster } from '../../../entities/bom-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
 
 /** Excel 업로드 결과 인터페이스 */
@@ -113,8 +113,8 @@ export class BomService {
   constructor(
     @InjectRepository(BomMaster)
     private readonly bomRepository: Repository<BomMaster>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
   ) {}
 
   /** 유효일자 필터 조건 생성 (validFrom <= date AND validTo >= date, NULL은 무제한) */

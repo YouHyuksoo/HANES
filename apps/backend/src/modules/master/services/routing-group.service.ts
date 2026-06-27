@@ -14,7 +14,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
@@ -36,8 +36,8 @@ export class RoutingGroupService {
     private readonly processMasterRepo: Repository<ProcessMaster>,
     @InjectRepository(ProcessQualityCondition)
     private readonly conditionRepo: Repository<ProcessQualityCondition>,
-    @InjectRepository(PartMaster)
-    private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepo: Repository<ItemMaster>,
     @InjectRepository(BomMaster)
     private readonly bomRepo: Repository<BomMaster>,
     @InjectRepository(RoutingMaterial)

@@ -15,7 +15,7 @@ import { Repository, MoreThanOrEqual, Between, In, EntityManager } from 'typeorm
 import { TransactionService } from '../../../shared/transaction.service';
 import { OracleService } from '../../../common/services/oracle.service';
 import { InterLog } from '../../../entities/inter-log.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import {
@@ -35,8 +35,8 @@ export class InterfaceService {
   constructor(
     @InjectRepository(InterLog)
     private readonly interLogRepository: Repository<InterLog>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(BomMaster)
     private readonly bomMasterRepository: Repository<BomMaster>,
     @InjectRepository(JobOrder)
@@ -239,7 +239,7 @@ export class InterfaceService {
 
     try {
       // 품목 확인
-      const part = await this.partMasterRepository.findOne({
+      const part = await this.itemMasterRepository.findOne({
         where: { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
       });
 
@@ -289,7 +289,7 @@ export class InterfaceService {
       // 관련 품목코드 일괄 선조회 (N+1 제거)
       const allItemCodes = [...new Set(dtos.flatMap((d) => [d.parentItemCode, d.childItemCode]))];
       const allParts = allItemCodes.length > 0
-        ? await this.partMasterRepository.find({ where: { itemCode: In(allItemCodes), ...this.tenantWhere(company, plant) } })
+        ? await this.itemMasterRepository.find({ where: { itemCode: In(allItemCodes), ...this.tenantWhere(company, plant) } })
         : [];
       const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
 
@@ -369,14 +369,14 @@ export class InterfaceService {
       // 기존 품목 일괄 선조회 (N+1 제거)
       const itemCodes = dtos.map((d) => d.itemCode);
       const existingParts = itemCodes.length > 0
-        ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+        ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
         : [];
       const existingSet = new Set(existingParts.map((p) => p.itemCode));
 
       const results = [];
       for (const dto of dtos) {
         if (existingSet.has(dto.itemCode)) {
-          await this.partMasterRepository.update(
+          await this.itemMasterRepository.update(
             { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
             {
               itemName: dto.itemName,
@@ -387,7 +387,7 @@ export class InterfaceService {
             },
           );
         } else {
-          const newPart = this.partMasterRepository.create({
+          const newPart = this.itemMasterRepository.create({
             itemCode: dto.itemCode,
             itemName: dto.itemName,
             // ERP는 품번을 전송하지 않으므로 품목코드로 대체 (PART_NO NOT NULL 보장)
@@ -399,7 +399,7 @@ export class InterfaceService {
             company,
             plant,
           });
-          await this.partMasterRepository.save(newPart);
+          await this.itemMasterRepository.save(newPart);
           existingSet.add(dto.itemCode);
         }
 

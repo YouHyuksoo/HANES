@@ -13,7 +13,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { StockQueryDto, TransactionQueryDto } from '../dto/inventory.dto';
 
 export interface StockSummary {
@@ -39,8 +39,8 @@ export class InventoryQueryService {
     private readonly lotRepository: Repository<MatLot>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -87,7 +87,7 @@ export class InventoryQueryService {
       where: { warehouseCode: In(whCodes), ...tenantWhere },
       select: ['warehouseCode', 'warehouseName', 'warehouseType'],
     }) : [];
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({
+    const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({
       where: { itemCode: In(itemCodes), ...tenantWhere },
       select: ['itemCode', 'itemName', 'itemType', 'unit'],
     }) : [];
@@ -174,7 +174,7 @@ export class InventoryQueryService {
     const tenantWhere = this.tenantWhere(company, plant);
 
     const warehouses = whIds.length > 0 ? await this.warehouseRepository.find({ where: { warehouseCode: In(whIds as string[]), ...tenantWhere } }) : [];
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes as string[]), ...tenantWhere } }) : [];
+    const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes as string[]), ...tenantWhere } }) : [];
     const lots = matUids.length > 0 ? await this.lotRepository.find({ where: { matUid: In(matUids as string[]), ...tenantWhere } }) : [];
 
     const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
@@ -208,7 +208,7 @@ export class InventoryQueryService {
 
     const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -232,7 +232,7 @@ export class InventoryQueryService {
     }
 
     const [part, stocks, transactions] = await Promise.all([
-      this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }),
+      this.itemMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }),
       this.stockRepository.find({ where: { matUid: id, ...tenantWhere } }),
       this.stockTransactionRepository.find({
         where: { matUid: id, ...tenantWhere },
@@ -273,7 +273,7 @@ export class InventoryQueryService {
     const [fromWarehouse, toWarehouse, part, lot, cancelRef, canceledByTrans] = await Promise.all([
       transaction.fromWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: transaction.fromWarehouseId, ...tenantWhere } }) : null,
       transaction.toWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: transaction.toWarehouseId, ...tenantWhere } }) : null,
-      this.partMasterRepository.findOne({ where: { itemCode: transaction.itemCode, ...tenantWhere } }),
+      this.itemMasterRepository.findOne({ where: { itemCode: transaction.itemCode, ...tenantWhere } }),
       transaction.matUid ? this.lotRepository.findOne({ where: { matUid: transaction.matUid, ...tenantWhere } }) : null,
       transaction.cancelRefId ? this.stockTransactionRepository.findOne({ where: { transNo: transaction.cancelRefId, ...tenantWhere } }) : null,
       this.stockTransactionRepository.findOne({ where: { cancelRefId: transNo, ...tenantWhere } }),
@@ -316,7 +316,7 @@ export class InventoryQueryService {
       where: { warehouseCode: In(whCodes), ...tenantWhere },
       select: ['warehouseCode', 'warehouseName', 'warehouseType'],
     }) : [];
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({
+    const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({
       where: { itemCode: In(itemCodes), ...tenantWhere },
       select: ['itemCode', 'itemName', 'itemType'],
     }) : [];

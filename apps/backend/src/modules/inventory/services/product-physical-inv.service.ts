@@ -5,7 +5,7 @@ import { ProductStock } from '../../../entities/product-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
@@ -29,8 +29,8 @@ export class ProductPhysicalInvService {
     private readonly lotRepository: Repository<MatLot>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(FgLabel)
     private readonly fgLabelRepository: Repository<FgLabel>,
     @InjectRepository(PhysicalInvSession)
@@ -69,7 +69,7 @@ export class ProductPhysicalInvService {
 
     const qb = this.stockRepository
       .createQueryBuilder('s')
-      .leftJoin(PartMaster, 'p', 'p.itemCode = s.itemCode AND p.company = s.company AND p.plant = s.plant')
+      .leftJoin(ItemMaster, 'p', 'p.itemCode = s.itemCode AND p.company = s.company AND p.plant = s.plant')
       .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode AND w.company = s.company AND w.plant = s.plant')
       .select([
         's.warehouseCode || \'::\' || s.itemCode AS "id"',
@@ -112,7 +112,7 @@ export class ProductPhysicalInvService {
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
-      .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant')
+      .leftJoin(ItemMaster, 'part', 'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant')
       .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid AND lot.company = log.company AND lot.plant = log.plant')
       .leftJoin(Warehouse, 'wh', 'wh.warehouseCode = log.warehouseCode AND wh.company = log.company AND wh.plant = log.plant')
       .select([
@@ -401,7 +401,7 @@ export class ProductPhysicalInvService {
     }
 
     // 3) 품목명 조회
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode, ...this.tenantWhere(company, plant) },
     });
     const itemName = part?.itemName ?? '';
@@ -470,7 +470,7 @@ export class ProductPhysicalInvService {
 
     const itemCodes = [...agg.keys()];
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p.itemName]));
 

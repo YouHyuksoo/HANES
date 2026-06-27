@@ -13,7 +13,7 @@ import { Repository, In, QueryRunner, FindOptionsWhere, EntityManager } from 'ty
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -36,8 +36,8 @@ export class ProductInventoryService {
     private readonly stockRepository: Repository<ProductStock>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(FgLabel)
     private readonly fgLabelRepository: Repository<FgLabel>,
     @InjectRepository(BoxMaster)
@@ -809,7 +809,7 @@ export class ProductInventoryService {
       where: { warehouseCode: In(whCodes), ...tenantWhere },
       select: ['warehouseCode', 'warehouseName', 'warehouseType'],
     }) : [];
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({
+    const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({
       where: { itemCode: In(itemCodes), ...tenantWhere },
       select: ['itemCode', 'itemName', 'itemType', 'unit'],
     }) : [];
@@ -894,7 +894,7 @@ export class ProductInventoryService {
     const tenantWhere = this.tenantWhere(company, plant);
 
     const warehouses = whIds.length > 0 ? await this.warehouseRepository.find({ where: { warehouseCode: In(whIds as string[]), ...tenantWhere } }) : [];
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes as string[]), ...tenantWhere } }) : [];
+    const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes as string[]), ...tenantWhere } }) : [];
 
     const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));

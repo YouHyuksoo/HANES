@@ -7,7 +7,7 @@ import { MiscReceiptService } from './misc-receipt.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -17,7 +17,7 @@ describe('MiscReceiptService', () => {
   let stockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let matStockRepo: DeepMocked<Repository<MatStock>>;
   let matLotRepo: DeepMocked<Repository<MatLot>>;
-  let partRepo: DeepMocked<Repository<PartMaster>>;
+  let partRepo: DeepMocked<Repository<ItemMaster>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
@@ -27,7 +27,7 @@ describe('MiscReceiptService', () => {
     stockTxRepo = createMock<Repository<StockTransaction>>();
     matStockRepo = createMock<Repository<MatStock>>();
     matLotRepo = createMock<Repository<MatLot>>();
-    partRepo = createMock<Repository<PartMaster>>();
+    partRepo = createMock<Repository<ItemMaster>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
@@ -47,7 +47,7 @@ describe('MiscReceiptService', () => {
         { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
@@ -98,7 +98,7 @@ describe('MiscReceiptService', () => {
 
     queryRunner.manager.findOne
       .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH' } as Warehouse)
-      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw' } as PartMaster)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw' } as ItemMaster)
       .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot)
       .mockResolvedValueOnce({
         warehouseCode: 'WH-01',
@@ -137,7 +137,7 @@ describe('MiscReceiptService', () => {
 
     queryRunner.manager.findOne
       .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH', company: 'HANES', plant: 'P01' } as Warehouse)
-      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw', company: 'HANES', plant: 'P01' } as PartMaster)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw', company: 'HANES', plant: 'P01' } as ItemMaster)
       .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' } as MatLot)
       .mockResolvedValueOnce({
         warehouseCode: 'WH-01',
@@ -168,7 +168,7 @@ describe('MiscReceiptService', () => {
 
     queryRunner.manager.findOne
       .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH' } as Warehouse)
-      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw' } as PartMaster)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw' } as ItemMaster)
       .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-999' } as MatLot);
 
     await expect(

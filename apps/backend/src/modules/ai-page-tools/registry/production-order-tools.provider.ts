@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { EquipMaster } from '../../../entities/equip-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { ProdLineMaster } from '../../../entities/prod-line-master.entity';
 import { AiPageToolCandidateResult, AiPageToolConfirmationReason, PageToolContext, PageToolProvider } from '../types';
@@ -18,7 +18,7 @@ export class ProductionOrderToolsProvider implements PageToolProvider {
   readonly manifest = PRODUCTION_ORDER_TOOL_MANIFEST;
 
   constructor(
-    @Optional() @InjectRepository(PartMaster) private readonly partRepo?: Repository<PartMaster>,
+    @Optional() @InjectRepository(ItemMaster) private readonly partRepo?: Repository<ItemMaster>,
     @Optional() @InjectRepository(ProdLineMaster) private readonly lineRepo?: Repository<ProdLineMaster>,
     @Optional() @InjectRepository(ProcessMaster) private readonly processRepo?: Repository<ProcessMaster>,
     @Optional() @InjectRepository(EquipMaster) private readonly equipRepo?: Repository<EquipMaster>,

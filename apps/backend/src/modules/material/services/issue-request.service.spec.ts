@@ -6,7 +6,7 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { IssueRequestService } from './issue-request.service';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
@@ -22,7 +22,7 @@ describe('IssueRequestService', () => {
   let service: IssueRequestService;
   let requestRepo: DeepMocked<Repository<MatIssueRequest>>;
   let requestItemRepo: DeepMocked<Repository<MatIssueRequestItem>>;
-  let partMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let itemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let jobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let bomRepo: DeepMocked<Repository<BomMaster>>;
   let matIssueRepo: DeepMocked<Repository<MatIssue>>;
@@ -37,7 +37,7 @@ describe('IssueRequestService', () => {
   beforeEach(async () => {
     requestRepo = createMock<Repository<MatIssueRequest>>();
     requestItemRepo = createMock<Repository<MatIssueRequestItem>>();
-    partMasterRepo = createMock<Repository<PartMaster>>();
+    itemMasterRepo = createMock<Repository<ItemMaster>>();
     jobOrderRepo = createMock<Repository<JobOrder>>();
     bomRepo = createMock<Repository<BomMaster>>();
     matIssueRepo = createMock<Repository<MatIssue>>();
@@ -62,7 +62,7 @@ describe('IssueRequestService', () => {
         IssueRequestService,
         { provide: getRepositoryToken(MatIssueRequest), useValue: requestRepo },
         { provide: getRepositoryToken(MatIssueRequestItem), useValue: requestItemRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: itemMasterRepo },
         { provide: getRepositoryToken(JobOrder), useValue: jobOrderRepo },
         { provide: getRepositoryToken(BomMaster), useValue: bomRepo },
         { provide: getRepositoryToken(MatIssue), useValue: matIssueRepo },
@@ -100,7 +100,7 @@ describe('IssueRequestService', () => {
           unit: null,
         } as unknown as MatIssueRequestItem,
       ]);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
 
       const result = await service.findAll({ page: 1, limit: 10 });
 
@@ -129,14 +129,14 @@ describe('IssueRequestService', () => {
           plant: 'P1',
         } as unknown as MatIssueRequestItem,
       ]);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
 
       await service.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
       expect(requestItemRepo.find).toHaveBeenCalledWith({
         where: { requestId: expect.anything(), company: 'C1', plant: 'P1' },
       });
-      expect(partMasterRepo.find).toHaveBeenCalledWith({
+      expect(itemMasterRepo.find).toHaveBeenCalledWith({
         where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
       });
     });
@@ -155,7 +155,7 @@ describe('IssueRequestService', () => {
           unit: null,
         } as unknown as MatIssueRequestItem,
       ]);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
 
       const result = await service.findByRequestNo('REQ-001');
 
@@ -186,7 +186,7 @@ describe('IssueRequestService', () => {
           plant: 'P1',
         } as unknown as MatIssueRequestItem,
       ]);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
 
       await service.findByRequestNo('REQ-001', 'C1', 'P1');
 
@@ -196,7 +196,7 @@ describe('IssueRequestService', () => {
       expect(requestItemRepo.find).toHaveBeenCalledWith({
         where: { requestId: 'REQ-001', company: 'C1', plant: 'P1' },
       });
-      expect(partMasterRepo.find).toHaveBeenCalledWith({
+      expect(itemMasterRepo.find).toHaveBeenCalledWith({
         where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
       });
     });
@@ -327,10 +327,10 @@ describe('IssueRequestService', () => {
         { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 2, seq: 1, useYn: 'Y' },
         { parentItemCode: 'FG-001', childItemCode: 'WIP-001', qtyPer: 1, seq: 2, useYn: 'Y' },
       ] as BomMaster[]);
-      partMasterRepo.find.mockResolvedValue([
+      itemMasterRepo.find.mockResolvedValue([
         { itemCode: 'RM-001', itemName: 'Raw A', itemType: 'RAW', unit: 'EA' },
         { itemCode: 'WIP-001', itemName: 'Semi A', itemType: 'WIP', unit: 'EA' },
-      ] as PartMaster[]);
+      ] as ItemMaster[]);
       matIssueRepo.createQueryBuilder.mockReturnValue(createQueryBuilder([{ itemCode: 'RM-001', qty: '4' }]) as any);
       matStockRepo.createQueryBuilder
         .mockReturnValueOnce(createQueryBuilder([{ itemCode: 'RM-001', qty: '3' }]) as any)

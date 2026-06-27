@@ -18,7 +18,7 @@ import {
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { JobOrderService } from './job-order.service';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
@@ -33,7 +33,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 describe('JobOrderService', () => {
   let target: JobOrderService;
   let mockJobOrderRepo: DeepMocked<Repository<JobOrder>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockProdResultRepo: DeepMocked<Repository<ProdResult>>;
   let mockBomMasterRepo: DeepMocked<Repository<BomMaster>>;
   let mockRoutingGroupRepo: DeepMocked<Repository<RoutingGroup>>;
@@ -48,7 +48,7 @@ describe('JobOrderService', () => {
 
   beforeEach(async () => {
     mockJobOrderRepo = createMock<Repository<JobOrder>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockProdResultRepo = createMock<Repository<ProdResult>>();
     mockBomMasterRepo = createMock<Repository<BomMaster>>();
     mockRoutingGroupRepo = createMock<Repository<RoutingGroup>>();
@@ -73,7 +73,7 @@ describe('JobOrderService', () => {
       providers: [
         JobOrderService,
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(ProdResult), useValue: mockProdResultRepo },
         { provide: getRepositoryToken(BomMaster), useValue: mockBomMasterRepo },
         { provide: getRepositoryToken(RoutingGroup), useValue: mockRoutingGroupRepo },
@@ -296,7 +296,7 @@ describe('JobOrderService', () => {
       mockJobOrderRepo.findOne
         .mockResolvedValueOnce(null) // existing check
         .mockResolvedValueOnce({ orderNo: 'JO-20260318-0001' } as JobOrder); // final findOne
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'COMPANY', plant: 'PLANT' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'COMPANY', plant: 'PLANT' } as ItemMaster);
       mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-001', itemCode: 'PART-001', company: 'COMPANY', plant: 'PLANT' } as any);
       mockQueryRunner.manager.create.mockReturnValue({ orderNo: 'JO-20260318-0001' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ orderNo: 'JO-20260318-0001' } as any);
@@ -316,7 +316,7 @@ describe('JobOrderService', () => {
       mockJobOrderRepo.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C1', plant: 'P1' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C1', plant: 'P1' } as ItemMaster);
       mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-001', itemCode: 'PART-001', company: 'C1', plant: 'P1' } as any);
       mockQueryRunner.manager.create.mockReturnValue({ orderNo: 'JO-001' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ orderNo: 'JO-001' } as any);
@@ -328,7 +328,7 @@ describe('JobOrderService', () => {
       expect(mockJobOrderRepo.findOne).toHaveBeenNthCalledWith(1, {
         where: { orderNo: 'JO-001', company: 'C1', plant: 'P1' },
       });
-      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'PART-001', company: 'C1', plant: 'P1' },
       });
     });
@@ -337,7 +337,7 @@ describe('JobOrderService', () => {
       // Arrange
       const dto = { ...createDto, orderNo: 'JO-EXISTS' };
       mockJobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-EXISTS' } as JobOrder);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001' } as ItemMaster);
 
       // Act & Assert
       await expect(target.create(dto, 'C', 'P')).rejects.toThrow(ConflictException);
@@ -347,7 +347,7 @@ describe('JobOrderService', () => {
       // Arrange
       mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
       mockJobOrderRepo.findOne.mockResolvedValue(null);
-      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
       await expect(target.create(createDto, 'C', 'P')).rejects.toThrow(NotFoundException);
@@ -356,7 +356,7 @@ describe('JobOrderService', () => {
     it('should reject when the found part belongs to a different tenant', async () => {
       mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
       mockJobOrderRepo.findOne.mockResolvedValue(null);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'OTHER', plant: 'P' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'OTHER', plant: 'P' } as ItemMaster);
 
       await expect(target.create(createDto, 'C', 'P')).rejects.toThrow(BadRequestException);
 
@@ -366,7 +366,7 @@ describe('JobOrderService', () => {
     it('should reject when resolved routing group belongs to a different tenant', async () => {
       mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
       mockJobOrderRepo.findOne.mockResolvedValue(null);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C', plant: 'P' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C', plant: 'P' } as ItemMaster);
       mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-OTHER', itemCode: 'PART-001', company: 'OTHER', plant: 'P' } as RoutingGroup);
 
       await expect(target.create(createDto, 'C', 'P')).rejects.toThrow(BadRequestException);
@@ -378,7 +378,7 @@ describe('JobOrderService', () => {
       // Arrange
       mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
       mockJobOrderRepo.findOne.mockResolvedValue(null);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001' } as ItemMaster);
       mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-001' } as any);
       mockQueryRunner.manager.create.mockReturnValue({} as any);
       mockQueryRunner.manager.save.mockRejectedValue(new Error('DB error'));

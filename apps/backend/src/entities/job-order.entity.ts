@@ -20,7 +20,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ProdResult } from './prod-result.entity';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 import { RoutingGroup } from './routing-group.entity';
 import { ProdPlan } from './prod-plan.entity';
 
@@ -52,13 +52,13 @@ export class JobOrder {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @ManyToOne(() => PartMaster, { nullable: true })
+  @ManyToOne(() => ItemMaster, { nullable: true })
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  part: PartMaster | null;
+  part: ItemMaster | null;
 
   @Column({ type: 'varchar2', name: 'LINE_CODE', length: 255, nullable: true })
   lineCode: string | null;

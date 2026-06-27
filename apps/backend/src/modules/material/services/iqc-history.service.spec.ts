@@ -11,7 +11,7 @@ import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { AqlService } from '../../quality/aql/services/aql.service';
@@ -28,7 +28,7 @@ describe('IqcHistoryService cancel policy', () => {
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
@@ -45,7 +45,7 @@ describe('IqcHistoryService cancel policy', () => {
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockPartnerMasterRepo.find.mockResolvedValue([]);
     mockDataSource = createMock<DataSource>();
@@ -91,7 +91,7 @@ describe('IqcHistoryService cancel policy', () => {
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: SysConfigService, useValue: mockSysConfigService },
@@ -127,7 +127,7 @@ describe('IqcHistoryService cancel policy', () => {
       ]);
       qb.getCount.mockResolvedValue(1);
       mockIqcLogRepo.createQueryBuilder.mockReturnValue(qb);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findAll({ page: 1, limit: 10 });
 
@@ -158,11 +158,11 @@ describe('IqcHistoryService cancel policy', () => {
       ]);
       qb.getCount.mockResolvedValue(1);
       mockIqcLogRepo.createQueryBuilder.mockReturnValue(qb);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -176,7 +176,7 @@ describe('IqcHistoryService cancel policy', () => {
       qb.getMany.mockResolvedValue([]);
       qb.getCount.mockResolvedValue(0);
       mockIqcLogRepo.createQueryBuilder.mockReturnValue(qb);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10, fromDate: '2026-06-08', toDate: '2026-06-08' });
 
@@ -198,7 +198,7 @@ describe('IqcHistoryService cancel policy', () => {
       } as MatLot);
       mockIqcLogRepo.create.mockReturnValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as IqcLog);
       mockIqcLogRepo.save.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as IqcLog);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
 
       await expect(
         target.createResult({ matUid: 'MAT-001', result: 'PASS' } as any, 'HANES', 'P01'),
@@ -219,7 +219,7 @@ describe('IqcHistoryService cancel policy', () => {
       mockMatLotRepo.findOne.mockResolvedValue(lot);
       mockIqcLogRepo.create.mockReturnValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as IqcLog);
       mockIqcLogRepo.save.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as IqcLog);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
 
       await target.createResult({ matUid: 'MAT-001', result: 'PASS' } as any, 'HANES', 'P01');
 
@@ -230,7 +230,7 @@ describe('IqcHistoryService cancel policy', () => {
         { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
         { iqcStatus: 'PASS' },
       );
-      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
       });
     });
@@ -246,7 +246,7 @@ describe('IqcHistoryService cancel policy', () => {
       mockMatLotRepo.findOne.mockResolvedValue(lot);
       mockIqcLogRepo.create.mockReturnValue({ matUid: 'MAT-001', itemCode: 'ITEM-MISSING' } as IqcLog);
       mockIqcLogRepo.save.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-MISSING' } as IqcLog);
-      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
 
       const result = await target.createResult({ matUid: 'MAT-001', result: 'PASS' } as any);
 
@@ -326,7 +326,7 @@ describe('IqcHistoryService cancel policy', () => {
       ]);
       mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001' } as IqcLog);
       mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001' } as IqcLog);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
 
       const result = await target.createArrivalResult({
         arrivalNo: 'ARR-001',
@@ -365,7 +365,7 @@ describe('IqcHistoryService cancel policy', () => {
       ]);
       mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'A1', itemCode: 'CBL-A' } as IqcLog);
       mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'A1', itemCode: 'CBL-A' } as IqcLog);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'CBL-A', itemName: 'Cable A' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'CBL-A', itemName: 'Cable A' } as ItemMaster);
 
       await target.createArrivalResult({ arrivalNo: 'A1', itemCode: 'CBL-A', result: 'PASS', details } as any, '40', '1000');
 
@@ -405,7 +405,7 @@ describe('IqcHistoryService cancel policy', () => {
       });
       mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001', result: 'FAIL' } as IqcLog);
       mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001', result: 'FAIL' } as IqcLog);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
       mockWarehouseRepo.findOne.mockResolvedValue(null);
 
       const result = await target.createArrivalResult({
@@ -450,7 +450,7 @@ describe('IqcHistoryService cancel policy', () => {
       ]);
       mockIqcLogRepo.create.mockImplementation((input) => input as IqcLog);
       mockIqcLogRepo.save.mockImplementation(async (input) => input as IqcLog);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-TRACE', itemName: 'Trace Item' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-TRACE', itemName: 'Trace Item' } as ItemMaster);
 
       await target.createArrivalResult({
         arrivalNo: 'ARR-TRACE',
@@ -515,7 +515,7 @@ describe('IqcHistoryService cancel policy', () => {
       ]);
       mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001' } as IqcLog);
       mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'ARR-001', itemCode: 'ITEM-001' } as IqcLog);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
 
       await target.createArrivalResult({
         arrivalNo: 'ARR-001',
@@ -789,7 +789,7 @@ describe('IqcHistoryService cancel policy', () => {
       plant: 'P01',
     } as MatStock);
     mockNumbering.nextInTx.mockResolvedValue('TX-IQC-FAIL');
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
 
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
@@ -840,7 +840,7 @@ describe('IqcHistoryService cancel policy', () => {
       plant: 'P01',
     } as MatStock);
     mockNumbering.nextInTx.mockResolvedValue('TX-IQC-DESTRUCT');
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
 
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),

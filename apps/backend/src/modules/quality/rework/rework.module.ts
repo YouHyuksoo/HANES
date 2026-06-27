@@ -24,7 +24,7 @@ import { ReworkProcess } from '../../../entities/rework-process.entity';
 import { ReworkResult } from '../../../entities/rework-result.entity';
 import { ReworkInspect } from '../../../entities/rework-inspect.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { InventoryModule } from '../../inventory/inventory.module';
 
 @Module({
@@ -35,7 +35,7 @@ import { InventoryModule } from '../../inventory/inventory.module';
       ReworkResult,
       ReworkInspect,
       DefectLog,
-      PartMaster,
+      ItemMaster,
     ]),
     InventoryModule,
   ],

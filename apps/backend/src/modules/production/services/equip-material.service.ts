@@ -17,7 +17,7 @@ import { WipMatStockService } from '../../inventory/services/wip-mat-stock.servi
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
 import { WipMatStock } from '../../../entities/wip-mat-stock.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 
 /** 장착된 자재 행 */
 export interface MountedRow {
@@ -36,8 +36,8 @@ export class EquipMaterialService {
   constructor(
     @InjectRepository(WipMatStock)
     private readonly wipStockRepo: Repository<WipMatStock>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepo: Repository<ItemMaster>,
     private readonly wipMatStockService: WipMatStockService,
     private readonly procMatStockService: ProcMatStockService,
     private readonly tx: TransactionService,
@@ -118,7 +118,7 @@ export class EquipMaterialService {
       });
 
       // 6. 품목명 조회(Best-effort)
-      const part = await this.partMasterRepo.findOne({
+      const part = await this.itemMasterRepo.findOne({
         where: { itemCode },
         select: ['itemCode', 'itemName'],
       });
@@ -148,7 +148,7 @@ export class EquipMaterialService {
     if (positive.length === 0) return [];
 
     const itemCodes = [...new Set(positive.map((s) => s.itemCode))];
-    const parts = await this.partMasterRepo.find({
+    const parts = await this.itemMasterRepo.find({
       where: { itemCode: In(itemCodes) },
       select: ['itemCode', 'itemName'],
     });
@@ -183,7 +183,7 @@ export class EquipMaterialService {
     if (rows.length === 0) return [];
 
     const itemCodes = [...new Set(rows.map((r) => r.itemCode))];
-    const parts = await this.partMasterRepo.find({
+    const parts = await this.itemMasterRepo.find({
       where: { itemCode: In(itemCodes) },
       select: ['itemCode', 'itemName'],
     });

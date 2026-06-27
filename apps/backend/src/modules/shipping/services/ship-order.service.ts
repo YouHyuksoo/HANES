@@ -23,7 +23,7 @@ import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
@@ -55,8 +55,8 @@ export class ShipOrderService {
     private readonly shipOrderRepository: Repository<ShipmentOrder>,
     @InjectRepository(ShipmentOrderItem)
     private readonly shipOrderItemRepository: Repository<ShipmentOrderItem>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerRepository: Repository<PartnerMaster>,
     @InjectRepository(BoxMaster)

@@ -16,7 +16,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -41,8 +41,8 @@ export class PhysicalInvService {
     private readonly invAdjLogRepository: Repository<InvAdjLog>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PhysicalInvSession)
     private readonly sessionRepository: Repository<PhysicalInvSession>,
     @InjectRepository(PhysicalInvCountDetail)
@@ -203,7 +203,7 @@ export class PhysicalInvService {
     // 寃?됱뼱媛 ?덉쑝硫?DB?먯꽌 ?꾪꽣 (硫붾え由??꾪꽣 ?쒓굅)
     if (search) {
       const upper = search.toUpperCase();
-      qb.leftJoin(PartMaster, 'part', 'part.itemCode = stock.itemCode AND part.company = stock.company AND part.plant = stock.plant')
+      qb.leftJoin(ItemMaster, 'part', 'part.itemCode = stock.itemCode AND part.company = stock.company AND part.plant = stock.plant')
         .andWhere(
           '(stock.itemCode LIKE :search OR part.itemName LIKE :searchRaw)',
           { search: `%${upper}%`, searchRaw: `%${search}%` },
@@ -226,7 +226,7 @@ export class PhysicalInvService {
     };
 
     const [parts, lots] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
       matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
     ]);
 
@@ -252,7 +252,7 @@ export class PhysicalInvService {
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
-      .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant')
+      .leftJoin(ItemMaster, 'part', 'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant')
       .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid AND lot.company = log.company AND lot.plant = log.plant')
       .select([
         'log.adjDate AS "adjDate"',
@@ -364,7 +364,7 @@ export class PhysicalInvService {
     const itemCodes = stocks.map(s => s.itemCode).filter(Boolean);
 
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
+      ? await this.itemMasterRepository.find({
         where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       })
       : [];
@@ -520,7 +520,7 @@ export class PhysicalInvService {
 
     if (search) {
       const upper = search.toUpperCase();
-      stockQb.leftJoin(PartMaster, 'sp', 'sp.itemCode = stock.itemCode AND sp.company = stock.company AND sp.plant = stock.plant')
+      stockQb.leftJoin(ItemMaster, 'sp', 'sp.itemCode = stock.itemCode AND sp.company = stock.company AND sp.plant = stock.plant')
         .andWhere(
           '(stock.itemCode LIKE :search OR sp.itemName LIKE :searchRaw)',
           { search: `%${upper}%`, searchRaw: `%${search}%` },
@@ -539,7 +539,7 @@ export class PhysicalInvService {
       ...(plant ? { plant } : {}),
     };
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 

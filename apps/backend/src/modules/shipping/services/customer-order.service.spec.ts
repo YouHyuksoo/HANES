@@ -10,7 +10,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { CustomerOrderService } from './customer-order.service';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -18,7 +18,7 @@ describe('CustomerOrderService', () => {
   let target: CustomerOrderService;
   let mockOrderRepo: DeepMocked<Repository<CustomerOrder>>;
   let mockItemRepo: DeepMocked<Repository<CustomerOrderItem>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
@@ -26,7 +26,7 @@ describe('CustomerOrderService', () => {
   beforeEach(async () => {
     mockOrderRepo = createMock<Repository<CustomerOrder>>();
     mockItemRepo = createMock<Repository<CustomerOrderItem>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQr = createMock<QueryRunner>();
@@ -43,7 +43,7 @@ describe('CustomerOrderService', () => {
         CustomerOrderService,
         { provide: getRepositoryToken(CustomerOrder), useValue: mockOrderRepo },
         { provide: getRepositoryToken(CustomerOrderItem), useValue: mockItemRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],

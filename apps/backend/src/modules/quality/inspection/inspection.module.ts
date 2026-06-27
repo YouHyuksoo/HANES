@@ -25,7 +25,7 @@ import { TraceLog } from '../../../entities/trace-log.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
@@ -60,7 +60,7 @@ import { SharedModule } from '../../../shared/shared.module';
       FgLabel,
       JobOrder,
       MatIssue,
-      PartMaster,
+      ItemMaster,
       EquipMaster,
       WorkerMaster,
       ProcessMaster,

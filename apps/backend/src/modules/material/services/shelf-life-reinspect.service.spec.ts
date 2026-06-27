@@ -9,7 +9,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -21,7 +21,7 @@ describe('ShelfLifeReInspectService', () => {
   let matStockRepo: DeepMocked<Repository<MatStock>>;
   let stockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
-  let partMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let itemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
@@ -33,7 +33,7 @@ describe('ShelfLifeReInspectService', () => {
     matStockRepo = createMock<Repository<MatStock>>();
     stockTxRepo = createMock<Repository<StockTransaction>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
-    partMasterRepo = createMock<Repository<PartMaster>>();
+    itemMasterRepo = createMock<Repository<ItemMaster>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
@@ -50,7 +50,7 @@ describe('ShelfLifeReInspectService', () => {
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: itemMasterRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
         { provide: NumberingService, useValue: numbering },
@@ -76,10 +76,10 @@ describe('ShelfLifeReInspectService', () => {
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
-      partMasterRepo.findOne.mockResolvedValue({
+      itemMasterRepo.findOne.mockResolvedValue({
         itemCode: 'ITEM-001',
         expiryExtDays: 90,
-      } as PartMaster);
+      } as ItemMaster);
       iqcLogRepo.count.mockResolvedValue(0);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
       iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
@@ -100,10 +100,10 @@ describe('ShelfLifeReInspectService', () => {
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
-      partMasterRepo.findOne.mockResolvedValue({
+      itemMasterRepo.findOne.mockResolvedValue({
         itemCode: 'ITEM-001',
         expiryExtDays: 90,
-      } as PartMaster);
+      } as ItemMaster);
       iqcLogRepo.count.mockResolvedValue(0);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
       iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
@@ -121,7 +121,7 @@ describe('ShelfLifeReInspectService', () => {
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
-      partMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as PartMaster);
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as ItemMaster);
       iqcLogRepo.count.mockResolvedValue(0);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
       iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
@@ -156,7 +156,7 @@ describe('ShelfLifeReInspectService', () => {
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
-      partMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as PartMaster);
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as ItemMaster);
       iqcLogRepo.count.mockResolvedValue(0);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
       iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
@@ -193,7 +193,7 @@ describe('ShelfLifeReInspectService', () => {
         company: 'HANES',
         plant: 'P01',
       } as MatLot);
-      partMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as PartMaster);
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as ItemMaster);
       iqcLogRepo.count.mockResolvedValue(1);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
       iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);

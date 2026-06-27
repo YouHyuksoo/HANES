@@ -5,7 +5,7 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { SampleInspectResult } from '../../../entities/sample-inspect-result.entity';
 import { SampleInspectService } from './sample-inspect.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -161,7 +161,7 @@ describe('SampleInspectService', () => {
       'jo.orderNo = si.orderNo AND jo.company = si.company AND jo.plant = si.plant',
     );
     expect(qb.leftJoin).toHaveBeenCalledWith(
-      PartMaster,
+      ItemMaster,
       'p',
       'p.itemCode = jo.itemCode AND p.company = jo.company AND p.plant = jo.plant',
     );

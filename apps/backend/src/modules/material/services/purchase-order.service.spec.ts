@@ -15,7 +15,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { PurchaseOrderService } from './purchase-order.service';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -26,7 +26,7 @@ describe('PurchaseOrderService', () => {
   let target: PurchaseOrderService;
   let mockPoRepo: DeepMocked<Repository<PurchaseOrder>>;
   let mockPoItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockMatArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockDataSource: DeepMocked<DataSource>;
@@ -49,7 +49,7 @@ describe('PurchaseOrderService', () => {
   beforeEach(async () => {
     mockPoRepo = createMock<Repository<PurchaseOrder>>();
     mockPoItemRepo = createMock<Repository<PurchaseOrderItem>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerRepo = createMock<Repository<PartnerMaster>>();
     mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockDataSource = createMock<DataSource>();
@@ -70,7 +70,7 @@ describe('PurchaseOrderService', () => {
         PurchaseOrderService,
         { provide: getRepositoryToken(PurchaseOrder), useValue: mockPoRepo },
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPoItemRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(MatArrival), useValue: mockMatArrivalRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerRepo },
         { provide: DataSource, useValue: mockDataSource },
@@ -102,7 +102,7 @@ describe('PurchaseOrderService', () => {
       mockPoItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 100 } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findAll({ page: 1, limit: 10 } as any);
 
@@ -127,7 +127,7 @@ describe('PurchaseOrderService', () => {
       };
       mockPoRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findAll({ page: 1, limit: 10 } as any);
 
@@ -147,14 +147,14 @@ describe('PurchaseOrderService', () => {
       mockPoItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10 } as any, 'C1', 'P1');
 
       expect(mockPoItemRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -165,7 +165,7 @@ describe('PurchaseOrderService', () => {
     it('PO를 poNo로 찾아 반환한다', async () => {
       mockPoRepo.findOne.mockResolvedValue(createPo());
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findById('PO-001');
 
@@ -183,7 +183,7 @@ describe('PurchaseOrderService', () => {
       mockPoItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 100 } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findById('PO-001');
 
@@ -202,7 +202,7 @@ describe('PurchaseOrderService', () => {
       mockPoItemRepo.find.mockResolvedValue([
         { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
       ]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.findById('PO-001', 'C1', 'P1');
 
@@ -212,7 +212,7 @@ describe('PurchaseOrderService', () => {
       expect(mockPoItemRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -235,7 +235,7 @@ describe('PurchaseOrderService', () => {
       (mockQueryRunner.manager.save as jest.Mock)
         .mockResolvedValueOnce(po) // PO 저장
         .mockResolvedValueOnce([]); // 품목 저장
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.create({
         poNo: 'PO-001',
@@ -258,7 +258,7 @@ describe('PurchaseOrderService', () => {
       mockQueryRunner.manager.save
         .mockResolvedValueOnce(po)
         .mockResolvedValueOnce(savedItems);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.create({
         poNo: 'PO-001',
@@ -287,7 +287,7 @@ describe('PurchaseOrderService', () => {
       mockQueryRunner.manager.save
         .mockResolvedValueOnce(po)
         .mockResolvedValueOnce(savedItems);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.create({
         poNo: 'PO-001',
@@ -299,7 +299,7 @@ describe('PurchaseOrderService', () => {
       expect(mockPoRepo.findOne).toHaveBeenCalledWith({
         where: { poNo: 'PO-001', company: 'C1', plant: 'P1' },
       });
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -310,7 +310,7 @@ describe('PurchaseOrderService', () => {
     it('품목 변경이 있는 PO 수정은 TransactionService로 PO와 품목을 함께 저장한다', async () => {
       mockPoRepo.findOne.mockResolvedValue(createPo());
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockQueryRunner.manager.create.mockImplementation((_entity, value) => value as any);
       mockQueryRunner.manager.save.mockResolvedValue([] as any);
 
@@ -332,7 +332,7 @@ describe('PurchaseOrderService', () => {
     it('PO 수정은 헤더와 품목 교체를 요청 테넌트 범위로 제한한다', async () => {
       mockPoRepo.findOne.mockResolvedValue(createPo({ company: 'C1', plant: 'P1' }));
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockQueryRunner.manager.create.mockImplementation((_entity, value) => value as any);
       mockQueryRunner.manager.save.mockResolvedValue([] as any);
 
@@ -364,7 +364,7 @@ describe('PurchaseOrderService', () => {
       mockPoRepo.findOne.mockResolvedValue(po);
       mockPoRepo.update.mockResolvedValue({ affected: 1 } as any);
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.confirm('PO-001', 'C1', 'P1');
 
@@ -397,7 +397,7 @@ describe('PurchaseOrderService', () => {
       mockPoRepo.findOne.mockResolvedValue(po);
       mockPoRepo.update.mockResolvedValue({ affected: 1 } as any);
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.close('PO-001', 'C1', 'P1');
 
@@ -422,7 +422,7 @@ describe('PurchaseOrderService', () => {
     it('PO를 삭제한다', async () => {
       mockPoRepo.findOne.mockResolvedValue(createPo());
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockMatArrivalRepo.find.mockResolvedValue([]);
       mockPoRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
@@ -438,7 +438,7 @@ describe('PurchaseOrderService', () => {
     it('DRAFT가 아니면 PO 삭제를 차단한다', async () => {
       mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'CONFIRMED' }));
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await expect(target.delete('PO-001')).rejects.toThrow(BadRequestException);
       expect(mockPoRepo.delete).not.toHaveBeenCalled();
@@ -447,7 +447,7 @@ describe('PurchaseOrderService', () => {
     it('입하 이력이 있으면 PO 삭제를 차단한다', async () => {
       mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'DRAFT' }));
       mockPoItemRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
       mockMatArrivalRepo.find.mockResolvedValue([
         { poNo: 'PO-001', arrivalNo: 'ARR-001', seq: 1 } as MatArrival,
       ]);

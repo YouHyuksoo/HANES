@@ -8,10 +8,10 @@
  * - OqcRequest: OQC 의뢰 관리
  * - OqcRequestBox: 의뢰별 박스 연결 관리
  * - BoxMaster: 박스 마스터 연동
- * - PartMaster: 품목 정보 연동
+ * - ItemMaster: 품목 정보 연동
  *
  * @dependencies
- * - TypeOrmModule: OqcRequest, OqcRequestBox, BoxMaster, PartMaster 엔티티
+ * - TypeOrmModule: OqcRequest, OqcRequestBox, BoxMaster, ItemMaster 엔티티
  */
 
 import { Module } from '@nestjs/common';
@@ -21,7 +21,7 @@ import { OqcService } from './services/oqc.service';
 import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 
 @Module({
   imports: [
@@ -29,7 +29,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
       OqcRequest,
       OqcRequestBox,
       BoxMaster,
-      PartMaster,
+      ItemMaster,
     ]),
   ],
   controllers: [OqcController],

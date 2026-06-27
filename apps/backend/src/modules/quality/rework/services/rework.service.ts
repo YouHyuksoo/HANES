@@ -31,7 +31,7 @@ import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { ReworkInspect } from '../../../../entities/rework-inspect.entity';
 import { ReworkProcess } from '../../../../entities/rework-process.entity';
 import { DefectLog } from '../../../../entities/defect-log.entity';
-import { PartMaster } from '../../../../entities/part-master.entity';
+import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import {
   CreateReworkOrderDto,
@@ -55,8 +55,8 @@ export class ReworkService {
     private readonly processRepo: Repository<ReworkProcess>,
     @InjectRepository(DefectLog)
     private readonly defectLogRepo: Repository<DefectLog>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepo: Repository<ItemMaster>,
     private readonly productInventoryService: ProductInventoryService,
   ) {}
 
@@ -533,7 +533,7 @@ export class ReworkService {
     // 격리 시점에 실적이 불량을 DEFECT창고에 적재해 두므로, 합격해도 양품이 새로 생기는 게 아니라
     // 불량재고가 정상재고로 '이동'한다(이중계상 방지).
     if (dto.inspectResult !== 'FAIL') {
-      const part = await this.partMasterRepo.findOne({
+      const part = await this.itemMasterRepo.findOne({
         where: { itemCode: order.itemCode, ...this.tenantWhere(company, plant) },
         select: ['itemCode', 'itemType'],
       });

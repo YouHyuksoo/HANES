@@ -10,7 +10,7 @@ import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
@@ -32,8 +32,8 @@ export class MatIssueService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
     private readonly dataSource: DataSource,
@@ -81,7 +81,7 @@ export class MatIssueService {
       ? await this.matLotRepository.findOne({ where: { matUid: issue.matUid, ...tenantWhere } })
       : null;
     const part = lot?.itemCode
-      ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } })
+      ? await this.itemMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } })
       : null;
     const jobOrder = issue.orderNo
       ? await this.jobOrderRepository.findOne({ where: { orderNo: issue.orderNo, ...tenantWhere } })
@@ -146,7 +146,7 @@ export class MatIssueService {
 
     const lotItemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
     const parts = lotItemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(lotItemCodes), ...tenantWhere } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(lotItemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -358,7 +358,7 @@ export class MatIssueService {
       remark: dto.remark ?? `바코드 스캔 출고: ${dto.matUid}`,
     }, company, plant);
 
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: lot.itemCode, ...tenantWhere },
     });
 

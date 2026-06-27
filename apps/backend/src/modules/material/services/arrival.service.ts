@@ -23,7 +23,7 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatArrivalTransaction } from '../../../entities/mat-arrival-transaction.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
@@ -64,8 +64,8 @@ export class ArrivalService {
     private readonly matArrivalTransactionRepository: Repository<MatArrivalTransaction>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     @InjectRepository(VendorBarcodeMapping)
@@ -121,7 +121,7 @@ export class ArrivalService {
 
     const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -168,11 +168,11 @@ export class ArrivalService {
 
     const itemCodes = items.map((item: PurchaseOrderItem) => item.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
+      ? await this.itemMasterRepository.find({
         where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       })
       : [];
-    const partMap = new Map(parts.map((p: PartMaster) => [p.itemCode, p]));
+    const partMap = new Map(parts.map((p: ItemMaster) => [p.itemCode, p]));
 
     return {
       ...po,
@@ -230,7 +230,7 @@ export class ArrivalService {
       ...(plant ? { plant } : {}),
     };
     const allParts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const allWarehouses = whCodes.length > 0
       ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes), ...tenantWhere } })
@@ -350,7 +350,7 @@ export class ArrivalService {
       const matUid = await this.numbering.nextMatSerial(queryRunner, txDate);
 
       // 품목 정보 조회
-      const part = await this.partMasterRepository.findOne({ where: { itemCode: dto.itemCode, ...tenantWhere } });
+      const part = await this.itemMasterRepository.findOne({ where: { itemCode: dto.itemCode, ...tenantWhere } });
 
       // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
       const arrival = queryRunner.manager.create(MatArrival, {
@@ -496,7 +496,7 @@ export class ArrivalService {
     };
 
     const [parts, lots, warehouses] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
       matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
       warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseIds), ...tenantWhere } }) : Promise.resolve([]),
     ]);
@@ -902,7 +902,7 @@ export class ArrivalService {
 
       // part, lot, warehouse 정보 조회
       const [part, lot, toWarehouse] = await Promise.all([
-        this.partMasterRepository.findOne({ where: { itemCode: original.itemCode, ...tenantWhere } }),
+        this.itemMasterRepository.findOne({ where: { itemCode: original.itemCode, ...tenantWhere } }),
         original.matUid
           ? this.matLotRepository.findOne({
               where: { matUid: original.matUid, ...tenantWhere },
@@ -1060,7 +1060,7 @@ export class ArrivalService {
 
     // 병렬 조회
     const [parts, warehouses, stocks] = await Promise.all([
-      this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }),
+      this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }),
       this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } }),
       this.matArrivalStockRepository.find({
         where: {
@@ -1167,7 +1167,7 @@ export class ArrivalService {
     }
 
     // 품목 정보 조회
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: arrival.itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
 
@@ -1332,7 +1332,7 @@ export class ArrivalService {
     const qb = this.purchaseOrderItemRepository
       .createQueryBuilder('pi')
       .innerJoin(PurchaseOrder, 'po', 'po.PO_NO = pi.PO_ID')
-      .leftJoin(PartMaster, 'item', 'item.ITEM_CODE = pi.ITEM_CODE')
+      .leftJoin(ItemMaster, 'item', 'item.ITEM_CODE = pi.ITEM_CODE')
       .select([
         'pi.PO_ID AS "poNo"',
         'pi.SEQ AS "poSeq"',
@@ -1445,7 +1445,7 @@ export class ArrivalService {
       }
 
       // 4. 시리얼 단위 (LOT_UNIT_QTY) — 품목 마스터 미등록(ERP 인터페이스 전)이면 단일 LOT으로 처리
-      const item = await qr.manager.findOne(PartMaster, {
+      const item = await qr.manager.findOne(ItemMaster, {
         where: { itemCode: poItem.itemCode },
       });
       const unit = item?.lotUnitQty && item.lotUnitQty > 0 ? item.lotUnitQty : dto.receivedQty;

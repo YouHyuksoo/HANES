@@ -15,7 +15,7 @@ import { ConsumableLog } from '../../entities/consumable-log.entity';
 import { ConsumableStock } from '../../entities/consumable-stock.entity';
 import { ConsumableUsageMap } from '../../entities/consumable-usage-map.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
-import { PartMaster } from '../../entities/part-master.entity';
+import { ItemMaster } from '../../entities/item-master.entity';
 import { EquipMaster } from '../../entities/equip-master.entity';
 
 @Module({
@@ -26,7 +26,7 @@ import { EquipMaster } from '../../entities/equip-master.entity';
       ConsumableStock,
       ConsumableUsageMap,
       LabelPrintLog,
-      PartMaster,
+      ItemMaster,
       EquipMaster,
     ]),
   ],

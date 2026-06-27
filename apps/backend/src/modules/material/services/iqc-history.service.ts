@@ -8,7 +8,7 @@ import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -57,8 +57,8 @@ export class IqcHistoryService {
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
     private readonly dataSource: DataSource,
@@ -186,7 +186,7 @@ export class IqcHistoryService {
     }
 
     if (search) {
-      const parts = await this.partMasterRepository.find({
+      const parts = await this.itemMasterRepository.find({
         where: [
           { itemCode: Like(`%${search}%`), ...(company && { company }), ...(plant && { plant }) },
           { itemName: Like(`%${search}%`), ...(company && { company }), ...(plant && { plant }) },
@@ -210,7 +210,7 @@ export class IqcHistoryService {
 
     const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
     const partsResult = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
+      ? await this.itemMasterRepository.find({
         where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) },
       })
       : [];
@@ -273,7 +273,7 @@ export class IqcHistoryService {
     });
     const saved = await this.iqcLogRepository.save(log);
 
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: lot.itemCode, ...lotTenantWhere },
     });
 
@@ -340,7 +340,7 @@ export class IqcHistoryService {
     const qb = this.matLotRepository
       .createQueryBuilder('lot')
       .leftJoin(
-        PartMaster,
+        ItemMaster,
         'part',
         'part.itemCode = lot.itemCode AND part.company = lot.company AND part.plant = lot.plant',
       )
@@ -523,7 +523,7 @@ export class IqcHistoryService {
     });
     const saved = await this.iqcLogRepository.save(log);
 
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: dto.itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
     });
 

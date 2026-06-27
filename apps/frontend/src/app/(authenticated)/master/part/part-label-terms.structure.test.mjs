@@ -9,7 +9,7 @@ const panel = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part
 const modal = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx', 'utf8');
 const fieldHelp = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/components/PartFieldHelp.tsx', 'utf8');
 const partDto = fs.readFileSync('apps/backend/src/modules/master/dto/part.dto.ts', 'utf8');
-const partEntity = fs.readFileSync('apps/backend/src/entities/part-master.entity.ts', 'utf8');
+const partEntity = fs.readFileSync('apps/backend/src/entities/item-master.entity.ts', 'utf8');
 const partService = fs.readFileSync('apps/backend/src/modules/master/services/part.service.ts', 'utf8');
 const implementationRules = fs.readFileSync('docs/standards/implementation-rules.md', 'utf8');
 const ko = JSON.parse(fs.readFileSync('apps/frontend/src/locales/ko.json', 'utf8'));
@@ -144,7 +144,7 @@ test('/master/part exposes defect model group from ITEM_MASTERS.DEFECT_MODEL_GRO
   const panel = read('apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx');
   const fieldHelp = read('apps/frontend/src/app/(authenticated)/master/part/components/PartFieldHelp.tsx');
   const partDto = read('apps/backend/src/modules/master/dto/part.dto.ts');
-  const partEntity = read('apps/backend/src/entities/part-master.entity.ts');
+  const partEntity = read('apps/backend/src/entities/item-master.entity.ts');
   const partService = read('apps/backend/src/modules/master/services/part.service.ts');
   const migration = read('apps/backend/src/migrations/2026-06-22_item_defect_model_group.sql');
 

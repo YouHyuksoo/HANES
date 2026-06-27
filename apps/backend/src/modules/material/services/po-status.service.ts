@@ -14,7 +14,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 }
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PoStatusQueryDto } from '../dto/po-status.dto';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
@@ -25,8 +25,8 @@ export class PoStatusService {
     private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
     @InjectRepository(PurchaseOrderItem)
     private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
   ) {}
 
   async findAll(query: PoStatusQueryDto, company?: string, plant?: string) {
@@ -81,7 +81,7 @@ export class PoStatusService {
     const parts = itemCodes.length > 0
       ? (await Promise.all(
           chunkArray(itemCodes, 999).map((chunk) =>
-            this.partMasterRepository.find({ where: { itemCode: In(chunk), ...tenantWhere } }),
+            this.itemMasterRepository.find({ where: { itemCode: In(chunk), ...tenantWhere } }),
           ),
         )).flat()
       : [];

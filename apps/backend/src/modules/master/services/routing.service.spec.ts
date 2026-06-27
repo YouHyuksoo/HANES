@@ -13,23 +13,23 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RoutingService } from './routing.service';
 import { ProcessMap } from '../../../entities/process-map.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('RoutingService', () => {
   let target: RoutingService;
   let mockRoutingRepo: DeepMocked<Repository<ProcessMap>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
 
   beforeEach(async () => {
     mockRoutingRepo = createMock<Repository<ProcessMap>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RoutingService,
         { provide: getRepositoryToken(ProcessMap), useValue: mockRoutingRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -44,7 +44,7 @@ describe('RoutingService', () => {
 
   // ─── findByKey ───
   describe('findByKey', () => {
-    // findByKey 는 PartMaster를 leftJoin한 쿼리빌더 + getRawAndEntities 로 itemName을 가져온다.
+    // findByKey 는 ItemMaster를 leftJoin한 쿼리빌더 + getRawAndEntities 로 itemName을 가져온다.
     const findByKeyQb = (
       entities: any[],
       raw: any[],
@@ -146,7 +146,7 @@ describe('RoutingService', () => {
       // Arrange
       const existing = { itemCode: 'ITEM01', seq: 10, processCode: 'PROC01' } as ProcessMap;
       mockRoutingRepo.findOne.mockResolvedValue(existing);
-      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', itemName: 'Part1' } as PartMaster);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', itemName: 'Part1' } as ItemMaster);
       mockRoutingRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act

@@ -18,7 +18,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { PartMaster } from './part-master.entity';
+import { ItemMaster } from './item-master.entity';
 import { CustomsEntry } from './customs-entry.entity';
 
 @Entity({ name: 'CUSTOMS_LOTS' })
@@ -37,13 +37,13 @@ export class CustomsLot {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @ManyToOne(() => PartMaster)
+  @ManyToOne(() => ItemMaster)
   @JoinColumn([
     { name: 'COMPANY', referencedColumnName: 'company' },
     { name: 'PLANT_CD', referencedColumnName: 'plant' },
     { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
   ])
-  item: PartMaster;
+  item: ItemMaster;
 
   @Column({ name: 'QTY', type: 'int' })
   qty: number;

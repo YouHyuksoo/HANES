@@ -10,7 +10,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { CreateScrapDto, ScrapQueryDto } from '../dto/scrap.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -26,8 +26,8 @@ export class ScrapService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly tx: TransactionService,
@@ -86,7 +86,7 @@ export class ScrapService {
     const tenantWhere = this.tenantWhere(company, plant);
 
     const [parts, lots] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
       matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
     ]);
 

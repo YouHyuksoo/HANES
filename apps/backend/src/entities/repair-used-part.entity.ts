@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * 1. 복합 PK: repairDate + seq (부모 RepairOrder FK)
  * 2. 하나의 수리오더에 여러 사용부품 행 가능
- * 3. itemCode: PartMaster FK, prdUid: 제품 고유식별자(시리얼)
+ * 3. itemCode: ItemMaster FK, prdUid: 제품 고유식별자(시리얼)
  */
 import {
   Entity,

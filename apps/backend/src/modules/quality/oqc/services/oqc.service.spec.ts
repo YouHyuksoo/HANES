@@ -11,7 +11,7 @@ import { OqcService } from './oqc.service';
 import { OqcRequest } from '../../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../../entities/oqc-request-box.entity';
 import { BoxMaster } from '../../../../entities/box-master.entity';
-import { PartMaster } from '../../../../entities/part-master.entity';
+import { ItemMaster } from '../../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 
@@ -20,7 +20,7 @@ describe('OqcService', () => {
   let mockOqcRepo: DeepMocked<Repository<OqcRequest>>;
   let mockOqcBoxRepo: DeepMocked<Repository<OqcRequestBox>>;
   let mockBoxRepo: DeepMocked<Repository<BoxMaster>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
@@ -29,7 +29,7 @@ describe('OqcService', () => {
     mockOqcRepo = createMock<Repository<OqcRequest>>();
     mockOqcBoxRepo = createMock<Repository<OqcRequestBox>>();
     mockBoxRepo = createMock<Repository<BoxMaster>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQr = createMock<QueryRunner>();
@@ -47,7 +47,7 @@ describe('OqcService', () => {
         { provide: getRepositoryToken(OqcRequest), useValue: mockOqcRepo },
         { provide: getRepositoryToken(OqcRequestBox), useValue: mockOqcBoxRepo },
         { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],

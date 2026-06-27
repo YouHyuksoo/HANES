@@ -10,7 +10,7 @@ import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
@@ -30,7 +30,7 @@ describe('ReceivingService', () => {
   let mockMatArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockMatReceivingRepo: DeepMocked<Repository<MatReceiving>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockPurchaseOrderRepo: DeepMocked<Repository<PurchaseOrder>>;
   let mockPurchaseOrderItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
@@ -49,7 +49,7 @@ describe('ReceivingService', () => {
     mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockMatReceivingRepo = createMock<Repository<MatReceiving>>();
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockPartnerMasterRepo.find.mockResolvedValue([]);
     mockPurchaseOrderRepo = createMock<Repository<PurchaseOrder>>();
@@ -74,7 +74,7 @@ describe('ReceivingService', () => {
         { provide: getRepositoryToken(MatArrival), useValue: mockMatArrivalRepo },
         { provide: getRepositoryToken(MatReceiving), useValue: mockMatReceivingRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(PurchaseOrder), useValue: mockPurchaseOrderRepo },
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPurchaseOrderItemRepo },
@@ -119,7 +119,7 @@ describe('ReceivingService', () => {
       getCount: jest.fn().mockResolvedValue(1),
     };
     mockMatReceivingRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
-    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockItemMasterRepo.find.mockResolvedValue([]);
     mockMatLotRepo.find.mockResolvedValue([
       {
         matUid: 'MAT-001',
@@ -134,7 +134,7 @@ describe('ReceivingService', () => {
 
     const result = await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
-    expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+    expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
       where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
     });
     expect(mockMatLotRepo.find).toHaveBeenCalledWith({
@@ -179,8 +179,8 @@ describe('ReceivingService', () => {
     mockWarehouseRepo.find.mockResolvedValue([
       { warehouseCode: 'ARR', warehouseName: 'Arrival' } as Warehouse,
     ]);
-    mockPartMasterRepo.find.mockResolvedValue([
-      { itemCode: 'ITEM-001', itemName: 'Wire', unit: 'EA', expiryDate: 0 } as PartMaster,
+    mockItemMasterRepo.find.mockResolvedValue([
+      { itemCode: 'ITEM-001', itemName: 'Wire', unit: 'EA', expiryDate: 0 } as ItemMaster,
     ]);
     mockLabelPrintLogRepo.createQueryBuilder.mockReturnValue({
       select: jest.fn().mockReturnThis(),
@@ -216,7 +216,7 @@ describe('ReceivingService', () => {
     mockMatArrivalRepo.find.mockResolvedValue([]);
     mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'DEF', warehouseName: 'Default', company: 'C1', plant: 'P1' } as Warehouse);
     mockWarehouseRepo.find.mockResolvedValue([]);
-    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockItemMasterRepo.find.mockResolvedValue([]);
     mockLabelPrintLogRepo.createQueryBuilder.mockReturnValue({
       select: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -264,7 +264,7 @@ describe('ReceivingService', () => {
       { warehouseCode: 'RIGHT', warehouseName: 'Right Warehouse' } as Warehouse,
       { warehouseCode: 'WRONG', warehouseName: 'Wrong Warehouse' } as Warehouse,
     ]);
-    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockItemMasterRepo.find.mockResolvedValue([]);
     mockLabelPrintLogRepo.createQueryBuilder.mockReturnValue({
       select: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -302,7 +302,7 @@ describe('ReceivingService', () => {
     } as any);
     mockMatArrivalRepo.find.mockResolvedValue([]);
     mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'DEF', warehouseName: 'Default', company: 'C1', plant: 'P1' } as Warehouse);
-    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockItemMasterRepo.find.mockResolvedValue([]);
     mockLabelPrintLogRepo.createQueryBuilder.mockReturnValue({
       select: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -312,7 +312,7 @@ describe('ReceivingService', () => {
 
     await target.findReceivable('C1', 'P1');
 
-    expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+    expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
       where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
     });
   });
@@ -335,7 +335,7 @@ describe('ReceivingService', () => {
       andWhere: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
     } as any);
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'N' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'N' } as ItemMaster);
     mockNumbering.nextInTx
       .mockResolvedValueOnce('RCV-001')
       .mockResolvedValueOnce('TX-001');
@@ -386,7 +386,7 @@ describe('ReceivingService', () => {
       andWhere: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
     } as any);
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'N' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'N' } as ItemMaster);
     mockNumbering.nextInTx
       .mockResolvedValueOnce('RCV-001')
       .mockResolvedValueOnce('TX-001');
@@ -453,8 +453,8 @@ describe('ReceivingService', () => {
     mockWarehouseRepo.find.mockResolvedValue([
       { warehouseCode: 'ARR-WH', warehouseName: 'Arrival Warehouse' } as Warehouse,
     ]);
-    mockPartMasterRepo.find.mockResolvedValue([
-      { itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA', iqcYn: 'Y' } as PartMaster,
+    mockItemMasterRepo.find.mockResolvedValue([
+      { itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA', iqcYn: 'Y' } as ItemMaster,
     ]);
     mockIqcLogRepo.find.mockResolvedValue([
       {
@@ -498,7 +498,7 @@ describe('ReceivingService', () => {
       andWhere: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
     } as any);
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'Y' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'Y' } as ItemMaster);
     mockIqcLogRepo.findOne.mockResolvedValue({
       arrivalNo: 'ARR-001',
       itemCode: 'ITEM-001',
@@ -553,7 +553,7 @@ describe('ReceivingService', () => {
       andWhere: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
     } as any);
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'Y' } as PartMaster);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'Y' } as ItemMaster);
     mockIqcLogRepo.findOne.mockResolvedValue({
       arrivalNo: 'ARR-001',
       itemCode: 'ITEM-001',
@@ -638,7 +638,7 @@ describe('ReceivingService', () => {
       company: 'CO',
       plant: 'P01',
     } as PurchaseOrderItem);
-    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', toleranceRate: 5, expiryDate: 10 } as any);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', toleranceRate: 5, expiryDate: 10 } as any);
     mockNumbering.nextInTx
       .mockResolvedValueOnce('RCV-001')
       .mockResolvedValueOnce('TX-001');
@@ -677,11 +677,11 @@ describe('ReceivingService', () => {
       expect.stringContaining('plant_cd = :plant'),
       { poNo: 'PO-001', company: 'CO', plant: 'P01' },
     );
-    expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+    expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
       where: { itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
       select: ['itemCode', 'toleranceRate'],
     });
-    expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+    expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
       where: { itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
     });
     expect(manager.update).toHaveBeenCalledWith(

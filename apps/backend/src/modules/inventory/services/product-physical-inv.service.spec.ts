@@ -12,7 +12,7 @@ import { ProductStock } from '../../../entities/product-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
@@ -25,7 +25,7 @@ describe('ProductPhysicalInvService', () => {
   let mockAdjRepo: DeepMocked<Repository<InvAdjLog>>;
   let mockLotRepo: DeepMocked<Repository<MatLot>>;
   let mockWhRepo: DeepMocked<Repository<Warehouse>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
   let mockSessionRepo: DeepMocked<Repository<PhysicalInvSession>>;
   let mockCountDetailRepo: DeepMocked<Repository<PhysicalInvCountDetail>>;
@@ -38,7 +38,7 @@ describe('ProductPhysicalInvService', () => {
     mockAdjRepo = createMock<Repository<InvAdjLog>>();
     mockLotRepo = createMock<Repository<MatLot>>();
     mockWhRepo = createMock<Repository<Warehouse>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockFgLabelRepo = createMock<Repository<FgLabel>>();
     mockSessionRepo = createMock<Repository<PhysicalInvSession>>();
     mockCountDetailRepo = createMock<Repository<PhysicalInvCountDetail>>();
@@ -60,7 +60,7 @@ describe('ProductPhysicalInvService', () => {
         { provide: getRepositoryToken(InvAdjLog), useValue: mockAdjRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockLotRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWhRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
         { provide: getRepositoryToken(PhysicalInvSession), useValue: mockSessionRepo },
         { provide: getRepositoryToken(PhysicalInvCountDetail), useValue: mockCountDetailRepo },
@@ -104,9 +104,9 @@ describe('ProductPhysicalInvService', () => {
 
       await target.findStocks({ page: 1, limit: 50 } as any, 'CO', 'P01');
 
-      // ProductStock는 warehouseCode+itemCode 키 기준. PartMaster/Warehouse만 조인한다 (MatLot 조인 제거됨).
+      // ProductStock는 warehouseCode+itemCode 키 기준. ItemMaster/Warehouse만 조인한다 (MatLot 조인 제거됨).
       expect(qb.leftJoin).toHaveBeenCalledWith(
-        PartMaster,
+        ItemMaster,
         'p',
         'p.itemCode = s.itemCode AND p.company = s.company AND p.plant = s.plant',
       );
@@ -143,7 +143,7 @@ describe('ProductPhysicalInvService', () => {
       await target.findHistory({ page: 1, limit: 50 } as any, 'CO', 'P01');
 
       expect(qb.leftJoin).toHaveBeenCalledWith(
-        PartMaster,
+        ItemMaster,
         'part',
         'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant',
       );

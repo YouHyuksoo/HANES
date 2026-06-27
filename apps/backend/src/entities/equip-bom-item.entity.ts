@@ -2,7 +2,7 @@
  * @file entities/equip-bom-item.entity.ts
  * @description 설비 BOM 품목 마스터 Entity
  *              bomItemCode를 자연키 PK로 사용한다.
- *              기존 itemCode/itemName은 PartMaster와 충돌 방지를 위해
+ *              기존 itemCode/itemName은 ItemMaster와 충돌 방지를 위해
  *              bomItemCode/bomItemName으로 변경.
  *
  * 초보자 가이드:

@@ -8,7 +8,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { User } from '../../../entities/user.entity';
@@ -38,7 +38,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
         { provide: getRepositoryToken(EquipMaster), useValue: createMock<Repository<EquipMaster>>() },
         { provide: getRepositoryToken(EquipBomRel), useValue: createMock<Repository<EquipBomRel>>() },
         { provide: getRepositoryToken(EquipBomItem), useValue: createMock<Repository<EquipBomItem>>() },
-        { provide: getRepositoryToken(PartMaster), useValue: createMock<Repository<PartMaster>>() },
+        { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
         { provide: getRepositoryToken(ConsumableMaster), useValue: createMock<Repository<ConsumableMaster>>() },
         { provide: getRepositoryToken(MatIssue), useValue: createMock<Repository<MatIssue>>() },
         { provide: getRepositoryToken(User), useValue: createMock<Repository<User>>() },

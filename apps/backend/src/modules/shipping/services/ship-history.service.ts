@@ -13,7 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ShipHistoryQueryDto } from '../dto/ship-history.dto';
 
 @Injectable()
@@ -23,8 +23,8 @@ export class ShipHistoryService {
     private readonly shipmentOrderRepository: Repository<ShipmentOrder>,
     @InjectRepository(ShipmentOrderItem)
     private readonly shipmentOrderItemRepository: Repository<ShipmentOrderItem>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {

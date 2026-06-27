@@ -7,7 +7,7 @@ import { AdjustmentService } from './adjustment.service';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -17,7 +17,7 @@ describe('AdjustmentService', () => {
   let invAdjLogRepo: DeepMocked<Repository<InvAdjLog>>;
   let matStockRepo: DeepMocked<Repository<MatStock>>;
   let matLotRepo: DeepMocked<Repository<MatLot>>;
-  let partMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let itemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let stockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let dataSource: DeepMocked<DataSource>;
   let queryRunner: DeepMocked<QueryRunner>;
@@ -27,7 +27,7 @@ describe('AdjustmentService', () => {
     invAdjLogRepo = createMock<Repository<InvAdjLog>>();
     matStockRepo = createMock<Repository<MatStock>>();
     matLotRepo = createMock<Repository<MatLot>>();
-    partMasterRepo = createMock<Repository<PartMaster>>();
+    itemMasterRepo = createMock<Repository<ItemMaster>>();
     stockTxRepo = createMock<Repository<StockTransaction>>();
     dataSource = createMock<DataSource>();
     queryRunner = createMock<QueryRunner>();
@@ -47,7 +47,7 @@ describe('AdjustmentService', () => {
         { provide: getRepositoryToken(InvAdjLog), useValue: invAdjLogRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: itemMasterRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
@@ -78,7 +78,7 @@ describe('AdjustmentService', () => {
         } as InvAdjLog,
       ]);
       invAdjLogRepo.count.mockResolvedValue(1);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
 
       const result = await service.findAll({ page: 1, limit: 10 } as any);
 
@@ -103,11 +103,11 @@ describe('AdjustmentService', () => {
         } as InvAdjLog,
       ]);
       invAdjLogRepo.count.mockResolvedValue(1);
-      partMasterRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
 
       await service.findAll({ page: 1, limit: 10 } as any, 'C1', 'P1');
 
-      expect(partMasterRepo.find).toHaveBeenCalledWith({
+      expect(itemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
@@ -120,7 +120,7 @@ describe('AdjustmentService', () => {
         seq: 1,
       } as InvAdjLog;
       queryRunner.manager.findOne
-        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as ItemMaster)
         .mockResolvedValueOnce({
           warehouseCode: 'WH-01',
           itemCode: 'ITEM-001',
@@ -148,7 +148,7 @@ describe('AdjustmentService', () => {
 
     it('승인대기 보정 요청은 품목과 LOT를 요청 테넌트 범위에서 확인한다', async () => {
       queryRunner.manager.findOne
-        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as ItemMaster)
         .mockResolvedValueOnce({ matUid: 'MAT-001', company: 'HANES', plant: 'P01' } as MatLot)
         .mockResolvedValueOnce({
           warehouseCode: 'WH-01',
@@ -170,7 +170,7 @@ describe('AdjustmentService', () => {
         reason: '보정',
       } as any, 'HANES', 'P01');
 
-      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(1, PartMaster, {
+      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(1, ItemMaster, {
         where: { itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
       });
       expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatLot, {
@@ -180,7 +180,7 @@ describe('AdjustmentService', () => {
 
     it('예약수량보다 적게 보정 요청하면 차단한다', async () => {
       queryRunner.manager.findOne
-        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART' } as PartMaster)
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART' } as ItemMaster)
         .mockResolvedValueOnce({ matUid: 'MAT-001' } as MatLot)
         .mockResolvedValueOnce({
           warehouseCode: 'WH-01',
@@ -205,7 +205,7 @@ describe('AdjustmentService', () => {
 
     it('승인대기 보정 요청은 조회된 재고 테넌트가 요청 테넌트와 다르면 차단한다', async () => {
       queryRunner.manager.findOne
-        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as ItemMaster)
         .mockResolvedValueOnce({
           warehouseCode: 'WH-01',
           itemCode: 'ITEM-001',
@@ -355,7 +355,7 @@ describe('AdjustmentService', () => {
         seq: 1,
       } as InvAdjLog;
       queryRunner.manager.findOne
-        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as ItemMaster)
         .mockResolvedValueOnce({
           warehouseCode: 'WH-01',
           itemCode: 'ITEM-001',
@@ -388,7 +388,7 @@ describe('AdjustmentService', () => {
 
     it('즉시승인 보정은 품목과 LOT를 요청 테넌트 범위에서 확인한다', async () => {
       queryRunner.manager.findOne
-        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as ItemMaster)
         .mockResolvedValueOnce({ matUid: 'MAT-001', company: 'HANES', plant: 'P01' } as MatLot)
         .mockResolvedValueOnce({
           warehouseCode: 'WH-01',
@@ -415,7 +415,7 @@ describe('AdjustmentService', () => {
         reason: '보정',
       } as any, 'HANES', 'P01');
 
-      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(1, PartMaster, {
+      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(1, ItemMaster, {
         where: { itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
       });
       expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatLot, {
@@ -425,7 +425,7 @@ describe('AdjustmentService', () => {
 
     it('즉시승인 보정은 조회된 재고 테넌트가 요청 테넌트와 다르면 차단한다', async () => {
       queryRunner.manager.findOne
-        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as ItemMaster)
         .mockResolvedValueOnce({
           warehouseCode: 'WH-01',
           itemCode: 'ITEM-001',

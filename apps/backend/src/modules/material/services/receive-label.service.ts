@@ -12,7 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { CreateMatLabelsDto, MatLabelResultDto } from '../dto/receive-label.dto';
@@ -27,8 +27,8 @@ export class ReceiveLabelService {
     private readonly arrivalRepo: Repository<MatArrival>,
     @InjectRepository(MatLot)
     private readonly matLotRepo: Repository<MatLot>,
-    @InjectRepository(PartMaster)
-    private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepo: Repository<ItemMaster>,
     @InjectRepository(LabelPrintLog)
     private readonly printLogRepo: Repository<LabelPrintLog>,
   ) {}

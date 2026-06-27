@@ -21,7 +21,7 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
@@ -47,8 +47,8 @@ export class ReceivingService {
     private readonly matReceivingRepository: Repository<MatReceiving>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(PurchaseOrder)
@@ -169,7 +169,7 @@ export class ReceivingService {
     // part 정보 조회
     const itemCodes = validLots.map((lot) => lot.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({
+      ? await this.itemMasterRepository.find({
           where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         })
       : [];
@@ -300,7 +300,7 @@ export class ReceivingService {
     if (!poItem) return; // PO 품목 정보 없으면 체크 불필요
 
     // 품목의 오차율 조회
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: lot.itemCode, ...tenantWhere },
       select: ['itemCode', 'toleranceRate'],
     });
@@ -458,7 +458,7 @@ export class ReceivingService {
         // 1-1. 제조일자 수정 시 LOT 업데이트 + 유효기한 재계산
         if (item.manufactureDate) {
           const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
-          const part = await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...lotTenantWhere } });
+          const part = await this.itemMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...lotTenantWhere } });
           const mfgDate = parseDateStart(item.manufactureDate)!;
           let expDate: Date | null = null;
           if (part?.expiryDate && part.expiryDate > 0) {
@@ -523,7 +523,7 @@ export class ReceivingService {
         //    수동 지정(item.locationCode) 우선, 미지정 시 품목마스터 STORAGE_LOCATION 자동 적용
         let receiveLocationCode = item.locationCode?.trim() || null;
         if (!receiveLocationCode) {
-          const locPart = await this.partMasterRepository.findOne({
+          const locPart = await this.itemMasterRepository.findOne({
             where: { itemCode: lot.itemCode, ...this.tenantWhere(lot.company, lot.plant) },
           });
           receiveLocationCode = locPart?.storageLocation?.trim() || null;
@@ -585,7 +585,7 @@ export class ReceivingService {
     };
 
     const [parts, lots, warehouses] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
       matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([] as MatLot[]),
       warehouseCodes.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } }) : Promise.resolve([]),
     ]);

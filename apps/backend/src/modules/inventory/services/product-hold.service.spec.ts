@@ -9,21 +9,21 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { ProductHoldService } from './product-hold.service';
 import { ProductStock } from '../../../entities/product-stock.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProductHoldService', () => {
   let target: ProductHoldService;
   let mockStockRepo: DeepMocked<Repository<ProductStock>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockStockRepo = createMock<Repository<ProductStock>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockTx = createMock<TransactionService>();
@@ -39,7 +39,7 @@ describe('ProductHoldService', () => {
       providers: [
         ProductHoldService,
         { provide: getRepositoryToken(ProductStock), useValue: mockStockRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],

@@ -11,7 +11,7 @@ import { ShipReturnService } from './ship-return.service';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -20,7 +20,7 @@ describe('ShipReturnService', () => {
   let mockReturnRepo: DeepMocked<Repository<ShipmentReturn>>;
   let mockReturnItemRepo: DeepMocked<Repository<ShipmentReturnItem>>;
   let mockShipOrderRepo: DeepMocked<Repository<ShipmentOrder>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
@@ -29,7 +29,7 @@ describe('ShipReturnService', () => {
     mockReturnRepo = createMock<Repository<ShipmentReturn>>();
     mockReturnItemRepo = createMock<Repository<ShipmentReturnItem>>();
     mockShipOrderRepo = createMock<Repository<ShipmentOrder>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQr = createMock<QueryRunner>();
@@ -47,7 +47,7 @@ describe('ShipReturnService', () => {
         { provide: getRepositoryToken(ShipmentReturn), useValue: mockReturnRepo },
         { provide: getRepositoryToken(ShipmentReturnItem), useValue: mockReturnItemRepo },
         { provide: getRepositoryToken(ShipmentOrder), useValue: mockShipOrderRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],
@@ -77,7 +77,7 @@ describe('ShipReturnService', () => {
       mockReturnItemRepo.find.mockResolvedValue([
         { returnNo: 'SR-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as ShipmentReturnItem,
       ]);
-      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part A' } as PartMaster);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part A' } as ItemMaster);
 
       await target.findById('SR-001', 'C1', 'P1');
 

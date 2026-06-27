@@ -18,7 +18,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import {
   CreateCustomerOrderDto,
   UpdateCustomerOrderDto,
@@ -34,8 +34,8 @@ export class CustomerOrderService {
     private readonly customerOrderRepository: Repository<CustomerOrder>,
     @InjectRepository(CustomerOrderItem)
     private readonly customerOrderItemRepository: Repository<CustomerOrderItem>,
-    @InjectRepository(PartMaster)
-    private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly partRepository: Repository<ItemMaster>,
     private readonly tx: TransactionService,
   ) {}
 

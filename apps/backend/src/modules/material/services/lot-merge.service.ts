@@ -16,7 +16,7 @@ import { Repository, In, QueryRunner, EntityManager } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
@@ -41,8 +41,8 @@ export class LotMergeService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatIssue)
     private readonly matIssueRepository: Repository<MatIssue>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
     @InjectRepository(StockTransaction)
@@ -219,7 +219,7 @@ export class LotMergeService {
       }
 
       // 7) 품목 정보
-      const part = await queryRunner.manager.findOne(PartMaster, {
+      const part = await queryRunner.manager.findOne(ItemMaster, {
         where: { itemCode: lots[0].itemCode, ...tenantWhere },
       });
       if (!part) {
@@ -374,7 +374,7 @@ export class LotMergeService {
 
     const [parts, stocks, partners] = await Promise.all([
       itemCodes.length > 0
-        ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere }, select: ['itemCode', 'itemName', 'unit'] })
+        ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere }, select: ['itemCode', 'itemName', 'unit'] })
         : Promise.resolve([]),
       this.matStockRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }),
       vendorCodes.length > 0

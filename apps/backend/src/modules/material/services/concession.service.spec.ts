@@ -5,14 +5,14 @@ import { Repository } from 'typeorm';
 import { ConcessionService } from './concession.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 
 describe('ConcessionService', () => {
   let service: ConcessionService;
   let lotRepo: jest.Mocked<Partial<Repository<MatLot>>>;
   let receivingRepo: jest.Mocked<Partial<Repository<MatReceiving>>>;
-  let partRepo: jest.Mocked<Partial<Repository<PartMaster>>>;
+  let partRepo: jest.Mocked<Partial<Repository<ItemMaster>>>;
   let workerRepo: jest.Mocked<Partial<Repository<WorkerMaster>>>;
 
   beforeEach(async () => {
@@ -35,7 +35,7 @@ describe('ConcessionService', () => {
         ConcessionService,
         { provide: getRepositoryToken(MatLot), useValue: lotRepo },
         { provide: getRepositoryToken(MatReceiving), useValue: receivingRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: getRepositoryToken(WorkerMaster), useValue: workerRepo },
       ],
     }).compile();

@@ -17,7 +17,7 @@ import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
@@ -30,7 +30,7 @@ describe('RoutingGroupService', () => {
   let mockProcessRepo: DeepMocked<Repository<RoutingProcess>>;
   let mockProcessMasterRepo: DeepMocked<Repository<ProcessMaster>>;
   let mockConditionRepo: DeepMocked<Repository<ProcessQualityCondition>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockBomRepo: DeepMocked<Repository<BomMaster>>;
   let mockMaterialRepo: DeepMocked<Repository<RoutingMaterial>>;
   let mockCircuitRepo: DeepMocked<Repository<HarnessCircuitSpec>>;
@@ -43,7 +43,7 @@ describe('RoutingGroupService', () => {
     mockProcessRepo = createMock<Repository<RoutingProcess>>();
     mockProcessMasterRepo = createMock<Repository<ProcessMaster>>();
     mockConditionRepo = createMock<Repository<ProcessQualityCondition>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockBomRepo = createMock<Repository<BomMaster>>();
     mockMaterialRepo = createMock<Repository<RoutingMaterial>>();
     mockCircuitRepo = createMock<Repository<HarnessCircuitSpec>>();
@@ -73,7 +73,7 @@ describe('RoutingGroupService', () => {
         { provide: getRepositoryToken(RoutingProcess), useValue: mockProcessRepo },
         { provide: getRepositoryToken(ProcessMaster), useValue: mockProcessMasterRepo },
         { provide: getRepositoryToken(ProcessQualityCondition), useValue: mockConditionRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
         { provide: getRepositoryToken(RoutingMaterial), useValue: mockMaterialRepo },
         { provide: getRepositoryToken(HarnessCircuitSpec), useValue: mockCircuitRepo },
@@ -614,7 +614,7 @@ describe('RoutingGroupService', () => {
       ] as RoutingMaterial[]);
       mockPartRepo.find.mockResolvedValue([
         { itemCode: 'MAT01', itemName: 'Wire', itemNo: 'W-01', itemType: 'RAW_MATERIAL', unit: 'EA' },
-      ] as PartMaster[]);
+      ] as ItemMaster[]);
 
       const result = await target.findMaterials('RG01', 10, 'C1', 'P1');
 

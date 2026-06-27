@@ -11,7 +11,7 @@ import { ProductInventoryService } from './product-inventory.service';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -22,7 +22,7 @@ describe('ProductInventoryService', () => {
   let mockTransRepo: DeepMocked<Repository<ProductTransaction>>;
   let mockStockRepo: DeepMocked<Repository<ProductStock>>;
   let mockWhRepo: DeepMocked<Repository<Warehouse>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
   let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
   let mockBoxRepo: DeepMocked<Repository<BoxMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
@@ -33,7 +33,7 @@ describe('ProductInventoryService', () => {
     mockTransRepo = createMock<Repository<ProductTransaction>>();
     mockStockRepo = createMock<Repository<ProductStock>>();
     mockWhRepo = createMock<Repository<Warehouse>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
     mockFgLabelRepo = createMock<Repository<FgLabel>>();
     mockBoxRepo = createMock<Repository<BoxMaster>>();
     mockDataSource = createMock<DataSource>();
@@ -53,7 +53,7 @@ describe('ProductInventoryService', () => {
         { provide: getRepositoryToken(ProductTransaction), useValue: mockTransRepo },
         { provide: getRepositoryToken(ProductStock), useValue: mockStockRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWhRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
         { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
         { provide: DataSource, useValue: mockDataSource },

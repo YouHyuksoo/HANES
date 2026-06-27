@@ -13,19 +13,19 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ShelfLifeService } from './shelf-life.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ShelfLifeService', () => {
   let target: ShelfLifeService;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
 
   beforeEach(async () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockPartnerMasterRepo.find.mockResolvedValue([]);
 
@@ -33,7 +33,7 @@ describe('ShelfLifeService', () => {
       providers: [
         ShelfLifeService,
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
       ],
     })
@@ -61,8 +61,8 @@ describe('ShelfLifeService', () => {
 
       mockMatLotRepo.find.mockResolvedValue([lot]);
       mockMatLotRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
 
       const result = await target.findAll({ page: 1, limit: 10 });
@@ -84,8 +84,8 @@ describe('ShelfLifeService', () => {
 
       mockMatLotRepo.find.mockResolvedValue([lot]);
       mockMatLotRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
 
       const result = await target.findAll({ page: 1, limit: 10 });
@@ -106,8 +106,8 @@ describe('ShelfLifeService', () => {
 
       mockMatLotRepo.find.mockResolvedValue([lot]);
       mockMatLotRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
 
       const result = await target.findAll({ page: 1, limit: 10, nearExpiryDays: 30 });
@@ -126,8 +126,8 @@ describe('ShelfLifeService', () => {
         { matUid: 'MAT-002', itemCode: 'ITEM-001', expireDate: futureDate } as MatLot,
       ]);
       mockMatLotRepo.count.mockResolvedValue(2);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster,
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
 
       const result = await target.findAll({ page: 1, limit: 10, expiryStatus: 'EXPIRED' as any });
@@ -148,7 +148,7 @@ describe('ShelfLifeService', () => {
         } as MatLot,
       ]);
       mockMatLotRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findAll({ page: 1, limit: 10 });
 
@@ -170,11 +170,11 @@ describe('ShelfLifeService', () => {
         { matUid: 'MAT-001', itemCode: 'ITEM-001', expireDate: futureDate, company: 'C1', plant: 'P1' } as MatLot,
       ]);
       mockMatLotRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
 
       await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
 
-      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      expect(mockItemMasterRepo.find).toHaveBeenCalledWith({
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });

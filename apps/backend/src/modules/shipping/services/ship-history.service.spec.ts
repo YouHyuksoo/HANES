@@ -13,26 +13,26 @@ import { Repository } from 'typeorm';
 import { ShipHistoryService } from './ship-history.service';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ShipHistoryService', () => {
   let target: ShipHistoryService;
   let mockShipmentOrderRepo: DeepMocked<Repository<ShipmentOrder>>;
   let mockShipmentOrderItemRepo: DeepMocked<Repository<ShipmentOrderItem>>;
-  let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockPartRepo: DeepMocked<Repository<ItemMaster>>;
 
   beforeEach(async () => {
     mockShipmentOrderRepo = createMock<Repository<ShipmentOrder>>();
     mockShipmentOrderItemRepo = createMock<Repository<ShipmentOrderItem>>();
-    mockPartRepo = createMock<Repository<PartMaster>>();
+    mockPartRepo = createMock<Repository<ItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ShipHistoryService,
         { provide: getRepositoryToken(ShipmentOrder), useValue: mockShipmentOrderRepo },
         { provide: getRepositoryToken(ShipmentOrderItem), useValue: mockShipmentOrderItemRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -77,7 +77,7 @@ describe('ShipHistoryService', () => {
       mockShipmentOrderItemRepo.find.mockResolvedValue([
         { shipOrderNo: 'SO-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as ShipmentOrderItem,
       ]);
-      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part A' } as PartMaster]);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part A' } as ItemMaster]);
 
       await target.findAll({ page: 1, limit: 10 } as any, 'C1', 'P1');
 

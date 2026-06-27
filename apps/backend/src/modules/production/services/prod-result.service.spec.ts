@@ -9,7 +9,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -34,7 +34,7 @@ describe('ProdResultService', () => {
   let equipMasterRepo: DeepMocked<Repository<EquipMaster>>;
   let equipBomRelRepo: DeepMocked<Repository<EquipBomRel>>;
   let equipBomItemRepo: DeepMocked<Repository<EquipBomItem>>;
-  let partMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let itemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let consumableRepo: DeepMocked<Repository<ConsumableMaster>>;
   let matIssueRepo: DeepMocked<Repository<MatIssue>>;
   let userRepo: DeepMocked<Repository<User>>;
@@ -55,7 +55,7 @@ describe('ProdResultService', () => {
     equipMasterRepo = createMock<Repository<EquipMaster>>();
     equipBomRelRepo = createMock<Repository<EquipBomRel>>();
     equipBomItemRepo = createMock<Repository<EquipBomItem>>();
-    partMasterRepo = createMock<Repository<PartMaster>>();
+    itemMasterRepo = createMock<Repository<ItemMaster>>();
     consumableRepo = createMock<Repository<ConsumableMaster>>();
     matIssueRepo = createMock<Repository<MatIssue>>();
     userRepo = createMock<Repository<User>>();
@@ -86,7 +86,7 @@ describe('ProdResultService', () => {
         { provide: getRepositoryToken(EquipMaster), useValue: equipMasterRepo },
         { provide: getRepositoryToken(EquipBomRel), useValue: equipBomRelRepo },
         { provide: getRepositoryToken(EquipBomItem), useValue: equipBomItemRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
+        { provide: getRepositoryToken(ItemMaster), useValue: itemMasterRepo },
         { provide: getRepositoryToken(ConsumableMaster), useValue: consumableRepo },
         { provide: getRepositoryToken(MatIssue), useValue: matIssueRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
@@ -137,7 +137,7 @@ describe('ProdResultService', () => {
     dataSource.getRepository.mockReturnValue({
       find: jest.fn().mockResolvedValue([]),
     } as any);
-    partMasterRepo.find.mockResolvedValue([]);
+    itemMasterRepo.find.mockResolvedValue([]);
 
     const result = await service.findMatIssues('PR-1', 'C1', 'P1');
 
@@ -166,11 +166,11 @@ describe('ProdResultService', () => {
     dataSource.getRepository.mockReturnValue({
       find: jest.fn().mockResolvedValue([{ matUid: 'MAT-001', itemCode: 'RM-001' }]),
     } as any);
-    partMasterRepo.find.mockResolvedValue([{ itemCode: 'RM-001', itemName: 'Raw Material', unit: 'EA' }] as any);
+    itemMasterRepo.find.mockResolvedValue([{ itemCode: 'RM-001', itemName: 'Raw Material', unit: 'EA' }] as any);
 
     await service.findMatIssues('PR-1', 'C1', 'P1');
 
-    expect(partMasterRepo.find).toHaveBeenCalledWith({
+    expect(itemMasterRepo.find).toHaveBeenCalledWith({
       where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
     });
   });
@@ -189,7 +189,7 @@ describe('ProdResultService', () => {
     dataSource.getRepository.mockReturnValue({
       find: jest.fn().mockResolvedValue([{ matUid: 'MAT-001', itemCode: 'RM-MISSING' }]),
     } as any);
-    partMasterRepo.find.mockResolvedValue([]);
+    itemMasterRepo.find.mockResolvedValue([]);
 
     const result = await service.findMatIssues('PR-1', 'C1', 'P1');
 

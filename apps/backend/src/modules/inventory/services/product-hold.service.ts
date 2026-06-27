@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In, FindOptionsWhere } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProductHoldActionDto, ProductReleaseHoldDto, ProductHoldQueryDto } from '../dto/product-hold.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -11,8 +11,8 @@ export class ProductHoldService {
   constructor(
     @InjectRepository(ProductStock)
     private readonly productStockRepository: Repository<ProductStock>,
-    @InjectRepository(PartMaster)
-    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(ItemMaster)
+    private readonly itemMasterRepository: Repository<ItemMaster>,
     private readonly tx: TransactionService,
   ) {}
 
@@ -41,7 +41,7 @@ export class ProductHoldService {
 
     const itemCodes = [...new Set(data.map((s) => s.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) } })
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -96,7 +96,7 @@ export class ProductHoldService {
 
     const updated = await this.productStockRepository.findOne({ where: scopedKey });
     if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: updated.itemCode, ...(company && { company }), ...(plant && { plant }) },
     });
 
@@ -137,7 +137,7 @@ export class ProductHoldService {
 
     const updated = await this.productStockRepository.findOne({ where: scopedKey });
     if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
-    const part = await this.partMasterRepository.findOne({
+    const part = await this.itemMasterRepository.findOne({
       where: { itemCode: updated.itemCode, ...(company && { company }), ...(plant && { plant }) },
     });
 

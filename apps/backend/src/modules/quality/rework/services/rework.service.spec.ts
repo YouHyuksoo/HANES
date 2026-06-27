@@ -12,7 +12,7 @@ import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { ReworkInspect } from '../../../../entities/rework-inspect.entity';
 import { ReworkProcess } from '../../../../entities/rework-process.entity';
 import { DefectLog } from '../../../../entities/defect-log.entity';
-import { PartMaster } from '../../../../entities/part-master.entity';
+import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
@@ -35,7 +35,7 @@ describe('ReworkService', () => {
         { provide: getRepositoryToken(ReworkInspect), useValue: mockInspectRepo },
         { provide: getRepositoryToken(ReworkProcess), useValue: mockProcessRepo },
         { provide: getRepositoryToken(DefectLog), useValue: mockDefectLogRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: createMock<Repository<PartMaster>>() },
+        { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
       ],
     }).setLogger(new MockLoggerService()).compile();
