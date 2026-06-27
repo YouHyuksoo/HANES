@@ -25,6 +25,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, QueryRunner, In } from 'typeorm';
 
 import { BomMaster } from '../../../entities/bom-master.entity';
+import { RoutingMaterial } from '../../../entities/routing-material.entity';
+import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { JobMaterialLot } from '../../../entities/job-material-lot.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -117,6 +119,7 @@ export class AutoIssueService {
     orderNo: string,
     qty: number,
     externalQR?: QueryRunner,
+    processCode?: string | null,
   ): Promise<AutoIssueResult> {
     const result: AutoIssueResult = { issued: [], warnings: [], skipped: false };
 
@@ -129,9 +132,9 @@ export class AutoIssueService {
     }
 
     if (externalQR) {
-      await this.executeInTransaction(externalQR, result, prodResultNo, orderNo, qty);
+      await this.executeInTransaction(externalQR, result, prodResultNo, orderNo, qty, processCode);
     } else {
-      await this.tx.run((qr) => this.executeInTransaction(qr, result, prodResultNo, orderNo, qty));
+      await this.tx.run((qr) => this.executeInTransaction(qr, result, prodResultNo, orderNo, qty, processCode));
     }
 
     this.logger.log(
@@ -146,6 +149,7 @@ export class AutoIssueService {
     prodResultNo: string,
     orderNo: string,
     qty: number,
+    processCode?: string | null,
   ): Promise<void> {
     /* ── 3. 작업지시 → itemCode 조회 ──────────────── */
     const jobOrder = await qr.manager.findOne(JobOrder, {
@@ -158,11 +162,39 @@ export class AutoIssueService {
 
     /* ── 4. BOM 조회 (유효 기간 & useYn) ──────────── */
     const today = new Date();
-    const bomList = await this.findValidBom(qr, jobOrder.itemCode, today, tenant);
-    if (bomList.length === 0) {
+    const fullBomList = await this.findValidBom(qr, jobOrder.itemCode, today, tenant);
+    if (fullBomList.length === 0) {
       this.logger.warn(`BOM 없음 — itemCode: ${jobOrder.itemCode}`);
       result.skipped = true;
       return;
+    }
+
+    /* ── 4-1. 공정별 자재 차감 필터 (ROUTING_MATERIALS 배정 기반) ───────────
+     * 라우팅에 ROUTING_MATERIALS 배정이 있으면: 현재 공정(processCode→seq)에 배정된 자재만 차감.
+     * 배정이 없으면(미전환 라우팅): 기존대로 BOM 전체 일괄 차감. (점진 전환)
+     * 차감량은 BOM.qtyPer 유지 — ROUTING_MATERIALS는 "어느 공정에서 차감할지" 필터 역할만. */
+    let bomList = fullBomList;
+    if (processCode && jobOrder.routingCode) {
+      const routingMaterials = await qr.manager.find(RoutingMaterial, {
+        where: { routingCode: jobOrder.routingCode, useYn: 'Y', ...this.tenantWhere(tenant) },
+      });
+      if (routingMaterials.length > 0) {
+        const step = await qr.manager.findOne(RoutingProcess, {
+          where: { routingCode: jobOrder.routingCode, processCode, ...this.tenantWhere(tenant) },
+        });
+        const assignedItems = new Set(
+          routingMaterials.filter((rm) => rm.seq === step?.seq).map((rm) => rm.childItemCode),
+        );
+        bomList = fullBomList.filter((b) => assignedItems.has(b.childItemCode));
+        this.logger.log(
+          `공정별 자재 차감 — orderNo=${orderNo}, 공정=${processCode}(seq=${step?.seq}): ${bomList.length}/${fullBomList.length}건 대상`,
+        );
+        if (bomList.length === 0) {
+          // 이 공정에 배정된 자재가 없음 — 정상(다른 공정에서 소비). 차감 없이 종료.
+          result.skipped = true;
+          return;
+        }
+      }
     }
 
     /* ── 5. 재고 부족 정책 조회 ───────────────────── */

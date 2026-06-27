@@ -27,6 +27,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
+import { RoutingMaterial } from '../../../entities/routing-material.entity';
 import { ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.dto';
 import { In } from 'typeorm';
 import { ProductionSpecificationService } from './production-specification.service';
@@ -72,6 +73,34 @@ export class SubprocessKittingService {
       where: { routingCode, processCode, ...tenant },
     });
     return step?.issueFgLabelYn === 'Y';
+  }
+
+  /**
+   * 공정별 자재 차감 필터: 라우팅에 ROUTING_MATERIALS 배정이 있으면 현재 공정(seq)에
+   * 배정된 자재만 남기고 나머지를 rawQtyPerByItem에서 제거한다(BACKFLUSH 공정별 차감).
+   * 배정이 없으면(미전환 라우팅) 전체를 그대로 둔다. (auto-issue와 동일 규칙)
+   */
+  private async filterRawByRoutingMaterials(
+    qr: QueryRunner,
+    routingCode: string | null | undefined,
+    processCode: string | null | undefined,
+    tenant: { company: string; plant: string },
+    rawQtyPerByItem: Map<string, number>,
+  ): Promise<void> {
+    if (!routingCode || !processCode) return;
+    const routingMaterials = await qr.manager.find(RoutingMaterial, {
+      where: { routingCode, useYn: 'Y', ...tenant },
+    });
+    if (routingMaterials.length === 0) return; // 미배정 → 전체 유지
+    const step = await qr.manager.findOne(RoutingProcess, {
+      where: { routingCode, processCode, ...tenant },
+    });
+    const assigned = new Set(
+      routingMaterials.filter((rm) => rm.seq === step?.seq).map((rm) => rm.childItemCode),
+    );
+    for (const key of [...rawQtyPerByItem.keys()]) {
+      if (!assigned.has(key)) rawQtyPerByItem.delete(key);
+    }
   }
 
   /**
@@ -213,6 +242,8 @@ export class SubprocessKittingService {
           rawQtyPerByItem.set(b.childItemCode, Number(b.qtyPer));
         }
       }
+      // 공정별 자재 차감 필터 — 라우팅 ISSUE 자재 배정 시 현재 공정 자재만 차감
+      await this.filterRawByRoutingMaterials(qr, jobOrder.routingCode, processCode, { company, plant }, rawQtyPerByItem);
 
       // 3. 스캔된 SG 검증 (오투입 포함)
       const sgBarcodes = [...new Set(dto.sgBarcodes)];
@@ -515,6 +546,8 @@ export class SubprocessKittingService {
           rawQtyPerByItem.set(b.childItemCode, Number(b.qtyPer));
         }
       }
+      // 공정별 자재 차감 필터 — 라우팅 ISSUE 자재 배정 시 현재 공정 자재만 차감
+      await this.filterRawByRoutingMaterials(qr, jobOrder.routingCode, processCode, { company, plant }, rawQtyPerByItem);
 
       // 3. 스캔된 입력 SG 검증 (오투입 포함)
       const sgBarcodes = [...new Set(dto.inputSgBarcodes)];

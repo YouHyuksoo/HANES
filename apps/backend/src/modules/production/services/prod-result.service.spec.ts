@@ -268,7 +268,7 @@ describe('ProdResultService', () => {
       expect.objectContaining({ goodQty: 5, defectQty: 5 }),
     );
     // 자재 자동차감은 good+defect(10) 기준 유지
-    expect(autoIssueService.execute).toHaveBeenCalledWith('ON_CREATE', 'PR-1', 'JO-1', 10, expect.anything());
+    expect(autoIssueService.execute).toHaveBeenCalledWith('ON_CREATE', 'PR-1', 'JO-1', 10, expect.anything(), undefined);
     // 불량 상세 2건이 같은 트랜잭션에서 DefectLog로 저장 (seq 1,2로 PK 충돌 방지)
     const defectSaves = queryRunner.manager.save.mock.calls.filter((c: any[]) => c[0] === DefectLog);
     expect(defectSaves).toHaveLength(2);

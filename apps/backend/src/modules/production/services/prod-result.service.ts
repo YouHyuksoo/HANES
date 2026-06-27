@@ -547,7 +547,7 @@ export class ProdResultService {
       const totalQty = (dto.goodQty ?? 0) + effectiveDefectQty;
       if (totalQty > 0) {
         const autoResult = await this.autoIssueService.execute(
-          'ON_CREATE', saved.resultNo, dto.orderNo, totalQty, queryRunner,
+          'ON_CREATE', saved.resultNo, dto.orderNo, totalQty, queryRunner, dto.processCode,
         );
         if (autoResult.warnings.length > 0) {
           this.logger.warn(`자동차감 경고: ${autoResult.warnings.join(', ')}`);
@@ -665,7 +665,7 @@ export class ProdResultService {
         );
         if (newTotalQty > 0) {
           await this.autoIssueService.execute(
-            'ON_CREATE', resultNo, prodResult.orderNo, newTotalQty, queryRunner,
+            'ON_CREATE', resultNo, prodResult.orderNo, newTotalQty, queryRunner, prodResult.processCode,
           );
         }
         // 제품재고 재동기화 — 적재된 WIP 재고를 역분개 후 새 양품수량으로 재적재
@@ -831,7 +831,7 @@ export class ProdResultService {
       const autoTotalQty = (dto.goodQty ?? prodResult.goodQty) + (dto.defectQty ?? prodResult.defectQty);
       if (autoTotalQty > 0) {
         const autoResult = await this.autoIssueService.execute(
-          'ON_COMPLETE', prodResult.resultNo, prodResult.orderNo, autoTotalQty, queryRunner,
+          'ON_COMPLETE', prodResult.resultNo, prodResult.orderNo, autoTotalQty, queryRunner, prodResult.processCode,
         );
         if (autoResult.warnings.length > 0) {
           this.logger.warn(`자동차감 경고: ${autoResult.warnings.join(', ')}`);
