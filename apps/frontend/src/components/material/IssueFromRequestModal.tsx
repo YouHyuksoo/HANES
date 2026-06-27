@@ -35,7 +35,13 @@ interface RequestDetailItem {
   unit: string;
   requestQty: number;
   issuedQty: number;
+  /** 포장단위(최소 출고 단위) */
+  minPackQty?: number;
 }
+
+/** 실출고수량 = ceil(잔여/포장단위)*포장단위. 포장단위<=0이면 잔여 그대로 */
+const roundUpToPack = (qty: number, minPackQty: number) =>
+  minPackQty > 0 && qty > 0 ? Math.ceil(qty / minPackQty) * minPackQty : qty;
 
 /** 요청 상세 응답 */
 interface RequestDetail {
@@ -53,6 +59,8 @@ interface IssueRow extends RequestDetailItem {
   rowKey: string;
   seq: number;
   remainQty: number;
+  /** 포장단위 올림 잔여(최대 출고 허용 수량) */
+  packRemainQty: number;
   issueQty: number;
 }
 
@@ -99,12 +107,15 @@ export default function IssueFromRequestModal({
     setIssueRows(
       detail.items.map((item) => {
         const seq = Number(item.seq ?? item.id);
+        const remainQty = item.requestQty - (item.issuedQty ?? 0);
+        const packRemainQty = roundUpToPack(remainQty, Number(item.minPackQty ?? 0));
         return {
           ...item,
           rowKey: String(seq || item.itemCode),
           seq,
-          remainQty: item.requestQty - (item.issuedQty ?? 0),
-          issueQty: item.requestQty - (item.issuedQty ?? 0), // 기본값: 잔여량
+          remainQty,
+          packRemainQty,
+          issueQty: packRemainQty, // 기본값: 포장단위 올림 잔여(실출고수량)
         };
       }),
     );
@@ -164,7 +175,7 @@ export default function IssueFromRequestModal({
   const handleQtyChange = useCallback((rowKey: string, qty: number) => {
     setIssueRows((prev) =>
       prev.map((row) =>
-        row.rowKey === rowKey ? { ...row, issueQty: Math.max(0, Math.min(qty, row.remainQty)) } : row,
+        row.rowKey === rowKey ? { ...row, issueQty: Math.max(0, Math.min(qty, row.packRemainQty)) } : row,
       ),
     );
   }, []);
@@ -239,6 +250,16 @@ export default function IssueFromRequestModal({
       ),
     },
     {
+      accessorKey: 'minPackQty',
+      header: t('material.request.minPackQty', { defaultValue: '포장단위' }),
+      size: 80,
+      meta: { filterType: 'number' as const },
+      cell: ({ getValue }) => {
+        const v = (getValue() as number) ?? 0;
+        return <span className="text-text-muted">{v > 0 ? v.toLocaleString() : '-'}</span>;
+      },
+    },
+    {
       id: 'matUidSelect',
       header: '출고 LOT',
       size: 220,
@@ -275,7 +296,7 @@ export default function IssueFromRequestModal({
             onChange={(e) => handleQtyChange(item.rowKey, Number(e.target.value))}
             className="w-24 text-right"
             min={0}
-            max={item.remainQty}
+            max={item.packRemainQty}
           />
         );
       },

@@ -27,6 +27,8 @@ export interface RequestItem {
   bomReqQty?: number;
   prevIssueQty?: number;
   floorStockQty?: number;
+  /** 포장단위(최소 출고/불출 단위). 실출고 = ceil(요청/minPackQty)*minPackQty */
+  minPackQty?: number;
   remark?: string | null;
 }
 
@@ -194,6 +196,7 @@ export function useIssueRequestData() {
       bomReqQty: Number(item.bomReqQty ?? 0),
       prevIssueQty: Number(item.prevIssueQty ?? 0),
       floorStockQty: Number(item.floorStockQty ?? 0),
+      minPackQty: Number(item.minPackQty ?? 0),
     }));
   }, []);
 

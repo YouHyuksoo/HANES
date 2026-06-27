@@ -2443,6 +2443,8 @@
       "addToRequest": "添加到请求",
       "requestItemCount": "请求品目（{{count}}条）",
       "requestQtyLabel": "请求数量",
+      "minPackQty": "包装单位",
+      "issueQtyLabel": "实际出库数量",
       "registerRequest": "提交请求",
       "manualRequest": "手动出库请求",
       "workOrderListTitle": "工单列表",

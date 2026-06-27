@@ -45,6 +45,10 @@ interface WorkOrderRequestPanelProps {
 
 const toNum = (v: number | null | undefined) => Number(v ?? 0);
 
+/** 실출고수량 = ceil(요청/포장단위)*포장단위. 포장단위<=0이면 요청 그대로 */
+const calcIssueQty = (requestQty: number, minPackQty: number) =>
+  minPackQty > 0 && requestQty > 0 ? Math.ceil(requestQty / minPackQty) * minPackQty : requestQty;
+
 export default function WorkOrderRequestPanel({
   jobOrders,
   isLoadingJobOrders,
@@ -438,11 +442,15 @@ export default function WorkOrderRequestPanel({
                         <th className="text-right px-3 py-2 font-medium w-24">{t('material.request.floorStockQty')}</th>
                         <th className="text-right px-3 py-2 font-medium w-24">{t('material.request.currentStock')}</th>
                         <th className="text-center px-3 py-2 font-medium w-32">{t('material.request.requestQtyLabel')}</th>
+                        <th className="text-right px-3 py-2 font-medium w-20">{t('material.request.minPackQty', { defaultValue: '포장단위' })}</th>
+                        <th className="text-right px-3 py-2 font-medium w-24">{t('material.request.issueQtyLabel', { defaultValue: '실출고수량' })}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {detailItems.map((item, idx) => {
                         const overStock = item.requestQty > toNum(item.currentStock);
+                        const minPackQty = toNum(item.minPackQty);
+                        const issueQty = calcIssueQty(toNum(item.requestQty), minPackQty);
                         return (
                           <tr key={item.itemCode} className="border-t border-border hover:bg-card-hover">
                             <td className="px-3 py-2 text-text-muted">{idx + 1}</td>
@@ -469,6 +477,12 @@ export default function WorkOrderRequestPanel({
                                 />
                                 {overStock && <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />}
                               </div>
+                            </td>
+                            <td className="px-3 py-2 text-right text-text-muted">
+                              {minPackQty > 0 ? minPackQty.toLocaleString() : '-'}
+                            </td>
+                            <td className="px-3 py-2 text-right font-semibold text-primary">
+                              {issueQty.toLocaleString()}
                             </td>
                           </tr>
                         );

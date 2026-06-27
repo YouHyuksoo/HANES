@@ -2443,6 +2443,8 @@
       "addToRequest": "Add to request",
       "requestItemCount": "Request Items ({{count}})",
       "requestQtyLabel": "Request Qty",
+      "minPackQty": "Pack Unit",
+      "issueQtyLabel": "Issue Qty",
       "registerRequest": "Submit Request",
       "manualRequest": "Manual Request",
       "workOrderListTitle": "Work Orders",

@@ -2853,6 +2853,8 @@
       "addToRequest": "요청 목록에 추가",
       "requestItemCount": "요청 품목 ({{count}}건)",
       "requestQtyLabel": "요청수량",
+      "minPackQty": "포장단위",
+      "issueQtyLabel": "실출고수량",
       "registerRequest": "요청등록",
       "manualRequest": "수동 출고요청",
       "workOrderListTitle": "작업지시 목록",

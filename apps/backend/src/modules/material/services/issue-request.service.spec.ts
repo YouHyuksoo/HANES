@@ -200,6 +200,29 @@ describe('IssueRequestService', () => {
         where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
       });
     });
+
+    it('상세 조회 응답에 품목 포장단위(minPackQty)를 포함한다', async () => {
+      requestRepo.findOne.mockResolvedValue({ requestNo: 'REQ-001', status: 'REQUESTED' } as MatIssueRequest);
+      requestItemRepo.find.mockResolvedValue([
+        {
+          requestId: 'REQ-001',
+          seq: 1,
+          itemCode: 'ITEM-001',
+          requestQty: 5,
+          issuedQty: 0,
+          unit: 'EA',
+        } as unknown as MatIssueRequestItem,
+      ]);
+      itemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: 'Raw A', unit: 'EA', minPackQty: 6 } as ItemMaster,
+      ]);
+
+      const result = await service.findByRequestNo('REQ-001');
+
+      expect(result.items[0]).toEqual(
+        expect.objectContaining({ itemCode: 'ITEM-001', minPackQty: 6 }),
+      );
+    });
   });
 
   describe('create', () => {
@@ -328,7 +351,7 @@ describe('IssueRequestService', () => {
         { parentItemCode: 'FG-001', childItemCode: 'WIP-001', qtyPer: 1, seq: 2, useYn: 'Y' },
       ] as BomMaster[]);
       itemMasterRepo.find.mockResolvedValue([
-        { itemCode: 'RM-001', itemName: 'Raw A', itemType: 'RAW', unit: 'EA' },
+        { itemCode: 'RM-001', itemName: 'Raw A', itemType: 'RAW', unit: 'EA', minPackQty: 5 },
         { itemCode: 'WIP-001', itemName: 'Semi A', itemType: 'WIP', unit: 'EA' },
       ] as ItemMaster[]);
       matIssueRepo.createQueryBuilder.mockReturnValue(createQueryBuilder([{ itemCode: 'RM-001', qty: '4' }]) as any);
@@ -355,6 +378,7 @@ describe('IssueRequestService', () => {
           prevIssueQty: 4,
           floorStockQty: 3,
           requestQty: 13,
+          minPackQty: 5,
         }),
       ]);
     });
@@ -554,6 +578,80 @@ describe('IssueRequestService', () => {
 
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('포장단위가 있으면 올림 잔여 수량까지 출고를 허용한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.findOne.mockResolvedValue({
+        requestId: 'REQ-001',
+        seq: 1,
+        itemCode: 'ITEM-001',
+        requestQty: 10,
+        issuedQty: 0,
+      } as MatIssueRequestItem);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      // 포장단위 6 → 요청 10의 올림 잔여 = ceil(10/6)*6 = 12
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', minPackQty: 6 } as ItemMaster);
+      queryRunner.manager.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+      } as MatLot);
+
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        issueType: 'PRODUCTION',
+        workerId: 'user',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 12 }],
+      }, 'C1', 'P1');
+
+      expect((matIssueService as any).createInTx).toHaveBeenCalledWith(
+        queryRunner,
+        expect.objectContaining({ items: [{ matUid: 'MAT-001', issueQty: 12 }] }),
+        'C1',
+        'P1',
+      );
+    });
+
+    it('포장단위 올림 잔여 수량을 초과하면 출고를 차단한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: null,
+        issueType: 'PRODUCTION',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.findOne.mockResolvedValue({
+        requestId: 'REQ-001',
+        seq: 1,
+        itemCode: 'ITEM-001',
+        requestQty: 10,
+        issuedQty: 0,
+      } as MatIssueRequestItem);
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', minPackQty: 6 } as ItemMaster);
+      queryRunner.manager.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+      } as MatLot);
+
+      // 올림 잔여 12 초과 13 → 차단
+      await expect(
+        service.issueFromRequest('REQ-001', {
+          warehouseCode: 'WH-01',
+          items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 13 }],
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect((matIssueService as any).createInTx).not.toHaveBeenCalled();
     });
   });
 });

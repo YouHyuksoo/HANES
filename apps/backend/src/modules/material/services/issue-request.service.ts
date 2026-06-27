@@ -67,6 +67,17 @@ export class IssueRequestService {
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
+  /**
+   * 포장단위(MIN_PACK_QTY) 올림.
+   * 요청 낱개 수량을 포장단위 배수로 올린다. minPackQty<=0이면 올림 없이 그대로.
+   */
+  private roundUpToPack(qty: number, minPackQty: number): number {
+    if (minPackQty > 0 && qty > 0) {
+      return Math.ceil(qty / minPackQty) * minPackQty;
+    }
+    return qty;
+  }
+
   private isRawMaterial(part?: ItemMaster): boolean {
     if (!part?.itemType) return true;
     const itemType = part.itemType.toUpperCase();
@@ -173,6 +184,7 @@ export class IssueRequestService {
         itemCode: item.itemCode,
         itemName: part?.itemName ?? null,
         unit: item.unit ?? part?.unit ?? null,
+        minPackQty: this.toNumber(part?.minPackQty),
       };
     });
   }
@@ -237,6 +249,7 @@ export class IssueRequestService {
           bomReqQty,
           prevIssueQty,
           floorStockQty,
+          minPackQty: this.toNumber(part?.minPackQty),
         };
       })
       .filter((item) => item.requestQty > 0);
@@ -407,10 +420,16 @@ export class IssueRequestService {
           throw new BadRequestException(`출고요청 항목을 찾을 수 없습니다: ${dtoItem.requestItemId}`);
         }
 
+        // 포장단위(MIN_PACK_QTY) 올림: 요청 낱개 잔여를 포장단위 배수까지 출고 허용(잔량은 공정재고 재공)
+        const part = await this.itemMasterRepository.findOne({
+          where: { itemCode: reqItem.itemCode, ...requestTenantWhere },
+        });
+        const minPackQty = this.toNumber(part?.minPackQty);
         const remainingQty = reqItem.requestQty - reqItem.issuedQty;
-        if (dtoItem.issueQty > remainingQty) {
+        const allowedQty = this.roundUpToPack(remainingQty, minPackQty);
+        if (dtoItem.issueQty > allowedQty) {
           throw new BadRequestException(
-            `요청 수량을 초과해 출고할 수 없습니다. 항목 ${reqItemSeq}, 잔여: ${remainingQty}, 요청: ${dtoItem.issueQty}`,
+            `요청 수량을 초과해 출고할 수 없습니다. 항목 ${reqItemSeq}, 잔여(포장단위 올림): ${allowedQty}, 요청: ${dtoItem.issueQty}`,
           );
         }
 

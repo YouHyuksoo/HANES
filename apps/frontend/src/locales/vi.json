@@ -2443,6 +2443,8 @@
       "addToRequest": "Thêm vào yêu cầu",
       "requestItemCount": "Mục yêu cầu ({{count}})",
       "requestQtyLabel": "SL yêu cầu",
+      "minPackQty": "Đơn vị đóng gói",
+      "issueQtyLabel": "SL xuất thực tế",
       "registerRequest": "Đăng ký yêu cầu",
       "manualRequest": "Yêu cầu thủ công",
       "workOrderListTitle": "Danh sách lệnh sản xuất",
