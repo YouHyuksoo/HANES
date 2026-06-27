@@ -7692,7 +7692,9 @@
       "prepareFailed": "Không thể chuẩn bị màn hình in nhãn SFG.",
       "printSent": "Đã gửi {{count}} nhãn SFG đến máy in.",
       "printError": "Đã xảy ra lỗi khi in nhãn SFG.",
-      "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại."
+      "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại.",
+      "typeBundle": "Bó",
+      "typeCircuit": "Mạch"
     },
     "instruction": {
       "title": "Hướng dẫn sản xuất",

@@ -7692,7 +7692,9 @@
       "prepareFailed": "Failed to prepare the SFG label print view.",
       "printSent": "Sent {{count}} SFG label(s) to the printer.",
       "printError": "An error occurred while printing SFG labels.",
-      "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again."
+      "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again.",
+      "typeBundle": "Bundle",
+      "typeCircuit": "Circuit"
     },
     "instruction": {
       "title": "Work Instruction",

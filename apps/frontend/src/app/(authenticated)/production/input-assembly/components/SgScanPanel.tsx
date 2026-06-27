@@ -14,6 +14,8 @@ interface SgLabelInfo {
   remainQty: number;
   status: string;
   orderNo?: string | null;
+  /** 라벨 종류 — BUNDLE(묶음)/SG(회로) */
+  labelType?: string;
 }
 
 interface AssemblyComponent {
@@ -175,7 +177,16 @@ export default function SgScanPanel({
                     className="border-b border-border/70 hover:bg-surface/60"
                   >
                     <td className="px-3 py-2 text-text-muted text-xs">{index + 1}</td>
-                    <td className="px-3 py-2 font-mono text-xs">{item.sgBarcode}</td>
+                    <td className="px-3 py-2 font-mono text-xs">
+                      {item.sgBarcode}
+                      {item.labelType && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] border border-border text-text-muted align-middle">
+                          {item.labelType === "BUNDLE"
+                            ? t("sgLabel.typeBundle", "묶음")
+                            : t("sgLabel.typeCircuit", "회로")}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-xs">{item.itemCode}</td>
                     <td className="px-3 py-2 text-right text-xs tabular-nums">
                       {item.remainQty != null ? item.remainQty.toLocaleString() : "-"}

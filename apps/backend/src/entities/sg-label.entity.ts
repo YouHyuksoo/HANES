@@ -53,6 +53,10 @@ export class SgLabel {
   @Column({ name: 'STATUS', length: 20, default: 'IN_STOCK' })
   status: string;
 
+  /** 라벨 종류 — BUNDLE(묶음 추적 라벨, 가닥 묶음) / SG(반제품 회로). 발행 공정 ISSUE_LABEL_TYPE 기준. */
+  @Column({ name: 'LABEL_TYPE', length: 20, default: 'SG' })
+  labelType: string;
+
   @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 50, nullable: true })
   workerId: string | null;
 

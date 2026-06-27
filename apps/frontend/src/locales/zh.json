@@ -7692,7 +7692,9 @@
       "prepareFailed": "无法准备 SFG 标签打印画面。",
       "printSent": "已将 {{count}} 个 SFG 标签发送到打印机。",
       "printError": "打印 SFG 标签时发生错误。",
-      "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。"
+      "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。",
+      "typeBundle": "捆扎",
+      "typeCircuit": "回路"
     },
     "instruction": {
       "title": "作业指导书",

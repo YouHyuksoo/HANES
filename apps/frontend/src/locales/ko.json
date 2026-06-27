@@ -7696,7 +7696,9 @@
       "prepareFailed": "SFG 라벨 출력 화면을 준비하지 못했습니다.",
       "printSent": "SFG 라벨 {{count}}건을 프린터로 전송했습니다.",
       "printError": "SFG 라벨 출력 중 오류가 발생했습니다.",
-      "agentUnavailable": "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요."
+      "agentUnavailable": "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.",
+      "typeBundle": "묶음",
+      "typeCircuit": "회로"
     },
     "instruction": {
       "title": "작업지도서",

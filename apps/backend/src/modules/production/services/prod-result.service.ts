@@ -1458,6 +1458,8 @@ export class ProdResultService {
         initQty: resolvedQtyPerBundle,
         remainQty: resolvedQtyPerBundle,
         status: 'IN_STOCK',
+        // 발행 공정 ISSUE_LABEL_TYPE 그대로 기록(가드에서 SG/BUNDLE만 통과)
+        labelType: currentStep.issueLabelType,
         workerId: workerId ?? null,
         company: jobOrderWithPart.company,
         plant: jobOrderWithPart.plant,

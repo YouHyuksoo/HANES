@@ -425,6 +425,14 @@ export class SubprocessKittingService {
       // 2. SG 바코드 채번 (기존 SG 발행과 동일 유틸 — SEQ_SG_LABEL)
       const sgBarcode = await this.numbering.nextSgLabel(qr);
 
+      // 라벨 종류 — 발행 공정 ISSUE_LABEL_TYPE 기준(서브키팅은 회로 SG가 기본, 라우팅이 BUNDLE이면 BUNDLE)
+      const step = jobOrder.routingCode
+        ? await qr.manager.findOne(RoutingProcess, {
+            where: { routingCode: jobOrder.routingCode, processCode: dto.processCode, ...tenantWhere },
+          })
+        : null;
+      const labelType = step?.issueLabelType === 'BUNDLE' ? 'BUNDLE' : 'SG';
+
       // 3. SgLabel status='ISSUED' 저장 (확정 전까지 재고 오인 방지). 입력 SG·자재·실적·재고 미반영.
       await qr.manager.save(SgLabel, {
         sgBarcode,
@@ -437,6 +445,7 @@ export class SubprocessKittingService {
         initQty: 1,
         remainQty: 1,
         status: 'ISSUED',
+        labelType,
         workerId: workerId ?? null,
         company,
         plant,

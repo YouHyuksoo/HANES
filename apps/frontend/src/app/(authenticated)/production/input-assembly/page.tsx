@@ -37,6 +37,8 @@ interface SgLabelInfo {
   remainQty: number;
   status: string;
   orderNo?: string | null;
+  /** 라벨 종류 — BUNDLE(묶음)/SG(회로) */
+  labelType?: string;
 }
 
 /** 화면에서 보관하는 작업지시 최소 정보 — 공용 모달(JobOrder)·스캔 응답을 공통으로 담는다. */
