@@ -14,7 +14,6 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 import {
-  KitDto,
   IssueLabelDto,
   ConfirmAssemblyDto,
   IssueSgLabelDto,
@@ -26,19 +25,6 @@ import { SubprocessKittingService } from '../services/subprocess-kitting.service
 @Controller('production/subprocess-kitting')
 export class SubprocessKittingController {
   constructor(private readonly service: SubprocessKittingService) {}
-
-  @Post()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '서브공정 키팅 — 제품라벨 발행 + genealogy + 제품 WIP 재고 적재' })
-  async kit(
-    @Body() dto: KitDto,
-    @Company() company: string,
-    @Plant() plant: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    const data = await this.service.kit(dto, company, plant, req.user?.id ?? 'system');
-    return ResponseUtil.success(data, '서브공정 키팅이 완료되었습니다.');
-  }
 
   @Post('issue-label')
   @HttpCode(HttpStatus.OK)

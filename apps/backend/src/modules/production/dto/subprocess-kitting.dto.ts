@@ -7,59 +7,11 @@
 import {
   IsString,
   IsOptional,
-  IsInt,
   IsArray,
   IsNotEmpty,
-  ValidateNested,
-  Min,
   ArrayNotEmpty,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
-/** 원자재 직접투입 로트(genealogy 기록 전용 — 재고 차감은 Phase 2 범위 밖) */
-export class KitMatLotDto {
-  @IsString()
-  matUid: string;
-
-  @IsString()
-  itemCode: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  qty?: number;
-}
-
-export class KitDto {
-  @IsString()
-  orderNo: string;
-
-  @IsString()
-  processCode: string;
-
-  @IsInt()
-  @Min(1)
-  qty: number;
-
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  sgBarcodes: string[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => KitMatLotDto)
-  matLots?: KitMatLotDto[];
-
-  @IsOptional()
-  @IsString()
-  equipCode?: string;
-
-  @IsOptional()
-  @IsString()
-  circuitNo?: string;
-}
 
 /** 조립 라벨 발행 DTO (② FG 바코드 채번 + ISSUED 저장만) */
 export class IssueLabelDto {
