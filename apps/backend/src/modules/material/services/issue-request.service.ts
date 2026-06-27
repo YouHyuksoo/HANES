@@ -249,6 +249,7 @@ export class IssueRequestService {
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
         orderNo: dto.orderNo ?? null,
+        processCode: dto.processCode ?? null,
         issueType: dto.issueType ?? null,
         status: 'REQUESTED',
         requester: 'SYSTEM',
@@ -431,6 +432,7 @@ export class IssueRequestService {
 
       const issueResult = await this.matIssueService.createInTx(queryRunner, {
         orderNo: request.orderNo ?? undefined,
+        processCode: request.processCode ?? undefined,
         warehouseCode: dto.warehouseCode,
         issueType: dto.issueType ?? request.issueType ?? 'PRODUCTION',
         items: dto.items.map((i) => ({ matUid: i.matUid, issueQty: i.issueQty })),

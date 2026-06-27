@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, ListChecks, FilePlus2, ChevronLeft } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, ComCodeBadge } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
+import ProcessSelect from '@/components/shared/ProcessSelect';
 import { IssueRequestStatusBadge, type IssueRequestStatus } from '@/components/material';
 import { api } from '@/services/api';
 import { useInvalidateQueries } from '@/hooks/useApi';
@@ -63,6 +64,7 @@ export default function WorkOrderRequestPanel({
   const invalidate = useInvalidateQueries();
 
   const [selectedOrderNo, setSelectedOrderNo] = useState('');
+  const [selectedProcessCode, setSelectedProcessCode] = useState('');
   const [mode, setMode] = useState<RightMode>('history');
   // 내역(history) 상태
   const [woRequests, setWoRequests] = useState<IssueRequest[]>([]);
@@ -147,6 +149,7 @@ export default function WorkOrderRequestPanel({
     try {
       const body = {
         orderNo: selectedOrderNo,
+        processCode: selectedProcessCode || undefined,
         items: detailItems
           .filter((item) => item.requestQty > 0)
           .map((item) => ({
@@ -321,6 +324,9 @@ export default function WorkOrderRequestPanel({
                   <Button size="sm" variant="secondary" onClick={() => { setMode('history'); setErrorMessage(''); }}>
                     <ChevronLeft className="w-4 h-4 mr-1" /> {t('material.request.backToHistory')}
                   </Button>
+                  <div className="w-40">
+                    <ProcessSelect value={selectedProcessCode} onChange={setSelectedProcessCode} fullWidth />
+                  </div>
                   <div className="w-40">
                     <Select options={reasonOptions} value={reason} onChange={setReason} fullWidth />
                   </div>

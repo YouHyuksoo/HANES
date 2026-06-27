@@ -29,6 +29,10 @@ export class MatIssueRequest {
   @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
 
+  // 출고 대상 공정(ADR 0002): 지정되면 출고 시 공정재고(PROC_MAT_STOCKS=장착 대기)로 적재된다.
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
+  processCode: string | null;
+
   @Column({ name: 'REQUEST_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   requestDate: Date;
 

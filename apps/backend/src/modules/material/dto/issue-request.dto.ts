@@ -75,6 +75,12 @@ export class CreateIssueRequestDto {
   @IsString()
   orderNo?: string;
 
+  @ApiPropertyOptional({ description: '출고 대상 공정코드 — 지정 시 출고가 공정재고로 적재된다(ADR 0002)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  processCode?: string;
+
   @ApiPropertyOptional({ description: '출고 유형 (ComCode ISSUE_TYPE)' })
   @IsOptional()
   @IsString()
