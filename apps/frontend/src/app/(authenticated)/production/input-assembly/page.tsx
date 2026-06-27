@@ -260,7 +260,7 @@ export default function InputAssemblyPage() {
           sgBarcodes: sgList.map((s) => s.sgBarcode),
         });
         toast.success(t("production.inputAssembly.confirmSuccess", "조립이 확정되었습니다."));
-        // FG 라벨 데이터는 항상 발행되며, 인쇄 여부는 백엔드 printFg(라우팅 ISSUE_FG_LABEL_YN='Y')로 제어한다.
+        // FG 라벨 데이터는 항상 발행되며, 인쇄 여부는 백엔드 printFg(라우팅 ISSUE_LABEL_TYPE='FG')로 제어한다.
         const confirmData = res.data?.data as { fgBarcode?: string; printFg?: boolean } | undefined;
         if (confirmData?.printFg) {
           void fgPrinterRef.current?.printByFgBarcodes([

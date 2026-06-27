@@ -277,8 +277,7 @@ describe('RoutingGroupService', () => {
         seq: 10,
         processCode: 'P01',
         processName: 'Process',
-        issueSgLabelYn: 'Y',
-        issueFgLabelYn: 'Y',
+        issueLabelType: 'SG',
       } as any;
       const created = { ...dto, useYn: 'Y' } as RoutingProcess;
       mockProcessRepo.findOne.mockResolvedValue(null);
@@ -290,8 +289,7 @@ describe('RoutingGroupService', () => {
       expect(mockProcessRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           processName: 'Process',
-          issueSgLabelYn: 'Y',
-          issueFgLabelYn: 'Y',
+          issueLabelType: 'SG',
           company: 'C1',
           plant: 'P1',
         }),
@@ -389,14 +387,14 @@ describe('RoutingGroupService', () => {
       await target.updateProcess(
         'RG01',
         10,
-        { issueSgLabelYn: 'Y', issueFgLabelYn: 'N' } as any,
+        { issueLabelType: 'SG' } as any,
         'C1',
         'P1',
       );
 
       expect(mockProcessRepo.update).toHaveBeenCalledWith(
         { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
-        expect.objectContaining({ issueSgLabelYn: 'Y', issueFgLabelYn: 'N' }),
+        expect.objectContaining({ issueLabelType: 'SG' }),
       );
     });
 

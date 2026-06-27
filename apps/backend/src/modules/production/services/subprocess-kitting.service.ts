@@ -58,7 +58,7 @@ export class SubprocessKittingService {
   ) {}
 
   /**
-   * 현재 공정이 제품(FG) 라벨 인쇄 공정인지 판정한다(라우팅 ISSUE_FG_LABEL_YN='Y').
+   * 현재 공정이 제품(FG) 라벨 인쇄 공정인지 판정한다(라우팅 ISSUE_LABEL_TYPE='FG').
    * FG 데이터는 항상 발행하되, 프린터 출력 여부만 이 플래그로 제어한다.
    * routingCode/processCode 가 없으면 인쇄하지 않는다(false).
    */
@@ -72,7 +72,7 @@ export class SubprocessKittingService {
     const step = await qr.manager.findOne(RoutingProcess, {
       where: { routingCode, processCode, ...tenant },
     });
-    return step?.issueFgLabelYn === 'Y';
+    return step?.issueLabelType === 'FG';
   }
 
   /**

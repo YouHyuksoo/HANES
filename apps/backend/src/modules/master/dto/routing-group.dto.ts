@@ -103,17 +103,11 @@ export class CreateRoutingProcessDto {
   @IsOptional() @IsString() @IsIn(['Y', 'N'])
   sampleInspectYn?: string;
 
-  @ApiPropertyOptional({ description: 'SG 라벨 발행 여부', default: 'N' })
+  @ApiPropertyOptional({ description: '라벨 발행 종류 (NONE/BUNDLE/SG/FG)', default: 'NONE' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
-  issueSgLabelYn?: string;
-
-  @ApiPropertyOptional({ description: 'FG 라벨 발행 여부', default: 'N' })
-  @IsOptional()
-  @IsString()
-  @IsIn(['Y', 'N'])
-  issueFgLabelYn?: string;
+  @IsIn(['NONE', 'BUNDLE', 'SG', 'FG'])
+  issueLabelType?: string;
 
   @ApiPropertyOptional({ description: '자주검사 여부', default: 'N' })
   @IsOptional()

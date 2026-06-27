@@ -69,8 +69,7 @@ const EMPTY_PROCESS = {
   stdTime: "",
   setupTime: "",
   sampleInspectYn: "N",
-  issueSgLabelYn: "N",
-  issueFgLabelYn: "N",
+  issueLabelType: "NONE",
   executionType: "IN_HOUSE",
   subconVendorCode: "",
 };
@@ -345,8 +344,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       stdTime: process.stdTime != null ? String(process.stdTime) : "",
       setupTime: process.setupTime != null ? String(process.setupTime) : "",
       sampleInspectYn: process.sampleInspectYn || "N",
-      issueSgLabelYn: process.issueSgLabelYn || "N",
-      issueFgLabelYn: process.issueFgLabelYn || "N",
+      issueLabelType: process.issueLabelType || "NONE",
       executionType: process.executionType || "IN_HOUSE",
       subconVendorCode: process.subconVendorCode || "",
     });
@@ -369,8 +367,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       stdTime: processForm.stdTime ? Number(processForm.stdTime) : undefined,
       setupTime: processForm.setupTime ? Number(processForm.setupTime) : undefined,
       sampleInspectYn: processForm.sampleInspectYn || "N",
-      issueSgLabelYn: processForm.issueSgLabelYn || "N",
-      issueFgLabelYn: processForm.issueFgLabelYn || "N",
+      issueLabelType: processForm.issueLabelType || "NONE",
       executionType: processForm.executionType,
       subconVendorCode: processForm.executionType === "SUBCON" ? processForm.subconVendorCode || undefined : undefined,
       useYn: "Y",
@@ -570,17 +567,22 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                       </td>
                       <td className="py-2 text-center">
                         <div className="inline-flex items-center justify-center gap-1">
-                          {process.issueSgLabelYn === 'Y' && (
+                          {process.issueLabelType === 'BUNDLE' && (
+                            <span className="inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                              {t("master.routing.bundleLabelShort", "묶음")}
+                            </span>
+                          )}
+                          {process.issueLabelType === 'SG' && (
                             <span className="inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                               {t("master.routing.sgLabelShort")}
                             </span>
                           )}
-                          {process.issueFgLabelYn === 'Y' && (
+                          {process.issueLabelType === 'FG' && (
                             <span className="inline-flex items-center rounded bg-cyan-100 px-1.5 py-0.5 text-[10px] font-bold text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
                               {t("master.routing.fgLabelShort")}
                             </span>
                           )}
-                          {process.issueSgLabelYn !== 'Y' && process.issueFgLabelYn !== 'Y' && (
+                          {(!process.issueLabelType || process.issueLabelType === 'NONE') && (
                             <span className="text-text-muted text-[10px]">-</span>
                           )}
                         </div>
@@ -711,26 +713,16 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
           </div>
           <div>
             <FieldLabel field="labelIssue" label={t("master.routing.labelIssue")} className="block text-sm font-medium text-text dark:text-gray-300 mb-2" />
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 dark:border-gray-600 dark:bg-gray-800">
-                <input
-                  type="checkbox"
-                  checked={processForm.issueSgLabelYn === "Y"}
-                  onChange={(e) => setProcessForm((f) => ({ ...f, issueSgLabelYn: e.target.checked ? "Y" : "N" }))}
-                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                />
-                <span className="text-sm text-text dark:text-gray-200">{t("master.routing.issueSgLabel")}</span>
-              </label>
-              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 dark:border-gray-600 dark:bg-gray-800">
-                <input
-                  type="checkbox"
-                  checked={processForm.issueFgLabelYn === "Y"}
-                  onChange={(e) => setProcessForm((f) => ({ ...f, issueFgLabelYn: e.target.checked ? "Y" : "N" }))}
-                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                />
-                <span className="text-sm text-text dark:text-gray-200">{t("master.routing.issueFgLabel")}</span>
-              </label>
-            </div>
+            <select
+              value={processForm.issueLabelType || "NONE"}
+              onChange={(e) => setProcessForm((f) => ({ ...f, issueLabelType: e.target.value }))}
+              className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-text dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            >
+              <option value="NONE">{t("master.routing.issueLabelTypeNone", "없음")}</option>
+              <option value="BUNDLE">{t("master.routing.issueLabelTypeBundle", "묶음 추적 라벨")}</option>
+              <option value="SG">{t("master.routing.issueLabelTypeSg", "반제품(SG) 라벨")}</option>
+              <option value="FG">{t("master.routing.issueLabelTypeFg", "완제품(FG) 라벨")}</option>
+            </select>
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-6">

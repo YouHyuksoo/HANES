@@ -65,7 +65,7 @@ export const ROUTING_MASTER_TOOL_MANIFEST: AiPageToolManifest = {
       description:
         '라우팅 그룹에 공정순서를 추가한다. routingCode(라우팅 그룹 코드)·seq(공정 순서, 1 이상 정수)·processCode(공정 코드) 필요. ' +
         '공정명은 공정코드 기준 PROCESS_MASTERS에서 자동 적용되므로 별도로 넣지 않아도 된다. ' +
-        'equipType(설비타입)·stdTime(표준시간)·setupTime(셋업시간)·sampleInspectYn/issueSgLabelYn/issueFgLabelYn(각 Y|N, 기본 N)은 선택.',
+        'equipType(설비타입)·stdTime(표준시간)·setupTime(셋업시간)·sampleInspectYn(Y|N)·issueLabelType(NONE|BUNDLE|SG|FG, 기본 NONE)은 선택.',
       riskLevel: 'write',
       source: 'backend',
       inputSchema: {
@@ -76,8 +76,7 @@ export const ROUTING_MASTER_TOOL_MANIFEST: AiPageToolManifest = {
         stdTime: { type: 'number', required: false },
         setupTime: { type: 'number', required: false },
         sampleInspectYn: { type: 'string', required: false, enum: ['Y', 'N'] },
-        issueSgLabelYn: { type: 'string', required: false, enum: ['Y', 'N'] },
-        issueFgLabelYn: { type: 'string', required: false, enum: ['Y', 'N'] },
+        issueLabelType: { type: 'string', required: false, enum: ['NONE', 'BUNDLE', 'SG', 'FG'] },
         useYn: { type: 'string', required: false, enum: ['Y', 'N'] },
       },
       requiresConfirmation: true,
@@ -89,7 +88,7 @@ export const ROUTING_MASTER_TOOL_MANIFEST: AiPageToolManifest = {
       description:
         'routingCode+seq로 지정한 공정순서를 수정한다. 바꿀 항목만 넣는다. ' +
         'processCode를 바꾸면 공정명/공정유형이 PROCESS_MASTERS 기준으로 다시 적용된다. ' +
-        'equipType/stdTime/setupTime/sampleInspectYn/issueSgLabelYn/issueFgLabelYn/useYn(Y|N) 모두 선택.',
+        'equipType/stdTime/setupTime/sampleInspectYn(Y|N)·issueLabelType(NONE|BUNDLE|SG|FG)/useYn(Y|N) 모두 선택.',
       riskLevel: 'write',
       source: 'backend',
       inputSchema: {
@@ -100,8 +99,7 @@ export const ROUTING_MASTER_TOOL_MANIFEST: AiPageToolManifest = {
         stdTime: { type: 'number', required: false },
         setupTime: { type: 'number', required: false },
         sampleInspectYn: { type: 'string', required: false, enum: ['Y', 'N'] },
-        issueSgLabelYn: { type: 'string', required: false, enum: ['Y', 'N'] },
-        issueFgLabelYn: { type: 'string', required: false, enum: ['Y', 'N'] },
+        issueLabelType: { type: 'string', required: false, enum: ['NONE', 'BUNDLE', 'SG', 'FG'] },
         useYn: { type: 'string', required: false, enum: ['Y', 'N'] },
       },
       requiresConfirmation: true,
@@ -166,6 +164,14 @@ export class RoutingToolsProvider implements PageToolProvider {
   private yn(v: unknown): string {
     const s = this.str(v).toUpperCase();
     if (s !== 'Y' && s !== 'N') throw new BadRequestException(`사용여부 값은 Y 또는 N 이어야 합니다: ${s}`);
+    return s;
+  }
+
+  private labelType(v: unknown): string {
+    const s = this.str(v).toUpperCase();
+    if (!['NONE', 'BUNDLE', 'SG', 'FG'].includes(s)) {
+      throw new BadRequestException(`라벨 발행 종류(issueLabelType)는 NONE/BUNDLE/SG/FG 중 하나여야 합니다: ${s}`);
+    }
     return s;
   }
 
@@ -247,8 +253,7 @@ export class RoutingToolsProvider implements PageToolProvider {
         stdTime: input.stdTime !== undefined ? this.num(input.stdTime, '표준시간(stdTime)') : undefined,
         setupTime: input.setupTime !== undefined ? this.num(input.setupTime, '셋업시간(setupTime)') : undefined,
         sampleInspectYn: input.sampleInspectYn !== undefined ? this.yn(input.sampleInspectYn) : undefined,
-        issueSgLabelYn: input.issueSgLabelYn !== undefined ? this.yn(input.issueSgLabelYn) : undefined,
-        issueFgLabelYn: input.issueFgLabelYn !== undefined ? this.yn(input.issueFgLabelYn) : undefined,
+        issueLabelType: input.issueLabelType !== undefined ? this.labelType(input.issueLabelType) : undefined,
         useYn: input.useYn !== undefined ? this.yn(input.useYn) : undefined,
       },
       company,
@@ -271,8 +276,7 @@ export class RoutingToolsProvider implements PageToolProvider {
       stdTime?: number;
       setupTime?: number;
       sampleInspectYn?: string;
-      issueSgLabelYn?: string;
-      issueFgLabelYn?: string;
+      issueLabelType?: string;
       useYn?: string;
     } = {};
     if (input.processCode !== undefined) dto.processCode = this.str(input.processCode);
@@ -280,8 +284,7 @@ export class RoutingToolsProvider implements PageToolProvider {
     if (input.stdTime !== undefined) dto.stdTime = this.num(input.stdTime, '표준시간(stdTime)');
     if (input.setupTime !== undefined) dto.setupTime = this.num(input.setupTime, '셋업시간(setupTime)');
     if (input.sampleInspectYn !== undefined) dto.sampleInspectYn = this.yn(input.sampleInspectYn);
-    if (input.issueSgLabelYn !== undefined) dto.issueSgLabelYn = this.yn(input.issueSgLabelYn);
-    if (input.issueFgLabelYn !== undefined) dto.issueFgLabelYn = this.yn(input.issueFgLabelYn);
+    if (input.issueLabelType !== undefined) dto.issueLabelType = this.labelType(input.issueLabelType);
     if (input.useYn !== undefined) dto.useYn = this.yn(input.useYn);
     await this.svc().updateProcess(routingCode, seq, dto, company, plant);
     return this.result('updateRoutingProcess', `라우팅 ${routingCode}의 공정 ${seq}번을 수정했습니다.`, { routingCode, seq });

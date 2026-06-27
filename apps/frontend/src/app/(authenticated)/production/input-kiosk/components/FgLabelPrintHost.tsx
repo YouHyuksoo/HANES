@@ -9,7 +9,7 @@
  * - printByFgBarcodes(rows): 조립(kit/confirmAssembly)에서 발행된 FG 바코드를 바코드+컨텍스트로 직접
  *   오프스크린 LabelPrintRenderer로 렌더 → PNG 변환 → HANES Print Agent(printAgentPng)로 모달 없이 출력.
  * - FG 데이터(FgLabel)는 조립 시 항상 발행되며, 인쇄 여부는 호출 측에서 백엔드 응답의 printFg(라우팅
- *   ISSUE_FG_LABEL_YN='Y')로 판정해 true일 때만 이 호스트를 호출한다(여기서는 라우팅을 보지 않음).
+ *   ISSUE_LABEL_TYPE='FG')로 판정해 true일 때만 이 호스트를 호출한다(여기서는 라우팅을 보지 않음).
  * - FgLabel 엔티티에 resultNo가 없으므로 resultNo 역조회는 하지 않는다.
  */
 import {

@@ -521,7 +521,7 @@ export class ProdResultService {
         );
       }
 
-      // FG 바코드는 조립(서브공정) 키팅 공정에서 발행한다(라우팅 ISSUE_FG_LABEL_YN). 실적 등록 시 사전발행하지 않는다.
+      // FG 바코드는 조립(서브공정) 키팅 공정에서 발행한다(라우팅 ISSUE_LABEL_TYPE='FG'). 실적 등록 시 사전발행하지 않는다.
 
       // 불량 상세 로그 저장 (불량입력 모달에서 등록된 유형별 불량)
       // 같은 occurAt에 seq 1..N으로 복합 PK 충돌을 방지하고, defectQty는 위에서 이미 산정했으므로 재증가하지 않는다.
@@ -1364,8 +1364,8 @@ export class ProdResultService {
    *  1) goodQty > 0
    *  2) 반제품만(jobOrder.part?.itemType !== 'FINISHED')
    *  3) 발행 공정 판정:
-   *     - 라우팅의 ROUTING_PROCESSES 중 processCode === prodResult.processCode 행의 issueSgLabelYn === 'Y' 이면 발행
-   *     - 라우팅 전체에 issueSgLabelYn='Y' 행이 하나도 없으면 폴백: 최초 공정(seq ASC 첫 행)과 일치하면 발행
+   *     - 라우팅의 ROUTING_PROCESSES 중 processCode === prodResult.processCode 행의 issueLabelType 이 'SG' 또는 'BUNDLE' 이면 발행
+   *       (단계 1: 묶음/회로 미분리 — 둘 다 SG_LABELS로 발행. 단계 2에서 LABEL_TYPE 분기 예정)
    *  4) 멱등: 같은 orderNo + issueProcessCode 로 이미 SgLabel 이 있으면 재발행 금지
    *
    * 수량: bundleCount·qtyPerBundle 둘 다 있으면 곱이 goodQty 와 일치해야 함(불일치 시 BadRequestException).
@@ -1405,7 +1405,7 @@ export class ProdResultService {
     if (!jobOrderWithPart?.itemCode) return;
     if (jobOrderWithPart.part?.itemType === 'FINISHED') return;
 
-    // 가드 3: 발행 공정 판정 — 현재 공정의 ISSUE_SG_LABEL_YN='Y'면 발행, 아니면 발행하지 않는다(폴백 없음).
+    // 가드 3: 발행 공정 판정 — 현재 공정 ISSUE_LABEL_TYPE 이 SG/BUNDLE 이면 발행, 아니면 발행하지 않는다(폴백 없음).
     const routingCode = jobOrderWithPart.routingCode;
     if (!routingCode) return;
     const currentStep = await qr.manager.findOne(RoutingProcess, {
@@ -1416,7 +1416,7 @@ export class ProdResultService {
         ...(plant ? { plant } : {}),
       },
     });
-    if (currentStep?.issueSgLabelYn !== 'Y') return;
+    if (currentStep?.issueLabelType !== 'SG' && currentStep?.issueLabelType !== 'BUNDLE') return;
 
     // 가드 4: 멱등 — 같은 실적(resultNo)으로 이미 발행됐으면 중단.
     // (배치마다 실적이 다르므로 resultNo 단위로 dedup → 다중 배치 작업지시도 배치별 묶음 발행됨)

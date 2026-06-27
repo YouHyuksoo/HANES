@@ -237,8 +237,7 @@ export class RoutingGroupService {
       stdTime: dto.stdTime ?? null,
       setupTime: dto.setupTime ?? null,
       sampleInspectYn: dto.sampleInspectYn ?? 'N',
-      issueSgLabelYn: dto.issueSgLabelYn ?? 'N',
-      issueFgLabelYn: dto.issueFgLabelYn ?? 'N',
+      issueLabelType: dto.issueLabelType ?? 'NONE',
       useYn: dto.useYn ?? 'Y',
       qcSelfYn: dto.qcSelfYn ?? 'N',
       inspectMethod: dto.inspectMethod ?? 'DIRECT',
@@ -276,8 +275,7 @@ export class RoutingGroupService {
       | 'stdTime'
       | 'setupTime'
       | 'sampleInspectYn'
-      | 'issueSgLabelYn'
-      | 'issueFgLabelYn'
+      | 'issueLabelType'
       | 'useYn'
       | 'qcSelfYn'
       | 'inspectMethod'
@@ -293,8 +291,7 @@ export class RoutingGroupService {
       ...(dto.stdTime !== undefined ? { stdTime: dto.stdTime } : {}),
       ...(dto.setupTime !== undefined ? { setupTime: dto.setupTime } : {}),
       ...(dto.sampleInspectYn !== undefined ? { sampleInspectYn: dto.sampleInspectYn } : {}),
-      ...(dto.issueSgLabelYn !== undefined ? { issueSgLabelYn: dto.issueSgLabelYn } : {}),
-      ...(dto.issueFgLabelYn !== undefined ? { issueFgLabelYn: dto.issueFgLabelYn } : {}),
+      ...(dto.issueLabelType !== undefined ? { issueLabelType: dto.issueLabelType } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
       ...(dto.qcSelfYn !== undefined ? { qcSelfYn: dto.qcSelfYn } : {}),
       ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),

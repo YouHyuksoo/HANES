@@ -8,7 +8,7 @@
  * - 마운트 시 /master/label-templates?category=sg 의 기본 템플릿(없으면 기본 디자인)을 로드.
  * - printByResultNo(resultNo): 해당 생산실적에서 발행된 SG_LABELS를 조회해, 발행분이 있으면
  *   오프스크린 LabelPrintRenderer로 렌더 → PNG 변환 → HANES Print Agent(printAgentPng)로 모달 없이 출력.
- * - 라우팅 ISSUE_SG_LABEL_YN='Y' 가 아닌 공정은 백엔드에서 SG를 발행하지 않으므로 조회 결과가 비어 자동으로 출력하지 않는다.
+ * - 라우팅 ISSUE_LABEL_TYPE 이 SG/BUNDLE 이 아닌 공정은 백엔드에서 SG를 발행하지 않으므로 조회 결과가 비어 자동으로 출력하지 않는다.
  */
 import {
   forwardRef,

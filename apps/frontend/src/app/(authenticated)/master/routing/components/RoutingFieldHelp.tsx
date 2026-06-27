@@ -23,11 +23,10 @@ export const ROUTING_FIELD_HELP = {
   stdTime: { db: "ROUTING_PROCESSES.STD_TIME", description: "단위 작업 1회에 소요되는 표준 작업시간(초)입니다." },
   setupTime: { db: "ROUTING_PROCESSES.SETUP_TIME", description: "공정 시작 전 준비(셋업)에 소요되는 시간(초)입니다." },
   sampleInspectYn: { db: "ROUTING_PROCESSES.SAMPLE_INSPECT_YN", description: "이 공정에서 샘플검사(자주검사)를 수행할지 여부입니다." },
-  issueSgLabelYn: { db: "ROUTING_PROCESSES.ISSUE_SG_LABEL_YN", description: "이 공정 완료 시 반제품 라벨(SG)을 발행할지 여부입니다." },
-  issueFgLabelYn: { db: "ROUTING_PROCESSES.ISSUE_FG_LABEL_YN", description: "이 공정 완료 시 완제품 라벨(FG)을 발행할지 여부입니다." },
+  issueLabelType: { db: "ROUTING_PROCESSES.ISSUE_LABEL_TYPE", description: "이 공정 완료 시 발행할 라벨 종류입니다(없음/묶음/SG/FG). 한 공정은 한 종류만 발행합니다." },
   labelIssue: {
-    db: "ROUTING_PROCESSES.ISSUE_SG_LABEL_YN / ISSUE_FG_LABEL_YN",
-    description: "이 공정 완료 시 발행할 라벨을 지정합니다. 반제품 라벨(SG)·완제품 라벨(FG)을 각각 선택할 수 있습니다.",
+    db: "ROUTING_PROCESSES.ISSUE_LABEL_TYPE",
+    description: "이 공정 완료 시 발행할 라벨 종류를 지정합니다. 없음·묶음 추적 라벨·반제품(SG)·완제품(FG) 중 하나를 선택합니다(한 공정 한 종류).",
   },
 } as const;
 

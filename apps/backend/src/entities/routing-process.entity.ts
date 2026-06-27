@@ -71,11 +71,9 @@ export class RoutingProcess {
   @Column({ type: 'varchar2', name: 'DESTRUCTIVE_YN', length: 1, default: 'N', nullable: true })
   destructiveYn: string | null;
 
-  @Column({ type: 'varchar2', name: 'ISSUE_SG_LABEL_YN', length: 1, default: 'N', nullable: true })
-  issueSgLabelYn: string | null;
-
-  @Column({ type: 'varchar2', name: 'ISSUE_FG_LABEL_YN', length: 1, default: 'N', nullable: true })
-  issueFgLabelYn: string | null;
+  /** 라벨 발행 종류: NONE / BUNDLE(묶음 추적 라벨) / SG(회로 반제품) / FG(완제품). 한 공정 한 종류. */
+  @Column({ type: 'varchar2', name: 'ISSUE_LABEL_TYPE', length: 20, default: 'NONE', nullable: true })
+  issueLabelType: string | null;
 
   @Column({ name: 'SAMPLE_QTY', type: 'number', default: 1, nullable: true })
   sampleQty: number | null;

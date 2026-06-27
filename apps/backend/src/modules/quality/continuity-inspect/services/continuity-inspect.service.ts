@@ -405,7 +405,7 @@ export class ContinuityInspectService {
 
   /**
    * 통전검사 결과 등록 (트랜잭션)
-   * 제품(FG) 라벨은 조립(서브공정) 키팅 공정에서 발행되므로(라우팅 ISSUE_FG_LABEL_YN), 검사 단계는 채번하지 않는다.
+   * 제품(FG) 라벨은 조립(서브공정) 키팅 공정에서 발행되므로(라우팅 ISSUE_LABEL_TYPE='FG'), 검사 단계는 채번하지 않는다.
    * - PASS: 회로라벨 필수 + 중복 차단 → dto.fgBarcode(조립 발행 ISSUED 라벨) 스캔 조회 → 판정/검사정보 갱신
    * - FAIL: InspectResult 등록 + dto.fgBarcode 있으면 ISSUED 라벨에 불합격 기록
    */

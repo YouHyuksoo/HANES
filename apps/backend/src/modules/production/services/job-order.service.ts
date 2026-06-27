@@ -562,7 +562,7 @@ export class JobOrderService {
       updateData,
     );
 
-    // FG 바코드는 조립(서브공정) 키팅 공정에서 발행한다(라우팅 ISSUE_FG_LABEL_YN). START 시 사전발행하지 않는다.
+    // FG 바코드는 조립(서브공정) 키팅 공정에서 발행한다(라우팅 ISSUE_LABEL_TYPE='FG'). START 시 사전발행하지 않는다.
     return this.findOneWithSelect(id, company, plant);
   }
 

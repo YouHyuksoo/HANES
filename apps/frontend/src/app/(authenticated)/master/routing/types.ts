@@ -32,8 +32,7 @@ export interface RoutingProcessItem {
   stdTime: number | null;
   setupTime: number | null;
   sampleInspectYn: string;
-  issueSgLabelYn: string;
-  issueFgLabelYn: string;
+  issueLabelType: string;
   useYn: string;
 }
 
