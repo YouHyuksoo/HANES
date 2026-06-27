@@ -77,6 +77,8 @@
 - `SEQ` 채번은 Oracle `SEQUENCE.NEXTVAL`만 사용한다. `MAX(SEQ)+1`, `NVL(MAX(...))+1`, 날짜별 1부터 재시작 채번은 금지한다.
 - 테이블/컬럼/PK/FK/CHECK/코드 도메인 등 DB 스키마를 변경하면 반드시 `python tools/generate_db_schema_doc.py`를 실행해 `docs/reports/db-schema-erd.md`를 함께 갱신한다. 스키마 변경 PR/커밋은 마이그레이션 SQL과 ERD 문서 갱신을 같은 작업 범위에 포함해야 한다.
 - 화면 개발 시 검사수준, AQL, 검사구분, 단위, 상태, 라인, 설비, 공정, 품목, 거래처처럼 코드성/기준정보성 값은 자유입력보다 공통코드 또는 기준정보 선택 방식을 우선한다. 공통코드/기준정보가 없으면 먼저 기준을 추가하고 선택 컴포넌트로 연결한다.
+- 작업이 중간에 멈추거나 검증/배포/데이터 정리가 완료되지 않았으면 반드시 `docs/standards/unfinished-work-record.md` 기준으로 `docs/reports/unfinished-work/YYYY-MM-DD-HHMM-<short-slug>.md` 기록을 남긴다. 다음 작업 시작 시 관련 미완료 기록을 먼저 확인하고, 기록 내용은 현재 코드/DB 상태로 재검증한다.
+- PowerShell 명령은 cmdlet별 실제 파라미터를 확인하고 사용한다. 특히 Windows PowerShell 5.1의 `New-Item`은 `-LiteralPath`를 지원하지 않으므로 디렉터리 생성에는 `New-Item -ItemType Directory -Force -Path ...` 또는 `[System.IO.Directory]::CreateDirectory(...)`를 사용한다. `-LiteralPath` 권장 규칙을 모든 cmdlet에 기계적으로 적용하지 않는다.
 
 ---
 
@@ -95,6 +97,7 @@
 - 코드 수정 전 `TASKS.md`에서 작업 ID를 확인하거나 새 작업 ID를 만든다.
 - 작업 중 중요한 판단은 `DECISIONS.md`에 남긴다.
 - 작업 종료 전 `JOURNAL.md`와 `.ai-coordination/HANDOFF/<agent-name>.md`를 갱신한다.
+- 작업 종료 전 미완료 항목이 있으면 `docs/reports/unfinished-work/`에 표준 기록을 남긴다. `.ai-coordination`이 비활성화되어 있어도 이 기록은 생략하지 않는다.
 - 다른 AI가 lock한 파일은 사용자 허가 없이 수정하지 않는다.
 - `AGENTS.md`의 프로젝트 규칙이 최우선이며, 불확실하면 구현하지 말고 `TASKS.md`에 BLOCKED로 남긴다.
 

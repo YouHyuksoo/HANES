@@ -13,6 +13,9 @@ import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
+import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
+import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -23,6 +26,9 @@ describe('ProductPhysicalInvService', () => {
   let mockLotRepo: DeepMocked<Repository<MatLot>>;
   let mockWhRepo: DeepMocked<Repository<Warehouse>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
+  let mockSessionRepo: DeepMocked<Repository<PhysicalInvSession>>;
+  let mockCountDetailRepo: DeepMocked<Repository<PhysicalInvCountDetail>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
@@ -33,6 +39,9 @@ describe('ProductPhysicalInvService', () => {
     mockLotRepo = createMock<Repository<MatLot>>();
     mockWhRepo = createMock<Repository<Warehouse>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
+    mockFgLabelRepo = createMock<Repository<FgLabel>>();
+    mockSessionRepo = createMock<Repository<PhysicalInvSession>>();
+    mockCountDetailRepo = createMock<Repository<PhysicalInvCountDetail>>();
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
@@ -52,6 +61,9 @@ describe('ProductPhysicalInvService', () => {
         { provide: getRepositoryToken(MatLot), useValue: mockLotRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWhRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
+        { provide: getRepositoryToken(PhysicalInvSession), useValue: mockSessionRepo },
+        { provide: getRepositoryToken(PhysicalInvCountDetail), useValue: mockCountDetailRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
       ],

@@ -30,6 +30,7 @@ import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
+import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import {
   CreateShipOrderDto,
   UpdateShipOrderDto,
@@ -1008,24 +1009,30 @@ export class ShipOrderService {
       throw new BadRequestException(`박스 수량(${box.qty})과 시리얼 수량(${serials.length})이 일치하지 않습니다: ${boxNo}`);
     }
 
-    const receiveBase = {
-      warehouseId: warehouse.warehouseCode,
-      itemCode: box.itemCode,
-      itemType: 'FINISHED' as const,
-      transType: 'FG_OUT_CANCEL' as const,
-      refType: 'SHIP_ORDER_CANCEL',
-      refId: shipOrderNo,
+    const originalFgOut = await qr.manager.findOne(ProductTransaction, {
+      where: {
+        transType: 'FG_OUT',
+        refType: 'SHIP_ORDER',
+        refId: shipOrderNo,
+        itemCode: box.itemCode,
+        qty: -box.qty,
+        status: 'DONE',
+        remark: `출하지시 박스출하:${boxNo}`,
+        ...where,
+      },
+    });
+    if (!originalFgOut) {
+      throw new BadRequestException(`출하 원장(FG_OUT)을 찾을 수 없어 취소할 수 없습니다: ${boxNo}`);
+    }
+    if (originalFgOut.fromWarehouseId !== warehouse.warehouseCode) {
+      throw new BadRequestException(`출하 원장 창고가 현재 FG 기본창고와 일치하지 않습니다: ${boxNo}`);
+    }
+
+    // 재고 복원 — 원본 FG_OUT을 표준 수불 취소로 역분개해 원본 CANCELED + CANCEL_REF_ID 연결을 남긴다.
+    await this.productInventory.cancelTransactionInTx(qr, originalFgOut, {
+      transactionId: originalFgOut.transNo,
       workerId,
       remark: `출하지시 박스출하 취소:${boxNo}`,
-      company,
-      plant,
-    };
-
-    // 재고 복원 — 출하가 수량 기준 FIFO이므로 취소도 수량 집계('*')로 복원해 키 체계를 통일한다.
-    // 시리얼 단위 복원은 아래 FG_LABELS → PACKED 전이가 담당. (재출하는 수량 FIFO라 키 무관 정상)
-    await this.productInventory.receiveStockInTx(qr, {
-      ...receiveBase,
-      qty: box.qty,
     });
 
     await qr.manager.update(BoxMaster, { boxNo: box.boxNo, ...where }, { status: 'CLOSED', shippedAt: null, shipOrderNo: null });

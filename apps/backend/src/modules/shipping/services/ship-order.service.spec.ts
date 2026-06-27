@@ -17,6 +17,7 @@ import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
+import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
@@ -537,6 +538,7 @@ describe('ShipOrderService.shipBox', () => {
   let service: ShipOrderService;
   let issueStockInTx: jest.Mock;
   let receiveStockInTx: jest.Mock;
+  let cancelTransactionInTx: jest.Mock;
   let managed: Record<string, any>;
 
   const makeManager = (overrides: Partial<Record<string, any>>) => ({
@@ -545,6 +547,7 @@ describe('ShipOrderService.shipBox', () => {
       if (entity === BoxMaster) return overrides.box ?? null;
       if (entity === ShipmentOrderItem) return overrides.line ?? null;
       if (entity === Warehouse) return overrides.warehouse ?? null;
+      if (entity === ProductTransaction) return overrides.originalFgOut ?? null;
       return null;
     }),
     find: jest.fn((entity: any) => {
@@ -558,6 +561,7 @@ describe('ShipOrderService.shipBox', () => {
     managed = makeManager(overrides);
     issueStockInTx = jest.fn().mockResolvedValue({ transNo: 'PTX_TEST' });
     receiveStockInTx = jest.fn().mockResolvedValue({ transNo: 'PTX_CANCEL' });
+    cancelTransactionInTx = jest.fn().mockResolvedValue({ transNo: 'PTX_CANCEL' });
     const moduleRef = await Test.createTestingModule({
       providers: [
         ShipOrderService,
@@ -570,7 +574,7 @@ describe('ShipOrderService.shipBox', () => {
         { provide: getRepositoryToken(PalletMaster), useValue: {} },
         { provide: getRepositoryToken(ShipmentLog), useValue: {} },
         { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed }) } },
-        { provide: ProductInventoryService, useValue: { issueStockByItemFifoInTx: issueStockInTx, receiveStockInTx } },
+        { provide: ProductInventoryService, useValue: { issueStockByItemFifoInTx: issueStockInTx, receiveStockInTx, cancelTransactionInTx } },
         { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
         { provide: NumberingService, useValue: { nextShipmentNo: jest.fn().mockResolvedValue('SO-TEST'), nextReturnNo: jest.fn().mockResolvedValue('RT-TEST') } },
         { provide: ShipmentService, useValue: { reverseShipmentInTx: jest.fn().mockResolvedValue(undefined), cancelInTx: jest.fn().mockResolvedValue(undefined) } },
@@ -677,14 +681,17 @@ describe('ShipOrderService.shipBox', () => {
       box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 2, status: 'SHIPPED', oqcStatus: 'PASS', serialList: JSON.stringify(['FG1', 'FG2']) },
       line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 2, shippedQty: 2 },
       warehouse: { warehouseCode: 'FG_MAIN' },
+      originalFgOut: { transNo: 'PTX_OUT', transType: 'FG_OUT', refType: 'SHIP_ORDER', refId: 'SO1', itemCode: 'HNS01', qty: -2, status: 'DONE', fromWarehouseId: 'FG_MAIN' },
     });
 
     const res = await service.cancelShipBox('SO1', { boxNo: 'BX1', workerId: 'worker1' }, '40', '1000');
 
-    expect(receiveStockInTx).toHaveBeenCalledTimes(1);
-    expect(receiveStockInTx).toHaveBeenCalledWith(
+    expect(receiveStockInTx).not.toHaveBeenCalled();
+    expect(cancelTransactionInTx).toHaveBeenCalledTimes(1);
+    expect(cancelTransactionInTx).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ warehouseId: 'FG_MAIN', itemCode: 'HNS01', qty: 2, transType: 'FG_OUT_CANCEL', refType: 'SHIP_ORDER_CANCEL', refId: 'SO1' }),
+      expect.objectContaining({ transNo: 'PTX_OUT', transType: 'FG_OUT', refType: 'SHIP_ORDER', refId: 'SO1' }),
+      expect.objectContaining({ transactionId: 'PTX_OUT', workerId: 'worker1', remark: '출하지시 박스출하 취소:BX1' }),
     );
     expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), expect.objectContaining({ status: 'CLOSED', shippedAt: null }));
     expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'PACKED' });
