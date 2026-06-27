@@ -653,5 +653,86 @@ describe('IssueRequestService', () => {
 
       expect((matIssueService as any).createInTx).not.toHaveBeenCalled();
     });
+
+    it('부분 출고 시 요청 상태를 PARTIAL로 갱신한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.findOne.mockResolvedValue({
+        requestId: 'REQ-001',
+        seq: 1,
+        itemCode: 'ITEM-001',
+        requestQty: 10,
+        issuedQty: 0,
+      } as MatIssueRequestItem);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster);
+      queryRunner.manager.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+      } as MatLot);
+
+      // 요청 10 중 4만 출고 → 잔여 6 → PARTIAL
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        issueType: 'PRODUCTION',
+        workerId: 'user',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 4 }],
+      }, 'C1', 'P1');
+
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatIssueRequest,
+        { requestNo: 'REQ-001', company: 'C1', plant: 'P1' },
+        { status: 'PARTIAL' },
+      );
+    });
+
+    it('PARTIAL 상태에서도 잔여를 출고할 수 있고 전량 채우면 COMPLETED가 된다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'PARTIAL',
+        orderNo: 'WO-001',
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-002' }]);
+      requestItemRepo.findOne.mockResolvedValue({
+        requestId: 'REQ-001',
+        seq: 1,
+        itemCode: 'ITEM-001',
+        requestQty: 10,
+        issuedQty: 4,
+      } as MatIssueRequestItem);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 4 } as MatIssueRequestItem,
+      ]);
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster);
+      queryRunner.manager.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+      } as MatLot);
+
+      // 잔여 6 전량 출고 → COMPLETED
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 6 }],
+      }, 'C1', 'P1');
+
+      expect((matIssueService as any).createInTx).toHaveBeenCalled();
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatIssueRequest,
+        { requestNo: 'REQ-001', company: 'C1', plant: 'P1' },
+        { status: 'COMPLETED' },
+      );
+    });
   });
 });

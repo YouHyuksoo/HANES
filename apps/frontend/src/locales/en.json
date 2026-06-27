@@ -2065,7 +2065,8 @@
       "approved": "Approved",
       "rejected": "Rejected",
       "pending": "Pending",
-      "issueCompleted": "Issue Completed"
+      "issueCompleted": "Issue Completed",
+      "partial": "Partial"
     },
     "arrivalResult": {
       "title": "Arrival Result",

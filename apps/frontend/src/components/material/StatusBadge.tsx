@@ -28,8 +28,8 @@ export type ReceiveStatus = 'PENDING' | 'IQC_IN_PROGRESS' | 'PASSED' | 'FAILED' 
 /** 출고 상태 타입 (확장: 요청→승인→출고→완료) */
 export type IssueStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 
-/** 출고요청 상태 타입 */
-export type IssueRequestStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+/** 출고요청 상태 타입 (PARTIAL=부분출고 진행 중) */
+export type IssueRequestStatus = 'REQUESTED' | 'APPROVED' | 'PARTIAL' | 'REJECTED' | 'COMPLETED';
 
 /** 입하 상태 배지 */
 export function ArrivalStatusBadge({ status }: { status: ArrivalStatus }) {
@@ -92,6 +92,7 @@ export function IssueRequestStatusBadge({ status }: { status: IssueRequestStatus
   const config: Record<IssueRequestStatus, { label: string; className: string }> = {
     REQUESTED: { label: t('material.badge.pending'), className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
     APPROVED: { label: t('material.badge.approved'), className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+    PARTIAL: { label: t('material.badge.partial', { defaultValue: '부분출고' }), className: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
     REJECTED: { label: t('material.badge.rejected'), className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
     COMPLETED: { label: t('material.badge.issueCompleted'), className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
   };

@@ -2065,7 +2065,8 @@
       "approved": "批准",
       "rejected": "驳回",
       "pending": "待处理",
-      "issueCompleted": "出库完成"
+      "issueCompleted": "出库完成",
+      "partial": "部分出库"
     },
     "arrivalResult": {
       "title": "到货实绩查询",

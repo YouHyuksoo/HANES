@@ -401,8 +401,9 @@ export class IssueRequestService {
    */
   async issueFromRequest(requestNo: string, dto: RequestIssueDto, company?: string, plant?: string) {
     const request = await this.getRequestOrFail(requestNo, company, plant);
-    if (request.status !== 'APPROVED') {
-      throw new BadRequestException(`출고할 수 없는 상태입니다 (APPROVED만 가능): ${request.status}`);
+    // APPROVED(승인) 또는 PARTIAL(부분출고 진행 중)에서만 출고 가능
+    if (request.status !== 'APPROVED' && request.status !== 'PARTIAL') {
+      throw new BadRequestException(`출고할 수 없는 상태입니다 (APPROVED/PARTIAL만 가능): ${request.status}`);
     }
     const effectiveCompany = request.company ?? company;
     const effectivePlant = request.plant ?? plant;
@@ -475,9 +476,10 @@ export class IssueRequestService {
         return (item.issuedQty + addedQty) >= item.requestQty;
       });
 
-      if (allCompleted) {
-        await queryRunner.manager.update(MatIssueRequest, { requestNo, ...requestTenantWhere }, { status: 'COMPLETED' });
-      }
+      // 전량 출고 완료면 COMPLETED, 일부만 출고됐으면 PARTIAL(부분출고)
+      await queryRunner.manager.update(MatIssueRequest, { requestNo, ...requestTenantWhere }, {
+        status: allCompleted ? 'COMPLETED' : 'PARTIAL',
+      });
 
       return { request: await this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined), issueResult };
     });

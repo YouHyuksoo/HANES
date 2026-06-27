@@ -2065,7 +2065,8 @@
       "approved": "Đã duyệt",
       "rejected": "Từ chối",
       "pending": "Chờ xử lý",
-      "issueCompleted": "Đã xuất kho"
+      "issueCompleted": "Đã xuất kho",
+      "partial": "Xuất một phần"
     },
     "arrivalResult": {
       "title": "Kết quả nhập hàng",
